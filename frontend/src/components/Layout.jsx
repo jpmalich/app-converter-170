@@ -1,10 +1,13 @@
 import React from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { useCompany } from "@/lib/company";
 import { LogOut, LayoutGrid, Settings2, Users } from "lucide-react";
+import CompanyLogo from "@/components/CompanyLogo";
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { company } = useCompany();
   const nav = useNavigate();
   const loc = useLocation();
 
@@ -20,11 +23,11 @@ export default function Layout() {
       <header className="bg-white border-b border-[#E4E4E7] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-3" data-testid="brand-link">
-            <div className="w-9 h-9 bg-[#09090B] text-[#F97316] flex items-center justify-center font-heading text-lg">
-              W
-            </div>
+            <CompanyLogo company={company} size={36} testid="nav-logo" />
             <div className="leading-tight">
-              <div className="font-heading text-base text-[#09090B]">Wolf &amp; Son</div>
+              <div className="font-heading text-base text-[#09090B]">
+                {company?.name || "Wolf & Son"}
+              </div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA]">Estimator</div>
             </div>
           </Link>

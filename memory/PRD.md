@@ -38,7 +38,9 @@ User uploaded a self-contained HTML "Vinyl Siding Estimator" used by Wolf and So
 - CORS tightened to explicit origins; logout cookie clearing fixed
 - **Frontend 16/16 scenarios passed**
 
-### Iteration 3 — Production features
+### Iteration 4 — Branding
+- **Uploadable company logo**: `PUT /api/company` accepts `{name?, logo_url?}`. Team page has Logo panel with preview + Upload/Replace/Remove. Logo renders in the top nav and on the printable customer-quote header via shared `CompanyContext` + `<CompanyLogo>` component (falls back to the company-name initial when no logo set).
+- Rename company also exposed on the Team page.
 - **Resend email** wired with real API key — quote send works end-to-end
 - **Multi-tenant Companies**: `/api/auth/register` accepts `company_name` (creates) OR `invite_code` (joins); `/api/company` returns invite code; catalogs + estimates auto-scoped via `company_id`
 - **Ad-hoc misc lines** in "Misc. Labor Only" (lab only) and "Misc. Labor & Material" (mat + lab) sections, persisted via `misc_labor` and `misc_material` arrays

@@ -3,6 +3,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { CompanyProvider } from "@/lib/company";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import EstimateEditor from "@/pages/EstimateEditor";
@@ -27,25 +28,27 @@ function App() {
   return (
     <div className="App">
       <AuthProvider>
-        <BrowserRouter>
-          <Toaster position="top-right" theme="light" />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              element={
-                <Protected>
-                  <Layout />
-                </Protected>
-              }
-            >
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/estimate/:id" element={<EstimateEditor />} />
-              <Route path="/catalog" element={<Catalog />} />
-              <Route path="/team" element={<Team />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+        <CompanyProvider>
+          <BrowserRouter>
+            <Toaster position="top-right" theme="light" />
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                element={
+                  <Protected>
+                    <Layout />
+                  </Protected>
+                }
+              >
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/estimate/:id" element={<EstimateEditor />} />
+                <Route path="/catalog" element={<Catalog />} />
+                <Route path="/team" element={<Team />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </CompanyProvider>
       </AuthProvider>
     </div>
   );

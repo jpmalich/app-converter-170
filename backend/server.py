@@ -194,6 +194,7 @@ async def _create_company(name: str, owner_user_id: str) -> dict:
         "name": name,
         "owner_user_id": owner_user_id,
         "invite_code": make_invite_code(),
+        "logo_url": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.companies.insert_one(company)
@@ -274,10 +275,29 @@ async def me(user: dict = Depends(get_current_user)):
 # ---------------------------------------------------------------------------
 # Company
 # ---------------------------------------------------------------------------
+class CompanyUpdate(BaseModel):
+    name: Optional[str] = None
+    logo_url: Optional[str] = None  # set "" or None to clear
+
+
 @api_router.get("/company")
 async def get_company(user: dict = Depends(get_current_user)):
     company = await get_company_for(user)
     return company
+
+
+@api_router.put("/company")
+async def update_company(body: CompanyUpdate, user: dict = Depends(get_current_user)):
+    company = await get_company_for(user)
+    updates = {}
+    if body.name is not None and body.name.strip():
+        updates["name"] = body.name.strip()
+    if body.logo_url is not None:
+        # Empty string clears the logo
+        updates["logo_url"] = body.logo_url or None
+    if updates:
+        await db.companies.update_one({"id": company["id"]}, {"$set": updates})
+    return await db.companies.find_one({"id": company["id"]}, {"_id": 0})
 
 
 # ---------------------------------------------------------------------------

@@ -1,8 +1,11 @@
 import React, { useState, useRef } from "react";
 import { fmt } from "@/lib/api";
-import { X, Printer, Mail, Send } from "lucide-react";
+import { useCompany } from "@/lib/company";
+import CompanyLogo from "@/components/CompanyLogo";
+import { X, Printer, Send } from "lucide-react";
 
 export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail }) {
+  const { company } = useCompany();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const printRef = useRef();
@@ -70,13 +73,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
         >
           <div className="border-b-4 border-[#F97316] px-8 sm:px-12 py-8 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-[#09090B] text-[#F97316] flex items-center justify-center text-2xl font-black">
-                W
-              </div>
+              <CompanyLogo company={company} size={56} />
               <div>
-                <div className="font-heading text-2xl text-[#09090B]">Wolf and Son</div>
+                <div className="font-heading text-2xl text-[#09090B]">
+                  {company?.name || "Wolf and Son"}
+                </div>
                 <div className="text-xs uppercase tracking-[0.25em] text-[#52525B]">
-                  Renovations LLC
+                  Estimate · Quote
                 </div>
               </div>
             </div>
