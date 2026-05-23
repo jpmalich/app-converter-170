@@ -141,7 +141,7 @@ export default function Login() {
           </div>
 
           <div className="mt-10 text-[11px] text-[#A1A1AA] uppercase tracking-widest">
-            Default admin · admin@wolfandson.com / Admin123!
+            Wolf and Son Renovations · Internal tool
           </div>
         </div>
       </div>
