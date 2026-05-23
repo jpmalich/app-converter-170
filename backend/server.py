@@ -21,7 +21,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
 
-from catalog_seed import DEFAULT_SECTIONS, TIER_NAMES, DEFAULT_TIER_NAME, build_tier_sections
+from catalog_seed import TIER_NAMES, DEFAULT_TIER_NAME, build_tier_sections
 
 # ---------------------------------------------------------------------------
 # Config & DB
@@ -149,8 +149,8 @@ class CatalogSection(BaseModel):
     items: List[CatalogItem]
 
 
-class CatalogIn(BaseModel):
-    sections: List[CatalogSection]
+class CatalogOverridesIn(BaseModel):
+    overrides: dict  # { "<section>::<name>": {"lab"?: float} }
 
 
 class EstimateLine(BaseModel):
@@ -312,8 +312,8 @@ async def _create_company(name: str, owner_user_id: str) -> dict:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.companies.insert_one(company)
-    # Per-company catalog now ONLY stores labor overrides + custom material overrides
-    # (material prices come from the assigned tier). Schema: {company_id, overrides: {key: {lab?, mat?}}}
+    # Per-company catalog stores only labor overrides; material is locked to the
+    # assigned price tier (managed by the supplier in /branding-admin).
     await db.catalogs.insert_one({
         "company_id": company["id"],
         "overrides": {},
@@ -471,10 +471,6 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
 async def get_catalog(user: dict = Depends(get_current_user)):
     company = await get_company_for(user)
     return await _resolve_catalog_for_company(company)
-
-
-class CatalogOverridesIn(BaseModel):
-    overrides: dict  # { "<section>::<name>": {"mat"?: float, "lab"?: float} }
 
 
 @api_router.put("/catalog")
@@ -648,8 +644,8 @@ def _calc_totals(est: dict) -> dict:
     lines = est.get("lines", []) or []
     misc_labor = est.get("misc_labor", []) or []
     misc_material = est.get("misc_material", []) or []
-    sub_mat = sum((l.get("qty", 0) or 0) * (l.get("mat", 0) or 0) for l in lines) + sum((m.get("mat", 0) or 0) for m in misc_material)
-    sub_lab = sum((l.get("qty", 0) or 0) * (l.get("lab", 0) or 0) for l in lines) + sum((m.get("lab", 0) or 0) for m in misc_material) + sum((m.get("lab", 0) or 0) for m in misc_labor)
+    sub_mat = sum((ln.get("qty", 0) or 0) * (ln.get("mat", 0) or 0) for ln in lines) + sum((m.get("mat", 0) or 0) for m in misc_material)
+    sub_lab = sum((ln.get("qty", 0) or 0) * (ln.get("lab", 0) or 0) for ln in lines) + sum((m.get("lab", 0) or 0) for m in misc_material) + sum((m.get("lab", 0) or 0) for m in misc_labor)
     wasted = sub_mat * (1 + (est.get("waste_pct", 0) or 0) / 100)
     tax = wasted * ((est.get("tax_rate", 0) or 0) / 100) if est.get("tax_enabled") else 0
     base = wasted + tax + sub_lab
@@ -710,11 +706,11 @@ async def export_estimate_csv(est_id: str, user: dict = Depends(get_current_user
         writer.writerow([k, v])
     writer.writerow([])
     writer.writerow(["Section", "Item", "Unit", "Qty", "Material $", "Labor $", "Line Total"])
-    for l in est.get("lines", []) or []:
-        if (l.get("qty", 0) or 0) > 0:
-            qty = l["qty"] or 0
-            line_total = qty * ((l.get("mat", 0) or 0) + (l.get("lab", 0) or 0))
-            writer.writerow([l["section"], l["name"], l["unit"], qty, l.get("mat", 0), l.get("lab", 0), f"{line_total:.2f}"])
+    for ln in est.get("lines", []) or []:
+        if (ln.get("qty", 0) or 0) > 0:
+            qty = ln["qty"] or 0
+            line_total = qty * ((ln.get("mat", 0) or 0) + (ln.get("lab", 0) or 0))
+            writer.writerow([ln["section"], ln["name"], ln["unit"], qty, ln.get("mat", 0), ln.get("lab", 0), f"{line_total:.2f}"])
     for m in est.get("misc_labor", []) or []:
         writer.writerow(["Misc. Labor Only", m.get("desc", ""), "—", 1, 0, m.get("lab", 0), f"{(m.get('lab', 0) or 0):.2f}"])
     for m in est.get("misc_material", []) or []:
