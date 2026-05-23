@@ -29,10 +29,11 @@ export default function Catalog() {
   const updateItem = (si, ii, key, val) => {
     setSections((arr) => {
       const next = JSON.parse(JSON.stringify(arr));
-      next[si].items[ii][key] = Number(val) || 0;
+      // Contractor can only override labor; material is supplier-controlled
+      if (key !== "lab") return arr;
+      next[si].items[ii].lab = Number(val) || 0;
       const item = next[si].items[ii];
-      if (key === "mat") item.mat_overridden = Number(val) !== Number(item.tier_mat);
-      if (key === "lab") item.lab_overridden = Number(val) !== Number(item.tier_lab);
+      item.lab_overridden = Number(val) !== Number(item.tier_lab);
       return next;
     });
   };
@@ -41,9 +42,7 @@ export default function Catalog() {
     setSections((arr) => {
       const next = JSON.parse(JSON.stringify(arr));
       const it = next[si].items[ii];
-      it.mat = it.tier_mat;
       it.lab = it.tier_lab;
-      it.mat_overridden = false;
       it.lab_overridden = false;
       return next;
     });
@@ -52,14 +51,13 @@ export default function Catalog() {
   const save = async () => {
     setSaving(true);
     try {
-      // Build overrides dict: only items that differ from tier defaults
+      // Build labor-only overrides; material is locked supplier-side
       const overrides = {};
       sections.forEach((s) => {
         s.items.forEach((it) => {
-          const ov = {};
-          if (it.mat_overridden) ov.mat = it.mat;
-          if (it.lab_overridden) ov.lab = it.lab;
-          if (Object.keys(ov).length) overrides[`${s.title}::${it.name}`] = ov;
+          if (it.lab_overridden) {
+            overrides[`${s.title}::${it.name}`] = { lab: it.lab };
+          }
         });
       });
       await api.put("/catalog", { overrides });
@@ -91,8 +89,8 @@ export default function Catalog() {
               <Lock className="w-3 h-3" /> Tier: {tierName}
             </span>
             <span className="text-xs text-[#52525B]">
-              Material prices set by your supplier. Labor is yours to set. You can also override
-              material per-item — overrides only apply to your company.
+              Material prices set by your supplier (read-only). Labor is yours to set —
+              overrides save to your company only.
             </span>
           </div>
         </div>
@@ -128,15 +126,9 @@ export default function Catalog() {
                   <div className="col-span-3 md:col-span-1 text-xs text-[#A1A1AA] uppercase tracking-wider">
                     {it.unit}
                   </div>
-                  <div className="col-span-4 md:col-span-2">
-                    <input
-                      className={`input num h-10 ${it.mat_overridden ? "border-[#F97316] bg-orange-50" : ""}`}
-                      type="number"
-                      step="0.01"
-                      value={it.mat}
-                      onChange={(e) => updateItem(si, ii, "mat", e.target.value)}
-                      title={it.mat_overridden ? `Tier default: $${it.tier_mat}` : ""}
-                    />
+                  <div className="col-span-4 md:col-span-2 text-right text-sm font-mono-num text-[#52525B] flex items-center justify-end gap-1.5">
+                    <Lock className="w-3 h-3 text-[#A1A1AA]" />
+                    {it.mat.toLocaleString("en-US", { style: "currency", currency: "USD" })}
                   </div>
                   <div className="col-span-4 md:col-span-2">
                     <input
@@ -149,11 +141,11 @@ export default function Catalog() {
                     />
                   </div>
                   <div className="col-span-1 md:col-span-2 text-right">
-                    {(it.mat_overridden || it.lab_overridden) && (
+                    {it.lab_overridden && (
                       <button
                         className="btn-ghost text-[#F97316]"
                         onClick={() => resetItem(si, ii)}
-                        title="Reset to tier defaults"
+                        title="Reset labor to tier default"
                       >
                         <RotateCcw className="w-4 h-4" />
                       </button>

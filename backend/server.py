@@ -479,16 +479,14 @@ class CatalogOverridesIn(BaseModel):
 
 @api_router.put("/catalog")
 async def update_catalog_overrides(body: CatalogOverridesIn, user: dict = Depends(get_current_user)):
-    """Save the contractor's per-line labor (and optional material) overrides. Material
-    overrides are permitted (your iteration-6 'yes' to per-contractor custom prices)."""
-    # Strip empty override keys so deletes work cleanly
+    """Save the contractor's per-line labor overrides. Material is supplier-controlled
+    (set per-tier) and is intentionally stripped here — contractors cannot override material."""
     clean = {}
     for k, v in (body.overrides or {}).items():
         if not isinstance(v, dict):
             continue
         keep = {}
-        if "mat" in v and v["mat"] is not None:
-            keep["mat"] = float(v["mat"])
+        # Material is locked to the assigned tier; ignore any client-side `mat` payload
         if "lab" in v and v["lab"] is not None:
             keep["lab"] = float(v["lab"])
         if keep:
