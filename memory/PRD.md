@@ -54,6 +54,7 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 - **Iter 3** — Multi-tenant companies, ad-hoc misc lines, CSV exports, Resend live, EstimateEditor refactor, 21/21 tests
 - **Iter 4** — Per-company uploadable logo via Team page
 - **Iter 5** — **Supplier-distributed pivot**: public branding endpoint, signup-code gating, Alside Pittsburgh dealer prices seeded, /branding-admin route, quote footer toggle, 45/45 tests pass
+- **Iter 6** — **4-Tier Material Pricing Architecture** (Feb 2026): 4 supplier-controlled tiers seeded (`one-opp`, `whole-sale`, `Contractor`, `Builder-Dealer`). Material prices locked at backend (PUT /api/catalog strips `mat`) AND at UI (Catalog inputs disabled, EstimateEditor renders mat as static text). Labor remains contractor-editable with orange override + reset. Admin can assign tier per-company via /branding-admin → PUT /api/admin/companies/{id}/tier. 23/23 new pytest tests pass; Playwright validated Catalog tier badge + locked material + BrandingAdmin tier dropdown.
 
 ## Configuration (`backend/.env`)
 - `SUPPLIER_NAME=Alside Supply`
