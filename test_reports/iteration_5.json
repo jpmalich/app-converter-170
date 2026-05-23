@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 5 backend testing — supplier-distributed pivot. 45/45 pytest tests pass (24 new iteration-5 + 21 iteration-3 regression). All requested behaviours verified: public /api/branding (Alside Supply + Howard Hunt tagline + nullable logo_url), invite-only signup gating (403 without codes / wrong code, 200 with ALSIDE-JR47Q8 -> owner, 200 with invite_code -> member), default Alside Pittsburgh catalog seeded (first section 'Vinyl Siding', first item Conquest @ $75.71/SQ lab=0, ASCEND section flagged ascend:true), Company.quote_footer_enabled defaults true on new companies and toggles persist, all /api/admin/* endpoints 403 without token and work via both X-Admin-Token header and ?token= query (signup-code, branding PUT reflected in public GET, logo upload returns /api/uploads/{name} which is fetchable and auto-attached to branding), regression of estimate CRUD, dashboard CSV, /api/auth/me, /api/company, multi-tenant isolation all intact.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/company (legacy admin)", "issue": "Pre-existing admin company created in earlier iterations may not have the quote_footer_enabled field. Verified the new owner's company has it as true; admin's company doc may be missing it (UI defaults via !== false). One-time migration in startup could backfill {quote_footer_enabled: true} on companies where the field is absent to keep API responses uniform."},
+      {"endpoint": "POST /api/admin/upload-logo", "issue": "File extension whitelist falls back silently to 'png' for disallowed extensions instead of rejecting (e.g. uploading a .gif gets saved as .png). Not security-critical (size capped at 5MB, served via FileResponse) but the saved extension misrepresents content-type."},
+      {"endpoint": "POST /api/auth/register", "issue": "Error message for invalid invite_code is 400 'Invalid invite code' whereas the spec/UX intent in the request implies it should also surface the supplier name. Current copy is fine, just noting for consistency with the 403 invite-only message."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5_supplier.py",
+    "/app/backend/tests/test_estimator_api.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_iteration5.xml"
+  ],
+  "action_items": [
+    "(Optional) Backfill quote_footer_enabled=true on legacy companies in the startup migration block so the field is always present on GET /api/company.",
+    "(Optional) Reject (415) instead of silently coercing disallowed logo extensions in /api/admin/upload-logo.",
+    "(Optional) Consider returning the supplier_name in the 400 'Invalid invite code' message for consistency with the 403 invite-only copy."
+  ],
+  "critical_code_review_comments": [
+    "server.py:38-40 — Fallback SIGNUP_CODE derivation uses uuid5(NAMESPACE_DNS, JWT_SECRET). If JWT_SECRET ever rotates without setting SIGNUP_CODE explicitly, every existing contractor's signup link breaks. Since the .env now pins SIGNUP_CODE, this branch is dead in practice; consider raising on startup if SUPPLIER_ADMIN_TOKEN is empty (same pattern), so misconfiguration fails fast.",
+    "server.py:224-227 — _check_admin_token short-circuits when SUPPLIER_ADMIN_TOKEN is empty (returns 403 always), which is correct, but means a typo in .env would silently lock the admin out without a clear log message. Add a logger.warning at startup if SUPPLIER_ADMIN_TOKEN is missing.",
+    "server.py:252-270 — admin_upload_logo writes the file to disk BEFORE checking size (await file.read() loads it fully into memory). For 5MB-cap that's fine, but the size check should be enforced via spool-to-disk or stream chunks for safety. Also: there is no MIME-sniffing — a user could upload a renamed .exe as supplier-logo-xxxx.png and the server would serve it with image content-type via FileResponse (FileResponse uses guess_type from filename). Low impact since only the supplier admin can hit this, but worth noting.",
+    "server.py:225 — X-Admin-Token is compared with `!=` (non-constant-time). With a 43-char token over HTTPS the timing risk is minimal, but `hmac.compare_digest` is the standard fix.",
+    "server.py:282-298 — _create_company always seeds DEFAULT_SECTIONS into db.catalogs. If a contractor later calls /api/catalog/reset they will revert to today's Alside prices — but if Alside updates the catalog_seed.py prices, existing companies retain their old custom values which is intended. Consider exposing a 'sync to latest supplier defaults' admin action.",
+    "server.py:638-658 — email_quote imports `resend` lazily inside the request handler. If the package is missing this raises an unhandled 500 instead of a clean 503. Wrap the import in try/except ImportError -> 503.",
+    "catalog_seed.py:69-73 — Shutter items have mat=0 and labels '(Call Alside for price)'. These will silently zero out an estimate line if a user adds them without overriding the price. Consider returning mat=null with UI signaling 'price on request' rather than 0."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration5_supplier.py (new — 24 tests)",
+    "/app/backend/tests/test_estimator_api.py (updated _register to send SIGNUP_CODE; updated default-mat assertion from 92.19 -> 75.71 to match the new Alside seed)"
+  ],
+  "success_rate": {"backend": "100% (45/45)", "frontend": "not tested per scope (backend only)"},
+  "test_credentials": "admin@wolfandson.com / Admin123! (works). SIGNUP_CODE=ALSIDE-JR47Q8 (verified). SUPPLIER_ADMIN_TOKEN=OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE (verified via both X-Admin-Token header and ?token= query).",
+  "seed_data_creation": "Each test class registers fresh TEST_ prefixed users + companies (TEST_Alside_xxxx, TEST_CompanyA_*, TEST_CompanyB_*) and cleans up its own estimates. Logo upload test creates one supplier-logo-xxxxxxxx.png under /app/backend/uploads/ and clears the branding.supplier_logo_url after. Branding tagline test snapshot/restore is used so the public /api/branding remains unchanged after the run. No leftover test data should affect future runs.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Use pytest /app/backend/tests/ — runs both iteration-3 regression and iteration-5 tests in ~9s. When registering a new TEST_ user that creates a company, you MUST include signup_code=ALSIDE-JR47Q8 (or join via invite_code from an existing company). Admin endpoints accept either X-Admin-Token: <token> header OR ?token=<token> query param. /api/branding is public (no cookie/token). Resend is configured with a real API key — do NOT call POST /api/estimates/{id}/email with a real recipient; test against a non-existent estimate to get a clean 404 instead.",
+  "rca of the issue": "No app issues found. Two minor test-side fixes were applied: (1) the iteration-3 _register helper was missing signup_code (added SIGNUP_CODE default); (2) the catalog isolation test had a hardcoded mat=92.19 from the previous catalog seed and was updated to 75.71 to match the new Alside Conquest dealer price. Both edits are test-only and do not change any production behavior."
+}

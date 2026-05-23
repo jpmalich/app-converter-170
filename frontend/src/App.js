@@ -3,12 +3,14 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { BrandingProvider } from "@/lib/branding";
 import { CompanyProvider } from "@/lib/company";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import EstimateEditor from "@/pages/EstimateEditor";
 import Catalog from "@/pages/Catalog";
 import Team from "@/pages/Team";
+import BrandingAdmin from "@/pages/BrandingAdmin";
 import Layout from "@/components/Layout";
 
 function Protected({ children }) {
@@ -28,27 +30,30 @@ function App() {
   return (
     <div className="App">
       <AuthProvider>
-        <CompanyProvider>
-          <BrowserRouter>
-            <Toaster position="top-right" theme="light" />
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route
-                element={
-                  <Protected>
-                    <Layout />
-                  </Protected>
-                }
-              >
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/estimate/:id" element={<EstimateEditor />} />
-                <Route path="/catalog" element={<Catalog />} />
-                <Route path="/team" element={<Team />} />
-              </Route>
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </CompanyProvider>
+        <BrandingProvider>
+          <CompanyProvider>
+            <BrowserRouter>
+              <Toaster position="top-right" theme="light" />
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/branding-admin" element={<BrandingAdmin />} />
+                <Route
+                  element={
+                    <Protected>
+                      <Layout />
+                    </Protected>
+                  }
+                >
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/estimate/:id" element={<EstimateEditor />} />
+                  <Route path="/catalog" element={<Catalog />} />
+                  <Route path="/team" element={<Team />} />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </CompanyProvider>
+        </BrandingProvider>
       </AuthProvider>
     </div>
   );

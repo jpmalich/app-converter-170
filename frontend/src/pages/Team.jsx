@@ -160,6 +160,31 @@ export default function Team() {
         </div>
       </div>
 
+      {/* Quote footer toggle */}
+      <div className="card p-6 mb-6 max-w-2xl" data-testid="footer-panel">
+        <div className="section-tag mb-3">Customer Quote Footer</div>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={company.quote_footer_enabled !== false}
+            onChange={async (e) => {
+              await update({ quote_footer_enabled: e.target.checked });
+              toast.success("Updated");
+            }}
+            data-testid="quote-footer-toggle"
+          />
+          <div className="text-sm">
+            <div className="font-semibold text-[#09090B]">
+              Show &quot;Materials supplied by your supplier&quot; footer on quotes
+            </div>
+            <div className="text-[#52525B] mt-1">
+              Adds a small attribution line at the bottom of every customer-facing quote. Recommended.
+            </div>
+          </div>
+        </label>
+      </div>
+
       {/* Invite teammates */}
       <div className="card p-6 max-w-2xl">
         <div className="section-tag mb-3">Invite a teammate</div>

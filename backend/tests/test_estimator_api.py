@@ -10,6 +10,7 @@ API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "admin@wolfandson.com"
 ADMIN_PASSWORD = "Admin123!"
+SIGNUP_CODE = "ALSIDE-JR47Q8"  # iteration-5 invite-only gating
 
 
 # ---------------- Fixtures ----------------
@@ -30,6 +31,9 @@ def _register(email_prefix="test", company_name=None, invite_code=None):
         body["company_name"] = company_name
     if invite_code:
         body["invite_code"] = invite_code
+    else:
+        # iteration-5: creating a new company requires the supplier signup_code
+        body["signup_code"] = SIGNUP_CODE
     r = s.post(f"{API}/auth/register", json=body)
     return s, r, email
 
@@ -141,7 +145,8 @@ class TestCatalogPerCompany:
 
         # B should still have default
         b = company_b_owner.get(f"{API}/catalog").json()
-        assert b["sections"][0]["items"][0]["mat"] == 92.19
+        # iteration-5: default catalog reseeded with Alside Pittsburgh dealer prices
+        assert b["sections"][0]["items"][0]["mat"] == 75.71
 
         # A should have the edited value
         a2 = company_a_owner.get(f"{API}/catalog").json()

@@ -1,14 +1,17 @@
 import React, { useState, useRef } from "react";
 import { fmt } from "@/lib/api";
 import { useCompany } from "@/lib/company";
+import { useBranding } from "@/lib/branding";
 import CompanyLogo from "@/components/CompanyLogo";
 import { X, Printer, Send } from "lucide-react";
 
 export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail }) {
   const { company } = useCompany();
+  const branding = useBranding();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const printRef = useRef();
+  const showSupplierFooter = company?.quote_footer_enabled !== false;
 
   const linesWithQty = (estimate.lines || []).filter((l) => (l.qty || 0) > 0);
   const linesBySection = linesWithQty.reduce((acc, l) => {
@@ -177,6 +180,15 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               </div>
             </div>
           </div>
+
+          {showSupplierFooter && (
+            <div
+              className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] text-center"
+              data-testid="supplier-footer"
+            >
+              Materials supplied by {branding.supplier_name}
+            </div>
+          )}
         </div>
       </div>
     </div>

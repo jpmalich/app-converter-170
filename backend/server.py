@@ -31,6 +31,13 @@ JWT_ALG = "HS256"
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@wolfandson.com")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin123!")
 ADMIN_COMPANY = os.environ.get("ADMIN_COMPANY", "Wolf and Son Renovations LLC")
+SUPPLIER_NAME = os.environ.get("SUPPLIER_NAME", "Alside Supply")
+SUPPLIER_TAGLINE = os.environ.get("SUPPLIER_TAGLINE", "Howard Hunt · Territory Sales Manager · (724) 640-4333")
+SUPPLIER_ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+SIGNUP_CODE = os.environ.get("SIGNUP_CODE", "")
+if not SIGNUP_CODE:
+    # Generate a stable signup code from JWT_SECRET so it survives restarts when not pinned
+    SIGNUP_CODE = "ALSIDE-" + uuid.uuid5(uuid.NAMESPACE_DNS, JWT_SECRET).hex[:6].upper()
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 
@@ -119,8 +126,9 @@ class RegisterIn(BaseModel):
     email: EmailStr
     password: str
     name: Optional[str] = None
-    company_name: Optional[str] = None  # creates a new company
-    invite_code: Optional[str] = None   # joins an existing company
+    company_name: Optional[str] = None
+    invite_code: Optional[str] = None
+    signup_code: Optional[str] = None  # required to create a new company
 
 
 class LoginIn(BaseModel):
@@ -186,6 +194,89 @@ class EmailQuoteIn(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Public Branding (no auth) + Supplier Admin
+# ---------------------------------------------------------------------------
+async def _get_branding() -> dict:
+    doc = await db.settings.find_one({"id": "branding"}, {"_id": 0})
+    if not doc:
+        doc = {
+            "id": "branding",
+            "supplier_name": SUPPLIER_NAME,
+            "supplier_tagline": SUPPLIER_TAGLINE,
+            "supplier_logo_url": None,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.settings.insert_one(doc)
+        doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/branding")
+async def get_branding():
+    b = await _get_branding()
+    return {
+        "supplier_name": b.get("supplier_name") or SUPPLIER_NAME,
+        "supplier_tagline": b.get("supplier_tagline") or SUPPLIER_TAGLINE,
+        "supplier_logo_url": b.get("supplier_logo_url"),
+    }
+
+
+def _check_admin_token(request: Request):
+    token = request.headers.get("X-Admin-Token") or request.query_params.get("token")
+    if not SUPPLIER_ADMIN_TOKEN or token != SUPPLIER_ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+
+class BrandingUpdate(BaseModel):
+    supplier_name: Optional[str] = None
+    supplier_tagline: Optional[str] = None
+    supplier_logo_url: Optional[str] = None
+
+
+@api_router.put("/admin/branding")
+async def admin_update_branding(body: BrandingUpdate, request: Request):
+    _check_admin_token(request)
+    updates = {}
+    if body.supplier_name is not None and body.supplier_name.strip():
+        updates["supplier_name"] = body.supplier_name.strip()
+    if body.supplier_tagline is not None:
+        updates["supplier_tagline"] = body.supplier_tagline.strip()
+    if body.supplier_logo_url is not None:
+        updates["supplier_logo_url"] = body.supplier_logo_url or None
+    if updates:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        await db.settings.update_one({"id": "branding"}, {"$set": updates}, upsert=True)
+    return await _get_branding()
+
+
+@api_router.post("/admin/upload-logo")
+async def admin_upload_logo(request: Request, file: UploadFile = File(...)):
+    _check_admin_token(request)
+    ext = (file.filename or "").split(".")[-1].lower() or "png"
+    if ext not in {"jpg", "jpeg", "png", "webp", "svg"}:
+        ext = "png"
+    name = f"supplier-logo-{uuid.uuid4().hex[:8]}.{ext}"
+    dest = UPLOAD_DIR / name
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Logo too large (>5MB)")
+    with open(dest, "wb") as f:
+        f.write(content)
+    url = f"/api/uploads/{name}"
+    await db.settings.update_one(
+        {"id": "branding"}, {"$set": {"supplier_logo_url": url, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
+    )
+    return {"url": url}
+
+
+@api_router.get("/admin/signup-code")
+async def admin_get_signup_code(request: Request):
+    _check_admin_token(request)
+    return {"signup_code": SIGNUP_CODE}
+
+
+# ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
 async def _create_company(name: str, owner_user_id: str) -> dict:
@@ -195,6 +286,7 @@ async def _create_company(name: str, owner_user_id: str) -> dict:
         "owner_user_id": owner_user_id,
         "invite_code": make_invite_code(),
         "logo_url": None,
+        "quote_footer_enabled": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.companies.insert_one(company)
@@ -226,7 +318,13 @@ async def register(body: RegisterIn, response: Response):
         company_id = company["id"]
         role = "member"
     else:
-        # Create a new company for this user (default if they didn't give a name)
+        # Creating a new company requires the supplier signup code
+        provided = (body.signup_code or "").strip().upper()
+        if not SIGNUP_CODE or provided != SIGNUP_CODE.upper():
+            raise HTTPException(
+                status_code=403,
+                detail=f"Signup is invite-only. Contact {SUPPLIER_NAME} for an access code.",
+            )
         cname = (body.company_name or f"{(body.name or email.split('@')[0])}'s Company").strip()
         company = await _create_company(cname, user_id)
         company_id = company["id"]
@@ -278,6 +376,7 @@ async def me(user: dict = Depends(get_current_user)):
 class CompanyUpdate(BaseModel):
     name: Optional[str] = None
     logo_url: Optional[str] = None  # set "" or None to clear
+    quote_footer_enabled: Optional[bool] = None
 
 
 @api_router.get("/company")
@@ -295,6 +394,8 @@ async def update_company(body: CompanyUpdate, user: dict = Depends(get_current_u
     if body.logo_url is not None:
         # Empty string clears the logo
         updates["logo_url"] = body.logo_url or None
+    if body.quote_footer_enabled is not None:
+        updates["quote_footer_enabled"] = bool(body.quote_footer_enabled)
     if updates:
         await db.companies.update_one({"id": company["id"]}, {"$set": updates})
     return await db.companies.find_one({"id": company["id"]}, {"_id": 0})

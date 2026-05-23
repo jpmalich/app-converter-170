@@ -32,11 +32,11 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (email, password, name, company_name, invite_code) => {
+  const register = async (email, password, name, company_name, invite_code, signup_code) => {
     setError("");
     try {
       const { data } = await api.post("/auth/register", {
-        email, password, name, company_name, invite_code,
+        email, password, name, company_name, invite_code, signup_code,
       });
       setUser(data);
       return true;
