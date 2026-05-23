@@ -21,7 +21,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr
 
-from catalog_seed import DEFAULT_SECTIONS
+from catalog_seed import DEFAULT_SECTIONS, TIER_NAMES, DEFAULT_TIER_NAME, build_tier_sections
 
 # ---------------------------------------------------------------------------
 # Config & DB
@@ -279,7 +279,28 @@ async def admin_get_signup_code(request: Request):
 # ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
+async def _ensure_tiers_seeded():
+    """Seed the 4 standard price tiers if they don't exist yet."""
+    existing = {t["name"] async for t in db.price_tiers.find({}, {"name": 1})}
+    for name in TIER_NAMES:
+        if name not in existing:
+            await db.price_tiers.insert_one({
+                "id": str(uuid.uuid4()),
+                "name": name,
+                "sections": build_tier_sections(name),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            })
+            logger.info("Seeded price tier %s", name)
+
+
+async def _get_default_tier_id() -> str:
+    t = await db.price_tiers.find_one({"name": DEFAULT_TIER_NAME}, {"id": 1})
+    return t["id"] if t else None
+
+
 async def _create_company(name: str, owner_user_id: str) -> dict:
+    tier_id = await _get_default_tier_id()
     company = {
         "id": str(uuid.uuid4()),
         "name": name,
@@ -287,13 +308,15 @@ async def _create_company(name: str, owner_user_id: str) -> dict:
         "invite_code": make_invite_code(),
         "logo_url": None,
         "quote_footer_enabled": True,
+        "price_tier_id": tier_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.companies.insert_one(company)
-    # Seed default catalog scoped to this company
+    # Per-company catalog now ONLY stores labor overrides + custom material overrides
+    # (material prices come from the assigned tier). Schema: {company_id, overrides: {key: {lab?, mat?}}}
     await db.catalogs.insert_one({
         "company_id": company["id"],
-        "sections": DEFAULT_SECTIONS,
+        "overrides": {},
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
     return company
@@ -402,48 +425,165 @@ async def update_company(body: CompanyUpdate, user: dict = Depends(get_current_u
 
 
 # ---------------------------------------------------------------------------
-# Catalog (per company)
+# Catalog (per company): material from assigned tier + per-company overrides
 # ---------------------------------------------------------------------------
-async def _ensure_catalog(company_id: str) -> dict:
-    cat = await db.catalogs.find_one({"company_id": company_id}, {"_id": 0})
-    if not cat:
-        cat = {
-            "company_id": company_id, "sections": DEFAULT_SECTIONS,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.catalogs.insert_one(cat)
-        cat.pop("_id", None)
-    return cat
+def _key(section: str, name: str) -> str:
+    return f"{section}::{name}"
+
+
+async def _resolve_catalog_for_company(company: dict) -> dict:
+    """Merge the company's assigned tier (material baseline) with their per-company
+    overrides (custom mat / lab). Returns shape: {sections, tier_id, tier_name, locked_material}."""
+    tier_id = company.get("price_tier_id")
+    tier = await db.price_tiers.find_one({"id": tier_id}, {"_id": 0}) if tier_id else None
+    if not tier:
+        # Fallback: seed default if missing
+        await _ensure_tiers_seeded()
+        tier = await db.price_tiers.find_one({"name": DEFAULT_TIER_NAME}, {"_id": 0})
+
+    cat = await db.catalogs.find_one({"company_id": company["id"]}, {"_id": 0})
+    overrides = (cat or {}).get("overrides", {})
+
+    sections = []
+    for s in tier["sections"]:
+        items_out = []
+        for it in s["items"]:
+            k = _key(s["title"], it["name"])
+            ov = overrides.get(k, {})
+            items_out.append({
+                "name": it["name"], "unit": it["unit"],
+                "mat": float(ov["mat"]) if "mat" in ov else float(it["mat"]),
+                "lab": float(ov["lab"]) if "lab" in ov else float(it["lab"]),
+                "tier_mat": float(it["mat"]),      # so UI can show "Tier default: $X"
+                "tier_lab": float(it["lab"]),
+                "mat_overridden": "mat" in ov,
+                "lab_overridden": "lab" in ov,
+            })
+        sections.append({"title": s["title"], "ascend": s.get("ascend", False), "items": items_out})
+    return {
+        "sections": sections,
+        "tier_id": tier["id"],
+        "tier_name": tier["name"],
+    }
 
 
 @api_router.get("/catalog")
 async def get_catalog(user: dict = Depends(get_current_user)):
-    return await _ensure_catalog(user["company_id"])
+    company = await get_company_for(user)
+    return await _resolve_catalog_for_company(company)
+
+
+class CatalogOverridesIn(BaseModel):
+    overrides: dict  # { "<section>::<name>": {"mat"?: float, "lab"?: float} }
 
 
 @api_router.put("/catalog")
-async def update_catalog(body: CatalogIn, user: dict = Depends(get_current_user)):
-    payload = {
-        "company_id": user["company_id"],
-        "sections": [s.model_dump() for s in body.sections],
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
+async def update_catalog_overrides(body: CatalogOverridesIn, user: dict = Depends(get_current_user)):
+    """Save the contractor's per-line labor (and optional material) overrides. Material
+    overrides are permitted (your iteration-6 'yes' to per-contractor custom prices)."""
+    # Strip empty override keys so deletes work cleanly
+    clean = {}
+    for k, v in (body.overrides or {}).items():
+        if not isinstance(v, dict):
+            continue
+        keep = {}
+        if "mat" in v and v["mat"] is not None:
+            keep["mat"] = float(v["mat"])
+        if "lab" in v and v["lab"] is not None:
+            keep["lab"] = float(v["lab"])
+        if keep:
+            clean[k] = keep
     await db.catalogs.update_one(
-        {"company_id": user["company_id"]}, {"$set": payload}, upsert=True
+        {"company_id": user["company_id"]},
+        {"$set": {"overrides": clean, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
     )
-    return payload
+    company = await get_company_for(user)
+    return await _resolve_catalog_for_company(company)
 
 
 @api_router.post("/catalog/reset")
 async def reset_catalog(user: dict = Depends(get_current_user)):
-    payload = {
-        "company_id": user["company_id"], "sections": DEFAULT_SECTIONS,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
+    """Clear all per-company overrides (back to assigned tier defaults)."""
     await db.catalogs.update_one(
-        {"company_id": user["company_id"]}, {"$set": payload}, upsert=True
+        {"company_id": user["company_id"]},
+        {"$set": {"overrides": {}, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True,
     )
-    return payload
+    company = await get_company_for(user)
+    return await _resolve_catalog_for_company(company)
+
+
+# ---------------------------------------------------------------------------
+# Admin: Price Tier management (supplier-only via token)
+# ---------------------------------------------------------------------------
+@api_router.get("/admin/tiers")
+async def admin_list_tiers(request: Request):
+    _check_admin_token(request)
+    await _ensure_tiers_seeded()
+    cursor = db.price_tiers.find({}, {"_id": 0}).sort("name", 1)
+    return await cursor.to_list(50)
+
+
+@api_router.get("/admin/tiers/{tier_id}")
+async def admin_get_tier(tier_id: str, request: Request):
+    _check_admin_token(request)
+    t = await db.price_tiers.find_one({"id": tier_id}, {"_id": 0})
+    if not t:
+        raise HTTPException(status_code=404, detail="Not found")
+    return t
+
+
+class TierUpdate(BaseModel):
+    name: Optional[str] = None
+    sections: Optional[List[CatalogSection]] = None
+
+
+@api_router.put("/admin/tiers/{tier_id}")
+async def admin_update_tier(tier_id: str, body: TierUpdate, request: Request):
+    _check_admin_token(request)
+    updates = {}
+    if body.name:
+        updates["name"] = body.name.strip()
+    if body.sections is not None:
+        updates["sections"] = [s.model_dump() for s in body.sections]
+    if updates:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        res = await db.price_tiers.update_one({"id": tier_id}, {"$set": updates})
+        if res.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Not found")
+    return await db.price_tiers.find_one({"id": tier_id}, {"_id": 0})
+
+
+@api_router.get("/admin/companies")
+async def admin_list_companies(request: Request):
+    _check_admin_token(request)
+    cursor = db.companies.find({}, {"_id": 0}).sort("created_at", -1)
+    companies = await cursor.to_list(500)
+    # Attach tier name + counts
+    tiers = {t["id"]: t["name"] async for t in db.price_tiers.find({}, {"id": 1, "name": 1})}
+    for c in companies:
+        c["tier_name"] = tiers.get(c.get("price_tier_id"))
+        c["estimate_count"] = await db.estimates.count_documents({"company_id": c["id"]})
+    return companies
+
+
+class CompanyTierAssign(BaseModel):
+    price_tier_id: str
+
+
+@api_router.put("/admin/companies/{company_id}/tier")
+async def admin_assign_tier(company_id: str, body: CompanyTierAssign, request: Request):
+    _check_admin_token(request)
+    tier = await db.price_tiers.find_one({"id": body.price_tier_id}, {"_id": 0})
+    if not tier:
+        raise HTTPException(status_code=400, detail="Tier not found")
+    res = await db.companies.update_one(
+        {"id": company_id}, {"$set": {"price_tier_id": body.price_tier_id}}
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return await db.companies.find_one({"id": company_id}, {"_id": 0})
 
 
 # ---------------------------------------------------------------------------
@@ -694,6 +834,20 @@ async def on_start():
     await db.catalogs.create_index("company_id", unique=True)
     await db.companies.create_index("id", unique=True)
     await db.companies.create_index("invite_code", unique=True)
+    await db.price_tiers.create_index("id", unique=True)
+    await db.price_tiers.create_index("name", unique=True)
+
+    # Seed the 4 price tiers
+    await _ensure_tiers_seeded()
+
+    # Migrate old catalog docs that still have `sections` -> convert to empty overrides
+    # (material now comes from tier; we keep their labor if it differed by storing as override).
+    legacy_cats = db.catalogs.find({"sections": {"$exists": True}})
+    async for legacy in legacy_cats:
+        await db.catalogs.update_one(
+            {"_id": legacy["_id"]},
+            {"$unset": {"sections": ""}, "$set": {"overrides": legacy.get("overrides", {})}},
+        )
 
     # Migrate old global catalog (id="default") -> company-scoped if present
     legacy = await db.catalogs.find_one({"id": "default"})
@@ -744,6 +898,14 @@ async def on_start():
         {"quote_footer_enabled": {"$exists": False}},
         {"$set": {"quote_footer_enabled": True}},
     )
+
+    # Backfill price_tier_id on legacy companies (assign cheapest default)
+    default_tier_id = await _get_default_tier_id()
+    if default_tier_id:
+        await db.companies.update_many(
+            {"price_tier_id": {"$exists": False}},
+            {"$set": {"price_tier_id": default_tier_id}},
+        )
 
     if not SUPPLIER_ADMIN_TOKEN:
         logger.warning(

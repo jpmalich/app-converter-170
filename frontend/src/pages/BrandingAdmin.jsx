@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "sonner";
-import { Upload, Shield, Copy, ArrowLeft } from "lucide-react";
+import { Upload, Shield, Copy, ArrowLeft, Tags, Building2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -234,7 +234,223 @@ export default function BrandingAdmin() {
         <div className="text-xs text-[#A1A1AA] text-center pt-4">
           Bookmark this URL — it&apos;s how you&apos;ll come back to update branding.
         </div>
+
+        {/* Pricing Tiers */}
+        <PricingTiersPanel token={token} />
+
+        {/* Contractors → Tier assignment */}
+        <CompaniesPanel token={token} />
       </main>
+    </div>
+  );
+}
+
+function PricingTiersPanel({ token }) {
+  const [tiers, setTiers] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editTier, setEditTier] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = React.useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/admin/tiers?token=${encodeURIComponent(token)}`);
+      setTiers(data);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || e.message);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openEdit = async (tierId) => {
+    setEditingId(tierId);
+    const { data } = await axios.get(`${API}/admin/tiers/${tierId}?token=${encodeURIComponent(token)}`);
+    setEditTier(data);
+  };
+
+  const updateItem = (si, ii, key, val) => {
+    setEditTier((t) => {
+      const next = JSON.parse(JSON.stringify(t));
+      next.sections[si].items[ii][key] = key === "name" || key === "unit" ? val : Number(val) || 0;
+      return next;
+    });
+  };
+
+  const saveTier = async () => {
+    setBusy(true);
+    try {
+      await axios.put(`${API}/admin/tiers/${editingId}?token=${encodeURIComponent(token)}`, {
+        sections: editTier.sections,
+      });
+      toast.success(`${editTier.name} prices saved`);
+      await load();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card p-6 mt-6" data-testid="tiers-panel">
+      <div className="flex items-center gap-3 mb-4">
+        <Tags className="w-5 h-5 text-[#F97316]" />
+        <div className="section-tag">Pricing Tiers</div>
+      </div>
+      <p className="text-sm text-[#52525B] mb-4">
+        Material prices each contractor sees, by tier. Labor numbers shown here are the
+        defaults — contractors can override labor per estimate. Click a tier to edit prices.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {tiers.map((t) => (
+          <button
+            key={t.id}
+            className={`p-4 border-2 text-left transition-all ${editingId === t.id ? "border-[#F97316] bg-orange-50" : "border-[#E4E4E7] hover:border-[#09090B]"}`}
+            onClick={() => openEdit(t.id)}
+            data-testid={`tier-${t.name}`}
+          >
+            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">Tier</div>
+            <div className="font-heading text-lg text-[#09090B]">{t.name}</div>
+            <div className="text-xs text-[#52525B] mt-1">
+              {(t.sections || []).reduce((s, x) => s + (x.items || []).length, 0)} items
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {editTier && (
+        <div className="border-t border-[#E4E4E7] pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-heading text-xl">{editTier.name}</h3>
+            <button className="btn-primary" onClick={saveTier} disabled={busy} data-testid="save-tier-btn">
+              {busy ? "Saving…" : "Save Tier"}
+            </button>
+          </div>
+          {editTier.sections.map((s) => {
+            const si = editTier.sections.indexOf(s);
+            return (
+              <div key={s.title} className="mb-4 border border-[#E4E4E7]">
+                <div className="bg-[#FAFAFA] px-3 py-2 text-xs uppercase tracking-wider font-bold text-[#52525B]">
+                  {s.title}
+                </div>
+                {s.items.map((it) => {
+                  const ii = s.items.indexOf(it);
+                  return (
+                    <div key={it.name} className="grid grid-cols-12 gap-2 px-3 py-1 border-t border-[#E4E4E7] items-center">
+                      <div className="col-span-6 text-sm">{it.name}</div>
+                      <div className="col-span-1 text-[10px] text-[#A1A1AA] uppercase">{it.unit}</div>
+                      <div className="col-span-2">
+                        <input
+                          className="input num h-8 text-sm"
+                          type="number"
+                          step="0.01"
+                          value={it.mat}
+                          onChange={(e) => updateItem(si, ii, "mat", e.target.value)}
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <input
+                          className="input num h-8 text-sm"
+                          type="number"
+                          step="0.01"
+                          value={it.lab}
+                          onChange={(e) => updateItem(si, ii, "lab", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompaniesPanel({ token }) {
+  const [companies, setCompanies] = useState([]);
+  const [tiers, setTiers] = useState([]);
+  const [busy, setBusy] = useState({});
+
+  const load = React.useCallback(async () => {
+    try {
+      const [co, t] = await Promise.all([
+        axios.get(`${API}/admin/companies?token=${encodeURIComponent(token)}`),
+        axios.get(`${API}/admin/tiers?token=${encodeURIComponent(token)}`),
+      ]);
+      setCompanies(co.data);
+      setTiers(t.data);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || e.message);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const assign = async (companyId, tierId) => {
+    setBusy((b) => ({ ...b, [companyId]: true }));
+    try {
+      await axios.put(`${API}/admin/companies/${companyId}/tier?token=${encodeURIComponent(token)}`, {
+        price_tier_id: tierId,
+      });
+      toast.success("Tier updated");
+      await load();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || e.message);
+    } finally {
+      setBusy((b) => ({ ...b, [companyId]: false }));
+    }
+  };
+
+  return (
+    <div className="card p-6 mt-6" data-testid="companies-panel">
+      <div className="flex items-center gap-3 mb-4">
+        <Building2 className="w-5 h-5 text-[#F97316]" />
+        <div className="section-tag">Contractor Companies ({companies.length})</div>
+      </div>
+      <p className="text-sm text-[#52525B] mb-4">
+        Assign each contractor to a pricing tier. Changing a tier takes effect on their
+        next estimate. Existing saved estimates keep their original prices.
+      </p>
+      <div className="border border-[#E4E4E7] max-h-[500px] overflow-y-auto">
+        <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold bg-[#FAFAFA] sticky top-0">
+          <div className="col-span-5">Company</div>
+          <div className="col-span-3">Tier</div>
+          <div className="col-span-2 text-right">Estimates</div>
+          <div className="col-span-2 text-right">Created</div>
+        </div>
+        {companies.map((c) => (
+          <div key={c.id} className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[#E4E4E7] items-center text-sm">
+            <div className="col-span-5">
+              <div className="font-semibold text-[#09090B]">{c.name}</div>
+              <div className="text-[10px] text-[#A1A1AA] font-mono-num">{c.invite_code}</div>
+            </div>
+            <div className="col-span-3">
+              <select
+                className="input h-9 text-sm"
+                value={c.price_tier_id || ""}
+                onChange={(e) => assign(c.id, e.target.value)}
+                disabled={busy[c.id]}
+                data-testid={`tier-select-${c.id}`}
+              >
+                {tiers.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2 text-right font-mono-num">{c.estimate_count}</div>
+            <div className="col-span-2 text-right text-xs text-[#A1A1AA]">
+              {new Date(c.created_at).toLocaleDateString()}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

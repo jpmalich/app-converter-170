@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useCallback } from "react";
 import api, { fmt, formatApiError } from "@/lib/api";
 import { toast } from "sonner";
-import { Save, RotateCcw, Plus, Trash2 } from "lucide-react";
+import { Save, RotateCcw, Lock } from "lucide-react";
 
 export default function Catalog() {
   const [sections, setSections] = useState([]);
+  const [tierName, setTierName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -12,18 +13,15 @@ export default function Catalog() {
     setLoading(true);
     try {
       const { data } = await api.get("/catalog");
-      // Tag each item with a stable client-side id so list keys survive reorder/remove
-      const tagged = (data.sections || []).map((s) => ({
-        ...s,
-        items: (s.items || []).map((it) => ({ ...it, _uid: crypto.randomUUID() })),
-      }));
-      setSections(tagged);
+      setSections(data.sections || []);
+      setTierName(data.tier_name || "");
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
     } finally {
       setLoading(false);
     }
   }, []);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -31,28 +29,40 @@ export default function Catalog() {
   const updateItem = (si, ii, key, val) => {
     setSections((arr) => {
       const next = JSON.parse(JSON.stringify(arr));
-      next[si].items[ii][key] = key === "name" || key === "unit" ? val : Number(val) || 0;
+      next[si].items[ii][key] = Number(val) || 0;
+      const item = next[si].items[ii];
+      if (key === "mat") item.mat_overridden = Number(val) !== Number(item.tier_mat);
+      if (key === "lab") item.lab_overridden = Number(val) !== Number(item.tier_lab);
       return next;
     });
   };
-  const addItem = (si) => {
+
+  const resetItem = (si, ii) => {
     setSections((arr) => {
       const next = JSON.parse(JSON.stringify(arr));
-      next[si].items.push({ _uid: crypto.randomUUID(), name: "New item", unit: "Each", mat: 0, lab: 0 });
+      const it = next[si].items[ii];
+      it.mat = it.tier_mat;
+      it.lab = it.tier_lab;
+      it.mat_overridden = false;
+      it.lab_overridden = false;
       return next;
     });
   };
-  const removeItem = (si, ii) => {
-    setSections((arr) => {
-      const next = JSON.parse(JSON.stringify(arr));
-      next[si].items.splice(ii, 1);
-      return next;
-    });
-  };
+
   const save = async () => {
     setSaving(true);
     try {
-      await api.put("/catalog", { sections });
+      // Build overrides dict: only items that differ from tier defaults
+      const overrides = {};
+      sections.forEach((s) => {
+        s.items.forEach((it) => {
+          const ov = {};
+          if (it.mat_overridden) ov.mat = it.mat;
+          if (it.lab_overridden) ov.lab = it.lab;
+          if (Object.keys(ov).length) overrides[`${s.title}::${it.name}`] = ov;
+        });
+      });
+      await api.put("/catalog", { overrides });
       toast.success("Catalog saved");
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
@@ -60,12 +70,12 @@ export default function Catalog() {
       setSaving(false);
     }
   };
-  const reset = async () => {
-    if (!window.confirm("Reset catalog to factory defaults? Your edits will be lost."))
-      return;
+
+  const resetAll = async () => {
+    if (!window.confirm("Clear all your custom overrides and use the tier defaults?")) return;
     const { data } = await api.post("/catalog/reset");
     setSections(data.sections);
-    toast.success("Reset to defaults");
+    toast.success("Reset to tier defaults");
   };
 
   if (loading) return <div className="p-10 text-center text-[#52525B]">Loading…</div>;
@@ -76,13 +86,19 @@ export default function Catalog() {
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">Settings</div>
           <h1 className="font-heading text-4xl text-[#09090B]">Price Catalog</h1>
-          <p className="text-sm text-[#52525B] mt-2">
-            Edit material &amp; labor costs. Changes apply to new estimates and recalculations.
-          </p>
+          <div className="flex items-center gap-3 mt-3">
+            <span className="inline-flex items-center gap-2 bg-[#09090B] text-[#F97316] px-3 py-1 text-xs font-bold uppercase tracking-wider" data-testid="tier-badge">
+              <Lock className="w-3 h-3" /> Tier: {tierName}
+            </span>
+            <span className="text-xs text-[#52525B]">
+              Material prices set by your supplier. Labor is yours to set. You can also override
+              material per-item — overrides only apply to your company.
+            </span>
+          </div>
         </div>
         <div className="flex gap-3">
-          <button className="btn-secondary" onClick={reset} data-testid="reset-catalog-btn">
-            <RotateCcw className="w-4 h-4" /> Reset
+          <button className="btn-secondary" onClick={resetAll} data-testid="reset-catalog-btn">
+            <RotateCcw className="w-4 h-4" /> Clear Overrides
           </button>
           <button className="btn-primary" onClick={save} disabled={saving} data-testid="save-catalog-btn">
             <Save className="w-4 h-4" /> {saving ? "Saving…" : "Save Catalog"}
@@ -91,64 +107,63 @@ export default function Catalog() {
       </div>
 
       <div className="space-y-8">
-        {sections.map((s) => {
-          const si = sections.indexOf(s);
-          return (
-            <div key={s.title} className="card">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-[#E4E4E7]">
+        {sections.map((s) => (
+          <div key={s.title} className="card">
+            <div className="px-5 py-3 border-b border-[#E4E4E7]">
               <div className="section-tag">{s.title}</div>
-              <button className="btn-ghost" onClick={() => addItem(si)} data-testid={`add-item-${si}`}>
-                <Plus className="w-4 h-4" /> Item
-              </button>
             </div>
             <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold border-b border-[#E4E4E7]">
               <div className="col-span-5">Item</div>
-              <div className="col-span-2">Unit</div>
-              <div className="col-span-2 text-right">Material</div>
-              <div className="col-span-2 text-right">Labor</div>
-              <div className="col-span-1"></div>
+              <div className="col-span-1">Unit</div>
+              <div className="col-span-2 text-right">Material $</div>
+              <div className="col-span-2 text-right">Labor $</div>
+              <div className="col-span-2"></div>
             </div>
             {s.items.map((it) => {
               const ii = s.items.indexOf(it);
+              const si = sections.indexOf(s);
               return (
-              <div key={it._uid || `${s.title}-${ii}`} className="grid grid-cols-12 gap-3 px-5 py-2 border-b border-[#E4E4E7] items-center">
-                <input
-                  className="input col-span-12 md:col-span-5"
-                  value={it.name}
-                  onChange={(e) => updateItem(si, ii, "name", e.target.value)}
-                />
-                <input
-                  className="input col-span-4 md:col-span-2"
-                  value={it.unit}
-                  onChange={(e) => updateItem(si, ii, "unit", e.target.value)}
-                />
-                <input
-                  className="input num col-span-4 md:col-span-2"
-                  type="number"
-                  step="0.01"
-                  value={it.mat}
-                  onChange={(e) => updateItem(si, ii, "mat", e.target.value)}
-                />
-                <input
-                  className="input num col-span-3 md:col-span-2"
-                  type="number"
-                  step="0.01"
-                  value={it.lab}
-                  onChange={(e) => updateItem(si, ii, "lab", e.target.value)}
-                />
-                <button
-                  className="btn-danger col-span-1 justify-self-end"
-                  onClick={() => removeItem(si, ii)}
-                  aria-label="Remove"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+                <div key={it.name} className="grid grid-cols-12 gap-3 px-5 py-2 border-b border-[#E4E4E7] items-center">
+                  <div className="col-span-12 md:col-span-5 text-sm text-[#09090B]">{it.name}</div>
+                  <div className="col-span-3 md:col-span-1 text-xs text-[#A1A1AA] uppercase tracking-wider">
+                    {it.unit}
+                  </div>
+                  <div className="col-span-4 md:col-span-2">
+                    <input
+                      className={`input num h-10 ${it.mat_overridden ? "border-[#F97316] bg-orange-50" : ""}`}
+                      type="number"
+                      step="0.01"
+                      value={it.mat}
+                      onChange={(e) => updateItem(si, ii, "mat", e.target.value)}
+                      title={it.mat_overridden ? `Tier default: $${it.tier_mat}` : ""}
+                    />
+                  </div>
+                  <div className="col-span-4 md:col-span-2">
+                    <input
+                      className={`input num h-10 ${it.lab_overridden ? "border-[#F97316] bg-orange-50" : ""}`}
+                      type="number"
+                      step="0.01"
+                      value={it.lab}
+                      onChange={(e) => updateItem(si, ii, "lab", e.target.value)}
+                      title={it.lab_overridden ? `Tier default: $${it.tier_lab}` : ""}
+                    />
+                  </div>
+                  <div className="col-span-1 md:col-span-2 text-right">
+                    {(it.mat_overridden || it.lab_overridden) && (
+                      <button
+                        className="btn-ghost text-[#F97316]"
+                        onClick={() => resetItem(si, ii)}
+                        title="Reset to tier defaults"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
-          );
-        })}
+        ))}
       </div>
     </main>
   );
