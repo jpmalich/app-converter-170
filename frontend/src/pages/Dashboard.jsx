@@ -1,13 +1,28 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api, { fmt, formatApiError } from "@/lib/api";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText, Search, Download, Copy } from "lucide-react";
 
+// Categorize an estimate into one of the pipeline buckets based on its lifecycle fields.
+function statusOf(e) {
+  if (e.accepted_at) return "accepted";
+  if (e.last_sent_at) return "sent";
+  return "draft";
+}
+
+const FILTERS = [
+  { key: "all", label: "All" },
+  { key: "draft", label: "Draft" },
+  { key: "sent", label: "Sent" },
+  { key: "accepted", label: "Accepted" },
+];
+
 export default function Dashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const nav = useNavigate();
 
   const load = useCallback(async () => {
@@ -76,12 +91,27 @@ export default function Dashboard() {
     return { base, sell };
   };
 
-  const filtered = items.filter((e) =>
-    !q ||
-    (e.customer_name || "").toLowerCase().includes(q.toLowerCase()) ||
-    (e.estimate_number || "").toLowerCase().includes(q.toLowerCase()) ||
-    (e.address || "").toLowerCase().includes(q.toLowerCase())
-  );
+  // Pipeline stats: how many in each bucket + dollar values for sent (pending) and accepted (won).
+  const stats = useMemo(() => {
+    const out = { draft: 0, sent: 0, accepted: 0, won_total: 0, pending_total: 0 };
+    for (const e of items) {
+      const s = statusOf(e);
+      out[s] += 1;
+      const { sell } = calcTotals(e);
+      if (s === "accepted") out.won_total += sell;
+      if (s === "sent") out.pending_total += sell;
+    }
+    return out;
+  }, [items]);
+
+  const filtered = items
+    .filter((e) => statusFilter === "all" || statusOf(e) === statusFilter)
+    .filter((e) =>
+      !q ||
+      (e.customer_name || "").toLowerCase().includes(q.toLowerCase()) ||
+      (e.estimate_number || "").toLowerCase().includes(q.toLowerCase()) ||
+      (e.address || "").toLowerCase().includes(q.toLowerCase())
+    );
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
@@ -125,6 +155,68 @@ export default function Dashboard() {
           onChange={(e) => setQ(e.target.value)}
           data-testid="search-input"
         />
+      </div>
+
+      {/* Pipeline stats — Draft / Sent / Accepted with running dollar totals */}
+      <div
+        className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
+        data-testid="pipeline-stats"
+      >
+        <StatCard label="Drafts" value={stats.draft} sublabel="In progress" />
+        <StatCard
+          label="Sent"
+          value={stats.sent}
+          sublabel={fmt(stats.pending_total) + " pending"}
+          accent="orange"
+        />
+        <StatCard
+          label="Accepted"
+          value={stats.accepted}
+          sublabel={fmt(stats.won_total) + " won"}
+          accent="green"
+        />
+        <StatCard
+          label="Win Rate"
+          value={
+            stats.sent + stats.accepted === 0
+              ? "—"
+              : `${Math.round((stats.accepted / (stats.sent + stats.accepted)) * 100)}%`
+          }
+          sublabel={`${stats.accepted} of ${stats.sent + stats.accepted} sent`}
+        />
+      </div>
+
+      {/* Status filter chips */}
+      <div
+        className="flex flex-wrap gap-2 mb-4"
+        data-testid="status-filter"
+      >
+        {FILTERS.map((f) => {
+          const active = statusFilter === f.key;
+          const count = f.key === "all" ? items.length : stats[f.key];
+          return (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setStatusFilter(f.key)}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition ${
+                active
+                  ? "bg-[#09090B] text-white border-[#09090B]"
+                  : "bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#09090B]"
+              }`}
+              data-testid={`filter-${f.key}`}
+            >
+              {f.label}
+              <span
+                className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-sm text-[10px] font-mono-num ${
+                  active ? "bg-white/20 text-white" : "bg-[#F4F4F5] text-[#71717A]"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="card">
@@ -221,3 +313,29 @@ export default function Dashboard() {
     </main>
   );
 }
+
+function StatCard({ label, value, sublabel, accent }) {
+  // The accent strip on the left signals which bucket this card belongs to
+  // (orange = Sent / pending revenue, green = Accepted / won revenue).
+  const stripe =
+    accent === "orange" ? "bg-[#F97316]"
+      : accent === "green" ? "bg-[#16A34A]"
+      : "bg-[#E4E4E7]";
+  return (
+    <div className="card flex overflow-hidden">
+      <div className={`w-1 ${stripe}`} />
+      <div className="px-4 py-3 flex-1 min-w-0">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+          {label}
+        </div>
+        <div className="font-mono-num text-2xl font-bold text-[#09090B] leading-tight">
+          {value}
+        </div>
+        {sublabel ? (
+          <div className="text-[11px] text-[#71717A] truncate">{sublabel}</div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+

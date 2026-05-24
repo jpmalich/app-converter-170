@@ -140,6 +140,46 @@ async def admin_list_companies(request: Request):
     return companies
 
 
+@router.get("/admin/pipeline")
+async def admin_pipeline_stats(request: Request):
+    """Aggregate pipeline across ALL contractor companies — what the supplier
+    sees on /branding-admin to gauge tool adoption + Alside-product velocity."""
+    from services import calc_totals
+    check_admin_token(request)
+    cursor = db.estimates.find({}, {"_id": 0})
+    estimates = await cursor.to_list(5000)
+    tot = {
+        "total_estimates": len(estimates),
+        "drafts": 0, "sent": 0, "accepted": 0,
+        "won_dollars": 0.0, "pending_dollars": 0.0,
+        "by_company": {},  # id -> {name, drafts, sent, accepted, won_dollars, pending_dollars}
+    }
+    company_names = {c["id"]: c["name"] async for c in db.companies.find({}, {"id": 1, "name": 1})}
+    for e in estimates:
+        bucket = "accepted" if e.get("accepted_at") else ("sent" if e.get("last_sent_at") else "drafts")
+        sell = calc_totals(e)["sell"]
+        tot[bucket] += 1
+        if bucket == "accepted":
+            tot["won_dollars"] += sell
+        elif bucket == "sent":
+            tot["pending_dollars"] += sell
+        cid = e.get("company_id")
+        if cid:
+            row = tot["by_company"].setdefault(cid, {
+                "name": company_names.get(cid, "(unknown)"),
+                "drafts": 0, "sent": 0, "accepted": 0,
+                "won_dollars": 0.0, "pending_dollars": 0.0,
+            })
+            row[bucket] += 1
+            if bucket == "accepted":
+                row["won_dollars"] += sell
+            elif bucket == "sent":
+                row["pending_dollars"] += sell
+    sent_plus_accepted = tot["sent"] + tot["accepted"]
+    tot["win_rate"] = round(100 * tot["accepted"] / sent_plus_accepted, 1) if sent_plus_accepted else None
+    return tot
+
+
 @router.put("/admin/companies/{company_id}/tier")
 async def admin_assign_tier(company_id: str, body: CompanyTierAssign, request: Request):
     check_admin_token(request)

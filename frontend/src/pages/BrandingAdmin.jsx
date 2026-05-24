@@ -306,6 +306,7 @@ export default function BrandingAdmin() {
         <PricingTiersPanel token={token} />
 
         {/* Contractors → Tier assignment */}
+        <PipelinePanel token={token} />
         <CompaniesPanel token={token} />
       </main>
     </div>
@@ -438,6 +439,117 @@ function PricingTiersPanel({ token }) {
   );
 }
 
+
+function PipelinePanel({ token }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await axios.get(
+          `${API}/admin/pipeline?token=${encodeURIComponent(token)}`
+        );
+        if (alive) setData(data);
+      } catch (e) {
+        if (alive) setError(e.response?.data?.detail || e.message);
+      }
+    })();
+    return () => { alive = false; };
+  }, [token]);
+
+  if (error) {
+    return (
+      <div className="card p-6 mt-6">
+        <div className="text-sm text-[#DC2626]">Could not load pipeline: {error}</div>
+      </div>
+    );
+  }
+  if (!data) {
+    return (
+      <div className="card p-6 mt-6">
+        <div className="text-sm text-[#A1A1AA]">Loading pipeline…</div>
+      </div>
+    );
+  }
+
+  const usd = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n || 0);
+  const winRate = data.win_rate == null ? "—" : `${data.win_rate}%`;
+
+  // Top performers — companies with the most won_dollars
+  const topByWon = Object.entries(data.by_company || {})
+    .map(([id, row]) => ({ id, ...row }))
+    .filter((r) => r.accepted > 0 || r.sent > 0)
+    .sort((a, b) => (b.won_dollars - a.won_dollars) || (b.accepted - a.accepted))
+    .slice(0, 5);
+
+  return (
+    <div className="card p-6 mt-6" data-testid="pipeline-panel">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="section-tag">Pipeline · All Contractors</div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <PipelineStat label="Total Estimates" value={data.total_estimates} />
+        <PipelineStat label="Drafts" value={data.drafts} />
+        <PipelineStat label="Sent" value={data.sent} sublabel={`${usd(data.pending_dollars)} pending`} accent="orange" />
+        <PipelineStat label="Accepted" value={data.accepted} sublabel={`${usd(data.won_dollars)} won`} accent="green" />
+        <PipelineStat
+          label="Win Rate"
+          value={winRate}
+          sublabel={
+            data.sent + data.accepted === 0
+              ? "no quotes yet"
+              : `${data.accepted} of ${data.sent + data.accepted} sent`
+          }
+        />
+      </div>
+
+      {topByWon.length > 0 && (
+        <div className="mt-6">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+            Top contractors by won revenue
+          </div>
+          <div className="border border-[#E4E4E7]">
+            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold bg-[#FAFAFA]">
+              <div className="col-span-5">Contractor</div>
+              <div className="col-span-2 text-right">Sent</div>
+              <div className="col-span-2 text-right">Accepted</div>
+              <div className="col-span-3 text-right">Won $</div>
+            </div>
+            {topByWon.map((c) => (
+              <div key={c.id} className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[#E4E4E7] items-center text-sm">
+                <div className="col-span-5 font-semibold text-[#09090B] truncate">{c.name}</div>
+                <div className="col-span-2 text-right font-mono-num text-[#52525B]">{c.sent}</div>
+                <div className="col-span-2 text-right font-mono-num text-[#15803D] font-bold">{c.accepted}</div>
+                <div className="col-span-3 text-right font-mono-num text-[#09090B] font-bold">{usd(c.won_dollars)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PipelineStat({ label, value, sublabel, accent }) {
+  const stripe =
+    accent === "orange" ? "bg-[#F97316]"
+      : accent === "green" ? "bg-[#16A34A]"
+      : "bg-[#E4E4E7]";
+  return (
+    <div className="flex border border-[#E4E4E7]">
+      <div className={`w-1 ${stripe}`} />
+      <div className="px-3 py-2 flex-1 min-w-0">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">{label}</div>
+        <div className="font-mono-num text-2xl font-bold text-[#09090B] leading-tight">{value}</div>
+        {sublabel ? <div className="text-[11px] text-[#71717A] truncate">{sublabel}</div> : null}
+      </div>
+    </div>
+  );
+}
+
 function CompaniesPanel({ token }) {
   const [companies, setCompanies] = useState([]);
   const [tiers, setTiers] = useState([]);
@@ -455,7 +567,6 @@ function CompaniesPanel({ token }) {
       toast.error(e.response?.data?.detail || e.message);
     }
   }, [token]);
-
   useEffect(() => {
     load();
   }, [load]);
