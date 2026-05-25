@@ -42,7 +42,7 @@ function computeExpiry(estimateDate) {
 }
 
 
-export function buildEmailHtml({ estimate, totals, company, branding, message, acceptEmail }) {
+export function buildEmailHtml({ estimate, totals, company, branding, message, acceptEmail, acceptUrl }) {
   const linesByCat = (estimate.lines || [])
     .filter((l) => (l.qty || 0) > 0)
     .reduce((acc, l) => {
