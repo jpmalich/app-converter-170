@@ -1,6 +1,7 @@
 // Build an email-safe HTML quote.
 // Uses table-based layout and inline styles only — required for Gmail / Outlook / Apple Mail.
 // Tailwind class names do not survive email clients; everything must be inlined.
+import { tFor } from "./i18n";
 
 const $ = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
@@ -33,16 +34,19 @@ function absUrl(path) {
   return `${process.env.REACT_APP_BACKEND_URL}${path}`;
 }
 
-// Add 30 days to the estimate date (or today, if missing) and return e.g. "Mar 16, 2026".
-function computeExpiry(estimateDate) {
+// Add 30 days to the estimate date (or today, if missing) and return e.g. "Mar 16, 2026" / "16 mar 2026".
+function computeExpiry(estimateDate, lang = "en") {
   const base = estimateDate ? new Date(estimateDate) : new Date();
   if (Number.isNaN(base.getTime())) return null;
   base.setDate(base.getDate() + 30);
-  return base.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const locale = lang === "es" ? "es-US" : "en-US";
+  return base.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
 }
 
 
-export function buildEmailHtml({ estimate, totals, company, branding, message, acceptEmail, acceptUrl }) {
+export function buildEmailHtml({ estimate, totals, company, branding, message, acceptEmail, acceptUrl, lang = "en" }) {
+  const t = (key, vars) => tFor(lang, key, vars);
+  const htmlLang = lang === "es" ? "es" : "en";
   const linesByCat = (estimate.lines || [])
     .filter((l) => (l.qty || 0) > 0)
     .reduce((acc, l) => {
@@ -54,7 +58,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
   const supplierName = branding?.supplier_name || "Alside Supply";
   const companyName = company?.name || "Your Contractor";
   const logoUrl = company?.logo_url ? absUrl(company.logo_url) : null;
-  const expiryStr = computeExpiry(estimate.estimate_date);
+  const expiryStr = computeExpiry(estimate.estimate_date, lang);
   const estNumDisplay = estimate.estimate_number ? `#${estimate.estimate_number}` : "";
 
   // Prefer the hosted accept page (one-click). Fall back to a mailto pre-fill
@@ -93,7 +97,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
 
   const photoGrid = (estimate.photos || []).length
     ? `
-      <tr><td style="padding:24px 0 8px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.faint};">Job Photos</td></tr>
+      <tr><td style="padding:24px 0 8px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.faint};">${esc(t("email.jobPhotos"))}</td></tr>
       <tr><td style="padding:0;">
         <table role="presentation" width="100%" cellspacing="6" cellpadding="0" border="0"><tr>
           ${estimate.photos
@@ -126,15 +130,15 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
 
   // ---- Final document -----------------------------------------------------
   return `<!doctype html>
-<html lang="en">
+<html lang="${htmlLang}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Estimate ${esc(estimate.estimate_number || "")} from ${esc(companyName)}</title>
+  <title>${t("email.estimate")} ${esc(estimate.estimate_number || "")} — ${esc(companyName)}</title>
 </head>
 <body style="margin:0;padding:0;background:#F4F4F5;font-family:${FONT};color:${C.ink};-webkit-font-smoothing:antialiased;">
   <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">
-    Estimate ${esc(estimate.estimate_number || "")} — ${$(totals.sell)} total. Valid 30 days.
+    ${esc(t("email.preheader", { number: estimate.estimate_number || "", amount: $(totals.sell) }))}
   </span>
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F4F4F5;padding:24px 12px;">
     <tr><td align="center">
@@ -148,11 +152,11 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
                 : `<div style="font-family:${FONT};font-size:22px;font-weight:800;color:${C.ink};">${esc(companyName)}</div>`}
             </td>
             <td align="right" valign="middle" style="font-family:${FONT};">
-              <div style="font-family:${FONT};font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;">Estimate</div>
+              <div style="font-family:${FONT};font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;">${esc(t("email.estimate"))}</div>
               <div style="font-family:${FONT};font-size:18px;font-weight:700;color:${C.ink};letter-spacing:0.5px;">${esc(estimate.estimate_number || "—")}</div>
               <div style="font-family:${FONT};font-size:12px;color:${C.muted};">${esc(estimate.estimate_date || "")}</div>
               ${expiryStr
-                ? `<div style="margin-top:8px;display:inline-block;padding:4px 10px;background:#FFF7ED;border:1px solid ${C.accent};color:${C.accent};font-family:${FONT};font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;border-radius:2px;">Valid through ${esc(expiryStr)}</div>`
+                ? `<div style="margin-top:8px;display:inline-block;padding:4px 10px;background:#FFF7ED;border:1px solid ${C.accent};color:${C.accent};font-family:${FONT};font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;border-radius:2px;">${esc(t("email.validThrough", { date: expiryStr }))}</div>`
                 : ""}
             </td>
           </tr></table>
@@ -165,12 +169,12 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
         <tr><td style="padding:8px 32px 20px 32px;border-top:1px solid ${C.line};">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
             <td width="50%" valign="top" style="padding-right:12px;font-family:${FONT};">
-              <div style="font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:4px;">Prepared For</div>
+              <div style="font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:4px;">${esc(t("email.preparedFor"))}</div>
               <div style="font-family:${FONT};font-size:15px;font-weight:600;color:${C.ink};">${esc(estimate.customer_name || "—")}</div>
               <div style="font-family:${FONT};font-size:13px;color:${C.muted};">${esc(estimate.address || "")}</div>
             </td>
             <td width="50%" valign="top" style="padding-left:12px;font-family:${FONT};">
-              <div style="font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:4px;">Estimator</div>
+              <div style="font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:4px;">${esc(t("email.estimator"))}</div>
               <div style="font-family:${FONT};font-size:15px;font-weight:600;color:${C.ink};">${esc(estimate.estimator || "—")}</div>
             </td>
           </tr></table>
@@ -178,7 +182,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
 
         ${estimate.notes
           ? `<tr><td style="padding:0 32px 20px 32px;border-top:1px solid ${C.line};">
-              <div style="padding-top:18px;font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:6px;">Scope of Work</div>
+              <div style="padding-top:18px;font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:6px;">${esc(t("email.scopeOfWork"))}</div>
               <div style="font-family:${FONT};font-size:14px;line-height:1.55;color:${C.ink};white-space:pre-line;">${nl2br(estimate.notes)}</div>
             </td></tr>`
           : ""}
@@ -194,13 +198,13 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
         <!-- Total -->
         <tr><td style="padding:24px 32px;border-top:4px solid ${C.ink};background:${C.bg};">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
-            <td style="font-family:${FONT};font-size:22px;font-weight:800;color:${C.ink};letter-spacing:0.3px;">Total Price</td>
+            <td style="font-family:${FONT};font-size:22px;font-weight:800;color:${C.ink};letter-spacing:0.3px;">${esc(t("email.total"))}</td>
             <td align="right" style="font-family:${FONT};font-size:34px;font-weight:900;color:${C.ink};letter-spacing:-0.5px;">${$(totals.sell)}</td>
           </tr></table>
           <div style="margin-top:10px;font-family:${FONT};font-size:12px;color:${C.muted};line-height:1.5;">
             ${expiryStr
-              ? `This estimate is valid through <strong style="color:${C.ink};">${esc(expiryStr)}</strong>. Final price may vary based on site conditions discovered after work begins.`
-              : `Valid for 30 days from the date above. Final price may vary based on site conditions discovered after work begins.`}
+              ? t("email.validityWithDate", { date: esc(expiryStr) })
+              : t("email.validityGeneric")}
           </div>
         </td></tr>
 
@@ -209,27 +213,27 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
         <tr><td align="center" style="padding:24px 32px 8px 32px;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="${C.accent}" style="border-radius:2px;">
             <a href="${acceptHref}" style="display:inline-block;padding:14px 28px;font-family:${FONT};font-size:14px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#FFFFFF;text-decoration:none;background:${C.accent};border-radius:2px;">
-              Accept this Estimate &nbsp;→
+              ${esc(t("email.acceptCta"))}
             </a>
           </td></tr></table>
           <div style="margin-top:10px;font-family:${FONT};font-size:11px;color:${C.muted};">
-            Or just reply to this email with any questions.
+            ${esc(t("email.replyHint"))}
           </div>
         </td></tr>`
           : `<!-- Footer -->
         <tr><td style="padding:18px 32px;font-family:${FONT};font-size:12px;color:${C.muted};text-align:center;border-top:1px solid ${C.line};">
-          Questions about this estimate? Reply to this email and we'll get right back to you.
+          ${esc(t("email.questionsFooter"))}
         </td></tr>`}
 
         ${showSupplierFooter
           ? `<tr><td style="padding:10px 32px;font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};text-align:center;border-top:1px solid ${C.line};">
-              Materials supplied by ${esc(supplierName)}
+              ${esc(t("email.materialsBy", { supplier: supplierName }))}
             </td></tr>`
           : ""}
       </table>
 
       <div style="padding:18px 12px;font-family:${FONT};font-size:11px;color:${C.faint};text-align:center;">
-        This estimate was sent by ${esc(companyName)}.
+        ${esc(t("email.sentBy", { company: companyName }))}
       </div>
     </td></tr>
   </table>
@@ -237,21 +241,16 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
 </html>`;
 }
 
-export function buildEmailSubject({ estimate, company }) {
+export function buildEmailSubject({ estimate, company, lang = "en" }) {
   const num = estimate.estimate_number ? ` ${estimate.estimate_number}` : "";
   const who = (company?.name || "your contractor").trim();
   const cust = (estimate.customer_name || "").trim();
-  return cust
-    ? `Your siding estimate${num} from ${who} — ${cust}`
-    : `Your siding estimate${num} from ${who}`;
+  const key = cust ? "email.subjectWithCustomer" : "email.subjectGeneric";
+  return tFor(lang, key, { num, company: who, customer: cust });
 }
 
-export function defaultEmailGreeting({ estimate, company }) {
-  const first = (estimate.customer_name || "").trim().split(/\s+/)[0] || "there";
-  const who = (estimate.estimator || company?.name || "Your contractor").trim();
-  return `Hi ${first},
-
-Thanks for the opportunity to quote your project — the detailed estimate is below. Take a look and reply with any questions; happy to walk through anything that isn't clear.
-
-— ${who}`;
+export function defaultEmailGreeting({ estimate, company, lang = "en" }) {
+  const first = (estimate.customer_name || "").trim().split(/\s+/)[0] || tFor(lang, "email.greetingFallbackName");
+  const who = (estimate.estimator || company?.name || tFor(lang, "email.greetingFallbackWho")).trim();
+  return tFor(lang, "email.greeting", { first, who });
 }

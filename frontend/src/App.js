@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { BrandingProvider } from "@/lib/branding";
 import { CompanyProvider } from "@/lib/company";
+import { LangProvider } from "@/lib/i18n";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import EstimateEditor from "@/pages/EstimateEditor";
@@ -30,33 +31,35 @@ function Protected({ children }) {
 function App() {
   return (
     <div className="App">
-      <AuthProvider>
-        <BrandingProvider>
-          <CompanyProvider>
-            <BrowserRouter>
-              <Toaster position="top-right" theme="light" />
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/branding-admin" element={<BrandingAdmin />} />
-                <Route path="/accept/:token" element={<AcceptPage />} />
-                <Route
-                  element={
-                    <Protected>
-                      <Layout />
-                    </Protected>
-                  }
-                >
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/estimate/:id" element={<EstimateEditor />} />
-                  <Route path="/catalog" element={<Catalog />} />
-                  <Route path="/team" element={<Team />} />
-                </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </BrowserRouter>
-          </CompanyProvider>
-        </BrandingProvider>
-      </AuthProvider>
+      <LangProvider>
+        <AuthProvider>
+          <BrandingProvider>
+            <CompanyProvider>
+              <BrowserRouter>
+                <Toaster position="top-right" theme="light" />
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/branding-admin" element={<BrandingAdmin />} />
+                  <Route path="/accept/:token" element={<AcceptPage />} />
+                  <Route
+                    element={
+                      <Protected>
+                        <Layout />
+                      </Protected>
+                    }
+                  >
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/estimate/:id" element={<EstimateEditor />} />
+                    <Route path="/catalog" element={<Catalog />} />
+                    <Route path="/team" element={<Team />} />
+                  </Route>
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </BrowserRouter>
+            </CompanyProvider>
+          </BrandingProvider>
+        </AuthProvider>
+      </LangProvider>
     </div>
   );
 }

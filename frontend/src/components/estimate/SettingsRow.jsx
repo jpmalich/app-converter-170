@@ -1,6 +1,8 @@
 import React from "react";
+import { useT } from "@/lib/i18n";
 
 export default function SettingsRow({ est, update }) {
+  const t = useT();
   const mode = est.pricing_mode || "margin";
   const isMargin = mode === "margin";
   // Live preview of the multiplier so the contractor knows what %  actually does
@@ -12,7 +14,7 @@ export default function SettingsRow({ est, update }) {
   return (
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <div className="card p-5">
-        <div className="section-tag mb-3">Waste Factor</div>
+        <div className="section-tag mb-3">{t("est.wasteFactor")}</div>
         <div className="flex items-baseline gap-2">
           <input
             className="input num w-24"
@@ -22,11 +24,11 @@ export default function SettingsRow({ est, update }) {
             onChange={(e) => update({ waste_pct: Number(e.target.value) || 0 })}
             data-testid="waste-pct"
           />
-          <span className="text-[#52525B]">% extra material</span>
+          <span className="text-[#52525B]">{t("est.wasteSuffix")}</span>
         </div>
       </div>
       <div className="card p-5">
-        <div className="section-tag mb-3">Sales Tax</div>
+        <div className="section-tag mb-3">{t("est.salesTax")}</div>
         <label className="flex items-center gap-3 mb-3 text-sm">
           <input
             type="checkbox"
@@ -34,7 +36,7 @@ export default function SettingsRow({ est, update }) {
             onChange={(e) => update({ tax_enabled: e.target.checked })}
             data-testid="tax-toggle"
           />
-          <span>Apply tax on material</span>
+          <span>{t("est.applyTaxOnMaterial")}</span>
         </label>
         <div className="flex items-baseline gap-2">
           <input
@@ -51,7 +53,7 @@ export default function SettingsRow({ est, update }) {
       </div>
       <div className="card p-5">
         <div className="flex items-center justify-between mb-3">
-          <div className="section-tag">Profit</div>
+          <div className="section-tag">{t("est.profit")}</div>
           <div
             className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-[11px] font-bold uppercase tracking-wider"
             data-testid="pricing-mode-toggle"
@@ -66,7 +68,7 @@ export default function SettingsRow({ est, update }) {
               onClick={() => update({ pricing_mode: "margin" })}
               data-testid="pricing-mode-margin"
             >
-              Margin
+              {t("est.margin")}
             </button>
             <button
               type="button"
@@ -78,7 +80,7 @@ export default function SettingsRow({ est, update }) {
               onClick={() => update({ pricing_mode: "markup" })}
               data-testid="pricing-mode-markup"
             >
-              Markup
+              {t("est.markup")}
             </button>
           </div>
         </div>
@@ -94,7 +96,7 @@ export default function SettingsRow({ est, update }) {
             data-testid="margin-pct"
           />
           <span className="text-[#52525B]">
-            % {isMargin ? "profit margin" : "markup on base"}
+            {isMargin ? t("est.marginSuffix") : t("est.markupSuffix")}
           </span>
         </div>
         <input

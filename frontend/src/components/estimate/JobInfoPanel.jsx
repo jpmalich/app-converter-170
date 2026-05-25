@@ -1,12 +1,14 @@
 import React from "react";
+import { useT } from "@/lib/i18n";
 
 export default function JobInfoPanel({ est, update }) {
+  const t = useT();
   return (
     <section className="card p-5 sm:p-6 mb-6" data-testid="job-info">
-      <div className="section-tag mb-4">Job Information</div>
+      <div className="section-tag mb-4">{t("est.jobInfo")}</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="label">Customer</label>
+          <label className="label">{t("est.customer")}</label>
           <input
             className="input"
             value={est.customer_name || ""}
@@ -15,7 +17,7 @@ export default function JobInfoPanel({ est, update }) {
           />
         </div>
         <div className="lg:col-span-2">
-          <label className="label">Address</label>
+          <label className="label">{t("est.address")}</label>
           <input
             className="input"
             value={est.address || ""}
@@ -24,7 +26,7 @@ export default function JobInfoPanel({ est, update }) {
           />
         </div>
         <div>
-          <label className="label">Estimate #</label>
+          <label className="label">{t("est.estimateNum")}</label>
           <input
             className="input"
             value={est.estimate_number || ""}
@@ -33,7 +35,7 @@ export default function JobInfoPanel({ est, update }) {
           />
         </div>
         <div>
-          <label className="label">Date</label>
+          <label className="label">{t("est.date")}</label>
           <input
             className="input"
             type="date"
@@ -43,7 +45,7 @@ export default function JobInfoPanel({ est, update }) {
           />
         </div>
         <div>
-          <label className="label">Estimator</label>
+          <label className="label">{t("est.estimator")}</label>
           <input
             className="input"
             value={est.estimator || ""}
@@ -52,7 +54,7 @@ export default function JobInfoPanel({ est, update }) {
           />
         </div>
         <div className="sm:col-span-2 lg:col-span-3">
-          <label className="label">Scope of Work / Notes</label>
+          <label className="label">{t("est.scope")}</label>
           <textarea
             className="input"
             rows="3"

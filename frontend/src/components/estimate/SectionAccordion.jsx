@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { fmt } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 /**
  * Renders one collapsible section.
@@ -21,6 +22,7 @@ export default function SectionAccordion({
   est,
   update,
 }) {
+  const t = useT();
   const isMiscLab = section.title === MISC_LABOR_SECTION;
   const isMiscMat = section.title === MISC_MATERIAL_SECTION;
   const miscKey = isMiscLab ? "misc_labor" : isMiscMat ? "misc_material" : null;
@@ -59,7 +61,7 @@ export default function SectionAccordion({
           <span className="section-tag">{section.title}</span>
           {filledCount > 0 && (
             <span className="text-[10px] font-bold px-2 py-0.5 border border-[#F97316] text-[#F97316]">
-              {filledCount} items
+              {t("est.itemsBadge", { n: filledCount })}
             </span>
           )}
         </div>
@@ -68,12 +70,12 @@ export default function SectionAccordion({
       {isOpen && (
         <div className="border-t border-[#E4E4E7]">
           <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold border-b border-[#E4E4E7]">
-            <div className="col-span-5">Item</div>
-            <div className="col-span-1">Unit</div>
-            <div className="col-span-2 text-right">Mat $</div>
-            <div className="col-span-1 text-right">Qty</div>
-            <div className="col-span-1 text-right">Lab $</div>
-            <div className="col-span-2 text-right">Total</div>
+            <div className="col-span-5">{t("est.col.item")}</div>
+            <div className="col-span-1">{t("est.col.unit")}</div>
+            <div className="col-span-2 text-right">{t("est.col.mat")}</div>
+            <div className="col-span-1 text-right">{t("est.col.qty")}</div>
+            <div className="col-span-1 text-right">{t("est.col.lab")}</div>
+            <div className="col-span-2 text-right">{t("est.col.total")}</div>
           </div>
           {lines.map((l) => {
             const total = (l.qty || 0) * ((l.mat || 0) + (l.lab || 0));
@@ -85,15 +87,15 @@ export default function SectionAccordion({
               >
                 <div className="col-span-12 md:col-span-5 text-sm font-semibold md:font-normal text-[#09090B]">{l.name}</div>
                 <div className="col-span-3 md:col-span-1 text-xs text-[#A1A1AA] uppercase tracking-wider">
-                  <span className="md:hidden text-[10px] text-[#A1A1AA] block">Unit</span>
+                  <span className="md:hidden text-[10px] text-[#A1A1AA] block">{t("est.col.unit")}</span>
                   {l.unit}
                 </div>
                 <div className="col-span-3 md:col-span-2 text-right text-sm font-mono-num text-[#52525B]">
-                  <span className="md:hidden text-[10px] text-[#A1A1AA] block text-right">Mat $</span>
+                  <span className="md:hidden text-[10px] text-[#A1A1AA] block text-right">{t("est.col.mat")}</span>
                   {fmt(l.mat)}
                 </div>
                 <div className="col-span-3 md:col-span-1">
-                  <label className="md:hidden text-[10px] text-[#A1A1AA] block uppercase tracking-wider mb-1">Qty</label>
+                  <label className="md:hidden text-[10px] text-[#A1A1AA] block uppercase tracking-wider mb-1">{t("est.col.qty")}</label>
                   <input
                     className="input num h-11 md:h-9 text-base md:text-sm w-full"
                     type="number"
@@ -107,7 +109,7 @@ export default function SectionAccordion({
                   />
                 </div>
                 <div className="col-span-3 md:col-span-1 relative">
-                  <label className="md:hidden text-[10px] text-[#A1A1AA] block uppercase tracking-wider mb-1">Lab $</label>
+                  <label className="md:hidden text-[10px] text-[#A1A1AA] block uppercase tracking-wider mb-1">{t("est.col.lab")}</label>
                   <input
                     className={`input num h-11 md:h-9 text-base md:text-sm w-full ${labOverridden ? "border-[#F97316] bg-orange-50" : ""}`}
                     type="number"
@@ -132,7 +134,7 @@ export default function SectionAccordion({
                   )}
                 </div>
                 <div className="col-span-12 md:col-span-2 text-right font-mono-num text-base md:text-sm font-bold md:font-semibold text-[#09090B] pt-2 md:pt-0 border-t md:border-t-0 border-[#F4F4F5]">
-                  <span className="md:hidden text-[10px] text-[#A1A1AA] uppercase tracking-wider mr-2">Total</span>
+                  <span className="md:hidden text-[10px] text-[#A1A1AA] uppercase tracking-wider mr-2">{t("est.col.total")}</span>
                   {fmt(total)}
                 </div>
               </div>
@@ -144,10 +146,10 @@ export default function SectionAccordion({
             <>
               {miscRows.length > 0 && (
                 <div className="hidden md:grid grid-cols-12 gap-3 px-5 pt-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold">
-                  <div className="col-span-6">Custom Description</div>
-                  {isMiscMat && <div className="col-span-2 text-right">Material $</div>}
-                  <div className={`col-span-${isMiscMat ? 2 : 4} text-right`}>Labor $</div>
-                  <div className="col-span-2 text-right">Total</div>
+                  <div className="col-span-6">{t("est.customDesc")}</div>
+                  {isMiscMat && <div className="col-span-2 text-right">{t("cat.col.material")}</div>}
+                  <div className={`col-span-${isMiscMat ? 2 : 4} text-right`}>{t("cat.col.labor")}</div>
+                  <div className="col-span-2 text-right">{t("est.col.total")}</div>
                 </div>
               )}
               {miscRows.map((r, i) => {
@@ -161,7 +163,7 @@ export default function SectionAccordion({
                     <input
                       className="input col-span-12 md:col-span-6"
                       value={r.desc}
-                      placeholder="Custom item description"
+                      placeholder={t("est.customDescPlaceholder")}
                       onChange={(e) => updateMisc(i, "desc", e.target.value)}
                       data-testid={`misc-desc-${section.title}-${i}`}
                     />
@@ -189,7 +191,7 @@ export default function SectionAccordion({
                     <button
                       className="btn-danger col-span-1 justify-self-end"
                       onClick={() => removeMisc(i)}
-                      aria-label="Remove misc row"
+                      aria-label={t("est.removeMisc")}
                       data-testid={`misc-remove-${section.title}-${i}`}
                     >
                       <Trash2 className="w-4 h-4" />
@@ -203,7 +205,7 @@ export default function SectionAccordion({
                   onClick={addMisc}
                   data-testid={`add-misc-${section.title}`}
                 >
-                  <Plus className="w-4 h-4" /> Add custom line
+                  <Plus className="w-4 h-4" /> {t("est.addCustomLine")}
                 </button>
               </div>
             </>

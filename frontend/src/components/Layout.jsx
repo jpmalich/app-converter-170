@@ -2,15 +2,25 @@ import React from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useCompany } from "@/lib/company";
+import { useT } from "@/lib/i18n";
 import { LogOut, LayoutGrid, Settings2, Users } from "lucide-react";
 import CompanyLogo from "@/components/CompanyLogo";
 import InstallBanner from "@/components/InstallBanner";
+import LangToggle from "@/components/LangToggle";
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const { company } = useCompany();
+  const t = useT();
   const nav = useNavigate();
   const loc = useLocation();
+
+  const roleLabel =
+    user?.role === "owner"
+      ? t("nav.role.owner")
+      : user?.role === "estimator"
+      ? t("nav.role.estimator")
+      : user?.role || "";
 
   const linkCls = (path) =>
     `px-3 py-2 text-sm font-semibold uppercase tracking-wider border-b-2 transition-colors ${
@@ -29,26 +39,27 @@ export default function Layout() {
               <div className="font-heading text-base text-[#09090B]" style={{ minHeight: "1em" }}>
                 {company?.name || "\u00A0"}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA]">Estimator</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA]">{t("nav.estimatorTag")}</div>
             </div>
           </Link>
           <nav className="hidden sm:flex items-center gap-1">
             <Link to="/" className={linkCls("/")} data-testid="nav-estimates">
-              <LayoutGrid className="inline w-4 h-4 mr-1" /> Estimates
+              <LayoutGrid className="inline w-4 h-4 mr-1" /> {t("nav.estimates")}
             </Link>
             <Link to="/catalog" className={linkCls("/catalog")} data-testid="nav-catalog">
-              <Settings2 className="inline w-4 h-4 mr-1" /> Catalog
+              <Settings2 className="inline w-4 h-4 mr-1" /> {t("nav.catalog")}
             </Link>
             <Link to="/team" className={linkCls("/team")} data-testid="nav-team">
-              <Users className="inline w-4 h-4 mr-1" /> Team
+              <Users className="inline w-4 h-4 mr-1" /> {t("nav.team")}
             </Link>
           </nav>
           <div className="flex items-center gap-3">
+            <LangToggle />
             <div className="hidden sm:block text-right">
               <div className="text-sm font-semibold text-[#09090B]" data-testid="user-name">
                 {user?.name}
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">{user?.role}</div>
+              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">{roleLabel}</div>
             </div>
             <button
               className="btn-ghost"
@@ -57,16 +68,16 @@ export default function Layout() {
                 nav("/login");
               }}
               data-testid="logout-btn"
-              aria-label="Log out"
+              aria-label={t("nav.logout")}
             >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
         <div className="sm:hidden flex border-t border-[#E4E4E7]">
-          <Link to="/" className={`flex-1 text-center ${linkCls("/")}`}>Estimates</Link>
-          <Link to="/catalog" className={`flex-1 text-center ${linkCls("/catalog")}`}>Catalog</Link>
-          <Link to="/team" className={`flex-1 text-center ${linkCls("/team")}`}>Team</Link>
+          <Link to="/" className={`flex-1 text-center ${linkCls("/")}`}>{t("nav.estimates")}</Link>
+          <Link to="/catalog" className={`flex-1 text-center ${linkCls("/catalog")}`}>{t("nav.catalog")}</Link>
+          <Link to="/team" className={`flex-1 text-center ${linkCls("/team")}`}>{t("nav.team")}</Link>
         </div>
       </header>
       <Outlet />

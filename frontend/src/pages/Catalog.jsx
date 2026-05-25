@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
-import api, { fmt, formatApiError } from "@/lib/api";
+import api, { formatApiError } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Save, RotateCcw, Lock } from "lucide-react";
 
@@ -8,6 +9,7 @@ export default function Catalog() {
   const [tierName, setTierName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const t = useT();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,7 +63,7 @@ export default function Catalog() {
         });
       });
       await api.put("/catalog", { overrides });
-      toast.success("Catalog saved");
+      toast.success(t("cat.saved"));
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
     } finally {
@@ -70,36 +72,35 @@ export default function Catalog() {
   };
 
   const resetAll = async () => {
-    if (!window.confirm("Clear all your custom overrides and use the tier defaults?")) return;
+    if (!window.confirm(t("cat.resetConfirm"))) return;
     const { data } = await api.post("/catalog/reset");
     setSections(data.sections);
-    toast.success("Reset to tier defaults");
+    toast.success(t("cat.resetDone"));
   };
 
-  if (loading) return <div className="p-10 text-center text-[#52525B]">Loading…</div>;
+  if (loading) return <div className="p-10 text-center text-[#52525B]">{t("common.loading")}</div>;
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="catalog-page">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">Settings</div>
-          <h1 className="font-heading text-4xl text-[#09090B]">Price Catalog</h1>
+          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">{t("cat.eyebrow")}</div>
+          <h1 className="font-heading text-4xl text-[#09090B]">{t("cat.title")}</h1>
           <div className="flex items-center gap-3 mt-3">
             <span className="inline-flex items-center gap-2 bg-[#09090B] text-[#F97316] px-3 py-1 text-xs font-bold uppercase tracking-wider" data-testid="tier-badge">
-              <Lock className="w-3 h-3" /> Tier: {tierName}
+              <Lock className="w-3 h-3" /> {t("cat.tier", { name: tierName })}
             </span>
             <span className="text-xs text-[#52525B]">
-              Material prices set by your supplier (read-only). Labor is yours to set —
-              overrides save to your company only.
+              {t("cat.intro")}
             </span>
           </div>
         </div>
         <div className="flex gap-3">
           <button className="btn-secondary" onClick={resetAll} data-testid="reset-catalog-btn">
-            <RotateCcw className="w-4 h-4" /> Clear Overrides
+            <RotateCcw className="w-4 h-4" /> {t("cat.clearOverrides")}
           </button>
           <button className="btn-primary" onClick={save} disabled={saving} data-testid="save-catalog-btn">
-            <Save className="w-4 h-4" /> {saving ? "Saving…" : "Save Catalog"}
+            <Save className="w-4 h-4" /> {saving ? t("common.saving") : t("cat.save")}
           </button>
         </div>
       </div>
@@ -111,10 +112,10 @@ export default function Catalog() {
               <div className="section-tag">{s.title}</div>
             </div>
             <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold border-b border-[#E4E4E7]">
-              <div className="col-span-5">Item</div>
-              <div className="col-span-1">Unit</div>
-              <div className="col-span-2 text-right">Material $</div>
-              <div className="col-span-2 text-right">Labor $</div>
+              <div className="col-span-5">{t("cat.col.item")}</div>
+              <div className="col-span-1">{t("cat.col.unit")}</div>
+              <div className="col-span-2 text-right">{t("cat.col.material")}</div>
+              <div className="col-span-2 text-right">{t("cat.col.labor")}</div>
               <div className="col-span-2"></div>
             </div>
             {s.items.map((it) => {

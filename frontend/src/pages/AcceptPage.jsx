@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { useLang, useT } from "@/lib/i18n";
+import LangToggle from "@/components/LangToggle";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -12,12 +14,22 @@ const FONT_STACK = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 export default function AcceptPage() {
   const { token } = useParams();
+  const [params] = useSearchParams();
+  const { setLang } = useLang();
+  const t = useT();
   const [state, setState] = useState({ loading: true });
   const [accepted, setAccepted] = useState(false);
   const [note, setNote] = useState("");
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // Honor ?lang=es on the link — flips the page language without changing
+  // the contractor's UI preference (which is per-device anyway).
+  useEffect(() => {
+    const wanted = params.get("lang");
+    if (wanted === "es" || wanted === "en") setLang(wanted);
+  }, [params, setLang]);
 
   useEffect(() => {
     let alive = true;
@@ -33,13 +45,13 @@ export default function AcceptPage() {
           loading: false,
           error:
             e.response?.status === 404
-              ? "This estimate link is invalid or has expired."
-              : `Could not load the estimate. ${e.response?.data?.detail || e.message}`,
+              ? t("accept.notFound.expired")
+              : `${t("accept.notFound.generic")} ${e.response?.data?.detail || e.message}`,
         });
       }
     })();
     return () => { alive = false; };
-  }, [token]);
+  }, [token, t]);
 
   const submit = async () => {
     if (!checked || submitting) return;
@@ -63,10 +75,10 @@ export default function AcceptPage() {
 
   if (state.loading) {
     return (
-      <Wrap>
+      <Wrap t={t}>
         <div style={{ textAlign: "center", padding: "60px 0", color: "#71717A" }}>
           <Loader2 className="animate-spin" style={{ display: "inline-block", marginRight: 8 }} />
-          Loading your estimate…
+          {t("accept.loading")}
         </div>
       </Wrap>
     );
@@ -74,9 +86,9 @@ export default function AcceptPage() {
 
   if (state.error) {
     return (
-      <Wrap>
+      <Wrap t={t}>
         <div style={{ padding: 32, textAlign: "center" }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#09090B" }}>Estimate Not Found</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "#09090B" }}>{t("accept.notFound.title")}</h1>
           <p style={{ color: "#52525B", marginTop: 12 }}>{state.error}</p>
         </div>
       </Wrap>
@@ -87,19 +99,23 @@ export default function AcceptPage() {
 
   if (accepted) {
     return (
-      <Wrap company={d}>
+      <Wrap company={d} t={t}>
         <div style={{ padding: 32, textAlign: "center" }} data-testid="accept-success">
           <CheckCircle2 size={64} color="#16A34A" style={{ margin: "0 auto" }} />
           <h1 style={{ fontSize: 28, fontWeight: 800, color: "#09090B", marginTop: 16 }}>
-            You're all set, {d.customer_name?.split(" ")[0] || "there"}.
+            {t("accept.success.heading", { name: d.customer_name?.split(" ")[0] || t("email.greetingFallbackName") })}
           </h1>
           <p style={{ fontSize: 16, color: "#52525B", marginTop: 12, lineHeight: 1.6 }}>
-            We've notified <strong style={{ color: "#09090B" }}>{d.company_name}</strong> that
-            you accepted estimate <strong style={{ color: "#09090B" }}>{d.estimate_number}</strong> for{" "}
-            <strong style={{ color: "#09090B" }}>{fmt(d.total)}</strong>.
+            <span dangerouslySetInnerHTML={{
+              __html: t("accept.success.body", {
+                company: `<strong style="color:#09090B">${escapeHtml(d.company_name || "")}</strong>`,
+                number: `<strong style="color:#09090B">${escapeHtml(d.estimate_number || "")}</strong>`,
+                amount: `<strong style="color:#09090B">${escapeHtml(fmt(d.total))}</strong>`,
+              }),
+            }} />
           </p>
           <p style={{ fontSize: 14, color: "#71717A", marginTop: 16 }}>
-            They'll reach out within one business day to schedule next steps.
+            {t("accept.success.next")}
           </p>
         </div>
       </Wrap>
@@ -107,7 +123,7 @@ export default function AcceptPage() {
   }
 
   return (
-    <Wrap company={d}>
+    <Wrap company={d} t={t}>
       <div style={{ padding: 32 }} data-testid="accept-page">
         <div
           style={{
@@ -115,13 +131,13 @@ export default function AcceptPage() {
             textTransform: "uppercase", color: "#F97316", marginBottom: 8,
           }}
         >
-          Confirm Acceptance
+          {t("accept.eyebrow")}
         </div>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: "#09090B", margin: 0 }}>
-          Accept Estimate {d.estimate_number}
+          {t("accept.heading", { number: d.estimate_number || "" })}
         </h1>
         <p style={{ fontSize: 15, color: "#52525B", marginTop: 8, lineHeight: 1.6 }}>
-          From <strong style={{ color: "#09090B" }}>{d.company_name}</strong> · {d.estimate_date}
+          {t("accept.from")} <strong style={{ color: "#09090B" }}>{d.company_name}</strong> · {d.estimate_date}
         </p>
 
         <div
@@ -131,7 +147,7 @@ export default function AcceptPage() {
             display: "flex", justifyContent: "space-between", alignItems: "baseline",
           }}
         >
-          <div style={{ fontSize: 20, fontWeight: 800, color: "#09090B" }}>Total Price</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#09090B" }}>{t("accept.totalPrice")}</div>
           <div
             style={{
               fontSize: 32, fontWeight: 900, color: "#09090B",
@@ -145,7 +161,7 @@ export default function AcceptPage() {
 
         {d.customer_name ? (
           <div style={{ marginTop: 16, fontSize: 13, color: "#52525B" }}>
-            <strong style={{ color: "#09090B" }}>Prepared for:</strong> {d.customer_name}
+            <strong style={{ color: "#09090B" }}>{t("accept.preparedFor")}</strong> {d.customer_name}
             {d.address ? ` · ${d.address}` : ""}
           </div>
         ) : null}
@@ -158,14 +174,14 @@ export default function AcceptPage() {
             }}
             htmlFor="customer-note"
           >
-            Optional note for the contractor
+            {t("accept.optionalNote")}
           </label>
           <textarea
             id="customer-note"
             rows={4}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="e.g. Can we start next week? Or, please bring extra trim samples."
+            placeholder={t("accept.notePlaceholder")}
             style={{
               width: "100%", padding: 12, border: "1px solid #E4E4E7",
               fontFamily: FONT_STACK, fontSize: 14, color: "#09090B",
@@ -188,10 +204,13 @@ export default function AcceptPage() {
             style={{ width: 18, height: 18, marginTop: 2, accentColor: "#F97316" }}
             data-testid="accept-checkbox"
           />
-          <span>
-            I, {d.customer_name || "the customer"}, accept this estimate for{" "}
-            <strong>{fmt(d.total)}</strong> as quoted by {d.company_name}.
-          </span>
+          <span dangerouslySetInnerHTML={{
+            __html: t("accept.consent", {
+              name: escapeHtml(d.customer_name || t("accept.consent.fallback")),
+              amount: `<strong>${escapeHtml(fmt(d.total))}</strong>`,
+              company: escapeHtml(d.company_name || ""),
+            }),
+          }} />
         </label>
 
         {error ? (
@@ -212,18 +231,25 @@ export default function AcceptPage() {
           }}
           data-testid="accept-submit"
         >
-          {submitting ? "Sending acceptance…" : "Confirm Acceptance →"}
+          {submitting ? t("accept.submitting") : t("accept.submit")}
         </button>
         <p style={{ marginTop: 14, fontSize: 11, color: "#A1A1AA", textAlign: "center" }}>
-          By accepting, you authorize {d.company_name} to begin scheduling. You can still
-          reply to the original email with any changes.
+          {t("accept.disclaimer", { company: d.company_name || "" })}
         </p>
       </div>
     </Wrap>
   );
 }
 
-function Wrap({ children, company }) {
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function Wrap({ children, company, t }) {
   return (
     <div
       style={{
@@ -232,6 +258,9 @@ function Wrap({ children, company }) {
         padding: "32px 12px", boxSizing: "border-box",
       }}
     >
+      <div style={{ maxWidth: 560, margin: "0 auto 12px auto", display: "flex", justifyContent: "flex-end" }}>
+        <LangToggle />
+      </div>
       <div
         style={{
           maxWidth: 560, margin: "0 auto", background: "#FFFFFF",
@@ -258,7 +287,7 @@ function Wrap({ children, company }) {
         {children}
       </div>
       <p style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "#A1A1AA" }}>
-        Secure customer-acceptance link.
+        {t ? t("accept.secureLink") : "Secure customer-acceptance link."}
       </p>
     </div>
   );

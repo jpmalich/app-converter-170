@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import api, { API, formatApiError } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import useEstimate from "@/lib/useEstimate";
 import { calcTotals } from "@/lib/calc";
 import StickyBar from "@/components/estimate/StickyBar";
@@ -16,6 +17,7 @@ import QuoteModal from "@/components/QuoteModal";
 export default function EstimateEditor() {
   const { id } = useParams();
   const nav = useNavigate();
+  const t = useT();
   const { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, save } = useEstimate(id);
   const [openSections, setOpenSections] = useState({});
   const [saving, setSaving] = useState(false);
@@ -37,7 +39,7 @@ export default function EstimateEditor() {
     }
     return (
       <div className="flex items-center justify-center h-[60vh] text-[#52525B]">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading estimate…
+        <Loader2 className="w-5 h-5 animate-spin mr-2" /> {t("est.loading")}
       </div>
     );
   }
@@ -118,7 +120,7 @@ export default function EstimateEditor() {
                 subject,
                 accept_token,
               });
-              toast.success("Email sent");
+              toast.success(t("quote.sentToast"));
               // Refresh local estimate so the dashboard badge updates.
               try {
                 const { data } = await api.get(`/estimates/${id}`);

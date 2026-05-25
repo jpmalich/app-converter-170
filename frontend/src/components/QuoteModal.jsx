@@ -3,6 +3,7 @@ import { fmt } from "@/lib/api";
 import { useCompany } from "@/lib/company";
 import { useBranding } from "@/lib/branding";
 import { useAuth } from "@/lib/auth";
+import { useLang, useT } from "@/lib/i18n";
 import CompanyLogo from "@/components/CompanyLogo";
 import { X, Printer, Send } from "lucide-react";
 import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/emailQuote";
@@ -11,15 +12,36 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   const { company } = useCompany();
   const branding = useBranding();
   const { user } = useAuth();
+  const { lang: uiLang } = useLang();
+  const t = useT();
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState(() => defaultEmailGreeting({ estimate, company }));
+  // Per-estimate send language — defaults to the contractor's current UI lang,
+  // but the contractor can flip it before sending. Note for the contractor only:
+  // the message body resets when they change languages so they don't accidentally
+  // send a Spanish quote with an English greeting.
+  const [sendLang, setSendLang] = useState(uiLang);
+  const [message, setMessage] = useState(() =>
+    defaultEmailGreeting({ estimate, company, lang: uiLang })
+  );
   const [sending, setSending] = useState(false);
   const printRef = useRef();
   const showSupplierFooter = company?.quote_footer_enabled !== false;
 
+  // When the contractor flips EN/ES, refresh the greeting to match. We DON'T
+  // overwrite the message if they've already customized it (i.e. it differs
+  // from the last default we generated). Capture the old default BEFORE
+  // mutating the ref so the setMessage callback compares against the right value.
+  const lastDefaultRef = useRef(defaultEmailGreeting({ estimate, company, lang: uiLang }));
+  React.useEffect(() => {
+    const oldDefault = lastDefaultRef.current;
+    const nextDefault = defaultEmailGreeting({ estimate, company, lang: sendLang });
+    lastDefaultRef.current = nextDefault;
+    setMessage((prev) => (prev === oldDefault ? nextDefault : prev));
+  }, [sendLang, estimate, company]);
+
   const subject = useMemo(
-    () => buildEmailSubject({ estimate, company }),
-    [estimate, company]
+    () => buildEmailSubject({ estimate, company, lang: sendLang }),
+    [estimate, company, sendLang]
   );
 
   // Stable accept token for this customer-facing quote. Reuse any existing one
@@ -31,7 +53,9 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`),
     [estimate.accept_token]
   );
-  const acceptUrl = `${window.location.origin}/accept/${acceptToken}`;
+  // Tack the language onto the accept link so the customer's hosted page
+  // matches the language of their email/PDF.
+  const acceptUrl = `${window.location.origin}/accept/${acceptToken}?lang=${sendLang}`;
 
   const linesWithQty = (estimate.lines || []).filter((l) => (l.qty || 0) > 0);
   const linesBySection = linesWithQty.reduce((acc, l) => {
@@ -51,6 +75,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
       message,
       acceptUrl,
       acceptEmail: user?.email,
+      lang: sendLang,
     });
     const ok = await onEmail({ recipient_email: email, html, subject, accept_token: acceptToken });
     setSending(false);
@@ -64,6 +89,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
         estimate, totals, company, branding, message,
         acceptUrl,
         acceptEmail: user?.email,
+        lang: sendLang,
       });
       const res = await fetch(
         `${process.env.REACT_APP_BACKEND_URL}/api/estimates/${estimate.id}/pdf`,
@@ -104,7 +130,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             <input
               type="email"
               className="input bg-white h-12 md:h-9 text-base md:text-sm"
-              placeholder="customer@example.com"
+              placeholder={t("quote.recipientPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               data-testid="email-recipient"
@@ -117,7 +143,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               data-testid="send-email-btn"
               title={!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : ""}
             >
-              <Send className="w-4 h-4" /> {sending ? "Sending…" : "Email"}
+              <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
             </button>
           </div>
           <div className="flex items-center gap-2 justify-between md:justify-end">
@@ -126,46 +152,67 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               onClick={handleDownloadPdf}
               disabled={sending}
               data-testid="download-pdf-btn"
-              title="Download a PDF copy of this quote"
+              title={t("quote.downloadPdf")}
             >
-              <Printer className="w-4 h-4" /> {sending ? "…" : "Download PDF"}
+              <Printer className="w-4 h-4" /> {sending ? "…" : t("quote.downloadPdf")}
             </button>
             <button
               className="btn-ghost text-white hover:text-white p-3 md:p-1"
               onClick={onClose}
               data-testid="quote-close-btn"
-              aria-label="Close"
+              aria-label={t("common.close")}
             >
               <X className="w-6 h-6 md:w-5 md:h-5" />
             </button>
           </div>
         </div>
 
-        {/* Editable email preamble — Phase 1 polish */}
+        {/* Editable email preamble + send-language picker */}
         <div className="no-print w-full max-w-3xl mb-4 bg-white border border-[#E4E4E7] p-4" data-testid="email-preamble">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-1">
-            Subject
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+              {t("quote.subject")}
+            </div>
+            <div className="flex items-center gap-2" data-testid="send-lang-picker">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+                {t("quote.langPicker")}
+              </span>
+              <div className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-[11px] font-bold uppercase tracking-wider">
+                <button
+                  type="button"
+                  onClick={() => setSendLang("en")}
+                  className={`px-2.5 py-1 ${sendLang === "en" ? "bg-[#09090B] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"}`}
+                  data-testid="send-lang-en"
+                >EN</button>
+                <button
+                  type="button"
+                  onClick={() => setSendLang("es")}
+                  className={`px-2.5 py-1 border-l border-[#E4E4E7] ${sendLang === "es" ? "bg-[#09090B] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"}`}
+                  data-testid="send-lang-es"
+                >ES</button>
+              </div>
+            </div>
           </div>
           <div className="text-sm font-mono-num text-[#09090B] mb-3 break-words">{subject}</div>
           <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-1">
-            Personal note (appears above the quote)
+            {t("quote.personalNote")}
           </div>
           <textarea
             className="input w-full"
             rows={4}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Hi [Customer], thanks for the opportunity to quote your project…"
+            placeholder={t("quote.personalNote")}
             data-testid="email-message"
             style={{ resize: "vertical", minHeight: 96 }}
           />
           <div className="text-[11px] text-[#71717A] mt-1">
-            The customer will see this note first, then the estimate below.
+            {t("quote.personalNoteHelp")}
           </div>
         </div>
         {!emailConfigured && (
           <div className="no-print w-full max-w-3xl mb-3 text-xs text-amber-200 bg-amber-900/40 border border-amber-200/40 px-3 py-2">
-            Email service not configured. Add <code className="font-mono">RESEND_API_KEY</code> in <code className="font-mono">backend/.env</code> to enable sending.
+            {t("quote.emailNotConfigured")}
           </div>
         )}
 

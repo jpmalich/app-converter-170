@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api, { fmt, formatApiError } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText, Search, Download, Copy } from "lucide-react";
 
@@ -11,19 +12,23 @@ function statusOf(e) {
   return "draft";
 }
 
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "sent", label: "Sent" },
-  { key: "accepted", label: "Accepted" },
-];
-
 export default function Dashboard() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const t = useT();
   const nav = useNavigate();
+
+  const FILTERS = useMemo(
+    () => [
+      { key: "all", label: t("dash.filter.all") },
+      { key: "draft", label: t("dash.filter.draft") },
+      { key: "sent", label: t("dash.filter.sent") },
+      { key: "accepted", label: t("dash.filter.accepted") },
+    ],
+    [t]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,16 +59,16 @@ export default function Dashboard() {
   };
 
   const del = async (id) => {
-    if (!window.confirm("Delete this estimate?")) return;
+    if (!window.confirm(t("dash.confirmDelete"))) return;
     await api.delete(`/estimates/${id}`);
     setItems((x) => x.filter((e) => e.id !== id));
-    toast.success("Estimate deleted");
+    toast.success(t("dash.deleted"));
   };
 
   const duplicate = async (id) => {
     try {
       const { data } = await api.post(`/estimates/${id}/duplicate`);
-      toast.success("Estimate duplicated — customer fields cleared");
+      toast.success(t("dash.duplicated"));
       nav(`/estimate/${data.id}`);
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
@@ -117,8 +122,8 @@ export default function Dashboard() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">Dashboard</div>
-          <h1 className="font-heading text-4xl sm:text-5xl text-[#09090B]">Estimates</h1>
+          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">{t("dash.eyebrow")}</div>
+          <h1 className="font-heading text-4xl sm:text-5xl text-[#09090B]">{t("dash.title")}</h1>
         </div>
         <div className="flex gap-3">
           <button
@@ -138,10 +143,10 @@ export default function Dashboard() {
             }}
             data-testid="export-all-csv-btn"
           >
-            <Download className="w-4 h-4" /> Export CSV
+            <Download className="w-4 h-4" /> {t("dash.exportCsv")}
           </button>
           <button className="btn-primary" onClick={createEstimate} data-testid="new-estimate-btn">
-            <Plus className="w-4 h-4" /> New Estimate
+            <Plus className="w-4 h-4" /> {t("dash.newEstimate")}
           </button>
         </div>
       </div>
@@ -150,7 +155,7 @@ export default function Dashboard() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1AA]" />
         <input
           className="input pl-10"
-          placeholder="Search by customer, address, or estimate #"
+          placeholder={t("dash.search")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           data-testid="search-input"
@@ -162,27 +167,27 @@ export default function Dashboard() {
         className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
         data-testid="pipeline-stats"
       >
-        <StatCard label="Drafts" value={stats.draft} sublabel="In progress" />
+        <StatCard label={t("dash.drafts")} value={stats.draft} sublabel={t("dash.drafts.sub")} />
         <StatCard
-          label="Sent"
+          label={t("dash.sent")}
           value={stats.sent}
-          sublabel={fmt(stats.pending_total) + " pending"}
+          sublabel={t("dash.sent.sub", { amount: fmt(stats.pending_total) })}
           accent="orange"
         />
         <StatCard
-          label="Accepted"
+          label={t("dash.accepted")}
           value={stats.accepted}
-          sublabel={fmt(stats.won_total) + " won"}
+          sublabel={t("dash.accepted.sub", { amount: fmt(stats.won_total) })}
           accent="green"
         />
         <StatCard
-          label="Win Rate"
+          label={t("dash.winRate")}
           value={
             stats.sent + stats.accepted === 0
               ? "—"
               : `${Math.round((stats.accepted / (stats.sent + stats.accepted)) * 100)}%`
           }
-          sublabel={`${stats.accepted} of ${stats.sent + stats.accepted} sent`}
+          sublabel={t("dash.winRate.sub", { won: stats.accepted, total: stats.sent + stats.accepted })}
         />
       </div>
 
@@ -221,22 +226,22 @@ export default function Dashboard() {
 
       <div className="card">
         <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-[#E4E4E7] text-xs uppercase tracking-[0.18em] text-[#52525B] font-bold">
-          <div className="col-span-2">Estimate #</div>
-          <div className="col-span-4">Customer</div>
-          <div className="col-span-3">Address</div>
-          <div className="col-span-2 text-right">Sell Price</div>
-          <div className="col-span-1 text-right">Actions</div>
+          <div className="col-span-2">{t("dash.col.estNum")}</div>
+          <div className="col-span-4">{t("dash.col.customer")}</div>
+          <div className="col-span-3">{t("dash.col.address")}</div>
+          <div className="col-span-2 text-right">{t("dash.col.sellPrice")}</div>
+          <div className="col-span-1 text-right">{t("dash.col.actions")}</div>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-[#52525B]">Loading…</div>
+          <div className="p-8 text-center text-[#52525B]">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center" data-testid="empty-state">
             <FileText className="w-12 h-12 mx-auto text-[#A1A1AA] mb-3" />
-            <div className="font-heading text-xl text-[#09090B] mb-1">No estimates yet</div>
-            <div className="text-sm text-[#52525B] mb-6">Create your first estimate to get going.</div>
+            <div className="font-heading text-xl text-[#09090B] mb-1">{t("dash.empty.title")}</div>
+            <div className="text-sm text-[#52525B] mb-6">{t("dash.empty.sub")}</div>
             <button className="btn-primary" onClick={createEstimate}>
-              <Plus className="w-4 h-4" /> New Estimate
+              <Plus className="w-4 h-4" /> {t("dash.newEstimate")}
             </button>
           </div>
         ) : (
@@ -255,14 +260,14 @@ export default function Dashboard() {
                 </div>
                 <div className="col-span-12 md:col-span-4">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="font-semibold text-[#09090B]">{e.customer_name || "Untitled"}</div>
+                    <div className="font-semibold text-[#09090B]">{e.customer_name || t("dash.untitled")}</div>
                     {e.accepted_at ? (
                       <span
                         className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] rounded-sm"
                         title={`Accepted ${new Date(e.accepted_at).toLocaleString()}`}
                         data-testid={`status-accepted-${e.id}`}
                       >
-                        ✓ Accepted
+                        ✓ {t("dash.badge.accepted")}
                       </span>
                     ) : e.last_sent_at ? (
                       <span
@@ -270,7 +275,7 @@ export default function Dashboard() {
                         title={`Sent ${new Date(e.last_sent_at).toLocaleString()}`}
                         data-testid={`status-sent-${e.id}`}
                       >
-                        Sent
+                        {t("dash.badge.sent")}
                       </span>
                     ) : null}
                   </div>
@@ -287,8 +292,8 @@ export default function Dashboard() {
                       ev.stopPropagation();
                       duplicate(e.id);
                     }}
-                    aria-label="Duplicate"
-                    title="Duplicate this estimate"
+                    aria-label={t("dash.duplicate.aria")}
+                    title={t("dash.duplicate.title")}
                     data-testid={`duplicate-${e.id}`}
                   >
                     <Copy className="w-4 h-4" />
@@ -299,7 +304,7 @@ export default function Dashboard() {
                       ev.stopPropagation();
                       del(e.id);
                     }}
-                    aria-label="Delete"
+                    aria-label={t("dash.delete.aria")}
                     data-testid={`delete-${e.id}`}
                   >
                     <Trash2 className="w-4 h-4" />
@@ -338,4 +343,3 @@ function StatCard({ label, value, sublabel, accent }) {
     </div>
   );
 }
-

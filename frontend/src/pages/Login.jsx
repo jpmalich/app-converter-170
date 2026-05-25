@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useBranding } from "@/lib/branding";
+import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
+import LangToggle from "@/components/LangToggle";
 
 const BG =
   "https://static.prod-images.emergentagent.com/jobs/f5ca1a54-7ada-4d85-b160-76d5daf2760b/images/d36a236ce8a57df40cb284a048570a3dc3ace340beaf7bd71fddadefd9427f32.png";
@@ -10,6 +12,7 @@ const BG =
 export default function Login() {
   const { user, login, register, error } = useAuth();
   const branding = useBranding();
+  const t = useT();
   const nav = useNavigate();
   const loc = useLocation();
   const [mode, setMode] = useState("login");
@@ -38,7 +41,7 @@ export default function Login() {
       ok = await register(email, password, name, undefined, inviteCode, undefined);
     }
     setBusy(false);
-    if (ok) toast.success(mode === "login" ? "Welcome back" : "Account created");
+    if (ok) toast.success(mode === "login" ? t("common.welcomeBack") : t("common.accountCreated"));
   };
 
   const logoUrl = branding.supplier_logo_url
@@ -47,6 +50,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid md:grid-cols-2 bg-white">
+      <div className="absolute top-4 right-4 z-10">
+        <LangToggle />
+      </div>
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm" data-testid="auth-card">
           <div className="flex items-center gap-3 mb-10">
@@ -67,17 +73,17 @@ export default function Login() {
                 {branding.supplier_name}
               </div>
               <div className="text-[10px] uppercase tracking-[0.25em] text-[#A1A1AA] mt-1">
-                Siding Estimator
+                {t("auth.sidingEstimator")}
               </div>
             </div>
           </div>
 
           <div className="mb-7">
             <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-2">
-              {mode === "login" ? "Welcome back" : "Create an account"}
+              {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
             </div>
             <h1 className="font-heading text-3xl sm:text-4xl text-[#09090B] leading-tight">
-              {mode === "login" ? "Sign in to your account" : "Free siding estimator for our dealers"}
+              {mode === "login" ? t("auth.signIn") : t("auth.freeTagline")}
             </h1>
           </div>
 
@@ -85,7 +91,7 @@ export default function Login() {
             {mode === "register" && (
               <>
                 <div>
-                  <label className="label">Your name</label>
+                  <label className="label">{t("auth.yourName")}</label>
                   <input
                     className="input"
                     type="text"
@@ -104,7 +110,7 @@ export default function Login() {
                       onClick={() => setJoinMode("create")}
                       data-testid="mode-create-co"
                     >
-                      New Company
+                      {t("auth.newCompany")}
                     </button>
                     <button
                       type="button"
@@ -112,31 +118,31 @@ export default function Login() {
                       onClick={() => setJoinMode("join")}
                       data-testid="mode-join-co"
                     >
-                      Join Teammate
+                      {t("auth.joinTeammate")}
                     </button>
                   </div>
                   {joinMode === "create" ? (
                     <>
                       <div className="mb-3">
-                        <label className="label">Your company name</label>
+                        <label className="label">{t("auth.yourCompanyName")}</label>
                         <input
                           className="input"
                           type="text"
                           value={companyName}
                           onChange={(e) => setCompanyName(e.target.value)}
-                          placeholder="e.g. Smith &amp; Sons Siding"
+                          placeholder={t("auth.companyNamePlaceholder")}
                           required
                           data-testid="company-name-input"
                         />
                       </div>
                       <div>
-                        <label className="label">Access code from {branding.supplier_name}</label>
+                        <label className="label">{t("auth.accessCodeFrom", { supplier: branding.supplier_name })}</label>
                         <input
                           className="input font-mono-num uppercase tracking-wider"
                           type="text"
                           value={signupCode}
                           onChange={(e) => setSignupCode(e.target.value.toUpperCase())}
-                          placeholder="ALSIDE-XXXXXX"
+                          placeholder={t("auth.accessCodePlaceholder")}
                           required
                           data-testid="signup-code-input"
                         />
@@ -147,18 +153,18 @@ export default function Login() {
                     </>
                   ) : (
                     <div>
-                      <label className="label">Teammate invite code</label>
+                      <label className="label">{t("auth.teammateInviteCode")}</label>
                       <input
                         className="input font-mono-num uppercase tracking-wider"
                         type="text"
                         value={inviteCode}
                         onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                        placeholder="ABCD1234"
+                        placeholder={t("auth.invitePlaceholder")}
                         required={joinMode === "join"}
                         data-testid="invite-code-input"
                       />
                       <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-1">
-                        Joining an existing company? Get the 8-character code from a coworker.
+                        {t("auth.inviteHelp")}
                       </div>
                     </div>
                   )}
@@ -167,7 +173,7 @@ export default function Login() {
             )}
 
             <div>
-              <label className="label">Email</label>
+              <label className="label">{t("auth.email")}</label>
               <input
                 className="input"
                 type="email"
@@ -179,7 +185,7 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="label">Password</label>
+              <label className="label">{t("auth.password")}</label>
               <input
                 className="input"
                 type="password"
@@ -202,38 +208,38 @@ export default function Login() {
               disabled={busy}
               data-testid="auth-submit-btn"
             >
-              {busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+              {busy ? t("common.pleaseWait") : mode === "login" ? t("auth.signInBtn") : t("auth.createBtn")}
             </button>
           </form>
 
           <div className="text-sm text-[#52525B] mt-6">
             {mode === "login" ? (
               <>
-                Need an account?{" "}
+                {t("auth.needAccount")}{" "}
                 <button
                   className="font-semibold text-[#09090B] underline underline-offset-4 decoration-[#F97316]"
                   onClick={() => setMode("register")}
                   data-testid="switch-register"
                 >
-                  Register
+                  {t("auth.register")}
                 </button>
               </>
             ) : (
               <>
-                Already have one?{" "}
+                {t("auth.alreadyHaveOne")}{" "}
                 <button
                   className="font-semibold text-[#09090B] underline underline-offset-4 decoration-[#F97316]"
                   onClick={() => setMode("login")}
                   data-testid="switch-login"
                 >
-                  Sign in
+                  {t("auth.signInBtn")}
                 </button>
               </>
             )}
           </div>
 
           <div className="mt-10 text-[11px] text-[#A1A1AA] uppercase tracking-widest">
-            Provided by {branding.supplier_name}
+            {t("auth.providedBy", { supplier: branding.supplier_name })}
           </div>
         </div>
       </div>
