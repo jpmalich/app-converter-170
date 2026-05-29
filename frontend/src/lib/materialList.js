@@ -60,7 +60,7 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
   const sectionBlock = ([sectionName, items]) => {
     const totalRaw = items.reduce((s, l) => s + (l.qty || 0), 0);
     return `
-      <tr><td colspan="6" style="padding:14px 0 4px 0;border-bottom:1px solid ${C.ink};font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.accent};">
+      <tr><td colspan="5" style="padding:14px 0 4px 0;border-bottom:1px solid ${C.ink};font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.accent};">
         ${esc(tSection(sectionName, lang))}
         <span style="float:right;color:${C.muted};font-weight:600;letter-spacing:1px;">${items.length} item${items.length === 1 ? "" : "s"}</span>
       </tr>
@@ -76,16 +76,13 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
           <td style="padding:8px 6px;font-family:${FONT};font-size:13px;color:${C.ink};vertical-align:top;">
             ${esc(tItem(l.name, lang))}
           </td>
-          <td style="padding:8px 6px;font-family:${FONT};font-size:13px;color:${C.ink};vertical-align:top;">
-            ${l.color ? esc(l.color) : '<span style="color:' + C.faint + ';">______________</span>'}
-          </td>
           <td style="padding:8px 6px;font-family:${FONT};font-size:12px;color:${C.muted};text-align:center;vertical-align:top;">${esc(tUnit(l.unit, lang))}</td>
           <td style="padding:8px 6px;font-family:${FONT};font-size:13px;color:${C.ink};text-align:right;font-variant-numeric:tabular-nums;vertical-align:top;">${rawQty}</td>
           <td style="padding:8px 6px;font-family:${FONT};font-size:13px;color:${C.ink};text-align:right;font-variant-numeric:tabular-nums;font-weight:bold;vertical-align:top;">${wasteQty}</td>
         </tr>`;
         })
         .join("")}
-      <tr><td colspan="4"></td>
+      <tr><td colspan="3"></td>
         <td style="padding:6px 6px;font-family:${FONT};font-size:11px;color:${C.faint};text-align:right;font-variant-numeric:tabular-nums;border-top:1px solid ${C.line};">${totalRaw}</td>
         <td style="padding:6px 6px;font-family:${FONT};font-size:11px;color:${C.faint};text-align:right;font-variant-numeric:tabular-nums;border-top:1px solid ${C.line};">${roundUpHalf(totalRaw * (1 + wastePct / 100))}</td>
       </tr>
@@ -144,6 +141,34 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
       <strong style="color:${C.ink};">Order Quantity</strong> shows the qty <em>with</em> ${wastePct}% waste factor applied (rounded up). Hand this list to ${esc(supplierName)} to pull / quote materials.
     </div>
 
+    <!-- Estimate-level color block. Blank fields show as a fillable underline
+         so contractors can hand-write a color on the printed copy if needed. -->
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:22px;border:1px solid ${C.line};">
+      <tr style="background:${C.bg};">
+        <td colspan="4" style="padding:6px 12px;font-family:${FONT};font-size:9px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;border-bottom:1px solid ${C.line};">
+          Material Colors
+        </td>
+      </tr>
+      <tr>
+        ${[
+          ["Siding", estimate.siding_color],
+          ["Accessories", estimate.accessories_color],
+          ["Outside Corner", estimate.outside_corner_color],
+          ["Soffit / Fascia", estimate.soffit_fascia_color],
+        ]
+          .map(
+            ([label, value]) => `
+          <td width="25%" valign="top" style="padding:8px 12px;border-right:1px solid ${C.line};">
+            <div style="font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:3px;">${esc(label)}</div>
+            <div style="font-family:${FONT};font-size:13px;font-weight:600;color:${C.ink};min-height:18px;">${
+              value ? esc(value) : '<span style="color:' + C.faint + ';font-weight:normal;">________________</span>'
+            }</div>
+          </td>`
+          )
+          .join("")}
+      </tr>
+    </table>
+
     ${
       hasLines
         ? `
@@ -151,12 +176,11 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
       <thead>
         <tr style="border-bottom:2px solid ${C.ink};">
-          <th align="left" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:80px;">AMI #</th>
+          <th align="left" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:90px;">AMI #</th>
           <th align="left" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;">Description</th>
-          <th align="left" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:140px;">Color</th>
-          <th align="center" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:50px;">Unit</th>
-          <th align="right" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:60px;">Job Qty</th>
-          <th align="right" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:80px;background:${C.bg};">Order Qty<br><span style="font-size:8px;text-transform:none;letter-spacing:0;color:${C.muted};font-weight:normal;">+${wastePct}% waste</span></th>
+          <th align="center" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:60px;">Unit</th>
+          <th align="right" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:70px;">Job Qty</th>
+          <th align="right" style="padding:6px 6px;font-family:${FONT};font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:${C.faint};font-weight:bold;width:90px;background:${C.bg};">Order Qty<br><span style="font-size:8px;text-transform:none;letter-spacing:0;color:${C.muted};font-weight:normal;">+${wastePct}% waste</span></th>
         </tr>
       </thead>
       <tbody>

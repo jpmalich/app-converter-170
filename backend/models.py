@@ -64,7 +64,6 @@ class EstimateLine(BaseModel):
     qty: float = 0
     mat: float = 0
     lab: float = 0
-    color: Optional[str] = None  # Per-line color choice — appears on the material list
     ami_part: Optional[str] = None  # Snapshotted at quote time so re-runs are reproducible
 
 
@@ -81,6 +80,12 @@ class EstimateIn(BaseModel):
     estimate_date: str = ""
     estimator: str = ""
     notes: str = ""
+    # Estimate-level color choices (one per material family). Print on the
+    # material list so the supplier knows exactly which colors to pull.
+    siding_color: str = ""
+    accessories_color: str = ""
+    outside_corner_color: str = ""
+    soffit_fascia_color: str = ""
     waste_pct: float = 0
     tax_enabled: bool = True
     tax_rate: float = 7.0

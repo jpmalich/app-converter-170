@@ -63,6 +63,56 @@ export default function JobInfoPanel({ est, update }) {
             data-testid="notes-input"
           />
         </div>
+
+        {/* Estimate-level colors — appear on the material list so the supplier
+            pulls the right color stock for the whole job. */}
+        <div className="sm:col-span-2 lg:col-span-3 pt-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+            {t("est.colors")}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="label">{t("est.color.siding")}</label>
+              <input
+                className="input"
+                value={est.siding_color || ""}
+                placeholder={t("est.color.placeholder")}
+                onChange={(e) => update({ siding_color: e.target.value })}
+                data-testid="color-siding"
+              />
+            </div>
+            <div>
+              <label className="label">{t("est.color.accessories")}</label>
+              <input
+                className="input"
+                value={est.accessories_color || ""}
+                placeholder={t("est.color.placeholder")}
+                onChange={(e) => update({ accessories_color: e.target.value })}
+                data-testid="color-accessories"
+              />
+            </div>
+            <div>
+              <label className="label">{t("est.color.outsideCorner")}</label>
+              <input
+                className="input"
+                value={est.outside_corner_color || ""}
+                placeholder={t("est.color.placeholder")}
+                onChange={(e) => update({ outside_corner_color: e.target.value })}
+                data-testid="color-outside-corner"
+              />
+            </div>
+            <div>
+              <label className="label">{t("est.color.soffitFascia")}</label>
+              <input
+                className="input"
+                value={est.soffit_fascia_color || ""}
+                placeholder={t("est.color.placeholder")}
+                onChange={(e) => update({ soffit_fascia_color: e.target.value })}
+                data-testid="color-soffit-fascia"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

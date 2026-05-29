@@ -100,21 +100,6 @@ export default function SectionAccordion({
                       </span>
                     )}
                   </div>
-                  {(l.qty || 0) > 0 && (
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
-                        Color:
-                      </label>
-                      <input
-                        type="text"
-                        className="text-xs px-2 py-1 border border-[#E4E4E7] bg-white text-[#09090B] w-44 focus:outline-none focus:border-[#09090B]"
-                        placeholder="e.g. Storm Gray"
-                        value={l.color || ""}
-                        onChange={(e) => onField(l.section, l.name, "color", e.target.value)}
-                        data-testid={`color-${section.title}-${l.name}`}
-                      />
-                    </div>
-                  )}
                 </div>
                 <div className="col-span-3 md:col-span-1 text-xs text-[#A1A1AA] uppercase tracking-wider">
                   <span className="md:hidden text-[10px] text-[#A1A1AA] block">{t("est.col.unit")}</span>
