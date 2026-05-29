@@ -38,6 +38,21 @@ async def ensure_tiers_seeded():
     """Seed the 4 standard price tiers if they don't exist yet.
     Also runs a tiny in-place migration to backfill `ami_part` on existing tier
     docs that were seeded before AMI numbers existed in the catalog."""
+    # One-time rename: "Install Vinyl Siding" → "Vinyl Siding" (Iter 24).
+    # Done up front so the rest of the migration logic below (which matches
+    # sections by title) finds the renamed section instead of orphaning it.
+    await db.price_tiers.update_many(
+        {"sections.title": "Install Vinyl Siding"},
+        {"$set": {"sections.$[s].title": "Vinyl Siding"}},
+        array_filters=[{"s.title": "Install Vinyl Siding"}],
+    )
+    # Same rename applied to historical estimate line items so existing
+    # estimates keep matching their catalog source after the rename.
+    await db.estimates.update_many(
+        {"lines.section": "Install Vinyl Siding"},
+        {"$set": {"lines.$[l].section": "Vinyl Siding"}},
+        array_filters=[{"l.section": "Install Vinyl Siding"}],
+    )
     existing = {t["name"] async for t in db.price_tiers.find({}, {"name": 1})}
     for name in TIER_NAMES:
         if name not in existing:
@@ -52,7 +67,7 @@ async def ensure_tiers_seeded():
             logger.info("Seeded price tier %s", name)
 
     # Migrate existing tier docs whenever SECTION_LAYOUT changes shape.
-    # We compare the item list inside "Install Vinyl Siding" — if it differs
+    # We compare the item list inside "Vinyl Siding" — if it differs
     # from the latest seed (e.g. siding was split into 12 profiles), rebuild
     # JUST that section using the fresh tier prices, preserving every other
     # section (so contractor labor overrides on other categories survive).

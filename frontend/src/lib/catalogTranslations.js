@@ -7,7 +7,8 @@
 // time. If a key isn't here, we fall back to the original (English) string.
 
 const SECTIONS_ES = {
-  "Install Vinyl Siding": "Instalar vinil",
+  "Install Vinyl Siding": "Vinil",
+  "Vinyl Siding": "Vinil",
   "Ascend Cladding/Accessories": "Revestimiento Ascend / Accesorios",
   "Siding Accessories": "Accesorios de vinil",
   "Tear-Off / Clean Up": "Demolición / Limpieza",

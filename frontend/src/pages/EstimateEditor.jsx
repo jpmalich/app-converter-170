@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -26,17 +26,11 @@ export default function EstimateEditor() {
   const { company } = useCompany();
   const branding = useBranding();
   const { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, save } = useEstimate(id);
+  // Start with every section collapsed so the editor stays compact —
+  // contractors expand only the categories they need for the job.
   const [openSections, setOpenSections] = useState({});
   const [saving, setSaving] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
-
-  useEffect(() => {
-    if (catalog.length && Object.keys(openSections).length === 0) {
-      const all = {};
-      catalog.forEach((s) => (all[s.title] = true));
-      setOpenSections(all);
-    }
-  }, [catalog]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totals = useMemo(() => (est ? calcTotals(est) : null), [est]);
 

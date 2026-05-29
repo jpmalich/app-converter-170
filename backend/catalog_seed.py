@@ -16,7 +16,7 @@ Tiers (cheapest → most expensive):
 # disambiguate the Siding Accessories one internally as
 # "Inside Corners (Siding)" — but display it as "Inside Corners" in the UI.
 SECTION_LAYOUT = [
-    ("Install Vinyl Siding", False, [
+    ("Vinyl Siding", False, [
         # Conquest (.040) — 2 profiles
         'Conquest Clap 4.5" .040',
         'Conquest Dutch lap 4.5" .040',
