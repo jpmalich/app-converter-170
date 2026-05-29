@@ -128,6 +128,14 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: round((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)),
         "note": "Eaves LF + Rakes LF",
     },
+    {
+        "section": "Vinyl Soffit with Siding",
+        "item": "3/4\" Soffit J-Channel (Charter Oak)",
+        "unit": "LF",
+        # Soffit J-Channel runs the same length as the soffit/fascia it secures.
+        "extract": lambda m: round((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)),
+        "note": "Matches Soffit & fascia LF",
+    },
     # SEAMLESS GUTTER — eaves are exactly where gutters go (rakes don't get gutter)
     {
         "section": "Seamless Gutter",
