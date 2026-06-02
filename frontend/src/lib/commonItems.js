@@ -47,6 +47,14 @@ export const COMMONLY_NEEDED_ITEMS = new Set([
   // items per product line — surface them so they always catch the eye.
   'Charter Oak Dutch Lap 4.5" .046',          // Vinyl tab default
   'Ascend Composite Lap Siding 7"',           // Ascend tab default
+  // ----- Ascend Cladding/Accessories starter pack — Ascend installers
+  // commonly need these but they're easy to overlook since the headline
+  // Ascend siding row gets all the attention.
+  'Ascend 5.5" Outside Corner  - MATTE',
+  "Inside Corners",
+  "Ascend - J - Channel  (2 per Sq of siding)",
+  "ASCEND Finish Trim",
+  "Ascend - Starter",
   // ----- LP SmartSide "starter pack" — items quoted on virtually every
   // LP job. Flagging them ensures the LP tab doesn't ship empty when a
   // contractor only fills the headline lap product.
