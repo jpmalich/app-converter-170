@@ -419,7 +419,33 @@ async def _ask_claude(text: str, session_id: str) -> dict:
         system_message=PROMPT_SYSTEM,
     ).with_model("anthropic", "claude-sonnet-4-5-20250929")
     msg = UserMessage(text=PROMPT_TEMPLATE.format(text=text[:60000]))  # safety cap
-    reply = await chat.send_message(msg)
+    try:
+        reply = await chat.send_message(msg)
+    except Exception as e:
+        # Surface the most common, actionable failure modes as friendly 4xx
+        # errors instead of generic 500s. Budget exhaustion is by far the
+        # most likely cause once a contractor runs a few large HOVER PDFs.
+        msg = str(e).lower()
+        if "budget" in msg and "exceed" in msg:
+            raise HTTPException(
+                status_code=402,
+                detail=(
+                    "Universal LLM key budget exceeded. Add balance in your "
+                    "Emergent profile (Profile → Universal Key → Add Balance) "
+                    "and retry the HOVER import."
+                ),
+            ) from e
+        if "rate" in msg and "limit" in msg:
+            raise HTTPException(
+                status_code=429,
+                detail="LLM rate limit hit — wait a few seconds and retry.",
+            ) from e
+        # Unknown LLM error — bubble up with detail so it's not a blind 500
+        logger.exception("HOVER LLM call failed")
+        raise HTTPException(
+            status_code=502,
+            detail=f"HOVER parser failed talking to the LLM ({e})",
+        ) from e
     try:
         return json.loads(_strip_json_fence(reply))
     except json.JSONDecodeError as e:
