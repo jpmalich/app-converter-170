@@ -145,6 +145,7 @@ async def ensure_tiers_seeded():
         if not fresh:
             continue
         sections = tier.get("sections") or []
+        existing_titles = {s.get("title") for s in sections}
         dirty = False
         for i, sec in enumerate(sections):
             fresh_sec = next((s for s in fresh if s["title"] == sec["title"]), None)
@@ -169,6 +170,18 @@ async def ensure_tiers_seeded():
                     if want and item.get("ami_part") != want:
                         item["ami_part"] = want
                         dirty = True
+        # Append any sections introduced by a newer SECTION_LAYOUT that don't
+        # yet exist in this tier doc (e.g. the LP SmartSide sections added
+        # in Iter 22 — without this step the rebuild loop above would skip
+        # them entirely because it only iterates over existing sections).
+        for fresh_sec in fresh:
+            if fresh_sec["title"] not in existing_titles:
+                logger.info(
+                    "Adding new section %s to tier %s",
+                    fresh_sec["title"], tier["name"],
+                )
+                sections.append(fresh_sec)
+                dirty = True
         if dirty:
             await db.price_tiers.update_one(
                 {"id": tier["id"]},

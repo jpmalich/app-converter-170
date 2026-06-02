@@ -90,6 +90,51 @@ SECTION_LAYOUT = [
         "Cap tops of bird boxes", "Dormer upcharge", "R&R Utilities",
         "Cut out 4x4 section of wall and insulate",
     ]),
+    # -----------------------------------------------------------------------
+    # LP SmartSide product line — single-price (same across all 4 tiers,
+    # set by Howard's "LP Smart siding" tab in the Excel price sheet).
+    # Items are prefixed with "LP " to avoid collisions with Vinyl/Ascend
+    # items of similar names (e.g. "Outside corners" exists in both
+    # Siding Accessories and LP Siding Accessories with different sizes).
+    # -----------------------------------------------------------------------
+    ("LP Smart Siding", False, [
+        'LP Strand Lap Siding 3/8" x 8" x 16\'',
+        'LP Strand Shake 3/8" x 12" x 4\'',
+        'LP Nickel Gap 1/2" x 8" x 16\'',
+        'LP Strand Panel 3/8" x 4\' x 8\'',
+        'LP Strand Panel 3/8" x 4\' x 10\'',
+        'LP Strand Panel 3/8" x 16" x 16\'',
+    ]),
+    ("LP SmartSide Trim", False, [
+        # 190 series — 4/4 thick
+        'LP 190 Trim 5/8" x 3" x 16\'',
+        # 440 series — 4/4 thick
+        'LP 440 Trim 3/4" x 4" x 16\'',
+        'LP 440 Trim 3/4" x 6" x 16\'',
+        'LP 440 Trim 3/4" x 8" x 16\'',
+        'LP 440 Trim 3/4" x 10" x 16\'',
+        'LP 440 Trim 3/4" x 12" x 16\'',
+        # 540 series — 5/4 thick
+        'LP 540 Trim 3/4" x 4" x 16\'',
+        'LP 540 Trim 3/4" x 6" x 16\'',
+        'LP 540 Trim 3/4" x 8" x 16\'',
+        'LP 540 Trim 3/4" x 10" x 16\'',
+        'LP 540 Trim 3/4" x 12" x 16\'',
+    ]),
+    ("LP Siding Accessories", False, [
+        "LP Color Match Coil",
+        'LP Outside corners 4" x 16\'',
+        'LP Outside corners 6" x 16\'',
+        "LP Touch-up Kit",
+        "LP Caulking Color Match",
+        'LP J-blocks 1" W/FLASHING',
+        'LP Mini Split 1" W/FLASHING',
+    ]),
+    ("LP SmartSide Soffit", False, [
+        'LP Soffit 3/8" x 16" x 16\' Vented',
+        'LP Soffit 3/8" x 24" x 16\' Vented',
+        'LP Soffit 3/8" x 24" x 16\' Solid',
+    ]),
 ]
 
 # Units & default labor are the same across tiers (labor defaults — contractor can override)
@@ -152,6 +197,40 @@ ITEM_META = {
     "Bird box": ("Each", 10), "Flashing": ("LF", 1),
     "Cap tops of bird boxes": ("Each", 1), "Dormer upcharge": ("Each", 100),
     "R&R Utilities": ("Each", 1), "Cut out 4x4 section of wall and insulate": ("Each", 50),
+    # ----------------- LP SmartSide items -----------------
+    # Units pulled verbatim from the LP Smart siding tab in Howard's
+    # original Vinyl Siding app price layout.xls. Labor is 0 by default —
+    # LP labor varies job-to-job and the contractor sets it per estimate.
+    'LP Strand Lap Siding 3/8" x 8" x 16\'': ("SQ", 0),
+    'LP Strand Shake 3/8" x 12" x 4\'': ("PCS", 0),
+    'LP Nickel Gap 1/2" x 8" x 16\'': ("PCS", 0),
+    'LP Strand Panel 3/8" x 4\' x 8\'': ("PCS", 0),
+    'LP Strand Panel 3/8" x 4\' x 10\'': ("PCS", 0),
+    'LP Strand Panel 3/8" x 16" x 16\'': ("PCS", 0),
+    'LP 190 Trim 5/8" x 3" x 16\'': ("PCS", 0),
+    'LP 440 Trim 3/4" x 4" x 16\'': ("PCS", 0),
+    'LP 440 Trim 3/4" x 6" x 16\'': ("PCS", 0),
+    'LP 440 Trim 3/4" x 8" x 16\'': ("PCS", 0),
+    'LP 440 Trim 3/4" x 10" x 16\'': ("PCS", 0),
+    'LP 440 Trim 3/4" x 12" x 16\'': ("PCS", 0),
+    # Note: the 4" and 6" entries in the 540 (5/4) series are labelled
+    # "SQ" in Howard's spreadsheet — preserved verbatim. Adjust via the
+    # catalog admin if that was a typo and they should be PCS.
+    'LP 540 Trim 3/4" x 4" x 16\'': ("SQ", 0),
+    'LP 540 Trim 3/4" x 6" x 16\'': ("SQ", 0),
+    'LP 540 Trim 3/4" x 8" x 16\'': ("PCS", 0),
+    'LP 540 Trim 3/4" x 10" x 16\'': ("PCS", 0),
+    'LP 540 Trim 3/4" x 12" x 16\'': ("PCS", 0),
+    "LP Color Match Coil": ("ROLL", 0),
+    'LP Outside corners 4" x 16\'': ("PCS", 0),
+    'LP Outside corners 6" x 16\'': ("PCS", 0),
+    "LP Touch-up Kit": ("PCS", 0),
+    "LP Caulking Color Match": ("Tube", 0),
+    'LP J-blocks 1" W/FLASHING': ("Each", 0),
+    'LP Mini Split 1" W/FLASHING': ("Each", 0),
+    'LP Soffit 3/8" x 16" x 16\' Vented': ("PCS", 0),
+    'LP Soffit 3/8" x 24" x 16\' Vented': ("PCS", 0),
+    'LP Soffit 3/8" x 24" x 16\' Solid': ("PCS", 0),
 }
 
 # Material prices per tier (name → mat $)
@@ -352,6 +431,52 @@ TIER_PRICES = {
 }
 
 
+# ---------------------------------------------------------------------------
+# LP SmartSide pricing — SAME PRICE ACROSS ALL 4 TIERS (per Howard, LP is
+# single-pricing). Values from the "LP Smart siding" tab in his Excel sheet.
+# Merged into every tier at module load so the existing TIER_PRICES /
+# pricing-admin / catalog-merge flow continues to work without special-casing.
+# ---------------------------------------------------------------------------
+LP_PRICES = {
+    # LP Smart Siding (main panels & laps)
+    'LP Strand Lap Siding 3/8" x 8" x 16\'': 298.24,
+    'LP Strand Shake 3/8" x 12" x 4\'': 20.78,
+    'LP Nickel Gap 1/2" x 8" x 16\'': 63.30,
+    'LP Strand Panel 3/8" x 4\' x 8\'': 90.16,
+    'LP Strand Panel 3/8" x 4\' x 10\'': 119.45,
+    'LP Strand Panel 3/8" x 16" x 16\'': 80.34,
+    # 190 series trim (4/4)
+    'LP 190 Trim 5/8" x 3" x 16\'': 17.20,
+    # 440 series trim (4/4)
+    'LP 440 Trim 3/4" x 4" x 16\'': 24.68,
+    'LP 440 Trim 3/4" x 6" x 16\'': 37.03,
+    'LP 440 Trim 3/4" x 8" x 16\'': 49.38,
+    'LP 440 Trim 3/4" x 10" x 16\'': 64.34,
+    'LP 440 Trim 3/4" x 12" x 16\'': 77.18,
+    # 540 series trim (5/4)
+    'LP 540 Trim 3/4" x 4" x 16\'': 30.01,
+    'LP 540 Trim 3/4" x 6" x 16\'': 45.01,
+    'LP 540 Trim 3/4" x 8" x 16\'': 60.01,
+    'LP 540 Trim 3/4" x 10" x 16\'': 78.59,
+    'LP 540 Trim 3/4" x 12" x 16\'': 94.26,
+    # LP siding accessories
+    "LP Color Match Coil": 133.23,
+    'LP Outside corners 4" x 16\'': 160.89,
+    'LP Outside corners 6" x 16\'': 241.35,
+    "LP Touch-up Kit": 53.34,
+    "LP Caulking Color Match": 12.28,
+    'LP J-blocks 1" W/FLASHING': 50.00,
+    'LP Mini Split 1" W/FLASHING': 70.00,
+    # LP soffit
+    'LP Soffit 3/8" x 16" x 16\' Vented': 76.00,
+    'LP Soffit 3/8" x 24" x 16\' Vented': 109.33,
+    'LP Soffit 3/8" x 24" x 16\' Solid': 117.44,
+}
+
+for _tier_dict in TIER_PRICES.values():
+    _tier_dict.update(LP_PRICES)
+
+
 # AMI part numbers from Alside's price sheet — used on the printed material list
 # so contractors can order/pull materials by SKU. Items without an AMI # (most
 # labor-only lines, some accessories) just show blank on the list.
@@ -418,8 +543,21 @@ ITEM_AMI = {
 # Siding gets its own dedicated sections once the catalog is populated, so
 # nothing shared bleeds into the LP tab by accident.
 SECTION_PRODUCT_LINES = {
+    # Product-line-exclusive sections
     "Vinyl Siding": ["vinyl"],
     "Ascend Cladding/Accessories": ["ascend"],
+    "LP Smart Siding": ["lp_smart"],
+    "LP SmartSide Trim": ["lp_smart"],
+    "LP Siding Accessories": ["lp_smart"],
+    "LP SmartSide Soffit": ["lp_smart"],
+    # Shared sections used by all 3 product lines (LP also uses the same
+    # generic tear-off, gutter, and misc-labor catalog rows per Howard's
+    # LP Smart siding sheet — pricing is identical to vinyl/ascend).
+    "Tear-Off / Clean Up": ["vinyl", "ascend", "lp_smart"],
+    "Seamless Gutter": ["vinyl", "ascend", "lp_smart"],
+    "Misc. Labor Only": ["vinyl", "ascend", "lp_smart"],
+    "Misc. Labor & Material": ["vinyl", "ascend", "lp_smart"],
+    "Misc.": ["vinyl", "ascend", "lp_smart"],
 }
 
 
