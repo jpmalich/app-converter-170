@@ -22,8 +22,13 @@ import { toast } from "sonner";
 export const TAB_IDS = ["vinyl", "ascend", "lp_smart"];
 
 // Back-compat: legacy Ascend lines → ascend tab; everything else → vinyl.
+// Both the new "Ascend Cladding" section AND the legacy combined
+// "Ascend Cladding/Accessories" section route to the Ascend tab.
 function legacyTabForSection(sectionTitle) {
-  return sectionTitle === "Ascend Cladding/Accessories" ? "ascend" : "vinyl";
+  return sectionTitle === "Ascend Cladding" ||
+    sectionTitle === "Ascend Cladding/Accessories"
+    ? "ascend"
+    : "vinyl";
 }
 
 function inferTab(line) {

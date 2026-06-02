@@ -68,7 +68,8 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
           // the 2 Ascend Composite siding products. Trim/accessories/etc. ship
           // to actual count.
           const isAscendWaste =
-            sectionName === "Ascend Cladding/Accessories" &&
+            (sectionName === "Ascend Cladding" ||
+              sectionName === "Ascend Cladding/Accessories") &&
             (l.name === 'Ascend Composite Lap Siding 7"' ||
               l.name === 'Ascend Composite B&B 12" (add 30% Waste)');
           const applyWaste = sectionName === "Vinyl Siding" || isAscendWaste;

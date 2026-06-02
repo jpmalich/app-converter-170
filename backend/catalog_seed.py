@@ -38,8 +38,11 @@ SECTION_LAYOUT = [
         "Architectural color upcharge Vinyl",
         'Pelican Bay Shakes 9"',
     ]),
+    ("Ascend Cladding", True, [
+        'Ascend Composite Lap Siding 7"',
+        'Ascend Composite B&B 12" (add 30% Waste)',
+    ]),
     ("Ascend Cladding/Accessories", True, [
-        'Ascend Composite Lap Siding 7"', 'Ascend Composite B&B 12" (add 30% Waste)',
         'Ascend 3.5" Outside Corner  - MATTE', 'Ascend 5.5" Outside Corner  - MATTE',
         "Inside Corners", "Ascend - 5.5\" Trim  (16' length)",
         "Ascend - J - Channel  (2 per Sq of siding)",
@@ -547,6 +550,7 @@ ITEM_AMI = {
 SECTION_PRODUCT_LINES = {
     # Product-line-exclusive sections
     "Vinyl Siding": ["vinyl"],
+    "Ascend Cladding": ["ascend"],
     "Ascend Cladding/Accessories": ["ascend"],
     "LP Smart Siding": ["lp_smart"],
     "LP SmartSide Trim": ["lp_smart"],

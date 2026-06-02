@@ -9,6 +9,7 @@
 const SECTIONS_ES = {
   "Install Vinyl Siding": "Vinil",
   "Vinyl Siding": "Vinil",
+  "Ascend Cladding": "Revestimiento Ascend",
   "Ascend Cladding/Accessories": "Revestimiento Ascend / Accesorios",
   "Siding Accessories": "Accesorios de vinil",
   "Tear-Off / Clean Up": "Demolición / Limpieza",

@@ -79,7 +79,8 @@ export default function Dashboard() {
   const calcTotals = (e) => {
     const isWaste = (l) =>
       l.section === "Vinyl Siding" ||
-      (l.section === "Ascend Cladding/Accessories" &&
+      ((l.section === "Ascend Cladding" ||
+        l.section === "Ascend Cladding/Accessories") &&
         (l.name === 'Ascend Composite Lap Siding 7"' ||
           l.name === 'Ascend Composite B&B 12" (add 30% Waste)'));
     const subMat = (e.lines || []).reduce((s, l) => s + (l.qty || 0) * (l.mat || 0), 0) +

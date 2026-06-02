@@ -72,6 +72,25 @@ async def ensure_tiers_seeded():
     # in DB at $0 because TIER_PRICES wasn't fully populated yet. Backfill the
     # correct mat prices from TIER_PRICES, idempotent (only updates items that
     # are currently $0 and have a real price in TIER_PRICES).
+    # Iter 23 (LP era): the 2 Ascend siding items (Composite Lap & Composite
+    # B&B) moved out of "Ascend Cladding/Accessories" into their own new
+    # "Ascend Cladding" section. Re-tag historical estimate line items so
+    # existing quotes keep matching their catalog source after the split.
+    ASCEND_SIDING_NAMES = [
+        'Ascend Composite Lap Siding 7"',
+        'Ascend Composite B&B 12" (add 30% Waste)',
+    ]
+    await db.estimates.update_many(
+        {"lines": {"$elemMatch": {
+            "section": "Ascend Cladding/Accessories",
+            "name": {"$in": ASCEND_SIDING_NAMES},
+        }}},
+        {"$set": {"lines.$[el].section": "Ascend Cladding"}},
+        array_filters=[{
+            "el.section": "Ascend Cladding/Accessories",
+            "el.name": {"$in": ASCEND_SIDING_NAMES},
+        }],
+    )
     # Iter 27: drop the "(1 per 50' fascia)" suffix from the 3 siding-accessories
     # coil entries — the fascia variants now live in Vinyl Soffit with Siding as
     # separate items, so the Siding Accessories names should just describe their
@@ -254,8 +273,15 @@ def calc_totals(est: dict) -> dict:
     def _is_waste_line(ln: dict) -> bool:
         if ln.get("section") == "Vinyl Siding":
             return True
-        return (ln.get("section") == "Ascend Cladding/Accessories"
-                and ln.get("name") in WASTE_ASCEND)
+        # Iter 23: the 2 Ascend siding items moved into their own "Ascend
+        # Cladding" section. Accept BOTH the new section name and the legacy
+        # "Ascend Cladding/Accessories" name so old estimates that haven't
+        # been re-saved (and thus haven't picked up the migration) still
+        # apply waste correctly.
+        return (
+            ln.get("section") in {"Ascend Cladding", "Ascend Cladding/Accessories"}
+            and ln.get("name") in WASTE_ASCEND
+        )
     waste_base = sum(
         (ln.get("qty", 0) or 0) * (ln.get("mat", 0) or 0)
         for ln in lines if _is_waste_line(ln)

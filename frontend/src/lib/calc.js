@@ -8,8 +8,13 @@ const WASTE_ASCEND_NAMES = new Set([
 
 export function isWasteLine(line) {
   if (line?.section === "Vinyl Siding") return true;
+  // Iter 23: the 2 Ascend siding items moved into their own "Ascend
+  // Cladding" section. Accept BOTH the new section name and the legacy
+  // "Ascend Cladding/Accessories" name so old estimates that haven't been
+  // re-saved (and thus haven't picked up the migration) still apply waste.
   return (
-    line?.section === "Ascend Cladding/Accessories" &&
+    (line?.section === "Ascend Cladding" ||
+      line?.section === "Ascend Cladding/Accessories") &&
     WASTE_ASCEND_NAMES.has(line?.name)
   );
 }
