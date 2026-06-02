@@ -213,19 +213,19 @@ ITEM_META = {
     'LP Strand Panel 3/8" x 4\' x 8\'': ("PCS", 0),
     'LP Strand Panel 3/8" x 4\' x 10\'': ("PCS", 0),
     'LP Strand Panel 3/8" x 16" x 16\'': ("PCS", 0),
-    'LP 190 Trim 5/8" x 3" x 16\'': ("PCS", 0),
-    'LP 440 Trim 3/4" x 4" x 16\'': ("PCS", 0),
-    'LP 440 Trim 3/4" x 6" x 16\'': ("PCS", 0),
-    'LP 440 Trim 3/4" x 8" x 16\'': ("PCS", 0),
-    'LP 440 Trim 3/4" x 10" x 16\'': ("PCS", 0),
-    'LP 440 Trim 3/4" x 12" x 16\'': ("PCS", 0),
-    # Note: per Howard, all 540 (5/4) trim sizes are PCS — the SQ labels for
-    # 4" and 6" in the original spreadsheet were typos.
-    'LP 540 Trim 3/4" x 4" x 16\'': ("PCS", 0),
-    'LP 540 Trim 3/4" x 6" x 16\'': ("PCS", 0),
-    'LP 540 Trim 3/4" x 8" x 16\'': ("PCS", 0),
-    'LP 540 Trim 3/4" x 10" x 16\'': ("PCS", 0),
-    'LP 540 Trim 3/4" x 12" x 16\'': ("PCS", 0),
+    'LP 190 Trim 5/8" x 3" x 16\'': ("LF", 0),
+    'LP 440 Trim 3/4" x 4" x 16\'': ("LF", 0),
+    'LP 440 Trim 3/4" x 6" x 16\'': ("LF", 0),
+    'LP 440 Trim 3/4" x 8" x 16\'': ("LF", 0),
+    'LP 440 Trim 3/4" x 10" x 16\'': ("LF", 0),
+    'LP 440 Trim 3/4" x 12" x 16\'': ("LF", 0),
+    # Note: per Howard, all 540 (5/4) trim sizes are LF — converted from
+    # the original per-piece pricing by dividing 16' board length.
+    'LP 540 Trim 3/4" x 4" x 16\'': ("LF", 0),
+    'LP 540 Trim 3/4" x 6" x 16\'': ("LF", 0),
+    'LP 540 Trim 3/4" x 8" x 16\'': ("LF", 0),
+    'LP 540 Trim 3/4" x 10" x 16\'': ("LF", 0),
+    'LP 540 Trim 3/4" x 12" x 16\'': ("LF", 0),
     "LP Color Match Coil": ("ROLL", 0),
     'LP Outside corners 4" x 16\'': ("PCS", 0),
     'LP Outside corners 6" x 16\'': ("PCS", 0),
@@ -450,20 +450,20 @@ LP_PRICES = {
     'LP Strand Panel 3/8" x 4\' x 8\'': 90.16,
     'LP Strand Panel 3/8" x 4\' x 10\'': 119.45,
     'LP Strand Panel 3/8" x 16" x 16\'': 80.34,
-    # 190 series trim (4/4)
-    'LP 190 Trim 5/8" x 3" x 16\'': 17.20,
-    # 440 series trim (4/4)
-    'LP 440 Trim 3/4" x 4" x 16\'': 24.68,
-    'LP 440 Trim 3/4" x 6" x 16\'': 37.03,
-    'LP 440 Trim 3/4" x 8" x 16\'': 49.38,
-    'LP 440 Trim 3/4" x 10" x 16\'': 64.34,
-    'LP 440 Trim 3/4" x 12" x 16\'': 77.18,
-    # 540 series trim (5/4)
-    'LP 540 Trim 3/4" x 4" x 16\'': 30.01,
-    'LP 540 Trim 3/4" x 6" x 16\'': 45.01,
-    'LP 540 Trim 3/4" x 8" x 16\'': 60.01,
-    'LP 540 Trim 3/4" x 10" x 16\'': 78.59,
-    'LP 540 Trim 3/4" x 12" x 16\'': 94.26,
+    # 190 series trim (4/4) — priced per LF (16' board ÷ 16)
+    'LP 190 Trim 5/8" x 3" x 16\'': 1.08,
+    # 440 series trim (4/4) — priced per LF
+    'LP 440 Trim 3/4" x 4" x 16\'': 1.54,
+    'LP 440 Trim 3/4" x 6" x 16\'': 2.31,
+    'LP 440 Trim 3/4" x 8" x 16\'': 3.09,
+    'LP 440 Trim 3/4" x 10" x 16\'': 4.02,
+    'LP 440 Trim 3/4" x 12" x 16\'': 4.82,
+    # 540 series trim (5/4) — priced per LF
+    'LP 540 Trim 3/4" x 4" x 16\'': 1.88,
+    'LP 540 Trim 3/4" x 6" x 16\'': 2.81,
+    'LP 540 Trim 3/4" x 8" x 16\'': 3.75,
+    'LP 540 Trim 3/4" x 10" x 16\'': 4.91,
+    'LP 540 Trim 3/4" x 12" x 16\'': 5.89,
     # LP siding accessories
     "LP Color Match Coil": 133.23,
     'LP Outside corners 4" x 16\'': 160.89,

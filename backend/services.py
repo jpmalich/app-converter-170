@@ -123,6 +123,24 @@ async def ensure_tiers_seeded():
         "PVC Trim Coil (1 per 50' fascia)",
         "Performance G8 Trim Coil (1 per 50' fascia)",
     ]
+    # Iter 28: LP trim moved from per-piece to per-LF pricing (Howard's
+    # request — 16' boards, so LF price = PCS price ÷ 16). Force-update mat
+    # on these 11 items across all 4 tiers so the new LF prices show up
+    # without a manual reseed. Idempotent: only updates rows whose current
+    # mat doesn't match the new LF price in TIER_PRICES.
+    LP_TRIM_RELIST = [
+        'LP 190 Trim 5/8" x 3" x 16\'',
+        'LP 440 Trim 3/4" x 4" x 16\'',
+        'LP 440 Trim 3/4" x 6" x 16\'',
+        'LP 440 Trim 3/4" x 8" x 16\'',
+        'LP 440 Trim 3/4" x 10" x 16\'',
+        'LP 440 Trim 3/4" x 12" x 16\'',
+        'LP 540 Trim 3/4" x 4" x 16\'',
+        'LP 540 Trim 3/4" x 6" x 16\'',
+        'LP 540 Trim 3/4" x 8" x 16\'',
+        'LP 540 Trim 3/4" x 10" x 16\'',
+        'LP 540 Trim 3/4" x 12" x 16\'',
+    ]
     async for tier in db.price_tiers.find({}, {"_id": 0, "id": 1, "name": 1, "sections": 1}):
         prices = TIER_PRICES.get(tier["name"])
         if not prices:
@@ -135,6 +153,18 @@ async def ensure_tiers_seeded():
                     want = float(prices.get(it["name"], 0))
                     if want > 0:
                         it["mat"] = want
+                        changed = True
+                # LP trim PCS→LF conversion (Iter 28): force the new LF price
+                # AND the new "LF" unit. Doesn't touch any other item, so it
+                # won't clobber contractor-side overrides made via the bulk
+                # pricing admin.
+                if it.get("name") in LP_TRIM_RELIST:
+                    want_mat = float(prices.get(it["name"], 0))
+                    if want_mat > 0 and float(it.get("mat") or 0) != want_mat:
+                        it["mat"] = want_mat
+                        changed = True
+                    if it.get("unit") != "LF":
+                        it["unit"] = "LF"
                         changed = True
         if changed:
             await db.price_tiers.update_one(
