@@ -313,6 +313,49 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: int(m.get("garage_door_count") or 0),
         "note": "1 per garage door (OHD-N or ≥72×84in)",
     },
+    # =====================================================================
+    # WINDOWS TAB — Vero product line. HOVER reports window count + entry/
+    # patio door counts. Default mappings:
+    #   - 1 Vero Double Hung per HOVER window (most common style; contractor
+    #     swaps to slider/casement/picture per line)
+    #   - 1 Pocket Install labor row per window (most common install method
+    #     for replacement jobs; contractor swaps to Full Fin / Block Frame
+    #     as needed)
+    #   - 1 of each appropriate Sliding Glass Door + install line per
+    #     HOVER patio_door_count, defaulting to 60" × 80"
+    # =====================================================================
+    {
+        "tabs": ["windows"],
+        "section": "Vero Windows",
+        "item": "Vero - Double Hung 0-101 UI",
+        "unit": "Each",
+        "extract": lambda m: int(m.get("window_count") or 0),
+        "note": "1 per HOVER window — change style on the line if needed",
+    },
+    {
+        "tabs": ["windows"],
+        "section": "Window Installation",
+        "item": "Window - Pocket Install",
+        "unit": "Each",
+        "extract": lambda m: int(m.get("window_count") or 0),
+        "note": "Default install method — swap to Full Fin/Block Frame per job",
+    },
+    {
+        "tabs": ["windows"],
+        "section": "Vero Sliding Glass Doors",
+        "item": 'Vero - Sliding glass door 60" x 80"',
+        "unit": "Each",
+        "extract": lambda m: int(m.get("patio_door_count") or 0),
+        "note": "1 per HOVER patio door — change size on the line if needed",
+    },
+    {
+        "tabs": ["windows"],
+        "section": "Sliding Glass Door Install",
+        "item": "Vinyl Sliding Glass Door (5' & 6' width)",
+        "unit": "Each",
+        "extract": lambda m: int(m.get("patio_door_count") or 0),
+        "note": "1 install per HOVER patio door",
+    },
 ]
 
 

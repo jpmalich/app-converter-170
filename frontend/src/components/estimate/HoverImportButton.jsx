@@ -37,6 +37,7 @@ const TAB_LABELS = {
   vinyl: "Vinyl",
   ascend: "Ascend",
   lp_smart: "LP Smart",
+  windows: "Windows",
 };
 
 const UNIT_BY_KEY = (k) => {
@@ -193,7 +194,7 @@ export default function HoverImportButton({ est, update }) {
                   Auto-generated Line Items ({result.lines?.length || 0} across {Object.keys(TAB_LABELS).filter(t => (result.lines || []).some(l => (l.tab || "vinyl") === t)).length} tabs)
                 </div>
                 {result.lines?.length ? (
-                  ["vinyl", "ascend", "lp_smart"].map((tab) => {
+                  ["vinyl", "ascend", "lp_smart", "windows"].map((tab) => {
                     const tabLines = (result.lines || []).filter(
                       (l) => (l.tab || "vinyl") === tab
                     );

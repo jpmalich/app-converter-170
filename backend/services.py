@@ -141,6 +141,19 @@ async def ensure_tiers_seeded():
         'LP 540 Trim 3/4" x 10" x 16\'',
         'LP 540 Trim 3/4" x 12" x 16\'',
     ]
+    # Iter 29: the Windows tab sections were appended to existing tier docs
+    # at $0 mat/lab on first boot (before TIER_PRICES + ITEM_META had real
+    # values). Force-reconcile mat (from TIER_PRICES) and lab (from
+    # ITEM_META) on every Windows-tab item so the prices Howard provided
+    # appear in the catalog. Idempotent: only writes when the DB value
+    # disagrees with code, so it won't clobber contractor overrides made
+    # later via the pricing admin (which writes elsewhere).
+    WINDOWS_SECTIONS_FOR_PRICE_SYNC = {
+        "Vero Windows", "Window Upgrade Options", "Window Installation",
+        "Vero Sliding Glass Doors", "Sliding Glass Door Install",
+        "Window Exterior Trim Work", "Window Interior Trim Work",
+        "Window Misc.",
+    }
     async for tier in db.price_tiers.find({}, {"_id": 0, "id": 1, "name": 1, "sections": 1}):
         prices = TIER_PRICES.get(tier["name"])
         if not prices:
@@ -165,6 +178,20 @@ async def ensure_tiers_seeded():
                         changed = True
                     if it.get("unit") != "LF":
                         it["unit"] = "LF"
+                        changed = True
+                # Windows-tab price sync (Iter 29): see WINDOWS_SECTIONS_FOR_
+                # PRICE_SYNC comment above. Forces mat from TIER_PRICES + lab
+                # from ITEM_META on any Windows item whose DB value disagrees
+                # with code. Idempotent and bounded to Windows sections.
+                if sec.get("title") in WINDOWS_SECTIONS_FOR_PRICE_SYNC:
+                    want_mat = prices.get(it.get("name"))
+                    if (want_mat is not None
+                            and float(it.get("mat") or 0) != float(want_mat)):
+                        it["mat"] = float(want_mat)
+                        changed = True
+                    meta = ITEM_META.get(it.get("name"))
+                    if meta is not None and float(it.get("lab") or 0) != float(meta[1]):
+                        it["lab"] = float(meta[1])
                         changed = True
         if changed:
             await db.price_tiers.update_one(

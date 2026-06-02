@@ -7,12 +7,14 @@ export const TAB_VISIBILITY = {
   vinyl: true,
   ascend: true,
   lp_smart: false, // Howard paused this until LP pricing is finalized.
+  windows: true,
 };
 
 export const ALL_TAB_DEFS = [
   { id: "vinyl", label: "Vinyl" },
   { id: "ascend", label: "Ascend" },
   { id: "lp_smart", label: "LP Smart" },
+  { id: "windows", label: "Windows" },
 ];
 
 /** Tab defs filtered to only the currently-enabled tabs. */

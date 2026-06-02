@@ -141,6 +141,72 @@ SECTION_LAYOUT = [
         "Cap tops of bird boxes", "Dormer upcharge", "R&R Utilities",
         "Cut out 4x4 section of wall and insulate",
     ]),
+    # -----------------------------------------------------------------------
+    # WINDOWS — Vero product line from Howard's "window price sheet" tab.
+    # Scoped to the dedicated "windows" tab. Prices currently same across
+    # all 4 tiers (Howard will tier them later). The 3× duplicate "3 lite
+    # slider / Casement / Picture" rows at $0 in the source spreadsheet
+    # collapse to one each since they're size placeholders; the second
+    # UPGRADE OPTIONS block (rows 36-40) is omitted (identical to rows 14-18).
+    # -----------------------------------------------------------------------
+    ("Vero Windows", False, [
+        "Vero - Double Hung 0-101 UI",
+        "Vero - Slider 0-101 UI",
+        "Vero - 3 lite slider 0-101 UI",
+        "Vero - Casement 0-101 UI",
+        "Vero - Picture 0-101 UI",
+        "Window Package Price",
+    ]),
+    ("Window Upgrade Options", False, [
+        "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+        "Sentry System - Tilt Lock upgrade",
+        "Integral Nail Fin 0-101",
+        "Heavy Duty 1/2 Screen White ONLY",
+    ]),
+    ("Window Installation", False, [
+        "Window - Pocket Install",
+        "Window - Full Fin Replacement",
+        "Window - Block Frame Replacement",
+        "Large Window - adder for windows 30 sq-ft or larger",
+        "Field Mull Assembly and/or Field Glaze (adder per each opening)",
+        "Lead Safe Installation Practices For Window Installation",
+        "Lead Safe - Test Fee (all homes 1978 and older are tested)",
+    ]),
+    ("Vero Sliding Glass Doors", False, [
+        'Vero - Sliding glass door 60" x 80"',
+        'Vero - Sliding glass door 72" x 80"',
+        'Vero - Sliding glass door 96" x 80"',
+        "Vero - Sliding glass door Custom Size",
+    ]),
+    ("Sliding Glass Door Install", False, [
+        "Vinyl Sliding Glass Door (5' & 6' width)",
+        "Vinyl Sliding Glass Door (8' width or field assembled)",
+        "Oversize Vinyl Door (greater than 8' width)",
+    ]),
+    ("Window Exterior Trim Work", False, [
+        "New Exterior Primed Stops or Snap Trim",
+        "New Exterior Primed Wood Trim",
+        "New Exterior Composite Trim",
+        "New Exterior Coil Trim",
+    ]),
+    ("Window Interior Trim Work", False, [
+        "New Interior Stops or Flat Trim",
+        "New Interior Casing",
+        "New Interior Jamb Extension",
+        "New Interior Sill - create or replace (QUOTE ONLY)",
+    ]),
+    ("Window Misc.", False, [
+        "Interior Blinds - Remove For Window Install & Reinstall",
+        "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)",
+        "Mullion Removal & Cut-Out of Non-Structural Framing Members",
+        "Storm Window Removal",
+        "Second/Third/Clear Story Fee",
+        "Job Measure Standard Fee 4 days+",
+        "Job Measure Rush Fee 3 days or less",
+        "Add New Channel on ALL, Close up opening to match master Front opening",
+        "Minimum Job Charge For Window Installs",
+        "Disposal Fee (Windows)",
+    ]),
 ]
 
 # Units & default labor are the same across tiers (labor defaults — contractor can override)
@@ -236,6 +302,53 @@ ITEM_META = {
     'LP Soffit 3/8" x 16" x 16\' Vented': ("PCS", 0),
     'LP Soffit 3/8" x 24" x 16\' Vented': ("PCS", 0),
     'LP Soffit 3/8" x 24" x 16\' Solid': ("PCS", 0),
+    # ----------------- Window items (Vero product line) -----------------
+    # Units & labor defaults from Howard's "window price sheet". Where a
+    # row has a non-zero labor value in the spreadsheet, that becomes the
+    # default; contractors can still override per estimate. Materials live
+    # in WINDOWS_PRICES → TIER_PRICES below.
+    "Vero - Double Hung 0-101 UI": ("Each", 0),
+    "Vero - Slider 0-101 UI": ("Each", 0),
+    "Vero - 3 lite slider 0-101 UI": ("Each", 0),
+    "Vero - Casement 0-101 UI": ("Each", 0),
+    "Vero - Picture 0-101 UI": ("Each", 0),
+    "Window Package Price": ("Each", 0),
+    "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE": ("Each", 0),
+    "Sentry System - Tilt Lock upgrade": ("Each", 0),
+    "Integral Nail Fin 0-101": ("Each", 0),
+    "Heavy Duty 1/2 Screen White ONLY": ("Each", 0),
+    "Window - Pocket Install": ("Each", 170),
+    "Window - Full Fin Replacement": ("Each", 252.45),
+    "Window - Block Frame Replacement": ("Each", 233.38),
+    "Large Window - adder for windows 30 sq-ft or larger": ("Each", 76.92),
+    "Field Mull Assembly and/or Field Glaze (adder per each opening)": ("Each", 53.85),
+    "Lead Safe Installation Practices For Window Installation": ("Each", 53.85),
+    "Lead Safe - Test Fee (all homes 1978 and older are tested)": ("Each", 0),
+    'Vero - Sliding glass door 60" x 80"': ("Each", 0),
+    'Vero - Sliding glass door 72" x 80"': ("Each", 0),
+    'Vero - Sliding glass door 96" x 80"': ("Each", 0),
+    "Vero - Sliding glass door Custom Size": ("Each", 0),
+    "Vinyl Sliding Glass Door (5' & 6' width)": ("Each", 669.63),
+    "Vinyl Sliding Glass Door (8' width or field assembled)": ("Each", 832.55),
+    "Oversize Vinyl Door (greater than 8' width)": ("Each", 1099.42),
+    "New Exterior Primed Stops or Snap Trim": ("Each", 49.65),
+    "New Exterior Primed Wood Trim": ("Each", 71.04),
+    "New Exterior Composite Trim": ("Each", 99.26),
+    "New Exterior Coil Trim": ("Each", 75.0),
+    "New Interior Stops or Flat Trim": ("Each", 20.0),
+    "New Interior Casing": ("Each", 77.62),
+    "New Interior Jamb Extension": ("Each", 89.13),
+    "New Interior Sill - create or replace (QUOTE ONLY)": ("Each", 120.0),
+    "Interior Blinds - Remove For Window Install & Reinstall": ("Each", 53.85),
+    "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)": ("Each", 38.46),
+    "Mullion Removal & Cut-Out of Non-Structural Framing Members": ("Each", 23.08),
+    "Storm Window Removal": ("Each", 23.08),
+    "Second/Third/Clear Story Fee": ("Each", 1846.15),
+    "Job Measure Standard Fee 4 days+": ("JOB", 150.0),
+    "Job Measure Rush Fee 3 days or less": ("ADD", 80.77),
+    "Add New Channel on ALL, Close up opening to match master Front opening": ("Each", 1200.0),
+    "Minimum Job Charge For Window Installs": ("JOB", 769.23),
+    "Disposal Fee (Windows)": ("JOB", 125.0),
 }
 
 # Material prices per tier (name → mat $)
@@ -482,6 +595,40 @@ for _tier_dict in TIER_PRICES.values():
     _tier_dict.update(LP_PRICES)
 
 
+# ---------------------------------------------------------------------------
+# Windows pricing — SAME ACROSS ALL 4 TIERS for now (Howard's note: "1 tier
+# for now, will eventually have 3 tiers but want to get this set correctly
+# first"). When he sends tier-specific window prices, replace this with the
+# same per-tier structure used for siding/Ascend above. Material defaults
+# from the "window price sheet" tab; rows tagged as labor-only (Pocket
+# Install, etc.) carry $0 material — their labor lives in ITEM_META.
+# ---------------------------------------------------------------------------
+WINDOWS_PRICES = {
+    # Vero Windows — known prices
+    "Vero - Double Hung 0-101 UI": 294.55,
+    "Vero - Slider 0-101 UI": 294.55,
+    # Other window/door product rows currently $0 placeholders — Howard
+    # will fill in via the pricing admin once he has them.
+    "Vero - 3 lite slider 0-101 UI": 0,
+    "Vero - Casement 0-101 UI": 0,
+    "Vero - Picture 0-101 UI": 0,
+    "Window Package Price": 0,
+    # Upgrade options — material adders
+    "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE": 95.37,
+    "Sentry System - Tilt Lock upgrade": 38.15,
+    "Integral Nail Fin 0-101": 19.52,
+    "Heavy Duty 1/2 Screen White ONLY": 25.73,
+    # Door products — $0 placeholders for now
+    'Vero - Sliding glass door 60" x 80"': 0,
+    'Vero - Sliding glass door 72" x 80"': 0,
+    'Vero - Sliding glass door 96" x 80"': 0,
+    "Vero - Sliding glass door Custom Size": 0,
+}
+
+for _tier_dict in TIER_PRICES.values():
+    _tier_dict.update(WINDOWS_PRICES)
+
+
 # AMI part numbers from Alside's price sheet — used on the printed material list
 # so contractors can order/pull materials by SKU. Items without an AMI # (most
 # labor-only lines, some accessories) just show blank on the list.
@@ -556,6 +703,15 @@ SECTION_PRODUCT_LINES = {
     "LP SmartSide Trim": ["lp_smart"],
     "LP Siding Accessories": ["lp_smart"],
     "LP SmartSide Soffit": ["lp_smart"],
+    # Windows tab — Vero product line lives entirely on its own.
+    "Vero Windows": ["windows"],
+    "Window Upgrade Options": ["windows"],
+    "Window Installation": ["windows"],
+    "Vero Sliding Glass Doors": ["windows"],
+    "Sliding Glass Door Install": ["windows"],
+    "Window Exterior Trim Work": ["windows"],
+    "Window Interior Trim Work": ["windows"],
+    "Window Misc.": ["windows"],
     # Shared sections used by all 3 product lines (LP also uses the same
     # generic tear-off, gutter, and misc-labor catalog rows per Howard's
     # LP Smart siding sheet — pricing is identical to vinyl/ascend).

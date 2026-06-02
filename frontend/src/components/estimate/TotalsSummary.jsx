@@ -3,7 +3,7 @@ import { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { Save, FileText, Printer, Download, ClipboardList } from "lucide-react";
 
-const TAB_LABEL = { vinyl: "Vinyl", ascend: "Ascend", lp_smart: "LP Smart" };
+const TAB_LABEL = { vinyl: "Vinyl", ascend: "Ascend", lp_smart: "LP Smart", windows: "Windows" };
 
 export default function TotalsSummary({ est, totals, activeTab, saving, onSave, onOpenQuote, onPrint, onExportCsv, onPrintMaterials }) {
   const t = useT();
