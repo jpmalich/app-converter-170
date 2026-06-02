@@ -1,5 +1,6 @@
 import React from "react";
 import { fmt } from "@/lib/api";
+import { VISIBLE_TAB_DEFS } from "@/lib/tabsConfig";
 
 /**
  * Excel-style tab strip for the multi-product estimator.
@@ -11,12 +12,12 @@ import { fmt } from "@/lib/api";
  * Per-tab subtotal = sum of (qty × (mat + lab)) for that tab's lines + its
  * misc rows. The Grand Total at the bottom of the page still rolls all
  * tabs together so the contractor sees the full quote value.
+ *
+ * Tab visibility is governed by `TAB_VISIBILITY` in `lib/tabsConfig.js` —
+ * flip a single boolean there to hide/show a tab without touching the
+ * underlying catalog data, HOVER mappings, or saved estimate lines.
  */
-export const TABS = [
-  { id: "vinyl", label: "Vinyl" },
-  { id: "ascend", label: "Ascend" },
-  { id: "lp_smart", label: "LP Smart" },
-];
+export const TABS = VISIBLE_TAB_DEFS;
 
 function subtotalForTab(est, tabId) {
   const lines = (est?.lines || []).filter((l) => (l.tab || "vinyl") === tabId);

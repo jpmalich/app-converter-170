@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { VISIBLE_TAB_DEFS } from "@/lib/tabsConfig";
 
 /**
  * Sticky bar at the top of the estimate editor.
@@ -17,11 +18,7 @@ import { useT } from "@/lib/i18n";
  *   tabTotals      — [{ id, label, totals }] where totals is calcTotals() output
  *   activeTab      — id of the currently active tab
  */
-const TAB_DEFS = [
-  { id: "vinyl", label: "Vinyl" },
-  { id: "ascend", label: "Ascend" },
-  { id: "lp_smart", label: "LP Smart" },
-];
+const TAB_DEFS = VISIBLE_TAB_DEFS;
 
 export default function StickyBar({ est, tabTotals, activeTab }) {
   const t = useT();

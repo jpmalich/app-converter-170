@@ -17,6 +17,7 @@ import SectionAccordion from "@/components/estimate/SectionAccordion";
 import TotalsSummary from "@/components/estimate/TotalsSummary";
 import CatalogSyncBanner from "@/components/estimate/CatalogSyncBanner";
 import EstimatorTabs from "@/components/estimate/EstimatorTabs";
+import { VISIBLE_TAB_IDS } from "@/lib/tabsConfig";
 import QuoteModal from "@/components/QuoteModal";
 
 export default function EstimateEditor() {
@@ -38,16 +39,14 @@ export default function EstimateEditor() {
   const [activeTab, setActiveTab] = useState("vinyl");
 
   const totals = useMemo(() => (est ? calcTotals(est, { tab: activeTab }) : null), [est, activeTab]);
-  // Per-tab totals for the sticky bar (3 mini-totals side by side). The
-  // bottom Summary card uses `totals` above which is already scoped to the
-  // active tab.
+  // Per-tab totals for the sticky bar. Only compute for visible tabs so
+  // hidden product lines don't ghost into the header.
   const tabTotals = useMemo(() => {
     if (!est) return [];
-    return [
-      { id: "vinyl", totals: calcTotals(est, { tab: "vinyl" }) },
-      { id: "ascend", totals: calcTotals(est, { tab: "ascend" }) },
-      { id: "lp_smart", totals: calcTotals(est, { tab: "lp_smart" }) },
-    ];
+    return VISIBLE_TAB_IDS.map((id) => ({
+      id,
+      totals: calcTotals(est, { tab: id }),
+    }));
   }, [est]);
 
   if (loading || !est) {
