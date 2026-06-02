@@ -37,7 +37,18 @@ export default function EstimateEditor() {
   // the Vinyl tab regardless of what's saved.
   const [activeTab, setActiveTab] = useState("vinyl");
 
-  const totals = useMemo(() => (est ? calcTotals(est) : null), [est]);
+  const totals = useMemo(() => (est ? calcTotals(est, { tab: activeTab }) : null), [est, activeTab]);
+  // Per-tab totals for the sticky bar (3 mini-totals side by side). The
+  // bottom Summary card uses `totals` above which is already scoped to the
+  // active tab.
+  const tabTotals = useMemo(() => {
+    if (!est) return [];
+    return [
+      { id: "vinyl", totals: calcTotals(est, { tab: "vinyl" }) },
+      { id: "ascend", totals: calcTotals(est, { tab: "ascend" }) },
+      { id: "lp_smart", totals: calcTotals(est, { tab: "lp_smart" }) },
+    ];
+  }, [est]);
 
   if (loading || !est) {
     if (est === false) {
@@ -120,7 +131,7 @@ export default function EstimateEditor() {
 
   return (
     <>
-      <StickyBar est={est} totals={totals} />
+      <StickyBar est={est} tabTotals={tabTotals} activeTab={activeTab} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24" data-testid="estimate-editor">
         <CatalogSyncBanner est={est} update={update} />
         <JobInfoPanel est={est} update={update} />
@@ -161,6 +172,7 @@ export default function EstimateEditor() {
         <TotalsSummary
           est={est}
           totals={totals}
+          activeTab={activeTab}
           saving={saving}
           onSave={handleSave}
           onOpenQuote={async () => {

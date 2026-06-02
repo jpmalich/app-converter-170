@@ -3,12 +3,23 @@ import { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { Save, FileText, Printer, Download, ClipboardList } from "lucide-react";
 
-export default function TotalsSummary({ est, totals, saving, onSave, onOpenQuote, onPrint, onExportCsv, onPrintMaterials }) {
+const TAB_LABEL = { vinyl: "Vinyl", ascend: "Ascend", lp_smart: "LP Smart" };
+
+export default function TotalsSummary({ est, totals, activeTab, saving, onSave, onOpenQuote, onPrint, onExportCsv, onPrintMaterials }) {
   const t = useT();
   const modeLabel = est.pricing_mode === "markup" ? t("est.markup").toLowerCase() : t("est.margin").toLowerCase();
+  const tabLabel = TAB_LABEL[activeTab] || "Vinyl";
   return (
     <section className="card p-6" data-testid="totals-summary">
-      <div className="section-tag mb-4">{t("est.summary")}</div>
+      <div className="section-tag mb-4 flex items-center gap-2">
+        <span>{t("est.summary")}</span>
+        <span
+          className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 border border-[#F97316] text-[#F97316]"
+          data-testid="summary-tab-badge"
+        >
+          {tabLabel} option
+        </span>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         <Stat label={t("est.sum.material")} val={fmt(totals.subMat)} />
         <Stat label={t("est.sum.waste", { pct: est.waste_pct || 0 })} val={fmt(totals.wasted)} />

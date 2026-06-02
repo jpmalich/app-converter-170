@@ -19,10 +19,17 @@ export function isWasteLine(line) {
   );
 }
 
-export function calcTotals(est) {
-  const lines = est?.lines || [];
-  const miscLab = est?.misc_labor || [];
-  const miscMat = est?.misc_material || [];
+export function calcTotals(est, { tab } = {}) {
+  // Filter lines + misc rows to a single tab when `tab` is provided. Lines
+  // without an explicit tab fall back to "vinyl" (back-compat for legacy
+  // estimates created before multi-product tabs existed).
+  const allLines = est?.lines || [];
+  const allMiscLab = est?.misc_labor || [];
+  const allMiscMat = est?.misc_material || [];
+  const inTab = (row) => !tab || (row?.tab || "vinyl") === tab;
+  const lines = allLines.filter(inTab);
+  const miscLab = allMiscLab.filter(inTab);
+  const miscMat = allMiscMat.filter(inTab);
   const subMat =
     lines.reduce((s, l) => s + (l.qty || 0) * (l.mat || 0), 0) +
     miscMat.reduce((s, l) => s + (l.mat || 0), 0);

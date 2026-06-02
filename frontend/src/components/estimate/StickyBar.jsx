@@ -4,8 +4,30 @@ import { ArrowLeft } from "lucide-react";
 import { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 
-export default function StickyBar({ est, totals }) {
+/**
+ * Sticky bar at the top of the estimate editor.
+ *
+ * Shows three side-by-side mini-totals — one per product-line tab (Vinyl,
+ * Ascend, LP Smart). The active tab is highlighted in orange so the
+ * contractor always knows which option they're currently editing while
+ * still seeing all three at a glance.
+ *
+ * Props:
+ *   est            — the estimate doc (used only for header info)
+ *   tabTotals      — [{ id, label, totals }] where totals is calcTotals() output
+ *   activeTab      — id of the currently active tab
+ */
+const TAB_DEFS = [
+  { id: "vinyl", label: "Vinyl" },
+  { id: "ascend", label: "Ascend" },
+  { id: "lp_smart", label: "LP Smart" },
+];
+
+export default function StickyBar({ est, tabTotals, activeTab }) {
   const t = useT();
+  // Build a lookup so we render in the canonical Vinyl → Ascend → LP order
+  // regardless of what order the parent passed.
+  const byId = Object.fromEntries((tabTotals || []).map((tt) => [tt.id, tt]));
   return (
     <div className="sell-bar" data-testid="sticky-bar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-3 sm:gap-6">
@@ -18,33 +40,65 @@ export default function StickyBar({ est, totals }) {
             {est.customer_name || t("est.untitled")} · {est.estimate_number}
           </div>
         </div>
-        <div className="flex items-center gap-5 sm:gap-8">
-          <Stat label={t("est.bar.base")} value={fmt(totals.base)} testid="bar-base" />
-          <Stat label={t("est.bar.sell")} value={fmt(totals.sell)} testid="bar-sell" emphasize />
-          <div className="hidden sm:block">
-            <Stat label={t("est.bar.profit")} value={fmt(totals.profit)} testid="bar-profit" color="#10B981" />
-          </div>
+        <div className="flex items-stretch gap-2 sm:gap-3 flex-wrap">
+          {TAB_DEFS.map((td) => {
+            const tt = byId[td.id];
+            if (!tt) return null;
+            const isActive = td.id === activeTab;
+            return (
+              <TabBlock
+                key={td.id}
+                label={td.label}
+                base={tt.totals.base}
+                sell={tt.totals.sell}
+                profit={tt.totals.profit}
+                active={isActive}
+                testid={`bar-tab-${td.id}`}
+              />
+            );
+          })}
         </div>
       </div>
     </div>
   );
 }
 
-function Stat({ label, value, testid, emphasize, color }) {
+function TabBlock({ label, base, sell, profit, active, testid }) {
+  // Active tab gets an orange underline + brighter sell color. Inactive
+  // tabs render at lower opacity so the eye lands on the one being edited.
   return (
-    <div className="text-right">
+    <div
+      className={`px-3 py-1 border-l ${active ? "border-[#F97316]" : "border-white/15"} ${
+        active ? "" : "opacity-60"
+      }`}
+      data-testid={testid}
+    >
       <div
-        className="text-[10px] uppercase tracking-[0.2em]"
-        style={{ color: emphasize ? "#F97316" : "rgba(255,255,255,0.5)" }}
+        className={`text-[10px] uppercase tracking-[0.18em] font-bold ${
+          active ? "text-[#F97316]" : "text-white/60"
+        }`}
       >
         {label}
       </div>
       <div
-        className={`font-mono-num ${emphasize ? "text-xl sm:text-2xl font-bold" : "text-sm sm:text-base"}`}
-        style={{ color: emphasize ? "#F97316" : color || "#fff" }}
-        data-testid={testid}
+        className={`font-mono-num text-base sm:text-xl font-bold ${
+          active ? "text-[#F97316]" : "text-white"
+        }`}
+        data-testid={`${testid}-sell`}
       >
-        {value}
+        {fmt(sell)}
+      </div>
+      <div className="flex items-baseline gap-2 mt-0.5">
+        <span className="text-[10px] text-white/50 font-mono-num" data-testid={`${testid}-base`}>
+          Base {fmt(base)}
+        </span>
+        <span
+          className="text-[10px] font-mono-num"
+          style={{ color: profit >= 0 ? "#10B981" : "#F87171" }}
+          data-testid={`${testid}-profit`}
+        >
+          + {fmt(profit)}
+        </span>
       </div>
     </div>
   );
