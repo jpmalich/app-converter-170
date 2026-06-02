@@ -65,11 +65,38 @@ export function isCommonlyNeeded(itemName) {
   return COMMONLY_NEEDED_ITEMS.has(itemName);
 }
 
+// Some commonly-needed items only apply to specific product tabs. For
+// example, the vinyl-style accessories ("Outside corners", "Starter", etc.)
+// share a catalog section between Vinyl and Ascend tabs, but on the Ascend
+// tab those rows are NOT the canonical accessory choice — Ascend has its
+// own dedicated items ("Ascend 3.5" Outside Corner - MATTE", "Ascend -
+// Starter", etc.) elsewhere. So we hide the lightbulb on the Ascend tab
+// for those vinyl-side accessories.
+//
+// Shape: { itemName: Set<tabId> } — if missing, the flag applies to all tabs.
+const COMMON_ITEM_TAB_SCOPE = {
+  "Outside corners": new Set(["vinyl"]),
+  "Inside Corners (Siding)": new Set(["vinyl"]),
+  '3/4" J-Channel (2 per Sq of siding)': new Set(["vinyl"]),
+  "Finish Trim": new Set(["vinyl"]),
+  "Starter": new Set(["vinyl"]),
+};
+
+/** Is this item commonly-needed on the given tab? Falls back to a global
+ *  check (matches all tabs) when `tab` is omitted, for back-compat. */
+export function isCommonOnTab(itemName, tab) {
+  if (!COMMONLY_NEEDED_ITEMS.has(itemName)) return false;
+  const scope = COMMON_ITEM_TAB_SCOPE[itemName];
+  if (!scope) return true;
+  return tab ? scope.has(tab) : true;
+}
+
 /** Returns the count of commonly-needed items in a section's line list that
  *  are still unfilled (qty <= 0). Used on collapsed section headers to show a
- *  small "N items to review" hint so the contractor knows to open it. */
-export function unfilledCommonCount(lines) {
+ *  small "N items to review" hint so the contractor knows to open it.
+ *  `activeTab` scopes the count to flags actually visible on that tab. */
+export function unfilledCommonCount(lines, activeTab) {
   return (lines || []).filter(
-    (l) => COMMONLY_NEEDED_ITEMS.has(l.name) && (l.qty || 0) <= 0
+    (l) => isCommonOnTab(l.name, activeTab) && (l.qty || 0) <= 0
   ).length;
 }

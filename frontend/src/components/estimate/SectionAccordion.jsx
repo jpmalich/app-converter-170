@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Plus, Trash2, Lightbulb } from "lucide-react
 import { fmt } from "@/lib/api";
 import { useT, useLang } from "@/lib/i18n";
 import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
-import { isCommonlyNeeded, unfilledCommonCount } from "@/lib/commonItems";
+import { isCommonOnTab, unfilledCommonCount } from "@/lib/commonItems";
 
 /**
  * Renders one collapsible section.
@@ -43,7 +43,9 @@ export default function SectionAccordion({
   const filledCount = lines.filter((l) => (l.qty || 0) > 0).length + miscRows.length;
   // Yellow flag pill: shown on the collapsed section header so contractors
   // know which categories have commonly-needed items they haven't quoted yet.
-  const unfilledCommon = unfilledCommonCount(lines);
+  // Tab-scoped so the Ascend tab doesn't show flags for vinyl-style
+  // accessories that aren't really "common" on that tab.
+  const unfilledCommon = unfilledCommonCount(lines, activeTab);
 
   const addMisc = () => {
     const newRow = isMiscMat
@@ -106,7 +108,7 @@ export default function SectionAccordion({
           {lines.map((l) => {
             const total = (l.qty || 0) * ((l.mat || 0) + (l.lab || 0));
             const labOverridden = l.defaultLab != null && Number(l.lab) !== Number(l.defaultLab);
-            const isCommon = isCommonlyNeeded(l.name);
+            const isCommon = isCommonOnTab(l.name, activeTab);
             const isUnfilledCommon = isCommon && (l.qty || 0) <= 0;
             return (
               <div
