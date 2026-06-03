@@ -179,6 +179,8 @@ SECTION_LAYOUT = [
         # always includes the measure trip + disposal.
         "Job Measure Standard Fee 4 days+",
         "Disposal Fee (Windows)",
+        # Iter 33: mullion removal is part of install scope, not misc.
+        "Mullion Removal & Cut-Out of Non-Structural Framing Members",
     ]),
     ("Vero Sliding Glass Doors", False, [
         'Vero - Sliding glass door 60" x 80"',
@@ -205,7 +207,6 @@ SECTION_LAYOUT = [
     ("Window Misc.", False, [
         "Interior Blinds - Remove For Window Install & Reinstall",
         "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)",
-        "Mullion Removal & Cut-Out of Non-Structural Framing Members",
         "Storm Window Removal",
         "Second/Third/Clear Story Fee",
         "Job Measure Rush Fee 3 days or less",

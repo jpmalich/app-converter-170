@@ -128,6 +128,8 @@ async def ensure_tiers_seeded():
     WINDOW_INSTALL_MOVE = [
         "Job Measure Standard Fee 4 days+",
         "Disposal Fee (Windows)",
+        # Iter 33
+        "Mullion Removal & Cut-Out of Non-Structural Framing Members",
     ]
     await db.estimates.update_many(
         {"lines": {"$elemMatch": {
