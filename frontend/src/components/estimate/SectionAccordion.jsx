@@ -30,6 +30,7 @@ const CUSTOM_LINE_SECTIONS = new Set([
 // to be priced per quote.
 const EDITABLE_MAT_ITEMS = new Set([
   "Window Package Price",
+  "Vero - Sliding glass door Custom Size",
 ]);
 
 export default function SectionAccordion({
