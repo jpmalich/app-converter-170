@@ -24,6 +24,14 @@ const CUSTOM_LINE_SECTIONS = new Set([
   "Window Installation",
 ]);
 
+// Whitelist of catalog items whose Material price the contractor can edit
+// inline (just like Labor). Most items use the catalog's fixed price, but
+// some (e.g. "Window Package Price") are job-specific bundles that need
+// to be priced per quote.
+const EDITABLE_MAT_ITEMS = new Set([
+  "Window Package Price",
+]);
+
 export default function SectionAccordion({
   section,
   lines,
@@ -198,7 +206,39 @@ export default function SectionAccordion({
                 </div>
                 <div className="col-span-3 md:col-span-2 text-right text-sm font-mono-num text-[#52525B]">
                   <span className="md:hidden text-[10px] text-[#A1A1AA] block text-right">{t("est.col.mat")}</span>
-                  {fmt(l.mat)}
+                  {EDITABLE_MAT_ITEMS.has(l.name) ? (
+                    <div className="relative">
+                      <input
+                        className={`input num h-11 md:h-9 text-base md:text-sm w-full text-right ${
+                          l.defaultMat != null && Number(l.mat) !== Number(l.defaultMat)
+                            ? "border-[#F97316] bg-orange-50"
+                            : ""
+                        }`}
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        value={l.mat ?? 0}
+                        onChange={(e) => onField(l.tab, l.section, l.name, "mat", e.target.value)}
+                        data-testid={`mat-${section.title}-${l.name}`}
+                      />
+                      {l.defaultMat != null && Number(l.mat) !== Number(l.defaultMat) && (
+                        <button
+                          type="button"
+                          className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[#F97316] text-white text-xs md:text-[10px] leading-none flex items-center justify-center"
+                          onClick={() =>
+                            onField(l.tab, l.section, l.name, "mat", l.defaultMat ?? 0)
+                          }
+                          title={`Reset to catalog default ($${l.defaultMat ?? 0})`}
+                          data-testid={`reset-mat-${section.title}-${l.name}`}
+                        >
+                          ↺
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    fmt(l.mat)
+                  )}
                 </div>
                 <div className="col-span-3 md:col-span-1">
                   <label className="md:hidden text-[10px] text-[#A1A1AA] block uppercase tracking-wider mb-1">{t("est.col.qty")}</label>
