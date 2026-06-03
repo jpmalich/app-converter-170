@@ -152,9 +152,18 @@ SECTION_LAYOUT = [
     ("Vero Windows", False, [
         "Vero - Double Hung 0-101 UI",
         "Vero - Slider 0-101 UI",
-        "Vero - 3 lite slider 0-101 UI",
-        "Vero - Casement 0-101 UI",
-        "Vero - Picture 0-101 UI",
+        # 3 lite slider — now split by UI range per Howard's updated price sheet
+        "Vero - 3 lite slider 0-45 UI",
+        "Vero - 3 lite slider 46-70 UI",
+        "Vero - 3 lite slider 71-101 UI",
+        # Casement — split by UI range
+        "Vero - Casement 0-45 UI",
+        "Vero - Casement 46-70 UI",
+        "Vero - Casement 71-101 UI",
+        # Picture — split by UI range
+        "Vero - Picture 0-45 UI",
+        "Vero - Picture 46-70 UI",
+        "Vero - Picture 71-101 UI",
         "Window Package Price",
     ]),
     ("Window Upgrade Options", False, [
@@ -315,9 +324,18 @@ ITEM_META = {
     # in WINDOWS_PRICES → TIER_PRICES below.
     "Vero - Double Hung 0-101 UI": ("Each", 0),
     "Vero - Slider 0-101 UI": ("Each", 0),
-    "Vero - 3 lite slider 0-101 UI": ("Each", 0),
-    "Vero - Casement 0-101 UI": ("Each", 0),
-    "Vero - Picture 0-101 UI": ("Each", 0),
+    # 3 lite slider (split by UI range — prices via pricing admin once set)
+    "Vero - 3 lite slider 0-45 UI": ("Each", 0),
+    "Vero - 3 lite slider 46-70 UI": ("Each", 0),
+    "Vero - 3 lite slider 71-101 UI": ("Each", 0),
+    # Casement (split by UI range)
+    "Vero - Casement 0-45 UI": ("Each", 0),
+    "Vero - Casement 46-70 UI": ("Each", 0),
+    "Vero - Casement 71-101 UI": ("Each", 0),
+    # Picture (split by UI range)
+    "Vero - Picture 0-45 UI": ("Each", 0),
+    "Vero - Picture 46-70 UI": ("Each", 0),
+    "Vero - Picture 71-101 UI": ("Each", 0),
     "Window Package Price": ("Each", 0),
     "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE": ("Each", 0),
     "Sentry System - Tilt Lock upgrade": ("Each", 0),
@@ -616,19 +634,26 @@ WINDOWS_PRICES = {
     "Vero - Slider 0-101 UI": 294.55,
     # Other window/door product rows currently $0 placeholders — Howard
     # will fill in via the pricing admin once he has them.
-    "Vero - 3 lite slider 0-101 UI": 0,
-    "Vero - Casement 0-101 UI": 0,
-    "Vero - Picture 0-101 UI": 0,
+    "Vero - 3 lite slider 0-45 UI": 0,
+    "Vero - 3 lite slider 46-70 UI": 0,
+    "Vero - 3 lite slider 71-101 UI": 0,
+    "Vero - Casement 0-45 UI": 0,
+    "Vero - Casement 46-70 UI": 0,
+    "Vero - Casement 71-101 UI": 0,
+    "Vero - Picture 0-45 UI": 0,
+    "Vero - Picture 46-70 UI": 0,
+    "Vero - Picture 71-101 UI": 0,
     "Window Package Price": 0,
     # Upgrade options — material adders
     "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE": 95.37,
     "Sentry System - Tilt Lock upgrade": 38.15,
     "Integral Nail Fin 0-101": 19.52,
     "Heavy Duty 1/2 Screen White ONLY": 25.73,
-    # Door products — $0 placeholders for now
-    'Vero - Sliding glass door 60" x 80"': 0,
-    'Vero - Sliding glass door 72" x 80"': 0,
-    'Vero - Sliding glass door 96" x 80"': 0,
+    # Sliding Glass Doors — material prices from Howard's updated sheet.
+    # Custom Size remains $0 (editable inline via EDITABLE_MAT_ITEMS).
+    'Vero - Sliding glass door 60" x 80"': 1025.99,
+    'Vero - Sliding glass door 72" x 80"': 1114.70,
+    'Vero - Sliding glass door 96" x 80"': 1253.09,
     "Vero - Sliding glass door Custom Size": 0,
 }
 
