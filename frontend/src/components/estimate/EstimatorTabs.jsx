@@ -39,14 +39,14 @@ function filledCountForTab(est, tabId) {
   ).length;
 }
 
-export default function EstimatorTabs({ est, activeTab, onChange }) {
+export default function EstimatorTabs({ est, activeTab, onChange, tabs = TABS }) {
   return (
     <div
       className="card mb-4 p-2 flex flex-wrap gap-1"
       role="tablist"
       data-testid="estimator-tabs"
     >
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         const count = filledCountForTab(est, tab.id);
         const subtotal = subtotalForTab(est, tab.id);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -17,7 +17,7 @@ import SectionAccordion from "@/components/estimate/SectionAccordion";
 import TotalsSummary from "@/components/estimate/TotalsSummary";
 import CatalogSyncBanner from "@/components/estimate/CatalogSyncBanner";
 import EstimatorTabs from "@/components/estimate/EstimatorTabs";
-import { VISIBLE_TAB_IDS } from "@/lib/tabsConfig";
+import { VISIBLE_TAB_IDS, ALL_TAB_DEFS } from "@/lib/tabsConfig";
 import QuoteModal from "@/components/QuoteModal";
 
 export default function EstimateEditor() {
@@ -33,21 +33,43 @@ export default function EstimateEditor() {
   const [openSections, setOpenSections] = useState({});
   const [saving, setSaving] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
-  // Active product-line tab. "vinyl" is the default for back-compat with
-  // single-product legacy quotes — opening an existing estimate lands on
-  // the Vinyl tab regardless of what's saved.
+  // Active product-line tab. Default depends on the estimate's `kind`:
+  // window estimates start on the Windows tab and lock to just that one;
+  // siding estimates start on Vinyl with all siding tabs visible.
+  const isWindowKind = est?.kind === "windows";
   const [activeTab, setActiveTab] = useState("vinyl");
 
+  // Force the active tab to "windows" the moment a windows-kind estimate
+  // finishes loading (only if the user hasn't already switched somewhere
+  // legitimate). Using useMemo here would be wrong since this is a state
+  // change side-effect — but `est` is stable across renders so a flag
+  // suffices.
+  useEffect(() => {
+    if (isWindowKind && activeTab !== "windows") setActiveTab("windows");
+  }, [isWindowKind, activeTab]);
+
+  // Visible tab set for THIS estimate. Windows kind → only the Windows
+  // tab (other tabs hidden). Siding kind → the global TAB_VISIBILITY
+  // config decides.
+  const visibleTabIds = useMemo(
+    () => (isWindowKind ? ["windows"] : VISIBLE_TAB_IDS),
+    [isWindowKind]
+  );
+  // Tab defs aligned to visibleTabIds (preserves label + order).
+  const visibleTabDefs = useMemo(
+    () => ALL_TAB_DEFS.filter((t) => visibleTabIds.includes(t.id)),
+    [visibleTabIds]
+  );
   const totals = useMemo(() => (est ? calcTotals(est, { tab: activeTab }) : null), [est, activeTab]);
   // Per-tab totals for the sticky bar. Only compute for visible tabs so
   // hidden product lines don't ghost into the header.
   const tabTotals = useMemo(() => {
     if (!est) return [];
-    return VISIBLE_TAB_IDS.map((id) => ({
+    return visibleTabIds.map((id) => ({
       id,
       totals: calcTotals(est, { tab: id }),
     }));
-  }, [est]);
+  }, [est, visibleTabIds]);
 
   if (loading || !est) {
     if (est === false) {
@@ -60,12 +82,16 @@ export default function EstimateEditor() {
     );
   }
 
-  // Filter catalog sections to those that belong to the active tab. Each
-  // section declares its `product_lines` (vinyl / ascend / lp_smart). Legacy
-  // tier docs without this field default to ["vinyl", "ascend"] server-side.
-  const visibleSections = catalog.filter((s) =>
-    (s.product_lines || ["vinyl", "ascend"]).includes(activeTab)
-  );
+  // Filter catalog sections to those that belong to the active tab AND
+  // are allowed by the estimate's kind. For window-kind estimates we
+  // restrict to sections that include "windows" in product_lines so
+  // siding sections never leak in.
+  const visibleSections = catalog.filter((s) => {
+    const pls = s.product_lines || ["vinyl", "ascend"];
+    if (!pls.includes(activeTab)) return false;
+    if (isWindowKind && !pls.includes("windows")) return false;
+    return true;
+  });
 
   // Lines grouped by section, scoped to the active tab. The catalog merge
   // in useEstimate creates one line entry per (tab, section, name), so we
@@ -130,14 +156,14 @@ export default function EstimateEditor() {
 
   return (
     <>
-      <StickyBar est={est} tabTotals={tabTotals} activeTab={activeTab} />
+      <StickyBar est={est} tabTotals={tabTotals} activeTab={activeTab} tabs={visibleTabDefs} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24" data-testid="estimate-editor">
         <CatalogSyncBanner est={est} update={update} />
         <JobInfoPanel est={est} update={update} />
         <SettingsRow est={est} update={update} />
         <PhotosPanel est={est} update={update} />
 
-        <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} />
+        <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} />
 
         {visibleSections.length === 0 ? (
           <div

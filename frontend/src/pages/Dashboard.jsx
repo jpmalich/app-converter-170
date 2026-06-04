@@ -13,13 +13,15 @@ function statusOf(e) {
   return "draft";
 }
 
-export default function Dashboard() {
+export default function Dashboard({ kind = "siding" }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const t = useT();
   const nav = useNavigate();
+  // Branding flag we use to gate copy + create-estimate metadata.
+  const isWindows = kind === "windows";
 
   const FILTERS = useMemo(
     () => [
@@ -34,14 +36,16 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/estimates");
+      // Scope the list to the active workspace. Backend treats estimates
+      // with no `kind` field as "siding" for back-compat.
+      const { data } = await api.get(`/estimates?kind=${kind}`);
       setItems(data);
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [kind]);
   useEffect(() => {
     load();
   }, [load]);
@@ -52,6 +56,7 @@ export default function Dashboard() {
         customer_name: "",
         estimate_number: `EST-${Date.now().toString().slice(-6)}`,
         estimate_date: new Date().toISOString().slice(0, 10),
+        kind, // tag the new estimate with the current workspace
       });
       nav(`/estimate/${data.id}`);
     } catch (e) {
@@ -135,8 +140,20 @@ export default function Dashboard() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">{t("dash.eyebrow")}</div>
-          <h1 className="font-heading text-4xl sm:text-5xl text-[#09090B]">{t("dash.title")}</h1>
+          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1 flex items-center gap-2">
+            <span>{isWindows ? "Windows" : "Siding"} · {t("dash.eyebrow")}</span>
+            <button
+              type="button"
+              onClick={() => nav("/")}
+              className="text-[10px] text-[#F97316] hover:underline"
+              data-testid="back-to-picker-btn"
+            >
+              ← Switch workspace
+            </button>
+          </div>
+          <h1 className="font-heading text-4xl sm:text-5xl text-[#09090B]">
+            {isWindows ? "Window Quotes" : t("dash.title")}
+          </h1>
         </div>
         <div className="flex gap-3">
           <button

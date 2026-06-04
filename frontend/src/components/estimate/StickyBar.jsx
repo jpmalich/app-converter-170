@@ -20,7 +20,7 @@ import { VISIBLE_TAB_DEFS } from "@/lib/tabsConfig";
  */
 const TAB_DEFS = VISIBLE_TAB_DEFS;
 
-export default function StickyBar({ est, tabTotals, activeTab }) {
+export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }) {
   const t = useT();
   // Build a lookup so we render in the canonical Vinyl → Ascend → LP order
   // regardless of what order the parent passed.
@@ -38,7 +38,7 @@ export default function StickyBar({ est, tabTotals, activeTab }) {
           </div>
         </div>
         <div className="flex items-stretch gap-2 sm:gap-3 flex-wrap">
-          {TAB_DEFS.map((td) => {
+          {tabs.map((td) => {
             const tt = byId[td.id];
             if (!tt) return null;
             const isActive = td.id === activeTab;

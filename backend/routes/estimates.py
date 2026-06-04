@@ -21,8 +21,20 @@ router = APIRouter()
 # so the literal path wins when FastAPI matches.
 # ---------------------------------------------------------------------------
 @router.get("/estimates")
-async def list_estimates(user: dict = Depends(get_current_user)):
-    cursor = db.estimates.find({"company_id": user["company_id"]}, {"_id": 0}).sort("updated_at", -1)
+async def list_estimates(
+    kind: str = "", user: dict = Depends(get_current_user)
+):
+    """List estimates for this company. Optional `?kind=siding|windows`
+    filter scopes the result to one workspace's estimates. Estimates
+    without an explicit kind field default to "siding" for back-compat
+    with quotes created before the windows workspace existed."""
+    q = {"company_id": user["company_id"]}
+    if kind == "windows":
+        q["kind"] = "windows"
+    elif kind == "siding":
+        # Include both explicit "siding" AND legacy estimates with no kind.
+        q["$or"] = [{"kind": "siding"}, {"kind": {"$exists": False}}, {"kind": ""}]
+    cursor = db.estimates.find(q, {"_id": 0}).sort("updated_at", -1)
     return await cursor.to_list(500)
 
 

@@ -118,6 +118,11 @@ class EstimateIn(BaseModel):
     tax_rate: float = 7.0
     margin_pct: float = 30.0
     pricing_mode: Optional[str] = None  # "margin" | "markup"; falls back to supplier default
+    # Estimate kind — controls which workspace the estimate belongs to.
+    # "siding" (default, back-compat for existing estimates) shows in the
+    # siding dashboard with all siding tabs visible; "windows" shows in the
+    # dedicated windows dashboard with only the Windows tab visible.
+    kind: str = "siding"
     lines: List[EstimateLine] = []
     misc_labor: List[MiscLine] = []
     misc_material: List[MiscLine] = []

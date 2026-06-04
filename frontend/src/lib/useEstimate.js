@@ -163,6 +163,9 @@ export default function useEstimate(id) {
     if (!est) return;
     try {
       const payload = {
+        // Preserve workspace tag so a Window-kind estimate stays in the
+        // Windows dashboard after saving.
+        kind: est.kind || "siding",
         customer_name: est.customer_name || "",
         address: est.address || "",
         estimate_number: est.estimate_number || "",
