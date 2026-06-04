@@ -49,10 +49,10 @@ export default function EstimateEditor() {
   }, [isWindowKind, activeTab]);
 
   // Visible tab set for THIS estimate. Windows kind → only the Windows
-  // tab (other tabs hidden). Siding kind → the global TAB_VISIBILITY
-  // config decides.
+  // tab (other tabs hidden). Siding kind → siding-only tabs (Windows tab
+  // hidden, since Windows is its own workspace now).
   const visibleTabIds = useMemo(
-    () => (isWindowKind ? ["windows"] : VISIBLE_TAB_IDS),
+    () => (isWindowKind ? ["windows"] : VISIBLE_TAB_IDS.filter((id) => id !== "windows")),
     [isWindowKind]
   );
   // Tab defs aligned to visibleTabIds (preserves label + order).
