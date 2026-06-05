@@ -134,11 +134,15 @@ export default function SectionAccordion({
 
   // Sub-category support (currently only Vinyl Siding splits by brand).
   // openSubs tracks which nested drop-downs are expanded; defaults to the
-  // first sub-category open so the section never looks empty on first open.
+  // Charter Oak brand expanded since it's the most-quoted siding line.
   const subGroups = groupLinesBySubCategory(section.title, lines);
-  const [openSubs, setOpenSubs] = useState(
-    subGroups ? new Set(subGroups.slice(0, 1).map((g) => g.id)) : new Set()
-  );
+  const [openSubs, setOpenSubs] = useState(() => {
+    if (!subGroups) return new Set();
+    // Prefer Charter Oak when present (Vinyl Siding); otherwise fall back
+    // to the first sub-category so the section is never visually empty.
+    const charter = subGroups.find((g) => g.id === "charter");
+    return new Set([(charter || subGroups[0]).id]);
+  });
   const toggleSub = (id) =>
     setOpenSubs((prev) => {
       const next = new Set(prev);
