@@ -12,8 +12,36 @@ const VINYL_SIDING_BRANDS = [
   { id: "shakes", label: "Shakes", match: (n) => /shake/i.test(n) },
 ];
 
+// Vero Windows broken out by United-Inch (UI) size range so contractors
+// can quickly find the right SKU. "Standard (0-101 UI)" holds the single-
+// size styles (Double Hung, Slider); the other three buckets carry the
+// size-split styles (3 lite slider, Casement, Picture).
+const VERO_WINDOW_SIZES = [
+  {
+    id: "ui-0-101",
+    label: "Standard (0-101 UI)",
+    match: (n) => /0-101 UI$/.test(n),
+  },
+  {
+    id: "ui-0-45",
+    label: "0-45 UI",
+    match: (n) => /0-45 UI$/.test(n),
+  },
+  {
+    id: "ui-46-70",
+    label: "46-70 UI",
+    match: (n) => /46-70 UI$/.test(n),
+  },
+  {
+    id: "ui-71-101",
+    label: "71-101 UI",
+    match: (n) => /71-101 UI$/.test(n),
+  },
+];
+
 const SUBCATS_BY_SECTION = {
   "Vinyl Siding": VINYL_SIDING_BRANDS,
+  "Vero Windows": VERO_WINDOW_SIZES,
 };
 
 /** Returns the array of sub-category definitions for a section, or null
