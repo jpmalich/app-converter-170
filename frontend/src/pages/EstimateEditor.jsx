@@ -52,7 +52,6 @@ export default function EstimateEditor() {
   // to follow a prop derived from the async estimate load.
   useEffect(() => {
     if (isWindowKind && activeTab !== "windows") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab("windows");
     }
   }, [isWindowKind, activeTab]);
