@@ -139,23 +139,23 @@ HOVER_MAPPING_SPEC = [
     },
     # =====================================================================
     # STARTER — both vinyl and Ascend now per-PCS in the catalog. HOVER
-    # qty = LF ÷ 100 (per Howard). LP has no dedicated starter.
+    # qty = LF ÷ 10 (per Howard). LP has no dedicated starter.
     # =====================================================================
     {
         "tabs": ["vinyl"],
         "section": "Siding Accessories",
         "item": "Starter",
         "unit": "PCS",
-        "extract": lambda m: round((m.get("starter_lf") or 0) / 100, 2),
-        "note": "Vinyl Starter qty = HOVER starter LF ÷ 100 (per Howard)",
+        "extract": lambda m: round((m.get("starter_lf") or 0) / 10, 2),
+        "note": "Vinyl Starter qty = HOVER starter LF ÷ 10 (per Howard)",
     },
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
         "item": "Ascend - Starter",
         "unit": "PCS",
-        "extract": lambda m: round((m.get("starter_lf") or 0) / 100, 2),
-        "note": "Ascend Starter qty = HOVER starter LF ÷ 100 (per Howard)",
+        "extract": lambda m: round((m.get("starter_lf") or 0) / 10, 2),
+        "note": "Ascend Starter qty = HOVER starter LF ÷ 10 (per Howard)",
     },
     # =====================================================================
     # FINISH TRIM — left for manual entry on BOTH vinyl and Ascend per
