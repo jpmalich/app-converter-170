@@ -44,10 +44,9 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
   const TAB_LABEL = {
     vinyl: "Vinyl Siding",
     ascend: "Ascend Composite Siding",
-    lp_smart: "LP SmartSide",
     windows: "Windows",
   };
-  const TAB_ORDER = ["vinyl", "ascend", "lp_smart", "windows"];
+  const TAB_ORDER = ["vinyl", "ascend", "windows"];
   const linesByTab = (estimate.lines || [])
     .filter((l) => (l.qty || 0) > 0)
     .reduce((acc, l) => {
