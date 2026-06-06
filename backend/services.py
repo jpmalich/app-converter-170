@@ -165,6 +165,20 @@ async def ensure_tiers_seeded():
             {"$set": {"lines.$[l].name": new_name}},
             array_filters=[{"l.name": old_name}],
         )
+    # Iter 36: 'Fascia/rake or frieze up to 8" coverage' moved from
+    # PER_TIER_PRICES → ZERO_PRICED (Howard: mat should be $0.00 across all
+    # tiers; this is a labor-only line). Force-set mat=0 on any existing
+    # tier doc that still carries the old non-zero price. Idempotent: once
+    # all 4 tiers have mat=0 for this row, the matcher finds nothing on
+    # subsequent boots.
+    await db.price_tiers.update_many(
+        {"sections.items": {"$elemMatch": {
+            "name": 'Fascia/rake or frieze up to 8" coverage',
+            "mat": {"$ne": 0},
+        }}},
+        {"$set": {"sections.$[].items.$[it].mat": 0.0}},
+        array_filters=[{"it.name": 'Fascia/rake or frieze up to 8" coverage'}],
+    )
     BACKFILL = [
         TRIM, "ASCEND Finish Trim", "Ascend - Starter",
         ".019 Coil (1 per 50' fascia)",
