@@ -190,9 +190,9 @@ HOVER_MAPPING_SPEC = [
         "note": "(Eaves LF + window bottom widths) ÷ 10 (per Howard)",
     },
     # =====================================================================
-    # J-CHANNEL (Vinyl only — Ascend J-Channel unit is ambiguous in the
-    # catalog vs how it's actually counted, so we leave Ascend J-Channel
-    # for manual entry. LP doesn't use J-channel.)
+    # J-CHANNEL — vinyl + Ascend. Same formula on both: 2 PCS per SQ of
+    # siding (wall runs) + 1 PCS per 10' of opening perimeter. LP doesn't
+    # use J-channel.
     # =====================================================================
     {
         "tabs": ["vinyl"],
@@ -204,6 +204,17 @@ HOVER_MAPPING_SPEC = [
             + (m.get("opening_perimeter_lf") or 0) / 10
         )),
         "note": "2/SQ siding + perimeter ÷ 10' around openings — defaults to Standard color",
+    },
+    {
+        "tabs": ["ascend"],
+        "section": "Ascend Cladding/Accessories",
+        "item": "Ascend - J - Channel  (2 per Sq of siding)",
+        "unit": "PCS",
+        "extract": lambda m: max(0, round(
+            ((m.get("siding_sqft") or 0) / 100.0) * 2
+            + (m.get("opening_perimeter_lf") or 0) / 10
+        )),
+        "note": "2/SQ siding + perimeter ÷ 10' around openings (per Howard)",
     },
     # =====================================================================
     # WALL UNDERLAYMENT — vinyl gets House Wrap; Ascend gets RainDrop (the
