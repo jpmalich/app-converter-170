@@ -107,6 +107,9 @@ class EstimateIn(BaseModel):
     outside_corner_color: str = ""
     soffit_fascia_color: str = ""
     window_wrap_color: str = ""
+    # Aluminum gutter/downspout color — separate field since gutter coil
+    # ships in its own palette (aluminum coil colors, not vinyl).
+    gutter_color: str = ""
     # Window product colors (Windows tab) — appear on the material list so
     # the installer pulls the right Vero color stock for frames + interior
     # + exterior trim.

@@ -189,6 +189,7 @@ export default function useEstimate(id) {
       outside_corner_color: source.outside_corner_color || "",
       soffit_fascia_color: source.soffit_fascia_color || "",
       window_wrap_color: source.window_wrap_color || "",
+      gutter_color: source.gutter_color || "",
       window_frame_color: source.window_frame_color || "",
       window_interior_color: source.window_interior_color || "",
       window_exterior_color: source.window_exterior_color || "",

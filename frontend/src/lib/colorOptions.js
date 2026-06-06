@@ -98,3 +98,25 @@ export const SOFFIT_COLORS = [
   "Cast Iron",
   "Black",
 ];
+
+// Aluminum seamless-gutter & downspout palette. Standard Alside aluminum
+// coil colors — narrower than the soffit/fascia palette since gutter coil
+// only ships in a subset.
+export const GUTTER_COLORS = [
+  "White",
+  "Almond",
+  "Cream",
+  "Pearl Gray",
+  "Cape Cod Gray",
+  "Tuxedo Gray",
+  "Wicker",
+  "Royal Brown",
+  "Musket Brown",
+  "Buckskin",
+  "Bronze",
+  "Antique Bronze",
+  "Coffee",
+  "Hunter Green",
+  "Terratone",
+  "Black",
+];

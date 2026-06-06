@@ -392,6 +392,7 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
       ${colorCell("Outside Corner", estimate.outside_corner_color)}
       ${colorCell("Soffit / Fascia", estimate.soffit_fascia_color)}
       ${colorCell("Window Wrap", estimate.window_wrap_color)}
+      ${colorCell("Gutter / Downspout", estimate.gutter_color)}
     </tr>
   </table>
 
