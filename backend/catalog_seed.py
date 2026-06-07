@@ -976,13 +976,13 @@ SECTION_PRODUCT_LINES = {
     "Vero 3 Lite Slider Windows": ["windows"],
     "Vero Casement Windows": ["windows"],
     "Vero Picture Windows": ["windows"],
-    "Window Installation": ["windows"],
+    "Window Installation": ["windows", "mezzo"],
     "Vero Sliding Glass Doors": ["windows"],
-    "Sliding Glass Door Install": ["windows"],
-    "Window Material List": ["windows"],
-    "Window Exterior Trim Work": ["windows"],
-    "Window Interior Trim Work": ["windows"],
-    "Window Misc.": ["windows"],
+    "Sliding Glass Door Install": ["windows", "mezzo"],
+    "Window Material List": ["windows", "mezzo"],
+    "Window Exterior Trim Work": ["windows", "mezzo"],
+    "Window Interior Trim Work": ["windows", "mezzo"],
+    "Window Misc.": ["windows", "mezzo"],
     # Shared sections used by all 3 product lines (LP also uses the same
     # generic tear-off, gutter, and misc-labor catalog rows per Howard's
     # LP Smart siding sheet — pricing is identical to vinyl/ascend).

@@ -272,7 +272,26 @@ export default function EstimateEditor() {
         <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} />
 
         {activeTab === "mezzo" ? (
-          <MezzoPanel est={est} update={update} />
+          <>
+            <MezzoPanel est={est} update={update} />
+            {visibleSections.map((s) => (
+              <SectionAccordion
+                key={s.title}
+                section={s}
+                lines={linesBySection[s.title] || []}
+                isOpen={!!openSections[s.title]}
+                onToggle={() => setOpenSections((o) => ({ ...o, [s.title]: !o[s.title] }))}
+                onQty={updateLineQty}
+                onField={updateLineField}
+                onResetLine={resetLineToDefault}
+                onToggleAdder={toggleLineAdder}
+                onUpdateAdderQty={updateAdderQty}
+                est={est}
+                update={update}
+                activeTab={activeTab}
+              />
+            ))}
+          </>
         ) : visibleSections.length === 0 ? (
           <div
             className="card p-8 text-center"
