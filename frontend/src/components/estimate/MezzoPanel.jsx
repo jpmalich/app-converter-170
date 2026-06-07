@@ -1,0 +1,445 @@
+import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
+import { Plus, Trash2, X, ChevronDown, ChevronRight, StickyNote } from "lucide-react";
+import { v4 as uuid } from "uuid";
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const fmt = (n) => `$${(Number(n) || 0).toFixed(2)}`;
+
+// Iter 37: snap a UI value to the matching bucket (min_ui ≤ UI ≤ max_ui).
+const findBucket = (buckets, ui) =>
+  (buckets || []).find((b) => b.min_ui <= ui && ui <= b.max_ui) || null;
+
+// Per-opening adder price lookup. Uses the size-bucket matrix for flat
+// adders; for sqft adders returns rate × (W × H / 144).
+const resolveAdderMat = (adder, productType, w, h) => {
+  if (!adder) return 0;
+  if (adder.kind === "sqft") {
+    return (Number(adder.rate) || 0) * ((Number(w) || 0) * (Number(h) || 0)) / 144;
+  }
+  const ui = (Number(w) || 0) + (Number(h) || 0);
+  const bucket = findBucket(productType.buckets, ui);
+  if (!bucket) return 0;
+  return Number(adder.prices_by_bucket?.[bucket.label]) || 0;
+};
+
+export default function MezzoPanel({ est, update }) {
+  const [catalog, setCatalog] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(() => new Set());
+  const [notesOpen, setNotesOpen] = useState(() => new Set());
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    axios
+      .get(`${API}/mezzo/catalog`)
+      .then((r) => alive && setCatalog(r.data))
+      .catch(() => alive && setCatalog({ product_types: [] }))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Group existing openings by product_type so each Mezzo section can
+  // render its own openings independently.
+  const openingsByType = useMemo(() => {
+    const out = {};
+    (est?.mezzo_openings || []).forEach((op) => {
+      const key = op.product_type;
+      if (!out[key]) out[key] = [];
+      out[key].push(op);
+    });
+    return out;
+  }, [est?.mezzo_openings]);
+
+  const setOpenings = (next) => update({ mezzo_openings: next });
+
+  const addOpening = (pt) => {
+    const op = {
+      id: uuid(),
+      product_type: pt.name,
+      label: "",
+      width: 0,
+      height: 0,
+      qty: 1,
+      base_mat: 0,
+      bucket_label: "",
+      adders: [],
+    };
+    setOpenings([...(est?.mezzo_openings || []), op]);
+    setExpanded((p) => new Set(p).add(op.id));
+  };
+
+  const updateOpening = (id, patch) => {
+    const next = (est?.mezzo_openings || []).map((op) => {
+      if (op.id !== id) return op;
+      const merged = { ...op, ...patch };
+      // Whenever W/H change, re-resolve bucket + base + every adder mat
+      // so the saved snapshot always matches the current matrix.
+      const pt = catalog?.product_types?.find((x) => x.name === merged.product_type);
+      if (pt) {
+        const ui = (Number(merged.width) || 0) + (Number(merged.height) || 0);
+        const bucket = findBucket(pt.buckets, ui);
+        merged.bucket_label = bucket ? bucket.label : "";
+        merged.base_mat = bucket ? Number(pt.base_prices?.[bucket.label]) || 0 : 0;
+        merged.adders = (merged.adders || []).map((a) => {
+          const def = pt.adders.find((x) => x.name === a.name);
+          return { ...a, mat: resolveAdderMat(def, pt, merged.width, merged.height) };
+        });
+      }
+      return merged;
+    });
+    setOpenings(next);
+  };
+
+  const removeOpening = (id) => {
+    setOpenings((est?.mezzo_openings || []).filter((op) => op.id !== id));
+  };
+
+  const toggleAdder = (id, adderDef, productType) => {
+    const next = (est?.mezzo_openings || []).map((op) => {
+      if (op.id !== id) return op;
+      const has = (op.adders || []).some((a) => a.name === adderDef.name);
+      if (has) {
+        return { ...op, adders: op.adders.filter((a) => a.name !== adderDef.name) };
+      }
+      return {
+        ...op,
+        adders: [
+          ...(op.adders || []),
+          {
+            name: adderDef.name,
+            mat: resolveAdderMat(adderDef, productType, op.width, op.height),
+            lab: 0,
+            qty: Number(op.qty) || 1,
+          },
+        ],
+      };
+    });
+    setOpenings(next);
+  };
+
+  const updateAdderQty = (id, name, qty) => {
+    const next = (est?.mezzo_openings || []).map((op) => {
+      if (op.id !== id) return op;
+      return {
+        ...op,
+        adders: (op.adders || []).map((a) =>
+          a.name === name ? { ...a, qty: Number(qty) || 0 } : a
+        ),
+      };
+    });
+    setOpenings(next);
+  };
+
+  if (loading) {
+    return <div className="card p-6 text-sm text-[#71717A]">Loading Mezzo catalog…</div>;
+  }
+  if (!catalog?.product_types?.length) {
+    return (
+      <div className="card p-6 text-sm text-[#71717A]" data-testid="mezzo-empty">
+        Mezzo catalog isn&apos;t loaded yet.
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {catalog.product_types.map((pt) => {
+        const openings = openingsByType[pt.name] || [];
+        const sectionTotal = openings.reduce((s, op) => {
+          const base = (Number(op.qty) || 0) * (Number(op.base_mat) || 0);
+          const ads = (op.adders || []).reduce(
+            (a, x) => a + (Number(x.qty) || 0) * (Number(x.mat) || 0),
+            0
+          );
+          return s + base + ads;
+        }, 0);
+        return (
+          <section
+            key={pt.name}
+            className="card mb-4"
+            data-testid={`mezzo-section-${pt.name}`}
+          >
+            <header className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[#E4E4E7] bg-[#FAFAFA]">
+              <div>
+                <div className="section-tag">{pt.name}</div>
+                <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+                  {openings.length} opening{openings.length === 1 ? "" : "s"} ·
+                  type W × H below to price each window
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="font-mono-num text-sm text-[#52525B]">
+                  {fmt(sectionTotal)}
+                </span>
+                <button
+                  type="button"
+                  className="px-3 py-1.5 bg-[#09090B] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                  onClick={() => addOpening(pt)}
+                  data-testid={`mezzo-add-${pt.name}`}
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add opening
+                </button>
+              </div>
+            </header>
+
+            {openings.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-[#A1A1AA]">
+                No openings yet. Click <strong>Add opening</strong> to start
+                quoting Mezzo {pt.name.replace("Mezzo ", "")} windows.
+              </div>
+            ) : (
+              <div className="divide-y divide-[#E4E4E7]">
+                {openings.map((op) => (
+                  <OpeningRow
+                    key={op.id}
+                    op={op}
+                    pt={pt}
+                    isExpanded={expanded.has(op.id)}
+                    isNotesOpen={notesOpen.has(op.id)}
+                    onToggleExpand={() =>
+                      setExpanded((p) => {
+                        const n = new Set(p);
+                        if (n.has(op.id)) n.delete(op.id);
+                        else n.add(op.id);
+                        return n;
+                      })
+                    }
+                    onToggleNotes={() =>
+                      setNotesOpen((p) => {
+                        const n = new Set(p);
+                        if (n.has(op.id)) n.delete(op.id);
+                        else n.add(op.id);
+                        return n;
+                      })
+                    }
+                    onUpdate={(patch) => updateOpening(op.id, patch)}
+                    onRemove={() => removeOpening(op.id)}
+                    onToggleAdder={(def) => toggleAdder(op.id, def, pt)}
+                    onUpdateAdderQty={(name, qty) => updateAdderQty(op.id, name, qty)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
+function OpeningRow({
+  op,
+  pt,
+  isExpanded,
+  isNotesOpen,
+  onToggleExpand,
+  onToggleNotes,
+  onUpdate,
+  onRemove,
+  onToggleAdder,
+  onUpdateAdderQty,
+}) {
+  const ui = (Number(op.width) || 0) + (Number(op.height) || 0);
+  const bucket = findBucket(pt.buckets, ui);
+  const inRange = !!bucket && ui > 0;
+  const baseMat = bucket ? Number(pt.base_prices[bucket.label]) || 0 : 0;
+  const sqft = ((Number(op.width) || 0) * (Number(op.height) || 0)) / 144;
+  const addersTotal = (op.adders || []).reduce(
+    (s, a) => s + (Number(a.qty) || 0) * (Number(a.mat) || 0),
+    0
+  );
+  const total = (Number(op.qty) || 0) * baseMat + addersTotal;
+  const selectedByName = new Map((op.adders || []).map((a) => [a.name, a]));
+
+  return (
+    <div className="px-4 md:px-5 py-3" data-testid={`mezzo-opening-${op.id}`}>
+      <div className="grid grid-cols-12 gap-3 items-end">
+        <div className="col-span-12 md:col-span-1 text-[11px] uppercase tracking-wider text-[#A1A1AA] font-bold pb-2 md:pb-1">
+          #{(op.label || (bucket ? bucket.label : "—"))}
+        </div>
+        <div className="col-span-4 md:col-span-2">
+          <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            Width
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.125"
+            min="0"
+            className="input num h-9 text-sm"
+            value={op.width || ""}
+            placeholder='in'
+            onChange={(e) => onUpdate({ width: Number(e.target.value) || 0 })}
+            data-testid={`mezzo-width-${op.id}`}
+          />
+        </div>
+        <div className="col-span-4 md:col-span-2">
+          <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            Height
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.125"
+            min="0"
+            className="input num h-9 text-sm"
+            value={op.height || ""}
+            placeholder='in'
+            onChange={(e) => onUpdate({ height: Number(e.target.value) || 0 })}
+            data-testid={`mezzo-height-${op.id}`}
+          />
+        </div>
+        <div className="col-span-4 md:col-span-1">
+          <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            Qty
+          </label>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="1"
+            min="0"
+            className="input num h-9 text-sm"
+            value={op.qty || ""}
+            onChange={(e) => onUpdate({ qty: Number(e.target.value) || 0 })}
+            data-testid={`mezzo-qty-${op.id}`}
+          />
+        </div>
+        <div className="col-span-4 md:col-span-2 text-xs">
+          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            UI ({(Number(op.width) || 0)}+{(Number(op.height) || 0)})
+          </div>
+          <div className={`font-mono-num text-sm font-bold ${inRange ? "text-[#09090B]" : "text-[#DC2626]"}`}>
+            {ui > 0 ? ui : "—"} {bucket && <span className="text-[10px] text-[#71717A] font-normal">({bucket.label})</span>}
+            {!inRange && ui > 0 && (
+              <span className="text-[10px] text-[#DC2626] font-normal block">Out of range</span>
+            )}
+          </div>
+        </div>
+        <div className="col-span-4 md:col-span-1 text-xs">
+          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Base</div>
+          <div className="font-mono-num text-sm">{fmt(baseMat)}</div>
+        </div>
+        <div className="col-span-4 md:col-span-2 text-right">
+          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Total</div>
+          <div className="font-mono-num text-base font-bold text-[#09090B]">{fmt(total)}</div>
+        </div>
+        <div className="col-span-12 md:col-span-1 flex md:justify-end gap-1">
+          <button
+            type="button"
+            className="p-1.5 text-[#71717A] hover:text-[#09090B]"
+            title="Toggle notes"
+            onClick={onToggleNotes}
+            data-testid={`mezzo-notes-${op.id}`}
+          >
+            <StickyNote className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            className="p-1.5 text-[#71717A] hover:text-[#DC2626]"
+            title="Remove opening"
+            onClick={onRemove}
+            data-testid={`mezzo-remove-${op.id}`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {isNotesOpen && (
+        <div className="mt-2 pl-0 md:pl-[8.333%]">
+          <input
+            type="text"
+            className="input h-8 text-sm"
+            placeholder='e.g. "Kitchen — west wall"'
+            value={op.label || ""}
+            onChange={(e) => onUpdate({ label: e.target.value })}
+            data-testid={`mezzo-label-${op.id}`}
+          />
+        </div>
+      )}
+
+      {inRange && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] font-bold text-[#52525B] hover:text-[#09090B]"
+            data-testid={`mezzo-adders-toggle-${op.id}`}
+          >
+            {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            Upgrade Options
+            {(op.adders || []).length > 0 && (
+              <span className="bg-[#F97316] text-white px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                {op.adders.length}
+              </span>
+            )}
+            <span className="font-mono-num text-[#52525B] normal-case tracking-normal ml-1">
+              {addersTotal > 0 ? `+${fmt(addersTotal)}` : ""}
+            </span>
+          </button>
+          {isExpanded && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 mt-2 pl-5 pb-2">
+              {pt.adders.map((a) => {
+                const sel = selectedByName.get(a.name);
+                const checked = !!sel;
+                const adderMat = resolveAdderMat(a, pt, op.width, op.height);
+                const adderQty = checked ? (Number(sel.qty) || 0) : 0;
+                const adderTotal = adderQty * adderMat;
+                const unitHint =
+                  a.kind === "sqft"
+                    ? `$${(Number(a.rate) || 0).toFixed(2)}/sqft × ${sqft.toFixed(2)}sqft`
+                    : adderMat > 0
+                      ? `+${fmt(adderMat)}/ea`
+                      : "—";
+                return (
+                  <div
+                    key={a.name}
+                    className={`flex items-center gap-2 py-1.5 border-b border-[#EDEDF0] last:border-b-0 text-[13px] ${
+                      checked ? "text-[#09090B] font-semibold" : "text-[#3F3F46]"
+                    }`}
+                    data-testid={`mezzo-adder-${op.id}-${a.name}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-[#F97316] cursor-pointer flex-shrink-0"
+                      checked={checked}
+                      onChange={() => onToggleAdder(a)}
+                      data-testid={`mezzo-adder-cb-${op.id}-${a.name}`}
+                    />
+                    <span className="flex-1 leading-snug">{a.name}</span>
+                    {checked ? (
+                      <>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="1"
+                          value={adderQty || ""}
+                          placeholder={`${Number(op.qty) || 0}`}
+                          onChange={(ev) => onUpdateAdderQty(a.name, ev.target.value)}
+                          className="input num h-7 text-xs w-14 text-right"
+                          data-testid={`mezzo-adder-qty-${op.id}-${a.name}`}
+                        />
+                        <span className="font-mono-num text-[11px] text-[#71717A] whitespace-nowrap w-16 text-right">
+                          {adderTotal > 0 ? `+${fmt(adderTotal)}` : "—"}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="font-mono-num text-[11px] text-[#71717A] whitespace-nowrap">
+                        {unitHint}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

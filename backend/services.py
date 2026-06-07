@@ -517,6 +517,12 @@ def calc_totals(est: dict) -> dict:
     lines = est.get("lines", []) or []
     misc_labor = est.get("misc_labor", []) or []
     misc_material = est.get("misc_material", []) or []
+    # Iter 37: Mezzo openings are stored separately because their price
+    # is W×H-derived (bucket-lookup at save time). Subtotal contribution
+    # = opening.qty × base_mat + sum(adder.qty × adder.mat). Lives in
+    # the material side of the ledger — Mezzo labor is on the regular
+    # Window Installation row tracked under est.lines.
+    mezzo_openings = est.get("mezzo_openings", []) or []
     # Iter 36: each adder carries its OWN qty (independent of line.qty)
     # so a line can have e.g. 10 windows with only 3 Tempered glass. The
     # adder's mat/lab is multiplied by the adder qty and added to the
@@ -527,9 +533,16 @@ def calc_totals(est: dict) -> dict:
     def _adders_lab_total(ln: dict) -> float:
         return sum((float(a.get("qty") or 0)) * (float(a.get("lab") or 0))
                    for a in (ln.get("adders") or []))
+    def _opening_mat(op: dict) -> float:
+        qty = float(op.get("qty") or 0)
+        base = float(op.get("base_mat") or 0)
+        adders = sum((float(a.get("qty") or 0)) * (float(a.get("mat") or 0))
+                     for a in (op.get("adders") or []))
+        return qty * base + adders
     sub_mat = (
         sum((ln.get("qty", 0) or 0) * (ln.get("mat", 0) or 0) + _adders_mat_total(ln) for ln in lines)
         + sum((m.get("mat", 0) or 0) for m in misc_material)
+        + sum(_opening_mat(op) for op in mezzo_openings)
     )
     sub_lab = (
         sum((ln.get("qty", 0) or 0) * (ln.get("lab", 0) or 0) + _adders_lab_total(ln) for ln in lines)

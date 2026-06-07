@@ -348,6 +348,26 @@ export default function useEstimate(id) {
         })),
       misc_labor: (source.misc_labor || []).map((m) => ({ ...m, tab: m.tab || "vinyl" })),
       misc_material: (source.misc_material || []).map((m) => ({ ...m, tab: m.tab || "vinyl" })),
+      // Iter 37: Mezzo openings (W×H-driven) round-trip on the estimate
+      // document so price snapshots stay reproducible.
+      mezzo_openings: (source.mezzo_openings || []).map((op) => ({
+        id: op.id,
+        product_type: op.product_type,
+        label: op.label || "",
+        width: Number(op.width) || 0,
+        height: Number(op.height) || 0,
+        qty: Number(op.qty) || 0,
+        base_mat: Number(op.base_mat) || 0,
+        bucket_label: op.bucket_label || "",
+        adders: Array.isArray(op.adders)
+          ? op.adders.map((a) => ({
+              name: a.name,
+              mat: Number(a.mat) || 0,
+              lab: Number(a.lab) || 0,
+              qty: Number(a.qty) || 0,
+            }))
+          : [],
+      })),
       photos: source.photos || [],
       status_label: source.status_label || "draft",
       install_method: source.install_method || "",

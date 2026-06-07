@@ -11,6 +11,7 @@ import { calcTotals } from "@/lib/calc";
 import { buildMaterialListHtml, materialListFilename } from "@/lib/materialList";
 import StickyBar from "@/components/estimate/StickyBar";
 import JobInfoPanel from "@/components/estimate/JobInfoPanel";
+import MezzoPanel from "@/components/estimate/MezzoPanel";
 import SettingsRow from "@/components/estimate/SettingsRow";
 import PhotosPanel from "@/components/estimate/PhotosPanel";
 import SectionAccordion from "@/components/estimate/SectionAccordion";
@@ -46,21 +47,23 @@ export default function EstimateEditor() {
   const isWindowKind = est?.kind === "windows";
   const [activeTab, setActiveTab] = useState("vinyl");
 
-  // Force the active tab to "windows" the moment a windows-kind estimate
-  // finishes loading (only if the user hasn't already switched somewhere
-  // legitimate). This IS a state-in-effect by design — we need the value
-  // to follow a prop derived from the async estimate load.
+  // Iter 37: For windows-kind, snap to "windows" (Vero) on first load
+  // only if the current activeTab is a siding-only tab — otherwise leave
+  // the user's choice intact so toggling to Mezzo sticks. For siding-
+  // kind, leave the default "vinyl" alone.
   useEffect(() => {
-    if (isWindowKind && activeTab !== "windows") {
+    if (isWindowKind && activeTab !== "windows" && activeTab !== "mezzo") {
       setActiveTab("windows");
     }
   }, [isWindowKind, activeTab]);
 
-  // Visible tab set for THIS estimate. Windows kind → only the Windows
-  // tab (other tabs hidden). Siding kind → siding-only tabs (Windows tab
-  // hidden, since Windows is its own workspace now).
+  // Visible tab set for THIS estimate. Windows kind → Vero + Mezzo
+  // (Iter 37). Siding kind → siding-only tabs.
   const visibleTabIds = useMemo(
-    () => (isWindowKind ? ["windows"] : VISIBLE_TAB_IDS.filter((id) => id !== "windows")),
+    () =>
+      isWindowKind
+        ? ["windows", "mezzo"]
+        : VISIBLE_TAB_IDS.filter((id) => id !== "windows" && id !== "mezzo"),
     [isWindowKind]
   );
   // Tab defs aligned to visibleTabIds (preserves label + order).
@@ -268,7 +271,9 @@ export default function EstimateEditor() {
 
         <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} />
 
-        {visibleSections.length === 0 ? (
+        {activeTab === "mezzo" ? (
+          <MezzoPanel est={est} update={update} />
+        ) : visibleSections.length === 0 ? (
           <div
             className="card p-8 text-center"
             data-testid={`empty-tab-${activeTab}`}

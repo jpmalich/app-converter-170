@@ -47,7 +47,19 @@ export function calcTotals(est, { tab } = {}) {
   const miscMat = allMiscMat.filter(inTab);
   const subMat =
     lines.reduce((s, l) => s + (l.qty || 0) * (l.mat || 0) + addersMatTotal(l), 0) +
-    miscMat.reduce((s, l) => s + (l.mat || 0), 0);
+    miscMat.reduce((s, l) => s + (l.mat || 0), 0) +
+    // Iter 37: Mezzo openings only count when viewing the Mezzo tab (or
+    // when no tab filter is applied — i.e. computing the grand total).
+    ((!tab || tab === "mezzo")
+      ? (est?.mezzo_openings || []).reduce((s, op) => {
+          const base = (Number(op.qty) || 0) * (Number(op.base_mat) || 0);
+          const ads = (op.adders || []).reduce(
+            (a, x) => a + (Number(x.qty) || 0) * (Number(x.mat) || 0),
+            0
+          );
+          return s + base + ads;
+        }, 0)
+      : 0);
   const subLab =
     lines.reduce((s, l) => s + (l.qty || 0) * (l.lab || 0) + addersLabTotal(l), 0) +
     miscMat.reduce((s, l) => s + (l.lab || 0), 0) +

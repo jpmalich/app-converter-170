@@ -161,8 +161,42 @@ class EstimateIn(BaseModel):
     lines: List[EstimateLine] = []
     misc_labor: List[MiscLine] = []
     misc_material: List[MiscLine] = []
+    # Iter 37: Mezzo W×H-driven openings. Each entry is one quoted
+    # opening (a single window on the customer's home). Lives in its
+    # own list rather than under `lines` because the data shape is
+    # different (W/H drive the price via bucket lookup; adder prices
+    # depend on size). See routes/mezzo.py for catalog lookup.
+    mezzo_openings: List["MezzoOpening"] = []
     photos: List[str] = []
     status_label: str = "draft"
+
+
+class MezzoOpening(BaseModel):
+    """One quoted Mezzo window opening. Width + height drive the
+    United Inches (UI) which snaps to a bucket on Mezzo's per-size
+    price matrix. Per-opening adders carry their own qty + computed
+    cost at save time so material-list / PDF rendering stays cheap."""
+    id: str  # UUID; frontend-generated so optimistic UI works
+    product_type: str  # e.g. "Mezzo Double Hung"
+    label: str = ""    # optional "Kitchen — west" annotation
+    width: float = 0   # inches
+    height: float = 0  # inches
+    qty: float = 1
+    # Snapshotted base price (per-window mat from the bucket lookup at
+    # save time). Lets the backend compute totals without re-resolving
+    # the catalog matrix.
+    base_mat: float = 0
+    # Resolved bucket label (e.g. "32-73 UI") snapshotted at save time
+    # for material-list / PDF rendering.
+    bucket_label: str = ""
+    # Selected adders. We reuse EstimateLineAdder so calc_totals can
+    # treat openings the same way it treats line.adders, but `mat`
+    # here is the PER-OPENING cost (sqft adders are pre-computed by
+    # frontend at toggle time; flat adders are looked up by bucket).
+    adders: List[EstimateLineAdder] = []
+
+
+EstimateIn.model_rebuild()
 
 
 class EmailQuoteIn(BaseModel):
