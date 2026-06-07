@@ -1,11 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { X } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
-const TAB_LABEL = {
-  vinyl: "Vinyl Siding",
-  ascend: "Ascend Composite Siding",
-  windows: "Windows",
-};
 const TAB_ORDER = ["vinyl", "ascend", "windows"];
 
 /**
@@ -14,8 +10,9 @@ const TAB_ORDER = ["vinyl", "ascend", "windows"];
  * one tab has data — the picker is only useful for hybrid estimates.
  */
 export default function TabPickerModal({ open, mode, tabsWithData, onClose, onConfirm }) {
+  const t = useT();
   const orderedTabs = useMemo(
-    () => TAB_ORDER.filter((t) => tabsWithData.includes(t)),
+    () => TAB_ORDER.filter((id) => tabsWithData.includes(id)),
     [tabsWithData]
   );
   // Default: all tabs selected — the contractor opts OUT of the ones they
@@ -30,11 +27,8 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
 
   if (!open) return null;
 
-  const title = mode === "quote" ? "Print Customer Quote" : "Print Material List";
-  const helper =
-    mode === "quote"
-      ? "Pick which product lines to send to the customer. One PDF per pick keeps the quote uncluttered when the job spans multiple product lines."
-      : "Pick which product lines to print for the supplier. Each pick gets its own list so the warehouse can pull and stage materials separately.";
+  const title = mode === "quote" ? t("tabPicker.title.quote") : t("tabPicker.title.material");
+  const helper = mode === "quote" ? t("tabPicker.helper.quote") : t("tabPicker.helper.material");
 
   const toggle = (id) => {
     setSelected((s) => {
@@ -84,7 +78,7 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
                   className="w-4 h-4"
                 />
                 <span className="text-sm font-semibold text-[#09090B]">
-                  {TAB_LABEL[id]}
+                  {t(`tabPicker.label.${id}`)}
                 </span>
               </label>
             ))}
@@ -97,7 +91,7 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
             onClick={onClose}
             data-testid="tab-picker-cancel"
           >
-            Cancel
+            {t("tabPicker.cancel")}
           </button>
           <button
             type="button"
@@ -106,7 +100,7 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
             onClick={() => onConfirm(Array.from(selected))}
             data-testid="tab-picker-confirm"
           >
-            Continue · {selected.size}
+            {t("tabPicker.continue", { n: selected.size })}
           </button>
         </div>
       </div>

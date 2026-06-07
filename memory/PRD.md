@@ -49,6 +49,8 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 - `GET /api/exports/estimates.csv` · `GET /api/exports/estimates/{id}.csv`
 
 ## Implementation Timeline
+- **Iter 39** — **Spanish translation polish for TotalsSummary + TabPickerModal** (Feb 2026): tightened remaining EN strings that weren't translating on Spanish-locale UI. (1) `TotalsSummary` badge "Vinyl option" → translated via new `est.tabOption` + `tabLabel.*` keys ("opción Ventanas" / "opción Vinil"); now reflects the active tab (vinyl/ascend/lpSmart/windows/mezzo). (2) `TotalsSummary` "Material List" button → `est.materialList` ("Lista de materiales"). (3) `TabPickerModal` fully translated — title ("Imprimir Cotización al Cliente" / "Imprimir Lista de Materiales"), helper text, Cancel/Continue buttons, and per-tab labels via new `tabPicker.*` namespace. (4) `StickyBar` TabBlock "Base" label parameterized via `est.bar.base`. Verified end-to-end on a Vero windows estimate at `ui-lang-v1=es`: section headers (Vero Doble Colgante, Vero Corrediza 2 Hojas, etc.), summary badge ("OPCIÓN VENTANAS"), and Material List button render in Spanish. Mezzo product block headers (Mezzo Doble Colgante, etc.) were already wrapped via `tSection(pt.name, lang)` — verified working.
+
 - **Iter 1** — MVP build, 17/17 backend tests
 - **Iter 2** — Frontend E2E hardening, 16/16 scenarios
 - **Iter 3** — Multi-tenant companies, ad-hoc misc lines, CSV exports, Resend live, EstimateEditor refactor, 21/21 tests

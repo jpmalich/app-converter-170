@@ -46,6 +46,7 @@ export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }
               <TabBlock
                 key={td.id}
                 label={td.label}
+                baseLabel={t("est.bar.base")}
                 base={tt.totals.base}
                 sell={tt.totals.sell}
                 profit={tt.totals.profit}
@@ -60,7 +61,7 @@ export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }
   );
 }
 
-function TabBlock({ label, base, sell, profit, active, testid }) {
+function TabBlock({ label, baseLabel, base, sell, profit, active, testid }) {
   // Active tab gets an orange underline + brighter sell color. Inactive
   // tabs render at lower opacity so the eye lands on the one being edited.
   return (
@@ -87,7 +88,7 @@ function TabBlock({ label, base, sell, profit, active, testid }) {
       </div>
       <div className="flex items-baseline gap-2 mt-0.5">
         <span className="text-[10px] text-white/50 font-mono-num" data-testid={`${testid}-base`}>
-          Base {fmt(base)}
+          {baseLabel} {fmt(base)}
         </span>
         <span
           className="text-[10px] font-mono-num"

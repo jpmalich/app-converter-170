@@ -1,10 +1,12 @@
 import React from "react";
-import { useT } from "@/lib/i18n";
+import { useT, useLang } from "@/lib/i18n";
+import { tColor, tColorGroup } from "@/lib/catalogTranslations";
 import { vinylSidingColorGroupsForEstimate, ASCEND_COLORS, SOFFIT_COLOR_GROUPS, GUTTER_COLORS, WINDOW_WRAP_COLORS, MEZZO_EXTERIOR_COLOR_GROUPS, MEZZO_INTERIOR_COLOR_GROUPS, VERO_EXTERIOR_COLOR_GROUPS, VERO_INTERIOR_COLOR_GROUPS, VERO_LAMINATE_NAMES } from "@/lib/colorOptions";
 import HoverImportButton from "@/components/estimate/HoverImportButton";
 
 export default function JobInfoPanel({ est, update, save, setInstallMethod, setHomePre1978 }) {
   const t = useT();
+  const { lang } = useLang();
   // Brand-filtered vinyl siding color groups. Computed inline on every
   // render — cheap (an array filter over <30 items) and avoids the
   // hooks/preserve-manual-memoization lint complaint about useMemo +
@@ -290,41 +292,41 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             <div className="text-[11px] uppercase tracking-wider text-[#09090B] font-bold mb-3">
               Vero
               <span className="ml-2 text-[#A1A1AA] font-normal normal-case tracking-normal">
-                vinyl base + laminate or painted finish
+                {t("win.colors.veroDesc")}
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="label">Exterior Color</label>
+                <label className="label">{t("win.color.exterior")}</label>
                 <select
                   className="input"
                   value={est.window_exterior_color || ""}
                   onChange={(e) => update({ window_exterior_color: e.target.value })}
                   data-testid="color-vero-exterior"
                 >
-                  <option value="">— Select —</option>
+                  <option value="">{t("win.color.select")}</option>
                   {VERO_EXTERIOR_COLOR_GROUPS.map((g) => (
-                    <optgroup key={g.label} label={g.label}>
+                    <optgroup key={g.label} label={tColorGroup(g.label, lang)}>
                       {g.colors.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>{tColor(c, lang)}</option>
                       ))}
                     </optgroup>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="label">Interior Color</label>
+                <label className="label">{t("win.color.interior")}</label>
                 <select
                   className="input"
                   value={est.window_interior_color || ""}
                   onChange={(e) => update({ window_interior_color: e.target.value })}
                   data-testid="color-vero-interior"
                 >
-                  <option value="">— Select —</option>
+                  <option value="">{t("win.color.select")}</option>
                   {VERO_INTERIOR_COLOR_GROUPS.map((g) => (
-                    <optgroup key={g.label} label={g.label}>
+                    <optgroup key={g.label} label={tColorGroup(g.label, lang)}>
                       {g.colors.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>{tColor(c, lang)}</option>
                       ))}
                     </optgroup>
                   ))}
@@ -345,10 +347,8 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   <div
                     className="mt-2 px-3 py-2 bg-[#FEF2F2] border-l-2 border-[#DC2626] text-[11px] text-[#991B1B]"
                     data-testid="vero-laminate-warning"
-                  >
-                    <strong>Heads up:</strong> Vero laminates are built on a <strong>white</strong> vinyl base only.
-                    Pair laminate with a white-base sister color, or switch the laminate side to a paint finish.
-                  </div>
+                    dangerouslySetInnerHTML={{ __html: t("win.color.laminateWarn") }}
+                  />
                 );
               }
               if (hasLaminate) {
@@ -356,9 +356,8 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   <div
                     className="mt-2 px-3 py-2 bg-[#F0F9FF] border-l-2 border-[#0284C7] text-[11px] text-[#075985]"
                     data-testid="vero-laminate-notice"
-                  >
-                    Laminate selected — manufacturing will use a <strong>white</strong> vinyl base.
-                  </div>
+                    dangerouslySetInnerHTML={{ __html: t("win.color.laminateNotice") }}
+                  />
                 );
               }
               return null;
@@ -370,41 +369,41 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             <div className="text-[11px] uppercase tracking-wider text-[#09090B] font-bold mb-3">
               Mezzo
               <span className="ml-2 text-[#A1A1AA] font-normal normal-case tracking-normal">
-                extruded solid · FrameWorks · woodgrain
+                {t("win.colors.mezzoDesc")}
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="label">Exterior Color</label>
+                <label className="label">{t("win.color.exterior")}</label>
                 <select
                   className="input"
                   value={est.mezzo_exterior_color || ""}
                   onChange={(e) => update({ mezzo_exterior_color: e.target.value })}
                   data-testid="color-mezzo-exterior"
                 >
-                  <option value="">— Select —</option>
+                  <option value="">{t("win.color.select")}</option>
                   {MEZZO_EXTERIOR_COLOR_GROUPS.map((g) => (
-                    <optgroup key={g.label} label={g.label}>
+                    <optgroup key={g.label} label={tColorGroup(g.label, lang)}>
                       {g.colors.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>{tColor(c, lang)}</option>
                       ))}
                     </optgroup>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="label">Interior Color</label>
+                <label className="label">{t("win.color.interior")}</label>
                 <select
                   className="input"
                   value={est.mezzo_interior_color || ""}
                   onChange={(e) => update({ mezzo_interior_color: e.target.value })}
                   data-testid="color-mezzo-interior"
                 >
-                  <option value="">— Select —</option>
+                  <option value="">{t("win.color.select")}</option>
                   {MEZZO_INTERIOR_COLOR_GROUPS.map((g) => (
-                    <optgroup key={g.label} label={g.label}>
+                    <optgroup key={g.label} label={tColorGroup(g.label, lang)}>
                       {g.colors.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>{tColor(c, lang)}</option>
                       ))}
                     </optgroup>
                   ))}

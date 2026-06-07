@@ -175,3 +175,84 @@ export function tUnit(unit, lang) {
   if (lang !== "es") return unit;
   return UNITS_ES[unit] || unit;
 }
+
+// ───────────────────────── Color translations ─────────────────────────
+// Covers both the Vero + Mezzo factory finishes as well as the per-window
+// "sister color" combos shown on the Vero W×H panel (e.g. "White Interior
+// / White Exterior"). Keys mirror the strings in `lib/colorOptions.js`
+// and `vero_seed_prices.json` exactly so a single `tColor()` call resolves
+// every dropdown option site-wide.
+const COLORS_ES = {
+  // Extruded solids (shared by Vero + Mezzo)
+  "White": "Blanco",
+  "Beige": "Beige",
+  "Classic Clay": "Arcilla clásica",
+  "Tan": "Tostado",
+
+  // Mezzo FrameWorks Finishes (exterior)
+  "Black Laminate": "Laminado negro",
+  "Brown Laminate": "Laminado café",
+  "Architectural Bronze": "Bronce arquitectónico",
+  "American Terra": "Terra americano",
+  "Hudson Khaki": "Caqui Hudson",
+  "Desert Clay": "Arcilla del desierto",
+  "Sand Dune": "Duna de arena",
+  "English Red": "Rojo inglés",
+  "Forest Green": "Verde bosque",
+  "Silver": "Plateado",
+  "Castle Gray": "Gris castillo",
+
+  // Mezzo Woodgrain Laminate (interior)
+  "White Woodgrain": "Veteado blanco",
+  "Rich Maple": "Arce intenso",
+  "Light Oak": "Roble claro",
+  "Dark Oak": "Roble oscuro",
+  "Foxwood": "Foxwood",
+  "Cherry": "Cerezo",
+
+  // Vero interior laminate woodgrains
+  "Cavalier Oak": "Roble Cavalier",
+  "Colonial Cherry": "Cerezo Colonial",
+
+  // Vero painted finishes (already disambiguated with " (Paint)" suffix)
+  "White (Paint)": "Blanco (pintura)",
+  "Black (Paint)": "Negro (pintura)",
+  "Tan (Paint)": "Tostado (pintura)",
+  "Graphite": "Grafito",
+  "Sterling": "Plata Sterling",
+  "Forest": "Bosque",
+  "Bronze": "Bronce",
+  "Royal Brown": "Café real",
+  "Terra": "Terra",
+  "Pebble": "Guijarro",
+  "Cream": "Crema",
+
+  // Vero sister-color combos (W×H per-opening picker)
+  "White Interior/White Exterior": "Blanco interior / Blanco exterior",
+  "Tan Interior/Tan Exterior": "Tostado interior / Tostado exterior",
+  "White Interior/Laminate Exterior": "Blanco interior / Laminado exterior",
+  "Laminate Interior/White Exterior": "Laminado interior / Blanco exterior",
+  "Woodgrain Interior/White Exterior": "Veteado interior / Blanco exterior",
+  "Wood Interior/White Exterior": "Madera interior / Blanco exterior",
+};
+
+// Optgroup labels used inside the color <select>s
+const COLOR_GROUP_LABELS_ES = {
+  "Extruded Solid": "Sólido extruido",
+  "FrameWorks Finish": "Acabado FrameWorks",
+  "Woodgrain Laminate": "Laminado veteado",
+  "Extruded Vinyl (color through)": "Vinil extruido (color en toda la pieza)",
+  "Laminate · white base only": "Laminado · solo sobre base blanca",
+  "Painted Finish": "Acabado pintado",
+  "Laminate Woodgrain · white base only": "Laminado veteado · solo sobre base blanca",
+};
+
+export function tColor(name, lang) {
+  if (lang !== "es" || !name) return name || "";
+  return COLORS_ES[name] || name;
+}
+
+export function tColorGroup(label, lang) {
+  if (lang !== "es" || !label) return label || "";
+  return COLOR_GROUP_LABELS_ES[label] || label;
+}

@@ -3,12 +3,18 @@ import { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { Save, FileText, Printer, Download, ClipboardList } from "lucide-react";
 
-const TAB_LABEL = { vinyl: "Vinyl", ascend: "Ascend", lp_smart: "LP Smart", windows: "Windows" };
+const TAB_LABEL_KEYS = {
+  vinyl: "tabLabel.vinyl",
+  ascend: "tabLabel.ascend",
+  lp_smart: "tabLabel.lpSmart",
+  windows: "tabLabel.windows",
+  mezzo: "tabLabel.mezzo",
+};
 
 export default function TotalsSummary({ est, totals, activeTab, saving, onSave, onOpenQuote, onPrint, onExportCsv, onPrintMaterials }) {
   const t = useT();
   const modeLabel = est.pricing_mode === "markup" ? t("est.markup").toLowerCase() : t("est.margin").toLowerCase();
-  const tabLabel = TAB_LABEL[activeTab] || "Vinyl";
+  const tabLabel = t(TAB_LABEL_KEYS[activeTab] || TAB_LABEL_KEYS.vinyl);
   return (
     <section className="card p-6" data-testid="totals-summary">
       <div className="section-tag mb-4 flex items-center gap-2">
@@ -17,7 +23,7 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
           className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 border border-[#F97316] text-[#F97316]"
           data-testid="summary-tab-badge"
         >
-          {tabLabel} option
+          {t("est.tabOption", { tab: tabLabel })}
         </span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
@@ -36,7 +42,7 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
           <FileText className="w-4 h-4" /> {t("est.customerQuote")}
         </button>
         <button className="btn-secondary" onClick={onPrintMaterials} data-testid="material-list-btn">
-          <ClipboardList className="w-4 h-4" /> Material List
+          <ClipboardList className="w-4 h-4" /> {t("est.materialList")}
         </button>
         <button className="btn-secondary" onClick={onPrint} data-testid="print-btn">
           <Printer className="w-4 h-4" /> {t("est.print")}
