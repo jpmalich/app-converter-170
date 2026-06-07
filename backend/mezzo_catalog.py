@@ -78,31 +78,27 @@ MEZZO_BUCKETS = {
     ],
 }
 
-# Adder name lists per product type. Double Hung has the full 8-option set;
-# Sliders + Picture share a tighter 5-option set (per Howard's Excel).
-_DH_ADDER_NAMES = [
+# Adder name lists per product type. Per Howard's full 4-tier Mezzo Excel
+# set, each product type has the same canonical 9-adder list (sometimes
+# in different column orders in the source files). Tempered Full is the
+# only sqft-rate adder.
+_CANONICAL_ADDERS = [
     "Extruded Beige or Clay",
     "ClimaTech Plus - 9E",
     "ClimaTech TG2 Plus",
+    "Grid - 1\" Contour Full",
     "Obscure Full",
     "Tempered Full",
     'NAILFIN 1 3/8" W/ J',
     "Black Exterior Paint",
-    "Cherry Laminate",
-]
-_SLIDER_PICTURE_ADDER_NAMES = [
-    "Extruded Beige or Clay",
-    "ClimaTech Plus - 9E",
-    'Grid - 1" Contour Full',
-    "Obscure Full",
-    "Tempered Full",
+    "CHERRY LAMINATE",
 ]
 
 MEZZO_ADDER_NAMES = {
-    "Mezzo Double Hung": _DH_ADDER_NAMES,
-    "Mezzo 2-Lite Slider": _SLIDER_PICTURE_ADDER_NAMES,
-    "Mezzo 3-Lite Slider": _SLIDER_PICTURE_ADDER_NAMES,
-    "Mezzo Picture": _SLIDER_PICTURE_ADDER_NAMES,
+    "Mezzo Double Hung": list(_CANONICAL_ADDERS),
+    "Mezzo 2-Lite Slider": list(_CANONICAL_ADDERS),
+    "Mezzo 3-Lite Slider": list(_CANONICAL_ADDERS),
+    "Mezzo Picture": list(_CANONICAL_ADDERS),
 }
 
 # `Tempered Full` is the only sqft-rate adder across the entire Mezzo
@@ -182,15 +178,9 @@ def adder_price(product_type: str, adder_name: str, tier: str, width: float, hei
 
 def catalog_for_tier(tier: str) -> dict:
     """Return a frontend-friendly catalog snapshot for a single tier.
-    Shape:
-      { "product_types": [
-          { "name": "Mezzo Double Hung",
-            "buckets": [...],
-            "base_prices": {bucket_label: mat},
-            "adders": [{name, kind, prices_by_bucket | rate}, ...] }
-        ]
-      }
-    """
+    NOTE: callers needing live prices from MongoDB should use
+    `catalog_for_tier_async()` in mezzo_prices.py — this fallback is
+    for tests/CLI only and returns the in-code $0 defaults."""
     out = []
     for name, pt in MEZZO_PRODUCT_TYPES.items():
         adders_out = []
@@ -211,6 +201,40 @@ def catalog_for_tier(tier: str) -> dict:
             "buckets": pt["buckets"],
             "base_prices": {
                 b["label"]: float(pt["tier_prices"].get(tier, {}).get(b["label"], 0))
+                for b in pt["buckets"]
+            },
+            "adders": adders_out,
+        })
+    return {"product_types": out}
+
+
+async def catalog_for_tier_async(tier: str, mezzo_prices_module) -> dict:
+    """Like catalog_for_tier but reads live prices from MongoDB. The
+    module is injected to avoid an import cycle (mezzo_prices imports
+    from this file)."""
+    out = []
+    for name, pt in MEZZO_PRODUCT_TYPES.items():
+        priced = await mezzo_prices_module.get_prices(tier, name)
+        base_prices = priced.get("base_prices") or {}
+        adder_prices = priced.get("adder_prices") or {}
+        adders_out = []
+        for a in pt["adders"]:
+            if a["kind"] == "sqft":
+                adders_out.append({"name": a["name"], "kind": "sqft", "rate": float(a["rate"])})
+            else:
+                adders_out.append({
+                    "name": a["name"],
+                    "kind": "flat",
+                    "prices_by_bucket": {
+                        b["label"]: float((adder_prices.get(a["name"]) or {}).get(b["label"], 0))
+                        for b in pt["buckets"]
+                    },
+                })
+        out.append({
+            "name": name,
+            "buckets": pt["buckets"],
+            "base_prices": {
+                b["label"]: float(base_prices.get(b["label"], 0))
                 for b in pt["buckets"]
             },
             "adders": adders_out,
