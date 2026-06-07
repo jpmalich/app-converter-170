@@ -179,53 +179,85 @@ SECTION_LAYOUT = [
         "Cut out 4x4 section of wall and insulate",
     ]),
     # -----------------------------------------------------------------------
-    # WINDOWS — Vero product line from Howard's "window price sheet" tab.
-    # Scoped to the dedicated "windows" tab. Prices currently same across
-    # all 4 tiers (Howard will tier them later). The 3× duplicate "3 lite
-    # slider / Casement / Picture" rows at $0 in the source spreadsheet
-    # collapse to one each since they're size placeholders; the second
-    # UPGRADE OPTIONS block (rows 36-40) is omitted (identical to rows 14-18).
+    # WINDOWS — Vero product line. Iter 36 (Feb 2026): per-window-type
+    # sections matching Howard's updated Excel layout. Each window product
+    # gets its own section with size buckets; the per-window-type adders
+    # (Tan Interior, Tempered glass, Obscure, etc.) are exposed as
+    # toggleable checkboxes via `WINDOW_ADDERS` below, NOT as their own
+    # line items. Prices start at $0 across the board — Howard will fill
+    # them in via the pricing admin once he likes the layout.
     # -----------------------------------------------------------------------
-    ("Vero Windows", False, [
+    ("Vero Double Hung Windows", False, [
         "Vero - Double Hung 0-101 UI",
-        "Vero - Slider 0-101 UI",
-        # 3 lite slider — now split by UI range per Howard's updated price sheet
-        "Vero - 3 lite slider 0-45 UI",
-        "Vero - 3 lite slider 46-70 UI",
-        "Vero - 3 lite slider 71-101 UI",
-        # Casement — split by UI range
-        "Vero - Casement 0-45 UI",
-        "Vero - Casement 46-70 UI",
-        "Vero - Casement 71-101 UI",
-        # Picture — split by UI range
-        "Vero - Picture 0-45 UI",
-        "Vero - Picture 46-70 UI",
-        "Vero - Picture 71-101 UI",
-        "Window Package Price",
+        "Vero - Double Hung 102-110 UI",
+        "Vero - Double Hung 111-120 UI",
+        "Vero - Double Hung 121-130 UI",
+        "Vero - Double Hung 131-140 UI",
+        "Vero - Double Hung 141-150 UI",
+        "Vero - Double Hung 151-160 UI",
+        "Vero - Double Hung 161-170 UI",
     ]),
-    ("Window Upgrade Options", False, [
-        "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
-        "Sentry System - Tilt Lock upgrade",
-        "Integral Nail Fin 0-101",
-        "Heavy Duty 1/2 Screen White ONLY",
+    ("Vero 2 Lite Slider Windows", False, [
+        "Vero - Slider 0-101 UI",
+        "Vero - Slider 102-110 UI",
+        "Vero - Slider 111-120 UI",
+        "Vero - Slider 121-130 UI",
+        "Vero - Slider 131-140 UI",
+        "Vero - Slider 141-150 UI",
+        "Vero - Slider 151-160 UI",
+        "Vero - Slider 161-170 UI",
+    ]),
+    ("Vero 3 Lite Slider Windows", False, [
+        "Vero - 3 Lite Slider Min-73 UI",
+        "Vero - 3 Lite Slider 74-83 UI",
+        "Vero - 3 Lite Slider 84-93 UI",
+        "Vero - 3 Lite Slider 94-101 UI",
+        "Vero - 3 Lite Slider 102-110 UI",
+        "Vero - 3 Lite Slider 111-120 UI",
+        "Vero - 3 Lite Slider 121-130 UI",
+        "Vero - 3 Lite Slider 131-140 UI",
+        "Vero - 3 Lite Slider 141-150 UI",
+        "Vero - 3 Lite Slider 151-160 UI",
+        "Vero - 3 Lite Slider 161-170 UI",
+        "Vero - 3 Lite Slider 171-180 UI",
+        "Vero - 3 Lite Slider 181-190 UI",
+    ]),
+    ("Vero Casement Windows", False, [
+        "Vero - Casement Min-43 UI",
+        "Vero - Casement 44-53 UI",
+        "Vero - Casement 54-63 UI",
+        "Vero - Casement 64-73 UI",
+        "Vero - Casement 74-83 UI",
+        "Vero - Casement 84-93 UI",
+        "Vero - Casement 93-101 UI",
+        "Vero - Casement 102-108 UI",
+    ]),
+    ("Vero Picture Windows", False, [
+        "Vero - Picture Min-73 UI",
+        "Vero - Picture 74-83 UI",
+        "Vero - Picture 84-93 UI",
+        "Vero - Picture 94-101 UI",
+        "Vero - Picture 102-110 UI",
+        "Vero - Picture 111-120 UI",
+        "Vero - Picture 121-130 UI",
+        "Vero - Picture 131-140 UI",
+        "Vero - Picture 141-150 UI",
+        "Vero - Picture 151-160 UI",
+        "Vero - Picture 161-170 UI",
+        "Vero - Picture 171-180 UI",
+        "Vero - Picture 181-190 UI",
     ]),
     ("Window Installation", False, [
-        "Window - Pocket Install",
+        "Window DH/Slider - Pocket Install",
         "Window - Full Fin Replacement",
         "Window - Block Frame Replacement",
         "Large Window - adder for windows 30 sq-ft or larger",
         "Field Mull Assembly and/or Field Glaze (adder per each opening)",
         "Lead Safe Installation Practices For Window Installation",
         "Lead Safe - Test Fee (all homes 1978 and older are tested)",
-        # Renamed from "New Exterior Coil Trim" in Iter 30 — matches the
-        # "Cap window" line on the siding tabs (same $20 labor); "(Windows)"
-        # suffix disambiguates from the siding Misc. Labor & Material row.
         "Cap window (Windows)",
-        # Iter 32: moved here from "Window Misc." per Howard — install
-        # always includes the measure trip + disposal.
         "Job Measure Standard Fee 4 days+",
         "Disposal Fee (Windows)",
-        # Iter 33: mullion removal is part of install scope, not misc.
         "Mullion Removal & Cut-Out of Non-Structural Framing Members",
     ]),
     ("Vero Sliding Glass Doors", False, [
@@ -236,8 +268,14 @@ SECTION_LAYOUT = [
     ]),
     ("Sliding Glass Door Install", False, [
         "Vinyl Sliding Glass Door (5' & 6' width)",
-        "Vinyl Sliding Glass Door (8' width or field assembled)",
-        "Oversize Vinyl Door (greater than 8' width)",
+        "Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)",
+        "Oversize Vinyl Door - (greater than 8' width)",
+    ]),
+    ("Window Material List", False, [
+        "Windows - .019 Coil (1 per 5 Sq Siding)",
+        "Windows - PVC Trim Coil (1 per 5 Sq Siding)",
+        "Windows - Performance G8 Trim Coil (1 per 5 Sq Siding)",
+        "Windows - Caulking (per color)",
     ]),
     ("Window Exterior Trim Work", False, [
         "New Exterior Primed Stops or Snap Trim",
@@ -248,7 +286,7 @@ SECTION_LAYOUT = [
         "New Interior Stops or Flat Trim",
         "New Interior Casing",
         "New Interior Jamb Extension",
-        "New Interior Sill - create or replace (QUOTE ONLY)",
+        "New Interior Sill - create or replace interior window sill - QUOTE ONLY",
     ]),
     ("Window Misc.", False, [
         "Interior Blinds - Remove For Window Install & Reinstall",
@@ -381,60 +419,105 @@ ITEM_META = {
     'LP Soffit 3/8" x 24" x 16\' Vented': ("PCS", 0),
     'LP Soffit 3/8" x 24" x 16\' Solid': ("PCS", 0),
     # ----------------- Window items (Vero product line) -----------------
-    # Units & labor defaults from Howard's "window price sheet". Where a
-    # row has a non-zero labor value in the spreadsheet, that becomes the
-    # default; contractors can still override per estimate. Materials live
-    # in WINDOWS_PRICES → TIER_PRICES below.
-    "Vero - Double Hung 0-101 UI": ("Each", 0),
-    "Vero - Slider 0-101 UI": ("Each", 0),
-    # 3 lite slider (split by UI range — prices via pricing admin once set)
-    "Vero - 3 lite slider 0-45 UI": ("Each", 0),
-    "Vero - 3 lite slider 46-70 UI": ("Each", 0),
-    "Vero - 3 lite slider 71-101 UI": ("Each", 0),
-    # Casement (split by UI range)
-    "Vero - Casement 0-45 UI": ("Each", 0),
-    "Vero - Casement 46-70 UI": ("Each", 0),
-    "Vero - Casement 71-101 UI": ("Each", 0),
-    # Picture (split by UI range)
-    "Vero - Picture 0-45 UI": ("Each", 0),
-    "Vero - Picture 46-70 UI": ("Each", 0),
-    "Vero - Picture 71-101 UI": ("Each", 0),
-    "Window Package Price": ("Each", 0),
-    "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE": ("Each", 0),
-    "Sentry System - Tilt Lock upgrade": ("Each", 0),
-    "Integral Nail Fin 0-101": ("Each", 0),
-    "Heavy Duty 1/2 Screen White ONLY": ("Each", 0),
-    "Window - Pocket Install": ("Each", 170),
-    "Window - Full Fin Replacement": ("Each", 252.45),
-    "Window - Block Frame Replacement": ("Each", 233.38),
-    "Large Window - adder for windows 30 sq-ft or larger": ("Each", 76.92),
-    "Field Mull Assembly and/or Field Glaze (adder per each opening)": ("Each", 53.85),
-    "Lead Safe Installation Practices For Window Installation": ("Each", 53.85),
-    "Lead Safe - Test Fee (all homes 1978 and older are tested)": ("Each", 0),
-    'Vero - Sliding glass door 60" x 80"': ("Each", 0),
-    'Vero - Sliding glass door 72" x 80"': ("Each", 0),
-    'Vero - Sliding glass door 96" x 80"': ("Each", 0),
-    "Vero - Sliding glass door Custom Size": ("Each", 0),
-    "Vinyl Sliding Glass Door (5' & 6' width)": ("Each", 669.63),
-    "Vinyl Sliding Glass Door (8' width or field assembled)": ("Each", 832.55),
-    "Oversize Vinyl Door (greater than 8' width)": ("Each", 1099.42),
-    "New Exterior Primed Stops or Snap Trim": ("Each", 49.65),
-    "New Exterior Primed Wood Trim": ("Each", 71.04),
-    "New Exterior Composite Trim": ("Each", 99.26),
-    "New Exterior Coil Trim": ("Each", 75.0),
-    "Cap window (Windows)": ("Each", 20),  # matches siding "Cap window"
-    "New Interior Stops or Flat Trim": ("Each", 20.0),
-    "New Interior Casing": ("Each", 77.62),
-    "New Interior Jamb Extension": ("Each", 89.13),
-    "New Interior Sill - create or replace (QUOTE ONLY)": ("Each", 120.0),
-    "Interior Blinds - Remove For Window Install & Reinstall": ("Each", 53.85),
-    "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)": ("Each", 38.46),
-    "Mullion Removal & Cut-Out of Non-Structural Framing Members": ("Each", 23.08),
-    "Storm Window Removal": ("Each", 23.08),
-    "Second/Third/Clear Story Fee": ("Each", 1846.15),
+    # Iter 36: each Vero product type now has its own section + its own
+    # size buckets (per Howard's updated Excel "window Whole Sale" sheet).
+    # All material prices start at $0 — Howard will set them via the
+    # pricing admin once the layout is approved. Labor defaults from the
+    # Excel; contractors override per estimate.
+    # Vero Double Hung — 8 size buckets
+    "Vero - Double Hung 0-101 UI": ("each", 0),
+    "Vero - Double Hung 102-110 UI": ("each", 0),
+    "Vero - Double Hung 111-120 UI": ("each", 0),
+    "Vero - Double Hung 121-130 UI": ("each", 0),
+    "Vero - Double Hung 131-140 UI": ("each", 0),
+    "Vero - Double Hung 141-150 UI": ("each", 0),
+    "Vero - Double Hung 151-160 UI": ("each", 0),
+    "Vero - Double Hung 161-170 UI": ("each", 0),
+    # Vero 2 Lite Slider — 8 size buckets
+    "Vero - Slider 0-101 UI": ("each", 0),
+    "Vero - Slider 102-110 UI": ("each", 0),
+    "Vero - Slider 111-120 UI": ("each", 0),
+    "Vero - Slider 121-130 UI": ("each", 0),
+    "Vero - Slider 131-140 UI": ("each", 0),
+    "Vero - Slider 141-150 UI": ("each", 0),
+    "Vero - Slider 151-160 UI": ("each", 0),
+    "Vero - Slider 161-170 UI": ("each", 0),
+    # Vero 3 Lite Slider — 13 size buckets
+    "Vero - 3 Lite Slider Min-73 UI": ("each", 0),
+    "Vero - 3 Lite Slider 74-83 UI": ("each", 0),
+    "Vero - 3 Lite Slider 84-93 UI": ("each", 0),
+    "Vero - 3 Lite Slider 94-101 UI": ("each", 0),
+    "Vero - 3 Lite Slider 102-110 UI": ("each", 0),
+    "Vero - 3 Lite Slider 111-120 UI": ("each", 0),
+    "Vero - 3 Lite Slider 121-130 UI": ("each", 0),
+    "Vero - 3 Lite Slider 131-140 UI": ("each", 0),
+    "Vero - 3 Lite Slider 141-150 UI": ("each", 0),
+    "Vero - 3 Lite Slider 151-160 UI": ("each", 0),
+    "Vero - 3 Lite Slider 161-170 UI": ("each", 0),
+    "Vero - 3 Lite Slider 171-180 UI": ("each", 0),
+    "Vero - 3 Lite Slider 181-190 UI": ("each", 0),
+    # Vero Casement — 8 size buckets
+    "Vero - Casement Min-43 UI": ("each", 0),
+    "Vero - Casement 44-53 UI": ("each", 0),
+    "Vero - Casement 54-63 UI": ("each", 0),
+    "Vero - Casement 64-73 UI": ("each", 0),
+    "Vero - Casement 74-83 UI": ("each", 0),
+    "Vero - Casement 84-93 UI": ("each", 0),
+    "Vero - Casement 93-101 UI": ("each", 0),
+    "Vero - Casement 102-108 UI": ("each", 0),
+    # Vero Picture — 13 size buckets
+    "Vero - Picture Min-73 UI": ("each", 0),
+    "Vero - Picture 74-83 UI": ("each", 0),
+    "Vero - Picture 84-93 UI": ("each", 0),
+    "Vero - Picture 94-101 UI": ("each", 0),
+    "Vero - Picture 102-110 UI": ("each", 0),
+    "Vero - Picture 111-120 UI": ("each", 0),
+    "Vero - Picture 121-130 UI": ("each", 0),
+    "Vero - Picture 131-140 UI": ("each", 0),
+    "Vero - Picture 141-150 UI": ("each", 0),
+    "Vero - Picture 151-160 UI": ("each", 0),
+    "Vero - Picture 161-170 UI": ("each", 0),
+    "Vero - Picture 171-180 UI": ("each", 0),
+    "Vero - Picture 181-190 UI": ("each", 0),
+    # Window install (labor defaults from the Excel)
+    "Window DH/Slider - Pocket Install": ("each", 170),
+    "Window - Full Fin Replacement": ("each", 252.45),
+    "Window - Block Frame Replacement": ("each", 233.38),
+    "Large Window - adder for windows 30 sq-ft or larger": ("each", 76.92),
+    "Field Mull Assembly and/or Field Glaze (adder per each opening)": ("each", 53.85),
+    "Lead Safe Installation Practices For Window Installation": ("each", 53.85),
+    "Lead Safe - Test Fee (all homes 1978 and older are tested)": ("each", 0),
+    # Sliding Glass Doors
+    'Vero - Sliding glass door 60" x 80"': ("each", 0),
+    'Vero - Sliding glass door 72" x 80"': ("each", 0),
+    'Vero - Sliding glass door 96" x 80"': ("each", 0),
+    "Vero - Sliding glass door Custom Size": ("each", 0),
+    "Vinyl Sliding Glass Door (5' & 6' width)": ("each", 669.63),
+    "Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)": ("each", 832.55),
+    "Oversize Vinyl Door - (greater than 8' width)": ("each", 1099.42),
+    # Exterior / Interior trim
+    "New Exterior Primed Stops or Snap Trim": ("each", 49.65),
+    "New Exterior Primed Wood Trim": ("each", 71.04),
+    "New Exterior Composite Trim": ("each", 99.26),
+    "Cap window (Windows)": ("each", 20),  # matches siding "Cap window"
+    "New Interior Stops or Flat Trim": ("each", 20.0),
+    "New Interior Casing": ("each", 77.62),
+    "New Interior Jamb Extension": ("each", 89.13),
+    "New Interior Sill - create or replace interior window sill - QUOTE ONLY": ("each", 120.0),
+    # Window Material List (windows-tab copies of siding-tab coils)
+    "Windows - .019 Coil (1 per 5 Sq Siding)": ("ROLL", 23),
+    "Windows - PVC Trim Coil (1 per 5 Sq Siding)": ("ROLL", 0),
+    "Windows - Performance G8 Trim Coil (1 per 5 Sq Siding)": ("ROLL", 0),
+    "Windows - Caulking (per color)": ("Each", 0),
+    # Window Misc.
+    "Interior Blinds - Remove For Window Install & Reinstall": ("each", 53.85),
+    "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)": ("each", 38.46),
+    "Mullion Removal & Cut-Out of Non-Structural Framing Members": ("each", 23.08),
+    "Storm Window Removal": ("each", 23.08),
+    "Second/Third/Clear Story Fee": ("each", 1846.15),
     "Job Measure Standard Fee 4 days+": ("JOB", 150.0),
     "Job Measure Rush Fee 3 days or less": ("ADD", 80.77),
-    "Add New Channel on ALL, Close up opening to match master Front opening": ("Each", 1200.0),
+    "Add New Channel on ALL, Close up opening to match master Front opening": ("each", 1200.0),
     "Minimum Job Charge For Window Installs": ("JOB", 769.23),
     "Disposal Fee (Windows)": ("JOB", 125.0),
 }
@@ -641,36 +724,142 @@ for _tier_dict in TIER_PRICES.values():
 # Install, etc.) carry $0 material — their labor lives in ITEM_META.
 # ---------------------------------------------------------------------------
 WINDOWS_PRICES = {
-    # Vero Windows — known prices
-    "Vero - Double Hung 0-101 UI": 294.55,
-    "Vero - Slider 0-101 UI": 294.55,
-    # Other window/door product rows currently $0 placeholders — Howard
-    # will fill in via the pricing admin once he has them.
-    "Vero - 3 lite slider 0-45 UI": 0,
-    "Vero - 3 lite slider 46-70 UI": 0,
-    "Vero - 3 lite slider 71-101 UI": 0,
-    "Vero - Casement 0-45 UI": 0,
-    "Vero - Casement 46-70 UI": 0,
-    "Vero - Casement 71-101 UI": 0,
-    "Vero - Picture 0-45 UI": 0,
-    "Vero - Picture 46-70 UI": 0,
-    "Vero - Picture 71-101 UI": 0,
-    "Window Package Price": 0,
-    # Upgrade options — material adders
-    "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE": 95.37,
-    "Sentry System - Tilt Lock upgrade": 38.15,
-    "Integral Nail Fin 0-101": 19.52,
-    "Heavy Duty 1/2 Screen White ONLY": 25.73,
-    # Sliding Glass Doors — material prices from Howard's updated sheet.
-    # Custom Size remains $0 (editable inline via EDITABLE_MAT_ITEMS).
+    # All Vero window prices start at $0 — Howard will fill them in via the
+    # pricing admin once he likes the new per-window-type layout (Iter 36).
+    # Double Hung
+    "Vero - Double Hung 0-101 UI": 0,
+    "Vero - Double Hung 102-110 UI": 0,
+    "Vero - Double Hung 111-120 UI": 0,
+    "Vero - Double Hung 121-130 UI": 0,
+    "Vero - Double Hung 131-140 UI": 0,
+    "Vero - Double Hung 141-150 UI": 0,
+    "Vero - Double Hung 151-160 UI": 0,
+    "Vero - Double Hung 161-170 UI": 0,
+    # 2 Lite Slider
+    "Vero - Slider 0-101 UI": 0,
+    "Vero - Slider 102-110 UI": 0,
+    "Vero - Slider 111-120 UI": 0,
+    "Vero - Slider 121-130 UI": 0,
+    "Vero - Slider 131-140 UI": 0,
+    "Vero - Slider 141-150 UI": 0,
+    "Vero - Slider 151-160 UI": 0,
+    "Vero - Slider 161-170 UI": 0,
+    # 3 Lite Slider — 13 buckets
+    "Vero - 3 Lite Slider Min-73 UI": 0,
+    "Vero - 3 Lite Slider 74-83 UI": 0,
+    "Vero - 3 Lite Slider 84-93 UI": 0,
+    "Vero - 3 Lite Slider 94-101 UI": 0,
+    "Vero - 3 Lite Slider 102-110 UI": 0,
+    "Vero - 3 Lite Slider 111-120 UI": 0,
+    "Vero - 3 Lite Slider 121-130 UI": 0,
+    "Vero - 3 Lite Slider 131-140 UI": 0,
+    "Vero - 3 Lite Slider 141-150 UI": 0,
+    "Vero - 3 Lite Slider 151-160 UI": 0,
+    "Vero - 3 Lite Slider 161-170 UI": 0,
+    "Vero - 3 Lite Slider 171-180 UI": 0,
+    "Vero - 3 Lite Slider 181-190 UI": 0,
+    # Casement — 8 buckets
+    "Vero - Casement Min-43 UI": 0,
+    "Vero - Casement 44-53 UI": 0,
+    "Vero - Casement 54-63 UI": 0,
+    "Vero - Casement 64-73 UI": 0,
+    "Vero - Casement 74-83 UI": 0,
+    "Vero - Casement 84-93 UI": 0,
+    "Vero - Casement 93-101 UI": 0,
+    "Vero - Casement 102-108 UI": 0,
+    # Picture — 13 buckets
+    "Vero - Picture Min-73 UI": 0,
+    "Vero - Picture 74-83 UI": 0,
+    "Vero - Picture 84-93 UI": 0,
+    "Vero - Picture 94-101 UI": 0,
+    "Vero - Picture 102-110 UI": 0,
+    "Vero - Picture 111-120 UI": 0,
+    "Vero - Picture 121-130 UI": 0,
+    "Vero - Picture 131-140 UI": 0,
+    "Vero - Picture 141-150 UI": 0,
+    "Vero - Picture 151-160 UI": 0,
+    "Vero - Picture 161-170 UI": 0,
+    "Vero - Picture 171-180 UI": 0,
+    "Vero - Picture 181-190 UI": 0,
+    # Sliding Glass Doors — material prices kept from previous catalog
+    # (Custom Size stays $0; editable inline via EDITABLE_MAT_ITEMS).
     'Vero - Sliding glass door 60" x 80"': 1025.99,
     'Vero - Sliding glass door 72" x 80"': 1114.70,
     'Vero - Sliding glass door 96" x 80"': 1253.09,
     "Vero - Sliding glass door Custom Size": 0,
+    # Window Material List — windows-tab copies (siding-tab coils are
+    # priced; these start at $0 so Howard can set windows-specific prices).
+    "Windows - .019 Coil (1 per 5 Sq Siding)": 0,
+    "Windows - PVC Trim Coil (1 per 5 Sq Siding)": 0,
+    "Windows - Performance G8 Trim Coil (1 per 5 Sq Siding)": 0,
+    "Windows - Caulking (per color)": 0,
 }
 
 for _tier_dict in TIER_PRICES.values():
     _tier_dict.update(WINDOWS_PRICES)
+
+
+# ---------------------------------------------------------------------------
+# WINDOW ADDERS (Iter 36) — per-window-type upgrade options. These are
+# rendered as toggleable checkboxes on each window line in the UI; when
+# checked, the adder's mat/lab is multiplied by line.qty and folded into
+# the line's effective price (services.calc_totals + lib/calc.js).
+#
+# Format: { section_title: [ {name, unit, mat, lab}, ... ] }
+# All adder prices start at $0 — Howard fills them in once he likes the
+# layout. Adders are stored on the catalog section so the frontend can
+# discover the full list without hard-coding it.
+# ---------------------------------------------------------------------------
+_DH_SLIDER_ADDERS = [
+    {"name": "Tan Interior/Tan Exterior", "unit": "each", "mat": 0, "lab": 0},
+    {"name": "Tempered glass", "unit": "each", "mat": 0, "lab": 0},
+    {"name": "Obscure Glass", "unit": "each", "mat": 0, "lab": 0},
+    {"name": "Grid Pattern", "unit": "each", "mat": 0, "lab": 0},
+    {"name": "Integral Nailing Fin", "unit": "each", "mat": 0, "lab": 0},
+    {"name": "White Interior/Laminate Exterior", "unit": "each", "mat": 0, "lab": 0},
+    {"name": "Woodgrain Interior/White Exterior", "unit": "each", "mat": 0, "lab": 0},
+    {"name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE", "unit": "each", "mat": 0, "lab": 0},
+]
+
+WINDOW_ADDERS = {
+    "Vero Double Hung Windows": list(_DH_SLIDER_ADDERS),
+    "Vero 2 Lite Slider Windows": list(_DH_SLIDER_ADDERS),
+    "Vero 3 Lite Slider Windows": [
+        {"name": "Tan Interior/Tan Exterior", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Tempered glass", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Obscure Glass Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Obscure Glass per u.i. over 101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Grid Pattern", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Integral Nailing Fin", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "White Interior/Laminate Exterior", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Woodgrain Interior/White Exterior", "unit": "each", "mat": 0, "lab": 0},
+    ],
+    "Vero Casement Windows": [
+        {"name": "Tan Interior/Tan Exterior", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Obscure Glass Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Obscure Glass 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Grid Pattern Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Grid Pattern 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Integral Nailing Fin Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Integral Nailing Fin 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Painted Exterior Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Painted Exterior 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Interior Finish Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Interior Finish 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+    ],
+    "Vero Picture Windows": [
+        {"name": "Obscure Glass Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Obscure Glass 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Grid Pattern Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Grid Pattern 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Integral Nailing Fin Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Integral Nailing Fin 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Painted Exterior Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Painted Exterior 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Interior Finish Min-101 UI", "unit": "each", "mat": 0, "lab": 0},
+        {"name": "Interior Finish 102-108 UI", "unit": "each", "mat": 0, "lab": 0},
+    ],
+}
 
 
 # AMI part numbers from Alside's price sheet — used on the printed material list
@@ -770,12 +959,17 @@ SECTION_PRODUCT_LINES = {
     "LP SmartSide Trim": ["lp_smart"],
     "LP Siding Accessories": ["lp_smart"],
     "LP SmartSide Soffit": ["lp_smart"],
-    # Windows tab — Vero product line lives entirely on its own.
-    "Vero Windows": ["windows"],
-    "Window Upgrade Options": ["windows"],
+    # Windows tab — Vero product line lives entirely on its own. Iter 36:
+    # each Vero window type is now its own section with per-type adders.
+    "Vero Double Hung Windows": ["windows"],
+    "Vero 2 Lite Slider Windows": ["windows"],
+    "Vero 3 Lite Slider Windows": ["windows"],
+    "Vero Casement Windows": ["windows"],
+    "Vero Picture Windows": ["windows"],
     "Window Installation": ["windows"],
     "Vero Sliding Glass Doors": ["windows"],
     "Sliding Glass Door Install": ["windows"],
+    "Window Material List": ["windows"],
     "Window Exterior Trim Work": ["windows"],
     "Window Interior Trim Work": ["windows"],
     "Window Misc.": ["windows"],
@@ -811,12 +1005,22 @@ def build_tier_sections(tier_name: str) -> list:
                 "lab": float(lab),  # labor default — contractor can override
                 "ami_part": ITEM_AMI.get(n),
             })
-        out.append({
+        section = {
             "title": title,
             "ascend": ascend,
             "product_lines": product_lines_for(title),
             "items": items,
-        })
+        }
+        # Iter 36: window-product sections carry per-type adders. Frontend
+        # discovers available adders via this field and renders checkboxes
+        # under each window line. Adders are NOT line items themselves.
+        if title in WINDOW_ADDERS:
+            section["adders"] = [
+                {"name": a["name"], "unit": a["unit"],
+                 "mat": float(a["mat"]), "lab": float(a["lab"])}
+                for a in WINDOW_ADDERS[title]
+            ]
+        out.append(section)
     return out
 
 

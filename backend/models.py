@@ -69,6 +69,15 @@ class InviteContractorIn(BaseModel):
     personal_note: Optional[str] = None  # Optional message from supplier admin
 
 
+class EstimateLineAdder(BaseModel):
+    """Per-line upgrade adder (windows only currently). When set on a
+    line, its mat/lab is multiplied by line.qty and folded into the
+    line's effective material/labor total (services.calc_totals)."""
+    name: str
+    mat: float = 0
+    lab: float = 0
+
+
 class EstimateLine(BaseModel):
     section: str
     name: str
@@ -78,11 +87,15 @@ class EstimateLine(BaseModel):
     lab: float = 0
     ami_part: Optional[str] = None  # Snapshotted at quote time so re-runs are reproducible
     # Which "tab" (product-line option) in the estimator this line belongs to.
-    # "vinyl" (default — backward compat), "ascend", or "lp_smart".
-    # Lets one estimate carry three parallel option sets — e.g. Vinyl vs.
+    # "vinyl" (default — backward compat), "ascend", "lp_smart", or "windows".
+    # Lets one estimate carry parallel option sets — e.g. Vinyl vs.
     # Ascend vs. LP Smart Siding — so the homeowner can compare them on
     # one quote.
     tab: str = "vinyl"
+    # Iter 36: selected per-line adders (windows-tab only currently).
+    # Stored as a list rather than a flag-per-adder dict so new adders
+    # added to the catalog don't require an estimate-schema migration.
+    adders: List[EstimateLineAdder] = []
 
 
 class MiscLine(BaseModel):

@@ -28,7 +28,7 @@ export default function EstimateEditor() {
   const { lang } = useLang();
   const { company } = useCompany();
   const branding = useBranding();
-  const { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, save } = useEstimate(id);
+  const { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, toggleLineAdder, save } = useEstimate(id);
   // Start with every section collapsed so the editor stays compact —
   // contractors expand only the categories they need for the job.
   const [openSections, setOpenSections] = useState({});
@@ -284,6 +284,7 @@ export default function EstimateEditor() {
               onQty={updateLineQty}
               onField={updateLineField}
               onResetLine={resetLineToDefault}
+              onToggleAdder={toggleLineAdder}
               est={est}
               update={update}
               activeTab={activeTab}

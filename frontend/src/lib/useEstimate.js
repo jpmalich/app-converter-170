@@ -101,6 +101,10 @@ export default function useEstimate(id) {
                 // Catalog defaults — used to flag overrides in the UI.
                 defaultMat: it.mat,
                 defaultLab: it.lab,
+                // Iter 36: per-line adders (windows-tab only). Preserved
+                // verbatim across catalog merges so toggled upgrades
+                // round-trip cleanly through save/reload.
+                adders: saved && Array.isArray(saved.adders) ? saved.adders : [],
               });
             });
           });
@@ -175,6 +179,33 @@ export default function useEstimate(id) {
     setUserEdits((n) => n + 1);
   }, []);
 
+  // Iter 36: toggle an adder on/off for a specific window line. `adderDef`
+  // is the catalog entry { name, mat, lab } from section.adders — when
+  // toggled on we append it to line.adders, when toggled off we remove
+  // the entry matching by name.
+  const toggleLineAdder = useCallback((tab, section, name, adderDef) => {
+    setEst((e) => ({
+      ...e,
+      lines: e.lines.map((l) => {
+        if (!matchLine(l, tab, section, name)) return l;
+        const current = Array.isArray(l.adders) ? l.adders : [];
+        const exists = current.some((a) => a.name === adderDef.name);
+        const next = exists
+          ? current.filter((a) => a.name !== adderDef.name)
+          : [
+              ...current,
+              {
+                name: adderDef.name,
+                mat: Number(adderDef.mat) || 0,
+                lab: Number(adderDef.lab) || 0,
+              },
+            ];
+        return { ...l, adders: next };
+      }),
+    }));
+    setUserEdits((n) => n + 1);
+  }, []);
+
   // Build the PUT payload from an estimate object. Used by both save()
   // and any caller that needs to persist freshly-merged data without
   // waiting for React state to flush (e.g. HOVER apply, catalog sync —
@@ -215,6 +246,14 @@ export default function useEstimate(id) {
           mat: l.mat,
           lab: l.lab,
           ami_part: l.ami_part || null,
+          // Iter 36: persist selected per-line adders (windows-tab only).
+          adders: Array.isArray(l.adders)
+            ? l.adders.map((a) => ({
+                name: a.name,
+                mat: Number(a.mat) || 0,
+                lab: Number(a.lab) || 0,
+              }))
+            : [],
         })),
       misc_labor: (source.misc_labor || []).map((m) => ({ ...m, tab: m.tab || "vinyl" })),
       misc_material: (source.misc_material || []).map((m) => ({ ...m, tab: m.tab || "vinyl" })),
@@ -343,5 +382,5 @@ export default function useEstimate(id) {
     };
   }, [id, userEdits, buildPayload]);
 
-  return { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, save };
+  return { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, toggleLineAdder, save };
 }

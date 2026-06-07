@@ -42,6 +42,7 @@ export default function SectionAccordion({
   onQty,
   onField,
   onResetLine,
+  onToggleAdder,
   est,
   update,
   activeTab = "vinyl",
@@ -82,7 +83,14 @@ export default function SectionAccordion({
   });
 
   const sectionSell =
-    lines.reduce((sum, l) => sum + (l.qty || 0) * ((l.mat || 0) + (l.lab || 0)), 0) +
+    // Iter 36: include selected adders in the section header total so
+    // toggling an upgrade visibly bumps the section subtotal.
+    lines.reduce((sum, l) => {
+      const adders = Array.isArray(l.adders) ? l.adders : [];
+      const aMat = adders.reduce((s, a) => s + (Number(a.mat) || 0), 0);
+      const aLab = adders.reduce((s, a) => s + (Number(a.lab) || 0), 0);
+      return sum + (l.qty || 0) * ((l.mat || 0) + aMat + (l.lab || 0) + aLab);
+    }, 0) +
     miscRows.reduce((s, m) => s + (m.mat || 0) + (m.lab || 0), 0);
 
   const filledCount = lines.filter((l) => (l.qty || 0) > 0).length + miscRows.length;
@@ -151,13 +159,38 @@ export default function SectionAccordion({
       return next;
     });
 
+  // Iter 36: track which window lines have their adder block expanded.
+  // Keyed by `${l.tab}::${l.name}` so multiple lines with the same name
+  // across tabs stay independent.
+  const [openAdders, setOpenAdders] = useState(() => new Set());
+  const toggleAddersOpen = (key) =>
+    setOpenAdders((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   const renderLine = (l) => {
-    const total = (l.qty || 0) * ((l.mat || 0) + (l.lab || 0));
+    // Iter 36: per-line adders bump the effective per-unit material/labor
+    // before we multiply by qty. Mirrors backend services.calc_totals.
+    const lineAdders = Array.isArray(l.adders) ? l.adders : [];
+    const adderMat = lineAdders.reduce((s, a) => s + (Number(a.mat) || 0), 0);
+    const adderLab = lineAdders.reduce((s, a) => s + (Number(a.lab) || 0), 0);
+    const total = (l.qty || 0) * ((l.mat || 0) + adderMat + (l.lab || 0) + adderLab);
     const labOverridden = l.defaultLab != null && Number(l.lab) !== Number(l.defaultLab);
     const isCommon = isCommonOnTab(l.name, activeTab);
+    // The catalog ships per-section adders for window-product sections.
+    // Only show the toggle row when the section actually has adders and
+    // the line has a qty (no point picking upgrades on an empty row).
+    const sectionAdders = Array.isArray(section.adders) ? section.adders : [];
+    const showAdderUI = sectionAdders.length > 0 && (l.qty || 0) > 0;
+    const adderKey = `${l.tab}::${l.name}`;
+    const isAdderOpen = openAdders.has(adderKey);
+    const selectedAdderNames = new Set(lineAdders.map((a) => a.name));
     return (
+      <React.Fragment key={adderKey}>
       <div
-        key={`${l.tab}::${l.name}`}
         className={`grid grid-cols-12 gap-3 px-4 md:px-5 py-3 md:py-2 border-b border-[#E4E4E7] items-center ${
           isCommon ? "bg-yellow-50" : ""
         }`}
@@ -267,6 +300,65 @@ export default function SectionAccordion({
           {fmt(total)}
         </div>
       </div>
+      {showAdderUI && (
+        <div className="border-b border-[#E4E4E7] bg-[#FAFAFA]" data-testid={`adder-block-${l.name}`}>
+          <button
+            type="button"
+            onClick={() => toggleAddersOpen(adderKey)}
+            className="w-full flex items-center justify-between px-4 md:px-5 py-2 text-left text-[11px] uppercase tracking-[0.18em] text-[#52525B] hover:text-[#09090B]"
+            data-testid={`adder-toggle-${l.name}`}
+          >
+            <span className="flex items-center gap-2">
+              {isAdderOpen ? (
+                <ChevronDown className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5" />
+              )}
+              Upgrade Options
+              {lineAdders.length > 0 && (
+                <span className="bg-[#F97316] text-white px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                  {lineAdders.length}
+                </span>
+              )}
+            </span>
+            <span className="font-mono-num text-[11px] text-[#52525B] normal-case tracking-normal">
+              {adderMat + adderLab > 0 ? `+${fmt(adderMat + adderLab)} / unit` : ""}
+            </span>
+          </button>
+          {isAdderOpen && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 px-4 md:px-8 pb-3 pt-1">
+              {sectionAdders.map((a) => {
+                const checked = selectedAdderNames.has(a.name);
+                const adderUnitCost = (Number(a.mat) || 0) + (Number(a.lab) || 0);
+                return (
+                  <label
+                    key={a.name}
+                    className={`flex items-center gap-2.5 text-[13px] cursor-pointer py-1.5 border-b border-[#EDEDF0] last:border-b-0 ${
+                      checked ? "text-[#09090B] font-semibold" : "text-[#3F3F46]"
+                    }`}
+                    data-testid={`adder-option-${l.name}-${a.name}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 accent-[#F97316] flex-shrink-0"
+                      checked={checked}
+                      onChange={() =>
+                        onToggleAdder && onToggleAdder(l.tab, l.section, l.name, a)
+                      }
+                      data-testid={`adder-checkbox-${l.name}-${a.name}`}
+                    />
+                    <span className="flex-1 leading-snug">{a.name}</span>
+                    <span className="font-mono-num text-[11px] text-[#71717A] whitespace-nowrap">
+                      {adderUnitCost > 0 ? `+${fmt(adderUnitCost)}` : "—"}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+      </React.Fragment>
     );
   };
 

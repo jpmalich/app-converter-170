@@ -41,8 +41,11 @@ EXPECTED = [
         {"whole-sale": 0, "Contractor": 0, "Builder-Dealer": 0, "one-opp": 0},
     ),
     (
+        # Iter 36: all Vero window prices reset to $0 — Howard will fill
+        # them in via the pricing admin once he likes the new per-window-
+        # type layout. Track Double Hung 0-101 UI as the canonical sample.
         "Vero - Double Hung 0-101 UI",
-        {"whole-sale": 294.55, "Contractor": 294.55, "Builder-Dealer": 294.55, "one-opp": 294.55},
+        {"whole-sale": 0, "Contractor": 0, "Builder-Dealer": 0, "one-opp": 0},
     ),
     (
         "LP Strand Lap Siding 3/8\" x 8' x 16'".replace("8' x 16'", "8\" x 16'"),  # exact key

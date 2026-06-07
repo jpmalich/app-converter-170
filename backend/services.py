@@ -179,6 +179,73 @@ async def ensure_tiers_seeded():
         {"$set": {"sections.$[].items.$[it].mat": 0.0}},
         array_filters=[{"it.name": 'Fascia/rake or frieze up to 8" coverage'}],
     )
+    # Iter 36: window catalog restructured into per-product-type sections
+    # (Vero Double Hung / 2 Lite Slider / 3 Lite Slider / Casement /
+    # Picture) plus a new "Window Material List" section. The old umbrella
+    # "Vero Windows" and "Window Upgrade Options" sections are gone. Pull
+    # them out of every existing tier doc so they don't ghost-render in
+    # the UI (build_tier_sections() generates the replacement set, which
+    # the existing append-new-sections loop below picks up). Also wipe any
+    # historical estimate lines that referenced those obsolete sections —
+    # user confirmed this is pre-production test data and old window rows
+    # are safe to drop.
+    OBSOLETE_WINDOW_SECTIONS = ["Vero Windows", "Window Upgrade Options"]
+    await db.price_tiers.update_many(
+        {"sections.title": {"$in": OBSOLETE_WINDOW_SECTIONS}},
+        {"$pull": {"sections": {"title": {"$in": OBSOLETE_WINDOW_SECTIONS}}}},
+    )
+    await db.estimates.update_many(
+        {"lines.section": {"$in": OBSOLETE_WINDOW_SECTIONS}},
+        {"$pull": {"lines": {"section": {"$in": OBSOLETE_WINDOW_SECTIONS}}}},
+    )
+    # Also wipe stale lines that referenced the OLD Vero size buckets
+    # (e.g. "Vero - 3 lite slider 0-45 UI") — none of these names exist in
+    # the new layout, so any saved estimate line carrying one would just
+    # produce a ghost row in the editor. Bounded list so we don't touch
+    # the renamed-but-still-valid Double Hung / Slider 0-101 UI rows.
+    OBSOLETE_WINDOW_ITEMS = [
+        "Vero - 3 lite slider 0-45 UI",
+        "Vero - 3 lite slider 46-70 UI",
+        "Vero - 3 lite slider 71-101 UI",
+        "Vero - Casement 0-45 UI",
+        "Vero - Casement 46-70 UI",
+        "Vero - Casement 71-101 UI",
+        "Vero - Picture 0-45 UI",
+        "Vero - Picture 46-70 UI",
+        "Vero - Picture 71-101 UI",
+        "Window Package Price",
+        "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+        "Sentry System - Tilt Lock upgrade",
+        "Integral Nail Fin 0-101",
+        "Heavy Duty 1/2 Screen White ONLY",
+        # Renamed install line
+        "Window - Pocket Install",
+        # Renamed door rows
+        "Vinyl Sliding Glass Door (8' width or field assembled)",
+        "Oversize Vinyl Door (greater than 8' width)",
+        # Renamed interior trim row
+        "New Interior Sill - create or replace (QUOTE ONLY)",
+        # Removed coil trim from Window Installation (it duplicated Cap window)
+        "New Exterior Coil Trim",
+    ]
+    await db.estimates.update_many(
+        {"lines.name": {"$in": OBSOLETE_WINDOW_ITEMS}},
+        {"$pull": {"lines": {"name": {"$in": OBSOLETE_WINDOW_ITEMS}}}},
+    )
+    # Iter 36 follow-up: an earlier boot snapshotted `Vero - Double Hung
+    # 0-101 UI` at its old $294.55 wholesale price into the new "Vero
+    # Double Hung Windows" section before Howard's "reset all window
+    # prices to $0" decision landed. Force-set mat=0 for that one row so
+    # the new layout starts truly clean. Idempotent: subsequent boots
+    # find mat already 0 and skip the write.
+    await db.price_tiers.update_many(
+        {"sections.items": {"$elemMatch": {
+            "name": "Vero - Double Hung 0-101 UI",
+            "mat": {"$ne": 0},
+        }}},
+        {"$set": {"sections.$[].items.$[it].mat": 0.0}},
+        array_filters=[{"it.name": "Vero - Double Hung 0-101 UI"}],
+    )
     BACKFILL = [
         TRIM, "ASCEND Finish Trim", "Ascend - Starter",
         ".019 Coil (1 per 50' fascia)",
@@ -384,6 +451,14 @@ async def ensure_tiers_seeded():
                     if meta and meta[0] and item.get("unit") != meta[0]:
                         item["unit"] = meta[0]
                         dirty = True
+                # Iter 36: reconcile the `adders` field on window sections
+                # so per-window-type upgrade options propagate to existing
+                # tier docs without a manual rebuild. Idempotent: only
+                # writes when the DB value disagrees with the catalog.
+                want_adders = fresh_sec.get("adders")
+                if want_adders is not None and sec.get("adders") != want_adders:
+                    sec["adders"] = want_adders
+                    dirty = True
         # Append any sections introduced by a newer SECTION_LAYOUT that don't
         # yet exist in this tier doc (e.g. the LP SmartSide sections added
         # in Iter 22 — without this step the rebuild loop above would skip
@@ -442,12 +517,18 @@ def calc_totals(est: dict) -> dict:
     lines = est.get("lines", []) or []
     misc_labor = est.get("misc_labor", []) or []
     misc_material = est.get("misc_material", []) or []
+    # Iter 36: each line may carry selected adders; their mat/lab is
+    # multiplied by line.qty and folded into the line subtotals.
+    def _adders_mat(ln: dict) -> float:
+        return sum(float(a.get("mat") or 0) for a in (ln.get("adders") or []))
+    def _adders_lab(ln: dict) -> float:
+        return sum(float(a.get("lab") or 0) for a in (ln.get("adders") or []))
     sub_mat = (
-        sum((ln.get("qty", 0) or 0) * (ln.get("mat", 0) or 0) for ln in lines)
+        sum((ln.get("qty", 0) or 0) * ((ln.get("mat", 0) or 0) + _adders_mat(ln)) for ln in lines)
         + sum((m.get("mat", 0) or 0) for m in misc_material)
     )
     sub_lab = (
-        sum((ln.get("qty", 0) or 0) * (ln.get("lab", 0) or 0) for ln in lines)
+        sum((ln.get("qty", 0) or 0) * ((ln.get("lab", 0) or 0) + _adders_lab(ln)) for ln in lines)
         + sum((m.get("lab", 0) or 0) for m in misc_material)
         + sum((m.get("lab", 0) or 0) for m in misc_labor)
     )

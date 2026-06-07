@@ -48,7 +48,7 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
                 "lab_overridden": "lab" in ov,
                 "ami_part": it.get("ami_part"),    # carry SKU through for material list
             })
-        sections.append({
+        section_out = {
             "title": s["title"],
             "ascend": s.get("ascend", False),
             # product_lines is the source of truth for which "tab" (vinyl /
@@ -57,7 +57,17 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
             # still render correctly without a DB migration.
             "product_lines": s.get("product_lines") or product_lines_for(s["title"]),
             "items": items_out,
-        })
+        }
+        # Iter 36: pass per-section adders (windows-tab only) through to
+        # the frontend so SectionAccordion can render the upgrade-options
+        # checkboxes under each window line.
+        if s.get("adders"):
+            section_out["adders"] = [
+                {"name": a["name"], "unit": a.get("unit") or "each",
+                 "mat": float(a.get("mat") or 0), "lab": float(a.get("lab") or 0)}
+                for a in s["adders"]
+            ]
+        sections.append(section_out)
     # Sort sections by their position in SECTION_LAYOUT so the order is always
     # canonical (matches code) regardless of how they were appended to the DB
     # tier doc over time. Sections we don't know about (legacy / renamed)
