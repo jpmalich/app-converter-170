@@ -241,3 +241,41 @@ export const WINDOW_WRAP_COLORS = [
   "Tuscan Clay", "Vintage Wicker", "Wedgewood Blue", "Wicker",
   "Window Beige", "Window Forest Green",
 ];
+
+// Mezzo (3000 Series) replacement-window factory finishes (Howard's spec).
+// Exterior = 3 extruded solids + 10 FrameWorks finishes; Interior = same 3
+// extruded solids + 6 woodgrain laminates. Each palette is split into
+// optgroups so the dropdown surfaces the most-common (solid) picks first.
+export const MEZZO_EXTERIOR_COLOR_GROUPS = [
+  {
+    label: "Extruded Solid",
+    colors: ["White", "Beige", "Classic Clay"],
+  },
+  {
+    label: "FrameWorks Finish",
+    colors: [
+      "Black Laminate", "Architectural Bronze", "American Terra",
+      "Hudson Khaki", "Desert Clay", "Sand Dune",
+      "English Red", "Forest Green", "Silver", "Castle Gray",
+    ],
+  },
+];
+
+export const MEZZO_INTERIOR_COLOR_GROUPS = [
+  {
+    label: "Extruded Solid",
+    colors: ["White", "Beige", "Classic Clay"],
+  },
+  {
+    label: "Woodgrain Laminate",
+    colors: [
+      "White Woodgrain", "Rich Maple", "Light Oak", "Dark Oak",
+      "Foxwood", "Cherry",
+    ],
+  },
+];
+
+// Flat exports for callers (PDF / email render) that just need the full
+// allow-list without optgroup hierarchy.
+export const MEZZO_EXTERIOR_COLORS = MEZZO_EXTERIOR_COLOR_GROUPS.flatMap((g) => g.colors);
+export const MEZZO_INTERIOR_COLORS = MEZZO_INTERIOR_COLOR_GROUPS.flatMap((g) => g.colors);
