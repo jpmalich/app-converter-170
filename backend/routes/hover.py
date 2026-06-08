@@ -470,6 +470,25 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: int(m.get("window_count") or 0),
         "note": "1 cap per HOVER window (default exterior wrap)",
     },
+    # Iter 42e: standard fee + disposal fee — always 1 per HOVER upload on
+    # any windows estimate (paired or standalone). Howard wanted these to
+    # land automatically since every job carries them.
+    {
+        "tabs": ["windows"],
+        "section": "Window Installation",
+        "item": "Job Measure Standard Fee 4 days+",
+        "unit": "JOB",
+        "extract": lambda m: 1 if (int(m.get("window_count") or 0) > 0 or int(m.get("patio_door_count") or 0) > 0) else 0,
+        "note": "Standard measure fee — one per job",
+    },
+    {
+        "tabs": ["windows"],
+        "section": "Window Installation",
+        "item": "Disposal Fee (Windows)",
+        "unit": "JOB",
+        "extract": lambda m: 1 if (int(m.get("window_count") or 0) > 0 or int(m.get("patio_door_count") or 0) > 0) else 0,
+        "note": "Disposal fee — one per job",
+    },
 ]
 
 
