@@ -24,6 +24,7 @@ import logging
 import os
 import re
 import tempfile
+import uuid
 from typing import Optional
 
 import pdfplumber
@@ -33,6 +34,40 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from deps import get_current_user
+
+
+# -----------------------------------------------------------------------------
+# Window-style guessing — HOVER reports DON'T tell us if a window is DH vs
+# slider vs casement. They only give the rough opening (W × H). These rules
+# pick the most likely Vero product type from those two numbers. Contractors
+# can override per opening in the preview modal before applying.
+#
+# Rules apply in order — first match wins. Tuned to Howard's real-world bias:
+# 99% of replacement openings end up as Double Hung; we only switch when
+# dimensions strongly indicate otherwise.
+# -----------------------------------------------------------------------------
+def _guess_vero_product_type(width_in: float, height_in: float) -> str:
+    w = float(width_in or 0)
+    h = float(height_in or 0)
+    if w <= 0 or h <= 0:
+        return "Vero Double Hung"
+
+    # Casement = TRULY small openings (kitchen above-sink, bath transom).
+    # Howard's stock answer is DH for anything else, so keep this tight.
+    if w <= 28 and h <= 36:
+        return "Vero 1-Lite Casement"
+    # Picture = large + nearly square fixed glass. Requires BOTH sides ≥ 48"
+    # and < 20% aspect difference so we don't catch tall bedroom DHs (49×62).
+    if w >= 48 and h >= 48 and abs(w - h) / max(w, h) < 0.20:
+        return "Vero Picture"
+    # 3-Lite slider (XOX) = very wide AND landscape orientation
+    if w >= 60 and w > h:
+        return "Vero 3-Lite Slider"
+    # 2-Lite slider (XO) = wide AND landscape orientation
+    if w >= 40 and w > h:
+        return "Vero 2-Lite Slider"
+    # Default everything else to DH (matches Howard's 99% bias for replacements)
+    return "Vero Double Hung"
 
 load_dotenv()
 
@@ -391,39 +426,18 @@ HOVER_MAPPING_SPEC = [
         "note": "1 per garage door (OHD-N or ≥72×84in)",
     },
     # =====================================================================
-    # WINDOWS TAB — Vero product line. HOVER reports window count + entry/
-    # patio door counts. Default mappings:
-    #   - 1 Vero Double Hung per HOVER window (most common style; contractor
-    #     swaps to slider/casement/picture per line)
-    #   - 1 Pocket Install labor row per window (most common install method
-    #     for replacement jobs; contractor swaps to Full Fin / Block Frame
-    #     as needed)
-    #   - 1 of each appropriate Sliding Glass Door + install line per
-    #     HOVER patio_door_count, defaulting to 60" × 80"
+    # WINDOWS TAB — per-opening Vero entries are built separately from the
+    # extracted windows[] list (see _build_vero_openings below). These two
+    # catalog-line mappings cover the labor rows that still live in the
+    # standard "Window Installation" section.
     # =====================================================================
     {
         "tabs": ["windows"],
-        "section": "Vero Windows",
-        "item": "Vero - Double Hung 0-101 UI",
-        "unit": "Each",
-        "extract": lambda m: int(m.get("window_count") or 0),
-        "note": "1 per HOVER window — change style on the line if needed",
-    },
-    {
-        "tabs": ["windows"],
         "section": "Window Installation",
-        "item": "Window - Pocket Install",
+        "item": "Window DH/Slider - Pocket Install",
         "unit": "Each",
         "extract": lambda m: int(m.get("window_count") or 0),
         "note": "Default install method — swap to Full Fin/Block Frame per job",
-    },
-    {
-        "tabs": ["windows"],
-        "section": "Vero Sliding Glass Doors",
-        "item": 'Vero - Sliding glass door 60" x 80"',
-        "unit": "Each",
-        "extract": lambda m: int(m.get("patio_door_count") or 0),
-        "note": "1 per HOVER patio door — change size on the line if needed",
     },
     {
         "tabs": ["windows"],
@@ -459,9 +473,35 @@ class HoverLine(BaseModel):
     tab: str = "vinyl"
 
 
+class HoverVeroOpening(BaseModel):
+    """One Vero W×H per-opening row produced from a HOVER window. Mirrors the
+    `vero_openings[]` shape the estimator stores on the Estimate doc."""
+    id: str
+    product_type: str
+    label: str = ""
+    width: float
+    height: float
+    qty: int = 1
+    sister_color: str = "White Interior/White Exterior"
+    glass_package: str = ""
+    tempered_upcharge: str = ""
+    premium_options: list[str] = []
+    sizing: str = "ui_bucket"
+    # Catalog-resolved snapshots are recomputed by VeroPanel after merge.
+    bucket_label: str = ""
+    base_mat: float = 0
+    glass_mat: float = 0
+    tempered_mat: float = 0
+    premium_mat: float = 0
+    # The original HOVER ID (W-101 etc.) — surfaced in the preview so the
+    # contractor can match it back to the elevations.
+    hover_id: str = ""
+
+
 class HoverImportResult(BaseModel):
     measurements: dict
     lines: list[HoverLine]
+    vero_openings: list[HoverVeroOpening] = []
     raw_extract_chars: int
 
 
@@ -499,8 +539,22 @@ PROMPT_TEMPLATE = """Extract from this HOVER report:
   "patio_door_count": <number of sliding/patio doors — typically `SGD-N` IDs (Sliding Glass Door), or `FD-N` (French Door)>,
   "garage_door_count": <number of garage/overhead doors — `OHD-N` prefix, or any door with width >= 96in (8ft, the smallest standard garage door). Most garage doors are 96-216in wide.>,
   "stories": <"1" | ">1" | "2" etc as printed>,
-  "address": <property address if shown, else null>
+  "address": <property address if shown, else null>,
+  "windows": [
+    {{ "id": "W-101", "width_in": 29.0, "height_in": 51.0 }},
+    ... one object per individual window opening listed in the Doors & Windows table ...
+  ]
 }}
+
+Window extraction rules:
+  - Pull EVERY individual window listed (W-101, W-202, etc.). Window-group rows
+    (WG-1, WG-2) are usually composites of the underlying W-N openings — skip
+    the WG rows and only emit the individual W-N entries.
+  - width_in is the SHORTER horizontal dimension (always the first number).
+  - height_in is the VERTICAL dimension (second number).
+  - Always emit inches as decimals. `29"` → 29.0.
+  - Skip rows that are clearly doors (D-, SGD-, FD-, OHD- prefix).
+  - If no individual window dimensions are available, emit an empty list [].
 
 Door classification rules (apply in this order):
   1. Any door with prefix `SGD-` or `FD-` → patio_door_count
@@ -622,6 +676,46 @@ def _build_lines(measurements: dict) -> list[dict]:
     return out
 
 
+def _build_vero_openings(measurements: dict) -> list[dict]:
+    """Turn the extracted `windows[]` list into Vero opening rows with a
+    smart-guessed product_type per opening. HOVER doesn't tell us if a window
+    is DH vs slider vs casement, so `_guess_vero_product_type` picks a best
+    default from W × H. Contractors edit on the preview before applying."""
+    out: list[dict] = []
+    raw = measurements.get("windows") or []
+    if not isinstance(raw, list):
+        return out
+    for w in raw:
+        try:
+            wid = float(w.get("width_in") or 0)
+            hgt = float(w.get("height_in") or 0)
+        except (TypeError, ValueError):
+            continue
+        if wid <= 0 or hgt <= 0:
+            continue
+        hover_id = str(w.get("id") or "").strip()
+        out.append({
+            "id": str(uuid.uuid4()),
+            "hover_id": hover_id,
+            "product_type": _guess_vero_product_type(wid, hgt),
+            "label": hover_id,
+            "width": wid,
+            "height": hgt,
+            "qty": 1,
+            "sister_color": "White Interior/White Exterior",
+            "glass_package": "",
+            "tempered_upcharge": "",
+            "premium_options": [],
+            "sizing": "ui_bucket",
+            "bucket_label": "",
+            "base_mat": 0,
+            "glass_mat": 0,
+            "tempered_mat": 0,
+            "premium_mat": 0,
+        })
+    return out
+
+
 # -----------------------------------------------------------------------------
 # Endpoint
 # -----------------------------------------------------------------------------
@@ -646,8 +740,10 @@ async def hover_import(
         )
     measurements = await _ask_claude(text, session_id=f"hover-{user.get('id','anon')}")
     lines = _build_lines(measurements)
+    openings = _build_vero_openings(measurements)
     return HoverImportResult(
         measurements=measurements,
         lines=[HoverLine(**ln) for ln in lines],
+        vero_openings=[HoverVeroOpening(**op) for op in openings],
         raw_extract_chars=len(text),
     )

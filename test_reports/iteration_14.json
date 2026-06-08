@@ -1,0 +1,47 @@
+{
+  "summary": "Smart-guess Vero window-style flow (HOVER import → per-opening dropdown preview → Apply & Save) verified end-to-end. One CRITICAL pre-existing FE bug found and fixed by testing agent: HoverImportButton was crashing the modal at render because backend now embeds `windows: [...]` (array of {id,width_in,height_in} objects) inside `result.measurements`, and the FE iterated all measurement entries and rendered the raw value — React threw 'Objects are not valid as a React child'. After adding `typeof v !== 'object'` to the measurements filter, all 3 acceptance tests pass: modal opens, 29 opening rows, defaults to DH, dropdown edit + row removal work, Apply persists 28 vero_openings to the estimate.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "HoverImportButton (preview modal)", "issue": "CRITICAL — Modal never rendered after PDF upload. Backend now returns `measurements.windows` as an array of {id, width_in, height_in} objects, but the measurements iterator in HoverImportButton.jsx (line ~258) renders `v` directly for non-numeric values → React error: \"Objects are not valid as a React child (found: object with keys {id, width_in, height_in})\". Modal silently swallowed by error boundary; user sees nothing happen after upload.", "selector": "[data-testid=\"hover-modal\"]", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "HOVER preview modal — Extracted Measurements", "issues": ["Unknown keys like `siding_with_openings_sqft` and `window_bottom_width_total_lf` show their raw snake_case as the label because they are not in KEY_LABELS. Minor — consider auto-prettifying unknown keys or adding labels."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Decide proper home for the `windows[]` payload returned from /api/estimates/hover-import. Recommended: backend `HoverImportResult` should put `windows` at top-level (not inside `measurements`) since FE already consumes `data.vero_openings`. If `windows` belongs to measurements for downstream use, FE should explicitly skip array/object values OR maintain an allow-list of renderable keys (my current fix of `typeof v !== 'object'` is the minimum guard but loses the chance to display useful nested data).",
+    "Add KEY_LABELS entries for `siding_with_openings_sqft` and `window_bottom_width_total_lf`, OR prettify unknown keys by replacing underscores."
+  ],
+  "critical_code_review_comments": [
+    "HoverImportButton.jsx renders `result.measurements` via Object.entries without any allow-list — fragile to any future backend additions (e.g. lists, dicts). Use an explicit allow-list (KEY_LABELS keys) or strict primitive check.",
+    "Apply button label uses the literal lines count `result.lines?.length || 0` — verified rendering as 'APPLY 51 LINES + 29 WINDOWS & SAVE' for the test PDF; this matches the review's intended 'Apply N Lines + 29 Windows & Save' pattern.",
+    "Saving via `await save({ ...est, lines: nextLines, vero_openings: nextOpenings })` correctly persists openings (verified 28 `[data-testid^='vero-opening-']` elements in DOM after apply + Vero header shows $8,828.04).",
+    "_guess_vero_product_type in backend looks correct for the test PDF — 29/29 windows classified as DH, matching the smoke run note from main agent."
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/estimate/HoverImportButton.jsx (one-line filter change: added `typeof v !== 'object'` to skip array/object measurement values that would crash React render)"
+  ],
+  "success_rate": {"backend": "N/A (frontend-only request)", "frontend": "100% after FE filter fix (3/3 acceptance tests pass)"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "seed_data_creation": "Created one TEST window estimate via 'New Estimate' button (auto-generated EST-032671). It was used for the HOVER import flow and contains 51 catalog lines + 28 vero_openings. Not cleaned up — main agent may want to delete it from Windows dashboard after review.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "HOVER PDF cached at /tmp/hover_sample.pdf (~2.2MB, 29 windows). To repro the original crash: revert the FE filter change in HoverImportButton.jsx and run the Test 1 flow — modal never opens, console shows the React 'Objects are not valid as a React child' error pointing at {id, width_in, height_in}. Acceptance flow testids: hover-import-btn → hover-warning-agree → hover-import-input (set_input_files) → hover-modal → hover-opening-W-XXX, hover-opening-style-W-XXX, hover-opening-remove-W-XXX → hover-apply-btn. After apply, vero openings render with data-testid=`vero-opening-{uuid}` in the Vero panel.",
+  "verified_acceptance_criteria": {
+    "T1_modal_opens_with_correct_title": "PASS",
+    "T1_vero_section_visible": "PASS (29 openings · edit any style before applying)",
+    "T1_29_rows_one_per_hover_window": "PASS",
+    "T1_each_row_shows_id_w_h_ui_and_5option_dropdown": "PASS — dropdown values: ['Vero Double Hung','Vero 2-Lite Slider','Vero 3-Lite Slider','Vero 1-Lite Casement','Vero Picture']",
+    "T1_defaults_mostly_DH": "PASS — all visible rows default to Vero Double Hung",
+    "T1_apply_button_label_with_count": "PASS — 'APPLY 51 LINES + 29 WINDOWS & SAVE'",
+    "T2_W101_dropdown_change_to_2lite_slider": "PASS",
+    "T2_remove_W202_decrements_row_count_to_28": "PASS",
+    "T2_apply_button_updates_to_28_windows": "PASS — 'APPLY 51 LINES + 28 WINDOWS & SAVE'",
+    "T3_apply_persists_and_modal_closes": "PASS",
+    "T3_success_toast": "PASS — 'Imported HOVER: 0 new + 51 updated + 28 windows · saved'",
+    "T3_28_vero_openings_in_DOM": "PASS — 28 elements with data-testid prefix 'vero-opening-' found"
+  }
+}

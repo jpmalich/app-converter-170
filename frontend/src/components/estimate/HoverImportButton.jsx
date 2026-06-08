@@ -40,6 +40,14 @@ const TAB_LABELS = {
   windows: "Windows",
 };
 
+const VERO_PRODUCT_TYPES = [
+  "Vero Double Hung",
+  "Vero 2-Lite Slider",
+  "Vero 3-Lite Slider",
+  "Vero 1-Lite Casement",
+  "Vero Picture",
+];
+
 const UNIT_BY_KEY = (k) => {
   if (k.endsWith("_sqft")) return "ft²";
   if (k.endsWith("_lf")) return "LF";
@@ -50,6 +58,7 @@ export default function HoverImportButton({ est, update, save }) {
   const fileRef = useRef();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const [openings, setOpenings] = useState([]);
   const [applying, setApplying] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
@@ -57,6 +66,7 @@ export default function HoverImportButton({ est, update, save }) {
     if (!f) return;
     setBusy(true);
     setResult(null);
+    setOpenings([]);
     try {
       const fd = new FormData();
       fd.append("file", f);
@@ -65,6 +75,7 @@ export default function HoverImportButton({ est, update, save }) {
         timeout: 60000,
       });
       setResult(data);
+      setOpenings(data.vero_openings || []);
     } catch (e) {
       toast.error(e?.response?.data?.detail || e?.message || "Import failed");
     } finally {
@@ -73,26 +84,31 @@ export default function HoverImportButton({ est, update, save }) {
     }
   };
 
+  const updateOpeningType = (id, productType) => {
+    setOpenings((prev) =>
+      prev.map((op) => (op.id === id ? { ...op, product_type: productType } : op))
+    );
+  };
+
+  const removeOpening = (id) => {
+    setOpenings((prev) => prev.filter((op) => op.id !== id));
+  };
+
   const apply = async () => {
-    if (!result?.lines?.length) return;
-    // Merge by (tab, section, name) — same item can exist on multiple tabs
-    // with independent quantities, and the HOVER importer now emits a line
-    // per tab. Overwriting an existing tab+section+name entry preserves its
-    // catalog mat/lab and just updates qty.
+    if (!result?.lines?.length && !openings.length) return;
+    // ─── Merge catalog lines (siding tabs + window labor rows) ─────────────
     const existing = est.lines || [];
     const tabOf = (l) => l.tab || "vinyl";
     const keyOf = (l) => `${tabOf(l)}::${l.section}::${l.name}`;
     const byKey = new Map(existing.map((l, i) => [keyOf(l), i]));
-    const next = [...existing];
+    const nextLines = [...existing];
     let added = 0;
     let updated = 0;
-    for (const ln of result.lines) {
+    for (const ln of result?.lines || []) {
       const key = `${ln.tab || "vinyl"}::${ln.section}::${ln.name}`;
       const idx = byKey.get(key);
       if (idx == null) {
-        // Should not happen in practice — useEstimate pre-creates entries
-        // for every (tab, section, item) tuple — but stay defensive.
-        next.push({
+        nextLines.push({
           tab: ln.tab || "vinyl",
           section: ln.section,
           name: ln.name,
@@ -102,26 +118,34 @@ export default function HoverImportButton({ est, update, save }) {
         });
         added += 1;
       } else {
-        next[idx] = { ...next[idx], qty: ln.qty };
+        nextLines[idx] = { ...nextLines[idx], qty: ln.qty };
         updated += 1;
       }
     }
-    update({ lines: next });
-    // Auto-save right after apply so the contractor can leave / refresh
-    // without losing the import. Without this, hitting Back forces another
-    // HOVER upload (and another LLM charge). Pass the merged estimate
-    // straight to save() to side-step React's stale state closure.
+    // ─── Append per-opening Vero rows (these are always brand-new — VeroPanel
+    // recomputes bucket_label / base_mat from the live catalog on next render) ─
+    const existingOpenings = est.vero_openings || [];
+    const nextOpenings = [
+      ...existingOpenings,
+      ...openings.map(({ hover_id, ...op }) => op),  // strip the hover_id metadata
+    ];
+
+    update({ lines: nextLines, vero_openings: nextOpenings });
     setApplying(true);
     try {
       if (save) {
-        await save({ ...est, lines: next });
+        await save({ ...est, lines: nextLines, vero_openings: nextOpenings });
       }
-      toast.success(`Imported HOVER: ${added} new + ${updated} updated across all tabs · saved`);
+      const winNote = openings.length ? ` + ${openings.length} windows` : "";
+      toast.success(
+        `Imported HOVER: ${added} new + ${updated} updated${winNote} · saved`
+      );
     } catch (e) {
       toast.error(e?.response?.data?.detail || e?.message || "Saved locally but failed to persist — click Save");
     } finally {
       setApplying(false);
       setResult(null);
+      setOpenings([]);
     }
   };
 
@@ -196,7 +220,7 @@ export default function HoverImportButton({ est, update, save }) {
       {result && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={() => setResult(null)}
+          onClick={() => { setResult(null); setOpenings([]); }}
           data-testid="hover-modal-backdrop"
         >
           <div
@@ -217,7 +241,7 @@ export default function HoverImportButton({ est, update, save }) {
               <button
                 type="button"
                 className="text-white/90 hover:text-white"
-                onClick={() => setResult(null)}
+                onClick={() => { setResult(null); setOpenings([]); }}
                 aria-label="Close"
                 data-testid="hover-modal-close"
               >
@@ -233,7 +257,7 @@ export default function HoverImportButton({ est, update, save }) {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {Object.entries(result.measurements || {})
-                    .filter(([, v]) => v !== null && v !== undefined && v !== "")
+                    .filter(([, v]) => v !== null && v !== undefined && v !== "" && typeof v !== "object")
                     .map(([k, v]) => (
                       <div key={k}>
                         <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
@@ -248,6 +272,84 @@ export default function HoverImportButton({ est, update, save }) {
                     ))}
                 </div>
               </div>
+
+              {/* Vero Windows block — one row per HOVER opening with the
+                  AI-guessed product type editable in a dropdown. Apply
+                  appends these to est.vero_openings (VeroPanel resolves
+                  bucket_label + price on next render). */}
+              {openings.length > 0 && (
+                <div className="p-5 border-b border-[#E4E4E7]">
+                  <div className="flex items-center gap-2 mb-3 pb-1 border-b border-[#09090B]">
+                    <span className="text-xs uppercase tracking-[0.18em] font-bold text-[#F97316]">
+                      Vero Window Openings — Style Guess
+                    </span>
+                    <span className="text-[10px] text-[#A1A1AA]">
+                      ({openings.length} {openings.length === 1 ? "opening" : "openings"} · edit any style before applying)
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#52525B] leading-snug mb-2">
+                    HOVER reports don&apos;t say if a window is double-hung, slider, casement, or picture — only the dimensions.
+                    Each row below was auto-guessed from W × H. <strong>Confirm or change</strong> the style per opening; they&apos;ll be added as a new Vero opening on the Windows tab.
+                  </p>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                        <th className="py-1 pr-2">HOVER ID</th>
+                        <th className="py-1 pr-2 text-right">W</th>
+                        <th className="py-1 pr-2 text-right">H</th>
+                        <th className="py-1 pr-2 text-right">UI</th>
+                        <th className="py-1 pr-2">Style (Vero product)</th>
+                        <th className="py-1 pr-1 w-8"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {openings.map((op) => (
+                        <tr
+                          key={op.id}
+                          className="border-b border-[#F4F4F5]"
+                          data-testid={`hover-opening-${op.hover_id || op.id}`}
+                        >
+                          <td className="py-1.5 pr-2 font-mono text-xs text-[#52525B]">
+                            {op.hover_id || "—"}
+                          </td>
+                          <td className="py-1.5 pr-2 text-right font-mono-num text-xs">
+                            {op.width}&quot;
+                          </td>
+                          <td className="py-1.5 pr-2 text-right font-mono-num text-xs">
+                            {op.height}&quot;
+                          </td>
+                          <td className="py-1.5 pr-2 text-right font-mono-num text-xs text-[#52525B]">
+                            {Math.round(op.width + op.height)}
+                          </td>
+                          <td className="py-1.5 pr-2">
+                            <select
+                              className="border border-[#E4E4E7] text-xs px-2 py-1 w-full bg-white font-semibold"
+                              value={op.product_type}
+                              onChange={(e) => updateOpeningType(op.id, e.target.value)}
+                              data-testid={`hover-opening-style-${op.hover_id || op.id}`}
+                            >
+                              {VERO_PRODUCT_TYPES.map((pt) => (
+                                <option key={pt} value={pt}>{pt}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="py-1.5">
+                            <button
+                              type="button"
+                              className="text-[#A1A1AA] hover:text-[#DC2626] p-1"
+                              onClick={() => removeOpening(op.id)}
+                              title="Skip this opening"
+                              data-testid={`hover-opening-remove-${op.hover_id || op.id}`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Lines block — grouped by tab so the contractor can see at a
                   glance what each option will look like. */}
@@ -312,13 +414,13 @@ export default function HoverImportButton({ est, update, save }) {
 
             <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-between items-center">
               <div className="text-[10px] text-[#A1A1AA]">
-                Existing lines with matching names will have their qty updated.
+                Existing lines with matching names will have their qty updated. Windows are appended as new openings.
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
                   className="px-4 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-sm font-bold uppercase tracking-wider"
-                  onClick={() => setResult(null)}
+                  onClick={() => { setResult(null); setOpenings([]); }}
                   data-testid="hover-cancel-btn"
                 >
                   Cancel
@@ -327,7 +429,7 @@ export default function HoverImportButton({ est, update, save }) {
                   type="button"
                   className="px-4 py-2 bg-[#F97316] text-white border border-[#F97316] hover:bg-[#EA580C] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   onClick={apply}
-                  disabled={!result.lines?.length || applying}
+                  disabled={(!result.lines?.length && !openings.length) || applying}
                   data-testid="hover-apply-btn"
                 >
                   {applying ? (
@@ -335,7 +437,9 @@ export default function HoverImportButton({ est, update, save }) {
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  {applying ? "Saving…" : `Apply ${result.lines?.length || 0} Lines & Save`}
+                  {applying
+                    ? "Saving…"
+                    : `Apply ${result.lines?.length || 0} Lines${openings.length ? ` + ${openings.length} Windows` : ""} & Save`}
                 </button>
               </div>
             </div>
