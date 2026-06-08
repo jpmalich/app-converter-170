@@ -237,11 +237,19 @@ export default function useEstimate(id) {
   // Iter 36: sum the qty across every Vero window line so install +
   // lead-safe rows can auto-track. Memoised so callers can read it
   // cheaply during the same render pass.
+  // Iter 43: also count vero_openings + mezzo_openings (the W×H matrices
+  // introduced in Iter 37/39). Vero & Mezzo openings represent the SAME
+  // physical window quoted in two brands (HOVER auto-mirrors), so we
+  // take max(vero,mezzo), not the sum, to avoid double-counting installs.
   const totalWindowQty = useCallback((source) => {
-    const lines = (source || est)?.lines || [];
-    return lines
+    const src = source || est;
+    if (!src) return 0;
+    const fromLegacyLines = (src.lines || [])
       .filter((l) => l.section && l.section.startsWith("Vero ") && l.section.endsWith("Windows"))
       .reduce((s, l) => s + (Number(l.qty) || 0), 0);
+    const fromVeroOpenings = (src.vero_openings || []).reduce((s, o) => s + (Number(o.qty) || 0), 0);
+    const fromMezzoOpenings = (src.mezzo_openings || []).reduce((s, o) => s + (Number(o.qty) || 0), 0);
+    return fromLegacyLines + Math.max(fromVeroOpenings, fromMezzoOpenings);
   }, [est]);
 
   // Iter 36: set the windows-tab install method. Auto-migrates the qty
@@ -258,9 +266,17 @@ export default function useEstimate(id) {
       if (!e) return e;
       const target = INSTALL_LINE_FOR_METHOD[method];
       const allInstallNames = Object.values(INSTALL_LINE_FOR_METHOD);
-      const totalQty = (e.lines || [])
+      // Iter 43: include vero_openings + mezzo_openings (W×H matrix) so
+      // installing methods correctly auto-fill the install row qty for
+      // openings-based estimates. Vero & Mezzo openings are parallel
+      // brand quotes for the SAME physical window (HOVER auto-mirrors),
+      // so we take max(vero,mezzo) not the sum.
+      const legacyQty = (e.lines || [])
         .filter((l) => l.section && l.section.startsWith("Vero ") && l.section.endsWith("Windows"))
         .reduce((s, l) => s + (Number(l.qty) || 0), 0);
+      const veroOpQty = (e.vero_openings || []).reduce((s, o) => s + (Number(o.qty) || 0), 0);
+      const mezzoOpQty = (e.mezzo_openings || []).reduce((s, o) => s + (Number(o.qty) || 0), 0);
+      const totalQty = legacyQty + Math.max(veroOpQty, mezzoOpQty);
       const lines = (e.lines || []).map((l) => {
         if (l.section !== "Window Installation" || !allInstallNames.includes(l.name)) return l;
         if (l.name === target) return { ...l, qty: totalQty };
@@ -280,9 +296,15 @@ export default function useEstimate(id) {
   const setHomePre1978 = useCallback((checked) => {
     setEst((e) => {
       if (!e) return e;
-      const totalQty = (e.lines || [])
+      // Iter 43: count W×H openings + legacy section lines (see
+      // setInstallMethod above for context). Take max(vero,mezzo) since
+      // they're parallel brand quotes for the same physical window.
+      const legacyQty = (e.lines || [])
         .filter((l) => l.section && l.section.startsWith("Vero ") && l.section.endsWith("Windows"))
         .reduce((s, l) => s + (Number(l.qty) || 0), 0);
+      const veroOpQty = (e.vero_openings || []).reduce((s, o) => s + (Number(o.qty) || 0), 0);
+      const mezzoOpQty = (e.mezzo_openings || []).reduce((s, o) => s + (Number(o.qty) || 0), 0);
+      const totalQty = legacyQty + Math.max(veroOpQty, mezzoOpQty);
       const lines = (e.lines || []).map((l) => {
         if (l.section !== "Window Installation") return l;
         if (l.name === "Lead Safe - Test Fee (all homes 1978 and older are tested)") {

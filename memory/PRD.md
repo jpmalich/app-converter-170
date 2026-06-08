@@ -164,6 +164,10 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
   - **Files touched**: `/app/backend/vero_seed_prices.json` (regenerated via `/tmp/build_vero_seed.py` from new xlsx), `db.vero_prices` reseeded with `force=True`, `/app/frontend/src/components/estimate/VeroPanel.jsx` (color picker now conditional on >1 sister color; reconciliation effect auto-snaps stale sister_color / glass_package / tempered / premium_options to currently-valid values), `/app/frontend/src/components/estimate/JobInfoPanel.jsx` (Vero color block wrapped in `{false &&}` until pricing is reclarified).
   - **Verified**: catalog API returns exactly the new shape (verified via curl); existing $602 Vero DH opening still prices correctly; sister picker no longer renders; new glass/tempered/premium dropdowns render exactly 2/2/11 options.
 
+- **Iter 43b — Vero Install + Trim P0 bug fix** (Jun 2026): `setInstallMethod` / `setHomePre1978` / `totalWindowQty` in `useEstimate.js` were counting only legacy section-line qty (`l.section.startsWith("Vero ") && l.section.endsWith("Windows")`) — but real openings now live in `vero_openings` / `mezzo_openings` (W×H matrix introduced in Iter 37/39). Result: clicking POCKET / FULL FIN / BLOCK FRAME on a windows-kind estimate computed `totalQty=0` → install + lead-safe rows pushed `qty=0` → snapshot showed `$0.00` for Install + Trim.
+  - **Fix**: `totalQty = sum(legacy lines) + Math.max(vero_openings_qty, mezzo_openings_qty)`. Max(vero,mezzo) avoids double-counting because HOVER auto-mirrors each opening into both Vero & Mezzo (two brand quotes, one physical window).
+  - **Verified live**: opened EST-863006 (1 Vero + 1 Mezzo opening, install_method=""), clicked POCKET, autosaved → `install_method=pocket`, both windows-tab + mezzo-tab "Window DH/Slider - Pocket Install" lines correctly set to qty=1 (not 2), Vero snapshot now reads `INSTALL + TRIM $518.85 / 6 lines · labor` (was `$0.00 / 0 lines`). Total grew from $920 → $1,661.41.
+
 ## Configuration (`backend/.env`)
 - `SUPPLIER_NAME=Alside Supply`
 - `SUPPLIER_TAGLINE=Howard Hunt · Territory Sales Manager · (724) 640-4333`
