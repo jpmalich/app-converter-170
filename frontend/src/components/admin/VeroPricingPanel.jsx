@@ -7,14 +7,13 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const fmt = (n) => (Number.isFinite(Number(n)) ? Number(n).toFixed(2) : "0.00");
 
-// Vero pricing has 4 sub-matrices per (tier × product): base_prices,
-// glass_packages, tempered, premium_options. We render them as separate
-// tabs inside the tier×product panel so the grid doesn't get unreadable.
+// Iter 46: Vero pricing now mirrors Mezzo — one `base_prices` matrix
+// plus one `adder_prices` matrix. The previous glass_packages / tempered
+// / premium_options sub-grids are gone (those SKUs all live as adders
+// now). Patio Door (fixed_model) only carries base prices.
 const GRID_KINDS = [
   { id: "base_prices", label: "Base · sister color × UI", colsKey: "_sister_colors" },
-  { id: "glass_packages", label: "Glass Packages · pkg × UI", colsKey: null },
-  { id: "tempered", label: "Tempered Upcharge · pkg × UI", colsKey: null },
-  { id: "premium_options", label: "Premium Options · variant × UI", colsKey: null },
+  { id: "adder_prices", label: "Adders · variant × UI", colsKey: null },
 ];
 
 /** Determines which grid kinds actually have data for the active doc. */
@@ -22,7 +21,6 @@ function applicableGrids(doc, sizing) {
   if (sizing === "fixed_model") {
     return [
       { id: "patio_prices", label: "Base · sister color × Model", rowsKey: "_models", colsKey: "_sister_colors" },
-      { id: "glass_packages_patio", label: "Glass Packages · pkg × Model", rowsKey: "_models", colsKey: null },
     ];
   }
   const out = [];
@@ -104,9 +102,10 @@ export default function VeroPricingPanel({ token }) {
       // rows = list of row keys
       rows2 = rows;
     } else {
-      // variant × row matrix — invert so admin sees variants on the X-axis
-      cols = Object.keys(data2d);  // variant names → columns
-      rows2 = rows;                // buckets/models → rows
+      // adder_prices: outer keys = adder names → columns; inner keys =
+      // buckets → rows. Invert so admin sees adders on the X-axis.
+      cols = Object.keys(data2d);
+      rows2 = rows;
       isInverted = true;
     }
     const getCell = (rowLabel, colLabel) => {
@@ -236,7 +235,7 @@ export default function VeroPricingPanel({ token }) {
           <div>
             <div className="section-tag">Vero Window Pricing Matrix</div>
             <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-0.5">
-              4 tiers · 6 products · base + glass + tempered + premium — paste from Excel
+              4 tiers · 5 products · base prices + adders matrix — paste from Excel
             </div>
           </div>
         </div>
@@ -259,8 +258,9 @@ export default function VeroPricingPanel({ token }) {
 
       <p className="text-sm text-[#52525B] mb-4">
         Edit any cell or paste a range from the Vero Series pricebook
-        (Ctrl/Cmd-V on the top-left target cell). Switch grids with the
-        tabs below — each (tier × product) ships with up to 4 sub-grids.
+        (Ctrl/Cmd-V on the top-left target cell). Each (tier × product)
+        carries a Base matrix (buckets × sister colors) and an Adders
+        matrix (buckets × adder names).
       </p>
 
       <div className="flex border border-[#E4E4E7] mb-3 overflow-x-auto" data-testid="vero-pricing-tier-tabs">

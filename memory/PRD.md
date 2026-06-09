@@ -183,10 +183,15 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
   - **Verified live**: EST-863006 → expanded Upgrade Options → toggled Climatech Plus (auto-default) + Climatech TG2 Plus (auto-deselected CP via exclusive pair) + Solid Color Flat Grids + Foam Wrap + Sentry System. UI shows orange-highlighted cards, per-card qty input, badge count, total `+$22.93`. Autosave persists `adders: [{name, mat, qty}]` to `db.estimates.vero_openings[].adders`. Vero DH section total $287.57 → $310.50 (base + Foam Wrap), Job Snapshot Window Openings reflects in real time.
   - **Follow-up note**: `/branding-admin` `VeroPricingPanel.jsx` still references the old `glass_packages` / `tempered` / `premium_options` sections — its tabs will show empty grids until rewritten to use `adder_prices`. Howard can edit base prices directly in Mongo for now, or via re-seeding the JSON. Same applies to HOVER importer (`routes/hover.py`) which still produces legacy-shape openings — the frontend reconciliation hook auto-migrates them on first load, so functionally HOVER imports work fine.
 
+- **Iter 46 — HOVER importer + admin Vero pricing editor cleanup** (Jun 2026): finished the Iter-44 migration by removing the last two references to the legacy glass/tempered/premium fields.
+  - **`routes/hover.py`** — `HoverVeroOpening` Pydantic model + `_build_window_openings()` no longer write `glass_package`, `tempered_upcharge`, `premium_options`, `glass_mat`, `tempered_mat`, `premium_mat`. New imports emit clean `adders: []` (frontend's reconciliation hook attaches the default Climatech Plus on first render — same as `addOpening`).
+  - **`/branding-admin` `VeroPricingPanel.jsx`** — old per-product tabs `glass_packages / tempered / premium_options / glass_packages_patio` collapsed into ONE unified **Adders · variant × UI** grid (12 columns × 14 buckets for DH). Patio Door now exposes only its **Base · sister color × Model** matrix. Header subtitle updated: `4 tiers · 5 products · base prices + adders matrix`.
+  - **Verified live**: admin panel renders DH Base (1-col $287 → $627 across 14 buckets) and DH Adders (12-col matrix incl. Integral Nailing Fin, Climatech Plus Tempered, Foam Frame, Climatech Plus). Zero legacy tabs visible. HOVER importer no longer emits stale field names.
+
 - **Iter 45 — Window-side line-item pricing aligned to canonical Excel** (Jun 2026, Howard's "Window app price layout page 6-8-26.xls"): audited every line in the 6 windows/mezzo-shared sections (Window Material List, Window Installation, Sliding Glass Door Install, Window Exterior/Interior Trim Work, Window Misc.) against the canonical Excel. Found 5 discrepancies — all in the Material List section where mat prices were $0 in the build but priced in the Excel. Fixed:
-  - `Windows - .019 Coil (1 per 5 Sq Siding)`: mat $0 → **$161.33**, lab $23 → **$0** (was inheriting a stale labor default; Excel says $0 lab)
-  - `Windows - PVC Trim Coil (1 per 5 Sq Siding)`: mat $0 → **$167.08**
-  - `Windows - Performance G8 Trim Coil (1 per 5 Sq Siding)`: mat $0 → **$170.53**
+  - `Windows - .019 Coil`: mat $0 → **$161.33**, lab $23 → **$0**  (and removed the "(1 per 5 Sq Siding)" suffix in Iter 45b per Howard)
+  - `Windows - PVC Trim Coil`: mat $0 → **$167.08**
+  - `Windows - Performance G8 Trim Coil`: mat $0 → **$170.53**
   - `Windows - Caulking (per color)`: mat $0 → **$8.23**
   - All other 27 line items in the 5 labor-only sections (Installation, SGD, Trim, Misc.) already matched the Excel exactly.
   - **Files touched**: `/app/backend/catalog_seed.py` (WINDOWS_PRICES + ITEM_META).

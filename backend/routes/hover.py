@@ -521,7 +521,9 @@ class HoverLine(BaseModel):
 
 class HoverVeroOpening(BaseModel):
     """One Vero W×H per-opening row produced from a HOVER window. Mirrors the
-    `vero_openings[]` shape the estimator stores on the Estimate doc."""
+    `vero_openings[]` shape the estimator stores on the Estimate doc. Iter 46:
+    aligned with the Mezzo-style adders model — no more glass_package /
+    tempered_upcharge / premium_options legacy fields."""
     id: str
     product_type: str
     label: str = ""
@@ -529,16 +531,11 @@ class HoverVeroOpening(BaseModel):
     height: float
     qty: int = 1
     sister_color: str = "White Interior/White Exterior"
-    glass_package: str = ""
-    tempered_upcharge: str = ""
-    premium_options: list[str] = []
     sizing: str = "ui_bucket"
     # Catalog-resolved snapshots are recomputed by VeroPanel after merge.
     bucket_label: str = ""
     base_mat: float = 0
-    glass_mat: float = 0
-    tempered_mat: float = 0
-    premium_mat: float = 0
+    adders: list = []
     # The original HOVER ID (W-101 etc.) — surfaced in the preview so the
     # contractor can match it back to the elevations.
     hover_id: str = ""
@@ -776,15 +773,13 @@ def _build_window_openings(measurements: dict) -> tuple[list[dict], list[dict]]:
             "height": hgt,
             "qty": 1,
             "sister_color": "White Interior/White Exterior",
-            "glass_package": "",
-            "tempered_upcharge": "",
-            "premium_options": [],
             "sizing": "ui_bucket",
             "bucket_label": "",
             "base_mat": 0,
-            "glass_mat": 0,
-            "tempered_mat": 0,
-            "premium_mat": 0,
+            # Iter 46: Vero uses Mezzo-style adders. The frontend
+            # auto-seeds "Climatech Plus" via VeroPanel's reconciliation
+            # hook on first render so we don't bake it in here.
+            "adders": [],
         })
         mezzo_out.append({
             "id": opening_id,
