@@ -53,7 +53,10 @@ function buildISSLinesFromMeasurements(m) {
     out.push({ section, name, unit, qty: Math.round(q * 100) / 100 });
   };
   const sidingSqft = Number(m.siding_with_openings_sqft) || Number(m.siding_sqft) || 0;
-  push("Install Vinyl Siding", "Conquest", "sq", sidingSqft / 100);
+  push("Install Vinyl Siding", "Charter Oak (standard colors)", "sq", sidingSqft / 100);
+  // Always-on adders the contractor told us to assume on every HOVER job.
+  push("Install Vinyl Siding", "Clean up / haul away job debris", "job", 1);
+  push("Install Vinyl Siding", "Dumpster", "ea", 1);
   push("Seamless Gutter with Siding", "Gutter", "lf", m.eaves_lf);
   push("Misc. Labor and Material", "Cap windows", "ea", m.window_count);
   push("Misc. Labor and Material", "Cap entry door", "ea", m.entry_door_count);
@@ -262,7 +265,7 @@ export default function ISSHoverImportButton({ est, applyLines }) {
                   </p>
                 )}
                 <p className="text-[10px] text-[#A1A1AA] mt-3 leading-snug">
-                  Default siding line is <strong>Conquest</strong>. Switch to Charter Oak, Ascend Composite, Prodigy, etc.
+                  Default siding line is <strong>Charter Oak (standard colors)</strong>. Switch to Conquest, Ascend Composite, Prodigy, etc.
                   by editing the qty on the appropriate row after import.
                 </p>
               </div>
