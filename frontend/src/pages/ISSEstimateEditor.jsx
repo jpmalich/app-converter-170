@@ -397,20 +397,26 @@ export default function ISSEstimateEditor() {
                     return (
                       <div
                         key={it.name}
-                        className="px-4 md:px-5 py-2.5 flex items-center gap-3 flex-wrap"
+                        className={`px-4 md:px-5 py-2.5 flex items-center gap-3 flex-wrap ${
+                          it.tip
+                            ? "bg-[#FEF3C7] border-l-4 border-[#F59E0B]"
+                            : ""
+                        }`}
                         data-testid={`iss-row-${sec.title}-${it.name}`}
                       >
-                        <div className="flex-1 min-w-[200px] flex items-center gap-1.5">
+                        <div className="flex-1 min-w-[200px] flex items-center gap-2">
                           {it.tip && (
                             <span
                               title="Commonly added on most jobs"
                               data-testid={`iss-tip-${sec.title}-${it.name}`}
                               className="flex-shrink-0"
                             >
-                              <Lightbulb className="w-3.5 h-3.5 text-[#F59E0B]" />
+                              <Lightbulb className="w-4 h-4 text-[#D97706] fill-[#FBBF24]" />
                             </span>
                           )}
-                          <div className="text-sm text-[#09090B]">{it.name}</div>
+                          <div className={`text-sm ${it.tip ? "font-semibold text-[#78350F]" : "text-[#09090B]"}`}>
+                            {it.name}
+                          </div>
                         </div>
                         <div className="w-16 text-right">
                           <input
