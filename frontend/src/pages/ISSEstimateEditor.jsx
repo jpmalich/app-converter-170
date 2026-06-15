@@ -135,50 +135,67 @@ export default function ISSEstimateEditor() {
 
   // Apply HOVER-derived ISS rows: upsert each {section,name,unit,qty} into
   // est.lines tagged with tab="iss". The catalog price is looked up from
-  // the loaded catalog so the row carries a real unit cost.
+  // the loaded catalog so the row carries a real unit cost. Saves to the
+  // backend immediately (not via the debounced autosave) so the imported
+  // data is persisted before the modal closes.
   const applyHoverLines = useCallback(async (rows) => {
     if (!rows?.length) return;
-    // Build a quick (section,name) → catalog price map.
     const priceMap = new Map();
     for (const sec of catalog.sections || []) {
       for (const it of sec.items) {
         priceMap.set(`${sec.title}::${it.name}`, it.price);
       }
     }
-    setEst((prev) => {
-      if (!prev) return prev;
-      const lines = [...(prev.lines || [])];
-      for (const r of rows) {
-        const key = `${r.section}::${r.name}`;
-        const price = Number(priceMap.get(key) || 0);
-        const idx = lines.findIndex(
-          (l) => (l.tab || "") === "iss" && l.section === r.section && l.name === r.name
-        );
-        if (idx >= 0) {
-          lines[idx] = { ...lines[idx], qty: Number(r.qty) || 0, unit: r.unit, mat: price, lab: 0, tab: "iss" };
-        } else {
-          lines.push({
-            tab: "iss",
-            section: r.section,
-            name: r.name,
-            unit: r.unit,
-            qty: Number(r.qty) || 0,
-            mat: price,
-            lab: 0,
-          });
-        }
+    const current = est;
+    if (!current) return;
+    const lines = [...(current.lines || [])];
+    for (const r of rows) {
+      const key = `${r.section}::${r.name}`;
+      const price = Number(priceMap.get(key) || 0);
+      const idx = lines.findIndex(
+        (l) => (l.tab || "") === "iss" && l.section === r.section && l.name === r.name
+      );
+      if (idx >= 0) {
+        lines[idx] = { ...lines[idx], qty: Number(r.qty) || 0, unit: r.unit, mat: price, lab: 0, tab: "iss" };
+      } else {
+        lines.push({
+          tab: "iss",
+          section: r.section,
+          name: r.name,
+          unit: r.unit,
+          qty: Number(r.qty) || 0,
+          mat: price,
+          lab: 0,
+        });
       }
-      return { ...prev, lines };
-    });
-    userEdits.current += 1;
-    // Auto-open the sections we just wrote into so the contractor can
-    // immediately see the imported rows.
+    }
+    // Optimistic local update so the UI repaints immediately.
+    setEst((prev) => (prev ? { ...prev, lines } : prev));
     setOpenSections((prev) => {
       const next = { ...prev };
       for (const r of rows) next[r.section] = true;
       return next;
     });
-  }, [catalog]);
+    // Immediate persist — bypass the debounced autosave so the data is
+    // safe even if the contractor navigates away right after applying.
+    setSaving(true);
+    try {
+      const payload = { ...current, lines };
+      delete payload.id;
+      delete payload.created_at;
+      delete payload.updated_at;
+      delete payload.user_id;
+      delete payload.company_id;
+      delete payload.totals;
+      delete payload.estimate_number;
+      const { data } = await api.put(`/estimates/${id}`, payload);
+      setEst((cur) => ({ ...(cur || {}), ...data, lines: data.lines || [] }));
+      // Mark autosave checkpoint so the debounced flush doesn't re-fire.
+      savedUpTo.current = userEdits.current;
+    } finally {
+      setSaving(false);
+    }
+  }, [catalog, est, id]);
 
   const totals = useMemo(() => {
     let subTotal = 0;
