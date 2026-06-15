@@ -180,17 +180,32 @@ export default function ISSEstimateEditor() {
     });
   }, [catalog]);
 
-  const grandTotal = useMemo(() => {
-    let total = 0;
+  const totals = useMemo(() => {
+    let subTotal = 0;
+    let sidingSub = 0;
     for (const sec of catalog.sections || []) {
       for (const it of sec.items) {
         const ln = lineByKey.get(`${sec.title}::${it.name}`);
         const qty = Number(ln?.qty) || 0;
-        if (qty > 0) total += qty * Number(it.price || 0);
+        if (qty > 0) {
+          const lineAmt = qty * Number(it.price || 0);
+          subTotal += lineAmt;
+          // Waste applies only to siding squares — the install section is
+          // material-heavy and the rest is labor / hardware.
+          if (sec.title === "Install Vinyl Siding") sidingSub += lineAmt;
+        }
       }
     }
-    return total;
-  }, [catalog, lineByKey]);
+    const wastePct = Number(est?.waste_pct) || 0;
+    const wasteAdd = sidingSub * (wastePct / 100);
+    const base = subTotal + wasteAdd;
+    const pct = Math.min(Number(est?.margin_pct) || 0, 99);
+    const mode = est?.pricing_mode || "margin";
+    const sell = mode === "markup" ? base * (1 + pct / 100) : pct >= 99 ? base : base / (1 - pct / 100);
+    const profit = sell - base;
+    return { subTotal, sidingSub, wasteAdd, base, sell, profit };
+  }, [catalog, lineByKey, est?.waste_pct, est?.margin_pct, est?.pricing_mode]);
+  const grandTotal = totals.sell;
 
   if (loading) {
     return (
@@ -403,6 +418,128 @@ export default function ISSEstimateEditor() {
                   ))}
                 </select>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Pricing controls — Waste Factor + Profit (no Tax for ISS). */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <div className="card p-4" data-testid="iss-waste-card">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+              Waste Factor
+            </div>
+            <div className="flex items-baseline gap-2">
+              <input
+                className="input num h-9 text-sm w-24"
+                type="number"
+                step="0.5"
+                min="0"
+                value={est.waste_pct || 0}
+                onChange={(e) => updateField("waste_pct", Number(e.target.value) || 0)}
+                data-testid="iss-waste-pct"
+              />
+              <span className="text-sm text-[#52525B]">% on siding squares</span>
+            </div>
+            <p className="mt-2 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+              Applied to Install Vinyl Siding subtotal · ${totals.sidingSub.toFixed(2)} × {Number(est.waste_pct) || 0}% = ${totals.wasteAdd.toFixed(2)}
+            </p>
+          </div>
+          {(() => {
+            const mode = est.pricing_mode || "margin";
+            const isMargin = mode === "margin";
+            const pct = Math.min(Number(est.margin_pct) || 0, 99);
+            const mult = isMargin ? (pct >= 99 ? Infinity : 1 / (1 - pct / 100)) : 1 + pct / 100;
+            return (
+              <div className="card p-4" data-testid="iss-profit-card">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+                    Profit
+                  </div>
+                  <div
+                    className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-[10px] font-bold uppercase tracking-wider"
+                    data-testid="iss-pricing-mode-toggle"
+                  >
+                    <button
+                      type="button"
+                      className={`px-3 py-1 transition ${
+                        isMargin
+                          ? "bg-[#09090B] text-white"
+                          : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+                      }`}
+                      onClick={() => updateField("pricing_mode", "margin")}
+                      data-testid="iss-pricing-mode-margin"
+                    >
+                      Margin
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 py-1 transition border-l border-[#E4E4E7] ${
+                        !isMargin
+                          ? "bg-[#09090B] text-white"
+                          : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+                      }`}
+                      onClick={() => updateField("pricing_mode", "markup")}
+                      data-testid="iss-pricing-mode-markup"
+                    >
+                      Markup
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <input
+                    className="input num h-9 text-sm w-24"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max={isMargin ? 99 : undefined}
+                    value={est.margin_pct || 0}
+                    onChange={(e) => updateField("margin_pct", Number(e.target.value) || 0)}
+                    data-testid="iss-margin-pct"
+                  />
+                  <span className="text-sm text-[#52525B]">
+                    {isMargin ? "% profit margin" : "% markup on base"}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max={isMargin ? 95 : 100}
+                  step="1"
+                  value={est.margin_pct || 0}
+                  onChange={(e) => updateField("margin_pct", Number(e.target.value) || 0)}
+                  className="w-full accent-[#F97316]"
+                  data-testid="iss-margin-slider"
+                />
+                <div className="mt-2 text-[11px] text-[#71717A] font-mono-num">
+                  {isMargin ? (
+                    <>Sell = Base ÷ (1 − {pct}%) = <span className="text-[#09090B] font-bold">×{Number.isFinite(mult) ? mult.toFixed(3) : "∞"}</span></>
+                  ) : (
+                    <>Sell = Base × (1 + {pct}%) = <span className="text-[#09090B] font-bold">×{mult.toFixed(3)}</span></>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+        </section>
+
+        {/* Totals breakdown */}
+        <div className="card p-4 mb-4" data-testid="iss-totals-summary">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Subtotal</div>
+              <div className="font-mono-num font-bold text-[#09090B]" data-testid="iss-subtotal">{fmt(totals.subTotal)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Waste</div>
+              <div className="font-mono-num font-bold text-[#09090B]" data-testid="iss-waste-add">{fmt(totals.wasteAdd)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Profit</div>
+              <div className="font-mono-num font-bold text-[#16A34A]" data-testid="iss-profit">{fmt(totals.profit)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-[#F97316] font-bold">Sell Price</div>
+              <div className="font-mono-num font-bold text-[#F97316]" data-testid="iss-sell-price">{fmt(totals.sell)}</div>
             </div>
           </div>
         </div>
