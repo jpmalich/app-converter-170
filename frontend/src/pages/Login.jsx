@@ -246,7 +246,7 @@ export default function Login() {
             {t("auth.providedBy", { supplier: branding.supplier_name })}
           </div>
           <div className="mt-4 text-[10px] text-[#A1A1AA] flex items-center gap-3">
-            <span>© {new Date().getFullYear()} Howard&apos;s Estimating Tool</span>
+            <span>© {new Date().getFullYear()} Pro-Quote Estimating Tool</span>
             <span aria-hidden="true">·</span>
             <a href="/terms" className="hover:text-[#09090B]" data-testid="login-terms-link">Terms</a>
             <span aria-hidden="true">·</span>

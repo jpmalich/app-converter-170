@@ -12,7 +12,7 @@ export default function Terms() {
       <header className="bg-white border-b border-[#E4E4E7]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="font-heading text-base text-[#09090B]">
-            Howard&apos;s Estimating Tool
+            Pro-Quote Estimating Tool
           </Link>
           <Link to="/" className="text-xs uppercase tracking-wider text-[#52525B] hover:text-[#09090B]">
             ← Back
@@ -31,7 +31,7 @@ export default function Terms() {
           <section>
             <h2 className="font-heading text-xl text-[#09090B] mb-2">1. Acceptance</h2>
             <p>
-              By creating an account or using Howard&apos;s Estimating Tool (the &ldquo;Service&rdquo;), you agree to these Terms.
+              By creating an account or using Pro-Quote Estimating Tool (the &ldquo;Service&rdquo;), you agree to these Terms.
               If you do not agree, do not use the Service. You must be at least 18 years old and authorized to
               act on behalf of the contracting business you represent.
             </p>

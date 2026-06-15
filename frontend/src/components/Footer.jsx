@@ -13,7 +13,7 @@ export default function Footer() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#A1A1AA]">
         <div>
-          © {year} Howard&apos;s Estimating Tool. All rights reserved.
+          © {year} Pro-Quote Estimating Tool. All rights reserved.
         </div>
         <div className="flex items-center gap-4">
           <Link to="/terms" className="hover:text-[#09090B]" data-testid="footer-terms">

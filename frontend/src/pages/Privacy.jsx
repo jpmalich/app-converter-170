@@ -9,7 +9,7 @@ export default function Privacy() {
       <header className="bg-white border-b border-[#E4E4E7]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="font-heading text-base text-[#09090B]">
-            Howard&apos;s Estimating Tool
+            Pro-Quote Estimating Tool
           </Link>
           <Link to="/" className="text-xs uppercase tracking-wider text-[#52525B] hover:text-[#09090B]">
             ← Back
@@ -27,7 +27,7 @@ export default function Privacy() {
         <div className="prose prose-sm text-[#52525B] space-y-6 leading-relaxed">
           <section>
             <h2 className="font-heading text-xl text-[#09090B] mb-2">What we collect</h2>
-            <p>When you use Howard&apos;s Estimating Tool, we collect:</p>
+            <p>When you use Pro-Quote Estimating Tool, we collect:</p>
             <ul className="list-disc pl-6 space-y-1 mt-2">
               <li><strong>Account info</strong> — your name, email address, role, company name, and any company logo or branding you upload.</li>
               <li><strong>Estimate data</strong> — customer names, addresses, line items, pricing, photos, scope notes, and quote history.</li>
