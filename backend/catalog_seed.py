@@ -138,6 +138,7 @@ SECTION_LAYOUT = [
         "J-blocks - Light Blocks (82A010)",
         "J-blocks - UL Blocks (82A017)",
         "J-blocks - Jumbo Blocks (82A011)",
+        'Dryer Vents 4" (82A014)',
         "Shutters (louvered, raised panel) standard sizes",
         "Gable vents (round,octagon)", '1 1/4" Trim Nails',
     ]),
@@ -367,6 +368,7 @@ ITEM_META = {
     "J-blocks - Light Blocks (82A010)": ("Each", 0),
     "J-blocks - UL Blocks (82A017)": ("Each", 0),
     "J-blocks - Jumbo Blocks (82A011)": ("Each", 0),
+    'Dryer Vents 4" (82A014)': ("Each", 0),
     "Shutters (louvered, raised panel) standard sizes": ("PR", 0),
     "Gable vents (round,octagon)": ("Each", 0), '1 1/4" Trim Nails': ("Box", 0),
     "Tear-Off": ("SQ", 0), "Wood shake tear off (requires a dumpster)": ("SQ", 0),
@@ -578,6 +580,7 @@ IDENTICAL_PRICES = {
     'J-blocks - Light Blocks (82A010)': 11.72,
     'J-blocks - UL Blocks (82A017)': 21.51,
     'J-blocks - Jumbo Blocks (82A011)': 11.72,
+    'Dryer Vents 4" (82A014)': 23.81,
     'Mitre': 13.75,
     'Pelican Bay Shakes 9"': 419.94,
     'RainDrop': 30.73,
@@ -895,6 +898,7 @@ ITEM_AMI = {
     "J-blocks - Light Blocks (82A010)": "82A010",
     "J-blocks - UL Blocks (82A017)": "82A017",
     "J-blocks - Jumbo Blocks (82A011)": "82A011",
+    'Dryer Vents 4" (82A014)': "82A014",
     # Siding profiles — each gets its own SKU per Alside's price sheet.
     # Iter 34: Standard/Architectural variants share the AMI of their
     # underlying SKU (color is a stocking variant, not a separate part).

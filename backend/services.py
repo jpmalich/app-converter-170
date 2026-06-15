@@ -327,6 +327,7 @@ async def ensure_tiers_seeded():
         {"name": "J-blocks - Light Blocks (82A010)",  "unit": "Each", "mat": 11.72, "lab": 0.0, "ami_part": "82A010"},
         {"name": "J-blocks - UL Blocks (82A017)",     "unit": "Each", "mat": 21.51, "lab": 0.0, "ami_part": "82A017"},
         {"name": "J-blocks - Jumbo Blocks (82A011)",  "unit": "Each", "mat": 11.72, "lab": 0.0, "ami_part": "82A011"},
+        {"name": 'Dryer Vents 4" (82A014)',           "unit": "Each", "mat": 23.81, "lab": 0.0, "ami_part": "82A014"},
     ]
     new_names = {it["name"] for it in NEW_J_BLOCK_ITEMS}
     async for doc in db.price_tiers.find({}, {"sections": 1}):
@@ -359,6 +360,7 @@ async def ensure_tiers_seeded():
         "J-blocks - Light Blocks (82A010)": 11.72,
         "J-blocks - UL Blocks (82A017)": 21.51,
         "J-blocks - Jumbo Blocks (82A011)": 11.72,
+        'Dryer Vents 4" (82A014)': 23.81,
     }
     for jname, jprice in J_BLOCK_PRICES.items():
         await db.price_tiers.update_many(
