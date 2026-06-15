@@ -108,7 +108,10 @@ ISS_TIP_KEYS: set[tuple[str, str]] = {
 
 
 def build_iss_catalog() -> dict:
-    """Return the API-shape catalog payload."""
+    """Return the API-shape catalog payload from the hardcoded seed.
+    Kept synchronous for tests and seed scripts. The live API uses the
+    async `load_iss_catalog()` below so supplier-admin price edits are
+    honored."""
     sections = []
     for title, rows in ISS_SECTIONS:
         sections.append({
@@ -121,6 +124,63 @@ def build_iss_catalog() -> dict:
                     "tip": (title, name) in ISS_TIP_KEYS,
                 }
                 for name, unit, price in rows
+            ],
+        })
+    return {"sections": sections}
+
+
+async def ensure_iss_catalog_seeded(db) -> None:
+    """Seed the `iss_catalog` collection from the hardcoded ISS_SECTIONS
+    if (and only if) the collection is empty. Called on first read and
+    by the admin export endpoint."""
+    existing = await db.iss_catalog.count_documents({})
+    if existing:
+        return
+    docs = []
+    for sec_idx, (title, rows) in enumerate(ISS_SECTIONS):
+        for item_idx, (name, unit, price) in enumerate(rows):
+            docs.append({
+                "section": title,
+                "name": name,
+                "unit": unit,
+                "price": float(price),
+                "section_order": sec_idx,
+                "item_order": item_idx,
+            })
+    if docs:
+        await db.iss_catalog.insert_many(docs)
+
+
+async def load_iss_catalog(db) -> dict:
+    """Build the API payload from the `iss_catalog` collection, falling
+    back to the hardcoded seed on first call. Tip flags are merged in
+    from `ISS_TIP_KEYS` so the highlighted-row UI keeps working even
+    after admins edit prices."""
+    await ensure_iss_catalog_seeded(db)
+    cursor = db.iss_catalog.find({}, {"_id": 0}).sort([
+        ("section_order", 1),
+        ("item_order", 1),
+    ])
+    docs = await cursor.to_list(500)
+    # Preserve the canonical section order from ISS_SECTIONS so admins
+    # can't accidentally re-order sections by editing the DB.
+    section_order = {title: i for i, (title, _) in enumerate(ISS_SECTIONS)}
+    grouped: dict[str, list[dict]] = {}
+    for d in docs:
+        grouped.setdefault(d["section"], []).append(d)
+    sections = []
+    for title in sorted(grouped.keys(), key=lambda t: section_order.get(t, 999)):
+        items = sorted(grouped[title], key=lambda x: x.get("item_order", 0))
+        sections.append({
+            "title": title,
+            "items": [
+                {
+                    "name": it["name"],
+                    "unit": it["unit"],
+                    "price": float(it["price"]),
+                    "tip": (title, it["name"]) in ISS_TIP_KEYS,
+                }
+                for it in items
             ],
         })
     return {"sections": sections}

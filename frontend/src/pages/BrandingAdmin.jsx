@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import PricingUpdatePanel from "@/components/admin/PricingUpdatePanel";
 import MezzoPricingPanel from "@/components/admin/MezzoPricingPanel";
 import VeroPricingPanel from "@/components/admin/VeroPricingPanel";
+import ISSPricingPanel from "@/components/admin/ISSPricingPanel";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -319,6 +320,9 @@ export default function BrandingAdmin() {
 
         {/* Vero Window Pricing Matrix (4 tiers × 6 product types, multi-grid) */}
         <VeroPricingPanel token={token} />
+
+        {/* ISS Siding Pricing — single-tier, CSV/Excel upload only */}
+        <ISSPricingPanel token={token} />
 
         {/* Contractors → Tier assignment */}
         <PipelinePanel token={token} />
