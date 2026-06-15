@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import re
 import tempfile
@@ -100,6 +101,37 @@ DEFAULT_WASTE_PCT = 10.0  # Howard's preferred default per setup
 # three complete quotes ready to compare.
 #
 # Industry-standard ratios are documented inline so Howard can tune them.
+
+# Typical opening perimeters used to back out window+patio-door perimeter
+# from HOVER's lumped `opening_perimeter_lf` (HOVER doesn't break it out).
+ENTRY_DOOR_PERIM_LF = 19.0   # 6'8" × 3'0" → 2 × (6.67 + 3.0) ≈ 19.3
+GARAGE_DOOR_PERIM_LF = 32.0  # 7'0" × 9'0" → 2 × (7 + 9) = 32
+
+
+def _j_channel_pcs(m: dict) -> int:
+    """Howard's J-channel formula:
+      pcs = ceil( (window + patio_door perimeter + eaves + rakes) / 12.5 )
+    HOVER gives us one lumped `opening_perimeter_lf` covering every
+    opening (windows + entry doors + patio doors + garage doors), so we
+    subtract typical entry-/garage-door perimeters using their counts to
+    isolate the window + patio-door portion. Each J-channel piece is 12.5'
+    and we always round up so the installer never ends up short.
+    """
+    opening_perim = float(m.get("opening_perimeter_lf") or 0)
+    entry_n = float(m.get("entry_door_count") or 0)
+    garage_n = float(m.get("garage_door_count") or 0)
+    # Window + patio door perimeter (subtract entry/garage door perimeters).
+    win_patio_perim = max(0.0, opening_perim
+                          - entry_n * ENTRY_DOOR_PERIM_LF
+                          - garage_n * GARAGE_DOOR_PERIM_LF)
+    total_lf = (win_patio_perim
+                + float(m.get("eaves_lf") or 0)
+                + float(m.get("rakes_lf") or 0))
+    if total_lf <= 0:
+        return 0
+    return int(math.ceil(total_lf / 12.5))
+
+
 HOVER_MAPPING_SPEC = [
     # =====================================================================
     # HEADLINE SIDING — one per tab. We use HOVER's "+ Openings < 20ft²
@@ -240,31 +272,28 @@ HOVER_MAPPING_SPEC = [
         "note": "(Eaves LF + window bottom widths) ÷ 10 (per Howard)",
     },
     # =====================================================================
-    # J-CHANNEL — vinyl + Ascend. Same formula on both: 2 PCS per SQ of
-    # siding (wall runs) + 1 PCS per 10' of opening perimeter. LP doesn't
-    # use J-channel.
+    # J-CHANNEL — vinyl + Ascend. Howard's formula:
+    #   pcs = ceil( (window_perim + patio_door_perim + eaves + rakes) / 12.5 )
+    # HOVER lumps all opening perimeters into one field, so we subtract
+    # typical entry-door (~19 LF) and garage-door (~32 LF) perimeters using
+    # their counts to isolate window + patio door perimeter. LP doesn't
+    # use J-channel. Pieces are 12.5 ft each, always round UP.
     # =====================================================================
     {
         "tabs": ["vinyl"],
         "section": "Siding Accessories",
         "item": "3/4\" J-Channel Standard color (2 per Sq of siding)",
         "unit": "PCS",
-        "extract": lambda m: max(0, round(
-            ((m.get("siding_sqft") or 0) / 100.0) * 2
-            + (m.get("opening_perimeter_lf") or 0) / 10
-        )),
-        "note": "2/SQ siding + perimeter ÷ 10' around openings — defaults to Standard color",
+        "extract": lambda m: _j_channel_pcs(m),
+        "note": "(window + patio door perimeter + eaves + rakes) ÷ 12.5, round up",
     },
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
         "item": "Ascend - J - Channel  (2 per Sq of siding)",
         "unit": "PCS",
-        "extract": lambda m: max(0, round(
-            ((m.get("siding_sqft") or 0) / 100.0) * 2
-            + (m.get("opening_perimeter_lf") or 0) / 10
-        )),
-        "note": "2/SQ siding + perimeter ÷ 10' around openings (per Howard)",
+        "extract": lambda m: _j_channel_pcs(m),
+        "note": "(window + patio door perimeter + eaves + rakes) ÷ 12.5, round up",
     },
     # =====================================================================
     # .019 TRIM COIL — 1 roll per 5 squares of siding (per Howard). The
