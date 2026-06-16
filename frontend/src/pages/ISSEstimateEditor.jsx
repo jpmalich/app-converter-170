@@ -344,6 +344,12 @@ export default function ISSEstimateEditor() {
                 );
                 const rows = buildISSLinesFromMeasurements(measurements || {});
                 await applyHoverLines(rows);
+                // Persist masked-zones summary so the PDF / email can
+                // show "Materials excluded: brick wainscot (220 ft²)".
+                if (measurements?._photo_zones_summary) {
+                  updateField("photo_zones_summary", measurements._photo_zones_summary);
+                  updateField("photo_zones_deducted_sqft", measurements._photo_zones_deducted_sqft || 0);
+                }
               }}
             />
           </div>

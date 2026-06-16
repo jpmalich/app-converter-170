@@ -24,7 +24,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           <AIMeasureButton
             kind={est.kind || "siding"}
             address={est?.customer_address}
-            onApply={async ({ lines: aiLines }) => {
+            onApply={async ({ lines: aiLines, measurements }) => {
               const existing = est.lines || [];
               const keyOf = (l) => `${l.tab || "vinyl"}::${l.section}::${l.name}`;
               const byKey = new Map(existing.map((l, i) => [keyOf(l), i]));
@@ -44,8 +44,16 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   next[idx] = { ...next[idx], qty: ln.qty };
                 }
               }
-              update({ lines: next });
-              if (save) await save({ ...est, lines: next });
+              // Surface masked-out zones (brick, stone, garage, stucco) on
+              // the estimate so the PDF / email can show "Materials
+              // excluded: ..." under the siding row.
+              const patch = { lines: next };
+              if (measurements?._photo_zones_summary) {
+                patch.photo_zones_summary = measurements._photo_zones_summary;
+                patch.photo_zones_deducted_sqft = measurements._photo_zones_deducted_sqft || 0;
+              }
+              update(patch);
+              if (save) await save({ ...est, ...patch });
             }}
           />
         </div>

@@ -185,6 +185,14 @@ class EstimateIn(BaseModel):
     vero_openings: List["VeroOpening"] = []
     photos: List[str] = []
     status_label: str = "draft"
+    # Photo Measure: human-readable summary of masked-out "no-siding"
+    # zones (e.g. "Brick: 220 ft²; Garage door: 168 ft²") so the
+    # customer PDF / email can show what was excluded from the siding
+    # qty. `photo_zones_deducted_sqft` is the rolled-up total. Both
+    # default to empty/0 — only populated when the contractor uses the
+    # Photo Measure "Mask zone" tool.
+    photo_zones_summary: str = ""
+    photo_zones_deducted_sqft: float = 0
 
 
 class MezzoOpening(BaseModel):

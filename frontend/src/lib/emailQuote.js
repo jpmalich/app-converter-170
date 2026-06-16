@@ -77,6 +77,26 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
   const cell = (content, extra = "") =>
     `<td style="padding:0;font-family:${FONT};color:${C.ink};${extra}">${content}</td>`;
 
+  // Sections that contain the headline siding product — used to decide
+  // where to inject the "Materials excluded" note (brick / stone / garage
+  // zones masked off during Photo Measure).
+  const SIDING_SECTIONS = new Set([
+    "Vinyl Siding",
+    "Ascend Cladding",
+    "LP Smart Siding",
+  ]);
+  const zonesSummary = (estimate.photo_zones_summary || "").trim();
+  const zonesDeducted = Number(estimate.photo_zones_deducted_sqft || 0);
+  const renderExcludedNote = () =>
+    zonesSummary
+      ? `
+      <tr>
+        <td style="padding:6px 0 10px 0;font-family:${FONT};font-size:12px;color:${C.muted};font-style:italic;border-bottom:1px solid ${C.line};">
+          ${esc(t("email.materialsExcluded"))}: ${esc(zonesSummary)}${zonesDeducted > 0 ? ` <span style="color:${C.faint};">(${zonesDeducted} ft² total)</span>` : ""}
+        </td>
+      </tr>`
+      : "";
+
   const sectionBlock = ([section, items]) => `
     <tr><td style="padding:18px 0 6px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.accent};border-bottom:1px solid ${C.ink};">${esc(tSection(section, lang))}</td></tr>
     ${items
@@ -94,6 +114,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
       </tr>`
       )
       .join("")}
+    ${SIDING_SECTIONS.has(section) ? renderExcludedNote() : ""}
   `;
 
   const photoGrid = (estimate.photos || []).length
