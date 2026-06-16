@@ -252,24 +252,24 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Finish Trim Standard color",
         "unit": "PCS",
-        "extract": lambda m: round(
+        "extract": lambda m: max(0, math.ceil(
             ((m.get("eaves_lf") or 0)
-             + (m.get("window_bottom_width_total_lf") or 0)) / 10,
-            2,
-        ),
-        "note": "(Eaves LF + window bottom widths) ÷ 10 (per Howard)",
+             + (m.get("window_bottom_width_total_lf")
+                or (m.get("window_count") or 0) * 3.0)) / 12.5
+        )),
+        "note": "ceil((Eaves LF + window bottoms) ÷ 12.5) — falls back to 3 ft/window",
     },
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
         "item": "ASCEND Finish Trim",
         "unit": "PCS",
-        "extract": lambda m: round(
+        "extract": lambda m: max(0, math.ceil(
             ((m.get("eaves_lf") or 0)
-             + (m.get("window_bottom_width_total_lf") or 0)) / 10,
-            2,
-        ),
-        "note": "(Eaves LF + window bottom widths) ÷ 10 (per Howard)",
+             + (m.get("window_bottom_width_total_lf")
+                or (m.get("window_count") or 0) * 3.0)) / 12.5
+        )),
+        "note": "ceil((Eaves LF + window bottoms) ÷ 12.5) — falls back to 3 ft/window",
     },
     # =====================================================================
     # J-CHANNEL — vinyl + Ascend. Howard's formula:
@@ -371,8 +371,8 @@ HOVER_MAPPING_SPEC = [
         "section": "Vinyl Soffit with Siding",
         "item": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
         "unit": "LF",
-        "extract": lambda m: round((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)),
-        "note": "Matches Soffit & fascia LF — defaults to Standard color",
+        "extract": lambda m: round((m.get("eaves_lf") or 0) * 2),
+        "note": "2 × Eaves LF (F-channel runs both wall-side and fascia-side of every soffit run)",
     },
     # =====================================================================
     # FASCIA / RAKE / FRIEZE COVERAGE — driven off eaves LF (per Howard).

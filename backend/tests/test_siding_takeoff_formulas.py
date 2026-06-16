@@ -69,3 +69,35 @@ def test_starter_ascend_matches_vinyl():
     a = _spec("Ascend - Starter", "ascend")
     m = {"starter_lf": 175}
     assert v["extract"](m) == a["extract"](m) == 14
+
+
+def test_soffit_j_channel_two_sides():
+    """F-channel runs along both the wall-side and fascia-side of the
+    soffit, so qty = 2 × eaves_lf."""
+    s = _spec('3/4" Soffit J-Channel (Charter Oak) Standard color', "vinyl")
+    assert s["extract"]({"eaves_lf": 100}) == 200
+    # Rakes are intentionally NOT included — gable rakes get fascia trim,
+    # not soffit channel.
+    assert s["extract"]({"eaves_lf": 100, "rakes_lf": 60}) == 200
+    assert s["extract"]({}) == 0
+
+
+def test_finish_trim_ceil_12_5_with_window_widths():
+    """Use the per-window width sum from HOVER when available."""
+    s = _spec("Finish Trim Standard color", "vinyl")
+    # 100 eaves + 24 window-bottom LF = 124 / 12.5 = 9.92 → 10 pcs
+    assert s["extract"]({
+        "eaves_lf": 100,
+        "window_bottom_width_total_lf": 24,
+    }) == 10
+
+
+def test_finish_trim_falls_back_to_3ft_per_window():
+    """When HOVER didn't break out window bottoms, fall back to a 3 ft
+    average per window count."""
+    s = _spec("Finish Trim Standard color", "vinyl")
+    # 100 eaves + 8 windows × 3 ft = 124 / 12.5 → 10 pcs
+    assert s["extract"]({
+        "eaves_lf": 100,
+        "window_count": 8,
+    }) == 10
