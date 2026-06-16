@@ -17,7 +17,7 @@
 // Output payload matches the AI Measure / HOVER shape so the calling
 // page can reuse the same `onApply({ measurements, lines, ... })`
 // callback contract.
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Ruler, Camera, X, Check, Trash2, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -111,7 +111,7 @@ function buildMeasurements(measures, openings) {
   };
 }
 
-export default function PhotoMeasureButton({ onApply, externalOpen, onExternalClose, hideTrigger }) {
+export default function PhotoMeasureButton({ onApply, externalOpen, onExternalClose, hideTrigger, prefillFiles }) {
   const fileRef = useRef();
   const canvasRef = useRef();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -123,6 +123,18 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
       setInternalOpen(v);
     }
   };
+  // Pre-built thumbnails for AI photos handed down from the parent so the
+  // contractor can pick one to refine without re-uploading.
+  const prefillThumbs = useMemo(() => {
+    if (!prefillFiles?.length) return [];
+    return prefillFiles.map((f) => ({ file: f, url: URL.createObjectURL(f) }));
+  }, [prefillFiles]);
+  useEffect(() => {
+    return () => {
+      prefillThumbs.forEach((t) => URL.revokeObjectURL(t.url));
+    };
+  }, [prefillThumbs]);
+
   const [photo, setPhoto] = useState(null); // {url, width, height}
   const [mode, setMode] = useState(MODE_CALIBRATE);
   const [pxPerFt, setPxPerFt] = useState(0);
@@ -149,12 +161,28 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     const f = e.target.files?.[0];
     if (!f) return;
     const url = URL.createObjectURL(f);
+    loadPhotoFromUrl(url);
+  };
+
+  // Shared loader so both manual uploads and prefilled AI thumbnails feed
+  // through the same code path.
+  const loadPhotoFromUrl = (url) => {
     const img = new Image();
     img.onload = () => {
       setPhoto({ url, width: img.naturalWidth, height: img.naturalHeight });
     };
     img.src = url;
   };
+
+  // Auto-load the only AI photo if there's exactly one; otherwise the user
+  // picks from a thumbnail grid (rendered below).
+  useEffect(() => {
+    if (!open) return;
+    if (photo) return;
+    if (prefillThumbs.length === 1) {
+      loadPhotoFromUrl(prefillThumbs[0].url);
+    }
+  }, [open, prefillThumbs, photo]);
 
   // Convert event coords → photo-space coords
   const evtPoint = (e) => {
@@ -308,12 +336,15 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     );
   };
 
-  // Cleanup blob URL
+  // Cleanup blob URL — but skip URLs we borrowed from prefillThumbs, since
+  // those are owned (and revoked) by the prefillThumbs effect above.
   useEffect(() => {
     return () => {
-      if (photo?.url) URL.revokeObjectURL(photo.url);
+      if (!photo?.url) return;
+      const borrowed = prefillThumbs.some((t) => t.url === photo.url);
+      if (!borrowed) URL.revokeObjectURL(photo.url);
     };
-  }, [photo]);
+  }, [photo, prefillThumbs]);
 
   const totals = buildMeasurements(measures, openings);
 
@@ -367,21 +398,51 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
               {/* Photo canvas */}
               <div className="md:col-span-2">
                 {!photo ? (
-                  <div
-                    onClick={() => fileRef.current?.click()}
-                    className="border-2 border-dashed border-[#E4E4E7] rounded-sm aspect-video flex flex-col items-center justify-center cursor-pointer hover:border-[#0EA5E9]"
-                  >
-                    <Camera className="w-12 h-12 mb-2 text-[#0EA5E9]" />
-                    <div className="text-sm font-bold text-[#0EA5E9] uppercase tracking-wider">Choose / Take Photo</div>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={pickPhoto}
-                      data-testid="photo-measure-file-input"
-                    />
+                  <div>
+                    {prefillThumbs.length > 1 && (
+                      <div className="mb-3" data-testid="photo-measure-prefill-grid">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-2">
+                          Pick one of your AI photos to refine
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {prefillThumbs.map((t, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => loadPhotoFromUrl(t.url)}
+                              className="border border-[#E4E4E7] hover:border-[#0EA5E9] focus:border-[#0EA5E9] focus:outline-none aspect-square overflow-hidden bg-[#FAFAFA]"
+                              data-testid={`photo-measure-prefill-thumb-${i}`}
+                              title={t.file?.name || `Photo ${i + 1}`}
+                            >
+                              <img
+                                src={t.url}
+                                alt={`AI photo ${i + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <div className="text-[10px] text-[#A1A1AA] text-center mt-3 uppercase tracking-wider">
+                          — or upload a different photo —
+                        </div>
+                      </div>
+                    )}
+                    <div
+                      onClick={() => fileRef.current?.click()}
+                      className="border-2 border-dashed border-[#E4E4E7] rounded-sm aspect-video flex flex-col items-center justify-center cursor-pointer hover:border-[#0EA5E9]"
+                    >
+                      <Camera className="w-12 h-12 mb-2 text-[#0EA5E9]" />
+                      <div className="text-sm font-bold text-[#0EA5E9] uppercase tracking-wider">Choose / Take Photo</div>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={pickPhoto}
+                        data-testid="photo-measure-file-input"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="relative border border-[#E4E4E7] rounded-sm overflow-hidden">

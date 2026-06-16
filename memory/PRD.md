@@ -223,6 +223,7 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 - Real PWA app icons (still programmatic placeholder)
 - **DONE in Iter 35**: ~~Invite Contractors via Admin Tab~~ — supplier can now send branded email invites with one-click signup links
 - **DONE in Iter 38**: ~~Mezzo Pricing Admin matrix~~ — supplier can paste any tier × product grid from Excel and contractors see prices live
+- **DONE in Iter 39 (Feb 2026)**: ~~AI Photo Measure + Photo Refine merge double-upload UX bug~~ — `AIMeasureButton` now hands its uploaded photos to `PhotoMeasureButton` via `prefillFiles`. Single AI photo auto-loads into the canvas; multiple photos render as a thumbnail picker so contractors skip re-uploading.
 
 ### P2
 - **Multi-Location support** (3–10 locations, e.g. Pittsburgh + Cleveland):
