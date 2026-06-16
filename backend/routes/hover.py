@@ -383,9 +383,12 @@ HOVER_MAPPING_SPEC = [
         "tabs": ["vinyl", "ascend"],
         "section": "Vinyl Soffit with Siding",
         "item": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
-        "unit": "LF",
-        "extract": lambda m: round((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)),
-        "note": "Matches Soffit & fascia LF — defaults to Standard color",
+        "unit": "PCS",
+        "extract": lambda m: max(
+            0,
+            math.ceil(((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 12.5),
+        ),
+        "note": "(Eaves + Rakes) ÷ 12.5 LF/stick, round up · matches Vinyl Accessories J-channel math",
     },
     # =====================================================================
     # FASCIA / RAKE / FRIEZE COVERAGE — driven off eaves LF (per Howard).

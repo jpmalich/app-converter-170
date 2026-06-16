@@ -5,6 +5,7 @@ routes/* (which need them at request time) and startup.py (which
 needs them during the initial seed/migration).
 """
 import uuid
+import math
 from datetime import datetime, timezone
 
 from config import SUPPLIER_NAME, SUPPLIER_TAGLINE
@@ -456,6 +457,58 @@ async def ensure_tiers_seeded():
                 await db.estimates.update_one(
                     {"_id": est["_id"]}, {"$set": {"lines": lines}}
                 )
+
+    # ------------------------------------------------------------------
+    # Iter 46: Soffit J-Channel LF → PCS (same names, just unit + math).
+    # Pricing now matches Vinyl Accessories J-Channel ($5.23/$6.03 per
+    # piece across tiers). qty conversion: qty_pcs = ceil(qty_lf / 12.5)
+    # since J-channel ships in 12'6" sticks. Catalog mat is force-set
+    # below to the new per-piece prices; estimate-line mat keeps its
+    # current dollar value (contractors may have overridden).
+    # ------------------------------------------------------------------
+    SOFFIT_J_NEW_PRICES = {
+        '3/4" Soffit J-Channel (Charter Oak) Standard color':
+            {"whole-sale": 7.28, "Contractor": 5.23, "Builder-Dealer": 5.23, "one-opp": 4.55},
+        '3/4" Soffit J-Channel (Charter Oak) Architectural color':
+            {"whole-sale": 8.49, "Contractor": 6.03, "Builder-Dealer": 6.03, "one-opp": 4.55},
+        '1/2" Soffit J-Channel (for T2 Soffit)':
+            {"whole-sale": 7.28, "Contractor": 5.23, "Builder-Dealer": 5.23, "one-opp": 4.55},
+    }
+    # Catalog: flip unit + set new PCS price per tier.
+    async for tier in db.price_tiers.find({}, {"_id": 1, "name": 1, "sections": 1}):
+        tier_name = tier.get("name")
+        sections = tier.get("sections") or []
+        dirty = False
+        for sec in sections:
+            for it in sec.get("items", []) or []:
+                name = it.get("name")
+                if name in SOFFIT_J_NEW_PRICES:
+                    new_price = float(SOFFIT_J_NEW_PRICES[name].get(tier_name, 0))
+                    if it.get("unit") != "PCS" or float(it.get("mat") or 0) != new_price:
+                        it["unit"] = "PCS"
+                        if new_price > 0:
+                            it["mat"] = new_price
+                        dirty = True
+        if dirty:
+            await db.price_tiers.update_one(
+                {"_id": tier["_id"]}, {"$set": {"sections": sections}}
+            )
+    # Estimate lines: flip unit + divide qty by 12.5, ceil.
+    SOFFIT_J_NAMES = list(SOFFIT_J_NEW_PRICES.keys())
+    async for est in db.estimates.find(
+        {"lines.name": {"$in": SOFFIT_J_NAMES}}, {"lines": 1}
+    ):
+        lines = est.get("lines", [])
+        dirty = False
+        for ln in lines:
+            if ln.get("name") in SOFFIT_J_NAMES and ln.get("unit") == "LF":
+                ln["unit"] = "PCS"
+                ln["qty"] = max(1, math.ceil(float(ln.get("qty") or 0) / 12.5))
+                dirty = True
+        if dirty:
+            await db.estimates.update_one(
+                {"_id": est["_id"]}, {"$set": {"lines": lines}}
+            )
 
     BACKFILL = [
         TRIM, "ASCEND Finish Trim", "Ascend - Starter",
