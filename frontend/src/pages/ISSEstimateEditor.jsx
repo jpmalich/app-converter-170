@@ -27,7 +27,6 @@ import { useLang } from "@/lib/i18n";
 import QuoteModal from "@/components/QuoteModal";
 import ISSHoverImportButton from "@/components/estimate/ISSHoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
-import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
 import { FileText, Printer, Download, ClipboardList } from "lucide-react";
 
 const fmt = (n) => `$${(Number(n) || 0).toFixed(2)}`;
@@ -339,15 +338,6 @@ export default function ISSEstimateEditor() {
             <AIMeasureButton
               kind="iss"
               address={est?.customer_address}
-              onApply={async ({ measurements }) => {
-                const { buildISSLinesFromMeasurements } = await import(
-                  "@/components/estimate/ISSHoverImportButton"
-                );
-                const rows = buildISSLinesFromMeasurements(measurements || {});
-                await applyHoverLines(rows);
-              }}
-            />
-            <PhotoMeasureButton
               onApply={async ({ measurements }) => {
                 const { buildISSLinesFromMeasurements } = await import(
                   "@/components/estimate/ISSHoverImportButton"

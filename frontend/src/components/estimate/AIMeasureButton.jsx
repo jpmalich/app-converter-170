@@ -9,9 +9,10 @@
 // shape as HOVER, so we hand it to the same `onApply` callback the page
 // already uses for HOVER.
 import React, { useRef, useState } from "react";
-import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload } from "lucide-react";
+import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
 
 const KEY_LABELS = {
   siding_sqft: "Siding",
@@ -39,6 +40,7 @@ export default function AIMeasureButton({ kind, onApply, address }) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null); // {measurements, raw_ai}
+  const [refineOpen, setRefineOpen] = useState(false);
 
   const pickFiles = (e) => {
     const arr = Array.from(e.target.files || []).slice(0, 8);
@@ -365,22 +367,56 @@ export default function AIMeasureButton({ kind, onApply, address }) {
                     {busy ? "Analyzing…" : "Run AI Measure"}
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={apply}
-                    disabled={busy}
-                    className="px-3 py-2 bg-[#F97316] text-white hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
-                    data-testid="ai-measure-apply-btn"
-                  >
-                    {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    {busy ? "Saving…" : "Apply Measurements"}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setRefineOpen(true)}
+                      disabled={busy}
+                      className="px-3 py-2 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      data-testid="ai-measure-refine-btn"
+                      title="Pick one of your photos and tap-measure to override specific values"
+                    >
+                      <Ruler className="w-3.5 h-3.5" />
+                      Refine on Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={apply}
+                      disabled={busy}
+                      className="px-3 py-2 bg-[#F97316] text-white hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      data-testid="ai-measure-apply-btn"
+                    >
+                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                      {busy ? "Saving…" : "Apply Measurements"}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
           </div>
         </div>
       )}
+      {/* Child modal: tap-on-photo refinement. Overrides any subset of
+          the AI measurements with hand-measured values. */}
+      <PhotoMeasureButton
+        hideTrigger
+        externalOpen={refineOpen}
+        onExternalClose={() => setRefineOpen(false)}
+        onApply={async ({ measurements: refined }) => {
+          // Merge: any non-zero refined value overrides the AI's number.
+          setPreview((prev) => {
+            if (!prev) return prev;
+            const next = { ...prev.measurements };
+            for (const [k, v] of Object.entries(refined || {})) {
+              if (k.startsWith("_")) continue;
+              if (v && Number(v) > 0) next[k] = v;
+            }
+            return { ...prev, measurements: next };
+          });
+          setRefineOpen(false);
+          toast.success("Refined measurements merged into AI estimate");
+        }}
+      />
     </div>
   );
 }

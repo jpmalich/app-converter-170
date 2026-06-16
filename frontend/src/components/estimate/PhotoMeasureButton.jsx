@@ -111,10 +111,18 @@ function buildMeasurements(measures, openings) {
   };
 }
 
-export default function PhotoMeasureButton({ onApply }) {
+export default function PhotoMeasureButton({ onApply, externalOpen, onExternalClose, hideTrigger }) {
   const fileRef = useRef();
   const canvasRef = useRef();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = hideTrigger ? !!externalOpen : internalOpen;
+  const setOpen = (v) => {
+    if (hideTrigger) {
+      if (!v && onExternalClose) onExternalClose();
+    } else {
+      setInternalOpen(v);
+    }
+  };
   const [photo, setPhoto] = useState(null); // {url, width, height}
   const [mode, setMode] = useState(MODE_CALIBRATE);
   const [pxPerFt, setPxPerFt] = useState(0);
@@ -311,16 +319,18 @@ export default function PhotoMeasureButton({ onApply }) {
 
   return (
     <div data-testid="photo-measure">
-      <button
-        type="button"
-        className="px-3 py-1.5 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
-        onClick={() => setOpen(true)}
-        data-testid="photo-measure-btn"
-        title="Tap-on-photo measurement — calibrate then tap walls and openings"
-      >
-        <Ruler className="w-3.5 h-3.5" />
-        Measure on Photo
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          className="px-3 py-1.5 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+          onClick={() => setOpen(true)}
+          data-testid="photo-measure-btn"
+          title="Tap-on-photo measurement — calibrate then tap walls and openings"
+        >
+          <Ruler className="w-3.5 h-3.5" />
+          Measure on Photo
+        </button>
+      )}
 
       {open && (
         <div
