@@ -180,16 +180,16 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Outside corners Standard color",
         "unit": "PCS",
-        "extract": lambda m: max(1, round((m.get("outside_corner_lf") or 0) / 10)),
-        "note": "Vinyl 10' pieces / outside-corner LF — defaults to Standard color",
+        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5)),
+        "note": "Vinyl 12.5' outside-corner pieces (HOVER LF ÷ 12.5, round up)",
     },
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
         "item": "Ascend 5.5\" Outside Corner  - MATTE",
         "unit": "PCS",
-        "extract": lambda m: max(1, round((m.get("outside_corner_lf") or 0) / 10)),
-        "note": "Ascend 10' outside-corner pieces / corner LF (5.5\" default)",
+        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5)),
+        "note": "Ascend 12.5' outside-corner pieces / corner LF",
     },
     {
         "tabs": ["lp_smart"],
@@ -208,16 +208,16 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Inside Corners (Siding) Standard color",
         "unit": "PCS",
-        "extract": lambda m: max(0, round((m.get("inside_corner_lf") or 0) / 10)),
-        "note": "10' pieces per HOVER inside-corner LF — defaults to Standard color",
+        "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5)),
+        "note": "12.5' pieces per HOVER inside-corner LF, round up — defaults to Standard color",
     },
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
         "item": "Inside Corners",
         "unit": "PCS",
-        "extract": lambda m: max(0, round((m.get("inside_corner_lf") or 0) / 10)),
-        "note": "Ascend inside-corner pieces / corner LF",
+        "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5)),
+        "note": "Ascend inside-corner 12.5' pieces / corner LF, round up",
     },
     # =====================================================================
     # STARTER — both vinyl and Ascend now per-PCS in the catalog. HOVER
@@ -228,16 +228,16 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Starter",
         "unit": "PCS",
-        "extract": lambda m: round((m.get("starter_lf") or 0) / 10, 2),
-        "note": "Vinyl Starter qty = HOVER starter LF ÷ 10 (per Howard)",
+        "extract": lambda m: max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
+        "note": "Vinyl Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
         "item": "Ascend - Starter",
         "unit": "PCS",
-        "extract": lambda m: round((m.get("starter_lf") or 0) / 10, 2),
-        "note": "Ascend Starter qty = HOVER starter LF ÷ 10 (per Howard)",
+        "extract": lambda m: max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
+        "note": "Ascend Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
     # =====================================================================
     # FINISH TRIM — qty = (eaves LF + sum of window bottom widths) ÷ 10
@@ -384,8 +384,8 @@ HOVER_MAPPING_SPEC = [
         "section": "Vinyl Soffit with Siding",
         "item": 'Fascia/rake or frieze up to 8" coverage',
         "unit": "LF",
-        "extract": lambda m: round(m.get("eaves_lf") or 0),
-        "note": "Eaves LF (per Howard)",
+        "extract": lambda m: round((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)),
+        "note": "Eaves LF + Rakes LF (fascia wraps both eave runs and gable rakes)",
     },
     # =====================================================================
     # .019 FASCIA COIL — 1 roll per 100 LF of soffit/fascia (per Howard).
