@@ -126,6 +126,11 @@ class EstimateIn(BaseModel):
     # material list so the supplier knows exactly which colors to pull.
     siding_color: str = ""
     ascend_color: str = ""
+    # Pelican Bay shake palette (Iter 52) — separate field for shake
+    # accents on gables/dormers via the "Quote gables as shake" toggle.
+    shake_color: str = ""
+    # Board & Batten accent color (Iter 52).
+    board_batten_color: str = ""
     accessories_color: str = ""
     outside_corner_color: str = ""
     soffit_fascia_color: str = ""

@@ -2,7 +2,7 @@ import React from "react";
 import DOMPurify from "dompurify";
 import { useT, useLang } from "@/lib/i18n";
 import { tColor, tColorGroup } from "@/lib/catalogTranslations";
-import { vinylSidingColorGroupsForEstimate, accessoryColorGroupsForEstimate, ASCEND_COLORS, SOFFIT_COLOR_GROUPS, GUTTER_COLORS, WINDOW_WRAP_COLORS, MEZZO_EXTERIOR_COLOR_GROUPS, MEZZO_INTERIOR_COLOR_GROUPS, VERO_EXTERIOR_COLOR_GROUPS, VERO_INTERIOR_COLOR_GROUPS, VERO_LAMINATE_NAMES } from "@/lib/colorOptions";
+import { vinylSidingColorGroupsForEstimate, accessoryColorGroupsForEstimate, ASCEND_COLORS, SHAKE_COLOR_GROUPS, BOARD_BATTEN_COLOR_GROUPS, SOFFIT_COLOR_GROUPS, GUTTER_COLORS, WINDOW_WRAP_COLORS, MEZZO_EXTERIOR_COLOR_GROUPS, MEZZO_INTERIOR_COLOR_GROUPS, VERO_EXTERIOR_COLOR_GROUPS, VERO_INTERIOR_COLOR_GROUPS, VERO_LAMINATE_NAMES } from "@/lib/colorOptions";
 import HoverImportButton from "@/components/estimate/HoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 
@@ -160,6 +160,42 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 <option value="">— Select —</option>
                 {ASCEND_COLORS.map((c) => (
                   <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">{t("est.color.shake")}</label>
+              <select
+                className="input"
+                value={est.shake_color || ""}
+                onChange={(e) => update({ shake_color: e.target.value })}
+                data-testid="color-shake"
+              >
+                <option value="">— Select —</option>
+                {SHAKE_COLOR_GROUPS.map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.colors.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="label">{t("est.color.boardBatten")}</label>
+              <select
+                className="input"
+                value={est.board_batten_color || ""}
+                onChange={(e) => update({ board_batten_color: e.target.value })}
+                data-testid="color-board-batten"
+              >
+                <option value="">— Select —</option>
+                {BOARD_BATTEN_COLOR_GROUPS.map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.colors.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

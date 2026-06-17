@@ -17,6 +17,8 @@ import {
   vinylSidingColorGroupsForEstimate,
   accessoryColorGroupsForEstimate,
   ASCEND_COLORS,
+  SHAKE_COLOR_GROUPS,
+  BOARD_BATTEN_COLOR_GROUPS,
   SOFFIT_COLOR_GROUPS,
   GUTTER_COLORS,
   WINDOW_WRAP_COLORS,
@@ -438,6 +440,42 @@ export default function ISSEstimateEditor() {
                   <option value="">— Select —</option>
                   {ASCEND_COLORS.map((c) => (
                     <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Shake (Pelican Bay)</label>
+                <select
+                  className="input h-9 text-sm w-full"
+                  value={est.shake_color || ""}
+                  onChange={(e) => updateField("shake_color", e.target.value)}
+                  data-testid="iss-color-shake"
+                >
+                  <option value="">— Select —</option>
+                  {SHAKE_COLOR_GROUPS.map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.colors.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Board &amp; Batten</label>
+                <select
+                  className="input h-9 text-sm w-full"
+                  value={est.board_batten_color || ""}
+                  onChange={(e) => updateField("board_batten_color", e.target.value)}
+                  data-testid="iss-color-board-batten"
+                >
+                  <option value="">— Select —</option>
+                  {BOARD_BATTEN_COLOR_GROUPS.map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.colors.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>

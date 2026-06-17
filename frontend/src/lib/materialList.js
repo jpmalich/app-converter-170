@@ -392,6 +392,8 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
     <tr>
       ${colorCell("Siding", estimate.siding_color)}
       ${colorCell("Ascend", estimate.ascend_color)}
+      ${colorCell("Shake (Pelican Bay)", estimate.shake_color)}
+      ${colorCell("Board & Batten", estimate.board_batten_color)}
       ${colorCell("Accessories", estimate.accessories_color)}
       ${colorCell("Outside Corner", estimate.outside_corner_color)}
       ${colorCell("Soffit / Fascia", estimate.soffit_fascia_color)}

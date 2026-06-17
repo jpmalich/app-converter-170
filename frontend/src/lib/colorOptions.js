@@ -167,6 +167,58 @@ export const ASCEND_COLORS = [
   "Fired Brick",
 ];
 
+// Pelican Bay One shake palette (Iter 52). Used when the contractor
+// quotes shake accents on gables/dormers via the "Quote gables as shake"
+// / "Quote dormers as shake" toggles in AI Measure. Howard's spec
+// follows the same Std/Arch split convention as the other vinyl lines —
+// even though the manufacturer brochure lists it as one collection,
+// we surface it as two optgroups so the dropdown matches the rest of
+// the UI.
+export const SHAKE_COLOR_GROUPS = [
+  {
+    label: "Pelican Bay Standard Color Collection",
+    colors: [
+      "Glacier White", "Antique Parchment", "Natural Linen", "Platinum Gray",
+      "Cape Cod Gray", "Dover Gray", "Mystic Blue", "Coastal Sage",
+      "Juniper Ridge", "Adobe Cream", "Maple", "Monterey Sand",
+      "Canyon Clay", "Vintage Wicker", "Tuscan Clay",
+    ],
+  },
+  {
+    label: "Pelican Bay Architectural Color Collection",
+    colors: [
+      "Fired Brick", "Canyon Drift", "Flagship Brown", "Deep Espresso",
+      "Rustic Timber", "Mountain Fern", "Deep Moss", "Harbor Blue",
+      "Midnight Blue", "Laguna Blue", "Riviera Dusk", "Storm",
+      "Sterling Gray", "Ageless Slate", "Charcoal Smoke", "Cast Iron",
+    ],
+  },
+];
+export const SHAKE_COLORS = SHAKE_COLOR_GROUPS.flatMap((g) => g.colors);
+
+// Board & Batten palette (Iter 52). Standard 12 + Architectural 16
+// premium per Howard's spec.
+export const BOARD_BATTEN_COLOR_GROUPS = [
+  {
+    label: "Standard Color Collection",
+    colors: [
+      "Glacier White", "Antique Parchment", "Natural Linen", "Platinum Gray",
+      "Cape Cod Gray", "Mystic Blue", "Coastal Sage", "Juniper Ridge",
+      "Maple", "Monterey Sand", "Vintage Wicker", "Tuscan Clay",
+    ],
+  },
+  {
+    label: "Architectural Color Collection (premium)",
+    colors: [
+      "Fired Brick", "Canyon Drift", "Flagship Brown", "Deep Espresso",
+      "Rustic Timber", "Mountain Fern", "Deep Moss", "Harbor Blue",
+      "Midnight Blue", "Laguna Blue", "Riviera Dusk", "Storm",
+      "Sterling Gray", "Ageless Slate", "Charcoal Smoke", "Cast Iron",
+    ],
+  },
+];
+export const BOARD_BATTEN_COLORS = BOARD_BATTEN_COLOR_GROUPS.flatMap((g) => g.colors);
+
 // Soffit / Fascia palette split into Standard and Architectural (premium)
 // collections — same rendering pattern as the Vinyl Siding dropdown.
 // Premium colors include Musket Brown + Black which only ship on aluminum
