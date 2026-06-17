@@ -221,6 +221,27 @@ def _aggregate_to_hover_shape(raw: dict) -> dict:
     for w in walls:
         width_ft = float(w.get("width_ft") or 0)
         eave_h = float(w.get("height_ft") or 0)
+        # Iter 55: HARD CLAMP — Claude occasionally returns wall heights
+        # as story-units (1.0 = 1 story) or stupidly small fractions
+        # (0.7 ft) which deflates the whole quote by 10–100×. No real
+        # exterior wall is < 7 ft. If we get something nonsensical, fall
+        # back to the global avg_wall_height_ft, then the story-default.
+        if 0 < eave_h < 7:
+            avg = float(raw.get("avg_wall_height_ft") or 0)
+            story = float(raw.get("story_count") or 1)
+            if avg >= 7:
+                eave_h = avg
+            elif story >= 2:
+                eave_h = 18.0
+            elif story >= 1.5:
+                eave_h = 12.0
+            else:
+                eave_h = 9.0
+        # Same defensive clamp for width — no real house wall is < 5 ft.
+        # Single-digit widths usually mean Claude returned a meaningless
+        # fraction. Skip the wall (don't try to guess a width).
+        if 0 < width_ft < 5:
+            width_ft = 0
         gross = width_ft * eave_h
         pct = float(w.get("siding_pct_this_wall") or 100.0)
         # Defensive parsing: Claude sometimes returns 0.85 meaning "85%"
