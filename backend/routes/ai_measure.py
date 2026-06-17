@@ -74,7 +74,7 @@ Schema:
      "height_ft": number,                 // EAVE height ONLY — measure from floor up to the soffit/gutter line. NEVER include the gable triangle, NEVER include a dormer.
      "gable_triangle_height_ft": number,  // 0 if this wall ends in an eave; >0 ONLY if this wall is a gable-end (you can see the triangular peak above the eave). Triangle area is auto-computed as 0.5 × width × this value.
      "dormer_face_sqft": number,          // 0 unless a true dormer (small box poking out of the roof) is on this elevation. Estimate the visible vertical face area in ft² — typically 20-60 ft² each.
-     "siding_pct_this_wall": number       // 0-100 — siding only, not brick/garage door/etc.
+     "siding_pct_this_wall": number       // INTEGER 0-100 (percent), NOT a fraction. Use 85 to mean 85% siding — NEVER 0.85. Siding only, not brick / garage door / etc.
     }
   ],
   "openings": [
@@ -223,7 +223,14 @@ def _aggregate_to_hover_shape(raw: dict) -> dict:
         eave_h = float(w.get("height_ft") or 0)
         gross = width_ft * eave_h
         pct = float(w.get("siding_pct_this_wall") or 100.0)
-        # Clamp to a sane range and treat null/zero defensively as 100%.
+        # Defensive parsing: Claude sometimes returns 0.85 meaning "85%"
+        # (a fraction) and sometimes returns 85 meaning "85%". Without
+        # this clamp a 2000 ft² house can shrink to 17 ft² because 0.85
+        # gets read as 0.85%. Heuristic: anything strictly between 0 and
+        # 1 is a fraction — multiply by 100 to get a percent. Anything
+        # exactly 0 or above 1 is already a percent (or junk).
+        if 0 < pct < 1:
+            pct = pct * 100.0
         if pct <= 0:
             pct = 100.0
         pct = min(pct, 100.0)
