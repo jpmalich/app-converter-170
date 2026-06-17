@@ -199,6 +199,26 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
   const [pxPerFt, setPxPerFt] = useState(0);
   // Pending click pair for calibration / measurement
   const [pending, setPending] = useState(null); // {x, y}
+  // Pending calibration awaiting reference length input.
+  // shape: { pxDistance, p1, p2 } — non-null while the calibration modal is open.
+  // Replaces the bare window.prompt("…INCHES…") that historically caused
+  // contractors to enter feet by mistake and shrink everything 12×.
+  const [calibPending, setCalibPending] = useState(null);
+  // Last-used calibration unit, persisted across sessions so contractors
+  // who consistently use feet (garage door height, etc.) don't have to
+  // re-toggle every photo.
+  const [calibUnit, setCalibUnit] = useState(() => {
+    try {
+      const saved = localStorage.getItem("photoMeasureCalibUnit");
+      return saved === "in" || saved === "ft" ? saved : "ft";
+    } catch {
+      return "ft";
+    }
+  });
+  const [calibValue, setCalibValue] = useState("");
+  useEffect(() => {
+    try { localStorage.setItem("photoMeasureCalibUnit", calibUnit); } catch { /* ignore */ }
+  }, [calibUnit]);
   const [measures, setMeasures] = useState([]); // [{p1, p2, feet, label}]
   const [openings, setOpenings] = useState([]); // [{x, y, type}]
   const [openingType, setOpeningType] = useState("window");
@@ -226,6 +246,8 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     setOpenings([]);
     setZones([]);
     setPolyPoints([]);
+    setCalibPending(null);
+    setCalibValue("");
   };
 
   const pickPhoto = (e) => {
@@ -328,18 +350,13 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     }
     const px = dist(pending, p);
     if (mode === MODE_CALIBRATE) {
-      const len = prompt("Real length of this reference (in INCHES):");
-      const inches = parseFloat(len || "0");
-      if (!inches || inches <= 0) {
-        setPending(null);
-        return;
-      }
-      const feet = inches / 12;
-      const newPxPerFt = px / feet;
-      setPxPerFt(newPxPerFt);
+      // Open the calibration modal instead of using window.prompt(). The
+      // legacy prompt asked for "INCHES" which contractors routinely
+      // misread, entering feet (e.g. 7 instead of 84 for a door) and
+      // shrinking every downstream measurement 12×.
+      setCalibPending({ pxDistance: px, p1: pending, p2: p });
+      setCalibValue("");
       setPending(null);
-      setMode(MODE_MEASURE);
-      toast.success(`Calibrated: ${newPxPerFt.toFixed(1)} px/ft. Now measure your walls.`);
       return;
     }
     if (mode === MODE_MEASURE) {
@@ -381,6 +398,30 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     setMode(MODE_CALIBRATE);
     setPxPerFt(0);
     setPending(null);
+    setCalibPending(null);
+    setCalibValue("");
+  };
+
+  // Finalize calibration from the modal: convert value+unit → inches → feet → px/ft.
+  const confirmCalibration = () => {
+    if (!calibPending) return;
+    const num = parseFloat(calibValue);
+    if (!num || num <= 0) {
+      toast.error("Enter a positive number");
+      return;
+    }
+    const inches = calibUnit === "ft" ? num * 12 : num;
+    const feet = inches / 12;
+    const newPxPerFt = calibPending.pxDistance / feet;
+    setPxPerFt(newPxPerFt);
+    setCalibPending(null);
+    setCalibValue("");
+    setMode(MODE_MEASURE);
+    toast.success(`Calibrated: ${num} ${calibUnit} reference → ${newPxPerFt.toFixed(1)} px/ft. Now measure your walls.`);
+  };
+  const cancelCalibration = () => {
+    setCalibPending(null);
+    setCalibValue("");
   };
 
   // Switch to a different photo without wiping the contractor's tap
@@ -590,7 +631,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
           onClick={closeAll}
         >
           <div
-            className="bg-white max-w-4xl w-full max-h-[95vh] flex flex-col"
+            className="bg-white max-w-4xl w-full max-h-[95vh] flex flex-col relative"
             onClick={(e) => e.stopPropagation()}
             data-testid="photo-measure-modal"
           >
@@ -618,6 +659,140 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Calibration modal — replaces the legacy window.prompt() that
+                ambiguously asked for "INCHES" and led contractors to enter
+                feet by mistake. Now: explicit Ft/In toggle, live conversion
+                preview, and a sanity warning when the value looks wrong
+                for the chosen unit. */}
+            {calibPending && (() => {
+              const num = parseFloat(calibValue);
+              const valid = !isNaN(num) && num > 0;
+              const inches = valid ? (calibUnit === "ft" ? num * 12 : num) : 0;
+              const feetEq = inches / 12;
+              // Sanity heuristic: typical references are 3–20 ft (door, garage,
+              // tape stretch). Warn if value looks like it was entered in the
+              // wrong unit.
+              let warning = null;
+              if (valid) {
+                if (calibUnit === "in" && num < 12) {
+                  warning = `That's less than 1 ft — did you mean ${num} feet?`;
+                } else if (calibUnit === "in" && num > 240) {
+                  warning = `That's over 20 ft of reference — double-check.`;
+                } else if (calibUnit === "ft" && num > 30) {
+                  warning = `That's a very long reference — make sure it's feet, not inches.`;
+                } else if (calibUnit === "ft" && num < 1) {
+                  warning = `Less than 1 ft — did you mean ${num} inches?`;
+                }
+              }
+              return (
+                <div
+                  className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center p-4"
+                  onClick={cancelCalibration}
+                  data-testid="photo-measure-calib-modal"
+                >
+                  <div
+                    className="bg-white max-w-sm w-full shadow-xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="bg-[#F97316] text-white px-4 py-2.5">
+                      <div className="font-heading text-base">Reference Length</div>
+                      <div className="text-[11px] opacity-90 mt-0.5">
+                        How long is the object you just tapped in real life?
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div>
+                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                          Unit
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setCalibUnit("ft")}
+                            className={`flex-1 px-3 py-2 text-xs font-bold uppercase tracking-wider border ${
+                              calibUnit === "ft"
+                                ? "bg-[#09090B] text-white border-[#09090B]"
+                                : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                            }`}
+                            data-testid="photo-measure-calib-unit-ft"
+                          >
+                            Feet (ft)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCalibUnit("in")}
+                            className={`flex-1 px-3 py-2 text-xs font-bold uppercase tracking-wider border ${
+                              calibUnit === "in"
+                                ? "bg-[#09090B] text-white border-[#09090B]"
+                                : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                            }`}
+                            data-testid="photo-measure-calib-unit-in"
+                          >
+                            Inches (in)
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                          Real length in {calibUnit === "ft" ? "feet" : "inches"}
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          inputMode="decimal"
+                          autoFocus
+                          value={calibValue}
+                          onChange={(e) => setCalibValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); confirmCalibration(); }
+                            if (e.key === "Escape") { e.preventDefault(); cancelCalibration(); }
+                          }}
+                          placeholder={calibUnit === "ft" ? "e.g. 7 (entry door)" : "e.g. 84"}
+                          className="w-full px-3 py-2 border border-[#E4E4E7] rounded-sm text-base font-mono-num focus:outline-none focus:border-[#0EA5E9]"
+                          data-testid="photo-measure-calib-input"
+                        />
+                        {valid && (
+                          <div className="text-[11px] text-[#71717A] mt-1.5" data-testid="photo-measure-calib-preview">
+                            = <span className="font-mono-num font-bold">{feetEq.toFixed(2)} ft</span>
+                            {" "}/{" "}
+                            <span className="font-mono-num font-bold">{inches.toFixed(1)} in</span>
+                          </div>
+                        )}
+                        {warning && (
+                          <div className="mt-2 px-2 py-1.5 bg-[#FEF3C7] border-l-2 border-[#F59E0B] text-[11px] text-[#92400E]" data-testid="photo-measure-calib-warning">
+                            ⚠ {warning}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-[#A1A1AA] leading-snug">
+                        Tip: use something with a known size — a standard entry door is ~<b>7 ft</b>, a single garage door is ~<b>7 ft</b> tall × <b>9 ft</b> wide, a double garage door is ~<b>7 × 16 ft</b>.
+                      </div>
+                    </div>
+                    <div className="border-t border-[#E4E4E7] px-4 py-3 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelCalibration}
+                        className="px-3 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider"
+                        data-testid="photo-measure-calib-cancel"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={confirmCalibration}
+                        disabled={!valid}
+                        className="px-3 py-2 bg-[#F97316] text-white hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                        data-testid="photo-measure-calib-confirm"
+                      >
+                        Calibrate
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="overflow-y-auto flex-1 p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Photo canvas */}
