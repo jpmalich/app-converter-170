@@ -19,6 +19,7 @@ use and de-facto used commercially without keys.
 """
 from __future__ import annotations
 
+import io
 import math
 import uuid
 from pathlib import Path
@@ -26,6 +27,7 @@ from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, Form, HTTPException
+from PIL import Image, ImageDraw, ImageFont
 
 from config import UPLOAD_DIR
 from deps import get_current_user
@@ -39,15 +41,15 @@ ESRI_EXPORT_URL = (
 )
 USER_AGENT = "ProQuoteEstimator/1.0 (contractor siding estimator)"
 
-# House-scale bbox at the equator: 120 m radius in each direction
-# (≈ a 240 m × 240 m square around the address). Esri's World Imagery
-# tile pyramid throws a 500 "Error: bytes" when the bbox is tighter
-# than ~150 m square (the imagery service can't synthesize from its
-# top-zoom tiles at that scale), so we default to 120 m and back off
-# to 250 m on retry. One degree of latitude ≈ 111 km. Longitude shrinks
+# House-scale bbox at the equator. Earlier testing showed Esri returns
+# a 500 "Error: bytes" whenever the bbox is tighter than ~150 m square
+# (the imagery service can't synthesize from its top-zoom tiles at that
+# scale). Default at 200 m (= 400 m × 400 m view) — first attempt almost
+# always succeeds on suburban + rural lots. Back off to 350 m only if
+# Esri still errors. One degree of latitude ≈ 111 km. Longitude shrinks
 # by cos(lat) toward the poles.
-DEFAULT_RADIUS_M = 120
-RETRY_RADIUS_M = 250
+DEFAULT_RADIUS_M = 200
+RETRY_RADIUS_M = 350
 EARTH_M_PER_DEG_LAT = 111_320
 
 DEFAULT_SIZE_PX = 1600  # 1600×1600 is plenty for Claude to read roof outline
@@ -58,6 +60,67 @@ def _bbox_around(lat: float, lon: float, radius_m: int) -> tuple[float, float, f
     dlat = radius_m / EARTH_M_PER_DEG_LAT
     dlon = radius_m / (EARTH_M_PER_DEG_LAT * max(0.01, math.cos(math.radians(lat))))
     return (lon - dlon, lat - dlat, lon + dlon, lat + dlat)
+
+
+def _burn_target_marker(jpeg_bytes: bytes, radius_m: int) -> bytes:
+    """Draw a red crosshair + ring + "TARGET" label at the center of the
+    satellite tile. Critical on rural lots where the radius bbox catches
+    several houses — without this marker, neither the contractor nor
+    Claude can tell which structure is the address."""
+    img = Image.open(io.BytesIO(jpeg_bytes)).convert("RGB")
+    draw = ImageDraw.Draw(img, "RGBA")
+    w, h = img.size
+    cx, cy = w // 2, h // 2
+    # Crosshair geometry sized so it stays legible at any radius zoom.
+    # At 200 m radius the ring is ~7% of the image (≈ a residential
+    # house footprint); at 350 m it stays the same px size, so the
+    # outline still pops without obscuring the roof.
+    ring_r = max(40, w // 14)
+    cross_len = ring_r * 2
+    line_w = max(4, w // 240)
+    # Outer ring
+    draw.ellipse(
+        (cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r),
+        outline=(220, 38, 38, 255),
+        width=line_w,
+    )
+    # Inner dot
+    inner = max(6, w // 200)
+    draw.ellipse(
+        (cx - inner, cy - inner, cx + inner, cy + inner),
+        fill=(220, 38, 38, 255),
+    )
+    # Crosshair arms (broken at the ring so the structure inside is visible)
+    gap = ring_r + line_w * 2
+    draw.line([(cx - cross_len, cy), (cx - gap, cy)], fill=(220, 38, 38, 255), width=line_w)
+    draw.line([(cx + gap, cy), (cx + cross_len, cy)], fill=(220, 38, 38, 255), width=line_w)
+    draw.line([(cx, cy - cross_len), (cx, cy - gap)], fill=(220, 38, 38, 255), width=line_w)
+    draw.line([(cx, cy + gap), (cx, cy + cross_len)], fill=(220, 38, 38, 255), width=line_w)
+    # TARGET label above the ring
+    label = f"TARGET · {radius_m}m view"
+    font_px = max(20, w // 50)
+    try:
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_px
+        )
+    except OSError:
+        font = ImageFont.load_default()
+    bbox = draw.textbbox((0, 0), label, font=font)
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
+    pad = font_px // 3
+    tx = cx - tw // 2
+    ty = cy - ring_r - cross_len // 2 - th - pad * 2
+    if ty < pad:
+        ty = cy + ring_r + cross_len // 2 + pad
+    draw.rectangle(
+        (tx - pad, ty - pad, tx + tw + pad, ty + th + pad),
+        fill=(220, 38, 38, 230),
+    )
+    draw.text((tx, ty), label, fill=(255, 255, 255, 255), font=font)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=88, optimize=True)
+    return buf.getvalue()
 
 
 @router.post("/satellite-tile")
@@ -152,6 +215,13 @@ async def fetch_satellite_tile(
                 status_code=502,
                 detail=f"Esri returned an unexpectedly small payload ({len(body)} bytes)",
             )
+
+    # 3a) Burn a red target crosshair on the exact geocoded center so
+    #     the contractor (and Claude) can instantly identify the right
+    #     structure — critical on rural lots where the bbox catches
+    #     several houses. The center pixel of the JPEG corresponds 1:1
+    #     to the lat/lon we just resolved.
+    body = _burn_target_marker(body, radius_used_m)
 
     # 3) Persist to UPLOAD_DIR (same place /api/uploads writes) so the
     #    AI Measure flow can pick it up via the existing photo_paths
