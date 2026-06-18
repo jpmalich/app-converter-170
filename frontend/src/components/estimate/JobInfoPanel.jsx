@@ -5,6 +5,7 @@ import { tColor, tColorGroup } from "@/lib/catalogTranslations";
 import { vinylSidingColorGroupsForEstimate, accessoryColorGroupsForEstimate, ASCEND_COLORS, SHAKE_COLOR_GROUPS, BOARD_BATTEN_COLOR_GROUPS, SOFFIT_COLOR_GROUPS, GUTTER_COLORS, WINDOW_WRAP_COLORS, MEZZO_EXTERIOR_COLOR_GROUPS, MEZZO_INTERIOR_COLOR_GROUPS, VERO_EXTERIOR_COLOR_GROUPS, VERO_INTERIOR_COLOR_GROUPS, VERO_LAMINATE_NAMES } from "@/lib/colorOptions";
 import HoverImportButton from "@/components/estimate/HoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
+import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
 
 export default function JobInfoPanel({ est, update, save, setInstallMethod, setHomePre1978 }) {
   const t = useT();
@@ -25,6 +26,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
         <div className="section-tag">{t("est.jobInfo")}</div>
         <div className="flex flex-wrap gap-2">
           <HoverImportButton est={est} update={update} save={save} />
+          <BlueprintMeasureButton est={est} update={update} save={save} />
           <AIMeasureButton
             kind={est.kind || "siding"}
             address={est?.customer_address}

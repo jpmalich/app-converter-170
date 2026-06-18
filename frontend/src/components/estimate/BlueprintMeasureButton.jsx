@@ -1,0 +1,438 @@
+// AI Blueprint Reader button.
+//
+// Sister flow to HOVER Import + AI Photo Measure. Where the photo flow
+// *estimates* dimensions (±20%), this one *reads* the printed dims on
+// an architectural plan set — so accuracy follows the drawing itself.
+//
+// Workflow:
+//   click → upload PDF (multi-page) OR images of plan sheets →
+//   Claude Opus 4.5 vision pass → preview measurements + extracted
+//   window schedule → Apply.
+//
+// Apply behavior matches the HOVER importer's contract: siding lines
+// merge into the current estimate; the window schedule routes to the
+// paired Windows estimate (auto-created via /estimates/{id}/pair).
+import React, { useRef, useState } from "react";
+import { FileText, Loader2, X, Check, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import api from "@/lib/api";
+
+const SIDING_TABS = new Set(["vinyl", "ascend", "lp_smart"]);
+const WINDOWS_TABS = new Set(["windows"]);
+
+// Mirror of HoverImportButton's Vero → Mezzo map (Mezzo has no Casement
+// — falls back to DH). Kept inline so we don't have to refactor the
+// HOVER button just to share two dozen lines.
+const VERO_TO_MEZZO = {
+  "Vero Double Hung":     "Mezzo Double Hung",
+  "Vero 2-Lite Slider":   "Mezzo 2-Lite Slider",
+  "Vero 3-Lite Slider":   "Mezzo 3-Lite Slider",
+  "Vero Picture":         "Mezzo Picture",
+  "Vero 1-Lite Casement": "Mezzo Double Hung",
+};
+const veroToMezzo = (op) => ({
+  id: op.id,
+  product_type: VERO_TO_MEZZO[op.product_type] || "Mezzo Double Hung",
+  label: op.label || "",
+  width: op.width,
+  height: op.height,
+  qty: op.qty || 1,
+  bucket_label: "",
+  base_mat: 0,
+  adders: [],
+});
+
+const fmtNum = (n) => Number(n || 0).toLocaleString();
+const UNIT_BY_KEY = (k) =>
+  k.endsWith("_sqft") ? "ft²" : k.endsWith("_lf") ? "LF" : "";
+
+const SUMMARY_KEYS = [
+  "siding_sqft",
+  "eaves_lf",
+  "rakes_lf",
+  "starter_lf",
+  "outside_corner_lf",
+  "window_count",
+  "entry_door_count",
+  "patio_door_count",
+  "garage_door_count",
+];
+
+const KEY_LABEL = {
+  siding_sqft: "Siding",
+  eaves_lf: "Eaves",
+  rakes_lf: "Rakes",
+  starter_lf: "Starter",
+  outside_corner_lf: "Outside corners",
+  window_count: "Windows",
+  entry_door_count: "Entry doors",
+  patio_door_count: "Patio doors",
+  garage_door_count: "Garage doors",
+};
+
+export default function BlueprintMeasureButton({ est, update, save }) {
+  const fileRef = useRef();
+  const [busy, setBusy] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [result, setResult] = useState(null); // { measurements, lines, vero_openings, mezzo_openings, raw_ai, pages_processed }
+  const [showRawJson, setShowRawJson] = useState(false);
+
+  const pickAndUpload = async (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setBusy(true);
+    setResult(null);
+    setShowRawJson(false);
+    try {
+      const fd = new FormData();
+      // Backend accepts either `file` (PDF) or `files[]` (image sheets)
+      const isPdf = /pdf/i.test(f.type) || /\.pdf$/i.test(f.name);
+      fd.append(isPdf ? "file" : "files", f);
+      if (est?.address) fd.append("address", est.address);
+      fd.append("overhang_in", String(est?.overhang_in ?? 12));
+      const { data } = await api.post("/measure/ai-blueprint", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 180000, // Opus 4.5 + multi-page PDF can run 60–120s
+      });
+      setResult(data);
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || "Blueprint read failed";
+      toast.error(detail);
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  // Cancel preview without applying anything.
+  const dismissPreview = () => {
+    if (applying) return;
+    setResult(null);
+    setShowRawJson(false);
+  };
+
+  // Apply the preview to the estimate. Mirrors HoverImportButton.applyResult
+  // — siding lines into current siding estimate; window schedule + opening
+  // rows route to a paired Windows estimate via /estimates/{id}/pair.
+  const applyResult = async () => {
+    if (!result) return;
+    const allLines = result.lines || [];
+    const srcKind = est.kind || "siding";
+
+    const sidingLines  = allLines.filter((l) => SIDING_TABS.has(l.tab || "vinyl"));
+    const windowsLines = allLines.filter((l) => WINDOWS_TABS.has(l.tab || "vinyl"));
+
+    const sourceLines  = srcKind === "windows" ? windowsLines : sidingLines;
+    const pairedLines  = srcKind === "windows" ? sidingLines  : windowsLines;
+    const allVero  = result.vero_openings  || [];
+    const allMezzo = result.mezzo_openings || [];
+    const sourceVero   = srcKind === "windows" ? allVero  : [];
+    const pairedVero   = srcKind === "windows" ? []       : allVero;
+    const sourceMezzo  = srcKind === "windows" ? allMezzo : [];
+    const pairedMezzo  = srcKind === "windows" ? []       : allMezzo;
+
+    // Merge source-side lines into the current estimate.
+    const existing = est.lines || [];
+    const keyOf = (l) => `${l.tab || "vinyl"}::${l.section}::${l.name}`;
+    const byKey = new Map(existing.map((l, i) => [keyOf(l), i]));
+    const nextLines = [...existing];
+    let added = 0;
+    let updated = 0;
+    for (const ln of sourceLines) {
+      const key = keyOf(ln);
+      const idx = byKey.get(key);
+      if (idx == null) {
+        nextLines.push({
+          tab: ln.tab || "vinyl",
+          section: ln.section,
+          name: ln.name,
+          unit: ln.unit,
+          qty: ln.qty,
+          mat: 0, lab: 0,
+        });
+        added += 1;
+      } else {
+        nextLines[idx] = { ...nextLines[idx], qty: ln.qty };
+        updated += 1;
+      }
+    }
+    const nextVero  = [...(est.vero_openings  || []), ...sourceVero];
+    const nextMezzo = [...(est.mezzo_openings || []), ...sourceMezzo];
+
+    setApplying(true);
+    try {
+      update({ lines: nextLines, vero_openings: nextVero, mezzo_openings: nextMezzo });
+      if (save) {
+        await save({
+          ...est,
+          lines: nextLines,
+          vero_openings: nextVero,
+          mezzo_openings: nextMezzo,
+        });
+      }
+
+      // Route window schedule slice to paired Windows estimate.
+      let pairedMsg = "";
+      const hasPairedWork = pairedLines.length > 0 || pairedVero.length > 0;
+      if (hasPairedWork) {
+        const pair = (await api.post(`/estimates/${est.id}/pair`)).data;
+        const pExisting = pair.lines || [];
+        const pByKey = new Map(pExisting.map((l, i) => [keyOf(l), i]));
+        const pNext = [...pExisting];
+        for (const ln of pairedLines) {
+          const idx = pByKey.get(keyOf(ln));
+          if (idx == null) {
+            pNext.push({
+              tab: ln.tab || "vinyl",
+              section: ln.section,
+              name: ln.name,
+              unit: ln.unit,
+              qty: ln.qty,
+              mat: 0, lab: 0,
+            });
+          } else {
+            pNext[idx] = { ...pNext[idx], qty: ln.qty };
+          }
+        }
+        const pNextVero  = [...(pair.vero_openings  || []), ...pairedVero];
+        const pNextMezzo = [...(pair.mezzo_openings || []), ...pairedMezzo.map((o) => ({ ...o }))];
+        await api.put(`/estimates/${pair.id}`, {
+          ...pair,
+          lines: pNext,
+          vero_openings: pNextVero,
+          mezzo_openings: pNextMezzo,
+        });
+        const pairedLabel = pair.kind === "windows" ? "Windows" : "Siding";
+        pairedMsg = ` · routed window schedule to paired ${pairedLabel} estimate ${pair.estimate_number || ""}`;
+      }
+
+      const winNote = sourceVero.length ? ` + ${sourceVero.length} windows` : "";
+      toast.success(
+        `Read ${result.pages_processed || "blueprint"} page(s): ${added} new + ${updated} updated${winNote}${pairedMsg}`
+      );
+      setResult(null);
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || err?.message || "Apply failed");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const measurements = result?.measurements || {};
+  const sheets = measurements._blueprint_sheets || [];
+  const schedWindows = (result?.raw_ai?.windows) || [];
+  const schedDoors = (result?.raw_ai?.doors) || [];
+
+  return (
+    <div data-testid="blueprint-import">
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={pickAndUpload}
+        data-testid="blueprint-import-input"
+      />
+      <button
+        type="button"
+        className="px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+        onClick={() => fileRef.current?.click()}
+        disabled={busy}
+        data-testid="blueprint-import-btn"
+        title="Read a blueprint PDF and pull window schedule + wall dims"
+      >
+        {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+        {busy ? "Reading plans…" : "Read Blueprints"}
+      </button>
+
+      {result && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClick={dismissPreview}
+          data-testid="blueprint-preview-backdrop"
+        >
+          <div
+            className="bg-white max-w-3xl w-full max-h-[95vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="blueprint-preview-modal"
+          >
+            <div className="bg-[#7C3AED] text-white px-5 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5" />
+                <div>
+                  <div className="font-heading text-lg">Blueprint Takeoff Preview</div>
+                  <div className="text-xs opacity-90 mt-0.5">
+                    {result.pages_processed} page(s) read · model {result.model || "Opus 4.5"}
+                  </div>
+                </div>
+              </div>
+              <button type="button" onClick={dismissPreview} className="text-white/90 hover:text-white" aria-label="Close">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-5 space-y-4">
+              {/* Confidence + notes banner */}
+              {measurements._ai_notes && (
+                <div className="px-3 py-2 bg-[#FEF3C7] border-l-2 border-[#F59E0B] text-[12px] text-[#92400E] flex items-start gap-2" data-testid="blueprint-ai-notes">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-bold uppercase text-[10px] tracking-wider">AI notes · verify before applying</span>
+                    <div className="mt-0.5 leading-snug">{measurements._ai_notes}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sheets identified */}
+              {sheets.length > 0 && (
+                <section>
+                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                    Plan sheets read
+                  </div>
+                  <ul className="text-xs space-y-0.5" data-testid="blueprint-sheets">
+                    {sheets.map((s, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="font-mono-num text-[#A1A1AA] w-8">p.{s.page}</span>
+                        <span className="font-bold">{s.sheet_title || "—"}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-[#71717A]">· {s.useful_for}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {/* Summary numbers */}
+              <section>
+                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                  Takeoff
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" data-testid="blueprint-summary">
+                  {SUMMARY_KEYS.map((k) => {
+                    const v = measurements[k];
+                    if (v == null) return null;
+                    return (
+                      <div key={k} className="border border-[#E4E4E7] px-2 py-1.5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{KEY_LABEL[k]}</div>
+                        <div className="font-mono-num font-bold">
+                          {fmtNum(v)} <span className="text-[10px] text-[#71717A]">{UNIT_BY_KEY(k)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Window schedule */}
+              {schedWindows.length > 0 && (
+                <section>
+                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                    Window schedule ({schedWindows.length} mark{schedWindows.length === 1 ? "" : "s"})
+                  </div>
+                  <div className="border border-[#E4E4E7] max-h-44 overflow-y-auto" data-testid="blueprint-window-schedule">
+                    <table className="w-full text-xs">
+                      <thead className="bg-[#FAFAFA] text-[10px] uppercase tracking-wider text-[#71717A]">
+                        <tr>
+                          <th className="text-left px-2 py-1">Mark</th>
+                          <th className="text-right px-2 py-1">W (in)</th>
+                          <th className="text-right px-2 py-1">H (in)</th>
+                          <th className="text-right px-2 py-1">Qty</th>
+                          <th className="text-left px-2 py-1">Type</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {schedWindows.map((w, i) => (
+                          <tr key={i} className="border-t border-[#F4F4F5]">
+                            <td className="px-2 py-1 font-mono-num">{w.id || "—"}</td>
+                            <td className="px-2 py-1 text-right font-mono-num">{fmtNum(w.width_in)}</td>
+                            <td className="px-2 py-1 text-right font-mono-num">{fmtNum(w.height_in)}</td>
+                            <td className="px-2 py-1 text-right font-mono-num">{fmtNum(w.qty || 1)}</td>
+                            <td className="px-2 py-1 text-[11px] text-[#71717A]">{w.type_hint || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="text-[10px] text-[#A1A1AA] mt-1.5">
+                    Will populate {est.kind === "windows" ? "this Windows estimate" : "the paired Windows estimate"} on Apply.
+                  </div>
+                </section>
+              )}
+
+              {/* Door schedule */}
+              {schedDoors.length > 0 && (
+                <section>
+                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                    Door schedule ({schedDoors.length} mark{schedDoors.length === 1 ? "" : "s"})
+                  </div>
+                  <div className="border border-[#E4E4E7] max-h-32 overflow-y-auto" data-testid="blueprint-door-schedule">
+                    <table className="w-full text-xs">
+                      <thead className="bg-[#FAFAFA] text-[10px] uppercase tracking-wider text-[#71717A]">
+                        <tr>
+                          <th className="text-left px-2 py-1">Mark</th>
+                          <th className="text-right px-2 py-1">W (in)</th>
+                          <th className="text-right px-2 py-1">H (in)</th>
+                          <th className="text-right px-2 py-1">Qty</th>
+                          <th className="text-left px-2 py-1">Type</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {schedDoors.map((d, i) => (
+                          <tr key={i} className="border-t border-[#F4F4F5]">
+                            <td className="px-2 py-1 font-mono-num">{d.id || "—"}</td>
+                            <td className="px-2 py-1 text-right font-mono-num">{fmtNum(d.width_in)}</td>
+                            <td className="px-2 py-1 text-right font-mono-num">{fmtNum(d.height_in)}</td>
+                            <td className="px-2 py-1 text-right font-mono-num">{fmtNum(d.qty || 1)}</td>
+                            <td className="px-2 py-1 text-[11px] text-[#71717A]">{d.type_hint || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              )}
+
+              {/* Raw JSON expander (parity with AI Measure debug panel) */}
+              <details
+                open={showRawJson}
+                onToggle={(e) => setShowRawJson(e.currentTarget.open)}
+                className="border border-[#E4E4E7]"
+              >
+                <summary className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-[#71717A] font-bold cursor-pointer bg-[#FAFAFA]">
+                  Raw AI JSON
+                </summary>
+                <pre className="text-[10px] font-mono-num p-3 overflow-x-auto max-h-64 bg-[#09090B] text-[#E4E4E7]" data-testid="blueprint-raw-json">
+                  {JSON.stringify(result.raw_ai, null, 2)}
+                </pre>
+              </details>
+            </div>
+
+            <div className="border-t border-[#E4E4E7] px-5 py-3 flex justify-between items-center">
+              <div className="text-[10px] text-[#A1A1AA]">
+                Tip: Plans should include elevations + a window schedule for best accuracy.
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="px-3 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                  onClick={dismissPreview}
+                  disabled={applying}
+                  data-testid="blueprint-cancel-btn"
+                >Cancel</button>
+                <button
+                  type="button"
+                  onClick={applyResult}
+                  disabled={applying}
+                  className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                  data-testid="blueprint-apply-btn"
+                >
+                  {applying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                  {applying ? "Applying…" : "Apply Takeoff"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

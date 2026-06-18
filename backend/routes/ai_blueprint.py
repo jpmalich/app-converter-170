@@ -1,0 +1,463 @@
+"""AI Blueprint Reader — pull a takeoff from architectural plans.
+
+Sister endpoint to /api/measure/ai-measure. Where ai-measure looks at a
+photo of the house and *estimates* dimensions (±10–30%), this endpoint
+*reads* the dimensions printed on a blueprint or plan PDF — so the
+output is as accurate as the drawing itself.
+
+Endpoint: POST /api/measure/ai-blueprint  (multipart/form-data)
+Form fields:
+  file:           one multi-page PDF (preferred — blueprint set)
+  files:          OR one or more JPG/PNG image scans of plan sheets
+  address:        optional context for Claude's reply
+  overhang_in:    soffit overhang for the piece-count formula
+  max_pages:      cap on PDF page count to send (default 12, max 20)
+
+Output matches /api/measure/ai-measure exactly:
+  { measurements, lines, vero_openings, mezzo_openings, raw_ai, model }
+
+A blueprint set typically has:
+  • Cover sheet / title block (scale, project address)
+  • Site plan (lot, setbacks — we ignore)
+  • Floor plan (perimeter dims, RO callouts at each window — KEY for windows)
+  • Elevations: front / rear / left / right (wall heights, gable rises)
+  • Roof plan (eave + rake LF)
+  • Window / Door Schedule (the table — KEY for exact counts + RO sizes)
+
+Cost: blueprint sheets are PNGs at ~200 DPI → ~3–6 MB each. A typical 6-sheet
+set costs ~$0.40–$0.60 in Opus 4.5 vision charges. We surface page-count
+in the response so the contractor can see what was billed.
+"""
+from __future__ import annotations
+
+import base64
+import io
+import json
+import os
+import re
+import uuid
+from typing import Optional
+
+import pypdfium2 as pdfium
+from emergentintegrations.llm.chat import (
+    ImageContent,
+    LlmChat,
+    UserMessage,
+)
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+
+from deps import get_current_user
+from routes.hover import _build_lines, _build_window_openings
+
+router = APIRouter(prefix="/measure", tags=["measure"])
+
+ACCEPTED_IMG_MIMES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+ACCEPTED_PDF_MIMES = {"application/pdf"}
+MAX_PAGES_HARD = 20
+DEFAULT_MAX_PAGES = 12
+MAX_BYTES_PER_FILE = 16 * 1024 * 1024  # blueprints scan larger than photos
+PDF_RENDER_SCALE = 2.0  # pypdfium2 scale factor — ~144 DPI for an 8.5×11
+MODEL_NAME = "claude-opus-4-5-20251101"
+
+
+SYSTEM_PROMPT = """\
+You are an expert residential blueprint reader for a vinyl-siding and
+window contractor. The user uploads scans / PDF exports of an architectural
+plan set. Your job is to READ (not estimate) the printed dimensions and
+return a takeoff JSON that drives a quote.
+
+You MUST return JSON only — no prose, no markdown fences.
+
+RESIDENTIAL PLAN NOTATION YOU MUST UNDERSTAND:
+
+1. Window / Door RO sizes are written one of these ways:
+     "3-6 5-0"       → 3'-6" wide × 5'-0" tall  → 42" × 60"
+     "3'-6\" 5'-0\""  → same
+     "3050"          → 3'-0" × 5'-0"  → 36" × 60"  (4-digit shorthand: first 2 digits = feet-inches of width, last 2 = feet-inches of height)
+     "3068"          → 3'-0" × 6'-8"  → 36" × 80"  (door shorthand: 6'-8" is standard residential door height)
+     "30 X 60"       → 30" wide × 60" tall (inches — already explicit)
+     "2868" / "3068" / "6068" → standard door codes (last 2 digits = 6'-8" door height); 6068 = 6'-0" double door
+   When you see one of these next to a window/door symbol on the FLOOR PLAN,
+   parse it into width_in + height_in. The 4-digit form is the most
+   ambiguous — verify by checking that height makes sense (60–84" for
+   windows, 78–84" for doors).
+
+2. Floor-plan dimension strings like "24'-0\"" or "24-0" or "24' 0\"" or "24.0'"
+   all mean 24 feet. Convert to decimal feet (24.0).
+
+3. Sheet titles to look for:
+   • "FLOOR PLAN" / "1ST FLOOR" / "2ND FLOOR" → for perimeter + RO callouts
+   • "FRONT ELEVATION" / "REAR" / "LEFT" / "RIGHT" / "SIDE" → for wall heights + gable rises
+   • "ROOF PLAN" → for eave / rake linear feet
+   • "WINDOW SCHEDULE" / "DOOR SCHEDULE" → THE most accurate source for
+     window/door counts and RO sizes. If a schedule is present, USE IT —
+     it overrides whatever you counted on the floor plan.
+
+4. Scale callouts: "1/4\" = 1'-0\"" or "SCALE 1/4 IN = 1 FT" → only
+   needed if dimensions are missing; you should rely on the printed
+   dim strings, not on measuring pixels.
+
+EXTRACTION SCHEMA — return EXACTLY this shape:
+{
+  "sheets_identified": [
+    {"page": 1, "sheet_title": "<best guess>", "useful_for": "elevation|floor_plan|schedule|roof|cover|other"}
+  ],
+  "scale_confidence": "high" | "medium" | "low",
+  "story_count": 1 | 1.5 | 2 | 2.5 | 3,
+  "avg_wall_height_ft": number,           // EAVE height, read from elevation
+  "walls": [
+    {"label": "front" | "back" | "left" | "right",
+     "width_ft": number,                  // read from floor plan or elevation
+     "height_ft": number,                 // EAVE height (not roof peak)
+     "gable_triangle_height_ft": number,  // 0 unless this wall is a gable end
+     "dormer_face_sqft": number,          // 0 unless dormer shown on this elevation
+     "siding_pct_this_wall": 100          // INTEGER percent; default 100 unless plan notes brick/stone
+    }
+  ],
+  "windows": [
+    // Each row in the Window Schedule (or each callout on the floor plan).
+    // If both are present, prefer the schedule and dedupe by mark.
+    {"id": "<mark like 'W1' or 'A' or blank>",
+     "width_in": number,                  // parse 3-6 → 42, 3050 → 36, etc.
+     "height_in": number,
+     "qty": 1,                            // increment if schedule shows multiple
+     "type_hint": "double_hung|casement|slider|picture|fixed|awning|unknown"
+    }
+  ],
+  "doors": [
+    // Same shape as windows, but for exterior doors only (front entry,
+    // patio sliders, garage). Interior doors are IGNORED.
+    {"id": "<mark>",
+     "width_in": number,
+     "height_in": number,
+     "qty": 1,
+     "type_hint": "entry|patio_slider|patio_french|garage|unknown"
+    }
+  ],
+  "eaves_lf": number,          // sum of horizontal soffit/gutter run, from roof plan or floor-plan perimeter
+  "rakes_lf": number,          // sum of sloped roof edges from elevations
+  "starter_lf": number,        // ≈ eaves_lf for basic 1-story; differs on walk-outs
+  "outside_corner_lf": number, // (# outside corners × avg eave height); count corners on the floor plan
+  "inside_corner_lf": number,  // L-shaped wings only; 0 for a basic rectangle
+  "notes": "<2-3 sentences flagging anything to verify — missing dims, illegible numbers, etc.>"
+}
+
+CRITICAL RULES:
+
+A. PREFER PRINTED DIMS OVER ESTIMATION. If the floor plan shows "32'-0\""
+   along the front wall, the front wall width is 32.0 ft — never round
+   it to 30 or 35. If a dim is missing or illegible, set the wall to
+   the best inferred value and FLAG IT in notes.
+
+B. WINDOW / DOOR SCHEDULE WINS. If a schedule sheet is present, the
+   `windows` and `doors` arrays must reflect THE SCHEDULE exactly — same
+   quantities, same RO sizes. The floor-plan callouts are only the
+   tie-breaker when the schedule omits a mark.
+
+C. PARSE "3-6 5-0" AS WIDTH-HEIGHT IN FEET-INCHES. The first pair is
+   ALWAYS width, the second pair is ALWAYS height. Convert each pair to
+   inches: e.g. 3-6 → 3*12 + 6 = 42, 5-0 → 5*12 = 60. NEVER swap them.
+   The 4-digit form "3050" is the SAME pattern: first 2 digits → 3-0,
+   last 2 digits → 5-0. Confirm by sanity-checking the result:
+     - Window heights are 36–84" (most are 48–72")
+     - Door heights are 78–84"
+   If your parse gives a window 96" tall, you parsed it wrong.
+
+D. STORY COUNT IS DETERMINED BY THE ELEVATIONS, NOT THE FLOOR PLAN. If
+   you see a 2nd-floor plan sheet, the house is 2-story (or 1.5). If
+   the elevation shows one row of windows under the eave, it's 1-story.
+
+E. SIDING vs MASONRY: Plans often callout "BRICK VENEER" or "STONE
+   WAINSCOT TO 36\"". Reflect these by reducing siding_pct_this_wall
+   (e.g. brick wainscot to 36" on a 9 ft wall → ~67% siding above).
+   When in doubt, assume 100% siding and flag in notes.
+
+F. ROUNDING:
+     - Wall widths to nearest 0.5 ft
+     - Wall heights to nearest 0.5 ft
+     - Window/door RO sizes to the nearest inch (parsed exactly from plan)
+     - Eaves/rakes to nearest 1 ft
+
+G. IF A SHEET IS NOT USEFUL (cover, site plan, foundation plan, electrical),
+   list it in sheets_identified with useful_for="other" and ignore it.
+
+H. NEVER FABRICATE. If you can't find a window schedule and the floor
+   plan callouts are illegible, return windows=[] and flag it in notes —
+   do NOT invent placeholder windows.
+
+Return ONLY the JSON object. No explanation, no code fences."""
+
+
+def _json_from_reply(text: str) -> dict:
+    """Pull the first {...} JSON object out of Claude's reply."""
+    text = (text or "").strip()
+    fence = re.match(r"^```(?:json)?\s*(\{.*\})\s*```$", text, re.DOTALL)
+    if fence:
+        text = fence.group(1)
+    start = text.find("{")
+    end = text.rfind("}")
+    if start < 0 or end < 0 or end <= start:
+        raise HTTPException(status_code=502, detail="AI did not return JSON")
+    try:
+        return json.loads(text[start : end + 1])
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {e}")
+
+
+def _render_pdf_to_pngs(raw_pdf: bytes, max_pages: int) -> list[bytes]:
+    """Rasterize a PDF into a list of PNG byte-strings, one per page,
+    capped at `max_pages`. Each page is rendered at PDF_RENDER_SCALE so
+    Claude can read printed dim text clearly."""
+    out: list[bytes] = []
+    try:
+        doc = pdfium.PdfDocument(raw_pdf)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid PDF: {e}") from e
+    page_count = min(len(doc), max_pages)
+    for i in range(page_count):
+        page = doc[i]
+        try:
+            pil_image = page.render(scale=PDF_RENDER_SCALE).to_pil()
+            buf = io.BytesIO()
+            pil_image.save(buf, format="PNG", optimize=True)
+            out.append(buf.getvalue())
+        finally:
+            page.close()
+    doc.close()
+    return out
+
+
+def _aggregate_to_hover_shape(raw: dict) -> dict:
+    """Roll Claude's blueprint extraction into the same measurements dict
+    the rest of the app speaks. Mirrors the photo-measure aggregator but
+    uses the printed dims at face value (no defensive clamps — the
+    contractor can see the raw Claude JSON in the preview to verify)."""
+    walls = raw.get("walls") or []
+    windows = raw.get("windows") or []
+    doors = raw.get("doors") or []
+
+    siding_sqft = 0.0
+    gable_sqft = 0.0
+    dormer_sqft = 0.0
+    for w in walls:
+        width_ft = float(w.get("width_ft") or 0)
+        eave_h = float(w.get("height_ft") or 0)
+        gross = width_ft * eave_h
+        pct = float(w.get("siding_pct_this_wall") or 100.0)
+        # Same fraction-vs-percent defensiveness as the photo aggregator.
+        if 0 < pct < 1:
+            pct = pct * 100.0
+        if pct <= 0:
+            pct = 100.0
+        pct = min(pct, 100.0)
+        siding_sqft += gross * (pct / 100.0)
+        gh = float(w.get("gable_triangle_height_ft") or 0)
+        if gh > 0 and width_ft > 0:
+            gable_sqft += 0.5 * width_ft * gh
+        dormer_sqft += float(w.get("dormer_face_sqft") or 0)
+    siding_sqft += gable_sqft + dormer_sqft
+
+    # Door type → opening-count bucket
+    counts = {"window": 0, "entry_door": 0, "patio_door": 0, "garage_door": 0}
+    opening_sqft = 0.0
+    perimeter_lf = 0.0
+    for win in windows:
+        try:
+            qty = max(1, int(win.get("qty") or 1))
+        except (TypeError, ValueError):
+            qty = 1
+        counts["window"] += qty
+        w_in = float(win.get("width_in") or 0)
+        h_in = float(win.get("height_in") or 0)
+        opening_sqft += qty * (w_in * h_in) / 144.0
+        perimeter_lf += qty * 2 * ((w_in + h_in) / 12.0)
+    for d in doors:
+        t = (d.get("type_hint") or "").lower()
+        if "garage" in t:
+            bucket = "garage_door"
+        elif "patio" in t:
+            bucket = "patio_door"
+        else:
+            bucket = "entry_door"
+        try:
+            qty = max(1, int(d.get("qty") or 1))
+        except (TypeError, ValueError):
+            qty = 1
+        counts[bucket] += qty
+        w_in = float(d.get("width_in") or 0)
+        h_in = float(d.get("height_in") or 0)
+        opening_sqft += qty * (w_in * h_in) / 144.0
+        perimeter_lf += qty * 2 * ((w_in + h_in) / 12.0)
+
+    # Expand schedule rows into a per-opening list (qty=1 each) so
+    # _build_window_openings sees one row per physical window. Matches
+    # the HOVER importer's contract.
+    expanded_windows = []
+    for win in windows:
+        try:
+            qty = max(1, int(win.get("qty") or 1))
+        except (TypeError, ValueError):
+            qty = 1
+        for n in range(qty):
+            mark = str(win.get("id") or "").strip()
+            label = f"{mark}-{n + 1}" if (qty > 1 and mark) else (mark or f"W-{uuid.uuid4().hex[:4]}")
+            expanded_windows.append({
+                "id": label,
+                "width_in": float(win.get("width_in") or 0),
+                "height_in": float(win.get("height_in") or 0),
+            })
+
+    measurements = {
+        "siding_sqft": round(siding_sqft, 1),
+        "siding_with_openings_sqft": round(siding_sqft, 1),
+        "opening_sqft": round(opening_sqft, 1),
+        "eaves_lf": round(float(raw.get("eaves_lf") or 0), 1),
+        "rakes_lf": round(float(raw.get("rakes_lf") or 0), 1),
+        "starter_lf": round(float(raw.get("starter_lf") or raw.get("eaves_lf") or 0), 1),
+        "outside_corner_lf": round(float(
+            raw.get("outside_corner_lf")
+            or 4 * float(raw.get("avg_wall_height_ft") or 0)
+        ), 1),
+        "inside_corner_lf": round(float(raw.get("inside_corner_lf") or 0), 1),
+        "opening_perimeter_lf": round(perimeter_lf, 1),
+        "opening_count": sum(counts.values()),
+        "window_count": counts["window"],
+        "entry_door_count": counts["entry_door"],
+        "patio_door_count": counts["patio_door"],
+        "garage_door_count": counts["garage_door"],
+        # Feed the Windows-workspace populator. Same shape HOVER produces.
+        "windows": expanded_windows,
+        # Surfaced fields for the preview UI
+        "_ai_scale_confidence": raw.get("scale_confidence") or "low",
+        "_ai_reference_used": "blueprint dimensions",
+        "_ai_story_count": raw.get("story_count"),
+        "_ai_avg_wall_height_ft": raw.get("avg_wall_height_ft"),
+        "_ai_gable_sqft": round(gable_sqft, 1),
+        "_ai_dormer_sqft": round(dormer_sqft, 1),
+        "_ai_notes": raw.get("notes") or "",
+        "_blueprint_sheets": raw.get("sheets_identified") or [],
+    }
+    return measurements
+
+
+@router.post("/ai-blueprint")
+async def ai_blueprint(
+    file: Optional[UploadFile] = File(None),
+    files: list[UploadFile] = File(default=[]),
+    address: Optional[str] = Form(None),
+    overhang_in: float = Form(12.0),
+    max_pages: int = Form(DEFAULT_MAX_PAGES),
+    user: dict = Depends(get_current_user),
+):
+    """Read a blueprint set and return a takeoff in the same shape AI Measure
+    produces. Accepts either a multi-page PDF (`file`) or several scanned
+    image sheets (`files`). At least one of the two must be present."""
+    if max_pages <= 0 or max_pages > MAX_PAGES_HARD:
+        max_pages = DEFAULT_MAX_PAGES
+
+    image_payloads: list[bytes] = []
+
+    # PDF path — render to PNGs
+    if file is not None:
+        ctype = (file.content_type or "").lower()
+        raw = await file.read()
+        if not raw:
+            raise HTTPException(status_code=400, detail="Empty PDF upload")
+        # Some browsers send application/octet-stream; sniff by header too.
+        is_pdf = ctype in ACCEPTED_PDF_MIMES or raw[:5] == b"%PDF-"
+        if not is_pdf:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Expected PDF for `file`, got {ctype!r}",
+            )
+        if len(raw) > MAX_BYTES_PER_FILE * 4:
+            raise HTTPException(status_code=413, detail="PDF exceeds 64 MB limit")
+        image_payloads.extend(_render_pdf_to_pngs(raw, max_pages))
+
+    # Image-scan path
+    if files:
+        for f in files:
+            ctype = (f.content_type or "").lower()
+            if ctype not in ACCEPTED_IMG_MIMES:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported file type {ctype!r} for `files` — use JPG, PNG, or WEBP",
+                )
+            raw = await f.read()
+            if not raw:
+                continue
+            if len(raw) > MAX_BYTES_PER_FILE:
+                raise HTTPException(status_code=413, detail="Plan sheet exceeds 16 MB limit")
+            image_payloads.append(raw)
+
+    if not image_payloads:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide either a PDF blueprint (`file`) or one or more image scans (`files`)",
+        )
+    if len(image_payloads) > MAX_PAGES_HARD:
+        # Already capped on the PDF side, but guard against image overflow too.
+        image_payloads = image_payloads[:MAX_PAGES_HARD]
+
+    image_contents = [
+        ImageContent(image_base64=base64.b64encode(p).decode("ascii"))
+        for p in image_payloads
+    ]
+
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+
+    user_id = user.get("id") or "anon"
+    session_id = f"ai-blueprint-{user_id}-{uuid.uuid4().hex[:8]}"
+
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=session_id,
+        system_message=SYSTEM_PROMPT,
+    ).with_model("anthropic", MODEL_NAME)
+
+    prompt_parts: list[str] = [
+        f"You are receiving {len(image_payloads)} plan sheet(s) as images.",
+    ]
+    if address:
+        prompt_parts.append(f"Project address: {address}")
+    prompt_parts.append(
+        "Read the printed dimensions on the elevations + floor plan, "
+        "and extract the window/door schedule if one is present. "
+        "Return the JSON takeoff object now."
+    )
+    user_text = "\n".join(prompt_parts)
+
+    try:
+        reply_text = await chat.send_message(
+            UserMessage(text=user_text, file_contents=image_contents),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AI blueprint call failed: {e}") from e
+
+    raw = _json_from_reply(reply_text or "")
+    measurements = _aggregate_to_hover_shape(raw)
+    measurements["overhang_in"] = float(overhang_in)
+
+    # Build siding/windows catalog lines + Vero/Mezzo opening rows from
+    # the schedule-derived windows array.
+    try:
+        lines = _build_lines(measurements)
+    except Exception:
+        lines = []
+    try:
+        vero_openings, mezzo_openings = _build_window_openings(measurements)
+    except Exception:
+        vero_openings, mezzo_openings = [], []
+
+    return {
+        "measurements": measurements,
+        "lines": lines,
+        "vero_openings": vero_openings,
+        "mezzo_openings": mezzo_openings,
+        "raw_ai": raw,
+        "model": MODEL_NAME,
+        "session_id": session_id,
+        "pages_processed": len(image_payloads),
+    }
