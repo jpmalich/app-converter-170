@@ -2,28 +2,32 @@
 saves it as an upload, ready to be passed to AI Measure as an extra
 photo.
 
+Iter 56h: switched from Nominatim + Esri World Imagery to Google Maps.
+Howard hit issues with Nominatim mis-geocoding rural addresses (parcel
+center vs structure), and Esri tile pyramid 500-ing on tight bboxes.
+Google's Geocoding API is the gold standard for residential addresses,
+and Google Maps Static API renders at any zoom (no tile-pyramid gaps).
+
 The chain:
-  1. Geocode the address via Nominatim (OpenStreetMap, free, no key)
-  2. Fetch an Esri World Imagery export at that lat/lon (free, no key)
-  3. Save the JPEG to UPLOAD_DIR and return its filename
+  1. Geocode the address via Google Geocoding API → lat/lon
+  2. Fetch a Google Static Maps satellite image at that lat/lon
+  3. Burn a red target crosshair on the geocoded center
+  4. Save the JPEG to UPLOAD_DIR
 
-The frontend then adds the returned filename to its `photoUrls` list so
-the satellite view rides along with the contractor's ground photos when
-AI Measure is run. Claude is taught (in ai_measure.py's system prompt)
-to use the aerial view for roof outline → eaves_lf / rakes_lf only;
-wall heights still come from the ground photos.
+The frontend appends the returned filename to its `photoUrls` list so
+the satellite ride-alongs with the contractor's ground photos when AI
+Measure is run. The contractor can then drag a green "TARGET HOUSE" box
+on the aerial via the Annotate modal if the geocoder still missed.
 
-No API keys required. Nominatim's usage policy asks for a descriptive
-User-Agent + ≤ 1 req/sec; Esri World Imagery is free for non-commercial
-use and de-facto used commercially without keys.
+Key required: GOOGLE_MAPS_API_KEY in backend/.env. The key must have
+both Geocoding API and Maps Static API enabled in Google Cloud Console.
 """
 from __future__ import annotations
 
 import io
-import math
+import os
 import uuid
 from pathlib import Path
-from typing import Optional
 
 import httpx
 from fastapi import APIRouter, Depends, Form, HTTPException
@@ -34,47 +38,34 @@ from deps import get_current_user
 
 router = APIRouter(prefix="/measure", tags=["measure"])
 
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
-ESRI_EXPORT_URL = (
-    "https://services.arcgisonline.com/arcgis/rest/services/"
-    "World_Imagery/MapServer/export"
-)
-USER_AGENT = "ProQuoteEstimator/1.0 (contractor siding estimator)"
+GOOGLE_GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
+GOOGLE_STATIC_URL = "https://maps.googleapis.com/maps/api/staticmap"
 
-# House-scale bbox at the equator. Earlier testing showed Esri returns
-# a 500 "Error: bytes" whenever the bbox is tighter than ~150 m square
-# (the imagery service can't synthesize from its top-zoom tiles at that
-# scale). Default at 200 m (= 400 m × 400 m view) — first attempt almost
-# always succeeds on suburban + rural lots. Back off to 350 m only if
-# Esri still errors. One degree of latitude ≈ 111 km. Longitude shrinks
-# by cos(lat) toward the poles.
-DEFAULT_RADIUS_M = 200
-RETRY_RADIUS_M = 350
-EARTH_M_PER_DEG_LAT = 111_320
-
-DEFAULT_SIZE_PX = 1600  # 1600×1600 is plenty for Claude to read roof outline
-
-
-def _bbox_around(lat: float, lon: float, radius_m: int) -> tuple[float, float, float, float]:
-    """Return (xmin, ymin, xmax, ymax) in WGS84 degrees centered on lat/lon."""
-    dlat = radius_m / EARTH_M_PER_DEG_LAT
-    dlon = radius_m / (EARTH_M_PER_DEG_LAT * max(0.01, math.cos(math.radians(lat))))
-    return (lon - dlon, lat - dlat, lon + dlon, lat + dlat)
+# Default zoom for a single-house satellite view. Google's zoom scale:
+#   18 = a few houses + yards visible
+#   19 = single house fills ~30% of the frame  ← suburban sweet spot
+#   20 = single house fills most of the frame  ← rural / large-lot sweet spot
+#   21 = roof detail only (some areas don't have 21-zoom imagery)
+# 20 is the safest universal default — visible roof outline + just
+# enough of the lot to see driveways / garages / outbuildings.
+DEFAULT_ZOOM = 20
+MIN_ZOOM = 17
+MAX_ZOOM = 21
+# Google's Static Maps cap is 640×640 free, 2× scale gives effective
+# 1280×1280 (still single API call). Premium would allow 2048 but the
+# free tier ceiling is 640 × scale=2.
+DEFAULT_SIZE_PX = 640
+DEFAULT_SCALE = 2  # 2× = retina resolution at the same billed cost
 
 
-def _burn_target_marker(jpeg_bytes: bytes, radius_m: int) -> bytes:
+def _burn_target_marker(jpeg_bytes: bytes, zoom: int) -> bytes:
     """Draw a red crosshair + ring + "TARGET" label at the center of the
-    satellite tile. Critical on rural lots where the radius bbox catches
-    several houses — without this marker, neither the contractor nor
-    Claude can tell which structure is the address."""
+    satellite tile. The center pixel corresponds 1:1 to the geocoded
+    lat/lon (Google Static Maps centers on the requested point)."""
     img = Image.open(io.BytesIO(jpeg_bytes)).convert("RGB")
     draw = ImageDraw.Draw(img, "RGBA")
     w, h = img.size
     cx, cy = w // 2, h // 2
-    # Crosshair geometry sized so it stays legible at any radius zoom.
-    # At 200 m radius the ring is ~7% of the image (≈ a residential
-    # house footprint); at 350 m it stays the same px size, so the
-    # outline still pops without obscuring the roof.
     ring_r = max(40, w // 14)
     cross_len = ring_r * 2
     line_w = max(4, w // 240)
@@ -90,14 +81,12 @@ def _burn_target_marker(jpeg_bytes: bytes, radius_m: int) -> bytes:
         (cx - inner, cy - inner, cx + inner, cy + inner),
         fill=(220, 38, 38, 255),
     )
-    # Crosshair arms (broken at the ring so the structure inside is visible)
     gap = ring_r + line_w * 2
     draw.line([(cx - cross_len, cy), (cx - gap, cy)], fill=(220, 38, 38, 255), width=line_w)
     draw.line([(cx + gap, cy), (cx + cross_len, cy)], fill=(220, 38, 38, 255), width=line_w)
     draw.line([(cx, cy - cross_len), (cx, cy - gap)], fill=(220, 38, 38, 255), width=line_w)
     draw.line([(cx, cy + gap), (cx, cy + cross_len)], fill=(220, 38, 38, 255), width=line_w)
-    # TARGET label above the ring
-    label = f"TARGET · {radius_m}m view"
+    label = f"TARGET · z{zoom}"
     font_px = max(20, w // 50)
     try:
         font = ImageFont.truetype(
@@ -126,108 +115,148 @@ def _burn_target_marker(jpeg_bytes: bytes, radius_m: int) -> bytes:
 @router.post("/satellite-tile")
 async def fetch_satellite_tile(
     address: str = Form(...),
-    radius_m: int = Form(DEFAULT_RADIUS_M),
+    zoom: int = Form(DEFAULT_ZOOM),
     size_px: int = Form(DEFAULT_SIZE_PX),
     user: dict = Depends(get_current_user),  # noqa: ARG001 — auth gate
 ):
-    """Geocode `address` and return a top-down satellite JPEG saved into
-    UPLOAD_DIR. Response shape mirrors `/api/uploads` so the frontend
-    can append the returned filename straight into `photoUrls`."""
+    """Geocode `address` via Google and return a top-down satellite JPEG
+    saved into UPLOAD_DIR. Response shape mirrors `/api/uploads` so the
+    frontend can append the returned filename straight into `photoUrls`."""
     if not address.strip():
         raise HTTPException(status_code=400, detail="address is required")
-    if radius_m < 30 or radius_m > 500:
-        radius_m = DEFAULT_RADIUS_M
-    if size_px < 512 or size_px > 2400:
+    if zoom < MIN_ZOOM or zoom > MAX_ZOOM:
+        zoom = DEFAULT_ZOOM
+    if size_px < 256 or size_px > 640:
         size_px = DEFAULT_SIZE_PX
 
-    async with httpx.AsyncClient(
-        headers={"User-Agent": USER_AGENT},
-        timeout=20.0,
-    ) as client:
-        # 1) Geocode via Nominatim. We ask for the top hit only.
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail="GOOGLE_MAPS_API_KEY missing on server",
+        )
+
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        # 1) Geocode via Google Geocoding API.
         try:
             geo = await client.get(
-                NOMINATIM_URL,
-                params={"q": address, "format": "json", "limit": 1, "addressdetails": 0},
+                GOOGLE_GEOCODE_URL,
+                params={"address": address, "key": api_key},
             )
             geo.raise_for_status()
-            hits = geo.json()
+            payload = geo.json()
         except httpx.HTTPError as e:
             raise HTTPException(status_code=502, detail=f"Geocode failed: {e}") from e
-        if not hits:
+        status = payload.get("status", "")
+        err_msg = payload.get("error_message") or ""
+        if status == "REQUEST_DENIED":
+            # Most common reasons: billing not enabled, or Geocoding API
+            # not turned on for this key. Surface plain-English guidance
+            # using HTTP 400 so the frontend can show it as a toast
+            # (502 gets wrapped by Cloudflare into its own error page).
+            if "billing" in err_msg.lower():
+                guidance = (
+                    "Google Cloud billing isn't enabled yet. Open "
+                    "console.cloud.google.com/billing, link a credit card "
+                    "to the project that owns this API key, then try again. "
+                    "Google gives a $200/mo free credit — Maps Static + "
+                    "Geocoding are essentially free at our usage volume."
+                )
+            elif "not authorized" in err_msg.lower() or "not enabled" in err_msg.lower() or "activated" in err_msg.lower():
+                guidance = (
+                    "The Geocoding API isn't enabled on this Google project. "
+                    "Open console.cloud.google.com/apis/library, search for "
+                    "'Geocoding API' and click ENABLE, then retry."
+                )
+            else:
+                guidance = (
+                    f"Google rejected the geocode request: {err_msg or 'check API key & enabled APIs'}"
+                )
+            raise HTTPException(status_code=400, detail=guidance)
+        if status == "ZERO_RESULTS" or not payload.get("results"):
+            raise HTTPException(status_code=404, detail=f"Address not found: {address!r}")
+        if status != "OK":
             raise HTTPException(
-                status_code=404,
-                detail=f"Address not found: {address!r}",
+                status_code=400,
+                detail=f"Geocode returned status={status}: {err_msg}",
             )
-        hit = hits[0]
+        top = payload["results"][0]
+        loc = top.get("geometry", {}).get("location", {})
         try:
-            lat = float(hit["lat"])
-            lon = float(hit["lon"])
+            lat = float(loc["lat"])
+            lon = float(loc["lng"])
         except (KeyError, ValueError) as e:
             raise HTTPException(status_code=502, detail=f"Bad geocode reply: {e}") from e
-        resolved_label = hit.get("display_name") or address
+        resolved_label = top.get("formatted_address") or address
+        # Track the precision Google reports — "ROOFTOP" is the most
+        # accurate (great for our use case); RANGE_INTERPOLATED is good;
+        # GEOMETRIC_CENTER and APPROXIMATE are looser. We surface this
+        # so contractors know when they might need to drag the green
+        # TARGET HOUSE box.
+        location_type = top.get("geometry", {}).get("location_type", "")
 
-        # 2) Fetch the satellite tile from Esri ExportMap. Esri returns
-        #    a 500 "Error: bytes" when the bbox is too tight — fall back
-        #    to a larger radius if the first attempt fails. Tracks
-        #    `radius_used_m` so the frontend can show what scale we
-        #    actually got.
-        radius_used_m = radius_m
-        body = b""
-        ctype = ""
-        last_err = ""
-        for attempt_radius in (radius_m, RETRY_RADIUS_M) if radius_m < RETRY_RADIUS_M else (radius_m,):
-            bbox = _bbox_around(lat, lon, attempt_radius)
+        # 2) Fetch the satellite tile from Google Static Maps.
+        try:
+            img = await client.get(
+                GOOGLE_STATIC_URL,
+                params={
+                    "center": f"{lat},{lon}",
+                    "zoom": str(zoom),
+                    "size": f"{size_px}x{size_px}",
+                    "scale": str(DEFAULT_SCALE),
+                    "maptype": "satellite",
+                    "format": "jpg",
+                    "key": api_key,
+                },
+            )
+        except httpx.HTTPError as e:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Google Static Maps fetch failed: {e}",
+            ) from e
+        if img.status_code != 200:
+            body_preview = ""
             try:
-                img = await client.get(
-                    ESRI_EXPORT_URL,
-                    params={
-                        "bbox": ",".join(str(x) for x in bbox),
-                        "bboxSR": "4326",  # WGS84 lat/lon
-                        "size": f"{size_px},{size_px}",
-                        "format": "jpg",
-                        "transparent": "false",
-                        "f": "image",
-                    },
+                body_preview = img.text[:300]
+            except Exception:
+                pass
+            low = body_preview.lower()
+            if "not activated" in low or "not been used" in low or "is disabled" in low:
+                guidance = (
+                    "The Maps Static API isn't enabled on this Google project. "
+                    "Open console.cloud.google.com/apis/library, search for "
+                    "'Maps Static API' and click ENABLE, then retry."
                 )
-            except httpx.HTTPError as e:
-                last_err = f"network error: {e}"
-                continue
-            ctype = img.headers.get("content-type", "").lower()
-            # Esri responds 200 with text/html when it actually errored,
-            # so check content-type too.
-            if img.status_code != 200 or "image" not in ctype:
-                last_err = (
-                    f"esri returned status={img.status_code} ctype={ctype!r} "
-                    f"body={img.text[:200]!r} at radius={attempt_radius}m"
+                raise HTTPException(status_code=400, detail=guidance)
+            if "billing" in low:
+                guidance = (
+                    "Google Cloud billing isn't enabled yet. Open "
+                    "console.cloud.google.com/billing and link a credit card "
+                    "to the project that owns this API key, then retry."
                 )
-                continue
-            body = img.content
-            radius_used_m = attempt_radius
-            break
-        if not body:
+                raise HTTPException(status_code=400, detail=guidance)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Static Maps status={img.status_code} body={body_preview!r}",
+            )
+        ctype = img.headers.get("content-type", "").lower()
+        if "image" not in ctype:
             raise HTTPException(
                 status_code=502,
-                detail=f"Esri imagery fetch failed: {last_err}",
+                detail=f"Static Maps returned non-image content-type {ctype!r}",
             )
-        if len(body) < 2048:
+        body = img.content
+        if not body or len(body) < 2048:
             raise HTTPException(
                 status_code=502,
-                detail=f"Esri returned an unexpectedly small payload ({len(body)} bytes)",
+                detail=f"Static Maps returned tiny payload ({len(body)} bytes)",
             )
 
-    # 3a) Burn a red target crosshair on the exact geocoded center so
-    #     the contractor (and Claude) can instantly identify the right
-    #     structure — critical on rural lots where the bbox catches
-    #     several houses. The center pixel of the JPEG corresponds 1:1
-    #     to the lat/lon we just resolved.
-    body = _burn_target_marker(body, radius_used_m)
+    # 3) Burn target crosshair on geocoded center.
+    body = _burn_target_marker(body, zoom)
 
-    # 3) Persist to UPLOAD_DIR (same place /api/uploads writes) so the
-    #    AI Measure flow can pick it up via the existing photo_paths
-    #    pathway with no extra plumbing.
-    ext = "jpg"
-    filename = f"satellite-{uuid.uuid4().hex[:10]}.{ext}"
+    # 4) Persist to UPLOAD_DIR.
+    filename = f"satellite-{uuid.uuid4().hex[:10]}.jpg"
     target: Path = UPLOAD_DIR / filename
     target.write_bytes(body)
 
@@ -237,7 +266,8 @@ async def fetch_satellite_tile(
         "lat": lat,
         "lon": lon,
         "address_resolved": resolved_label,
-        "radius_m": radius_used_m,
-        "size_px": size_px,
+        "zoom": zoom,
+        "size_px": size_px * DEFAULT_SCALE,
         "bytes": len(body),
+        "location_type": location_type,
     }
