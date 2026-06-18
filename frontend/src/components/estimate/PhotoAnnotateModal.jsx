@@ -115,8 +115,21 @@ export default function PhotoAnnotateModal({
     if (!photo) return;
     const p = evtPoint(e);
     if (mode === MODE_TARGET) {
-      // Single tap drops / replaces the target-house pin.
-      setLocalTarget(p);
+      // Two-tap rectangle: first tap = corner 1, second tap = corner 2.
+      // Lets the contractor draw a TIGHT box around just the structure
+      // they're quoting (e.g. the garage, ignoring the house 2 ft away).
+      // Cleared rectangle is normalized to {x1,y1,x2,y2}.
+      if (!pending) { setPending(p); return; }
+      const x1 = Math.min(pending.x, p.x);
+      const y1 = Math.min(pending.y, p.y);
+      const x2 = Math.max(pending.x, p.x);
+      const y2 = Math.max(pending.y, p.y);
+      if (x2 - x1 < 4 || y2 - y1 < 4) {
+        setPending(null);
+        return;
+      }
+      setLocalTarget({ x1, y1, x2, y2 });
+      setPending(null);
       return;
     }
     if (mode === MODE_SCALE) {
@@ -228,28 +241,41 @@ export default function PhotoAnnotateModal({
           </g>
         )}
         {localTarget && (() => {
-          const ringR = Math.max(40, photo.width / 14);
+          // New format: rectangle {x1,y1,x2,y2} from two taps. Legacy:
+          // single point {x,y} from the old single-tap pin — keep
+          // rendering a small ring so old saved sessions still display.
           const lw = Math.max(4, photo.width / 240);
+          if ("x1" in localTarget) {
+            const { x1, y1, x2, y2 } = localTarget;
+            const w = x2 - x1;
+            const h = y2 - y1;
+            const cx = (x1 + x2) / 2;
+            const fontPx = Math.max(15, photo.width / 65);
+            return (
+              <g>
+                <rect x={x1} y={y1} width={w} height={h}
+                      fill="rgba(16, 185, 129, 0.18)"
+                      stroke="#10B981" strokeWidth={lw} />
+                <rect x={cx - 110} y={y1 - fontPx - 8}
+                      width={220} height={32} fill="#10B981" rx={3} />
+                <text x={cx} y={y1 - 12}
+                      fill="#FFFFFF" fontSize={fontPx}
+                      textAnchor="middle" fontWeight="bold">
+                  TARGET HOUSE
+                </text>
+              </g>
+            );
+          }
+          // Legacy small-ring fallback for any sessions saved pre-fix.
+          const ringR = Math.max(20, photo.width / 50);
           return (
             <g>
               <circle cx={localTarget.x} cy={localTarget.y} r={ringR}
                       fill="none" stroke="#10B981" strokeWidth={lw} />
-              <circle cx={localTarget.x} cy={localTarget.y} r={Math.max(6, photo.width / 200)} fill="#10B981" />
-              <line x1={localTarget.x - ringR * 2} y1={localTarget.y}
-                    x2={localTarget.x - ringR - lw} y2={localTarget.y}
-                    stroke="#10B981" strokeWidth={lw} />
-              <line x1={localTarget.x + ringR + lw} y1={localTarget.y}
-                    x2={localTarget.x + ringR * 2} y2={localTarget.y}
-                    stroke="#10B981" strokeWidth={lw} />
-              <line x1={localTarget.x} y1={localTarget.y - ringR * 2}
-                    x2={localTarget.x} y2={localTarget.y - ringR - lw}
-                    stroke="#10B981" strokeWidth={lw} />
-              <line x1={localTarget.x} y1={localTarget.y + ringR + lw}
-                    x2={localTarget.x} y2={localTarget.y + ringR * 2}
-                    stroke="#10B981" strokeWidth={lw} />
-              <rect x={localTarget.x - 110} y={localTarget.y - ringR * 2 - 36}
+              <circle cx={localTarget.x} cy={localTarget.y} r={Math.max(4, photo.width / 350)} fill="#10B981" />
+              <rect x={localTarget.x - 110} y={localTarget.y - ringR - 36}
                     width={220} height={32} fill="#10B981" rx={3} />
-              <text x={localTarget.x} y={localTarget.y - ringR * 2 - 14}
+              <text x={localTarget.x} y={localTarget.y - ringR - 14}
                     fill="#FFFFFF" fontSize={Math.max(15, photo.width / 65)}
                     textAnchor="middle" fontWeight="bold">
                 TARGET HOUSE
@@ -294,7 +320,7 @@ export default function PhotoAnnotateModal({
             <div className="text-xs opacity-90 mt-0.5">
               {elevation && <>Elevation: <b>{elevation}</b> · </>}
               {mode === MODE_TARGET
-                ? "Tap once on the actual house — overrides the auto-geocoded crosshair on aerial photos"
+                ? "Tap two corners around the target structure (works to isolate a garage, shed, or close neighbor)"
                 : mode === MODE_SCALE
                 ? "Tap two points on a known reference (door, garage), then enter its real length"
                 : (zoneShape === "rect"
@@ -443,7 +469,9 @@ export default function PhotoAnnotateModal({
               {localTarget ? (
                 <div className="text-xs flex items-center justify-between gap-2 bg-[#D1FAE5] px-2 py-1.5 border-l-2 border-[#10B981]">
                   <span className="font-mono-num text-[#065F46]">
-                    Pinned at ({Math.round(localTarget.x)}, {Math.round(localTarget.y)})
+                    {"x1" in localTarget
+                      ? `Box ${Math.round(localTarget.x2 - localTarget.x1)}×${Math.round(localTarget.y2 - localTarget.y1)} px`
+                      : `Pinned at (${Math.round(localTarget.x)}, ${Math.round(localTarget.y)})`}
                   </span>
                   <button onClick={removeTarget} className="text-[#A1A1AA] hover:text-[#DC2626]" data-testid="annotate-target-remove">
                     <Trash2 className="w-3 h-3" />
@@ -451,7 +479,7 @@ export default function PhotoAnnotateModal({
                 </div>
               ) : (
                 <div className="text-[11px] text-[#A1A1AA] italic">
-                  No pin set — tap on the actual house in Pin mode (overrides the auto-geocoded crosshair).
+                  No box drawn — tap two corners around the target structure (e.g. just the garage).
                 </div>
               )}
             </div>

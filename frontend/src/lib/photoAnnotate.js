@@ -134,45 +134,66 @@ export async function renderAnnotated(photoUrl, annot) {
     ctx.fillText(label, mx, my);
   }
 
-  // Target house pin — green crosshair + ring + "TARGET HOUSE" label.
-  // For aerial photos this OVERRIDES the auto-burned red crosshair the
-  // satellite endpoint added from the geocoded lat/lon (which often
-  // misses on rural addresses with multiple structures).
+  // Target house pin — green rectangle around the target structure +
+  // "TARGET HOUSE" label. For aerial photos this OVERRIDES the auto-
+  // burned red crosshair the satellite endpoint added from the
+  // geocoded lat/lon (which often misses on rural addresses with
+  // multiple structures). New format: {x1,y1,x2,y2} two-corner box —
+  // tight enough to isolate a garage from a house 2 ft away. Legacy:
+  // {x,y} single-tap pin renders a small ring (back-compat).
   if (annot?.targetPin) {
-    const { x, y } = annot.targetPin;
-    const ringR = Math.max(40, naturalW / 14);
     const lw = Math.max(4, naturalW / 240);
-    const armLen = ringR * 2;
-    ctx.strokeStyle = "#10B981";
-    ctx.lineWidth = lw;
-    ctx.beginPath();
-    ctx.arc(x, y, ringR, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = "#10B981";
-    ctx.beginPath();
-    ctx.arc(x, y, Math.max(6, naturalW / 200), 0, Math.PI * 2);
-    ctx.fill();
-    // Crosshair arms broken at the ring so the house roof remains visible.
-    const gap = ringR + lw * 2;
-    ctx.beginPath();
-    ctx.moveTo(x - armLen, y); ctx.lineTo(x - gap, y);
-    ctx.moveTo(x + gap, y);    ctx.lineTo(x + armLen, y);
-    ctx.moveTo(x, y - armLen); ctx.lineTo(x, y - gap);
-    ctx.moveTo(x, y + gap);    ctx.lineTo(x, y + armLen);
-    ctx.stroke();
-    const fontPx = Math.max(22, naturalW / 55);
-    ctx.font = `bold ${fontPx}px sans-serif`;
-    const label = "TARGET HOUSE";
-    const tw = ctx.measureText(label).width;
-    const pad = fontPx * 0.4;
-    const labelY = y - ringR - armLen / 2 - fontPx - pad;
-    const ty = labelY < pad ? y + ringR + armLen / 2 + pad : labelY;
-    ctx.fillStyle = "#10B981";
-    ctx.fillRect(x - tw / 2 - pad, ty - pad, tw + pad * 2, fontPx + pad * 2);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.fillText(label, x, ty);
+    const tp = annot.targetPin;
+    if ("x1" in tp) {
+      const { x1, y1, x2, y2 } = tp;
+      const w = x2 - x1;
+      const h = y2 - y1;
+      ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
+      ctx.fillRect(x1, y1, w, h);
+      ctx.strokeStyle = "#10B981";
+      ctx.lineWidth = lw;
+      ctx.strokeRect(x1, y1, w, h);
+      const cx = (x1 + x2) / 2;
+      const fontPx = Math.max(22, naturalW / 55);
+      ctx.font = `bold ${fontPx}px sans-serif`;
+      const label = "TARGET HOUSE";
+      const tw = ctx.measureText(label).width;
+      const pad = fontPx * 0.4;
+      const labelY = y1 - fontPx - pad * 2;
+      const ty = labelY < pad ? y2 + pad : labelY;
+      ctx.fillStyle = "#10B981";
+      ctx.fillRect(cx - tw / 2 - pad, ty, tw + pad * 2, fontPx + pad * 2);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(label, cx, ty + pad);
+    } else {
+      // Legacy ring fallback for old saved sessions.
+      const { x, y } = tp;
+      const ringR = Math.max(20, naturalW / 50);
+      ctx.strokeStyle = "#10B981";
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      ctx.arc(x, y, ringR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = "#10B981";
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(4, naturalW / 350), 0, Math.PI * 2);
+      ctx.fill();
+      const fontPx = Math.max(22, naturalW / 55);
+      ctx.font = `bold ${fontPx}px sans-serif`;
+      const label = "TARGET HOUSE";
+      const tw = ctx.measureText(label).width;
+      const pad = fontPx * 0.4;
+      const ty = y - ringR - fontPx - pad * 2;
+      const tyFinal = ty < pad ? y + ringR + pad : ty;
+      ctx.fillStyle = "#10B981";
+      ctx.fillRect(x - tw / 2 - pad, tyFinal, tw + pad * 2, fontPx + pad * 2);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(label, x, tyFinal + pad);
+    }
   }
 
   // Elevation badge — top-left corner.
@@ -215,7 +236,7 @@ export function describeAnnotations(entries) {
       parts.push(`Red line marked "REF = ${e.reference.inches}\"" is a known ${e.reference.inches}-inch span — anchor scale to this`);
     }
     if (e.targetPin) {
-      parts.push(`Green ring labeled "TARGET HOUSE" marks the contractor-confirmed target structure — measure ONLY this house, ignore any other buildings in frame (overrides any red auto-crosshair)`);
+      parts.push(`Green rectangle labeled "TARGET HOUSE" outlines the contractor-confirmed target structure — measure ONLY what's inside the green box, ignore any other buildings even if they're a few feet away (overrides any red auto-crosshair)`);
     }
     const zoneBits = (e.zones || []).map((z) => `${ZONE_NAMES[z.category] || z.category}`);
     if (zoneBits.length) {
