@@ -738,7 +738,7 @@ async def _ask_claude(text: str, session_id: str) -> dict:
         api_key=api_key,
         session_id=session_id,
         system_message=PROMPT_SYSTEM,
-    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+    ).with_model("anthropic", "claude-opus-4-5-20251101")  # Iter 58: upgraded from Sonnet 4.5 to Opus 4.5 — matches AI Measure for max accuracy on edge HOVER PDFs
     msg = UserMessage(text=PROMPT_TEMPLATE.format(text=text[:60000]))  # safety cap
     try:
         reply = await chat.send_message(msg)
