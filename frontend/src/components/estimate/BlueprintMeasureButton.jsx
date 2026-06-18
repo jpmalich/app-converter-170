@@ -70,7 +70,13 @@ const KEY_LABEL = {
   garage_door_count: "Garage doors",
 };
 
-export default function BlueprintMeasureButton({ est, update, save }) {
+export default function BlueprintMeasureButton({ est, update, save, applyLines }) {
+  // ISS mode: when `applyLines` is provided we route through that callback
+  // (mirroring ISSHoverImportButton's contract) and skip the pairing
+  // logic entirely, since the ISS workspace has no separate Windows
+  // estimate to pair with. Siding mode keeps the est/update/save +
+  // /estimates/{id}/pair flow.
+  const issMode = typeof applyLines === "function";
   const fileRef = useRef();
   const [busy, setBusy] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -114,8 +120,31 @@ export default function BlueprintMeasureButton({ est, update, save }) {
   // Apply the preview to the estimate. Mirrors HoverImportButton.applyResult
   // — siding lines into current siding estimate; window schedule + opening
   // rows route to a paired Windows estimate via /estimates/{id}/pair.
+  //
+  // In ISS mode (applyLines prop provided), the preview's measurements
+  // are passed through `buildISSLinesFromMeasurements` and handed back
+  // via applyLines() — no pairing, no Vero/Mezzo openings.
   const applyResult = async () => {
     if (!result) return;
+    if (issMode) {
+      setApplying(true);
+      try {
+        const { buildISSLinesFromMeasurements } = await import(
+          "@/components/estimate/ISSHoverImportButton"
+        );
+        const rows = buildISSLinesFromMeasurements(result.measurements || {});
+        await applyLines(rows);
+        toast.success(
+          `Read ${result.pages_processed || "blueprint"} page(s) · ${rows.length} ISS line item(s) ready`
+        );
+        setResult(null);
+      } catch (err) {
+        toast.error(err?.response?.data?.detail || err?.message || "Apply failed");
+      } finally {
+        setApplying(false);
+      }
+      return;
+    }
     const allLines = result.lines || [];
     const srcKind = est.kind || "siding";
 
@@ -353,7 +382,9 @@ export default function BlueprintMeasureButton({ est, update, save }) {
                     </table>
                   </div>
                   <div className="text-[10px] text-[#A1A1AA] mt-1.5">
-                    Will populate {est.kind === "windows" ? "this Windows estimate" : "the paired Windows estimate"} on Apply.
+                    {issMode
+                      ? "Window schedule shown for reference only — ISS estimates don't have a Windows tab. Take counts manually if needed."
+                      : `Will populate ${est.kind === "windows" ? "this Windows estimate" : "the paired Windows estimate"} on Apply.`}
                   </div>
                 </section>
               )}

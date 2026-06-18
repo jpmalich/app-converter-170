@@ -30,6 +30,7 @@ import { useLang } from "@/lib/i18n";
 import QuoteModal from "@/components/QuoteModal";
 import ISSHoverImportButton from "@/components/estimate/ISSHoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
+import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
 import { FileText, Printer, Download, ClipboardList } from "lucide-react";
 
 const fmt = (n) => `$${(Number(n) || 0).toFixed(2)}`;
@@ -338,6 +339,7 @@ export default function ISSEstimateEditor() {
               ISS Quote · {est.estimate_number || "Draft"}
             </div>
             <ISSHoverImportButton est={est} applyLines={applyHoverLines} />
+            <BlueprintMeasureButton est={est} applyLines={applyHoverLines} />
             <AIMeasureButton
               kind="iss"
               address={est?.address}
