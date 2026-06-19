@@ -436,7 +436,7 @@ export default function PhotoAnnotateModal({
               {mode === MODE_TARGET
                 ? "Tap two corners around the target structure (works to isolate a garage, shed, or close neighbor)"
                 : mode === MODE_SCALE
-                ? "Tap two points on a known reference (door, garage), then enter its real length"
+                ? "Tap two points on a known reference — door, garage, or even a single window edge (for per-window precision), then enter its real length in inches"
                 : (zoneShape === "rect"
                     ? `Tap top-left then bottom-right to mark a ${ZONE_CATEGORIES.find((c) => c.key === zoneCategory)?.name} zone`
                     : `Tap polygon points, then Close to commit a ${ZONE_CATEGORIES.find((c) => c.key === zoneCategory)?.name} zone`)}
@@ -570,7 +570,8 @@ export default function PhotoAnnotateModal({
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
                         mode === MODE_SCALE ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
                       }`}
-                      data-testid="annotate-mode-scale">
+                      data-testid="annotate-mode-scale"
+                      title="2-tap red line with a known length in inches. Draw on a window edge to give Claude a per-window calibration — the closer the reference to the window, the tighter the AI's sizing.">
                 <Ruler className="w-3 h-3" /> Scale
               </button>
               <button type="button"

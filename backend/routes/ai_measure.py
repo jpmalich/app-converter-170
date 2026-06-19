@@ -570,6 +570,110 @@ def _dedupe_openings(openings: list) -> list:
     return list(seen.values())
 
 
+# Iter 57g — Standard-size window snapping. Residential windows are ~99%
+# of the time ONE of a fixed set of widths and heights. Claude's vision
+# measurements are usually within ±2 in of the true size — snapping
+# them to the nearest standard tightens up Vero SKU matching dramatically
+# (a 37×61 becomes a 36×60, hitting the right price bucket).
+_STD_WIDTHS_IN = (
+    18, 20, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48, 54, 60, 66, 72, 78,
+    84, 96, 108, 120, 144, 168, 192,
+)
+_STD_HEIGHTS_IN = (
+    24, 30, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 60, 62, 66, 72, 76,
+    80, 84, 90, 96,
+)
+_SNAP_TOLERANCE_IN = 2.5  # how close a guess must be to a standard to snap
+
+
+def _snap_to_standard(value: float, ladder: tuple[int, ...]) -> float:
+    """Snap `value` to the nearest entry in `ladder` if it's within
+    `_SNAP_TOLERANCE_IN` inches; otherwise return the value unchanged.
+    Keeps outlier sizes (true custom windows) intact — only the noisy
+    ±2-in guesses get cleaned up."""
+    if value <= 0:
+        return value
+    nearest = min(ladder, key=lambda s: abs(s - value))
+    if abs(nearest - value) <= _SNAP_TOLERANCE_IN:
+        return float(nearest)
+    return value
+
+
+def _snap_window_sizes(openings: list) -> list:
+    """Snap every `type=window` opening's W and H to nearest standard
+    size within tolerance. Mutates and returns the list for convenience
+    — caller can ignore the return."""
+    for o in openings or []:
+        if (o.get("type") or "").lower() != "window":
+            continue
+        try:
+            w = float(o.get("width_in") or 0)
+            h = float(o.get("height_in") or 0)
+        except (TypeError, ValueError):
+            continue
+        o["width_in"] = _snap_to_standard(w, _STD_WIDTHS_IN)
+        o["height_in"] = _snap_to_standard(h, _STD_HEIGHTS_IN)
+    return openings
+
+
+def _snap_schedule_sizes(schedule: list) -> list:
+    """Same snap pass for the openings_schedule rows so the display
+    and the openings[] list stay consistent."""
+    for o in schedule or []:
+        if (o.get("type") or "").lower() != "window":
+            continue
+        try:
+            w = float(o.get("width_in") or 0)
+            h = float(o.get("height_in") or 0)
+        except (TypeError, ValueError):
+            continue
+        o["width_in"] = _snap_to_standard(w, _STD_WIDTHS_IN)
+        o["height_in"] = _snap_to_standard(h, _STD_HEIGHTS_IN)
+        wi = int(round(o["width_in"]))
+        hi = int(round(o["height_in"]))
+        # Refresh size_label so the snapped value shows in the schedule.
+        o["size_label"] = f'{wi}×{hi} in'
+    return schedule
+
+
+def _enforce_symmetry(openings: list) -> list:
+    """Iter 57g — if 3+ windows on the SAME wall + style are within a
+    few inches of each other, force them all to the SAME size (the
+    median W and median H of the cluster). Eliminates the "Claude
+    returned 36×60, 35×61, 37×59 for the same row of 4 identical
+    front windows" inconsistency."""
+    if not openings:
+        return openings
+    # Bucket windows by (wall, style). Type stays = window throughout.
+    buckets: dict[tuple, list[dict]] = {}
+    for o in openings:
+        if (o.get("type") or "").lower() != "window":
+            continue
+        wall = (o.get("wall") or "other").lower()
+        style = (o.get("style") or "").strip().lower()
+        buckets.setdefault((wall, style), []).append(o)
+    for cluster in buckets.values():
+        if len(cluster) < 3:
+            continue
+        ws = sorted(float(o.get("width_in") or 0) for o in cluster)
+        hs = sorted(float(o.get("height_in") or 0) for o in cluster)
+        mw = ws[len(ws) // 2]
+        mh = hs[len(hs) // 2]
+        # Spread check: if any W is more than 4 in away from median,
+        # this isn't really a "set of identical windows" — leave them.
+        if max(abs(w - mw) for w in ws) > 4 or max(abs(h - mh) for h in hs) > 4:
+            continue
+        # Force every member to the median, snapped to a standard size.
+        mw_snap = _snap_to_standard(mw, _STD_WIDTHS_IN)
+        mh_snap = _snap_to_standard(mh, _STD_HEIGHTS_IN)
+        for o in cluster:
+            o["width_in"] = mw_snap
+            o["height_in"] = mh_snap
+    return openings
+
+
+
+
 def _json_from_reply(text: str) -> dict:
     """Pull the first {...} JSON object out of Claude's reply, tolerant of
     accidental code fences."""
@@ -608,7 +712,15 @@ def _aggregate_to_hover_shape(raw: dict) -> dict:
     # strengthened double-count prompt rule, Opus occasionally returns
     # the same window twice when it appears at the edges of two photos.
     raw_openings = raw.get("openings") or []
+    # Iter 57g order: 1) dedupe, 2) enforce symmetry on like-windows,
+    # 3) snap each window to nearest standard residential size. Doing
+    # dedupe first reduces the cluster sizes that symmetry sees.
     openings = _dedupe_openings(raw_openings)
+    openings = _enforce_symmetry(openings)
+    openings = _snap_window_sizes(openings)
+    # Snap the schedule rolls too so the on-screen + PDF tables match.
+    if raw.get("openings_schedule"):
+        raw["openings_schedule"] = _snap_schedule_sizes(raw["openings_schedule"])
     deduped_count = len(raw_openings) - len(openings)
     if deduped_count > 0:
         # Stash the pre-dedupe list back onto raw so the frontend's
@@ -757,6 +869,12 @@ async def ai_measure(
     address: Optional[str] = Form(None),
     kind: str = Form("siding"),
     overhang_in: float = Form(12.0),
+    # Iter 57g — optional course-counting context. If the contractor
+    # tells us the brick course or siding exposure, Claude can size
+    # windows by counting visible courses (way more accurate than
+    # eyeballing pixel ratios). Defaults are residential standards.
+    brick_course_in: Optional[float] = Form(None),       # e.g. 8.0 for standard 3-bricks-per-8"
+    siding_exposure_in: Optional[float] = Form(None),    # e.g. 5.0 for D5 lap, 6.0 for D6, 7.0 for Cedar Impressions
     user: dict = Depends(get_current_user),
 ):
     """Run an AI photo-measure pass on 2-8 uploaded photos.
@@ -842,6 +960,48 @@ async def ai_measure(
             f"Reference dimension provided by contractor: {reference_dim}. "
             "Anchor all scale to this."
         )
+    # Iter 57g — surface course-counting context to Claude so it can size
+    # windows by counting visible brick courses or siding rows. The
+    # backend ALSO snaps any window dimension to nearest standard size
+    # after Claude returns (±2.5 in tolerance), so a 37×61 guess becomes
+    # a clean 36×60. Together these are the biggest single windowsize
+    # accuracy lever we ship.
+    course_hints = []
+    if brick_course_in and brick_course_in > 0:
+        course_hints.append(
+            f"BRICK COURSE = {brick_course_in:.2f} inches (one brick + mortar = this height). "
+            f"If brick is visible anywhere in a photo, COUNT THE COURSES "
+            f"between the sill and head of each window to size it: "
+            f"{brick_course_in:.2f} in × course count = window height. "
+            f"This is far more accurate than estimating pixel ratios."
+        )
+    if siding_exposure_in and siding_exposure_in > 0:
+        course_hints.append(
+            f"SIDING EXPOSURE = {siding_exposure_in:.2f} inches (one visible "
+            f"siding row = this height). On siding-clad walls, count visible "
+            f"siding rows between the sill and head: {siding_exposure_in:.2f} in × "
+            f"row count = window height."
+        )
+    if course_hints:
+        prompt_parts.append("\n".join(course_hints))
+    prompt_parts.append(
+        "STANDARD-SIZE RESIDENTIAL WINDOWS — most windows are one of "
+        "these widths: 18, 20, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48, "
+        "54, 60, 66, 72 in. Heights: 24, 30, 36, 38, 40, 42, 44, 46, 48, "
+        "50, 52, 54, 60, 62, 66, 72 in. If your initial pixel measurement "
+        "is within 2-3 inches of a standard, EMIT THE STANDARD (the "
+        "backend will snap exact matches anyway, but rounding yourself "
+        "first reduces noise). Doors: entry 36×80 (or 32×80, 30×80); "
+        "patio 60×80 / 72×80; garage 96×84 (single), 192×84 (double)."
+    )
+    prompt_parts.append(
+        "SYMMETRY / REPETITION — if you see 3+ windows on the same wall "
+        "that look identical (same operation style, similar W and H), "
+        "they ARE identical (houses don't have 4 windows in a row of "
+        "different sizes — that's a builder error). Emit them ALL with "
+        "the SAME width_in and height_in. The backend also enforces this "
+        "but you doing it cleanly produces fewer dedupe artefacts."
+    )
     prompt_parts.append(
         "Photos attached below. Return the JSON measurement object now."
     )

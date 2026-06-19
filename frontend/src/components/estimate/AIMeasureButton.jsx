@@ -73,6 +73,16 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   const [refDim, setRefDim] = useState("");
   const [wallHeight, setWallHeight] = useState("");
   const [sidingPct, setSidingPct] = useState("");
+  // Iter 57g — optional course-counting calibration. If the contractor
+  // tells us the brick course size or the siding exposure, Claude can
+  // size windows by counting visible rows in the photo — far more
+  // accurate than estimating pixel ratios. Defaults:
+  //   • Brick: 8 in (standard 3-bricks-per-8" course w/ 3/8" mortar)
+  //   • Siding D5: 5 in, D6: 6 in, Cedar Impressions: 7 in (default 5)
+  // Blank = "don't pass to Claude"; user can also disable each
+  // independently by emptying the field.
+  const [brickCourse, setBrickCourse] = useState("");
+  const [sidingExposure, setSidingExposure] = useState("");
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null); // {measurements, raw_ai}
@@ -598,6 +608,15 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       fd.append("kind", kind || "siding");
       // Soffit pieces are computed server-side using this overhang.
       fd.append("overhang_in", String(overhangIn ?? 12));
+      // Iter 57g — pass the contractor's course-counting overrides
+      // (blank = use Claude's defaults). Backend feeds these into the
+      // prompt as additional sizing context.
+      if (brickCourse && parseFloat(brickCourse) > 0) {
+        fd.append("brick_course_in", String(parseFloat(brickCourse)));
+      }
+      if (sidingExposure && parseFloat(sidingExposure) > 0) {
+        fd.append("siding_exposure_in", String(parseFloat(sidingExposure)));
+      }
       const { data } = await api.post("/measure/ai-measure", fd, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 120000,
@@ -1129,6 +1148,50 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       />
                     </label>
                   </div>
+                  {/* Iter 57g — course-counting overrides. Optional —
+                      contractor can leave blank to use Claude's
+                      defaults. Filled in, Claude is told to size
+                      windows by counting brick courses / siding rows
+                      visible in the photo (way more accurate than
+                      eyeballing pixel ratios). */}
+                  <details className="text-xs mb-3" data-testid="ai-measure-course-sizing">
+                    <summary className="cursor-pointer text-[#7C3AED] font-bold uppercase tracking-wider text-[10px]">
+                      Course / row sizing (optional · improves window accuracy)
+                    </summary>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <label className="block">
+                        <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Brick course (in)</span>
+                        <input
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          className="input text-sm"
+                          placeholder="8.0 = standard"
+                          value={brickCourse}
+                          onChange={(e) => setBrickCourse(e.target.value)}
+                          data-testid="ai-measure-brick-course"
+                          title="Height of one brick + mortar joint. Standard is 8 in (3 bricks per 8 in = 1 course). Used by Claude to count courses between window sill and head."
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Siding exposure (in)</span>
+                        <input
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          className="input text-sm"
+                          placeholder="D5=5, D6=6, CI=7"
+                          value={sidingExposure}
+                          onChange={(e) => setSidingExposure(e.target.value)}
+                          data-testid="ai-measure-siding-exposure"
+                          title="Visible height of one siding row. D5 lap = 5 in, D6 = 6 in, Cedar Impressions = 7 in. Claude counts rows between sill and head."
+                        />
+                      </label>
+                    </div>
+                    <div className="text-[10px] text-[#A1A1AA] mt-2 italic">
+                      Tip — fill these in if you see brick or siding in the photos. Backend snaps every window to nearest standard size after Claude runs, regardless.
+                    </div>
+                  </details>
                 </>
               )}
 
