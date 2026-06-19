@@ -44,7 +44,11 @@ from routes.hover import _build_lines  # reuse the same measurement→line mappe
 router = APIRouter(prefix="/measure", tags=["measure"])
 
 ACCEPTED_MIMES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
-MAX_FILES = 8
+# Iter 57b: bumped from 8 → 9 so contractors can add the free Google
+# Maps aerial alongside the 8 standard elevation shots from the Guided
+# Capture wizard. The aerial is a small ~400 KB tile; total payload
+# stays under Claude Opus's 100 MB request limit by a wide margin.
+MAX_FILES = 9
 MAX_BYTES_PER_FILE = 12 * 1024 * 1024  # 12 MB pre-base64 (Iter 56b: bumped from 8 MB to accommodate modern phone photos + annotated re-renders)
 # Iter 49: bumped from claude-sonnet-4-5-20250929 to claude-opus-4-5
 # at Howard's request — ~3× cost per measure but materially better at
@@ -211,9 +215,31 @@ CRITICAL accuracy rules (read every time):
    `height_ft`. Typical residential gable_triangle_height_ft is 4-8 ft
    for a 6/12 to 9/12 pitch on a 24-32 ft wide house.
 
-4. DORMERS: Do not include dormer area in `height_ft`. Use
-   `dormer_face_sqft` (typically 20-60 ft² each) so the contractor sees
-   a separate line of accountability. If a wall has 2 dormers, sum them.
+4. DORMERS (REQUIRED — SCAN EVERY ROOFLINE):
+   BEFORE finalizing each elevation, trace the roofline in the photo
+   from end to end looking for projections breaking the smooth slope.
+   Common dormer signatures (look for ALL of these, not just one):
+     • Small box-shaped projection out of the roof slope with its own
+       mini-roof (gable, shed, or eyebrow shape)
+     • One or two windows set INTO the roof slope (not on the main
+       wall plane) — the window is recessed behind a visible roof slope
+       on either side
+     • A horizontal eave line ABOVE the main eave at a noticeably
+       smaller width than the wall below
+     • Shed dormers run wide and low (common on 1.5-story Capes / capes)
+     • Gable dormers are narrow and triangular-topped
+     • Eyebrow dormers are curved/arched and very subtle
+   For EACH dormer found, estimate `dormer_face_sqft` (typical residential
+   range: 20-60 ft² per dormer face — a 4 ft wide × 4 ft tall gable dormer
+   = 16 ft²; a 12 ft wide × 6 ft tall shed dormer = 72 ft²) and record
+   the total sum on the wall it FACES (front / back / left / right).
+   Do NOT add dormer height to `height_ft` — that breaks the gable math.
+   If a wall has 2 dormers, sum their face areas into one `dormer_face_sqft`
+   value on that wall. If you see dormers ANYWHERE in any photo, you
+   MUST record them — missing dormers is a top-3 source of under-quoting.
+   In `notes`, briefly call out each dormer you found: e.g. "Shed dormer
+   on left elevation, ~12 ft × 6 ft = 72 ft² face; gable dormer on right,
+   ~4 ft × 4 ft = 16 ft² face."
 
 5. SIDING COVERAGE: A wall area is NOT the same as a siding area.
    Examine every wall for:
@@ -257,12 +283,30 @@ CRITICAL accuracy rules (read every time):
    things you cannot see from above. Don't try to read wall heights or
    window counts off the aerial.
 
-11. DOUBLE-COUNT CHECK (required) — before you finalize, cross-reference
-   openings and walls visible from more than one angle. A window seen at
-   the front-right corner of the front-elevation photo IS THE SAME WINDOW
-   as the one at the front edge of the right-elevation photo — count it
-   ONCE, not twice. Same for outside corner posts at any rectangular-house
-   corner. Briefly explain your reconciliation in `double_count_check`.
+11. DOUBLE-COUNT CHECK (REQUIRED — DEDUPE BEFORE RETURNING):
+   When the same window/door/wall corner is visible from two angles
+   (very common: a front-elevation photo AND a corner photo both show
+   the same front-right window), you MUST count it EXACTLY ONCE.
+   Process for every opening:
+     • Group openings by (wall, type, approximate size). If you see a
+       36"×60" window on the front-right of the front-elevation photo,
+       AND a 36"×60" window on the left edge of the front-right corner
+       photo, they are THE SAME WINDOW. Emit ONE entry in `openings[]`,
+       not two.
+     • Outside corner posts at any rectangular-house corner appear in
+       two photos. Count each unique corner ONCE in `outside_corner_lf`.
+     • The front wall visible in both the front-elevation photo and a
+       front-corner photo is the SAME wall. One row in `walls[]`, not two.
+   In `double_count_check`, explicitly list which openings/walls you
+   deduplicated and which photos showed them. Example:
+   "Front wall has 4 windows (36×60) — visible in photo #1 (front
+   elevation) and partially in photo #2 (front-right corner). Counted
+   the rightmost window ONCE not twice. Outside corners: 4 total
+   (front-left, front-right, back-left, back-right) — each visible
+   in two photos but counted once."
+   If you cannot tell whether two photos show the same opening or
+   different openings, BIAS TO DEDUPE (count once) and flag uncertainty
+   in `notes`. Over-counting inflates quotes and erodes contractor trust.
 
 12. PER-WALL CONFIDENCE (required) — emit a `confidence` (0-100) on each
    wall reflecting how well you can actually measure THAT specific wall:
@@ -288,6 +332,43 @@ CRITICAL accuracy rules (read every time):
    geometry. `elevation_confidence` 0-100 mirrors your certainty.
 
 Return ONLY the JSON object. No explanation, no code fences."""
+
+
+def _dedupe_openings(openings: list) -> list:
+    """Iter 57b safety net — collapse near-duplicate openings that Claude
+    occasionally double-counts when the same window appears in two photos
+    (front + corner). Group by (wall, type, width_in rounded to nearest 6
+    in, height_in rounded to nearest 6 in). Within a group, keep the
+    SINGLE highest-count representative — never sum, never duplicate.
+
+    The bin width of 6 inches covers normal photo-perspective error
+    (a 36" window viewed at an angle might be measured as 32" or 38")
+    without merging genuinely different sizes (a 24" bathroom window
+    vs a 36" bedroom window stay separate at bin width 6 in).
+
+    Returns a fresh list — input is not mutated."""
+    if not openings:
+        return openings
+    seen: dict[tuple, dict] = {}
+    for o in openings:
+        try:
+            w = float(o.get("width_in") or 0)
+            h = float(o.get("height_in") or 0)
+        except (TypeError, ValueError):
+            continue
+        if w <= 0 or h <= 0:
+            continue
+        wall = (o.get("wall") or "other").lower()
+        otype = (o.get("type") or "other").lower()
+        # Bin width 6 in — matches the bin used in openings_schedule
+        # roll-up so a contractor can spot-check counts there too.
+        key = (wall, otype, round(w / 6) * 6, round(h / 6) * 6)
+        # First occurrence wins. We DO NOT sum — Claude already returned
+        # one entry per visible window, and our job here is to undo any
+        # cross-photo double-count.
+        if key not in seen:
+            seen[key] = dict(o)
+    return list(seen.values())
 
 
 def _json_from_reply(text: str) -> dict:
@@ -324,7 +405,25 @@ def _aggregate_to_hover_shape(raw: dict) -> dict:
         projecting from the roof slope — added as an extra to siding.
     """
     walls = raw.get("walls") or []
-    openings = raw.get("openings") or []
+    # Iter 57b — dedupe openings as a safety net. Even with the
+    # strengthened double-count prompt rule, Opus occasionally returns
+    # the same window twice when it appears at the edges of two photos.
+    raw_openings = raw.get("openings") or []
+    openings = _dedupe_openings(raw_openings)
+    deduped_count = len(raw_openings) - len(openings)
+    if deduped_count > 0:
+        # Stash the pre-dedupe list back onto raw so the frontend's
+        # raw_ai display matches what the aggregator actually counted,
+        # AND surface the dedup tally in notes so the contractor knows
+        # the safety net fired.
+        raw["openings_raw_before_dedupe"] = list(raw_openings)
+        raw["openings"] = openings
+        prev_notes = raw.get("notes") or ""
+        raw["notes"] = (
+            f"Backend deduped {deduped_count} double-counted opening"
+            f"{'s' if deduped_count > 1 else ''} (same window seen from two angles). "
+            + prev_notes
+        ).strip()
 
     siding_sqft = 0.0
     gable_sqft = 0.0

@@ -144,23 +144,57 @@ def _build_html(
         )
     wall_table_html = "".join(wall_rows) or '<tr><td colspan="7" style="padding:12px;text-align:center;color:#A1A1AA;">No walls measured</td></tr>'
 
-    # --- openings schedule ----------------------------------------------
-    sched_rows = []
+    # --- openings schedule (grouped by elevation, color-coded) --------
+    # Mirrors the on-screen Option B layout: one colored header bar per
+    # elevation with total count, then indented rows showing size + count.
+    ELEV_COLORS = {
+        "front": ("#3B82F6", "#EFF6FF"),
+        "back":  ("#16A34A", "#F0FDF4"),
+        "left":  ("#EA580C", "#FFF7ED"),
+        "right": ("#7C3AED", "#FAF5FF"),
+        "other": ("#52525B", "#FAFAFA"),
+    }
+    ELEV_ORDER = ["front", "back", "left", "right", "other"]
+    groups: dict[str, list[dict]] = {}
     for o in openings_schedule or []:
-        size_label = o.get("size_label")
-        if not size_label:
-            wi = int(float(o.get("width_in") or 0))
-            hi = int(float(o.get("height_in") or 0))
-            size_label = f"{wi}×{hi} in"
-        sched_rows.append(
-            f"<tr>"
-            f'<td style="padding:5px 8px;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:1px;color:#52525B;">{o.get("elevation","—")}</td>'
-            f'<td style="padding:5px 8px;text-transform:capitalize;font-size:11px;">{(o.get("type") or "—").replace("_"," ")}</td>'
-            f'<td style="padding:5px 8px;font-family:Menlo,monospace;font-size:11px;">{size_label}</td>'
-            f'<td style="padding:5px 8px;font-family:Menlo,monospace;text-align:right;font-weight:700;">{int(o.get("count") or 0)}</td>'
-            f"</tr>"
+        elev = (o.get("elevation") or "other").lower()
+        if elev not in ELEV_COLORS:
+            elev = "other"
+        groups.setdefault(elev, []).append(o)
+    grouped_blocks = []
+    for elev in ELEV_ORDER:
+        items = groups.get(elev) or []
+        if not items:
+            continue
+        bg, soft = ELEV_COLORS[elev]
+        total_count = sum(int(o.get("count") or 0) for o in items)
+        rows = []
+        for o in items:
+            size_label = o.get("size_label")
+            if not size_label:
+                wi = int(float(o.get("width_in") or 0))
+                hi = int(float(o.get("height_in") or 0))
+                size_label = f"{wi}×{hi} in"
+            otype = (o.get("type") or "—").replace("_", " ")
+            rows.append(
+                f'<tr>'
+                f'<td style="padding:4px 8px 4px 24px;text-transform:capitalize;color:#52525B;width:45%;">{otype}</td>'
+                f'<td style="padding:4px 8px;font-family:Menlo,monospace;color:#27272A;width:35%;">{size_label}</td>'
+                f'<td style="padding:4px 8px;font-family:Menlo,monospace;font-weight:700;text-align:right;">×{int(o.get("count") or 0)}</td>'
+                f'</tr>'
+            )
+        grouped_blocks.append(
+            f'<div style="margin-bottom:6px;">'
+            f'<div style="background:{soft};border-left:4px solid {bg};padding:4px 8px;display:flex;align-items:center;gap:8px;">'
+            f'<span style="background:{bg};color:#FFF;font-size:9px;font-weight:700;letter-spacing:1px;padding:2px 8px;text-transform:uppercase;">{elev}</span>'
+            f'<span style="font-size:11px;font-weight:700;color:{bg};">{total_count} opening{"s" if total_count != 1 else ""}</span>'
+            f'</div>'
+            f'<table style="width:100%;border-collapse:collapse;font-size:11px;">'
+            f'<tbody>{"".join(rows)}</tbody>'
+            f'</table>'
+            f'</div>'
         )
-    sched_html = "".join(sched_rows) or '<tr><td colspan="4" style="padding:12px;text-align:center;color:#A1A1AA;">No openings detected</td></tr>'
+    sched_html = "".join(grouped_blocks) or '<div style="padding:12px;text-align:center;color:#A1A1AA;font-size:11px;">No openings detected</div>'
 
     # --- photo strip -----------------------------------------------------
     photo_cells = []
@@ -251,15 +285,7 @@ def _build_html(
   </table>
 
   <h2>Openings schedule</h2>
-  <table>
-    <thead><tr>
-      <th>Elevation</th>
-      <th>Type</th>
-      <th>Size</th>
-      <th style="text-align:right;">Count</th>
-    </tr></thead>
-    <tbody>{sched_html}</tbody>
-  </table>
+  <div>{sched_html}</div>
 
   <h2>Photos</h2>
   <div>{photos_html}</div>

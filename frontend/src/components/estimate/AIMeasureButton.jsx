@@ -348,7 +348,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // photoUrls. The transient `files` list lives just long enough to
   // show previews during upload.
   const pickFiles = async (e) => {
-    const arr = Array.from(e.target.files || []).slice(0, 8 - photoUrls.length);
+    const arr = Array.from(e.target.files || []).slice(0, 9 - photoUrls.length);
     if (!arr.length) return;
     setFiles((prev) => [...prev, ...arr]);
     // Parallel uploads.
@@ -380,7 +380,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   const [wizardOpen, setWizardOpen] = useState(false);
   const handleWizardComplete = async ({ photos }) => {
     if (!photos?.length) return;
-    const room = 8 - photoUrls.length;
+    const room = 9 - photoUrls.length;
     if (room <= 0) {
       toast.error("Already at 8 photos — remove some before importing wizard captures");
       return;
@@ -428,8 +428,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       toast.error("Fill in the Address in Job Information first — I need it to find the property");
       return;
     }
-    if (photoUrls.length >= 8) {
-      toast.error("Already at 8 photos — remove one to add the aerial view");
+    if (photoUrls.length >= 9) {
+      toast.error("Already at 9 photos — remove one to add the aerial view");
       return;
     }
     setSatBusy(true);
@@ -756,7 +756,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         className="px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => setOpen(true)}
         data-testid="ai-measure-btn"
-        title={preview ? "Resume AI measure session — add more photos or refine" : "AI photo measure — upload 2-8 phone photos of the house"}
+        title={preview ? "Resume AI measure session — add more photos or refine" : "AI photo measure — upload 2-8 phone photos of the house (+ optional aerial)"}
       >
         <Sparkles className="w-3.5 h-3.5" />
         {preview ? "AI Measure (Resume)" : "AI Measure"}
@@ -779,7 +779,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 <div>
                   <div className="font-heading text-lg">AI Photo Measure</div>
                   <div className="text-xs opacity-90 mt-0.5">
-                    Upload 2-8 phone photos · Claude Opus 4.5
+                    Upload 2-8 phone photos · + free aerial · Claude Opus 4.5
                   </div>
                 </div>
               </div>
@@ -840,7 +840,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   {/* File picker */}
                   <label className="block mb-3">
                     <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
-                      Photos (2-8)
+                      Photos (2-8 + aerial)
                     </div>
                     <div className="border-2 border-dashed border-[#E4E4E7] rounded-sm px-4 py-6 text-center hover:border-[#7C3AED] transition-colors cursor-pointer">
                       <input
@@ -858,7 +858,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         type="button"
                         onClick={() => fileRef.current?.click()}
                         className="text-sm font-bold text-[#7C3AED] uppercase tracking-wider"
-                        disabled={photoUrls.length >= 8}
+                        disabled={photoUrls.length >= 9}
                       >
                         {photoUrls.length > 0 ? "Add more photos" : "Choose / Take Photos"}
                       </button>
@@ -874,7 +874,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         <button
                           type="button"
                           onClick={() => setWizardOpen(true)}
-                          disabled={photoUrls.length >= 8}
+                          disabled={photoUrls.length >= 9}
                           className="px-3 py-1.5 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 disabled:opacity-50"
                           data-testid="ai-measure-wizard-btn"
                           title="HOVER-style step-by-step capture — walks you through 8 elevation positions, auto-tags each photo"
@@ -897,7 +897,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         <button
                           type="button"
                           onClick={fetchSatellite}
-                          disabled={satBusy || photoUrls.length >= 8}
+                          disabled={satBusy || photoUrls.length >= 9}
                           className="px-3 py-1.5 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 disabled:opacity-50"
                           data-testid="ai-measure-satellite-btn"
                           title={address ? "Fetch a free top-down satellite view from Esri World Imagery" : "Fill in the Address field in Job Information first"}
@@ -1351,32 +1351,96 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         Openings schedule — grouped by elevation × size
                       </summary>
                       <div className="text-[11px] text-[#71717A] mt-2 italic">
-                        Counts collapsed by size — easier to spot-check than the full opening list. Verify before ordering.
+                        Each elevation is grouped together with a colored chip and total count so it&apos;s easy to verify against the house. Sizes are listed underneath.
                       </div>
-                      <table className="w-full mt-2 text-xs">
-                        <thead className="text-left text-[#A1A1AA] uppercase tracking-wider text-[10px]">
-                          <tr>
-                            <th>Elevation</th>
-                            <th>Type</th>
-                            <th>Size</th>
-                            <th className="text-right">Count</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {preview.measurements._ai_openings_schedule.map((o, i) => (
-                            <tr key={i} className="border-b border-[#F4F4F5]" data-testid={`ai-measure-opening-row-${i}`}>
-                              <td className="py-1 font-bold text-[#52525B] uppercase tracking-wider text-[10px]">
-                                {o.elevation || "—"}
-                              </td>
-                              <td className="capitalize">{(o.type || "—").replace(/_/g, " ")}</td>
-                              <td className="font-mono-num">
-                                {o.size_label || `${Math.round(Number(o.width_in) || 0)}×${Math.round(Number(o.height_in) || 0)} in`}
-                              </td>
-                              <td className="font-mono-num font-bold text-right">{Number(o.count) || 0}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                      {/* Iter 57c — Option B: rows grouped by elevation
+                          with a colored chip + total opening count per
+                          group. Kills the visual confusion of seeing
+                          "LEFT, LEFT, LEFT" repeated. */}
+                      {(() => {
+                        const ELEVATION_COLORS = {
+                          front:  { bg: "bg-[#3B82F6]", soft: "bg-[#EFF6FF]", text: "text-[#1E40AF]" },
+                          back:   { bg: "bg-[#16A34A]", soft: "bg-[#F0FDF4]", text: "text-[#166534]" },
+                          left:   { bg: "bg-[#EA580C]", soft: "bg-[#FFF7ED]", text: "text-[#9A3412]" },
+                          right:  { bg: "bg-[#7C3AED]", soft: "bg-[#FAF5FF]", text: "text-[#5B21B6]" },
+                          other:  { bg: "bg-[#52525B]", soft: "bg-[#FAFAFA]", text: "text-[#27272A]" },
+                        };
+                        const schedule = preview.measurements._ai_openings_schedule || [];
+                        // Group by elevation in a fixed display order.
+                        const order = ["front", "back", "left", "right", "other"];
+                        const groups = {};
+                        schedule.forEach((o) => {
+                          const elev = (o.elevation || "other").toLowerCase();
+                          const k = order.includes(elev) ? elev : "other";
+                          if (!groups[k]) groups[k] = [];
+                          groups[k].push(o);
+                        });
+                        const orderedGroups = order
+                          .filter((k) => groups[k]?.length)
+                          .map((k) => [k, groups[k]]);
+
+                        return (
+                          <div className="mt-2" data-testid="ai-measure-openings-grouped">
+                            {/* Tiny house diagram so the colors map to spatial position */}
+                            <div className="flex items-center justify-center gap-3 py-2 mb-2 border-y border-[#E4E4E7]" data-testid="ai-measure-elevation-legend">
+                              <svg width="56" height="56" viewBox="0 0 56 56" className="flex-shrink-0">
+                                <rect x="14" y="14" width="28" height="28" fill="#FAFAFA" stroke="#A1A1AA" strokeWidth="1" />
+                                <rect x="14" y="11" width="28" height="3" fill="#3B82F6" />
+                                <rect x="14" y="42" width="28" height="3" fill="#16A34A" />
+                                <rect x="11" y="14" width="3" height="28" fill="#EA580C" />
+                                <rect x="42" y="14" width="3" height="28" fill="#7C3AED" />
+                                <text x="28" y="9" fontSize="6" fill="#3B82F6" textAnchor="middle" fontWeight="700">FRONT</text>
+                                <text x="28" y="52" fontSize="6" fill="#16A34A" textAnchor="middle" fontWeight="700">BACK</text>
+                                <text x="8" y="30" fontSize="5" fill="#EA580C" textAnchor="middle" fontWeight="700" transform="rotate(-90 8 30)">LEFT</text>
+                                <text x="48" y="30" fontSize="5" fill="#7C3AED" textAnchor="middle" fontWeight="700" transform="rotate(90 48 30)">RIGHT</text>
+                              </svg>
+                              <div className="text-[10px] text-[#A1A1AA] uppercase tracking-wider">
+                                Color = which side of the house
+                              </div>
+                            </div>
+                            {orderedGroups.map(([elev, items]) => {
+                              const color = ELEVATION_COLORS[elev] || ELEVATION_COLORS.other;
+                              const totalCount = items.reduce((sum, o) => sum + (Number(o.count) || 0), 0);
+                              return (
+                                <div
+                                  key={elev}
+                                  className="mb-2"
+                                  data-testid={`ai-measure-opening-group-${elev}`}
+                                >
+                                  <div className={`${color.soft} flex items-center gap-2 px-2 py-1.5 border-l-4 ${color.bg.replace("bg-", "border-")}`}>
+                                    <span className={`${color.bg} text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider`}>
+                                      {elev}
+                                    </span>
+                                    <span className={`text-[11px] font-bold ${color.text}`}>
+                                      {totalCount} opening{totalCount !== 1 ? "s" : ""}
+                                    </span>
+                                    <span className="text-[10px] text-[#71717A] ml-2 italic">
+                                      {items.map((o) => `${o.size_label || `${Math.round(Number(o.width_in) || 0)}×${Math.round(Number(o.height_in) || 0)} in`}×${o.count}`).join(" · ")}
+                                    </span>
+                                  </div>
+                                  <table className="w-full text-xs border-b border-[#E4E4E7]">
+                                    <tbody>
+                                      {items.map((o, i) => (
+                                        <tr key={i} className="hover:bg-[#FAFAFA]" data-testid={`ai-measure-opening-row-${elev}-${i}`}>
+                                          <td className="py-1 pl-4 capitalize text-[#52525B]" style={{ width: "40%" }}>
+                                            {(o.type || "—").replace(/_/g, " ")}
+                                          </td>
+                                          <td className="font-mono-num text-[#27272A]" style={{ width: "40%" }}>
+                                            {o.size_label || `${Math.round(Number(o.width_in) || 0)}×${Math.round(Number(o.height_in) || 0)} in`}
+                                          </td>
+                                          <td className="font-mono-num font-bold text-right pr-2">
+                                            ×{Number(o.count) || 0}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </details>
                   )}
 
