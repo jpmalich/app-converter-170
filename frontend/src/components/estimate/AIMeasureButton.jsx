@@ -83,6 +83,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // independently by emptying the field.
   const [brickCourse, setBrickCourse] = useState("");
   const [sidingExposure, setSidingExposure] = useState("");
+  // Iter 57j — Deep Dormer Scan toggle. When ON, the backend runs a
+  // parallel Claude pass per ground-level photo that crops + upscales
+  // the roofline strip to surface small dormers that get lost when
+  // Claude downsizes full-house shots. Default OFF — keeps the fast
+  // path fast for the 90% of jobs without dormers.
+  const [deepDormerScan, setDeepDormerScan] = useState(false);
   // Iter 57h — popover state for the inline "📐 Calibrate window sizing"
   // mini-panel that hangs next to the Run AI Measure button.
   const [calibOpen, setCalibOpen] = useState(false);
@@ -565,16 +571,23 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       const annotatedFiles = [];   // [{ name (original), file }]
       const passThroughUrls = [];  // original photoUrls that have no annot
       const elevations = {};       // { originalName: elevation }
+      // Iter 57j — track per-photo elevation aligned to backend order
+      // (photo_paths first, then files). Empty strings preserve slot
+      // alignment when an elevation is unknown.
+      const passThroughElevs = [];
+      const annotatedElevs = [];
       for (const name of photoUrls) {
         const a = photoAnnotations[name];
         if (annotEmpty(a)) {
           passThroughUrls.push(name);
+          passThroughElevs.push((a && a.elevation) || "");
           continue;
         }
         try {
           const blob = await renderAnnotated(`/api/uploads/${name}`, a);
           const file = new File([blob], `annotated-${name.replace(/\.\w+$/, "")}.jpg`, { type: "image/jpeg" });
           annotatedFiles.push({ name, file });
+          annotatedElevs.push(a.elevation || "");
           if (a.elevation) elevations[name] = a.elevation;
         } catch (e) {
           // Render failed (e.g. CORS) — fall back to the original photo
@@ -582,6 +595,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           // Claude has at least that.
           console.warn("annotate render failed for", name, e);
           passThroughUrls.push(name);
+          passThroughElevs.push((a && a.elevation) || "");
         }
       }
       if (passThroughUrls.length) {
@@ -619,6 +633,18 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       }
       if (sidingExposure && parseFloat(sidingExposure) > 0) {
         fd.append("siding_exposure_in", String(parseFloat(sidingExposure)));
+      }
+      // Iter 57j — Deep Dormer Scan. Backend runs a parallel
+      // crop-and-upscale pass per ground-level photo when enabled.
+      if (deepDormerScan) {
+        fd.append("deep_dormer_scan", "true");
+      }
+      // Elevation tags aligned with the backend photo order
+      // (photo_paths first, then files). Used to skip aerial/detail
+      // shots in the dormer pass and seed wall hints.
+      const elevTagList = [...passThroughElevs, ...annotatedElevs];
+      if (elevTagList.length) {
+        fd.append("elevation_tags", elevTagList.join(","));
       }
       const { data } = await api.post("/measure/ai-measure", fd, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -1691,6 +1717,29 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   <div className="text-[9px] text-[#A1A1AA] mt-2 italic">
                     Backend snaps every window to nearest standard size after Claude runs, regardless.
                   </div>
+                  {/* Iter 57j — Deep Dormer Scan toggle. Catches small
+                      dormers / gable windows / eyebrow vents that get
+                      lost when Claude downsizes full-house photos. */}
+                  <label
+                    className="flex items-start gap-2 mt-3 pt-3 border-t border-[#E4E4E7] cursor-pointer"
+                    data-testid="ai-measure-deep-dormer-row"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={deepDormerScan}
+                      onChange={(e) => setDeepDormerScan(e.target.checked)}
+                      className="mt-0.5 accent-[#7C3AED]"
+                      data-testid="ai-measure-deep-dormer-toggle"
+                    />
+                    <div className="flex-1">
+                      <div className="text-[10px] uppercase tracking-wider text-[#09090B] font-bold leading-tight">
+                        🔍 Deep dormer scan
+                      </div>
+                      <div className="text-[9px] text-[#A1A1AA] mt-0.5">
+                        Runs an extra Claude pass on the cropped roofline of each ground photo. Catches small dormers / eyebrow vents. Adds ~5–10 s.
+                      </div>
+                    </div>
+                  </label>
                 </div>
               )}
               <div className="text-[10px] text-[#A1A1AA] flex items-center gap-3">
@@ -1699,13 +1748,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   type="button"
                   onClick={() => setCalibOpen((v) => !v)}
                   className={`text-[10px] uppercase tracking-wider font-bold flex items-center gap-1 ${
-                    (brickCourse || sidingExposure) ? "text-[#7C3AED]" : "text-[#A1A1AA] hover:text-[#7C3AED]"
+                    (brickCourse || sidingExposure || deepDormerScan) ? "text-[#7C3AED]" : "text-[#A1A1AA] hover:text-[#7C3AED]"
                   }`}
                   data-testid="ai-measure-course-sizing-toggle"
-                  title="Tell Claude the brick course or siding row height for sharper window measurements (optional)"
+                  title="Tell Claude the brick course or siding row height, or enable Deep Dormer Scan (optional)"
                 >
                   <Ruler className="w-3 h-3" />
-                  {(brickCourse || sidingExposure) ? "Calibration on" : "Calibrate window sizing"}
+                  {(brickCourse || sidingExposure || deepDormerScan) ? "Calibration on" : "Calibrate window sizing"}
                 </button>
               </div>
               <div className="flex gap-2">

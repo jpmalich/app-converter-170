@@ -1122,6 +1122,19 @@ async def ai_measure(
     # eyeballing pixel ratios). Defaults are residential standards.
     brick_course_in: Optional[float] = Form(None),       # e.g. 8.0 for standard 3-bricks-per-8"
     siding_exposure_in: Optional[float] = Form(None),    # e.g. 5.0 for D5 lap, 6.0 for D6, 7.0 for Cedar Impressions
+    # Iter 57j — Deep Dormer Scan. When True, after the main multi-photo
+    # Claude pass we ALSO fan out a parallel pass per ground-level photo
+    # that crops the top 38% of the image, 2× upscales it, and asks
+    # Claude to look ONLY for dormers / gable windows / eyebrow vents.
+    # Catches small dormers that get lost when Claude downsizes
+    # full-house photos to 1568 px. Default OFF (~5–10 s slower).
+    deep_dormer_scan: bool = Form(False),
+    # Comma-aligned list of per-photo elevation tags ("front,back,left,
+    # right,aerial,detail,...") matching the order of `photo_paths` then
+    # `files`. Used to skip aerial/detail shots in the dormer pass and
+    # to seed `wall_hint` so the dormer pass can tag found dormers on
+    # the right wall without guessing.
+    elevation_tags: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
 ):
     """Run an AI photo-measure pass on 2-8 uploaded photos.
@@ -1262,6 +1275,41 @@ async def ai_measure(
         raise HTTPException(status_code=502, detail=f"AI measure call failed: {e}") from e
 
     raw = _json_from_reply(reply_text or "")
+
+    # Iter 57j — Deep Dormer Scan. Fan out a parallel Claude call per
+    # ground-level photo that crops the roofline strip + upscales it
+    # so small dormers / gable windows aren't lost in Claude's standard
+    # 1568 px downsize. Skip aerial / detail / blueprint shots since
+    # they don't have a roofline.
+    if deep_dormer_scan:
+        # Parse the elevation_tags string into a list aligned with the
+        # image_payloads order. Empty/missing tags become "" (treated
+        # as ground-level — we'd rather scan a photo we're unsure about
+        # than skip it).
+        elev_list = [
+            (t or "").strip().lower()
+            for t in (elevation_tags or "").split(",")
+        ]
+        while len(elev_list) < len(image_payloads):
+            elev_list.append("")
+        dormer_coros = []
+        for idx, ((_ctype, raw_bytes), elev) in enumerate(zip(image_payloads, elev_list)):
+            if _is_skyline_photo(elev):
+                continue
+            dormer_coros.append(
+                _run_dormer_pass_for_photo(api_key, user_id, raw_bytes, elev, idx)
+            )
+        if dormer_coros:
+            try:
+                results = await asyncio.gather(*dormer_coros, return_exceptions=True)
+            except Exception:
+                results = []
+            all_hits: list[dict] = []
+            for r in results:
+                if isinstance(r, list):
+                    all_hits.extend(r)
+            _merge_dormer_hits(raw, all_hits)
+
     measurements = _aggregate_to_hover_shape(raw)
     measurements["overhang_in"] = float(overhang_in)
 
