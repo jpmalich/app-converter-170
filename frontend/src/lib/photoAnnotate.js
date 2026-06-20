@@ -54,7 +54,7 @@ function loadImage(url) {
  * downscaled to keep payload size under control.
  *
  * @param {string} photoUrl
- * @param {{ elevation?: string, reference?: { p1, p2, inches } | null, zones?: Array }} annot
+ * @param {{ elevation?: string, reference?: { p1, p2, inches } | null, windowReference?: { p1, p2, inches } | null, zones?: Array }} annot
  * @returns {Promise<Blob>}
  */
 export async function renderAnnotated(photoUrl, annot) {
@@ -103,17 +103,20 @@ export async function renderAnnotated(photoUrl, annot) {
     ctx.fillText(label, cx, cy);
   }
 
-  // Reference scale line — red with endpoints + label.
-  if (annot?.reference) {
-    const { p1, p2, inches } = annot.reference;
-    ctx.strokeStyle = "#DC2626";
+  // Reference scale line — red WALL anchor + blue WINDOW anchor.
+  // Both share the same draw routine; the wall ref is the legacy
+  // `reference` field, the window ref is `windowReference` (Iter 57k).
+  const drawScaleLine = (ref, color, label) => {
+    if (!ref) return;
+    const { p1, p2, inches } = ref;
+    ctx.strokeStyle = color;
     ctx.lineWidth = Math.max(5, naturalW / 400);
     ctx.beginPath();
     ctx.moveTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
     ctx.stroke();
     const r = Math.max(7, naturalW / 250);
-    ctx.fillStyle = "#DC2626";
+    ctx.fillStyle = color;
     for (const p of [p1, p2]) {
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
@@ -123,16 +126,18 @@ export async function renderAnnotated(photoUrl, annot) {
     const my = (p1.y + p2.y) / 2;
     const fontPx = Math.max(22, naturalW / 55);
     ctx.font = `bold ${fontPx}px sans-serif`;
-    const label = `REF = ${inches}"`;
-    const tw = ctx.measureText(label).width;
+    const text = `${label} = ${inches}"`;
+    const tw = ctx.measureText(text).width;
     const pad = fontPx * 0.4;
-    ctx.fillStyle = "#DC2626";
+    ctx.fillStyle = color;
     ctx.fillRect(mx - tw / 2 - pad, my - fontPx / 2 - pad, tw + pad * 2, fontPx + pad * 2);
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(label, mx, my);
-  }
+    ctx.fillText(text, mx, my);
+  };
+  drawScaleLine(annot?.reference, "#DC2626", "WALL REF");
+  drawScaleLine(annot?.windowReference, "#2563EB", "WIN REF");
 
   // Target house pin — green rectangle around the target structure +
   // "TARGET HOUSE" label. For aerial photos this OVERRIDES the auto-
@@ -277,7 +282,10 @@ export function describeAnnotations(entries) {
       parts.push(`${e.elevation.toUpperCase()} ELEVATION`);
     }
     if (e.reference) {
-      parts.push(`Red line marked "REF = ${e.reference.inches}\"" is a known ${e.reference.inches}-inch span — anchor scale to this`);
+      parts.push(`Red line marked "WALL REF = ${e.reference.inches}\"" is a known ${e.reference.inches}-inch span — anchor the WALL/elevation scale to this`);
+    }
+    if (e.windowReference) {
+      parts.push(`Blue line marked "WIN REF = ${e.windowReference.inches}\"" is a known ${e.windowReference.inches}-inch span across a window edge — use this as a TIGHTER per-window scale for ALL window sizing on this photo (the wall ref handles whole-wall geometry, this one handles openings). Window measurements should be within ±5% of this anchor.`);
     }
     if (e.targetPin) {
       parts.push(`Green rectangle labeled "TARGET HOUSE" outlines the contractor-confirmed target structure — measure ONLY what's inside the green box, ignore any other buildings even if they're a few feet away (overrides any red auto-crosshair)`);

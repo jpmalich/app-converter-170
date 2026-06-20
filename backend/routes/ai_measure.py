@@ -138,7 +138,8 @@ CRITICAL accuracy rules (read every time):
    you'd otherwise infer from pixels:
 
    • PURPLE "ELEVATION" badge top-left → photo is that exact wall
-   • RED line + "REF = N in" → known scale; anchor your measurements to it
+   • RED line + "WALL REF = N in" → known scale for whole-wall geometry; anchor wall measurements to it
+   • BLUE line + "WIN REF = N in" → known scale specifically across a window edge (Iter 57k); use it as a TIGHTER per-window calibration for ALL window measurements on that photo. Whole-wall measurements still anchor to the wall ref; openings (windows, doors) should be sized using the blue WIN REF when it's present (±5% accuracy instead of ±15%).
    • GREEN "TARGET HOUSE" rectangle → measure only what's inside it (aerial)
    • RED hatched zone marked "NO SIDING" → exclude that area from siding %
    • YELLOW circle pin + brown badge with a style abbreviation
@@ -180,11 +181,21 @@ CRITICAL accuracy rules (read every time):
      roof edges) and `rakes_lf` (total sloped gable-edge legs). DO NOT
      use it for wall heights, story count, openings, or siding %.
      Those must come from the ground-level elevation photos.
-   • Red line with red endpoints + red label like 'REF = 80"' — this is
-     a contractor-confirmed scale anchor. The red line spans a real-world
+   • Red line with red endpoints + red label like 'WALL REF = 80"' — this is
+     a contractor-confirmed WALL scale anchor. The red line spans a real-world
      distance of exactly that many inches in the photo. Use it to lock
-     scale for that ENTIRE photo with high confidence. Set
+     scale for whole-wall geometry (widths, heights, eave-to-ground) on
+     that ENTIRE photo with high confidence. Set
      scale_confidence to "high" and reference_used to "contractor red-line ref".
+   • Blue line with blue endpoints + blue label like 'WIN REF = 36"' — this
+     is a contractor-confirmed WINDOW scale anchor (Iter 57k). The blue
+     line spans a real-world window edge of exactly that many inches.
+     When present, use it as the AUTHORITATIVE scale for ALL window/door
+     measurements on that photo (width_in, height_in of every opening).
+     Window sizes anchored to the blue WIN REF should land within ±5% of
+     real values — far tighter than estimating from the red wall ref.
+     The wall ref still governs the rest of the geometry; the two refs
+     are complementary, not exclusive.
    • Colored hatched zones with a black label like "NO SIDING · Brick"
      or "NO SIDING · Stone" or "NO SIDING · Garage door" — these areas
      are NOT clad in siding. They must be EXCLUDED from

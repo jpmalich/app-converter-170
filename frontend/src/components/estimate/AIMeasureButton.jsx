@@ -31,7 +31,7 @@ const ELEVATION_OPTIONS = [
   { key: "detail",      label: "Detail" },
 ];
 const annotEmpty = (a) =>
-  !a || (!a.reference && (!a.zones || a.zones.length === 0) && (!a.elevation || a.elevation === "") && !a.targetPin);
+  !a || (!a.reference && !a.windowReference && (!a.zones || a.zones.length === 0) && (!a.elevation || a.elevation === "") && !a.targetPin);
 
 const KEY_LABELS = {
   siding_sqft: "Siding",
@@ -1047,6 +1047,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           {photoUrls.map((name, i) => {
                             const annot = photoAnnotations[name] || {};
                             const hasRef = !!annot.reference;
+                            const hasWinRef = !!annot.windowReference;
                             const zoneCount = (annot.zones || []).length;
                             const elev = annot.elevation || "";
                             return (
@@ -1073,7 +1074,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                     )}
                                     {hasRef && (
                                       <span className="bg-[#DC2626] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold">
-                                        Scale ✓
+                                        Wall ✓
+                                      </span>
+                                    )}
+                                    {hasWinRef && (
+                                      <span className="bg-[#2563EB] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold" data-testid={`ai-measure-photo-winref-badge-${i}`}>
+                                        Win ✓
                                       </span>
                                     )}
                                     {annot.targetPin && (
@@ -1899,6 +1905,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         reference={
           annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.reference || null) : null
         }
+        windowReference={
+          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.windowReference || null) : null
+        }
         zones={
           annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.zones || []) : []
         }
@@ -1908,13 +1917,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         windows={
           annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.windows || []) : []
         }
-        onSave={({ reference, zones, targetPin, windows }) => {
+        onSave={({ reference, windowReference, zones, targetPin, windows }) => {
           if (!annotateOpenFor) return;
           setPhotoAnnotations((prev) => ({
             ...prev,
             [annotateOpenFor]: {
               ...(prev[annotateOpenFor] || {}),
               reference,
+              windowReference,
               zones,
               targetPin,
               windows,
