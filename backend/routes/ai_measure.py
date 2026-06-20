@@ -28,9 +28,11 @@ import asyncio
 import base64
 import io
 import json
+import logging
 import os
 import re
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 from emergentintegrations.llm.chat import (
@@ -42,7 +44,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from PIL import Image
 
 from deps import get_current_user
+from db import db
 from routes.hover import _build_lines  # reuse the same measurement→line mapper
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/measure", tags=["measure"])
 
@@ -1170,7 +1175,13 @@ async def ai_measure(
     elevation_tags: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
 ):
-    """Run an AI photo-measure pass on 2-8 uploaded photos.
+    """Kick off an async AI photo-measure run. Iter 57q: the old
+    synchronous flow was hitting Kubernetes ingress timeouts (~100 s)
+    on 8-photo houses with Deep Dormer Scan enabled. Now this route
+    just validates inputs + spawns a background worker, returning
+    `{run_id, status: "running"}` in under a second. The frontend
+    polls `/api/measure/ai-measure/status/{run_id}` until the worker
+    writes the final result to the `ai_measure_runs` collection.
 
     `overhang_in` (inches) flows into the soffit piece-count formula so
     the imported qty matches the estimate's current Overhang setting.
@@ -1215,161 +1226,260 @@ async def ai_measure(
         raise HTTPException(
             status_code=400, detail=f"Maximum {MAX_FILES} photos per request",
         )
-
-    image_contents = []
-    for ctype, raw in image_payloads:
+    for _ctype, raw in image_payloads:
         if len(raw) > MAX_BYTES_PER_FILE:
             raise HTTPException(
                 status_code=413,
                 detail="Photo exceeds 12 MB limit",
             )
-        image_contents.append(ImageContent(image_base64=base64.b64encode(raw).decode("ascii")))
 
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
 
     user_id = user.get("id") or "anon"
-    session_id = f"ai-measure-{user_id}-{uuid.uuid4().hex[:8]}"
+    run_id = uuid.uuid4().hex
+    now = datetime.now(timezone.utc)
+    # Persist a "running" run doc so the status endpoint can return
+    # progress even before the worker writes its first stage update.
+    # Image bytes stay in memory in the worker's closure — too large
+    # to write into MongoDB (8 photos × 8 MB = 64 MB per run).
+    await db.ai_measure_runs.insert_one({
+        "run_id": run_id,
+        "user_id": user_id,
+        "status": "running",
+        "stage": "starting",
+        "photo_count": len(image_payloads),
+        "deep_dormer_scan": deep_dormer_scan,
+        "kind": kind,
+        "address": address,
+        "created_at": now,
+        "updated_at": now,
+        "completed_at": None,
+        "result": None,
+        "error": None,
+    })
 
-    chat = LlmChat(
+    # Spawn the worker as a true detached task — outlives the request.
+    asyncio.create_task(_execute_ai_measure_worker(
+        run_id=run_id,
+        image_payloads=image_payloads,
         api_key=api_key,
-        session_id=session_id,
-        system_message=SYSTEM_PROMPT,
-    ).with_model("anthropic", MODEL_NAME)
+        user_id=user_id,
+        address=address,
+        reference_dim=reference_dim,
+        kind=kind,
+        overhang_in=overhang_in,
+        brick_course_in=brick_course_in,
+        siding_exposure_in=siding_exposure_in,
+        deep_dormer_scan=deep_dormer_scan,
+        elevation_tags=elevation_tags,
+    ))
 
-    prompt_parts = []
-    # Iter 54: the previous prompt leaked the workspace key ("iss") to
-    # Claude as `Workspace: iss estimate.` which made Opus return
-    # comically tiny wall dimensions on ISS jobs (Charter Oak came out
-    # 0.2 SQ on a 25 SQ house). The measurements should be identical
-    # regardless of which workspace the contractor is in — they always
-    # describe the same physical house. So we no longer mention the
-    # workspace; the same Python aggregator drives every flow.
-    if address:
-        prompt_parts.append(f"Property address: {address}")
-    if reference_dim:
-        prompt_parts.append(
-            f"Reference dimension provided by contractor: {reference_dim}. "
-            "Anchor all scale to this."
-        )
-    # Iter 57g — surface course-counting context to Claude so it can size
-    # windows by counting visible brick courses or siding rows. The
-    # backend ALSO snaps any window dimension to nearest standard size
-    # after Claude returns (±2.5 in tolerance), so a 37×61 guess becomes
-    # a clean 36×60. Together these are the biggest single windowsize
-    # accuracy lever we ship.
-    course_hints = []
-    if brick_course_in and brick_course_in > 0:
-        course_hints.append(
-            f"BRICK COURSE = {brick_course_in:.2f} inches (one brick + mortar = this height). "
-            f"If brick is visible anywhere in a photo, COUNT THE COURSES "
-            f"between the sill and head of each window to size it: "
-            f"{brick_course_in:.2f} in × course count = window height. "
-            f"This is far more accurate than estimating pixel ratios."
-        )
-    if siding_exposure_in and siding_exposure_in > 0:
-        course_hints.append(
-            f"SIDING EXPOSURE = {siding_exposure_in:.2f} inches (one visible "
-            f"siding row = this height). On siding-clad walls, count visible "
-            f"siding rows between the sill and head: {siding_exposure_in:.2f} in × "
-            f"row count = window height."
-        )
-    if course_hints:
-        prompt_parts.append("\n".join(course_hints))
-    prompt_parts.append(
-        "STANDARD-SIZE RESIDENTIAL WINDOWS — most windows are one of "
-        "these widths: 18, 20, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48, "
-        "54, 60, 66, 72 in. Heights: 24, 30, 36, 38, 40, 42, 44, 46, 48, "
-        "50, 52, 54, 60, 62, 66, 72 in. If your initial pixel measurement "
-        "is within 2-3 inches of a standard, EMIT THE STANDARD (the "
-        "backend will snap exact matches anyway, but rounding yourself "
-        "first reduces noise). Doors: entry 36×80 (or 32×80, 30×80); "
-        "patio 60×80 / 72×80; garage 96×84 (single), 192×84 (double)."
-    )
-    prompt_parts.append(
-        "SYMMETRY / REPETITION — if you see 3+ windows on the same wall "
-        "that look identical (same operation style, similar W and H), "
-        "they ARE identical (houses don't have 4 windows in a row of "
-        "different sizes — that's a builder error). Emit them ALL with "
-        "the SAME width_in and height_in. The backend also enforces this "
-        "but you doing it cleanly produces fewer dedupe artefacts."
-    )
-    prompt_parts.append(
-        "Photos attached below. Return the JSON measurement object now."
-    )
-    user_text = "\n".join(prompt_parts)
+    return {
+        "run_id": run_id,
+        "status": "running",
+        "stage": "starting",
+        "photo_count": len(image_payloads),
+        "deep_dormer_scan": deep_dormer_scan,
+    }
 
+
+@router.get("/ai-measure/status/{run_id}")
+async def ai_measure_status(
+    run_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Poll the status of an async AI measure run.
+
+    Returns:
+        {
+          status: "running" | "done" | "error",
+          stage: "starting"|"claude"|"dormer_scan"|"aggregating"|"mapping",
+          result: {...measurements/raw_ai/lines/vero_openings...} | None,
+          error: str | None,
+          elapsed_ms: int,
+        }
+    """
+    doc = await db.ai_measure_runs.find_one({"run_id": run_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if doc.get("user_id") not in (user.get("id"), "anon"):
+        raise HTTPException(status_code=403, detail="Not your run")
+    created = doc.get("created_at")
+    completed = doc.get("completed_at") or doc.get("updated_at")
+    elapsed_ms = None
+    if isinstance(created, datetime):
+        ref = completed if isinstance(completed, datetime) else datetime.now(timezone.utc)
+        elapsed_ms = int((ref - created).total_seconds() * 1000)
+    return {
+        "run_id": run_id,
+        "status": doc.get("status"),
+        "stage": doc.get("stage"),
+        "result": doc.get("result"),
+        "error": doc.get("error"),
+        "elapsed_ms": elapsed_ms,
+    }
+
+
+async def _execute_ai_measure_worker(
+    *,
+    run_id: str,
+    image_payloads: list[tuple[str, bytes]],
+    api_key: str,
+    user_id: str,
+    address: Optional[str],
+    reference_dim: Optional[str],
+    kind: str,
+    overhang_in: float,
+    brick_course_in: Optional[float],
+    siding_exposure_in: Optional[float],
+    deep_dormer_scan: bool,
+    elevation_tags: Optional[str],
+):
+    """Background worker — runs the Claude call(s), aggregates, maps to
+    catalog lines, and writes the final result back to the run doc.
+    Errors get written as `status: "error"` with a friendly message
+    so the frontend's polling loop can surface them."""
+    async def _set_stage(stage: str):
+        await db.ai_measure_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {"stage": stage, "updated_at": datetime.now(timezone.utc)}},
+        )
     try:
+        await _set_stage("claude")
+        image_contents = [
+            ImageContent(image_base64=base64.b64encode(raw).decode("ascii"))
+            for _ct, raw in image_payloads
+        ]
+        session_id = f"ai-measure-{user_id}-{uuid.uuid4().hex[:8]}"
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=session_id,
+            system_message=SYSTEM_PROMPT,
+        ).with_model("anthropic", MODEL_NAME)
+
+        prompt_parts = []
+        if address:
+            prompt_parts.append(f"Property address: {address}")
+        if reference_dim:
+            prompt_parts.append(
+                f"Reference dimension provided by contractor: {reference_dim}. "
+                "Anchor all scale to this."
+            )
+        course_hints = []
+        if brick_course_in and brick_course_in > 0:
+            course_hints.append(
+                f"BRICK COURSE = {brick_course_in:.2f} inches (one brick + mortar = this height). "
+                f"If brick is visible anywhere in a photo, COUNT THE COURSES "
+                f"between the sill and head of each window to size it: "
+                f"{brick_course_in:.2f} in × course count = window height. "
+                f"This is far more accurate than estimating pixel ratios."
+            )
+        if siding_exposure_in and siding_exposure_in > 0:
+            course_hints.append(
+                f"SIDING EXPOSURE = {siding_exposure_in:.2f} inches (one visible "
+                f"siding row = this height). On siding-clad walls, count visible "
+                f"siding rows between the sill and head: {siding_exposure_in:.2f} in × "
+                f"row count = window height."
+            )
+        if course_hints:
+            prompt_parts.append("\n".join(course_hints))
+        prompt_parts.append(
+            "STANDARD-SIZE RESIDENTIAL WINDOWS — most windows are one of "
+            "these widths: 18, 20, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48, "
+            "54, 60, 66, 72 in. Heights: 24, 30, 36, 38, 40, 42, 44, 46, 48, "
+            "50, 52, 54, 60, 62, 66, 72 in. If your initial pixel measurement "
+            "is within 2-3 inches of a standard, EMIT THE STANDARD (the "
+            "backend will snap exact matches anyway, but rounding yourself "
+            "first reduces noise). Doors: entry 36×80 (or 32×80, 30×80); "
+            "patio 60×80 / 72×80; garage 96×84 (single), 192×84 (double)."
+        )
+        prompt_parts.append(
+            "SYMMETRY / REPETITION — if you see 3+ windows on the same wall "
+            "that look identical (same operation style, similar W and H), "
+            "they ARE identical (houses don't have 4 windows in a row of "
+            "different sizes — that's a builder error). Emit them ALL with "
+            "the SAME width_in and height_in. The backend also enforces this "
+            "but you doing it cleanly produces fewer dedupe artefacts."
+        )
+        prompt_parts.append(
+            "Photos attached below. Return the JSON measurement object now."
+        )
+        user_text = "\n".join(prompt_parts)
+
         reply_text = await chat.send_message(
             UserMessage(text=user_text, file_contents=image_contents),
         )
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"AI measure call failed: {e}") from e
+        raw = _json_from_reply(reply_text or "")
 
-    raw = _json_from_reply(reply_text or "")
-
-    # Iter 57j — Deep Dormer Scan. Fan out a parallel Claude call per
-    # ground-level photo that crops the roofline strip + upscales it
-    # so small dormers / gable windows aren't lost in Claude's standard
-    # 1568 px downsize. Skip aerial / detail / blueprint shots since
-    # they don't have a roofline.
-    if deep_dormer_scan:
-        # Parse the elevation_tags string into a list aligned with the
-        # image_payloads order. Empty/missing tags become "" (treated
-        # as ground-level — we'd rather scan a photo we're unsure about
-        # than skip it).
-        elev_list = [
-            (t or "").strip().lower()
-            for t in (elevation_tags or "").split(",")
-        ]
-        while len(elev_list) < len(image_payloads):
-            elev_list.append("")
-        dormer_coros = []
-        for idx, ((_ctype, raw_bytes), elev) in enumerate(zip(image_payloads, elev_list)):
-            if _is_skyline_photo(elev):
-                continue
-            dormer_coros.append(
-                _run_dormer_pass_for_photo(api_key, user_id, raw_bytes, elev, idx)
-            )
-        if dormer_coros:
-            try:
+        if deep_dormer_scan:
+            await _set_stage("dormer_scan")
+            elev_list = [
+                (t or "").strip().lower()
+                for t in (elevation_tags or "").split(",")
+            ]
+            while len(elev_list) < len(image_payloads):
+                elev_list.append("")
+            dormer_coros = []
+            for idx, ((_ctype, raw_bytes), elev) in enumerate(zip(image_payloads, elev_list)):
+                if _is_skyline_photo(elev):
+                    continue
+                dormer_coros.append(
+                    _run_dormer_pass_for_photo(api_key, user_id, raw_bytes, elev, idx)
+                )
+            if dormer_coros:
                 results = await asyncio.gather(*dormer_coros, return_exceptions=True)
-            except Exception:
-                results = []
-            all_hits: list[dict] = []
-            for r in results:
-                if isinstance(r, list):
-                    all_hits.extend(r)
-            _merge_dormer_hits(raw, all_hits)
+                all_hits: list[dict] = []
+                for r in results:
+                    if isinstance(r, list):
+                        all_hits.extend(r)
+                _merge_dormer_hits(raw, all_hits)
 
-    measurements = _aggregate_to_hover_shape(raw)
-    measurements["overhang_in"] = float(overhang_in)
+        await _set_stage("aggregating")
+        measurements = _aggregate_to_hover_shape(raw)
+        measurements["overhang_in"] = float(overhang_in)
 
-    # Re-use the HOVER importer's measurement → catalog-line mapper so the
-    # siding/windows estimator can merge AI results identically to a real
-    # HOVER PDF.
-    try:
-        lines = _build_lines(measurements)
-    except Exception:
-        lines = []
+        await _set_stage("mapping")
+        try:
+            lines = _build_lines(measurements)
+        except Exception:
+            lines = []
 
-    return {
-        "measurements": measurements,
-        "lines": lines,
-        # Iter 57d — AI photo measure now populates vero_openings using
-        # the per-window `style` field. Each AI-detected window becomes
-        # 1+ Vero rows (Twin DH → 2 rows of Vero Double Hung, etc.).
-        # On Apply, the Windows workspace gets pre-seeded with the
-        # right product types instead of being empty.
-        "vero_openings": _build_vero_openings_from_ai(
-            raw.get("openings") or [],
-            raw.get("openings_schedule") or [],
-        ),
-        "raw_ai": raw,
-        "model": MODEL_NAME,
-        "session_id": session_id,
-    }
+        result = {
+            "measurements": measurements,
+            "lines": lines,
+            "vero_openings": _build_vero_openings_from_ai(
+                raw.get("openings") or [],
+                raw.get("openings_schedule") or [],
+            ),
+            "raw_ai": raw,
+            "model": MODEL_NAME,
+            "session_id": session_id,
+        }
+        await db.ai_measure_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {
+                "status": "done",
+                "stage": "done",
+                "result": result,
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+    except Exception as e:
+        # Log & surface a friendly error to the polling client.
+        logger.exception("[ai-measure] worker failed for run_id=%s", run_id)
+        await db.ai_measure_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {
+                "status": "error",
+                "stage": "error",
+                "error": f"AI measure failed: {e}",
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
 
 
 @router.post("/map")

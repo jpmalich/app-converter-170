@@ -93,6 +93,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // mini-panel that hangs next to the Run AI Measure button.
   const [calibOpen, setCalibOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Iter 57q — when AI Measure is running, show the worker's current
+  // stage ("claude" → "dormer_scan" → "aggregating" → "mapping") in the
+  // Run button so the contractor knows progress is happening. Empty
+  // string when idle.
+  const [busyStage, setBusyStage] = useState("");
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null); // {measurements, raw_ai}
   const [refineOpen, setRefineOpen] = useState(false);
@@ -646,10 +651,50 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (elevTagList.length) {
         fd.append("elevation_tags", elevTagList.join(","));
       }
-      const { data } = await api.post("/measure/ai-measure", fd, {
+      // Iter 57q — async launcher + polling. The backend used to do
+      // all the Claude work synchronously in a single 60–120 s
+      // request which hit the Kubernetes ingress timeout on 8-photo
+      // houses. Now we POST → get `run_id` in <300 ms → poll
+      // `/measure/ai-measure/status/{run_id}` every 3 s until status
+      // is "done" or "error". Timeouts are no longer possible.
+      const launch = await api.post("/measure/ai-measure", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 120000,
+        timeout: 60000,   // 60 s is generous for just uploading the photos
       });
+      const runId = launch?.data?.run_id;
+      if (!runId) {
+        throw new Error("Backend didn't return a run_id");
+      }
+      setBusyStage(launch?.data?.stage || "starting");
+      // Poll until done. Max ~5 min (100 polls × 3 s); each poll is a
+      // tiny GET so a misbehaving Claude doesn't hang the UI either.
+      let result = null;
+      for (let i = 0; i < 100; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        let statusResp;
+        try {
+          statusResp = await api.get(`/measure/ai-measure/status/${runId}`);
+        } catch (e) {
+          // Transient network blip — just retry on the next tick.
+          if (i >= 5) console.warn("ai-measure status poll failed", e?.message);
+          continue;
+        }
+        const s = statusResp?.data || {};
+        if (s.stage && s.stage !== busyStage) {
+          setBusyStage(s.stage);
+        }
+        if (s.status === "error") {
+          throw new Error(s.error || "AI measure failed");
+        }
+        if (s.status === "done") {
+          result = s.result;
+          break;
+        }
+      }
+      if (!result) {
+        throw new Error("AI measure timed out after 5 minutes — please try again with fewer photos or turn off Deep Dormer Scan");
+      }
+      const data = result;
       // Iter 57: trust the walls. Claude occasionally returns
       // siding_pct_this_wall in a way the aggregator can't recover
       // (e.g. 0.5 meaning 50% but post-clamp becomes 0.5%, deflating
@@ -728,6 +773,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       toast.error(e?.response?.data?.detail || e.message || "AI measure failed");
     } finally {
       setBusy(false);
+      setBusyStage("");
     }
   };
 
@@ -1988,7 +2034,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     data-testid="ai-measure-run-btn"
                   >
                     {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    {busy ? "Analyzing…" : files.length > 0 ? "Uploading…" : "Run AI Measure"}
+                    {busy
+                      ? (busyStage === "claude" ? "Claude vision…"
+                        : busyStage === "dormer_scan" ? "Deep dormer scan…"
+                        : busyStage === "aggregating" ? "Aggregating walls…"
+                        : busyStage === "mapping" ? "Mapping to catalog…"
+                        : busyStage === "starting" ? "Starting…"
+                        : "Analyzing…")
+                      : files.length > 0 ? "Uploading…" : "Run AI Measure"}
                   </button>
                 ) : (
                   <>
