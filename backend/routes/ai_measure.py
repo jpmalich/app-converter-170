@@ -1173,6 +1173,12 @@ async def ai_measure(
     # to seed `wall_hint` so the dormer pass can tag found dormers on
     # the right wall without guessing.
     elevation_tags: Optional[str] = Form(None),
+    # Iter 57r — Resume support. When the caller is running this from
+    # inside an estimate, pass `estimate_id` so we can persist the run
+    # against it. Then `GET /ai-measure/latest-for-estimate/{eid}` can
+    # return the most recent in-flight or done run, letting the
+    # frontend "Resume" after a page reload / screen lock.
+    estimate_id: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
 ):
     """Kick off an async AI photo-measure run. Iter 57q: the old
@@ -1247,9 +1253,13 @@ async def ai_measure(
     await db.ai_measure_runs.insert_one({
         "run_id": run_id,
         "user_id": user_id,
+        "estimate_id": estimate_id,
         "status": "running",
         "stage": "starting",
         "photo_count": len(image_payloads),
+        # Iter 57r — keep the original `photo_paths` string so resume can
+        # restore the contractor's photo grid without re-uploading.
+        "photo_paths": photo_paths,
         "deep_dormer_scan": deep_dormer_scan,
         "kind": kind,
         "address": address,
@@ -1285,6 +1295,17 @@ async def ai_measure(
     }
 
 
+def _as_aware_utc(dt):
+    """Coerce a datetime to a timezone-aware UTC datetime. MongoDB may
+    return naive datetimes depending on the driver/codec settings, which
+    breaks arithmetic against `datetime.now(timezone.utc)`."""
+    if not isinstance(dt, datetime):
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 @router.get("/ai-measure/status/{run_id}")
 async def ai_measure_status(
     run_id: str,
@@ -1306,11 +1327,11 @@ async def ai_measure_status(
         raise HTTPException(status_code=404, detail="Run not found")
     if doc.get("user_id") not in (user.get("id"), "anon"):
         raise HTTPException(status_code=403, detail="Not your run")
-    created = doc.get("created_at")
-    completed = doc.get("completed_at") or doc.get("updated_at")
+    created = _as_aware_utc(doc.get("created_at"))
+    completed = _as_aware_utc(doc.get("completed_at") or doc.get("updated_at"))
     elapsed_ms = None
-    if isinstance(created, datetime):
-        ref = completed if isinstance(completed, datetime) else datetime.now(timezone.utc)
+    if created is not None:
+        ref = completed if completed is not None else datetime.now(timezone.utc)
         elapsed_ms = int((ref - created).total_seconds() * 1000)
     return {
         "run_id": run_id,
@@ -1319,6 +1340,48 @@ async def ai_measure_status(
         "result": doc.get("result"),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
+    }
+
+
+@router.get("/ai-measure/latest-for-estimate/{estimate_id}")
+async def ai_measure_latest_for_estimate(
+    estimate_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Iter 57r — Resume support. Returns the most recent AI Measure
+    run for this user+estimate (regardless of status), or `null` if
+    none exists. Used by the AI Measure modal to surface a "Resume" or
+    "Restore preview" banner after a page reload / screen lock.
+    """
+    user_id = user.get("id") or "anon"
+    doc = await db.ai_measure_runs.find_one(
+        {"user_id": user_id, "estimate_id": estimate_id},
+        sort=[("created_at", -1)],
+    )
+    if not doc:
+        return {"run": None}
+    created = _as_aware_utc(doc.get("created_at"))
+    completed = _as_aware_utc(doc.get("completed_at") or doc.get("updated_at"))
+    now = datetime.now(timezone.utc)
+    elapsed_ms = None
+    age_seconds = None
+    if created is not None:
+        ref = completed if completed is not None else now
+        elapsed_ms = int((ref - created).total_seconds() * 1000)
+        age_seconds = int((now - created).total_seconds())
+    return {
+        "run": {
+            "run_id": doc.get("run_id"),
+            "status": doc.get("status"),
+            "stage": doc.get("stage"),
+            "photo_count": doc.get("photo_count"),
+            "photo_paths": doc.get("photo_paths"),
+            "deep_dormer_scan": doc.get("deep_dormer_scan"),
+            "result": doc.get("result"),
+            "error": doc.get("error"),
+            "elapsed_ms": elapsed_ms,
+            "age_seconds": age_seconds,
+        },
     }
 
 

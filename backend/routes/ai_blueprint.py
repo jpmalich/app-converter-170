@@ -353,6 +353,8 @@ async def ai_blueprint(
     address: Optional[str] = Form(None),
     overhang_in: float = Form(12.0),
     max_pages: int = Form(DEFAULT_MAX_PAGES),
+    # Iter 57r — Resume support
+    estimate_id: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
 ):
     """Read a blueprint set and return a takeoff in the same shape AI Measure
@@ -421,6 +423,7 @@ async def ai_blueprint(
     await db.ai_blueprint_runs.insert_one({
         "run_id": run_id,
         "user_id": user_id,
+        "estimate_id": estimate_id,
         "status": "running",
         "stage": "starting",
         "page_count": len(image_payloads),
@@ -472,6 +475,43 @@ async def ai_blueprint_status(
         "result": doc.get("result"),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
+    }
+
+
+@router.get("/ai-blueprint/latest-for-estimate/{estimate_id}")
+async def ai_blueprint_latest_for_estimate(
+    estimate_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Iter 57r — same Resume support as the AI Measure endpoint.
+    Returns the most recent blueprint run for this user+estimate."""
+    user_id = user.get("id") or "anon"
+    doc = await db.ai_blueprint_runs.find_one(
+        {"user_id": user_id, "estimate_id": estimate_id},
+        sort=[("created_at", -1)],
+    )
+    if not doc:
+        return {"run": None}
+    created = doc.get("created_at")
+    completed = doc.get("completed_at") or doc.get("updated_at")
+    now = datetime.now(timezone.utc)
+    elapsed_ms = None
+    age_seconds = None
+    if isinstance(created, datetime):
+        ref = completed if isinstance(completed, datetime) else now
+        elapsed_ms = int((ref - created).total_seconds() * 1000)
+        age_seconds = int((now - created).total_seconds())
+    return {
+        "run": {
+            "run_id": doc.get("run_id"),
+            "status": doc.get("status"),
+            "stage": doc.get("stage"),
+            "page_count": doc.get("page_count"),
+            "result": doc.get("result"),
+            "error": doc.get("error"),
+            "elapsed_ms": elapsed_ms,
+            "age_seconds": age_seconds,
+        },
     }
 
 

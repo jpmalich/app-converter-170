@@ -408,3 +408,11 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
     - **`BlueprintMeasureButton.jsx`** updated to launch + poll (3 s interval, 5 min cap), stage-aware button text ("Uploading…" → "Reading plans…" → "Aggregating walls…" → "Mapping to catalog…").
     - **Verified end-to-end** via curl on the synthetic blueprint test image: POST took 198 ms, polling reported `done` at T+3s with elapsed_ms=6920 and all 8 expected result keys (measurements / lines / vero_openings / mezzo_openings / raw_ai / model / session_id / pages_processed; 4 walls extracted).
     - **Files**: `backend/routes/ai_blueprint.py` (launcher + worker + status endpoint), `frontend/src/components/estimate/BlueprintMeasureButton.jsx` (poll loop + busyStage + button text).
+
+
+  - **Iter 57r — Resume last AI run + datetime bug fix (2026-06-20)**: Endpoint `GET /api/measure/ai-measure/latest-for-estimate/{estimate_id}` was throwing 500 with `TypeError: can't subtract offset-naive and offset-aware datetimes` because MongoDB returns `created_at` as a timezone-naive `datetime` by default while the code compared it against `datetime.now(timezone.utc)`. Fix:
+    1. Added a small helper `_as_aware_utc(dt)` in `ai_measure.py` that coerces a naive datetime to UTC (`dt.replace(tzinfo=timezone.utc)`) and passes through aware ones unchanged.
+    2. Applied the helper to both `ai_measure_status` and `ai_measure_latest_for_estimate` so all `(now - created)` / `(completed - created)` arithmetic is offset-safe.
+    - Verified via curl: `GET /api/measure/ai-measure/latest-for-estimate/resume-test-1781993221` returns HTTP 200 with the full run payload including computed `elapsed_ms` and `age_seconds`. No-run path also OK (`{"run":null}`).
+    - Unblocks the "Resume last AI run" banner in `AIMeasureButton.jsx` (`data-testid="ai-measure-resume-banner"` / `ai-measure-resume-btn`).
+    - **Files**: `backend/routes/ai_measure.py` (added `_as_aware_utc` helper + applied to status + latest-for-estimate endpoints).

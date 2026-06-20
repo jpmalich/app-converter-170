@@ -100,6 +100,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   const [busyStage, setBusyStage] = useState("");
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null); // {measurements, raw_ai}
+  // Iter 57r — Resume support. When the modal opens we ask the
+  // backend for the most recent AI Measure run for this estimate
+  // (regardless of status). If it's still "running" or finished within
+  // the last 30 minutes, we surface a small banner that lets the
+  // contractor pick up where they left off after a page reload or
+  // screen lock — no re-uploading photos, no re-running Claude.
+  const [lastRun, setLastRun] = useState(null);  // { run_id, status, stage, age_seconds, photo_paths, result }
   const [refineOpen, setRefineOpen] = useState(false);
   // Iter 51: Optional "quote gables as shake" override. Adds a shake-
   // siding line for the total gable ft² and deducts that area from the
@@ -371,6 +378,92 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       cancelled = true;
     };
   }, [estimateId, open, sessionChecked, photoUrls.length, preview]);
+
+  // Iter 57r — Resume support. On modal open, fetch the most recent
+  // AI Measure run for this estimate. If it's still "running" or
+  // finished within the last 30 min, set `lastRun` so the banner
+  // surfaces. The actual Resume / Restore button click is wired below.
+  useEffect(() => {
+    if (!estimateId || !open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get(`/measure/ai-measure/latest-for-estimate/${estimateId}`);
+        if (cancelled) return;
+        const r = data?.run || null;
+        if (!r) { setLastRun(null); return; }
+        // Only surface fresh runs (< 30 min) so we don't nag the
+        // contractor about ancient runs they already applied.
+        if (r.status === "running" || (r.age_seconds || 0) < 30 * 60) {
+          setLastRun(r);
+        } else {
+          setLastRun(null);
+        }
+      } catch {
+        setLastRun(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [estimateId, open]);
+
+  // Iter 57r — handler: resume polling an in-flight run.
+  const _applyAIResult = (data) => {
+    // Resume path: load the preview directly. The full per-wall
+    // recompute + auto-elevation-tagging that the fresh-run path
+    // performs assumes the contractor was watching the run live; on
+    // resume we trust whatever Claude returned and let them re-edit.
+    setPreview(data);
+  };
+
+  const resumeRunPolling = async () => {
+    if (!lastRun || !lastRun.run_id) return;
+    setBusy(true);
+    setBusyStage(lastRun.stage || "running");
+    // Restore the photo grid from the saved photo_paths so the UI
+    // matches the run the worker is processing.
+    if (lastRun.photo_paths) {
+      const paths = String(lastRun.photo_paths).split(",").map((s) => s.trim()).filter(Boolean);
+      if (paths.length) setPhotoUrls(paths);
+    }
+    setLastRun(null);
+    try {
+      let result = null;
+      for (let i = 0; i < 100; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        let statusResp;
+        try {
+          statusResp = await api.get(`/measure/ai-measure/status/${lastRun.run_id}`);
+        } catch {
+          continue;
+        }
+        const s = statusResp?.data || {};
+        if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
+        if (s.status === "error") throw new Error(s.error || "AI measure failed");
+        if (s.status === "done") { result = s.result; break; }
+      }
+      if (!result) throw new Error("Resume timed out");
+      // Mimic the same downstream flow as a normal run completion.
+      _applyAIResult(result);
+      toast.success("AI Measure resumed — preview loaded");
+    } catch (e) {
+      toast.error(e?.message || "Resume failed");
+    } finally {
+      setBusy(false);
+      setBusyStage("");
+    }
+  };
+
+  // Iter 57r — handler: restore the preview from a finished run.
+  const restoreLastRun = () => {
+    if (!lastRun || !lastRun.result) return;
+    if (lastRun.photo_paths) {
+      const paths = String(lastRun.photo_paths).split(",").map((s) => s.trim()).filter(Boolean);
+      if (paths.length) setPhotoUrls(paths);
+    }
+    _applyAIResult(lastRun.result);
+    setLastRun(null);
+    toast.success("Last AI run restored — preview loaded");
+  };
 
   // Debounced autosave: any time the persisted state changes, push to
   // /measure/sessions. 1 second debounce keeps wall-edit keystrokes from
@@ -650,6 +743,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       const elevTagList = [...passThroughElevs, ...annotatedElevs];
       if (elevTagList.length) {
         fd.append("elevation_tags", elevTagList.join(","));
+      }
+      // Iter 57r — link the run to this estimate so a later modal open
+      // can offer to Resume / Restore the most recent run for this job.
+      if (estimateId) {
+        fd.append("estimate_id", estimateId);
       }
       // Iter 57q — async launcher + polling. The backend used to do
       // all the Claude work synchronously in a single 60–120 s
@@ -989,6 +1087,67 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       data-testid="ai-measure-discard-btn"
                     >
                       Start fresh
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* Iter 57r — Resume last AI run banner */}
+              {lastRun && (lastRun.status === "running" || (lastRun.status === "done" && lastRun.result) || lastRun.status === "error") && (
+                <div
+                  className="mb-4 p-3 border border-[#7C3AED] bg-purple-50 flex items-center justify-between gap-3 flex-wrap"
+                  data-testid="ai-measure-resume-run-banner"
+                >
+                  <div className="text-xs text-[#581C87]">
+                    <span className="font-bold uppercase tracking-wider text-[10px] mr-2">
+                      {lastRun.status === "running" ? "AI run in progress" : lastRun.status === "error" ? "Last AI run failed" : "Recent AI run"}
+                    </span>
+                    {lastRun.status === "running" && (
+                      <>
+                        {lastRun.photo_count || 0} photo{(lastRun.photo_count || 0) === 1 ? "" : "s"} —
+                        started {Math.round((lastRun.age_seconds || 0))}s ago, currently <b>{lastRun.stage || "running"}</b>.
+                        Reconnect to keep watching progress.
+                      </>
+                    )}
+                    {lastRun.status === "done" && (
+                      <>
+                        Finished {Math.round((lastRun.age_seconds || 0) / 60)} min ago on {lastRun.photo_count || 0} photo{(lastRun.photo_count || 0) === 1 ? "" : "s"}.
+                        Restore the preview without re-running Claude.
+                      </>
+                    )}
+                    {lastRun.status === "error" && (
+                      <>
+                        {lastRun.error || "Worker crashed"} — try a smaller photo set.
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {lastRun.status === "running" && (
+                      <button
+                        type="button"
+                        onClick={resumeRunPolling}
+                        className="px-3 py-1.5 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                        data-testid="ai-measure-resume-run-btn"
+                      >
+                        <Loader2 className="w-3 h-3 animate-spin" /> Reconnect
+                      </button>
+                    )}
+                    {lastRun.status === "done" && (
+                      <button
+                        type="button"
+                        onClick={restoreLastRun}
+                        className="px-3 py-1.5 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                        data-testid="ai-measure-restore-run-btn"
+                      >
+                        <Check className="w-3 h-3" /> Restore preview
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setLastRun(null)}
+                      className="px-3 py-1.5 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider"
+                      data-testid="ai-measure-dismiss-run-btn"
+                    >
+                      Dismiss
                     </button>
                   </div>
                 </div>
