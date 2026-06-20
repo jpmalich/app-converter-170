@@ -79,6 +79,9 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
   const issMode = typeof applyLines === "function";
   const fileRef = useRef();
   const [busy, setBusy] = useState(false);
+  // Iter 57q-bp — surface the worker's current stage in the toast/UI
+  // so contractors know progress is happening on long blueprint reads.
+  const [busyStage, setBusyStage] = useState("");
   const [applying, setApplying] = useState(false);
   const [result, setResult] = useState(null); // { measurements, lines, vero_openings, mezzo_openings, raw_ai, pages_processed }
   const [showRawJson, setShowRawJson] = useState(false);
@@ -87,6 +90,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
     const f = e.target.files?.[0];
     if (!f) return;
     setBusy(true);
+    setBusyStage("starting");
     setResult(null);
     setShowRawJson(false);
     try {
@@ -96,16 +100,43 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
       fd.append(isPdf ? "file" : "files", f);
       if (est?.address) fd.append("address", est.address);
       fd.append("overhang_in", String(est?.overhang_in ?? 12));
-      const { data } = await api.post("/measure/ai-blueprint", fd, {
+      // Iter 57q-bp — async launcher + polling. Backend now returns
+      // `{run_id, status: "running"}` in under a second instead of
+      // waiting 60–120 s for Claude. We poll the status endpoint
+      // every 3 s until the worker writes the result. Kills the
+      // Cloudflare 524 timeouts that bit Howard's blueprint uploads.
+      const launch = await api.post("/measure/ai-blueprint", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 180000, // Opus 4.5 + multi-page PDF can run 60–120s
+        timeout: 60000,
       });
-      setResult(data);
+      const runId = launch?.data?.run_id;
+      if (!runId) throw new Error("Backend didn't return a run_id");
+      setBusyStage(launch?.data?.stage || "starting");
+      let pollResult = null;
+      for (let i = 0; i < 100; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        let statusResp;
+        try {
+          statusResp = await api.get(`/measure/ai-blueprint/status/${runId}`);
+        } catch (pollErr) {
+          if (i >= 5) console.warn("ai-blueprint status poll failed", pollErr?.message);
+          continue;
+        }
+        const s = statusResp?.data || {};
+        if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
+        if (s.status === "error") throw new Error(s.error || "Blueprint read failed");
+        if (s.status === "done") { pollResult = s.result; break; }
+      }
+      if (!pollResult) {
+        throw new Error("Blueprint read timed out after 5 minutes — try a smaller PDF or fewer pages");
+      }
+      setResult(pollResult);
     } catch (err) {
       const detail = err?.response?.data?.detail || err?.message || "Blueprint read failed";
       toast.error(detail);
     } finally {
       setBusy(false);
+      setBusyStage("");
       if (fileRef.current) fileRef.current.value = "";
     }
   };
@@ -271,7 +302,13 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         title="Read a blueprint PDF and pull window schedule + wall dims"
       >
         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-        {busy ? "Reading plans…" : "Read Blueprints"}
+        {busy
+          ? (busyStage === "claude" ? "Reading plans…"
+            : busyStage === "aggregating" ? "Aggregating walls…"
+            : busyStage === "mapping" ? "Mapping to catalog…"
+            : busyStage === "starting" ? "Uploading…"
+            : "Reading plans…")
+          : "Read Blueprints"}
       </button>
 
       {result && (

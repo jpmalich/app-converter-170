@@ -32,10 +32,13 @@ from __future__ import annotations
 
 import base64
 import io
+import asyncio
 import json
+import logging
 import os
 import re
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 import pypdfium2 as pdfium
@@ -47,7 +50,10 @@ from emergentintegrations.llm.chat import (
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from deps import get_current_user
+from db import db
 from routes.hover import _build_lines, _build_window_openings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/measure", tags=["measure"])
 
@@ -399,65 +405,165 @@ async def ai_blueprint(
         # Already capped on the PDF side, but guard against image overflow too.
         image_payloads = image_payloads[:MAX_PAGES_HARD]
 
-    image_contents = [
-        ImageContent(image_base64=base64.b64encode(p).decode("ascii"))
-        for p in image_payloads
-    ]
-
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
 
     user_id = user.get("id") or "anon"
-    session_id = f"ai-blueprint-{user_id}-{uuid.uuid4().hex[:8]}"
-
-    chat = LlmChat(
+    run_id = uuid.uuid4().hex
+    now = datetime.now(timezone.utc)
+    # Iter 57q-bp — async launcher pattern. Same fix as the AI Measure
+    # route: synchronous Claude calls on big blueprint sets were
+    # exceeding the Kubernetes ingress timeout (~100 s) and triggering
+    # the Cloudflare 524 error. Now the route persists a `running` doc
+    # and returns a run_id immediately; the worker writes the result
+    # back when Claude finishes (no time cap).
+    await db.ai_blueprint_runs.insert_one({
+        "run_id": run_id,
+        "user_id": user_id,
+        "status": "running",
+        "stage": "starting",
+        "page_count": len(image_payloads),
+        "address": address,
+        "created_at": now,
+        "updated_at": now,
+        "completed_at": None,
+        "result": None,
+        "error": None,
+    })
+    asyncio.create_task(_execute_ai_blueprint_worker(
+        run_id=run_id,
+        image_payloads=image_payloads,
         api_key=api_key,
-        session_id=session_id,
-        system_message=SYSTEM_PROMPT,
-    ).with_model("anthropic", MODEL_NAME)
+        user_id=user_id,
+        address=address,
+        overhang_in=overhang_in,
+    ))
+    return {
+        "run_id": run_id,
+        "status": "running",
+        "stage": "starting",
+        "pages_queued": len(image_payloads),
+    }
 
-    prompt_parts: list[str] = [
-        f"You are receiving {len(image_payloads)} plan sheet(s) as images.",
-    ]
-    if address:
-        prompt_parts.append(f"Project address: {address}")
-    prompt_parts.append(
-        "Read the printed dimensions on the elevations + floor plan, "
-        "and extract the window/door schedule if one is present. "
-        "Return the JSON takeoff object now."
-    )
-    user_text = "\n".join(prompt_parts)
 
+@router.get("/ai-blueprint/status/{run_id}")
+async def ai_blueprint_status(
+    run_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Poll the status of an async blueprint-read run. Mirrors the
+    `/measure/ai-measure/status/{run_id}` shape."""
+    doc = await db.ai_blueprint_runs.find_one({"run_id": run_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if doc.get("user_id") not in (user.get("id"), "anon"):
+        raise HTTPException(status_code=403, detail="Not your run")
+    created = doc.get("created_at")
+    completed = doc.get("completed_at") or doc.get("updated_at")
+    elapsed_ms = None
+    if isinstance(created, datetime):
+        ref = completed if isinstance(completed, datetime) else datetime.now(timezone.utc)
+        elapsed_ms = int((ref - created).total_seconds() * 1000)
+    return {
+        "run_id": run_id,
+        "status": doc.get("status"),
+        "stage": doc.get("stage"),
+        "result": doc.get("result"),
+        "error": doc.get("error"),
+        "elapsed_ms": elapsed_ms,
+    }
+
+
+async def _execute_ai_blueprint_worker(
+    *,
+    run_id: str,
+    image_payloads: list[bytes],
+    api_key: str,
+    user_id: str,
+    address: Optional[str],
+    overhang_in: float,
+):
+    """Background worker — runs the Claude blueprint read, aggregates,
+    maps to lines + Vero/Mezzo openings, and writes the final result
+    back to the run doc."""
+    async def _set_stage(stage: str):
+        await db.ai_blueprint_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {"stage": stage, "updated_at": datetime.now(timezone.utc)}},
+        )
     try:
+        await _set_stage("claude")
+        image_contents = [
+            ImageContent(image_base64=base64.b64encode(p).decode("ascii"))
+            for p in image_payloads
+        ]
+        session_id = f"ai-blueprint-{user_id}-{uuid.uuid4().hex[:8]}"
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=session_id,
+            system_message=SYSTEM_PROMPT,
+        ).with_model("anthropic", MODEL_NAME)
+
+        prompt_parts: list[str] = [
+            f"You are receiving {len(image_payloads)} plan sheet(s) as images.",
+        ]
+        if address:
+            prompt_parts.append(f"Project address: {address}")
+        prompt_parts.append(
+            "Read the printed dimensions on the elevations + floor plan, "
+            "and extract the window/door schedule if one is present. "
+            "Return the JSON takeoff object now."
+        )
+        user_text = "\n".join(prompt_parts)
         reply_text = await chat.send_message(
             UserMessage(text=user_text, file_contents=image_contents),
         )
+
+        await _set_stage("aggregating")
+        raw = _json_from_reply(reply_text or "")
+        measurements = _aggregate_to_hover_shape(raw)
+        measurements["overhang_in"] = float(overhang_in)
+
+        await _set_stage("mapping")
+        try:
+            lines = _build_lines(measurements)
+        except Exception:
+            lines = []
+        try:
+            vero_openings, mezzo_openings = _build_window_openings(measurements)
+        except Exception:
+            vero_openings, mezzo_openings = [], []
+
+        result = {
+            "measurements": measurements,
+            "lines": lines,
+            "vero_openings": vero_openings,
+            "mezzo_openings": mezzo_openings,
+            "raw_ai": raw,
+            "model": MODEL_NAME,
+            "session_id": session_id,
+            "pages_processed": len(image_payloads),
+        }
+        await db.ai_blueprint_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {
+                "status": "done",
+                "stage": "done",
+                "result": result,
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"AI blueprint call failed: {e}") from e
-
-    raw = _json_from_reply(reply_text or "")
-    measurements = _aggregate_to_hover_shape(raw)
-    measurements["overhang_in"] = float(overhang_in)
-
-    # Build siding/windows catalog lines + Vero/Mezzo opening rows from
-    # the schedule-derived windows array.
-    try:
-        lines = _build_lines(measurements)
-    except Exception:
-        lines = []
-    try:
-        vero_openings, mezzo_openings = _build_window_openings(measurements)
-    except Exception:
-        vero_openings, mezzo_openings = [], []
-
-    return {
-        "measurements": measurements,
-        "lines": lines,
-        "vero_openings": vero_openings,
-        "mezzo_openings": mezzo_openings,
-        "raw_ai": raw,
-        "model": MODEL_NAME,
-        "session_id": session_id,
-        "pages_processed": len(image_payloads),
-    }
+        logger.exception("[ai-blueprint] worker failed for run_id=%s", run_id)
+        await db.ai_blueprint_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {
+                "status": "error",
+                "stage": "error",
+                "error": f"AI blueprint read failed: {e}",
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
