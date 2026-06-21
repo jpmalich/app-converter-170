@@ -57,13 +57,11 @@ def _guess_vero_product_type(width_in: float, height_in: float) -> str:
     # Howard's stock answer is DH for anything else, so keep this tight.
     if w <= 28 and h <= 36:
         return "Vero 1-Lite Casement"
-    # Picture = large + nearly square fixed glass. Requires BOTH sides ≥ 48"
-    # and < 20% aspect difference so we don't catch tall bedroom DHs (49×62).
-    if w >= 48 and h >= 48 and abs(w - h) / max(w, h) < 0.20:
-        return "Vero Picture"
-    # 3-Lite slider (XOX) = very wide AND landscape orientation
-    if w >= 60 and w > h:
-        return "Vero 3-Lite Slider"
+    # Iter 57t — Vero pricing freeze: `Vero Picture` and `Vero 3-Lite Slider`
+    # are hidden until reliable pricing lands, so the heuristic now only
+    # picks between Double Hung, 2-Lite Slider, and Casement. Anything
+    # that previously routed to Picture/3-Lite falls through to the
+    # corresponding open product (2-Lite for wide-landscape, DH otherwise).
     # 2-Lite slider (XO) = wide AND landscape orientation
     if w >= 40 and w > h:
         return "Vero 2-Lite Slider"

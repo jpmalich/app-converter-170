@@ -524,6 +524,11 @@ Return ONLY the JSON object. No explanation, no code fences."""
 # Vero quote rows fall into one of the 5 buckets). For multi-unit styles
 # (Twin DH / Twin Casement / Bay / Bow), the qty is multiplied so a
 # single openings row becomes the correct count of Vero opening rows.
+#
+# Iter 57t — Vero pricing freeze. Styles that historically routed to
+# `Vero Picture` or `Vero 3-Lite Slider` (both frozen) now reroute to
+# `Vero Double Hung` so the estimator can hand-tag/upgrade them after
+# the fact, instead of landing in a hidden section.
 _STYLE_TO_VERO_PRODUCT_TYPE: dict[str, tuple[str, int]] = {
     "Double Hung":        ("Vero Double Hung",     1),
     "Single Hung":        ("Vero Double Hung",     1),
@@ -532,20 +537,20 @@ _STYLE_TO_VERO_PRODUCT_TYPE: dict[str, tuple[str, int]] = {
     "Awning":             ("Vero 1-Lite Casement", 1),
     "Hopper":             ("Vero 1-Lite Casement", 1),
     "2-Lite Slider":      ("Vero 2-Lite Slider",   1),
-    "3-Lite Slider":      ("Vero 3-Lite Slider",   1),
-    "Picture":            ("Vero Picture",         1),
+    "3-Lite Slider":      ("Vero 2-Lite Slider",   1),  # frozen → reroute to 2-Lite
+    "Picture":            ("Vero Double Hung",     1),  # frozen → DH
     "Twin Double Hung":   ("Vero Double Hung",     2),
     "Twin Single Hung":   ("Vero Double Hung",     2),
     "Triple Double Hung": ("Vero Double Hung",     3),
-    "Bay Window":         ("Vero Picture",         3),
-    "Bow Window":         ("Vero Picture",         5),
-    "Half-Round":         ("Vero Picture",         1),
-    "Quarter-Round":      ("Vero Picture",         1),
-    "Arch":               ("Vero Picture",         1),
-    "Octagon":            ("Vero Picture",         1),
-    "Hexagon":            ("Vero Picture",         1),
-    "Garden Window":      ("Vero Picture",         1),
-    "Other Shape":        ("Vero Picture",         1),
+    "Bay Window":         ("Vero Double Hung",     3),  # frozen → DH (3-pane)
+    "Bow Window":         ("Vero Double Hung",     5),  # frozen → DH (5-pane)
+    "Half-Round":         ("Vero Double Hung",     1),  # frozen → DH
+    "Quarter-Round":      ("Vero Double Hung",     1),  # frozen → DH
+    "Arch":               ("Vero Double Hung",     1),  # frozen → DH
+    "Octagon":            ("Vero Double Hung",     1),  # frozen → DH
+    "Hexagon":            ("Vero Double Hung",     1),  # frozen → DH
+    "Garden Window":      ("Vero Double Hung",     1),  # frozen → DH
+    "Other Shape":        ("Vero Double Hung",     1),  # frozen → DH
 }
 
 

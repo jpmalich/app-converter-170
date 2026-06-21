@@ -10,6 +10,21 @@ import BulkApplyConfirm from "./BulkApplyConfirm";
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const fmt = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 
+// Iter 57t — Vero pricing freeze. Howard's pricing sheet is unreliable
+// for these product types and for the >101 UI buckets, so we hide
+// frozen product types entirely and show "Need Custom Quote" on locked
+// products when the UI exceeds 101. Flip these constants to unfreeze.
+const FROZEN_PRODUCT_TYPES = new Set([
+  "Vero 3-Lite Slider",
+  "Vero Picture",
+  "Vero Patio Door",
+]);
+const BUCKET_LOCKED_PRODUCT_TYPES = new Set([
+  "Vero Double Hung",
+  "Vero 2-Lite Slider",
+]);
+const LOCKED_MAX_UI = 101;
+
 const DEFAULT_SISTER_COLOR = "White Interior/White Exterior";
 
 // Auto-applied on every new Vero opening (Howard's most-common spec).
@@ -176,12 +191,23 @@ export default function VeroPanel({ est, update }) {
         if (pt.sizing === "ui_bucket") {
           const ui = (Number(merged.width) || 0) + (Number(merged.height) || 0);
           const bucket = findBucket(pt.buckets, ui);
-          merged.bucket_label = bucket ? bucket.label : "";
-          merged.base_mat = bucket ? Number(pt.base_prices?.[bucket.label]) || 0 : 0;
-          merged.adders = (merged.adders || []).map((a) => {
-            const def = (pt.adders || []).find((x) => x.name === a.name);
-            return def ? { ...a, mat: resolveAdderMat(def, pt, merged.width, merged.height) } : a;
-          });
+          // Iter 57t — locked product types are capped at UI ≤ 101.
+          // Anything larger gets a "Need Custom Quote" badge + $0 price
+          // so it doesn't silently roll up into the estimate total.
+          const lockedOverLimit =
+            BUCKET_LOCKED_PRODUCT_TYPES.has(pt.name) && ui > LOCKED_MAX_UI;
+          if (lockedOverLimit) {
+            merged.bucket_label = "";
+            merged.base_mat = 0;
+            merged.adders = [];
+          } else {
+            merged.bucket_label = bucket ? bucket.label : "";
+            merged.base_mat = bucket ? Number(pt.base_prices?.[bucket.label]) || 0 : 0;
+            merged.adders = (merged.adders || []).map((a) => {
+              const def = (pt.adders || []).find((x) => x.name === a.name);
+              return def ? { ...a, mat: resolveAdderMat(def, pt, merged.width, merged.height) } : a;
+            });
+          }
         } else {
           merged.base_mat = Number(pt.patio_prices?.[merged.model] || 0);
         }
@@ -308,7 +334,9 @@ export default function VeroPanel({ est, update }) {
 
   return (
     <>
-      {catalog.product_types.map((pt) => {
+      {catalog.product_types
+        .filter((pt) => !FROZEN_PRODUCT_TYPES.has(pt.name))
+        .map((pt) => {
         const openings = openingsByType[pt.name] || [];
         const sectionTotal = openings.reduce((s, op) => {
           const base = (Number(op.qty) || 0) * (Number(op.base_mat) || 0);
@@ -359,6 +387,19 @@ export default function VeroPanel({ est, update }) {
                 </button>
               </div>
             </header>
+
+            {BUCKET_LOCKED_PRODUCT_TYPES.has(pt.name) && (
+              <div
+                className="px-4 md:px-5 py-2 bg-[#FEF3C7] border-b border-[#F59E0B] text-[11px] text-[#92400E] flex items-center gap-2"
+                data-testid={`vero-locked-banner-${pt.name}`}
+              >
+                <span className="font-bold uppercase tracking-wider text-[10px]">Pricing cap</span>
+                <span>
+                  Verified for windows with W + H ≤ {LOCKED_MAX_UI}&quot; only. Larger units show
+                  &quot;Need Custom Quote&quot; — contact your Vero rep.
+                </span>
+              </div>
+            )}
 
             {openings.length === 0 ? (
               <div
@@ -424,15 +465,22 @@ function VeroOpeningRow({
   const isFixed = pt.sizing === "fixed_model";
   const ui = isFixed ? 0 : (Number(op.width) || 0) + (Number(op.height) || 0);
   const bucket = isFixed ? null : findBucket(pt.buckets, ui);
-  const inRange = isFixed || (!!bucket && ui > 0);
-  const baseMat = isFixed
+  // Iter 57t — locked product types ignore buckets > 101 UI.
+  const isLocked = BUCKET_LOCKED_PRODUCT_TYPES.has(pt.name);
+  const lockedOverLimit = isLocked && ui > LOCKED_MAX_UI;
+  const inRange = !lockedOverLimit && (isFixed || (!!bucket && ui > 0));
+  const baseMat = lockedOverLimit
+    ? 0
+    : isFixed
     ? Number(pt.patio_prices?.[op.model] || 0)
     : (bucket ? Number(pt.base_prices?.[bucket.label]) || 0 : 0);
-  const addersTotal = (op.adders || []).reduce(
-    (s, a) => s + (Number(a.qty) || 0) * (Number(a.mat) || 0),
-    0
-  );
-  const total = (Number(op.qty) || 0) * baseMat + addersTotal;
+  const addersTotal = lockedOverLimit
+    ? 0
+    : (op.adders || []).reduce(
+        (s, a) => s + (Number(a.qty) || 0) * (Number(a.mat) || 0),
+        0
+      );
+  const total = lockedOverLimit ? 0 : (Number(op.qty) || 0) * baseMat + addersTotal;
   const selectedByName = new Map((op.adders || []).map((a) => [a.name, a]));
 
   return (
@@ -490,21 +538,41 @@ function VeroOpeningRow({
               }`}
               data-testid={`vero-ui-${op.id}`}
             >
-              {ui || "—"} {bucket ? <span className="text-[10px] text-[#71717A] font-normal">({bucket.label})</span> : ui > 0 ? <span className="text-[10px] text-[#DC2626] font-normal">{t("win.outOfRange")}</span> : null}
+              {ui || "—"}{" "}
+              {lockedOverLimit ? (
+                <span className="text-[10px] text-[#DC2626] font-normal">(&gt; {LOCKED_MAX_UI} UI)</span>
+              ) : bucket ? (
+                <span className="text-[10px] text-[#71717A] font-normal">({bucket.label})</span>
+              ) : ui > 0 ? (
+                <span className="text-[10px] text-[#DC2626] font-normal">{t("win.outOfRange")}</span>
+              ) : null}
             </div>
           </div>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.base")}</div>
-            <div className="font-mono-num text-sm text-[#09090B]">{fmt(baseMat)}</div>
-          </div>
-          <div className="text-right pl-2 border-l border-[#E4E4E7]">
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.total")}</div>
-            <div className="font-mono-num text-base font-bold text-[#09090B]" data-testid={`vero-total-${op.id}`}>
-              {fmt(total)}
+          {lockedOverLimit ? (
+            <div
+              className="text-right px-3 py-1.5 bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E]"
+              title={`Vero pricing is only verified for windows with W + H ≤ ${LOCKED_MAX_UI}". Contact your Vero rep for a custom quote on larger units.`}
+              data-testid={`vero-need-quote-${op.id}`}
+            >
+              <div className="text-[10px] uppercase tracking-wider font-bold">Need Custom Quote</div>
+              <div className="text-[10px] font-normal">UI &gt; {LOCKED_MAX_UI} — contact rep</div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="text-right">
+                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.base")}</div>
+                <div className="font-mono-num text-sm text-[#09090B]">{fmt(baseMat)}</div>
+              </div>
+              <div className="text-right pl-2 border-l border-[#E4E4E7]">
+                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.total")}</div>
+                <div className="font-mono-num text-base font-bold text-[#09090B]" data-testid={`vero-total-${op.id}`}>
+                  {fmt(total)}
+                </div>
+              </div>
+            </>
+          )}
           <button
             type="button"
             onClick={onToggleNotes}

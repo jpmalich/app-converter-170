@@ -45,9 +45,10 @@ const TAB_LABELS = {
 const VERO_PRODUCT_TYPES = [
   "Vero Double Hung",
   "Vero 2-Lite Slider",
-  "Vero 3-Lite Slider",
   "Vero 1-Lite Casement",
-  "Vero Picture",
+  // Iter 57t — Vero 3-Lite Slider + Vero Picture are frozen (pricing
+  // unreliable). Drop them from the HOVER style dropdown so contractors
+  // can't accidentally land an opening in a hidden Vero section.
 ];
 
 // Mezzo has no Casement product type — fall back to DH on the Mezzo side

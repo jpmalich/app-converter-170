@@ -16,6 +16,17 @@ import axios from "axios";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// Iter 57t — Vero pricing freeze. Frozen product_types are hidden in
+// the Vero panel, so any pre-existing openings carrying these types
+// would be invisible-but-still-billed. Migrate them to Vero Double
+// Hung on reconcile so contractors can see + edit them.
+const FROZEN_VERO_PRODUCT_TYPES = new Set([
+  "Vero 3-Lite Slider",
+  "Vero Picture",
+  "Vero Patio Door",
+]);
+const FROZEN_VERO_FALLBACK = "Vero Double Hung";
+
 // Vero buckets use min/max; Mezzo buckets use min_ui/max_ui.
 const findBucketVero = (buckets, ui) =>
   (buckets || []).find((b) => ui >= b.min && ui <= b.max) || null;
@@ -134,10 +145,21 @@ export default function useReconcileWindowSnapshots(est, update) {
       if (hasVero && veroCat?.product_types) {
         let dirty = false;
         const next = (est.vero_openings || []).map((op) => {
-          const pt = veroCat.product_types.find((p) => p.name === op.product_type);
-          if (!pt) return op;
-          const fresh = resolveVeroSnapshot(pt, op);
+          // Iter 57t — remap frozen product types to Double Hung. Old
+          // estimates may carry "Vero Picture"/"Vero 3-Lite Slider"/
+          // "Vero Patio Door"; without this they'd be hidden but still
+          // priced. Width/height/qty/adders are preserved so the
+          // estimator can review the migrated rows.
+          let working = op;
+          if (FROZEN_VERO_PRODUCT_TYPES.has(op.product_type)) {
+            working = { ...op, product_type: FROZEN_VERO_FALLBACK, sizing: "ui_bucket" };
+            dirty = true;
+          }
+          const pt = veroCat.product_types.find((p) => p.name === working.product_type);
+          if (!pt) return working;
+          const fresh = resolveVeroSnapshot(pt, working);
           if (
+            working !== op ||
             Math.round(Number(op.base_mat) || 0) !== Math.round(fresh.base_mat) ||
             Math.round(Number(op.glass_mat) || 0) !== Math.round(fresh.glass_mat) ||
             Math.round(Number(op.tempered_mat) || 0) !== Math.round(fresh.tempered_mat) ||
@@ -145,7 +167,7 @@ export default function useReconcileWindowSnapshots(est, update) {
             (op.bucket_label || "") !== (fresh.bucket_label || "")
           ) {
             dirty = true;
-            return { ...op, ...fresh };
+            return { ...working, ...fresh };
           }
           return op;
         });
