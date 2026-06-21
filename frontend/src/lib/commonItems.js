@@ -75,6 +75,12 @@ export const COMMONLY_NEEDED_ITEMS = new Set([
   // Highlight it so contractors notice the line before sending the
   // quote. Scoped below to "windows" + "mezzo" tabs only.
   "Window DH/Slider - Pocket Install",
+  // Iter 57z — easy-to-forget window-job accessories. Both apply to
+  // every window install regardless of brand. Scoped to "windows" +
+  // "mezzo" tabs only (these line names are window-specific so they
+  // wouldn't surface on siding tabs anyway, but explicit scope is safer).
+  "Windows - .019 Coil",
+  "Windows - Caulking (per color)",
   "Lead Safe Installation Practices For Window Installation",
   "Lead Safe - Test Fee (all homes 1978 and older are tested)",
   "Cap window (Windows)",
@@ -110,6 +116,9 @@ const COMMON_ITEM_TAB_SCOPE = {
   // Iter 57y — only highlight the Pocket Install row on the window tabs
   // (Vero / Mezzo) where contractors actually pick install method.
   "Window DH/Slider - Pocket Install": new Set(["windows", "mezzo"]),
+  // Iter 57z — window accessory caulking + coil only show on window tabs.
+  "Windows - .019 Coil": new Set(["windows", "mezzo"]),
+  "Windows - Caulking (per color)": new Set(["windows", "mezzo"]),
 };
 
 /** Is this item commonly-needed on the given tab? Falls back to a global
