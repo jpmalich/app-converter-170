@@ -483,6 +483,31 @@ HOVER_MAPPING_SPEC = [
         ),
         "note": "2 elbows per downspout (top + kick-out)",
     },
+    # Iter 57w — Mirror Gutter + Downspout into the ISS catalog. ISS uses
+    # the "Seamless Gutter with Siding" section with plainer item names
+    # ("Gutter" / "Downspout"), so they need their own spec entries. ISS
+    # has no separate "elbow" line in the catalog so we don't emit it
+    # there. (Re-siding jobs are the typical ISS use case — "with
+    # Siding" matches the "without Siding" exception is non-default.)
+    {
+        "tabs": ["iss"],
+        "section": "Seamless Gutter with Siding",
+        "item": "Gutter",
+        "unit": "LF",
+        "extract": lambda m: round(m.get("eaves_lf") or 0),
+        "note": "Eaves LF (gutters run along eaves, not rakes)",
+    },
+    {
+        "tabs": ["iss"],
+        "section": "Seamless Gutter with Siding",
+        "item": "Downspout",
+        "unit": "LF",
+        "extract": lambda m: (
+            max(2, math.ceil((m.get("eaves_lf") or 0) / 30)) * 10
+            if (m.get("eaves_lf") or 0) > 0 else 0
+        ),
+        "note": "1 downspout per 30 LF eaves, min 2; each ≈ 10 LF of coil",
+    },
     # =====================================================================
     # CAPS — Misc. Labor & Material section is on all 3 tabs.
     # =====================================================================

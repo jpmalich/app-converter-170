@@ -141,8 +141,8 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      "type_hint": "entry|patio_slider|patio_french|garage|unknown"
     }
   ],
-  "eaves_lf": number,          // sum of horizontal soffit/gutter run, from roof plan or floor-plan perimeter
-  "rakes_lf": number,          // sum of sloped roof edges from elevations
+  "eaves_lf": number,          // sum of widths of EAVE walls only (i.e. walls where gable_triangle_height_ft == 0). For a typical gable-roof house with gables on front + back, this = left wall width + right wall width — NOT the full perimeter. Only equals the full perimeter when the roof is a hip (every wall has gable_triangle_height_ft = 0).
+  "rakes_lf": number,          // sum of sloped roof edges = 2 × √((wall_width/2)² + gable_triangle_height_ft²) summed over each gable wall
   "starter_lf": number,        // ≈ eaves_lf for basic 1-story; differs on walk-outs
   "outside_corner_lf": number, // (# outside corners × avg eave height); count corners on the floor plan
   "inside_corner_lf": number,  // L-shaped wings only; 0 for a basic rectangle
@@ -357,6 +357,23 @@ def _aggregate_to_hover_shape(raw: dict) -> dict:
                 "width_in": float(win.get("width_in") or 0),
                 "height_in": float(win.get("height_in") or 0),
             })
+
+    # Iter 57w — Defensive eaves_lf override. Claude historically returns
+    # the full floor-plan perimeter as eaves_lf, which is only correct
+    # for hip roofs. On a typical gable-roof house gutters run only on
+    # the non-gable walls (eave walls). When any wall is flagged as a
+    # gable (`gable_triangle_height_ft > 0`), recompute eaves_lf as the
+    # sum of widths of NON-gable walls. This drops the gable ends from
+    # the gutter coil + downspout count + elbow count downstream.
+    any_gable = any(float(w.get("gable_triangle_height_ft") or 0) > 0 for w in walls)
+    if any_gable:
+        corrected_eaves = sum(
+            float(w.get("width_ft") or 0)
+            for w in walls
+            if float(w.get("gable_triangle_height_ft") or 0) <= 0
+        )
+        if corrected_eaves > 0:
+            raw["eaves_lf"] = corrected_eaves
 
     measurements = {
         "siding_sqft": round(siding_sqft, 1),

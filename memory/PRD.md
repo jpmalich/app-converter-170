@@ -455,3 +455,16 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
     - Brand-independent: setting the Vero override does NOT affect Mezzo and vice versa.
     - Verified end-to-end: created a fresh windows-kind estimate, set Vero package quote to $12,500 with reference "VR-44892 — Jen S." → sidebar jumped to Base $13,375 (= $12,500 + 7% tax) → Vero Job Snapshot Base Total = $12,500 → per-row sections show $0.00 with strikethrough. Mezzo independent ($0.00). Lint clean. PUT/GET round-trip OK.
     - **Files**: `backend/models.py`, `backend/services.py`, `frontend/src/lib/calc.js`, `frontend/src/components/estimate/WindowPackageQuote.jsx` (new), `frontend/src/components/estimate/VeroPanel.jsx`, `frontend/src/components/estimate/MezzoPanel.jsx`, `frontend/src/components/estimate/VeroJobSnapshot.jsx`, `frontend/src/components/estimate/MezzoJobSnapshot.jsx`.
+
+  - **Iter 57w — Blueprint downspouts on ISS + gable-eaves over-count fix (2026-06-20)**: Howard tested Read Blueprints on a real residential plan set and saw no Downspout line on the ISS estimate after Apply. Two root causes:
+
+    **Bug 1 — ISS apply path bypasses the shared `hover.py` mapper.** Siding apply uses `_build_lines(measurements)` from `hover.py` which emits Gutter + Downspout + elbow lines. ISS apply mode in `BlueprintMeasureButton.applyResult` calls `buildISSLinesFromMeasurements()` (frontend, `ISSHoverImportButton.jsx`) instead — which emitted a Gutter line but no Downspout line.
+    - Fix: added a Downspout line to `buildISSLinesFromMeasurements` using the same formula as `hover.py` (1 downspout per 30 LF eaves, min 2; each ≈ 10 LF of coil).
+    - Also added 2 defensive rules to `HOVER_MAPPING_SPEC` for `tabs=["iss"]` (Gutter + Downspout under `Seamless Gutter with Siding` with ISS catalog item names) — covers any future ISS path that consumes `result.lines` directly. No "elbow" line for ISS — that line doesn't exist in the ISS catalog.
+
+    **Bug 2 — Claude reports eaves_lf as the full floor-plan perimeter, over-counting by ~2.5×.** On a gable-roof house gutters only run along non-gable walls. Claude was returning perimeter (248 LF) instead of just the eave walls (100 LF).
+    - Fix part 1: clarified the system prompt — `eaves_lf` is now "sum of widths of EAVE walls only (walls where gable_triangle_height_ft == 0)".
+    - Fix part 2: defensive post-processing in `_aggregate_to_hover_shape` — when ANY wall has `gable_triangle_height_ft > 0`, recompute eaves_lf as the sum of widths of non-gable walls (overrides Claude). Hip roofs leave Claude's value untouched.
+    - Verified: Howard's last blueprint run (4 walls 74+74+50+50, gables on front+back) recomputes from 248 → 100 LF; downspouts drop from 9×10=90 LF → 4×10=40 LF coil. Unit tests pass for both gable + hip cases.
+
+    - **Files**: `backend/routes/ai_blueprint.py` (system prompt + defensive eaves recompute), `backend/routes/hover.py` (added 2 ISS-tab rules to `HOVER_MAPPING_SPEC`), `frontend/src/components/estimate/ISSHoverImportButton.jsx` (`buildISSLinesFromMeasurements` now pushes Downspout).

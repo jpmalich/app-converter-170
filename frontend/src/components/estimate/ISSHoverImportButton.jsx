@@ -63,6 +63,13 @@ export function buildISSLinesFromMeasurements(m) {
   const soffitLf = Math.round((Number(m.eaves_lf) || 0) + (Number(m.rakes_lf) || 0));
   push("Vinyl Soffit with Siding", "Soffit & fascia up to 13\" wide", "lf", soffitLf);
   push("Seamless Gutter with Siding", "Gutter", "lf", m.eaves_lf);
+  // Iter 57w — Downspout coil follows the same formula the siding tabs
+  // use (1 downspout per 30 LF eaves, min 2 per job; each ≈ 10 LF of
+  // coil = ~9 ft drop + slack). Howard reported this was missing from
+  // the ISS Apply flow because ISS bypasses the shared hover.py mapper.
+  const eavesLf = Number(m.eaves_lf) || 0;
+  const downspoutCount = eavesLf > 0 ? Math.max(2, Math.ceil(eavesLf / 30)) : 0;
+  push("Seamless Gutter with Siding", "Downspout", "lf", downspoutCount * 10);
   push("Misc. Labor and Material", "Cap windows", "ea", m.window_count);
   push("Misc. Labor and Material", "Cap entry door", "ea", m.entry_door_count);
   push("Misc. Labor and Material", "Cap patio door", "ea", m.patio_door_count);
