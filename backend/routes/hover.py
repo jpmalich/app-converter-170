@@ -307,9 +307,9 @@ HOVER_MAPPING_SPEC = [
         "note": "Squares ÷ 5 (per Howard)",
     },
     # =====================================================================
-    # WALL UNDERLAYMENT — vinyl gets House Wrap; Ascend gets RainDrop (the
-    # rainscreen underlayment Ascend installers prefer). LP has no
-    # underlayment line in the catalog.
+    # WALL UNDERLAYMENT — vinyl gets House Wrap; Ascend gets RainDrop House
+    # Wrap (the rainscreen underlayment Ascend installers prefer). LP has
+    # no underlayment line in the catalog.
     # =====================================================================
     {
         "tabs": ["vinyl"],
@@ -325,7 +325,7 @@ HOVER_MAPPING_SPEC = [
     {
         "tabs": ["ascend"],
         "section": "Siding Accessories",
-        "item": "RainDrop",
+        "item": "RainDrop House Wrap",
         "unit": "SQ",
         "extract": lambda m: round(
             ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0,

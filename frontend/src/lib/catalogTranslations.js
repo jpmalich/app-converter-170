@@ -165,9 +165,24 @@ export function tSection(name, lang) {
   return SECTIONS_ES[name] || name;
 }
 
+// Iter 57cc — Legacy item-name aliases. Whenever a catalog item gets
+// renamed, drop an entry here so old estimates' saved `lines[].name`
+// (e.g. "RainDrop") render under the new label ("RainDrop House Wrap")
+// without a destructive DB migration. New estimates always store the
+// new name; this map only kicks in when a stored name is no longer
+// in the catalog.
+const ITEM_NAME_ALIASES = {
+  "RainDrop": "RainDrop House Wrap",
+};
+
+export function canonicalItemName(name) {
+  return ITEM_NAME_ALIASES[name] || name;
+}
+
 export function tItem(name, lang) {
-  if (lang !== "es") return name;
-  return ITEMS_ES[name] || name;
+  const canonical = ITEM_NAME_ALIASES[name] || name;
+  if (lang !== "es") return canonical;
+  return ITEMS_ES[canonical] || ITEMS_ES[name] || canonical;
 }
 
 export function tUnit(unit, lang) {

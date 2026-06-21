@@ -6,6 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useLang } from "@/lib/i18n";
+import { canonicalItemName } from "@/lib/catalogTranslations";
 import { getItemDescription, hasItemDescription } from "@/lib/itemDescriptions";
 
 /**
@@ -19,8 +20,13 @@ import { getItemDescription, hasItemDescription } from "@/lib/itemDescriptions";
 export default function ItemHelpButton({ itemName }) {
   const lang = useLang();
   const [open, setOpen] = useState(false);
-  if (!hasItemDescription(itemName)) return null;
-  const text = getItemDescription(itemName, lang);
+  // Iter 57cc — Always resolve via the canonical (post-rename) name so
+  // legacy estimates (e.g. lines saved as "RainDrop" before the
+  // rename) still get the right popover entry under the new key
+  // ("RainDrop House Wrap").
+  const resolved = canonicalItemName(itemName);
+  if (!hasItemDescription(resolved)) return null;
+  const text = getItemDescription(resolved, lang);
   if (!text) return null;
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -46,7 +52,7 @@ export default function ItemHelpButton({ itemName }) {
         data-testid={`item-help-popover-${itemName}`}
       >
         <div className="font-bold text-[11px] uppercase tracking-wider text-[#3B82F6] mb-1.5">
-          {itemName}
+          {resolved}
         </div>
         <div className="whitespace-pre-line">{text}</div>
       </PopoverContent>

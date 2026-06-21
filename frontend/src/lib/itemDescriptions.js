@@ -40,6 +40,12 @@ const ITEM_DESCRIPTIONS = {
     en: "Window – Fin-Cut Replacement: New-construction window with the nailing fin trimmed off, installed into the existing opening as a replacement unit. Fastened through the frame jambs rather than the fin, so existing siding and exterior trim remain undisturbed.",
     es: "Ventana – Reemplazo con aleta cortada: ventana de nueva construcción con la aleta de clavado recortada, instalada en la abertura existente como unidad de reemplazo. Se fija a través de las jambas del marco en lugar de por la aleta, por lo que el revestimiento y la moldura exterior existentes permanecen intactos.",
   },
+
+  // ----- Underlayments -----
+  "RainDrop House Wrap": {
+    en: "RainDrop House Wrap: A drainable weather-resistive barrier whose surface is embossed with raised vertical channels (the \"3D\" texture) that hold the wrap slightly off the sheathing. This creates a built-in drainage gap so any water that gets behind the cladding has a continuous path to run down and out, rather than sitting against the wall. Like standard housewrap, it blocks air and bulk water infiltration while staying vapor-permeable so the wall can dry.",
+    es: "RainDrop House Wrap: barrera de drenaje resistente a la intemperie cuya superficie está grabada con canales verticales en relieve (la textura \"3D\") que mantienen la envoltura ligeramente separada del tablero. Esto crea un hueco de drenaje integrado para que el agua que se cuele detrás del revestimiento tenga un camino continuo para bajar y salir, en lugar de quedarse contra la pared. Como las envolturas estándar, bloquea el aire y la infiltración masiva de agua manteniéndose permeable al vapor para que la pared pueda secarse.",
+  },
 };
 
 export function getItemDescription(name, lang = "en") {
