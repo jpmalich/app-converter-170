@@ -6,7 +6,7 @@
 export const TAB_VISIBILITY = {
   vinyl: true,
   ascend: true,
-  lp_smart: false, // Howard paused this until LP pricing is finalized.
+  lp_smart: true,  // Iter 66 — re-enabled per Howard's request to work on LP pricing/UX.
   windows: true,   // Vero (legacy) — windows-kind only
   mezzo: true,     // Iter 37 — Mezzo (3000 series), windows-kind only
 };
