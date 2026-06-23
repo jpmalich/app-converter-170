@@ -127,9 +127,14 @@ def _j_channel_breakdown(m: dict) -> str:
 
 
 def _j_channel_compute(m: dict) -> tuple[int, str]:
-    """Howard's J-channel formula (Iter 57dd revision):
+    """Howard's J-channel formula (Iter 78 — eaves moved to Finish Trim):
 
-        pcs = ceil( (window + patio + garage perimeter + eaves + rakes) / 12.5 )
+        pcs = ceil( (window + patio + garage perimeter + rakes) / 12.5 )
+
+    Eaves used to be added here, but that double-counted the eave run
+    against Finish Trim (which already includes eaves). Eaves now belong
+    exclusively to Finish Trim; J-channel covers openings + rake
+    terminations only.
 
     Garage doors are now INCLUDED in the J-channel count (most
     contractors wrap vinyl J around the garage opening even with a
@@ -152,7 +157,6 @@ def _j_channel_compute(m: dict) -> tuple[int, str]:
     win_count = float(m.get("window_count") or 0)
     opening_perim = float(m.get("opening_perimeter_lf") or 0)
     windows = m.get("windows") or []
-    eaves = float(m.get("eaves_lf") or 0)
     rakes = float(m.get("rakes_lf") or 0)
 
     parts: list[str] = []  # human-readable breakdown segments
@@ -189,19 +193,16 @@ def _j_channel_compute(m: dict) -> tuple[int, str]:
             parts.append(f"{int(patio_n)} patio × {int(PATIO_DOOR_PERIM_LF)}")
     if garage_n:
         parts.append(f"{int(garage_n)} garage × {int(GARAGE_DOOR_PERIM_LF)}")
-    if eaves:
-        parts.append(f"{eaves:.0f} eaves")
     if rakes:
         parts.append(f"{rakes:.0f} rakes")
 
     total_lf = (
         win_patio_perim
         + garage_n * GARAGE_DOOR_PERIM_LF
-        + eaves
         + rakes
     )
     if total_lf <= 0:
-        return 0, "no openings + no soffit → 0 pcs"
+        return 0, "no openings + no rakes → 0 pcs"
     pcs = int(math.ceil(total_lf / 12.5))
     breakdown = f"{' + '.join(parts)} = {total_lf:.0f} LF ÷ 12.5 = {pcs} pcs"
     return pcs, breakdown
@@ -561,9 +562,9 @@ HOVER_MAPPING_SPEC = [
         "unit": "PCS",
         "extract": lambda m: max(
             0,
-            math.ceil(((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 12.5),
+            math.ceil(((m.get("eaves_lf") or 0) + 2 * (m.get("rakes_lf") or 0)) / 12.5),
         ),
-        "note": "(Eaves + Rakes) ÷ 12.5 LF/stick, round up · matches Vinyl Accessories J-channel math",
+        "note": "(Eaves + 2 × Rakes) ÷ 12.5 LF/stick — soffit J runs 2 passes at each rake (wall side + fascia return)",
     },
     # =====================================================================
     # FASCIA / RAKE / FRIEZE COVERAGE — driven off eaves LF (per Howard).
@@ -667,8 +668,9 @@ HOVER_MAPPING_SPEC = [
     },
     # =====================================================================
     # GUTTER — all 3 tabs share the Seamless Gutter section.
-    # Iter 57p: auto-extract downspouts + elbows. Default rule of thumb:
-    #   - 1 downspout per 30 LF of gutter (industry standard for 6" K-style)
+    # Iter 78 (2026-02-23): tightened downspout + end-cap formulas per
+    # Howard's LETRICK reconciliation. Downspouts: 1 per 25 LF (was 30).
+    # End caps: 1 run per 30 LF eaves (was 40).
     #   - 2 elbows per downspout (1 top to turn off the gutter, 1 kick-out
     #     at the bottom to throw water away from the foundation)
     #   - Minimum 2 downspouts when ANY gutter is present (code-typical:
@@ -689,24 +691,24 @@ HOVER_MAPPING_SPEC = [
         "section": "Seamless Gutter",
         "item": "Downspout 6\"",
         "unit": "LF",
-        # 1 downspout per 30 LF of gutter, minimum 2 when any gutter
-        # exists. Each downspout = ~10 LF run from gutter to splash
-        # block on a single-story (≈ eave-height + 2 ft of horizontal
-        # kick + 2 elbows of slack). Multiply count × 10 LF for ordering.
+        # Iter 78: 1 downspout per 25 LF (tightened from 30), minimum 2.
+        # Each downspout = ~10 LF run from gutter to splash block on a
+        # single-story (≈ eave-height + 2 ft kick + slack).
         "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 30)) * 10
+            max(2, math.ceil((m.get("eaves_lf") or 0) / 25)) * 10
             if (m.get("eaves_lf") or 0) > 0 else 0
         ),
-        "note": "1 downspout per 30 LF eaves, min 2; each ≈ 10 LF of coil",
+        "note": "1 downspout per 25 LF eaves, min 2; each ≈ 10 LF of coil",
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
         "section": "Seamless Gutter",
         "item": "elbow",
         "unit": "Each",
-        # 2 elbows per downspout (top turn + bottom kick-out)
+        # 2 elbows per downspout (top turn + bottom kick-out). Same
+        # 1-per-25 LF rule as downspouts.
         "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 30)) * 2
+            max(2, math.ceil((m.get("eaves_lf") or 0) / 25)) * 2
             if (m.get("eaves_lf") or 0) > 0 else 0
         ),
         "note": "2 elbows per downspout (top + kick-out)",
@@ -714,19 +716,19 @@ HOVER_MAPPING_SPEC = [
     # Iter 65 — End Caps. Industry standard: 2 caps per continuous gutter
     # run (one on each end). HOVER doesn't expose a gutter-run count so
     # we estimate runs from eaves LF: a typical rectangular home has
-    # ~2 runs (front + back), larger/wrapping homes get +1 run per ~40
-    # LF beyond that. Min 2 runs whenever any gutter is present, so the
-    # row never under-orders on a small one-elevation quote.
+    # ~2 runs (front + back), larger/wrapping homes get +1 run per ~30
+    # LF (tightened from 40 in Iter 78 per LETRICK reconciliation).
+    # Min 2 runs whenever any gutter is present.
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
         "section": "Seamless Gutter",
         "item": "End Cap",
         "unit": "Each",
         "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 40)) * 2
+            max(2, math.ceil((m.get("eaves_lf") or 0) / 30)) * 2
             if (m.get("eaves_lf") or 0) > 0 else 0
         ),
-        "note": "2 end caps per gutter run (~1 run per 40 LF eaves, min 2 runs)",
+        "note": "2 end caps per gutter run (~1 run per 30 LF eaves, min 2 runs)",
     },
     # Iter 57w — Mirror Gutter + Downspout into the ISS catalog. ISS uses
     # the "Seamless Gutter with Siding" section with plainer item names
@@ -748,10 +750,10 @@ HOVER_MAPPING_SPEC = [
         "item": "Downspout",
         "unit": "LF",
         "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 30)) * 10
+            max(2, math.ceil((m.get("eaves_lf") or 0) / 25)) * 10
             if (m.get("eaves_lf") or 0) > 0 else 0
         ),
-        "note": "1 downspout per 30 LF eaves, min 2; each ≈ 10 LF of coil",
+        "note": "1 downspout per 25 LF eaves, min 2; each ≈ 10 LF of coil",
     },
     # =====================================================================
     # CAPS — Misc. Labor & Material section is on all 3 tabs.

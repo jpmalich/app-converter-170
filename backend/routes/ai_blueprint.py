@@ -144,10 +144,47 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   "eaves_lf": number,          // sum of widths of EAVE walls only (i.e. walls where gable_triangle_height_ft == 0). For a typical gable-roof house with gables on front + back, this = left wall width + right wall width — NOT the full perimeter. Only equals the full perimeter when the roof is a hip (every wall has gable_triangle_height_ft = 0).
   "rakes_lf": number,          // sum of sloped roof edges = 2 × √((wall_width/2)² + gable_triangle_height_ft²) summed over each gable wall
   "starter_lf": number,        // ≈ eaves_lf for basic 1-story; differs on walk-outs
-  "outside_corner_lf": number, // (# outside corners × avg eave height); count corners on the floor plan
-  "inside_corner_lf": number,  // L-shaped wings only; 0 for a basic rectangle
+  "outside_corner_count": number, // INTEGER. Number of OUTSIDE corner locations on the floor plan. See "CORNER COUNTING" rule below.
+  "outside_corner_lf": number, // = outside_corner_count × avg_wall_height_ft. Each corner trim runs the full eave height.
+  "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
+  "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
   "notes": "<2-3 sentences flagging anything to verify — missing dims, illegible numbers, etc.>"
 }
+
+CORNER COUNTING (read this carefully — this is where most readers
+get the takeoff wrong):
+
+Walk the floor-plan perimeter CLOCKWISE starting from any corner. At
+every change of direction, classify the corner:
+
+  • OUTSIDE corner (convex / 90° projecting outward) — the wall turns
+    AWAY from the interior. From inside the house this corner looks
+    like a 90° bend pointing OUT toward the yard. A simple rectangular
+    house has exactly 4 outside corners. An L-shape has 5 outside
+    corners. A T-shape has 6.
+
+  • INSIDE corner (concave / 270° receding inward) — the wall turns
+    TOWARD the interior. From inside the house this corner looks like
+    a notch / armpit pointing IN. A simple rectangle has 0 inside
+    corners. An L-shape has 1 inside corner. A T-shape has 2.
+
+INVARIANT — verify this before returning:
+  (outside_corner_count − inside_corner_count) MUST equal 4 for any
+  closed building footprint. If your counts don't satisfy this,
+  RE-WALK the perimeter — you mis-classified at least one corner.
+
+Examples:
+  • Pure rectangle:           4 outside, 0 inside  → 4 − 0 = 4 ✓
+  • L-shape (one wing):       5 outside, 1 inside  → 5 − 1 = 4 ✓
+  • T-shape (two wings):      6 outside, 2 inside  → 6 − 2 = 4 ✓
+  • U-shape:                  6 outside, 2 inside  → 6 − 2 = 4 ✓
+  • Cross / plus footprint:   8 outside, 4 inside  → 8 − 4 = 4 ✓
+  • Footprint with bump-out:  6 outside, 2 inside  → 6 − 2 = 4 ✓
+
+DO NOT default inside_corner_count to 0 unless you have walked the
+perimeter and confirmed the footprint is a pure rectangle. Bump-outs,
+breakfast nooks, mudroom additions, garage bumpouts, and L-wings ALL
+create inside corners.
 
 CRITICAL RULES:
 

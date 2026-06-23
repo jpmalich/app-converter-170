@@ -390,7 +390,28 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
       <button
         type="button"
         className="px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
-        onClick={() => fileRef.current?.click()}
+        onClick={() => {
+          // Iter 78 — prompt for waste % if blank. Bakes the contractor's
+          // waste assumption into the estimate BEFORE the blueprint read,
+          // so siding + soffit panel quantities come out matching what
+          // they'd actually order. Skip if a value (even 0) is already set
+          // intentionally, or if we have no `update` callback (ISS mode).
+          const currentWaste = Number(est?.waste_pct ?? -1);
+          const shouldPrompt =
+            typeof update === "function" && (currentWaste <= 0 || isNaN(currentWaste));
+          if (shouldPrompt) {
+            const raw = window.prompt(
+              "Set Waste Factor % for this quote (applies to Siding + Soffit panel orders).\n\nTypical: 10% small/simple, 15% standard, 25–33% complex / lots of cuts.\n\nLeave blank to skip.",
+              "15"
+            );
+            if (raw === null) return; // user hit Cancel — abort upload
+            const pct = Number(raw);
+            if (!isNaN(pct) && pct > 0) {
+              update({ waste_pct: pct });
+            }
+          }
+          fileRef.current?.click();
+        }}
         disabled={busy}
         data-testid="blueprint-import-btn"
         title="Read a blueprint PDF and pull window schedule + wall dims"
