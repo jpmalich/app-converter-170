@@ -153,6 +153,10 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 ))}
               </select>
             </div>
+            {/* Iter 77 — LP SmartSiding doesn't use Ascend or Pelican Bay
+                shake palettes; Howard asked to hide those two selectors on
+                the LP workspace. Siding (vinyl/ascend) and ISS keep them. */}
+            {est.kind !== "lp_smart" && (
             <div>
               <label className="label">{t("est.color.ascend")}</label>
               <select
@@ -167,6 +171,8 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 ))}
               </select>
             </div>
+            )}
+            {est.kind !== "lp_smart" && (
             <div>
               <label className="label">{t("est.color.shake")}</label>
               <select
@@ -185,6 +191,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 ))}
               </select>
             </div>
+            )}
             <div>
               <label className="label">{t("est.color.boardBatten")}</label>
               <select
