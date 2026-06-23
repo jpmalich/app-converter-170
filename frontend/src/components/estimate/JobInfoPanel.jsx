@@ -6,6 +6,7 @@ import { vinylSidingColorGroupsForEstimate, accessoryColorGroupsForEstimate, ASC
 import HoverImportButton from "@/components/estimate/HoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
+import PairToLpButton from "@/components/estimate/PairToLpButton";
 
 export default function JobInfoPanel({ est, update, save, setInstallMethod, setHomePre1978 }) {
   const t = useT();
@@ -27,6 +28,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
         <div className="flex flex-wrap gap-2">
           <HoverImportButton est={est} update={update} save={save} />
           <BlueprintMeasureButton est={est} update={update} save={save} />
+          <PairToLpButton est={est} />
           <AIMeasureButton
             kind={est.kind || "siding"}
             address={est?.address}

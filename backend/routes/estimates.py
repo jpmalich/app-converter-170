@@ -201,6 +201,90 @@ async def pair_estimate(est_id: str, user: dict = Depends(get_current_user)):
     return new_doc
 
 
+@router.post("/estimates/{est_id}/pair-lp")
+async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
+    """Spawn (or return existing) paired LP-kind estimate.
+
+    Iter 74: LP got its own workspace (Iter 73). When a contractor quotes
+    siding + LP on the same house, this endpoint creates a fresh lp_smart-
+    kind estimate carrying over customer / address / estimator / HOVER
+    measurements so they don't have to retype.
+
+    Behavior:
+      - Idempotent: if the source already has a `paired_lp_estimate_id`
+        pointing to a live doc, return it unchanged.
+      - EST# scheme: source `EST-788260` → paired `EST-788260-L`.
+        Source `EST-788260-W` (windows) → strip `-W`, append `-L` →
+        `EST-788260-L`.
+      - Independent of `paired_estimate_id` (siding↔windows pair) so a
+        single source can fan out to BOTH windows AND lp_smart pairs.
+      - Carries `hover_measurements` forward (Iter 71) so the LP HOVER
+        auto-fill formulas can run on the new estimate without re-uploading
+        the PDF.
+    """
+    src = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0}
+    )
+    if not src:
+        raise HTTPException(status_code=404, detail="Source estimate not found")
+    if src.get("kind") == "lp_smart":
+        # Can't pair LP from an LP estimate — pair the other way.
+        raise HTTPException(
+            status_code=400,
+            detail="This is already an LP estimate. Pair from the siding or windows side.",
+        )
+
+    existing_id = src.get("paired_lp_estimate_id")
+    if existing_id:
+        existing = await db.estimates.find_one(
+            {"id": existing_id, "company_id": user["company_id"]}, {"_id": 0}
+        )
+        if existing:
+            return existing
+        # Pointer stale (LP estimate deleted) — fall through to re-create.
+
+    src_num = src.get("estimate_number") or ""
+    base_num = src_num[:-2] if src_num.endswith(("-W", "-S")) else src_num
+    new_num = f"{base_num}-L" if base_num else ""
+
+    new_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    new_doc = {
+        "id": new_id,
+        "company_id": user["company_id"],
+        "created_by": user["id"],
+        "created_by_name": user.get("name"),
+        "created_at": now,
+        "updated_at": now,
+        "estimate_number": new_num,
+        "estimate_date": src.get("estimate_date") or now[:10],
+        # One-time copy of job info.
+        "customer_name": src.get("customer_name") or "",
+        "address": src.get("address") or "",
+        "estimator": src.get("estimator") or "",
+        # Iter 71: carry HOVER measurements forward so LP HOVER auto-fill
+        # specs (Iter 68) and per-elevation card can render on the LP side
+        # without re-uploading the PDF.
+        "hover_measurements": src.get("hover_measurements") or None,
+        "kind": "lp_smart",
+        "status_label": "draft",
+        "lines": [],
+        "misc_labor": [],
+        "misc_material": [],
+        "mezzo_openings": [],
+        "vero_openings": [],
+        "photos": [],
+        "paired_lp_estimate_id": est_id,  # back-pointer (reciprocal)
+    }
+    await db.estimates.insert_one(new_doc)
+    await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"$set": {"paired_lp_estimate_id": new_id, "updated_at": now}},
+    )
+    new_doc.pop("_id", None)
+    return new_doc
+
+
 # ---------------------------------------------------------------------------
 # CSV Export — define BEFORE the /estimates/{est_id} param routes so the
 # literal "/exports/..." paths match first.

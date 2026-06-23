@@ -174,6 +174,13 @@ class EstimateIn(BaseModel):
     # chain-link badge linking them. One-time copy on creation — they're
     # independent docs after that.
     paired_estimate_id: Optional[str] = None
+    # Iter 74 (2026-06-22): LP got its own workspace (Iter 73). When a
+    # contractor quotes both siding + LP for the same house, the "Pair to
+    # LP" button copies customer/address/HOVER measurements into a new
+    # lp_smart-kind estimate and back-points here. Independent of the
+    # siding↔windows pairing above so a single siding draft can fan out
+    # to BOTH a windows-pair and an LP-pair.
+    paired_lp_estimate_id: Optional[str] = None
     lines: List[EstimateLine] = []
     misc_labor: List[MiscLine] = []
     misc_material: List[MiscLine] = []
