@@ -17,6 +17,12 @@ import { FileText, Loader2, X, Check, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
+import {
+  getSavedWasteDefault,
+  saveWasteDefault,
+  clearWasteDefault,
+  workspaceLabel,
+} from "@/lib/wasteDefaults";
 
 const SIDING_TABS = new Set(["vinyl", "ascend", "lp_smart"]);
 const WINDOWS_TABS = new Set(["windows"]);
@@ -392,24 +398,34 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         type="button"
         className="px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => {
-          // Iter 78 — prompt for waste % if blank. Bakes the contractor's
-          // waste assumption into the estimate BEFORE the blueprint read,
-          // so siding + soffit panel quantities come out matching what
-          // they'd actually order. Skip if a value (even 0) is already set
-          // intentionally, or if we have no `update` callback (ISS mode).
-          const currentWaste = Number(est?.waste_pct ?? -1);
-          const shouldPrompt =
-            typeof update === "function" && (currentWaste <= 0 || isNaN(currentWaste));
-          if (shouldPrompt) {
-            const raw = window.prompt(
-              "Set Waste Factor % for this quote (applies to Siding + Soffit panel orders).\n\nTypical: 10% small/simple, 15% standard, 25–33% complex / lots of cuts.\n\nLeave blank to skip.",
-              "15"
-            );
-            if (raw === null) return; // user hit Cancel — abort upload
-            const pct = Number(raw);
-            if (!isNaN(pct) && pct > 0) {
-              update({ waste_pct: pct });
-            }
+          // Iter 78 — Waste % flow:
+          //   1. If estimate already has waste_pct > 0 → respect it, no prompt.
+          //   2. Else if a saved default exists for this workspace → silently
+          //      apply it and proceed. ("Save as Job Standard" behavior.)
+          //   3. Else → prompt once; the entered value is saved as the
+          //      per-workspace default + applied to this estimate.
+          const kind = est?.kind || "siding";
+          const currentWaste = Number(est?.waste_pct ?? 0);
+          const canUpdate = typeof update === "function";
+          if (currentWaste > 0 || !canUpdate) {
+            fileRef.current?.click();
+            return;
+          }
+          const savedDefault = getSavedWasteDefault(kind);
+          if (savedDefault) {
+            update({ waste_pct: savedDefault });
+            fileRef.current?.click();
+            return;
+          }
+          const raw = window.prompt(
+            `Set Waste Factor % for ${workspaceLabel(kind)} quotes (applies to Siding + Soffit panel orders).\n\nThis value will be saved as your default for this workspace — you won't be asked again on future uploads (use the "change" link under the button to update it later).\n\nTypical: 10% small, 15% standard, 25–33% complex / lots of cuts.`,
+            "15"
+          );
+          if (raw === null) return;
+          const pct = Number(raw);
+          if (!isNaN(pct) && pct > 0) {
+            update({ waste_pct: pct });
+            saveWasteDefault(kind, pct);
           }
           fileRef.current?.click();
         }}
@@ -426,6 +442,60 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
             : "Reading plans…")
           : "Read Blueprints"}
       </button>
+
+      {/* Iter 78 — Default waste % caption. Shown when a saved default
+          exists for this workspace; provides quick "change" + "clear"
+          affordances so Howard can update or reset without leaving the
+          page. Hidden when no default is saved yet (the upload button's
+          first-click prompt creates it). */}
+      {typeof update === "function" && (() => {
+        const kind = est?.kind || "siding";
+        const saved = getSavedWasteDefault(kind);
+        if (!saved) return null;
+        return (
+          <div
+            className="mt-1.5 text-[10px] uppercase tracking-wider text-[#71717A] flex items-center gap-2"
+            data-testid="blueprint-waste-default-caption"
+          >
+            <span>
+              Default waste · <span className="font-bold text-[#09090B]">{saved}%</span>
+            </span>
+            <button
+              type="button"
+              className="text-[#7C3AED] hover:underline font-bold"
+              onClick={() => {
+                const raw = window.prompt(
+                  `Update default Waste Factor % for ${workspaceLabel(kind)} quotes.\n\nThis replaces the saved default and applies to this estimate too.`,
+                  String(saved)
+                );
+                if (raw === null) return;
+                const pct = Number(raw);
+                if (!isNaN(pct) && pct > 0) {
+                  update({ waste_pct: pct });
+                  saveWasteDefault(kind, pct);
+                }
+              }}
+              data-testid="blueprint-waste-default-change"
+            >
+              change
+            </button>
+            <span className="text-[#D4D4D8]">·</span>
+            <button
+              type="button"
+              className="text-[#71717A] hover:text-[#DC2626] font-bold"
+              onClick={() => {
+                clearWasteDefault(kind);
+                // Force re-render by nudging the estimate (any update will do)
+                update({ waste_pct: est?.waste_pct || 0 });
+              }}
+              data-testid="blueprint-waste-default-clear"
+              title="Clear the saved default — next upload will prompt again"
+            >
+              clear
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Iter 57x — Restore banner. Surfaces when a blueprint run for
           this estimate completed on the backend but the frontend never

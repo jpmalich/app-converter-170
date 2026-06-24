@@ -12,6 +12,7 @@ import { Upload, FileText, Check, X, Loader2, AlertTriangle } from "lucide-react
 import { toast } from "sonner";
 import api from "@/lib/api";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
+import { getSavedWasteDefault } from "@/lib/wasteDefaults";
 
 const KEY_LABELS = {
   siding_sqft: "Siding",
@@ -78,6 +79,19 @@ export default function HoverImportButton({ est, update, save }) {
 
   const upload = async (f) => {
     if (!f) return;
+    // Iter 78 — silent auto-apply of the per-workspace default Waste %.
+    // No prompt here (HOVER reports already include their own waste row);
+    // we just respect the contractor's saved default so the
+    // reconciliation card shows the right "Order @ X%" column. The
+    // Blueprint button is the one place that prompts.
+    if (typeof update === "function") {
+      const kind = est?.kind || "siding";
+      const currentWaste = Number(est?.waste_pct ?? 0);
+      if (currentWaste <= 0) {
+        const saved = getSavedWasteDefault(kind);
+        if (saved) update({ waste_pct: saved });
+      }
+    }
     setBusy(true);
     setResult(null);
     setOpenings([]);
