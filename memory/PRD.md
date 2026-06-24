@@ -487,6 +487,15 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 
 ## Recent Changes
 
+- **Iter 78l — Waste factor applies to House Wrap (2026-02-25)**: Howard's request: waste % should bake into House Wrap rolls the same way it bakes into siding panels (full-coverage product, cut waste at every opening + corner + seam).
+  - **One-line fix** in `frontend/src/lib/wasteLogic.js` — `isCutProneItem` now also matches `name === "house wrap" || name === "raindrop house wrap"`. Single source of truth, so the change propagates across:
+    - HOVER import / Blueprint import (waste baked into qty on apply)
+    - "Recompute waste on existing lines" button (SettingsRow)
+    - Material List PDF Order column
+    - Takeoff Recon Card (Order @ X% waste column)
+  - **Tests** (`frontend/src/lib/wasteLogic.test.mjs`): added 2 new assertions covering both `House Wrap` and `RainDrop House Wrap`. All wasteLogic tests pass.
+  - **Files**: `frontend/src/lib/wasteLogic.js`, `frontend/src/lib/wasteLogic.test.mjs`, `memory/PRD.md`.
+
 - **Iter 78k — Reverse Iter 69 vinyl/ascend labor lockdown (2026-02-25)**: Howard reversed his Iter 69 rule. Labor is now editable on ALL siding tabs (vinyl, ascend, lp_smart) just like windows. Two changes:
   - **Backend** (`services.py`): removed the boot-time `update_many` that force-zeroed `lab` on every estimate line where `tab ∈ {vinyl, ascend}`. Contractors' labor edits now survive backend restarts. Historical $0 values stay until the contractor types a new value (no auto-restore since the catalog never carried a default labor for siding profiles).
   - **Frontend** (`SectionAccordion.jsx`): removed the tab-conditional read-only branch. Labor `<input>` now renders editable on every tab with the same override-styling + reset-to-default chip the LP/Windows lab fields already use.

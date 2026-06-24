@@ -89,6 +89,12 @@ export function isCutProneItem(line) {
   // Starter strip
   if (name === "starter" || name.startsWith("starter ")) return true;
 
+  // Iter 78l — House Wrap. Wrap rolls are full-coverage so contractors
+  // cut waste at every opening, seam, and corner. Howard's request: the
+  // waste % should apply to House Wrap (regular + RainDrop) the same
+  // way it applies to siding panels.
+  if (name === "house wrap" || name === "raindrop house wrap") return true;
+
   return false;
 }
 

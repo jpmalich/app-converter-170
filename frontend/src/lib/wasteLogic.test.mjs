@@ -103,6 +103,19 @@ eq(
   "End Cap != cut-prone"
 );
 
+// Iter 78l — House Wrap rolls now get the waste % too (full-coverage, cut
+// waste at every opening + corner).
+eq(
+  isCutProneItem({ section: "Siding Accessories", name: "House Wrap" }),
+  true,
+  "House Wrap = cut-prone"
+);
+eq(
+  isCutProneItem({ section: "Siding Accessories", name: "RainDrop House Wrap" }),
+  true,
+  "RainDrop House Wrap = cut-prone"
+);
+
 // Iter 78a bug fix — LP sections must now be cut-prone too.
 eq(
   isCutProneItem({ section: "LP Smart Siding", name: '38 Series Lap 3/8" x 8" x 16\'' }),
