@@ -699,19 +699,21 @@ async def ensure_tiers_seeded():
             await db.estimates.update_one(
                 {"_id": est["_id"]}, {"$set": {"lines": lines}}
             )
-    # Iter 69 (2026-06-22): zero lab on every estimate line on siding tabs.
-    # Howard's rule: "all labor entries to be $0 in the siding estimates;
-    # leave windows as is." Bounded by tab ∈ {vinyl, ascend, lp_smart} so
-    # Vero/Mezzo/Windows installed-labor pricing is untouched. Idempotent
-    # via the `lab: {$ne: 0}` matcher — finds nothing after first run.
+    # Iter 69 (2026-06-22) + Iter 78c (2026-02-23): zero lab on every
+    # estimate line on Vinyl + Ascend siding tabs. Howard's original
+    # rule: "all labor entries to be $0 in the siding estimates; leave
+    # windows as is." Iter 78c (LP labor un-locked): lp_smart REMOVED
+    # from this filter — LP contractors book labor on the line. Bounded
+    # by tab ∈ {vinyl, ascend} only. Idempotent via the
+    # `lab: {$ne: 0}` matcher — finds nothing after first run.
     await db.estimates.update_many(
         {"lines": {"$elemMatch": {
-            "tab": {"$in": ["vinyl", "ascend", "lp_smart"]},
+            "tab": {"$in": ["vinyl", "ascend"]},
             "lab": {"$ne": 0},
         }}},
         {"$set": {"lines.$[ln].lab": 0}},
         array_filters=[{
-            "ln.tab": {"$in": ["vinyl", "ascend", "lp_smart"]},
+            "ln.tab": {"$in": ["vinyl", "ascend"]},
             "ln.lab": {"$ne": 0},
         }],
     )

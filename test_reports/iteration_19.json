@@ -1,0 +1,34 @@
+{
+  "summary": "Iter 78c follow-up — backend startup migration restart-safety verified. After removing 'lp_smart' from BOTH $elemMatch and array_filters in services.py:709-718, LP labor edits now survive backend restarts. Confirmed across 3 consecutive backend restarts: lab=9.99 on '38 Series Lap 3/8\\\" x 8\\\" x 16'' (seeded by iteration_18) AND a newly-set lab=4.25 on '440 Series Trim 4/4\\\" x 4\\\" x 16'' both persisted. Vinyl/Ascend lab-zero enforcement remains intact (46 lines, all lab=0). Backend pytest 29/29 green.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_hover_perimeter.py",
+    "/app/backend/tests/test_pricing_parity.py",
+    "/app/backend/tests/test_j_channel_formula.py",
+    "/app/backend/tests/test_lp_waste_roundtrip.py",
+    "/app/test_reports/pytest/pytest_iteration19.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "services.py:702-708 comment block correctly documents Iter 69 + Iter 78c: 'lp_smart REMOVED from this filter — LP contractors book labor on the line. Bounded by tab ∈ {vinyl, ascend} only.' Filter arrays at lines 711 and 716 both contain only ['vinyl','ascend'] — matches the comment.",
+    "Idempotent matcher `lab: {$ne: 0}` is preserved on both the $elemMatch and the array_filter so subsequent restarts are no-ops on already-zeroed vinyl/ascend lines.",
+    "Recommend (non-blocking) adding a one-shot pytest that PUTs lab=X on an lp_smart line, calls the seed/migration function directly, then asserts the lab survived — would catch any future regression here automatically. The current test_lp_waste_roundtrip.py covers waste but not the lab restart-survival path."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (29/29 pytest + 3-restart persistence + vinyl/ascend regression)", "frontend": "N/A (iteration_18 fully covered UI; not re-tested per main agent guidance)"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "seed_data_creation": "Set lab=4.25 / qty=14 on '440 Series Trim 4/4\" x 4\" x 16'' line of EST-723351 (id f27a3c6f-00c6-4401-94a0-33f22eb6212e) — in addition to iteration_18's existing 9.99/255 on the 38 Series Lap line. Both LP labor values now sitting on the same estimate for visual verification if Howard opens it.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "EST-723351 (id f27a3c6f-00c6-4401-94a0-33f22eb6212e) now has TWO LP lines with non-zero lab as test residue: '38 Series Lap' lab=9.99/qty=255 (from iter18) and '440 Series Trim' lab=4.25/qty=14 (from iter19). Both survive backend restarts. Howard can reset via orange ↺ badge if undesired. The backend startup migration only zeros vinyl + ascend lines now.",
+  "verified_acceptance_criteria": {
+    "T1_preflight_iter18_value_survived_1st_restart": "PASS — GET /api/estimates/f27a3c6f-00c6-4401-94a0-33f22eb6212e returned lab=9.99 on '38 Series Lap 3/8\" x 8\" x 16'' line (tab=lp_smart, qty=255)",
+    "T2_stress_2nd_restart_value_still_intact": "PASS — sudo supervisorctl restart backend → sleep 6 → GET returned lab=9.99 unchanged; vinyl/ascend lines (46 total) all lab=0",
+    "T3_lp_PUT_lab_4.25_persisted_via_3rd_restart": "PASS — PUT lab=4.25 on '440 Series Trim 4/4\" x 4\" x 16'' (200 OK) → restart backend → GET returned lab=4.25, AND the prior 9.99 on 38 Series Lap also still intact",
+    "T4_vinyl_ascend_lock_regression": "PASS — Backend-side: all 46 vinyl/ascend lines on EST-723351 still lab=0 after 3 restarts. Frontend-side: iteration_18 verified all Vinyl Conquest/Coventry inputs render readOnly=true tabIndex=-1 cursor-not-allowed — unchanged in iter78c (SectionAccordion.jsx:285-310 still gates on ['vinyl','ascend'].includes(l.tab))",
+    "T5_backend_pytest_29_pass": "PASS — 29 passed in 4.67s; junit xml at /app/test_reports/pytest/pytest_iteration19.xml",
+    "T6_code_review_comment_block_correct": "PASS — services.py:702-708 comment correctly documents Iter 78c (only vinyl + ascend in both filters). Filter arrays at 711 + 716 confirmed ['vinyl','ascend'] — lp_smart NOT present in either."
+  },
+  "rca_of_the_issue": "Iter 78c originally relaxed only the frontend lock (SectionAccordion.jsx) while leaving the backend startup migration (services.py:707-717) configured to zero lab on lp_smart at every restart. In-session edits worked, but `ensure_tiers_seeded()` runs on every backend boot and would wipe all saved LP labor. The follow-up fix removes 'lp_smart' from BOTH the $elemMatch tab list (line 711) AND the array_filters (line 716), so only vinyl + ascend are affected. Verified end-to-end via 3 backend restarts — LP labor values 9.99 + 4.25 both survived; vinyl/ascend remain zeroed."
+}
