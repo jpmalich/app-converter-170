@@ -71,22 +71,27 @@ def test_starter_ascend_matches_vinyl():
     assert v["extract"](m) == a["extract"](m) == 14
 
 
-def test_finish_trim_ceil_12_5_with_window_widths():
-    """Use the per-window width sum from HOVER when available."""
+def test_finish_trim_full_window_perimeter_when_dims_available():
+    """Iter 78f — Finish Trim uses FULL window perimeter (top + sides + bottom)
+    when per-window dimensions are present in `windows[]`."""
     s = _spec("Finish Trim Standard color", "vinyl")
-    # 100 eaves + 24 window-bottom LF = 124 / 12.5 = 9.92 → 10 pcs
+    # 100 eaves + 2 windows @ 36x48 + 48x60 → perim_in = 2×(36+48) + 2×(48+60)
+    # = 168 + 216 = 384 in / 12 = 32 LF. Total = 132 LF / 12.5 = 10.56 → 11 pcs.
     assert s["extract"]({
         "eaves_lf": 100,
-        "window_bottom_width_total_lf": 24,
-    }) == 10
+        "windows": [
+            {"width_in": 36, "height_in": 48},
+            {"width_in": 48, "height_in": 60},
+        ],
+    }) == 11
 
 
-def test_finish_trim_falls_back_to_3ft_per_window():
-    """When HOVER didn't break out window bottoms, fall back to a 3 ft
-    average per window count."""
+def test_finish_trim_falls_back_to_14lf_per_window():
+    """Iter 78f — When HOVER didn't break out per-window dims, fall back to
+    14 LF/window (3'0" × 4'0" typical replacement window perimeter)."""
     s = _spec("Finish Trim Standard color", "vinyl")
-    # 100 eaves + 8 windows × 3 ft = 124 / 12.5 → 10 pcs
+    # 100 eaves + 5 windows × 14 LF = 170 LF / 12.5 = 13.6 → 14 pcs
     assert s["extract"]({
         "eaves_lf": 100,
-        "window_count": 8,
-    }) == 10
+        "window_count": 5,
+    }) == 14

@@ -108,6 +108,47 @@ PATIO_DOOR_PERIM_LF = 22.0    # 6'0" × 6'8" → 2 × (6 + 6.67) ≈ 25.3 (use 2
 WINDOW_PERIM_LF_FALLBACK = 14.0  # 3'0" × 4'0" typical replacement window → 14 perim
 
 
+def _window_perim_total_lf(m: dict) -> float:
+    """Total window perimeter (all 4 sides) across every window on the job.
+
+    Prefers per-window dims from `windows[]` (most accurate); falls back to
+    `window_count × WINDOW_PERIM_LF_FALLBACK` when HOVER didn't break out
+    individual dimensions. Used by Finish Trim (Iter 78f — full window
+    perimeter, not just sills).
+    """
+    windows = m.get("windows") or []
+    if windows:
+        perim_in = sum(
+            2 * (float(w.get("width_in") or 0) + float(w.get("height_in") or 0))
+            for w in windows
+        )
+        return perim_in / 12.0
+    return float(m.get("window_count") or 0) * WINDOW_PERIM_LF_FALLBACK
+
+
+def _finish_trim_pcs(m: dict) -> int:
+    """Iter 78f — Finish Trim qty = ceil((Eaves + full window perimeter) ÷ 12.5).
+    Rakes are deliberately excluded: Soffit J-Channel already covers the rake
+    in 2 passes (wall + fascia side), and Howard's install rule is exactly
+    2 passes at each rake total — adding rake here would push it to 4."""
+    eaves = float(m.get("eaves_lf") or 0)
+    win_perim = _window_perim_total_lf(m)
+    return max(0, math.ceil((eaves + win_perim) / 12.5))
+
+
+def _finish_trim_note(m: dict) -> str:
+    eaves = float(m.get("eaves_lf") or 0)
+    win_perim = _window_perim_total_lf(m)
+    windows = m.get("windows") or []
+    src = (f"{len(windows)} windows individual dims"
+           if windows else
+           f"{int(m.get('window_count') or 0)} wins × {int(WINDOW_PERIM_LF_FALLBACK)} LF (fallback)")
+    total = eaves + win_perim
+    pcs = max(0, math.ceil(total / 12.5))
+    return (f"{eaves:.0f} eaves + {win_perim:.0f} LF window perim "
+            f"({src}) = {total:.0f} LF ÷ 12.5 = {pcs} pcs")
+
+
 def _j_channel_pcs(m: dict) -> int:
     """See `_j_channel_breakdown` for the full math + which source path
     was used. This wrapper just returns the integer piece count."""
@@ -416,36 +457,27 @@ HOVER_MAPPING_SPEC = [
         "note": "Ascend Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
     # =====================================================================
-    # FINISH TRIM — qty = (eaves LF + sum of window bottom widths) ÷ 10
-    # (per Howard, matching the per-PCS catalog unit — same divisor as
-    # Starter). Defaults to Standard color on vinyl; Architectural color
-    # variant is left for manual selection. Same formula on Ascend.
-    # If the HOVER report doesn't break out per-window widths, that piece
-    # falls back to 0 and the contractor can top-up the qty manually.
+    # FINISH TRIM — qty = (eaves LF + FULL window perimeter) ÷ 12.5
+    # Iter 78f (2026-02-25): Howard's clarification — finish trim wraps the
+    # full window perimeter (top + sides + bottom), not just the sill width.
+    # Rakes are NOT included here: Soffit J-Channel already counts 2 passes
+    # at each rake; total install rule is exactly 2 passes per rake.
     # =====================================================================
     {
         "tabs": ["vinyl"],
         "section": "Siding Accessories",
         "item": "Finish Trim Standard color",
         "unit": "PCS",
-        "extract": lambda m: max(0, math.ceil(
-            ((m.get("eaves_lf") or 0)
-             + (m.get("window_bottom_width_total_lf")
-                or (m.get("window_count") or 0) * 3.0)) / 12.5
-        )),
-        "note": "ceil((Eaves LF + window bottoms) ÷ 12.5) — falls back to 3 ft/window",
+        "extract": lambda m: _finish_trim_pcs(m),
+        "note": lambda m: _finish_trim_note(m),
     },
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
         "item": "ASCEND Finish Trim",
         "unit": "PCS",
-        "extract": lambda m: max(0, math.ceil(
-            ((m.get("eaves_lf") or 0)
-             + (m.get("window_bottom_width_total_lf")
-                or (m.get("window_count") or 0) * 3.0)) / 12.5
-        )),
-        "note": "ceil((Eaves LF + window bottoms) ÷ 12.5) — falls back to 3 ft/window",
+        "extract": lambda m: _finish_trim_pcs(m),
+        "note": lambda m: _finish_trim_note(m),
     },
     # =====================================================================
     # J-CHANNEL — wraps window + patio + GARAGE door perimeters PLUS soffit
