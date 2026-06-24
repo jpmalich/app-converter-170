@@ -487,6 +487,17 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 
 ## Recent Changes
 
+- **Iter 78r — Phase 2 expanded: rakes, soffit depth, window dims (2026-02-25)**: Howard wanted Phase 2 to cover more than just siding. Same Claude Opus 4.5 Vision call, expanded prompt, expanded `_build_warnings` — **5 new cross-checks** at zero added cost:
+  - **Eaves LF** — sum of per-face `facade_width_ft` vs text `eaves_lf` (>12% Δ flagged with per-face breakdown).
+  - **Rakes LF** — sum of per-face `rake_lf_on_face` (both slopes summed on gable faces, 0 on hip/flat) vs text `rakes_lf`.
+  - **Soffit / overhang depth** — drawings often label the overhang; compares avg labeled depth to job's `overhang_in` setting (>25% Δ, wider envelope since labels round to ¼ ft).
+  - **Window count** — sum of `len(window_dims[])` across elevations vs text `window_count` or `len(windows[])`. Flags Δ ≥ 2.
+  - **Window perimeter total** — Σ 2×(W+H) from drawing dims vs text `windows[]` dims (>20% Δ).
+  - Each new warning has a stable code (`vision_eaves_delta`, `vision_rakes_delta`, `vision_overhang_delta`, `vision_window_count_delta`, `vision_window_perim_delta`) and renders in the same yellow banner with detail strings.
+  - All extended-cross-check logic is null-safe: if Claude can't read a field, that delta silently skips.
+  - **Tests** (`backend/tests/test_hover_vision.py`): 7 new tests covering all 5 deltas (positive case + close-enough negative case + null-safe path). **53/53 backend tests pass.**
+  - **Files**: `backend/routes/hover_vision.py`, `backend/tests/test_hover_vision.py`, `memory/PRD.md`.
+
 - **Iter 78q — HOVER AI Verification Phase 3: Deep Verify scale-bar measurement (2026-02-25)**: Final phase of Howard's "verify HOVER drawings vs reported numbers" stack. Contractor-triggered second-opinion pass that re-measures a specific elevation against its on-page scale bar — ignoring the dim callouts entirely.
   - **Backend**:
     - Phase 2 now also stashes each rendered elevation PNG (base64) into a new MongoDB collection `hover_page_cache`, keyed by a UUID `deep_verify_cache_key` returned in the HOVER import response. **TTL index = 1 hour** so renders auto-purge after a typical preview session — never accumulates.

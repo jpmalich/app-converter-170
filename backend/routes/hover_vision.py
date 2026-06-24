@@ -68,7 +68,21 @@ Return ONE JSON object (no markdown, no commentary):
   "siding_sqft": <number | null>,        // net of openings if shown on the page;
                                          // null if only gross is labeled
   "confidence": "high" | "medium" | "low",
-  "notes": "<one short string explaining anomalies if confidence is low>"
+  "notes": "<one short string explaining anomalies if confidence is low>",
+
+  // Iter 78r — extended cross-check fields. All optional — set to null if
+  // not visible on this page.
+  "rake_lf_on_face": <number | null>,    // total RAKE length on this face
+                                         //   (both slopes summed). Set to
+                                         //   0 for a flat eave-only face.
+  "soffit_depth_ft": <number | null>,    // labeled overhang depth, in feet
+                                         //   (HOVER often labels this near
+                                         //   the eave). Null if not labeled.
+  "door_count_on_face": <integer | null>,// doors specifically (entry / patio
+                                         //   / garage combined) on THIS face
+  "window_dims": [                       // each visible window on THIS face
+    {"label": "<W1 / etc>", "width_ft": <num>, "height_ft": <num>}
+  ]
 }
 
 CRITICAL RULES:
@@ -81,6 +95,11 @@ CRITICAL RULES:
 - `siding_sqft` should be NET when the drawing explicitly shows a net
   number; otherwise null. NEVER guess net by subtracting an assumed
   opening size — only report what's labeled.
+- For `window_dims`, prefer the labeled dim callout (e.g. "3'0 × 4'0")
+  over inferring from the rectangle proportions. If only one dim is
+  visible, leave the missing one as null.
+- For `rake_lf_on_face` on a gable face: sum both sloped sides (left + right
+  rake). On a hip face or flat-eave face, return 0.
 """
 
 
@@ -191,24 +210,23 @@ def _build_warnings(
     vision_results: list[dict],
     measurements: dict,
 ) -> list[dict]:
-    """Compare each elevation's drawing-extracted area to the text-extracted
-    siding total. Builds Phase 1-shaped warning dicts (same banner)."""
+    """Compare drawing-extracted values to text-extracted measurements
+    across multiple axes (siding, eaves, rakes, soffit depth, window dims).
+    Builds Phase 1-shaped warning dicts (same banner)."""
     warnings: list[dict] = []
     text_per_elev = measurements.get("per_elevation_siding") or {}
     total_siding = float(measurements.get("siding_sqft") or 0)
     drawing_total = 0.0
     elev_lines: list[str] = []
 
+    # Per-elevation siding deltas + drawing totals
     for vr in vision_results:
         label = vr.get("elevation_label") or vr.get("__expected_label") or "?"
         drawing_net = vr.get("siding_sqft")
         drawing_gross = float(vr.get("gross_wall_sqft") or 0)
-        # Prefer net (siding) — fall back to gross when HOVER drawing
-        # didn't label a net.
         drawing_area = float(drawing_net) if drawing_net not in (None, 0) else drawing_gross
         drawing_total += drawing_area
 
-        # Per-elevation comparison if text has it broken out
         text_area_raw = text_per_elev.get(label) or text_per_elev.get(label.lower())
         if isinstance(text_area_raw, dict):
             text_area = float(
@@ -236,7 +254,7 @@ def _build_warnings(
                 })
         elev_lines.append(f"{label}: {drawing_area:.0f} ft²")
 
-    # Overall: drawing-total vs text siding_sqft
+    # Total siding drawing vs text
     if drawing_total > 0 and total_siding > 0:
         delta = _pct_delta(total_siding, drawing_total)
         if delta > DELTA_PCT_THRESHOLD:
@@ -250,7 +268,6 @@ def _build_warnings(
                 "detail": " · ".join(elev_lines) if elev_lines else None,
             })
     elif drawing_total > 0:
-        # Info-only: drawings gave us a number, text didn't.
         warnings.append({
             "code": "vision_drawings_sum_info",
             "level": "info",
@@ -259,6 +276,133 @@ def _build_warnings(
                 f"(per-elevation: {', '.join(elev_lines)})"
             ),
         })
+
+    # ─── Iter 78r — extended cross-checks ─────────────────────────────────
+    # 1) Eaves LF: text vs sum of per-face facade_widths.
+    text_eaves = float(measurements.get("eaves_lf") or 0)
+    drawing_eaves = sum(
+        float(vr.get("facade_width_ft") or 0) for vr in vision_results
+    )
+    if text_eaves > 0 and drawing_eaves > 0:
+        delta = _pct_delta(text_eaves, drawing_eaves)
+        if delta > DELTA_PCT_THRESHOLD:
+            warnings.append({
+                "code": "vision_eaves_delta",
+                "level": "warn",
+                "message": (
+                    f"Eaves LF: drawings sum to {drawing_eaves:.0f} LF, "
+                    f"text says {text_eaves:.0f} LF"
+                ),
+                "detail": (
+                    f"Δ = {delta:.0f}% · per-face: " +
+                    " · ".join(
+                        f"{vr.get('elevation_label') or vr.get('__expected_label')}: "
+                        f"{float(vr.get('facade_width_ft') or 0):.0f}"
+                        for vr in vision_results
+                    )
+                ),
+            })
+
+    # 2) Rakes LF: text vs sum of per-face rake_lf_on_face.
+    text_rakes = float(measurements.get("rakes_lf") or 0)
+    drawing_rakes = sum(
+        float(vr.get("rake_lf_on_face") or 0) for vr in vision_results
+    )
+    if text_rakes > 0 and drawing_rakes > 0:
+        delta = _pct_delta(text_rakes, drawing_rakes)
+        if delta > DELTA_PCT_THRESHOLD:
+            warnings.append({
+                "code": "vision_rakes_delta",
+                "level": "warn",
+                "message": (
+                    f"Rakes LF: drawings sum to {drawing_rakes:.0f} LF, "
+                    f"text says {text_rakes:.0f} LF"
+                ),
+                "detail": f"Δ = {delta:.0f}%",
+            })
+
+    # 3) Soffit / overhang depth: text vs labeled drawing depth.
+    text_overhang = float(measurements.get("overhang_in") or 0) / 12.0
+    drawing_overhangs = [
+        float(vr.get("soffit_depth_ft") or 0)
+        for vr in vision_results
+        if vr.get("soffit_depth_ft") not in (None, 0)
+    ]
+    if text_overhang > 0 and drawing_overhangs:
+        # Use the most common drawing-labeled overhang (median-ish — but
+        # with 4-6 samples just take the average).
+        avg_drawing_overhang = sum(drawing_overhangs) / len(drawing_overhangs)
+        delta = _pct_delta(text_overhang, avg_drawing_overhang)
+        if delta > 25:  # wider envelope — overhang labels round to ¼-ft
+            warnings.append({
+                "code": "vision_overhang_delta",
+                "level": "warn",
+                "message": (
+                    f"Overhang depth: drawings label ≈ {avg_drawing_overhang:.2f} ft, "
+                    f"job uses {text_overhang:.2f} ft"
+                ),
+                "detail": (
+                    f"Δ = {delta:.0f}% · update the overhang in Job Info if "
+                    f"the drawing is correct (soffit qty depends on this)."
+                ),
+            })
+
+    # 4) Window dim cross-check. Compare counts first; if counts agree,
+    # compare per-window perimeter total against text `windows[]`.
+    text_windows = measurements.get("windows") or []
+    drawing_windows = []
+    for vr in vision_results:
+        for w in (vr.get("window_dims") or []):
+            wf = float(w.get("width_ft") or 0)
+            hf = float(w.get("height_ft") or 0)
+            if wf > 0 and hf > 0:
+                drawing_windows.append({"width_ft": wf, "height_ft": hf,
+                                        "label": w.get("label")})
+    if drawing_windows:
+        drawing_count = len(drawing_windows)
+        text_count = (
+            len(text_windows)
+            if isinstance(text_windows, list) and text_windows
+            else int(measurements.get("window_count") or 0)
+        )
+        if text_count > 0 and abs(drawing_count - text_count) >= 2:
+            warnings.append({
+                "code": "vision_window_count_delta",
+                "level": "warn",
+                "message": (
+                    f"Window count from drawings ({drawing_count}) "
+                    f"differs from text ({text_count})"
+                ),
+                "detail": (
+                    f"Drawings labeled {drawing_count} discrete window "
+                    f"dims across all elevations · text reports "
+                    f"{text_count} windows total"
+                ),
+            })
+        # Per-window perimeter total cross-check
+        if isinstance(text_windows, list) and text_windows:
+            text_perim_in = sum(
+                2 * (float(w.get("width_in") or 0) + float(w.get("height_in") or 0))
+                for w in text_windows
+            )
+            drawing_perim_in = sum(
+                2 * (w["width_ft"] * 12 + w["height_ft"] * 12)
+                for w in drawing_windows
+            )
+            if text_perim_in > 0 and drawing_perim_in > 0:
+                delta = _pct_delta(text_perim_in, drawing_perim_in)
+                if delta > 20:  # wider envelope — labels round to 6"
+                    warnings.append({
+                        "code": "vision_window_perim_delta",
+                        "level": "warn",
+                        "message": (
+                            f"Window perimeter total: drawings ≈ "
+                            f"{drawing_perim_in / 12:.0f} LF, text "
+                            f"{text_perim_in / 12:.0f} LF"
+                        ),
+                        "detail": f"Δ = {delta:.0f}%",
+                    })
+
     return warnings
 
 
@@ -321,6 +465,11 @@ async def run_vision_pass(
             "facade_height_ft": r.get("facade_height_ft"),
             "opening_count": r.get("opening_count"),
             "confidence": r.get("confidence"),
+            # Iter 78r — extended drawing-extracted cross-check fields
+            "rake_lf_on_face": r.get("rake_lf_on_face"),
+            "soffit_depth_ft": r.get("soffit_depth_ft"),
+            "door_count_on_face": r.get("door_count_on_face"),
+            "window_dims": r.get("window_dims") or [],
             "source": "claude_vision",
             "page_num": r.get("__page_num"),
         }

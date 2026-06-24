@@ -199,3 +199,94 @@ def test_reconcile_deep_verify_no_text_area():
     assert out["delta_vs_text"] == "—"
     assert out["delta_vs_phase2"] == "Δ 10%"
 
+
+# ─── Iter 78r — extended cross-check tests ──────────────────────────────────
+
+
+def test_eaves_delta_flagged_when_sum_diverges():
+    """Drawings sum to 150 LF of facade widths but text says 100 LF eaves."""
+    vision_results = [
+        {"elevation_label": "Front", "facade_width_ft": 50, "siding_sqft": 0, "gross_wall_sqft": 0},
+        {"elevation_label": "Back",  "facade_width_ft": 50, "siding_sqft": 0, "gross_wall_sqft": 0},
+        {"elevation_label": "Left",  "facade_width_ft": 25, "siding_sqft": 0, "gross_wall_sqft": 0},
+        {"elevation_label": "Right", "facade_width_ft": 25, "siding_sqft": 0, "gross_wall_sqft": 0},
+    ]
+    warns = _build_warnings(vision_results, {"eaves_lf": 100})
+    codes = {w["code"] for w in warns}
+    assert "vision_eaves_delta" in codes
+
+
+def test_eaves_no_flag_when_close():
+    vision_results = [
+        {"elevation_label": "Front", "facade_width_ft": 26, "siding_sqft": 0, "gross_wall_sqft": 0},
+        {"elevation_label": "Back",  "facade_width_ft": 26, "siding_sqft": 0, "gross_wall_sqft": 0},
+        {"elevation_label": "Left",  "facade_width_ft": 25, "siding_sqft": 0, "gross_wall_sqft": 0},
+        {"elevation_label": "Right", "facade_width_ft": 25, "siding_sqft": 0, "gross_wall_sqft": 0},
+    ]
+    warns = _build_warnings(vision_results, {"eaves_lf": 100})  # drawings: 102
+    codes = {w["code"] for w in warns}
+    assert "vision_eaves_delta" not in codes
+
+
+def test_rakes_delta_flagged():
+    """Drawings show 80 LF of rake but text says 50."""
+    vision_results = [
+        {"elevation_label": "Left",  "rake_lf_on_face": 40, "siding_sqft": 0, "gross_wall_sqft": 0, "facade_width_ft": 0},
+        {"elevation_label": "Right", "rake_lf_on_face": 40, "siding_sqft": 0, "gross_wall_sqft": 0, "facade_width_ft": 0},
+    ]
+    warns = _build_warnings(vision_results, {"rakes_lf": 50})
+    codes = {w["code"] for w in warns}
+    assert "vision_rakes_delta" in codes
+
+
+def test_overhang_delta_flagged():
+    """Job uses 12" overhang (=1 ft) but drawings label 24" (=2 ft)."""
+    vision_results = [
+        {"elevation_label": "Front", "soffit_depth_ft": 2.0, "siding_sqft": 0, "gross_wall_sqft": 0, "facade_width_ft": 0},
+    ]
+    warns = _build_warnings(vision_results, {"overhang_in": 12})
+    codes = {w["code"] for w in warns}
+    assert "vision_overhang_delta" in codes
+
+
+def test_window_count_delta_flagged():
+    """Drawings show 10 distinct labeled windows but text says 5."""
+    vision_results = [
+        {"elevation_label": "Front",
+         "window_dims": [{"width_ft": 3, "height_ft": 4} for _ in range(10)],
+         "siding_sqft": 0, "gross_wall_sqft": 0, "facade_width_ft": 0},
+    ]
+    warns = _build_warnings(vision_results, {"window_count": 5})
+    codes = {w["code"] for w in warns}
+    assert "vision_window_count_delta" in codes
+
+
+def test_window_perim_delta_flagged():
+    """Drawings labeled 4 windows at 4'×5' (= 18 LF perim each, total 72)
+    but text windows[] has them at 3'×4' (= 14 LF perim, total 56). Delta = 22%."""
+    vision_results = [
+        {"elevation_label": "Front",
+         "window_dims": [{"width_ft": 4, "height_ft": 5} for _ in range(4)],
+         "siding_sqft": 0, "gross_wall_sqft": 0, "facade_width_ft": 0},
+    ]
+    text_windows = [{"width_in": 36, "height_in": 48} for _ in range(4)]
+    warns = _build_warnings(vision_results, {"windows": text_windows})
+    codes = {w["code"] for w in warns}
+    assert "vision_window_perim_delta" in codes
+
+
+def test_extended_checks_silent_when_drawings_omit_fields():
+    """If Phase 2 didn't extract rake/soffit/window data, no new warnings fire."""
+    vision_results = [
+        {"elevation_label": "Front", "siding_sqft": 500, "gross_wall_sqft": 500, "facade_width_ft": 0},
+    ]
+    warns = _build_warnings(vision_results, {
+        "eaves_lf": 100, "rakes_lf": 100, "overhang_in": 12,
+        "windows": [{"width_in": 36, "height_in": 48}],
+    })
+    extended_codes = {"vision_eaves_delta", "vision_rakes_delta",
+                      "vision_overhang_delta", "vision_window_count_delta",
+                      "vision_window_perim_delta"}
+    assert extended_codes.isdisjoint({w["code"] for w in warns})
+
+
