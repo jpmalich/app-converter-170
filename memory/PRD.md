@@ -485,6 +485,15 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 
 ## Recent Changes
 
+- **Iter 78g — Coverage Breakdown visualization in Takeoff Recon Card (2026-02-25)**: Howard wanted a quick way to spot HOVER mis-reads before sending a quote. Shipped a compact stacked-bar visualization for the two LF-driven items most prone to drift:
+  - **Finish Trim bar** — segments: `Eaves run` (blue) + `Window perimeter` (purple, with source tag "N dims" if HOVER returned per-window dims, else "N wins × 14 LF" fallback). Bottom label shows `total LF ÷ 12.5 = pcs` and formula `ceil((Eaves + Full Window Perim) ÷ 12.5)`.
+  - **Soffit J-Channel bar** — segments: `Eaves run` (blue) + `Rake @ 2 passes` (orange, computed as `2 × rakes_lf`). Bottom label shows `total LF ÷ 12.5 = pcs` and formula `ceil((Eaves + 2 × Rakes) ÷ 12.5) — 2 passes per rake (wall side + fascia return)`.
+  - Each segment width is proportional to its share of the total LF; inline LF value renders inside any segment ≥ 12% wide; legend chips below show full detail.
+  - Vinyl/Ascend only — LP catalog doesn't use Finish Trim or Soffit J-Channel item names. Section only renders when at least one of the two lines is present.
+  - New `CoverageBar` subcomponent + `windowPerimTotalLf()` helper added to `TakeoffReconCard.jsx`. Helper mirrors backend `_window_perim_total_lf()` exactly so card and mapper agree.
+  - **Files**: `frontend/src/components/estimate/TakeoffReconCard.jsx`.
+  - Renders inside both HOVER import preview modal and Blueprint preview modal (existing call sites — no plumbing needed).
+
 - **Iter 78f — Finish Trim: full window perimeter + 2-pass rake rule confirmed (2026-02-25)**: Howard's clarification on the soffit-J / finish-trim install rule — exactly **2 passes per rake** total (NOT 4), and Finish Trim wraps the **full window perimeter** (top + sides + bottom), not just the sill.
   - **Code** (`backend/routes/hover.py`): new `_window_perim_total_lf(m)` helper that prefers per-window dims from `windows[]` (sum of `2 × (width + height)` per window, in feet) and falls back to `window_count × 14 LF/window` (3'0" × 4'0" replacement-window assumption). New `_finish_trim_pcs(m)` + `_finish_trim_note(m)` helpers wired into both vinyl ("Finish Trim Standard color") and Ascend ("ASCEND Finish Trim") mappings. Formula: `ceil((eaves_lf + full_window_perim) ÷ 12.5)`. Rake stays out of Finish Trim — Soffit J-Channel already covers it with 2 passes (`Eaves + 2 × Rakes ÷ 12.5`), preserving the total-2-passes-per-rake rule.
   - **Examples**: 100 eaves + 2 wins @ 36×48 + 48×60 = 132 LF → **11 pcs**. 100 eaves + 5 wins (fallback) = 170 LF → **14 pcs**. Breakdown string in the Takeoff Recon Card now shows "{eaves} eaves + {win_perim} LF window perim ({src}) = {total} LF ÷ 12.5 = {pcs} pcs".

@@ -175,6 +175,69 @@ const roundUpHalf = (n) => {
   return Math.ceil(x * 2) / 2;
 };
 
+// Iter 78g — compute total window perimeter from HOVER measurements.
+// Mirrors backend `_window_perim_total_lf` in routes/hover.py so the
+// recon card and the takeoff mapper agree.
+const WINDOW_PERIM_LF_FALLBACK = 14.0;
+const windowPerimTotalLf = (m) => {
+  const wins = Array.isArray(m?.windows) ? m.windows : [];
+  if (wins.length) {
+    const perimIn = wins.reduce(
+      (s, w) => s + 2 * ((Number(w?.width_in) || 0) + (Number(w?.height_in) || 0)),
+      0,
+    );
+    return perimIn / 12;
+  }
+  return (Number(m?.window_count) || 0) * WINDOW_PERIM_LF_FALLBACK;
+};
+
+// Iter 78g — small horizontal stacked-bar coverage breakdown. Each
+// segment is colored, labeled with its LF value, and proportional to
+// its share of the total. Spot-checking aid for Howard to catch HOVER
+// mis-reads before sending a quote.
+function CoverageBar({ label, segments, totalLf, pcs, unit, formula }) {
+  const total = segments.reduce((s, x) => s + (Number(x.lf) || 0), 0);
+  if (total <= 0) return null;
+  return (
+    <div className="mb-2.5 last:mb-0" data-testid={`coverage-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+      <div className="flex items-baseline justify-between mb-1">
+        <span className="text-[11px] font-bold text-[#09090B]">{label}</span>
+        <span className="text-[10px] font-mono-num text-[#52525B]">
+          {total.toFixed(0)} LF ÷ 12.5 = <span className="font-bold text-[#09090B]">{pcs} {unit}</span>
+        </span>
+      </div>
+      <div className="flex h-5 w-full border border-[#E4E4E7] overflow-hidden">
+        {segments.map((seg) => {
+          const lf = Number(seg.lf) || 0;
+          if (lf <= 0) return null;
+          const pct = (lf / total) * 100;
+          return (
+            <div
+              key={seg.label}
+              className="flex items-center justify-center text-[10px] text-white font-mono-num"
+              style={{ width: `${pct}%`, backgroundColor: seg.color, minWidth: 0 }}
+              title={`${seg.label}: ${lf.toFixed(0)} LF`}
+            >
+              {pct >= 12 ? `${lf.toFixed(0)}` : ""}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+        {segments.filter((s) => (Number(s.lf) || 0) > 0).map((seg) => (
+          <span key={seg.label} className="flex items-center gap-1 text-[10px] text-[#52525B]">
+            <span className="inline-block w-2 h-2" style={{ backgroundColor: seg.color }} />
+            <span>{seg.label} <span className="font-mono-num text-[#71717A]">{seg.detail}</span></span>
+          </span>
+        ))}
+      </div>
+      {formula && (
+        <div className="text-[10px] font-mono-num text-[#A1A1AA] mt-0.5">{formula}</div>
+      )}
+    </div>
+  );
+}
+
 export default function TakeoffReconCard({ measurements, lines, wastePct = 0, kind = "siding", lpSoffitType = "mix" }) {
   if (!measurements || !lines || !lines.length) return null;
   const pct = Math.max(0, Number(wastePct) || 0);
@@ -235,6 +298,27 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
 
   if (!rows.length) return null;
 
+  // Iter 78g — Coverage breakdown for Finish Trim + Soffit J-Channel.
+  // Vinyl/Ascend only — LP catalog doesn't use these item names. Computes
+  // the LF contribution of each surface and renders compact stacked bars
+  // so Howard can spot drift in the source measurements at a glance.
+  const finishTrimLine = kind === "lp_smart" ? null : (
+    byName("Finish Trim Standard color", "vinyl") ||
+    byName("ASCEND Finish Trim", "ascend")
+  );
+  const soffitJLine = kind === "lp_smart" ? null : byName(
+    '3/4" Soffit J-Channel (Charter Oak) Standard color',
+    "vinyl",
+  );
+  const eavesLf = Number(measurements?.eaves_lf) || 0;
+  const rakesLf = Number(measurements?.rakes_lf) || 0;
+  const winPerim = windowPerimTotalLf(measurements);
+  const winSrc = (measurements?.windows?.length || 0) > 0
+    ? `${measurements.windows.length} dims`
+    : `${Number(measurements?.window_count) || 0} wins × 14 LF`;
+
+  const showCoverage = finishTrimLine || soffitJLine;
+
   return (
     <section
       className="p-5 border-b border-[#E4E4E7] bg-white"
@@ -292,6 +376,42 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
           </tbody>
         </table>
       </div>
+      {showCoverage && (
+        <div className="mt-4 pt-3 border-t border-[#E4E4E7]" data-testid="coverage-breakdown">
+          <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-2">
+            Coverage Breakdown
+          </div>
+          <p className="text-[11px] text-[#52525B] leading-snug mb-3">
+            Spot-check the source LF each piece count is built from. If a
+            segment looks off vs the home, the underlying HOVER measurement
+            (eaves / rakes / window dims) likely needs a second look.
+          </p>
+          {finishTrimLine && (
+            <CoverageBar
+              label="Finish Trim"
+              segments={[
+                { label: "Eaves run", lf: eavesLf, detail: `${eavesLf.toFixed(0)} LF`, color: "#0EA5E9" },
+                { label: "Window perimeter", lf: winPerim, detail: `${winPerim.toFixed(0)} LF · ${winSrc}`, color: "#A855F7" },
+              ]}
+              pcs={Number(finishTrimLine.qty) || 0}
+              unit={finishTrimLine.unit || "PCS"}
+              formula="Formula: ceil((Eaves + Full Window Perim) ÷ 12.5)"
+            />
+          )}
+          {soffitJLine && (
+            <CoverageBar
+              label="Soffit J-Channel"
+              segments={[
+                { label: "Eaves run", lf: eavesLf, detail: `${eavesLf.toFixed(0)} LF`, color: "#0EA5E9" },
+                { label: "Rake @ 2 passes", lf: rakesLf * 2, detail: `2 × ${rakesLf.toFixed(0)} LF rake`, color: "#F97316" },
+              ]}
+              pcs={Number(soffitJLine.qty) || 0}
+              unit={soffitJLine.unit || "PCS"}
+              formula="Formula: ceil((Eaves + 2 × Rakes) ÷ 12.5) — 2 passes per rake (wall side + fascia return)"
+            />
+          )}
+        </div>
+      )}
     </section>
   );
 }
