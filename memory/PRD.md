@@ -487,6 +487,17 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 
 ## Recent Changes
 
+- **Iter 78s — HOVER-style elevation drawings from AI Measure (2026-02-25)**: Howard wanted contractors using AI Photo to get HOVER-grade per-elevation takeoff sheets without paying for HOVER. Shipped the full kit:
+  - **New `ElevationDrawing.jsx`** — pure SVG React component that renders one elevation: wall rectangle sized to (facade_width_ft × facade_height_ft), roof shape above (gable triangle / hip trapezoid / flat slab / none), proportionally-positioned opening rectangles (color-coded by type: window blue, door orange, patio purple, garage grey), labeled dim callouts, 10-ft scale bar.
+  - **Interactive features**: drag any opening to reposition it (pointer events, touch + mouse), click roof toggle button to cycle gable → hip → flat → none. Edits stash on `measurements._ai_elevation_edits` and propagate to the persisted estimate on Apply.
+  - **`elevationBuilder.js`** — single source of truth that converts AI Measure (`walls[]` + `openings[]` with bboxes) into the renderer's input shape. Bbox center coords → wall-relative x/y percentages. Roof style auto-inferred from `gable_triangle_height_ft`.
+  - **`emailElevations.js`** — string-based SVG renderer (no React) that produces email/PDF-safe inline SVG for the customer Quote PDF. Mirrors the visual style of the React component at a compact print size. Wired into `emailQuote.js` as a new "Elevation Drawings" block right after the existing Per-Elevation Breakdown card.
+  - **AI Measure preview modal** (`AIMeasureButton.jsx`): new "Elevation Drawings" grid right under the AI notes, rendering one drawing per wall in a 2-col layout. Contractor reviews, nudges, toggles roof, applies → drawings persist on the estimate's measurements payload for the customer quote.
+  - **Persistence**: at Apply time, the merged elevations (with all contractor edits baked in) are stashed on `toApply.measurements._ai_elevations`. The customer Quote PDF reads from there.
+  - **Limitations called out in the modal subtitle**: photos with perspective distortion may need a contractor nudge; roof auto-guess can be wrong (one-tap toggle fixes it); scale bar derived from facade measurements, not a real on-photo scale (consistent with Phase 3's logic).
+  - **Verified**: Node smoke test confirms `elevationToSvg()` produces valid SVG with all expected elements (gable path, opening labels, color coding, scale bar). All 4 modified files lint clean. App loads cleanly with no console errors.
+  - **Files**: `frontend/src/components/estimate/ElevationDrawing.jsx` (new), `frontend/src/lib/elevationBuilder.js` (new), `frontend/src/lib/emailElevations.js` (new), `frontend/src/components/estimate/AIMeasureButton.jsx`, `frontend/src/lib/emailQuote.js`, `memory/PRD.md`.
+
 - **Iter 78r — Phase 2 expanded: rakes, soffit depth, window dims (2026-02-25)**: Howard wanted Phase 2 to cover more than just siding. Same Claude Opus 4.5 Vision call, expanded prompt, expanded `_build_warnings` — **5 new cross-checks** at zero added cost:
   - **Eaves LF** — sum of per-face `facade_width_ft` vs text `eaves_lf` (>12% Δ flagged with per-face breakdown).
   - **Rakes LF** — sum of per-face `rake_lf_on_face` (both slopes summed on gable faces, 0 on hip/flat) vs text `rakes_lf`.

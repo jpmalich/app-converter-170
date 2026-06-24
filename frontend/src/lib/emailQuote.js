@@ -3,6 +3,7 @@
 // Tailwind class names do not survive email clients; everything must be inlined.
 import { tFor } from "./i18n";
 import { tSection, tItem, tUnit } from "./catalogTranslations";
+import { buildElevationsBlock } from "./emailElevations";
 
 const $ = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
@@ -193,6 +194,12 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
     </td></tr>`
     : "";
 
+  // Iter 78s — Elevation drawings block (HOVER-style takeoff sheets
+  // generated from AI Measure photos). Pulled from
+  // `estimate.measurements._ai_elevations`. Skipped silently when the
+  // estimate didn't use AI Measure or no drawings were stashed.
+  const elevationDrawingsBlock = buildElevationsBlock(estimate, t, C, FONT);
+
   const sigBlock = estimate.estimator
     ? `
     <tr><td style="padding:8px 32px 24px 32px;font-family:${FONT};font-size:14px;line-height:1.5;color:${C.muted};">
@@ -261,6 +268,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
           : ""}
 
         ${elevationBlock}
+        ${elevationDrawingsBlock}
 
         <!-- Line items -->
         <tr><td style="padding:0 32px 20px 32px;border-top:1px solid ${C.line};">

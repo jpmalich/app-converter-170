@@ -16,6 +16,10 @@ import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
 import GuidedCaptureWizard from "@/components/estimate/GuidedCaptureWizard";
 import { renderAnnotated, describeAnnotations } from "@/lib/photoAnnotate";
+// Iter 78s — HOVER-style elevation drawings, generated from the AI Measure
+// raw_ai output.
+import ElevationDrawing from "@/components/estimate/ElevationDrawing";
+import { buildElevationsFromAIMeasure } from "@/lib/elevationBuilder";
 
 const ELEVATION_OPTIONS = [
   { key: "",            label: "Untagged" },
@@ -939,6 +943,40 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         toApply = swapSidingToShake(toApply, dormerSqft, dormerShakeSku);
       }
 
+      // Iter 78s — stash the rendered elevation drawings (with any
+      // contractor nudges + roof overrides) on `measurements._ai_elevations`
+      // so the customer Quote PDF can embed them as HOVER-style takeoff
+      // sheets. The shape is the same one `ElevationDrawing` consumes.
+      try {
+        const elevs = buildElevationsFromAIMeasure({
+          walls: preview.raw_ai?.walls,
+          openings: preview.raw_ai?.openings,
+          avg_wall_height_ft: preview.measurements?._ai_avg_wall_height_ft,
+        });
+        const edits = preview.measurements?._ai_elevation_edits || {};
+        const merged = elevs.map((e) => {
+          const editsForElev = edits[e.label] || {};
+          const opEdits = editsForElev.openings || {};
+          return {
+            ...e,
+            roof_style: editsForElev.roof_style || e.roof_style,
+            openings: e.openings.map((op) =>
+              opEdits[op.id]
+                ? { ...op, x_pct: opEdits[op.id].x_pct, y_pct: opEdits[op.id].y_pct }
+                : op
+            ),
+          };
+        });
+        if (merged.length) {
+          toApply = {
+            ...toApply,
+            measurements: { ...(toApply.measurements || {}), _ai_elevations: merged },
+          };
+        }
+      } catch {
+        /* non-fatal */
+      }
+
       // Pass the full preview {measurements, lines, vero_openings, raw_ai}
       // so the page can choose how to merge. ISS uses just measurements;
       // siding/windows merge `lines` directly.
@@ -1460,6 +1498,76 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       {preview.measurements._ai_notes}
                     </div>
                   )}
+                  {/* Iter 78s — HOVER-style elevation drawings, generated
+                      from raw_ai.walls + raw_ai.openings. Includes any
+                      contractor-applied nudges + roof-shape overrides
+                      stashed on preview.measurements._ai_elevation_edits. */}
+                  {(() => {
+                    const elevs = buildElevationsFromAIMeasure({
+                      walls: preview.raw_ai?.walls,
+                      openings: preview.raw_ai?.openings,
+                      avg_wall_height_ft: preview.measurements?._ai_avg_wall_height_ft,
+                    });
+                    if (!elevs.length) return null;
+                    const edits = preview.measurements?._ai_elevation_edits || {};
+                    const handleNudge = (elevLabel) => (opId, xPct, yPct) => {
+                      setPreview((p) => {
+                        if (!p) return p;
+                        const cur = p.measurements?._ai_elevation_edits || {};
+                        const elevEdits = cur[elevLabel] || { openings: {}, roof_style: null };
+                        const next = {
+                          ...cur,
+                          [elevLabel]: {
+                            ...elevEdits,
+                            openings: { ...(elevEdits.openings || {}), [opId]: { x_pct: xPct, y_pct: yPct } },
+                          },
+                        };
+                        return { ...p, measurements: { ...p.measurements, _ai_elevation_edits: next } };
+                      });
+                    };
+                    const handleRoof = (elevLabel) => (shape) => {
+                      setPreview((p) => {
+                        if (!p) return p;
+                        const cur = p.measurements?._ai_elevation_edits || {};
+                        const elevEdits = cur[elevLabel] || { openings: {}, roof_style: null };
+                        const next = { ...cur, [elevLabel]: { ...elevEdits, roof_style: shape } };
+                        return { ...p, measurements: { ...p.measurements, _ai_elevation_edits: next } };
+                      });
+                    };
+                    // Merge edits into each elevation's openings + roof
+                    const merged = elevs.map((e) => {
+                      const editsForElev = edits[e.label] || {};
+                      const opEdits = editsForElev.openings || {};
+                      return {
+                        ...e,
+                        roof_style: editsForElev.roof_style || e.roof_style,
+                        openings: e.openings.map((op) =>
+                          opEdits[op.id]
+                            ? { ...op, x_pct: opEdits[op.id].x_pct, y_pct: opEdits[op.id].y_pct }
+                            : op
+                        ),
+                      };
+                    });
+                    return (
+                      <div className="mb-4" data-testid="ai-elevation-drawings">
+                        <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-2 flex items-center justify-between">
+                          <span>Elevation Drawings <span className="text-[9px] not-italic text-[#71717A]">· HOVER-style takeoff sheets generated from your photos</span></span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {merged.map((e) => (
+                            <ElevationDrawing
+                              key={e.label}
+                              elevation={e}
+                              editable
+                              compact
+                              onOpeningMove={handleNudge(e.label)}
+                              onRoofToggle={handleRoof(e.label)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                     {Object.entries(preview.measurements)
                       .filter(([k, v]) => !k.startsWith("_") && v !== 0 && v !== null && v !== undefined)
