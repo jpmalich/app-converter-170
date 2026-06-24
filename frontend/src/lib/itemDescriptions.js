@@ -63,6 +63,26 @@ const ITEM_DESCRIPTIONS = {
     en: "LP Cedar Shake panels. Coverage depends on reveal: minimum reveal (tightest exposure) ≈ 44 pieces per square; maximum reveal (widest exposure) ≈ 31 pieces per square. Choose your reveal at install time based on the look you want.",
     es: "Paneles LP Cedar Shake. La cobertura depende de la exposición: mínima exposición (más ajustada) ≈ 44 piezas por cuadrado; máxima exposición (más amplia) ≈ 31 piezas por cuadrado. Elige la exposición según el estilo deseado.",
   },
+  "38 Series Soffit 16 x 16 Vented": {
+    en: "LP 38 Series Vented Soffit, 16\" wide × 16' long. Used along eaves where attic ventilation is required (allows soffit-to-ridge airflow). 1 piece covers 16 LF of eave run.",
+    es: "Soffit Ventilado LP 38 Series, 16\" ancho × 16' largo. Se usa en aleros donde se requiere ventilación del ático (permite flujo de aire del soffit al caballete). 1 pieza cubre 16 LF de alero.",
+  },
+  "38 Series Soffit 16 x 16 Closed": {
+    en: "LP 38 Series Closed Soffit, 16\" wide × 16' long. Used at rake gables and porch ceilings where no ventilation is needed (no attic behind). 1 piece covers 16 LF of run.",
+    es: "Soffit Cerrado LP 38 Series, 16\" ancho × 16' largo. Se usa en aleros de hastial y cielos de porches donde no se necesita ventilación (sin ático detrás). 1 pieza cubre 16 LF.",
+  },
+  "440 Series Trim 4/4\" x 4\" x 16'": {
+    en: "LP 440 Series Trim — 4/4 (1\") thick × 4\" wide × 16' long. Standard flat-profile trim for window/door surrounds, band boards, and finish edges. Thinner than the 540 series — use where you don't need the deeper reveal.",
+    es: "LP 440 Series Trim — 4/4 (1\") grueso × 4\" ancho × 16' largo. Moldura plana estándar para marcos de ventanas/puertas, bandas de cintura y bordes de acabado. Más delgada que la serie 540 — úsala donde no necesites una sombra profunda.",
+  },
+  "540 Series Trim 5/4\" x 4\" x 16'": {
+    en: "LP 540 Series Trim — 5/4 (~1¼\") thick × 4\" wide × 16' long. Heavier profile trim with a deeper reveal — use around windows, doors, corners, and bandboards where a more substantial shadow line is wanted. Common for Modern Farmhouse and Craftsman looks.",
+    es: "LP 540 Series Trim — 5/4 (~1¼\") grueso × 4\" ancho × 16' largo. Moldura con perfil más grueso y sombra más profunda. Se usa alrededor de ventanas, puertas, esquinas y bandas donde se quiere una línea de sombra más marcada. Común en estilos Modern Farmhouse y Craftsman.",
+  },
+  "540 Series OSC 5/4\" x 4\" x 16'": {
+    en: "LP 540 Series Outside Corner Trim, 5/4 (~1¼\") thick × 4\" wide × 16' long pre-mitered. Wraps the outside corners of the home.",
+    es: "LP 540 Series Esquinero Exterior, 5/4 (~1¼\") grueso × 4\" ancho × 16' largo pre-mitrado. Cubre las esquinas exteriores de la casa.",
+  },
 };
 
 export function getItemDescription(name, lang = "en") {
