@@ -487,6 +487,13 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 
 ## Recent Changes
 
+- **Iter 78n — "Restore HOVER Lines" button (2026-02-25)**: Howard shipped a one-tap restore for accidentally-cleared HOVER auto-fills. No new PDF upload, no new LLM call — re-runs the takeoff mapper against the measurements already cached on `estimate.hover_measurements` (persisted since Iter 70) via the existing `POST /api/measure/map` endpoint.
+  - **UI**: New blue-outlined `data-testid="hover-restore-btn"` rendered next to **Import HOVER** in `HoverImportButton.jsx`, gated by `hasCached = !!est.hover_measurements`. Tooltip: "Re-apply the auto-fills from the most recent HOVER import — no new upload needed".
+  - **Modal**: same preview modal as the fresh-upload flow (Takeoff Recon Card, Coverage Breakdown, Gutter assumptions chips, Apply button) — title flips to **"HOVER Lines Restored (Cached)"** with a timestamp subtitle so the contractor knows it's a recall.
+  - **Apply** path unchanged: `bakeWasteIntoLines` + `steerLpSoffit` + merge-by-key — preserves manual edits, restores missing rows. Backend endpoint unchanged.
+  - **Verified live**: clicked restore on John Derunk's existing estimate (EST-669165) → modal opened in <1s, showed 8 recon rows + Finish Trim coverage bar + Gutter runs chip + "Apply 69 Lines & Save" button. No console errors.
+  - **Files**: `frontend/src/components/estimate/HoverImportButton.jsx`, `memory/PRD.md`.
+
 - **Iter 78m — Fan Fold added to cut-prone waste items (2026-02-25)**: Howard confirmed Fan Fold (3/8") behaves the same as House Wrap on a job site — full-coverage, cut around every opening + corner. Added `name === '3/8" fan fold' || name.includes("fan fold")` branch to `isCutProneItem`. New test assertion added; all 3 wrap-style items (House Wrap / RainDrop House Wrap / Fan Fold) now bake waste into qty consistently. Howard also confirmed RainDrop is just a House Wrap variant (already covered in Iter 78l).
   - **Files**: `frontend/src/lib/wasteLogic.js`, `frontend/src/lib/wasteLogic.test.mjs`, `memory/PRD.md`.
 

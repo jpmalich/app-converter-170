@@ -77,6 +77,12 @@ export default function HoverImportButton({ est, update, save }) {
   const [openings, setOpenings] = useState([]);
   const [applying, setApplying] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+  // Iter 78n — when set, the preview modal was opened by "Restore HOVER
+  // lines" (re-running the mapper against cached measurements) instead of
+  // a fresh PDF read. Shown as a subtitle in the modal header so the
+  // contractor knows no new LLM call was made.
+  const [restoredAt, setRestoredAt] = useState(null);
+  const hasCached = !!(est?.hover_measurements && Object.keys(est.hover_measurements).length);
 
   const upload = async (f) => {
     if (!f) return;
@@ -118,6 +124,30 @@ export default function HoverImportButton({ est, update, save }) {
     setOpenings((prev) =>
       prev.map((op) => (op.id === id ? { ...op, product_type: productType } : op))
     );
+  };
+
+  // Iter 78n — Restore HOVER lines. Re-runs the takeoff mapper against
+  // the measurements already cached on `est.hover_measurements`, no new
+  // PDF upload + no new LLM call (free + instant). Opens the same
+  // preview modal as a fresh import so the contractor can review +
+  // selectively re-apply auto-fills that were accidentally cleared.
+  const restore = async () => {
+    if (!hasCached) return;
+    setBusy(true);
+    setResult(null);
+    setOpenings([]);
+    try {
+      const { data } = await api.post("/measure/map", {
+        measurements: est.hover_measurements,
+      });
+      setResult(data);
+      setOpenings(data.vero_openings || []);
+      setRestoredAt(new Date());
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || e?.message || "Restore failed");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const removeOpening = (id) => {
@@ -282,11 +312,12 @@ export default function HoverImportButton({ est, update, save }) {
       setApplying(false);
       setResult(null);
       setOpenings([]);
+      setRestoredAt(null);
     }
   };
 
   return (
-    <div data-testid="hover-import">
+    <div data-testid="hover-import" className="inline-flex items-center gap-2 flex-wrap">
       <input
         ref={fileRef}
         type="file"
@@ -306,6 +337,22 @@ export default function HoverImportButton({ est, update, save }) {
         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
         {busy ? "Reading…" : "Import HOVER"}
       </button>
+      {/* Iter 78n — Restore HOVER lines. Only renders when this estimate has
+          cached measurements from a previous import. Re-runs the mapper
+          against those cached numbers — no new PDF, no new LLM call. */}
+      {hasCached && (
+        <button
+          type="button"
+          className="px-3 py-1.5 bg-white text-[#0369A1] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+          onClick={restore}
+          disabled={busy}
+          data-testid="hover-restore-btn"
+          title="Re-apply the auto-fills from the most recent HOVER import — no new upload needed"
+        >
+          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+          Restore HOVER Lines
+        </button>
+      )}
 
       {showWarning && (
         <div
@@ -356,7 +403,7 @@ export default function HoverImportButton({ est, update, save }) {
       {result && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={() => { setResult(null); setOpenings([]); }}
+          onClick={() => { setResult(null); setOpenings([]); setRestoredAt(null); }}
           data-testid="hover-modal-backdrop"
         >
           <div
@@ -368,16 +415,20 @@ export default function HoverImportButton({ est, update, save }) {
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5" />
                 <div>
-                  <div className="font-heading text-lg">HOVER Report Imported</div>
+                  <div className="font-heading text-lg">
+                    {restoredAt ? "HOVER Lines Restored (Cached)" : "HOVER Report Imported"}
+                  </div>
                   <div className="text-xs opacity-90 mt-0.5">
-                    Review measurements and line items below — click Apply when ready
+                    {restoredAt
+                      ? `Source: cached HOVER measurements (no new LLM call) · re-run at ${restoredAt.toLocaleTimeString()}`
+                      : "Review measurements and line items below — click Apply when ready"}
                   </div>
                 </div>
               </div>
               <button
                 type="button"
                 className="text-white/90 hover:text-white"
-                onClick={() => { setResult(null); setOpenings([]); }}
+                onClick={() => { setResult(null); setOpenings([]); setRestoredAt(null); }}
                 aria-label="Close"
                 data-testid="hover-modal-close"
               >
