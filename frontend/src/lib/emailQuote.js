@@ -3,7 +3,14 @@
 // Tailwind class names do not survive email clients; everything must be inlined.
 import { tFor } from "./i18n";
 import { tSection, tItem, tUnit } from "./catalogTranslations";
-import { buildElevationsBlock } from "./emailElevations";
+// Iter 78t — Elevation drawings are intentionally OMITTED from the
+// customer quote PDF / email. The current 2D SVGs are useful as an
+// internal contractor cross-check but openings are positioned
+// approximately (no true 3D placement). Until we can do a real
+// 3D render, the customer-facing document stays drawing-free to
+// preserve perceived quality. Contractors still see them in-app
+// (see `ElevationDrawing.jsx`) and can nudge openings interactively.
+// import { buildElevationsBlock } from "./emailElevations";
 
 const $ = (n) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
@@ -194,11 +201,9 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
     </td></tr>`
     : "";
 
-  // Iter 78s — Elevation drawings block (HOVER-style takeoff sheets
-  // generated from AI Measure photos). Pulled from
-  // `estimate.measurements._ai_elevations`. Skipped silently when the
-  // estimate didn't use AI Measure or no drawings were stashed.
-  const elevationDrawingsBlock = buildElevationsBlock(estimate, t, C, FONT);
+  // Iter 78t — Elevation drawings removed from customer quote PDF /
+  // email until we can do a true 3D render. Contractor still views
+  // them inside the app (ElevationDrawing.jsx, fully nudgeable).
 
   const sigBlock = estimate.estimator
     ? `
@@ -268,7 +273,6 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
           : ""}
 
         ${elevationBlock}
-        ${elevationDrawingsBlock}
 
         <!-- Line items -->
         <tr><td style="padding:0 32px 20px 32px;border-top:1px solid ${C.line};">
