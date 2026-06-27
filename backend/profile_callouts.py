@@ -272,6 +272,75 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
 
 
 # ---------------------------------------------------------------------------
+# Iter 78z+++ — Safety-net recompute helper.
+#
+# When a ProfileAnnotator box arrives with sqft == 50 (the sentinel
+# default the client uses before a scale is set) AND the page has a
+# stored scale_ref, derive the real-world sqft from the box's
+# normalized geometry + the calibration values. Mirrors the math the
+# client's computeSqftFromBox / computeSqftFromPolygon use:
+#
+#   ft_per_px = scale_ref.real_ft / scale_ref.px_height
+#   real_w_ft = (box.w_norm * scale_ref.img_w) * ft_per_px
+#   real_h_ft = (box.h_norm * scale_ref.img_h) * ft_per_px
+#   sqft      = real_w_ft * real_h_ft   (rect)
+#             OR shoelace area for polygons.
+#
+# Returns None if the scale_ref is incomplete or the geometry doesn't
+# project to a positive area (callers fall back to the raw sqft).
+# ---------------------------------------------------------------------------
+def _recompute_box_sqft(box: dict, scale_ref: dict) -> Optional[float]:
+    if not isinstance(box, dict) or not isinstance(scale_ref, dict):
+        return None
+    try:
+        px_height = float(scale_ref.get("px_height") or 0)
+        real_ft = float(scale_ref.get("real_ft") or 0)
+        img_w = float(scale_ref.get("img_w") or 0)
+        img_h = float(scale_ref.get("img_h") or 0)
+    except (TypeError, ValueError):
+        return None
+    if px_height <= 0 or real_ft <= 0 or img_w <= 0 or img_h <= 0:
+        return None
+    ft_per_px = real_ft / px_height
+
+    if box.get("shape") == "polygon" and isinstance(box.get("points"), list):
+        pts = box["points"]
+        if len(pts) < 3:
+            return None
+        n = len(pts)
+        area_px2 = 0.0
+        try:
+            for i in range(n):
+                j = (i + 1) % n
+                xi = float(pts[i].get("x_norm") or 0) * img_w
+                yi = float(pts[i].get("y_norm") or 0) * img_h
+                xj = float(pts[j].get("x_norm") or 0) * img_w
+                yj = float(pts[j].get("y_norm") or 0) * img_h
+                area_px2 += (xi * yj - xj * yi)
+        except (TypeError, ValueError, AttributeError):
+            return None
+        area_px2 = abs(area_px2) / 2.0
+        if area_px2 <= 0:
+            return None
+        return area_px2 * (ft_per_px ** 2)
+
+    # Rectangle path
+    try:
+        w_norm = float(box.get("w_norm") or 0)
+        h_norm = float(box.get("h_norm") or 0)
+    except (TypeError, ValueError):
+        return None
+    if w_norm <= 0 or h_norm <= 0:
+        return None
+    real_w = (w_norm * img_w) * ft_per_px
+    real_h = (h_norm * img_h) * ft_per_px
+    sqft = real_w * real_h
+    if sqft <= 0:
+        return None
+    return sqft
+
+
+# ---------------------------------------------------------------------------
 # Iter 78z — Apply user-drawn profile annotations to the breakdown.
 #
 # Each annotation is a bounding box the contractor drew on a photo or
@@ -308,12 +377,20 @@ def apply_annotations_to_breakdown(
     # case-insensitively.
     by_label = {(e.get("label") or "").strip().lower(): e for e in per_elev}
     new_accents_by_label: dict[str, list] = {}
+    # Iter 78z+++ — scale refs are stored under `_scale_refs` keyed by
+    # the same photo index strings as the box lists. Used by the
+    # safety-net recompute below when a box's sqft slipped through as
+    # the sentinel 50.
+    scale_refs = annotations.get("_scale_refs") or {}
+    if not isinstance(scale_refs, dict):
+        scale_refs = {}
 
     for key, val in annotations.items():
         if key.startswith("_"):  # reserved keys like _scale_refs
             continue
         if not isinstance(val, list):
             continue
+        scale_ref = scale_refs.get(key) if isinstance(scale_refs.get(key), dict) else None
         for box in val:
             if not isinstance(box, dict):
                 continue
@@ -325,6 +402,19 @@ def apply_annotations_to_breakdown(
                 sqft = float(box.get("sqft") or 0)
             except (TypeError, ValueError):
                 sqft = 0.0
+            # Iter 78z+++ safety net: ProfileAnnotator defaults a new
+            # box's sqft to 50 (sentinel) when no scale_ref is set yet.
+            # If the box still has the sentinel value AND a scale_ref
+            # was later established for the page (e.g. auto-OCR ran
+            # AFTER the box was drawn but recompute on the client got
+            # skipped — stale closure, network race, whatever), use
+            # the stored scale_ref + box geometry to compute the real
+            # sqft server-side. Prevents a silent 50-ft² leak into the
+            # materials list.
+            if abs(sqft - 50.0) < 0.5 and scale_ref is not None:
+                recomputed = _recompute_box_sqft(box, scale_ref)
+                if recomputed and recomputed > 0:
+                    sqft = recomputed
             if sqft <= 0:
                 continue
             # Non-siding annotations (stone / brick) DON'T add a siding

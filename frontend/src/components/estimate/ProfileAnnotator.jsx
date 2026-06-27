@@ -361,6 +361,11 @@ export default function ProfileAnnotator({
     newRefs[photoKey] = {
       px_height: scaleRefInput.pxHeight,
       real_ft: realFt,
+      // Iter 78z+++ — store the display image dimensions at calibration
+      // time so the backend can recompute box sqft from normalized
+      // coords if a sentinel 50-default ever slips through.
+      img_w: imgPx?.w || 0,
+      img_h: imgPx?.h || 0,
     };
     // Re-compute sqft for every existing box on this photo using the new ref
     const newBoxes = (annotations[photoKey] || []).map((b) => {
@@ -472,7 +477,12 @@ export default function ProfileAnnotator({
         return;
       }
       const newRefs = { ...(annotations._scale_refs || {}) };
-      newRefs[photoKey] = { px_height: pxHeight, real_ft: realFt };
+      newRefs[photoKey] = {
+        px_height: pxHeight,
+        real_ft: realFt,
+        img_w: imgPx?.w || 0,
+        img_h: imgPx?.h || 0,
+      };
       const newBoxes = (annotations[photoKey] || []).map((b) => {
         if (b.shape === "polygon" && Array.isArray(b.points)) {
           const recomputed = computeSqftFromPolygon(b.points, imgPx, newRefs[photoKey]);
