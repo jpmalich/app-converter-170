@@ -144,32 +144,33 @@ export default function ProfileAnnotator({
     }
   }, [selectedIdx]);
 
-  // Iter 78z++ — Ctrl/Cmd+wheel to zoom anchored at the cursor. Plain
-  // wheel (no modifier) falls through to the container's native
-  // scrollbars so the user can always pan around without getting
-  // locked into the zoom. This matches Figma / Photoshop Web /
-  // Google Maps behavior.
-  const onWheelCanvas = (e) => {
-    if (!currentPhoto) return;
-    if (!(e.ctrlKey || e.metaKey)) return; // plain wheel = native pan
-    e.preventDefault();
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const cx = e.clientX - rect.left + container.scrollLeft;
-    const cy = e.clientY - rect.top + container.scrollTop;
-    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    setZoom((prev) => {
-      const next = Math.max(0.5, Math.min(8, prev * factor));
-      if (next === prev) return prev;
-      requestAnimationFrame(() => {
-        if (!containerRef.current) return;
-        containerRef.current.scrollLeft = cx * (next / prev) - (e.clientX - rect.left);
-        containerRef.current.scrollTop = cy * (next / prev) - (e.clientY - rect.top);
+  // Iter 78z++ — Wheel-to-zoom anchored at cursor (no modifier needed),
+  // ported from PhotoAnnotateModal. Non-passive listener so the page
+  // doesn't scroll while zooming inside the canvas. Plain wheel up =
+  // zoom in toward cursor, wheel down = zoom out. The wider the
+  // delta, the bigger the step (exponential curve).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || !currentPhoto) return;
+    const handler = (e) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left + el.scrollLeft;
+      const cy = e.clientY - rect.top + el.scrollTop;
+      setZoom((prev) => {
+        const next = Math.max(0.5, Math.min(8, prev * Math.exp(-e.deltaY * 0.0015)));
+        if (next === prev) return prev;
+        requestAnimationFrame(() => {
+          if (!containerRef.current) return;
+          containerRef.current.scrollLeft = cx * (next / prev) - (e.clientX - rect.left);
+          containerRef.current.scrollTop = cy * (next / prev) - (e.clientY - rect.top);
+        });
+        return next;
       });
-      return next;
-    });
-  };
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [currentPhoto, selectedIdx]);
 
   const bumpZoom = (factor) => {
     const container = containerRef.current;
@@ -550,66 +551,65 @@ export default function ProfileAnnotator({
           <div
             className="flex-1 overflow-auto bg-[#27272A] relative"
             ref={containerRef}
-            onWheel={onWheelCanvas}
           >
-            {/* Iter 78z++ — Floating zoom + fullscreen toolbar. Sticky in
-                the top-right so it survives scroll/zoom. */}
+            {/* Iter 78z++ — Vertical zoom toolbar, ported from
+                PhotoAnnotateModal so Blueprint/AI Measure feel
+                identical. Stays sticky in the top-right while you
+                scroll/zoom the canvas. */}
             {currentPhoto && (
               <div
-                className="sticky top-2 z-20 flex items-center gap-1 ml-auto mr-2 mt-2 bg-white/95 border border-[#E4E4E7] px-1.5 py-1 shadow-sm w-fit"
+                className="sticky top-2 z-20 flex flex-col gap-1 ml-auto mr-2 mt-2 w-fit"
                 data-testid="annotator-zoom-toolbar"
               >
                 <button
                   type="button"
-                  onClick={() => bumpZoom(1 / 1.25)}
-                  className="text-[#3F3F46] hover:bg-[#FAFAFA] p-1"
-                  title="Zoom out  ·  shortcut: −"
-                  data-testid="annotator-zoom-out"
+                  onClick={() => bumpZoom(1.25)}
+                  className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
+                  disabled={zoom >= 8 - 0.001}
+                  title="Zoom in  ·  scroll wheel up"
+                  data-testid="annotator-zoom-in"
                 >
-                  <ZoomOut size={14} />
+                  <ZoomIn className="w-4 h-4 text-[#09090B]" />
                 </button>
                 <button
                   type="button"
                   onClick={resetZoom}
-                  className="text-[10px] font-mono-num font-bold w-12 text-center text-[#52525B] hover:bg-[#FAFAFA] py-1"
-                  title="Click to reset zoom  ·  shortcut: 0"
+                  disabled={zoom === 1}
+                  className="px-1.5 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center text-[10px] font-bold tabular-nums disabled:opacity-40 shadow-sm min-w-[36px]"
+                  title="Reset zoom to 100%  ·  shortcut: 0"
                   data-testid="annotator-zoom-pct"
                 >
                   {Math.round(zoom * 100)}%
                 </button>
                 <button
                   type="button"
-                  onClick={() => bumpZoom(1.25)}
-                  className="text-[#3F3F46] hover:bg-[#FAFAFA] p-1"
-                  title="Zoom in  ·  shortcut: +"
-                  data-testid="annotator-zoom-in"
+                  onClick={() => bumpZoom(1 / 1.25)}
+                  className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
+                  disabled={zoom <= 0.5 + 0.001}
+                  title="Zoom out  ·  scroll wheel down"
+                  data-testid="annotator-zoom-out"
                 >
-                  <ZoomIn size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={resetZoom}
-                  className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 hover:bg-[#FAFAFA] border-l border-[#E4E4E7] text-[#7C3AED]"
-                  title="Reset zoom to fit (0)"
-                  data-testid="annotator-zoom-fit"
-                >
-                  Fit
+                  <ZoomOut className="w-4 h-4 text-[#09090B]" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFullscreen((f) => !f)}
-                  className="text-[#3F3F46] hover:bg-[#FAFAFA] p-1 border-l border-[#E4E4E7]"
+                  className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center shadow-sm"
                   title={isFullscreen ? "Exit fullscreen" : "Expand to fullscreen"}
                   data-testid="annotator-fullscreen"
                 >
-                  {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  {isFullscreen ? <Minimize2 className="w-4 h-4 text-[#09090B]" /> : <Maximize2 className="w-4 h-4 text-[#09090B]" />}
                 </button>
-                <span
-                  className="text-[9px] text-[#A1A1AA] ml-1 pl-1.5 border-l border-[#E4E4E7] hidden lg:inline"
-                  title="Hold Ctrl/⌘ and scroll on the image to zoom"
-                >
-                  ⌘+scroll
-                </span>
+              </div>
+            )}
+            {/* Iter 78z++ — Scroll-wheel hint, mirrors PhotoAnnotateModal */}
+            {currentPhoto && zoom === 1 && (
+              <div
+                className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-1 pointer-events-none hidden sm:flex items-center gap-1.5 z-20"
+                data-testid="annotator-zoom-hint"
+              >
+                <Maximize2 className="w-3 h-3" />
+                <span>Scroll to zoom · scroll bars to pan when zoomed</span>
               </div>
             )}
             {currentPhoto ? (
