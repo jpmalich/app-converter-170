@@ -1248,6 +1248,20 @@ def _aggregate_to_hover_shape(raw: dict) -> dict:
         "_ai_photos": raw.get("photos") or [],
         "_ai_notes": raw.get("notes") or "",
     }
+    # Iter 78z — Per-elevation breakdown (lap / shake / B&B / etc.) so
+    # the takeoff card can render a profile-by-elevation table and the
+    # catalog mapper can split siding into multiple SKU lines.
+    try:
+        from profile_callouts import breakdown_walls_by_profile
+        breakdown = breakdown_walls_by_profile(walls)
+        measurements["_per_elevation_breakdown"] = breakdown["per_elevation"]
+        measurements["_per_profile_sqft"] = breakdown["per_profile_sqft"]
+    except Exception as _e:
+        # Never let the breakdown helper block a successful measurement
+        # response — Claude's wall data may have unusual shapes from old
+        # sessions.
+        measurements["_per_elevation_breakdown"] = []
+        measurements["_per_profile_sqft"] = {}
     return measurements
 
 
