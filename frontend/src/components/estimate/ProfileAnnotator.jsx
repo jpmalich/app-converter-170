@@ -144,14 +144,14 @@ export default function ProfileAnnotator({
     }
   }, [selectedIdx]);
 
-  // Iter 78z++ — Wheel-to-zoom, anchored at the cursor so the spot
-  // under the mouse stays under the mouse. Native overflow scrolling
-  // keeps panning as a free fall-through (scrollbars + trackpad
-  // two-finger drag both work without touching draw handlers).
+  // Iter 78z++ — Ctrl/Cmd+wheel to zoom anchored at the cursor. Plain
+  // wheel (no modifier) falls through to the container's native
+  // scrollbars so the user can always pan around without getting
+  // locked into the zoom. This matches Figma / Photoshop Web /
+  // Google Maps behavior.
   const onWheelCanvas = (e) => {
-    // Only intercept wheel events when over the stage; if no photo,
-    // let the container scroll normally.
     if (!currentPhoto) return;
+    if (!(e.ctrlKey || e.metaKey)) return; // plain wheel = native pan
     e.preventDefault();
     const container = containerRef.current;
     if (!container) return;
@@ -162,7 +162,6 @@ export default function ProfileAnnotator({
     setZoom((prev) => {
       const next = Math.max(0.5, Math.min(8, prev * factor));
       if (next === prev) return prev;
-      // Re-anchor scroll so the cursor world-point stays put.
       requestAnimationFrame(() => {
         if (!containerRef.current) return;
         containerRef.current.scrollLeft = cx * (next / prev) - (e.clientX - rect.left);
@@ -258,9 +257,13 @@ export default function ProfileAnnotator({
     setPolygonDraft(null);
   };
 
-  // Keyboard shortcuts: Enter closes polygon, Esc cancels.
+  // Keyboard shortcuts: Enter closes polygon, Esc cancels,
+  // 0/+/- control zoom (so user can always escape the zoom).
   useEffect(() => {
     const handler = (e) => {
+      // Don't fire shortcuts when typing in an input/textarea (sqft, note)
+      const t = e.target;
+      const isEditing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
       if (e.key === "Escape") {
         setPolygonDraft(null);
         setScaleDraft(null);
@@ -268,6 +271,17 @@ export default function ProfileAnnotator({
       }
       if (e.key === "Enter" && polygonDraft && polygonDraft.points?.length >= 3) {
         finalizePolygon(polygonDraft.points);
+      }
+      if (isEditing) return;
+      if (e.key === "0") {
+        e.preventDefault();
+        resetZoom();
+      } else if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        bumpZoom(1.25);
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        bumpZoom(1 / 1.25);
       }
     };
     window.addEventListener("keydown", handler);
@@ -551,22 +565,25 @@ export default function ProfileAnnotator({
                   type="button"
                   onClick={() => bumpZoom(1 / 1.25)}
                   className="text-[#3F3F46] hover:bg-[#FAFAFA] p-1"
-                  title="Zoom out (or scroll-down on image)"
+                  title="Zoom out  ·  shortcut: −"
                   data-testid="annotator-zoom-out"
                 >
                   <ZoomOut size={14} />
                 </button>
-                <span
-                  className="text-[10px] font-mono-num font-bold w-10 text-center text-[#52525B] select-none"
+                <button
+                  type="button"
+                  onClick={resetZoom}
+                  className="text-[10px] font-mono-num font-bold w-12 text-center text-[#52525B] hover:bg-[#FAFAFA] py-1"
+                  title="Click to reset zoom  ·  shortcut: 0"
                   data-testid="annotator-zoom-pct"
                 >
                   {Math.round(zoom * 100)}%
-                </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => bumpZoom(1.25)}
                   className="text-[#3F3F46] hover:bg-[#FAFAFA] p-1"
-                  title="Zoom in (or scroll-up on image)"
+                  title="Zoom in  ·  shortcut: +"
                   data-testid="annotator-zoom-in"
                 >
                   <ZoomIn size={14} />
@@ -574,8 +591,8 @@ export default function ProfileAnnotator({
                 <button
                   type="button"
                   onClick={resetZoom}
-                  className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 hover:bg-[#FAFAFA] border-l border-[#E4E4E7]"
-                  title="Reset zoom to fit"
+                  className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 hover:bg-[#FAFAFA] border-l border-[#E4E4E7] text-[#7C3AED]"
+                  title="Reset zoom to fit (0)"
                   data-testid="annotator-zoom-fit"
                 >
                   Fit
@@ -589,6 +606,12 @@ export default function ProfileAnnotator({
                 >
                   {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                 </button>
+                <span
+                  className="text-[9px] text-[#A1A1AA] ml-1 pl-1.5 border-l border-[#E4E4E7] hidden lg:inline"
+                  title="Hold Ctrl/⌘ and scroll on the image to zoom"
+                >
+                  ⌘+scroll
+                </span>
               </div>
             )}
             {currentPhoto ? (
