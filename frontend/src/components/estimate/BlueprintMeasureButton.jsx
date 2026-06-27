@@ -810,11 +810,12 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                 </section>
               )}
 
-              {/* Iter 78t — Elevation drawings (shared with AI Measure +
-                  HOVER). Blueprint vision pass produces AI-Measure-shaped
-                  raw_ai.walls + openings OR HOVER-vision-shaped per-elev
-                  data; try AI-shaped first, fall back to vision-shaped. */}
-              {(() => {
+              {/* Iter 78t — Elevation drawings hidden per user request
+                  (2026-02-27). Drawings are too generic to be useful;
+                  revisit later with better-fidelity rendering. The
+                  underlying `_ai_elevations` data still computes on
+                  Apply so PDF/Compare flows keep working. */}
+              {false && (() => {
                 const fromAI = buildElevationsFromAIMeasure({
                   walls: result.raw_ai?.walls,
                   openings: result.raw_ai?.openings,
