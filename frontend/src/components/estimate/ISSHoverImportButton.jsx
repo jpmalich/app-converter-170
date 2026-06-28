@@ -133,7 +133,7 @@ export default function ISSHoverImportButton({ est, applyLines }) {
       />
       <button
         type="button"
-        className="px-3 py-1.5 bg-white text-[#09090B] border border-[#09090B] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+        className="px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => setShowWarning(true)}
         disabled={busy}
         data-testid="iss-hover-import-btn"
