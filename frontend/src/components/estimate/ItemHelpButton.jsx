@@ -54,7 +54,28 @@ export default function ItemHelpButton({ itemName }) {
         <div className="font-bold text-[11px] uppercase tracking-wider text-[#3B82F6] mb-1.5">
           {resolved}
         </div>
-        <div className="whitespace-pre-line">{text}</div>
+        <div className="whitespace-pre-line">
+          {/* Iter 78z++++ — Highlight the "Packaging:" / "Empaque:"
+              label in the same blue as the item title so the carton
+              info pops out from the spec paragraph. We split once,
+              keep the rest of the sentence in normal copy. */}
+          {(() => {
+            const labels = ["Packaging:", "Empaque:"];
+            for (const lbl of labels) {
+              const idx = text.indexOf(lbl);
+              if (idx !== -1) {
+                return (
+                  <>
+                    {text.slice(0, idx)}
+                    <span className="font-bold text-[#3B82F6]">{lbl}</span>
+                    {text.slice(idx + lbl.length)}
+                  </>
+                );
+              }
+            }
+            return text;
+          })()}
+        </div>
       </PopoverContent>
     </Popover>
   );
