@@ -53,11 +53,12 @@ ISS_SECTIONS = [
         ("Miters",                                          "ea",    25.00),
         ("Gutter guard (USA Shurflo)",                      "lf",     6.52),
     ]),
-    ("Misc. Labor Only", [
+    ("Misc. Labor and Material", [
+        # Iter 78z++++ — Howard merged the legacy "Misc. Labor Only"
+        # section into this one. R&R gutter + R&R downspout live here
+        # alongside the existing labor+material lines.
         ("R&R gutter",                                      "lf",     4.28),
         ("R&R downspout",                                   "lf",     2.15),
-    ]),
-    ("Misc. Labor and Material", [
         ("Shakes and scallops",                             "sq",   889.44),
         ("Cap windows",                                     "ea",    98.44),
         ("Capping general",                                 "lf",     3.98),
@@ -133,6 +134,17 @@ async def ensure_iss_catalog_seeded(db) -> None:
     """Seed the `iss_catalog` collection from the hardcoded ISS_SECTIONS
     if (and only if) the collection is empty. Called on first read and
     by the admin export endpoint."""
+    # Iter 78z++++ — In-place merge of legacy "Misc. Labor Only" docs
+    # into the "Misc. Labor and Material" section so the single merged
+    # section surfaces R&R gutter + R&R downspout alongside the existing
+    # caps + flashing rows. Idempotent; runs even if the collection is
+    # already seeded.
+    only_count = await db.iss_catalog.count_documents({"section": "Misc. Labor Only"})
+    if only_count:
+        await db.iss_catalog.update_many(
+            {"section": "Misc. Labor Only"},
+            {"$set": {"section": "Misc. Labor and Material"}},
+        )
     existing = await db.iss_catalog.count_documents({})
     if existing:
         return

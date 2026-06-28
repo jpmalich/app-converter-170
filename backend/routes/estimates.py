@@ -395,9 +395,12 @@ async def export_estimate_csv(est_id: str, user: dict = Depends(get_current_user
             line_total = qty * ((ln.get("mat", 0) or 0) + (ln.get("lab", 0) or 0))
             writer.writerow([ln["section"], ln["name"], ln["unit"], qty, ln.get("mat", 0), ln.get("lab", 0), f"{line_total:.2f}"])
     for m in est.get("misc_labor", []) or []:
-        writer.writerow(["Misc. Labor Only", m.get("desc", ""), "—", 1, 0, m.get("lab", 0), f"{(m.get('lab', 0) or 0):.2f}"])
+        # Iter 78z++++ — legacy "Misc. Labor Only" estimates still in
+        # the DB. The migration in services.py moves these rows into
+        # `misc_material`, so this loop only fires for un-migrated docs.
+        writer.writerow(["Misc. Labor and Material", m.get("desc", ""), "—", 1, 0, m.get("lab", 0), f"{(m.get('lab', 0) or 0):.2f}"])
     for m in est.get("misc_material", []) or []:
-        writer.writerow(["Misc. Labor & Material", m.get("desc", ""), "—", 1, m.get("mat", 0), m.get("lab", 0), f"{((m.get('mat', 0) or 0) + (m.get('lab', 0) or 0)):.2f}"])
+        writer.writerow(["Misc. Labor and Material", m.get("desc", ""), "—", 1, m.get("mat", 0), m.get("lab", 0), f"{((m.get('mat', 0) or 0) + (m.get('lab', 0) or 0)):.2f}"])
     writer.writerow([])
     writer.writerow(["Summary", ""])
     writer.writerow(["Material Subtotal", f"{t['sub_mat']:.2f}"])

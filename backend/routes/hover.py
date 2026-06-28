@@ -1080,7 +1080,7 @@ HOVER_MAPPING_SPEC = [
     # =====================================================================
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
-        "section": "Misc. Labor & Material",
+        "section": "Misc. Labor and Material",
         "item": "Cap window",
         "unit": "Each",
         "extract": lambda m: int(m.get("window_count") or 0),
@@ -1088,7 +1088,7 @@ HOVER_MAPPING_SPEC = [
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
-        "section": "Misc. Labor & Material",
+        "section": "Misc. Labor and Material",
         "item": "Cap entry door",
         "unit": "Each",
         "extract": lambda m: int(m.get("entry_door_count") or 0),
@@ -1096,7 +1096,7 @@ HOVER_MAPPING_SPEC = [
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
-        "section": "Misc. Labor & Material",
+        "section": "Misc. Labor and Material",
         "item": "Cap patio door",
         "unit": "Each",
         "extract": lambda m: int(m.get("patio_door_count") or 0),
@@ -1104,7 +1104,7 @@ HOVER_MAPPING_SPEC = [
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
-        "section": "Misc. Labor & Material",
+        "section": "Misc. Labor and Material",
         "item": "Cap single garage door",
         "unit": "Each",
         "extract": lambda m: int(m.get("garage_door_count") or 0),

@@ -200,8 +200,12 @@ SECTION_LAYOUT = [
         'Hangars with Screws',
         'Pipe Clips',
     ]),
-    ("Misc. Labor Only", False, ["R&R gutter", "R&R downspout"]),
-    ("Misc. Labor & Material", False, [
+    ("Misc. Labor and Material", False, [
+        # Iter 78z++++ — "Misc. Labor Only" merged in here per Howard:
+        # R&R gutter / R&R downspout used to live in their own section
+        # but contractors found it confusing to flip between two
+        # ad-hoc add-on buckets. One section, one place to look.
+        "R&R gutter", "R&R downspout",
         "Cap window", "Cap windows with wide crown", "Capping general",
         "Cap window headers only", "Cap entry door", "Cap patio door",
         "Cap single garage door", "Build out for windows w/furring (includes capping)",
@@ -1095,8 +1099,7 @@ SECTION_PRODUCT_LINES = {
     # LP Smart siding sheet — pricing is identical to vinyl/ascend).
     "Tear-Off / Clean Up": ["vinyl", "ascend", "lp_smart"],
     "Seamless Gutter": ["vinyl", "ascend", "lp_smart"],
-    "Misc. Labor Only": ["vinyl", "ascend", "lp_smart"],
-    "Misc. Labor & Material": ["vinyl", "ascend", "lp_smart"],
+    "Misc. Labor and Material": ["vinyl", "ascend", "lp_smart"],
     "Misc.": ["vinyl", "ascend", "lp_smart"],
 }
 

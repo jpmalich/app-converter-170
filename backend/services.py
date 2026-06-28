@@ -212,6 +212,97 @@ async def ensure_tiers_seeded():
         {"lines.section": {"$in": OBSOLETE_WINDOW_SECTIONS}},
         {"$pull": {"lines": {"section": {"$in": OBSOLETE_WINDOW_SECTIONS}}}},
     )
+    # ----------------------------------------------------------------- #
+    # Iter 78z++++ (Feb 2026) — Merge "Misc. Labor Only" into "Misc.
+    # Labor and Material" across every estimate kind. Howard's request:
+    # "combine the misc. labor into the misc. labor and material across
+    # all estimates". The old `& Material` spelling is normalized to
+    # `and Material` so the contractor catalog matches the ISS catalog.
+    #
+    # Three migrations run in order:
+    #   (1) tier docs: rename `& Material` section → `and Material`
+    #   (2) tier docs: copy items from `Misc. Labor Only` into the
+    #       renamed section, then drop the now-redundant section
+    #   (3) saved estimates: rename the section on saved lines, and
+    #       move any ad-hoc `misc_labor` rows into `misc_material` so
+    #       the single new section renders both legacy buckets.
+    # All idempotent — once the tiers + estimates have been migrated,
+    # subsequent boots find nothing to do.
+    # ----------------------------------------------------------------- #
+    await db.price_tiers.update_many(
+        {"sections.title": "Misc. Labor & Material"},
+        {"$set": {"sections.$[s].title": "Misc. Labor and Material"}},
+        array_filters=[{"s.title": "Misc. Labor & Material"}],
+    )
+    # Move "Misc. Labor Only" items into the (now-renamed) merged
+    # section, then drop the empty source section.
+    async for tier in db.price_tiers.find(
+        {"sections.title": "Misc. Labor Only"},
+        {"_id": 0, "id": 1, "sections": 1},
+    ):
+        sections = tier.get("sections") or []
+        only_idx = next(
+            (i for i, s in enumerate(sections) if s.get("title") == "Misc. Labor Only"),
+            None,
+        )
+        merged_idx = next(
+            (i for i, s in enumerate(sections) if s.get("title") == "Misc. Labor and Material"),
+            None,
+        )
+        if only_idx is None or merged_idx is None:
+            continue
+        existing_names = {it.get("name") for it in sections[merged_idx].get("items", [])}
+        moved = [
+            it for it in (sections[only_idx].get("items") or [])
+            if it.get("name") not in existing_names
+        ]
+        if moved:
+            # Prepend so R&R rows stay at the top of the merged section.
+            sections[merged_idx]["items"] = moved + (sections[merged_idx].get("items") or [])
+        # Drop the empty "Misc. Labor Only" section.
+        sections.pop(only_idx)
+        await db.price_tiers.update_one(
+            {"id": tier["id"]},
+            {"$set": {"sections": sections,
+                      "updated_at": datetime.now(timezone.utc).isoformat()}},
+        )
+        logger.info("Merged 'Misc. Labor Only' into 'Misc. Labor and Material' on tier %s", tier["id"])
+    # Rename the section on every saved estimate's `lines[]` array.
+    await db.estimates.update_many(
+        {"lines": {"$elemMatch": {"section": "Misc. Labor & Material"}}},
+        {"$set": {"lines.$[el].section": "Misc. Labor and Material"}},
+        array_filters=[{"el.section": "Misc. Labor & Material"}],
+    )
+    await db.estimates.update_many(
+        {"lines": {"$elemMatch": {"section": "Misc. Labor Only"}}},
+        {"$set": {"lines.$[el].section": "Misc. Labor and Material"}},
+        array_filters=[{"el.section": "Misc. Labor Only"}],
+    )
+    # Move ad-hoc `misc_labor` rows (the legacy storage for the labor-
+    # only section) into `misc_material` so the single merged section
+    # surfaces every custom row a contractor previously added. Keep
+    # `lab` intact; default `mat` to 0 so the line total is unchanged.
+    async for est in db.estimates.find(
+        {"misc_labor.0": {"$exists": True}},
+        {"_id": 0, "id": 1, "misc_labor": 1, "misc_material": 1},
+    ):
+        moved_rows = []
+        for row in est.get("misc_labor", []) or []:
+            moved_rows.append({
+                **row,
+                "mat": float(row.get("mat") or 0),
+                "lab": float(row.get("lab") or 0),
+                "section": "Misc. Labor and Material",
+            })
+        if not moved_rows:
+            continue
+        new_misc_material = (est.get("misc_material") or []) + moved_rows
+        await db.estimates.update_one(
+            {"id": est["id"]},
+            {"$set": {"misc_material": new_misc_material, "misc_labor": []}},
+        )
+        logger.info("Migrated %d misc_labor rows into misc_material on est %s", len(moved_rows), est["id"])
+
     # Also wipe stale lines that referenced the OLD Vero size buckets
     # (e.g. "Vero - 3 lite slider 0-45 UI") — none of these names exist in
     # the new layout, so any saved estimate line carrying one would just

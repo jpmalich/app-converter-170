@@ -232,7 +232,13 @@ export default function SectionAccordion({
         </div>
         <div className="col-span-3 md:col-span-2 text-right text-sm font-mono-num text-[#52525B]">
           <span className="md:hidden text-[10px] text-[#A1A1AA] block text-right">{t("est.col.mat")}</span>
-          {EDITABLE_MAT_ITEMS.has(l.name) ? (
+          {/* Iter 78z++++ — Mat $ is editable for every catalog row inside
+              the merged "Misc. Labor and Material" section so the
+              contractor can override per-job material cost without
+              touching the supplier catalog. Falls back to the
+              EDITABLE_MAT_ITEMS whitelist for the few job-specific
+              custom lines (Vero Window Quote, etc.). */}
+          {(isMiscMat || EDITABLE_MAT_ITEMS.has(l.name)) ? (
             <div className="relative">
               <input
                 className={`input num h-11 md:h-9 text-base md:text-sm w-full text-right ${

@@ -775,10 +775,16 @@ export default function ISSEstimateEditor() {
 
         {(catalog.sections || []).map((sec) => {
           const isOpen = !!openSections[sec.title];
+          // Iter 78z++++ — Header subtotal honors per-row Mat $
+          // overrides on the merged "Misc. Labor and Material" section.
+          const sectionIsMiscMat = sec.title === "Misc. Labor and Material";
           const sectionTotal = sec.items.reduce((s, it) => {
             const ln = lineByKey.get(`${sec.title}::${it.name}`);
             const qty = Number(ln?.qty) || 0;
-            return s + qty * Number(it.price || 0);
+            const unit = sectionIsMiscMat && ln && ln.mat != null
+              ? Number(ln.mat)
+              : Number(it.price || 0);
+            return s + qty * unit;
           }, 0);
           const filledCount = sec.items.filter((it) => {
             const ln = lineByKey.get(`${sec.title}::${it.name}`);
@@ -827,7 +833,18 @@ export default function ISSEstimateEditor() {
                   {sec.items.map((it) => {
                     const ln = lineByKey.get(`${sec.title}::${it.name}`);
                     const qty = Number(ln?.qty) || 0;
-                    const lineTotal = qty * Number(it.price || 0);
+                    // Iter 78z++++ — Mat $ override for the merged
+                    // "Misc. Labor and Material" section. The contractor
+                    // can punch in a per-job material cost; the row's
+                    // line total + section subtotal both reflect the
+                    // override. Stored on the line as `mat` (ISS lines
+                    // already use `mat` to carry the unit price with
+                    // `lab` always 0).
+                    const isMiscMat = sec.title === "Misc. Labor and Material";
+                    const effectivePrice = isMiscMat && ln && ln.mat != null
+                      ? Number(ln.mat)
+                      : Number(it.price || 0);
+                    const lineTotal = qty * effectivePrice;
                     return (
                       <div
                         key={it.name}
@@ -861,16 +878,51 @@ export default function ISSEstimateEditor() {
                             value={ln ? (qty || "") : ""}
                             placeholder="0"
                             className="input num h-9 text-sm text-center w-full"
-                            onChange={(e) => setQty(sec.title, it.name, it.unit, it.price, e.target.value)}
+                            onChange={(e) => setQty(sec.title, it.name, it.unit, effectivePrice, e.target.value)}
                             data-testid={`iss-qty-${sec.title}-${it.name}`}
                           />
                         </div>
                         <div className="w-12 text-center text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
                           {it.unit}
                         </div>
-                        <div className="w-24 text-right font-mono-num text-sm text-[#52525B]">
-                          {fmt(it.price)}
-                        </div>
+                        {isMiscMat ? (
+                          <div className="w-24 text-right relative">
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              min="0"
+                              step="0.01"
+                              value={effectivePrice}
+                              className={`input num h-9 text-sm w-full text-right ${
+                                Number(effectivePrice) !== Number(it.price || 0)
+                                  ? "border-[#F97316] bg-orange-50"
+                                  : ""
+                              }`}
+                              onChange={(e) =>
+                                setQty(sec.title, it.name, it.unit, Number(e.target.value) || 0, qty)
+                              }
+                              data-testid={`iss-mat-${sec.title}-${it.name}`}
+                              title="Per-unit material + labor cost — overrides the catalog default for this estimate only"
+                            />
+                            {Number(effectivePrice) !== Number(it.price || 0) && (
+                              <button
+                                type="button"
+                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#F97316] text-white text-[10px] leading-none flex items-center justify-center"
+                                onClick={() =>
+                                  setQty(sec.title, it.name, it.unit, Number(it.price || 0), qty)
+                                }
+                                title={`Reset to catalog default ($${it.price})`}
+                                data-testid={`iss-reset-mat-${sec.title}-${it.name}`}
+                              >
+                                ↺
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-24 text-right font-mono-num text-sm text-[#52525B]">
+                            {fmt(it.price)}
+                          </div>
+                        )}
                         <div className="w-28 text-right font-mono-num text-base font-bold text-[#09090B]" data-testid={`iss-linetotal-${sec.title}-${it.name}`}>
                           {fmt(lineTotal)}
                         </div>
