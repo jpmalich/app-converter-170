@@ -9,14 +9,14 @@ import { calcTotals as calcTabTotals } from "@/lib/calc";
 
 // Iter 78z++++ — per-kind tab definitions. Mirrors what the in-estimate
 // StickyBar renders, so the dashboard list row shows the same per-tab
-// breakdown a contractor sees inside the estimate (Vinyl / Ascend / LP
-// for siding, Vero / Mezzo for windows). Single-tab kinds (lp_smart,
-// iss) fall back to one collapsed total.
+// breakdown a contractor sees inside the estimate. LP Smart got its
+// own workspace (Iter 73) so siding rows show only Vinyl + Ascend;
+// legacy estimates with LP qty > 0 still surface the LP tab inside
+// the estimate via the back-compat path in EstimateEditor.
 const KIND_TABS = {
   siding: [
     { id: "vinyl", label: "Vinyl", color: "#F97316" },
     { id: "ascend", label: "Ascend", color: "#A1A1AA" },
-    { id: "lp_smart", label: "LP", color: "#A1A1AA" },
   ],
   windows: [
     { id: "windows", label: "Vero", color: "#F97316" },

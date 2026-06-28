@@ -196,9 +196,16 @@ export default function HoverImportButton({ est, update, save }) {
     // ─── Split incoming data by which estimate-kind it belongs on ───────────
     // Source kind determines which slice stays on the current estimate vs
     // gets routed to the auto-paired estimate of the opposite kind.
+    // Iter 78z++++ — LP Smart got its own workspace (Iter 73). Importing
+    // a HOVER PDF on a siding estimate no longer creates LP rows; if a
+    // contractor wants LP they import from the LP workspace directly.
+    // Legacy siding estimates with LP qty > 0 still surface the LP tab
+    // via the back-compat path in EstimateEditor.
     const srcKind = est.kind || "siding";
     const allLines = result?.lines || [];
-    const SIDING_TABS = new Set(["vinyl", "ascend", "lp_smart"]);
+    const SIDING_TABS = new Set(srcKind === "siding"
+      ? ["vinyl", "ascend"]               // LP excluded on siding-kind imports
+      : ["vinyl", "ascend", "lp_smart"]); // lp_smart-kind needs LP rows
     const WINDOWS_TABS = new Set(["windows"]);
     const sidingLines = allLines.filter((l) => SIDING_TABS.has(l.tab || "vinyl"));
     const windowsLines = allLines.filter((l) => WINDOWS_TABS.has(l.tab || "vinyl"));

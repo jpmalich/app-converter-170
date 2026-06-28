@@ -333,7 +333,13 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
     const allLines = result.lines || [];
     const srcKind = est.kind || "siding";
 
-    const sidingLines  = allLines.filter((l) => SIDING_TABS.has(l.tab || "vinyl"));
+    // Iter 78z++++ — drop LP rows for siding-kind imports. LP Smart now
+    // has its own workspace; legacy siding estimates with existing LP
+    // qty > 0 keep the LP tab via EstimateEditor's back-compat path.
+    const SIDING_TABS_FOR_KIND = new Set(srcKind === "siding"
+      ? ["vinyl", "ascend"]
+      : ["vinyl", "ascend", "lp_smart"]);
+    const sidingLines  = allLines.filter((l) => SIDING_TABS_FOR_KIND.has(l.tab || "vinyl"));
     const windowsLines = allLines.filter((l) => WINDOWS_TABS.has(l.tab || "vinyl"));
 
     const sourceLines  = srcKind === "windows" ? windowsLines : sidingLines;

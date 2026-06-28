@@ -139,9 +139,14 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               const keyOf = (l) => `${l.tab || "vinyl"}::${l.section}::${l.name}`;
               const byKey = new Map(existing.map((l, i) => [keyOf(l), i]));
               const next = [...existing];
-              const SIDING_TABS = new Set(["vinyl", "ascend", "lp_smart"]);
-              const WINDOWS_TABS = new Set(["windows"]);
+              // Iter 78z++++ — LP Smart has its own workspace; drop LP rows
+              // from AI imports onto siding-kind estimates. lp_smart-kind
+              // estimates still accept LP rows (they're the primary tab).
               const srcKind = est.kind || "siding";
+              const SIDING_TABS = new Set(srcKind === "siding"
+                ? ["vinyl", "ascend"]
+                : ["vinyl", "ascend", "lp_smart"]);
+              const WINDOWS_TABS = new Set(["windows"]);
               for (const ln of aiLines || []) {
                 const isSiding = SIDING_TABS.has(ln.tab || "vinyl");
                 const isWindows = WINDOWS_TABS.has(ln.tab || "vinyl");
