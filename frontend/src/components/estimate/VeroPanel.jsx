@@ -28,23 +28,36 @@ const LOCKED_MAX_UI = 101;
 
 const DEFAULT_SISTER_COLOR = "White Interior/White Exterior";
 
-// Auto-applied on every new Vero opening (Howard's most-common spec).
-const DEFAULT_ADDER = "Climatech Plus";
+// Iter 78y — Vero base price already includes Climatech Plus, so no
+// adder is auto-applied. The 3 glass upgrades below (Quattro / Elite
+// TG2 / TG2 Triple) are upgrades FROM the base Climatech Plus glass.
+const DEFAULT_ADDER = "";
 
-// Mutually-exclusive adder pairs. Selecting one auto-removes the other.
-const EXCLUSIVE_PAIR = {
-  "Climatech Plus": "Climatech TG2 Plus",
-  "Climatech TG2 Plus": "Climatech Plus",
-  "Climatech Plus Tempered": "Climatech TG2 Tempered",
-  "Climatech TG2 Tempered": "Climatech Plus Tempered",
-};
+// Glass-package adders are mutually exclusive — only one glass upgrade
+// can be applied per opening. Selecting one auto-removes the others.
+const GLASS_PACKAGE_GROUP = [
+  "Quattro .25 U Factor 2 coats LoE",
+  "Elite TG2 .24 U Factor 1 coat",
+  "TG2 Triple Pane/Argon .19 U Factor",
+];
 
-// Howard's preferred adder display order (Iter 44 conversation).
-// Row 1 = most common · Row 2 = second-tier · Row 3 = situational.
+// Iter 78y — 8-adder layout matching Howard's master Excel left→right
+// column order (Pro-quotes Master Price Catalog, VERO sheet).
+// Row 1: 3 mutually-exclusive glass upgrades + Head Expander.
+// Row 2: Grids · Sentry · Nail Fin · Heavy Duty Screen.
 const ADDER_ROWS = [
-  ["Climatech Plus", "Solid Color Flat Grids", "Head Expander", "Sentry System"],
-  ["Obscure Full", "Climatech TG2 Plus", "Foam Wrap", "Foam Frame"],
-  ["Climatech Plus Tempered", "Climatech TG2 Tempered", "Integral Nailing Fin", "Oriel Style Double Hung"],
+  [
+    "Quattro .25 U Factor 2 coats LoE",
+    "Elite TG2 .24 U Factor 1 coat",
+    "TG2 Triple Pane/Argon .19 U Factor",
+    "Head Expander 0-101",
+  ],
+  [
+    "Grids",
+    "Sentry System - Tilt Lock upgrade",
+    "Integral Nail Fin 0-101",
+    "Heavy Duty 1/2 Screen White ONLY",
+  ],
 ];
 
 const findBucket = (buckets, ui) =>
@@ -243,9 +256,11 @@ export default function VeroPanel({ est, update }) {
         return { ...op, adders: op.adders.filter((a) => a.name !== adderDef.name) };
       }
       didTurnOn = true;
-      const exclude = EXCLUSIVE_PAIR[adderDef.name];
-      const cleanedExisting = exclude
-        ? (op.adders || []).filter((a) => a.name !== exclude)
+      // If this is one of the mutually-exclusive glass packages, drop
+      // any other glass packages already selected.
+      const inGlassGroup = GLASS_PACKAGE_GROUP.includes(adderDef.name);
+      const cleanedExisting = inGlassGroup
+        ? (op.adders || []).filter((a) => !GLASS_PACKAGE_GROUP.includes(a.name))
         : op.adders || [];
       return {
         ...op,
@@ -269,9 +284,9 @@ export default function VeroPanel({ est, update }) {
           const otherDef = (otherPt?.adders || []).find((a) => a.name === adderDef.name);
           if (!otherDef) return null;
           if ((other.adders || []).some((a) => a.name === adderDef.name)) return null;
-          const exclude = EXCLUSIVE_PAIR[adderDef.name];
-          const cleaned = exclude
-            ? (other.adders || []).filter((a) => a.name !== exclude)
+          const inGlassGroup = GLASS_PACKAGE_GROUP.includes(adderDef.name);
+          const cleaned = inGlassGroup
+            ? (other.adders || []).filter((a) => !GLASS_PACKAGE_GROUP.includes(a.name))
             : other.adders || [];
           return {
             adders: [
