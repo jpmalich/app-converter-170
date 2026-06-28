@@ -75,8 +75,7 @@ ISS_SECTIONS = [
         ("Fascia return",                                   "ea",    17.50),
         ("Bird box",                                        "ea",    28.75),
         ("Flashing",                                        "lf",     3.98),
-    ]),
-    ("Misc.", [
+        # Iter 78z++++ (follow-up) — "Misc." section merged here too.
         ("Fullback in place of 1/4\" insulation",           "sq",    93.63),
         ("Replace 1x4 lumber",                              "lf",     7.15),
         ("Replace 1x6 lumber",                              "lf",     8.63),
@@ -134,15 +133,16 @@ async def ensure_iss_catalog_seeded(db) -> None:
     """Seed the `iss_catalog` collection from the hardcoded ISS_SECTIONS
     if (and only if) the collection is empty. Called on first read and
     by the admin export endpoint."""
-    # Iter 78z++++ — In-place merge of legacy "Misc. Labor Only" docs
-    # into the "Misc. Labor and Material" section so the single merged
-    # section surfaces R&R gutter + R&R downspout alongside the existing
-    # caps + flashing rows. Idempotent; runs even if the collection is
-    # already seeded.
-    only_count = await db.iss_catalog.count_documents({"section": "Misc. Labor Only"})
-    if only_count:
+    # Iter 78z++++ — In-place merge of legacy "Misc. Labor Only" and
+    # "Misc." section docs into the "Misc. Labor and Material" section
+    # so the single merged section surfaces R&R + caps + flashing +
+    # the small "Misc." adders (Fullback, lumber R&R) in one place.
+    # Idempotent; runs even if the collection is already seeded.
+    legacy_sections = ["Misc. Labor Only", "Misc."]
+    legacy_count = await db.iss_catalog.count_documents({"section": {"$in": legacy_sections}})
+    if legacy_count:
         await db.iss_catalog.update_many(
-            {"section": "Misc. Labor Only"},
+            {"section": {"$in": legacy_sections}},
             {"$set": {"section": "Misc. Labor and Material"}},
         )
     existing = await db.iss_catalog.count_documents({})

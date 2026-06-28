@@ -238,38 +238,49 @@ async def ensure_tiers_seeded():
         array_filters=[{"s.title": "Misc. Labor & Material"}],
     )
     # Move "Misc. Labor Only" items into the (now-renamed) merged
-    # section, then drop the empty source section.
+    # section, then drop the empty source section. Also handles the
+    # "Misc." section the same way (Howard merged it in Iter 78z++++
+    # follow-up).
+    SOURCE_SECTIONS_TO_MERGE = ("Misc. Labor Only", "Misc.")
     async for tier in db.price_tiers.find(
-        {"sections.title": "Misc. Labor Only"},
+        {"sections.title": {"$in": list(SOURCE_SECTIONS_TO_MERGE)}},
         {"_id": 0, "id": 1, "sections": 1},
     ):
         sections = tier.get("sections") or []
-        only_idx = next(
-            (i for i, s in enumerate(sections) if s.get("title") == "Misc. Labor Only"),
-            None,
-        )
         merged_idx = next(
             (i for i, s in enumerate(sections) if s.get("title") == "Misc. Labor and Material"),
             None,
         )
-        if only_idx is None or merged_idx is None:
+        if merged_idx is None:
             continue
         existing_names = {it.get("name") for it in sections[merged_idx].get("items", [])}
-        moved = [
-            it for it in (sections[only_idx].get("items") or [])
-            if it.get("name") not in existing_names
-        ]
-        if moved:
-            # Prepend so R&R rows stay at the top of the merged section.
-            sections[merged_idx]["items"] = moved + (sections[merged_idx].get("items") or [])
-        # Drop the empty "Misc. Labor Only" section.
-        sections.pop(only_idx)
+        # Walk back-to-front so we can pop sources without re-indexing.
+        for src_title in SOURCE_SECTIONS_TO_MERGE:
+            src_idx = next(
+                (i for i, s in enumerate(sections) if s.get("title") == src_title),
+                None,
+            )
+            if src_idx is None:
+                continue
+            moved = [
+                it for it in (sections[src_idx].get("items") or [])
+                if it.get("name") not in existing_names
+            ]
+            if moved:
+                sections[merged_idx]["items"] = (
+                    sections[merged_idx].get("items") or []
+                ) + moved
+                existing_names.update(it.get("name") for it in moved)
+            sections.pop(src_idx)
+            # `merged_idx` may have shifted if it sat after the popped source.
+            if src_idx < merged_idx:
+                merged_idx -= 1
         await db.price_tiers.update_one(
             {"id": tier["id"]},
             {"$set": {"sections": sections,
                       "updated_at": datetime.now(timezone.utc).isoformat()}},
         )
-        logger.info("Merged 'Misc. Labor Only' into 'Misc. Labor and Material' on tier %s", tier["id"])
+        logger.info("Merged Misc.* sections into 'Misc. Labor and Material' on tier %s", tier["id"])
     # Dedupe duplicate "Misc. Labor and Material" sections produced by
     # partial migrations during development. Collapse all into the first
     # occurrence, union the items by name (later duplicates lose).
@@ -308,6 +319,12 @@ async def ensure_tiers_seeded():
         {"lines": {"$elemMatch": {"section": "Misc. Labor Only"}}},
         {"$set": {"lines.$[el].section": "Misc. Labor and Material"}},
         array_filters=[{"el.section": "Misc. Labor Only"}],
+    )
+    # Iter 78z++++ follow-up — "Misc." section merged here too.
+    await db.estimates.update_many(
+        {"lines": {"$elemMatch": {"section": "Misc."}}},
+        {"$set": {"lines.$[el].section": "Misc. Labor and Material"}},
+        array_filters=[{"el.section": "Misc."}],
     )
     # Move ad-hoc `misc_labor` rows (the legacy storage for the labor-
     # only section) into `misc_material` so the single merged section

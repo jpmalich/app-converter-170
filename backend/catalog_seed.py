@@ -201,17 +201,16 @@ SECTION_LAYOUT = [
         'Pipe Clips',
     ]),
     ("Misc. Labor and Material", False, [
-        # Iter 78z++++ — "Misc. Labor Only" merged in here per Howard:
-        # R&R gutter / R&R downspout used to live in their own section
-        # but contractors found it confusing to flip between two
+        # Iter 78z++++ — "Misc. Labor Only" + "Misc." merged in here
+        # per Howard: contractors got confused flipping between three
         # ad-hoc add-on buckets. One section, one place to look.
         "R&R gutter", "R&R downspout",
         "Cap window", "Cap windows with wide crown", "Capping general",
         "Cap window headers only", "Cap entry door", "Cap patio door",
         "Cap single garage door", "Build out for windows w/furring (includes capping)",
         "R&R Gable louvers", "Fascia Return", "Bird box", "Flashing",
-    ]),
-    ("Misc.", False, [
+        # Iter 78z++++ (follow-up) — items pulled out of the old "Misc."
+        # section. They're labor + material like everything else here.
         "Cap tops of bird boxes", "Dormer upcharge", "R&R Utilities",
         "Cut out 4x4 section of wall and insulate",
     ]),
@@ -1100,7 +1099,6 @@ SECTION_PRODUCT_LINES = {
     "Tear-Off / Clean Up": ["vinyl", "ascend", "lp_smart"],
     "Seamless Gutter": ["vinyl", "ascend", "lp_smart"],
     "Misc. Labor and Material": ["vinyl", "ascend", "lp_smart"],
-    "Misc.": ["vinyl", "ascend", "lp_smart"],
 }
 
 
