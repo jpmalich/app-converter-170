@@ -35,6 +35,24 @@ const MODE_TARGET = "target";
 // its own photo-inference of style/size, which is the biggest source
 // of wrong-window-on-quote errors.
 const MODE_WINDOW = "window";
+// Iter 78z+++ — Tag profile families (LAP / SHAKE / B&B / etc.) right
+// here so Profile shares the photo's Wall Scale Anchor for ft² math
+// instead of running a separate scale calibration. Each box gets a
+// profile family + callout location + auto-computed ft².
+const MODE_PROFILE = "profile";
+
+const PROFILE_FAMILIES = [
+  { key: "lap",          label: "Lap",        bg: "#DBEAFE", fg: "#1E40AF" },
+  { key: "dutch_lap",    label: "Dutch Lap",  bg: "#E0E7FF", fg: "#3730A3" },
+  { key: "shake",        label: "Shake",      bg: "#FED7AA", fg: "#9A3412" },
+  { key: "board_batten", label: "B&B",        bg: "#FCE7F3", fg: "#9D174D" },
+  { key: "vertical",     label: "Vertical",   bg: "#FECACA", fg: "#991B1B" },
+  { key: "nickel_gap",   label: "Nickel Gap", bg: "#E9D5FF", fg: "#6B21A8" },
+  { key: "stone",        label: "Stone",      bg: "#E5E7EB", fg: "#374151" },
+  { key: "brick",        label: "Brick",      bg: "#FED7AA", fg: "#7C2D12" },
+  { key: "stucco",       label: "Stucco",     bg: "#F3F4F6", fg: "#6B7280" },
+];
+const CALLOUT_LOCATIONS = ["body", "gable", "dormer", "porch", "trim", "other"];
 
 // Same vocabulary as AIMeasureButton's WINDOW_STYLES — duplicated here so
 // the modal stays self-contained. Keep in sync.
@@ -131,8 +149,9 @@ export default function PhotoAnnotateModal({
   zones,        // array of saved zones (rect/poly)
   targetPin,    // { x, y } | null — single point marking the target house
   windows,      // Iter 57e — array of {x,y,style,width_in,height_in,id}
-  onSave,       // ({ reference, windowReference, zones, targetPin, windows }) => void
-  onOpenProfileAnnotator, // Iter 78z+++ — opens the cross-photo Tag Profiles tool (LAP / SHAKE / B&B / dormer / etc.)
+  profileBoxes, // Iter 78z+++ — array of saved profile boxes {id, shape, points/coords, profile, location, sqft, note}
+  onSave,       // ({ reference, windowReference, zones, targetPin, windows, profileBoxes }) => void
+  onOpenProfileAnnotator, // (legacy) — kept for cross-photo Tag Profiles tool
 }) {
   const canvasRef = useRef();
   const [photo, setPhoto] = useState(null); // { width, height }
@@ -160,6 +179,11 @@ export default function PhotoAnnotateModal({
   const [localZones, setLocalZones] = useState(zones || []);
   const [localTarget, setLocalTarget] = useState(targetPin || null);
   const [localWindows, setLocalWindows] = useState(windows || []);
+  // Iter 78z+++ — profile boxes drawn in MODE_PROFILE. Each box stores
+  // its bounds in PHOTO NATURAL PIXELS so sqft can be computed against
+  // the same Wall Scale Anchor that PIN/WALL/WINDOW/MASK already use.
+  const [localProfileBoxes, setLocalProfileBoxes] = useState(profileBoxes || []);
+  const [profileFamily, setProfileFamily] = useState("shake");
   // Pending window-tag entry: after the contractor taps a window pixel,
   // we open a small picker (style + W×H). Saved with `confirmWindow`.
   const [windowPending, setWindowPending] = useState(null); // { x, y }
@@ -201,6 +225,7 @@ export default function PhotoAnnotateModal({
     setLocalZones(zones || []);
     setLocalTarget(targetPin || null);
     setLocalWindows(windows || []);
+    setLocalProfileBoxes(profileBoxes || []);
     setWindowPending(null);
     // For aerial photos, default to Target Pin mode since that's the
     // most common reason to annotate one (geocoder missed the house).
@@ -251,6 +276,19 @@ export default function PhotoAnnotateModal({
     el.addEventListener("wheel", handler, { passive: false });
     return () => el.removeEventListener("wheel", handler);
   }, [open, zoom, pan.x, pan.y, photo]);
+
+  // Iter 78z+++ — when the contractor adds/changes the Wall Anchor
+  // AFTER drawing profile boxes, recompute every box's sqft so the
+  // sentinel 50 never lingers on save.
+  useEffect(() => {
+    if (!localRef) return;
+    setLocalProfileBoxes((prev) =>
+      prev.map((b) => ({
+        ...b,
+        sqft: _computeProfileSqft(b.points, localRef),
+      })),
+    );
+  }, [localRef]);
 
   if (!open) return null;
 
@@ -451,6 +489,41 @@ export default function PhotoAnnotateModal({
       setHoverPoint(null);
       return;
     }
+    // MODE_PROFILE — draws on the photo using the same rect/polygon
+    // shape toggle as MODE_ZONE, but tagged with a profile family +
+    // sqft auto-computed from the Wall Scale Anchor.
+    if (mode === MODE_PROFILE) {
+      if (zoneShape === "rect") {
+        if (!pending) { setPending(p); return; }
+        const x1 = Math.min(pending.x, p.x);
+        const y1 = Math.min(pending.y, p.y);
+        const x2 = Math.max(pending.x, p.x);
+        const y2 = Math.max(pending.y, p.y);
+        if (x2 - x1 < 4 || y2 - y1 < 4) { setPending(null); return; }
+        const points = [
+          { x: x1, y: y1 }, { x: x2, y: y1 },
+          { x: x2, y: y2 }, { x: x1, y: y2 },
+        ];
+        const sqft = _computeProfileSqft(points, localRef);
+        setLocalProfileBoxes((prev) => [
+          ...prev,
+          {
+            id: `p-${Date.now()}`,
+            shape: "rect",
+            points,
+            profile: profileFamily,
+            location: "body",
+            sqft,
+            note: "",
+          },
+        ]);
+        setPending(null);
+        return;
+      }
+      // polygon
+      setPolyPoints((prev) => [...prev, p]);
+      return;
+    }
     // MODE_ZONE
     if (zoneShape === "rect") {
       if (!pending) { setPending(p); return; }
@@ -473,8 +546,48 @@ export default function PhotoAnnotateModal({
     setPolyPoints((prev) => [...prev, p]);
   };
 
+  // Iter 78z+++ — Wall-Anchor-driven sqft for profile boxes. Returns
+  // 50 (sentinel) when no anchor is set so the contractor sees boxes
+  // ship without bombing — banner already tells them to set the
+  // anchor first.
+  const _computeProfileSqft = (points, ref) => {
+    if (!Array.isArray(points) || points.length < 3) return 50;
+    if (!ref || !ref.p1 || !ref.p2 || !ref.inches) return 50;
+    const dx = (ref.p2.x || 0) - (ref.p1.x || 0);
+    const dy = (ref.p2.y || 0) - (ref.p1.y || 0);
+    const refPx = Math.sqrt(dx * dx + dy * dy);
+    if (refPx <= 0) return 50;
+    const ftPerPx = (ref.inches / 12) / refPx;
+    // Shoelace (handles both rect-as-4pt and arbitrary polygons).
+    let area = 0;
+    const n = points.length;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      area += (points[i].x * points[j].y) - (points[j].x * points[i].y);
+    }
+    area = Math.abs(area) / 2;
+    return Math.round(area * ftPerPx * ftPerPx * 10) / 10;
+  };
+
   const closePolygon = () => {
     if (polyPoints.length < 3) { toast.error("Polygon needs at least 3 points"); return; }
+    if (mode === MODE_PROFILE) {
+      const sqft = _computeProfileSqft(polyPoints, localRef);
+      setLocalProfileBoxes((prev) => [
+        ...prev,
+        {
+          id: `p-${Date.now()}`,
+          shape: "polygon",
+          points: polyPoints,
+          profile: profileFamily,
+          location: "body",
+          sqft,
+          note: "",
+        },
+      ]);
+      setPolyPoints([]);
+      return;
+    }
     setLocalZones((prev) => [
       ...prev,
       { id: `z-${Date.now()}`, kind: "poly", category: zoneCategory, points: polyPoints },
@@ -501,6 +614,10 @@ export default function PhotoAnnotateModal({
   const cancelScale = () => { setScalePending(null); setScaleValue(""); };
 
   const removeZone = (id) => setLocalZones((prev) => prev.filter((z) => z.id !== id));
+  const removeProfileBox = (id) => setLocalProfileBoxes((prev) => prev.filter((b) => b.id !== id));
+  const updateProfileBox = (id, patch) =>
+    setLocalProfileBoxes((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+
   const removeReference = () => setLocalRef(null);
   const removeWindowReference = () => setLocalWindowRef(null);
   const removeTarget = () => setLocalTarget(null);
@@ -539,6 +656,8 @@ export default function PhotoAnnotateModal({
       zones: localZones,
       targetPin: localTarget,
       windows: localWindows,
+      profileBoxes: localProfileBoxes,
+      imageDims: photo ? { w: photo.width, h: photo.height } : null,
     });
     onClose();
   };
@@ -571,6 +690,27 @@ export default function PhotoAnnotateModal({
               <rect x={cx - 90} y={cy - 18} width={180} height={28} fill="#09090B" rx={3} />
               <text x={cx} y={cy + 3} fill="#FFFFFF" fontSize={Math.max(13, photo.width / 75)} textAnchor="middle" fontWeight="bold">
                 NO SIDING · {c.name}
+              </text>
+            </g>
+          );
+        })}
+        {/* Iter 78z+++ — Profile boxes overlay */}
+        {localProfileBoxes.map((b) => {
+          const fam = PROFILE_FAMILIES.find((f) => f.key === b.profile) || { label: b.profile, fg: "#7C3AED", bg: "#E9D5FF" };
+          const d = b.points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
+          const xs = b.points.map((p) => p.x);
+          const ys = b.points.map((p) => p.y);
+          const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+          const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+          const fontPx = Math.max(13, photo.width / 75);
+          const label = `${fam.label.toUpperCase()} · ${b.sqft} ft²`;
+          const labelLen = Math.max(140, label.length * fontPx * 0.55);
+          return (
+            <g key={b.id}>
+              <path d={d} fill={fam.fg} fillOpacity={0.22} stroke={fam.fg} strokeWidth={Math.max(3, photo.width / 600)} />
+              <rect x={cx - labelLen / 2} y={cy - fontPx - 4} width={labelLen} height={fontPx + 8} fill={fam.fg} rx={3} />
+              <text x={cx} y={cy + 2} fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
+                {label}
               </text>
             </g>
           );
@@ -701,6 +841,61 @@ export default function PhotoAnnotateModal({
               {polyPoints.map((p, i) => (
                 <circle key={i} cx={p.x} cy={p.y} r={Math.max(5, photo.width / 350)} fill={c.color} />
               ))}
+            </g>
+          );
+        })()}
+        {/* Iter 78z+++ — Profile rect rubber-band with live sqft readout */}
+        {mode === MODE_PROFILE && zoneShape === "rect" && pending && hoverPoint && (() => {
+          const fam = PROFILE_FAMILIES.find((f) => f.key === profileFamily) || { fg: "#7C3AED" };
+          const x1 = Math.min(pending.x, hoverPoint.x);
+          const y1 = Math.min(pending.y, hoverPoint.y);
+          const x2 = Math.max(pending.x, hoverPoint.x);
+          const y2 = Math.max(pending.y, hoverPoint.y);
+          const previewPts = [
+            { x: x1, y: y1 }, { x: x2, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 },
+          ];
+          const liveSqft = _computeProfileSqft(previewPts, localRef);
+          const fontPx = Math.max(13, photo.width / 75);
+          const label = `~${liveSqft} ft²`;
+          return (
+            <g>
+              <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1}
+                    fill={fam.fg} fillOpacity={0.18} stroke={fam.fg}
+                    strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="8 4" />
+              <rect x={(x1 + x2) / 2 - 70} y={(y1 + y2) / 2 - fontPx - 4}
+                    width={140} height={fontPx + 8} fill={fam.fg} rx={3} />
+              <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 + 2}
+                    fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
+                {label}
+              </text>
+            </g>
+          );
+        })()}
+        {/* Iter 78z+++ — Profile polygon preview with live sqft */}
+        {mode === MODE_PROFILE && zoneShape === "poly" && polyPoints.length > 0 && (() => {
+          const fam = PROFILE_FAMILIES.find((f) => f.key === profileFamily) || { fg: "#7C3AED" };
+          const previewPts = hoverPoint && polyPoints.length >= 1
+            ? [...polyPoints, hoverPoint]
+            : polyPoints;
+          const d = previewPts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+          const live = polyPoints.length >= 2 ? _computeProfileSqft(previewPts, localRef) : null;
+          const fontPx = Math.max(13, photo.width / 75);
+          return (
+            <g>
+              <path d={d} fill="none" stroke={fam.fg} strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="8 4" />
+              {polyPoints.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r={Math.max(5, photo.width / 350)} fill={fam.fg} />
+              ))}
+              {live != null && polyPoints.length >= 2 && (
+                <>
+                  <rect x={polyPoints[0].x - 70} y={polyPoints[0].y - fontPx - 14}
+                        width={140} height={fontPx + 8} fill={fam.fg} rx={3} />
+                  <text x={polyPoints[0].x} y={polyPoints[0].y - 8}
+                        fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
+                    ~{live} ft²
+                  </text>
+                </>
+              )}
             </g>
           );
         })()}
@@ -1000,22 +1195,20 @@ export default function PhotoAnnotateModal({
                       title="Tap a window in the photo to tag its style. Claude treats your tags as GROUND TRUTH (overrides its photo-inference).">
                 <Square className="w-3 h-3" /> Style
               </button>
-              {/* Iter 78z+++ — Profiles button. Opens the Tag Profiles
-                  cross-photo tool (LAP / SHAKE / B&B / VERTICAL /
-                  NICKEL GAP / STONE / BRICK / STUCCO) with dormer +
-                  callout-location dropdowns per box. Closes this
-                  modal so the parent can take over the workflow. */}
-              {onOpenProfileAnnotator && (
-                <button
-                  type="button"
-                  onClick={() => { onClose(); onOpenProfileAnnotator(); }}
-                  className="px-2 py-2 text-[10px] font-bold uppercase tracking-wider border bg-white text-[#7C3AED] border-[#7C3AED] hover:bg-[#FAF5FF] flex items-center justify-center gap-1"
-                  data-testid="annotate-mode-profile"
-                  title="Tag Shake / B&B / Dormer / Stone / Brick zones. Opens the cross-photo profile tagger — annotations land as authoritative accents in the materials list."
-                >
-                  <Tags className="w-3 h-3" /> Profile
-                </button>
-              )}
+              {/* Iter 78z+++ — Profile mode. Lives inside this modal so
+                  it shares the Wall Scale Anchor + photo coordinate
+                  system. Each box gets a profile family + auto-sqft. */}
+              <button
+                type="button"
+                onClick={() => { setMode(MODE_PROFILE); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
+                className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
+                  mode === MODE_PROFILE ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                }`}
+                data-testid="annotate-mode-profile"
+                title="Tag Shake / B&B / Dormer regions. Reuses the Wall Scale Anchor for ft² math — set the anchor first."
+              >
+                <Tags className="w-3 h-3" /> Profile
+              </button>
             </div>
 
             {mode === MODE_ZONE && (
@@ -1046,6 +1239,90 @@ export default function PhotoAnnotateModal({
                     </button>
                     <button type="button" onClick={() => setPolyPoints([])}
                             className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5]">Cancel</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Iter 78z+++ — Profile mode side panel */}
+            {mode === MODE_PROFILE && (
+              <div className="space-y-2">
+                {!localRef && (
+                  <div className="px-2 py-2 bg-[#FEF3C7] border border-[#F59E0B] text-[10px] text-[#92400E]" data-testid="profile-no-anchor-banner">
+                    <strong>Set Wall Anchor first</strong> (red WALL button) so ft² auto-computes. Without an anchor, new boxes default to 50 ft².
+                  </div>
+                )}
+                <div className="flex gap-1">
+                  <button type="button"
+                          onClick={() => { setZoneShape("rect"); setPending(null); setPolyPoints([]); }}
+                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}>Rectangle</button>
+                  <button type="button"
+                          onClick={() => { setZoneShape("poly"); setPending(null); }}
+                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}>Polygon</button>
+                </div>
+                <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold pt-1">Profile family</div>
+                <div className="grid grid-cols-3 gap-1">
+                  {PROFILE_FAMILIES.map((f) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setProfileFamily(f.key)}
+                      className={`px-1 py-1 text-[10px] font-bold uppercase tracking-wider border ${profileFamily === f.key ? "border-[#09090B] ring-1 ring-[#09090B]" : "border-[#E4E4E7]"}`}
+                      style={{ background: f.bg, color: f.fg }}
+                      data-testid={`annotate-profile-fam-${f.key}`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                {zoneShape === "poly" && polyPoints.length > 0 && (
+                  <div className="flex gap-1">
+                    <button type="button" onClick={closePolygon} disabled={polyPoints.length < 3}
+                            className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#7C3AED] text-white border border-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-40">
+                      Close ({polyPoints.length} pts)
+                    </button>
+                    <button type="button" onClick={() => setPolyPoints([])}
+                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5]">Cancel</button>
+                  </div>
+                )}
+                {localProfileBoxes.length > 0 && (
+                  <div className="pt-1 space-y-1">
+                    <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Profile boxes ({localProfileBoxes.length})</div>
+                    {localProfileBoxes.map((b) => {
+                      const fam = PROFILE_FAMILIES.find((f) => f.key === b.profile) || { label: b.profile, bg: "#F4F4F5", fg: "#71717A" };
+                      return (
+                        <div key={b.id} className="border border-[#E4E4E7] p-1.5 space-y-1" data-testid={`profile-box-${b.id}`}>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{ background: fam.bg, color: fam.fg }}>
+                              {fam.label}
+                            </span>
+                            <span className="text-[10px] font-mono-num tabular-nums">{b.sqft} ft²</span>
+                            <button type="button" onClick={() => removeProfileBox(b.id)} className="text-[#DC2626] hover:text-[#991B1B]" title="Delete box">
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <select
+                            value={b.location}
+                            onChange={(e) => updateProfileBox(b.id, { location: e.target.value })}
+                            className="block w-full text-[10px] border border-[#E4E4E7] px-1 py-0.5"
+                            data-testid={`profile-box-location-${b.id}`}
+                          >
+                            {CALLOUT_LOCATIONS.map((loc) => (
+                              <option key={loc} value={loc}>{loc}</option>
+                            ))}
+                          </select>
+                          {!localRef && (
+                            <input
+                              type="number"
+                              value={b.sqft}
+                              onChange={(e) => updateProfileBox(b.id, { sqft: parseFloat(e.target.value) || 0 })}
+                              className="block w-full text-[10px] border border-[#E4E4E7] px-1 py-0.5"
+                              placeholder="ft² (manual)"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

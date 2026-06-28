@@ -2578,7 +2578,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         windows={
           annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.windows || []) : []
         }
-        onSave={({ reference, windowReference, zones, targetPin, windows }) => {
+        profileBoxes={
+          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.profileBoxes || []) : []
+        }
+        onSave={({ reference, windowReference, zones, targetPin, windows, profileBoxes, imageDims }) => {
           if (!annotateOpenFor) return;
           setPhotoAnnotations((prev) => ({
             ...prev,
@@ -2589,8 +2592,69 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               zones,
               targetPin,
               windows,
+              profileBoxes,
             },
           }));
+          // Iter 78z+++ — push the new in-modal profile boxes into the
+          // estimate-level annotations object so the worker treats them
+          // as ground-truth on Run / Re-run. Keyed by photo INDEX to
+          // match the backend (apply_annotations_to_breakdown).
+          const idx = photoUrls.indexOf(annotateOpenFor);
+          if (idx >= 0) {
+            const naturalW = imageDims?.w || 1;
+            const naturalH = imageDims?.h || 1;
+            const elev = photoAnnotations[annotateOpenFor]?.elevation || "other";
+            const boxesForBackend = (profileBoxes || []).map((b) => {
+              const xs = b.points.map((p) => p.x);
+              const ys = b.points.map((p) => p.y);
+              const minX = Math.min(...xs), minY = Math.min(...ys);
+              const maxX = Math.max(...xs), maxY = Math.max(...ys);
+              return {
+                shape: b.shape,
+                elevation_label: elev,
+                profile: b.profile,
+                location: b.location,
+                sqft: b.sqft,
+                callout: b.note || "",
+                ...(b.shape === "polygon"
+                  ? {
+                      points: b.points.map((p) => ({ x_norm: p.x / naturalW, y_norm: p.y / naturalH })),
+                    }
+                  : {
+                      x_norm: minX / naturalW,
+                      y_norm: minY / naturalH,
+                      w_norm: (maxX - minX) / naturalW,
+                      h_norm: (maxY - minY) / naturalH,
+                    }),
+              };
+            });
+            // Build a fresh scale_ref from the wall anchor for backend
+            // sqft recompute parity.
+            const ref = reference;
+            let scaleRef = null;
+            if (ref && ref.p1 && ref.p2 && ref.inches > 0) {
+              const dx = ref.p2.x - ref.p1.x;
+              const dy = ref.p2.y - ref.p1.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist > 0) {
+                scaleRef = {
+                  px_height: dist,
+                  real_ft: ref.inches / 12,
+                  img_w: naturalW,
+                  img_h: naturalH,
+                };
+              }
+            }
+            setSavedProfileAnnotations((prev) => {
+              const next = { ...(prev || {}) };
+              next[String(idx)] = boxesForBackend;
+              const refs = { ...((prev && prev._scale_refs) || {}) };
+              if (scaleRef) refs[String(idx)] = scaleRef;
+              else delete refs[String(idx)];
+              next._scale_refs = refs;
+              return next;
+            });
+          }
           toast.success("Annotations saved · Claude will see them when you Run AI Measure");
         }}
         onOpenProfileAnnotator={
