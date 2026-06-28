@@ -96,110 +96,110 @@ const ITEM_DESCRIPTIONS = {
 
   // Charter Oak — Double 4-1/2" Clapboard
   "Charter Oak Standard color Clap 4.5\" .046": {
-    en: "Charter Oak® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness.",
-    es: "Charter Oak® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\".",
+    en: "Charter Oak® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Charter Oak® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
   "Charter Oak Architectural color Clap 4.5\" .046": {
-    en: "Charter Oak® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness.",
-    es: "Charter Oak® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\".",
+    en: "Charter Oak® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Charter Oak® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
 
   // Charter Oak — Double 4-1/2" Dutch Lap
   "Charter Oak Standard color Dutch Lap 4.5\" .046": {
-    en: "Charter Oak® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness.",
-    es: "Charter Oak® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\".",
+    en: "Charter Oak® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Charter Oak® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
   "Charter Oak Architectural color Dutch Lap 4.5\" .046": {
-    en: "Charter Oak® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness.",
-    es: "Charter Oak® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\".",
+    en: "Charter Oak® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 3/4\" field butt height; TriBeam system; rollover nail hem; oak grain texture; low-gloss finish; 0.046\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Charter Oak® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 3/4\"; sistema TriBeam; pestaña de clavado enrollada; textura grano de roble; acabado bajo brillo; espesor nom. 0.046\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
 
   // Board & Batten® — 7" Vertical
   "vertical board and batten Standard color 7\"": {
-    en: "Board & Batten® — 7\" Vertical. 7\" overall exposure; 10'0\" panel length; 5-1/2\" board width, 1-1/2\" batten width/height; light roughsawn texture; low-gloss finish; 0.050\" nom. thickness.",
-    es: "Board & Batten® — 7\" Vertical. Exposición total 7\"; longitud de panel 10'0\"; ancho de tabla 5-1/2\", ancho/alto de listón 1-1/2\"; textura aserrada ligera; acabado bajo brillo; espesor nom. 0.050\".",
+    en: "Board & Batten® — 7\" Vertical. 7\" overall exposure; 10'0\" panel length; 5-1/2\" board width, 1-1/2\" batten width/height; light roughsawn texture; low-gloss finish; 0.050\" nom. thickness. Packaging: 1 square per carton; 17 panels per carton.",
+    es: "Board & Batten® — 7\" Vertical. Exposición total 7\"; longitud de panel 10'0\"; ancho de tabla 5-1/2\", ancho/alto de listón 1-1/2\"; textura aserrada ligera; acabado bajo brillo; espesor nom. 0.050\". Empaque: 1 cuadrado por caja; 17 paneles por caja.",
   },
   "vertical board and batten Architectural color 7\"": {
-    en: "Board & Batten® — 7\" Vertical. 7\" overall exposure; 10'0\" panel length; 5-1/2\" board width, 1-1/2\" batten width/height; light roughsawn texture; low-gloss finish; 0.050\" nom. thickness.",
-    es: "Board & Batten® — 7\" Vertical. Exposición total 7\"; longitud de panel 10'0\"; ancho de tabla 5-1/2\", ancho/alto de listón 1-1/2\"; textura aserrada ligera; acabado bajo brillo; espesor nom. 0.050\".",
+    en: "Board & Batten® — 7\" Vertical. 7\" overall exposure; 10'0\" panel length; 5-1/2\" board width, 1-1/2\" batten width/height; light roughsawn texture; low-gloss finish; 0.050\" nom. thickness. Packaging: 1 square per carton; 17 panels per carton.",
+    es: "Board & Batten® — 7\" Vertical. Exposición total 7\"; longitud de panel 10'0\"; ancho de tabla 5-1/2\", ancho/alto de listón 1-1/2\"; textura aserrada ligera; acabado bajo brillo; espesor nom. 0.050\". Empaque: 1 cuadrado por caja; 17 paneles por caja.",
   },
 
   // Coventry by Alside® — Double 4" Clap
   "Coventry Standard color Clap 4\" .042": {
-    en: "Coventry by Alside® — Double 4\" Clapboard. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Clapboard doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 4\" Clapboard. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 24 panels per carton.",
+    es: "Coventry by Alside® — Clapboard doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 24 paneles por caja.",
   },
   "Coventry Architectural color Clap 4\" .042": {
-    en: "Coventry by Alside® — Double 4\" Clapboard. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Clapboard doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 4\" Clapboard. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 24 panels per carton.",
+    es: "Coventry by Alside® — Clapboard doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 24 paneles por caja.",
   },
 
   // Coventry by Alside® — Double 4" Dutch Lap
   "Coventry Standard color Dutch lap 4\" .042": {
-    en: "Coventry by Alside® — Double 4\" Dutch Lap. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Dutch Lap doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 4\" Dutch Lap. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 24 panels per carton.",
+    es: "Coventry by Alside® — Dutch Lap doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 24 paneles por caja.",
   },
   "Coventry Architectural color Dutch lap 4\" .042": {
-    en: "Coventry by Alside® — Double 4\" Dutch Lap. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Dutch Lap doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 4\" Dutch Lap. Double 4\" exposure; 12'6\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 24 panels per carton.",
+    es: "Coventry by Alside® — Dutch Lap doble 4\". Exposición doble 4\"; longitud de panel 12'6\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 24 paneles por caja.",
   },
 
   // Coventry by Alside® — Double 5" Clap
   "Coventry Standard color Clap 5\" .042": {
-    en: "Coventry by Alside® — Double 5\" Clapboard. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Clapboard doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 5\" Clapboard. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 20 panels per carton.",
+    es: "Coventry by Alside® — Clapboard doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 20 paneles por caja.",
   },
   "Coventry Architectural color Clap 5\" .042": {
-    en: "Coventry by Alside® — Double 5\" Clapboard. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Clapboard doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 5\" Clapboard. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 20 panels per carton.",
+    es: "Coventry by Alside® — Clapboard doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 20 paneles por caja.",
   },
 
   // Coventry by Alside® — Double 5" Dutch Lap
   "Coventry Standard color Dutch lap 5\" .042": {
-    en: "Coventry by Alside® — Double 5\" Dutch Lap. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Dutch Lap doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 5\" Dutch Lap. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 20 panels per carton.",
+    es: "Coventry by Alside® — Dutch Lap doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 20 paneles por caja.",
   },
   "Coventry Architectural color Dutch lap 5\" .042": {
-    en: "Coventry by Alside® — Double 5\" Dutch Lap. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness.",
-    es: "Coventry by Alside® — Dutch Lap doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\".",
+    en: "Coventry by Alside® — Double 5\" Dutch Lap. Double 5\" exposure; 12'0\" panel length; 1/2\" field butt height; rolled-top nail hem; natural cedar grain texture; low-gloss finish; 0.042\" nom. thickness. Packaging: 2 squares per carton; 20 panels per carton.",
+    es: "Coventry by Alside® — Dutch Lap doble 5\". Exposición doble 5\"; longitud de panel 12'0\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura grano de cedro natural; acabado bajo brillo; espesor nom. 0.042\". Empaque: 2 cuadrados por caja; 20 paneles por caja.",
   },
 
   // Conquest® — Double 4-1/2" Clap
   "Conquest Standard color Clap 4.5\" .040": {
-    en: "Conquest® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness.",
-    es: "Conquest® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\".",
+    en: "Conquest® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Conquest® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
   "Conquest Architectural color Clap 4.5\" .040": {
-    en: "Conquest® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness.",
-    es: "Conquest® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\".",
+    en: "Conquest® — Double 4-1/2\" Clapboard. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Conquest® — Clapboard doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
 
   // Conquest® — Double 4-1/2" Dutch Lap
   "Conquest Standard color Dutch lap 4.5\" .040": {
-    en: "Conquest® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness.",
-    es: "Conquest® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\".",
+    en: "Conquest® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Conquest® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
   "Conquest Architectural color Dutch lap 4.5\" .040": {
-    en: "Conquest® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness.",
-    es: "Conquest® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\".",
+    en: "Conquest® — Double 4-1/2\" Dutch Lap. Double 4-1/2\" exposure; 12'1\" panel length; 1/2\" field butt height; rolled-top nail hem; subtle cedar grain texture; low-gloss finish; 0.040\" nom. thickness. Packaging: 2 squares per carton; 22 panels per carton.",
+    es: "Conquest® — Dutch Lap doble 4-1/2\". Exposición doble 4-1/2\"; longitud de panel 12'1\"; alto de cara 1/2\"; pestaña de clavado enrollada; textura sutil grano de cedro; acabado bajo brillo; espesor nom. 0.040\". Empaque: 2 cuadrados por caja; 22 paneles por caja.",
   },
 
   // Charter Oak Soffit — Aerated and Solid variants combined (catalog
   // has a single SKU per color tier; the PDF splits the spec across
   // two pages, so we surface both NFA notes inside one popover.)
   "Charter Oak Soffit Standard color": {
-    en: "Charter Oak Soffit — 10\". Triple 3-1/3\" exposure; 12'0\" panel length; 3/4\" field butt height; TriBeam system; smooth texture; low-gloss finish; 0.042\" nom. thickness. Aerated variant: 8.06 sq.in. NFA / lineal ft, 9.68 sq.in. NFA / sq ft. Solid / Vertical variant: no venting.",
-    es: "Charter Oak Soffit — 10\". Exposición triple 3-1/3\"; longitud de panel 12'0\"; alto de cara 3/4\"; sistema TriBeam; textura lisa; acabado bajo brillo; espesor nom. 0.042\". Variante aireada: 8.06 pulg² NFA/pie lineal; 9.68 pulg² NFA/pie². Variante sólida/vertical: sin ventilación.",
+    en: "Charter Oak Soffit — 10\". Triple 3-1/3\" exposure; 12'0\" panel length; 3/4\" field butt height; TriBeam system; smooth texture; low-gloss finish; 0.042\" nom. thickness. Aerated variant: 8.06 sq.in. NFA / lineal ft, 9.68 sq.in. NFA / sq ft. Solid / Vertical variant: no venting. Packaging: 2 squares per carton; 20 panels per carton (both Aerated and Solid variants).",
+    es: "Charter Oak Soffit — 10\". Exposición triple 3-1/3\"; longitud de panel 12'0\"; alto de cara 3/4\"; sistema TriBeam; textura lisa; acabado bajo brillo; espesor nom. 0.042\". Variante aireada: 8.06 pulg² NFA/pie lineal; 9.68 pulg² NFA/pie². Variante sólida/vertical: sin ventilación. Empaque: 2 cuadrados por caja; 20 paneles por caja (tanto variante aireada como sólida).",
   },
   "Charter Oak Soffit Architectural color": {
-    en: "Charter Oak Soffit — 10\". Triple 3-1/3\" exposure; 12'0\" panel length; 3/4\" field butt height; TriBeam system; smooth texture; low-gloss finish; 0.042\" nom. thickness. Aerated variant: 8.06 sq.in. NFA / lineal ft, 9.68 sq.in. NFA / sq ft. Solid / Vertical variant: no venting.",
-    es: "Charter Oak Soffit — 10\". Exposición triple 3-1/3\"; longitud de panel 12'0\"; alto de cara 3/4\"; sistema TriBeam; textura lisa; acabado bajo brillo; espesor nom. 0.042\". Variante aireada: 8.06 pulg² NFA/pie lineal; 9.68 pulg² NFA/pie². Variante sólida/vertical: sin ventilación.",
+    en: "Charter Oak Soffit — 10\". Triple 3-1/3\" exposure; 12'0\" panel length; 3/4\" field butt height; TriBeam system; smooth texture; low-gloss finish; 0.042\" nom. thickness. Aerated variant: 8.06 sq.in. NFA / lineal ft, 9.68 sq.in. NFA / sq ft. Solid / Vertical variant: no venting. Packaging: 2 squares per carton; 20 panels per carton (both Aerated and Solid variants).",
+    es: "Charter Oak Soffit — 10\". Exposición triple 3-1/3\"; longitud de panel 12'0\"; alto de cara 3/4\"; sistema TriBeam; textura lisa; acabado bajo brillo; espesor nom. 0.042\". Variante aireada: 8.06 pulg² NFA/pie lineal; 9.68 pulg² NFA/pie². Variante sólida/vertical: sin ventilación. Empaque: 2 cuadrados por caja; 20 paneles por caja (tanto variante aireada como sólida).",
   },
 
   // Greenbriar® Vintage Beaded Soffit — 8" (Aerated + Solid combined)
   "Greenbriar Soffit": {
-    en: "Greenbriar® Vintage Beaded Soffit — 8\". Triple 2-1/2\" exposure; 12'6\" panel length; 3/8\" field butt height; smooth texture; low-gloss finish; 0.042\" nom. thickness. Aerated variant: 2.8 sq.in. NFA / lineal ft, 4.2 sq.in. NFA / sq ft. Solid variant: no venting.",
-    es: "Greenbriar® Vintage Beaded Soffit — 8\". Exposición triple 2-1/2\"; longitud de panel 12'6\"; alto de cara 3/8\"; textura lisa; acabado bajo brillo; espesor nom. 0.042\". Variante aireada: 2.8 pulg² NFA/pie lineal; 4.2 pulg² NFA/pie². Variante sólida: sin ventilación.",
+    en: "Greenbriar® Vintage Beaded Soffit — 8\". Triple 2-1/2\" exposure; 12'6\" panel length; 3/8\" field butt height; smooth texture; low-gloss finish; 0.042\" nom. thickness. Aerated variant: 2.8 sq.in. NFA / lineal ft, 4.2 sq.in. NFA / sq ft. Solid variant: no venting. Packaging: 1 square per carton; 12 panels per carton (both Aerated and Solid variants).",
+    es: "Greenbriar® Vintage Beaded Soffit — 8\". Exposición triple 2-1/2\"; longitud de panel 12'6\"; alto de cara 3/8\"; textura lisa; acabado bajo brillo; espesor nom. 0.042\". Variante aireada: 2.8 pulg² NFA/pie lineal; 4.2 pulg² NFA/pie². Variante sólida: sin ventilación. Empaque: 1 cuadrado por caja; 12 paneles por caja (tanto variante aireada como sólida).",
   },
 };
 
