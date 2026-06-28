@@ -72,26 +72,19 @@ export default function EstimateEditor() {
   // Visible tab set for THIS estimate.
   //   windows kind → Vero + Mezzo (Iter 37)
   //   lp_smart kind → LP only (Iter 73)
-  //   siding kind  → Vinyl + Ascend (Iter 73 — LP got its own workspace).
-  //     Backward-compat: if a legacy siding estimate already carries LP
-  //     line qty > 0, surface the LP tab on THAT estimate only so the
-  //     contractor can still see/edit the rows.
-  const sidingLegacyHasLp = useMemo(() => {
-    if (isWindowKind || isLpKind) return false;
-    return (est?.lines || []).some(
-      (l) => l.tab === "lp_smart" && (Number(l.qty) || 0) > 0
-    );
-  }, [est?.lines, isWindowKind, isLpKind]);
-
+  //   siding kind  → Vinyl + Ascend (Iter 73 — LP got its own workspace;
+  //     Iter 78z++++ dropped the legacy back-compat path so siding now
+  //     NEVER renders the LP tab regardless of stored data).
   const visibleTabIds = useMemo(() => {
     if (isWindowKind) return WINDOWS_KIND_TAB_IDS;
     if (isLpKind) return LP_KIND_TAB_IDS;
-    const base = SIDING_KIND_TAB_IDS.filter((id) => VISIBLE_TAB_IDS.includes(id));
-    if (sidingLegacyHasLp && VISIBLE_TAB_IDS.includes("lp_smart") && !base.includes("lp_smart")) {
-      return [...base, "lp_smart"];
-    }
-    return base;
-  }, [isWindowKind, isLpKind, sidingLegacyHasLp]);
+    // Iter 78z++++ — Howard removed LP from the siding workspace.
+    // Even legacy estimates that had LP imports applied to them
+    // before now render only Vinyl + Ascend tabs. LP line data stays
+    // in MongoDB (recoverable) but is invisible in the siding UI; to
+    // quote LP for the same job, use the LP standalone workspace.
+    return SIDING_KIND_TAB_IDS.filter((id) => VISIBLE_TAB_IDS.includes(id));
+  }, [isWindowKind, isLpKind]);
   // Tab defs aligned to visibleTabIds (preserves label + order).
   const visibleTabDefs = useMemo(
     () => ALL_TAB_DEFS.filter((t) => visibleTabIds.includes(t.id)),
