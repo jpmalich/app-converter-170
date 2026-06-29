@@ -873,12 +873,20 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: max(
             0,
             math.ceil(
-                ((float(m.get("overhang_in") or 12) / 12.0)
-                 * ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)))
+                (
+                    (float(m.get("overhang_in") or 12) / 12.0)
+                    * ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0))
+                    + (m.get("porch_ceiling_sqft") or 0)
+                )
                 / 10.0
             ),
         ),
-        "note": "Pieces = (Overhang × (Eaves+Rakes)) ÷ panel area (10 sqft/pc); Standard color default",
+        "note": lambda m: (
+            (
+                f"Pieces = ((Overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × (Eaves+Rakes) "
+                f"+ porch_ceiling {float(m.get('porch_ceiling_sqft') or 0):g} sqft) ÷ 10 sqft/pc; Standard color default"
+            )
+        ),
     },
     {
         "tabs": ["vinyl", "ascend"],
@@ -979,6 +987,10 @@ HOVER_MAPPING_SPEC = [
     #   pcs = ceil( (overhang_in/12) × LF / 21.3 × 1.10 waste )
     # When the flag is off, fall back to the legacy LF ÷ 16 row so
     # historical quotes don't shift.
+    # Iter 78aj — porch ceilings contribute sqft to the SAME soffit
+    # qty. Vented porches go on eaves (most common — front porch
+    # ceiling under the main eave) so we route the porch_ceiling_sqft
+    # total to the Vented row. Closed (rake) row stays rake-only.
     {
         "tabs": ["lp_smart"],
         "section": "LP SmartSide Soffit",
@@ -987,12 +999,19 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: (
             lp_formulas.soffit_pieces(
                 (float(m.get("overhang_in") or 12) / 12.0) * (m.get("eaves_lf") or 0)
+                + (m.get("porch_ceiling_sqft") or 0)
             )
             if lp_formulas.is_enabled()
-            else max(1, math.ceil((m.get("eaves_lf") or 0) / 16))
+            else max(
+                1,
+                math.ceil(((m.get("eaves_lf") or 0) + (m.get("porch_ceiling_sqft") or 0) / max(float(m.get("overhang_in") or 12) / 12.0, 0.1)) / 16),
+            )
         ),
         "note": lambda m: (
-            f"Vented (eaves) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × eaves_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+            (
+                f"Vented (eaves + porches) — ceil( ((overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × eaves_LF "
+                f"+ porch_ceiling {float(m.get('porch_ceiling_sqft') or 0):g} sqft) ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+            )
             if lp_formulas.is_enabled()
             else "Vented goes on eaves (attic vent path) — eaves LF ÷ 16"
         ),

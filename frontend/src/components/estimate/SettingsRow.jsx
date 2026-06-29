@@ -1,6 +1,7 @@
 import React from "react";
 import { useT } from "@/lib/i18n";
 import { recomputeWasteQtys, recomputeAllWaste } from "@/lib/wasteLogic";
+import PorchCeilingsCard from "./PorchCeilingsCard";
 
 export default function SettingsRow({ est, update }) {
   const t = useT();
@@ -136,6 +137,14 @@ export default function SettingsRow({ est, update }) {
             <p className="mt-2 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
               {t("est.overhangHint")}
             </p>
+            {/* Iter 78aj — Porch ceilings live right below the overhang
+                field so contractors see them as part of the same "what
+                drives soffit qty" decision. The total sqft is summed
+                into the same soffit formula. */}
+            <PorchCeilingsCard
+              value={est.porch_ceilings || []}
+              onChange={(next) => update({ porch_ceilings: next })}
+            />
           </div>
         </div>
       )}

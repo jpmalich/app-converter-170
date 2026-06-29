@@ -1,24 +1,22 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { porchCeilingTotalSqft } from "@/components/estimate/PorchCeilingsCard";
 
-// Iter 78ai — Auto-recalculate soffit material qty when the contractor
-// changes the Eave Overhang field. Soffit pieces are computed at import
-// time using whatever overhang value the estimate had at that moment;
-// without this hook, editing overhang from 12" → 24" later in the
-// quoting flow leaves the original soffit qty stale.
+// Iter 78ai/78aj — Auto-recalculate soffit material qty when the
+// contractor changes the Eave Overhang field OR edits any porch
+// ceiling dimension (length / width / add / remove). Soffit pieces
+// are computed at import time using the overhang value of the moment;
+// without this hook, editing overhang or adding porches later leaves
+// the original soffit qty stale.
 //
 // Behaviour:
-//   • Fires only when `est.overhang_in` actually changes (skips initial mount).
+//   • Fires only when overhang OR porch-ceiling-total actually changes.
 //   • Recomputes qty for the 3 soffit rows (Charter Oak + LP Vented + LP Closed)
-//     using `eaves_lf` + `rakes_lf` cached on `est.hover_measurements`.
-//   • If `hover_measurements` is missing or has no LF data, the hook
-//     no-ops (nothing to recompute from).
-//   • Always overwrites existing qty — Howard's call (Iter 78ai) so the
-//     reactive behavior is predictable. Contractor can still type a
-//     custom qty after the recalc and it will stick until the next
-//     overhang change.
-//   • Single toast summarising what was recalculated so the contractor
-//     understands why qty changed.
+//     using `eaves_lf` + `rakes_lf` cached on `est.hover_measurements`
+//     AND the porch ceiling total sqft (live-summed from est.porch_ceilings).
+//   • If there's neither HOVER measurement data NOR porches, no-op toast.
+//   • Always overwrites existing qty — Howard's call (Iter 78ai).
+//   • Single toast summarising what was recalculated.
 
 const CHARTER_OAK_SOFFIT = "Charter Oak Soffit Standard color";
 const LP_VENTED = "38 Series Soffit 16 x 16 Vented";
@@ -30,49 +28,60 @@ const LP_SOFFIT_SQFT_PER_PC = 21.3;     // 16" Soffit panel (Howard's default)
 const LP_WASTE = 1.10;                   // 10% waste + ceil
 const CHARTER_OAK_SQFT_PER_PC = 10.0;    // 10" exposure × 12' panel
 
-function lpSoffitPcs(overhangIn, lf) {
-  if (!lf || lf <= 0) return 0;
-  return Math.max(0, Math.ceil((overhangIn / 12.0) * lf / LP_SOFFIT_SQFT_PER_PC * LP_WASTE));
+function lpSoffitPcs(overhangIn, lf, extraSqft = 0) {
+  const area = (overhangIn / 12.0) * (lf || 0) + (extraSqft || 0);
+  if (area <= 0) return 0;
+  return Math.max(0, Math.ceil(area / LP_SOFFIT_SQFT_PER_PC * LP_WASTE));
 }
 
-function charterOakSoffitPcs(overhangIn, eavesLf, rakesLf) {
+function charterOakSoffitPcs(overhangIn, eavesLf, rakesLf, extraSqft = 0) {
   const totalLf = (eavesLf || 0) + (rakesLf || 0);
-  if (totalLf <= 0) return 0;
-  return Math.max(0, Math.ceil((overhangIn / 12.0) * totalLf / CHARTER_OAK_SQFT_PER_PC));
+  const area = (overhangIn / 12.0) * totalLf + (extraSqft || 0);
+  if (area <= 0) return 0;
+  return Math.max(0, Math.ceil(area / CHARTER_OAK_SQFT_PER_PC));
 }
 
 export default function useRecalcSoffitOnOverhang(est, update) {
+  // Track previous (overhang, porchTotal) tuple so we know when either
+  // changed and can decide what to mention in the toast.
   const prevRef = useRef(undefined);
+
+  const porchTotal = porchCeilingTotalSqft(est?.porch_ceilings);
 
   useEffect(() => {
     if (!est) return;
     const current = Number(est.overhang_in ?? 12);
     const prev = prevRef.current;
-    prevRef.current = current;
+    prevRef.current = { overhang: current, porchTotal };
 
     // Skip initial mount — only react to actual changes.
     if (prev === undefined) return;
-    if (prev === current) return;
+    if (prev.overhang === current && prev.porchTotal === porchTotal) return;
 
     const m = est.hover_measurements;
-    if (!m) {
+    const eavesLf = Number(m?.eaves_lf) || 0;
+    const rakesLf = Number(m?.rakes_lf) || 0;
+    const hasLf = eavesLf > 0 || rakesLf > 0;
+    const hasPorch = porchTotal > 0;
+
+    if (!hasLf && !hasPorch) {
+      // Build a short descriptor for what changed so the toast is useful
+      const changes = [];
+      if (prev.overhang !== current) changes.push(`overhang ${prev.overhang}" → ${current}"`);
+      if (prev.porchTotal !== porchTotal)
+        changes.push(`porch ceilings ${prev.porchTotal} → ${porchTotal} sqft`);
       toast.info(
-        `Overhang ${prev}" → ${current}" — soffit qty stays as-is (no HOVER/AI measurement on this estimate to recalculate from)`
-      );
-      return;
-    }
-    const eavesLf = Number(m.eaves_lf) || 0;
-    const rakesLf = Number(m.rakes_lf) || 0;
-    if (eavesLf <= 0 && rakesLf <= 0) {
-      toast.info(
-        `Overhang ${prev}" → ${current}" — no eaves/rakes LF in measurements, nothing to recalc`
+        `Updated ${changes.join(" + ")} — no measurements or porches yet, soffit qty will fill on next import.`
       );
       return;
     }
 
+    // Porch ceilings sit under eaves (Vented) by convention — front
+    // porch / breezeway covered ceiling all vent into the soffit on
+    // the eave side of the house.
     const targets = {
-      [CHARTER_OAK_SOFFIT]: charterOakSoffitPcs(current, eavesLf, rakesLf),
-      [LP_VENTED]: lpSoffitPcs(current, eavesLf),
+      [CHARTER_OAK_SOFFIT]: charterOakSoffitPcs(current, eavesLf, rakesLf, porchTotal),
+      [LP_VENTED]: lpSoffitPcs(current, eavesLf, porchTotal),
       [LP_CLOSED]: lpSoffitPcs(current, rakesLf),
     };
 
@@ -85,21 +94,26 @@ export default function useRecalcSoffitOnOverhang(est, update) {
       return { ...l, qty: newQty };
     });
 
+    // Compose toast message describing what triggered the recalc
+    const reasons = [];
+    if (prev.overhang !== current) reasons.push(`overhang ${prev.overhang}" → ${current}"`);
+    if (prev.porchTotal !== porchTotal)
+      reasons.push(`porch ceilings ${prev.porchTotal} → ${porchTotal} sqft`);
+
     if (changed === 0) {
-      // Edge case: overhang changed but no soffit rows in the estimate
-      // (e.g. contractor cleared them, or never imported). Quiet toast.
       toast.info(
-        `Overhang updated to ${current}". No soffit rows in this estimate to recalc — they'll pick up the new value on the next HOVER/AI import.`
+        `Updated ${reasons.join(" + ")}. No soffit rows in this estimate to recalc — they'll pick up the new value on the next HOVER/AI import.`
       );
       return;
     }
 
     update({ lines: newLines });
     toast.success(
-      `Overhang ${prev}" → ${current}" — recalculated ${changed} soffit row${changed === 1 ? "" : "s"}`
+      `${reasons.join(" + ")} — recalculated ${changed} soffit row${changed === 1 ? "" : "s"}`
     );
     // ESLint disable next line — we intentionally only react to overhang
-    // changes; including the full `est` would re-run on every keystroke.
+    // or porch_total changes; including the full `est` would re-run on
+    // every keystroke in an unrelated field.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [est?.overhang_in]);
+  }, [est?.overhang_in, porchTotal]);
 }

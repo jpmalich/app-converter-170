@@ -123,6 +123,18 @@ class MiscLine(BaseModel):
     section: str = ""
 
 
+class PorchCeiling(BaseModel):
+    """A single porch ceiling — dimensional input (length × width).
+    Iter 78aj (2026-02-28). Multiple porches can be added per estimate
+    (front porch, back porch, side entry, etc.). Total porch ceiling
+    sqft = sum(length_ft × width_ft) and is rolled into the soffit qty
+    formulas alongside the eave/rake overhang contribution.
+    """
+    label: str = ""          # optional, e.g. "Front Porch", "Side Entry"
+    length_ft: float = 0     # along the house
+    width_ft: float = 0      # out from the house
+
+
 class EstimateIn(BaseModel):
     customer_name: str = ""
     address: str = ""
@@ -226,6 +238,11 @@ class EstimateIn(BaseModel):
     # `Pieces = (Overhang × Length) ÷ panel area` math on the Vinyl
     # Soffit line — contractor adjusts once per job in Job Info.
     overhang_in: float = 12.0
+    # Iter 78aj — list of porch ceilings (length × width). Their total
+    # sqft feeds the same soffit formula as eaves × overhang. Empty by
+    # default; contractor adds porches manually in the Job Info panel
+    # (or via the HOVER preview modal before applying).
+    porch_ceilings: List[PorchCeiling] = []
     # Photo Measure: human-readable summary of masked-out "no-siding"
     # zones (e.g. "Brick: 220 ft²; Garage door: 168 ft²") so the
     # customer PDF / email can show what was excluded from the siding

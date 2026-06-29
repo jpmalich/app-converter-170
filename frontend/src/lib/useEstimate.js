@@ -349,6 +349,9 @@ export default function useEstimate(id) {
       // Soffit eave overhang (inches) — drives the soffit piece-count
       // formula. Default 12" matches a basic single-family eave.
       overhang_in: source.overhang_in ?? 12,
+      // Iter 78aj — porch ceilings (length × width per porch). Total
+      // sqft is summed live in the UI and threaded into soffit qty.
+      porch_ceilings: Array.isArray(source.porch_ceilings) ? source.porch_ceilings : [],
       tax_enabled: !!source.tax_enabled,
       tax_rate: source.tax_rate || 0,
       margin_pct: source.margin_pct || 0,
