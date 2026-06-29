@@ -155,14 +155,33 @@ export default function HoverImportButton({ est, update, save }) {
       const fd = new FormData();
       fd.append("file", f);
       fd.append("overhang_in", String(est?.overhang_in ?? 12));
+      // Iter 78af — Howard hit "timeout of 60000ms exceeded" on
+      // app.pro-quotes.com when Claude Opus took >60 s to map a
+      // larger HOVER. axios was bailing at 60 s while Cloudflare's
+      // edge held the connection up to ~100 s. Bumped axios to 180 s
+      // so the realistic 30–90 s end-to-end mapping completes. For
+      // even-longer HOVERs that exceed Cloudflare's edge (~100 s on
+      // Pro plans), the proper fix is async-launcher + polling like
+      // Blueprint already has — tracked as Iter 78ag.
       const { data } = await api.post("/estimates/hover-import", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 60000,
+        timeout: 180000,
       });
       setResult(data);
       setOpenings(data.vero_openings || []);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || e?.message || "Import failed");
+      const detail = e?.response?.data?.detail || e?.message || "Import failed";
+      // Iter 78af — surface a more useful message when the failure is
+      // an edge timeout (axios ECONNABORTED, Cloudflare 502/524, etc.)
+      // vs a real backend rejection.
+      const isTimeout =
+        /timeout|502|503|504|524|bad gateway|gateway timeout|network|aborted/i.test(detail) ||
+        e?.code === "ECONNABORTED";
+      toast.error(
+        isTimeout
+          ? "HOVER import is taking longer than expected. Larger or scanned PDFs sometimes exceed our edge timeout — try a smaller PDF, or use the preview environment while we wire up async processing."
+          : detail
+      );
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
