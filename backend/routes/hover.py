@@ -539,7 +539,7 @@ HOVER_MAPPING_SPEC = [
             )
         ),
         "note": lambda m: (
-            f"LP 8\" Lap: ceil(sqft ÷ 9.17 × 1.10) — PDF coverage (LPZB0884)"
+            "LP 8\" Lap: ceil(sqft ÷ 9.17 × 1.10) — PDF coverage (LPZB0884)"
             if lp_formulas.is_enabled()
             else "11 PCS per Sq (LP 8\" lap exposure); sqft × 0.11 rounded"
         ),
@@ -971,25 +971,53 @@ HOVER_MAPPING_SPEC = [
     # Howard's request — splits the previous (eaves+rakes)/16 lump into
     # the two right material rows so the contractor doesn't have to move
     # qty between them by hand.
+    #
+    # Iter 78ah — when LP_AI_FORMULAS_V1 is on, LP soffit qty scales
+    # with the estimate's overhang (mirroring how Vinyl/Ascend
+    # Charter Oak soffit is computed). Coverage from PDF default 16"
+    # Soffit panel = 21.3 sqft/PCS. Formula:
+    #   pcs = ceil( (overhang_in/12) × LF / 21.3 × 1.10 waste )
+    # When the flag is off, fall back to the legacy LF ÷ 16 row so
+    # historical quotes don't shift.
     {
         "tabs": ["lp_smart"],
         "section": "LP SmartSide Soffit",
         "item": "38 Series Soffit 16 x 16 Vented",
         "unit": "PCS",
-        "extract": lambda m: max(
-            1, math.ceil((m.get("eaves_lf") or 0) / 16)
+        "extract": lambda m: (
+            lp_formulas.soffit_pieces(
+                (float(m.get("overhang_in") or 12) / 12.0) * (m.get("eaves_lf") or 0)
+            )
+            if lp_formulas.is_enabled()
+            else max(1, math.ceil((m.get("eaves_lf") or 0) / 16))
         ),
-        "note": "Vented goes on eaves (attic vent path) — eaves LF ÷ 16",
+        "note": lambda m: (
+            f"Vented (eaves) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × eaves_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+            if lp_formulas.is_enabled()
+            else "Vented goes on eaves (attic vent path) — eaves LF ÷ 16"
+        ),
     },
     {
         "tabs": ["lp_smart"],
         "section": "LP SmartSide Soffit",
         "item": "38 Series Soffit 16 x 16 Closed",
         "unit": "PCS",
-        "extract": lambda m: max(
-            1, math.ceil((m.get("rakes_lf") or 0) / 16)
-        ) if (m.get("rakes_lf") or 0) > 0 else 0,
-        "note": "Closed goes on rakes (gable ends, no venting) — rakes LF ÷ 16",
+        "extract": lambda m: (
+            lp_formulas.soffit_pieces(
+                (float(m.get("overhang_in") or 12) / 12.0) * (m.get("rakes_lf") or 0)
+            )
+            if lp_formulas.is_enabled()
+            else (
+                max(1, math.ceil((m.get("rakes_lf") or 0) / 16))
+                if (m.get("rakes_lf") or 0) > 0
+                else 0
+            )
+        ),
+        "note": lambda m: (
+            f"Closed (rakes) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × rakes_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+            if lp_formulas.is_enabled()
+            else "Closed goes on rakes (gable ends, no venting) — rakes LF ÷ 16"
+        ),
     },
     # =====================================================================
     # GUTTER — all 3 tabs share the Seamless Gutter section.

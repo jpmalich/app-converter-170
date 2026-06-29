@@ -278,3 +278,67 @@ def test_pdf_defaults_match_howards_spec():
     assert lp.DEFAULT_SOFFIT_WIDTH == "16\" Soffit"
     assert lp.DEFAULT_SHAKE_REVEAL_INCHES == 7.0
     assert lp.DEFAULT_WASTE == 0.10
+
+
+# ────────────────────── Iter 78ah — overhang-aware LP soffit ──────────────────────
+
+
+def test_lp_soffit_legacy_when_flag_off(flag_off):
+    """Flag OFF: LP vented soffit uses the legacy `eaves_lf ÷ 16`
+    formula (ignores overhang)."""
+    m = {"eaves_lf": 160, "rakes_lf": 0, "overhang_in": 12}
+    lines = _build_lines(m)
+    vented = _find(_lp_lines(lines), "38 Series Soffit 16 x 16 Vented")
+    assert vented is not None
+    # 160 / 16 = 10 PCS
+    assert vented["qty"] == 10
+
+
+def test_lp_soffit_uses_overhang_when_flag_on_default_12in(flag_on):
+    """Flag ON + default 12" overhang: 100 LF eaves → area = 1.0 × 100
+    = 100 sqft → ceil(100/21.3 × 1.10) = 6 PCS."""
+    m = {"eaves_lf": 100, "rakes_lf": 0, "overhang_in": 12}
+    lines = _build_lines(m)
+    vented = _find(_lp_lines(lines), "38 Series Soffit 16 x 16 Vented")
+    assert vented is not None
+    assert vented["qty"] == 6
+
+
+def test_lp_soffit_scales_with_24in_overhang(flag_on):
+    """Doubling overhang to 24" should ~double the LP soffit qty."""
+    m = {"eaves_lf": 100, "rakes_lf": 0, "overhang_in": 24}
+    lines = _build_lines(m)
+    vented = _find(_lp_lines(lines), "38 Series Soffit 16 x 16 Vented")
+    assert vented is not None
+    # area = 2.0 × 100 = 200 sqft → ceil(200/21.3 × 1.10) = 11
+    assert vented["qty"] == 11
+
+
+def test_lp_soffit_scales_with_6in_overhang(flag_on):
+    """6" overhang halves the qty vs 12"."""
+    m = {"eaves_lf": 100, "rakes_lf": 0, "overhang_in": 6}
+    lines = _build_lines(m)
+    vented = _find(_lp_lines(lines), "38 Series Soffit 16 x 16 Vented")
+    assert vented is not None
+    # area = 0.5 × 100 = 50 sqft → ceil(50/21.3 × 1.10) = 3
+    assert vented["qty"] == 3
+
+
+def test_lp_closed_soffit_uses_overhang_too(flag_on):
+    """Closed soffit (rakes) scales with overhang just like vented."""
+    m = {"eaves_lf": 0, "rakes_lf": 100, "overhang_in": 12}
+    lines = _build_lines(m)
+    closed = _find(_lp_lines(lines), "38 Series Soffit 16 x 16 Closed")
+    assert closed is not None
+    assert closed["qty"] == 6
+
+
+def test_lp_closed_soffit_zero_when_no_rakes(flag_on):
+    """No rake LF → no closed soffit row."""
+    m = {"eaves_lf": 100, "rakes_lf": 0, "overhang_in": 12}
+    lines = _build_lines(m)
+    closed = _find(_lp_lines(lines), "38 Series Soffit 16 x 16 Closed")
+    # Either suppressed (qty=0) or absent — both are fine per the
+    # downstream zero-qty filter, but the qty must not be > 0.
+    if closed is not None:
+        assert closed["qty"] == 0
