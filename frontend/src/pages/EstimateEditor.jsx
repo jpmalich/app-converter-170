@@ -39,11 +39,13 @@ export default function EstimateEditor() {
   // the $0 totals on freshly HOVER-imported windows estimates whose openings
   // arrive with base_mat: 0. No-op for estimates without window openings.
   useReconcileWindowSnapshots(est, update);
-  // Iter 78ai — Auto-recalculate soffit qty (Charter Oak + LP Vented +
-  // LP Closed) when the contractor changes Eave Overhang. Pulls
-  // eaves_lf / rakes_lf from cached hover_measurements; quiet no-op
-  // when no measurement data is present.
-  useRecalcSoffitOnOverhang(est, update);
+  // Iter 78ai/78aj/78ak — Auto-recalculate soffit qty (Charter Oak + LP
+  // Vented + LP Closed) and Porch Ceiling labor rows (Charter Oak + Wrap
+  // porch beam) when the contractor changes Eave Overhang or porch
+  // ceiling dimensions. Pulls eaves_lf / rakes_lf from cached
+  // hover_measurements; catalog is passed in so the hook can hydrate
+  // mat/lab when it auto-adds new Porch Ceiling rows.
+  useRecalcSoffitOnOverhang(est, update, catalog);
   // Start with every section collapsed so the editor stays compact —
   // contractors expand only the categories they need for the job.
   const [openSections, setOpenSections] = useState({});
