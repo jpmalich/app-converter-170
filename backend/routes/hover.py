@@ -19,6 +19,7 @@ Constants live in this file so Howard can tune them without me touching code.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import math
@@ -1883,14 +1884,23 @@ async def hover_deep_verify(
 # -----------------------------------------------------------------------------
 # Endpoint
 # -----------------------------------------------------------------------------
-@router.post("/estimates/hover-import", response_model=HoverImportResult)
+@router.post("/estimates/hover-import")
 async def hover_import(
     file: UploadFile = File(...),
     overhang_in: float = Form(12.0),
     user: dict = Depends(get_current_user),
-) -> HoverImportResult:
-    """Upload a HOVER PDF, return parsed measurements + a draft `lines[]`
-    payload the frontend can preview before committing to the estimate.
+):
+    """Async launcher: upload a HOVER PDF, persist a `running` run doc,
+    spawn a background worker that does the PDF→Claude→mapping→vision
+    pipeline, and return a `run_id` the frontend polls via
+    `/estimates/hover-import/status/{run_id}`.
+
+    Iter 79d (Feb 2026) — Howard hit Cloudflare 524s on production when
+    Claude Opus took >100 s to map large multi-page HOVERs. Async
+    launcher pattern (already shipped for AI Blueprint + AI Measure)
+    removes the long-running synchronous HTTP request, so the edge
+    timeout never trips. The heavy work runs background; the client
+    polls every 2 s for status (cheap, fast).
 
     `overhang_in` (inches) flows into the soffit piece-count formula —
     frontend sends the estimate's current overhang so the imported qty
@@ -1901,38 +1911,161 @@ async def hover_import(
     raw = await file.read()
     if len(raw) > 20 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="PDF too large (>20MB)")
-
+    # Fast text extract — happens in the request scope so we can reject
+    # scanned/image PDFs synchronously (sub-second). The slow part is
+    # the Claude call which moves to the worker.
     text = _extract_pdf_text(raw)
     if not text.strip():
         raise HTTPException(
             status_code=422,
             detail="Could not extract text from PDF — is this a scanned/image PDF?",
         )
-    measurements = await _ask_claude(text, session_id=f"hover-{user.get('id','anon')}")
-    # Pull the per-window list out of measurements so the FE measurements
-    # iterator can safely render every remaining value as a primitive.
-    windows_payload = measurements.pop("windows", None) or []
-    vero_openings, mezzo_openings = _build_window_openings({"windows": windows_payload})
-    measurements["overhang_in"] = overhang_in
-    lines = _build_lines(measurements)
-    # Iter 78o — Phase 1 sanity checks: deterministic rules over the
-    # extracted measurements. Surfaced as a yellow banner in the preview
-    # modal so contractors catch HOVER mis-reads BEFORE applying.
-    from routes.hover_sanity import run_checks
-    warnings = run_checks(measurements)
-    # Iter 78p — Phase 2 vision verification: render elevation drawing
-    # pages, send each to Claude Opus 4.5 Vision, compare drawing-derived
-    # area to text-extracted siding_sqft / per_elevation_siding. Returns
-    # additional warnings (same banner) + per-elevation drawing data we
-    # stash on `measurements` for the Per-Elevation Breakdown card.
-    # Iter 78q — also stash rendered PNGs in MongoDB (TTL 1h) so the
-    # contractor can trigger Phase 3 Deep Verify on any elevation without
-    # re-uploading the PDF.
-    deep_verify_cache_key: Optional[str] = None
+
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+
+    user_id = user.get("id", "anon")
+    run_id = uuid.uuid4().hex
+    now = datetime.now(timezone.utc)
+    await db.hover_import_runs.insert_one({
+        "run_id": run_id,
+        "user_id": user_id,
+        "status": "running",
+        "stage": "claude-mapping",
+        "overhang_in": overhang_in,
+        "raw_extract_chars": len(text),
+        "pdf_size_bytes": len(raw),
+        "created_at": now,
+        "updated_at": now,
+        "completed_at": None,
+        "result": None,
+        "error": None,
+    })
+    asyncio.create_task(_execute_hover_import_worker(
+        run_id=run_id,
+        raw=raw,
+        text=text,
+        overhang_in=overhang_in,
+        user_id=user_id,
+        api_key=api_key,
+    ))
+    return {
+        "run_id": run_id,
+        "status": "running",
+        "stage": "claude-mapping",
+        "raw_extract_chars": len(text),
+    }
+
+
+# Iter 79d — TTL index on hover_import_runs so completed runs auto-purge
+# after 24 hours. Frontend grabs result inside the polling window, no
+# need to keep them forever.
+async def _ensure_hover_import_runs_index():
+    if db is None:
+        return
     try:
-        from routes.hover_vision import run_vision_pass
-        api_key = os.environ.get("EMERGENT_LLM_KEY")
-        if api_key:
+        await db.hover_import_runs.create_index(
+            "created_at", expireAfterSeconds=86400,
+        )
+    except Exception as e:
+        logger.warning("Iter 79d: hover_import_runs TTL index create failed: %s", e)
+
+
+@router.get("/estimates/hover-import/status/{run_id}")
+async def hover_import_status(
+    run_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """Poll the status of an async HOVER-import run. Returns the same
+    shape as the legacy sync `/estimates/hover-import` response inside
+    `result` once `status == "done"`.
+
+    Stages (in order):
+      claude-mapping  — Claude Opus is parsing the PDF text → measurements
+      building-lines  — Backend maps measurements → catalog lines
+      vision-verify   — Phase 2 vision pass on elevation drawings (optional)
+      done            — Final result is in `result`
+    """
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+    doc = await db.hover_import_runs.find_one({"run_id": run_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if doc.get("user_id") not in (user["id"], "anon"):
+        raise HTTPException(status_code=403, detail="Not your run")
+    created = doc.get("created_at")
+    completed = doc.get("completed_at") or doc.get("updated_at")
+    elapsed_ms = None
+    if isinstance(created, datetime):
+        if completed and isinstance(completed, datetime):
+            # Mongo returns naive datetimes; coerce to aware UTC for safe subtraction.
+            if completed.tzinfo is None:
+                completed = completed.replace(tzinfo=timezone.utc)
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            elapsed_ms = int((completed - created).total_seconds() * 1000)
+        else:
+            now = datetime.now(timezone.utc)
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            elapsed_ms = int((now - created).total_seconds() * 1000)
+    return {
+        "run_id": run_id,
+        "status": doc.get("status"),
+        "stage": doc.get("stage"),
+        "result": doc.get("result"),
+        "error": doc.get("error"),
+        "elapsed_ms": elapsed_ms,
+    }
+
+
+async def _execute_hover_import_worker(
+    *,
+    run_id: str,
+    raw: bytes,
+    text: str,
+    overhang_in: float,
+    user_id: str,
+    api_key: str,
+):
+    """Background worker — runs the heavy HOVER mapping pipeline + writes
+    the result back to `hover_import_runs.{run_id}`."""
+    async def _set_stage(stage: str):
+        if db is None:
+            return
+        await db.hover_import_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {"stage": stage, "updated_at": datetime.now(timezone.utc)}},
+        )
+
+    try:
+        # Stage 1 — Claude mapping (the slow step that caused the 524).
+        await _set_stage("claude-mapping")
+        measurements = await _ask_claude(text, session_id=f"hover-{user_id}")
+        windows_payload = measurements.pop("windows", None) or []
+        vero_openings, mezzo_openings = _build_window_openings(
+            {"windows": windows_payload}
+        )
+        measurements["overhang_in"] = overhang_in
+
+        # Stage 2 — Map measurements to catalog lines (cheap, in-process).
+        await _set_stage("building-lines")
+        lines = _build_lines(measurements)
+        from routes.hover_sanity import run_checks
+        warnings = run_checks(measurements)
+
+        # Stage 3 — Optional Phase 2 vision verification (renders elevation
+        # pages, sends each to Claude Opus 4.5 Vision, compares drawing-
+        # derived area to text-extracted siding_sqft). Adds additional
+        # warnings + per-elevation drawing data. Stash rendered PNGs in
+        # MongoDB (TTL 1h) so Phase 3 Deep Verify can run without re-upload.
+        await _set_stage("vision-verify")
+        deep_verify_cache_key: Optional[str] = None
+        try:
+            from routes.hover_vision import run_vision_pass
             deep_verify_cache_key = f"dv-{uuid.uuid4().hex}"
 
             async def _cache_writer(key: str, label: str, png_b64: str, page_num: int):
@@ -1945,7 +2078,7 @@ async def hover_import(
                         "label": label,
                         "page_num": page_num,
                         "png_b64": png_b64,
-                        "user_id": user.get("id"),
+                        "user_id": user_id,
                         "created_at": datetime.now(timezone.utc),
                     }},
                     upsert=True,
@@ -1953,21 +2086,46 @@ async def hover_import(
 
             vision_warns, per_elev_drawing = await run_vision_pass(
                 raw, measurements, api_key,
-                session_id=f"hover-vision-{user.get('id','anon')}",
+                session_id=f"hover-vision-{user_id}",
                 cache_key=deep_verify_cache_key,
                 cache_writer=_cache_writer,
             )
             warnings.extend(vision_warns)
             if per_elev_drawing:
                 measurements["per_elevation_siding_from_drawing"] = per_elev_drawing
+        except Exception as e:
+            logger.warning("Iter 79d: vision pass failed silently: %s", e)
+
+        result_payload = {
+            "measurements": measurements,
+            # Convert pydantic models to dicts so MongoDB can store them.
+            "lines": [HoverLine(**ln).model_dump() for ln in lines],
+            "vero_openings": [HoverVeroOpening(**op).model_dump() for op in vero_openings],
+            "mezzo_openings": [HoverMezzoOpening(**op).model_dump() for op in mezzo_openings],
+            "raw_extract_chars": len(text),
+            "warnings": warnings,
+            "deep_verify_cache_key": deep_verify_cache_key,
+        }
+        await db.hover_import_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {
+                "status": "done",
+                "stage": "done",
+                "result": result_payload,
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
     except Exception as e:
-        logger.warning("Iter 78p/q: vision pass failed silently: %s", e)
-    return HoverImportResult(
-        measurements=measurements,
-        lines=[HoverLine(**ln) for ln in lines],
-        vero_openings=[HoverVeroOpening(**op) for op in vero_openings],
-        mezzo_openings=[HoverMezzoOpening(**op) for op in mezzo_openings],
-        raw_extract_chars=len(text),
-        warnings=warnings,
-        deep_verify_cache_key=deep_verify_cache_key,
-    )
+        logger.exception("Iter 79d: hover_import worker failed: %s", e)
+        if db is not None:
+            await db.hover_import_runs.update_one(
+                {"run_id": run_id},
+                {"$set": {
+                    "status": "error",
+                    "stage": "error",
+                    "error": str(e) or "Unknown error",
+                    "completed_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc),
+                }},
+            )

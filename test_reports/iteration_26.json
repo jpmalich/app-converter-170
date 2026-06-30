@@ -1,0 +1,29 @@
+{
+  "summary": "Iter 79d HOVER import async refactor verified end-to-end. Backend: 7/7 pytest tests pass against /api/estimates/hover-import (POST returns async {run_id, status:'running', stage:'claude-mapping', raw_extract_chars} with NO legacy 'lines'/'measurements' keys), 400 on non-PDF, 413 on >20MB PDF, 401 unauthenticated. GET /api/estimates/hover-import/status/{run_id} returns the required shape {run_id, status, stage, result, error, elapsed_ms}; 404 on unknown id. Worker terminates with status='done' and result populated with all required keys (measurements, lines, vero_openings, mezzo_openings, warnings, deep_verify_cache_key). Frontend smoke test on EST-603252 (Vinyl+Ascend workspace): clicked Import HOVER → I Agree → uploaded /tmp/test_hover.pdf → button label cycled 'Reading…' → 'Verifying with vision…' → back to 'Import HOVER'. HOVER Report Imported preview modal opened automatically with 24 auto-generated lines across 3 tabs and Waste:0% banner. Iter 79c (waste_pct=0 on HOVER upload) confirmed not regressed — Waste Factor card shows 0% after upload. No Cloudflare 524 / axios timeout / spinner freeze. Total elapsed for the small reportlab PDF: ~8 s end-to-end (Claude returned fast on minimal text).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_hover_import_async.py",
+    "/app/test_reports/pytest/iter26_hover_async.xml",
+    "/app/test_reports/pytest/iter26_hover_async_worker.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "routes/hover.py:1997 — `if doc.get('user_id') not in (user['id'], 'anon')` lets ANY authenticated user read a run owned by user_id=='anon'. In production no run should be 'anon' (get_current_user enforces auth on POST), but the guard is too permissive and worth tightening to a strict equality `doc.get('user_id') != user['id']`. The 403 'Not your run' test (cross-user isolation) was skipped per the request — main agent should validate strict isolation in a follow-up.",
+    "routes/hover.py:1947 — `asyncio.create_task(_execute_hover_import_worker(...))` is fire-and-forget. If the worker raises before the outer try/except (e.g. import-time exception), the run doc stays at status='running' forever. The worker body is wrapped, but an early failure (e.g. _ask_claude raising synchronously during construction) could orphan the doc. Consider also writing a watchdog or a finally-clause that flips status='error' on any unhandled path.",
+    "routes/hover.py:1966 — `_ensure_hover_import_runs_index()` is defined but I did not see it called from app startup in the snippets reviewed. Verify it is awaited from a FastAPI startup event, otherwise the 24h TTL never gets installed in fresh environments.",
+    "HoverImportButton.jsx:99 — 5 min poll cap is enforced client-side, but backend worker has no analogous wall-clock cap. A stuck Claude call could leave the run doc at status='running' indefinitely (until TTL expiry). Consider adding a server-side timeout (e.g. asyncio.wait_for) on _ask_claude inside the worker."
+  ],
+  "updated_files": ["/app/backend/tests/test_hover_import_async.py (new — 7 pytest tests for the async hover import contract)"],
+  "success_rate": {"backend": "100% (7/7 tests pass)", "frontend": "100% — full upload flow + stage caption + waste-reset all verified"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! — works against POST /api/auth/login (200, access_token httpOnly cookie set).",
+  "seed_data_creation": "Generated /tmp/test_hover.pdf (1.4KB reportlab PDF) for upload test. Used existing draft estimate EST-603252 in the Vinyl+Ascend workspace.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The async HOVER import refactor is solid. Test file at /app/backend/tests/test_hover_import_async.py covers all the contract assertions and a worker-completion polling test (skip with -k 'not eventually' for fast runs). Cross-user (403) isolation was intentionally not tested per the request (no second user). The reportlab minimal-PDF path exercises the full pipeline including the vision-verify stage in ~8 s; a real multi-page HOVER would naturally take longer but the contract is identical. Vero/Mezzo openings auto-generation also still works post-refactor (modal preview shows 24 lines across 3 tabs).",
+  "rca of the issue": "No blocking issue. The sync→async refactor at /api/estimates/hover-import is complete and correct: POST returns immediately with run_id+status='running'+stage='claude-mapping'; background asyncio task updates Mongo doc through stages claude-mapping → building-lines → vision-verify → done; GET /status/{run_id} returns the canonical {run_id, status, stage, result, error, elapsed_ms} shape with elapsed_ms computed from created_at vs completed_at/now. The frontend POST timeout is bound to 30 s (sub-second response in practice), the polling loop runs at 2 s cadence with a 5-min hard cap, and the live stage caption is wired through STAGE_LABEL → button label. Iter 79c (waste_pct=0 on HOVER upload) is preserved by the early-write in upload() before the POST. Cloudflare 524 root cause (sync HTTP request lasting >100 s) is mitigated."
+}

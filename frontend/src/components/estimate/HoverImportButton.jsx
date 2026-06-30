@@ -74,9 +74,64 @@ const UNIT_BY_KEY = (k) => {
   return "";
 };
 
+// Iter 79d — Async polling helper. Polls `/estimates/hover-import/status/
+// {run_id}` every 2 s until the run flips to `done` or `error`. Throws
+// on error or timeout (5 min hard cap). The optional `onStage` callback
+// receives the current stage label so the calling component can keep a
+// live progress message in sync.
+const STAGE_LABEL = {
+  "claude-mapping": "Reading report with Claude…",
+  "building-lines": "Mapping to catalog…",
+  "vision-verify": "Verifying with vision…",
+  done: "Done",
+  error: "Error",
+};
+
+async function pollHoverImportStatus(runId, onStage) {
+  const POLL_INTERVAL_MS = 2000;
+  const MAX_ELAPSED_MS = 5 * 60 * 1000;
+  const start = Date.now();
+  // Track the last stage we surfaced so we don't fire setState on every
+  // poll iteration with the same value (would still re-render but
+  // cheaper to skip).
+  let lastStage = "";
+  while (true) {
+    if (Date.now() - start > MAX_ELAPSED_MS) {
+      throw new Error(
+        "HOVER import timed out after 5 minutes. The worker may still complete in the background — please retry."
+      );
+    }
+    let resp;
+    try {
+      resp = await api.get(`/estimates/hover-import/status/${runId}`, { timeout: 15000 });
+    } catch (e) {
+      // Transient network blip — keep polling unless the status code is
+      // a hard error (404 = run lost, 403 = not our run).
+      const code = e?.response?.status;
+      if (code === 404 || code === 403) throw e;
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      continue;
+    }
+    const { status, stage, result, error } = resp.data || {};
+    if (stage && stage !== lastStage) {
+      lastStage = stage;
+      if (typeof onStage === "function") {
+        onStage(STAGE_LABEL[stage] || stage);
+      }
+    }
+    if (status === "done") return result;
+    if (status === "error") throw new Error(error || "HOVER import failed");
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+  }
+}
+
 export default function HoverImportButton({ est, update, save }) {
   const fileRef = useRef();
   const [busy, setBusy] = useState(false);
+  // Iter 79d — async status messages while the polling loop runs. e.g.
+  // "Claude is mapping the report…" / "Verifying with vision…" — gives
+  // the contractor live feedback instead of a frozen spinner.
+  const [stage, setStage] = useState("");
   const [result, setResult] = useState(null);
   const [openings, setOpenings] = useState([]);
   const [applying, setApplying] = useState(false);
@@ -154,39 +209,56 @@ export default function HoverImportButton({ est, update, save }) {
     setBusy(true);
     setResult(null);
     setOpenings([]);
+    setStage("");
     try {
       const fd = new FormData();
       fd.append("file", f);
       fd.append("overhang_in", String(est?.overhang_in ?? 12));
-      // Iter 78af — Howard hit "timeout of 60000ms exceeded" on
-      // app.pro-quotes.com when Claude Opus took >60 s to map a
-      // larger HOVER. axios was bailing at 60 s while Cloudflare's
-      // edge held the connection up to ~100 s. Bumped axios to 180 s
-      // so the realistic 30–90 s end-to-end mapping completes. For
-      // even-longer HOVERs that exceed Cloudflare's edge (~100 s on
-      // Pro plans), the proper fix is async-launcher + polling like
-      // Blueprint already has — tracked as Iter 78ag.
-      const { data } = await api.post("/estimates/hover-import", fd, {
+      // Iter 79d (Feb 2026) — Async polling launcher. POST returns a
+      // `run_id` immediately (sub-second); the heavy Claude pass + vision
+      // verify runs in a background worker so Cloudflare's ~100 s edge
+      // timeout never trips, even on big multi-page HOVERs. We then
+      // poll `/estimates/hover-import/status/{run_id}` every 2 s for
+      // up to 5 min until status flips to `done` (or `error`).
+      const startResp = await api.post("/estimates/hover-import", fd, {
         headers: { "Content-Type": "multipart/form-data" },
-        timeout: 180000,
+        // Initial POST is now sub-second — bound it tight so a stuck
+        // pre-claude validation (e.g. PDF text extract on a 19 MB file)
+        // can't hang the UI.
+        timeout: 30000,
       });
-      setResult(data);
-      setOpenings(data.vero_openings || []);
+      const { run_id: runId, status: startStatus, result: startResult } = startResp.data || {};
+      // Defensive: if the backend ever falls back to the legacy sync
+      // shape (e.g. during a partial deploy), treat the POST body as
+      // the final result and skip polling.
+      if (!runId || startResult || startStatus === "done") {
+        const final = startResult || startResp.data;
+        setResult(final);
+        setOpenings(final?.vero_openings || []);
+      } else {
+        const final = await pollHoverImportStatus(runId, setStage);
+        setResult(final);
+        setOpenings(final?.vero_openings || []);
+      }
     } catch (e) {
       const detail = e?.response?.data?.detail || e?.message || "Import failed";
       // Iter 78af — surface a more useful message when the failure is
       // an edge timeout (axios ECONNABORTED, Cloudflare 502/524, etc.)
-      // vs a real backend rejection.
+      // vs a real backend rejection. With the Iter 79d async refactor
+      // these timeouts should be rare — the POST is sub-second, and
+      // polling each takes <1 s. If we still see one here, it's
+      // probably the initial PDF-text-extract on a huge PDF.
       const isTimeout =
         /timeout|502|503|504|524|bad gateway|gateway timeout|network|aborted/i.test(detail) ||
         e?.code === "ECONNABORTED";
       toast.error(
         isTimeout
-          ? "HOVER import is taking longer than expected. Larger or scanned PDFs sometimes exceed our edge timeout — try a smaller PDF, or use the preview environment while we wire up async processing."
+          ? "HOVER import is taking longer than expected — please retry. If this PDF is unusually large (>15 MB) try splitting it."
           : detail
       );
     } finally {
       setBusy(false);
+      setStage("");
       if (fileRef.current) fileRef.current.value = "";
     }
   };
@@ -460,7 +532,7 @@ export default function HoverImportButton({ est, update, save }) {
         title="Import a HOVER measurement report (.pdf)"
       >
         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-        {busy ? "Reading…" : "Import HOVER"}
+        {busy ? (stage || "Reading…") : "Import HOVER"}
       </button>
       {/* Iter 78n — Restore HOVER lines. Only renders when this estimate has
           cached measurements from a previous import. Re-runs the mapper
