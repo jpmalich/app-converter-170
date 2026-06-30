@@ -35,6 +35,16 @@ async def run_startup():
         "created_at", expireAfterSeconds=3600,
     )
 
+    # Iter 79d — TTL index on HOVER async-import run docs (24 hours).
+    # Each `/api/estimates/hover-import` POST inserts one doc that holds
+    # the worker's status, stage, and (when done) the parsed result —
+    # purged automatically a day after creation since the contractor
+    # always retrieves the result within the polling window (max 5 min).
+    await db.hover_import_runs.create_index("run_id", unique=True)
+    await db.hover_import_runs.create_index(
+        "created_at", expireAfterSeconds=86400,
+    )
+
     # Seed the 4 price tiers
     await ensure_tiers_seeded()
 

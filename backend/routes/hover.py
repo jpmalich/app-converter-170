@@ -1960,18 +1960,8 @@ async def hover_import(
     }
 
 
-# Iter 79d — TTL index on hover_import_runs so completed runs auto-purge
-# after 24 hours. Frontend grabs result inside the polling window, no
-# need to keep them forever.
-async def _ensure_hover_import_runs_index():
-    if db is None:
-        return
-    try:
-        await db.hover_import_runs.create_index(
-            "created_at", expireAfterSeconds=86400,
-        )
-    except Exception as e:
-        logger.warning("Iter 79d: hover_import_runs TTL index create failed: %s", e)
+# Iter 79d — index for hover_import_runs lives in startup.py
+# (run_id unique + created_at TTL 24h).
 
 
 @router.get("/estimates/hover-import/status/{run_id}")
@@ -1994,7 +1984,8 @@ async def hover_import_status(
     doc = await db.hover_import_runs.find_one({"run_id": run_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Run not found")
-    if doc.get("user_id") not in (user["id"], "anon"):
+    # Strict ownership check — only the user who launched the run can read it.
+    if doc.get("user_id") != user["id"]:
         raise HTTPException(status_code=403, detail="Not your run")
     created = doc.get("created_at")
     completed = doc.get("completed_at") or doc.get("updated_at")
@@ -2043,8 +2034,16 @@ async def _execute_hover_import_worker(
 
     try:
         # Stage 1 — Claude mapping (the slow step that caused the 524).
+        # Wrap in asyncio.wait_for so a stuck Claude call can't leave
+        # the run doc parked at status='running' indefinitely. 4 min is
+        # well above the realistic p99 (~90 s for a 12-page HOVER) and
+        # comfortably under the frontend's 5-min polling cap, so the
+        # client sees a clean 'error' state if Claude is unresponsive.
         await _set_stage("claude-mapping")
-        measurements = await _ask_claude(text, session_id=f"hover-{user_id}")
+        measurements = await asyncio.wait_for(
+            _ask_claude(text, session_id=f"hover-{user_id}"),
+            timeout=240,
+        )
         windows_payload = measurements.pop("windows", None) or []
         vero_openings, mezzo_openings = _build_window_openings(
             {"windows": windows_payload}
