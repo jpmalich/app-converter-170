@@ -1299,10 +1299,10 @@ export default function PhotoAnnotateModal({
                   Fixes the "banner says both Window and Style, which one
                   am I on?" confusion Howard hit. */}
               <div className="text-lg font-heading font-bold text-[#09090B] uppercase tracking-wider mb-1">
-                {guidedSteps[guidedStepIdx]?.key === "wall" && "🎯 Wall Scale"}
-                {guidedSteps[guidedStepIdx]?.key === "window" && "🪟 Mark Windows"}
+                {guidedSteps[guidedStepIdx]?.key === "wall" && "🎯 Wall Measurement"}
+                {guidedSteps[guidedStepIdx]?.key === "window-measure" && "📏 Window Measurement"}
+                {guidedSteps[guidedStepIdx]?.key === "window-style" && "🪟 Window Style"}
                 {guidedSteps[guidedStepIdx]?.key === "mask" && "🧱 Mask (brick / stone)"}
-                {guidedSteps[guidedStepIdx]?.key === "style" && "🎨 Review Window Styles"}
                 {guidedSteps[guidedStepIdx]?.key === "profile" && "🏠 Profile"}
               </div>
               <div className="text-sm text-[#52525B] font-medium mb-3">
