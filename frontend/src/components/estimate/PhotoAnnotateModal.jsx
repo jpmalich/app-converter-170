@@ -1349,8 +1349,8 @@ export default function PhotoAnnotateModal({
           )}
 
           {/* Controls (classic mode toolbar — hidden in guided flow) */}
-          {!guidedFlow && (
           <div className="space-y-3">
+            {!guidedFlow && (
             <div className="grid grid-cols-6 gap-1">
               <button type="button"
                       onClick={() => { setMode(MODE_TARGET); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
@@ -1411,6 +1411,7 @@ export default function PhotoAnnotateModal({
                 <Tags className="w-3 h-3" /> Profile
               </button>
             </div>
+            )}
 
             {mode === MODE_ZONE && (
               <div className="space-y-2">
@@ -1533,7 +1534,10 @@ export default function PhotoAnnotateModal({
               </div>
             )}
 
-            {/* Existing annotations */}
+            {/* Existing annotations (hidden in guided flow to keep the
+                mobile UI focused on the current step) */}
+            {!guidedFlow && (
+            <>
             <div className="border-t border-[#E4E4E7] pt-2">
               <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
                 Target house pin
@@ -1640,6 +1644,8 @@ export default function PhotoAnnotateModal({
                 )}
               </ul>
             </div>
+            </>
+            )}
 
             {(localRef || localWindowRef || localZones.length > 0 || localTarget || localWindows.length > 0) && (
               <button type="button"
@@ -1650,7 +1656,6 @@ export default function PhotoAnnotateModal({
               </button>
             )}
           </div>
-          )}
         </div>
 
         <div className="border-t border-[#E4E4E7] px-5 py-3 flex justify-between items-center">

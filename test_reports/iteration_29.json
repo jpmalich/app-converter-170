@@ -1,0 +1,26 @@
+{
+  "summary": "Iter 79j.3 fix verified end-to-end. Logged in as Howard, opened Vinyl+Ascend workspace, created a fresh estimate, launched AI Measure → Guided Capture, uploaded /tmp/dummy.png through data-testid='guided-capture-input-0' which auto-opened PhotoAnnotateModal in guided-flow mode. Advanced through Wall Measurement (step 1, Next) → Window Measurement (step 2, Skip) → Window Style (step 3, Skip) → Mask (step 4). On Mask verified: (a) big-title = '🧱 Mask (brick / stone)', (b) TOP 6-mode-button toolbar HIDDEN (annotate-mode-target NOT visible), (c) BOTH shape toggle buttons render — Rectangle + Polygon (2 role=button matches, both is_visible=true), (d) 5 zone-category testids (annotate-zone-cat-brick / stone / garage_door / stucco / other) all visible, (e) clicking Polygon toggles it active (class now contains both 'border-[#09090B]' and 'bg-[#FAFAFA]'), (f) 'Target house pin' existing-annotations summary HIDDEN. Then advanced (Skip) to Profile (step 5) and verified: big-title = '🏠 Profile', top toolbar HIDDEN, Rectangle + Polygon both visible, 9 annotate-profile-fam-* buttons render (lap/dutch_lap/shake/board_batten/vertical/nickel_gap/stone/brick/stucco), Polygon click flips it to active state, existing-annotations still HIDDEN. Screenshots (/tmp/step4_mask.png, /tmp/step5_profile.png) show the correct guided-mode layout on both steps.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PhotoAnnotateModal.jsx lines 1416-1447 and 1449-1535 — the two guided-relevant sub-panels are now correctly unconditional. Consider extracting into two small components (<MaskModeControls />, <ProfileModeControls />) to shrink this 1689-line file (>700-line guideline).",
+    "The Mask category grid on step 4 currently exposes 5 categories (brick, stone, garage_door, stucco, other) — the review-request checklist expected exactly 4 zone-category testids. Not a bug (ZONE_CATEGORIES constant defines 5, so all 5 render), but worth confirming with product/Howard whether 'other' should be there in guided mode. Same file, lines 1426-1435.",
+    "Carried from iter 28: handleGuidedNext still advances setGuidedStepIdx unconditionally on step 1 (Wall Measurement — 'required'). A user can Next past it without setting the wall scale ref.",
+    "Carried from iter 28: GuidedCaptureWizard.jsx ~line 301 setTimeout(setAnnotateOpen, 100) pending timer not cleared on Retake — race if user retakes within 100 ms.",
+    "Carried from iter 28: PhotoAnnotateModal.jsx big-title switch is still an inline chained short-circuit on step.key — a custom guidedFlow.steps entry with an unknown key silently renders an empty title. Move emoji+label into each step object."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only per request)", "frontend": "100% — all 9 verification points from the review-request pass on both Mask (step 4) and Profile (step 5)"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (verified working)",
+  "seed_data_creation": "Created a fresh empty Vinyl+Ascend estimate via 'New Estimate' button on /dashboard/siding. Uploaded /tmp/dummy.png (600x400 lightgray PNG, 1.5 KB) as the Step-1/Front photo to trigger PhotoAnnotateModal in guided-flow mode.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The two side-panels (MODE_ZONE at ~line 1416-1447 and MODE_PROFILE at ~line 1449-1535) are now correctly OUTSIDE the {!guidedFlow && ...} gate. Only the 6-button top toolbar (lines 1353-1414) and 'Existing annotations' summary block (lines 1537+) remain gated. Verified selectors that reliably work in guided mode: data-testid='annotate-mode-target' (must NOT be visible in guided flow), page.get_by_role('button', name='Rectangle'/'Polygon', exact=True) to grab the shape toggles, data-testid='annotate-zone-cat-*' (5 zone categories), data-testid='annotate-profile-fam-*' (9 profile families), data-testid='annotate-guided-next-btn'/'annotate-guided-skip-btn' to walk the 5 steps, data-testid='guided-capture-input-0' to feed the initial photo file. Active toggle CSS check: class must contain BOTH 'border-[#09090B]' AND 'bg-[#FAFAFA]'.",
+  "rca of the issue": "No blocker. Root cause of the original bug (Polygon missing on Mask/Profile in guided mode) was that the entire MODE_ZONE and MODE_PROFILE sub-panels were nested inside the same {!guidedFlow && (...)} JSX gate that also hides the 6-mode top toolbar. Main agent lifted the two sub-panels out of that gate so they now render whenever mode === MODE_ZONE or MODE_PROFILE, regardless of guided flow. The rectangle/polygon toggle, the zone-category grid, the profile-family grid, and the polygon Close/Cancel buttons are all now reachable from the guided Mask (step 4) and Profile (step 5) sub-screens. Verified visually + via role/testid queries."
+}
