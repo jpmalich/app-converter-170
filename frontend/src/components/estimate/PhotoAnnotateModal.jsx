@@ -942,10 +942,23 @@ export default function PhotoAnnotateModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-[#7C3AED] text-white px-5 py-3 flex items-center justify-between">
-          <div>
-            <div className="font-heading text-lg">Annotate Photo for AI</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="font-heading text-lg">Annotate Photo for AI</div>
+              {/* Iter 79g — Prominent elevation chip so the contractor
+                  always knows which wall they're marking. Especially
+                  helpful when opened from the Guided Capture wizard
+                  where you land here mid-walkaround. */}
+              {elevation && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-[#7C3AED] text-xs font-bold uppercase tracking-wider"
+                  data-testid="photo-annotate-elevation-chip"
+                >
+                  Wall: {elevation}
+                </span>
+              )}
+            </div>
             <div className="text-xs opacity-90 mt-0.5">
-              {elevation && <>Elevation: <b>{elevation}</b> · </>}
               {mode === MODE_TARGET
                 ? "Tap two corners around the target structure (works to isolate a garage, shed, or close neighbor)"
                 : mode === MODE_SCALE
@@ -963,7 +976,7 @@ export default function PhotoAnnotateModal({
                     : `Tap polygon points, then Close to commit a ${ZONE_CATEGORIES.find((c) => c.key === zoneCategory)?.name} zone`)}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="text-white/90 hover:text-white" aria-label="Close">
+          <button type="button" onClick={onClose} className="text-white/90 hover:text-white flex-shrink-0" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>

@@ -111,6 +111,24 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
   // Iter 79f — annotator state. When the contractor clicks "Annotate
   // this photo" we open PhotoAnnotateModal on the current step's photo.
   const [annotateOpen, setAnnotateOpen] = useState(false);
+  // Iter 79g (Phase 2) — Fast Track mode: contractor toggles this if they
+  // want to capture all 8 photos first and annotate later (from the
+  // main AI Measure screen). Persisted per-browser so their preference
+  // sticks across sessions. Default OFF (annotate-now is recommended).
+  const [fastTrack, setFastTrack] = useState(() => {
+    try {
+      return localStorage.getItem("guidedCaptureFastTrack") === "1";
+    } catch { return false; }
+  });
+  const toggleFastTrack = () => {
+    setFastTrack((v) => {
+      const next = !v;
+      try { localStorage.setItem("guidedCaptureFastTrack", next ? "1" : "0"); } catch {
+        /* localStorage disabled — silent no-op */
+      }
+      return next;
+    });
+  };
 
   if (!open) return null;
   const step = STEPS[stepIdx];
@@ -237,6 +255,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
   };
 
   const captureCount = Object.keys(captured).length;
+  const annotateCount = Object.values(captured).filter((c) => c?.annotated).length;
   const progressPct = ((stepIdx + 1) / STEPS.length) * 100;
 
   return (
@@ -250,8 +269,11 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
           <Camera className="w-5 h-5 flex-shrink-0" />
           <div className="flex-1">
             <div className="text-xs uppercase tracking-wider opacity-90">Guided Capture · HOVER-style</div>
-            <div className="text-base font-bold">
+            <div className="text-base font-bold" data-testid="guided-capture-header-tally">
               Step {stepIdx + 1} of {STEPS.length} · {captureCount} captured
+              {annotateCount > 0 && (
+                <span className="ml-1 text-[#DBEAFE]">· {annotateCount} annotated</span>
+              )}
             </div>
           </div>
           <button
@@ -304,6 +326,45 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
+          {/* Iter 79g — Fast Track toggle. Recommended default is
+              Annotate-now (better AI accuracy per photo), but power
+              users who prefer to capture in one sweep and annotate at
+              the end can flip this on. Preference persists to
+              localStorage. */}
+          <div className="flex items-center gap-2 mb-4 text-xs">
+            <button
+              type="button"
+              onClick={toggleFastTrack}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 border font-bold uppercase tracking-wider transition ${
+                fastTrack
+                  ? "bg-white border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA]"
+                  : "bg-[#7C3AED] border-[#7C3AED] text-white"
+              }`}
+              data-testid="guided-capture-annotate-now-toggle"
+              title="Show the Annotate button after each capture (recommended — better AI accuracy per photo)"
+            >
+              <Tags className="w-3 h-3" /> Annotate now
+            </button>
+            <button
+              type="button"
+              onClick={toggleFastTrack}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 border font-bold uppercase tracking-wider transition ${
+                fastTrack
+                  ? "bg-[#F97316] border-[#F97316] text-white"
+                  : "bg-white border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA]"
+              }`}
+              data-testid="guided-capture-fast-track-toggle"
+              title="Capture all photos first, then annotate them together at the end from the main AI Measure screen"
+            >
+              ⚡ Fast Track
+            </button>
+            <span className="text-[10px] text-[#A1A1AA] italic ml-1">
+              {fastTrack
+                ? "Fast Track: photos only — annotate later"
+                : "Best for accuracy — annotate each wall as you capture it"}
+            </span>
+          </div>
+
           <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
             Elevation: <span className="text-[#7C3AED]">{step.elevation}</span>
           </div>
@@ -367,8 +428,10 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
           {/* Iter 79f — Annotate-this-photo gate. Appears once the photo
               is uploaded (photoUrl is stable + PhotoAnnotateModal can
               render). Skipping is always fine — annotations improve
-              Claude's accuracy but aren't required. */}
-          {taken && (
+              Claude's accuracy but aren't required. Iter 79g: hidden
+              when Fast Track mode is on (contractor annotates at the
+              end instead). */}
+          {taken && !fastTrack && (
             <div className="mt-4 bg-[#FAFAFA] border border-[#E4E4E7] p-4">
               <div className="text-xs uppercase tracking-wider text-[#71717A] font-bold mb-1">
                 Annotate this photo?
