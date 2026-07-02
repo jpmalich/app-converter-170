@@ -2708,6 +2708,18 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               if (scaleRef) refs[String(idx)] = scaleRef;
               else delete refs[String(idx)];
               next._scale_refs = refs;
+              // Iter 79j.14 — persist to backend so the Run AI Measure
+              // worker can read the profile boxes from the estimate doc.
+              // Previous local-only state meant shake polygons drawn in
+              // the guided flow never reached Claude / the sqft router,
+              // so Apply Measurements didn't move the ft² into the
+              // SHAKE / B&B / etc. profile SKUs. Fire-and-forget PUT;
+              // failure is non-fatal (annotations stay in local state
+              // for this session, but log so we can debug).
+              if (estimateId) {
+                api.put(`/estimates/${estimateId}/profile-annotations`, { annotations: next })
+                  .catch((err) => console.warn("profile-annotations persist failed:", err?.message));
+              }
               return next;
             });
           }
