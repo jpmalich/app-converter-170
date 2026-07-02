@@ -122,24 +122,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   useEffect(() => {
     try { localStorage.setItem("aiMeasureModelChoice", modelChoice); } catch { /* ignore */ }
   }, [modelChoice]);
-  // Iter 79j.16 — Model Comparison history. Refetched whenever the
-  // preview flips to a new run OR the modal opens. Empty until at
-  // least one "done" run exists for this estimate.
-  const [modelHistory, setModelHistory] = useState([]);
-  useEffect(() => {
-    if (!estimateId || !open) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await api.get(`/measure/ai-measure/history/${estimateId}?limit=5`);
-        if (!cancelled) setModelHistory(Array.isArray(data?.runs) ? data.runs : []);
-      } catch {
-        if (!cancelled) setModelHistory([]);
-      }
-    })();
-    return () => { cancelled = true; };
-    // Re-fetch every time a fresh preview lands (new run completed).
-  }, [estimateId, open, preview?.session_id]);
+  // Iter 79j.16 — Model Comparison history state moved below `open`
+  // and `preview` state declarations to avoid TDZ (state hooks
+  // referenced by the effect must exist first).
   // Iter 57h — popover state for the inline "📐 Calibrate window sizing"
   // mini-panel that hangs next to the Run AI Measure button.
   const [calibOpen, setCalibOpen] = useState(false);
@@ -159,6 +144,25 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   const [busyStage, setBusyStage] = useState("");
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null); // {measurements, raw_ai}
+  // Iter 79j.16 — Model Comparison history. Refetched whenever the
+  // preview flips to a new run OR the modal opens. Empty until at
+  // least one "done" run exists for this estimate. Declared here so
+  // both `open` and `preview` are in scope (avoids TDZ).
+  const [modelHistory, setModelHistory] = useState([]);
+  useEffect(() => {
+    if (!estimateId || !open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get(`/measure/ai-measure/history/${estimateId}?limit=5`);
+        if (!cancelled) setModelHistory(Array.isArray(data?.runs) ? data.runs : []);
+      } catch {
+        if (!cancelled) setModelHistory([]);
+      }
+    })();
+    return () => { cancelled = true; };
+    // Re-fetch every time a fresh preview lands (new run completed).
+  }, [estimateId, open, preview?.session_id]);
   // Iter 57r — Resume support. When the modal opens we ask the
   // backend for the most recent AI Measure run for this estimate
   // (regardless of status). If it's still "running" or finished within
