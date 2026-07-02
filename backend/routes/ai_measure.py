@@ -1752,6 +1752,120 @@ async def ai_measure_latest_for_estimate(
     }
 
 
+# Iter 79j.16 — Per-run cost estimate for the Model Comparison panel.
+# Rough approximation using published Anthropic / OpenAI / Google list
+# prices as of Feb 2026. Token counts are estimated from photo count
+# (~2 K input tokens per image at Claude's 1568 px downscale, similar
+# for the other providers) + fixed system + typical output. Precise
+# enough for A/B decision-making — not a billing source of truth.
+_MODEL_PRICING_PER_M: dict[str, dict[str, float]] = {
+    # provider/model_name lowercase-key -> {input, output}
+    "claude-opus-4-5":       {"input": 5.00, "output": 25.00},
+    "claude-opus-4-8":       {"input": 5.00, "output": 25.00},
+    "claude-sonnet-4-6":     {"input": 3.00, "output": 15.00},
+    "gemini-3.5-flash":      {"input": 1.50, "output": 9.00},
+    "gemini-3.1-pro":        {"input": 5.00, "output": 25.00},
+    "gpt-5.5":               {"input": 5.00, "output": 30.00},
+    "gpt-5.4":               {"input": 5.00, "output": 30.00},
+}
+
+
+def _estimate_run_cost_usd(model_choice: str | None, photo_count: int, deep_dormer: bool) -> float | None:
+    """Approximate USD cost for one AI Measure run. Returns None if the
+    model isn't in the pricing table (e.g. an old run against a
+    now-deprecated model). Fine-grained enough to sort A/B runs, not a
+    billing document."""
+    if not model_choice:
+        return None
+    price = _MODEL_PRICING_PER_M.get(model_choice.strip().lower())
+    if not price:
+        return None
+    photos = max(1, int(photo_count or 1))
+    # Input: system+user prompt (~4K) + per-photo (~2K)
+    input_tokens = 4000 + (2000 * photos)
+    # Deep Dormer adds a parallel per-photo pass at ~1500 tok each.
+    if deep_dormer:
+        input_tokens += 1500 * photos
+    output_tokens = 2500
+    return round(
+        (input_tokens / 1_000_000) * price["input"]
+        + (output_tokens / 1_000_000) * price["output"],
+        4,
+    )
+
+
+@router.get("/ai-measure/history/{estimate_id}")
+async def ai_measure_history(
+    estimate_id: str,
+    limit: int = 5,
+    user: dict = Depends(get_current_user),
+):
+    """Iter 79j.16 — Model comparison history. Returns the last N
+    completed runs for this estimate with just the fields needed to
+    A/B compare models side-by-side (model + confidence + counts +
+    approximate cost). Used by the Model Comparison panel on the AI
+    Measure preview. Only runs with `status == 'done'` are returned so
+    the panel never shows in-flight or failed runs."""
+    user_id = user.get("id") or "anon"
+    limit = max(1, min(int(limit or 5), 20))
+    cursor = db.ai_measure_runs.find(
+        {"user_id": user_id, "estimate_id": estimate_id, "status": "done"},
+        sort=[("completed_at", -1)],
+        limit=limit,
+    )
+    runs = []
+    async for doc in cursor:
+        result = doc.get("result") or {}
+        measurements = result.get("measurements") or {}
+        raw_ai = result.get("raw_ai") or {}
+        # Confidence: try raw_ai first (0-100), fall back to
+        # measurements._ai_overall_confidence, then None.
+        conf = raw_ai.get("overall_confidence")
+        if conf is None:
+            conf = measurements.get("_ai_overall_confidence")
+        try:
+            conf = int(round(float(conf))) if conf is not None else None
+        except (TypeError, ValueError):
+            conf = None
+        # Wall / opening counts from raw_ai
+        walls = raw_ai.get("walls") or []
+        openings = raw_ai.get("openings") or []
+        window_count = sum(1 for o in openings if (o.get("type") or "").lower() == "window")
+        door_count = sum(
+            int(o.get("count") or 1)
+            for o in openings
+            if (o.get("type") or "").lower() in {"entry_door", "patio_door", "garage_door"}
+        )
+        cost_usd = _estimate_run_cost_usd(
+            doc.get("model_choice"),
+            int(doc.get("photo_count") or 0),
+            bool(doc.get("deep_dormer_scan")),
+        )
+        completed = _as_aware_utc(doc.get("completed_at"))
+        created = _as_aware_utc(doc.get("created_at"))
+        elapsed_ms = None
+        if created is not None and completed is not None:
+            elapsed_ms = int((completed - created).total_seconds() * 1000)
+        runs.append({
+            "run_id": doc.get("run_id"),
+            "model_choice": doc.get("model_choice") or "claude-opus-4-5",
+            "model_provider": doc.get("model_provider"),
+            "model_name": doc.get("model_name") or result.get("model"),
+            "completed_at": completed.isoformat() if completed else None,
+            "elapsed_ms": elapsed_ms,
+            "photo_count": doc.get("photo_count") or 0,
+            "deep_dormer_scan": bool(doc.get("deep_dormer_scan")),
+            "confidence": conf,
+            "wall_count": len(walls),
+            "window_count": window_count,
+            "door_count": door_count,
+            "siding_sqft": measurements.get("siding_sqft") or 0,
+            "eaves_lf": measurements.get("eaves_lf") or 0,
+            "cost_estimate_usd": cost_usd,
+        })
+    return {"runs": runs}
+
+
 async def _execute_ai_measure_worker(
     *,
     run_id: str,

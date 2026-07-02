@@ -122,6 +122,24 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   useEffect(() => {
     try { localStorage.setItem("aiMeasureModelChoice", modelChoice); } catch { /* ignore */ }
   }, [modelChoice]);
+  // Iter 79j.16 — Model Comparison history. Refetched whenever the
+  // preview flips to a new run OR the modal opens. Empty until at
+  // least one "done" run exists for this estimate.
+  const [modelHistory, setModelHistory] = useState([]);
+  useEffect(() => {
+    if (!estimateId || !open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get(`/measure/ai-measure/history/${estimateId}?limit=5`);
+        if (!cancelled) setModelHistory(Array.isArray(data?.runs) ? data.runs : []);
+      } catch {
+        if (!cancelled) setModelHistory([]);
+      }
+    })();
+    return () => { cancelled = true; };
+    // Re-fetch every time a fresh preview lands (new run completed).
+  }, [estimateId, open, preview?.session_id]);
   // Iter 57h — popover state for the inline "📐 Calibrate window sizing"
   // mini-panel that hangs next to the Run AI Measure button.
   const [calibOpen, setCalibOpen] = useState(false);
@@ -1716,6 +1734,75 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       </span>
                     )}
                   </div>
+
+                  {/* Iter 79j.16 — Model Comparison panel. Renders only
+                      when 2+ runs on this estimate have used at least 2
+                      DIFFERENT models — nothing to compare otherwise. */}
+                  {(() => {
+                    const uniqueModels = new Set(modelHistory.map((r) => r.model_choice));
+                    if (modelHistory.length < 2 || uniqueModels.size < 2) return null;
+                    const MODEL_LABELS = {
+                      "claude-opus-4-5":     "Opus 4.5",
+                      "claude-opus-4-8":     "Opus 4.8",
+                      "claude-sonnet-4-6":   "Sonnet 4.6",
+                      "gemini-3.5-flash":    "Gemini 3.5 Flash",
+                      "gemini-3.1-pro":      "Gemini 3.1 Pro",
+                      "gpt-5.5":             "GPT-5.5",
+                      "gpt-5.4":             "GPT-5.4",
+                    };
+                    const fmtCost = (c) => (c == null ? "—" : `$${c.toFixed(3)}`);
+                    const fmtElapsed = (ms) => {
+                      if (!ms) return "—";
+                      if (ms < 60000) return `${(ms / 1000).toFixed(0)}s`;
+                      return `${(ms / 60000).toFixed(1)}m`;
+                    };
+                    return (
+                      <div className="mb-3 border border-[#7C3AED] bg-[#FAF5FF]" data-testid="ai-measure-model-comparison">
+                        <div className="px-3 py-1.5 border-b border-[#7C3AED] bg-[#7C3AED] text-white text-[10px] uppercase tracking-wider font-bold flex items-center justify-between">
+                          <span>Model Comparison · last {modelHistory.length} runs on this estimate</span>
+                          <span className="text-[9px] font-normal opacity-80">Higher = winner</span>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-[11px]">
+                            <thead>
+                              <tr className="border-b border-[#E9D5FF] bg-white">
+                                <th className="text-left px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Model</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Conf</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Windows</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Doors</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Walls</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Siding ft²</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Eaves LF</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Time</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Cost</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {modelHistory.map((r, i) => (
+                                <tr key={r.run_id} className={i === 0 ? "bg-[#EDE9FE] font-medium" : "bg-white"}>
+                                  <td className="px-2 py-1.5 font-bold text-[#09090B]">
+                                    {MODEL_LABELS[r.model_choice] || r.model_choice}
+                                    {i === 0 && <span className="ml-1 text-[8px] uppercase text-[#7C3AED]">(latest)</span>}
+                                  </td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{r.confidence != null ? r.confidence : "—"}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{r.window_count}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{r.door_count}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{r.wall_count}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{Math.round(r.siding_sqft || 0).toLocaleString()}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{Math.round(r.eaves_lf || 0)}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[#71717A]">{fmtElapsed(r.elapsed_ms)}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[#71717A]">{fmtCost(r.cost_estimate_usd)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="px-3 py-1.5 border-t border-[#E9D5FF] bg-white text-[9px] text-[#71717A] italic">
+                          Cost is an approximation using published list prices · Compare Conf + counts vs your ground-truth field measurement.
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {preview.measurements._ai_story_count_reasoning && (
                     <div className="text-[11px] text-[#71717A] mb-2 italic">
                       Story count: {preview.measurements._ai_story_count_reasoning}
