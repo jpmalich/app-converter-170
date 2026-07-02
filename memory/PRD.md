@@ -931,3 +931,7 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
     - Profile: `data-testid="guided-profile-remove-{id}"` per profile box.
   - **Files**: `frontend/src/components/estimate/PhotoAnnotateModal.jsx` only. Lint clean.
   - **Status**: SHIPPED. USER VERIFICATION PENDING.
+
+- **Iter 79j.10 — Auto-default scale unit by kind (2026-02-28)**: When the Wall Reference dialog opens (MODE_SCALE), default unit is now **FEET** (door/garage/eave-to-ground spans are almost always ft). When the Window Reference dialog opens (MODE_SCALE_WINDOW), default unit is **INCHES** (standard window widths are 24/28/30/32/36/40/44/48 in). User can still toggle manually mid-dialog; effect fires only on `scalePending.kind` change so a manual override during entry is preserved. LocalStorage `photoAnnotateScaleUnit` no longer sticks between kinds — replaced by kind-based defaults.
+  - **Files**: `frontend/src/components/estimate/PhotoAnnotateModal.jsx` only. Lint clean.
+  - **Status**: SHIPPED. USER VERIFICATION PENDING.

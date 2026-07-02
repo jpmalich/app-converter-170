@@ -235,6 +235,19 @@ export default function PhotoAnnotateModal({
     try { localStorage.setItem("photoAnnotateScaleUnit", scaleUnit); } catch { /* ignore */ }
   }, [scaleUnit]);
 
+  // Iter 79j.10 — auto-default unit based on which scale is being set:
+  // wall spans (door, garage, eave) → feet;  window edges → inches.
+  // Fires only when the scale dialog opens with a new kind, so the
+  // user's manual mid-dialog switch is preserved.
+  useEffect(() => {
+    if (!scalePending) return;
+    if (scalePending.kind === "window") {
+      setScaleUnit("in");
+    } else if (scalePending.kind === "wall") {
+      setScaleUnit("ft");
+    }
+  }, [scalePending?.kind]);
+
   // Iter 79j — guided-flow step index. Only active when `guidedFlow`
   // prop is set. Auto-syncs the `mode` state to the current step's
   // mode via an effect below.
