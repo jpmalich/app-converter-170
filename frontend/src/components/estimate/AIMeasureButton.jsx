@@ -109,6 +109,19 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // scan only adds ~5-10s and catches what the main pass misses
   // because phone photos get downsized to ~1568px before tokenization.
   const [deepDormerScan, setDeepDormerScan] = useState(true);
+  // Iter 79j.15 — A/B model dropdown. Persisted so a contractor's
+  // last choice survives modal close/reopen. Keys must match the
+  // backend `_MODEL_CHOICES` registry.
+  const [modelChoice, setModelChoice] = useState(() => {
+    try {
+      return localStorage.getItem("aiMeasureModelChoice") || "claude-opus-4-5";
+    } catch {
+      return "claude-opus-4-5";
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("aiMeasureModelChoice", modelChoice); } catch { /* ignore */ }
+  }, [modelChoice]);
   // Iter 57h — popover state for the inline "📐 Calibrate window sizing"
   // mini-panel that hangs next to the Run AI Measure button.
   const [calibOpen, setCalibOpen] = useState(false);
@@ -938,6 +951,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (elevTagList.length) {
         fd.append("elevation_tags", elevTagList.join(","));
       }
+      // Iter 79j.15 — A/B model choice. Contractor-selectable via the
+      // dropdown next to the Run AI Measure button. Blank/unknown =
+      // backend default (Opus 4.5).
+      if (modelChoice) {
+        fd.append("model_choice", modelChoice);
+      }
       // Iter 57r — link the run to this estimate so a later modal open
       // can offer to Resume / Restore the most recent run for this job.
       if (estimateId) {
@@ -1657,6 +1676,27 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border ${confColor}`} data-testid="ai-measure-confidence">
                       Confidence: {conf}
                     </span>
+                    {preview.model && (
+                      <span
+                        className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-[#7C3AED] text-[#7C3AED] bg-[#FAF5FF]"
+                        data-testid="ai-measure-model-badge"
+                        title={`Ran on ${preview.model_provider || ""} · ${preview.model}`}
+                      >
+                        {(() => {
+                          // Compact label from the full model id.
+                          const m = String(preview.model).toLowerCase();
+                          if (m.includes("opus-4-5")) return "Opus 4.5";
+                          if (m.includes("opus-4-8")) return "Opus 4.8";
+                          if (m.includes("sonnet-4-6")) return "Sonnet 4.6";
+                          if (m.includes("gemini-3.5")) return "Gemini 3.5 Flash";
+                          if (m.includes("gemini-3.1")) return "Gemini 3.1 Pro";
+                          if (m.includes("gemini-3-flash")) return "Gemini 3 Flash";
+                          if (m.includes("gpt-5.5")) return "GPT-5.5";
+                          if (m.includes("gpt-5.4")) return "GPT-5.4";
+                          return preview.model;
+                        })()}
+                      </span>
+                    )}
                     <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
                       Reference: {preview.measurements._ai_reference_used || "none"}
                     </span>
@@ -2393,7 +2433,25 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 </div>
               )}
               <div className="text-[10px] text-[#A1A1AA] flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0">
-                <span className="whitespace-nowrap">Powered by Claude Opus 4.5</span>
+                <span className="whitespace-nowrap">Powered by</span>
+                {/* Iter 79j.15 — A/B model picker. Compact select so
+                    contractors can flip models per-run without leaving
+                    the modal. Persisted in localStorage. */}
+                <select
+                  value={modelChoice}
+                  onChange={(e) => setModelChoice(e.target.value)}
+                  className="text-[10px] font-bold uppercase tracking-wider bg-white border border-[#E4E4E7] px-1 py-0.5 focus:outline-none focus:border-[#7C3AED]"
+                  data-testid="ai-measure-model-select"
+                  title="Which vision model runs the measurement pass. Opus 4.5 is the current default; try Gemini 3.5 Flash or GPT-5.5 to A/B accuracy vs cost."
+                >
+                  <option value="claude-opus-4-5">Claude Opus 4.5</option>
+                  <option value="claude-opus-4-8">Claude Opus 4.8</option>
+                  <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                  <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+                  <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
+                  <option value="gpt-5.5">GPT-5.5</option>
+                  <option value="gpt-5.4">GPT-5.4</option>
+                </select>
                 <button
                   type="button"
                   onClick={() => setCalibOpen((v) => !v)}

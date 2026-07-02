@@ -959,3 +959,19 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
   - **Fix**: fire-and-forget `api.put(...)` on every save inside the same `setSavedProfileAnnotations` updater callback, with the merged `next` object. Failure is non-fatal (local state still works for the session, just won't survive a reload).
   - **Files**: `frontend/src/components/estimate/AIMeasureButton.jsx` only. Lint clean.
   - **Status**: SHIPPED. USER VERIFICATION PENDING (please re-draw a shake polygon and Run AI Measure to confirm the SHAKE line now appears with the correct ft²).
+
+- **Iter 79j.15 — AI Measure A/B model toggle (2026-02-28)**: Contractors can now flip between Claude / Gemini / GPT vision models per-run without a code deploy, and the model used is stamped on both the run doc and the preview so accuracy + cost can be A/B compared on the same house.
+  - **Backend** (`routes/ai_measure.py`):
+    - New `_MODEL_CHOICES` registry mapping human-readable keys → `(provider, model_name)` tuples for: `claude-opus-4-5` (default), `claude-opus-4-8`, `claude-sonnet-4-6`, `gemini-3.5-flash`, `gemini-3.1-pro`, `gpt-5.5`, `gpt-5.4`.
+    - `_resolve_model(choice)` helper — unknown keys log a warning and fall back to default. Never fails the run.
+    - `POST /api/measure/ai-measure` accepts an optional `model_choice` Form field.
+    - `_execute_ai_measure_worker` now takes `model_provider` + `model_name` kwargs and passes them to `LlmChat.with_model(...)`. Rerun path (which doesn't specify) still works via defaults.
+    - Run doc persists `model_choice`, `model_provider`, `model_name` so a later query can compare Opus-vs-Gemini runs on the same estimate.
+    - Result object now includes `model` (actual model used) + `model_provider` (was hardcoded to `MODEL_NAME`).
+  - **Frontend** (`components/estimate/AIMeasureButton.jsx`):
+    - New `modelChoice` state persisted in localStorage (`aiMeasureModelChoice`). Key survives modal close/reopen so the contractor's choice sticks.
+    - Compact `<select>` dropdown next to the "Powered by" line lets contractors pick model per-run without leaving the modal. Data-testid: `ai-measure-model-select`.
+    - `runMeasure` appends `model_choice` to FormData when running.
+    - Preview header now shows a purple model badge (e.g. "Gemini 3.5 Flash") so a subsequent run with a different model is visually distinguishable. Data-testid: `ai-measure-model-badge`.
+  - **Files**: `backend/routes/ai_measure.py` + `frontend/src/components/estimate/AIMeasureButton.jsx`. Backend + frontend lint clean, backend hot-reloaded successfully.
+  - **Status**: SHIPPED. USER VERIFICATION PENDING — please run the SAME set of photos through Opus 4.5 and Gemini 3.5 Flash back-to-back and compare window counts + wall LF + profile detection to decide which model to keep as the default.

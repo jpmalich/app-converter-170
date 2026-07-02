@@ -65,6 +65,38 @@ MAX_BYTES_PER_FILE = 12 * 1024 * 1024  # 12 MB pre-base64 (Iter 56b: bumped from
 # are unchanged.
 MODEL_NAME = "claude-opus-4-5-20251101"
 
+# Iter 79j.15 — A/B model registry. The main AI-measure Claude call can
+# now run against any of these models per-run (see `model_choice`
+# parameter on POST /measure/ai-measure). Contractors flip between them
+# from the AI Measure modal to compare accuracy + cost on the same
+# house. The default stays Opus 4.5 until we have field data proving a
+# swap is worth it. The provider string maps to emergentintegrations'
+# `.with_model(provider, model_name)` call.
+_MODEL_CHOICES: dict[str, tuple[str, str]] = {
+    # key                    -> (provider,   model_name)
+    "claude-opus-4-5":         ("anthropic", "claude-opus-4-5-20251101"),
+    "claude-opus-4-8":         ("anthropic", "claude-opus-4-8"),
+    "claude-sonnet-4-6":       ("anthropic", "claude-sonnet-4-6"),
+    "gemini-3.5-flash":        ("gemini",    "gemini-3.5-flash"),
+    "gemini-3.1-pro":          ("gemini",    "gemini-3.1-pro-preview"),
+    "gpt-5.5":                 ("openai",    "gpt-5.5"),
+    "gpt-5.4":                 ("openai",    "gpt-5.4"),
+}
+_DEFAULT_MODEL_KEY = "claude-opus-4-5"
+
+
+def _resolve_model(choice: str | None) -> tuple[str, str, str]:
+    """Return (key, provider, model_name) for the given contractor
+    choice, falling back to the default. Unknown keys log a warning
+    but don't fail the run — we still want a measurement even if the
+    contractor typed something weird into a URL param."""
+    key = (choice or _DEFAULT_MODEL_KEY).strip()
+    if key not in _MODEL_CHOICES:
+        logger.warning("Unknown ai-measure model_choice %r, falling back to %s", key, _DEFAULT_MODEL_KEY)
+        key = _DEFAULT_MODEL_KEY
+    provider, model_name = _MODEL_CHOICES[key]
+    return key, provider, model_name
+
 
 def _compress_for_claude(img_bytes: bytes, max_raw_bytes: int = 5_500_000) -> bytes:
     """Ensure a single image fits under Anthropic's 10 MB base64 cap.
@@ -1389,6 +1421,10 @@ async def ai_measure(
     # return the most recent in-flight or done run, letting the
     # frontend "Resume" after a page reload / screen lock.
     estimate_id: Optional[str] = Form(None),
+    # Iter 79j.15 — A/B model choice. Allowed keys are the keys of
+    # `_MODEL_CHOICES` (claude-opus-4-5, claude-opus-4-8, gemini-3.5-flash,
+    # gpt-5.5, etc.). Blank / unknown → default (Opus 4.5).
+    model_choice: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
 ):
     """Kick off an async AI photo-measure run. Iter 57q: the old
@@ -1461,6 +1497,10 @@ async def ai_measure(
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
 
     user_id = user["id"]
+    # Iter 79j.15 — resolve the A/B model choice up front so the run doc
+    # persists it for reporting + the worker can hand it to LlmChat.
+    model_key, model_provider, model_name = _resolve_model(model_choice)
+
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
     # Persist a "running" run doc so the status endpoint can return
@@ -1480,6 +1520,10 @@ async def ai_measure(
         "deep_dormer_scan": deep_dormer_scan,
         "kind": kind,
         "address": address,
+        # Iter 79j.15 — A/B model tracking
+        "model_choice": model_key,
+        "model_provider": model_provider,
+        "model_name": model_name,
         "created_at": now,
         "updated_at": now,
         "completed_at": None,
@@ -1502,6 +1546,8 @@ async def ai_measure(
         deep_dormer_scan=deep_dormer_scan,
         elevation_tags=elevation_tags,
         estimate_id=estimate_id,
+        model_provider=model_provider,
+        model_name=model_name,
     ))
 
     return {
@@ -1721,6 +1767,10 @@ async def _execute_ai_measure_worker(
     deep_dormer_scan: bool,
     elevation_tags: Optional[str],
     estimate_id: Optional[str] = None,
+    # Iter 79j.15 — A/B model selection. Defaults match the run-doc
+    # defaults so the rerun path (which doesn't pass these) still works.
+    model_provider: str = "anthropic",
+    model_name: str = MODEL_NAME,
 ):
     """Background worker — runs the Claude call(s), aggregates, maps to
     catalog lines, and writes the final result back to the run doc.
@@ -1759,7 +1809,7 @@ async def _execute_ai_measure_worker(
             api_key=api_key,
             session_id=session_id,
             system_message=SYSTEM_PROMPT,
-        ).with_model("anthropic", MODEL_NAME)
+        ).with_model(model_provider, model_name)
 
         prompt_parts = []
         if address:
@@ -1886,7 +1936,8 @@ async def _execute_ai_measure_worker(
                 raw.get("openings_schedule") or [],
             ),
             "raw_ai": raw,
-            "model": MODEL_NAME,
+            "model": model_name,          # Iter 79j.15 — actual model used (may differ from MODEL_NAME default)
+            "model_provider": model_provider,
             "session_id": session_id,
             "warnings": warnings,
         }
