@@ -66,8 +66,44 @@ function deriveRoofPitchFromWalls(walls) {
   return { pitch: best, raw: Math.round(avg * 10) / 10, sampleCount: gables.length };
 }
 
+// Iter 79j.28 — Palette mapping for Howard's most-common Alside siding
+// colors. When the estimate has a palette NAME selected (via the
+// "Siding Color" dropdown on the JOB INFORMATION panel), we look up
+// a representative hex here so the 3D render matches. Unknown names
+// fall through to the AI-sampled hex. Kept short deliberately — this
+// isn't a color-management system, just enough to bridge Howard's
+// most common picks. Add more as they come up in real estimates.
+const ALSIDE_COLOR_HEX = {
+  "white": "#F2F0EA",
+  "colonial white": "#EEE9DD",
+  "cape cod grey": "#8F8B83",
+  "cape cod gray": "#8F8B83",
+  "sandalwood": "#C8B58F",
+  "wicker": "#D6C5A0",
+  "sable brown": "#5C4A3A",
+  "harbor grey": "#767C7B",
+  "harbor gray": "#767C7B",
+  "misty shadow": "#B8B7B3",
+  "flagstone": "#8B7F73",
+  "pebblestone clay": "#B39F82",
+  "desert tan": "#B79E7A",
+  "sterling grey": "#9DA0A0",
+  "sterling gray": "#9DA0A0",
+  "autumn red": "#7C2E24",
+  "cranberry": "#8A1E20",
+  "hunter green": "#2F4F3E",
+  "forest green": "#2E4632",
+  "midnight blue": "#1F2B3D",
+  "sage": "#8A9784",
+};
+
+function hexForPaletteName(name) {
+  if (!name || typeof name !== "string") return null;
+  return ALSIDE_COLOR_HEX[name.trim().toLowerCase()] || null;
+}
+
 // Build a house-JSON shape from the AI preview + user overrides.
-function buildHouseJson(preview, overrides) {
+function buildHouseJson(preview, overrides, estimate) {
   if (!preview) return null;
   const walls = preview.raw_ai?.walls || [];
   const openings = preview.raw_ai?.openings || [];
@@ -132,26 +168,34 @@ function buildHouseJson(preview, overrides) {
   // True per-wall X-positioning using photo bbox (Iter 79j.27). If a
   // bbox is present, use its X center as a fraction of the wall width;
   // otherwise fall back to even auto-spacing so nothing regresses.
-  const autoSpace = (list, wallWidth) => {
+  const autoSpace = (list, wallWidth, wallHeight) => {
     if (!list?.length) return [];
     const n = list.length;
     return list.map((o, i) => {
       const w = (o.width_in || 36) / 12;
       const h = (o.height_in || 48) / 12;
-      const y = (o.type || "").toLowerCase().includes("door") ? 0 : 3.2;
-      // bbox.x is the LEFT edge normalized to [0,1] of the photo width.
-      // We treat the photo as a straight-on shot of the wall — good
-      // enough for a schematic 3D placement, not survey-accurate.
-      const bboxCenter = o.bbox && Number.isFinite(o.bbox.x) && Number.isFinite(o.bbox.w)
+      // Iter 79j.28 — true Y positioning from bbox. Photo Y origin is
+      // top-left, so worldY (from ground) = wallHeight × (1 − photoY).
+      // Doors that Claude bbox'd near the floor land at Y≈0 naturally.
+      const bboxCx = o.bbox && Number.isFinite(o.bbox.x) && Number.isFinite(o.bbox.w)
         ? Math.min(1, Math.max(0, o.bbox.x + o.bbox.w / 2))
         : null;
+      const bboxCy = o.bbox && Number.isFinite(o.bbox.y) && Number.isFinite(o.bbox.h)
+        ? Math.min(1, Math.max(0, o.bbox.y + o.bbox.h / 2))
+        : null;
+      const isDoor = (o.type || "").toLowerCase().includes("door");
+      // Fallback Y (no bbox): entry/patio/garage doors at floor, windows at 3.2ft.
+      const fallbackY = isDoor ? 0 : 3.2;
+      const worldYCenter = bboxCy != null
+        ? Math.max(0, Math.min(wallHeight - h, wallHeight * (1 - bboxCy) - h / 2))
+        : fallbackY;
       const slot = wallWidth / n;
-      const cx = bboxCenter != null ? bboxCenter * wallWidth : slot * (i + 0.5);
+      const cx = bboxCx != null ? bboxCx * wallWidth : slot * (i + 0.5);
       return {
-        type: (o.type || "window").toLowerCase().includes("door") ? "door" : "window",
+        type: (o.type || "window").toLowerCase(),
         style: o.style,
         x: Math.max(0.5, Math.min(wallWidth - w - 0.5, cx - w / 2)),
-        y,
+        y: worldYCenter,
         w,
         h,
         confidence: o.style_confidence ?? o.confidence ?? null,
@@ -193,16 +237,23 @@ function buildHouseJson(preview, overrides) {
     ? widthBack
     : widthFront;
   // Position each dormer opening on its face using bbox.x when available.
+  // Vertical position on the face is derived from bbox.y relative to the
+  // dormer face's height range (mainRoofY at zFace ↔ faceTop).
   const dormerOpeningsPositioned = dormerOpeningsRaw.map((o) => {
     const w = (o.width_in || 30) / 12;
     const h = (o.height_in || 42) / 12;
     const bboxCenter = o.bbox && Number.isFinite(o.bbox.x) && Number.isFinite(o.bbox.w)
       ? Math.min(1, Math.max(0, o.bbox.x + o.bbox.w / 2))
       : 0.5;
+    const bboxCy = o.bbox && Number.isFinite(o.bbox.y) && Number.isFinite(o.bbox.h)
+      ? Math.min(1, Math.max(0, o.bbox.y + o.bbox.h / 2))
+      : null;
     const cxOnWall = bboxCenter * dormerFaceWallWidth;
     return {
       w, h,
       cxOnWall,           // center X in wall-local coords, 0 = left edge of wall
+      bboxCy,             // vertical fraction on the photo (null → default center)
+      type: (o.type || "window").toLowerCase(),
       style: o.style,
       confidence: o.style_confidence ?? o.confidence ?? null,
     };
@@ -252,7 +303,7 @@ function buildHouseJson(preview, overrides) {
     gableEnd: id === "left" || id === "right",
     confidence: wallData?.confidence ?? null,
     estimated: !wallData,
-    openings: autoSpace(openingsByWall[id] || [], widthOverride),
+    openings: autoSpace(openingsByWall[id] || [], widthOverride, eave.h),
   });
   return {
     footprint: { width: footprintW, depth: footprintD, estimated: !front || !left },
@@ -281,6 +332,19 @@ function buildHouseJson(preview, overrides) {
             faceWallWidth: dormerFaceWallWidth,
           }
         : null,
+    },
+    // Iter 79j.28 — Colors. Priority chain (buildScene reads this):
+    //   siding: estimate override (palette name → hex) > AI-sampled hex > default grey
+    //   trim/roof/door: AI-sampled > default
+    // `siding` is the only field the contractor can override today via
+    // the JOB INFO → Siding Color dropdown; the others follow whatever
+    // Claude sampled from the photos.
+    colors: {
+      siding: hexForPaletteName(estimate?.siding_color),
+      siding_ai: preview.measurements?._ai_siding_color_hex || null,
+      trim_ai: preview.measurements?._ai_trim_color_hex || null,
+      roof_ai: preview.measurements?._ai_roof_color_hex || null,
+      door_ai: preview.measurements?._ai_door_color_hex || null,
     },
     facades: [
       mkFacade("front", "Front elevation", widthFront, front, eaves.front),
@@ -377,7 +441,9 @@ function buildHipRoof(scene, house, roofMat, ridgeY, avgGableEave) {
 //   • two triangular cheek walls filling the gap between the face
 //     top and the main roof surface
 //   • low-slope shed roof from the face top back to the main ridge
-function buildShedDormer(scene, house, roofMat, wallMat, frameMat, paneMat, roofRise, avgGableEave) {
+// Iter 79j.28 — openingMats passed through so dormer windows/doors
+// render with the same type-aware factory as the main walls.
+function buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, avgGableEave) {
   const { footprint, roof } = house;
   const d = roof.dormer;
   if (!d) return;
@@ -408,29 +474,25 @@ function buildShedDormer(scene, house, roofMat, wallMat, frameMat, paneMat, roof
   if (d.face === "rear") faceMesh.rotation.y = Math.PI;
   scene.add(faceMesh);
 
-  // Iter 79j.27 — Render each dormer opening that Claude tagged
-  // on_dormer=true, at its true X position on the face. No more stock
-  // 3'×5' placeholder window. If no dormer openings were classified,
-  // the face is left blank (a valid state for a shed dormer with just
-  // siding, no windows).
+  // Iter 79j.27+.28 — Render each dormer opening that Claude tagged
+  // on_dormer=true, at its true X and Y position on the face, dispatched
+  // through the same type-aware factory as the main walls. No stock
+  // placeholder window. If no dormer openings were classified, the face
+  // is left blank (valid state for a shed dormer with siding-only).
   const dormerOpenings = d.openings || [];
-  // The wall-local cxOnWall was computed with 0=left edge of the wall;
-  // convert to world-X: worldX = cxOnWall - dormerFaceWallWidth/2
   const worldXForOpening = (o) => (o.cxOnWall - (d.faceWallWidth || footprint.width) / 2);
+  const faceHeightRange = faceTopY - faceBottomY;
   dormerOpenings.forEach((o) => {
     const wx = worldXForOpening(o);
-    // Center Y inside the face wall (vertically centered by default)
-    const wy = (faceBottomY + faceTopY) / 2;
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(o.w + 0.4, o.h + 0.4, 0.15), frameMat);
-    frame.position.set(wx, wy, zFace + faceSign * 0.14);
-    scene.add(frame);
-    const pane = new THREE.Mesh(new THREE.BoxGeometry(o.w, o.h, 0.2), paneMat);
-    pane.position.set(wx, wy, zFace + faceSign * 0.16);
-    scene.add(pane);
+    // If bboxCy is present, place vertically within the face; else center.
+    const wy = o.bboxCy != null
+      ? Math.max(faceBottomY, Math.min(faceTopY - o.h, faceBottomY + faceHeightRange * (1 - o.bboxCy) - o.h / 2))
+      : (faceBottomY + faceTopY) / 2 - o.h / 2;
+    const g = buildOpeningMesh(o, openingMats);
+    g.position.set(wx, wy, zFace + faceSign * 0.09);
+    if (d.face === "rear") g.rotation.y = Math.PI;
+    scene.add(g);
   });
-  // paneMat is passed in to keep the API symmetric with the main wall
-  // renderer; suppress the unused warning when there are zero openings.
-  void paneMat;
 
   // 2) Cheek walls — two triangles filling the wedge on each side.
   // Each cheek is a triangle in the XZ (well, YZ at fixed X) plane
@@ -471,14 +533,121 @@ function buildShedDormer(scene, house, roofMat, wallMat, frameMat, paneMat, roof
   scene.add(new THREE.Mesh(shedGeom, roofMat));
 }
 
+// Iter 79j.28 — Opening mesh factory. Returns a THREE.Group placed at
+// (0,0,0) with its bottom at Y=0 and center at X=0, so callers can
+// position it anywhere. Distinct visual per type — flat-colored, no
+// textures, no course lines (deliberately out of scope). The point is
+// that a contractor comparing 3D to photo can see "yes, that's my
+// front door", "that's the sliding patio door", "that's the garage".
+function buildOpeningMesh(o, materials) {
+  const { frameMat, paneMat, doorMat, garageMat, sliderMat } = materials;
+  const group = new THREE.Group();
+  const t = (o.type || "window").toLowerCase();
+  const w = o.w;
+  const h = o.h;
+  // All openings are anchored center-X, bottom-Y (we translate later).
+  const cx = 0;
+  const cy = h / 2;
+
+  if (t.includes("garage")) {
+    // Garage door: full-width solid slab, thin dark border, one thin
+    // horizontal band across the top to hint at panels (out of scope
+    // for real panels, but this one band reads as "garage").
+    const body = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, 0.22),
+      garageMat,
+    );
+    body.position.set(cx, cy, 0.11);
+    group.add(body);
+    // Subtle top rail band
+    const band = new THREE.Mesh(
+      new THREE.BoxGeometry(w - 0.2, 0.35, 0.24),
+      frameMat,
+    );
+    band.position.set(cx, h - 0.5, 0.12);
+    group.add(band);
+    return group;
+  }
+
+  if (t.includes("patio") || t.includes("slider") || t.includes("sliding")) {
+    // Slider / patio door: two side-by-side glass panels in a dark frame.
+    // Frame width = full opening, height = full opening.
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, h + 0.3, 0.15), frameMat);
+    frame.position.set(cx, cy, 0.08);
+    group.add(frame);
+    // Two glass panels split vertically at cx
+    const paneW = w / 2 - 0.1;
+    const paneMesh = (dx) => {
+      const p = new THREE.Mesh(new THREE.BoxGeometry(paneW, h - 0.2, 0.2), sliderMat);
+      p.position.set(cx + dx, cy, 0.11);
+      return p;
+    };
+    group.add(paneMesh(-paneW / 2 - 0.05));
+    group.add(paneMesh(+paneW / 2 + 0.05));
+    return group;
+  }
+
+  if (t.includes("entry") || t === "door") {
+    // Entry door: solid slab (no pane), taller-than-wide, dark accent
+    // color so it reads as "front door" against the siding.
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, h + 0.3, 0.15), frameMat);
+    frame.position.set(cx, cy, 0.08);
+    group.add(frame);
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(w - 0.15, h - 0.15, 0.22), doorMat);
+    slab.position.set(cx, cy, 0.11);
+    group.add(slab);
+    // Small knob-height accent (out-of-scope for actual knob but adds a
+    // door-shaped cue that the material isn't a window)
+    const knob = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.06), frameMat);
+    knob.position.set(w / 2 - 0.5, cy - 0.2, 0.18);
+    group.add(knob);
+    return group;
+  }
+
+  // Window (default): frame + glass pane
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, h + 0.4, 0.15), frameMat);
+  frame.position.set(cx, cy, 0.09);
+  group.add(frame);
+  const pane = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), paneMat);
+  pane.position.set(cx, cy, 0.11);
+  group.add(pane);
+  return group;
+}
+
+// Iter 79j.28 — Safely parse a hex color to a THREE color number.
+// Accepts "#RRGGBB", "RRGGBB", or 0xRRGGBB integers. Returns null for
+// invalid input so the caller can fall back cleanly.
+function parseHex(input) {
+  if (input == null) return null;
+  if (typeof input === "number" && Number.isFinite(input)) return input;
+  if (typeof input !== "string") return null;
+  const s = input.trim().replace(/^#/, "");
+  if (!/^[0-9A-Fa-f]{6}$/.test(s)) return null;
+  return parseInt(s, 16);
+}
+
 // Rebuild the Three.js scene from the house JSON. Returns walls by id
 // (so the click handler can highlight the tapped facade).
 function buildScene(scene, house) {
   const wallMeshes = {};
-  const wallMat = new THREE.MeshLambertMaterial({ color: 0xd9dce2, side: THREE.DoubleSide });
-  const frameMat = new THREE.MeshLambertMaterial({ color: 0x333842 });
+  // Iter 79j.28 — per-material colors. Priority chain:
+  //   house.colors.<field>  (user/estimate override — highest)
+  //   → house.colors.<field>_ai (AI-sampled from photos)
+  //   → hardcoded default (lowest)
+  const c = house.colors || {};
+  const wallColor = parseHex(c.siding) ?? parseHex(c.siding_ai) ?? 0xd9dce2;
+  const trimColor = parseHex(c.trim) ?? parseHex(c.trim_ai) ?? 0x333842;
+  const roofColor = parseHex(c.roof) ?? parseHex(c.roof_ai) ?? 0x4a5058;
+  const doorColor = parseHex(c.door) ?? parseHex(c.door_ai) ?? 0x2a3f5f;
+
+  const wallMat = new THREE.MeshLambertMaterial({ color: wallColor, side: THREE.DoubleSide });
+  const frameMat = new THREE.MeshLambertMaterial({ color: trimColor });
   const paneMat = new THREE.MeshLambertMaterial({ color: 0x88a9c7, transparent: true, opacity: 0.75 });
-  const roofMat = new THREE.MeshLambertMaterial({ color: 0x4a5058, side: THREE.DoubleSide });
+  const sliderMat = new THREE.MeshLambertMaterial({ color: 0x9fb8d1, transparent: true, opacity: 0.7 });
+  const roofMat = new THREE.MeshLambertMaterial({ color: roofColor, side: THREE.DoubleSide });
+  const doorMat = new THREE.MeshLambertMaterial({ color: doorColor });
+  const garageMat = new THREE.MeshLambertMaterial({ color: 0xe8e5df });
+  const openingMats = { frameMat, paneMat, doorMat, garageMat, sliderMat };
   const { footprint, roof } = house;
   const halfW = footprint.width / 2;
   const halfD = footprint.depth / 2;
@@ -514,16 +683,13 @@ function buildScene(scene, house) {
     mesh.userData.facadeId = f.id;
     wallMeshes[f.id] = mesh;
     scene.add(mesh);
-    // Openings on this facade (in local wall coords x from left, y from bottom).
+    // Openings on this facade — dispatched through the type-aware
+    // factory so a window doesn't look like a garage door.
     f.openings.forEach((o) => {
       const cx = -f.width / 2 + o.x + o.w / 2;
-      const cy = o.y + o.h / 2;
-      const frame = new THREE.Mesh(new THREE.BoxGeometry(o.w + 0.4, o.h + 0.4, 0.15), frameMat);
-      frame.position.set(cx, cy, 0.09);
-      mesh.add(frame);
-      const pane = new THREE.Mesh(new THREE.BoxGeometry(o.w, o.h, 0.2), paneMat);
-      pane.position.set(cx, cy, 0.11);
-      mesh.add(pane);
+      const g = buildOpeningMesh(o, openingMats);
+      g.position.set(cx, o.y, 0.09);
+      mesh.add(g);
     });
   });
 
@@ -542,7 +708,7 @@ function buildScene(scene, house) {
   } else {
     buildGableRoofPlanes(scene, house, roofMat, roofRise, avgGableEave);
     if (roof.type === "gable-shed-dormer" && roof.dormer) {
-      buildShedDormer(scene, house, roofMat, wallMat, frameMat, paneMat, roofRise, avgGableEave);
+      buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, avgGableEave);
     }
   }
 
@@ -590,12 +756,12 @@ function buildScene(scene, house) {
   return wallMeshes;
 }
 
-export default function HouseModel3D({ preview }) {
+export default function HouseModel3D({ preview, estimate }) {
   const mountRef = useRef(null);
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
   const [overrides, setOverrides] = useState({ pitch: null, eaveHeights: {}, widths: {} });
-  const house = useMemo(() => buildHouseJson(preview, overrides), [preview, overrides]);
+  const house = useMemo(() => buildHouseJson(preview, overrides, estimate), [preview, overrides, estimate]);
 
   // Mount scene once
   useEffect(() => {

@@ -166,6 +166,18 @@ Schema:
   "roof_type": "gable" | "hip" | "gable-shed-dormer",
   "roof_type_confidence": number,         // 0.0-1.0
   "roof_type_reasoning": "<1 sentence — what visual cue drove your call>",
+  // Iter 79j.28 — Dominant flat colors per material family, sampled
+  // from the photos. Return a 6-digit hex (#RRGGBB) for each. Sample
+  // the AVERAGE color of a large clean patch — ignore shadows, glare,
+  // and small trim/accent details. These populate the 3D viewer walls,
+  // trim, roof, and doors. Leave any field null if no clean sample is
+  // possible.
+  "dominant_colors": {
+     "siding_hex": "#RRGGBB" | null,   // main field siding color
+     "trim_hex": "#RRGGBB" | null,     // window/door trim, corners, fascia
+     "roof_hex": "#RRGGBB" | null,     // shingles or metal
+     "door_hex": "#RRGGBB" | null      // primary entry door — often distinct from siding
+  },
   // Fill only when roof_type === "gable-shed-dormer". `face` = which
   // slope carries the dormer, `width_ft` = its X-extent across the roof,
   // `knee_wall_height_ft` = how tall the vertical face wall stands above
@@ -1476,6 +1488,23 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     measurements["_ai_roof_type_reasoning"] = raw.get("roof_type_reasoning") or ""
     dormer_raw = raw.get("dormer") if isinstance(raw.get("dormer"), dict) else None
     measurements["_ai_dormer"] = dormer_raw
+
+    # Iter 79j.28 — dominant colors sampled from the photos. Each hex is
+    # validated (must match #RRGGBB) before surfacing so we don't feed
+    # garbage into the 3D viewer's color parser.
+    def _valid_hex(v):
+        if not isinstance(v, str):
+            return None
+        s = v.strip()
+        if len(s) == 7 and s[0] == "#" and all(c in "0123456789abcdefABCDEF" for c in s[1:]):
+            return s
+        return None
+
+    colors_raw = raw.get("dominant_colors") if isinstance(raw.get("dominant_colors"), dict) else {}
+    measurements["_ai_siding_color_hex"] = _valid_hex(colors_raw.get("siding_hex"))
+    measurements["_ai_trim_color_hex"] = _valid_hex(colors_raw.get("trim_hex"))
+    measurements["_ai_roof_color_hex"] = _valid_hex(colors_raw.get("roof_hex"))
+    measurements["_ai_door_color_hex"] = _valid_hex(colors_raw.get("door_hex"))
 
     # Apply material math per roof type (extracted to
     # apply_roof_type_material_math above so it's directly unit-testable).

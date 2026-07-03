@@ -65,7 +65,7 @@ const fmt = (n) => Number(n || 0).toLocaleString();
 const unitOf = (k) =>
   k.endsWith("_sqft") ? "ft²" : k.endsWith("_lf") ? "LF" : "";
 
-export default function AIMeasureButton({ kind, onApply, address, overhangIn, estimateId }) {
+export default function AIMeasureButton({ kind, onApply, address, overhangIn, estimateId, estimate }) {
   const fileRef = useRef();
   // `files` is the locally-selected file objects (used for previews until
   // upload completes); `photoUrls` is the canonical server-side list that
@@ -1958,7 +1958,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
                   {previewTab === "3d" && (
                     <div className="mb-4" data-testid="ai-measure-3d-panel">
-                      <HouseModel3D preview={preview} />
+                      <HouseModel3D preview={preview} estimate={estimate} />
                     </div>
                   )}
 

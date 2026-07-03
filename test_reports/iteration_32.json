@@ -1,0 +1,44 @@
+{
+  "summary": "Iter 79j.28 — frontend-only verification of the 3D House Viewer in AI Measure modal on EST-675749 (fixture from an older Claude run). All plumbing verified functional: login → estimate → AI Measure → Resume Preview → 3D Model tab. The 3D canvas mounts, roof-type dropdown switches gable/hip/gable-shed-dormer with 'edited' purple badge appearing on each change; Dormer W (ft) input surfaces (default 16) when roof-type is gable-shed-dormer; facade tabs cycle; per-wall width/eave/pitch inputs work; Whole-house materials section is visible with items + qty + units and NO dollar amounts; Preview tab shows Per-Elevation Breakdown; modal reopens on Preview tab (border-[#7C3AED] active on Preview, transparent on 3D). ZERO console.error() 'sanity FAILED' logs across gable/hip/gable-shed-dormer switches. ZERO THREE/HouseModel3D/React error logs. Hydration <option><span> warning from iter 31 is GONE. Autumn Red IS available in the Siding Color dropdown, so color-override plumbing is testable end-to-end (not exercised here — see action items). Buildings render in default grey siding (#d9dce2) since fixture has no siding_color and no _ai_siding_color_hex.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Front-facade openings render",
+        "issue": "AI takeoff panel reports 5 openings on Front, but only 2 rectangular window meshes render visibly at eye-level (~3.2ft) with no distinct door/garage/slider geometry visible. Root cause is EXPECTED per review notes — fixture pre-dates the type + on_dormer + bbox classification prompt, so all openings default to 'window' in buildOpeningMesh and get fallback Y=3.2ft, and any that share overlapping X positions from autoSpace stack on top of each other. Not a bug in the new code — the type-aware factory, bbox X+Y positioning, and Y=0 door fallback are all in place at HouseModel3D.jsx lines 490-565 (buildOpeningMesh) and lines 177-198 (autoSpace bbox handling). Just cannot be visually verified on this fixture.",
+        "affected_selectors": ["ai-measure-3d-view"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "AI Measure 3D tab",
+        "issues": [
+          "Canvas area is only 415×638px at 1920×1080; when camera default zoom shows the roof/gable prominently, the actual openings on side walls can be off-frame until the user orbits. Consider a slightly higher camera or slightly wider initial FOV so the first paint shows walls + openings + roof. Not blocking."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL end-to-end color test: pick 'Autumn Red' (present in Siding Color dropdown, index 15) via JobInfoPanel, close/reopen modal, resume preview, jump to 3D tab, and confirm walls render dark red (~#7C2E24). Not blocking — color pipeline code in HouseModel3D.jsx lines 630-641 reads house.colors.siding via ALSIDE_COLOR_HEX map first, then AI-sampled hex, then default grey. Plumbing is in place.",
+    "For a definitive visual check of item (2) — distinct opening meshes per type — a fresh Claude Fable 5 run with the new schema (dominant_colors + on_dormer + explicit type on each opening) is required. Explicitly out of scope for this iter (would cost $0.45)."
+  ],
+  "critical_code_review_comments": [
+    "HouseModel3D.jsx buildOpeningMesh (lines 542-615): type detection uses .includes('garage'), .includes('patio')/'slider'/'sliding', .includes('entry') || t==='door', else window. This means Claude MUST send lowercase-ish type strings — an uppercase 'PATIO_DOOR' still works via toLowerCase() at line 545 but a 'sliding door' string reaches the slider branch and never the entry branch — good. Edge case: type='door' alone hits entry branch, but 'garage_door' hits garage first — order matters and current order (garage → patio → entry → window) is correct.",
+    "HouseModel3D.jsx buildScene wipe loop (line 834-836): still uses `if (child.isMesh) s.scene.remove(child)` on every child. This wipes wall meshes AND ground shadow disc AND all opening groups (opening groups are added as children of walls, not scene, so they get GC'd with the wall). But it does NOT dispose geometry/material — under repeated pitch/roof-type edits GPU memory grows. Non-blocking for preview UX; consider explicit .geometry.dispose() and .material.dispose() in the wipe loop.",
+    "HouseModel3D.jsx line 645: paneMat is created fresh per buildScene call but stored as module-scope-ish via openingMats — since buildScene rebuilds on every house change, we allocate a new pane material on every dropdown change. Combined with above, this compounds GPU-object leakage. Minor.",
+    "HouseModel3D.jsx line 1045: the 'estimates require Re-run' amber footer chip logic string is very long and includes house.roof.dormer?.widthSource — good defensive optional chaining. OK.",
+    "buildOpeningMesh at line 601-603 adds a static-position knob at (w/2 - 0.5, cy - 0.2). For very small doors (w<1ft, hypothetical) the knob would exit the slab. Add a Math.max clamp if narrow doors are ever expected."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only requested)", "frontend": "~95%"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (worked)",
+  "seed_data_creation": "None (used existing fixture EST-675749).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Route to estimate is /estimate/:id (singular, not /estimates/). AI Measure trigger data-testid is 'ai-measure-btn'; the Resume dialog button is 'ai-measure-resume-btn'. 3D tab is 'ai-measure-3d-tab', Preview tab is 'ai-measure-preview-tab', facade tabs are 'ai-measure-3d-tab-{front|right|back|left}'. Modal opens on Preview tab; user must click Resume to hydrate the saved run before Preview + 3D tabs render (this hasn't changed). Roof-type select is 'ai-measure-3d-roof-type', dormer width input is 'ai-measure-3d-dormer-width' (only appears when roofType==='gable-shed-dormer'). Materials heading is 'ai-measure-3d-materials-heading' and IS visible/scrollable at 1920×1080 (iter 31's clip concern is resolved by an internal overflow-y-auto). Fixture on EST-675749 has NO type/bbox/dominant_colors so opening-type distinction and per-material colors cannot be visually verified — the code paths exist but need a fresh AI run with the new prompt schema.",
+  "rca_of_the_issue": {
+    "front_openings_5_reported_2_visible": "The AI takeoff shows Openings=5 for Front, but only 2 window meshes render visibly. Root cause: fixture pre-dates the classification prompt update — openings arrive from Claude WITHOUT `type` or `bbox` fields. In HouseModel3D.jsx autoSpace (line 171), missing bbox falls back to even X-spacing (slot = wallWidth/n) at Y=3.2ft. Missing type in buildOpeningMesh defaults to the window branch. So all 5 openings render at Y=3.2ft as identical windows spaced evenly across the 27ft front. Two of them may be partially clipped by the gable triangle top edge or by neighboring geometry. Not a code bug; not fixable without re-running Claude with the new schema. Confirmed by review request note: 'the fixture on EST-675749 was captured BEFORE the classification prompt changed'."
+  }
+}

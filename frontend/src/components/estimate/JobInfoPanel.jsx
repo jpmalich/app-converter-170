@@ -137,6 +137,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             address={est?.address}
             overhangIn={est?.overhang_in ?? 12}
             estimateId={est?.id}
+            estimate={est}
             onApply={async ({ lines: aiLines, measurements }) => {
               // Iter 79j.19 — Apply the current estimate `waste_pct`
               // to cut-prone AI lines the same way HOVER Import does.
