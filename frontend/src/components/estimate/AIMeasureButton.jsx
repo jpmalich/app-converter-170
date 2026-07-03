@@ -939,18 +939,24 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     return ["front", "back", "left", "right"].filter((w) => !c.has(w));
   };
 
-  const runMeasure = async () => {
+  const runMeasure = async (opts = {}) => {
     if (!photoUrls.length) {
       toast.error("Add at least one photo");
       return;
     }
-    // Iter 79i — pre-flight guardrail. Skip if we already showed the
-    // modal + contractor clicked "Run anyway" (missingWallsModal set to
-    // "bypassed" tag).
-    const missing = missingPrimaryWalls();
-    if (missing.length > 0 && missingWallsModal !== "bypassed") {
-      setMissingWallsModal({ missing });
-      return;
+    // Iter 79i — pre-flight guardrail. Skip if the caller passes
+    // `bypassMissingWallsGuard: true` (from the "Run anyway" button in
+    // the missing-walls modal). Iter 79j.20: switched from a state
+    // sentinel to an explicit param because setTimeout captured the
+    // stale `missingWallsModal` value from the render at click time,
+    // so the guard re-fired on the "bypassed" run and the modal
+    // reappeared with nothing happening.
+    if (!opts.bypassMissingWallsGuard) {
+      const missing = missingPrimaryWalls();
+      if (missing.length > 0) {
+        setMissingWallsModal({ missing });
+        return;
+      }
     }
     setMissingWallsModal(null);
     setBusy(true);
@@ -3244,10 +3250,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               <button
                 type="button"
                 onClick={() => {
-                  setMissingWallsModal("bypassed");
-                  // Re-invoke runMeasure now that the guard is bypassed.
-                  // Async fire-and-forget — the modal closes immediately.
-                  setTimeout(() => { runMeasure(); }, 50);
+                  setMissingWallsModal(null);
+                  // Iter 79j.20 — explicit bypass param instead of the
+                  // "bypassed" state sentinel. Avoids the stale-closure
+                  // bug where setTimeout captured the old runMeasure
+                  // and re-fired the guard.
+                  runMeasure({ bypassMissingWallsGuard: true });
                 }}
                 className="px-3 py-2 bg-white border border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider"
                 data-testid="ai-measure-missing-walls-run-anyway"
