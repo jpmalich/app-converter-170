@@ -228,7 +228,15 @@ Schema:
      // arrows on the photo AND place each opening at its TRUE
      // x-position on the 2D wall diagram instead of guessing.
      "photo_idx": number,                // 0-based index of the photo this opening is visible in (matching the order you were given). If you can't pinpoint, omit.
-     "bbox": {"x": number, "y": number, "w": number, "h": number}  // normalized 0.0–1.0 bounding box of the opening on photo_idx. Origin top-left. Omit if you're not confident enough to draw the box.
+     "bbox": {"x": number, "y": number, "w": number, "h": number},  // normalized 0.0–1.0 bounding box of the opening on photo_idx. Origin top-left. Omit if you're not confident enough to draw the box.
+     // Iter 79j.27 — dormer classification. Set to true ONLY when the
+     // opening sits ABOVE the main eave line (on a shed-dormer face,
+     // gable-triangle, or upper cross-gable). These openings belong to
+     // the dormer face wall — their siding-cutout area is deducted from
+     // dormer_face_sqft, not from the main wall, and they anchor the
+     // dormer width. When roof_type is not "gable-shed-dormer", leave
+     // this field false or omit it.
+     "on_dormer": boolean
     }
   ],
   "openings_schedule": [
@@ -682,6 +690,67 @@ def _vero_for_style(style: str, width_in: float, height_in: float) -> tuple[str,
         return _STYLE_TO_VERO_PRODUCT_TYPE[style]
     from .hover import _guess_vero_product_type  # local import avoids cycle
     return (_guess_vero_product_type(width_in, height_in), 1)
+
+
+def apply_roof_type_material_math(raw: dict, walls: list, gable_sqft: float, dormer_sqft: float) -> tuple:
+    """Iter 79j.26 + 79j.27 — normalize walls[] based on Claude's roof-type
+    classification.
+
+    Behaviour matches the frontend HouseModel3D confidence threshold (0.8):
+      * roof_type "hip" ≥0.8   → zero every wall's gable_triangle_height_ft,
+                                 zero the gable_sqft summary
+      * roof_type "gable-shed-dormer" ≥0.8 + dormer payload
+                               → inflate the target facade's dormer_face_sqft
+                                 by (face + cheeks − on_dormer opening area)
+      * below 0.8 or missing   → no-op (return inputs unchanged)
+
+    Walls are mutated in place. Returns the (possibly adjusted)
+    (gable_sqft, dormer_sqft) totals.
+    """
+    roof_type_raw = raw.get("roof_type")
+    roof_type = roof_type_raw if roof_type_raw in ("gable", "hip", "gable-shed-dormer") else None
+    conf_raw = raw.get("roof_type_confidence")
+    try:
+        conf = float(conf_raw) if conf_raw is not None else 0.0
+    except (TypeError, ValueError):
+        conf = 0.0
+    if not roof_type or conf < 0.8:
+        return gable_sqft, dormer_sqft
+
+    if roof_type == "hip":
+        for w in walls:
+            w["gable_triangle_height_ft"] = 0
+        return 0.0, dormer_sqft
+
+    if roof_type == "gable-shed-dormer":
+        dormer_raw = raw.get("dormer") if isinstance(raw.get("dormer"), dict) else None
+        if not dormer_raw:
+            return gable_sqft, dormer_sqft
+        face = str(dormer_raw.get("face") or "front").lower()
+        d_w = float(dormer_raw.get("width_ft") or 0)
+        d_h = float(dormer_raw.get("knee_wall_height_ft") or 0)
+        if d_w <= 0 or d_h <= 0:
+            return gable_sqft, dormer_sqft
+        face_sqft = d_w * d_h
+        # 2 cheek triangles, base = knee height, height = knee height —
+        # matches the frontend geometry which uses knee for both.
+        cheek_sqft = 2 * 0.5 * d_h * d_h
+        openings_area = 0.0
+        for o in (raw.get("openings") or []):
+            if not o.get("on_dormer"):
+                continue
+            w_in = float(o.get("width_in") or 0)
+            h_in = float(o.get("height_in") or 0)
+            if w_in > 0 and h_in > 0:
+                openings_area += (w_in / 12.0) * (h_in / 12.0)
+        extra = max(0.0, face_sqft + cheek_sqft - openings_area)
+        for w in walls:
+            if (w.get("label") or "").lower() == face:
+                w["dormer_face_sqft"] = float(w.get("dormer_face_sqft") or 0) + extra
+                break
+        return gable_sqft, float(dormer_sqft) + extra
+
+    return gable_sqft, dormer_sqft
 
 
 def _build_vero_openings_from_ai(openings: list, schedule: list | None = None) -> list[dict]:
@@ -1408,39 +1477,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     dormer_raw = raw.get("dormer") if isinstance(raw.get("dormer"), dict) else None
     measurements["_ai_dormer"] = dormer_raw
 
-    # Apply material math per roof type. Threshold matches the frontend
-    # (0.8) so the estimator and 3D viewer agree on what Claude got right.
-    apply_type = roof_type if (roof_type and (roof_type_conf or 0) >= 0.8) else None
-    if apply_type == "hip":
-        # Hip = flat eave all around → no gable triangles anywhere.
-        # Zero out gable_triangle_height_ft on every wall BEFORE the
-        # breakdown runs, so the siding takeoff excludes the phantom
-        # triangle area a gable-biased Claude may have added.
-        for w in walls:
-            w["gable_triangle_height_ft"] = 0
-        # Recompute the visible-gable-sqft roll-up so the summary tile
-        # is consistent with the walls we just cleaned.
-        gable_sqft = 0.0
-    elif apply_type == "gable-shed-dormer" and dormer_raw:
-        # Add the dormer's face + cheek walls to the target facade's
-        # dormer_face_sqft. The estimator already treats dormer_face_sqft
-        # as extra siding area — we just enlarge it.
-        face = str(dormer_raw.get("face") or "front").lower()
-        d_w = float(dormer_raw.get("width_ft") or 0)
-        d_h = float(dormer_raw.get("knee_wall_height_ft") or 0)
-        if d_w > 0 and d_h > 0:
-            face_sqft = d_w * d_h
-            # Cheek walls = 2 triangles. Depth of each ≈ (halfD * 0.5)
-            # matches the frontend placement (zFrac=0.5).
-            # We approximate the cheek base as knee_wall_height_ft
-            # (self-consistent with the frontend geometry).
-            cheek_sqft = 2 * 0.5 * d_h * d_h
-            extra = face_sqft + cheek_sqft
-            for w in walls:
-                if (w.get("label") or "").lower() == face:
-                    w["dormer_face_sqft"] = float(w.get("dormer_face_sqft") or 0) + extra
-                    break
-            dormer_sqft = float(dormer_sqft) + extra
+    # Apply material math per roof type (extracted to
+    # apply_roof_type_material_math above so it's directly unit-testable).
+    gable_sqft, dormer_sqft = apply_roof_type_material_math(raw, walls, gable_sqft, dormer_sqft)
     measurements["_ai_gable_sqft"] = round(gable_sqft, 1)
     measurements["_ai_dormer_sqft"] = round(dormer_sqft, 1)
 

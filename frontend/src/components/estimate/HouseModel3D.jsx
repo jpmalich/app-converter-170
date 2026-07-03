@@ -116,24 +116,41 @@ function buildHouseJson(preview, overrides) {
   };
   const avgEave = (eaves.front.h + eaves.back.h + eaves.left.h + eaves.right.h) / 4;
 
-  const openingsByWall = openings.reduce((acc, o) => {
+  // Iter 79j.27 — Split openings into main-wall vs on-dormer BEFORE
+  // grouping. Dormer openings drive dormer.width + drive the face-wall
+  // window meshes; main-wall openings drive the regular wall renders.
+  // A dormer classification only "sticks" when the roof type ends up
+  // gable-shed-dormer (see below). Otherwise all openings flow to the
+  // main walls unchanged.
+  const mainOpenings = openings.filter((o) => !o.on_dormer);
+  const dormerOpeningsRaw = openings.filter((o) => o.on_dormer);
+  const openingsByWall = mainOpenings.reduce((acc, o) => {
     const k = (o.wall || "other").toLowerCase();
     (acc[k] = acc[k] || []).push(o);
     return acc;
   }, {});
+  // True per-wall X-positioning using photo bbox (Iter 79j.27). If a
+  // bbox is present, use its X center as a fraction of the wall width;
+  // otherwise fall back to even auto-spacing so nothing regresses.
   const autoSpace = (list, wallWidth) => {
     if (!list?.length) return [];
     const n = list.length;
     return list.map((o, i) => {
       const w = (o.width_in || 36) / 12;
       const h = (o.height_in || 48) / 12;
-      const slot = wallWidth / n;
-      const cx = slot * (i + 0.5);
       const y = (o.type || "").toLowerCase().includes("door") ? 0 : 3.2;
+      // bbox.x is the LEFT edge normalized to [0,1] of the photo width.
+      // We treat the photo as a straight-on shot of the wall — good
+      // enough for a schematic 3D placement, not survey-accurate.
+      const bboxCenter = o.bbox && Number.isFinite(o.bbox.x) && Number.isFinite(o.bbox.w)
+        ? Math.min(1, Math.max(0, o.bbox.x + o.bbox.w / 2))
+        : null;
+      const slot = wallWidth / n;
+      const cx = bboxCenter != null ? bboxCenter * wallWidth : slot * (i + 0.5);
       return {
         type: (o.type || "window").toLowerCase().includes("door") ? "door" : "window",
         style: o.style,
-        x: Math.max(0.5, cx - w / 2),
+        x: Math.max(0.5, Math.min(wallWidth - w - 0.5, cx - w / 2)),
         y,
         w,
         h,
@@ -160,14 +177,71 @@ function buildHouseJson(preview, overrides) {
     : "default";
 
   // Dormer geometry (only used when roofType === 'gable-shed-dormer').
-  // The AI may return { face, width_ft, knee_wall_height_ft, offset_x_ft };
-  // fall back to a sane default centered on the front slope.
+  // Iter 79j.27 — width + offsetX are DERIVED from the horizontal spread
+  // of any openings Claude classified as on_dormer=true, plus a 1.5-ft
+  // margin on each side. This replaces the fixed 50%-of-facade default.
+  // When we derive from openings the source is 'ai-inferred' → amber
+  // "estimated" badge. Otherwise sources cascade normally.
   const aiDormer = preview.measurements?._ai_dormer || null;
   const dormerOverride = overrides.dormer || {};
   const dormerFace = dormerOverride.face ?? aiDormer?.face ?? "front";
-  const dormerWidth = Number(dormerOverride.width ?? aiDormer?.width_ft ?? Math.min(footprintW * 0.6, 16));
+  // Face wall width for the dormer facade (used to convert dormer-opening
+  // bbox X → world X on the face).
+  const dormerFaceWallWidth = dormerFace === "front"
+    ? widthFront
+    : dormerFace === "rear" || dormerFace === "back"
+    ? widthBack
+    : widthFront;
+  // Position each dormer opening on its face using bbox.x when available.
+  const dormerOpeningsPositioned = dormerOpeningsRaw.map((o) => {
+    const w = (o.width_in || 30) / 12;
+    const h = (o.height_in || 42) / 12;
+    const bboxCenter = o.bbox && Number.isFinite(o.bbox.x) && Number.isFinite(o.bbox.w)
+      ? Math.min(1, Math.max(0, o.bbox.x + o.bbox.w / 2))
+      : 0.5;
+    const cxOnWall = bboxCenter * dormerFaceWallWidth;
+    return {
+      w, h,
+      cxOnWall,           // center X in wall-local coords, 0 = left edge of wall
+      style: o.style,
+      confidence: o.style_confidence ?? o.confidence ?? null,
+    };
+  });
+  let derivedDormerWidth = null;
+  let derivedDormerOffsetX = null;
+  if (dormerOpeningsPositioned.length > 0) {
+    const halves = dormerOpeningsPositioned.map((o) => ({
+      left: o.cxOnWall - o.w / 2,
+      right: o.cxOnWall + o.w / 2,
+    }));
+    const leftmost = Math.min(...halves.map((s) => s.left));
+    const rightmost = Math.max(...halves.map((s) => s.right));
+    // 1.5' margin per side
+    const inferredLeft = Math.max(0, leftmost - 1.5);
+    const inferredRight = Math.min(dormerFaceWallWidth, rightmost + 1.5);
+    derivedDormerWidth = Math.max(6, inferredRight - inferredLeft);
+    // Wall center is at dormerFaceWallWidth/2 in wall coords.
+    // In world coords the wall runs from -dormerFaceWallWidth/2 to +dormerFaceWallWidth/2.
+    // dormer's inferred center X in wall coords = (inferredLeft + inferredRight)/2
+    // Convert to world X (offset from wall center):
+    derivedDormerOffsetX = ((inferredLeft + inferredRight) / 2) - dormerFaceWallWidth / 2;
+  }
+  const dormerWidth = Number(
+    dormerOverride.width
+    ?? (derivedDormerWidth != null ? derivedDormerWidth : (aiDormer?.width_ft ?? Math.min(footprintW * 0.6, 16))),
+  );
   const dormerKnee = Number(dormerOverride.kneeWallHeight ?? aiDormer?.knee_wall_height_ft ?? 4);
-  const dormerOffsetX = Number(dormerOverride.offsetX ?? aiDormer?.offset_x_ft ?? 0);
+  const dormerOffsetX = Number(
+    dormerOverride.offsetX
+    ?? (derivedDormerOffsetX != null ? derivedDormerOffsetX : (aiDormer?.offset_x_ft ?? 0)),
+  );
+  const dormerWidthSource = dormerOverride.width != null
+    ? "user"
+    : derivedDormerWidth != null
+    ? "ai-inferred"        // amber — derived from openings, not a direct AI measurement
+    : aiDormer?.width_ft
+    ? "ai"
+    : "default";
 
   const mkFacade = (id, label, widthOverride, wallData, eave) => ({
     id,
@@ -197,7 +271,15 @@ function buildHouseJson(preview, overrides) {
       pitchAiSamples: aiPitch?.sampleCount ?? 0,
       pitchEstimated: pitchSource === "default",
       dormer: roofType === "gable-shed-dormer"
-        ? { face: dormerFace, width: dormerWidth, kneeWallHeight: dormerKnee, offsetX: dormerOffsetX }
+        ? {
+            face: dormerFace,
+            width: dormerWidth,
+            widthSource: dormerWidthSource,
+            kneeWallHeight: dormerKnee,
+            offsetX: dormerOffsetX,
+            openings: dormerOpeningsPositioned,
+            faceWallWidth: dormerFaceWallWidth,
+          }
         : null,
     },
     facades: [
@@ -326,14 +408,29 @@ function buildShedDormer(scene, house, roofMat, wallMat, frameMat, paneMat, roof
   if (d.face === "rear") faceMesh.rotation.y = Math.PI;
   scene.add(faceMesh);
 
-  // Add a stock 3'×5' window at the center of the dormer face
-  const win = { w: 3, h: 5, cx, cy: (faceBottomY + faceTopY) / 2 };
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(win.w + 0.4, win.h + 0.4, 0.15), frameMat);
-  frame.position.set(cx, win.cy, zFace + faceSign * 0.14);
-  scene.add(frame);
-  const pane = new THREE.Mesh(new THREE.BoxGeometry(win.w, win.h, 0.2), paneMat);
-  pane.position.set(cx, win.cy, zFace + faceSign * 0.16);
-  scene.add(pane);
+  // Iter 79j.27 — Render each dormer opening that Claude tagged
+  // on_dormer=true, at its true X position on the face. No more stock
+  // 3'×5' placeholder window. If no dormer openings were classified,
+  // the face is left blank (a valid state for a shed dormer with just
+  // siding, no windows).
+  const dormerOpenings = d.openings || [];
+  // The wall-local cxOnWall was computed with 0=left edge of the wall;
+  // convert to world-X: worldX = cxOnWall - dormerFaceWallWidth/2
+  const worldXForOpening = (o) => (o.cxOnWall - (d.faceWallWidth || footprint.width) / 2);
+  dormerOpenings.forEach((o) => {
+    const wx = worldXForOpening(o);
+    // Center Y inside the face wall (vertically centered by default)
+    const wy = (faceBottomY + faceTopY) / 2;
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(o.w + 0.4, o.h + 0.4, 0.15), frameMat);
+    frame.position.set(wx, wy, zFace + faceSign * 0.14);
+    scene.add(frame);
+    const pane = new THREE.Mesh(new THREE.BoxGeometry(o.w, o.h, 0.2), paneMat);
+    pane.position.set(wx, wy, zFace + faceSign * 0.16);
+    scene.add(pane);
+  });
+  // paneMat is passed in to keep the API symmetric with the main wall
+  // renderer; suppress the unused warning when there are zero openings.
+  void paneMat;
 
   // 2) Cheek walls — two triangles filling the wedge on each side.
   // Each cheek is a triangle in the XZ (well, YZ at fixed X) plane
@@ -744,7 +841,42 @@ export default function HouseModel3D({ preview }) {
               </span>
             )}
           </div>
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf") && (
+          {/* Iter 79j.27 — Dormer width row (only when roof is gable-shed-dormer).
+              width + offsetX are inferred from the horizontal spread of any
+              on_dormer openings + 1.5' margin per side. Amber-flagged as
+              inferred until user overrides. */}
+          {house.roof.type === "gable-shed-dormer" && house.roof.dormer && (
+            <div className="flex items-center gap-2 text-[11px]" data-testid="ai-measure-3d-dormer-row">
+              <span className="text-[#71717A] w-24">Dormer W (ft)</span>
+              <input
+                type="number" step="0.5" min="4"
+                value={Math.round(house.roof.dormer.width * 10) / 10}
+                onChange={(e) => setOverrides((o) => ({ ...o, dormer: { ...(o.dormer || {}), width: parseFloat(e.target.value) || house.roof.dormer.width } }))}
+                className="w-20 px-2 py-1 border border-[#E4E4E7] font-mono-num text-right"
+                data-testid="ai-measure-3d-dormer-width"
+              />
+              {house.roof.dormer.widthSource === "ai-inferred" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  title={`Inferred from ${house.roof.dormer.openings?.length ?? 0} on-dormer window(s) + 1.5' margin — verify before ordering`}
+                  data-testid="ai-measure-3d-dormer-width-inferred"
+                >
+                  <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> estimated
+                </span>
+              )}
+              {house.roof.dormer.widthSource === "user" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                  title="You overrode the dormer width — hit Re-run to feed this back to the estimator"
+                  data-testid="ai-measure-3d-dormer-width-user"
+                >
+                  edited
+                </span>
+              )}
+              {house.roof.dormer.widthSource === "default" && <Amber />}
+            </div>
+          )}
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "default") && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>
