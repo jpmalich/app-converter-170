@@ -1757,6 +1757,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       "gpt-5.4":             "GPT-5.4",
                     };
                     const fmtCost = (c) => (c == null ? "—" : `$${c.toFixed(3)}`);
+                    const totalCost = modelHistory.reduce((sum, r) => sum + (r.cost_estimate_usd || 0), 0);
                     const fmtElapsed = (ms) => {
                       if (!ms) return "—";
                       if (ms < 60000) return `${(ms / 1000).toFixed(0)}s`;
@@ -1764,9 +1765,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     };
                     return (
                       <div className="mb-3 border border-[#7C3AED] bg-[#FAF5FF]" data-testid="ai-measure-model-comparison">
-                        <div className="px-3 py-1.5 border-b border-[#7C3AED] bg-[#7C3AED] text-white text-[10px] uppercase tracking-wider font-bold flex items-center justify-between">
+                        <div className="px-3 py-1.5 border-b border-[#7C3AED] bg-[#7C3AED] text-white text-[10px] uppercase tracking-wider font-bold flex items-center justify-between gap-2 flex-wrap">
                           <span>Model Comparison · last {modelHistory.length} runs on this estimate</span>
-                          <span className="text-[9px] font-normal opacity-80">Higher = winner</span>
+                          <span className="text-[10px] font-normal flex items-center gap-2">
+                            <span className="bg-white/20 px-2 py-0.5 rounded-sm" title="Approximate USD spent A/B testing on this house across all listed runs">
+                              A/B spend: <span className="font-bold font-mono-num tabular-nums">${totalCost.toFixed(3)}</span>
+                            </span>
+                            <span className="opacity-80">Higher = winner</span>
+                          </span>
                         </div>
                         <div className="overflow-x-auto">
                           <table className="w-full text-[11px]">
