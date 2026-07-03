@@ -830,9 +830,25 @@ export default function HouseModel3D({ preview, estimate }) {
   useEffect(() => {
     const s = sceneRef.current;
     if (!s.scene || !house) return;
-    // Wipe non-light objects
+    // Iter 79j.28 — wipe non-light objects AND release GPU resources.
+    // Prior versions just called `scene.remove(child)` — GPU-side
+    // buffers survived, so cycling through the roof-type dropdown
+    // leaked ~2 MB per click. Walk each removed object's descendants,
+    // dispose their geometry + material(s), then remove.
+    const disposeDeep = (obj) => {
+      obj.traverse?.((n) => {
+        if (n.geometry) n.geometry.dispose();
+        if (n.material) {
+          if (Array.isArray(n.material)) n.material.forEach((m) => m.dispose());
+          else n.material.dispose();
+        }
+      });
+    };
     [...s.scene.children].forEach((child) => {
-      if (child.isMesh) s.scene.remove(child);
+      if (child.isMesh || child.isGroup) {
+        disposeDeep(child);
+        s.scene.remove(child);
+      }
     });
     s.wallMeshes = buildScene(s.scene, house);
   }, [house]);
