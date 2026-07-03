@@ -1710,6 +1710,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           if (m.includes("opus-4-5")) return "Opus 4.5";
                           if (m.includes("opus-4-8")) return "Opus 4.8";
                           if (m.includes("sonnet-4-6")) return "Sonnet 4.6";
+                          if (m.includes("fable-5")) return "Fable 5";
                           if (m.includes("gemini-3.5")) return "Gemini 3.5 Flash";
                           if (m.includes("gemini-3.1")) return "Gemini 3.1 Pro";
                           if (m.includes("gemini-3-flash")) return "Gemini 3 Flash";
@@ -1749,6 +1750,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       "claude-opus-4-5":     "Opus 4.5",
                       "claude-opus-4-8":     "Opus 4.8",
                       "claude-sonnet-4-6":   "Sonnet 4.6",
+                      "claude-fable-5":      "Fable 5",
                       "gemini-3.5-flash":    "Gemini 3.5 Flash",
                       "gemini-3.1-pro":      "Gemini 3.1 Pro",
                       "gpt-5.5":             "GPT-5.5",
@@ -2538,6 +2540,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   <option value="claude-opus-4-5">Claude Opus 4.5</option>
                   <option value="claude-opus-4-8">Claude Opus 4.8</option>
                   <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+                  <option value="claude-fable-5">Claude Fable 5</option>
                   <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
                   <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
                   <option value="gpt-5.5">GPT-5.5</option>
