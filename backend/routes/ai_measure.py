@@ -1592,6 +1592,14 @@ async def ai_measure(
     """
     # Resolve raw image bytes from either source.
     image_payloads: list[tuple[str, bytes]] = []  # [(content_type, raw_bytes)]
+    # Iter 79j.29 — track ALL photo names so we can persist them on the
+    # run doc. Fresh file-uploads used to be discarded (bytes in memory
+    # only) — which meant that if the session doc's photo_urls got
+    # clobbered, the run was unrecoverable ("Re-run" silently failed
+    # with an empty photo grid). Now every file receives a name here
+    # AND is written to /api/uploads/ so the frontend can always find
+    # it again on Resume / Restore-preview.
+    all_photo_names: list[str] = []
     if photo_paths:
         from config import UPLOAD_DIR  # local import to avoid top-level cycle
         for name in [p.strip() for p in photo_paths.split(",") if p.strip()]:
@@ -1605,7 +1613,10 @@ async def ai_measure(
             ext = name.rsplit(".", 1)[-1].lower()
             ctype = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
             image_payloads.append((ctype, data))
+            all_photo_names.append(name)
     if files:
+        import uuid as _uuid
+        from config import UPLOAD_DIR  # local import to avoid top-level cycle
         for f in files:
             ctype = (f.content_type or "").lower()
             if ctype not in ACCEPTED_MIMES:
@@ -1617,6 +1628,11 @@ async def ai_measure(
             if len(raw) == 0:
                 continue
             image_payloads.append((ctype, raw))
+            # Persist to /api/uploads/ so it's addressable + recoverable.
+            ext = "jpg" if ctype == "image/jpeg" else ctype.split("/")[-1]
+            name = f"ai_{_uuid.uuid4().hex}.{ext}"
+            (UPLOAD_DIR / name).write_bytes(raw)
+            all_photo_names.append(name)
 
     if not image_payloads:
         raise HTTPException(status_code=400, detail="At least one photo is required")
@@ -1660,9 +1676,11 @@ async def ai_measure(
         "status": "running",
         "stage": "starting",
         "photo_count": len(image_payloads),
-        # Iter 57r — keep the original `photo_paths` string so resume can
-        # restore the contractor's photo grid without re-uploading.
-        "photo_paths": photo_paths,
+        # Iter 57r + 79j.29 — persist ALL photo names, including fresh
+        # uploads that came in via `files=`. Prior to 79j.29 fresh files
+        # weren't named/persisted, so `photo_paths` could be None on the
+        # run doc → resume paths silently failed to rehydrate photoUrls.
+        "photo_paths": ",".join(all_photo_names) if all_photo_names else photo_paths,
         "deep_dormer_scan": deep_dormer_scan,
         "kind": kind,
         "address": address,

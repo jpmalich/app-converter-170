@@ -610,6 +610,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     if (!estimateId || !open || !sessionChecked) return;
     // Skip empty initial state to avoid creating an empty session doc.
     if (!photoUrls.length && !preview) return;
+    // Iter 79j.29 — Do NOT clobber a session that already has photos
+    // with an empty photo_urls array when a preview exists. This was
+    // the root cause of the "Re-Run does nothing" bug — an empty
+    // photo_urls + non-null preview mismatch poisoned the session so
+    // Resume rehydrated 0 photos and Re-Run silently bailed.
+    if (!photoUrls.length && preview) return;
     const t = setTimeout(() => {
       api
         .put(`/measure/sessions/${estimateId}`, {
@@ -634,22 +640,41 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     return () => clearTimeout(t);
   }, [estimateId, open, sessionChecked, photoUrls, refDim, wallHeight, sidingPct, overhangIn, preview, photoAnnotations]);
 
-  const resumeSession = () => {
+  const resumeSession = async () => {
     const data = window.__aiMeasurePendingSession;
     if (!data) {
       setResumePrompt(false);
       return;
     }
-    setPhotoUrls(data.photo_urls || []);
+    // Iter 79j.29 — if the session's photo_urls is empty but a preview
+    // exists, the session was clobbered by an earlier autosave bug.
+    // Fall back to the last completed run doc's photo_paths so the
+    // contractor's grid + Re-Run still work.
+    let urls = data.photo_urls || [];
+    if ((!urls || urls.length === 0) && data.preview) {
+      try {
+        const r = await api.get(`/measure/ai-measure/history/${estimateId}`, { params: { limit: 1 } });
+        const last = r.data?.runs?.[0];
+        const paths = (last?.photo_paths || "").split(",").map((s) => s.trim()).filter(Boolean);
+        if (paths.length) {
+          urls = paths;
+          toast.success(`Recovered ${paths.length} photos from the last run`);
+        }
+      } catch {
+        // Non-fatal — the loud banner below handles the "no photos" case.
+      }
+    }
+    setPhotoUrls(urls);
     setRefDim(data.reference_dim || "");
     setWallHeight(data.wall_height || "");
     setSidingPct(data.siding_pct || "");
     if (data.preview) setPreview(data.preview);
-    // Iter 56f: also restore per-photo annotations.
     if (data.photo_annotations) setPhotoAnnotations(data.photo_annotations);
     setResumePrompt(false);
     delete window.__aiMeasurePendingSession;
-    toast.success("Resumed your last AI Measure session");
+    if (urls.length > 0) {
+      toast.success("Resumed your last AI Measure session");
+    }
   };
 
   const startOver = async () => {
@@ -931,6 +956,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // can go back and capture the missing ones — or bypass with "Run
   // anyway" if they have a valid reason (e.g. inaccessible side yard).
   const [missingWallsModal, setMissingWallsModal] = useState(null);
+  // Iter 79j.29 — inline "no photos" banner shown when Re-Run is
+  // clicked with an empty photo grid. Auto-clears on next successful
+  // upload or run.
+  const [noPhotosBanner, setNoPhotosBanner] = useState(false);
   const primaryWallsCovered = () => {
     const covered = new Set();
     for (const name of photoUrls) {
@@ -950,9 +979,16 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
   const runMeasure = async (opts = {}) => {
     if (!photoUrls.length) {
-      toast.error("Add at least one photo");
+      // Iter 79j.29 — LOUD failure. Sonner toasts aren't visible when
+      // the main modal covers the screen, so we also flash an inline
+      // banner state that blocks further clicks until the contractor
+      // re-uploads. Prior behavior was a silent no-op that looked
+      // exactly like "the Re-Run button is broken".
+      toast.error("Add at least one photo before running");
+      setNoPhotosBanner(true);
       return;
     }
+    setNoPhotosBanner(false);
     // Iter 79i — pre-flight guardrail. Skip if the caller passes
     // `bypassMissingWallsGuard: true` (from the "Run anyway" button in
     // the missing-walls modal). Iter 79j.20: switched from a state
@@ -1955,6 +1991,30 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <span className="text-[9px] px-1.5 py-0.5 bg-[#F3F4F6] text-[#7C3AED] tracking-normal">BETA</span>
                     </button>
                   </div>
+
+                  {/* Iter 79j.29 — photos-lost banner. When preview
+                      exists but the photo grid is empty (typically an
+                      older run whose upload names were never persisted),
+                      the Re-Run button is disabled and the contractor
+                      can't tell why. Explicit inline banner spells it
+                      out and points to the upload input. */}
+                  {photoUrls.length === 0 && (
+                    <div
+                      className="mb-3 p-3 bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-[11px] flex items-start gap-2"
+                      data-testid="ai-measure-photos-lost-banner"
+                    >
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#B45309]" />
+                      <div className="flex-1">
+                        <div className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Photos missing</div>
+                        <div>
+                          The measurements below are from an older run whose photo files
+                          were not persisted. <b>Re-upload the same photos above</b> to
+                          enable Re-Run · Refine on Photo · A/B model comparison. Nothing
+                          in the current takeoff will be lost.
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {previewTab === "3d" && (
                     <div className="mb-4" data-testid="ai-measure-3d-panel">
