@@ -65,9 +65,7 @@ function buildHouseJson(preview, overrides) {
   if (!preview) return null;
   const walls = preview.raw_ai?.walls || [];
   const openings = preview.raw_ai?.openings || [];
-  const eave = overrides.eaveHeight
-    ?? preview.measurements?._ai_avg_wall_height_ft
-    ?? DEFAULT_EAVE_HEIGHT;
+  const avgAiEave = preview.measurements?._ai_avg_wall_height_ft;
   // Iter 79j.23 — try to derive pitch from Claude's gable heights before
   // falling back to the 6/12 default.
   const aiPitch = deriveRoofPitchFromWalls(walls);
@@ -90,6 +88,27 @@ function buildHouseJson(preview, overrides) {
   const widthRight = overrides.widths?.right ?? right?.width_ft ?? widthLeft;
   const footprintW = Math.max(widthFront, widthBack);
   const footprintD = Math.max(widthLeft, widthRight);
+
+  // Iter 79j.24 — Per-facade eave heights. Claude reports `height_ft` on
+  // every walls[] entry; we prefer that over the whole-house average.
+  // Sources cascade: user override > wall-specific AI > whole-house AI
+  // average > 10ft default. Sources drive the badge color in the UI.
+  const eaveOverrides = overrides.eaveHeights || {};
+  const resolveEave = (id, wallData) => {
+    if (eaveOverrides[id] != null) return { h: Number(eaveOverrides[id]), source: "user" };
+    const wallH = Number(wallData?.height_ft || 0);
+    if (wallH > 0) return { h: wallH, source: "ai" };
+    const avgH = Number(avgAiEave || 0);
+    if (avgH > 0) return { h: avgH, source: "ai-avg" };
+    return { h: DEFAULT_EAVE_HEIGHT, source: "default" };
+  };
+  const eaves = {
+    front: resolveEave("front", front),
+    back: resolveEave("back", back),
+    left: resolveEave("left", left),
+    right: resolveEave("right", right),
+  };
+  const avgEave = (eaves.front.h + eaves.back.h + eaves.left.h + eaves.right.h) / 4;
 
   const openingsByWall = openings.reduce((acc, o) => {
     const k = (o.wall || "other").toLowerCase();
@@ -117,10 +136,12 @@ function buildHouseJson(preview, overrides) {
     });
   };
 
-  const mkFacade = (id, label, widthOverride, wallData) => ({
+  const mkFacade = (id, label, widthOverride, wallData, eave) => ({
     id,
     label,
     width: widthOverride,
+    eaveHeight: eave.h,
+    eaveHeightSource: eave.source,
     gableEnd: id === "left" || id === "right",
     confidence: wallData?.confidence ?? null,
     estimated: !wallData,
@@ -128,8 +149,7 @@ function buildHouseJson(preview, overrides) {
   });
   return {
     footprint: { width: footprintW, depth: footprintD, estimated: !front || !left },
-    eaveHeight: eave,
-    eaveHeightEstimated: overrides.eaveHeight == null && preview.measurements?._ai_avg_wall_height_ft == null,
+    avgEaveHeight: avgEave,
     roof: {
       type: "gable",
       pitch,
@@ -141,10 +161,10 @@ function buildHouseJson(preview, overrides) {
       pitchEstimated: pitchSource === "default",  // kept for backwards-compat in scene render
     },
     facades: [
-      mkFacade("front", "Front elevation", widthFront, front),
-      mkFacade("right", "Right gable end", widthRight, right),
-      mkFacade("back", "Rear elevation", widthBack, back),
-      mkFacade("left", "Left gable end", widthLeft, left),
+      mkFacade("front", "Front elevation", widthFront, front, eaves.front),
+      mkFacade("right", "Right gable end", widthRight, right, eaves.right),
+      mkFacade("back", "Rear elevation", widthBack, back, eaves.back),
+      mkFacade("left", "Left gable end", widthLeft, left, eaves.left),
     ],
   };
 }
@@ -157,11 +177,14 @@ function buildScene(scene, house) {
   const frameMat = new THREE.MeshLambertMaterial({ color: 0x333842 });
   const paneMat = new THREE.MeshLambertMaterial({ color: 0x88a9c7, transparent: true, opacity: 0.75 });
   const roofMat = new THREE.MeshLambertMaterial({ color: 0x4a5058, side: THREE.DoubleSide });
-  const { footprint, eaveHeight: H, roof } = house;
+  const { footprint, roof } = house;
   const halfW = footprint.width / 2;
   const halfD = footprint.depth / 2;
 
   house.facades.forEach((f) => {
+    // Iter 79j.24 — each wall uses its own eave height so split-level
+    // homes render with the correct step in the eave line.
+    const H = f.eaveHeight;
     const rise = f.gableEnd ? pitchRise(footprint.depth, roof.pitch) : 0;
     // Build shape (rectangle + optional gable triangle)
     const shape = new THREE.Shape();
@@ -199,7 +222,16 @@ function buildScene(scene, house) {
     });
   });
 
-  // Roof — two sloped planes.
+  // Roof — two sloped planes. Ridge sits at the AVERAGE of the two
+  // gable-end eave heights + rise, so a walkout/split-level with a
+  // 4-ft eave difference on left vs right still shows a flat ridge.
+  // Wall polygons above already draw their own gable triangles at
+  // their true individual heights, so the ridge visually snaps to
+  // the correct point on each gable-end wall.
+  const gableEndFacades = house.facades.filter((f) => f.gableEnd);
+  const avgGableEave = gableEndFacades.length
+    ? gableEndFacades.reduce((s, f) => s + f.eaveHeight, 0) / gableEndFacades.length
+    : house.avgEaveHeight;
   const roofRise = pitchRise(footprint.depth, roof.pitch);
   const roofPlaneLen = Math.sqrt(Math.pow(footprint.depth / 2, 2) + Math.pow(roofRise, 2));
   const roofOverhang = roof.overhang;
@@ -210,7 +242,7 @@ function buildScene(scene, house) {
     plane.rotation.x = side === "north" ? -(Math.PI / 2 - angle) : (Math.PI / 2 - angle);
     plane.position.set(
       0,
-      H + roofRise / 2,
+      avgGableEave + roofRise / 2,
       side === "north" ? -footprint.depth / 4 : footprint.depth / 4
     );
     scene.add(plane);
@@ -232,7 +264,7 @@ export default function HouseModel3D({ preview }) {
   const mountRef = useRef(null);
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
-  const [overrides, setOverrides] = useState({ pitch: null, eaveHeight: null, widths: {} });
+  const [overrides, setOverrides] = useState({ pitch: null, eaveHeights: {}, widths: {} });
   const house = useMemo(() => buildHouseJson(preview, overrides), [preview, overrides]);
 
   // Mount scene once
@@ -243,7 +275,7 @@ export default function HouseModel3D({ preview }) {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xf7f8fb);
     const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 500);
-    camera.position.set(house.footprint.width * 1.2, house.eaveHeight * 1.5, house.footprint.depth * 1.2);
+    camera.position.set(house.footprint.width * 1.2, house.avgEaveHeight * 1.5, house.footprint.depth * 1.2);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(w, h);
@@ -256,7 +288,7 @@ export default function HouseModel3D({ preview }) {
     fill.position.set(-50, 40, -60);
     scene.add(fill);
     const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, house.eaveHeight * 0.55, 0);
+    controls.target.set(0, house.avgEaveHeight * 0.55, 0);
     controls.enableDamping = true;
 
     let raf;
@@ -371,12 +403,39 @@ export default function HouseModel3D({ preview }) {
             <span className="text-[#71717A] w-24">Eave height</span>
             <input
               type="number" step="0.5" min="6"
-              value={house.eaveHeight}
-              onChange={(e) => setOverrides((o) => ({ ...o, eaveHeight: parseFloat(e.target.value) || house.eaveHeight }))}
+              value={facade.eaveHeight}
+              onChange={(e) => setOverrides((o) => ({ ...o, eaveHeights: { ...o.eaveHeights, [facade.id]: parseFloat(e.target.value) || facade.eaveHeight } }))}
               className="w-20 px-2 py-1 border border-[#E4E4E7] font-mono-num text-right"
-              data-testid="ai-measure-3d-eave"
+              data-testid={`ai-measure-3d-eave-${facade.id}`}
             />
-            {house.eaveHeightEstimated && <Amber />}
+            {facade.eaveHeightSource === "default" && <Amber />}
+            {facade.eaveHeightSource === "ai" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                title="Read straight from Claude's per-wall height_ft for this elevation"
+                data-testid={`ai-measure-3d-eave-derived-${facade.id}`}
+              >
+                <Check className="w-2.5 h-2.5" /> AI per-wall
+              </span>
+            )}
+            {facade.eaveHeightSource === "ai-avg" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                title="Claude didn't return a per-wall height for this elevation — using the whole-house average. Verify in the field."
+                data-testid={`ai-measure-3d-eave-avg-${facade.id}`}
+              >
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> AI avg
+              </span>
+            )}
+            {facade.eaveHeightSource === "user" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                title="You overrode this wall's eave — hit Re-run to feed this back to the estimator"
+                data-testid={`ai-measure-3d-eave-user-${facade.id}`}
+              >
+                edited
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-[11px]">
             <span className="text-[#71717A] w-24">Roof pitch</span>
@@ -410,7 +469,7 @@ export default function HouseModel3D({ preview }) {
               </span>
             )}
           </div>
-          {(facade.estimated || house.eaveHeightEstimated || house.roof.pitchSource === "default") && (
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default") && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>
