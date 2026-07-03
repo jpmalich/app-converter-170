@@ -1957,7 +1957,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   </div>
 
                   {previewTab === "3d" && (
-                    <div className="mb-4 min-h-[560px]" data-testid="ai-measure-3d-panel">
+                    <div className="mb-4" data-testid="ai-measure-3d-panel">
                       <HouseModel3D preview={preview} />
                     </div>
                   )}

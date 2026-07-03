@@ -294,13 +294,13 @@ export default function HouseModel3D({ preview }) {
     return ["siding", "trim", "corners", "j-channel", "starter"].some((k) => s.includes(k));
   }).slice(0, 10);
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-full" data-testid="ai-measure-3d-view">
-      <div className="md:col-span-2 min-h-[520px] border border-[#E4E4E7] bg-[#F7F8FB] relative" ref={mountRef}>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="ai-measure-3d-view">
+      <div className="md:col-span-2 h-[560px] md:h-[640px] border border-[#E4E4E7] bg-[#F7F8FB] relative" ref={mountRef}>
         <div className="absolute top-2 left-2 text-[10px] uppercase tracking-wider font-bold text-[#7C3AED] bg-white/80 px-2 py-1 border border-[#7C3AED]" data-testid="ai-measure-3d-hint">
           Tap a wall to see its takeoff · drag to orbit · scroll to zoom
         </div>
       </div>
-      <div className="min-h-[520px] flex flex-col gap-2">
+      <div className="h-[560px] md:h-[640px] flex flex-col gap-2 min-h-0">
         <div className="flex gap-1">
           {house.facades.map((f) => (
             <button
@@ -345,7 +345,9 @@ export default function HouseModel3D({ preview }) {
               className="w-20 px-2 py-1 border border-[#E4E4E7] text-right"
               data-testid="ai-measure-3d-pitch"
             >
-              {ROOF_PITCHES.map((p) => <option key={p} value={p}>{p}/12</option>)}
+              {ROOF_PITCHES.map((p) => (
+                <option key={p} value={p}>{`${p}/12`}</option>
+              ))}
             </select>
             {house.roof.pitchEstimated && <Amber />}
           </div>
@@ -371,8 +373,8 @@ export default function HouseModel3D({ preview }) {
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
           <Row k="Openings" v={facade.openings.length} />
         </div>
-        <div className="p-3 bg-white border border-[#E4E4E7] space-y-1 flex-1 overflow-y-auto">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+        <div className="p-3 bg-white border border-[#E4E4E7] space-y-1 flex-1 min-h-0 overflow-y-auto">
+          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold sticky top-0 bg-white pb-1" data-testid="ai-measure-3d-materials-heading">
             Whole-house materials <span className="text-[9px] italic text-[#71717A] font-normal">· from estimator</span>
           </div>
           {sidingLines.length === 0 ? (
