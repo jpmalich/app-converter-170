@@ -488,7 +488,12 @@ async def get_profile_annotations(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "profile_annotations": 1},
     )
-    if not doc:
+    # Iter 79j.17 — `if not doc` was a bug: when the estimate exists
+    # but has no `profile_annotations` field yet, the projection
+    # `{"_id": 0, "profile_annotations": 1}` returns `{}` — which is
+    # falsy in Python, so it 404'd on every fresh estimate. Use an
+    # explicit `is None` check so only a truly missing estimate 404s.
+    if doc is None:
         raise HTTPException(status_code=404, detail="Not found")
     return {"annotations": doc.get("profile_annotations") or {}}
 
