@@ -52,6 +52,24 @@ module.exports = [
       "react/prop-types": "off",
       "react/no-unescaped-entities": "off",
       "react/react-in-jsx-scope": "off",
+
+      // Iter 79j.21 — stale-closure smell detector. Short-delay
+      // setTimeout wrapping a component-scoped function call is
+      // almost always a React state-update race (see the AI Measure
+      // "Run anyway" bug: the setTimeout captured runMeasure from
+      // the render before setState took effect, so the closure re-fired
+      // the same guard). Threshold: any setTimeout with a numeric
+      // literal delay < 500ms.  If a real debounce/animation timer
+      // needs this, use `// eslint-disable-next-line no-restricted-syntax`
+      // above the call with a short comment explaining why.
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "CallExpression[callee.name='setTimeout'][arguments.1.type='Literal'][arguments.1.value<500]",
+          message:
+            "Short-delay setTimeout is a stale-closure smell. If you're bouncing off a setState, pass the value explicitly (e.g. fn({ bypass: true })) instead of relying on a state sentinel being read via closure.",
+        },
+      ],
     },
   },
 ];
