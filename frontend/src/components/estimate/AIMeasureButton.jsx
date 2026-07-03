@@ -960,6 +960,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // clicked with an empty photo grid. Auto-clears on next successful
   // upload or run.
   const [noPhotosBanner, setNoPhotosBanner] = useState(false);
+  // Iter 79j.30 — persistent inline error banner shown when a run
+  // fails. Sonner toasts are hidden behind the modal and auto-dismiss
+  // in 4s — for a $-affecting failure like budget-exceeded that's not
+  // enough. Cleared automatically on the next successful run.
+  const [runError, setRunError] = useState(null);
   const primaryWallsCovered = () => {
     const covered = new Set();
     for (const name of photoUrls) {
@@ -1194,6 +1199,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         setWallsDirty(false);
       }
       setPreview(data);
+      setRunError(null);   // Iter 79j.30 — clear any prior failure banner
       // Iter 57: auto-apply Claude's per-photo elevation guesses to
       // any photo that isn't already explicitly tagged. Saves the
       // contractor 4-8 dropdown taps per measurement. Manual tags
@@ -1223,7 +1229,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         });
       }
     } catch (e) {
-      toast.error(e?.response?.data?.detail || e.message || "AI measure failed");
+      // Iter 79j.30 — Toasts get covered by the modal + auto-dismiss.
+      // Surface the error as a persistent inline banner too. Budget
+      // exceeded is common enough (Emergent LLM Key runs out) that it
+      // gets its own recognizable copy + link to the fix.
+      const msg = e?.response?.data?.detail || e?.message || "AI measure failed";
+      setRunError(String(msg));
+      toast.error(msg);
     } finally {
       setBusy(false);
       setBusyStage("");
@@ -1461,6 +1473,42 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             </div>
 
             <div className="overflow-y-auto flex-1 p-5">
+              {/* Iter 79j.30 — persistent run-error banner shown at the
+                  very top of the modal body (above Resume) so a budget-
+                  exceeded or worker failure ALWAYS surfaces, even when
+                  the user has no preview yet. Budget errors get their
+                  own actionable copy pointing at Profile → Universal Key. */}
+              {runError && (
+                <div
+                  className="mb-4 p-3 border border-[#EF4444] bg-[#FEE2E2] text-[#7F1D1D] text-[11px] flex items-start gap-2"
+                  data-testid="ai-measure-run-error-banner"
+                >
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#DC2626]" />
+                  <div className="flex-1">
+                    <div className="font-bold uppercase tracking-wider text-[10px] mb-1 flex items-center justify-between">
+                      <span>{/Budget/i.test(runError) ? "Universal Key budget exhausted" : "AI Measure failed"}</span>
+                      <button
+                        type="button"
+                        className="text-[10px] font-normal text-[#7F1D1D] underline hover:no-underline"
+                        onClick={() => setRunError(null)}
+                        data-testid="ai-measure-run-error-dismiss"
+                      >
+                        dismiss
+                      </button>
+                    </div>
+                    {/Budget/i.test(runError) ? (
+                      <div>
+                        Your Emergent LLM Key balance is spent. Open the platform menu
+                        in the top-right and go to <b>Profile → Universal Key → Add Balance</b>
+                        {" "}(or toggle Auto Top-up). Once topped up, click Run AI Measure
+                        again — nothing on this estimate is lost.
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-wrap break-words">{runError}</div>
+                    )}
+                  </div>
+                </div>
+              )}
               {resumePrompt && (
                 <div
                   className="mb-4 p-3 border border-[#0EA5E9] bg-sky-50 flex items-center justify-between gap-3 flex-wrap"
