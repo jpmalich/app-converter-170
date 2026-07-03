@@ -24,7 +24,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check } from "lucide-react";
 
 const ROOF_PITCHES = [4, 6, 8, 10, 12];
 const DEFAULT_PITCH = 6;
@@ -36,6 +36,30 @@ function pitchRise(widthFt, pitchOver12) {
   return (widthFt / 2) * (pitchOver12 / 12);
 }
 
+// Iter 79j.23 — Derive roof pitch from any gable-end wall Claude found.
+// Formula: rise = (width / 2) × (pitch / 12)  ⇒  pitch = rise × 24 / width.
+// When the house has multiple gables we average the raw values before
+// snapping to the nearest supported pitch (4/6/8/10/12). Returns null
+// when no gable data is available — caller falls back to DEFAULT_PITCH.
+function deriveRoofPitchFromWalls(walls) {
+  const gables = (walls || []).filter(
+    (w) => Number(w?.gable_triangle_height_ft || 0) > 0 && Number(w?.width_ft || 0) > 0,
+  );
+  if (!gables.length) return null;
+  const raws = gables.map((w) => (Number(w.gable_triangle_height_ft) * 24) / Number(w.width_ft));
+  const avg = raws.reduce((a, b) => a + b, 0) / raws.length;
+  let best = ROOF_PITCHES[0];
+  let bestDelta = Math.abs(avg - best);
+  for (const p of ROOF_PITCHES) {
+    const d = Math.abs(avg - p);
+    if (d < bestDelta) {
+      best = p;
+      bestDelta = d;
+    }
+  }
+  return { pitch: best, raw: Math.round(avg * 10) / 10, sampleCount: gables.length };
+}
+
 // Build a house-JSON shape from the AI preview + user overrides.
 function buildHouseJson(preview, overrides) {
   if (!preview) return null;
@@ -44,7 +68,15 @@ function buildHouseJson(preview, overrides) {
   const eave = overrides.eaveHeight
     ?? preview.measurements?._ai_avg_wall_height_ft
     ?? DEFAULT_EAVE_HEIGHT;
-  const pitch = overrides.pitch ?? DEFAULT_PITCH;
+  // Iter 79j.23 — try to derive pitch from Claude's gable heights before
+  // falling back to the 6/12 default.
+  const aiPitch = deriveRoofPitchFromWalls(walls);
+  const pitch = overrides.pitch ?? aiPitch?.pitch ?? DEFAULT_PITCH;
+  const pitchSource = overrides.pitch != null
+    ? "user"
+    : aiPitch
+    ? "ai"
+    : "default";
   // Match primary walls by label. If a label is missing, keep the wall
   // but flag "estimated" in the UI.
   const findWall = (lab) => walls.find((w) => (w.label || "").toLowerCase() === lab);
@@ -98,7 +130,16 @@ function buildHouseJson(preview, overrides) {
     footprint: { width: footprintW, depth: footprintD, estimated: !front || !left },
     eaveHeight: eave,
     eaveHeightEstimated: overrides.eaveHeight == null && preview.measurements?._ai_avg_wall_height_ft == null,
-    roof: { type: "gable", pitch, ridgeAxis: "x", overhang: 1.25, pitchEstimated: overrides.pitch == null },
+    roof: {
+      type: "gable",
+      pitch,
+      ridgeAxis: "x",
+      overhang: 1.25,
+      pitchSource,               // "user" | "ai" | "default"
+      pitchAiRaw: aiPitch?.raw ?? null,       // unsnapped raw pitch (e.g. 7.4) — tooltip
+      pitchAiSamples: aiPitch?.sampleCount ?? 0,
+      pitchEstimated: pitchSource === "default",  // kept for backwards-compat in scene render
+    },
     facades: [
       mkFacade("front", "Front elevation", widthFront, front),
       mkFacade("right", "Right gable end", widthRight, right),
@@ -349,9 +390,27 @@ export default function HouseModel3D({ preview }) {
                 <option key={p} value={p}>{`${p}/12`}</option>
               ))}
             </select>
-            {house.roof.pitchEstimated && <Amber />}
+            {house.roof.pitchSource === "default" && <Amber />}
+            {house.roof.pitchSource === "ai" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                title={`Derived from Claude's gable height (raw ${house.roof.pitchAiRaw}/12 across ${house.roof.pitchAiSamples} gable-end wall${house.roof.pitchAiSamples > 1 ? "s" : ""}, snapped to ${house.roof.pitch}/12)`}
+                data-testid="ai-measure-3d-pitch-derived"
+              >
+                <Check className="w-2.5 h-2.5" /> AI-derived
+              </span>
+            )}
+            {house.roof.pitchSource === "user" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                title="You overrode the pitch — hit Re-run to feed this back to the estimator"
+                data-testid="ai-measure-3d-pitch-user"
+              >
+                edited
+              </span>
+            )}
           </div>
-          {(facade.estimated || house.eaveHeightEstimated || house.roof.pitchEstimated) && (
+          {(facade.estimated || house.eaveHeightEstimated || house.roof.pitchSource === "default") && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>
