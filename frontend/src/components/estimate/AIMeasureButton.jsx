@@ -2646,6 +2646,28 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     >
                       {showAdvanced ? "Hide" : "Advanced"}
                     </button>
+                    {/* Iter 79j.16 — Re-run button so contractors can
+                        A/B a different model on the SAME photos without
+                        hitting Start Over. Uses the current model in
+                        the "Powered by" dropdown. */}
+                    <button
+                      type="button"
+                      onClick={runMeasure}
+                      disabled={busy || photoUrls.length === 0 || files.length > 0}
+                      className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      data-testid="ai-measure-rerun-btn"
+                      title="Run the measure again — usually with a different model in the Powered by dropdown to A/B compare accuracy"
+                    >
+                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      {busy
+                        ? (busyStage === "claude" ? "Vision…"
+                          : busyStage === "dormer_scan" ? "Dormer scan…"
+                          : busyStage === "aggregating" ? "Aggregating…"
+                          : busyStage === "mapping" ? "Mapping…"
+                          : busyStage === "starting" ? "Starting…"
+                          : "Running…")
+                        : "Re-run"}
+                    </button>
                     {/* Merge-mode picker — controls how Refine on Photo
                         deltas roll into the AI's aggregate measurements.
                         Add accumulates LFs/counts across per-elevation
