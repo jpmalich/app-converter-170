@@ -236,10 +236,20 @@ function buildScene(scene, house) {
   const roofPlaneLen = Math.sqrt(Math.pow(footprint.depth / 2, 2) + Math.pow(roofRise, 2));
   const roofOverhang = roof.overhang;
   const roofPlaneGeom = new THREE.PlaneGeometry(footprint.width + roofOverhang * 2, roofPlaneLen + roofOverhang);
+  // Iter 79j.25 — Roof planes were inverted (V-shape). A PlaneGeometry
+  // starts in the XY plane with its "top" edge at +Y. Positive rotation
+  // around X sends +Y toward +Z. The south plane is positioned at +Z
+  // (front side of the house) and its top edge (the ridge) must land
+  // at Z=0 — meaning it must move toward -Z relative to its center →
+  // rotation.x must be NEGATIVE. The north plane at -Z needs the
+  // opposite sign so its top edge moves toward +Z (to the ridge).
+  // Old code had these swapped, producing a valley.
+  const ridgeY = avgGableEave + roofRise;
   ["north", "south"].forEach((side) => {
     const plane = new THREE.Mesh(roofPlaneGeom, roofMat);
     const angle = Math.atan2(roofRise, footprint.depth / 2);
-    plane.rotation.x = side === "north" ? -(Math.PI / 2 - angle) : (Math.PI / 2 - angle);
+    const dir = side === "north" ? 1 : -1;
+    plane.rotation.x = dir * (Math.PI / 2 - angle);
     plane.position.set(
       0,
       avgGableEave + roofRise / 2,
@@ -247,6 +257,19 @@ function buildScene(scene, house) {
     );
     scene.add(plane);
   });
+
+  // Iter 79j.25 — Geometry sanity check. The ridge Y must sit strictly
+  // above every wall's eave, otherwise the pitch computation is broken
+  // (e.g. a negative roofRise from a degenerate pitch input) and the
+  // roof will render at or below the walls. Fires a console.error with
+  // enough context to debug in dev; harmless in prod.
+  const maxEave = Math.max(...house.facades.map((f) => f.eaveHeight));
+  if (ridgeY <= maxEave) {
+    console.error(
+      "[HouseModel3D] roof geometry sanity check FAILED — ridge is not above eave",
+      { ridgeY, maxEave, avgGableEave, roofRise, pitch: roof.pitch, footprintDepth: footprint.depth },
+    );
+  }
 
   // Ground shadow disc for visual grounding.
   const ground = new THREE.Mesh(
