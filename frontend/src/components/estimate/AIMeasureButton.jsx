@@ -774,6 +774,74 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       });
       return next;
     });
+    // Iter 79j.18 — CRITICAL fix: persist profile boxes from the
+    // Guided Capture Wizard to the estimate's `profile_annotations`
+    // in Mongo. Previously the wizard's `handleAnnotateSave` only
+    // stored payloads in local wizard state — they never reached the
+    // AI Measure worker, so a contractor's shake polygon drawn during
+    // guided capture produced ZERO shake ft² in the final quote. This
+    // block extracts profileBoxes from each just-uploaded photo,
+    // transforms them into the backend shape (identical to the
+    // AIMeasureButton's per-photo save path), and PUTs the merged
+    // annotations bundle. Keyed by photo INDEX (post-append) so it
+    // stays in sync with `apply_annotations_to_breakdown`'s expected
+    // shape.
+    if (estimateId) {
+      const baseIdx = photoUrls.length; // pre-append offset
+      setSavedProfileAnnotations((prev) => {
+        const next = { ...(prev || {}) };
+        const refs = { ...((prev && prev._scale_refs) || {}) };
+        ok.forEach(({ elevation, annotations }, i) => {
+          const idx = baseIdx + i;
+          const boxes = annotations?.profileBoxes || [];
+          if (!boxes.length) return;
+          const dims = annotations?.imageDims;
+          const naturalW = dims?.w || 1;
+          const naturalH = dims?.h || 1;
+          const boxesForBackend = boxes.map((b) => {
+            const xs = b.points.map((p) => p.x);
+            const ys = b.points.map((p) => p.y);
+            const minX = Math.min(...xs), minY = Math.min(...ys);
+            const maxX = Math.max(...xs), maxY = Math.max(...ys);
+            return {
+              shape: b.shape,
+              elevation_label: elevation || "other",
+              profile: b.profile,
+              location: b.location,
+              sqft: b.sqft,
+              callout: b.note || "",
+              ...(b.shape === "polygon"
+                ? { points: b.points.map((p) => ({ x_norm: p.x / naturalW, y_norm: p.y / naturalH })) }
+                : {
+                    x_norm: minX / naturalW,
+                    y_norm: minY / naturalH,
+                    w_norm: (maxX - minX) / naturalW,
+                    h_norm: (maxY - minY) / naturalH,
+                  }),
+            };
+          });
+          next[String(idx)] = boxesForBackend;
+          // Persist the wall scale anchor too so the backend safety-
+          // net can recompute polygon sqft server-side if a box's
+          // sqft slipped through as the sentinel 50.
+          const ref = annotations?.reference;
+          if (ref && Array.isArray(ref?.p1) === false && ref?.p1 && ref?.p2 && ref?.inches) {
+            refs[String(idx)] = {
+              p1_x_norm: ref.p1.x / naturalW,
+              p1_y_norm: ref.p1.y / naturalH,
+              p2_x_norm: ref.p2.x / naturalW,
+              p2_y_norm: ref.p2.y / naturalH,
+              inches: ref.inches,
+            };
+          }
+        });
+        next._scale_refs = refs;
+        // Fire-and-forget PUT — non-fatal if the network hiccups.
+        api.put(`/estimates/${estimateId}/profile-annotations`, { annotations: next })
+          .catch((err) => console.warn("wizard profile-annotations persist failed:", err?.message));
+        return next;
+      });
+    }
     setFiles((prev) => prev.filter((f) => !batch.find((b) => b.file === f)));
     const annotatedCount = ok.filter((u) => u.annotations).length;
     const annotatedNote = annotatedCount > 0 ? ` (${annotatedCount} annotated)` : "";
