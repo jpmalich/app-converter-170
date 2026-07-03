@@ -27,9 +27,15 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { AlertTriangle, Check } from "lucide-react";
 
 const ROOF_PITCHES = [4, 6, 8, 10, 12];
+const ROOF_TYPES = [
+  { id: "gable", label: "Gable" },
+  { id: "hip", label: "Hip" },
+  { id: "gable-shed-dormer", label: "Gable + shed dormer" },
+];
 const DEFAULT_PITCH = 6;
 const DEFAULT_EAVE_HEIGHT = 10;
 const AMBER = "#F59E0B";
+const ROOF_TYPE_CONFIDENCE_THRESHOLD = 0.8;
 
 function pitchRise(widthFt, pitchOver12) {
   // rise across HALF the roof span, e.g. 6/12 on a 40 ft span = 20 × 6/12 = 10 ft.
@@ -136,6 +142,33 @@ function buildHouseJson(preview, overrides) {
     });
   };
 
+  // Iter 79j.26 — Roof type cascade: user > AI (≥0.8 confidence) >
+  // default 'gable'. Below-threshold AI values still surface in the
+  // tooltip so contractors can double-check.
+  const aiRoofType = preview.measurements?._ai_roof_type || null;
+  const aiRoofTypeConfidence = Number(preview.measurements?._ai_roof_type_confidence ?? 0);
+  const aiRoofTypeReasoning = preview.measurements?._ai_roof_type_reasoning || "";
+  const aiRoofTypeConfident = aiRoofType && aiRoofTypeConfidence >= ROOF_TYPE_CONFIDENCE_THRESHOLD;
+  const roofType = overrides.roofType
+    ?? (aiRoofTypeConfident ? aiRoofType : "gable");
+  const roofTypeSource = overrides.roofType
+    ? "user"
+    : aiRoofTypeConfident
+    ? "ai"
+    : aiRoofType
+    ? "ai-low-conf"
+    : "default";
+
+  // Dormer geometry (only used when roofType === 'gable-shed-dormer').
+  // The AI may return { face, width_ft, knee_wall_height_ft, offset_x_ft };
+  // fall back to a sane default centered on the front slope.
+  const aiDormer = preview.measurements?._ai_dormer || null;
+  const dormerOverride = overrides.dormer || {};
+  const dormerFace = dormerOverride.face ?? aiDormer?.face ?? "front";
+  const dormerWidth = Number(dormerOverride.width ?? aiDormer?.width_ft ?? Math.min(footprintW * 0.6, 16));
+  const dormerKnee = Number(dormerOverride.kneeWallHeight ?? aiDormer?.knee_wall_height_ft ?? 4);
+  const dormerOffsetX = Number(dormerOverride.offsetX ?? aiDormer?.offset_x_ft ?? 0);
+
   const mkFacade = (id, label, widthOverride, wallData, eave) => ({
     id,
     label,
@@ -151,14 +184,21 @@ function buildHouseJson(preview, overrides) {
     footprint: { width: footprintW, depth: footprintD, estimated: !front || !left },
     avgEaveHeight: avgEave,
     roof: {
-      type: "gable",
+      type: roofType,
+      typeSource: roofTypeSource,        // "user" | "ai" | "ai-low-conf" | "default"
+      typeAiRaw: aiRoofType,
+      typeAiConfidence: aiRoofTypeConfidence,
+      typeAiReasoning: aiRoofTypeReasoning,
       pitch,
       ridgeAxis: "x",
       overhang: 1.25,
-      pitchSource,               // "user" | "ai" | "default"
-      pitchAiRaw: aiPitch?.raw ?? null,       // unsnapped raw pitch (e.g. 7.4) — tooltip
+      pitchSource,
+      pitchAiRaw: aiPitch?.raw ?? null,
       pitchAiSamples: aiPitch?.sampleCount ?? 0,
-      pitchEstimated: pitchSource === "default",  // kept for backwards-compat in scene render
+      pitchEstimated: pitchSource === "default",
+      dormer: roofType === "gable-shed-dormer"
+        ? { face: dormerFace, width: dormerWidth, kneeWallHeight: dormerKnee, offsetX: dormerOffsetX }
+        : null,
     },
     facades: [
       mkFacade("front", "Front elevation", widthFront, front, eaves.front),
@@ -167,6 +207,171 @@ function buildHouseJson(preview, overrides) {
       mkFacade("left", "Left gable end", widthLeft, left, eaves.left),
     ],
   };
+}
+
+// Iter 79j.26 — Gable roof planes (2 sloped rectangles).
+function buildGableRoofPlanes(scene, house, roofMat, roofRise, avgGableEave) {
+  const { footprint, roof } = house;
+  const roofPlaneLen = Math.sqrt(Math.pow(footprint.depth / 2, 2) + Math.pow(roofRise, 2));
+  const roofPlaneGeom = new THREE.PlaneGeometry(footprint.width + roof.overhang * 2, roofPlaneLen + roof.overhang);
+  ["north", "south"].forEach((side) => {
+    const plane = new THREE.Mesh(roofPlaneGeom, roofMat);
+    const angle = Math.atan2(roofRise, footprint.depth / 2);
+    const dir = side === "north" ? 1 : -1;
+    plane.rotation.x = dir * (Math.PI / 2 - angle);
+    plane.position.set(
+      0,
+      avgGableEave + roofRise / 2,
+      side === "north" ? -footprint.depth / 4 : footprint.depth / 4,
+    );
+    scene.add(plane);
+  });
+}
+
+// Iter 79j.26 — Hip roof: 4 planes (2 trapezoids on the long sides,
+// 2 triangles on the short ends) meeting at a shortened ridge that
+// runs along whichever axis (X or Z) is longer. Equal pitch all
+// around → ridge length = |longAxis − shortAxis|.
+function buildHipRoof(scene, house, roofMat, ridgeY, avgGableEave) {
+  const { footprint } = house;
+  const W = footprint.width;    // X axis
+  const D = footprint.depth;    // Z axis
+  const halfW = W / 2;
+  const halfD = D / 2;
+  const ridgeAlongX = W >= D;   // ridge runs along the longer axis
+  const shortHalf = Math.min(halfW, halfD);
+  const ridgeHalfLen = Math.abs(halfW - halfD);
+
+  // Ridge endpoints in world space
+  const ridgeEnds = ridgeAlongX
+    ? [[-ridgeHalfLen, ridgeY, 0], [+ridgeHalfLen, ridgeY, 0]]
+    : [[0, ridgeY, -ridgeHalfLen], [0, ridgeY, +ridgeHalfLen]];
+
+  // Eave corners (all at avgGableEave for hip — hip roofs sit on
+  // rectangular walls at uniform eave)
+  const corners = {
+    fl: [-halfW, avgGableEave, +halfD],
+    fr: [+halfW, avgGableEave, +halfD],
+    bl: [-halfW, avgGableEave, -halfD],
+    br: [+halfW, avgGableEave, -halfD],
+  };
+
+  // Helper to add a polygon face from a vertex list. Assumes convex.
+  const addFace = (verts) => {
+    const positions = [];
+    // Fan triangulation from vert[0]
+    for (let i = 1; i < verts.length - 1; i += 1) {
+      positions.push(...verts[0], ...verts[i], ...verts[i + 1]);
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geom.computeVertexNormals();
+    scene.add(new THREE.Mesh(geom, roofMat));
+  };
+
+  // 4 faces: 2 trapezoids + 2 triangles.
+  if (ridgeAlongX) {
+    // Front trapezoid: FL → FR → ridgeEnd_R (top-right) → ridgeEnd_L (top-left)
+    addFace([corners.fl, corners.fr, ridgeEnds[1], ridgeEnds[0]]);
+    // Back trapezoid: BR → BL → ridgeEnd_L → ridgeEnd_R
+    addFace([corners.br, corners.bl, ridgeEnds[0], ridgeEnds[1]]);
+    // Right triangle: FR → BR → ridgeEnd_R
+    addFace([corners.fr, corners.br, ridgeEnds[1]]);
+    // Left triangle: BL → FL → ridgeEnd_L
+    addFace([corners.bl, corners.fl, ridgeEnds[0]]);
+  } else {
+    // Ridge runs along Z. Left+right are trapezoids; front+back are triangles.
+    addFace([corners.fr, corners.br, ridgeEnds[0], ridgeEnds[1]]);   // Right trapezoid
+    addFace([corners.bl, corners.fl, ridgeEnds[1], ridgeEnds[0]]);   // Left trapezoid
+    addFace([corners.fl, corners.fr, ridgeEnds[1]]);                 // Front triangle
+    addFace([corners.br, corners.bl, ridgeEnds[0]]);                 // Back triangle
+  }
+  // shortHalf reserved for future overhang math
+  void shortHalf;
+}
+
+// Iter 79j.26 — Shed dormer on one slope of a gable roof. Adds:
+//   • vertical face wall (rectangle) with any openings pinned to it
+//   • two triangular cheek walls filling the gap between the face
+//     top and the main roof surface
+//   • low-slope shed roof from the face top back to the main ridge
+function buildShedDormer(scene, house, roofMat, wallMat, frameMat, paneMat, roofRise, avgGableEave) {
+  const { footprint, roof } = house;
+  const d = roof.dormer;
+  if (!d) return;
+  const halfD = footprint.depth / 2;
+  // Position dormer face at 25% of the roof depth back from the eave
+  // (halfway between eave and ridge on the chosen slope).
+  const zFrac = 0.5;   // fraction of halfD from ridge to eave
+  const faceSign = d.face === "rear" ? -1 : 1;
+  const zFace = faceSign * halfD * zFrac;
+  // Main roof Y at this Z (linear from ridge at Z=0 to eave at Z=±halfD)
+  const mainRoofYAtFace = avgGableEave + roofRise * (1 - Math.abs(zFace) / halfD);
+  const faceBottomY = mainRoofYAtFace;
+  const faceTopY = faceBottomY + Number(d.kneeWallHeight);
+  const halfWD = Number(d.width) / 2;
+  const cx = Number(d.offsetX) || 0;
+
+  // 1) Face wall (vertical rectangle in XY at Z=zFace)
+  const faceShape = new THREE.Shape();
+  faceShape.moveTo(cx - halfWD, faceBottomY);
+  faceShape.lineTo(cx + halfWD, faceBottomY);
+  faceShape.lineTo(cx + halfWD, faceTopY);
+  faceShape.lineTo(cx - halfWD, faceTopY);
+  faceShape.lineTo(cx - halfWD, faceBottomY);
+  const faceGeom = new THREE.ShapeGeometry(faceShape);
+  const faceMesh = new THREE.Mesh(faceGeom, wallMat.clone());
+  // Face wall normal points outward on the dormer's own axis (+Z for front, -Z for rear)
+  faceMesh.position.set(0, 0, zFace + faceSign * 0.05);
+  if (d.face === "rear") faceMesh.rotation.y = Math.PI;
+  scene.add(faceMesh);
+
+  // Add a stock 3'×5' window at the center of the dormer face
+  const win = { w: 3, h: 5, cx, cy: (faceBottomY + faceTopY) / 2 };
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(win.w + 0.4, win.h + 0.4, 0.15), frameMat);
+  frame.position.set(cx, win.cy, zFace + faceSign * 0.14);
+  scene.add(frame);
+  const pane = new THREE.Mesh(new THREE.BoxGeometry(win.w, win.h, 0.2), paneMat);
+  pane.position.set(cx, win.cy, zFace + faceSign * 0.16);
+  scene.add(pane);
+
+  // 2) Cheek walls — two triangles filling the wedge on each side.
+  // Each cheek is a triangle in the XZ (well, YZ at fixed X) plane
+  // with vertices: (X=side_of_dormer, faceTopY, zFace),
+  //                (X=side, faceBottomY, zFace),
+  //                (X=side, ridgeY, 0)  ← where the shed meets ridge
+  const ridgeY = avgGableEave + roofRise;
+  const addTri = (v1, v2, v3) => {
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute([...v1, ...v2, ...v3], 3));
+    geom.computeVertexNormals();
+    scene.add(new THREE.Mesh(geom, wallMat.clone()));
+  };
+  const cheekXs = [cx - halfWD, cx + halfWD];
+  cheekXs.forEach((x) => {
+    // For rear-facing dormer, the shed slopes DOWN toward the ridge; z of
+    // "back" edge is 0 (ridge), z of face edge is zFace.
+    addTri(
+      [x, faceTopY, zFace],
+      [x, faceBottomY, zFace],
+      [x, ridgeY, 0],
+    );
+  });
+
+  // 3) Shed roof plane — quad from (X=-halfWD..+halfWD, Y=faceTopY, Z=zFace)
+  // to (X=-halfWD..+halfWD, Y=ridgeY, Z=0)
+  const shedGeomPositions = [
+    cx - halfWD, faceTopY, zFace,
+    cx + halfWD, faceTopY, zFace,
+    cx + halfWD, ridgeY,   0,
+    cx - halfWD, faceTopY, zFace,
+    cx + halfWD, ridgeY,   0,
+    cx - halfWD, ridgeY,   0,
+  ];
+  const shedGeom = new THREE.BufferGeometry();
+  shedGeom.setAttribute("position", new THREE.Float32BufferAttribute(shedGeomPositions, 3));
+  shedGeom.computeVertexNormals();
+  scene.add(new THREE.Mesh(shedGeom, roofMat));
 }
 
 // Rebuild the Three.js scene from the house JSON. Returns walls by id
@@ -184,14 +389,17 @@ function buildScene(scene, house) {
   house.facades.forEach((f) => {
     // Iter 79j.24 — each wall uses its own eave height so split-level
     // homes render with the correct step in the eave line.
+    // Iter 79j.26 — hip roofs have NO gable triangles on any wall; the
+    // gable-shed-dormer type keeps the gable-end triangles as normal
+    // (dormer geometry is added separately as its own mesh cluster).
     const H = f.eaveHeight;
-    const rise = f.gableEnd ? pitchRise(footprint.depth, roof.pitch) : 0;
-    // Build shape (rectangle + optional gable triangle)
+    const hasGablePeak = f.gableEnd && (roof.type === "gable" || roof.type === "gable-shed-dormer");
+    const rise = hasGablePeak ? pitchRise(footprint.depth, roof.pitch) : 0;
     const shape = new THREE.Shape();
     shape.moveTo(-f.width / 2, 0);
     shape.lineTo(f.width / 2, 0);
     shape.lineTo(f.width / 2, H);
-    if (f.gableEnd) {
+    if (hasGablePeak) {
       shape.lineTo(0, H + rise);
     }
     shape.lineTo(-f.width / 2, H);
@@ -222,53 +430,55 @@ function buildScene(scene, house) {
     });
   });
 
-  // Roof — two sloped planes. Ridge sits at the AVERAGE of the two
-  // gable-end eave heights + rise, so a walkout/split-level with a
-  // 4-ft eave difference on left vs right still shows a flat ridge.
-  // Wall polygons above already draw their own gable triangles at
-  // their true individual heights, so the ridge visually snaps to
-  // the correct point on each gable-end wall.
+  // Iter 79j.26 — Roof geometry routes on roof.type. All 3 types share
+  // the same ridge-height math (avgGableEave + rise) so the sanity
+  // check below applies uniformly.
   const gableEndFacades = house.facades.filter((f) => f.gableEnd);
   const avgGableEave = gableEndFacades.length
     ? gableEndFacades.reduce((s, f) => s + f.eaveHeight, 0) / gableEndFacades.length
     : house.avgEaveHeight;
   const roofRise = pitchRise(footprint.depth, roof.pitch);
-  const roofPlaneLen = Math.sqrt(Math.pow(footprint.depth / 2, 2) + Math.pow(roofRise, 2));
-  const roofOverhang = roof.overhang;
-  const roofPlaneGeom = new THREE.PlaneGeometry(footprint.width + roofOverhang * 2, roofPlaneLen + roofOverhang);
-  // Iter 79j.25 — Roof planes were inverted (V-shape). A PlaneGeometry
-  // starts in the XY plane with its "top" edge at +Y. Positive rotation
-  // around X sends +Y toward +Z. The south plane is positioned at +Z
-  // (front side of the house) and its top edge (the ridge) must land
-  // at Z=0 — meaning it must move toward -Z relative to its center →
-  // rotation.x must be NEGATIVE. The north plane at -Z needs the
-  // opposite sign so its top edge moves toward +Z (to the ridge).
-  // Old code had these swapped, producing a valley.
   const ridgeY = avgGableEave + roofRise;
-  ["north", "south"].forEach((side) => {
-    const plane = new THREE.Mesh(roofPlaneGeom, roofMat);
-    const angle = Math.atan2(roofRise, footprint.depth / 2);
-    const dir = side === "north" ? 1 : -1;
-    plane.rotation.x = dir * (Math.PI / 2 - angle);
-    plane.position.set(
-      0,
-      avgGableEave + roofRise / 2,
-      side === "north" ? -footprint.depth / 4 : footprint.depth / 4
-    );
-    scene.add(plane);
-  });
 
-  // Iter 79j.25 — Geometry sanity check. The ridge Y must sit strictly
-  // above every wall's eave, otherwise the pitch computation is broken
-  // (e.g. a negative roofRise from a degenerate pitch input) and the
-  // roof will render at or below the walls. Fires a console.error with
-  // enough context to debug in dev; harmless in prod.
+  if (roof.type === "hip") {
+    buildHipRoof(scene, house, roofMat, ridgeY, avgGableEave);
+  } else {
+    buildGableRoofPlanes(scene, house, roofMat, roofRise, avgGableEave);
+    if (roof.type === "gable-shed-dormer" && roof.dormer) {
+      buildShedDormer(scene, house, roofMat, wallMat, frameMat, paneMat, roofRise, avgGableEave);
+    }
+  }
+
+  // Iter 79j.25 + .26 — Geometry sanity checks.
   const maxEave = Math.max(...house.facades.map((f) => f.eaveHeight));
   if (ridgeY <= maxEave) {
     console.error(
-      "[HouseModel3D] roof geometry sanity check FAILED — ridge is not above eave",
-      { ridgeY, maxEave, avgGableEave, roofRise, pitch: roof.pitch, footprintDepth: footprint.depth },
+      "[HouseModel3D] sanity FAILED — ridge not above eave",
+      { roofType: roof.type, ridgeY, maxEave, avgGableEave, roofRise, pitch: roof.pitch },
     );
+  }
+  if (roof.type === "hip") {
+    // For hip: ridge length ≥ 0 (i.e. |width - depth| ≥ 0) and all
+    // four planes slope downward from the ridge. `PlaneGeometry` +
+    // BufferGeometry constructions we build ensure downward slope by
+    // construction, so this reduces to a non-negative ridge length.
+    const ridgeLen = Math.abs(footprint.width - footprint.depth);
+    if (ridgeLen < 0) {
+      console.error("[HouseModel3D] hip sanity FAILED — negative ridge length", { ridgeLen });
+    }
+  }
+  if (roof.type === "gable-shed-dormer" && roof.dormer) {
+    // Dormer face top must sit below the main ridge.
+    // Face bottom sits on the main roof surface at Z=zd.
+    const zd = footprint.depth * 0.25;
+    const mainRoofY = avgGableEave + roofRise * (1 - zd / (footprint.depth / 2));
+    const dormerFaceTop = mainRoofY + Number(roof.dormer.kneeWallHeight || 0);
+    if (dormerFaceTop >= ridgeY) {
+      console.error(
+        "[HouseModel3D] dormer sanity FAILED — dormer face top ≥ main ridge",
+        { dormerFaceTop, ridgeY, kneeWallHeight: roof.dormer.kneeWallHeight },
+      );
+    }
   }
 
   // Ground shadow disc for visual grounding.
@@ -492,7 +702,49 @@ export default function HouseModel3D({ preview }) {
               </span>
             )}
           </div>
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default") && (
+          {/* Iter 79j.26 — Roof type dropdown */}
+          <div className="flex items-center gap-2 text-[11px]">
+            <span className="text-[#71717A] w-24">Roof type</span>
+            <select
+              value={house.roof.type}
+              onChange={(e) => setOverrides((o) => ({ ...o, roofType: e.target.value }))}
+              className="px-2 py-1 border border-[#E4E4E7] text-left flex-1 min-w-0"
+              data-testid="ai-measure-3d-roof-type"
+            >
+              {ROOF_TYPES.map((rt) => (
+                <option key={rt.id} value={rt.id}>{rt.label}</option>
+              ))}
+            </select>
+            {house.roof.typeSource === "default" && <Amber />}
+            {house.roof.typeSource === "ai-low-conf" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                title={`Claude guessed "${house.roof.typeAiRaw}" with only ${Math.round((house.roof.typeAiConfidence || 0) * 100)}% confidence — defaulting to gable. Verify from the photos.`}
+                data-testid="ai-measure-3d-roof-type-lowconf"
+              >
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> estimated
+              </span>
+            )}
+            {house.roof.typeSource === "ai" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                title={`Classified by Claude with ${Math.round((house.roof.typeAiConfidence || 0) * 100)}% confidence. ${house.roof.typeAiReasoning || ""}`}
+                data-testid="ai-measure-3d-roof-type-ai"
+              >
+                <Check className="w-2.5 h-2.5" /> AI-classified
+              </span>
+            )}
+            {house.roof.typeSource === "user" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                title="You changed the roof type — hit Re-run to feed this back to the estimator"
+                data-testid="ai-measure-3d-roof-type-user"
+              >
+                edited
+              </span>
+            )}
+          </div>
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf") && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>

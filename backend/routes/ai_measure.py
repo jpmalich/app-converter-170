@@ -150,6 +150,28 @@ Schema:
   "story_count_reasoning": "<1 sentence — what visual cue told you the story count>",
   "avg_wall_height_ft": number,           // average EAVE height (floor to where the roof starts), NOT roof peak
   "siding_coverage_pct": number,          // 0-100, % of gross wall area actually clad in siding (NOT brick, stone, etc.)
+  // Iter 79j.26 — roof-type classification. Drives the 3D viewer and
+  // the estimator's siding takeoff:
+  //   gable              → 2-plane pitched roof, gable triangles at both ends
+  //   hip                → 4-plane pitched roof, NO gable triangles (all 4 walls end flat at eave)
+  //   gable-shed-dormer  → gable roof + a shed dormer on one slope with a vertical
+  //                        face wall that carries additional siding area + windows
+  // Classification cues:
+  //   • Gable ends visible (triangular wall peaks above the eave line)         → "gable"
+  //   • Roof slopes downward on ALL FOUR sides, no triangular walls anywhere   → "hip"
+  //   • A rectangular vertical wall (usually with windows) rises ABOVE the
+  //     main eave line and steps back INTO the roof slope                      → "gable-shed-dormer"
+  // Set roof_type_confidence to 0.0–1.0. Below 0.8 the app defaults to
+  // "gable" and flags this field as estimated for the contractor to review.
+  "roof_type": "gable" | "hip" | "gable-shed-dormer",
+  "roof_type_confidence": number,         // 0.0-1.0
+  "roof_type_reasoning": "<1 sentence — what visual cue drove your call>",
+  // Fill only when roof_type === "gable-shed-dormer". `face` = which
+  // slope carries the dormer, `width_ft` = its X-extent across the roof,
+  // `knee_wall_height_ft` = how tall the vertical face wall stands above
+  // where the main roof would be at that Z position, `offset_x_ft` =
+  // horizontal offset from the wall center (0 = centered).
+  "dormer": {"face": "front" | "rear", "width_ft": number, "knee_wall_height_ft": number, "offset_x_ft": number} | null,
   "photos": [
     // ONE entry per photo IN THE EXACT ORDER they were sent to you.
     // photos[0] = the first attached image, photos[1] = the second, etc.
@@ -1367,6 +1389,61 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "_ai_photos": raw.get("photos") or [],
         "_ai_notes": raw.get("notes") or "",
     }
+    # Iter 79j.26 — Roof type classification. Cascade: valid Claude
+    # value → surface; else null. Confidence threshold enforced on the
+    # frontend (≥0.8 → apply; below → default to gable + amber flag).
+    # Material math post-processing runs BEFORE the breakdown so hip
+    # roofs get their gable_triangle_height zeroed and dormers get
+    # extra face+cheek sqft added into their facade's dormer_face_sqft.
+    roof_type_raw = raw.get("roof_type")
+    roof_type = roof_type_raw if roof_type_raw in ("gable", "hip", "gable-shed-dormer") else None
+    roof_type_conf = raw.get("roof_type_confidence")
+    try:
+        roof_type_conf = float(roof_type_conf) if roof_type_conf is not None else None
+    except (TypeError, ValueError):
+        roof_type_conf = None
+    measurements["_ai_roof_type"] = roof_type
+    measurements["_ai_roof_type_confidence"] = roof_type_conf
+    measurements["_ai_roof_type_reasoning"] = raw.get("roof_type_reasoning") or ""
+    dormer_raw = raw.get("dormer") if isinstance(raw.get("dormer"), dict) else None
+    measurements["_ai_dormer"] = dormer_raw
+
+    # Apply material math per roof type. Threshold matches the frontend
+    # (0.8) so the estimator and 3D viewer agree on what Claude got right.
+    apply_type = roof_type if (roof_type and (roof_type_conf or 0) >= 0.8) else None
+    if apply_type == "hip":
+        # Hip = flat eave all around → no gable triangles anywhere.
+        # Zero out gable_triangle_height_ft on every wall BEFORE the
+        # breakdown runs, so the siding takeoff excludes the phantom
+        # triangle area a gable-biased Claude may have added.
+        for w in walls:
+            w["gable_triangle_height_ft"] = 0
+        # Recompute the visible-gable-sqft roll-up so the summary tile
+        # is consistent with the walls we just cleaned.
+        gable_sqft = 0.0
+    elif apply_type == "gable-shed-dormer" and dormer_raw:
+        # Add the dormer's face + cheek walls to the target facade's
+        # dormer_face_sqft. The estimator already treats dormer_face_sqft
+        # as extra siding area — we just enlarge it.
+        face = str(dormer_raw.get("face") or "front").lower()
+        d_w = float(dormer_raw.get("width_ft") or 0)
+        d_h = float(dormer_raw.get("knee_wall_height_ft") or 0)
+        if d_w > 0 and d_h > 0:
+            face_sqft = d_w * d_h
+            # Cheek walls = 2 triangles. Depth of each ≈ (halfD * 0.5)
+            # matches the frontend placement (zFrac=0.5).
+            # We approximate the cheek base as knee_wall_height_ft
+            # (self-consistent with the frontend geometry).
+            cheek_sqft = 2 * 0.5 * d_h * d_h
+            extra = face_sqft + cheek_sqft
+            for w in walls:
+                if (w.get("label") or "").lower() == face:
+                    w["dormer_face_sqft"] = float(w.get("dormer_face_sqft") or 0) + extra
+                    break
+            dormer_sqft = float(dormer_sqft) + extra
+    measurements["_ai_gable_sqft"] = round(gable_sqft, 1)
+    measurements["_ai_dormer_sqft"] = round(dormer_sqft, 1)
+
     # Iter 78z — Per-elevation breakdown (lap / shake / B&B / etc.) so
     # the takeoff card can render a profile-by-elevation table and the
     # catalog mapper can split siding into multiple SKU lines.
