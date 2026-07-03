@@ -255,7 +255,6 @@ export default function HouseModel3D({ preview }) {
       renderer.dispose();
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Rebuild geometry when house changes
@@ -294,11 +293,6 @@ export default function HouseModel3D({ preview }) {
     const s = (l.section || "").toLowerCase();
     return ["siding", "trim", "corners", "j-channel", "starter"].some((k) => s.includes(k));
   }).slice(0, 10);
-  const Amber = ({ children }) => (
-    <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]" title="Approximated / low-confidence — verify before you quote">
-      <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> estimated {children}
-    </span>
-  );
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-full" data-testid="ai-measure-3d-view">
       <div className="md:col-span-2 min-h-[520px] border border-[#E4E4E7] bg-[#F7F8FB] relative" ref={mountRef}>
@@ -399,4 +393,10 @@ const Row = ({ k, v, bold }) => (
     <span className="text-[#71717A]">{k}</span>
     <span className="font-mono-num tabular-nums">{v}</span>
   </div>
+);
+
+const Amber = () => (
+  <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]" title="Approximated / low-confidence — verify before you quote" data-testid="ai-measure-3d-amber">
+    <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> estimated
+  </span>
 );

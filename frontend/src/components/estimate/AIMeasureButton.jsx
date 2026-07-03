@@ -29,6 +29,8 @@ import { buildElevationsFromAIMeasure } from "@/lib/elevationBuilder";
 // Iter 78z (P1.3) — Per-Elevation Breakdown card + "+ Add Accent" override
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 import { printTakeoff } from "@/lib/printTakeoff";
+// Iter 79j.22 — 3D House Model view (parametric Three.js render from raw_ai)
+import HouseModel3D from "@/components/estimate/HouseModel3D";
 
 const ELEVATION_OPTIONS = [
   { key: "",            label: "Untagged" },
@@ -144,6 +146,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   const [busyStage, setBusyStage] = useState("");
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null); // {measurements, raw_ai}
+  // Iter 79j.22 — Preview / 3D Model tab toggle inside the results block.
+  // Auto-resets to "preview" whenever a new run lands so contractors see
+  // the numbers first, then choose to switch to 3D for structural review.
+  const [previewTab, setPreviewTab] = useState("preview");
+  useEffect(() => {
+    if (preview) setPreviewTab("preview");
+  }, [preview?.run_id, preview?.session_id, preview?.model]);
   // Iter 79j.16 — Model Comparison history. Refetched whenever the
   // preview flips to a new run OR the modal opens. Empty until at
   // least one "done" run exists for this estimate. Declared here so
@@ -1912,6 +1921,49 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       {preview.measurements._ai_notes}
                     </div>
                   )}
+                  {/* Iter 79j.22 — Preview / 3D Model tab toggle. Auto-lands
+                      on Preview each new run; contractor can flip to 3D
+                      Model to sanity-check the parametric geometry
+                      Claude/Gemini inferred (pitch, eave, wall widths,
+                      opening layout). All estimate line quantities remain
+                      SSOT — the 3D side panel READS from preview.lines,
+                      never re-computes.  */}
+                  <div className="flex items-center gap-1 mb-3 border-b border-[#E4E4E7]">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("preview")}
+                      className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
+                        previewTab === "preview"
+                          ? "border-[#7C3AED] text-[#7C3AED]"
+                          : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                      }`}
+                      data-testid="ai-measure-preview-tab"
+                    >
+                      Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("3d")}
+                      className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${
+                        previewTab === "3d"
+                          ? "border-[#7C3AED] text-[#7C3AED]"
+                          : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                      }`}
+                      data-testid="ai-measure-3d-tab"
+                    >
+                      3D Model
+                      <span className="text-[9px] px-1.5 py-0.5 bg-[#F3F4F6] text-[#7C3AED] tracking-normal">BETA</span>
+                    </button>
+                  </div>
+
+                  {previewTab === "3d" && (
+                    <div className="mb-4 min-h-[560px]" data-testid="ai-measure-3d-panel">
+                      <HouseModel3D preview={preview} />
+                    </div>
+                  )}
+
+                  {previewTab === "preview" && (
+                  <>
                   {/* Iter 78z (P1.3 + Cross-Check) — Per-Elevation Breakdown,
                       "+ Add Accent", and "🔁 Re-check with AI" button */}
                   <PerElevationBreakdownCard
@@ -2517,6 +2569,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   )}
 
 
+                  </>
+                  )}
                 </>
               )}
             </div>

@@ -1,0 +1,49 @@
+{
+  "summary": "Iter 79j.22 — 3D House Viewer tab in the AI Measure modal was tested end-to-end (frontend only, no real AI run triggered). Login as Howard succeeded, estimate EST-675749 loaded, AI Measure modal opened, and 'Restore Preview' was clicked to hydrate the saved run (the modal does NOT auto-restore — a click is required). All critical 3D tab behaviors work: tab toggle, canvas mount, facade selection, editable pitch/eave/per-wall width inputs, amber estimated badges, PEB hide/restore on tab switch. Two minor concerns flagged.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "AI Measure modal open",
+        "issue": "Problem statement says 'the preview auto-restores when you open the modal', but the modal actually opens showing 'RESUME? Restore Preview / Dismiss' cards — the user must click 'Restore Preview' to hydrate the last run. Not necessarily a bug (may be intentional UX), but the request wording is inconsistent with observed behavior.",
+        "affected_selectors": []
+      },
+      {
+        "flow": "3D panel — 'Whole-house materials' section",
+        "issue": "During DOM text extraction of the 3D panel, the string 'Whole-house materials' was NOT found in panel.inner_text(). The heading is defined at HouseModel3D.jsx line 375-377 inside a flex-1 overflow-y-auto div, so it may be pushed off-screen at 1920x1080 by the fixed min-h-[520px] parent when siding lines exist. Screenshot g2 confirms only the Geometry / pitch / eave block is visible in the right side panel — the materials block appears to be clipped below the modal fold. Recommend main agent verify the materials section is scrollable and visible on typical laptop viewports.",
+        "affected_selectors": ["ai-measure-3d-panel"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "AI Measure 3D tab (HouseModel3D)",
+        "issues": [
+          "Hydration warning in console: '<span> cannot be a child of <option>'. Emergent dev-instrumentation wraps ROOF_PITCHES option text in a debug <span>, which is invalid HTML for <option>. Non-blocking in production build but pollutes dev console. Consider hardcoding option text (e.g. <option value={4}>4/12</option>) so the instrumentation does not wrap it — or ignore if this is dev-only tooling.",
+          "The right-side panel gets vertically clipped inside the modal — the 'Whole-house materials' block is likely below the visible fold at 1920x1080. Consider reducing min-h on the child sections or moving the materials list into an accordion."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Verify the 'Whole-house materials' section from preview.lines is actually visible/scrollable inside the 3D side panel (I could not surface it via inner_text extraction — appears clipped by min-h layout).",
+    "Fix or acknowledge the <option><span> hydration warning coming from the ROOF_PITCHES map in HouseModel3D.jsx line 348 (only surfaces under emergent dev instrumentation)."
+  ],
+  "critical_code_review_comments": [
+    "HouseModel3D.jsx line 258: The mount useEffect has an empty deps array [] but references `house` inside (camera initial position). If preview arrives after mount, the initial camera position may reference an undefined house. In practice this is fine because the parent gates on `if (!preview) return` before rendering — but adding a guard `if (!mountRef.current || !house) return;` (already present at line 199) covers it. OK as-is.",
+    "HouseModel3D.jsx line 265: The wipe loop 'if (child.isMesh) s.scene.remove(child)' works but leaks geometry/material clones (wallMat.clone() at line 136 creates fresh material each rebuild). For a preview-only UI this is acceptable but under repeated pitch edits it will pile up GPU objects. Non-blocking.",
+    "HouseModel3D.jsx line 322: The width input value is bound to `facade.width` which is derived from overrides.widths OR the AI wall — but the input is uncontrolled with respect to bad user input: parseFloat('') || facade.width silently reverts. That's fine but a min='1' HTML attr blocks negative values. OK."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only requested)", "frontend": "~95%"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (worked)",
+  "seed_data_creation": "None (used existing fixture estimate EST-675749).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Estimate ID 4dc9d615-5e1d-438d-9df3-bbe4e6f91344 has a completed Claude Fable 5 run — open AI Measure modal, click 'Restore Preview' (does NOT auto-restore), then the Preview + 3D Model tabs appear. 3D canvas mounts inside data-testid='ai-measure-3d-view'. Confirmed working: tab toggle, canvas render (415×734 px), 4 facade tabs, 1 amber badge (roof pitch), pitch/eave/width edits update state + rebuild scene, pitch persists across facade switches, PEB hides on 3D and restores on Preview. NOT confirmed via DOM text: 'Whole-house materials' section — likely clipped below fold in modal layout.",
+  "rca_of_the_issue": {
+    "materials_section_not_found": "Panel inner_text() returned no 'Whole-house materials' substring even though the code renders it. Most likely cause: the .min-h-[520px].flex.flex-col right column has three stacked cards (facade tabs + Geometry + AI takeoff + Materials with flex-1 overflow-y-auto). At the modal's fixed height, the flex-1 materials pane collapses to 0 height. Recommend main agent verify visually.",
+    "option_span_hydration": "Emergent's runtime injects <span data-ve-dynamic='true'> around any dynamic child expression. Inside <option>{p}/12</option> the numeric {p} gets wrapped, producing invalid <option><span>...</span>/12</option>. Fix: replace with static string like `${p}/12` in the option text (already a template) OR let the framework skip <option> children."
+  }
+}
