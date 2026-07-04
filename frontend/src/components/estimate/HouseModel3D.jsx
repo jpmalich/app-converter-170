@@ -288,16 +288,16 @@ function buildHouseJson(preview, overrides, estimate) {
   const aiDormersList = Array.isArray(_aiDormersRaw) && _aiDormersRaw.length
     ? _aiDormersRaw.filter((d) => d && typeof d === "object")
     : (preview.measurements?._ai_dormer ? [preview.measurements._ai_dormer] : []);
-  const aiDormer = aiDormersList[0] || null;
-  const dormerOverride = overrides.dormer || {};
-  const legacyFace = dormerOverride.face ?? aiDormer?.face ?? "front";
+  // Iter 79j.44 — Per-index override map. Primary (index 0) also
+  // reads the legacy singular `overrides.dormer` for backward compat.
+  const dormerOverridesMap = overrides.dormers || {};
+  const primaryOverride = dormerOverridesMap[0] || overrides.dormer || {};
   const slopesForAxis = ridgeAxis === "x" ? ["slope-front", "slope-back"] : ["slope-left", "slope-right"];
   const migrateFace = (f) => {
     if (slopesForAxis.includes(f)) return f;   // already slope-relative
     if (ridgeAxis === "x") return f === "rear" || f === "back" ? "slope-back" : "slope-front";
     return f === "rear" || f === "back" ? "slope-right" : "slope-left";
   };
-  const dormerFace = migrateFace(legacyFace);
   // Face wall width for the dormer facade: on a slope-facing dormer the
   // "face" wall runs parallel to the ridge, so its width equals the
   // ridge-parallel footprint dimension.
@@ -324,84 +324,70 @@ function buildHouseJson(preview, overrides, estimate) {
       confidence: o.style_confidence ?? o.confidence ?? null,
     };
   });
-  let derivedDormerWidth = null;
-  let derivedDormerOffsetX = null;
-  if (dormerOpeningsPositioned.length > 0) {
-    const halves = dormerOpeningsPositioned.map((o) => ({
-      left: o.cxOnWall - o.w / 2,
-      right: o.cxOnWall + o.w / 2,
-    }));
-    const leftmost = Math.min(...halves.map((s) => s.left));
-    const rightmost = Math.max(...halves.map((s) => s.right));
-    // 1.5' margin per side
-    const inferredLeft = Math.max(0, leftmost - 1.5);
-    const inferredRight = Math.min(dormerFaceWallWidth, rightmost + 1.5);
-    derivedDormerWidth = Math.max(6, inferredRight - inferredLeft);
-    // Wall center is at dormerFaceWallWidth/2 in wall coords.
-    // In world coords the wall runs from -dormerFaceWallWidth/2 to +dormerFaceWallWidth/2.
-    // dormer's inferred center X in wall coords = (inferredLeft + inferredRight)/2
-    // Convert to world X (offset from wall center):
-    derivedDormerOffsetX = ((inferredLeft + inferredRight) / 2) - dormerFaceWallWidth / 2;
-  }
-  const aiWidthSource = (aiDormer?.width_ft != null ? (aiDormer?.width_source || "") : "").toLowerCase();
-  // Iter 79j.43 — When the reconciler provided a real AI width_source
-  // (any of the enumerated tags), the value MUST come from
-  // aiDormer.width_ft verbatim. Falling through to derivedDormerWidth
-  // in that case was the "18 ft reconciled → 7.2 ft displayed" bug:
-  // the badge said DIRECT (green) but the value was silently swapped
-  // for an opening-derived guess that could be a fraction of reality.
-  const aiSourceIsAuthoritative = [
+
+  // Iter 79j.44 — Per-dormer resolver. Each dormer in aiDormersList
+  // gets independently resolved: its OWN width_ft, width_source,
+  // knee, offsetX, and any user override. The primary dormer (idx 0)
+  // additionally receives the on_dormer openings from Phase A/B for
+  // mesh placement. Additional dormers still render in 3D and now
+  // get their own editable UI row.
+  const AI_AUTHORITATIVE_TAGS = new Set([
     "direct_consensus",
     "direct_single_reading",
     "direct_disagreement",
     "back_solved_from_opening",
     "estimated_no_direct_view",
-  ].includes(aiWidthSource);
-  const dormerWidth = Number(
-    dormerOverride.width
-    ?? (aiSourceIsAuthoritative
-        ? aiDormer.width_ft
-        : (derivedDormerWidth != null
-           ? derivedDormerWidth
-           : (aiDormer?.width_ft ?? Math.min(footprintW * 0.6, 16)))),
-  );
-  const dormerKnee = Number(dormerOverride.kneeWallHeight ?? aiDormer?.knee_wall_height_ft ?? 4);
-  const dormerOffsetX = Number(
-    dormerOverride.offsetX
-    ?? (aiSourceIsAuthoritative
-        ? (aiDormer.offset_x_ft ?? 0)
-        : (derivedDormerOffsetX != null
-           ? derivedDormerOffsetX
-           : (aiDormer?.offset_x_ft ?? 0))),
-  );
-  // Iter 79j.39 — Prefer the two-phase reconciler's width_source when
-  // it's present. It tags each dormer width with a provenance label
-  // that maps 1:1 to badge colors:
-  //   direct_consensus         → green (2+ direct views agreed)
-  //   direct_single_reading    → amber (1 direct view — can't verify)
-  //   direct_disagreement      → amber ("direct reads disagree")
-  //   back_solved_from_opening → amber (no direct view; back-solved)
-  //   estimated_no_direct_view → amber-estimated (placeholder only)
-  // Legacy single-call runs won't emit width_source → fall back to
-  // the old opening-derived / raw-ai / default cascade so nothing
-  // regresses.
-  const dormerWidthSource = dormerOverride.width != null
-    ? "user"
-    : aiWidthSource === "direct_consensus"
-    ? "ai"
-    : aiWidthSource === "direct_single_reading"
-    ? "ai-single"
-    : aiWidthSource === "direct_disagreement"
-    ? "ai-disagreement"
-    : aiWidthSource === "back_solved_from_opening"
-    ? "ai-back-solved"
-    : aiWidthSource === "estimated_no_direct_view"
-    ? "ai-no-direct-view"
-    : derivedDormerWidth != null
-    ? "ai-inferred"        // legacy amber — derived from openings client-side
-    : aiDormer?.width_ft
-    ? "ai"
-    : "default";
+  ]);
+  const resolveDormer = (ad, i) => {
+    const override = i === 0 ? primaryOverride : (dormerOverridesMap[i] || {});
+    const legacyFace = override.face ?? ad?.face ?? "front";
+    const face = migrateFace(legacyFace);
+    const aiSrc = (ad?.width_ft != null ? (ad?.width_source || "") : "").toLowerCase();
+    const authoritative = AI_AUTHORITATIVE_TAGS.has(aiSrc);
+    // Width value cascade — user override → AI width_ft (verbatim when
+    // reconciler tagged provenance) → fallback. NEVER swap in a
+    // client-derived guess when the reconciler has spoken.
+    const width = Number(
+      override.width
+      ?? (authoritative
+          ? ad.width_ft
+          : (ad?.width_ft ?? Math.min(footprintW * 0.6, 16))),
+    );
+    const kneeWallHeight = Number(override.kneeWallHeight ?? ad?.knee_wall_height_ft ?? 4);
+    const offsetX = Number(
+      override.offsetX
+      ?? (authoritative
+          ? (ad?.offset_x_ft ?? 0)
+          : (ad?.offset_x_ft ?? 0)),
+    );
+    const widthSource = override.width != null
+      ? "user"
+      : aiSrc === "direct_consensus" ? "ai"
+      : aiSrc === "direct_single_reading" ? "ai-single"
+      : aiSrc === "direct_disagreement" ? "ai-disagreement"
+      : aiSrc === "back_solved_from_opening" ? "ai-back-solved"
+      : aiSrc === "estimated_no_direct_view" ? "ai-no-direct-view"
+      : ad?.width_ft
+      ? "ai"
+      : "default";
+    return {
+      face,
+      width,
+      widthSource,
+      kneeWallHeight,
+      offsetX,
+      // Only the primary dormer receives the on_dormer opening list
+      // for now (bbox-to-dormer routing is a follow-up).
+      openings: i === 0 ? dormerOpeningsPositioned : [],
+      faceWallWidth: dormerFaceWallWidth,
+      _aiIndex: i,
+      _reconciliationNote: ad?._reconciliation_note || null,
+      _aiWidthFt: ad?.width_ft ?? null,
+      _aiWidthSource: aiSrc || null,
+    };
+  };
+  const dormersResolved = aiDormersList.map(resolveDormer);
+  const primaryDormer = dormersResolved[0] || null;
 
   // Iter 79j.31 — gable-end assignment now follows ridge axis.
   // Every downstream consumer (wall polygons, per-wall takeoff,
@@ -440,64 +426,13 @@ function buildHouseJson(preview, overrides, estimate) {
       pitchAiRaw: aiPitch?.raw ?? null,
       pitchAiSamples: aiPitch?.sampleCount ?? 0,
       pitchEstimated: pitchSource === "default",
-      dormer: roofType === "gable-shed-dormer"
-        ? {
-            face: dormerFace,
-            width: dormerWidth,
-            widthSource: dormerWidthSource,
-            kneeWallHeight: dormerKnee,
-            offsetX: dormerOffsetX,
-            openings: dormerOpeningsPositioned,
-            faceWallWidth: dormerFaceWallWidth,
-          }
-        : null,
-      // Iter 79j.41 — Full dormer array. Entry [0] is the primary
-      // dormer (same object as `dormer` above — kept for back-compat).
-      // Entries [1..N] are additional dormers from _ai_dormers[],
-      // rendered by buildScene without contractor overrides (until
-      // per-dormer override UI ships). Each carries its own face and
-      // width_source so material math and provenance stay correct.
-      dormers: roofType === "gable-shed-dormer"
-        ? [
-            {
-              face: dormerFace,
-              width: dormerWidth,
-              widthSource: dormerWidthSource,
-              kneeWallHeight: dormerKnee,
-              offsetX: dormerOffsetX,
-              openings: dormerOpeningsPositioned,
-              faceWallWidth: dormerFaceWallWidth,
-              _aiIndex: 0,
-              _reconciliationNote: aiDormer?._reconciliation_note || null,
-            },
-            ...aiDormersList.slice(1).map((ad, i) => {
-              // Migrate face label through the same ridge-axis rules.
-              const face = migrateFace(ad?.face || "front");
-              const w = Number(ad?.width_ft || 12);
-              const knee = Number(ad?.knee_wall_height_ft || 4);
-              const offX = Number(ad?.offset_x_ft || 0);
-              const src = (ad?.width_source || "").toLowerCase();
-              const widthSource =
-                src === "direct_consensus" ? "ai"
-                : src === "direct_single_reading" ? "ai-single"
-                : src === "direct_disagreement" ? "ai-disagreement"
-                : src === "back_solved_from_opening" ? "ai-back-solved"
-                : src === "estimated_no_direct_view" ? "ai-no-direct-view"
-                : "ai";
-              return {
-                face,
-                width: w,
-                widthSource,
-                kneeWallHeight: knee,
-                offsetX: offX,
-                openings: [],           // per-dormer opening assignment is a follow-up
-                faceWallWidth: dormerFaceWallWidth,
-                _aiIndex: i + 1,
-                _reconciliationNote: ad?._reconciliation_note || null,
-              };
-            }),
-          ]
-        : [],
+      dormer: roofType === "gable-shed-dormer" ? primaryDormer : null,
+      // Iter 79j.44 — Full dormer array now populated by resolveDormer
+      // (per-index override support). `roof.dormer` above is a
+      // back-compat alias for entry [0]. Every entry carries its own
+      // face + width + width_source + knee + offset so multi-dormer
+      // houses render correctly AND get one editable UI row each.
+      dormers: roofType === "gable-shed-dormer" ? dormersResolved : [],
     },
     // Iter 79j.28 — Colors. Priority chain (buildScene reads this):
     //   siding: estimate override (palette name → hex) > AI-sampled hex > default grey
@@ -1465,6 +1400,10 @@ export default function HouseModel3D({ preview, estimate }) {
               gets N-1 additional dormers rendered in 3D without a
               contractor override UI yet. Show the count here so the
               contractor knows to look at the model. */}
+          {/* Iter 79j.44 — Per-dormer editable rows. Each detected
+              dormer (from _ai_dormers[]) gets its own row showing the
+              reconciled width_ft VERBATIM plus a provenance badge.
+              Overrides are keyed by dormer index in overrides.dormers[]. */}
           {house.roof.type === "gable-shed-dormer" && (house.roof.dormers?.length || 0) > 1 && (
             <div
               className="flex items-center gap-2 text-[10px] leading-tight bg-[#DCFCE7] border border-[#16A34A] text-[#166534] px-2 py-1"
@@ -1473,86 +1412,94 @@ export default function HouseModel3D({ preview, estimate }) {
             >
               <Check className="w-3 h-3" />
               <span className="font-bold uppercase tracking-wider text-[9px]">{house.roof.dormers.length} dormers detected</span>
-              <span className="text-[10px]">— all rendered in 3D; edit the primary below</span>
+              <span className="text-[10px]">— one row per dormer</span>
             </div>
           )}
-          {house.roof.type === "gable-shed-dormer" && house.roof.dormer && (
-            <div className="flex items-center gap-2 text-[11px]" data-testid="ai-measure-3d-dormer-row">
-              <span className="text-[#71717A] w-24">Dormer W (ft)</span>
+          {house.roof.type === "gable-shed-dormer" && (house.roof.dormers || []).map((d, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 text-[11px]"
+              data-testid={`ai-measure-3d-dormer-row-${i}`}
+            >
+              <span className="text-[#71717A] w-24">
+                Dormer {i + 1} W (ft)
+                <span className="block text-[9px] italic text-[#A1A1AA] normal-case">{d.face}</span>
+              </span>
               <input
                 type="number" step="0.5" min="4"
-                value={Math.round(house.roof.dormer.width * 10) / 10}
-                onChange={(e) => setOverrides((o) => ({ ...o, dormer: { ...(o.dormer || {}), width: parseFloat(e.target.value) || house.roof.dormer.width } }))}
+                value={Math.round(d.width * 10) / 10}
+                onChange={(e) => setOverrides((o) => ({
+                  ...o,
+                  dormers: {
+                    ...(o.dormers || {}),
+                    [i]: { ...((o.dormers || {})[i] || {}), width: parseFloat(e.target.value) || d.width },
+                  },
+                  // Keep legacy singular in sync for primary edit so any
+                  // downstream code still reading overrides.dormer keeps
+                  // working during the transition.
+                  ...(i === 0 ? { dormer: { ...(o.dormer || {}), width: parseFloat(e.target.value) || d.width } } : {}),
+                }))}
                 className="w-20 px-2 py-1 border border-[#E4E4E7] font-mono-num text-right"
-                data-testid="ai-measure-3d-dormer-width"
+                data-testid={`ai-measure-3d-dormer-width-${i}`}
               />
-              {house.roof.dormer.widthSource === "ai" && (
+              {d.widthSource === "ai" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
                   title="Direct-view dormer readings across 2+ photos agreed within ±1 ft — median taken"
-                  data-testid="ai-measure-3d-dormer-width-consensus"
+                  data-testid={`ai-measure-3d-dormer-width-consensus-${i}`}
                 >
                   <Check className="w-2.5 h-2.5" /> Direct
                 </span>
               )}
-              {house.roof.dormer.widthSource === "ai-disagreement" && (
+              {d.widthSource === "ai-disagreement" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
                   title="Direct-view dormer widths disagreed by >1 ft. The strongest reading was kept, others rejected. Open Debug to see the trace."
-                  data-testid="ai-measure-3d-dormer-width-disagreement"
+                  data-testid={`ai-measure-3d-dormer-width-disagreement-${i}`}
                 >
                   <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Direct reads disagree
                 </span>
               )}
-              {house.roof.dormer.widthSource === "ai-single" && (
+              {d.widthSource === "ai-single" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
                   title="Only ONE photo captured a direct view of this dormer face — the reading is real but couldn't be cross-checked. Capture a second angle before quoting."
-                  data-testid="ai-measure-3d-dormer-width-single-reading"
+                  data-testid={`ai-measure-3d-dormer-width-single-reading-${i}`}
                 >
                   <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Single reading
                 </span>
               )}
-              {house.roof.dormer.widthSource === "ai-back-solved" && (
+              {d.widthSource === "ai-back-solved" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
                   title="No direct-view width reading — back-solved from a window on the dormer face (window width + 3 ft trim per side). Verify before ordering."
-                  data-testid="ai-measure-3d-dormer-width-back-solved"
+                  data-testid={`ai-measure-3d-dormer-width-back-solved-${i}`}
                 >
                   <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Back-solved
                 </span>
               )}
-              {house.roof.dormer.widthSource === "ai-no-direct-view" && (
+              {d.widthSource === "ai-no-direct-view" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
                   title="No photo captured a direct view of the dormer face — this is a 12 ft placeholder. Capture a straight-on shot before quoting."
-                  data-testid="ai-measure-3d-dormer-width-no-direct"
+                  data-testid={`ai-measure-3d-dormer-width-no-direct-${i}`}
                 >
                   <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> No direct read
                 </span>
               )}
-              {house.roof.dormer.widthSource === "ai-inferred" && (
-                <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
-                  title={`Inferred from ${house.roof.dormer.openings?.length ?? 0} on-dormer window(s) + 1.5' margin — verify before ordering`}
-                  data-testid="ai-measure-3d-dormer-width-inferred"
-                >
-                  <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> estimated
-                </span>
-              )}
-              {house.roof.dormer.widthSource === "user" && (
+              {d.widthSource === "user" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
                   title="You overrode the dormer width — hit Re-run to feed this back to the estimator"
-                  data-testid="ai-measure-3d-dormer-width-user"
+                  data-testid={`ai-measure-3d-dormer-width-user-${i}`}
                 >
                   edited
                 </span>
               )}
-              {house.roof.dormer.widthSource === "default" && <Amber />}
+              {d.widthSource === "default" && <Amber />}
             </div>
-          )}
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "ai-disagreement" || house.roof.dormer?.widthSource === "ai-back-solved" || house.roof.dormer?.widthSource === "ai-no-direct-view" || house.roof.dormer?.widthSource === "default") && (
+          ))}
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || (house.roof.dormers || []).some((d) => ["ai-disagreement", "ai-single", "ai-back-solved", "ai-no-direct-view", "default"].includes(d.widthSource))) && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>

@@ -104,16 +104,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // independently by emptying the field.
   const [brickCourse, setBrickCourse] = useState("");
   const [sidingExposure, setSidingExposure] = useState("");
-  // Iter 57j — Deep Dormer Scan toggle. When ON, the backend runs a
-  // parallel Claude pass per ground-level photo that crops + upscales
-  // the roofline strip to surface small dormers that get lost when
-  // Claude downsizes full-house shots. Default OFF — keeps the fast
-  // path fast for the 90% of jobs without dormers.
-  // Iter 78u — Default ON. Missing dormers is the #1 source of
-  // under-quoting on 1.5-story Capes / dormer-rich homes. The deep
-  // scan only adds ~5-10s and catches what the main pass misses
-  // because phone photos get downsized to ~1568px before tokenization.
-  const [deepDormerScan, setDeepDormerScan] = useState(true);
+  // Iter 79j.44 — Deep Dormer Scan removed. Two-phase Phase A/B
+  // owns dormer detection end-to-end. Flag no longer sent to the
+  // backend; toggle UI + state variable are gone.
   // Iter 79j.15 — A/B model dropdown. Persisted so a contractor's
   // last choice survives modal close/reopen. Keys must match the
   // backend `_MODEL_CHOICES` registry.
@@ -1122,14 +1115,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (sidingExposure && parseFloat(sidingExposure) > 0) {
         fd.append("siding_exposure_in", String(parseFloat(sidingExposure)));
       }
-      // Iter 57j — Deep Dormer Scan. Backend runs a parallel
-      // crop-and-upscale pass per ground-level photo when enabled.
-      if (deepDormerScan) {
-        fd.append("deep_dormer_scan", "true");
-      }
+      // Iter 79j.44 — Deep Dormer Scan is a no-op now; Phase A/B
+      // owns dormer detection. Don't append the flag — cleaner
+      // request payload.
       // Elevation tags aligned with the backend photo order
-      // (photo_paths first, then files). Used to skip aerial/detail
-      // shots in the dormer pass and seed wall hints.
+      // (photo_paths first, then files). Kept for elevation hints
+      // (front/right/back/left) that Phase A uses to seed extraction.
       const elevTagList = [...passThroughElevs, ...annotatedElevs];
       if (elevTagList.length) {
         fd.append("elevation_tags", elevTagList.join(","));
@@ -1189,7 +1180,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         }
       }
       if (!result) {
-        throw new Error("AI measure timed out after 5 minutes — please try again with fewer photos or turn off Deep Dormer Scan");
+        throw new Error("AI measure timed out after 5 minutes — please try again with fewer photos");
       }
       const data = result;
       // Iter 79j.37 — Thread per-photo extractions + pipeline flag
@@ -2832,29 +2823,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   <div className="text-[9px] text-[#A1A1AA] mt-2 italic">
                     Backend snaps every window to nearest standard size after Claude runs, regardless.
                   </div>
-                  {/* Iter 57j — Deep Dormer Scan toggle. Catches small
-                      dormers / gable windows / eyebrow vents that get
-                      lost when Claude downsizes full-house photos. */}
-                  <label
-                    className="flex items-start gap-2 mt-3 pt-3 border-t border-[#E4E4E7] cursor-pointer"
-                    data-testid="ai-measure-deep-dormer-row"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={deepDormerScan}
-                      onChange={(e) => setDeepDormerScan(e.target.checked)}
-                      className="mt-0.5 accent-[#7C3AED]"
-                      data-testid="ai-measure-deep-dormer-toggle"
-                    />
-                    <div className="flex-1">
-                      <div className="text-[10px] uppercase tracking-wider text-[#09090B] font-bold leading-tight">
-                        🔍 Deep dormer scan
-                      </div>
-                      <div className="text-[9px] text-[#A1A1AA] mt-0.5">
-                        Runs an extra Claude pass on the cropped roofline of each ground photo. Catches small dormers / eyebrow vents. Adds ~5–10 s.
-                      </div>
-                    </div>
-                  </label>
+                  {/* Iter 79j.44 — Deep Dormer Scan removed. Two-phase
+                      Phase A/B now owns dormer detection end-to-end
+                      via the `dormers[]` array with per-face provenance.
+                      The legacy roofline-crop scan was injecting corrupt
+                      data (null opening_ids, wrong-wall face SF crediting,
+                      hits on nonexistent walls). UI + request flag gone. */}
                 </div>
               )}
               <div className="text-[10px] text-[#A1A1AA] flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0">
@@ -2882,13 +2856,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   type="button"
                   onClick={() => setCalibOpen((v) => !v)}
                   className={`text-[10px] uppercase tracking-wider font-bold flex items-center gap-1 whitespace-nowrap ${
-                    (brickCourse || sidingExposure || deepDormerScan) ? "text-[#7C3AED]" : "text-[#A1A1AA] hover:text-[#7C3AED]"
+                    (brickCourse || sidingExposure) ? "text-[#7C3AED]" : "text-[#A1A1AA] hover:text-[#7C3AED]"
                   }`}
                   data-testid="ai-measure-course-sizing-toggle"
-                  title="Tell Claude the brick course or siding row height, or enable Deep Dormer Scan (optional)"
+                  title="Tell Claude the brick course or siding row height (optional)"
                 >
                   <Ruler className="w-3 h-3" />
-                  {(brickCourse || sidingExposure || deepDormerScan) ? "Calibration on" : "Calibrate window sizing"}
+                  {(brickCourse || sidingExposure) ? "Calibration on" : "Calibrate window sizing"}
                 </button>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2 min-w-0 [&_button]:whitespace-nowrap">

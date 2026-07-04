@@ -8,10 +8,9 @@ Four defects surfaced by the run-1 trace analysis:
      green DIRECT badge) → width value cascade must respect the
      AI-provided `width_source` and never silently swap in a
      client-derived guess.
-  3. Dormer scan openings misassigned to the wall + face sf not
-     credited → `_merge_dormer_hits` must set `on_dormer=True`, mint
-     a stable opening_id, populate `_source_photo_indices`, and
-     synthesise a face_sqft estimate when Claude returns 0.
+  3. Dormer scan subsystem removed in Iter 79j.44 — Phase A/B now owns
+     dormer detection end-to-end. Prior test cases for
+     `_merge_dormer_hits` deleted alongside the helper itself.
   4. `direct_consensus` tag was applied to a SINGLE-photo reading →
      schema now enumerates `direct_single_reading` (amber) as its
      own value, reserving `direct_consensus` for 2+ agreeing readings.
@@ -61,88 +60,6 @@ def test_is_empty_extraction_ignores_true_extraction():
 def test_is_empty_extraction_flags_extraction_errors():
     m = _mod()
     assert m._is_empty_extraction({"_extraction_error": "timeout"}) is True
-
-
-# ------------------------------------------------------------------ #
-# 2 & 3. Dormer-scan merge — attachment + face sf crediting          #
-# ------------------------------------------------------------------ #
-def test_merge_dormer_hits_tags_on_dormer_and_opening_id():
-    m = _mod()
-    raw = {"openings": [], "walls": [{"label": "front", "width_ft": 30}]}
-    hits = [
-        {
-            "type": "dormer",
-            "width_in": 30,
-            "height_in": 42,
-            "wall": "front",
-            "dormer_face_sqft": 40,
-            "_photo_index": 3,
-        }
-    ]
-    m._merge_dormer_hits(raw, hits)
-    ops = raw["openings"]
-    assert len(ops) == 1, "hit should be appended as an opening"
-    op = ops[0]
-    assert op["on_dormer"] is True, "dormer-scan hits MUST be tagged on_dormer=True"
-    assert op["opening_id"].startswith("dormer_scan_"), "must mint stable opening_id"
-    assert "along_wall_ft" in op, "must populate along_wall_ft field (even null)"
-    assert op["along_wall_ft"] is None
-    assert op["photo_idx"] == 3
-    assert op["_source_photo_indices"] == [3]
-    assert op["_via_dormer_scan"] is True
-    # Face sf crediting on the wall.
-    front = next(w for w in raw["walls"] if w["label"] == "front")
-    assert front["dormer_face_sqft"] == 40
-
-
-def test_merge_dormer_hits_synthesizes_face_sf_when_zero():
-    """If Claude returns valid width/height but 0 face_sqft, we still
-    must credit an estimated face area — an empty
-    dormer_scan_added_sf_by_wall map was the run-1 bug."""
-    m = _mod()
-    raw = {"openings": [], "walls": [{"label": "front", "width_ft": 30}]}
-    hits = [
-        {
-            "type": "dormer",
-            "width_in": 36,
-            "height_in": 48,
-            "wall": "front",
-            "dormer_face_sqft": 0,
-            "_photo_index": 2,
-        }
-    ]
-    m._merge_dormer_hits(raw, hits)
-    assert raw["dormer_scan_synthesized_face_sf"] is True
-    assert "front" in raw["dormer_scan_added_sf_by_wall"]
-    sf = raw["dormer_scan_added_sf_by_wall"]["front"]
-    assert 16.0 <= sf <= 72.0, f"estimated face_sqft should fall in 16-72 band, got {sf}"
-    front = next(w for w in raw["walls"] if w["label"] == "front")
-    assert front["dormer_face_sqft"] == sf
-
-
-def test_merge_dormer_hits_preserves_multiple_hits():
-    m = _mod()
-    raw = {"openings": [], "walls": [
-        {"label": "front", "width_ft": 30},
-        {"label": "back", "width_ft": 30},
-    ]}
-    hits = [
-        {"type": "dormer", "width_in": 30, "height_in": 42, "wall": "front",
-         "dormer_face_sqft": 40, "_photo_index": 1},
-        {"type": "dormer", "width_in": 30, "height_in": 42, "wall": "back",
-         "dormer_face_sqft": 40, "_photo_index": 4},
-    ]
-    m._merge_dormer_hits(raw, hits)
-    assert len(raw["openings"]) == 2
-    # Each opening must carry a UNIQUE opening_id.
-    ids = {o["opening_id"] for o in raw["openings"]}
-    assert len(ids) == 2
-    # Each opening must attach to the right dormer face wall.
-    front_op = next(o for o in raw["openings"] if o["wall"] == "front")
-    back_op = next(o for o in raw["openings"] if o["wall"] == "back")
-    assert front_op["photo_idx"] == 1
-    assert back_op["photo_idx"] == 4
-    assert front_op["on_dormer"] is True and back_op["on_dormer"] is True
 
 
 # ------------------------------------------------------------------ #
@@ -208,3 +125,39 @@ def test_aggregate_omits_empty_metadata_on_healthy_run():
     measurements = m._aggregate_to_hover_shape(raw)
     assert measurements.get("_ai_empty_photos") == []
     assert measurements.get("_ai_orphaned_walls") == []
+
+
+# ------------------------------------------------------------------ #
+# 6. Iter 79j.44 — dormer-scan subsystem removed                     #
+# ------------------------------------------------------------------ #
+def test_dormer_scan_helpers_are_gone():
+    """The DORMER_PROMPT + _crop_top_strip + _run_dormer_pass_for_photo
+    + _is_skyline_photo + _merge_dormer_hits helpers were injecting
+    corrupt data (null opening_ids, hits on `rear-left`, wrong-wall
+    face SF crediting). Two-phase Phase A/B now owns dormer detection.
+    Verify the legacy helpers are truly gone so no code path can
+    accidentally re-invoke them."""
+    m = _mod()
+    for name in ("DORMER_PROMPT", "_crop_top_strip",
+                 "_run_dormer_pass_for_photo", "_is_skyline_photo",
+                 "_merge_dormer_hits"):
+        assert not hasattr(m, name), (
+            f"{name} is still defined in ai_measure — legacy dormer-scan "
+            f"code paths must be fully removed."
+        )
+
+
+def test_deep_dormer_scan_flag_still_accepted_but_noop():
+    """The `deep_dormer_scan` Form flag is preserved on the request
+    schema for backward compat, but any invocation of the scan block
+    inside _execute_ai_measure_worker has been replaced by a no-op."""
+    src = Path("/app/backend/routes/ai_measure.py").read_text()
+    # The active worker no longer references dormer_scan_added_* fields.
+    assert "raw[\"dormer_scan_added" not in src
+    # The legacy scan-orchestration block (stage flip + parallel dispatch)
+    # is gone.
+    assert "await _set_stage(\"dormer_scan\")" not in src
+    assert "dormer_coros" not in src
+    # Flag still accepted as Form input for older clients.
+    assert "deep_dormer_scan: bool = Form(False)" in src
+

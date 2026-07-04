@@ -1350,238 +1350,17 @@ def _build_annotation_hint(annotations: dict | None) -> str:
 
 
 # =====================================================================
-# Iter 57j — DEEP DORMER SCAN
+# Iter 79j.44 — REMOVED: Deep-Dormer-Scan subsystem
 # =====================================================================
-# Claude Opus's vision pipeline downsizes every image to ~1568 px on its
-# longest edge before tokenizing. On a typical 4032×3024 phone photo of
-# a whole house, an 8-foot-wide dormer that's 200 px tall in the original
-# becomes ~80 px tall after resize — and after tokenization (one token
-# per ~14 px patch), that's effectively 6 tokens of total information.
-# Not enough to detect anything subtle like an eyebrow vent or a small
-# gable dormer.
-#
-# Fix: crop the top ~38% of each ground-level photo, upscale 2× (free
-# on Claude's side — they downsize anyway), and send it as a SEPARATE
-# scoped call asking ONLY for roofline detail.
-DORMER_PROMPT = """You are looking at the TOP 38% of a single house photo \
-(the roofline). Your only job: find dormers, gable windows, eyebrow vents, \
-and any windows set INTO the roof slope. Ignore everything below the eave \
-line. Return JSON only:
-
-{
-  "found": [
-    {"type": "dormer" | "gable_window" | "eyebrow_vent" | "roof_window",
-     "style": "Double Hung" | "Single Hung" | "Casement" | "Picture" | "Half-Round" | "Octagon" | "Hexagon" | "Arch" | "Other Shape" | "",
-     "width_in": number,
-     "height_in": number,
-     "wall": "front" | "back" | "left" | "right" | "other",
-     "dormer_face_sqft": number,
-     "shape": "gable" | "shed" | "eyebrow" | "hip" | "n/a",
-     "notes": "<1 sentence>"
-    }
-  ],
-  "scanned": true
-}
-
-Rules:
-1. ONLY report items in the top 38% of the original photo (above the eave).
-2. Typical residential dormer faces are 16-72 ft².
-3. If you see NOTHING, return {"found": [], "scanned": true}. Don't invent.
-4. JSON only. No markdown fences.
-"""
-
-
-def _crop_top_strip(raw_bytes: bytes, top_pct: float = 0.38, upscale: float = 2.0) -> Optional[bytes]:
-    """Take the top `top_pct` of `raw_bytes`, optionally upscale by
-    `upscale`, return JPEG bytes ready to send to Claude."""
-    try:
-        with Image.open(io.BytesIO(raw_bytes)) as im:
-            im.load()
-            w, h = im.size
-            if w <= 0 or h <= 0:
-                return None
-            crop_h = max(1, int(h * top_pct))
-            strip = im.crop((0, 0, w, crop_h))
-            if upscale and upscale > 1.0:
-                long_edge = max(strip.size)
-                if long_edge < 1568:
-                    new_w = int(strip.size[0] * upscale)
-                    new_h = int(strip.size[1] * upscale)
-                    strip = strip.resize((new_w, new_h), Image.NEAREST)
-            if strip.mode in ("RGBA", "P"):
-                strip = strip.convert("RGB")
-            buf = io.BytesIO()
-            strip.save(buf, format="JPEG", quality=82, optimize=True)
-            return buf.getvalue()
-    except Exception:
-        return None
-
-
-async def _run_dormer_pass_for_photo(
-    api_key: str, user_id: str, raw_bytes: bytes, wall_hint: str, photo_idx: int,
-) -> list[dict]:
-    """Run ONE dormer-scan call against a single photo's cropped top strip."""
-    cropped = _crop_top_strip(raw_bytes)
-    if not cropped:
-        return []
-    chat = LlmChat(
-        api_key=api_key,
-        session_id=f"dormer-scan-{user_id}-{uuid.uuid4().hex[:8]}",
-        system_message=DORMER_PROMPT,
-    ).with_model("anthropic", MODEL_NAME)
-    user_msg = UserMessage(
-        text=(
-            f"This is the top 38% (roofline strip) of an exterior house "
-            f"photo. Wall hint: '{wall_hint or 'unknown'}' — if you find "
-            f"dormers or roof windows, tag them on this wall unless "
-            f"the geometry obviously says otherwise. Return JSON only."
-        ),
-        file_contents=[ImageContent(image_base64=base64.b64encode(cropped).decode("ascii"))],
-    )
-    try:
-        reply = await chat.send_message(user_msg)
-    except Exception:
-        return []
-    try:
-        payload = _json_from_reply(reply or "")
-    except Exception:
-        return []
-    found = payload.get("found") or []
-    out: list[dict] = []
-    for f in found:
-        try:
-            w = float(f.get("width_in") or 0)
-            h = float(f.get("height_in") or 0)
-        except (TypeError, ValueError):
-            continue
-        if w <= 0 and h <= 0 and not f.get("dormer_face_sqft"):
-            continue
-        out.append({
-            **f,
-            "_photo_index": photo_idx,
-            "_via_dormer_scan": True,
-        })
-    return out
-
-
-def _is_skyline_photo(elev: str) -> bool:
-    """Aerial and Detail shots don't have rooflines to scan."""
-    e = (elev or "").lower()
-    return e in ("aerial", "detail")
-
-
-def _merge_dormer_hits(raw: dict, dormer_hits: list[dict]) -> None:
-    """Merge dormer-scan hits into `openings[]` + `walls[].dormer_face_sqft`.
-
-    Iter 79j.43 — Every hit from the dormer scan by definition lives
-    on a dormer face, so we MUST tag `on_dormer: True` and attach the
-    opening to the correct dormer entry (not the wall behind it).
-    Also generate a stable `opening_id` (prefixed `dormer_scan_`) and
-    populate `along_wall_ft = null` so downstream provenance + dedup
-    code recognises the row shape. When Claude returns no explicit
-    `dormer_face_sqft` but has valid window dimensions, we synthesise
-    a face_sqft estimate so the wall's takeoff isn't silently under-
-    credited (typical dormer face ≈ 1.4 × window height, capped at
-    the residential 16-72 ft² band)."""
-    if not dormer_hits:
-        return
-    existing_keys: set[tuple] = set()
-    for o in raw.get("openings") or []:
-        try:
-            w = float(o.get("width_in") or 0)
-            h = float(o.get("height_in") or 0)
-        except (TypeError, ValueError):
-            continue
-        existing_keys.add((
-            (o.get("wall") or "other").lower(),
-            (o.get("type") or "").lower(),
-            round(w / 6) * 6,
-            round(h / 6) * 6,
-        ))
-
-    added_openings = 0
-    dormer_sf_by_wall: dict[str, float] = {}
-    synthesized_face_sf = False
-    walls = raw.get("walls") or []
-    wall_index = {(w.get("label") or "").lower(): w for w in walls}
-    for h in dormer_hits:
-        wi = float(h.get("width_in") or 0)
-        hi = float(h.get("height_in") or 0)
-        wall = (h.get("wall") or "other").lower()
-        dormer_face = float(h.get("dormer_face_sqft") or 0)
-        photo_idx = h.get("_photo_index")
-        if wi > 0 and hi > 0:
-            key = (wall, "window", round(wi / 6) * 6, round(hi / 6) * 6)
-            if key not in existing_keys:
-                # Iter 79j.43 — Tag on_dormer=True so downstream
-                # material math (apply_roof_type_material_math) credits
-                # the dormer face against the correct facade, and so
-                # the frontend routes the opening to the dormer mesh
-                # instead of the wall.
-                opening_id = f"dormer_scan_{uuid.uuid4().hex[:8]}"
-                raw.setdefault("openings", []).append({
-                    "opening_id": opening_id,
-                    "type": "window",
-                    "style": (h.get("style") or "").strip(),
-                    "style_confidence": 90,
-                    "width_in": wi,
-                    "height_in": hi,
-                    "wall": wall,
-                    "on_dormer": True,
-                    "along_wall_ft": None,
-                    "photo_idx": photo_idx,
-                    "_via_dormer_scan": True,
-                    "_source_photo_indices": [photo_idx] if photo_idx is not None else [],
-                })
-                existing_keys.add(key)
-                added_openings += 1
-        if dormer_face > 0:
-            dormer_sf_by_wall[wall] = dormer_sf_by_wall.get(wall, 0) + dormer_face
-        elif wi > 0 and hi > 0:
-            # Iter 79j.43 — Claude often reports width/height for the
-            # window ON the dormer but leaves dormer_face_sqft = 0.
-            # Synthesise an estimated face from the opening dims so
-            # the wall's takeoff still gets credited (empty map was
-            # the bug that hid dormer face SF for every scan run).
-            # Dormer face height ≈ knee(4ft) + window height + 1.5ft
-            # trim margin; face width ≈ window width + 3ft trim margin.
-            est_face = max(16.0, min(72.0,
-                (wi / 12.0 + 3.0) * (hi / 12.0 + 1.5)))
-            dormer_sf_by_wall[wall] = dormer_sf_by_wall.get(wall, 0) + est_face
-            synthesized_face_sf = True
-
-    for wall, sf in dormer_sf_by_wall.items():
-        w = wall_index.get(wall)
-        if w is None:
-            new_wall = {
-                "label": wall, "width_ft": 0, "height_ft": 0,
-                "gable_triangle_height_ft": 0,
-                "dormer_face_sqft": sf,
-                "siding_pct_this_wall": 100,
-                "confidence": 50,
-                "confidence_reasoning": "Synthesized from dormer scan — verify the wall's main dimensions.",
-            }
-            walls.append(new_wall)
-            wall_index[wall] = new_wall
-        else:
-            w["dormer_face_sqft"] = float(w.get("dormer_face_sqft") or 0) + sf
-
-    raw["walls"] = walls
-    raw["dormer_scan_added_openings"] = added_openings
-    raw["dormer_scan_added_sf_by_wall"] = dormer_sf_by_wall
-    raw["dormer_scan_synthesized_face_sf"] = synthesized_face_sf
-    prev_notes = (raw.get("notes") or "").strip()
-    total_added_sf = sum(dormer_sf_by_wall.values())
-    if added_openings or total_added_sf:
-        marker = (
-            f"Deep dormer scan added {added_openings} opening"
-            f"{'s' if added_openings != 1 else ''}"
-            + (f" and {total_added_sf:.0f} ft² of dormer face area" if total_added_sf else "")
-            + (" (face area estimated from window dims)" if synthesized_face_sf else "")
-            + " from roofline crops. "
-        )
-        raw["notes"] = (marker + prev_notes).strip()
-
+# The legacy roofline-crop scan (DORMER_PROMPT, _crop_top_strip,
+# _run_dormer_pass_for_photo, _is_skyline_photo, _merge_dormer_hits)
+# has been removed. Two-phase Phase A/B now owns dormer detection
+# end-to-end via the `dormers[]` array with per-face + `width_source`
+# provenance. The old scan was injecting corrupt data: openings with
+# null opening_ids, hits on nonexistent walls (e.g. `rear-left`), and
+# face SF credited to the wrong wall for side-slope dormers. The
+# `deep_dormer_scan` request flag is still accepted for backward
+# compatibility but is now a no-op — see `_execute_ai_measure_worker`.
 
 
 def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dict:
@@ -3376,35 +3155,15 @@ async def _execute_ai_measure_worker(
             raw = _json_from_reply(reply_text or "")
             raw["_pipeline"] = "single_call"
 
-        if deep_dormer_scan:
-            await _set_stage("dormer_scan")
-            elev_list = [
-                (t or "").strip().lower()
-                for t in (elevation_tags or "").split(",")
-            ]
-            while len(elev_list) < len(image_payloads):
-                elev_list.append("")
-            dormer_coros = []
-            for idx, ((_ctype, raw_bytes), elev) in enumerate(zip(image_payloads, elev_list)):
-                if _is_skyline_photo(elev):
-                    continue
-                dormer_coros.append(
-                    _run_dormer_pass_for_photo(api_key, user_id, raw_bytes, elev, idx)
-                )
-            if dormer_coros:
-                # Iter 79e — also cap the parallel dormer scan. 300 s is
-                # comfortably above the realistic p99 (12 photos × ~20 s
-                # each in parallel ≈ 30 s wall-clock) but stops a single
-                # stuck request from holding up the whole run.
-                results = await asyncio.wait_for(
-                    asyncio.gather(*dormer_coros, return_exceptions=True),
-                    timeout=300,
-                )
-                all_hits: list[dict] = []
-                for r in results:
-                    if isinstance(r, list):
-                        all_hits.extend(r)
-                _merge_dormer_hits(raw, all_hits)
+        # Iter 79j.44 — Removed deep_dormer_scan invocation. Two-phase
+        # Phase A/B now owns dormer detection end-to-end (dormers[]
+        # array with per-face + width_source provenance). The legacy
+        # roofline-crop scan was injecting corrupt data — openings
+        # with null opening_ids, hits on nonexistent walls (e.g.
+        # 'rear-left'), and face SF credited to the wrong wall for
+        # side-slope dormers. The `deep_dormer_scan` request flag is
+        # still accepted for backward compat but is now a no-op.
+        _ = deep_dormer_scan  # accepted, ignored
 
         await _set_stage("aggregating")
         # Iter 78z — Annotations were already loaded above (for the
