@@ -1,0 +1,51 @@
+{
+  "summary": "Validated Iter 79j.43 + 79j.44 fixes for the 4 Run 3 defects via (a) pytest suite (51/51 green) and (b) synthetic MongoDB injection into ai_measure_runs to exercise the AIMeasureButton preview + HouseModel3D 3D tab. All four defects verified end-to-end. Regression suite fully green.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_run1_defects.py",
+    "/app/backend/tests/test_two_phase_pipeline.py",
+    "/app/backend/tests/test_opening_dedup_twin_safety.py",
+    "/app/backend/tests/test_dormers_array_end_to_end.py",
+    "/app/backend/tests/test_anthropic_direct_key.py",
+    "/app/backend/tests/test_roof_type_material_math.py",
+    "/app/test_reports/pytest/iter33_run1_defects.xml"
+  ],
+  "verification_details": {
+    "defect_1_empty_photo_retry_and_orphaned_wall_banner": {
+      "backend_pytest": "9/9 test_run1_defects.py PASSED (_is_empty_extraction detection + RECONCILE prompt + aggregate metadata forwarding)",
+      "frontend_synthetic": "Injected measurements._ai_empty_photos=[{photo_idx:2,reason:'empty'}] + _ai_orphaned_walls=['left'] into ai_measure_runs; opened AI Measure modal → clicked 'Restore preview'; observed: ai-measure-empty-photos-banner (visible, correct amber text 'AI extraction gaps detected'), ai-measure-empty-photos-list ('Photo #3 — empty'), ai-measure-orphaned-walls ('Walls with no direct-view coverage: left.') all present."
+    },
+    "defect_2_per_dormer_editable_rows": {
+      "frontend_synthetic": "Injected _ai_dormers=[{width_ft:13.5, source:consensus, face:front}, {width_ft:16, source:single_reading, face:back}] with _ai_roof_type=gable-shed-dormer, conf=0.9. In 3D tab observed ai-measure-3d-dormers-count='2 dormers detected — one row per dormer', ai-measure-3d-dormer-row-0 with width=13.5 verbatim, ai-measure-3d-dormer-row-1 with width=16 verbatim (no averaging)."
+    },
+    "defect_3_dormer_scan_subsystem_removed": {
+      "backend_pytest": "test_run1_defects.py::test_dormer_scan_helpers_are_gone PASSED (validated _merge_dormer_hits, _run_dormer_pass_for_photo, _is_skyline_photo, _crop_top_strip, DORMER_PROMPT no longer exist on routes.ai_measure)",
+      "backend_pytest_flag_noop": "test_deep_dormer_scan_flag_still_accepted_but_noop PASSED (backward-compat Form flag preserved)",
+      "frontend_grep": "'Deep Dormer Scan' occurrences in JobInfoPanel.jsx=0, in AIMeasureButton.jsx=3 (all are removed-marker code comments, no JSX toggle)."
+    },
+    "defect_4_single_reading_tag_end_to_end": {
+      "backend_grep": "RECONCILE_PROMPT contains both 'TWO OR MORE direct readings agree' (lines 2510, 2646) and 'EXACTLY ONE direct-view reading' (lines 2514, 2650). Width_source and height_ft_source schema slots enumerate both 'direct_consensus' and 'direct_single_reading' (lines 2391, 2409).",
+      "backend_pytest": "test_reconcile_prompt_requires_two_readings_for_direct_consensus + test_reconcile_prompt_enumerates_direct_single_reading PASSED",
+      "frontend_synthetic": "ai-measure-3d-dormer-width-consensus-0 renders green 'Direct' badge; ai-measure-3d-dormer-width-single-reading-1 renders amber 'Single reading' badge — both testids visible with correct provenance mapping."
+    },
+    "regression_pytest_summary": "51 passed in 3.23s (test_run1_defects: 9, test_two_phase_pipeline: 9, test_opening_dedup_twin_safety: 13, test_dormers_array_end_to_end: 7, test_anthropic_direct_key: 7, test_roof_type_material_math: 8)."
+  },
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AIMeasureButton.jsx is 3534 lines — well past the 700-line file-size guideline. Split into subcomponents (PreviewHeader, EmptyPhotosBanner, PreviewTabs, ResumeBanner) at next opportunity. Not blocking Run 3 defect validation.",
+    "HouseModel3D.jsx is 1553 lines — same file-size concern. buildHouseJson + roofFrame + resolveDormer are candidates for extraction into a /house_model/ folder.",
+    "Console warning 'dormer sanity FAILED — dormer face top ≥ main ridge' fires whenever knee_wall_height_ft is set too high relative to roof rise. Not caused by these fixes (existed pre-79j.43) but worth surfacing to the user as a visible amber note rather than a silent console error."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100%", "frontend": "100%" },
+  "test_credentials": "Admin: hhunt6677@yahoo.com / Admin123! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Injected synthetic ai_measure_runs doc (run_id=synthtest-v2) on estimate d7757ad7-4bbf-4fa7-95a3-e701b2ebbe8d to exercise Restore-Preview path. Cleaned up post-test — synthtest runs deleted, estimate measurements reset to empty.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "To reproduce a synthetic AI Measure preview without hitting Anthropic: insert a doc into ai_measure_runs with {user_id, estimate_id, status='done', result:{measurements:{...}, raw_ai:{walls:[], dormers:[...], ...}}}. The frontend's 'Restore preview' button (data-testid=ai-measure-restore-run-btn, inside the ai-measure-resume-run-banner) loads it into preview state. Prereqs: (1) preview.raw_ai.walls MUST be a list not dict, (2) measurements._ai_roof_type_confidence >= 0.8 for dormer rows to render (ROOF_TYPE_CONFIDENCE_THRESHOLD in HouseModel3D.jsx line 48), (3) DELETE /api/measure/sessions/{estimate_id} first to clear the autosave that otherwise short-circuits the Restore path."
+}
