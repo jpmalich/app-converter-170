@@ -55,11 +55,11 @@ export default function LpFormulaPreview() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)]">
         <div className="card p-8 max-w-md w-full">
-          <Shield className="w-10 h-10 text-[#C2410C] mb-4" />
-          <h1 className="font-heading text-2xl text-[#09090B] mb-2">LP Formula Preview</h1>
-          <p className="text-sm text-[#52525B]">
+          <Shield className="w-10 h-10 text-[var(--brand-text)] mb-4" />
+          <h1 className="font-heading text-2xl text-[var(--ink)] mb-2">LP Formula Preview</h1>
+          <p className="text-sm text-[var(--ink-2)]">
             This URL requires an admin token. Append{" "}
             <code className="font-mono">?token=YOUR_TOKEN</code> to the URL.
           </p>
@@ -69,19 +69,19 @@ export default function LpFormulaPreview() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5] py-8 px-4">
+    <div className="min-h-screen bg-[var(--bg-app)] py-8 px-4">
       <div className="max-w-6xl mx-auto">
         <header className="mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <FlaskConical className="w-5 h-5 text-[#C2410C]" />
-            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#71717A]">
+            <FlaskConical className="w-5 h-5 text-[var(--brand-text)]" />
+            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--muted)]">
               Supplier Admin · LP Formula Go/No-Go Gate
             </span>
           </div>
-          <h1 className="font-heading text-3xl text-[#09090B] mb-1">
+          <h1 className="font-heading text-3xl text-[var(--ink)] mb-1">
             LP SmartSide AI Formula Preview
           </h1>
-          <p className="text-sm text-[#52525B] max-w-3xl">
+          <p className="text-sm text-[var(--ink-2)] max-w-3xl">
             Side-by-side LP-line qty diff between the legacy{" "}
             <code className="font-mono">sqft × 0.11</code> math and the PDF-accurate
             per-profile formulas (8&quot; Lap / 16&quot; Soffit / 7&quot; Shake reveal + 10% waste).
@@ -95,15 +95,15 @@ export default function LpFormulaPreview() {
           <div
             className={`mb-4 p-3 border ${
               data.flag_currently_enabled
-                ? "border-[#16A34A] bg-[#F0FDF4]"
-                : "border-[#71717A] bg-[#FAFAFA]"
+                ? "border-[var(--success)] bg-[#F0FDF4]"
+                : "border-[var(--muted)] bg-[var(--surface-muted)]"
             } flex items-center gap-2 text-sm`}
             data-testid="lp-flag-status"
           >
             {data.flag_currently_enabled ? (
-              <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
+              <CheckCircle2 className="w-4 h-4 text-[var(--success)]" />
             ) : (
-              <AlertTriangle className="w-4 h-4 text-[#71717A]" />
+              <AlertTriangle className="w-4 h-4 text-[var(--muted)]" />
             )}
             <div>
               <span className="font-bold">
@@ -119,7 +119,7 @@ export default function LpFormulaPreview() {
         )}
 
         <div className="card p-4 mb-4">
-          <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#71717A] block mb-2">
+          <label className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--muted)] block mb-2">
             Sample Job Preset
           </label>
           <div className="flex items-center gap-2 flex-wrap">
@@ -137,7 +137,7 @@ export default function LpFormulaPreview() {
             </select>
             <button
               type="button"
-              className="px-4 py-2 bg-[#09090B] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider"
+              className="px-4 py-2 bg-[var(--bar-bg)] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider"
               onClick={() => runPreview(preset)}
               disabled={loading}
               data-testid="lp-preview-run"
@@ -146,7 +146,7 @@ export default function LpFormulaPreview() {
             </button>
           </div>
           {data?.preset_label && (
-            <div className="mt-2 text-[11px] text-[#71717A]">
+            <div className="mt-2 text-[11px] text-[var(--muted)]">
               <span className="uppercase tracking-wider font-bold mr-1">Scenario:</span>
               {data.preset_label}
             </div>
@@ -154,7 +154,7 @@ export default function LpFormulaPreview() {
         </div>
 
         {error && (
-          <div className="card p-3 mb-4 border-l-4 border-[#DC2626] bg-[#FEF2F2] text-sm text-[#991B1B]">
+          <div className="card p-3 mb-4 border-l-4 border-[#DC2626] bg-[var(--danger-soft)] text-sm text-[#991B1B]">
             {error}
           </div>
         )}
@@ -163,20 +163,20 @@ export default function LpFormulaPreview() {
           <>
             <div className="card p-4 mb-4 flex items-center gap-6">
               <div>
-                <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#71717A]">
+                <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--muted)]">
                   LP Lines Total
                 </div>
-                <div className="font-mono-num text-2xl font-bold text-[#09090B]">
+                <div className="font-mono-num text-2xl font-bold text-[var(--ink)]">
                   {data.summary?.lines_total ?? 0}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#71717A]">
+                <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--muted)]">
                   Lines With Δ
                 </div>
                 <div
                   className={`font-mono-num text-2xl font-bold ${
-                    (data.summary?.lines_changed ?? 0) > 0 ? "text-[#C2410C]" : "text-[#09090B]"
+                    (data.summary?.lines_changed ?? 0) > 0 ? "text-[var(--brand-text)]" : "text-[var(--ink)]"
                   }`}
                   data-testid="lp-preview-changed"
                 >
@@ -187,24 +187,24 @@ export default function LpFormulaPreview() {
 
             <div className="card overflow-x-auto" data-testid="lp-preview-diff-table">
               <table className="w-full text-sm">
-                <thead className="bg-[#FAFAFA] border-b border-[#E4E4E7]">
+                <thead className="bg-[var(--surface-muted)] border-b border-[var(--border)]">
                   <tr>
-                    <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+                    <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                       Section
                     </th>
-                    <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+                    <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                       Item
                     </th>
-                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                       Legacy
                     </th>
-                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                       PDF Formula
                     </th>
-                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                       Δ Qty
                     </th>
-                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+                    <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                       Δ %
                     </th>
                   </tr>
@@ -215,35 +215,35 @@ export default function LpFormulaPreview() {
                     return (
                       <tr
                         key={`${row.section}-${row.name}-${i}`}
-                        className={`border-b border-[#F4F4F5] ${
+                        className={`border-b border-[var(--bg-app)] ${
                           changed ? "bg-[#FFF7ED]" : ""
                         }`}
                         data-testid={`lp-preview-row-${i}`}
                       >
-                        <td className="px-3 py-2 text-[12px] text-[#52525B]">
+                        <td className="px-3 py-2 text-[12px] text-[var(--ink-2)]">
                           {row.section}
                         </td>
-                        <td className="px-3 py-2 text-[12px] text-[#09090B]">
+                        <td className="px-3 py-2 text-[12px] text-[var(--ink)]">
                           {row.name}
                           {row.pdf_note && row.pdf_note !== row.legacy_note && (
-                            <div className="text-[10px] text-[#71717A] mt-0.5">
+                            <div className="text-[10px] text-[var(--muted)] mt-0.5">
                               {row.pdf_note}
                             </div>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-[12px] text-right font-mono-num text-[#52525B]">
-                          {row.legacy_qty} <span className="text-[#71717A]">{row.unit}</span>
+                        <td className="px-3 py-2 text-[12px] text-right font-mono-num text-[var(--ink-2)]">
+                          {row.legacy_qty} <span className="text-[var(--muted)]">{row.unit}</span>
                         </td>
-                        <td className="px-3 py-2 text-[12px] text-right font-mono-num text-[#09090B] font-bold">
-                          {row.pdf_qty} <span className="text-[#71717A]">{row.unit}</span>
+                        <td className="px-3 py-2 text-[12px] text-right font-mono-num text-[var(--ink)] font-bold">
+                          {row.pdf_qty} <span className="text-[var(--muted)]">{row.unit}</span>
                         </td>
                         <td
                           className={`px-3 py-2 text-[12px] text-right font-mono-num ${
                             row.delta_qty > 0
-                              ? "text-[#16A34A] font-bold"
+                              ? "text-[var(--success)] font-bold"
                               : row.delta_qty < 0
-                              ? "text-[#DC2626] font-bold"
-                              : "text-[#71717A]"
+                              ? "text-[var(--danger-text)] font-bold"
+                              : "text-[var(--muted)]"
                           }`}
                         >
                           {row.delta_qty > 0 ? "+" : ""}
@@ -252,10 +252,10 @@ export default function LpFormulaPreview() {
                         <td
                           className={`px-3 py-2 text-[12px] text-right font-mono-num ${
                             row.delta_pct > 0
-                              ? "text-[#16A34A]"
+                              ? "text-[var(--success)]"
                               : row.delta_pct < 0
-                              ? "text-[#DC2626]"
-                              : "text-[#71717A]"
+                              ? "text-[var(--danger-text)]"
+                              : "text-[var(--muted)]"
                           }`}
                         >
                           {row.delta_pct > 0 ? "+" : ""}
@@ -266,7 +266,7 @@ export default function LpFormulaPreview() {
                   })}
                   {(!data.diff || data.diff.length === 0) && (
                     <tr>
-                      <td colSpan={6} className="px-3 py-6 text-center text-[#71717A] text-sm">
+                      <td colSpan={6} className="px-3 py-6 text-center text-[var(--muted)] text-sm">
                         No LP lines emitted for this preset.
                       </td>
                     </tr>
@@ -275,10 +275,10 @@ export default function LpFormulaPreview() {
               </table>
             </div>
 
-            <div className="mt-4 p-3 border border-[#E4E4E7] bg-[#FAFAFA] text-[11px] text-[#71717A] leading-relaxed">
+            <div className="mt-4 p-3 border border-[var(--border)] bg-[var(--surface-muted)] text-[11px] text-[var(--muted)] leading-relaxed">
               <strong>Go/No-Go decision:</strong> If the deltas above look right, set{" "}
-              <code className="font-mono text-[#09090B]">LP_AI_FORMULAS_V1=true</code> in{" "}
-              <code className="font-mono text-[#09090B]">backend/.env</code> and restart the
+              <code className="font-mono text-[var(--ink)]">LP_AI_FORMULAS_V1=true</code> in{" "}
+              <code className="font-mono text-[var(--ink)]">backend/.env</code> and restart the
               backend (<code className="font-mono">sudo supervisorctl restart backend</code>).
               All four ingest paths (HOVER, AI Photo, Blueprint, manual) will pick up the new
               formulas immediately. Existing quotes are not retroactively recalculated.

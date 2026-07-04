@@ -1144,10 +1144,10 @@ export default function PhotoAnnotateModal({
       data-testid="photo-annotate-modal"
     >
       <div
-        className="bg-white max-w-5xl w-full max-h-[95vh] flex flex-col relative"
+        className="bg-[var(--surface)] max-w-5xl w-full max-h-[95vh] flex flex-col relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-[#7C3AED] text-white px-5 py-3 flex items-center justify-between">
+        <div className="bg-[var(--ai)] text-white px-5 py-3 flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="font-heading text-lg">Annotate Photo for AI</div>
@@ -1157,7 +1157,7 @@ export default function PhotoAnnotateModal({
                   where you land here mid-walkaround. */}
               {elevation && (
                 <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-[#7C3AED] text-xs font-bold uppercase tracking-wider"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-[var(--surface)] text-[var(--ai)] text-xs font-bold uppercase tracking-wider"
                   data-testid="photo-annotate-elevation-chip"
                 >
                   Wall: {elevation}
@@ -1219,13 +1219,13 @@ export default function PhotoAnnotateModal({
             : (scaleUnit === "ft" ? "e.g. 7 (entry door)" : "e.g. 84");
           return (
             <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center p-4" onClick={cancelScale}>
-              <div className="bg-white max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-[var(--surface)] max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
                 <div className="text-white px-4 py-2.5" style={{ background: accentBg }}>
                   <div className="font-heading text-base">{heading}</div>
                   <div className="text-[11px] opacity-90 mt-0.5">
                     {sub}
                     {scalePending.snapped && (
-                      <span className="ml-1 inline-block px-1.5 py-0.5 bg-[#10B981] rounded-sm text-[9px] uppercase tracking-wider font-bold">
+                      <span className="ml-1 inline-block px-1.5 py-0.5 bg-[var(--success)] rounded-sm text-[9px] uppercase tracking-wider font-bold">
                         🔒 Auto-snapped {scalePending.snapped}
                       </span>
                     )}
@@ -1234,33 +1234,33 @@ export default function PhotoAnnotateModal({
                 <div className="p-4 space-y-3">
                   <div className="flex gap-1">
                     <button type="button" onClick={() => setScaleUnit("ft")}
-                            className={`flex-1 px-3 py-2 text-xs font-bold uppercase tracking-wider border ${scaleUnit === "ft" ? "bg-[#09090B] text-white border-[#09090B]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"}`}
+                            className={`flex-1 px-3 py-2 text-xs font-bold uppercase tracking-wider border ${scaleUnit === "ft" ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"}`}
                             data-testid="annotate-scale-unit-ft">Feet</button>
                     <button type="button" onClick={() => setScaleUnit("in")}
-                            className={`flex-1 px-3 py-2 text-xs font-bold uppercase tracking-wider border ${scaleUnit === "in" ? "bg-[#09090B] text-white border-[#09090B]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"}`}
+                            className={`flex-1 px-3 py-2 text-xs font-bold uppercase tracking-wider border ${scaleUnit === "in" ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"}`}
                             data-testid="annotate-scale-unit-in">Inches</button>
                   </div>
                   <input type="number" step="any" min="0" inputMode="decimal" autoFocus
                          value={scaleValue} onChange={(e) => setScaleValue(e.target.value)}
                          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmScale(); } if (e.key === "Escape") { e.preventDefault(); cancelScale(); } }}
                          placeholder={placeholderText}
-                         className="w-full px-3 py-2 border border-[#E4E4E7] rounded-sm text-base font-mono-num focus:outline-none"
+                         className="w-full px-3 py-2 border border-[var(--border)] rounded-sm text-base font-mono-num focus:outline-none"
                          style={{ borderColor: valid ? accentBg : undefined }}
                          data-testid="annotate-scale-input" />
                   {valid && (
-                    <div className="text-[11px] text-[#71717A]">
+                    <div className="text-[11px] text-[var(--muted)]">
                       = <b className="font-mono-num">{(inches / 12).toFixed(2)} ft</b> / <b className="font-mono-num">{inches.toFixed(1)} in</b>
                     </div>
                   )}
-                  <div className="text-[10px] text-[#71717A] leading-snug">
+                  <div className="text-[10px] text-[var(--muted)] leading-snug">
                     {isWindow
                       ? <>Std window widths: <b>24, 28, 30, 32, 36, 40, 44, 48, 54, 60, 72&nbsp;in</b>. Std heights: <b>36, 42, 48, 54, 60, 72&nbsp;in</b>.</>
                       : <>Entry door ≈ <b>7 ft</b>, single garage ≈ <b>7×9 ft</b>, double garage ≈ <b>7×16 ft</b>.</>}
                   </div>
                 </div>
-                <div className="border-t border-[#E4E4E7] px-4 py-3 flex justify-end gap-2">
+                <div className="border-t border-[var(--border)] px-4 py-3 flex justify-end gap-2">
                   <button type="button" onClick={cancelScale}
-                          className="px-3 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider">Cancel</button>
+                          className="px-3 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider">Cancel</button>
                   <button type="button" onClick={confirmScale} disabled={!valid}
                           className="px-3 py-2 text-white text-xs font-bold uppercase tracking-wider disabled:opacity-50"
                           style={{ background: valid ? accentBg : accentBgDark }}
@@ -1277,7 +1277,7 @@ export default function PhotoAnnotateModal({
             pixel, pick style + W×H so Claude treats it as ground truth. */}
         {windowPending && (
           <div className="absolute inset-0 z-10 bg-black/60 flex items-center justify-center p-4" onClick={cancelWindow}>
-            <div className="bg-white max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[var(--surface)] max-w-sm w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
               <div className="bg-[#92400E] text-white px-4 py-2.5">
                 <div className="font-heading text-base">Tag this window&apos;s style</div>
                 <div className="text-[11px] opacity-90 mt-0.5">
@@ -1286,11 +1286,11 @@ export default function PhotoAnnotateModal({
               </div>
               <div className="p-4 space-y-3">
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">Style</div>
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">Style</div>
                   <select
                     value={windowStyle}
                     onChange={(e) => setWindowStyle(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#E4E4E7] rounded-sm text-sm focus:outline-none focus:border-[#92400E]"
+                    className="w-full px-3 py-2 border border-[var(--border)] rounded-sm text-sm focus:outline-none focus:border-[#92400E]"
                     data-testid="annotate-window-style"
                     autoFocus
                   >
@@ -1299,13 +1299,13 @@ export default function PhotoAnnotateModal({
                     ))}
                   </select>
                 </div>
-                <div className="text-[10px] text-[#71717A] leading-snug">
+                <div className="text-[10px] text-[var(--muted)] leading-snug">
                   Tip — your tag locks the STYLE only. Claude still measures width &amp; height from the photo using its scale reference. If you also need a specific size, edit it in the openings schedule after Claude runs.
                 </div>
               </div>
-              <div className="border-t border-[#E4E4E7] px-4 py-3 flex justify-end gap-2">
+              <div className="border-t border-[var(--border)] px-4 py-3 flex justify-end gap-2">
                 <button type="button" onClick={cancelWindow}
-                        className="px-3 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider">Cancel</button>
+                        className="px-3 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider">Cancel</button>
                 <button type="button" onClick={confirmWindow}
                         className="px-3 py-2 bg-[#92400E] text-white hover:bg-[#78350F] text-xs font-bold uppercase tracking-wider"
                         data-testid="annotate-window-confirm">Tag Window</button>
@@ -1318,11 +1318,11 @@ export default function PhotoAnnotateModal({
           {/* Canvas */}
           <div className="md:col-span-2">
             {!photo ? (
-              <div className="aspect-video bg-[#FAFAFA] flex items-center justify-center text-[#71717A] text-sm">Loading photo…</div>
+              <div className="aspect-video bg-[var(--surface-muted)] flex items-center justify-center text-[var(--muted)] text-sm">Loading photo…</div>
             ) : (
               <div
                 ref={viewportRef}
-                className="relative border border-[#E4E4E7] rounded-sm overflow-hidden bg-[#0A0A0A] select-none"
+                className="relative border border-[var(--border)] rounded-sm overflow-hidden bg-[#0A0A0A] select-none"
                 style={{ touchAction: "none" }}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
@@ -1357,24 +1357,24 @@ export default function PhotoAnnotateModal({
                 >
                   <button type="button" onClick={zoomIn}
                           disabled={zoom >= ZOOM_MAX - 0.001}
-                          className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
+                          className="w-9 h-9 bg-white/95 hover:bg-[var(--surface)] border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
                           data-testid="annotate-zoom-in"
                           title="Zoom in (or pinch out on touch)">
-                    <ZoomIn className="w-4 h-4 text-[#09090B]" />
+                    <ZoomIn className="w-4 h-4 text-[var(--ink)]" />
                   </button>
                   <button type="button" onClick={resetZoom}
                           disabled={zoom === 1 && pan.x === 0 && pan.y === 0}
-                          className="px-1.5 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center text-[10px] font-bold tabular-nums disabled:opacity-40 shadow-sm min-w-[36px]"
+                          className="px-1.5 h-9 bg-white/95 hover:bg-[var(--surface)] border border-[#27272A] flex items-center justify-center text-[10px] font-bold tabular-nums disabled:opacity-40 shadow-sm min-w-[36px]"
                           data-testid="annotate-zoom-reset"
                           title="Reset zoom & pan to 100%">
                     {Math.round(zoom * 100)}%
                   </button>
                   <button type="button" onClick={zoomOut}
                           disabled={zoom <= ZOOM_MIN + 0.001}
-                          className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
+                          className="w-9 h-9 bg-white/95 hover:bg-[var(--surface)] border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
                           data-testid="annotate-zoom-out"
                           title="Zoom out (or pinch in on touch)">
-                    <ZoomOut className="w-4 h-4 text-[#09090B]" />
+                    <ZoomOut className="w-4 h-4 text-[var(--ink)]" />
                   </button>
                 </div>
                 {/* Pinch hint — only show on touch devices, fades after first interaction. */}
@@ -1403,11 +1403,11 @@ export default function PhotoAnnotateModal({
               handleGuidedNext / handleGuidedSkip below). */}
           {guidedFlow && guidedSteps && (
             <div
-              className="mb-3 p-3 bg-gradient-to-r from-[#0EA5E9]/10 to-[#7C3AED]/10 border-l-4 border-[#7C3AED]"
+              className="mb-3 p-3 bg-gradient-to-r from-[#0EA5E9]/10 to-[#7C3AED]/10 border-l-4 border-[var(--ai)]"
               data-testid="annotate-guided-banner"
             >
               <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="text-xs uppercase tracking-wider font-bold text-[#7C3AED]">
+                <div className="text-xs uppercase tracking-wider font-bold text-[var(--ai)]">
                   Step {guidedStepIdx + 1} of {guidedSteps.length}
                 </div>
                 <div className="flex items-center gap-1">
@@ -1416,10 +1416,10 @@ export default function PhotoAnnotateModal({
                       key={i}
                       className={`w-2 h-2 rounded-full ${
                         i < guidedStepIdx
-                          ? "bg-[#16A34A]"
+                          ? "bg-[var(--success)]"
                           : i === guidedStepIdx
-                            ? "bg-[#7C3AED]"
-                            : "bg-[#E4E4E7]"
+                            ? "bg-[var(--ai)]"
+                            : "bg-[var(--table-header)]"
                       }`}
                     />
                   ))}
@@ -1429,14 +1429,14 @@ export default function PhotoAnnotateModal({
                   contractors can see AT A GLANCE which step they're on.
                   Fixes the "banner says both Window and Style, which one
                   am I on?" confusion Howard hit. */}
-              <div className="text-lg font-heading font-bold text-[#09090B] uppercase tracking-wider mb-1 inline-flex items-center gap-2">
+              <div className="text-lg font-heading font-bold text-[var(--ink)] uppercase tracking-wider mb-1 inline-flex items-center gap-2">
                 {guidedSteps[guidedStepIdx]?.key === "wall" && (<><Crosshair aria-hidden="true" className="w-5 h-5" /> Wall Measurement</>)}
                 {guidedSteps[guidedStepIdx]?.key === "window-measure" && (<><Ruler aria-hidden="true" className="w-5 h-5" /> Window Measurement</>)}
                 {guidedSteps[guidedStepIdx]?.key === "window-style" && (<><AppWindow aria-hidden="true" className="w-5 h-5" /> Window Style</>)}
                 {guidedSteps[guidedStepIdx]?.key === "mask" && (<><BrickWall aria-hidden="true" className="w-5 h-5" /> Mask (brick / stone)</>)}
                 {guidedSteps[guidedStepIdx]?.key === "profile" && (<><Home aria-hidden="true" className="w-5 h-5" /> Profile</>)}
               </div>
-              <div className="text-sm text-[#52525B] font-medium mb-3">
+              <div className="text-sm text-[var(--ink-2)] font-medium mb-3">
                 {guidedSteps[guidedStepIdx]?.banner}
               </div>
 
@@ -1444,21 +1444,21 @@ export default function PhotoAnnotateModal({
                   guided banner so contractors don't have to reach the
                   bottom-left of the modal to pick shape / category. */}
               {guidedFlow && mode === MODE_ZONE && (
-                <div className="space-y-2 mb-3 p-2 bg-white border border-[#E4E4E7]">
+                <div className="space-y-2 mb-3 p-2 bg-[var(--surface)] border border-[var(--border)]">
                   <div className="flex gap-1">
                     <button type="button"
                             onClick={() => { setZoneShape("rect"); setPending(null); setPolyPoints([]); }}
-                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}
+                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}
                             data-testid="guided-mask-shape-rect">Rectangle</button>
                     <button type="button"
                             onClick={() => { setZoneShape("poly"); setPending(null); }}
-                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}
+                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}
                             data-testid="guided-mask-shape-poly">Polygon</button>
                   </div>
                   <div className="grid grid-cols-2 gap-1">
                     {ZONE_CATEGORIES.map((c) => (
                       <button key={c.key} type="button" onClick={() => setZoneCategory(c.key)}
-                              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneCategory === c.key ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"} flex items-center gap-1`}
+                              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneCategory === c.key ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"} flex items-center gap-1`}
                               data-testid={`guided-mask-cat-${c.key}`}>
                         <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />
                         {c.name}
@@ -1468,46 +1468,46 @@ export default function PhotoAnnotateModal({
                   {zoneShape === "poly" && polyPoints.length > 0 && (
                     <div className="flex gap-1">
                       <button type="button" onClick={closePolygon} disabled={polyPoints.length < 3}
-                              className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#B45309] text-white border border-[#B45309] hover:bg-[#92400E] disabled:opacity-40"
+                              className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#B45309] text-white border border-[var(--warning-text)] hover:bg-[#92400E] disabled:opacity-40"
                               data-testid="guided-zone-poly-close-btn">
                         Close ({polyPoints.length} pts)
                       </button>
                       <button type="button" onClick={() => setPolyPoints((prev) => prev.slice(0, -1))}
-                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#B45309] border border-[#B45309] hover:bg-[#FEF3C7]"
+                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--warning-text)] border border-[var(--warning-text)] hover:bg-[#FEF3C7]"
                               data-testid="guided-zone-poly-undo-btn"
                               title="Remove the most recently placed point">Undo</button>
                       <button type="button" onClick={() => setPolyPoints([])}
-                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5]">Cancel</button>
+                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)]">Cancel</button>
                     </div>
                   )}
                 </div>
               )}
 
               {guidedFlow && mode === MODE_PROFILE && (
-                <div className="space-y-2 mb-3 p-2 bg-white border border-[#E4E4E7]">
+                <div className="space-y-2 mb-3 p-2 bg-[var(--surface)] border border-[var(--border)]">
                   {!localRef && (
-                    <div className="px-2 py-1.5 bg-[#FEF3C7] border border-[#F59E0B] text-[10px] text-[#92400E]">
+                    <div className="px-2 py-1.5 bg-[#FEF3C7] border border-[#F59E0B] text-[10px] text-[var(--warning-text)]">
                       <strong>Set Wall Anchor first</strong> — otherwise new boxes default to 50 ft².
                     </div>
                   )}
                   <div className="flex gap-1">
                     <button type="button"
                             onClick={() => { setZoneShape("rect"); setPending(null); setPolyPoints([]); }}
-                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}
+                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}
                             data-testid="guided-profile-shape-rect">Rectangle</button>
                     <button type="button"
                             onClick={() => { setZoneShape("poly"); setPending(null); }}
-                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}
+                            className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}
                             data-testid="guided-profile-shape-poly">Polygon</button>
                   </div>
-                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Profile family</div>
+                  <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Profile family</div>
                   <div className="grid grid-cols-3 gap-1">
                     {PROFILE_FAMILIES.map((f) => (
                       <button
                         key={f.key}
                         type="button"
                         onClick={() => setProfileFamily(f.key)}
-                        className={`px-1 py-1 text-[10px] font-bold uppercase tracking-wider border ${profileFamily === f.key ? "border-[#09090B] ring-1 ring-[#09090B]" : "border-[#E4E4E7]"}`}
+                        className={`px-1 py-1 text-[10px] font-bold uppercase tracking-wider border ${profileFamily === f.key ? "border-[var(--border-strong)] ring-1 ring-[var(--border-strong)]" : "border-[var(--border)]"}`}
                         style={{ background: f.bg, color: f.fg }}
                         data-testid={`guided-profile-fam-${f.key}`}
                       >
@@ -1520,18 +1520,18 @@ export default function PhotoAnnotateModal({
                       <button type="button"
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); closePolygon(); }}
                               disabled={polyPoints.length < 3}
-                              className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#7C3AED] text-white border border-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-40"
+                              className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--ai)] text-white border border-[var(--ai)] hover:bg-[#6D28D9] disabled:opacity-40"
                               data-testid="guided-profile-poly-close-btn">
                         Close ({polyPoints.length} pts)
                       </button>
                       <button type="button"
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPolyPoints((prev) => prev.slice(0, -1)); }}
-                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#EDE9FE]"
+                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[var(--ai-soft)]"
                               data-testid="guided-profile-poly-undo-btn"
                               title="Remove the most recently placed point">Undo</button>
                       <button type="button"
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPolyPoints([]); }}
-                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5]">Cancel</button>
+                              className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)]">Cancel</button>
                     </div>
                   )}
                 </div>
@@ -1542,45 +1542,45 @@ export default function PhotoAnnotateModal({
                   without leaving guided mode. Renders the items that
                   apply to the current step. */}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "wall" && localRef && (
-                <div className="mb-3 p-2 bg-white border border-[#E4E4E7] flex items-center justify-between text-[11px]">
+                <div className="mb-3 p-2 bg-[var(--surface)] border border-[var(--border)] flex items-center justify-between text-[11px]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 bg-[#DC2626]"></span>
                     <span className="font-mono-num font-bold">{localRef.inches}&quot;</span>
-                    <span className="text-[#71717A]">wall scale</span>
+                    <span className="text-[var(--muted)]">wall scale</span>
                   </span>
                   <button type="button" onClick={removeReference}
-                          className="text-[#71717A] hover:text-[#DC2626] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
+                          className="text-[var(--muted)] hover:text-[var(--danger-text)] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
                           data-testid="guided-wall-ref-remove">
                     <Trash2 className="w-3 h-3" /> Delete
                   </button>
                 </div>
               )}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "window-measure" && localWindowRef && (
-                <div className="mb-3 p-2 bg-white border border-[#E4E4E7] flex items-center justify-between text-[11px]">
+                <div className="mb-3 p-2 bg-[var(--surface)] border border-[var(--border)] flex items-center justify-between text-[11px]">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 bg-[#2563EB]"></span>
                     <span className="font-mono-num font-bold">{localWindowRef.inches}&quot;</span>
-                    <span className="text-[#71717A]">window scale</span>
+                    <span className="text-[var(--muted)]">window scale</span>
                   </span>
                   <button type="button" onClick={removeWindowReference}
-                          className="text-[#71717A] hover:text-[#DC2626] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
+                          className="text-[var(--muted)] hover:text-[var(--danger-text)] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
                           data-testid="guided-winref-remove">
                     <Trash2 className="w-3 h-3" /> Delete
                   </button>
                 </div>
               )}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "window-style" && localWindows.length > 0 && (
-                <div className="mb-3 p-2 bg-white border border-[#E4E4E7] space-y-1">
-                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Tagged windows ({localWindows.length})</div>
+                <div className="mb-3 p-2 bg-[var(--surface)] border border-[var(--border)] space-y-1">
+                  <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Tagged windows ({localWindows.length})</div>
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {localWindows.map((w) => (
                       <li key={w.id} className="flex items-center justify-between text-[11px]">
                         <span className="flex items-center gap-1.5">
-                          <span className="font-bold text-[#92400E]">{STYLE_ABBR[w.style] || "?"}</span>
-                          <span className="text-[#52525B]">{w.style}</span>
+                          <span className="font-bold text-[var(--warning-text)]">{STYLE_ABBR[w.style] || "?"}</span>
+                          <span className="text-[var(--ink-2)]">{w.style}</span>
                         </span>
                         <button type="button" onClick={() => removeWindow(w.id)}
-                                className="text-[#71717A] hover:text-[#DC2626]"
+                                className="text-[var(--muted)] hover:text-[var(--danger-text)]"
                                 data-testid={`guided-window-remove-${w.id}`}
                                 title="Delete this window tag">
                           <Trash2 className="w-3 h-3" />
@@ -1591,8 +1591,8 @@ export default function PhotoAnnotateModal({
                 </div>
               )}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "mask" && localZones.length > 0 && (
-                <div className="mb-3 p-2 bg-white border border-[#E4E4E7] space-y-1">
-                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Mask zones ({localZones.length})</div>
+                <div className="mb-3 p-2 bg-[var(--surface)] border border-[var(--border)] space-y-1">
+                  <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Mask zones ({localZones.length})</div>
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {localZones.map((z) => {
                       const c = ZONE_CATEGORIES.find((x) => x.key === z.category);
@@ -1600,10 +1600,10 @@ export default function PhotoAnnotateModal({
                         <li key={z.id} className="flex items-center justify-between text-[11px]">
                           <span className="flex items-center gap-1.5">
                             <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c?.color }} />
-                            <span className="text-[#52525B]">{c?.name} ({z.kind})</span>
+                            <span className="text-[var(--ink-2)]">{c?.name} ({z.kind})</span>
                           </span>
                           <button type="button" onClick={() => removeZone(z.id)}
-                                  className="text-[#71717A] hover:text-[#DC2626]"
+                                  className="text-[var(--muted)] hover:text-[var(--danger-text)]"
                                   data-testid={`guided-zone-remove-${z.id}`}
                                   title="Delete this mask zone">
                             <Trash2 className="w-3 h-3" />
@@ -1615,8 +1615,8 @@ export default function PhotoAnnotateModal({
                 </div>
               )}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "profile" && localProfileBoxes.length > 0 && (
-                <div className="mb-3 p-2 bg-white border border-[#E4E4E7] space-y-1">
-                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Profile boxes ({localProfileBoxes.length})</div>
+                <div className="mb-3 p-2 bg-[var(--surface)] border border-[var(--border)] space-y-1">
+                  <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Profile boxes ({localProfileBoxes.length})</div>
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {localProfileBoxes.map((b) => {
                       const fam = PROFILE_FAMILIES.find((f) => f.key === b.profile) || { label: b.profile, bg: "#F4F4F5", fg: "#71717A" };
@@ -1627,10 +1627,10 @@ export default function PhotoAnnotateModal({
                                   style={{ background: fam.bg, color: fam.fg }}>
                               {fam.label}
                             </span>
-                            <span className="text-[#52525B] font-mono-num tabular-nums">{b.sqft} ft²</span>
+                            <span className="text-[var(--ink-2)] font-mono-num tabular-nums">{b.sqft} ft²</span>
                           </span>
                           <button type="button" onClick={() => removeProfileBox(b.id)}
-                                  className="text-[#71717A] hover:text-[#DC2626]"
+                                  className="text-[var(--muted)] hover:text-[var(--danger-text)]"
                                   data-testid={`guided-profile-remove-${b.id}`}
                                   title="Delete this profile box">
                             <Trash2 className="w-3 h-3" />
@@ -1647,7 +1647,7 @@ export default function PhotoAnnotateModal({
                   <button
                     type="button"
                     onClick={() => handleGuidedBack()}
-                    className="px-3 py-2 bg-white border border-[#E4E4E7] text-[#52525B] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                    className="px-3 py-2 bg-[var(--surface)] border border-[var(--border)] text-[var(--ink-2)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
                     data-testid="annotate-guided-back-btn"
                     title="Go back to the previous step to change something"
                   >
@@ -1657,7 +1657,7 @@ export default function PhotoAnnotateModal({
                 <button
                   type="button"
                   onClick={() => handleGuidedNext()}
-                  className="px-4 py-2 bg-[#16A34A] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                  className="px-4 py-2 bg-[var(--success)] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
                   data-testid="annotate-guided-next-btn"
                 >
                   {guidedStepIdx === guidedSteps.length - 1 ? (
@@ -1670,7 +1670,7 @@ export default function PhotoAnnotateModal({
                   <button
                     type="button"
                     onClick={() => handleGuidedSkip()}
-                    className="px-3 py-2 bg-white border border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider"
+                    className="px-3 py-2 bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider"
                     data-testid="annotate-guided-skip-btn"
                   >
                     {guidedSteps[guidedStepIdx].skipLabel}
@@ -1683,7 +1683,7 @@ export default function PhotoAnnotateModal({
                     // manual control. Show the classic toolbar.
                     if (typeof guidedFlow?.onExit === "function") guidedFlow.onExit();
                   }}
-                  className="ml-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#71717A] hover:text-[#71717A] underline underline-offset-2"
+                  className="ml-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] hover:text-[var(--muted)] underline underline-offset-2"
                   data-testid="annotate-guided-exit-btn"
                   title="Turn off the guided walkthrough — use the full annotator toolbar instead"
                 >
@@ -1700,7 +1700,7 @@ export default function PhotoAnnotateModal({
               <button type="button"
                       onClick={() => { setMode(MODE_TARGET); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
-                        mode === MODE_TARGET ? "bg-[#10B981] text-white border-[#10B981]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                        mode === MODE_TARGET ? "bg-[var(--success)] text-white border-[var(--success)]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
                       }`}
                       data-testid="annotate-mode-target"
                       title="Tap once on the actual target house — overrides the auto-geocoded crosshair on aerial photos">
@@ -1709,7 +1709,7 @@ export default function PhotoAnnotateModal({
               <button type="button"
                       onClick={() => { setMode(MODE_SCALE); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
-                        mode === MODE_SCALE ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                        mode === MODE_SCALE ? "bg-[#DC2626] text-white border-[#DC2626]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
                       }`}
                       data-testid="annotate-mode-scale"
                       title="WALL SCALE: 2-tap red line on a known span (entry door = 7 ft, garage door = 7 ft, eave-to-ground, etc.). Anchors the WHOLE-WALL geometry.">
@@ -1718,7 +1718,7 @@ export default function PhotoAnnotateModal({
               <button type="button"
                       onClick={() => { setMode(MODE_SCALE_WINDOW); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
-                        mode === MODE_SCALE_WINDOW ? "bg-[#2563EB] text-white border-[#2563EB]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                        mode === MODE_SCALE_WINDOW ? "bg-[#2563EB] text-white border-[#2563EB]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
                       }`}
                       data-testid="annotate-mode-scale-window"
                       title="WINDOW SCALE: 2-tap blue line across a window edge you know (e.g. 36 in wide). Gives Claude PER-WINDOW precision — ±5% sizing instead of ±15%.">
@@ -1727,7 +1727,7 @@ export default function PhotoAnnotateModal({
               <button type="button"
                       onClick={() => { setMode(MODE_ZONE); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
-                        mode === MODE_ZONE ? "bg-[#B45309] text-white border-[#B45309]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                        mode === MODE_ZONE ? "bg-[#B45309] text-white border-[var(--warning-text)]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
                       }`}
                       data-testid="annotate-mode-zone">
                 <Square className="w-3 h-3" /> Mask
@@ -1735,7 +1735,7 @@ export default function PhotoAnnotateModal({
               <button type="button"
                       onClick={() => { setMode(MODE_WINDOW); setPending(null); setHoverPoint(null); setPolyPoints([]); setWindowPending(null); }}
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
-                        mode === MODE_WINDOW ? "bg-[#FBBF24] text-[#09090B] border-[#92400E]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                        mode === MODE_WINDOW ? "bg-[#FBBF24] text-[var(--ink)] border-[#92400E]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
                       }`}
                       data-testid="annotate-mode-window"
                       title="Tap a window in the photo to tag its style. Claude treats your tags as GROUND TRUTH (overrides its photo-inference).">
@@ -1748,7 +1748,7 @@ export default function PhotoAnnotateModal({
                 type="button"
                 onClick={() => { setMode(MODE_PROFILE); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
                 className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
-                  mode === MODE_PROFILE ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                  mode === MODE_PROFILE ? "bg-[var(--ai)] text-white border-[var(--ai)]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
                 }`}
                 data-testid="annotate-mode-profile"
                 title="Tag Shake / B&B / Dormer regions. Reuses the Wall Scale Anchor for ft² math — set the anchor first."
@@ -1763,15 +1763,15 @@ export default function PhotoAnnotateModal({
                 <div className="flex gap-1">
                   <button type="button"
                           onClick={() => { setZoneShape("rect"); setPending(null); setPolyPoints([]); }}
-                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}>Rectangle</button>
+                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}>Rectangle</button>
                   <button type="button"
                           onClick={() => { setZoneShape("poly"); setPending(null); }}
-                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}>Polygon</button>
+                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}>Polygon</button>
                 </div>
                 <div className="grid grid-cols-2 gap-1">
                   {ZONE_CATEGORIES.map((c) => (
                     <button key={c.key} type="button" onClick={() => setZoneCategory(c.key)}
-                            className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneCategory === c.key ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"} flex items-center gap-1`}
+                            className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneCategory === c.key ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"} flex items-center gap-1`}
                             data-testid={`annotate-zone-cat-${c.key}`}>
                       <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c.color }} />
                       {c.name}
@@ -1781,16 +1781,16 @@ export default function PhotoAnnotateModal({
                 {zoneShape === "poly" && polyPoints.length > 0 && (
                   <div className="flex gap-1">
                     <button type="button" onClick={closePolygon} disabled={polyPoints.length < 3}
-                            className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#B45309] text-white border border-[#B45309] hover:bg-[#92400E] disabled:opacity-40"
+                            className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#B45309] text-white border border-[var(--warning-text)] hover:bg-[#92400E] disabled:opacity-40"
                             data-testid="zone-poly-close-btn">
                       Close ({polyPoints.length} pts)
                     </button>
                     <button type="button" onClick={() => setPolyPoints((prev) => prev.slice(0, -1))}
-                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#B45309] border border-[#B45309] hover:bg-[#FEF3C7]"
+                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--warning-text)] border border-[var(--warning-text)] hover:bg-[#FEF3C7]"
                             data-testid="zone-poly-undo-btn"
                             title="Remove the most recently placed point">Undo</button>
                     <button type="button" onClick={() => setPolyPoints([])}
-                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5]">Cancel</button>
+                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)]">Cancel</button>
                   </div>
                 )}
               </div>
@@ -1800,26 +1800,26 @@ export default function PhotoAnnotateModal({
             {!guidedFlow && mode === MODE_PROFILE && (
               <div className="space-y-2">
                 {!localRef && (
-                  <div className="px-2 py-2 bg-[#FEF3C7] border border-[#F59E0B] text-[10px] text-[#92400E]" data-testid="profile-no-anchor-banner">
+                  <div className="px-2 py-2 bg-[#FEF3C7] border border-[#F59E0B] text-[10px] text-[var(--warning-text)]" data-testid="profile-no-anchor-banner">
                     <strong>Set Wall Anchor first</strong> (red WALL button) so ft² auto-computes. Without an anchor, new boxes default to 50 ft².
                   </div>
                 )}
                 <div className="flex gap-1">
                   <button type="button"
                           onClick={() => { setZoneShape("rect"); setPending(null); setPolyPoints([]); }}
-                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}>Rectangle</button>
+                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "rect" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}>Rectangle</button>
                   <button type="button"
                           onClick={() => { setZoneShape("poly"); setPending(null); }}
-                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}>Polygon</button>
+                          className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[var(--border-strong)] bg-[var(--surface-muted)]" : "border-[var(--border)]"}`}>Polygon</button>
                 </div>
-                <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold pt-1">Profile family</div>
+                <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold pt-1">Profile family</div>
                 <div className="grid grid-cols-3 gap-1">
                   {PROFILE_FAMILIES.map((f) => (
                     <button
                       key={f.key}
                       type="button"
                       onClick={() => setProfileFamily(f.key)}
-                      className={`px-1 py-1 text-[10px] font-bold uppercase tracking-wider border ${profileFamily === f.key ? "border-[#09090B] ring-1 ring-[#09090B]" : "border-[#E4E4E7]"}`}
+                      className={`px-1 py-1 text-[10px] font-bold uppercase tracking-wider border ${profileFamily === f.key ? "border-[var(--border-strong)] ring-1 ring-[var(--border-strong)]" : "border-[var(--border)]"}`}
                       style={{ background: f.bg, color: f.fg }}
                       data-testid={`annotate-profile-fam-${f.key}`}
                     >
@@ -1832,40 +1832,40 @@ export default function PhotoAnnotateModal({
                     <button type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); closePolygon(); }}
                             disabled={polyPoints.length < 3}
-                            className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#7C3AED] text-white border border-[#7C3AED] hover:bg-[#6D28D9] disabled:opacity-40"
+                            className="flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--ai)] text-white border border-[var(--ai)] hover:bg-[#6D28D9] disabled:opacity-40"
                             data-testid="profile-poly-close-btn">
                       Close ({polyPoints.length} pts)
                     </button>
                     <button type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPolyPoints((prev) => prev.slice(0, -1)); }}
-                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#EDE9FE]"
+                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[var(--ai-soft)]"
                             data-testid="profile-poly-undo-btn"
                             title="Remove the most recently placed point">Undo</button>
                     <button type="button"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); setPolyPoints([]); }}
-                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5]">Cancel</button>
+                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)]">Cancel</button>
                   </div>
                 )}
                 {localProfileBoxes.length > 0 && (
                   <div className="pt-1 space-y-1">
-                    <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Profile boxes ({localProfileBoxes.length})</div>
+                    <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Profile boxes ({localProfileBoxes.length})</div>
                     {localProfileBoxes.map((b) => {
                       const fam = PROFILE_FAMILIES.find((f) => f.key === b.profile) || { label: b.profile, bg: "#F4F4F5", fg: "#71717A" };
                       return (
-                        <div key={b.id} className="border border-[#E4E4E7] p-1.5 space-y-1" data-testid={`profile-box-${b.id}`}>
+                        <div key={b.id} className="border border-[var(--border)] p-1.5 space-y-1" data-testid={`profile-box-${b.id}`}>
                           <div className="flex items-center justify-between gap-1">
                             <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider" style={{ background: fam.bg, color: fam.fg }}>
                               {fam.label}
                             </span>
                             <span className="text-[10px] font-mono-num tabular-nums">{b.sqft} ft²</span>
-                            <button type="button" onClick={() => removeProfileBox(b.id)} className="text-[#DC2626] hover:text-[#991B1B]" title="Delete box">
+                            <button type="button" onClick={() => removeProfileBox(b.id)} className="text-[var(--danger-text)] hover:text-[#991B1B]" title="Delete box">
                               <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                           <select
                             value={b.location}
                             onChange={(e) => updateProfileBox(b.id, { location: e.target.value })}
-                            className="block w-full text-[10px] border border-[#E4E4E7] px-1 py-0.5"
+                            className="block w-full text-[10px] border border-[var(--border)] px-1 py-0.5"
                             data-testid={`profile-box-location-${b.id}`}
                           >
                             {CALLOUT_LOCATIONS.map((loc) => (
@@ -1877,7 +1877,7 @@ export default function PhotoAnnotateModal({
                               type="number"
                               value={b.sqft}
                               onChange={(e) => updateProfileBox(b.id, { sqft: parseFloat(e.target.value) || 0 })}
-                              className="block w-full text-[10px] border border-[#E4E4E7] px-1 py-0.5"
+                              className="block w-full text-[10px] border border-[var(--border)] px-1 py-0.5"
                               placeholder="ft² (manual)"
                             />
                           )}
@@ -1893,29 +1893,29 @@ export default function PhotoAnnotateModal({
                 mobile UI focused on the current step) */}
             {!guidedFlow && (
             <>
-            <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">
+            <div className="border-t border-[var(--border)] pt-2">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
                 Target house pin
               </div>
               {localTarget ? (
-                <div className="text-xs flex items-center justify-between gap-2 bg-[#D1FAE5] px-2 py-1.5 border-l-2 border-[#10B981]">
+                <div className="text-xs flex items-center justify-between gap-2 bg-[#D1FAE5] px-2 py-1.5 border-l-2 border-[var(--success)]">
                   <span className="font-mono-num text-[#065F46]">
                     {"x1" in localTarget
                       ? `Box ${Math.round(localTarget.x2 - localTarget.x1)}×${Math.round(localTarget.y2 - localTarget.y1)} px`
                       : `Pinned at (${Math.round(localTarget.x)}, ${Math.round(localTarget.y)})`}
                   </span>
-                  <button onClick={removeTarget} className="text-[#71717A] hover:text-[#DC2626]" data-testid="annotate-target-remove">
+                  <button onClick={removeTarget} className="text-[var(--muted)] hover:text-[var(--danger-text)]" data-testid="annotate-target-remove">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="text-[11px] text-[#71717A] italic">
+                <div className="text-[11px] text-[var(--muted)] italic">
                   No box drawn — tap two corners around the target structure (e.g. just the garage).
                 </div>
               )}
             </div>
-            <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1 flex items-center gap-1.5">
+            <div className="border-t border-[var(--border)] pt-2">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-[#DC2626]"></span>
                 Wall scale anchor
               </div>
@@ -1924,16 +1924,16 @@ export default function PhotoAnnotateModal({
                   <span>
                     <span className="font-mono-num font-bold">{localRef.inches}&quot;</span> ({(localRef.inches / 12).toFixed(2)} ft)
                   </span>
-                  <button onClick={removeReference} className="text-[#71717A] hover:text-[#DC2626]" data-testid="annotate-ref-remove">
+                  <button onClick={removeReference} className="text-[var(--muted)] hover:text-[var(--danger-text)]" data-testid="annotate-ref-remove">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="text-[11px] text-[#71717A] italic">No wall anchor — Wall mode + tap 2 points across a known span (door, garage, eave-to-ground).</div>
+                <div className="text-[11px] text-[var(--muted)] italic">No wall anchor — Wall mode + tap 2 points across a known span (door, garage, eave-to-ground).</div>
               )}
             </div>
-            <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1 flex items-center gap-1.5">
+            <div className="border-t border-[var(--border)] pt-2">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-[#2563EB]"></span>
                 Window scale anchor
               </div>
@@ -1942,16 +1942,16 @@ export default function PhotoAnnotateModal({
                   <span>
                     <span className="font-mono-num font-bold">{localWindowRef.inches}&quot;</span> ({(localWindowRef.inches / 12).toFixed(2)} ft)
                   </span>
-                  <button onClick={removeWindowReference} className="text-[#71717A] hover:text-[#2563EB]" data-testid="annotate-winref-remove">
+                  <button onClick={removeWindowReference} className="text-[var(--muted)] hover:text-[#2563EB]" data-testid="annotate-winref-remove">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="text-[11px] text-[#71717A] italic">No window anchor — Window mode + tap 2 points across a window edge you know (e.g. 36&quot; wide).</div>
+                <div className="text-[11px] text-[var(--muted)] italic">No window anchor — Window mode + tap 2 points across a window edge you know (e.g. 36&quot; wide).</div>
               )}
             </div>
-            <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">
+            <div className="border-t border-[var(--border)] pt-2">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
                 No-siding zones ({localZones.length})
               </div>
               <ul className="space-y-1 max-h-32 overflow-y-auto" data-testid="annotate-zone-list">
@@ -1963,21 +1963,21 @@ export default function PhotoAnnotateModal({
                         <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c?.color }} />
                         {c?.name} ({z.kind})
                       </span>
-                      <button onClick={() => removeZone(z.id)} className="text-[#71717A] hover:text-[#DC2626]">
+                      <button onClick={() => removeZone(z.id)} className="text-[var(--muted)] hover:text-[var(--danger-text)]">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </li>
                   );
                 })}
                 {!localZones.length && (
-                  <li className="text-[11px] text-[#71717A] italic">No zones yet — switch to Mask zone mode to draw.</li>
+                  <li className="text-[11px] text-[var(--muted)] italic">No zones yet — switch to Mask zone mode to draw.</li>
                 )}
               </ul>
             </div>
 
             {/* Iter 57e — tagged windows list */}
-            <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1 flex items-center gap-1.5">
+            <div className="border-t border-[var(--border)] pt-2">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-[#FBBF24] border border-[#92400E]"></span>
                 Tagged windows ({localWindows.length})
               </div>
@@ -1985,17 +1985,17 @@ export default function PhotoAnnotateModal({
                 {localWindows.map((w) => (
                   <li key={w.id} className="text-xs flex items-center justify-between gap-2">
                     <span className="flex items-center gap-1">
-                      <span className="font-bold text-[#92400E]">{STYLE_ABBR[w.style] || "?"}</span>
+                      <span className="font-bold text-[var(--warning-text)]">{STYLE_ABBR[w.style] || "?"}</span>
                       <span>{w.style}</span>
-                      <span className="text-[10px] text-[#71717A]">(Claude sizes)</span>
+                      <span className="text-[10px] text-[var(--muted)]">(Claude sizes)</span>
                     </span>
-                    <button onClick={() => removeWindow(w.id)} className="text-[#71717A] hover:text-[#DC2626]" data-testid={`annotate-window-remove-${w.id}`}>
+                    <button onClick={() => removeWindow(w.id)} className="text-[var(--muted)] hover:text-[var(--danger-text)]" data-testid={`annotate-window-remove-${w.id}`}>
                       <Trash2 className="w-3 h-3" />
                     </button>
                   </li>
                 ))}
                 {!localWindows.length && (
-                  <li className="text-[11px] text-[#71717A] italic">No windows tagged — switch to Window mode and tap each window.</li>
+                  <li className="text-[11px] text-[var(--muted)] italic">No windows tagged — switch to Window mode and tap each window.</li>
                 )}
               </ul>
             </div>
@@ -2005,7 +2005,7 @@ export default function PhotoAnnotateModal({
             {(localRef || localWindowRef || localZones.length > 0 || localTarget || localWindows.length > 0) && (
               <button type="button"
                       onClick={() => { setLocalRef(null); setLocalWindowRef(null); setLocalZones([]); setLocalTarget(null); setLocalWindows([]); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
-                      className="text-[10px] text-[#71717A] uppercase tracking-wider font-bold flex items-center gap-1 hover:text-[#DC2626]"
+                      className="text-[10px] text-[var(--muted)] uppercase tracking-wider font-bold flex items-center gap-1 hover:text-[var(--danger-text)]"
                       data-testid="annotate-clear-all">
                 <RotateCcw className="w-3 h-3" /> Clear all
               </button>
@@ -2014,15 +2014,15 @@ export default function PhotoAnnotateModal({
           </div>
         </div>
 
-        <div className="border-t border-[#E4E4E7] px-5 py-3 flex justify-between items-center">
-          <div className="text-[10px] text-[#71717A]">
+        <div className="border-t border-[var(--border)] px-5 py-3 flex justify-between items-center">
+          <div className="text-[10px] text-[var(--muted)]">
             {guidedFlow
               ? "Annotations save automatically when you finish the last step."
               : "Annotations are burned into the photo before Claude sees it."}
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={onClose}
-                    className="px-3 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider">
+                    className="px-3 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider">
               {guidedFlow ? "Cancel · discard" : "Cancel"}
             </button>
             {/* Iter 79j — in guided mode, Save is triggered by the
@@ -2030,7 +2030,7 @@ export default function PhotoAnnotateModal({
                 Hide the redundant classic Save button. */}
             {!guidedFlow && (
               <button type="button" onClick={save}
-                      className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                      className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
                       data-testid="annotate-save">
                 <Check className="w-3.5 h-3.5" />
                 Save Annotations

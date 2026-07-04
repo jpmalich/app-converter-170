@@ -88,10 +88,10 @@ export default function ISSPricingPanel({ token }) {
   return (
     <div className="card p-6 mt-6" data-testid="iss-pricing-panel">
       <div className="flex items-center gap-3 mb-2">
-        <RefreshCw className="w-5 h-5 text-[#C2410C]" />
+        <RefreshCw className="w-5 h-5 text-[var(--brand-text)]" />
         <div className="section-tag">ISS Pricing Updates</div>
       </div>
-      <p className="text-sm text-[#52525B] mb-4">
+      <p className="text-sm text-[var(--ink-2)] mb-4">
         ISS prices float per line. Download the current CSV, edit it in Excel,
         and re-upload — every cell change shows up as a diff before anything is saved.
       </p>
@@ -99,7 +99,7 @@ export default function ISSPricingPanel({ token }) {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <button
           type="button"
-          className="px-3 py-1.5 bg-white text-[#09090B] border border-[#09090B] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+          className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ink)] border border-[var(--border-strong)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
           onClick={handleExport}
           disabled={busy}
           data-testid="iss-pricing-export-btn"
@@ -117,7 +117,7 @@ export default function ISSPricingPanel({ token }) {
         />
         <button
           type="button"
-          className="px-3 py-1.5 bg-[#09090B] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+          className="px-3 py-1.5 bg-[var(--bar-bg)] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
           onClick={() => fileRef.current?.click()}
           disabled={busy}
           data-testid="iss-pricing-upload-btn"
@@ -125,15 +125,15 @@ export default function ISSPricingPanel({ token }) {
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
           {busy ? "Reading…" : "Upload CSV / Excel"}
         </button>
-        <span className="text-[10px] text-[#71717A] uppercase tracking-wider">
+        <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider">
           Required columns: section, name, unit, price
         </span>
       </div>
 
       {preview && (
-        <div className="border border-[#E4E4E7] rounded-sm" data-testid="iss-pricing-preview">
-          <div className="px-4 py-3 bg-[#FAFAFA] border-b border-[#E4E4E7] flex items-center justify-between">
-            <div className="text-xs font-bold uppercase tracking-wider text-[#09090B]">
+        <div className="border border-[var(--border)] rounded-sm" data-testid="iss-pricing-preview">
+          <div className="px-4 py-3 bg-[var(--surface-muted)] border-b border-[var(--border)] flex items-center justify-between">
+            <div className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
               Diff Preview · {preview.changes?.length || 0} change
               {preview.changes?.length === 1 ? "" : "s"}
               {preview.unmatched?.length ? `, ${preview.unmatched.length} unmatched` : ""}
@@ -141,7 +141,7 @@ export default function ISSPricingPanel({ token }) {
             <div className="flex gap-2">
               <button
                 type="button"
-                className="px-3 py-1.5 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
                 onClick={() => setPreview(null)}
                 data-testid="iss-pricing-cancel-btn"
               >
@@ -150,7 +150,7 @@ export default function ISSPricingPanel({ token }) {
               </button>
               <button
                 type="button"
-                className="px-3 py-1.5 bg-[#F97316] text-[#09090B] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                className="px-3 py-1.5 bg-[var(--brand)] text-[var(--on-brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                 onClick={applyChanges}
                 disabled={!preview.changes?.length || applying}
                 data-testid="iss-pricing-apply-btn"
@@ -164,7 +164,7 @@ export default function ISSPricingPanel({ token }) {
           {preview.changes?.length ? (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wider text-[#71717A] border-b border-[#E4E4E7] bg-[#FAFAFA]">
+                <tr className="text-left text-[10px] uppercase tracking-wider text-[var(--muted)] border-b border-[var(--border)] bg-[var(--surface-muted)]">
                   <th className="px-4 py-2">Section</th>
                   <th className="px-3 py-2">Item</th>
                   <th className="px-3 py-2">Unit</th>
@@ -180,17 +180,17 @@ export default function ISSPricingPanel({ token }) {
                   return (
                     <tr
                       key={`${c.section}::${c.name}::${i}`}
-                      className="border-b border-[#F4F4F5]"
+                      className="border-b border-[var(--bg-app)]"
                       data-testid={`iss-pricing-row-${c.section}-${c.name}`}
                     >
-                      <td className="px-4 py-2 text-xs text-[#52525B]">{c.section}</td>
-                      <td className="px-3 py-2 text-xs text-[#09090B]">{c.name}</td>
-                      <td className="px-3 py-2 text-xs text-[#52525B]">{c.unit}</td>
-                      <td className="px-3 py-2 text-right font-mono-num text-xs text-[#71717A] line-through">${c.old.toFixed(2)}</td>
-                      <td className="px-3 py-2 text-right font-mono-num text-xs font-bold text-[#09090B]">${c.new.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-xs text-[var(--ink-2)]">{c.section}</td>
+                      <td className="px-3 py-2 text-xs text-[var(--ink)]">{c.name}</td>
+                      <td className="px-3 py-2 text-xs text-[var(--ink-2)]">{c.unit}</td>
+                      <td className="px-3 py-2 text-right font-mono-num text-xs text-[var(--muted)] line-through">${c.old.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right font-mono-num text-xs font-bold text-[var(--ink)]">${c.new.toFixed(2)}</td>
                       <td
                         className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${
-                          delta >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"
+                          delta >= 0 ? "text-[var(--success)]" : "text-[var(--danger-text)]"
                         }`}
                       >
                         {delta >= 0 ? "+" : ""}${delta.toFixed(2)} ({pct >= 0 ? "+" : ""}{pct.toFixed(1)}%)
@@ -201,16 +201,16 @@ export default function ISSPricingPanel({ token }) {
               </tbody>
             </table>
           ) : (
-            <div className="px-4 py-3 text-sm text-[#52525B]">No price differences detected.</div>
+            <div className="px-4 py-3 text-sm text-[var(--ink-2)]">No price differences detected.</div>
           )}
 
           {preview.unmatched?.length ? (
-            <div className="border-t border-[#E4E4E7] px-4 py-3 bg-yellow-50">
-              <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-yellow-900">
+            <div className="border-t border-[var(--border)] px-4 py-3 bg-[var(--hint-bg)]">
+              <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-[var(--hint-ink-2)]">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 Unmatched rows ({preview.unmatched.length})
               </div>
-              <ul className="text-xs text-[#52525B] space-y-1">
+              <ul className="text-xs text-[var(--ink-2)] space-y-1">
                 {preview.unmatched.map((u, i) => {
                   // Row number comes from the upload parser; combine with
                   // section+name for a stable key even when 2 rows fail

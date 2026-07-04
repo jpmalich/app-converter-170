@@ -68,17 +68,17 @@ export default function Elevation3DPreview({ elevation, pxHeight = 220 }) {
 
   return (
     <div
-      className="border border-[#E4E4E7] bg-white"
+      className="border border-[var(--border)] bg-[var(--surface)]"
       data-testid={`elevation-3d-${(elevation?.label || "").toLowerCase()}`}
     >
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#FAFAFA] border-b border-[#E4E4E7]">
-        <div className="text-[11px] uppercase tracking-wider font-bold text-[#09090B]">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--surface-muted)] border-b border-[var(--border)]">
+        <div className="text-[11px] uppercase tracking-wider font-bold text-[var(--ink)]">
           {elevation?.label || "Elevation"}
-          <span className="ml-2 font-mono-num text-[#71717A]">
+          <span className="ml-2 font-mono-num text-[var(--muted)]">
             {Number(elevation?.facade_width_ft || 0).toFixed(0)}&apos;W &times; {Number(elevation?.facade_height_ft || 0).toFixed(0)}&apos;H
           </span>
         </div>
-        <span className="text-[9px] uppercase tracking-wider font-bold text-[#7C3AED] bg-[#FAF5FF] border border-[#E9D5FF] px-1.5 py-0.5">3D</span>
+        <span className="text-[9px] uppercase tracking-wider font-bold text-[var(--ai)] bg-[#FAF5FF] border border-[#E9D5FF] px-1.5 py-0.5">3D</span>
       </div>
       <div ref={containerRef} style={{ width: "100%", height: pxHeight }} />
     </div>

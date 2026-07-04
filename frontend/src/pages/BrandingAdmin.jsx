@@ -48,11 +48,11 @@ export default function BrandingAdmin() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)]">
         <div className="card p-8 max-w-md w-full">
-          <Shield className="w-10 h-10 text-[#C2410C] mb-4" />
-          <h1 className="font-heading text-2xl text-[#09090B] mb-2">Branding Admin</h1>
-          <p className="text-sm text-[#52525B]">
+          <Shield className="w-10 h-10 text-[var(--brand-text)] mb-4" />
+          <h1 className="font-heading text-2xl text-[var(--ink)] mb-2">Branding Admin</h1>
+          <p className="text-sm text-[var(--ink-2)]">
             This URL requires an admin token. Append <code className="font-mono">?token=YOUR_TOKEN</code> to the URL. The token lives in <code className="font-mono">backend/.env</code> as <code className="font-mono">SUPPLIER_ADMIN_TOKEN</code>.
           </p>
         </div>
@@ -62,17 +62,17 @@ export default function BrandingAdmin() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)]">
         <div className="card p-8 max-w-md w-full">
-          <h1 className="font-heading text-2xl text-[#EF4444] mb-2">Access denied</h1>
-          <p className="text-sm text-[#52525B]">{error}</p>
+          <h1 className="font-heading text-2xl text-[var(--danger)] mb-2">Access denied</h1>
+          <p className="text-sm text-[var(--ink-2)]">{error}</p>
         </div>
       </div>
     );
   }
 
   if (!branding) {
-    return <div className="p-10 text-center text-[#52525B]">Loading…</div>;
+    return <div className="p-10 text-center text-[var(--ink-2)]">Loading…</div>;
   }
 
   const uploadLogo = async (file) => {
@@ -133,11 +133,11 @@ export default function BrandingAdmin() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F5]">
-      <header className="bg-[#09090B] text-white">
+    <div className="min-h-screen bg-[var(--bg-app)]">
+      <header className="bg-[var(--bar-bg)] text-white">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="w-5 h-5 text-[#C2410C]" />
+            <Shield className="w-5 h-5 text-[var(--brand-text)]" />
             <div>
               <div className="font-heading text-lg">Branding Admin</div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">
@@ -155,11 +155,11 @@ export default function BrandingAdmin() {
         {/* Signup code */}
         <div className="card p-6" data-testid="signup-code-card">
           <div className="section-tag mb-3">Contractor Access Code</div>
-          <p className="text-sm text-[#52525B] mb-3">
+          <p className="text-sm text-[var(--ink-2)] mb-3">
             Give this code to any contractor you want to grant access. They&apos;ll enter it when creating a new account.
           </p>
           <div className="flex items-stretch gap-2">
-            <div className="flex-1 bg-[#09090B] text-[#F97316] font-mono-num text-2xl tracking-[0.3em] px-5 flex items-center">
+            <div className="flex-1 bg-[var(--bar-bg)] text-[var(--brand)] font-mono-num text-2xl tracking-[0.3em] px-5 flex items-center">
               {signupCode}
             </div>
             <button
@@ -172,7 +172,7 @@ export default function BrandingAdmin() {
               <Copy className="w-4 h-4" /> Copy
             </button>
           </div>
-          <p className="text-[10px] uppercase tracking-wider text-[#71717A] mt-3">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)] mt-3">
             To rotate: change SIGNUP_CODE in <span className="font-mono-num">backend/.env</span> &amp; restart backend.
           </p>
         </div>
@@ -211,15 +211,15 @@ export default function BrandingAdmin() {
         {/* Default pricing mode */}
         <div className="card p-6" data-testid="default-pricing-card">
           <div className="flex items-center gap-3 mb-3">
-            <Percent className="w-5 h-5 text-[#C2410C]" />
+            <Percent className="w-5 h-5 text-[var(--brand-text)]" />
             <div className="section-tag">Default Pricing Mode</div>
           </div>
-          <p className="text-sm text-[#52525B] mb-4">
+          <p className="text-sm text-[var(--ink-2)] mb-4">
             Sets how new estimates calculate sell price for every contractor by default.
             Each contractor can still toggle per-estimate, but new estimates start in this mode.
           </p>
           <div
-            className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-sm font-bold uppercase tracking-wider"
+            className="inline-flex border border-[var(--border)] rounded-sm overflow-hidden text-sm font-bold uppercase tracking-wider"
             data-testid="default-pricing-toggle"
           >
             <button
@@ -227,8 +227,8 @@ export default function BrandingAdmin() {
               disabled={busy}
               className={`px-5 py-2 transition ${
                 defaultPricingMode === "margin"
-                  ? "bg-[#09090B] text-white"
-                  : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+                  ? "bg-[var(--bar-bg)] text-white"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
               }`}
               onClick={() => savePricingDefault("margin")}
               data-testid="default-pricing-margin"
@@ -238,10 +238,10 @@ export default function BrandingAdmin() {
             <button
               type="button"
               disabled={busy}
-              className={`px-5 py-2 transition border-l border-[#E4E4E7] ${
+              className={`px-5 py-2 transition border-l border-[var(--border)] ${
                 defaultPricingMode === "markup"
-                  ? "bg-[#09090B] text-white"
-                  : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+                  ? "bg-[var(--bar-bg)] text-white"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
               }`}
               onClick={() => savePricingDefault("markup")}
               data-testid="default-pricing-markup"
@@ -249,7 +249,7 @@ export default function BrandingAdmin() {
               Markup
             </button>
           </div>
-          <div className="mt-3 text-[11px] text-[#71717A] font-mono-num">
+          <div className="mt-3 text-[11px] text-[var(--muted)] font-mono-num">
             {defaultPricingMode === "margin"
               ? "Margin: sell = base ÷ (1 − %)  — 30% gives a ×1.429 multiplier"
               : "Markup: sell = base × (1 + %)  — 30% gives a ×1.300 multiplier"}
@@ -259,15 +259,15 @@ export default function BrandingAdmin() {
         {/* Supplier logo */}
         <div className="card p-6">
           <div className="section-tag mb-3">Supplier Logo</div>
-          <p className="text-sm text-[#52525B] mb-4">
+          <p className="text-sm text-[var(--ink-2)] mb-4">
             Appears on the Login page and (optionally) in the quote footer.
           </p>
           <div className="flex items-center gap-5">
-            <div className="w-28 h-28 border-2 border-[#E4E4E7] bg-[#09090B] flex items-center justify-center overflow-hidden">
+            <div className="w-28 h-28 border-2 border-[var(--border)] bg-[var(--bar-bg)] flex items-center justify-center overflow-hidden">
               {logoUrl ? (
                 <img src={logoUrl} alt="Supplier logo" className="w-full h-full object-contain" data-testid="supplier-logo-preview" />
               ) : (
-                <div className="font-heading text-[#C2410C] text-5xl">
+                <div className="font-heading text-[var(--brand-text)] text-5xl">
                   {(supplierName || "A").charAt(0)}
                 </div>
               )}
@@ -285,7 +285,7 @@ export default function BrandingAdmin() {
               </button>
               {logoUrl && (
                 <button
-                  className="btn-ghost text-[#EF4444] mt-2"
+                  className="btn-ghost text-[var(--danger)] mt-2"
                   onClick={async () => {
                     setBusy(true);
                     try {
@@ -308,7 +308,7 @@ export default function BrandingAdmin() {
           </div>
         </div>
 
-        <div className="text-xs text-[#71717A] text-center pt-4">
+        <div className="text-xs text-[var(--muted)] text-center pt-4">
           Bookmark this URL — it&apos;s how you&apos;ll come back to update branding.
         </div>
 
@@ -386,10 +386,10 @@ function PricingTiersPanel({ token }) {
   return (
     <div className="card p-6 mt-6" data-testid="tiers-panel">
       <div className="flex items-center gap-3 mb-4">
-        <Tags className="w-5 h-5 text-[#C2410C]" />
+        <Tags className="w-5 h-5 text-[var(--brand-text)]" />
         <div className="section-tag">Pricing Tiers</div>
       </div>
-      <p className="text-sm text-[#52525B] mb-4">
+      <p className="text-sm text-[var(--ink-2)] mb-4">
         Material prices each contractor sees, by tier. Labor numbers shown here are the
         defaults — contractors can override labor per estimate. Click a tier to edit prices.
       </p>
@@ -397,13 +397,13 @@ function PricingTiersPanel({ token }) {
         {tiers.map((t) => (
           <button
             key={t.id}
-            className={`p-4 border-2 text-left transition-all ${editingId === t.id ? "border-[#F97316] bg-orange-50" : "border-[#E4E4E7] hover:border-[#09090B]"}`}
+            className={`p-4 border-2 text-left transition-all ${editingId === t.id ? "border-[var(--brand)] bg-orange-50" : "border-[var(--border)] hover:border-[var(--border-strong)]"}`}
             onClick={() => openEdit(t.id)}
             data-testid={`tier-${t.name}`}
           >
-            <div className="text-[10px] uppercase tracking-wider text-[#71717A]">Tier</div>
-            <div className="font-heading text-lg text-[#09090B]">{t.name}</div>
-            <div className="text-xs text-[#52525B] mt-1">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)]">Tier</div>
+            <div className="font-heading text-lg text-[var(--ink)]">{t.name}</div>
+            <div className="text-xs text-[var(--ink-2)] mt-1">
               {(t.sections || []).reduce((s, x) => s + (x.items || []).length, 0)} items
             </div>
           </button>
@@ -411,7 +411,7 @@ function PricingTiersPanel({ token }) {
       </div>
 
       {editTier && (
-        <div className="border-t border-[#E4E4E7] pt-5">
+        <div className="border-t border-[var(--border)] pt-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-heading text-xl">{editTier.name}</h3>
             <button className="btn-primary" onClick={saveTier} disabled={busy} data-testid="save-tier-btn">
@@ -421,16 +421,16 @@ function PricingTiersPanel({ token }) {
           {editTier.sections.map((s) => {
             const si = editTier.sections.indexOf(s);
             return (
-              <div key={s.title} className="mb-4 border border-[#E4E4E7]">
-                <div className="bg-[#FAFAFA] px-3 py-2 text-xs uppercase tracking-wider font-bold text-[#52525B]">
+              <div key={s.title} className="mb-4 border border-[var(--border)]">
+                <div className="bg-[var(--surface-muted)] px-3 py-2 text-xs uppercase tracking-wider font-bold text-[var(--ink-2)]">
                   {s.title}
                 </div>
                 {s.items.map((it) => {
                   const ii = s.items.indexOf(it);
                   return (
-                    <div key={it.name} className="grid grid-cols-12 gap-2 px-3 py-1 border-t border-[#E4E4E7] items-center">
+                    <div key={it.name} className="grid grid-cols-12 gap-2 px-3 py-1 border-t border-[var(--border)] items-center">
                       <div className="col-span-6 text-sm">{it.name}</div>
-                      <div className="col-span-1 text-[10px] text-[#71717A] uppercase">{it.unit}</div>
+                      <div className="col-span-1 text-[10px] text-[var(--muted)] uppercase">{it.unit}</div>
                       <div className="col-span-2">
                         <input
                           className="input num h-8 text-sm"
@@ -485,14 +485,14 @@ function PipelinePanel({ token }) {
   if (error) {
     return (
       <div className="card p-6 mt-6">
-        <div className="text-sm text-[#DC2626]">Could not load pipeline: {error}</div>
+        <div className="text-sm text-[var(--danger-text)]">Could not load pipeline: {error}</div>
       </div>
     );
   }
   if (!data) {
     return (
       <div className="card p-6 mt-6">
-        <div className="text-sm text-[#71717A]">Loading pipeline…</div>
+        <div className="text-sm text-[var(--muted)]">Loading pipeline…</div>
       </div>
     );
   }
@@ -531,22 +531,22 @@ function PipelinePanel({ token }) {
 
       {topByWon.length > 0 && (
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold mb-2">
             Top contractors by won revenue
           </div>
-          <div className="border border-[#E4E4E7]">
-            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#71717A] font-bold bg-[#FAFAFA]">
+          <div className="border border-[var(--border)]">
+            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold bg-[var(--surface-muted)]">
               <div className="col-span-5">Contractor</div>
               <div className="col-span-2 text-right">Sent</div>
               <div className="col-span-2 text-right">Accepted</div>
               <div className="col-span-3 text-right">Won $</div>
             </div>
             {topByWon.map((c) => (
-              <div key={c.id} className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[#E4E4E7] items-center text-sm">
-                <div className="col-span-5 font-semibold text-[#09090B] truncate">{c.name}</div>
-                <div className="col-span-2 text-right font-mono-num text-[#52525B]">{c.sent}</div>
+              <div key={c.id} className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[var(--border)] items-center text-sm">
+                <div className="col-span-5 font-semibold text-[var(--ink)] truncate">{c.name}</div>
+                <div className="col-span-2 text-right font-mono-num text-[var(--ink-2)]">{c.sent}</div>
                 <div className="col-span-2 text-right font-mono-num text-[#15803D] font-bold">{c.accepted}</div>
-                <div className="col-span-3 text-right font-mono-num text-[#09090B] font-bold">{usd(c.won_dollars)}</div>
+                <div className="col-span-3 text-right font-mono-num text-[var(--ink)] font-bold">{usd(c.won_dollars)}</div>
               </div>
             ))}
           </div>
@@ -558,16 +558,16 @@ function PipelinePanel({ token }) {
 
 function PipelineStat({ label, value, sublabel, accent }) {
   const stripe =
-    accent === "orange" ? "bg-[#F97316]"
-      : accent === "green" ? "bg-[#16A34A]"
-      : "bg-[#E4E4E7]";
+    accent === "orange" ? "bg-[var(--brand)]"
+      : accent === "green" ? "bg-[var(--success)]"
+      : "bg-[var(--table-header)]";
   return (
-    <div className="flex border border-[#E4E4E7]">
+    <div className="flex border border-[var(--border)]">
       <div className={`w-1 ${stripe}`} />
       <div className="px-3 py-2 flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">{label}</div>
-        <div className="font-mono-num text-2xl font-bold text-[#09090B] leading-tight">{value}</div>
-        {sublabel ? <div className="text-[11px] text-[#71717A] truncate">{sublabel}</div> : null}
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold">{label}</div>
+        <div className="font-mono-num text-2xl font-bold text-[var(--ink)] leading-tight">{value}</div>
+        {sublabel ? <div className="text-[11px] text-[var(--muted)] truncate">{sublabel}</div> : null}
       </div>
     </div>
   );
@@ -625,12 +625,12 @@ function InviteContractorPanel({ token, signupCode }) {
   return (
     <div className="card p-6" data-testid="invite-contractor-panel">
       <div className="flex items-center gap-3 mb-3">
-        <Mail className="w-5 h-5 text-[#C2410C]" />
+        <Mail className="w-5 h-5 text-[var(--brand-text)]" />
         <div className="section-tag">Invite a Contractor by Email</div>
       </div>
-      <p className="text-sm text-[#52525B] mb-4">
+      <p className="text-sm text-[var(--ink-2)] mb-4">
         We&apos;ll send a branded email with a one-click signup link (your access code{" "}
-        <span className="font-mono-num text-[#09090B]">{signupCode}</span> is pre-filled).
+        <span className="font-mono-num text-[var(--ink)]">{signupCode}</span> is pre-filled).
       </p>
       <form onSubmit={send} className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -681,11 +681,11 @@ function InviteContractorPanel({ token, signupCode }) {
 
       {loaded && invitations.length > 0 && (
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold mb-2">
             Recent invitations ({invitations.length})
           </div>
-          <div className="border border-[#E4E4E7] max-h-72 overflow-y-auto" data-testid="invitations-list">
-            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#71717A] font-bold bg-[#FAFAFA] sticky top-0">
+          <div className="border border-[var(--border)] max-h-72 overflow-y-auto" data-testid="invitations-list">
+            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold bg-[var(--surface-muted)] sticky top-0">
               <div className="col-span-5">Email</div>
               <div className="col-span-3">Sent</div>
               <div className="col-span-2 text-right">Status</div>
@@ -694,14 +694,14 @@ function InviteContractorPanel({ token, signupCode }) {
             {invitations.map((inv) => (
               <div
                 key={inv.id}
-                className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[#E4E4E7] items-center text-sm"
+                className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[var(--border)] items-center text-sm"
                 data-testid={`invitation-row-${inv.email}`}
               >
                 <div className="col-span-5 truncate">
-                  <div className="font-semibold text-[#09090B] truncate">{inv.email}</div>
-                  {inv.name && <div className="text-[10px] text-[#71717A] truncate">{inv.name}</div>}
+                  <div className="font-semibold text-[var(--ink)] truncate">{inv.email}</div>
+                  {inv.name && <div className="text-[10px] text-[var(--muted)] truncate">{inv.name}</div>}
                 </div>
-                <div className="col-span-3 text-xs text-[#52525B]">
+                <div className="col-span-3 text-xs text-[var(--ink-2)]">
                   {new Date(inv.sent_at).toLocaleString()}
                 </div>
                 <div className="col-span-2 text-right">
@@ -710,7 +710,7 @@ function InviteContractorPanel({ token, signupCode }) {
                       Signed up
                     </span>
                   ) : (
-                    <span className="inline-block px-2 py-0.5 bg-[#FEF3C7] text-[#92400E] text-[10px] uppercase tracking-wider font-bold">
+                    <span className="inline-block px-2 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] text-[10px] uppercase tracking-wider font-bold">
                       Pending
                     </span>
                   )}
@@ -718,7 +718,7 @@ function InviteContractorPanel({ token, signupCode }) {
                 <div className="col-span-2 text-right">
                   <button
                     type="button"
-                    className="text-[10px] text-[#52525B] hover:text-[#C2410C] underline"
+                    className="text-[10px] text-[var(--ink-2)] hover:text-[var(--brand-text)] underline"
                     onClick={() => {
                       navigator.clipboard.writeText(inv.register_url);
                       toast.success("Signup link copied");
@@ -804,15 +804,15 @@ function CompaniesPanel({ token }) {
   return (
     <div className="card p-6 mt-6" data-testid="companies-panel">
       <div className="flex items-center gap-3 mb-4">
-        <Building2 className="w-5 h-5 text-[#C2410C]" />
+        <Building2 className="w-5 h-5 text-[var(--brand-text)]" />
         <div className="section-tag">Contractor Companies ({companies.length})</div>
       </div>
-      <p className="text-sm text-[#52525B] mb-4">
+      <p className="text-sm text-[var(--ink-2)] mb-4">
         Assign each contractor to a pricing tier. Changing a tier takes effect on their
         next estimate. Existing saved estimates keep their original prices.
       </p>
-      <div className="border border-[#E4E4E7] max-h-[500px] overflow-y-auto">
-        <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#71717A] font-bold bg-[#FAFAFA] sticky top-0">
+      <div className="border border-[var(--border)] max-h-[500px] overflow-y-auto">
+        <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold bg-[var(--surface-muted)] sticky top-0">
           <div className="col-span-4">Company</div>
           <div className="col-span-3">Tier</div>
           <div className="col-span-2 text-right">Estimates</div>
@@ -820,10 +820,10 @@ function CompaniesPanel({ token }) {
           <div className="col-span-1 text-right">&nbsp;</div>
         </div>
         {companies.map((c) => (
-          <div key={c.id} className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[#E4E4E7] items-center text-sm">
+          <div key={c.id} className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[var(--border)] items-center text-sm">
             <div className="col-span-4">
-              <div className="font-semibold text-[#09090B]">{c.name}</div>
-              <div className="text-[10px] text-[#71717A] font-mono-num">{c.invite_code}</div>
+              <div className="font-semibold text-[var(--ink)]">{c.name}</div>
+              <div className="text-[10px] text-[var(--muted)] font-mono-num">{c.invite_code}</div>
             </div>
             <div className="col-span-3">
               <select
@@ -839,7 +839,7 @@ function CompaniesPanel({ token }) {
               </select>
             </div>
             <div className="col-span-2 text-right font-mono-num">{c.estimate_count}</div>
-            <div className="col-span-2 text-right text-xs text-[#71717A]">
+            <div className="col-span-2 text-right text-xs text-[var(--muted)]">
               {new Date(c.created_at).toLocaleDateString()}
             </div>
             <div className="col-span-1 text-right">
@@ -847,7 +847,7 @@ function CompaniesPanel({ token }) {
                 type="button"
                 onClick={() => remove(c)}
                 disabled={busy[c.id]}
-                className="p-1.5 text-[#71717A] hover:text-[#DC2626] hover:bg-[#FEF2F2] rounded-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 text-[var(--muted)] hover:text-[var(--danger-text)] hover:bg-[var(--danger-soft)] rounded-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
                 title={`Delete ${c.name}`}
                 data-testid={`delete-company-${c.id}`}
               >

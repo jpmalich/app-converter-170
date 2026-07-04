@@ -26,8 +26,8 @@ export default function EstimateRouter() {
 
   if (kind === null) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#C2410C]" />
+      <main className="min-h-screen flex items-center justify-center bg-[var(--surface-muted)]">
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--brand-text)]" />
       </main>
     );
   }

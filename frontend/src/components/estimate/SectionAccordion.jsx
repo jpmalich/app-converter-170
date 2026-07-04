@@ -201,16 +201,16 @@ export default function SectionAccordion({
     return (
       <React.Fragment key={adderKey}>
       <div
-        className={`grid grid-cols-12 gap-3 px-4 md:px-5 py-3 md:py-2 border-b border-[#E4E4E7] items-center ${
-          isCommon ? "bg-yellow-50" : ""
+        className={`grid grid-cols-12 gap-3 px-4 md:px-5 py-3 md:py-2 border-b border-[var(--border)] items-center ${
+          isCommon ? "bg-[var(--hint-bg)]" : ""
         }`}
         data-testid={`row-${section.title}-${l.name}`}
       >
         <div className="col-span-12 md:col-span-5">
-          <div className="text-sm font-semibold md:font-normal text-[#09090B] flex items-center gap-2 flex-wrap">
+          <div className="text-sm font-semibold md:font-normal text-[var(--ink)] flex items-center gap-2 flex-wrap">
             {isCommon && (
               <Lightbulb
-                className="w-3.5 h-3.5 text-yellow-700 flex-shrink-0"
+                className="w-3.5 h-3.5 text-[var(--hint-ink)] flex-shrink-0"
                 title="Commonly needed — review qty"
               />
             )}
@@ -218,7 +218,7 @@ export default function SectionAccordion({
             <ItemHelpButton itemName={l.name} />
             {l.ami_part && (
               <span
-                className="ml-2 inline-block font-mono-num text-[10px] tracking-wider text-[#71717A] bg-[#F4F4F5] border border-[#E4E4E7] px-1.5 py-0.5 rounded-sm"
+                className="ml-2 inline-block font-mono-num text-[10px] tracking-wider text-[var(--muted)] bg-[var(--bg-app)] border border-[var(--border)] px-1.5 py-0.5 rounded-sm"
                 title="Alside part number"
                 data-testid={`ami-${section.title}-${l.name}`}
               >
@@ -227,12 +227,12 @@ export default function SectionAccordion({
             )}
           </div>
         </div>
-        <div className="col-span-3 md:col-span-1 text-xs text-[#71717A] uppercase tracking-wider">
-          <span className="md:hidden text-[10px] text-[#71717A] block">{t("est.col.unit")}</span>
+        <div className="col-span-3 md:col-span-1 text-xs text-[var(--muted)] uppercase tracking-wider">
+          <span className="md:hidden text-[10px] text-[var(--muted)] block">{t("est.col.unit")}</span>
           {tUnit(l.unit, lang)}
         </div>
-        <div className="col-span-3 md:col-span-2 text-right text-sm font-mono-num text-[#52525B]">
-          <span className="md:hidden text-[10px] text-[#71717A] block text-right">{t("est.col.mat")}</span>
+        <div className="col-span-3 md:col-span-2 text-right text-sm font-mono-num text-[var(--ink-2)]">
+          <span className="md:hidden text-[10px] text-[var(--muted)] block text-right">{t("est.col.mat")}</span>
           {/* Iter 78z++++ — Mat $ is editable for every catalog row inside
               the merged "Misc. Labor and Material" section so the
               contractor can override per-job material cost without
@@ -244,7 +244,7 @@ export default function SectionAccordion({
               <input
                 className={`input num h-11 md:h-9 text-base md:text-sm w-full text-right ${
                   l.defaultMat != null && Number(l.mat) !== Number(l.defaultMat)
-                    ? "border-[#F97316] bg-orange-50"
+                    ? "border-[var(--brand)] bg-orange-50"
                     : ""
                 }`}
                 type="number"
@@ -258,7 +258,7 @@ export default function SectionAccordion({
               {l.defaultMat != null && Number(l.mat) !== Number(l.defaultMat) && (
                 <button
                   type="button"
-                  className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[#F97316] text-[#09090B] text-xs md:text-[10px] leading-none flex items-center justify-center"
+                  className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[var(--brand)] text-[var(--on-brand)] text-xs md:text-[10px] leading-none flex items-center justify-center"
                   onClick={() =>
                     onField(l.tab, l.section, l.name, "mat", l.defaultMat ?? 0)
                   }
@@ -274,7 +274,7 @@ export default function SectionAccordion({
           )}
         </div>
         <div className="col-span-3 md:col-span-1">
-          <label className="md:hidden text-[10px] text-[#71717A] block uppercase tracking-wider mb-1">{t("est.col.qty")}</label>
+          <label className="md:hidden text-[10px] text-[var(--muted)] block uppercase tracking-wider mb-1">{t("est.col.qty")}</label>
           <input
             className="input num h-11 md:h-9 text-base md:text-sm w-full"
             type="number"
@@ -296,7 +296,7 @@ export default function SectionAccordion({
             const hint = porchMathHint(est?.porch_ceilings, l.name === "Wrap porch beam" ? "lf" : "sqft");
             return hint ? (
               <div
-                className="hidden md:block text-[10px] text-[#71717A] mt-1 leading-snug font-mono-num"
+                className="hidden md:block text-[10px] text-[var(--muted)] mt-1 leading-snug font-mono-num"
                 data-testid={`porch-math-hint-${l.name}`}
                 title={hint}
               >
@@ -306,14 +306,14 @@ export default function SectionAccordion({
           })()}
         </div>
         <div className="col-span-3 md:col-span-1 relative">
-          <label className="md:hidden text-[10px] text-[#71717A] block uppercase tracking-wider mb-1">{t("est.col.lab")}</label>
+          <label className="md:hidden text-[10px] text-[var(--muted)] block uppercase tracking-wider mb-1">{t("est.col.lab")}</label>
           {/* Iter 78k (2026-02-25): Howard reversed the Iter 69 vinyl/ascend
               labor lockdown — labor is now editable on ALL siding tabs
               (vinyl, ascend, lp_smart) and windows. Single editable input
               with override styling shared across every tab. */}
           <>
             <input
-              className={`input num h-11 md:h-9 text-base md:text-sm w-full ${labOverridden ? "border-[#F97316] bg-orange-50" : ""}`}
+              className={`input num h-11 md:h-9 text-base md:text-sm w-full ${labOverridden ? "border-[var(--brand)] bg-orange-50" : ""}`}
               type="number"
               inputMode="decimal"
               step="0.25"
@@ -326,7 +326,7 @@ export default function SectionAccordion({
             {labOverridden && (
               <button
                 type="button"
-                className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[#F97316] text-[#09090B] text-xs md:text-[10px] leading-none flex items-center justify-center"
+                className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[var(--brand)] text-[var(--on-brand)] text-xs md:text-[10px] leading-none flex items-center justify-center"
                 onClick={() => onResetLine(l.tab, l.section, l.name)}
                 title={`Reset to catalog default ($${l.defaultLab})`}
                 data-testid={`reset-lab-${section.title}-${l.name}`}
@@ -336,17 +336,17 @@ export default function SectionAccordion({
             )}
           </>
         </div>
-        <div className="col-span-12 md:col-span-2 text-right font-mono-num text-base md:text-sm font-bold md:font-semibold text-[#09090B] pt-2 md:pt-0 border-t md:border-t-0 border-[#F4F4F5]">
-          <span className="md:hidden text-[10px] text-[#71717A] uppercase tracking-wider mr-2">{t("est.col.total")}</span>
+        <div className="col-span-12 md:col-span-2 text-right font-mono-num text-base md:text-sm font-bold md:font-semibold text-[var(--ink)] pt-2 md:pt-0 border-t md:border-t-0 border-[var(--bg-app)]">
+          <span className="md:hidden text-[10px] text-[var(--muted)] uppercase tracking-wider mr-2">{t("est.col.total")}</span>
           {fmt(total)}
         </div>
       </div>
       {showAdderUI && (
-        <div className="border-b border-[#E4E4E7] bg-[#FAFAFA]" data-testid={`adder-block-${l.name}`}>
+        <div className="border-b border-[var(--border)] bg-[var(--surface-muted)]" data-testid={`adder-block-${l.name}`}>
           <button
             type="button"
             onClick={() => toggleAddersOpen(adderKey)}
-            className="w-full flex items-center justify-between px-4 md:px-5 py-2 text-left text-[11px] uppercase tracking-[0.18em] text-[#52525B] hover:text-[#09090B]"
+            className="w-full flex items-center justify-between px-4 md:px-5 py-2 text-left text-[11px] uppercase tracking-[0.18em] text-[var(--ink-2)] hover:text-[var(--ink)]"
             data-testid={`adder-toggle-${l.name}`}
           >
             <span className="flex items-center gap-2">
@@ -357,12 +357,12 @@ export default function SectionAccordion({
               )}
               Upgrade Options
               {lineAdders.length > 0 && (
-                <span className="bg-[#F97316] text-[#09090B] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                <span className="bg-[var(--brand)] text-[var(--on-brand)] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
                   {lineAdders.length}
                 </span>
               )}
             </span>
-            <span className="font-mono-num text-[11px] text-[#52525B] normal-case tracking-normal">
+            <span className="font-mono-num text-[11px] text-[var(--ink-2)] normal-case tracking-normal">
               {adderMatSubtotal + adderLabSubtotal > 0
                 ? `+${fmt(adderMatSubtotal + adderLabSubtotal)}`
                 : ""}
@@ -380,13 +380,13 @@ export default function SectionAccordion({
                   <div
                     key={a.name}
                     className={`flex items-center gap-2.5 py-1.5 border-b border-[#EDEDF0] last:border-b-0 text-[13px] ${
-                      checked ? "text-[#09090B] font-semibold" : "text-[#3F3F46]"
+                      checked ? "text-[var(--ink)] font-semibold" : "text-[#3F3F46]"
                     }`}
                     data-testid={`adder-option-${l.name}-${a.name}`}
                   >
                     <input
                       type="checkbox"
-                      className="w-4 h-4 accent-[#F97316] flex-shrink-0 cursor-pointer"
+                      className="w-4 h-4 accent-[var(--brand)] flex-shrink-0 cursor-pointer"
                       checked={checked}
                       onChange={() =>
                         onToggleAdder && onToggleAdder(l.tab, l.section, l.name, a)
@@ -411,12 +411,12 @@ export default function SectionAccordion({
                           title={`Of ${Number(l.qty) || 0} ${l.name.includes("Door") ? "doors" : "windows"}, how many get this`}
                           data-testid={`adder-qty-${l.name}-${a.name}`}
                         />
-                        <span className="font-mono-num text-[11px] text-[#71717A] whitespace-nowrap w-16 text-right">
+                        <span className="font-mono-num text-[11px] text-[var(--muted)] whitespace-nowrap w-16 text-right">
                           {adderTotal > 0 ? `+${fmt(adderTotal)}` : "—"}
                         </span>
                       </>
                     ) : (
-                      <span className="font-mono-num text-[11px] text-[#71717A] whitespace-nowrap">
+                      <span className="font-mono-num text-[11px] text-[var(--muted)] whitespace-nowrap">
                         {unitCost > 0 ? `+${fmt(unitCost)}/ea` : "—"}
                       </span>
                     )}
@@ -441,13 +441,13 @@ export default function SectionAccordion({
           {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           <span className="section-tag">{tSection(section.title, lang)}</span>
           {filledCount > 0 && (
-            <span className="text-[10px] font-bold px-2 py-0.5 border border-[#F97316] text-[#C2410C]">
+            <span className="text-[10px] font-bold px-2 py-0.5 border border-[var(--brand)] text-[var(--brand-text)]">
               {t("est.itemsBadge", { n: filledCount })}
             </span>
           )}
           {unfilledCommon > 0 && (
             <span
-              className="text-[10px] font-bold px-2 py-0.5 bg-yellow-100 border border-yellow-400 text-yellow-900 flex items-center gap-1"
+              className="text-[10px] font-bold px-2 py-0.5 bg-[var(--hint-bg-2)] border border-[var(--hint-line)] text-[var(--hint-ink-2)] flex items-center gap-1"
               title="Commonly-needed items in this section haven't been quoted yet"
               data-testid={`common-flag-${section.title}`}
             >
@@ -456,11 +456,11 @@ export default function SectionAccordion({
             </span>
           )}
         </div>
-        <div className="font-mono-num text-sm text-[#52525B]">{fmt(sectionSell)}</div>
+        <div className="font-mono-num text-sm text-[var(--ink-2)]">{fmt(sectionSell)}</div>
       </button>
       {isOpen && (
-        <div className="border-t border-[#E4E4E7]">
-          <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#71717A] font-bold border-b border-[#E4E4E7]">
+        <div className="border-t border-[var(--border)]">
+          <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)] font-bold border-b border-[var(--border)]">
             <div className="col-span-5">{t("est.col.item")}</div>
             <div className="col-span-1">{t("est.col.unit")}</div>
             <div className="col-span-2 text-right">{t("est.col.mat")}</div>
@@ -480,33 +480,33 @@ export default function SectionAccordion({
                   (l) => isCommonOnTab(l.name, activeTab) && (l.qty || 0) <= 0
                 ).length;
                 return (
-                  <div key={g.id} className="border-b border-[#E4E4E7]" data-testid={`subcat-${g.id}`}>
+                  <div key={g.id} className="border-b border-[var(--border)]" data-testid={`subcat-${g.id}`}>
                     <button
                       type="button"
                       onClick={() => toggleSub(g.id)}
-                      className="w-full flex items-center justify-between px-5 py-2.5 text-left bg-[#FAFAFA] hover:bg-[#F4F4F5]"
+                      className="w-full flex items-center justify-between px-5 py-2.5 text-left bg-[var(--surface-muted)] hover:bg-[var(--bg-app)]"
                       data-testid={`subcat-toggle-${g.id}`}
                     >
                       <div className="flex items-center gap-2.5">
                         {isOpenSub ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-[#71717A]" />
+                          <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
                         ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-[#71717A]" />
+                          <ChevronRight className="w-3.5 h-3.5 text-[var(--muted)]" />
                         )}
                         <span className="text-xs uppercase tracking-[0.14em] font-semibold text-[#3F3F46]">
                           {g.label}
                         </span>
-                        <span className="text-[10px] text-[#71717A] font-mono-num">
+                        <span className="text-[10px] text-[var(--muted)] font-mono-num">
                           {g.lines.length}
                         </span>
                         {subFilled > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#F97316] text-[#C2410C]">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[var(--brand)] text-[var(--brand-text)]">
                             {t("est.itemsBadge", { n: subFilled })}
                           </span>
                         )}
                         {subUnfilled > 0 && (
                           <span
-                            className="text-[10px] font-bold px-1.5 py-0.5 bg-yellow-100 border border-yellow-400 text-yellow-900 flex items-center gap-1"
+                            className="text-[10px] font-bold px-1.5 py-0.5 bg-[var(--hint-bg-2)] border border-[var(--hint-line)] text-[var(--hint-ink-2)] flex items-center gap-1"
                             title="Commonly-needed items in this sub-category haven't been quoted yet"
                           >
                             <Lightbulb className="w-3 h-3" />
@@ -514,7 +514,7 @@ export default function SectionAccordion({
                           </span>
                         )}
                       </div>
-                      <div className="font-mono-num text-xs text-[#52525B]">{fmt(subTotal)}</div>
+                      <div className="font-mono-num text-xs text-[var(--ink-2)]">{fmt(subTotal)}</div>
                     </button>
                     {isOpenSub && <div>{g.lines.map(renderLine)}</div>}
                   </div>
@@ -526,7 +526,7 @@ export default function SectionAccordion({
           {miscKey && (
             <>
               {miscRows.length > 0 && (
-                <div className="hidden md:grid grid-cols-12 gap-3 px-5 pt-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-[#71717A] font-bold">
+                <div className="hidden md:grid grid-cols-12 gap-3 px-5 pt-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)] font-bold">
                   <div className="col-span-6">{t("est.customDesc")}</div>
                   {showMatCol && <div className="col-span-2 text-right">{t("cat.col.material")}</div>}
                   <div className={`col-span-${showMatCol ? 2 : 4} text-right`}>{t("cat.col.labor")}</div>
@@ -538,7 +538,7 @@ export default function SectionAccordion({
                 return (
                   <div
                     key={r._id || i}
-                    className="grid grid-cols-12 gap-3 px-5 py-2 border-b border-[#E4E4E7] items-center bg-[#FAFAFA]"
+                    className="grid grid-cols-12 gap-3 px-5 py-2 border-b border-[var(--border)] items-center bg-[var(--surface-muted)]"
                     data-testid={`misc-row-${section.title}-${i}`}
                   >
                     <input
@@ -566,7 +566,7 @@ export default function SectionAccordion({
                       onChange={(e) => updateMisc(i, "lab", e.target.value)}
                       data-testid={`misc-lab-${section.title}-${i}`}
                     />
-                    <div className="col-span-3 md:col-span-1 text-right font-mono-num text-sm font-semibold text-[#09090B]">
+                    <div className="col-span-3 md:col-span-1 text-right font-mono-num text-sm font-semibold text-[var(--ink)]">
                       {fmt(rowTotal)}
                     </div>
                     <button
@@ -582,7 +582,7 @@ export default function SectionAccordion({
               })}
               <div className="px-5 py-3">
                 <button
-                  className="btn-ghost border border-dashed border-[#A1A1AA] hover:border-[#09090B] hover:text-[#09090B] w-full justify-center"
+                  className="btn-ghost border border-dashed border-[var(--muted)] hover:border-[var(--border-strong)] hover:text-[var(--ink)] w-full justify-center"
                   onClick={addMisc}
                   data-testid={`add-misc-${section.title}`}
                 >

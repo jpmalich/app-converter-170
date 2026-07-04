@@ -151,7 +151,7 @@ export default function EstimateEditor() {
       setTimeout(() => nav("/"), 0);
     }
     return (
-      <div className="flex items-center justify-center h-[60vh] text-[#52525B]">
+      <div className="flex items-center justify-center h-[60vh] text-[var(--ink-2)]">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> {t("est.loading")}
       </div>
     );
@@ -361,7 +361,7 @@ export default function EstimateEditor() {
             data-testid={`empty-tab-${activeTab}`}
           >
             <div className="section-tag mb-3">LP Smart Siding</div>
-            <p className="text-sm text-[#52525B] max-w-md mx-auto">
+            <p className="text-sm text-[var(--ink-2)] max-w-md mx-auto">
               The LP SmartSide catalog hasn&apos;t been loaded yet. Send Howard your
               LP Smart Siding price sheet (Excel/CSV) and it&apos;ll populate here.
             </p>

@@ -11,12 +11,12 @@ export default function LangToggle({ tone = "light", className = "" }) {
 
   const base =
     "px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition";
-  const activeLight = "bg-[#09090B] text-white";
-  const inactiveLight = "bg-white text-[#52525B] hover:bg-[#F4F4F5]";
-  const activeDark = "bg-[#F97316] text-[#09090B]";
+  const activeLight = "bg-[var(--bar-bg)] text-white";
+  const inactiveLight = "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]";
+  const activeDark = "bg-[var(--brand)] text-[var(--on-brand)]";
   const inactiveDark = "bg-transparent text-white/70 hover:text-white";
 
-  const border = isDark ? "border border-white/20" : "border border-[#E4E4E7]";
+  const border = isDark ? "border border-white/20" : "border border-[var(--border)]";
 
   return (
     <div
@@ -41,7 +41,7 @@ export default function LangToggle({ tone = "light", className = "" }) {
       <button
         type="button"
         onClick={() => setLang("es")}
-        className={`${base} ${isDark ? "border-l border-white/20" : "border-l border-[#E4E4E7]"} ${
+        className={`${base} ${isDark ? "border-l border-white/20" : "border-l border-[var(--border)]"} ${
           lang === "es"
             ? isDark ? activeDark : activeLight
             : isDark ? inactiveDark : inactiveLight

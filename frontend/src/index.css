@@ -2,27 +2,170 @@
 @tailwind components;
 @tailwind utilities;
 
+/* -------------------------------------------------------------------------- */
+/* Iter 79j.46 — Semantic design tokens.                                       */
+/*                                                                             */
+/* Defaults below are the Safety Orange (Alside) brand. Alternate themes       */
+/* live in `[data-theme="…"]` blocks further down and override ONLY what       */
+/* differs. Values are kept in the SAME hex format they had inline so the      */
+/* codemod-driven Tailwind `var(--token)` references produce byte-identical    */
+/* colors for the default theme.                                               */
+/*                                                                             */
+/* Customer-facing surfaces (QuoteModal, AcceptPage, emailQuote/               */
+/* materialList/printTakeoff HTML) intentionally keep hard-coded neutrals and  */
+/* are NOT rewritten to use tokens — those documents must render the same     */
+/* regardless of the contractor's UI theme.                                    */
+/* -------------------------------------------------------------------------- */
 :root {
+  /* surface + text */
   --bg-app: #F4F4F5;
   --surface: #FFFFFF;
+  --surface-muted: #FAFAFA;
+  --table-header: #E4E4E7;
   --ink: #09090B;
   --ink-2: #52525B;
   --muted: #71717A;
   --border: #E4E4E7;
+  --border-strong: #09090B;
+  --edge: #09090B;
+  --focus: #C2410C;
+
+  /* brand */
   --brand: #F97316;
   --brand-hover: #EA580C;
   --brand-text: #C2410C;
+  --on-brand: #09090B;
+
+  /* sticky sell-bar */
+  --bar-bg: #09090B;
+  --bar-ink: #FFFFFF;
+  --bar-muted: #A1A1AA;
+
+  /* accents */
+  --ai: #7C3AED;
+  --ai-soft: #F5F3FF;
   --profit: #059669;
+  --success: #16A34A;
+  --warning-text: #92400E;
   --danger: #EF4444;
+  --danger-text: #DC2626;
+  --danger-soft: #FEF2F2;
+
+  /* hints (soft yellow "commonly needed" callouts) */
+  --hint-bg: #FEFCE8;
+  --hint-bg-2: #FEF9C3;
+  --hint-line: #FACC15;
+  --hint-ink: #A16207;
+  --hint-ink-2: #713F12;
 }
 
-* {
-  box-sizing: border-box;
+/* -------------------------------------------------------------------------- */
+/* Blueprint Blue                                                              */
+/* -------------------------------------------------------------------------- */
+[data-theme="blueprint"] {
+  --bg-app: #F2F4F8;
+  --ink: #0C1220;
+  --ink-2: #475569;
+  --muted: #64748B;
+  --border: #DBE1EA;
+  --border-strong: #0C1220;
+  --edge: #0C1220;
+  --bar-bg: #0C1220;
+  --focus: #1D4ED8;
+  --brand: #2563EB;
+  --brand-hover: #1D4ED8;
+  --brand-text: #1D4ED8;
+  --on-brand: #FFFFFF;
 }
 
-html, body, #root {
-  height: 100%;
+/* -------------------------------------------------------------------------- */
+/* Forest Green                                                                */
+/* -------------------------------------------------------------------------- */
+[data-theme="forest"] {
+  --bg-app: #F1F5F1;
+  --ink: #0A0F0B;
+  --ink-2: #44554A;
+  --muted: #5F6F65;
+  --border: #DDE4DE;
+  --border-strong: #0A0F0B;
+  --edge: #0A0F0B;
+  --bar-bg: #0A0F0B;
+  --focus: #166534;
+  --brand: #15803D;
+  --brand-hover: #166534;
+  --brand-text: #166534;
+  --on-brand: #FFFFFF;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Steel                                                                       */
+/* -------------------------------------------------------------------------- */
+[data-theme="steel"] {
+  --bg-app: #F2F4F6;
+  --ink: #0B0F14;
+  --ink-2: #475569;
+  --muted: #64748B;
+  --border: #DDE2E8;
+  --border-strong: #0B0F14;
+  --edge: #0B0F14;
+  --bar-bg: #0B0F14;
+  --focus: #334155;
+  --brand: #334155;
+  --brand-hover: #1E293B;
+  --brand-text: #334155;
+  --on-brand: #FFFFFF;
+}
+
+/* -------------------------------------------------------------------------- */
+/* High-Vis Yellow                                                             */
+/* -------------------------------------------------------------------------- */
+[data-theme="highvis"] {
+  --focus: #854D0E;
+  --brand: #FACC15;
+  --brand-hover: #EAB308;
+  --brand-text: #854D0E;
+  --on-brand: #09090B;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Jobsite Dark                                                                */
+/* -------------------------------------------------------------------------- */
+[data-theme="dark"] {
+  --bg-app: #0B0B0D;
+  --surface: #18181B;
+  --surface-muted: #1F1F23;
+  --table-header: #27272A;
+  --ink: #FAFAFA;
+  --ink-2: #D4D4D8;
+  --muted: #A1A1AA;
+  --border: #2E2E33;
+  --border-strong: #FAFAFA;
+  --edge: #000000;
+  --focus: #FB923C;
+  --brand: #F97316;
+  --brand-hover: #FB923C;
+  --brand-text: #FB923C;
+  --on-brand: #09090B;
+  --bar-bg: #27272A;
+  --bar-ink: #FAFAFA;
+  --ai: #A78BFA;
+  --ai-soft: #2A2440;
+  --profit: #34D399;
+  --success: #4ADE80;
+  --warning-text: #FBBF24;
+  --danger: #F87171;
+  --danger-text: #F87171;
+  --danger-soft: #3A1A1A;
+  --hint-bg: #2A2415;
+  --hint-bg-2: #332B15;
+  --hint-line: #854D0E;
+  --hint-ink: #FACC15;
+  --hint-ink-2: #FDE68A;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
 
 body {
   margin: 0;
@@ -43,32 +186,43 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Brutalist primary button: square, hard shadow. Black label on safety-orange
-   passes WCAG AA (7.10:1) — replaces the older white-on-orange (2.80:1). */
+/* Brutalist primary button — token-driven so all themes get consistent
+   black-shadow / brand-fill industrial silhouette. Label uses --on-brand
+   so highvis/blueprint/forest each pick a legible label color. */
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 bg-[#F97316] text-[#09090B] font-bold uppercase tracking-wider px-5 py-3 border border-[#09090B] transition-all;
-  box-shadow: 4px 4px 0 #09090B;
+  @apply inline-flex items-center justify-center gap-2 font-bold uppercase tracking-wider px-5 py-3 transition-all;
+  background: var(--brand);
+  color: var(--on-brand);
+  border: 1px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
 }
-.btn-primary:hover { background: #EA580C; transform: translate(2px,2px); box-shadow: 2px 2px 0 #09090B; }
-.btn-primary:active { transform: translate(4px,4px); box-shadow: 0 0 0 #09090B; }
+.btn-primary:hover { background: var(--brand-hover); transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--edge); }
+.btn-primary:active { transform: translate(4px,4px); box-shadow: 0 0 0 var(--edge); }
 .btn-primary[disabled] { opacity: .5; cursor: not-allowed; }
 
 .btn-secondary {
-  @apply inline-flex items-center justify-center gap-2 bg-white text-[#09090B] font-semibold uppercase tracking-wider px-4 py-2.5 border border-[#09090B] transition-all;
+  @apply inline-flex items-center justify-center gap-2 font-semibold uppercase tracking-wider px-4 py-2.5 transition-all;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border-strong);
 }
-.btn-secondary:hover { background: #09090B; color: #fff; }
+.btn-secondary:hover { background: var(--border-strong); color: var(--surface); }
 
 .btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 text-[#52525B] font-semibold px-3 py-2 transition-colors hover:text-[#09090B];
+  @apply inline-flex items-center justify-center gap-2 font-semibold px-3 py-2 transition-colors;
+  color: var(--ink-2);
   min-width: 44px;
   min-height: 44px;
 }
+.btn-ghost:hover { color: var(--ink); }
 
 .btn-danger {
-  @apply inline-flex items-center justify-center gap-2 text-[#EF4444] font-semibold px-3 py-2 hover:bg-[#FEF2F2] border border-transparent hover:border-[#EF4444] transition-all;
+  @apply inline-flex items-center justify-center gap-2 font-semibold px-3 py-2 border border-transparent transition-all;
+  color: var(--danger);
   min-width: 44px;
   min-height: 44px;
 }
+.btn-danger:hover { background: var(--danger-soft); border-color: var(--danger); }
 
 /* Tighten the touch-target floors back down on desktop where pointers are precise */
 @media (min-width: 768px) {
@@ -81,10 +235,13 @@ body {
 /* Form inputs */
 .input, input[type="text"].input, input[type="email"].input, input[type="password"].input,
 input[type="number"].input, textarea.input {
-  @apply w-full bg-white border-2 border-[#E4E4E7] px-3 text-[#09090B] outline-none transition-colors;
+  @apply w-full px-3 outline-none transition-colors;
+  background: var(--surface);
+  color: var(--ink);
+  border: 2px solid var(--border);
   height: 44px;
 }
-.input:focus { border-color: var(--brand-text); }
+.input:focus { border-color: var(--focus); }
 .input.num { text-align: right; font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", ui-monospace, monospace; }
 textarea.input { height: auto; min-height: 80px; padding: 10px 12px; }
 
@@ -93,15 +250,18 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin
 input[type=number] { -moz-appearance: textfield; }
 
 .label {
-  @apply block text-xs font-bold uppercase tracking-[0.18em] text-[#52525B] mb-1.5;
+  @apply block text-xs font-bold uppercase tracking-[0.18em] mb-1.5;
+  color: var(--ink-2);
 }
 
 .card {
-  @apply bg-white border border-[#E4E4E7];
+  background: var(--surface);
+  border: 1px solid var(--border);
 }
 
 .section-tag {
-  @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[#52525B];
+  @apply inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em];
+  color: var(--ink-2);
 }
 .section-tag::before {
   content: "";
@@ -112,10 +272,10 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* Sticky top bar */
 .sell-bar {
-  background: #09090B;
-  color: #fff;
+  background: var(--bar-bg);
+  color: var(--bar-ink);
   position: sticky; top: 0; z-index: 50;
-  border-bottom: 2px solid #F97316;
+  border-bottom: 2px solid var(--brand);
 }
 
 /* Print styles */

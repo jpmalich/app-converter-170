@@ -26,7 +26,7 @@ function Protected({ children }) {
   const location = useLocation();
   if (user === null)
     return (
-      <div className="flex items-center justify-center h-screen text-[#52525B]" data-testid="loading-state">
+      <div className="flex items-center justify-center h-screen text-[var(--ink-2)]" data-testid="loading-state">
         Loading…
       </div>
     );

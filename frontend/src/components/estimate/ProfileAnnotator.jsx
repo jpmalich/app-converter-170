@@ -580,13 +580,13 @@ export default function ProfileAnnotator({
       <div
         className={
           isFullscreen
-            ? "bg-white w-full h-full max-w-none flex flex-col border border-[#E4E4E7]"
-            : "bg-white max-w-6xl w-full h-[90vh] flex flex-col border border-[#E4E4E7]"
+            ? "bg-[var(--surface)] w-full h-full max-w-none flex flex-col border border-[var(--border)]"
+            : "bg-[var(--surface)] max-w-6xl w-full h-[90vh] flex flex-col border border-[var(--border)]"
         }
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header — matches PhotoAnnotateModal styling for cross-tool consistency */}
-        <div className="bg-[#7C3AED] text-white px-5 py-3 flex items-center justify-between">
+        <div className="bg-[var(--ai)] text-white px-5 py-3 flex items-center justify-between">
           <div>
             <div className="font-heading text-lg">Profile Annotator</div>
             <div className="text-xs opacity-90 mt-0.5">
@@ -601,7 +601,7 @@ export default function ProfileAnnotator({
               <button
                 type="button"
                 onClick={saveAndRerun}
-                className="bg-white text-[#7C3AED] text-xs font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-[#FAFAFA] flex items-center gap-1"
+                className="bg-[var(--surface)] text-[var(--ai)] text-xs font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-[var(--surface-muted)] flex items-center gap-1"
                 data-testid="annotator-save-rerun"
                 title="Save annotations and immediately re-read the blueprint with them"
               >
@@ -611,7 +611,7 @@ export default function ProfileAnnotator({
             <button
               type="button"
               onClick={save}
-              className="bg-[#F97316] text-[#09090B] text-xs font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-[#EA580C] flex items-center gap-1"
+              className="bg-[var(--brand)] text-[var(--on-brand)] text-xs font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-[var(--brand-hover)] flex items-center gap-1"
               data-testid="annotator-save"
             >
               <Save size={12} /> Save
@@ -629,7 +629,7 @@ export default function ProfileAnnotator({
 
         <div className="flex-1 flex min-h-0">
           {/* Image strip */}
-          <div className="w-32 border-r border-[#E4E4E7] overflow-y-auto bg-[#FAFAFA] p-2 space-y-2">
+          <div className="w-32 border-r border-[var(--border)] overflow-y-auto bg-[var(--surface-muted)] p-2 space-y-2">
             {(photos || []).map((p, i) => {
               const count = (annotations[String(i)] || []).length;
               return (
@@ -637,16 +637,16 @@ export default function ProfileAnnotator({
                   key={i}
                   type="button"
                   onClick={() => setSelectedIdx(i)}
-                  className={`block relative w-full border-2 ${i === selectedIdx ? "border-[#F97316]" : "border-[#E4E4E7]"}`}
+                  className={`block relative w-full border-2 ${i === selectedIdx ? "border-[var(--brand)]" : "border-[var(--border)]"}`}
                   data-testid={`annotator-strip-${i}`}
                 >
                   <img src={p.url} alt={`photo ${i}`} className="w-full h-auto block" />
                   {count > 0 && (
-                    <span className="absolute top-1 right-1 bg-[#F97316] text-[#09090B] text-[9px] font-bold px-1.5 py-0.5">
+                    <span className="absolute top-1 right-1 bg-[var(--brand)] text-[var(--on-brand)] text-[9px] font-bold px-1.5 py-0.5">
                       {count}
                     </span>
                   )}
-                  <span className="block text-[9px] text-center font-bold uppercase tracking-wider text-[#71717A] mt-0.5">
+                  <span className="block text-[9px] text-center font-bold uppercase tracking-wider text-[var(--muted)] mt-0.5">
                     {p.label || `#${i + 1}`}
                   </span>
                 </button>
@@ -671,18 +671,18 @@ export default function ProfileAnnotator({
                 <button
                   type="button"
                   onClick={() => bumpZoom(1.25)}
-                  className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
+                  className="w-9 h-9 bg-white/95 hover:bg-[var(--surface)] border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
                   disabled={zoom >= 8 - 0.001}
                   title="Zoom in  ·  scroll wheel up"
                   data-testid="annotator-zoom-in"
                 >
-                  <ZoomIn className="w-4 h-4 text-[#09090B]" />
+                  <ZoomIn className="w-4 h-4 text-[var(--ink)]" />
                 </button>
                 <button
                   type="button"
                   onClick={resetZoom}
                   disabled={zoom === 1}
-                  className="px-1.5 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center text-[10px] font-bold tabular-nums disabled:opacity-40 shadow-sm min-w-[36px]"
+                  className="px-1.5 h-9 bg-white/95 hover:bg-[var(--surface)] border border-[#27272A] flex items-center justify-center text-[10px] font-bold tabular-nums disabled:opacity-40 shadow-sm min-w-[36px]"
                   title="Reset zoom to 100%  ·  shortcut: 0"
                   data-testid="annotator-zoom-pct"
                 >
@@ -691,21 +691,21 @@ export default function ProfileAnnotator({
                 <button
                   type="button"
                   onClick={() => bumpZoom(1 / 1.25)}
-                  className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
+                  className="w-9 h-9 bg-white/95 hover:bg-[var(--surface)] border border-[#27272A] flex items-center justify-center disabled:opacity-40 shadow-sm"
                   disabled={zoom <= 0.5 + 0.001}
                   title="Zoom out  ·  scroll wheel down"
                   data-testid="annotator-zoom-out"
                 >
-                  <ZoomOut className="w-4 h-4 text-[#09090B]" />
+                  <ZoomOut className="w-4 h-4 text-[var(--ink)]" />
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFullscreen((f) => !f)}
-                  className="w-9 h-9 bg-white/95 hover:bg-white border border-[#27272A] flex items-center justify-center shadow-sm"
+                  className="w-9 h-9 bg-white/95 hover:bg-[var(--surface)] border border-[#27272A] flex items-center justify-center shadow-sm"
                   title={isFullscreen ? "Exit fullscreen" : "Expand to fullscreen"}
                   data-testid="annotator-fullscreen"
                 >
-                  {isFullscreen ? <Minimize2 className="w-4 h-4 text-[#09090B]" /> : <Maximize2 className="w-4 h-4 text-[#09090B]" />}
+                  {isFullscreen ? <Minimize2 className="w-4 h-4 text-[var(--ink)]" /> : <Maximize2 className="w-4 h-4 text-[var(--ink)]" />}
                 </button>
               </div>
             )}
@@ -731,15 +731,15 @@ export default function ProfileAnnotator({
               >
                 {ocrBusy ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#92400E] flex-shrink-0" />
-                    <span className="text-[#92400E] font-bold">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--warning-text)] flex-shrink-0" />
+                    <span className="text-[var(--warning-text)] font-bold">
                       Auto-detecting scale from blueprint…
                     </span>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle className="w-3.5 h-3.5 text-[#92400E] flex-shrink-0" />
-                    <span className="text-[#92400E] font-bold flex-1">
+                    <AlertTriangle className="w-3.5 h-3.5 text-[var(--warning-text)] flex-shrink-0" />
+                    <span className="text-[var(--warning-text)] font-bold flex-1">
                       No scale set on this page — new boxes default to 50 ft². Set scale so Shake / B&B come in at real square footage.
                     </span>
                     {currentUploadName && (
@@ -906,16 +906,16 @@ export default function ProfileAnnotator({
           </div>
 
           {/* Right panel — palette + per-box editor */}
-          <div className="w-72 border-l border-[#E4E4E7] flex flex-col">
-            <div className="p-3 border-b border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
+          <div className="w-72 border-l border-[var(--border)] flex flex-col">
+            <div className="p-3 border-b border-[var(--border)]">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-2">
                 Draw mode
               </div>
               <div className="grid grid-cols-2 gap-1 mb-3">
                 <button
                   type="button"
                   onClick={() => { setDrawMode("rect"); setPolygonDraft(null); }}
-                  className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border ${drawMode === "rect" ? "bg-[#09090B] text-white border-[#09090B]" : "border-[#E4E4E7] hover:bg-[#FAFAFA]"}`}
+                  className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border ${drawMode === "rect" ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
                   data-testid="annotator-mode-rect"
                 >
                   ▢ Rectangle
@@ -923,7 +923,7 @@ export default function ProfileAnnotator({
                 <button
                   type="button"
                   onClick={() => setDrawMode("polygon")}
-                  className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border ${drawMode === "polygon" ? "bg-[#09090B] text-white border-[#09090B]" : "border-[#E4E4E7] hover:bg-[#FAFAFA]"}`}
+                  className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border ${drawMode === "polygon" ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
                   data-testid="annotator-mode-polygon"
                   title="Click each corner of the area, then click the first point again (or press Enter) to close"
                 >
@@ -931,18 +931,18 @@ export default function ProfileAnnotator({
                 </button>
               </div>
               {drawMode === "polygon" && (
-                <div className="text-[10px] text-[#52525B] bg-[#FEF3C7] border border-[#F59E0B] px-2 py-1 mb-2">
+                <div className="text-[10px] text-[var(--ink-2)] bg-[#FEF3C7] border border-[#F59E0B] px-2 py-1 mb-2">
                   <span className="font-bold">Polygon mode:</span> click each corner →
                   click first point (or press <kbd className="font-mono-num">Enter</kbd>) to close ·
                   <kbd className="font-mono-num">Esc</kbd> to cancel.
                   {polygonDraft?.points?.length > 0 && (
-                    <span className="block mt-1 font-bold text-[#92400E]">
+                    <span className="block mt-1 font-bold text-[var(--warning-text)]">
                       {polygonDraft.points.length} vertex{polygonDraft.points.length === 1 ? "" : "es"} placed
                     </span>
                   )}
                 </div>
               )}
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-2">
                 Profile {drawMode === "rect" ? "(drag to draw box)" : "(click corners on image)"}
               </div>
               <div className="grid grid-cols-3 gap-1">
@@ -951,7 +951,7 @@ export default function ProfileAnnotator({
                     key={p.value}
                     type="button"
                     onClick={() => setActiveProfile(p.value)}
-                    className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border ${activeProfile === p.value ? "ring-2 ring-[#F97316]" : "border-transparent"}`}
+                    className={`text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border ${activeProfile === p.value ? "ring-2 ring-[var(--brand)]" : "border-transparent"}`}
                     style={{ background: `${p.color}22`, color: p.color }}
                     data-testid={`annotator-profile-${p.value}`}
                   >
@@ -960,24 +960,24 @@ export default function ProfileAnnotator({
                 ))}
               </div>
             </div>
-            <div className="p-3 border-b border-[#E4E4E7]">
+            <div className="p-3 border-b border-[var(--border)]">
               <div className="flex items-center justify-between mb-1">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                   Scale reference
                 </div>
                 {scaleRef ? (
-                  <span className="text-[10px] text-[#16A34A] font-bold">
+                  <span className="text-[10px] text-[var(--success)] font-bold">
                     ✓ {scaleRef.real_ft.toFixed(2)}ft / {Math.round(scaleRef.px_height)}px
                   </span>
                 ) : (
-                  <span className="text-[10px] text-[#71717A]">not set</span>
+                  <span className="text-[10px] text-[var(--muted)]">not set</span>
                 )}
               </div>
               <div className="flex gap-1 mt-1">
                 <button
                   type="button"
                   onClick={() => setScaleDraft({ active: true })}
-                  className={`flex-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border flex items-center justify-center gap-1 ${scaleDraft?.active ? "bg-[#10B981] text-white" : "border-[#E4E4E7] hover:bg-[#FAFAFA]"}`}
+                  className={`flex-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border flex items-center justify-center gap-1 ${scaleDraft?.active ? "bg-[var(--success)] text-white" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
                   data-testid="annotator-set-scale"
                 >
                   <Ruler size={12} />
@@ -990,7 +990,7 @@ export default function ProfileAnnotator({
                   type="button"
                   onClick={autoDetectScale}
                   disabled={ocrBusy || !currentUploadName}
-                  className="flex-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border border-[#7C3AED] text-[#7C3AED] hover:bg-[#F5F3FF] flex items-center justify-center gap-1 disabled:opacity-50"
+                  className="flex-1 text-[10px] uppercase tracking-wider font-bold px-2 py-1.5 border border-[var(--ai)] text-[var(--ai)] hover:bg-[var(--ai-soft)] flex items-center justify-center gap-1 disabled:opacity-50"
                   data-testid="annotator-auto-scale"
                   title="Use AI vision to find a labeled dimension on the image"
                 >
@@ -998,7 +998,7 @@ export default function ProfileAnnotator({
                 </button>
               </div>
               {scaleRefInput.open && (
-                <div className="mt-2 p-2 border border-[#10B981] bg-[#ECFDF5]">
+                <div className="mt-2 p-2 border border-[var(--success)] bg-[#ECFDF5]">
                   <div className="text-[10px] uppercase tracking-wider font-bold text-[#065F46] mb-1">
                     What real-world length is that?
                   </div>
@@ -1009,7 +1009,7 @@ export default function ProfileAnnotator({
                       min="0.1"
                       value={scaleRefInput.realFt}
                       onChange={(e) => setScaleRefInput({ ...scaleRefInput, realFt: e.target.value })}
-                      className="flex-1 border border-[#E4E4E7] px-2 py-1 text-xs font-mono-num"
+                      className="flex-1 border border-[var(--border)] px-2 py-1 text-xs font-mono-num"
                       placeholder="ft"
                       autoFocus
                       data-testid="annotator-scale-ft"
@@ -1017,7 +1017,7 @@ export default function ProfileAnnotator({
                     <button
                       type="button"
                       onClick={confirmScale}
-                      className="bg-[#10B981] text-white text-[10px] uppercase font-bold px-2"
+                      className="bg-[var(--success)] text-white text-[10px] uppercase font-bold px-2"
                       data-testid="annotator-scale-confirm"
                     >
                       OK
@@ -1029,17 +1029,17 @@ export default function ProfileAnnotator({
                 </div>
               )}
               {!scaleRef && (
-                <p className="text-[10px] text-[#71717A] mt-1 italic">
+                <p className="text-[10px] text-[var(--muted)] mt-1 italic">
                   Without scale, sqft defaults to 50 — type the real ft² in each box below to override.
                 </p>
               )}
             </div>
             <div className="flex-1 overflow-y-auto p-3">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-2">
                 Boxes on this image ({boxes.length})
               </div>
               {boxes.length === 0 && (
-                <div className="text-[11px] text-[#71717A] italic">
+                <div className="text-[11px] text-[var(--muted)] italic">
                   <MousePointer2 size={12} className="inline mr-1" />
                   Click and drag on the image to draw a box.
                 </div>
@@ -1047,7 +1047,7 @@ export default function ProfileAnnotator({
               {boxes.map((b) => {
                 const profileDef = PROFILES.find((p) => p.value === b.profile) || PROFILES[0];
                 return (
-                  <div key={b.id} className="border border-[#E4E4E7] p-2 mb-2" data-testid={`annotator-list-${b.id}`}>
+                  <div key={b.id} className="border border-[var(--border)] p-2 mb-2" data-testid={`annotator-list-${b.id}`}>
                     <div className="flex items-center justify-between mb-1">
                       <select
                         value={b.profile}
@@ -1063,18 +1063,18 @@ export default function ProfileAnnotator({
                       <button
                         type="button"
                         onClick={() => deleteBox(b.id)}
-                        className="text-[#71717A] hover:text-[#EF4444]"
+                        className="text-[var(--muted)] hover:text-[var(--danger)]"
                         data-testid={`annotator-list-delete-${b.id}`}
                       >
                         <Trash2 size={12} />
                       </button>
                     </div>
                     <label className="block mb-1">
-                      <span className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Elevation</span>
+                      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Elevation</span>
                       <select
                         value={b.elevation_label}
                         onChange={(e) => updateBox(b.id, { elevation_label: e.target.value })}
-                        className="block w-full text-[11px] border border-[#E4E4E7] px-1 py-0.5"
+                        className="block w-full text-[11px] border border-[var(--border)] px-1 py-0.5"
                       >
                         {ELEVATIONS.map((el) => (
                           <option key={el} value={el}>{el}</option>
@@ -1082,11 +1082,11 @@ export default function ProfileAnnotator({
                       </select>
                     </label>
                     <label className="block mb-1">
-                      <span className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Callout location</span>
+                      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Callout location</span>
                       <select
                         value={b.location || "body"}
                         onChange={(e) => updateBox(b.id, { location: e.target.value })}
-                        className="block w-full text-[11px] border border-[#E4E4E7] px-1 py-0.5"
+                        className="block w-full text-[11px] border border-[var(--border)] px-1 py-0.5"
                         data-testid={`annotator-list-location-${b.id}`}
                         title="Where on this elevation the profile sits. Lets you carry mixed accents — Lap on body + Shake on gable + B&B on dormer — without splitting elevation rows."
                       >
@@ -1096,23 +1096,23 @@ export default function ProfileAnnotator({
                       </select>
                     </label>
                     <label className="block mb-1">
-                      <span className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">ft²</span>
+                      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">ft²</span>
                       <input
                         type="number"
                         value={b.sqft}
                         onChange={(e) => updateBox(b.id, { sqft: Number(e.target.value) || 0 })}
-                        className="block w-full text-[11px] border border-[#E4E4E7] px-1 py-0.5 font-mono-num"
+                        className="block w-full text-[11px] border border-[var(--border)] px-1 py-0.5 font-mono-num"
                         data-testid={`annotator-list-sqft-${b.id}`}
                       />
                     </label>
                     <label className="block">
-                      <span className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Note</span>
+                      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Note</span>
                       <input
                         type="text"
                         value={b.callout}
                         onChange={(e) => updateBox(b.id, { callout: e.target.value })}
                         placeholder="e.g. porch face"
-                        className="block w-full text-[11px] border border-[#E4E4E7] px-1 py-0.5"
+                        className="block w-full text-[11px] border border-[var(--border)] px-1 py-0.5"
                       />
                     </label>
                   </div>
@@ -1123,7 +1123,7 @@ export default function ProfileAnnotator({
         </div>
 
         {/* Footer hint */}
-        <div className="px-4 py-2 border-t border-[#E4E4E7] bg-[#FAFAFA] text-[10px] text-[#71717A] leading-snug">
+        <div className="px-4 py-2 border-t border-[var(--border)] bg-[var(--surface-muted)] text-[10px] text-[var(--muted)] leading-snug">
           <span className="font-bold text-[#3F3F46]">How this helps:</span>{" "}
           Boxes you draw here are saved on the estimate. When you click{" "}
           <span className="font-bold">Save &amp; Re-run / Re-read</span>, the AI worker

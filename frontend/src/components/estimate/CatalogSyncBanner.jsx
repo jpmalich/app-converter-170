@@ -123,18 +123,18 @@ export default function CatalogSyncBanner({ est, update }) {
   return (
     <>
       <div
-        className="mb-6 border-2 border-[#F97316] bg-orange-50 px-4 py-3 flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row"
+        className="mb-6 border-2 border-[var(--brand)] bg-orange-50 px-4 py-3 flex items-start sm:items-center justify-between gap-3 flex-col sm:flex-row"
         data-testid="sync-banner"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex-shrink-0 w-9 h-9 bg-[#F97316] text-[#09090B] flex items-center justify-center">
+          <div className="flex-shrink-0 w-9 h-9 bg-[var(--brand)] text-[var(--on-brand)] flex items-center justify-center">
             <RefreshCw className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <div className="font-bold text-sm text-[#09090B]">
+            <div className="font-bold text-sm text-[var(--ink)]">
               {t("est.sync.headline")}
             </div>
-            <div className="text-xs text-[#52525B] mt-0.5">
+            <div className="text-xs text-[var(--ink-2)] mt-0.5">
               {t("est.sync.subline", { n: changes.length })}
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function CatalogSyncBanner({ est, update }) {
         <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
           <button
             type="button"
-            className="px-3 py-1.5 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider flex-1 sm:flex-none"
+            className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider flex-1 sm:flex-none"
             onClick={dismiss}
             data-testid="sync-dismiss-btn"
           >
@@ -150,7 +150,7 @@ export default function CatalogSyncBanner({ est, update }) {
           </button>
           <button
             type="button"
-            className="px-3 py-1.5 bg-[#09090B] text-white border border-[#09090B] hover:bg-black text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
+            className="px-3 py-1.5 bg-[var(--bar-bg)] text-white border border-[var(--border-strong)] hover:bg-black text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 flex-1 sm:flex-none"
             onClick={() => setOpen(true)}
             data-testid="sync-review-btn"
           >
@@ -167,11 +167,11 @@ export default function CatalogSyncBanner({ est, update }) {
           data-testid="sync-modal-backdrop"
         >
           <div
-            className="bg-white max-w-3xl w-full max-h-[85vh] flex flex-col"
+            className="bg-[var(--surface)] max-w-3xl w-full max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
             data-testid="sync-modal"
           >
-            <div className="bg-[#F97316] text-[#09090B] px-5 py-4 flex items-center justify-between">
+            <div className="bg-[var(--brand)] text-[var(--on-brand)] px-5 py-4 flex items-center justify-between">
               <div>
                 <div className="font-heading text-lg">{t("est.sync.modal.title")}</div>
                 <div className="text-xs opacity-90 mt-0.5">
@@ -191,8 +191,8 @@ export default function CatalogSyncBanner({ est, update }) {
             </div>
             <div className="overflow-y-auto flex-1">
               <table className="w-full text-sm">
-                <thead className="bg-[#FAFAFA] border-b border-[#E4E4E7] sticky top-0">
-                  <tr className="text-left text-[10px] uppercase tracking-wider text-[#71717A]">
+                <thead className="bg-[var(--surface-muted)] border-b border-[var(--border)] sticky top-0">
+                  <tr className="text-left text-[10px] uppercase tracking-wider text-[var(--muted)]">
                     <th className="px-4 py-2">{t("est.sync.col.item")}</th>
                     <th className="px-3 py-2 text-center">{t("est.sync.col.qty")}</th>
                     <th className="px-3 py-2 text-right">{t("est.sync.col.matOld")}</th>
@@ -203,18 +203,18 @@ export default function CatalogSyncBanner({ est, update }) {
                 </thead>
                 <tbody>
                   {changes.map((c) => (
-                    <tr key={`${c.section}::${c.name}`} className="border-b border-[#F4F4F5]">
+                    <tr key={`${c.section}::${c.name}`} className="border-b border-[var(--bg-app)]">
                       <td className="px-4 py-2 text-xs">
-                        <div className="font-bold text-[#09090B]">{c.name}</div>
-                        <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-0.5">{c.section}</div>
+                        <div className="font-bold text-[var(--ink)]">{c.name}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] mt-0.5">{c.section}</div>
                       </td>
                       <td className="px-3 py-2 text-center font-mono-num text-xs">{c.qty} {c.unit}</td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.mat_changed ? "text-[#71717A] line-through" : ""}`}>{usd(c.mat_old)}</td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.mat_changed ? (c.mat_new > c.mat_old ? "text-green-700" : "text-red-700") : "text-[#71717A]"}`}>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.mat_changed ? "text-[var(--muted)] line-through" : ""}`}>{usd(c.mat_old)}</td>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.mat_changed ? (c.mat_new > c.mat_old ? "text-green-700" : "text-red-700") : "text-[var(--muted)]"}`}>
                         {c.mat_changed ? usd(c.mat_new) : "—"}
                       </td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.lab_changed ? "text-[#71717A] line-through" : ""}`}>{usd(c.lab_old)}</td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.lab_changed ? (c.lab_new > c.lab_old ? "text-green-700" : "text-red-700") : "text-[#71717A]"}`}>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.lab_changed ? "text-[var(--muted)] line-through" : ""}`}>{usd(c.lab_old)}</td>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.lab_changed ? (c.lab_new > c.lab_old ? "text-green-700" : "text-red-700") : "text-[var(--muted)]"}`}>
                         {c.lab_changed ? usd(c.lab_new) : "—"}
                       </td>
                     </tr>
@@ -222,10 +222,10 @@ export default function CatalogSyncBanner({ est, update }) {
                 </tbody>
               </table>
             </div>
-            <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-end gap-2">
+            <div className="border-t border-[var(--border)] px-5 py-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-4 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-sm font-bold uppercase tracking-wider"
+                className="px-4 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-sm font-bold uppercase tracking-wider"
                 onClick={() => setOpen(false)}
                 disabled={busy}
                 data-testid="sync-cancel-btn"
@@ -234,7 +234,7 @@ export default function CatalogSyncBanner({ est, update }) {
               </button>
               <button
                 type="button"
-                className="px-4 py-2 bg-[#09090B] text-white border border-[#09090B] hover:bg-black text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                className="px-4 py-2 bg-[var(--bar-bg)] text-white border border-[var(--border-strong)] hover:bg-black text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                 onClick={apply}
                 disabled={busy}
                 data-testid="sync-apply-btn"

@@ -396,7 +396,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#09090B]/70 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-[var(--bar-bg)]/70 flex items-center justify-center p-4"
       data-testid="guided-capture-wizard"
     >
       {/* Iter 79i (Phase 4) — Resume prompt. Shown once on wizard open
@@ -407,18 +407,18 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
           back to where the contractor left off. */}
       {resumeCandidate && (
         <div
-          className="absolute inset-0 z-10 bg-[#09090B]/80 flex items-center justify-center p-4"
+          className="absolute inset-0 z-10 bg-[var(--bar-bg)]/80 flex items-center justify-center p-4"
           data-testid="guided-capture-resume-prompt"
         >
-          <div className="bg-white max-w-md w-full p-6 shadow-2xl">
+          <div className="bg-[var(--surface)] max-w-md w-full p-6 shadow-2xl">
             <div className="text-xs uppercase tracking-wider text-[#0EA5E9] font-bold mb-2">
               Resume your session?
             </div>
-            <h3 className="text-lg font-bold text-[#09090B] mb-2">
+            <h3 className="text-lg font-bold text-[var(--ink)] mb-2">
               {Object.keys(resumeCandidate.captured || {}).length} photo
               {Object.keys(resumeCandidate.captured || {}).length !== 1 ? "s" : ""} from earlier
             </h3>
-            <p className="text-sm text-[#52525B] mb-4">
+            <p className="text-sm text-[var(--ink-2)] mb-4">
               Looks like you started a Guided Capture on this device recently.
               Restore where you left off, or start fresh?
             </p>
@@ -426,7 +426,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               <button
                 type="button"
                 onClick={dismissResume}
-                className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#71717A] hover:text-[#52525B]"
+                className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-[var(--muted)] hover:text-[var(--ink-2)]"
                 data-testid="guided-capture-resume-start-over"
               >
                 Start over
@@ -434,7 +434,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               <button
                 type="button"
                 onClick={applyResume}
-                className="px-4 py-2 bg-[#16A34A] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider"
+                className="px-4 py-2 bg-[var(--success)] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider"
                 data-testid="guided-capture-resume-btn"
               >
                 Resume
@@ -443,7 +443,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
           </div>
         </div>
       )}
-      <div className="bg-white w-full max-w-2xl rounded-sm shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+      <div className="bg-[var(--surface)] w-full max-w-2xl rounded-sm shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         {/* Header */}
         <div className="bg-gradient-to-r from-[#0EA5E9] to-[#7C3AED] text-white px-5 py-4 flex items-center gap-3">
           <Camera className="w-5 h-5 flex-shrink-0" />
@@ -466,9 +466,9 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
         </div>
 
         {/* Progress bar */}
-        <div className="h-1 bg-[#F4F4F5]">
+        <div className="h-1 bg-[var(--bg-app)]">
           <div
-            className="h-full bg-[#7C3AED] transition-all duration-300"
+            className="h-full bg-[var(--ai)] transition-all duration-300"
             style={{ width: `${progressPct}%` }}
             data-testid="guided-capture-progress"
           />
@@ -477,19 +477,19 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
         {/* Step dots — Iter 79f: annotated steps get a distinct
             ring so contractor sees at a glance which elevations still
             need annotations. */}
-        <div className="flex justify-center gap-1.5 py-2 bg-[#FAFAFA] border-b border-[#E4E4E7]">
+        <div className="flex justify-center gap-1.5 py-2 bg-[var(--surface-muted)] border-b border-[var(--border)]">
           {STEPS.map((s, i) => {
             const cap = captured[s.key];
             const done = !!cap;
             const annotated = !!cap?.annotated;
             const active = i === stepIdx;
             const bg = active
-              ? "bg-[#7C3AED] text-white ring-2 ring-[#7C3AED]/30 ring-offset-1"
+              ? "bg-[var(--ai)] text-white ring-2 ring-[var(--ai)]/30 ring-offset-1"
               : annotated
-                ? "bg-[#16A34A] text-white ring-2 ring-[#0EA5E9]/60"
+                ? "bg-[var(--success)] text-white ring-2 ring-[#0EA5E9]/60"
                 : done
-                  ? "bg-[#16A34A] text-white"
-                  : "bg-[#E4E4E7] text-[#71717A] hover:bg-[#D4D4D8]";
+                  ? "bg-[var(--success)] text-white"
+                  : "bg-[var(--table-header)] text-[var(--muted)] hover:bg-[#D4D4D8]";
             return (
               <button
                 key={s.key}
@@ -517,8 +517,8 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               onClick={toggleFastTrack}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 border font-bold uppercase tracking-wider transition ${
                 fastTrack
-                  ? "bg-white border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA]"
-                  : "bg-[#7C3AED] border-[#7C3AED] text-white"
+                  ? "bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-muted)]"
+                  : "bg-[var(--ai)] border-[var(--ai)] text-white"
               }`}
               data-testid="guided-capture-annotate-now-toggle"
               title="Show the Annotate button after each capture (recommended — better AI accuracy per photo)"
@@ -530,31 +530,31 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               onClick={toggleFastTrack}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 border font-bold uppercase tracking-wider transition ${
                 fastTrack
-                  ? "bg-[#F97316] border-[#F97316] text-[#09090B]"
-                  : "bg-white border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA]"
+                  ? "bg-[var(--brand)] border-[var(--brand)] text-[var(--on-brand)]"
+                  : "bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-muted)]"
               }`}
               data-testid="guided-capture-fast-track-toggle"
               title="Capture all photos first, then annotate them together at the end from the main AI Measure screen"
             >
               <Zap aria-hidden="true" className="w-3 h-3" /> Fast Track
             </button>
-            <span className="text-[10px] text-[#71717A] italic ml-1">
+            <span className="text-[10px] text-[var(--muted)] italic ml-1">
               {fastTrack
                 ? "Fast Track: photos only — annotate later"
                 : "Best for accuracy — annotate each wall as you capture it"}
             </span>
           </div>
 
-          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
-            Elevation: <span className="text-[#7C3AED]">{step.elevation}</span>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
+            Elevation: <span className="text-[var(--ai)]">{step.elevation}</span>
           </div>
-          <h2 className="text-xl font-bold text-[#09090B] mt-1 mb-2" data-testid="guided-capture-step-title">
+          <h2 className="text-xl font-bold text-[var(--ink)] mt-1 mb-2" data-testid="guided-capture-step-title">
             {step.title}
           </h2>
-          <p className="text-sm text-[#52525B] mb-4">{step.hint}</p>
+          <p className="text-sm text-[var(--ink-2)] mb-4">{step.hint}</p>
 
           {/* Diagram */}
-          <div className="bg-[#FAFAFA] border border-[#E4E4E7] py-6 px-4 mb-4 text-center font-mono-num text-2xl whitespace-pre leading-relaxed">
+          <div className="bg-[var(--surface-muted)] border border-[var(--border)] py-6 px-4 mb-4 text-center font-mono-num text-2xl whitespace-pre leading-relaxed">
             {step.diagram}
           </div>
 
@@ -573,31 +573,31 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="w-full border-2 border-dashed border-[#7C3AED] hover:bg-[#FAF5FF] py-8 flex flex-col items-center gap-2 transition-colors"
+              className="w-full border-2 border-dashed border-[var(--ai)] hover:bg-[#FAF5FF] py-8 flex flex-col items-center gap-2 transition-colors"
               data-testid="guided-capture-take-btn"
             >
-              <Camera className="w-10 h-10 text-[#7C3AED]" />
-              <div className="text-sm font-bold uppercase tracking-wider text-[#7C3AED]">
+              <Camera className="w-10 h-10 text-[var(--ai)]" />
+              <div className="text-sm font-bold uppercase tracking-wider text-[var(--ai)]">
                 Take / Choose Photo
               </div>
-              <div className="text-xs text-[#71717A]">
+              <div className="text-xs text-[var(--muted)]">
                 Phone camera or photo library
               </div>
             </button>
           ) : (
-            <div className="relative border-2 border-[#16A34A]">
+            <div className="relative border-2 border-[var(--success)]">
               <img
                 src={taken.previewUrl}
                 alt={`Step ${stepIdx + 1} preview`}
-                className="w-full max-h-80 object-contain bg-[#09090B]"
+                className="w-full max-h-80 object-contain bg-[var(--bar-bg)]"
                 data-testid={`guided-capture-preview-${stepIdx}`}
               />
-              <div className="absolute top-2 left-2 bg-[#16A34A] text-white text-xs font-bold uppercase tracking-wider px-2 py-1 flex items-center gap-1">
+              <div className="absolute top-2 left-2 bg-[var(--success)] text-white text-xs font-bold uppercase tracking-wider px-2 py-1 flex items-center gap-1">
                 <Check className="w-3 h-3" /> Captured · {step.elevation}
               </div>
               <button
                 onClick={retake}
-                className="absolute top-2 right-2 bg-white/95 text-[#52525B] text-xs font-bold uppercase tracking-wider px-2 py-1 hover:bg-white"
+                className="absolute top-2 right-2 bg-white/95 text-[var(--ink-2)] text-xs font-bold uppercase tracking-wider px-2 py-1 hover:bg-[var(--surface)]"
                 data-testid="guided-capture-retake-btn"
               >
                 Retake
@@ -612,11 +612,11 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               when Fast Track mode is on (contractor annotates at the
               end instead). */}
           {taken && !fastTrack && (
-            <div className="mt-4 bg-[#FAFAFA] border border-[#E4E4E7] p-4">
-              <div className="text-xs uppercase tracking-wider text-[#71717A] font-bold mb-1">
+            <div className="mt-4 bg-[var(--surface-muted)] border border-[var(--border)] p-4">
+              <div className="text-xs uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
                 Annotate this photo?
               </div>
-              <div className="text-sm text-[#52525B] mb-3">
+              <div className="text-sm text-[var(--ink-2)] mb-3">
                 Mark Wall · Window · Mask · Style · Profile · Calibrate so Claude
                 gets ground truth instead of guessing. Takes 20-40 seconds.
               </div>
@@ -625,7 +625,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
                   type="button"
                   onClick={openAnnotate}
                   disabled={taken.uploading || !taken.name}
-                  className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-40"
+                  className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-40"
                   data-testid="guided-capture-annotate-btn"
                 >
                   {taken.uploading ? (
@@ -638,7 +638,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
                 </button>
                 {taken.annotated && (
                   <span
-                    className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[#16A34A]"
+                    className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[var(--success)]"
                     data-testid="guided-capture-annotated-badge"
                   >
                     <Check className="w-3.5 h-3.5" /> Annotated
@@ -650,12 +650,12 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-[#E4E4E7] px-5 py-3 flex justify-between items-center bg-white">
+        <div className="border-t border-[var(--border)] px-5 py-3 flex justify-between items-center bg-[var(--surface)]">
           <button
             type="button"
             onClick={back}
             disabled={stepIdx === 0}
-            className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#52525B] disabled:opacity-30 flex items-center gap-1"
+            className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-[var(--ink-2)] disabled:opacity-30 flex items-center gap-1"
             data-testid="guided-capture-back-btn"
           >
             <ChevronLeft className="w-3.5 h-3.5" /> Back
@@ -665,7 +665,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               <button
                 type="button"
                 onClick={skip}
-                className="px-3 py-2 bg-white text-[#71717A] border border-[#E4E4E7] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                className="px-3 py-2 bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
                 data-testid="guided-capture-skip-btn"
                 title="Skip this step — fewer photos = lower AI accuracy"
               >
@@ -677,7 +677,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
                 type="button"
                 onClick={next}
                 disabled={!taken}
-                className="px-4 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
+                className="px-4 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
                 data-testid="guided-capture-next-btn"
               >
                 Next <ChevronRight className="w-3.5 h-3.5" />
@@ -695,7 +695,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
                   type="button"
                   onClick={() => finish({ autoRun: false })}
                   disabled={captureCount === 0}
-                  className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#71717A] hover:text-[#52525B] underline underline-offset-2 disabled:opacity-30"
+                  className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] hover:text-[var(--ink-2)] underline underline-offset-2 disabled:opacity-30"
                   data-testid="guided-capture-finish-save-only-btn"
                   title="Save photos without running AI Measure — you can trigger it manually later"
                 >
@@ -705,7 +705,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
                   type="button"
                   onClick={() => finish({ autoRun: true })}
                   disabled={captureCount === 0}
-                  className="px-4 py-2 bg-[#16A34A] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
+                  className="px-4 py-2 bg-[var(--success)] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
                   data-testid="guided-capture-finish-run-btn"
                 >
                   <Check className="w-3.5 h-3.5" /> Done · Run AI Measure

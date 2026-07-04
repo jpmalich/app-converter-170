@@ -201,12 +201,12 @@ function CoverageBar({ label, segments, totalLf, pcs, unit, formula }) {
   return (
     <div className="mb-2.5 last:mb-0" data-testid={`coverage-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
       <div className="flex items-baseline justify-between mb-1">
-        <span className="text-[11px] font-bold text-[#09090B]">{label}</span>
-        <span className="text-[10px] font-mono-num text-[#52525B]">
-          {total.toFixed(0)} LF ÷ 12.5 = <span className="font-bold text-[#09090B]">{pcs} {unit}</span>
+        <span className="text-[11px] font-bold text-[var(--ink)]">{label}</span>
+        <span className="text-[10px] font-mono-num text-[var(--ink-2)]">
+          {total.toFixed(0)} LF ÷ 12.5 = <span className="font-bold text-[var(--ink)]">{pcs} {unit}</span>
         </span>
       </div>
-      <div className="flex h-5 w-full border border-[#E4E4E7] overflow-hidden">
+      <div className="flex h-5 w-full border border-[var(--border)] overflow-hidden">
         {segments.map((seg) => {
           const lf = Number(seg.lf) || 0;
           if (lf <= 0) return null;
@@ -225,14 +225,14 @@ function CoverageBar({ label, segments, totalLf, pcs, unit, formula }) {
       </div>
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
         {segments.filter((s) => (Number(s.lf) || 0) > 0).map((seg) => (
-          <span key={seg.label} className="flex items-center gap-1 text-[10px] text-[#52525B]">
+          <span key={seg.label} className="flex items-center gap-1 text-[10px] text-[var(--ink-2)]">
             <span className="inline-block w-2 h-2" style={{ backgroundColor: seg.color }} />
-            <span>{seg.label} <span className="font-mono-num text-[#71717A]">{seg.detail}</span></span>
+            <span>{seg.label} <span className="font-mono-num text-[var(--muted)]">{seg.detail}</span></span>
           </span>
         ))}
       </div>
       {formula && (
-        <div className="text-[10px] font-mono-num text-[#71717A] mt-0.5">{formula}</div>
+        <div className="text-[10px] font-mono-num text-[var(--muted)] mt-0.5">{formula}</div>
       )}
     </div>
   );
@@ -334,26 +334,26 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
 
   return (
     <section
-      className="p-5 border-b border-[#E4E4E7] bg-white"
+      className="p-5 border-b border-[var(--border)] bg-[var(--surface)]"
       data-testid="takeoff-recon-card"
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
+        <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
           Takeoff Reconciliation
         </div>
-        <div className="text-[10px] uppercase tracking-wider text-[#71717A]">
-          Waste · <span className="font-bold text-[#09090B]">{pct}%</span>{" "}
-          <span className="text-[#71717A]">(Siding + Soffit panels only)</span>
+        <div className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
+          Waste · <span className="font-bold text-[var(--ink)]">{pct}%</span>{" "}
+          <span className="text-[var(--muted)]">(Siding + Soffit panels only)</span>
         </div>
       </div>
-      <p className="text-[11px] text-[#52525B] leading-snug mb-3">
+      <p className="text-[11px] text-[var(--ink-2)] leading-snug mb-3">
         AI reads the raw measurements; the catalog mapper converts them to
         line quantities; the Order column applies the waste factor so you
         can spot drift against what you&apos;d actually need to order.
       </p>
-      <div className="border border-[#E4E4E7] overflow-x-auto">
+      <div className="border border-[var(--border)] overflow-x-auto">
         <table className="w-full text-xs">
-          <thead className="bg-[#FAFAFA] text-[10px] uppercase tracking-wider text-[#71717A]">
+          <thead className="bg-[var(--surface-muted)] text-[10px] uppercase tracking-wider text-[var(--muted)]">
             <tr>
               <th className="text-left px-3 py-2">Item</th>
               <th className="text-right px-3 py-2 w-32">AI raw</th>
@@ -367,19 +367,19 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
             {rows.map((r, i) => (
               <tr
                 key={r.label}
-                className={i % 2 ? "bg-white" : "bg-[#FAFAFA]"}
+                className={i % 2 ? "bg-[var(--surface)]" : "bg-[var(--surface-muted)]"}
                 data-testid={`recon-row-${r.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
               >
-                <td className="px-3 py-1.5 text-[#09090B] font-bold font-sans">
+                <td className="px-3 py-1.5 text-[var(--ink)] font-bold font-sans">
                   {r.label}
                 </td>
-                <td className="px-3 py-1.5 text-right text-[#52525B]">{r.raw}</td>
-                <td className="px-3 py-1.5 text-right text-[#09090B]">
+                <td className="px-3 py-1.5 text-right text-[var(--ink-2)]">{r.raw}</td>
+                <td className="px-3 py-1.5 text-right text-[var(--ink)]">
                   {r.formula}
                 </td>
                 <td
                   className={`px-3 py-1.5 text-right ${
-                    r.drift ? "text-[#C2410C] font-bold" : "text-[#09090B]"
+                    r.drift ? "text-[var(--brand-text)] font-bold" : "text-[var(--ink)]"
                   }`}
                 >
                   {r.order}
@@ -390,11 +390,11 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
         </table>
       </div>
       {(showCoverage || showGutterAssumptions) && (
-        <div className="mt-4 pt-3 border-t border-[#E4E4E7]" data-testid="coverage-breakdown">
-          <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
+        <div className="mt-4 pt-3 border-t border-[var(--border)]" data-testid="coverage-breakdown">
+          <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-2">
             Coverage Breakdown
           </div>
-          <p className="text-[11px] text-[#52525B] leading-snug mb-3">
+          <p className="text-[11px] text-[var(--ink-2)] leading-snug mb-3">
             Spot-check the source LF each piece count is built from. If a
             segment looks off vs the home, the underlying HOVER measurement
             (eaves / rakes / window dims) likely needs a second look.
@@ -424,11 +424,11 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
             />
           )}
           {showGutterAssumptions && (
-            <div className="mt-3 pt-2.5 border-t border-dashed border-[#E4E4E7]" data-testid="gutter-assumptions">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-1.5">
+            <div className="mt-3 pt-2.5 border-t border-dashed border-[var(--border)]" data-testid="gutter-assumptions">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1.5">
                 Gutter assumptions
               </div>
-              <p className="text-[10px] text-[#71717A] leading-snug mb-2">
+              <p className="text-[10px] text-[var(--muted)] leading-snug mb-2">
                 One shared run count drives End Caps (× 2) and the +1-per-run on Hangars. Downspouts use their own 25 LF spacing rule.
               </p>
               <div className="flex flex-wrap gap-2">
@@ -440,24 +440,24 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
                   </span>
                 </div>
                 {endCapLine && (
-                  <div className="inline-flex items-baseline gap-1.5 border border-[#E4E4E7] bg-[#FAFAFA] px-2 py-1" data-testid="chip-end-caps">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">End Caps</span>
-                    <span className="text-[13px] font-mono-num font-bold text-[#09090B]">{Number(endCapLine.qty) || 0}</span>
-                    <span className="text-[10px] font-mono-num text-[#71717A]">({gutterRuns} runs × 2)</span>
+                  <div className="inline-flex items-baseline gap-1.5 border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1" data-testid="chip-end-caps">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">End Caps</span>
+                    <span className="text-[13px] font-mono-num font-bold text-[var(--ink)]">{Number(endCapLine.qty) || 0}</span>
+                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({gutterRuns} runs × 2)</span>
                   </div>
                 )}
                 {hangersLine && (
-                  <div className="inline-flex items-baseline gap-1.5 border border-[#E4E4E7] bg-[#FAFAFA] px-2 py-1" data-testid="chip-hangars">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">Hangars</span>
-                    <span className="text-[13px] font-mono-num font-bold text-[#09090B]">{Number(hangersLine.qty) || 0}</span>
-                    <span className="text-[10px] font-mono-num text-[#71717A]">({Math.ceil(eavesLf / 2)} + {gutterRuns} runs)</span>
+                  <div className="inline-flex items-baseline gap-1.5 border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1" data-testid="chip-hangars">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">Hangars</span>
+                    <span className="text-[13px] font-mono-num font-bold text-[var(--ink)]">{Number(hangersLine.qty) || 0}</span>
+                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({Math.ceil(eavesLf / 2)} + {gutterRuns} runs)</span>
                   </div>
                 )}
                 {downspoutLine && (
-                  <div className="inline-flex items-baseline gap-1.5 border border-[#E4E4E7] bg-[#FAFAFA] px-2 py-1" data-testid="chip-downspouts">
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">Downspouts</span>
-                    <span className="text-[13px] font-mono-num font-bold text-[#09090B]">{downspoutCount}</span>
-                    <span className="text-[10px] font-mono-num text-[#71717A]">({eavesLf.toFixed(0)} LF ÷ 25{downspoutCount === 2 && eavesLf / 25 < 2 ? ", min 2" : ""})</span>
+                  <div className="inline-flex items-baseline gap-1.5 border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1" data-testid="chip-downspouts">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">Downspouts</span>
+                    <span className="text-[13px] font-mono-num font-bold text-[var(--ink)]">{downspoutCount}</span>
+                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({eavesLf.toFixed(0)} LF ÷ 25{downspoutCount === 2 && eavesLf / 25 < 2 ? ", min 2" : ""})</span>
                   </div>
                 )}
               </div>

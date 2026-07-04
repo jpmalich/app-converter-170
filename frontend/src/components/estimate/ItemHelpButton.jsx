@@ -37,7 +37,7 @@ export default function ItemHelpButton({ itemName }) {
             e.stopPropagation();
             setOpen((v) => !v);
           }}
-          className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-[#71717A] hover:text-[#3B82F6] hover:bg-[#EFF6FF] focus:outline-none focus:ring-1 focus:ring-[#3B82F6] transition-colors"
+          className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-[var(--muted)] hover:text-[#3B82F6] hover:bg-[#EFF6FF] focus:outline-none focus:ring-1 focus:ring-[#3B82F6] transition-colors"
           aria-label={`Help — ${itemName}`}
           data-testid={`item-help-${itemName}`}
         >
@@ -47,7 +47,7 @@ export default function ItemHelpButton({ itemName }) {
       <PopoverContent
         side="top"
         align="start"
-        className="w-80 max-w-[90vw] p-3 text-xs leading-relaxed text-[#27272A] bg-white border border-[#3B82F6] shadow-lg"
+        className="w-80 max-w-[90vw] p-3 text-xs leading-relaxed text-[#27272A] bg-[var(--surface)] border border-[#3B82F6] shadow-lg"
         onClick={(e) => e.stopPropagation()}
         data-testid={`item-help-popover-${itemName}`}
       >

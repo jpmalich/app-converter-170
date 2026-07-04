@@ -46,16 +46,16 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
       onClick={onClose}
     >
       <div
-        className="bg-white max-w-md w-full border border-[#09090B] shadow-2xl"
+        className="bg-[var(--surface)] max-w-md w-full border border-[var(--border-strong)] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <div className="text-sm uppercase tracking-[0.18em] font-bold text-[#09090B]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
+          <div className="text-sm uppercase tracking-[0.18em] font-bold text-[var(--ink)]">
             {title}
           </div>
           <button
             type="button"
-            className="p-1 text-[#71717A] hover:text-[#09090B]"
+            className="p-1 text-[var(--muted)] hover:text-[var(--ink)]"
             onClick={onClose}
             data-testid="tab-picker-close"
           >
@@ -63,12 +63,12 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
           </button>
         </div>
         <div className="px-5 py-5 space-y-4">
-          <p className="text-xs text-[#52525B] leading-relaxed">{helper}</p>
+          <p className="text-xs text-[var(--ink-2)] leading-relaxed">{helper}</p>
           <div className="space-y-2">
             {orderedTabs.map((id) => (
               <label
                 key={id}
-                className="flex items-center gap-3 px-3 py-2.5 border border-[#E4E4E7] hover:border-[#09090B] cursor-pointer select-none"
+                className="flex items-center gap-3 px-3 py-2.5 border border-[var(--border)] hover:border-[var(--border-strong)] cursor-pointer select-none"
                 data-testid={`tab-picker-option-${id}`}
               >
                 <input
@@ -77,17 +77,17 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
                   onChange={() => toggle(id)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-semibold text-[#09090B]">
+                <span className="text-sm font-semibold text-[var(--ink)]">
                   {t(`tabPicker.label.${id}`)}
                 </span>
               </label>
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-end gap-2 border-t border-[#E4E4E7] px-5 py-3">
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
           <button
             type="button"
-            className="px-3 py-2 text-xs uppercase tracking-wider font-bold text-[#52525B] hover:text-[#09090B]"
+            className="px-3 py-2 text-xs uppercase tracking-wider font-bold text-[var(--ink-2)] hover:text-[var(--ink)]"
             onClick={onClose}
             data-testid="tab-picker-cancel"
           >
@@ -95,7 +95,7 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
           </button>
           <button
             type="button"
-            className="px-4 py-2 bg-[#F97316] text-[#09090B] border border-[#F97316] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--brand)] text-[var(--on-brand)] border border-[var(--brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
             disabled={selected.size === 0}
             onClick={() => onConfirm(Array.from(selected))}
             data-testid="tab-picker-confirm"

@@ -16,7 +16,7 @@ export default function CompanyLogo({ company, size = 36, className = "", testid
       <img
         src={url}
         alt={company?.name || "Company logo"}
-        className={`object-contain bg-[#09090B] ${className}`}
+        className={`object-contain bg-[var(--bar-bg)] ${className}`}
         style={{ width: px, height: px }}
         data-testid={testid}
       />
@@ -24,7 +24,7 @@ export default function CompanyLogo({ company, size = 36, className = "", testid
   }
   return (
     <div
-      className={`bg-[#09090B] text-[#F97316] flex items-center justify-center font-heading ${className}`}
+      className={`bg-[var(--bar-bg)] text-[var(--brand)] flex items-center justify-center font-heading ${className}`}
       style={{ width: px, height: px, fontSize: size * 0.55 }}
       data-testid={testid}
     >

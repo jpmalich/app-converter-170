@@ -33,17 +33,17 @@ export default function BulkApplyConfirm({
       data-testid={`${testid}-backdrop`}
     >
       <div
-        className="bg-white max-w-md w-full border border-[#09090B] shadow-2xl"
+        className="bg-[var(--surface)] max-w-md w-full border border-[var(--border-strong)] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         data-testid={testid}
       >
-        <div className="flex items-center justify-between border-b border-[#E4E4E7] px-5 py-3">
-          <div className="text-sm uppercase tracking-[0.18em] font-bold text-[#09090B]">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
+          <div className="text-sm uppercase tracking-[0.18em] font-bold text-[var(--ink)]">
             {t("win.bulkApply.title")}
           </div>
           <button
             type="button"
-            className="p-1 text-[#71717A] hover:text-[#09090B]"
+            className="p-1 text-[var(--muted)] hover:text-[var(--ink)]"
             onClick={onSkip}
             data-testid={`${testid}-close`}
             aria-label="Close"
@@ -52,17 +52,17 @@ export default function BulkApplyConfirm({
           </button>
         </div>
         <div className="px-5 py-5">
-          <p className="text-sm text-[#09090B] leading-relaxed">
+          <p className="text-sm text-[var(--ink)] leading-relaxed">
             {t("win.bulkApply.body", { option: optionLabel, count: targetCount })}
           </p>
-          <p className="text-[11px] text-[#71717A] mt-2 leading-snug">
+          <p className="text-[11px] text-[var(--muted)] mt-2 leading-snug">
             {t("win.bulkApply.hint")}
           </p>
         </div>
-        <div className="flex items-center justify-end gap-2 border-t border-[#E4E4E7] px-5 py-3">
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3">
           <button
             type="button"
-            className="px-3 py-2 text-xs uppercase tracking-wider font-bold text-[#52525B] hover:text-[#09090B]"
+            className="px-3 py-2 text-xs uppercase tracking-wider font-bold text-[var(--ink-2)] hover:text-[var(--ink)]"
             onClick={onSkip}
             data-testid={`${testid}-skip`}
           >
@@ -70,7 +70,7 @@ export default function BulkApplyConfirm({
           </button>
           <button
             type="button"
-            className="px-4 py-2 bg-[#F97316] text-[#09090B] border border-[#F97316] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider"
+            className="px-4 py-2 bg-[var(--brand)] text-[var(--on-brand)] border border-[var(--brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider"
             onClick={onApplyAll}
             data-testid={`${testid}-apply`}
           >

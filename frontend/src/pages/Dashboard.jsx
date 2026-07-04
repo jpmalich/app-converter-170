@@ -156,18 +156,18 @@ export default function Dashboard({ kind = "siding" }) {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-[#71717A] mb-1 flex items-center gap-2">
+          <div className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] mb-1 flex items-center gap-2">
             <span>{isWindows ? "Windows" : isLp ? "LP SmartSiding" : "Siding"} · {t("dash.eyebrow")}</span>
             <button
               type="button"
               onClick={() => nav("/")}
-              className="text-[10px] text-[#C2410C] hover:underline"
+              className="text-[10px] text-[var(--brand-text)] hover:underline"
               data-testid="back-to-picker-btn"
             >
               ← Switch workspace
             </button>
           </div>
-          <h1 className="font-heading text-4xl sm:text-5xl text-[#09090B]">
+          <h1 className="font-heading text-4xl sm:text-5xl text-[var(--ink)]">
             {isIss ? "ISS Quotes" : isWindows ? "ISS Window Quotes" : isLp ? "LP SmartSiding Quote" : t("dash.title")}
           </h1>
         </div>
@@ -198,7 +198,7 @@ export default function Dashboard({ kind = "siding" }) {
       </div>
 
       <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A] pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
         <input
           className="input !pl-10"
           placeholder={t("dash.search")}
@@ -215,7 +215,7 @@ export default function Dashboard({ kind = "siding" }) {
           feedback to tune pricing / labor / accessory rules. */}
       {kind === "lp_smart" && (
         <div
-          className="mb-6 px-4 py-3 bg-[#ECFDF5] border-l-4 border-[#10B981] flex items-start gap-3"
+          className="mb-6 px-4 py-3 bg-[#ECFDF5] border-l-4 border-[var(--success)] flex items-start gap-3"
           data-testid="lp-feedback-banner"
         >
           <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#065F46] mt-0.5 whitespace-nowrap">
@@ -237,7 +237,7 @@ export default function Dashboard({ kind = "siding" }) {
           className="mb-6 px-4 py-3 bg-[#FEF3C7] border-l-4 border-[#F59E0B] flex items-start gap-3"
           data-testid="windows-under-construction-banner"
         >
-          <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#92400E] mt-0.5">
+          <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--warning-text)] mt-0.5">
             Under Construction
           </span>
           <div className="text-sm text-[#78350F] leading-relaxed">
@@ -292,15 +292,15 @@ export default function Dashboard({ kind = "siding" }) {
               onClick={() => setStatusFilter(f.key)}
               className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wider border transition ${
                 active
-                  ? "bg-[#09090B] text-white border-[#09090B]"
-                  : "bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#09090B]"
+                  ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:border-[var(--border-strong)]"
               }`}
               data-testid={`filter-${f.key}`}
             >
               {f.label}
               <span
                 className={`inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-sm text-[10px] font-mono-num ${
-                  active ? "bg-white/20 text-white" : "bg-[#F4F4F5] text-[#71717A]"
+                  active ? "bg-white/20 text-white" : "bg-[var(--bg-app)] text-[var(--muted)]"
                 }`}
               >
                 {count}
@@ -311,7 +311,7 @@ export default function Dashboard({ kind = "siding" }) {
       </div>
 
       <div className="card">
-        <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-[#E4E4E7] text-xs uppercase tracking-[0.18em] text-[#52525B] font-bold">
+        <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-[var(--table-header)] text-xs uppercase tracking-[0.18em] text-[var(--ink-2)] font-bold">
           <div className="col-span-2">{t("dash.col.estNum")}</div>
           <div className="col-span-3">{t("dash.col.customer")}</div>
           <div className="col-span-2">{t("dash.col.address")}</div>
@@ -320,12 +320,12 @@ export default function Dashboard({ kind = "siding" }) {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-[#52525B]">{t("common.loading")}</div>
+          <div className="p-8 text-center text-[var(--ink-2)]">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center" data-testid="empty-state">
-            <FileText className="w-12 h-12 mx-auto text-[#71717A] mb-3" />
-            <div className="font-heading text-xl text-[#09090B] mb-1">{t("dash.empty.title")}</div>
-            <div className="text-sm text-[#52525B] mb-6">{t("dash.empty.sub")}</div>
+            <FileText className="w-12 h-12 mx-auto text-[var(--muted)] mb-3" />
+            <div className="font-heading text-xl text-[var(--ink)] mb-1">{t("dash.empty.title")}</div>
+            <div className="text-sm text-[var(--ink-2)] mb-6">{t("dash.empty.sub")}</div>
             <button className="btn-primary" onClick={createEstimate}>
               <Plus className="w-4 h-4" /> {t("dash.newEstimate")}
             </button>
@@ -336,18 +336,18 @@ export default function Dashboard({ kind = "siding" }) {
             return (
               <div
                 key={e.id}
-                className="grid grid-cols-12 gap-4 px-5 py-4 border-t border-[#E4E4E7] items-center hover:bg-[#FAFAFA] cursor-pointer"
+                className="grid grid-cols-12 gap-4 px-5 py-4 border-t border-[var(--border)] items-center hover:bg-[var(--surface-muted)] cursor-pointer"
                 onClick={() => nav(`/estimate/${e.id}`)}
                 data-testid={`estimate-row-${e.id}`}
               >
-                <div className="col-span-12 md:col-span-2 font-mono-num text-sm text-[#09090B]">
-                  <div className="text-[10px] uppercase tracking-wider text-[#71717A] md:hidden">#</div>
+                <div className="col-span-12 md:col-span-2 font-mono-num text-sm text-[var(--ink)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] md:hidden">#</div>
                   <div className="flex items-center gap-1.5">
                     <span>{e.estimate_number || "—"}</span>
                     {e.paired_estimate_id && (
                       <button
                         type="button"
-                        className="text-[#71717A] hover:text-[#C2410C] p-0.5 -m-0.5"
+                        className="text-[var(--muted)] hover:text-[var(--brand-text)] p-0.5 -m-0.5"
                         onClick={(ev) => {
                           ev.stopPropagation();
                           nav(`/estimate/${e.paired_estimate_id}`);
@@ -362,7 +362,7 @@ export default function Dashboard({ kind = "siding" }) {
                 </div>
                 <div className="col-span-12 md:col-span-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div className="font-semibold text-[#09090B]">{e.customer_name || t("dash.untitled")}</div>
+                    <div className="font-semibold text-[var(--ink)]">{e.customer_name || t("dash.untitled")}</div>
                     {e.accepted_at ? (
                       <span
                         className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] rounded-sm"
@@ -373,7 +373,7 @@ export default function Dashboard({ kind = "siding" }) {
                       </span>
                     ) : e.last_sent_at ? (
                       <span
-                        className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#FFF7ED] text-[#C2410C] border border-[#FED7AA] rounded-sm"
+                        className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#FFF7ED] text-[var(--brand-text)] border border-[#FED7AA] rounded-sm"
                         title={`Sent ${new Date(e.last_sent_at).toLocaleString()}`}
                         data-testid={`status-sent-${e.id}`}
                       >
@@ -382,9 +382,9 @@ export default function Dashboard({ kind = "siding" }) {
                     ) : null}
                     <EmailPipeline est={e} />
                   </div>
-                  <div className="text-xs text-[#71717A]">{new Date(e.updated_at).toLocaleString()}</div>
+                  <div className="text-xs text-[var(--muted)]">{new Date(e.updated_at).toLocaleString()}</div>
                 </div>
-                <div className="col-span-12 md:col-span-2 text-sm text-[#52525B] truncate">{e.address || "—"}</div>
+                <div className="col-span-12 md:col-span-2 text-sm text-[var(--ink-2)] truncate">{e.address || "—"}</div>
                 <div className="col-span-8 md:col-span-4 text-right">
                   {/* Iter 78z++++ — Per-tab split mirroring the in-estimate
                       sticky banner (Vinyl / Ascend / LP for siding,
@@ -421,7 +421,7 @@ export default function Dashboard({ kind = "siding" }) {
                       })}
                     </div>
                   ) : (
-                    <div className="font-mono-num text-lg font-bold text-[#09090B]">
+                    <div className="font-mono-num text-lg font-bold text-[var(--ink)]">
                       {fmt(sell)}
                     </div>
                   )}
@@ -464,21 +464,21 @@ function StatCard({ label, value, sublabel, accent }) {
   // The accent strip on the left signals which bucket this card belongs to
   // (orange = Sent / pending revenue, green = Accepted / won revenue).
   const stripe =
-    accent === "orange" ? "bg-[#F97316]"
-      : accent === "green" ? "bg-[#16A34A]"
-      : "bg-[#E4E4E7]";
+    accent === "orange" ? "bg-[var(--brand)]"
+      : accent === "green" ? "bg-[var(--success)]"
+      : "bg-[var(--table-header)]";
   return (
     <div className="card flex overflow-hidden">
       <div className={`w-1 ${stripe}`} />
       <div className="px-4 py-3 flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold">
           {label}
         </div>
-        <div className="font-mono-num text-2xl font-bold text-[#09090B] leading-tight">
+        <div className="font-mono-num text-2xl font-bold text-[var(--ink)] leading-tight">
           {value}
         </div>
         {sublabel ? (
-          <div className="text-[11px] text-[#71717A] truncate">{sublabel}</div>
+          <div className="text-[11px] text-[var(--muted)] truncate">{sublabel}</div>
         ) : null}
       </div>
     </div>

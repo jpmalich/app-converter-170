@@ -23,6 +23,18 @@ export const dict = {
     "lang.en": "EN",
     "lang.es": "ES",
 
+    // --- Theme picker ---
+    "theme.toggle.aria": "Theme",
+    "theme.auto": "Auto (system)",
+    "theme.orange": "Safety Orange",
+    "theme.blueprint": "Blueprint Blue",
+    "theme.forest": "Forest Green",
+    "theme.steel": "Steel",
+    "theme.highvis": "High-Vis Yellow",
+    "theme.dark": "Jobsite Dark",
+    "theme.status": "Theme: {name}",
+    "theme.blurb": "Does not affect customer quotes — the quote preview, PDFs, and emails stay in the neutral document style.",
+
     // --- Layout / nav ---
     "nav.estimates": "Estimates",
     "nav.catalog": "Catalog",
@@ -387,6 +399,17 @@ export const dict = {
     "lang.toggle.aria": "Idioma",
     "lang.en": "EN",
     "lang.es": "ES",
+
+    "theme.toggle.aria": "Tema",
+    "theme.auto": "Auto (sistema)",
+    "theme.orange": "Naranja de Seguridad",
+    "theme.blueprint": "Azul Plano",
+    "theme.forest": "Verde Bosque",
+    "theme.steel": "Acero",
+    "theme.highvis": "Amarillo Alta Visibilidad",
+    "theme.dark": "Oscuro de Obra",
+    "theme.status": "Tema: {name}",
+    "theme.blurb": "No afecta las cotizaciones del cliente — la vista previa, PDFs y correos mantienen el estilo neutral del documento.",
 
     "nav.estimates": "Estimados",
     "nav.catalog": "Catálogo",

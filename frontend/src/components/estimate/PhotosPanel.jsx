@@ -39,19 +39,19 @@ export default function PhotosPanel({ est, update }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         {(est.photos || []).length === 0 && (
-          <div className="col-span-full text-sm text-[#71717A] py-4">{t("est.noPhotos")}</div>
+          <div className="col-span-full text-sm text-[var(--muted)] py-4">{t("est.noPhotos")}</div>
         )}
         {(est.photos || []).map((p) => {
           const i = est.photos.indexOf(p);
           return (
-          <div key={`${p}-${i}`} className="relative aspect-square bg-[#FAFAFA] border border-[#E4E4E7]">
+          <div key={`${p}-${i}`} className="relative aspect-square bg-[var(--surface-muted)] border border-[var(--border)]">
             <img
               src={`${process.env.REACT_APP_BACKEND_URL}${p}`}
               alt=""
               className="w-full h-full object-cover"
             />
             <button
-              className="absolute top-1 right-1 bg-white border border-[#09090B] p-1"
+              className="absolute top-1 right-1 bg-[var(--surface)] border border-[var(--border-strong)] p-1"
               onClick={() => update({ photos: est.photos.filter((_, j) => j !== i) })}
               aria-label="Remove photo"
             >

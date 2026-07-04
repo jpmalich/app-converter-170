@@ -182,10 +182,10 @@ export default function MezzoPricingPanel({ token }) {
     return (
       <div className="card p-6 mt-6">
         <div className="flex items-center gap-3 mb-3">
-          <Wrench className="w-5 h-5 text-[#C2410C]" />
+          <Wrench className="w-5 h-5 text-[var(--brand-text)]" />
           <div className="section-tag">Mezzo Window Pricing Matrix</div>
         </div>
-        <div className="text-sm text-[#71717A]">Loading Mezzo prices…</div>
+        <div className="text-sm text-[var(--muted)]">Loading Mezzo prices…</div>
       </div>
     );
   }
@@ -194,17 +194,17 @@ export default function MezzoPricingPanel({ token }) {
     <div className="card p-6 mt-6" data-testid="mezzo-pricing-panel">
       <div className="flex items-start justify-between mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <Wrench className="w-5 h-5 text-[#C2410C]" />
+          <Wrench className="w-5 h-5 text-[var(--brand-text)]" />
           <div>
             <div className="section-tag">Mezzo Window Pricing Matrix</div>
-            <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-0.5">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] mt-0.5">
               4 tiers · 4 products · paste a grid directly from Excel
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
-            <span className="text-[10px] uppercase tracking-wider text-[#C2410C] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--brand-text)] font-bold">
               Unsaved changes
             </span>
           )}
@@ -229,7 +229,7 @@ export default function MezzoPricingPanel({ token }) {
         </div>
       </div>
 
-      <p className="text-sm text-[#52525B] mb-4">
+      <p className="text-sm text-[var(--ink-2)] mb-4">
         Each grid below is the pricing matrix for one tier × one product.
         Click a cell to edit, or click a cell and <strong>Ctrl/Cmd-V</strong> to
         paste a range copied straight out of Excel. Tempered Full is sqft-rated
@@ -238,7 +238,7 @@ export default function MezzoPricingPanel({ token }) {
 
       {/* Tier tabs */}
       <div
-        className="flex border border-[#E4E4E7] mb-3 overflow-x-auto"
+        className="flex border border-[var(--border)] mb-3 overflow-x-auto"
         data-testid="mezzo-pricing-tier-tabs"
       >
         {meta.tiers.map((t) => (
@@ -250,8 +250,8 @@ export default function MezzoPricingPanel({ token }) {
               setActiveTier(t);
               setDirty(false);
             }}
-            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[#E4E4E7] last:border-r-0 transition ${
-              activeTier === t ? "bg-[#09090B] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[var(--border)] last:border-r-0 transition ${
+              activeTier === t ? "bg-[var(--bar-bg)] text-white" : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
             }`}
             data-testid={`mezzo-pricing-tier-${t}`}
           >
@@ -262,7 +262,7 @@ export default function MezzoPricingPanel({ token }) {
 
       {/* Product tabs */}
       <div
-        className="flex border border-[#E4E4E7] mb-4 overflow-x-auto"
+        className="flex border border-[var(--border)] mb-4 overflow-x-auto"
         data-testid="mezzo-pricing-product-tabs"
       >
         {meta.products.map((p) => (
@@ -274,8 +274,8 @@ export default function MezzoPricingPanel({ token }) {
               setActiveProduct(p);
               setDirty(false);
             }}
-            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[#E4E4E7] last:border-r-0 transition ${
-              activeProduct === p ? "bg-[#F97316] text-[#09090B]" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[var(--border)] last:border-r-0 transition ${
+              activeProduct === p ? "bg-[var(--brand)] text-[var(--on-brand)]" : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
             }`}
             data-testid={`mezzo-pricing-product-${p}`}
           >
@@ -284,27 +284,27 @@ export default function MezzoPricingPanel({ token }) {
         ))}
       </div>
 
-      <div className="text-[11px] text-[#52525B] mb-2 flex items-center gap-1.5">
-        <ClipboardPaste className="w-3.5 h-3.5 text-[#C2410C]" />
+      <div className="text-[11px] text-[var(--ink-2)] mb-2 flex items-center gap-1.5">
+        <ClipboardPaste className="w-3.5 h-3.5 text-[var(--brand-text)]" />
         Tip: copy a block from the Mezzo Excel (Base + adder columns), click
         the top-left cell here, then press <strong className="mx-0.5">Ctrl/Cmd-V</strong>.
       </div>
 
       {/* Grid */}
-      <div className="border border-[#E4E4E7] overflow-x-auto">
+      <div className="border border-[var(--border)] overflow-x-auto">
         <table className="w-full border-collapse text-xs" data-testid="mezzo-pricing-grid">
-          <thead className="bg-[#FAFAFA]">
+          <thead className="bg-[var(--surface-muted)]">
             <tr>
-              <th className="sticky left-0 z-10 bg-[#FAFAFA] text-left px-2 py-1.5 text-[10px] uppercase tracking-wider text-[#71717A] font-bold border-r border-[#E4E4E7] min-w-[110px]">
+              <th className="sticky left-0 z-10 bg-[var(--surface-muted)] text-left px-2 py-1.5 text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold border-r border-[var(--border)] min-w-[110px]">
                 UI Bucket
               </th>
-              <th className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-[#09090B] font-bold border-r border-[#E4E4E7] bg-[#FAFAFA] min-w-[100px]">
+              <th className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-[var(--ink)] font-bold border-r border-[var(--border)] bg-[var(--surface-muted)] min-w-[100px]">
                 Base
               </th>
               {grid.adders.map((a) => (
                 <th
                   key={a}
-                  className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-[#52525B] font-bold border-r border-[#E4E4E7] last:border-r-0 min-w-[100px]"
+                  className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-[var(--ink-2)] font-bold border-r border-[var(--border)] last:border-r-0 min-w-[100px]"
                   title={a}
                 >
                   {a}
@@ -314,8 +314,8 @@ export default function MezzoPricingPanel({ token }) {
           </thead>
           <tbody>
             {grid.buckets.map((b, rowIdx) => (
-              <tr key={b.label} className="border-t border-[#E4E4E7]">
-                <td className="sticky left-0 z-10 bg-white px-2 py-0 text-[11px] font-mono-num text-[#09090B] font-semibold border-r border-[#E4E4E7] whitespace-nowrap">
+              <tr key={b.label} className="border-t border-[var(--border)]">
+                <td className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-0 text-[11px] font-mono-num text-[var(--ink)] font-semibold border-r border-[var(--border)] whitespace-nowrap">
                   {b.label}
                 </td>
                 {[0, ...grid.adders.map((_, i) => i + 1)].map((colIdx) => {
@@ -330,9 +330,9 @@ export default function MezzoPricingPanel({ token }) {
                   return (
                     <td
                       key={colIdx}
-                      className={`border-r border-[#E4E4E7] last:border-r-0 ${
+                      className={`border-r border-[var(--border)] last:border-r-0 ${
                         isBase ? "bg-[#FFFBF5]" : ""
-                      } ${isFocused ? "outline outline-1 outline-[#F97316]" : ""}`}
+                      } ${isFocused ? "outline outline-1 outline-[var(--brand)]" : ""}`}
                     >
                       <input
                         type="number"
@@ -354,14 +354,14 @@ export default function MezzoPricingPanel({ token }) {
         </table>
       </div>
 
-      <div className="mt-3 text-[10px] uppercase tracking-wider text-[#71717A]">
-        Editing: <span className="text-[#09090B] font-bold">{activeTier}</span>
+      <div className="mt-3 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+        Editing: <span className="text-[var(--ink)] font-bold">{activeTier}</span>
         <span className="mx-1">·</span>
-        <span className="text-[#09090B] font-bold">{activeProduct}</span>
-        <span className="ml-2 text-[#71717A] normal-case">
+        <span className="text-[var(--ink)] font-bold">{activeProduct}</span>
+        <span className="ml-2 text-[var(--muted)] normal-case">
           ({grid.buckets.length} buckets × {grid.adders.length} adders)
         </span>
-        <span className="ml-2 text-[#71717A] normal-case">
+        <span className="ml-2 text-[var(--muted)] normal-case">
           · Sample: 32-73 UI Base = ${fmt(grid.base_prices[grid.buckets[0]?.label])}
         </span>
       </div>

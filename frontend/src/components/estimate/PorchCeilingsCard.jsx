@@ -79,16 +79,16 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
   };
 
   return (
-    <div className="border border-[#E4E4E7] p-3 mt-2" data-testid="porch-ceilings-card">
+    <div className="border border-[var(--border)] p-3 mt-2" data-testid="porch-ceilings-card">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
-          <Home className="w-3.5 h-3.5 text-[#71717A]" />
-          <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#71717A]">
+          <Home className="w-3.5 h-3.5 text-[var(--muted)]" />
+          <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--muted)]">
             Porch Ceilings
           </span>
         </div>
         <div
-          className="font-mono-num text-[11px] text-[#09090B] font-bold"
+          className="font-mono-num text-[11px] text-[var(--ink)] font-bold"
           data-testid="porch-ceilings-total"
         >
           Total: {round2(total)} sqft
@@ -96,7 +96,7 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
       </div>
 
       {porches.length === 0 && (
-        <div className="text-[11px] text-[#71717A] italic mb-2 leading-snug">
+        <div className="text-[11px] text-[var(--muted)] italic mb-2 leading-snug">
           No porch ceilings yet. Add one if this job has a covered porch,
           breezeway, or soffited bay overhang — the sqft is rolled into the
           soffit qty automatically.
@@ -108,7 +108,7 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
         return (
           <div
             key={i}
-            className="flex items-center gap-2 py-1.5 border-t border-[#F4F4F5] first-of-type:border-t-0"
+            className="flex items-center gap-2 py-1.5 border-t border-[var(--bg-app)] first-of-type:border-t-0"
             data-testid={`porch-row-${i}`}
           >
             <input
@@ -129,7 +129,7 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
               onChange={(e) => update(i, { length_ft: Number(e.target.value) || 0 })}
               data-testid={`porch-length-${i}`}
             />
-            <span className="text-[10px] text-[#71717A]">ft ×</span>
+            <span className="text-[10px] text-[var(--muted)]">ft ×</span>
             <input
               type="number"
               step="0.5"
@@ -140,9 +140,9 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
               onChange={(e) => update(i, { width_ft: Number(e.target.value) || 0 })}
               data-testid={`porch-width-${i}`}
             />
-            <span className="text-[10px] text-[#71717A]">ft =</span>
+            <span className="text-[10px] text-[var(--muted)]">ft =</span>
             <span
-              className="font-mono-num text-xs text-[#09090B] w-20 text-right tabular-nums"
+              className="font-mono-num text-xs text-[var(--ink)] w-20 text-right tabular-nums"
               data-testid={`porch-area-${i}`}
             >
               {area} sqft
@@ -150,7 +150,7 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
             <button
               type="button"
               onClick={() => remove(i)}
-              className="text-[#71717A] hover:text-[#DC2626] p-1"
+              className="text-[var(--muted)] hover:text-[var(--danger-text)] p-1"
               title="Remove porch"
               data-testid={`porch-remove-${i}`}
             >
@@ -163,7 +163,7 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
       <button
         type="button"
         onClick={add}
-        className="mt-2 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] font-bold text-[#52525B] hover:text-[#09090B]"
+        className="mt-2 flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] font-bold text-[var(--ink-2)] hover:text-[var(--ink)]"
         data-testid="porch-add"
       >
         <Plus className="w-3.5 h-3.5" />

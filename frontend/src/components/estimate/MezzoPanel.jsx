@@ -298,11 +298,11 @@ export default function MezzoPanel({ est, update }) {
   };
 
   if (loading) {
-    return <div className="card p-6 text-sm text-[#71717A]">Loading Mezzo catalog…</div>;
+    return <div className="card p-6 text-sm text-[var(--muted)]">Loading Mezzo catalog…</div>;
   }
   if (!catalog?.product_types?.length) {
     return (
-      <div className="card p-6 text-sm text-[#71717A]" data-testid="mezzo-empty">
+      <div className="card p-6 text-sm text-[var(--muted)]" data-testid="mezzo-empty">
         Mezzo catalog isn&apos;t loaded yet.
       </div>
     );
@@ -352,7 +352,7 @@ export default function MezzoPanel({ est, update }) {
               return (
                 <>
                   <header
-                    className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[#E4E4E7] bg-[#FAFAFA] cursor-pointer hover:bg-[#F4F4F5]"
+                    className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[var(--border)] bg-[var(--surface-muted)] cursor-pointer hover:bg-[var(--bg-app)]"
                     onClick={toggleSection}
                     role="button"
                     tabIndex={0}
@@ -366,13 +366,13 @@ export default function MezzoPanel({ est, update }) {
                   >
                     <div className="flex items-center gap-2">
                       {isOpen ? (
-                        <ChevronDown className="w-4 h-4 text-[#71717A] flex-shrink-0" />
+                        <ChevronDown className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
                       ) : (
-                        <ChevronRight className="w-4 h-4 text-[#71717A] flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
                       )}
                       <div>
                         <div className="section-tag">{tSection(pt.name, lang)}</div>
-                        <div className="text-[10px] text-[#71717A] mt-0.5">
+                        <div className="text-[10px] text-[var(--muted)] mt-0.5">
                           {t(openings.length === 1 ? "win.openingsLabel" : "win.openingsLabelPlural", { n: openings.length })}
                         </div>
                       </div>
@@ -380,7 +380,7 @@ export default function MezzoPanel({ est, update }) {
                     <div className="flex items-center gap-3">
                       <span
                         className={`font-mono-num text-sm ${
-                          packageQuoteActive ? "line-through text-[#71717A]" : "text-[#52525B]"
+                          packageQuoteActive ? "line-through text-[var(--muted)]" : "text-[var(--ink-2)]"
                         }`}
                         title={packageQuoteActive ? "Per-window pricing overridden by Window Package Quote" : undefined}
                       >
@@ -388,7 +388,7 @@ export default function MezzoPanel({ est, update }) {
                       </span>
                       <button
                         type="button"
-                        className="px-3 py-1.5 bg-[#09090B] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                        className="px-3 py-1.5 bg-[var(--bar-bg)] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSectionOverride((prev) => ({ ...prev, [pt.name]: true }));
@@ -403,7 +403,7 @@ export default function MezzoPanel({ est, update }) {
 
                   {isOpen && (openings.length === 0 ? (
                     <div
-                      className="px-5 py-8 text-center text-sm text-[#71717A]"
+                      className="px-5 py-8 text-center text-sm text-[var(--muted)]"
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t("win.noOpenings")) }}
                     />
                   ) : (
@@ -488,11 +488,11 @@ function OpeningRow({
   return (
     <div className="px-4 md:px-5 py-3" data-testid={`mezzo-opening-${op.id}`}>
       <div className="grid grid-cols-12 gap-3 items-end">
-        <div className="col-span-12 md:col-span-1 text-[11px] uppercase tracking-wider text-[#71717A] font-bold pb-2 md:pb-1">
+        <div className="col-span-12 md:col-span-1 text-[11px] uppercase tracking-wider text-[var(--muted)] font-bold pb-2 md:pb-1">
           #{(op.label || (bucket ? bucket.label : "—"))}
         </div>
         <div className="col-span-4 md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+          <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
             {t("win.width")}
           </label>
           <input
@@ -508,7 +508,7 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+          <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
             {t("win.height")}
           </label>
           <input
@@ -524,7 +524,7 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-1">
-          <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+          <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
             {t("win.qty")}
           </label>
           <input
@@ -539,28 +539,28 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-2 text-xs">
-          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
             {t("win.ui")} ({(Number(op.width) || 0)}+{(Number(op.height) || 0)})
           </div>
-          <div className={`font-mono-num text-sm font-bold ${inRange ? "text-[#09090B]" : "text-[#DC2626]"}`}>
-            {ui > 0 ? ui : "—"} {bucket && <span className="text-[10px] text-[#71717A] font-normal">({bucket.label})</span>}
+          <div className={`font-mono-num text-sm font-bold ${inRange ? "text-[var(--ink)]" : "text-[var(--danger-text)]"}`}>
+            {ui > 0 ? ui : "—"} {bucket && <span className="text-[10px] text-[var(--muted)] font-normal">({bucket.label})</span>}
             {!inRange && ui > 0 && (
-              <span className="text-[10px] text-[#DC2626] font-normal block">{t("win.outOfRange")}</span>
+              <span className="text-[10px] text-[var(--danger-text)] font-normal block">{t("win.outOfRange")}</span>
             )}
           </div>
         </div>
         <div className="col-span-4 md:col-span-1 text-xs">
-          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">{t("win.base")}</div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">{t("win.base")}</div>
           <div className="font-mono-num text-sm">{fmt(baseMat)}</div>
         </div>
         <div className="col-span-4 md:col-span-2 text-right">
-          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">{t("win.total")}</div>
-          <div className="font-mono-num text-base font-bold text-[#09090B]">{fmt(total)}</div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">{t("win.total")}</div>
+          <div className="font-mono-num text-base font-bold text-[var(--ink)]">{fmt(total)}</div>
         </div>
         <div className="col-span-12 md:col-span-1 flex md:justify-end gap-1">
           <button
             type="button"
-            className="p-1.5 text-[#71717A] hover:text-[#09090B]"
+            className="p-1.5 text-[var(--muted)] hover:text-[var(--ink)]"
             title={t("win.addNote")}
             onClick={onToggleNotes}
             data-testid={`mezzo-notes-${op.id}`}
@@ -569,7 +569,7 @@ function OpeningRow({
           </button>
           <button
             type="button"
-            className="p-1.5 text-[#71717A] hover:text-[#DC2626]"
+            className="p-1.5 text-[var(--muted)] hover:text-[var(--danger-text)]"
             title={t("win.removeOpening")}
             onClick={onRemove}
             data-testid={`mezzo-remove-${op.id}`}
@@ -598,17 +598,17 @@ function OpeningRow({
             <button
               type="button"
               onClick={onToggleExpand}
-              className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] font-bold text-[#52525B] hover:text-[#09090B]"
+              className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] font-bold text-[var(--ink-2)] hover:text-[var(--ink)]"
               data-testid={`mezzo-adders-toggle-${op.id}`}
             >
               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               {t("win.upgradeOptions")}
               {(op.adders || []).length > 0 && (
-                <span className="bg-[#F97316] text-[#09090B] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                <span className="bg-[var(--brand)] text-[var(--on-brand)] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
                   {op.adders.length}
                 </span>
               )}
-              <span className="font-mono-num text-[#52525B] normal-case tracking-normal ml-1">
+              <span className="font-mono-num text-[var(--ink-2)] normal-case tracking-normal ml-1">
                 {addersTotal > 0 ? `+${fmt(addersTotal)}` : ""}
               </span>
             </button>
@@ -651,14 +651,14 @@ function OpeningRow({
                           key={a.name}
                           className={`flex items-center gap-1.5 py-1.5 px-2 border ${
                             checked
-                              ? "border-[#F97316] bg-[#FFF7ED] text-[#09090B]"
-                              : "border-[#E4E4E7] bg-white text-[#3F3F46] hover:bg-[#FAFAFA]"
+                              ? "border-[var(--brand)] bg-[#FFF7ED] text-[var(--ink)]"
+                              : "border-[var(--border)] bg-[var(--surface)] text-[#3F3F46] hover:bg-[var(--surface-muted)]"
                           } text-[12px]`}
                           data-testid={`mezzo-adder-${op.id}-${a.name}`}
                         >
                           <input
                             type="checkbox"
-                            className="w-3.5 h-3.5 accent-[#F97316] cursor-pointer flex-shrink-0"
+                            className="w-3.5 h-3.5 accent-[var(--brand)] cursor-pointer flex-shrink-0"
                             checked={checked}
                             onChange={() => onToggleAdder(a)}
                             data-testid={`mezzo-adder-cb-${op.id}-${a.name}`}
@@ -668,7 +668,7 @@ function OpeningRow({
                               <span className="truncate" title={label}>{label}</span>
                               {mixed && (
                                 <span
-                                  className="text-[9px] font-mono-num bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] px-1 py-px tracking-tight flex-shrink-0 normal-case font-bold"
+                                  className="text-[9px] font-mono-num bg-[#FEF3C7] text-[var(--warning-text)] border border-[#FCD34D] px-1 py-px tracking-tight flex-shrink-0 normal-case font-bold"
                                   title={`Applied on ${usedOn} of ${totalOpenings} windows`}
                                   data-testid={`mezzo-adder-usage-${a.name.replace(/[^a-zA-Z0-9]/g, "_")}`}
                                 >
@@ -676,7 +676,7 @@ function OpeningRow({
                                 </span>
                               )}
                             </div>
-                            <div className="font-mono-num text-[10px] text-[#71717A] truncate">
+                            <div className="font-mono-num text-[10px] text-[var(--muted)] truncate">
                               {checked ? (adderTotal > 0 ? `+${fmt(adderTotal)} total` : "—") : unitHint}
                             </div>
                           </div>
@@ -689,7 +689,7 @@ function OpeningRow({
                               value={adderQty || ""}
                               placeholder={`${Number(op.qty) || 0}`}
                               onChange={(ev) => onUpdateAdderQty(a.name, ev.target.value)}
-                              className="bg-white border border-[#E4E4E7] focus:border-[#F97316] outline-none h-7 text-xs w-12 px-1.5 text-right flex-shrink-0 font-mono-num"
+                              className="bg-[var(--surface)] border border-[var(--border)] focus:border-[var(--focus)] outline-none h-7 text-xs w-12 px-1.5 text-right flex-shrink-0 font-mono-num"
                               data-testid={`mezzo-adder-qty-${op.id}-${a.name}`}
                               title={t("win.qty")}
                             />
@@ -731,8 +731,8 @@ function MezzoBaseIncludedHint({ testid }) {
         }}
         className={`flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] font-bold px-1.5 py-0.5 border ${
           open
-            ? "border-[#09090B] bg-[#09090B] text-white"
-            : "border-[#E4E4E7] bg-white text-[#71717A] hover:text-[#09090B] hover:border-[#09090B]"
+            ? "border-[var(--border-strong)] bg-[var(--bar-bg)] text-white"
+            : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--border-strong)]"
         }`}
         title="What's included in the base price?"
         aria-expanded={open}
@@ -749,18 +749,18 @@ function MezzoBaseIncludedHint({ testid }) {
             data-testid={`${testid}-backdrop`}
           />
           <div
-            className="absolute z-50 left-0 top-full mt-1 w-72 bg-white border border-[#09090B] shadow-lg p-3"
+            className="absolute z-50 left-0 top-full mt-1 w-72 bg-[var(--surface)] border border-[var(--border-strong)] shadow-lg p-3"
             data-testid={`${testid}-popover`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#09090B]">
+              <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--ink)]">
                 Included in base price
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-[#71717A] hover:text-[#09090B] -mt-0.5"
+                className="text-[var(--muted)] hover:text-[var(--ink)] -mt-0.5"
                 title="Close"
                 data-testid={`${testid}-close`}
               >
@@ -770,12 +770,12 @@ function MezzoBaseIncludedHint({ testid }) {
             <ul className="space-y-1 text-[11px] text-[#3F3F46] leading-snug">
               {MEZZO_BASE_INCLUDED_ITEMS.map((item) => (
                 <li key={item} className="flex items-start gap-1.5">
-                  <span className="text-[#C2410C] font-bold mt-px">·</span>
+                  <span className="text-[var(--brand-text)] font-bold mt-px">·</span>
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
-            <div className="mt-2 pt-2 border-t border-[#E4E4E7] text-[10px] text-[#71717A] leading-snug">
+            <div className="mt-2 pt-2 border-t border-[var(--border)] text-[10px] text-[var(--muted)] leading-snug">
               Pick an Upgrade Option only to <em>change</em> one of these
               (e.g., upgrade glass from Climatech Plus → Climatech TG2 Plus).
             </div>

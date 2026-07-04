@@ -91,7 +91,7 @@ export default function ElevationDrawing({
 
   if (!hasDims) {
     return (
-      <div className="text-[11px] text-[#71717A] p-3 border border-dashed border-[#E4E4E7] text-center">
+      <div className="text-[11px] text-[var(--muted)] p-3 border border-dashed border-[var(--border)] text-center">
         Drawing unavailable &mdash; facade dimensions missing for {elevation?.label || "this elevation"}
       </div>
     );
@@ -126,14 +126,14 @@ export default function ElevationDrawing({
 
   return (
     <div
-      className="relative border border-[#E4E4E7] bg-white"
+      className="relative border border-[var(--border)] bg-[var(--surface)]"
       data-testid={`elevation-drawing-${(elevation?.label || "").toLowerCase()}`}
     >
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-[#FAFAFA] border-b border-[#E4E4E7]">
-        <div className="text-[11px] uppercase tracking-wider font-bold text-[#09090B]">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--surface-muted)] border-b border-[var(--border)]">
+        <div className="text-[11px] uppercase tracking-wider font-bold text-[var(--ink)]">
           {elevation?.label || "Elevation"}
-          <span className="ml-2 font-mono-num text-[#71717A]">
+          <span className="ml-2 font-mono-num text-[var(--muted)]">
             {width_ft.toFixed(0)}&apos;W &times; {height_ft.toFixed(0)}&apos;H
           </span>
         </div>
@@ -144,7 +144,7 @@ export default function ElevationDrawing({
               const next = ROOF_CYCLE[(ROOF_CYCLE.indexOf(roofShape) + 1) % ROOF_CYCLE.length];
               onRoofToggle(next);
             }}
-            className="text-[9px] uppercase tracking-wider font-bold text-[#52525B] border border-[#E4E4E7] px-1.5 py-0.5 hover:bg-[#FAFAFA]"
+            className="text-[9px] uppercase tracking-wider font-bold text-[var(--ink-2)] border border-[var(--border)] px-1.5 py-0.5 hover:bg-[var(--surface-muted)]"
             title="Cycle roof shape: gable → hip → flat → none"
             data-testid={`roof-toggle-${(elevation?.label || "").toLowerCase()}`}
           >
@@ -332,7 +332,7 @@ export default function ElevationDrawing({
         </g>
       </svg>
       {editable && onOpeningMove && openings.length > 0 && (
-        <div className="text-[9px] text-[#71717A] italic px-2 py-1 border-t border-[#E4E4E7] bg-[#FAFAFA]">
+        <div className="text-[9px] text-[var(--muted)] italic px-2 py-1 border-t border-[var(--border)] bg-[var(--surface-muted)]">
           Drag any opening to reposition &middot; click &quot;Roof:&quot; to cycle shape
         </div>
       )}

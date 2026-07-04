@@ -53,7 +53,7 @@ export default function Login() {
     : null;
 
   return (
-    <div className="min-h-screen grid md:grid-cols-2 bg-white">
+    <div className="min-h-screen grid md:grid-cols-2 bg-[var(--surface)]">
       <div className="absolute top-4 right-4 z-10">
         <LangToggle />
       </div>
@@ -64,29 +64,29 @@ export default function Login() {
               <img
                 src={logoUrl}
                 alt={branding.supplier_name}
-                className="w-11 h-11 object-contain bg-[#09090B]"
+                className="w-11 h-11 object-contain bg-[var(--bar-bg)]"
                 data-testid="supplier-logo"
               />
             ) : (
-              <div className="w-11 h-11 bg-[#09090B] text-[#F97316] flex items-center justify-center font-heading text-xl">
+              <div className="w-11 h-11 bg-[var(--bar-bg)] text-[var(--brand)] flex items-center justify-center font-heading text-xl">
                 {(branding.supplier_name || "A").charAt(0)}
               </div>
             )}
             <div>
-              <div className="font-heading text-xl text-[#09090B] leading-none" data-testid="supplier-name">
+              <div className="font-heading text-xl text-[var(--ink)] leading-none" data-testid="supplier-name">
                 {branding.supplier_name}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] mt-1">
+              <div className="text-[10px] uppercase tracking-[0.25em] text-[var(--muted)] mt-1">
                 {t("auth.sidingEstimator")}
               </div>
             </div>
           </div>
 
           <div className="mb-7">
-            <div className="text-xs uppercase tracking-[0.2em] text-[#71717A] mb-2">
+            <div className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] mb-2">
               {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
             </div>
-            <h1 className="font-heading text-3xl sm:text-4xl text-[#09090B] leading-tight">
+            <h1 className="font-heading text-3xl sm:text-4xl text-[var(--ink)] leading-tight">
               {mode === "login" ? t("auth.signIn") : t("auth.freeTagline")}
             </h1>
           </div>
@@ -106,11 +106,11 @@ export default function Login() {
                   />
                 </div>
 
-                <div className="border border-[#E4E4E7] p-3">
-                  <div className="flex border-b border-[#E4E4E7] mb-3">
+                <div className="border border-[var(--border)] p-3">
+                  <div className="flex border-b border-[var(--border)] mb-3">
                     <button
                       type="button"
-                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "create" ? "text-[#C2410C] border-b-2 border-[#F97316]" : "text-[#71717A]"}`}
+                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "create" ? "text-[var(--brand-text)] border-b-2 border-[var(--brand)]" : "text-[var(--muted)]"}`}
                       onClick={() => setJoinMode("create")}
                       data-testid="mode-create-co"
                     >
@@ -118,7 +118,7 @@ export default function Login() {
                     </button>
                     <button
                       type="button"
-                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "join" ? "text-[#C2410C] border-b-2 border-[#F97316]" : "text-[#71717A]"}`}
+                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "join" ? "text-[var(--brand-text)] border-b-2 border-[var(--brand)]" : "text-[var(--muted)]"}`}
                       onClick={() => setJoinMode("join")}
                       data-testid="mode-join-co"
                     >
@@ -150,7 +150,7 @@ export default function Login() {
                           required
                           data-testid="signup-code-input"
                         />
-                        <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-1">
+                        <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] mt-1">
                           {branding.supplier_tagline}
                         </div>
                       </div>
@@ -167,7 +167,7 @@ export default function Login() {
                         required={joinMode === "join"}
                         data-testid="invite-code-input"
                       />
-                      <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-1">
+                      <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] mt-1">
                         {t("auth.inviteHelp")}
                       </div>
                     </div>
@@ -202,7 +202,7 @@ export default function Login() {
               />
             </div>
             {error && (
-              <div className="text-sm text-[#EF4444] border border-[#EF4444]/30 bg-[#FEF2F2] px-3 py-2" data-testid="auth-error">
+              <div className="text-sm text-[var(--danger)] border border-[var(--danger)]/30 bg-[var(--danger-soft)] px-3 py-2" data-testid="auth-error">
                 {error}
               </div>
             )}
@@ -216,12 +216,12 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="text-sm text-[#52525B] mt-6">
+          <div className="text-sm text-[var(--ink-2)] mt-6">
             {mode === "login" ? (
               <>
                 {t("auth.needAccount")}{" "}
                 <button
-                  className="font-semibold text-[#09090B] underline underline-offset-4 decoration-[#F97316]"
+                  className="font-semibold text-[var(--ink)] underline underline-offset-4 decoration-[var(--brand)]"
                   onClick={() => setMode("register")}
                   data-testid="switch-register"
                 >
@@ -232,7 +232,7 @@ export default function Login() {
               <>
                 {t("auth.alreadyHaveOne")}{" "}
                 <button
-                  className="font-semibold text-[#09090B] underline underline-offset-4 decoration-[#F97316]"
+                  className="font-semibold text-[var(--ink)] underline underline-offset-4 decoration-[var(--brand)]"
                   onClick={() => setMode("login")}
                   data-testid="switch-login"
                 >
@@ -242,20 +242,20 @@ export default function Login() {
             )}
           </div>
 
-          <div className="mt-10 text-[11px] text-[#71717A] uppercase tracking-widest">
+          <div className="mt-10 text-[11px] text-[var(--muted)] uppercase tracking-widest">
             {t("auth.providedBy", { supplier: branding.supplier_name })}
           </div>
-          <div className="mt-4 text-[10px] text-[#71717A] flex items-center gap-3">
+          <div className="mt-4 text-[10px] text-[var(--muted)] flex items-center gap-3">
             <span>© {new Date().getFullYear()} Pro-Quote Estimating Tool</span>
             <span aria-hidden="true">·</span>
-            <a href="/terms" className="hover:text-[#09090B]" data-testid="login-terms-link">Terms</a>
+            <a href="/terms" className="hover:text-[var(--ink)]" data-testid="login-terms-link">Terms</a>
             <span aria-hidden="true">·</span>
-            <a href="/privacy" className="hover:text-[#09090B]" data-testid="login-privacy-link">Privacy</a>
+            <a href="/privacy" className="hover:text-[var(--ink)]" data-testid="login-privacy-link">Privacy</a>
           </div>
         </div>
       </div>
       <div
-        className="hidden md:block bg-contain bg-center bg-no-repeat bg-white"
+        className="hidden md:block bg-contain bg-center bg-no-repeat bg-[var(--surface)]"
         style={{ backgroundImage: `url(${BG})` }}
         aria-hidden="true"
       />

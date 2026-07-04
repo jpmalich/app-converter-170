@@ -26,16 +26,16 @@ import ElevationCompareModal, { countSources } from "@/components/estimate/Eleva
 function ToolTile({ icon: Icon, label, sub, children, testid, accent = "#7C3AED" }) {
   return (
     <div
-      className="border border-[#E4E4E7] bg-white p-3 flex flex-col gap-2 min-w-0"
+      className="border border-[var(--border)] bg-[var(--surface)] p-3 flex flex-col gap-2 min-w-0"
       data-testid={testid}
     >
       <div className="flex items-center gap-1.5">
         <Icon className="w-3.5 h-3.5" style={{ color: accent }} />
-        <div className="text-[10px] uppercase tracking-wider font-bold text-[#52525B] truncate">
+        <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--ink-2)] truncate">
           {label}
         </div>
         {sub && (
-          <span className="text-[9px] text-[#71717A] uppercase tracking-wider truncate ml-auto">
+          <span className="text-[9px] text-[var(--muted)] uppercase tracking-wider truncate ml-auto">
             {sub}
           </span>
         )}
@@ -86,14 +86,14 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
         <div className="flex items-center gap-3">
           <div className="section-tag">{t("est.jobInfo")}</div>
           {collapsed && basicsFilled && (
-            <div className="text-xs text-[#52525B] flex items-center gap-2 flex-wrap" data-testid="job-info-summary">
-              <span className="font-bold text-[#09090B]">{est.customer_name}</span>
-              <span className="text-[#71717A]">·</span>
+            <div className="text-xs text-[var(--ink-2)] flex items-center gap-2 flex-wrap" data-testid="job-info-summary">
+              <span className="font-bold text-[var(--ink)]">{est.customer_name}</span>
+              <span className="text-[var(--muted)]">·</span>
               <span>{est.address}</span>
               {est.estimate_number && (
                 <>
-                  <span className="text-[#71717A]">·</span>
-                  <span className="font-mono-num text-[#71717A]">{est.estimate_number}</span>
+                  <span className="text-[var(--muted)]">·</span>
+                  <span className="font-mono-num text-[var(--muted)]">{est.estimate_number}</span>
                 </>
               )}
             </div>
@@ -103,7 +103,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
-            className="text-[10px] uppercase tracking-wider font-bold text-[#7C3AED] hover:text-[#5B21B6] flex items-center gap-1"
+            className="text-[10px] uppercase tracking-wider font-bold text-[var(--ai)] hover:text-[#5B21B6] flex items-center gap-1"
             data-testid="job-info-toggle"
           >
             {collapsed ? (
@@ -217,7 +217,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             <button
               type="button"
               onClick={() => setShowCompare(true)}
-              className="px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold text-[#71717A] hover:text-[#7C3AED] flex items-center gap-1"
+              className="px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] hover:text-[var(--ai)] flex items-center gap-1"
               title="Side-by-side compare drawings across your measurement sources"
               data-testid="compare-drawings-btn"
             >
@@ -295,7 +295,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             window-only estimates show the Window Colors block below. */}
         {est.kind !== "windows" && (
         <div className="sm:col-span-2 lg:col-span-3 pt-2">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold mb-2">
             {t("est.colors")}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
@@ -493,7 +493,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               switches that auto-fill the matching install / lead-safe
               rows so contractors don't have to remember to add them. */}
           <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold mb-2">
               Window Job Setup
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -511,8 +511,8 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                         type="button"
                         className={`px-3 py-2 text-xs font-bold uppercase tracking-wider border ${
                           active
-                            ? "bg-[#09090B] text-white border-[#09090B]"
-                            : "bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#09090B]"
+                            ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]"
+                            : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:border-[var(--border-strong)]"
                         }`}
                         onClick={() =>
                           setInstallMethod && setInstallMethod(active ? "" : opt.id)
@@ -524,7 +524,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-[#71717A] mt-1.5 leading-snug">
+                <p className="text-[10px] text-[var(--muted)] mt-1.5 leading-snug">
                   Picks which install row the total window count flows into.
                   Override per-row anytime.
                 </p>
@@ -535,13 +535,13 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   className={`flex items-start gap-2.5 px-3 py-2.5 border cursor-pointer ${
                     est.home_pre_1978
                       ? "bg-[#FEF3C7] border-[#F59E0B]"
-                      : "bg-white border-[#E4E4E7] hover:border-[#09090B]"
+                      : "bg-[var(--surface)] border-[var(--border)] hover:border-[var(--border-strong)]"
                   }`}
                   data-testid="pre-1978-toggle"
                 >
                   <input
                     type="checkbox"
-                    className="w-4 h-4 mt-0.5 accent-[#F97316] flex-shrink-0"
+                    className="w-4 h-4 mt-0.5 accent-[var(--brand)] flex-shrink-0"
                     checked={!!est.home_pre_1978}
                     onChange={(ev) =>
                       setHomePre1978 && setHomePre1978(ev.target.checked)
@@ -549,10 +549,10 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                     data-testid="pre-1978-checkbox"
                   />
                   <div className="text-xs leading-snug">
-                    <div className="font-bold text-[#09090B]">
+                    <div className="font-bold text-[var(--ink)]">
                       Home built before 1978
                     </div>
-                    <div className="text-[#71717A]">
+                    <div className="text-[var(--muted)]">
                       Auto-adds Lead Safe Test Fee + Installation Practices for every window.
                     </div>
                   </div>
@@ -562,7 +562,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           </div>
 
           <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-3">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold mb-3">
             {t("est.colors.windows")}
           </div>
 
@@ -571,10 +571,10 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               pricing for the other extruded / laminate / painted finishes is
               re-clarified. */}
           {false && (
-          <div className="border border-[#E4E4E7] bg-white p-4 mb-3">
-            <div className="text-[11px] uppercase tracking-wider text-[#09090B] font-bold mb-3">
+          <div className="border border-[var(--border)] bg-[var(--surface)] p-4 mb-3">
+            <div className="text-[11px] uppercase tracking-wider text-[var(--ink)] font-bold mb-3">
               Vero
-              <span className="ml-2 text-[#71717A] font-normal normal-case tracking-normal">
+              <span className="ml-2 text-[var(--muted)] font-normal normal-case tracking-normal">
                 {t("win.colors.veroDesc")}
               </span>
             </div>
@@ -628,7 +628,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               if (conflictsWithTan) {
                 return (
                   <div
-                    className="mt-2 px-3 py-2 bg-[#FEF2F2] border-l-2 border-[#DC2626] text-[11px] text-[#991B1B]"
+                    className="mt-2 px-3 py-2 bg-[var(--danger-soft)] border-l-2 border-[#DC2626] text-[11px] text-[#991B1B]"
                     data-testid="vero-laminate-warning"
                     dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t("win.color.laminateWarn")) }}
                   />
@@ -649,10 +649,10 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           )}
 
           {/* MEZZO color block — solid extruded + FrameWorks / Woodgrain */}
-          <div className="border border-[#E4E4E7] bg-white p-4">
-            <div className="text-[11px] uppercase tracking-wider text-[#09090B] font-bold mb-3">
+          <div className="border border-[var(--border)] bg-[var(--surface)] p-4">
+            <div className="text-[11px] uppercase tracking-wider text-[var(--ink)] font-bold mb-3">
               Mezzo
-              <span className="ml-2 text-[#71717A] font-normal normal-case tracking-normal">
+              <span className="ml-2 text-[var(--muted)] font-normal normal-case tracking-normal">
                 {t("win.colors.mezzoDesc")}
               </span>
             </div>

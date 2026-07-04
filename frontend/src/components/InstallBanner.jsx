@@ -92,21 +92,21 @@ export default function InstallBanner() {
         role="dialog"
         aria-label="Install on your phone"
       >
-        <div className="bg-[#09090B] text-white border-t-4 border-[#F97316] shadow-2xl">
+        <div className="bg-[var(--bar-bg)] text-white border-t-4 border-[var(--brand)] shadow-2xl">
           <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 rounded bg-[#F97316] flex items-center justify-center shrink-0">
-              <Smartphone className="w-5 h-5 text-[#09090B]" />
+            <div className="w-10 h-10 rounded bg-[var(--brand)] flex items-center justify-center shrink-0">
+              <Smartphone className="w-5 h-5 text-[var(--ink)]" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold">Install on your phone</div>
-              <div className="text-[11px] text-[#71717A] leading-snug">
+              <div className="text-[11px] text-[var(--muted)] leading-snug">
                 Add to your home screen for a faster, app-like experience.
               </div>
             </div>
             <button
               type="button"
               onClick={handleInstall}
-              className="bg-[#F97316] text-[#09090B] text-xs font-bold uppercase tracking-wider px-3 py-2.5 hover:bg-[#EA580C] transition"
+              className="bg-[var(--brand)] text-[var(--on-brand)] text-xs font-bold uppercase tracking-wider px-3 py-2.5 hover:bg-[var(--brand-hover)] transition"
               data-testid="install-banner-action"
             >
               Install
@@ -114,7 +114,7 @@ export default function InstallBanner() {
             <button
               type="button"
               onClick={dismiss}
-              className="p-2 text-[#A1A1AA] hover:text-white"
+              className="p-2 text-[var(--bar-muted)] hover:text-white"
               aria-label="Dismiss"
               data-testid="install-banner-dismiss"
             >
@@ -131,22 +131,22 @@ export default function InstallBanner() {
           data-testid="install-banner-help"
         >
           <div
-            className="w-full bg-white p-6 pt-7"
+            className="w-full bg-[var(--surface)] p-6 pt-7"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C2410C]">
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--brand-text)]">
                   3-Step Install
                 </div>
-                <h2 className="text-xl font-bold text-[#09090B] mt-1">
+                <h2 className="text-xl font-bold text-[var(--ink)] mt-1">
                   {platform === "ios" ? "On iPhone / iPad" : "On Android"}
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={dismiss}
-                className="p-2 text-[#71717A] hover:text-[#09090B]"
+                className="p-2 text-[var(--muted)] hover:text-[var(--ink)]"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -154,7 +154,7 @@ export default function InstallBanner() {
             </div>
 
             {platform === "ios" ? (
-              <ol className="space-y-3 text-sm text-[#09090B]">
+              <ol className="space-y-3 text-sm text-[var(--ink)]">
                 <Step
                   n={1}
                   label="Tap the Share icon"
@@ -175,7 +175,7 @@ export default function InstallBanner() {
                 />
               </ol>
             ) : (
-              <ol className="space-y-3 text-sm text-[#09090B]">
+              <ol className="space-y-3 text-sm text-[var(--ink)]">
                 <Step
                   n={1}
                   label="Open the Chrome menu"
@@ -200,12 +200,12 @@ export default function InstallBanner() {
             <button
               type="button"
               onClick={dismiss}
-              className="mt-6 w-full bg-[#09090B] text-white py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#27272A] transition"
+              className="mt-6 w-full bg-[var(--bar-bg)] text-white py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#27272A] transition"
               data-testid="install-banner-help-close"
             >
               Got it
             </button>
-            <p className="mt-3 text-[11px] text-[#71717A] text-center">
+            <p className="mt-3 text-[11px] text-[var(--muted)] text-center">
               You can re-open this app from your home screen any time.
             </p>
           </div>
@@ -218,15 +218,15 @@ export default function InstallBanner() {
 function Step({ n, label, detail, icon }) {
   return (
     <li className="flex gap-3">
-      <div className="w-8 h-8 rounded-full bg-[#F97316] text-[#09090B] font-bold text-sm flex items-center justify-center shrink-0">
+      <div className="w-8 h-8 rounded-full bg-[var(--brand)] text-[var(--on-brand)] font-bold text-sm flex items-center justify-center shrink-0">
         {n}
       </div>
       <div className="flex-1 pt-0.5">
-        <div className="font-bold text-[#09090B] flex items-center gap-2">
+        <div className="font-bold text-[var(--ink)] flex items-center gap-2">
           {label}
-          <span className="text-[#71717A]">{icon}</span>
+          <span className="text-[var(--muted)]">{icon}</span>
         </div>
-        <div className="text-[#52525B] text-[13px] leading-snug mt-0.5">{detail}</div>
+        <div className="text-[var(--ink-2)] text-[13px] leading-snug mt-0.5">{detail}</div>
       </div>
     </li>
   );

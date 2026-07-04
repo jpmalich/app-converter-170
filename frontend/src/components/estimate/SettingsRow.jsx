@@ -64,16 +64,16 @@ export default function SettingsRow({ est, update }) {
               onChange={(e) => updateWastePct(Number(e.target.value) || 0)}
               data-testid="waste-pct"
             />
-            <span className="text-[#52525B]">{t("est.wasteSuffix")}</span>
+            <span className="text-[var(--ink-2)]">{t("est.wasteSuffix")}</span>
           </div>
-          <p className="mt-2 text-[10px] uppercase tracking-wider text-[#71717A]">
+          <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
             {t("est.wasteHint")}
           </p>
           {/* Iter 78 — Waste is now baked directly into line qty on HOVER /
               Blueprint imports for siding, soffit, J-channel, finish trim,
               corners + starter. Changing the % here recomputes those line
               qtys (raw × 1+waste). Manual lines are untouched. */}
-          <p className="mt-1 text-[10px] uppercase tracking-wider text-[#16A34A] font-bold">
+          <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--success)] font-bold">
             Baked into line qty on import — change % to recompute
           </p>
           {/* Iter 78b — Retroactive recompute button for legacy lines.
@@ -83,7 +83,7 @@ export default function SettingsRow({ est, update }) {
               re-uploading the blueprint. */}
           <button
             type="button"
-            className="mt-2 px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-[10px] font-bold uppercase tracking-wider"
+            className="mt-2 px-3 py-1.5 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[#FAF5FF] text-[10px] font-bold uppercase tracking-wider"
             onClick={recomputeAllNow}
             data-testid="recompute-all-waste-btn"
             title="Stamp raw_qty + recompute every cut-prone line at the current waste %"
@@ -95,8 +95,8 @@ export default function SettingsRow({ est, update }) {
               surface. This knob lets Howard collapse to all-vented or
               all-closed for jobs that only use one style. */}
           {est.kind === "lp_smart" && (
-            <div className="mt-4 pt-4 border-t border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-2">
+            <div className="mt-4 pt-4 border-t border-[var(--border)]">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
                 LP Soffit type
               </div>
               <select
@@ -109,7 +109,7 @@ export default function SettingsRow({ est, update }) {
                 <option value="vented">Vented — all soffit qty as Vented (38 Series Vented)</option>
                 <option value="closed">Closed — all soffit qty as Closed (38 Series Closed)</option>
               </select>
-              <p className="mt-2 text-[10px] uppercase tracking-wider text-[#71717A]">
+              <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
                 Applied on HOVER / Blueprint import — collapses or splits the two soffit lines automatically
               </p>
             </div>
@@ -118,8 +118,8 @@ export default function SettingsRow({ est, update }) {
               Pieces = (Overhang × Length) ÷ panel-area formula on the
               Vinyl Soffit line. Lives in the same card as Waste Factor
               since it's the other knob that affects qty-not-price. */}
-          <div className="mt-4 pt-4 border-t border-[#E4E4E7]">
-            <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-2">
+          <div className="mt-4 pt-4 border-t border-[var(--border)]">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
               {t("est.overhang")}
             </div>
             <div className="flex items-baseline gap-2">
@@ -132,9 +132,9 @@ export default function SettingsRow({ est, update }) {
                 onChange={(e) => update({ overhang_in: Number(e.target.value) || 0 })}
                 data-testid="overhang-in"
               />
-              <span className="text-[#52525B]">in</span>
+              <span className="text-[var(--ink-2)]">in</span>
             </div>
-            <p className="mt-2 text-[10px] uppercase tracking-wider text-[#71717A]">
+            <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
               {t("est.overhangHint")}
             </p>
             {/* Iter 78aj — Porch ceilings live right below the overhang
@@ -169,22 +169,22 @@ export default function SettingsRow({ est, update }) {
             onChange={(e) => update({ tax_rate: Number(e.target.value) || 0 })}
             data-testid="tax-rate"
           />
-          <span className="text-[#52525B]">%</span>
+          <span className="text-[var(--ink-2)]">%</span>
         </div>
       </div>
       <div className="card p-5">
         <div className="flex items-center justify-between mb-3">
           <div className="section-tag">{t("est.profit")}</div>
           <div
-            className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-[11px] font-bold uppercase tracking-wider"
+            className="inline-flex border border-[var(--border)] rounded-sm overflow-hidden text-[11px] font-bold uppercase tracking-wider"
             data-testid="pricing-mode-toggle"
           >
             <button
               type="button"
               className={`px-3 py-1.5 transition ${
                 isMargin
-                  ? "bg-[#09090B] text-white"
-                  : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+                  ? "bg-[var(--bar-bg)] text-white"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
               }`}
               onClick={() => update({ pricing_mode: "margin" })}
               data-testid="pricing-mode-margin"
@@ -193,10 +193,10 @@ export default function SettingsRow({ est, update }) {
             </button>
             <button
               type="button"
-              className={`px-3 py-1.5 transition border-l border-[#E4E4E7] ${
+              className={`px-3 py-1.5 transition border-l border-[var(--border)] ${
                 !isMargin
-                  ? "bg-[#09090B] text-white"
-                  : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+                  ? "bg-[var(--bar-bg)] text-white"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
               }`}
               onClick={() => update({ pricing_mode: "markup" })}
               data-testid="pricing-mode-markup"
@@ -216,7 +216,7 @@ export default function SettingsRow({ est, update }) {
             onChange={(e) => update({ margin_pct: Number(e.target.value) || 0 })}
             data-testid="margin-pct"
           />
-          <span className="text-[#52525B]">
+          <span className="text-[var(--ink-2)]">
             {isMargin ? t("est.marginSuffix") : t("est.markupSuffix")}
           </span>
         </div>
@@ -227,21 +227,21 @@ export default function SettingsRow({ est, update }) {
           step="1"
           value={est.margin_pct || 0}
           onChange={(e) => update({ margin_pct: Number(e.target.value) || 0 })}
-          className="w-full accent-[#F97316]"
+          className="w-full accent-[var(--brand)]"
           data-testid="margin-slider"
         />
-        <div className="mt-2 text-[11px] text-[#71717A] font-mono-num">
+        <div className="mt-2 text-[11px] text-[var(--muted)] font-mono-num">
           {isMargin ? (
             <>
               Sell = Base ÷ (1 − {pct}%) ={" "}
-              <span className="text-[#09090B] font-bold">
+              <span className="text-[var(--ink)] font-bold">
                 ×{effectiveMultiplier.toFixed(3)}
               </span>
             </>
           ) : (
             <>
               Sell = Base × (1 + {pct}%) ={" "}
-              <span className="text-[#09090B] font-bold">
+              <span className="text-[var(--ink)] font-bold">
                 ×{effectiveMultiplier.toFixed(3)}
               </span>
             </>
