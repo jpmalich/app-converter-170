@@ -184,6 +184,21 @@ Schema:
   // where the main roof would be at that Z position, `offset_x_ft` =
   // horizontal offset from the wall center (0 = centered).
   "dormer": {"face": "front" | "rear", "width_ft": number, "knee_wall_height_ft": number, "offset_x_ft": number} | null,
+  // Iter 79j.36 — TOP-LEVEL RECONCILIATION NOTES. One short sentence
+  // per aggregate field explaining how you got there when a value
+  // could reasonably vary between photos. The contractor uses these
+  // to diagnose whether variance between runs comes from Claude
+  // reading the same photos differently (a model problem) or from
+  // reconciling multiple readings inconsistently (a merge problem).
+  // Leave a value empty if it wasn't reconciled from multiple sources.
+  "_reconciliation_notes": {
+    "avg_wall_height_ft": "<e.g. 'averaged 3 valid observations 8.5, 8.7, 9.0 → 8.7 → snapped to 9' | ''>",
+    "roof_type":          "<e.g. 'gable-shed-dormer — photo 0 showed 1 dormer, photos 2 and 3 confirmed from side' | ''>",
+    "dormer":             "<e.g. 'width read from photo 0 bbox → 12 ft, offset centered' | ''>",
+    "story_count":        "<e.g. 'photos 0 and 1 both showed 2 rows of windows → 2 stories' | ''>",
+    "siding_coverage_pct": "<e.g. 'brick wainscot on front and left reduces field siding by ~15% overall' | ''>",
+    "dominant_colors":    "<e.g. 'sampled from photo 0 sunlit patch; other photos in shade' | ''>"
+  },
   "photos": [
     // ONE entry per photo IN THE EXACT ORDER they were sent to you.
     // photos[0] = the first attached image, photos[1] = the second, etc.
@@ -196,7 +211,29 @@ Schema:
      // (front-left, rear-left, etc.) so the contractor's photo grid
      // shows distinct badges instead of "FRONT, FRONT, FRONT".
      "elevation_confidence": number,      // 0-100, how confident are you in the elevation tag
-     "elevation_reasoning": "<1 short sentence — what told you which side this is>"
+     "elevation_reasoning": "<1 short sentence — what told you which side this is>",
+     // Iter 79j.36 — PER-PHOTO RAW OBSERVATIONS. Fill these fields
+     // with what YOU SAW IN THIS SINGLE PHOTO before merging across
+     // photos. The contractor uses them to diagnose whether variance
+     // in the final result is a detection problem (different photos
+     // disagree) or a reconciliation problem (photos agree but the
+     // merged number drifts). Leave a number null (not 0) if the
+     // measurement isn't visible in this photo — 0 means "measured
+     // and it truly is 0". Leave arrays [] if nothing to report.
+     "walls_visible": ["front" | "back" | "left" | "right"],   // which of walls[] labels are captured in this photo (a corner shot sees 2)
+     "eave_height_ft_observed": number | null,                  // eave height as measured from THIS photo, null if not measurable
+     "eave_reasoning": "<1 short sentence — HOW you measured this photo's eave (e.g. 'counted 12 lap courses × 8.5 in exposure = 8.5 ft')>",
+     "pitch_ratio_observed": "<e.g. '6/12' | '8/12'>" | null,  // pitch estimate from THIS photo if a gable is visible; else null
+     "gable_triangle_height_ft_observed": number | null,        // 0 if this photo shows an eave-only wall; null if not visible; >0 if a gable is visible in THIS photo
+     "dormers_observed_count": number,                          // count of dormers visible in THIS photo (0 if none)
+     "openings_this_photo": [                                   // openings VISIBLE IN THIS PHOTO (bbox coords are pixel-space of the compressed image we sent you)
+       {"opening_id": "<stable id you assign, e.g. 'front-w1' — reuse the SAME id on any matching entry in the top-level openings[] array so we can trace provenance>",
+        "type": "window" | "entry_door" | "patio_door" | "garage_door" | "vent" | "other",
+        "width_in": number,
+        "height_in": number,
+        "bbox": [x, y, w, h]}                                    // pixel bbox in this photo — omit if you can't localize
+     ],
+     "notes": "<optional: anything unusual about this photo (obstruction, corner shot, telephoto compression, lighting, etc.)>"
     }
   ],
   "walls": [
@@ -206,6 +243,21 @@ Schema:
      "gable_triangle_height_ft": number,  // 0 if this wall ends in an eave; >0 ONLY if this wall is a gable-end (you can see the triangular peak above the eave). Triangle area is auto-computed as 0.5 × width × this value.
      "dormer_face_sqft": number,          // 0 unless a true dormer (small box poking out of the roof) is on this elevation. Estimate the visible vertical face area in ft² — typically 20-60 ft² each.
      "siding_pct_this_wall": number,      // INTEGER 0-100 (percent), NOT a fraction. Use 85 to mean 85% siding — NEVER 0.85. Siding only, not brick / garage door / etc.
+     // Iter 79j.36 — RECONCILIATION PROVENANCE. Even though we ask
+     // for one merged number here, tell us how you got it: which
+     // photos contributed, what each one read, and how you combined
+     // them. When 3 runs on the same house return eave heights of
+     // 7, 8.5, and 12 ft, this trace tells the contractor whether
+     // the photos disagreed (detection failure) or you merged
+     // inconsistently (reconciliation failure).
+     "_source_photo_indices": [number],       // photo indices you drew this wall's dimensions from (e.g. [0, 3])
+     "_per_photo_readings": [                  // one row per contributing photo — what each photo read BEFORE merging
+       {"photo_idx": number,
+        "eave_ft":  number | null,
+        "gable_triangle_ft": number | null,
+        "notes": "<optional per-photo note (e.g. 'front-right corner — foreshortening'>"}
+     ],
+     "_reconciliation_note": "<short sentence: e.g. 'averaged 2 readings 8.5 and 8.7 → 8.6, snapped to 9' or 'photo 0 read 12 ft but discarded — aerial view compresses foreshortening'>",
      // Iter 78z — Profile callouts per elevation. Capture the raw text or
      // visible siding pattern so the catalog mapper can split LAP / SHAKE /
      // B&B / DUTCH LAP into SEPARATE quote lines. Without these, mixed
@@ -256,7 +308,14 @@ Schema:
      // dormer_face_sqft, not from the main wall, and they anchor the
      // dormer width. When roof_type is not "gable-shed-dormer", leave
      // this field false or omit it.
-     "on_dormer": boolean
+     "on_dormer": boolean,
+     // Iter 79j.36 — Opening provenance. Reuse the same `opening_id`
+     // string you assigned in photos[i].openings_this_photo so the
+     // debug view can hyperlink final openings back to the photo(s)
+     // they were extracted from.
+     "opening_id": "<optional stable id — matches photos[i].openings_this_photo[].opening_id>",
+     "_source_photo_indices": [number],   // photo indices this opening was seen in (usually 1, sometimes 2 on corner shots)
+     "_reconciliation_note": "<optional — only fill when you merged multiple photo readings or discarded some (e.g. 'photos 0 and 3 both showed this window at 36×60; consistent — no adjustment')>"
     }
   ],
   "openings_schedule": [

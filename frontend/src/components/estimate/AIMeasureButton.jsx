@@ -9,7 +9,7 @@
 // shape as HOVER, so we hand it to the same `onApply` callback the page
 // already uses for HOVER.
 import React, { useEffect, useRef, useState } from "react";
-import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer } from "lucide-react";
+import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
@@ -31,6 +31,9 @@ import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdo
 import { printTakeoff } from "@/lib/printTakeoff";
 // Iter 79j.22 — 3D House Model view (parametric Three.js render from raw_ai)
 import HouseModel3D from "@/components/estimate/HouseModel3D";
+// Iter 79j.36 — Debug view: per-photo raw observations + reconciled
+// house JSON with provenance. Behind Advanced.
+import AIExtractionDebugModal from "@/components/estimate/AIExtractionDebugModal";
 
 const ELEVATION_OPTIONS = [
   { key: "",            label: "Untagged" },
@@ -223,6 +226,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Now that pre-AI annotations (Iter 56) cover most use cases, Refine
   // on Photo is the rare-case escape hatch — keep it accessible but out
   // of the primary flow.
+  // Iter 79j.36 — Debug modal open state. Advanced-only. Shows per-
+  // photo raw observations + the reconciled house JSON side-by-side,
+  // so contractors can diagnose whether variance between runs is a
+  // detection problem (photos disagree) or a reconciliation problem
+  // (photos agree but the merge drifts).
+  const [debugOpen, setDebugOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(() => {
     try {
       return localStorage.getItem("aiMeasureShowAdvanced") === "1";
@@ -2978,6 +2987,25 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       Refine on Photo
                     </button>
                     )}
+                    {/* Iter 79j.36 — Debug view button. Advanced-only.
+                        Opens a two-column modal: per-photo raw
+                        observations on the left, reconciled house
+                        JSON with provenance on the right. Only
+                        useful once a preview is loaded — pre-preview
+                        state is diagnosed with the upload grid
+                        itself. */}
+                    {showAdvanced && preview && (
+                      <button
+                        type="button"
+                        onClick={() => setDebugOpen(true)}
+                        className="px-3 py-2 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#F5F3FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                        data-testid="ai-measure-debug-btn"
+                        title="Show per-photo raw observations and the reconciled house JSON with provenance"
+                      >
+                        <Bug className="w-3.5 h-3.5" />
+                        Debug
+                      </button>
+                    )}
                     {/* Iter 78z+++ — Tag Profiles also accessible from
                         the preview footer so contractors can correct
                         a missed Shake / B&B / dormer AFTER seeing the
@@ -3367,6 +3395,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             </div>
           </div>
         </div>
+      )}
+      {/* Iter 79j.36 — Extraction Debug modal (Advanced only). */}
+      {debugOpen && (
+        <AIExtractionDebugModal
+          preview={preview}
+          photoUrls={photoUrls}
+          onClose={() => setDebugOpen(false)}
+        />
       )}
       {/* Iter 78z — Profile Annotator (Tag Shake / B&B / etc.) */}
       {profileAnnotatorOpen && estimateId && (
