@@ -519,7 +519,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setBusy(true);
     setBusyStage("starting");
     try {
-      const launch = await api.post(`/measure/ai-measure/rerun/${currentRunId}`);
+      // Iter 79j.35 — Pass the current "Powered by" dropdown selection
+      // so Re-Run honors the model the contractor picked. Prior version
+      // silently reused the original run's model, defeating A/B testing.
+      const launch = await api.post(
+        `/measure/ai-measure/rerun/${currentRunId}`,
+        modelChoice ? { model_choice: modelChoice } : {},
+      );
       const newRunId = launch?.data?.run_id;
       if (!newRunId) throw new Error("Backend didn't return a new run_id");
       setCurrentRunId(newRunId);

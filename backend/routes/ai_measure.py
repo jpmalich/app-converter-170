@@ -1793,6 +1793,7 @@ async def ai_measure(
 @router.post("/ai-measure/rerun/{prev_run_id}")
 async def ai_measure_rerun(
     prev_run_id: str,
+    payload: Optional[dict] = None,
     user: dict = Depends(get_current_user),
 ):
     prev = await db.ai_measure_runs.find_one({"run_id": prev_run_id})
@@ -1809,20 +1810,48 @@ async def ai_measure_rerun(
             status_code=400,
             detail="No cached photos on this run — re-upload to use rerun",
         )
+    # Iter 79j.35 — Photos live in TWO places: the ephemeral pod disk
+    # (fast path) and MongoDB `upload_blobs` (durable). Ephemeral disk
+    # can be wiped by pod restarts / autoscaler churn — a previous
+    # bug surfaced as "Cached photos are no longer on disk" even
+    # though the user could still SEE the same photos in the UI (they
+    # were served via /api/uploads with an implicit rehydrate). Rerun
+    # now uses the same self-healing rehydrate path so the two views
+    # stay consistent.
     from config import UPLOAD_DIR  # local import to dodge cycle
+    from upload_store import rehydrate_to_disk
     image_payloads: list[tuple[str, bytes]] = []
+    missing_after_rehydrate: list[str] = []
     for name in paths:
         target = UPLOAD_DIR / name
         if not target.exists():
-            continue
+            restored = await rehydrate_to_disk(name, UPLOAD_DIR)
+            if restored and restored.exists():
+                target = restored
+            else:
+                missing_after_rehydrate.append(name)
+                continue
         raw = target.read_bytes()
+        if not raw:
+            missing_after_rehydrate.append(name)
+            continue
         # Reuse the same compressor the primary pass uses so the box
         # coordinates from the annotator line up with what Claude sees.
         image_payloads.append((name, _compress_for_claude(raw)))
     if not image_payloads:
         raise HTTPException(
             status_code=400,
-            detail="Cached photos are no longer on disk — re-upload",
+            detail=(
+                "Cached photos are no longer on disk or in the durable store — "
+                "re-upload the photos above and try again."
+            ),
+        )
+    # Non-fatal: some photos rehydrated, others didn't. Log so the
+    # frontend can surface a warning banner if it grows a UI for it.
+    if missing_after_rehydrate:
+        logger.warning(
+            "[ai-measure rerun] %d of %d photos unavailable after rehydrate: %s",
+            len(missing_after_rehydrate), len(paths), missing_after_rehydrate,
         )
 
     api_key = os.environ.get("EMERGENT_LLM_KEY")
@@ -1835,6 +1864,20 @@ async def ai_measure_rerun(
     estimate_id = prev.get("estimate_id")
     kind = prev.get("kind") or "siding"
     deep_dormer_scan = bool(prev.get("deep_dormer_scan") or False)
+
+    # Iter 79j.35 — Model choice cascade for rerun. The frontend's
+    # "Powered by" dropdown now POSTs `{model_choice: "..."}` as an
+    # optional JSON body — used so A/B model comparison works from
+    # the Re-Run button instead of silently reusing the original
+    # run's model. Falls back to the previous run's model_choice if
+    # the body is missing (legacy clients).
+    model_choice_override = None
+    if isinstance(payload, dict):
+        _mc = payload.get("model_choice")
+        if isinstance(_mc, str) and _mc.strip():
+            model_choice_override = _mc.strip()
+    model_choice = model_choice_override or prev.get("model_choice") or _DEFAULT_MODEL_KEY
+    model_key, model_provider, model_name = _resolve_model(model_choice)
 
     # Pull worker params from the previous result's measurements when
     # available; fall back to sane defaults that match the form schema.
@@ -1857,6 +1900,7 @@ async def ai_measure_rerun(
         "deep_dormer_scan": deep_dormer_scan,
         "kind":            kind,
         "address":         address,
+        "model_choice":    model_key,
         "rerun_of":        prev_run_id,
         "created_at":      now,
         "updated_at":      now,
@@ -1878,12 +1922,17 @@ async def ai_measure_rerun(
         deep_dormer_scan=deep_dormer_scan,
         elevation_tags=None,
         estimate_id=estimate_id,
+        model_provider=model_provider,
+        model_name=model_name,
     ))
     return {
         "run_id":           new_run_id,
         "status":           "running",
         "stage":            "starting",
         "photo_count":      len(image_payloads),
+        "photos_rehydrated": len(paths) - len(missing_after_rehydrate),
+        "photos_missing":   len(missing_after_rehydrate),
+        "model_choice":     model_key,
         "deep_dormer_scan": deep_dormer_scan,
         "rerun_of":         prev_run_id,
     }
