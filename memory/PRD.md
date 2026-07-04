@@ -49,6 +49,11 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 - `GET /api/exports/estimates.csv` · `GET /api/exports/estimates/{id}.csv`
 
 ## Implementation Timeline
+- **P2 (FROZEN)** — **Refactor `AIMeasureButton.jsx` (3534 lines) + `HouseModel3D.jsx` (1553 lines)** — explicit gate before this touches production:
+  - Prerequisite 1: red-house photos pass the stability pair (two consecutive runs producing equivalent JSON).
+  - Prerequisite 2: ranch + hip-roof houses successfully validate through the two-phase pipeline (proves the current code isn't accidentally red-house-shaped).
+  - Acceptance test for the refactor iteration itself: full regression suite green + a before/after run on the red-house photo set producing byte-identical (or semantically-identical) JSON — zero behavior changes allowed. Refactor becomes its own dedicated iteration; nothing else ships alongside it.
+
 - **P1 QUEUED (post-Run3)** — **Trace Coverage tile** (Feb 2026): tight fence per user — 4 wall cells + N dormer cells, each showing count of direct-view photos from `_source_photo_indices.length`. Color: green ≥2, amber 1, red 0. Read-only. NO new detection logic — purely a view over data Phase A already emits. Half-day scope. Ship only after Run 3 validates the current defect fixes.
 
 - **Iter 79j.49** — **Soft input validation for customer contact fields** (Feb 2026): warn-don't-block policy across JobInfoPanel, ISS editor, and QuoteModal.
