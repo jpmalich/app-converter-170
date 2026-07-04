@@ -973,14 +973,28 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   const [runError, setRunError] = useState(null);
   const primaryWallsCovered = () => {
     const covered = new Set();
-    for (const name of photoUrls) {
-      const e = (photoAnnotations[name]?.elevation || "").toLowerCase();
-      if (!e) continue;
+    // Iter 79j.35 — Two sources of elevation tags:
+    // 1. `photoAnnotations` — contractor-set (via the ProfileAnnotator or
+    //    the elevation dropdown on each thumbnail).
+    // 2. `preview.measurements._ai_photos` — Claude's per-photo
+    //    classification from the most recent run. These are the tags
+    //    the contractor SEES as colored badges on each photo thumbnail
+    //    (front, back, front-right, aerial, etc). Prior versions of
+    //    this guard only read source #1, so hitting Re-run on a run
+    //    whose photos had Claude-classified elevations (but no
+    //    contractor overrides) triggered a false "0 of 4 walls
+    //    captured" modal.
+    const aiPhotos = preview?.measurements?._ai_photos || preview?.raw_ai?.photos || [];
+    photoUrls.forEach((name, idx) => {
+      const eManual = (photoAnnotations[name]?.elevation || "").toLowerCase();
+      const eAi = (aiPhotos[idx]?.elevation || "").toLowerCase();
+      const e = eManual || eAi;
+      if (!e) return;
       if (e === "front" || e === "front-left" || e === "front-right") covered.add("front");
       if (e === "back" || e === "rear-left" || e === "rear-right") covered.add("back");
       if (e === "left" || e === "front-left" || e === "rear-left") covered.add("left");
       if (e === "right" || e === "front-right" || e === "rear-right") covered.add("right");
-    }
+    });
     return covered;
   };
   const missingPrimaryWalls = () => {
