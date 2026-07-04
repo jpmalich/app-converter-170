@@ -658,26 +658,46 @@ CRITICAL accuracy rules (read every time):
    When the same window/door/wall corner is visible from two angles
    (very common: a front-elevation photo AND a corner photo both show
    the same front-right window), you MUST count it EXACTLY ONCE.
-   Process for every opening:
-     • Group openings by (wall, type, approximate size). If you see a
-       36"×60" window on the front-right of the front-elevation photo,
-       AND a 36"×60" window on the left edge of the front-right corner
-       photo, they are THE SAME WINDOW. Emit ONE entry in `openings[]`,
-       not two.
-     • Outside corner posts at any rectangular-house corner appear in
-       two photos. Count each unique corner ONCE in `outside_corner_lf`.
-     • The front wall visible in both the front-elevation photo and a
-       front-corner photo is the SAME wall. One row in `walls[]`, not two.
+
+   Iter 79j.40 — CRITICAL: twins and triples MUST survive. Two 36×60
+   double-hungs on the same bedroom wall are TWINS, not one window
+   seen twice. Never dedupe on (wall, type, size) alone — that
+   heuristic under-counts real twin/triple/quad configurations by 50-
+   75% and silently drops the J-channel takeoff for the lost units.
+
+   Rules for cross-photo dedupe:
+     a) Two openings collapse to ONE if AND ONLY IF: same wall, same
+        type, size within ±3", AND their POSITION ALONG THE WALL
+        (distance from the LEFT corner viewing the wall from outside)
+        agrees within ±2 ft.
+     b) Two openings on the same wall with matching (wall, type, size)
+        but position gap > 2 ft are TWINS or a MATCHED PAIR — keep
+        both. Common examples:
+          • Twin double-hungs mulled together (bedroom windows)
+          • Triple casements over a kitchen sink
+          • Matched pair flanking a fireplace
+          • 4-unit sunroom bank
+          • Two garage doors side-by-side
+     c) If you can't estimate the position along the wall for one of
+        them (foreshortened corner shot, obstruction, dormer opening),
+        KEEP BOTH. False duplicates cost less than lost twins.
+     d) Outside corner posts at any rectangular-house corner appear
+        in two photos. Count each unique corner ONCE in
+        `outside_corner_lf`.
+     e) The front wall visible in both the front-elevation photo and
+        a front-corner photo is the SAME wall. One row in `walls[]`,
+        not two.
    In `double_count_check`, explicitly list which openings/walls you
-   deduplicated and which photos showed them. Example:
-   "Front wall has 4 windows (36×60) — visible in photo #1 (front
-   elevation) and partially in photo #2 (front-right corner). Counted
-   the rightmost window ONCE not twice. Outside corners: 4 total
-   (front-left, front-right, back-left, back-right) — each visible
-   in two photos but counted once."
-   If you cannot tell whether two photos show the same opening or
-   different openings, BIAS TO DEDUPE (count once) and flag uncertainty
-   in `notes`. Over-counting inflates quotes and erodes contractor trust.
+   deduplicated and which photos showed them, INCLUDING the position
+   evidence that justified the dedupe (or the position gap that saved
+   a twin). Example:
+   "Front wall has 4 windows (36×60). Photo #1 shows all 4 at
+   positions 4ft, 10ft, 16ft, 22ft. Photo #2 (front-right corner)
+   shows 2 windows at positions 16ft, 22ft — SAME PHYSICAL WINDOWS
+   as photo #1's right two (positions match within ±0.5 ft). Counted
+   the 4 unique windows once each, not 6. Kept the twin at 4ft/10ft
+   separately from the twin at 16ft/22ft because both pairs have a
+   >2 ft position gap."
 
 12. PER-WALL CONFIDENCE (required) — emit a `confidence` (0-100) on each
    wall reflecting how well you can actually measure THAT specific wall:
@@ -963,21 +983,30 @@ def _build_vero_openings_from_ai(openings: list, schedule: list | None = None) -
 
 
 def _dedupe_openings(openings: list) -> list:
-    """Iter 57b safety net — collapse near-duplicate openings that Claude
-    occasionally double-counts when the same window appears in two photos
-    (front + corner). Group by (wall, type, width_in rounded to nearest 6
-    in, height_in rounded to nearest 6 in). Within a group, keep the
-    SINGLE highest-count representative — never sum, never duplicate.
+    """Iter 79j.40 — TWIN-SAFE cross-photo dedupe.
 
-    The bin width of 6 inches covers normal photo-perspective error
-    (a 36" window viewed at an angle might be measured as 32" or 38")
-    without merging genuinely different sizes (a 24" bathroom window
-    vs a 36" bedroom window stay separate at bin width 6 in).
+    Rewritten from the old Iter-57b heuristic which grouped by (wall,
+    type, size, style) and collapsed every group down to a single
+    entry — that MURDERED twins and triples (two 36×60 double-hungs on
+    the same bedroom wall silently became one). Under-count cost:
+    50-75% of the J-channel takeoff for the lost units.
 
-    Returns a fresh list — input is not mutated."""
+    New rule: two openings collapse to ONE if AND ONLY IF they match
+    on (wall, type, size within 6 in, style) AND their `along_wall_ft`
+    positions agree within POSITION_TOL_FT. If `along_wall_ft` is null
+    on EITHER opening, we cannot confirm they're the same physical
+    window, so KEEP BOTH — false duplicates are far cheaper than lost
+    twins.
+
+    Every kept opening's `_source_photo_indices` is unioned across
+    the merged rows so provenance is preserved.
+
+    Returns a fresh list — input is not mutated.
+    """
     if not openings:
         return openings
-    seen: dict[tuple, dict] = {}
+    POSITION_TOL_FT = 2.0
+    kept: list[dict] = []
     for o in openings:
         try:
             w = float(o.get("width_in") or 0)
@@ -988,20 +1017,56 @@ def _dedupe_openings(openings: list) -> list:
             continue
         wall = (o.get("wall") or "other").lower()
         otype = (o.get("type") or "other").lower()
-        # Bin width 6 in — matches the bin used in openings_schedule
-        # roll-up so a contractor can spot-check counts there too.
-        # Iter 57d — also key on `style` so two same-size windows of
-        # DIFFERENT operation styles (e.g. a Picture + a Casement, both
-        # 36×36 on the same wall) are NOT merged. Style mismatch is a
-        # genuinely different opening even at identical W×H.
         style = (o.get("style") or "").strip().lower()
-        key = (wall, otype, round(w / 6) * 6, round(h / 6) * 6, style)
-        # First occurrence wins. We DO NOT sum — Claude already returned
-        # one entry per visible window, and our job here is to undo any
-        # cross-photo double-count.
-        if key not in seen:
-            seen[key] = dict(o)
-    return list(seen.values())
+        try:
+            pos = o.get("along_wall_ft")
+            pos = float(pos) if pos is not None else None
+        except (TypeError, ValueError):
+            pos = None
+        w_bin = round(w / 6) * 6
+        h_bin = round(h / 6) * 6
+
+        merged_into: dict | None = None
+        for existing in kept:
+            if wall != (existing.get("wall") or "other").lower():
+                continue
+            if otype != (existing.get("type") or "other").lower():
+                continue
+            e_w = float(existing.get("width_in") or 0)
+            e_h = float(existing.get("height_in") or 0)
+            if round(e_w / 6) * 6 != w_bin or round(e_h / 6) * 6 != h_bin:
+                continue
+            if style != (existing.get("style") or "").strip().lower():
+                continue
+            # Same (wall, type, size, style). Now the twin-safe check.
+            try:
+                e_pos = existing.get("along_wall_ft")
+                e_pos = float(e_pos) if e_pos is not None else None
+            except (TypeError, ValueError):
+                e_pos = None
+            # If EITHER position is null, we cannot prove same-window.
+            # Keep both — this is the twin-safety line.
+            if pos is None or e_pos is None:
+                continue
+            # Both positions known — merge only when within tolerance.
+            if abs(pos - e_pos) <= POSITION_TOL_FT:
+                merged_into = existing
+                break
+
+        if merged_into is None:
+            kept.append(dict(o))
+        else:
+            # Union source photo indices so provenance is preserved.
+            src = list(merged_into.get("_source_photo_indices") or [])
+            for idx in (o.get("_source_photo_indices") or []):
+                if idx not in src:
+                    src.append(idx)
+            if merged_into.get("photo_idx") is not None and merged_into["photo_idx"] not in src:
+                src.insert(0, merged_into["photo_idx"])
+            if o.get("photo_idx") is not None and o["photo_idx"] not in src:
+                src.append(o["photo_idx"])
+            merged_into["_source_photo_indices"] = src
+    return kept
 
 
 # Iter 57g — Standard-size window snapping. Residential windows are ~99%
@@ -2290,7 +2355,7 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
   // it to dedup the same physical opening seen in two photos (a
   // corner shot + a cardinal shot commonly overlap by 1–3 openings).
   "openings_this_photo": [
-    {"opening_id":    "<stable string id>",
+    {"opening_id":    "<stable string id — UNIQUE WITHIN THIS PHOTO. Reconciliation cannot use this to match across photos (each Phase A call is independent) so use position — see `along_wall_ft` below — for cross-photo dedup>",
      "type":          "window" | "entry_door" | "patio_door" | "garage_door" | "vent" | "other",
      "style":         "Double Hung" | "Casement" | "Picture" | "Twin Double Hung" | "Twin Casement" | "2-Lite Slider" | "3-Lite Slider" | "Half-Round" | "Awning" | "Hopper" | "Garden Window" | "Bay Window" | "Bow Window" | "",
      "style_confidence": number,   // 0-100
@@ -2298,6 +2363,18 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
      "height_in":     number,
      "wall_hint":     "front" | "back" | "left" | "right" | "on_dormer" | null,
      "bbox":          [x, y, w, h] | null,
+     // Iter 79j.40 — Position along the wall, measured from the LEFT
+     // corner as viewed from OUTSIDE the house looking at that wall.
+     // This is how cross-photo dedup identifies "the same physical
+     // window" — (wall, type, size) alone MURDERS twins (two 36×60
+     // double-hungs on the same bedroom wall become one). If you
+     // can't estimate the position (foreshortened / partial view),
+     // set null and the reconciler will KEEP the opening rather
+     // than risk a false-positive dedup. Estimate from wall corners
+     // or reference dims visible in this photo; use full-wall span
+     // as denominator (e.g. window centered in a 32 ft wall →
+     // along_wall_ft ≈ 16).
+     "along_wall_ft": number | null,
      "on_dormer":     boolean,
      "profile_around_opening": "<lap, dutch_lap, shake, board_and_batten, vertical, brick, stone, stucco, or empty>"}
   ],
@@ -2412,10 +2489,14 @@ call worker returns, so downstream code doesn't fork.
      "photo_idx": number,                            // the PRIMARY photo for this opening (best bbox)
      "bbox":     {"x": number, "y": number, "w": number, "h": number},   // NORMALIZED 0..1 on photo_idx
      "on_dormer": boolean,
+     // Iter 79j.40 — Position along the wall (feet from LEFT corner
+     // as viewed from outside). REQUIRED for cross-photo dedup — see
+     // rule 3. Null when no Phase A photo could estimate it.
+     "along_wall_ft": number | null,
      // PROVENANCE.
      "opening_id":               "<stable id preserved from extractions>",
      "_source_photo_indices":    [number],
-     "_reconciliation_note":     "<optional — only when you merged or dedup'd>"}
+     "_reconciliation_note":     "<optional — only when you merged or dedup'd. Cite along_wall_ft values from each source photo so the debug view shows why they collapsed (e.g. 'photo 0 at 8.2 ft, photo 2 at 8.4 ft on front wall → same window'). For twins that DID NOT collapse, cite the separation (e.g. 'photo 0 emitted twins at 6.2 ft and 9.4 ft on the front wall; kept both, delta 3.2 ft > sum-of-widths 3.0 ft')>"}
   ],
   "openings_schedule": [
     {"elevation": "<wall>", "type": "<>", "style": "<>", "width_in": number, "height_in": number, "count": number,
@@ -2497,11 +2578,58 @@ RECONCILIATION RULES:
 2. `avg_wall_height_ft` = weighted average of the FINAL per-wall
    `height_ft` values across the 4 primary walls. Weight by `confidence`.
 
-3. OPENING DEDUP — the same physical window often shows up in a corner
-   shot AND a cardinal shot. Match by opening_id first, then by
-   (wall_hint, type, size within ±3"). Emit ONE entry in `openings[]`
-   per physical opening with `_source_photo_indices` listing all
-   photos that saw it.
+3. OPENING DEDUP — twins, triples, and matched pairs are COMMON in
+   residential construction; naively deduping by (wall, type, size)
+   MURDERS them. Two 36×60 double-hungs on the same bedroom wall are
+   NOT one window seen twice — they're twins. Same for triple casements
+   over a kitchen sink, mulled pairs flanking a fireplace, or 4-unit
+   banks on a sunroom.
+
+   Rules of engagement:
+
+   a) `opening_id` IS NOT a cross-photo match key. Phase A calls are
+      independent Claude invocations, so IDs are only unique WITHIN
+      a photo — the same physical window will have different IDs in
+      different photos. Never dedup on opening_id alone.
+
+   b) The ONLY reliable cross-photo dedup signal is POSITION ALONG
+      THE WALL. Two openings collapse to one IF AND ONLY IF ALL of:
+        (i)   same `wall_hint` (or same reconciled wall)
+        (ii)  same `type`
+        (iii) `width_in` within ±3" AND `height_in` within ±3"
+        (iv)  `along_wall_ft` present in BOTH photos AND agrees
+              within ±2 ft
+      Missing any one of these = KEEP BOTH.
+
+   c) If `along_wall_ft` is null on one or both photos (foreshortened
+      corner, partial view, dormer opening), DO NOT DEDUP even if
+      (wall, type, size) match. Emit both entries. False duplicates
+      cost less than lost twins — twin loss silently under-quotes the
+      window and J-channel takeoff by 50-75%.
+
+   d) Same physical opening seen in a corner shot AND a cardinal shot
+      of the same wall should dedup by rule (b) — the along_wall_ft
+      estimates should land within ±2 ft since they measure the same
+      physical position.
+
+   e) Twin markers: if a photo returns a style of `Twin Double Hung`,
+      `Twin Casement`, or emits two openings on the same wall with
+      along_wall_ft values differing by less than the sum of their
+      widths (i.e. the two windows share a stud between them), they
+      are TWINS and MUST both be preserved. Emit them as two rows in
+      openings[] with the correct along_wall_ft each.
+
+   f) `openings[]._source_photo_indices` must list every photo that
+      contributed to the entry (both the dominant photo and any
+      dedup-matched confirmations). If an entry has only one source
+      photo, that's fine — many openings are only visible from one
+      angle.
+
+   Provenance: for every merged opening (>1 source photo), fill
+   `_reconciliation_note` with the along_wall_ft values from each
+   source photo so the debug view can show why they collapsed
+   (e.g. "photo 0 at 8.2 ft, photo 2 at 8.4 ft on front wall → same
+   window").
 
 4. ROOF TYPE — count photos where a gable triangle was visible vs
    photos where the roof ends flat on all sides. Gables on 2+ walls
