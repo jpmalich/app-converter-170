@@ -960,6 +960,22 @@ export default function HouseModel3D({ preview, estimate }) {
     (r) => (r.label || "").toLowerCase() === selectedFacade
   ) || {};
   const totalSqft = (peb.wall_body_sqft || 0) + (peb.gable_sqft || 0) + (peb.dormer_sqft || 0);
+  // Iter 79j.32 — Ridge/gable consistency check surfaced in the UI.
+  // Walk every facade and flag any wall where Claude reported a gable
+  // triangle but the current ridgeAxis doesn't render it as a gable-
+  // end (or vice-versa). If we find any, the amber banner below
+  // recommends flipping the Ridge orientation dropdown. Skipped for
+  // hip roofs (no gable ends by design) and for facades Claude never
+  // returned (facade.estimated=true — nothing to compare against).
+  const ridgeMismatchWalls = house.roof.type === "hip"
+    ? []
+    : house.facades.filter((f) => {
+        if (f.estimated) return false;
+        const aiSaysGable = f.aiGableTriangleHeightFt > 0;
+        const rendersGable = f.gableEnd;
+        return aiSaysGable !== rendersGable;
+      });
+  const hasRidgeMismatch = ridgeMismatchWalls.length > 0;
   // Whole-house material lines from the estimator (SSOT). Filter to
   // siding-adjacent categories so the "Materials" section shows the
   // squares / j-channel / starter / corner post the estimate will use.
@@ -1112,6 +1128,31 @@ export default function HouseModel3D({ preview, estimate }) {
               </span>
             )}
           </div>
+          {/* Iter 79j.32 — Ridge/gable consistency warning banner.
+              Fires when Claude's per-wall gable_triangle_height_ft
+              disagrees with which walls we're rendering as gable ends.
+              Points the contractor straight at the Ridge orientation
+              flip control right below it. */}
+          {hasRidgeMismatch && (
+            <div
+              className="flex items-start gap-2 px-2 py-1.5 bg-[#FEF3C7] border border-[#F59E0B] text-[10px] leading-tight"
+              data-testid="ai-measure-3d-ridge-mismatch-banner"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: AMBER }} />
+              <div className="text-[#92400E]">
+                <strong className="uppercase tracking-wider text-[9px]">Roof orientation may be wrong</strong>
+                <div className="mt-0.5">
+                  {ridgeMismatchWalls.length === 1
+                    ? `The ${ridgeMismatchWalls[0].id} wall`
+                    : `${ridgeMismatchWalls.map((w) => w.id).join(", ")} walls`}{" "}
+                  {ridgeMismatchWalls.some((w) => w.aiGableTriangleHeightFt > 0)
+                    ? "report a gable triangle in the AI takeoff but aren't rendering as a gable end."
+                    : "are rendering as gable ends but the AI didn't detect a gable there."}{" "}
+                  Try flipping <strong>Ridge orientation</strong> below.
+                </div>
+              </div>
+            </div>
+          )}
           {/* Iter 79j.32 — Ridge orientation toggle. Flipping the axis
               re-derives gableEnd assignment, roof-plane orientation,
               and dormer slope face in one place (see buildHouseJson).
