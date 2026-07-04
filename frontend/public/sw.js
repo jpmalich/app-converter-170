@@ -1,4 +1,4 @@
-const CACHE = "vse-v1";
+const CACHE = "vse-v2-theme";
 const ASSETS = ["/"];
 
 self.addEventListener("install", (e) => {

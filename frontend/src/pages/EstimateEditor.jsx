@@ -151,7 +151,7 @@ export default function EstimateEditor() {
       setTimeout(() => nav("/"), 0);
     }
     return (
-      <div className="flex items-center justify-center h-[60vh] text-[#52525B]">
+      <div className="flex items-center justify-center h-[60vh] text-[var(--ink-2)]">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> {t("est.loading")}
       </div>
     );
@@ -361,7 +361,7 @@ export default function EstimateEditor() {
             data-testid={`empty-tab-${activeTab}`}
           >
             <div className="section-tag mb-3">LP Smart Siding</div>
-            <p className="text-sm text-[#52525B] max-w-md mx-auto">
+            <p className="text-sm text-[var(--ink-2)] max-w-md mx-auto">
               The LP SmartSide catalog hasn&apos;t been loaded yet. Send Howard your
               LP Smart Siding price sheet (Excel/CSV) and it&apos;ll populate here.
             </p>
@@ -422,14 +422,21 @@ export default function EstimateEditor() {
                 accept_token,
               });
               toast.success(t("quote.sentToast"));
-              // Refresh local estimate so the dashboard badge updates.
+              // Iter 79j.47 — Two-way sync. If the sent address differs
+              // from the stored customer_email, write it back through
+              // update() so autosave persists it. This is why the
+              // send flow no longer prompts "no email on file" the
+              // next time the same estimate is reopened.
+              const sent = (recipient_email || "").trim();
+              const stored = (est?.customer_email || "").trim();
+              if (sent && sent !== stored) update({ customer_email: sent });
+              // Refresh local estimate through the proper state update
+              // (Object.assign mutated the ref without re-rendering,
+              // leaving pipeline stage badges stale).
               try {
                 const { data } = await api.get(`/estimates/${id}`);
-                if (data) Object.assign(est, data);
+                if (data) update(data);
               } catch (err) {
-                // Non-fatal: the email already sent successfully, we just
-                // couldn't refresh the local copy. Logs help diagnose if
-                // status badges look stale.
                 console.warn("[quote-modal] post-send refresh failed:", err?.message || err);
               }
               return true;

@@ -51,16 +51,16 @@ export default function PricingUpdatePanel({ token }) {
   return (
     <div className="card p-6 mt-6" data-testid="pricing-update-panel">
       <div className="flex items-center gap-3 mb-2">
-        <RefreshCw className="w-5 h-5 text-[#F97316]" />
+        <RefreshCw className="w-5 h-5 text-[var(--brand-text)]" />
         <div className="section-tag">Pricing Updates</div>
       </div>
-      <p className="text-sm text-[#52525B] mb-4">
+      <p className="text-sm text-[var(--ink-2)] mb-4">
         Bulk-update catalog prices when Alside raises rates. All changes preview as a diff
         before anything is saved — review the table and click Apply when you&apos;re ready.
       </p>
 
       {/* Tab bar */}
-      <div className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-sm font-bold uppercase tracking-wider mb-5">
+      <div className="inline-flex border border-[var(--border)] rounded-sm overflow-hidden text-sm font-bold uppercase tracking-wider mb-5">
         {[
           { key: "bump", label: "Quick Bump", icon: <Percent className="w-3.5 h-3.5" /> },
           { key: "upload", label: "Upload CSV/Excel", icon: <Upload className="w-3.5 h-3.5" /> },
@@ -69,8 +69,8 @@ export default function PricingUpdatePanel({ token }) {
           <button
             key={t.key}
             type="button"
-            className={`px-4 py-2 flex items-center gap-2 transition ${i > 0 ? "border-l border-[#E4E4E7]" : ""} ${
-              tab === t.key ? "bg-[#09090B] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+            className={`px-4 py-2 flex items-center gap-2 transition ${i > 0 ? "border-l border-[var(--border)]" : ""} ${
+              tab === t.key ? "bg-[var(--bar-bg)] text-white" : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
             }`}
             onClick={() => setTab(t.key)}
             data-testid={`pricing-tab-${t.key}`}
@@ -158,9 +158,9 @@ function BumpForm({ tiers, token, setChanges, setUnmatched }) {
               onChange={(e) => setPercent(e.target.value)}
               data-testid="bump-percent"
             />
-            <div className="px-3 flex items-center bg-[#FAFAFA] border border-l-0 border-[#E4E4E7] text-[#52525B] font-mono-num">%</div>
+            <div className="px-3 flex items-center bg-[var(--surface-muted)] border border-l-0 border-[var(--border)] text-[var(--ink-2)] font-mono-num">%</div>
           </div>
-          <p className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-1">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)] mt-1">
             Positive = increase. Negative = decrease.
           </p>
         </div>
@@ -200,8 +200,8 @@ function BumpForm({ tiers, token, setChanges, setUnmatched }) {
             onClick={() => setTierIds([])}
             className={`px-3 py-1.5 border text-xs uppercase tracking-wider font-bold transition ${
               tierIds.length === 0
-                ? "bg-[#09090B] text-white border-[#09090B]"
-                : "bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#09090B]"
+                ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]"
+                : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:border-[var(--border-strong)]"
             }`}
             data-testid="bump-tier-all"
           >
@@ -214,8 +214,8 @@ function BumpForm({ tiers, token, setChanges, setUnmatched }) {
               onClick={() => toggleTier(t.id)}
               className={`px-3 py-1.5 border text-xs uppercase tracking-wider font-bold transition ${
                 tierIds.includes(t.id)
-                  ? "bg-[#F97316] text-white border-[#F97316]"
-                  : "bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#F97316]"
+                  ? "bg-[var(--brand)] text-[var(--on-brand)] border-[var(--brand)]"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:border-[var(--brand)]"
               }`}
               data-testid={`bump-tier-${t.name}`}
             >
@@ -262,7 +262,7 @@ function UploadForm({ token, setChanges, setUnmatched }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-[#52525B]">
+      <p className="text-sm text-[var(--ink-2)]">
         Upload a <strong>CSV</strong> or <strong>Excel (.xlsx)</strong> file with the new prices.
         Required columns: <code className="font-mono-num text-xs">tier, section, name, unit, mat, lab</code>.
         Tip: <strong>Export</strong> the current pricing first to get the exact format.
@@ -317,7 +317,7 @@ function ExportPanel({ token }) {
   };
   return (
     <div className="space-y-3">
-      <p className="text-sm text-[#52525B]">
+      <p className="text-sm text-[var(--ink-2)]">
         Download a CSV snapshot of every tier × section × item with current prices.
         Open in Excel, edit the <code className="font-mono-num text-xs">mat</code> and{" "}
         <code className="font-mono-num text-xs">lab</code> columns, save, and re-upload via the Upload tab.
@@ -345,8 +345,8 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
   const decreases = changes.filter((c) => c.new < c.old).length;
 
   return (
-    <div className="mt-6 border-2 border-[#F97316] bg-orange-50" data-testid="diff-preview">
-      <div className="bg-[#F97316] text-white px-4 py-3 flex items-center justify-between">
+    <div className="mt-6 border-2 border-[var(--brand)] bg-orange-50" data-testid="diff-preview">
+      <div className="bg-[var(--brand)] text-[var(--on-brand)] px-4 py-3 flex items-center justify-between">
         <div>
           <div className="font-heading text-base">Review changes</div>
           <div className="text-xs opacity-90 mt-0.5">
@@ -357,7 +357,7 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
         <div className="flex gap-2">
           <button
             type="button"
-            className="px-3 py-1.5 bg-white text-[#52525B] border border-white hover:bg-[#F4F4F5] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5"
+            className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ink-2)] border border-white hover:bg-[var(--bg-app)] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5"
             onClick={onCancel}
             disabled={busy}
             data-testid="diff-cancel-btn"
@@ -366,7 +366,7 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
           </button>
           <button
             type="button"
-            className="px-3 py-1.5 bg-[#09090B] text-white border border-[#09090B] hover:bg-black text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+            className="px-3 py-1.5 bg-[var(--bar-bg)] text-white border border-[var(--border-strong)] hover:bg-black text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
             onClick={onApply}
             disabled={busy || total === 0}
             data-testid="diff-apply-btn"
@@ -393,14 +393,14 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
       )}
 
       {total === 0 ? (
-        <div className="p-6 text-sm text-[#52525B] text-center">
+        <div className="p-6 text-sm text-[var(--ink-2)] text-center">
           No price changes to apply.
         </div>
       ) : (
         <div className="max-h-[420px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead className="bg-white border-b border-[#E4E4E7] sticky top-0">
-              <tr className="text-left text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+            <thead className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0">
+              <tr className="text-left text-[10px] uppercase tracking-wider text-[var(--muted)]">
                 <th className="px-3 py-2">Tier</th>
                 <th className="px-3 py-2">Section</th>
                 <th className="px-3 py-2">Item</th>
@@ -410,17 +410,17 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
                 <th className="px-3 py-2 text-right">Δ</th>
               </tr>
             </thead>
-            <tbody className="bg-white">
+            <tbody className="bg-[var(--surface)]">
               {changes.map((c) => {
                 const delta = c.new - c.old;
                 const pct = c.old ? (delta / c.old) * 100 : 0;
                 return (
-                  <tr key={`${c.tier_id}-${c.section}-${c.name}-${c.field}`} className="border-b border-[#F4F4F5] hover:bg-[#FAFAFA]">
-                    <td className="px-3 py-1.5 font-mono-num text-xs text-[#52525B]">{c.tier_name}</td>
-                    <td className="px-3 py-1.5 text-xs text-[#52525B]">{c.section}</td>
+                  <tr key={`${c.tier_id}-${c.section}-${c.name}-${c.field}`} className="border-b border-[var(--bg-app)] hover:bg-[var(--surface-muted)]">
+                    <td className="px-3 py-1.5 font-mono-num text-xs text-[var(--ink-2)]">{c.tier_name}</td>
+                    <td className="px-3 py-1.5 text-xs text-[var(--ink-2)]">{c.section}</td>
                     <td className="px-3 py-1.5 text-xs">{c.name}</td>
-                    <td className="px-3 py-1.5 text-center text-[10px] uppercase font-bold tracking-wider text-[#A1A1AA]">{c.field}</td>
-                    <td className="px-3 py-1.5 text-right font-mono-num text-xs text-[#A1A1AA] line-through">{usd(c.old)}</td>
+                    <td className="px-3 py-1.5 text-center text-[10px] uppercase font-bold tracking-wider text-[var(--muted)]">{c.field}</td>
+                    <td className="px-3 py-1.5 text-right font-mono-num text-xs text-[var(--muted)] line-through">{usd(c.old)}</td>
                     <td className="px-3 py-1.5 text-right font-mono-num text-xs font-bold">{usd(c.new)}</td>
                     <td className={`px-3 py-1.5 text-right font-mono-num text-xs font-bold ${delta > 0 ? "text-green-700" : "text-red-700"}`}>
                       {delta > 0 ? "+" : ""}{usd(delta)} <span className="opacity-60">({pct > 0 ? "+" : ""}{pct.toFixed(1)}%)</span>

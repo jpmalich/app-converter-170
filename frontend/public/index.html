@@ -26,6 +26,26 @@
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
         <title>Pro-Quotes Estimator</title>
+        <script>
+          // Iter 79j.46 — Theme FOUC guard. Reads the persisted UI
+          // theme from localStorage BEFORE first paint and applies
+          // the data-theme attribute so the app renders in the
+          // correct palette immediately (no flash of default orange
+          // for dark-mode users). Silent on any storage failure.
+          (function() {
+            try {
+              var raw = localStorage.getItem("ui-theme-v1") || "auto";
+              var valid = { auto:1, orange:1, blueprint:1, forest:1, steel:1, highvis:1, dark:1 };
+              if (!valid[raw]) raw = "auto";
+              var applied = raw;
+              if (raw === "auto") {
+                applied = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+                  ? "dark" : "orange";
+              }
+              if (applied !== "orange") document.documentElement.setAttribute("data-theme", applied);
+            } catch (e) { /* localStorage disabled — ship default orange */ }
+          })();
+        </script>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>

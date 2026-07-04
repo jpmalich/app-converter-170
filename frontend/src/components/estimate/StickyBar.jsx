@@ -76,21 +76,21 @@ function TabBlock({ label, baseLabel, base, sell, profit, active, testid }) {
   // tabs render at lower opacity so the eye lands on the one being edited.
   return (
     <div
-      className={`px-3 py-1 border-l ${active ? "border-[#F97316]" : "border-white/15"} ${
+      className={`px-3 py-1 border-l ${active ? "border-[var(--brand)]" : "border-white/15"} ${
         active ? "" : "opacity-60"
       }`}
       data-testid={testid}
     >
       <div
         className={`text-[10px] uppercase tracking-[0.18em] font-bold ${
-          active ? "text-[#F97316]" : "text-white/60"
+          active ? "text-[var(--brand)]" : "text-white/60"
         }`}
       >
         {label}
       </div>
       <div
         className={`font-mono-num text-base sm:text-xl font-bold ${
-          active ? "text-[#F97316]" : "text-white"
+          active ? "text-[var(--brand)]" : "text-white"
         }`}
         data-testid={`${testid}-sell`}
       >

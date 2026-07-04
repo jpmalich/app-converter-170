@@ -71,6 +71,30 @@ async def create_estimate(body: EstimateIn, user: dict = Depends(get_current_use
     if not doc.get("pricing_mode"):
         b = await get_branding()
         doc["pricing_mode"] = b.get("default_pricing_mode") or "margin"
+    # Iter 79j.48 — Fill-if-empty defaults from data the app already
+    # knows at creation time. NEVER override a client-supplied value —
+    # the contractor can edit everything post-create anyway. `now` is
+    # UTC for created_at consistency; the frontend also passes a
+    # LOCAL-date fallback so evening-US timezones don't get dated
+    # tomorrow.
+    if not (doc.get("estimator") or "").strip():
+        doc["estimator"] = user.get("name") or ""
+    if not (doc.get("estimate_date") or "").strip():
+        doc["estimate_date"] = now[:10]  # YYYY-MM-DD from the same UTC now
+    if not (doc.get("address_state") or "").strip():
+        # Look up the company's most-recently-updated estimate that
+        # HAS a state, and copy it. Most contractors run local, so the
+        # last-used state is a strong default.
+        prior = await db.estimates.find_one(
+            {
+                "company_id": user["company_id"],
+                "address_state": {"$nin": [None, ""]},
+            },
+            sort=[("updated_at", -1)],
+            projection={"address_state": 1},
+        )
+        if prior and prior.get("address_state"):
+            doc["address_state"] = prior["address_state"]
     doc.update({
         "id": est_id,
         "company_id": user["company_id"],
@@ -342,7 +366,8 @@ async def export_estimates_csv(user: dict = Depends(get_current_user)):
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow([
-        "Estimate #", "Customer", "Address", "Date", "Estimator",
+        "Estimate #", "Customer", "Address", "Email", "Phone", "Company", "Lead Source",
+        "Date", "Estimator",
         "Material", "Labor", "Tax", "Base", "Pricing Mode", "Margin/Markup %", "Sell Price", "Profit",
         "Created By", "Updated At",
     ])
@@ -350,7 +375,12 @@ async def export_estimates_csv(user: dict = Depends(get_current_user)):
         t = calc_totals(e)
         writer.writerow([
             e.get("estimate_number", ""), e.get("customer_name", ""),
-            e.get("address", ""), e.get("estimate_date", ""), e.get("estimator", ""),
+            e.get("address", ""),
+            e.get("customer_email", "") or "",
+            e.get("customer_phone", "") or "",
+            e.get("customer_company", "") or "",
+            e.get("lead_source", "") or "",
+            e.get("estimate_date", ""), e.get("estimator", ""),
             f"{t['sub_mat']:.2f}", f"{t['sub_lab']:.2f}", f"{t['tax']:.2f}",
             f"{t['base']:.2f}", e.get("pricing_mode") or "markup", e.get("margin_pct", 0),
             f"{t['sell']:.2f}", f"{t['profit']:.2f}",
@@ -376,7 +406,17 @@ async def export_estimate_csv(est_id: str, user: dict = Depends(get_current_user
     for k, v in [
         ("Estimate #", est.get("estimate_number", "")),
         ("Customer", est.get("customer_name", "")),
+        ("Company", est.get("customer_company", "") or ""),
+        ("Contact Title", est.get("customer_contact_title", "") or ""),
+        ("Email", est.get("customer_email", "") or ""),
+        ("Cell Phone", est.get("customer_phone", "") or ""),
+        ("Secondary Phone", est.get("customer_phone_alt", "") or ""),
+        ("Fax", est.get("customer_fax", "") or ""),
+        ("Preferred Contact", est.get("customer_contact_method", "") or ""),
         ("Address", est.get("address", "")),
+        ("Billing Address", est.get("billing_address", "") or ""),
+        ("Lead Source", est.get("lead_source", "") or ""),
+        ("Lead Source Detail", est.get("lead_source_detail", "") or ""),
         ("Date", est.get("estimate_date", "")),
         ("Estimator", est.get("estimator", "")),
         ("Notes", (est.get("notes", "") or "").replace("\n", " ")),

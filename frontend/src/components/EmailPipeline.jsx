@@ -5,7 +5,7 @@
 import React from "react";
 import { Send, Eye, MousePointerClick, Check, AlertTriangle } from "lucide-react";
 
-function Stage({ Icon, label, ts, color, testId }) {
+function Stage({ Icon, label, ts, color, textColor = "text-white", testId }) {
   const filled = !!ts;
   const tip = filled ? `${label}: ${new Date(ts).toLocaleString()}` : `${label}: not yet`;
   return (
@@ -13,8 +13,8 @@ function Stage({ Icon, label, ts, color, testId }) {
       title={tip}
       className={`inline-flex items-center justify-center w-5 h-5 rounded-sm border ${
         filled
-          ? `${color} border-transparent text-white`
-          : "bg-white border-[#E4E4E7] text-[#D4D4D8]"
+          ? `${color} border-transparent ${textColor}`
+          : "bg-[var(--surface)] border-[var(--border)] text-[#D4D4D8]"
       }`}
       data-testid={testId}
       aria-label={tip}
@@ -44,10 +44,10 @@ export default function EmailPipeline({ est }) {
   if (!est?.last_sent_at) return null;
   return (
     <span className="inline-flex items-center gap-1" data-testid={`pipeline-${est.id}`}>
-      <Stage Icon={Send} label="Sent" ts={est.last_sent_at} color="bg-[#A1A1AA]" testId={`stage-sent-${est.id}`} />
+      <Stage Icon={Send} label="Sent" ts={est.last_sent_at} color="bg-[var(--muted)]" textColor="text-[var(--ink)]" testId={`stage-sent-${est.id}`} />
       <Stage Icon={Eye} label="Opened" ts={est.last_opened_at} color="bg-[#3B82F6]" testId={`stage-opened-${est.id}`} />
-      <Stage Icon={MousePointerClick} label="Clicked" ts={est.last_clicked_at} color="bg-[#F97316]" testId={`stage-clicked-${est.id}`} />
-      <Stage Icon={Check} label="Accepted" ts={est.accepted_at} color="bg-[#16A34A]" testId={`stage-accepted-${est.id}`} />
+      <Stage Icon={MousePointerClick} label="Clicked" ts={est.last_clicked_at} color="bg-[var(--brand)]" textColor="text-[var(--ink)]" testId={`stage-clicked-${est.id}`} />
+      <Stage Icon={Check} label="Accepted" ts={est.accepted_at} color="bg-[var(--success)]" testId={`stage-accepted-${est.id}`} />
     </span>
   );
 }

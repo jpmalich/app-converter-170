@@ -19,7 +19,7 @@ export default function IssPicker() {
       <button
         type="button"
         onClick={() => nav("/")}
-        className="text-xs font-bold uppercase tracking-[0.18em] text-[#52525B] hover:text-[#F97316] mb-6"
+        className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-2)] hover:text-[var(--brand-text)] mb-6"
         data-testid="iss-picker-back"
       >
         {t("home.back")}
@@ -27,10 +27,10 @@ export default function IssPicker() {
 
       <div className="mb-10 sm:mb-12">
         <div className="section-tag mb-3">{t("home.issGroupTitle")}</div>
-        <h1 className="font-heading text-3xl sm:text-4xl text-[#09090B]">
+        <h1 className="font-heading text-3xl sm:text-4xl text-[var(--ink)]">
           {t("home.iss.title")}
         </h1>
-        <p className="mt-2 text-[#52525B] max-w-2xl text-sm sm:text-base">
+        <p className="mt-2 text-[var(--ink-2)] max-w-2xl text-sm sm:text-base">
           {t("home.iss.subtitle")}
         </p>
       </div>
@@ -39,20 +39,20 @@ export default function IssPicker() {
         <button
           type="button"
           onClick={() => nav("/dashboard/iss")}
-          className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors"
+          className="card text-left p-6 sm:p-8 group hover:border-[var(--brand)] transition-colors"
           data-testid="iss-card-siding"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[var(--brand-text)]">
             <HomeIcon className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl text-[#09090B] mb-2">
+          <h2 className="font-heading text-2xl text-[var(--ink)] mb-2">
             {t("home.issTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6">{t("home.issDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <p className="text-sm text-[var(--ink-2)] mb-6">{t("home.issDesc")}</p>
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-text)] group-hover:underline">
             {t("home.issCta")}
           </div>
         </button>
@@ -60,22 +60,22 @@ export default function IssPicker() {
         <button
           type="button"
           onClick={() => nav("/dashboard/windows")}
-          className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors"
+          className="card text-left p-6 sm:p-8 group hover:border-[var(--brand)] transition-colors"
           data-testid="iss-card-windows"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[var(--brand-text)]">
             <RectangleHorizontal className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl text-[#09090B] mb-2">
+          <h2 className="font-heading text-2xl text-[var(--ink)] mb-2">
             {t("home.issWindowsTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6">
+          <p className="text-sm text-[var(--ink-2)] mb-6">
             {t("home.issWindowsDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-text)] group-hover:underline">
             {t("home.issWindowsCta")}
           </div>
         </button>
@@ -88,19 +88,19 @@ export default function IssPicker() {
           data-testid="iss-card-new-construction"
           aria-disabled="true"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#A1A1AA]">
+          <div className="flex items-center gap-3 mb-4 text-[var(--muted)]">
             <Hammer className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl text-[#09090B] mb-2">
+          <h2 className="font-heading text-2xl text-[var(--ink)] mb-2">
             {t("home.issNewConTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6">
+          <p className="text-sm text-[var(--ink-2)] mb-6">
             {t("home.issNewConDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#A1A1AA]">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
             {t("home.issNewConCta")}
           </div>
         </div>

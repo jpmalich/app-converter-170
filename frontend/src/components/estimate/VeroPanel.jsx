@@ -345,11 +345,11 @@ export default function VeroPanel({ est, update }) {
   };
 
   if (loading) {
-    return <div className="card p-6 text-sm text-[#71717A]">{t("common.loading")}</div>;
+    return <div className="card p-6 text-sm text-[var(--muted)]">{t("common.loading")}</div>;
   }
   if (!catalog?.product_types?.length) {
     return (
-      <div className="card p-6 text-sm text-[#71717A]" data-testid="vero-empty">
+      <div className="card p-6 text-sm text-[var(--muted)]" data-testid="vero-empty">
         {t("common.loading")}
       </div>
     );
@@ -398,7 +398,7 @@ export default function VeroPanel({ est, update }) {
             data-testid={`vero-section-${pt.name}`}
           >
             <header
-              className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[#E4E4E7] bg-[#FAFAFA] cursor-pointer hover:bg-[#F4F4F5]"
+              className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[var(--border)] bg-[var(--surface-muted)] cursor-pointer hover:bg-[var(--bg-app)]"
               onClick={toggleSection}
               role="button"
               tabIndex={0}
@@ -412,13 +412,13 @@ export default function VeroPanel({ est, update }) {
             >
               <div className="flex items-center gap-2">
                 {isOpen ? (
-                  <ChevronDown className="w-4 h-4 text-[#71717A] flex-shrink-0" />
+                  <ChevronDown className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
                 ) : (
-                  <ChevronRight className="w-4 h-4 text-[#71717A] flex-shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-[var(--muted)] flex-shrink-0" />
                 )}
                 <div>
                   <div className="section-tag">{tSection(pt.name, lang)}</div>
-                  <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+                  <div className="text-[10px] text-[var(--muted)] mt-0.5">
                     {t(
                       isFixed
                         ? (openings.length === 1 ? "win.openingsLabelFixed" : "win.openingsLabelFixedPlural")
@@ -431,7 +431,7 @@ export default function VeroPanel({ est, update }) {
               <div className="flex items-center gap-3">
                 <span
                   className={`font-mono-num text-sm ${
-                    packageQuoteActive ? "line-through text-[#A1A1AA]" : "text-[#52525B]"
+                    packageQuoteActive ? "line-through text-[var(--muted)]" : "text-[var(--ink-2)]"
                   }`}
                   title={packageQuoteActive ? "Per-window pricing overridden by Window Package Quote" : undefined}
                 >
@@ -439,7 +439,7 @@ export default function VeroPanel({ est, update }) {
                 </span>
                 <button
                   type="button"
-                  className="px-3 py-1.5 bg-[#09090B] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                  className="px-3 py-1.5 bg-[var(--bar-bg)] text-white hover:bg-[#27272A] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
                   onClick={(e) => {
                     e.stopPropagation();
                     // Auto-expand the section so the new row is visible.
@@ -455,7 +455,7 @@ export default function VeroPanel({ est, update }) {
 
             {isOpen && BUCKET_LOCKED_PRODUCT_TYPES.has(pt.name) && (
               <div
-                className="px-4 md:px-5 py-2 bg-[#FEF3C7] border-b border-[#F59E0B] text-[11px] text-[#92400E] flex items-center gap-2"
+                className="px-4 md:px-5 py-2 bg-[#FEF3C7] border-b border-[#F59E0B] text-[11px] text-[var(--warning-text)] flex items-center gap-2"
                 data-testid={`vero-locked-banner-${pt.name}`}
               >
                 <span className="font-bold uppercase tracking-wider text-[10px]">Pricing cap</span>
@@ -468,7 +468,7 @@ export default function VeroPanel({ est, update }) {
 
             {isOpen && (openings.length === 0 ? (
               <div
-                className="px-5 py-8 text-center text-sm text-[#A1A1AA]"
+                className="px-5 py-8 text-center text-sm text-[var(--muted)]"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t("win.noOpenings")) }}
               />
             ) : (
@@ -552,13 +552,13 @@ function VeroOpeningRow({
     <div className="px-4 md:px-5 py-3" data-testid={`vero-opening-${op.id}`}>
       <div className="flex items-center gap-3 flex-wrap">
         {!isFixed && (
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold w-[80px] text-right pr-1 hidden md:block">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold w-[80px] text-right pr-1 hidden md:block">
             {bucket ? `#${bucket.label}` : "—"}
           </div>
         )}
         {isFixed ? (
           <div className="flex-1 min-w-[200px]">
-            <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">{t("win.model")}</label>
+            <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">{t("win.model")}</label>
             <select
               className="input h-9 text-sm w-full"
               value={op.model || ""}
@@ -596,20 +596,20 @@ function VeroOpeningRow({
         />
         {!isFixed && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-0.5">{t("win.ui")} ({Number(op.width) || 0}+{Number(op.height) || 0})</div>
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-0.5">{t("win.ui")} ({Number(op.width) || 0}+{Number(op.height) || 0})</div>
             <div
               className={`font-mono-num text-sm font-bold ${
-                inRange ? "text-[#09090B]" : ui > 0 ? "text-[#DC2626]" : "text-[#A1A1AA]"
+                inRange ? "text-[var(--ink)]" : ui > 0 ? "text-[var(--danger-text)]" : "text-[var(--muted)]"
               }`}
               data-testid={`vero-ui-${op.id}`}
             >
               {ui || "—"}{" "}
               {lockedOverLimit ? (
-                <span className="text-[10px] text-[#DC2626] font-normal">(&gt; {LOCKED_MAX_UI} UI)</span>
+                <span className="text-[10px] text-[var(--danger-text)] font-normal">(&gt; {LOCKED_MAX_UI} UI)</span>
               ) : bucket ? (
-                <span className="text-[10px] text-[#71717A] font-normal">({bucket.label})</span>
+                <span className="text-[10px] text-[var(--muted)] font-normal">({bucket.label})</span>
               ) : ui > 0 ? (
-                <span className="text-[10px] text-[#DC2626] font-normal">{t("win.outOfRange")}</span>
+                <span className="text-[10px] text-[var(--danger-text)] font-normal">{t("win.outOfRange")}</span>
               ) : null}
             </div>
           </div>
@@ -617,7 +617,7 @@ function VeroOpeningRow({
         <div className="ml-auto flex items-center gap-2">
           {lockedOverLimit ? (
             <div
-              className="text-right px-3 py-1.5 bg-[#FEF3C7] border border-[#F59E0B] text-[#92400E]"
+              className="text-right px-3 py-1.5 bg-[#FEF3C7] border border-[#F59E0B] text-[var(--warning-text)]"
               title={`Vero pricing is only verified for windows with W + H ≤ ${LOCKED_MAX_UI}". Contact your Vero rep for a custom quote on larger units.`}
               data-testid={`vero-need-quote-${op.id}`}
             >
@@ -627,12 +627,12 @@ function VeroOpeningRow({
           ) : (
             <>
               <div className="text-right">
-                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.base")}</div>
-                <div className="font-mono-num text-sm text-[#09090B]">{fmt(baseMat)}</div>
+                <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">{t("win.base")}</div>
+                <div className="font-mono-num text-sm text-[var(--ink)]">{fmt(baseMat)}</div>
               </div>
-              <div className="text-right pl-2 border-l border-[#E4E4E7]">
-                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.total")}</div>
-                <div className="font-mono-num text-base font-bold text-[#09090B]" data-testid={`vero-total-${op.id}`}>
+              <div className="text-right pl-2 border-l border-[var(--border)]">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">{t("win.total")}</div>
+                <div className="font-mono-num text-base font-bold text-[var(--ink)]" data-testid={`vero-total-${op.id}`}>
                   {fmt(total)}
                 </div>
               </div>
@@ -641,7 +641,7 @@ function VeroOpeningRow({
           <button
             type="button"
             onClick={onToggleNotes}
-            className="text-[#71717A] hover:text-[#09090B] p-1"
+            className="text-[var(--muted)] hover:text-[var(--ink)] p-1"
             title={t("win.addNote")}
             data-testid={`vero-notes-toggle-${op.id}`}
           >
@@ -650,7 +650,7 @@ function VeroOpeningRow({
           <button
             type="button"
             onClick={onRemove}
-            className="text-[#DC2626] hover:text-[#991B1B] p-1"
+            className="text-[var(--danger-text)] hover:text-[#991B1B] p-1"
             title={t("win.removeOpening")}
             data-testid={`vero-remove-${op.id}`}
           >
@@ -670,7 +670,7 @@ function VeroOpeningRow({
           />
           <button
             type="button"
-            className="text-[#71717A] hover:text-[#09090B] p-1"
+            className="text-[var(--muted)] hover:text-[var(--ink)] p-1"
             onClick={onToggleNotes}
             title={t("win.hideNotes")}
           >
@@ -685,17 +685,17 @@ function VeroOpeningRow({
             <button
               type="button"
               onClick={onToggleExpand}
-              className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] font-bold text-[#52525B] hover:text-[#09090B]"
+              className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] font-bold text-[var(--ink-2)] hover:text-[var(--ink)]"
               data-testid={`vero-adders-toggle-${op.id}`}
             >
               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               {t("win.upgradeOptions")}
               {(op.adders || []).length > 0 && (
-                <span className="bg-[#F97316] text-white px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                <span className="bg-[var(--brand)] text-[var(--on-brand)] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
                   {op.adders.length}
                 </span>
               )}
-              <span className="font-mono-num text-[#52525B] normal-case tracking-normal ml-1">
+              <span className="font-mono-num text-[var(--ink-2)] normal-case tracking-normal ml-1">
                 {addersTotal > 0 ? `+${fmt(addersTotal)}` : ""}
               </span>
             </button>
@@ -728,14 +728,14 @@ function VeroOpeningRow({
                           key={a.name}
                           className={`flex items-center gap-1.5 py-1.5 px-2 border ${
                             checked
-                              ? "border-[#F97316] bg-[#FFF7ED] text-[#09090B]"
-                              : "border-[#E4E4E7] bg-white text-[#3F3F46] hover:bg-[#FAFAFA]"
+                              ? "border-[var(--brand)] bg-[#FFF7ED] text-[var(--ink)]"
+                              : "border-[var(--border)] bg-[var(--surface)] text-[#3F3F46] hover:bg-[var(--surface-muted)]"
                           } text-[12px]`}
                           data-testid={`vero-adder-${op.id}-${a.name.replace(/[^a-zA-Z0-9]/g, "_")}`}
                         >
                           <input
                             type="checkbox"
-                            className="w-3.5 h-3.5 accent-[#F97316] cursor-pointer flex-shrink-0"
+                            className="w-3.5 h-3.5 accent-[var(--brand)] cursor-pointer flex-shrink-0"
                             checked={checked}
                             onChange={() => onToggleAdder(a)}
                             data-testid={`vero-adder-cb-${op.id}-${a.name.replace(/[^a-zA-Z0-9]/g, "_")}`}
@@ -745,14 +745,14 @@ function VeroOpeningRow({
                               <span className="truncate" title={a.name}>{a.name}</span>
                               {mixed && (
                                 <span
-                                  className="text-[9px] font-mono-num bg-[#FEF3C7] text-[#92400E] border border-[#FCD34D] px-1 py-px tracking-tight flex-shrink-0 normal-case font-bold"
+                                  className="text-[9px] font-mono-num bg-[#FEF3C7] text-[var(--warning-text)] border border-[#FCD34D] px-1 py-px tracking-tight flex-shrink-0 normal-case font-bold"
                                   title={`Applied on ${usedOn} of ${totalOpenings} windows`}
                                 >
                                   {usedOn}/{totalOpenings}
                                 </span>
                               )}
                             </div>
-                            <div className="font-mono-num text-[10px] text-[#71717A] truncate">
+                            <div className="font-mono-num text-[10px] text-[var(--muted)] truncate">
                               {checked ? (adderTotalCell > 0 ? `+${fmt(adderTotalCell)} total` : "—") : unitHint}
                             </div>
                           </div>
@@ -765,7 +765,7 @@ function VeroOpeningRow({
                               value={adderQty || ""}
                               placeholder={`${Number(op.qty) || 0}`}
                               onChange={(ev) => onUpdateAdderQty(a.name, ev.target.value)}
-                              className="bg-white border border-[#E4E4E7] focus:border-[#F97316] outline-none h-7 text-xs w-12 px-1.5 text-right flex-shrink-0 font-mono-num"
+                              className="bg-[var(--surface)] border border-[var(--border)] focus:border-[var(--focus)] outline-none h-7 text-xs w-12 px-1.5 text-right flex-shrink-0 font-mono-num"
                               data-testid={`vero-adder-qty-${op.id}-${a.name.replace(/[^a-zA-Z0-9]/g, "_")}`}
                               title={t("win.qty")}
                             />
@@ -787,7 +787,7 @@ function VeroOpeningRow({
 function NumField({ label, value, onChange, testid, minWidth = 78, isQty = false }) {
   return (
     <div style={{ minWidth }}>
-      <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">{label}</label>
+      <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">{label}</label>
       <input
         type="number"
         inputMode="decimal"
@@ -827,8 +827,8 @@ function BaseIncludedHint({ testid }) {
         }}
         className={`flex items-center gap-1 text-[10px] uppercase tracking-[0.18em] font-bold px-1.5 py-0.5 border ${
           open
-            ? "border-[#09090B] bg-[#09090B] text-white"
-            : "border-[#E4E4E7] bg-white text-[#71717A] hover:text-[#09090B] hover:border-[#09090B]"
+            ? "border-[var(--border-strong)] bg-[var(--bar-bg)] text-white"
+            : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--ink)] hover:border-[var(--border-strong)]"
         }`}
         title="What's included in the base price?"
         aria-expanded={open}
@@ -846,18 +846,18 @@ function BaseIncludedHint({ testid }) {
             data-testid={`${testid}-backdrop`}
           />
           <div
-            className="absolute z-50 left-0 top-full mt-1 w-72 bg-white border border-[#09090B] shadow-lg p-3"
+            className="absolute z-50 left-0 top-full mt-1 w-72 bg-[var(--surface)] border border-[var(--border-strong)] shadow-lg p-3"
             data-testid={`${testid}-popover`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#09090B]">
+              <div className="text-[10px] uppercase tracking-[0.2em] font-bold text-[var(--ink)]">
                 Included in base price
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-[#71717A] hover:text-[#09090B] -mt-0.5"
+                className="text-[var(--muted)] hover:text-[var(--ink)] -mt-0.5"
                 title="Close"
                 data-testid={`${testid}-close`}
               >
@@ -867,12 +867,12 @@ function BaseIncludedHint({ testid }) {
             <ul className="space-y-1 text-[11px] text-[#3F3F46] leading-snug">
               {BASE_INCLUDED_ITEMS.map((item) => (
                 <li key={item} className="flex items-start gap-1.5">
-                  <span className="text-[#F97316] font-bold mt-px">·</span>
+                  <span className="text-[var(--brand-text)] font-bold mt-px">·</span>
                   <span>{item}</span>
                 </li>
               ))}
             </ul>
-            <div className="mt-2 pt-2 border-t border-[#E4E4E7] text-[10px] text-[#71717A] leading-snug">
+            <div className="mt-2 pt-2 border-t border-[var(--border)] text-[10px] text-[var(--muted)] leading-snug">
               Pick an Upgrade Option only to <em>change</em> one of these
               (e.g., upgrade glass from Climatech Plus → Quattro).
             </div>

@@ -21,10 +21,10 @@ export default function HomePicker() {
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
       <div className="mb-10 sm:mb-12">
         <div className="section-tag mb-3">{t("home.pickerTag") || "Workspace"}</div>
-        <h1 className="font-heading text-3xl sm:text-4xl text-[#09090B]">
+        <h1 className="font-heading text-3xl sm:text-4xl text-[var(--ink)]">
           {t("home.pickerTitle") || "Choose what you’re quoting"}
         </h1>
-        <p className="mt-2 text-[#52525B] max-w-2xl text-sm sm:text-base">
+        <p className="mt-2 text-[var(--ink-2)] max-w-2xl text-sm sm:text-base">
           {t("home.pickerSubtitle")}
         </p>
       </div>
@@ -33,22 +33,22 @@ export default function HomePicker() {
         <button
           type="button"
           onClick={() => nav("/picker/iss")}
-          className="card text-left p-6 sm:p-10 group hover:border-[#F97316] transition-colors"
+          className="card text-left p-6 sm:p-10 group hover:border-[var(--brand)] transition-colors"
           data-testid="home-group-iss"
         >
-          <div className="flex items-center gap-3 mb-5 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-5 text-[var(--brand-text)]">
             <Building2 className="w-9 h-9" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl sm:text-3xl text-[#09090B] mb-3">
+          <h2 className="font-heading text-2xl sm:text-3xl text-[var(--ink)] mb-3">
             {t("home.issGroupTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6 leading-relaxed">
+          <p className="text-sm text-[var(--ink-2)] mb-6 leading-relaxed">
             {t("home.issGroupDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-text)] group-hover:underline">
             {t("home.issGroupCta")}
           </div>
         </button>
@@ -56,22 +56,22 @@ export default function HomePicker() {
         <button
           type="button"
           onClick={() => nav("/picker/contractor")}
-          className="card text-left p-6 sm:p-10 group hover:border-[#F97316] transition-colors"
+          className="card text-left p-6 sm:p-10 group hover:border-[var(--brand)] transition-colors"
           data-testid="home-group-contractor"
         >
-          <div className="flex items-center gap-3 mb-5 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-5 text-[var(--brand-text)]">
             <HardHat className="w-9 h-9" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl sm:text-3xl text-[#09090B] mb-3">
+          <h2 className="font-heading text-2xl sm:text-3xl text-[var(--ink)] mb-3">
             {t("home.contractorGroupTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6 leading-relaxed">
+          <p className="text-sm text-[var(--ink-2)] mb-6 leading-relaxed">
             {t("home.contractorGroupDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-text)] group-hover:underline">
             {t("home.contractorGroupCta")}
           </div>
         </button>

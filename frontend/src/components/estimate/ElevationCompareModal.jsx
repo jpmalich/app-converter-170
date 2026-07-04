@@ -79,11 +79,11 @@ export default function ElevationCompareModal({ est, open, onClose }) {
       data-testid="elevation-compare-backdrop"
     >
       <div
-        className="bg-white max-w-5xl w-full max-h-[90vh] flex flex-col"
+        className="bg-[var(--surface)] max-w-5xl w-full max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
         data-testid="elevation-compare-modal"
       >
-        <div className="bg-[#09090B] text-white px-5 py-4 flex items-center justify-between">
+        <div className="bg-[var(--bar-bg)] text-white px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Layers className="w-5 h-5" />
             <div>
@@ -102,15 +102,15 @@ export default function ElevationCompareModal({ est, open, onClose }) {
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="border-b border-[#E4E4E7] px-5 flex items-center gap-1">
+        <div className="border-b border-[var(--border)] px-5 flex items-center gap-1">
           {canCompare && (
             <button
               type="button"
               onClick={() => setActiveTab("compare")}
               className={`px-3 py-2 text-[11px] uppercase tracking-wider font-bold border-b-2 ${
                 activeTab === "compare"
-                  ? "border-[#09090B] text-[#09090B]"
-                  : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                  ? "border-[var(--border-strong)] text-[var(--ink)]"
+                  : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
               }`}
               data-testid="elevation-compare-tab-compare"
             >
@@ -124,8 +124,8 @@ export default function ElevationCompareModal({ est, open, onClose }) {
               onClick={() => setActiveTab(src)}
               className={`px-3 py-2 text-[11px] uppercase tracking-wider font-bold border-b-2 ${
                 activeTab === src
-                  ? "border-[#09090B] text-[#09090B]"
-                  : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                  ? "border-[var(--border-strong)] text-[var(--ink)]"
+                  : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
               }`}
               style={activeTab === src ? { borderColor: SOURCE_COLORS[src] } : {}}
               data-testid={`elevation-compare-tab-${src}`}
@@ -140,11 +140,11 @@ export default function ElevationCompareModal({ est, open, onClose }) {
               {compareGroups.map((group) => (
                 <div
                   key={group.label}
-                  className="border border-[#E4E4E7]"
+                  className="border border-[var(--border)]"
                   data-testid={`compare-group-${group.label.toLowerCase()}`}
                 >
-                  <div className="px-3 py-2 bg-[#FAFAFA] border-b border-[#E4E4E7] flex items-center justify-between">
-                    <div className="text-[12px] uppercase tracking-wider font-bold text-[#09090B]">
+                  <div className="px-3 py-2 bg-[var(--surface-muted)] border-b border-[var(--border)] flex items-center justify-between">
+                    <div className="text-[12px] uppercase tracking-wider font-bold text-[var(--ink)]">
                       {group.label} Elevation
                     </div>
                     {group.versions.length >= 2 && (() => {
@@ -157,7 +157,7 @@ export default function ElevationCompareModal({ est, open, onClose }) {
                         <div
                           className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 ${
                             drift
-                              ? "bg-[#FEF3C7] text-[#B45309] border border-[#FCD34D]"
+                              ? "bg-[#FEF3C7] text-[var(--warning-text)] border border-[#FCD34D]"
                               : "bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC]"
                           }`}
                         >
@@ -170,7 +170,7 @@ export default function ElevationCompareModal({ est, open, onClose }) {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-2">
                     {group.versions.map((v) => (
-                      <div key={v.source} className="border border-[#E4E4E7]">
+                      <div key={v.source} className="border border-[var(--border)]">
                         <div
                           className="px-2 py-1 text-[10px] uppercase tracking-wider font-bold text-white"
                           style={{ background: SOURCE_COLORS[v.source] }}
@@ -184,7 +184,7 @@ export default function ElevationCompareModal({ est, open, onClose }) {
                 </div>
               ))}
               {compareGroups.length === 0 && (
-                <div className="text-center py-12 text-[12px] text-[#A1A1AA]">
+                <div className="text-center py-12 text-[12px] text-[var(--muted)]">
                   No matching elevation labels across sources.
                 </div>
               )}

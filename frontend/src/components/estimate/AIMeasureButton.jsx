@@ -9,7 +9,7 @@
 // shape as HOVER, so we hand it to the same `onApply` callback the page
 // already uses for HOVER.
 import React, { useEffect, useRef, useState } from "react";
-import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug } from "lucide-react";
+import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug, Lightbulb, ScanSearch } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
@@ -1458,16 +1458,16 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   const conf = preview?.measurements?._ai_scale_confidence || "low";
   const confColor =
     conf === "high"
-      ? "text-[#16A34A] border-[#16A34A] bg-green-50"
+      ? "text-[var(--success)] border-[var(--success)] bg-green-50"
       : conf === "medium"
-      ? "text-[#D97706] border-[#D97706] bg-yellow-50"
-      : "text-[#DC2626] border-[#DC2626] bg-red-50";
+      ? "text-[#D97706] border-[#D97706] bg-[var(--hint-bg)]"
+      : "text-[var(--danger-text)] border-[#DC2626] bg-red-50";
 
   return (
     <div data-testid="ai-measure" className="w-full">
       <button
         type="button"
-        className="w-full justify-center px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+        className="w-full justify-center px-3 py-1.5 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => setOpen(true)}
         data-testid="ai-measure-btn"
         title={preview ? "Resume AI measure session — add more photos or refine" : "AI photo measure — upload 2-8 phone photos of the house (+ optional aerial)"}
@@ -1483,7 +1483,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           data-testid="ai-measure-backdrop"
         >
           <div
-            className="bg-white max-w-2xl w-full max-h-[90vh] flex flex-col"
+            className="bg-[var(--surface)] max-w-2xl w-full max-h-[90vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
             data-testid="ai-measure-modal"
           >
@@ -1516,10 +1516,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   own actionable copy pointing at Profile → Universal Key. */}
               {runError && (
                 <div
-                  className="mb-4 p-3 border border-[#EF4444] bg-[#FEE2E2] text-[#7F1D1D] text-[11px] flex items-start gap-2"
+                  className="mb-4 p-3 border border-[var(--danger)] bg-[#FEE2E2] text-[#7F1D1D] text-[11px] flex items-start gap-2"
                   data-testid="ai-measure-run-error-banner"
                 >
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#DC2626]" />
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--danger-text)]" />
                   <div className="flex-1">
                     <div className="font-bold uppercase tracking-wider text-[10px] mb-1 flex items-center justify-between">
                       <span>{/Budget/i.test(runError) ? "Universal Key budget exhausted" : "AI Measure failed"}</span>
@@ -1566,7 +1566,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     <button
                       type="button"
                       onClick={startOver}
-                      className="px-3 py-1.5 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider"
+                      className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider"
                       data-testid="ai-measure-discard-btn"
                     >
                       Start fresh
@@ -1577,7 +1577,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               {/* Iter 57r — Resume last AI run banner */}
               {lastRun && (lastRun.status === "running" || (lastRun.status === "done" && lastRun.result) || lastRun.status === "error") && (
                 <div
-                  className="mb-4 p-3 border border-[#7C3AED] bg-purple-50 flex items-center justify-between gap-3 flex-wrap"
+                  className="mb-4 p-3 border border-[var(--ai)] bg-purple-50 flex items-center justify-between gap-3 flex-wrap"
                   data-testid="ai-measure-resume-run-banner"
                 >
                   <div className="text-xs text-[#581C87]">
@@ -1608,7 +1608,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <button
                         type="button"
                         onClick={resumeRunPolling}
-                        className="px-3 py-1.5 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                        className="px-3 py-1.5 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
                         data-testid="ai-measure-resume-run-btn"
                       >
                         <Loader2 className="w-3 h-3 animate-spin" /> Reconnect
@@ -1618,7 +1618,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <button
                         type="button"
                         onClick={restoreLastRun}
-                        className="px-3 py-1.5 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                        className="px-3 py-1.5 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
                         data-testid="ai-measure-restore-run-btn"
                       >
                         <Check className="w-3 h-3" /> Restore preview
@@ -1627,7 +1627,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     <button
                       type="button"
                       onClick={() => setLastRun(null)}
-                      className="px-3 py-1.5 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider"
+                      className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider"
                       data-testid="ai-measure-dismiss-run-btn"
                     >
                       Dismiss
@@ -1636,7 +1636,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 </div>
               )}
               {/* Warning banner — set expectations honestly */}
-              <div className="border border-yellow-400 bg-yellow-50 px-3 py-2 mb-4 text-xs text-yellow-900 flex items-start gap-2">
+              <div className="border border-[var(--hint-line)] bg-[var(--hint-bg)] px-3 py-2 mb-4 text-xs text-[var(--hint-ink-2)] flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <div>
                   AI photo measurement is an <strong>estimate, not a survey</strong>.
@@ -1650,10 +1650,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 <>
                   {/* File picker */}
                   <label className="block mb-3">
-                    <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+                    <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
                       Photos (2-8 + aerial)
                     </div>
-                    <div className="border-2 border-dashed border-[#E4E4E7] rounded-sm px-4 py-6 text-center hover:border-[#7C3AED] transition-colors cursor-pointer">
+                    <div className="border-2 border-dashed border-[var(--border)] rounded-sm px-4 py-6 text-center hover:border-[var(--ai)] transition-colors cursor-pointer">
                       <input
                         ref={fileRef}
                         type="file"
@@ -1664,16 +1664,16 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         onChange={pickFiles}
                         data-testid="ai-measure-file-input"
                       />
-                      <Camera className="w-8 h-8 mx-auto mb-2 text-[#7C3AED]" />
+                      <Camera className="w-8 h-8 mx-auto mb-2 text-[var(--ai)]" />
                       <button
                         type="button"
                         onClick={() => fileRef.current?.click()}
-                        className="text-sm font-bold text-[#7C3AED] uppercase tracking-wider"
+                        className="text-sm font-bold text-[var(--ai)] uppercase tracking-wider"
                         disabled={photoUrls.length >= 9}
                       >
                         {photoUrls.length > 0 ? "Add more photos" : "Choose / Take Photos"}
                       </button>
-                      <div className="text-[10px] text-[#A1A1AA] mt-1">
+                      <div className="text-[10px] text-[var(--muted)] mt-1">
                         Tip: front, back, left, right elevations + any tricky corners
                       </div>
                       {/* Iter 57: HOVER-style guided capture wizard. Walks
@@ -1686,7 +1686,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           type="button"
                           onClick={() => setCalibPrepOpen(true)}
                           disabled={photoUrls.length >= 9}
-                          className="px-3 py-1.5 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 disabled:opacity-50"
+                          className="px-3 py-1.5 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 disabled:opacity-50"
                           data-testid="ai-measure-wizard-btn"
                           title="HOVER-style step-by-step capture — walks you through 8 elevation positions, auto-tags each photo"
                         >
@@ -1709,7 +1709,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           type="button"
                           onClick={fetchSatellite}
                           disabled={satBusy || photoUrls.length >= 9}
-                          className="px-3 py-1.5 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 disabled:opacity-50"
+                          className="px-3 py-1.5 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5 disabled:opacity-50"
                           data-testid="ai-measure-satellite-btn"
                           title={address ? "Fetch a free top-down satellite view from Esri World Imagery" : "Fill in the Address field in Job Information first"}
                         >
@@ -1717,13 +1717,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           {satBusy ? "Fetching aerial…" : "Add aerial view (free)"}
                         </button>
                         {!address && (
-                          <div className="text-[10px] text-[#A1A1AA] mt-1">
+                          <div className="text-[10px] text-[var(--muted)] mt-1">
                             Address required — fill in <b>Address</b> in Job Information first.
                           </div>
                         )}
                       </div>
                       {(photoUrls.length > 0 || files.length > 0) && (
-                        <div className="mt-3 text-xs text-[#52525B] flex items-center justify-center gap-2 flex-wrap" data-testid="ai-measure-file-count">
+                        <div className="mt-3 text-xs text-[var(--ink-2)] flex items-center justify-center gap-2 flex-wrap" data-testid="ai-measure-file-count">
                           <span>
                             {photoUrls.length} uploaded
                             {files.length > 0 && ` · ${files.length} uploading…`}
@@ -1800,7 +1800,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                               }
                             }
                             return (
-                              <div key={name} className="relative border border-[#E4E4E7] overflow-hidden bg-[#FAFAFA]">
+                              <div key={name} className="relative border border-[var(--border)] overflow-hidden bg-[var(--surface-muted)]">
                                 <div className="relative aspect-video">
                                   <img
                                     src={`/api/uploads/${name}`}
@@ -1820,14 +1820,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                   <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
-                                    className="absolute top-0.5 right-0.5 bg-[#09090B] text-white w-5 h-5 flex items-center justify-center text-xs hover:bg-[#DC2626]"
+                                    className="absolute top-0.5 right-0.5 bg-[var(--bar-bg)] text-white w-5 h-5 flex items-center justify-center text-xs hover:bg-[#DC2626]"
                                     data-testid={`ai-measure-photo-remove-${i}`}
                                     title="Remove this photo"
                                   >×</button>
                                   {/* Status badges */}
                                   <div className="absolute bottom-0.5 left-0.5 flex gap-1 flex-wrap">
                                     {elev && elev !== "" && (
-                                      <span className="bg-[#7C3AED] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold">
+                                      <span className="bg-[var(--ai)] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold">
                                         {elev}
                                       </span>
                                     )}
@@ -1842,7 +1842,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                       </span>
                                     )}
                                     {annot.targetPin && (
-                                      <span className="bg-[#10B981] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold">
+                                      <span className="bg-[var(--success)] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold">
                                         Pin ✓
                                       </span>
                                     )}
@@ -1852,13 +1852,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                       </span>
                                     )}
                                     {(annot.windows?.length || 0) > 0 && (
-                                      <span className="bg-[#FBBF24] text-[#92400E] text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold border border-[#92400E]" data-testid={`ai-measure-photo-windows-badge-${i}`}>
+                                      <span className="bg-[#FBBF24] text-[var(--warning-text)] text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold border border-[#92400E]" data-testid={`ai-measure-photo-windows-badge-${i}`}>
                                         {annot.windows.length} win
                                       </span>
                                     )}
                                   </div>
                                 </div>
-                                <div className="p-1.5 space-y-1 border-t border-[#E4E4E7] bg-white">
+                                <div className="p-1.5 space-y-1 border-t border-[var(--border)] bg-[var(--surface)]">
                                   <select
                                     className="input h-7 text-[11px] w-full"
                                     value={elev}
@@ -1875,7 +1875,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                   <button
                                     type="button"
                                     onClick={() => setAnnotateOpenFor(name)}
-                                    className="w-full px-2 py-1 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
+                                    className="w-full px-2 py-1 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[#FAF5FF] text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
                                     data-testid={`ai-measure-photo-annotate-${i}`}
                                     title="Mark a reference scale anchor and/or no-siding zones BEFORE sending to AI"
                                   >
@@ -1903,7 +1903,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     </span>
                     {preview.model && (
                       <span
-                        className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-[#7C3AED] text-[#7C3AED] bg-[#FAF5FF]"
+                        className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 border border-[var(--ai)] text-[var(--ai)] bg-[#FAF5FF]"
                         data-testid="ai-measure-model-badge"
                         title={`Ran on ${preview.model_provider || ""} · ${preview.model}`}
                       >
@@ -1923,21 +1923,21 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         })()}
                       </span>
                     )}
-                    <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
                       Reference: {preview.measurements._ai_reference_used || "none"}
                     </span>
                     {preview.measurements._ai_story_count != null && (
-                      <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                      <span className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
                         {preview.measurements._ai_story_count}-story
                       </span>
                     )}
                     {preview.measurements._ai_avg_wall_height_ft != null && (
-                      <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                      <span className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
                         wall ht {preview.measurements._ai_avg_wall_height_ft} ft
                       </span>
                     )}
                     {preview.measurements._ai_siding_coverage_pct != null && (
-                      <span className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                      <span className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
                         siding {preview.measurements._ai_siding_coverage_pct}%
                       </span>
                     )}
@@ -1967,8 +1967,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       return `${(ms / 60000).toFixed(1)}m`;
                     };
                     return (
-                      <div className="mb-3 border border-[#7C3AED] bg-[#FAF5FF]" data-testid="ai-measure-model-comparison">
-                        <div className="px-3 py-1.5 border-b border-[#7C3AED] bg-[#7C3AED] text-white text-[10px] uppercase tracking-wider font-bold flex items-center justify-between gap-2 flex-wrap">
+                      <div className="mb-3 border border-[var(--ai)] bg-[#FAF5FF]" data-testid="ai-measure-model-comparison">
+                        <div className="px-3 py-1.5 border-b border-[var(--ai)] bg-[var(--ai)] text-white text-[10px] uppercase tracking-wider font-bold flex items-center justify-between gap-2 flex-wrap">
                           <span>Model Comparison · last {modelHistory.length} runs on this estimate</span>
                           <span className="text-[10px] font-normal flex items-center gap-2">
                             <span className="bg-white/20 px-2 py-0.5 rounded-sm" title="Approximate USD spent A/B testing on this house across all listed runs">
@@ -1980,24 +1980,24 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         <div className="overflow-x-auto">
                           <table className="w-full text-[11px]">
                             <thead>
-                              <tr className="border-b border-[#E9D5FF] bg-white">
-                                <th className="text-left px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Model</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Conf</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Windows</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Doors</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Walls</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Siding ft²</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Eaves LF</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Time</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[#71717A] uppercase tracking-wider text-[9px]">Cost</th>
+                              <tr className="border-b border-[#E9D5FF] bg-[var(--surface)]">
+                                <th className="text-left px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Model</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Conf</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Windows</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Doors</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Walls</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Siding ft²</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Eaves LF</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Time</th>
+                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Cost</th>
                               </tr>
                             </thead>
                             <tbody>
                               {modelHistory.map((r, i) => (
-                                <tr key={r.run_id} className={i === 0 ? "bg-[#EDE9FE] font-medium" : "bg-white"}>
-                                  <td className="px-2 py-1.5 font-bold text-[#09090B]">
+                                <tr key={r.run_id} className={i === 0 ? "bg-[var(--ai-soft)] font-medium" : "bg-[var(--surface)]"}>
+                                  <td className="px-2 py-1.5 font-bold text-[var(--ink)]">
                                     {MODEL_LABELS[r.model_choice] || r.model_choice}
-                                    {i === 0 && <span className="ml-1 text-[8px] uppercase text-[#7C3AED]">(latest)</span>}
+                                    {i === 0 && <span className="ml-1 text-[8px] uppercase text-[var(--ai)]">(latest)</span>}
                                   </td>
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{r.confidence != null ? r.confidence : "—"}</td>
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{r.window_count}</td>
@@ -2005,27 +2005,27 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{r.wall_count}</td>
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{Math.round(r.siding_sqft || 0).toLocaleString()}</td>
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{Math.round(r.eaves_lf || 0)}</td>
-                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[#71717A]">{fmtElapsed(r.elapsed_ms)}</td>
-                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[#71717A]">{fmtCost(r.cost_estimate_usd)}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[var(--muted)]">{fmtElapsed(r.elapsed_ms)}</td>
+                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[var(--muted)]">{fmtCost(r.cost_estimate_usd)}</td>
                                 </tr>
                               ))}
                             </tbody>
                           </table>
                         </div>
-                        <div className="px-3 py-1.5 border-t border-[#E9D5FF] bg-white text-[9px] text-[#71717A] italic">
+                        <div className="px-3 py-1.5 border-t border-[#E9D5FF] bg-[var(--surface)] text-[9px] text-[var(--muted)] italic">
                           Cost is an approximation using published list prices · Compare Conf + counts vs your ground-truth field measurement.
                         </div>
                       </div>
                     );
                   })()}
                   {preview.measurements._ai_story_count_reasoning && (
-                    <div className="text-[11px] text-[#71717A] mb-2 italic">
+                    <div className="text-[11px] text-[var(--muted)] mb-2 italic">
                       Story count: {preview.measurements._ai_story_count_reasoning}
                     </div>
                   )}
                   {((preview.measurements._ai_gable_sqft || 0) > 0 ||
                     (preview.measurements._ai_dormer_sqft || 0) > 0) && (
-                    <div className="text-[11px] text-[#71717A] mb-2 italic" data-testid="ai-measure-geometry-breakdown">
+                    <div className="text-[11px] text-[var(--muted)] mb-2 italic" data-testid="ai-measure-geometry-breakdown">
                       Geometry: rectangular walls
                       {(preview.measurements._ai_gable_sqft || 0) > 0 && (
                         <> · gable triangles add <span className="font-bold not-italic">{preview.measurements._ai_gable_sqft} ft²</span></>
@@ -2037,7 +2037,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     </div>
                   )}
                   {preview.measurements._ai_notes && (
-                    <div className="text-xs text-[#52525B] mb-3 italic border-l-2 border-[#7C3AED] pl-3" data-testid="ai-measure-notes">
+                    <div className="text-xs text-[var(--ink-2)] mb-3 italic border-l-2 border-[var(--ai)] pl-3" data-testid="ai-measure-notes">
                       {preview.measurements._ai_notes}
                     </div>
                   )}
@@ -2048,14 +2048,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       opening layout). All estimate line quantities remain
                       SSOT — the 3D side panel READS from preview.lines,
                       never re-computes.  */}
-                  <div className="flex items-center gap-1 mb-3 border-b border-[#E4E4E7]">
+                  <div className="flex items-center gap-1 mb-3 border-b border-[var(--border)]">
                     <button
                       type="button"
                       onClick={() => setPreviewTab("preview")}
                       className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
                         previewTab === "preview"
-                          ? "border-[#7C3AED] text-[#7C3AED]"
-                          : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                          ? "border-[var(--ai)] text-[var(--ai)]"
+                          : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
                       }`}
                       data-testid="ai-measure-preview-tab"
                     >
@@ -2066,13 +2066,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       onClick={() => setPreviewTab("3d")}
                       className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${
                         previewTab === "3d"
-                          ? "border-[#7C3AED] text-[#7C3AED]"
-                          : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                          ? "border-[var(--ai)] text-[var(--ai)]"
+                          : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
                       }`}
                       data-testid="ai-measure-3d-tab"
                     >
                       3D Model
-                      <span className="text-[9px] px-1.5 py-0.5 bg-[#F3F4F6] text-[#7C3AED] tracking-normal">BETA</span>
+                      <span className="text-[9px] px-1.5 py-0.5 bg-[#F3F4F6] text-[var(--ai)] tracking-normal">BETA</span>
                     </button>
                   </div>
 
@@ -2087,7 +2087,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       className="mb-3 p-3 bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-[11px] flex items-start gap-2"
                       data-testid="ai-measure-photos-lost-banner"
                     >
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#B45309]" />
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--warning-text)]" />
                       <div className="flex-1">
                         <div className="font-bold uppercase tracking-wider text-[10px] mb-0.5">Photos missing</div>
                         <div>
@@ -2111,7 +2111,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       className="mb-3 p-3 bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-[11px] flex items-start gap-2"
                       data-testid="ai-measure-empty-photos-banner"
                     >
-                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#B45309]" />
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--warning-text)]" />
                       <div className="flex-1">
                         <div className="font-bold uppercase tracking-wider text-[10px] mb-1">
                           AI extraction gaps detected
@@ -2137,7 +2137,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             direct side shot of each and Re-Run before quoting.
                           </div>
                         )}
-                        <div className="text-[#92400E]">
+                        <div className="text-[var(--warning-text)]">
                           Re-shoot the flagged photos (or delete them and re-upload)
                           then click <b>Re-Run</b> below.
                         </div>
@@ -2177,8 +2177,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       .filter(([k, v]) => !k.startsWith("_") && v !== 0 && v !== null && v !== undefined)
                       .map(([k, v]) => (
                         <div key={k} data-testid={`ai-measure-stat-${k}`}>
-                          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">{KEY_LABELS[k] || k}</div>
-                          <div className="font-mono-num text-sm font-bold text-[#09090B]">
+                          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)]">{KEY_LABELS[k] || k}</div>
+                          <div className="font-mono-num text-sm font-bold text-[var(--ink)]">
                             {fmt(v)} {unitOf(k)}
                           </div>
                         </div>
@@ -2186,15 +2186,15 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   </div>
                   {preview.raw_ai?.walls?.length > 0 && (
                     <details className="text-xs mb-3" open>
-                      <summary className="cursor-pointer text-[#7C3AED] font-bold uppercase tracking-wider">
+                      <summary className="cursor-pointer text-[var(--ai)] font-bold uppercase tracking-wider">
                         Wall breakdown ({preview.raw_ai.walls.length}) — tap to edit
                       </summary>
-                      <div className="text-[11px] text-[#71717A] mt-2 italic">
+                      <div className="text-[11px] text-[var(--muted)] mt-2 italic">
                         If the AI got the geometry wrong (e.g. called a 1-story dormer a 2-story wall),
                         edit the numbers below. Siding ft² updates live. Apply re-runs the line math.
                       </div>
                       <table className="w-full mt-2 text-xs" data-testid="ai-measure-wall-table">
-                        <thead className="text-left text-[#A1A1AA] uppercase tracking-wider text-[10px]">
+                        <thead className="text-left text-[var(--muted)] uppercase tracking-wider text-[10px]">
                           <tr>
                             <th>Wall</th>
                             <th>W (ft)</th>
@@ -2217,19 +2217,19 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             const confScore = Math.round(Number(w.confidence) || 0);
                             const confTier = confScore >= 80 ? "high" : confScore >= 60 ? "med" : confScore >= 30 ? "low" : "guess";
                             const confChip = {
-                              high:  { bg: "bg-[#16A34A]", label: "HIGH" },
+                              high:  { bg: "bg-[var(--success)]", label: "HIGH" },
                               med:   { bg: "bg-[#CA8A04]", label: "MED" },
-                              low:   { bg: "bg-[#EA580C]", label: "LOW" },
+                              low:   { bg: "bg-[var(--brand-hover)]", label: "LOW" },
                               guess: { bg: "bg-[#DC2626]", label: "GUESS" },
                             }[confTier];
                             return (
-                              <tr key={i} className="border-b border-[#F4F4F5]">
-                                <td className="py-1 font-bold text-[#52525B] uppercase tracking-wider text-[10px]">{w.label}</td>
+                              <tr key={i} className="border-b border-[var(--bg-app)]">
+                                <td className="py-1 font-bold text-[var(--ink-2)] uppercase tracking-wider text-[10px]">{w.label}</td>
                                 <td>
                                   <input
                                     type="number"
                                     step="0.5"
-                                    className="w-16 px-1 py-0.5 border border-[#E4E4E7] font-mono-num text-xs"
+                                    className="w-16 px-1 py-0.5 border border-[var(--border)] font-mono-num text-xs"
                                     value={width}
                                     onChange={(e) => setWall(i, "width_ft", e.target.value)}
                                     data-testid={`ai-measure-wall-w-${i}`}
@@ -2239,7 +2239,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                   <input
                                     type="number"
                                     step="0.5"
-                                    className="w-16 px-1 py-0.5 border border-[#E4E4E7] font-mono-num text-xs"
+                                    className="w-16 px-1 py-0.5 border border-[var(--border)] font-mono-num text-xs"
                                     value={eave}
                                     onChange={(e) => setWall(i, "height_ft", e.target.value)}
                                     data-testid={`ai-measure-wall-h-${i}`}
@@ -2250,7 +2250,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                     type="number"
                                     step="0.5"
                                     min="0"
-                                    className="w-16 px-1 py-0.5 border border-[#E4E4E7] font-mono-num text-xs"
+                                    className="w-16 px-1 py-0.5 border border-[var(--border)] font-mono-num text-xs"
                                     value={gable}
                                     onChange={(e) => setWall(i, "gable_triangle_height_ft", e.target.value)}
                                     data-testid={`ai-measure-wall-gable-${i}`}
@@ -2261,13 +2261,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                     type="number"
                                     step="1"
                                     min="0"
-                                    className="w-16 px-1 py-0.5 border border-[#E4E4E7] font-mono-num text-xs"
+                                    className="w-16 px-1 py-0.5 border border-[var(--border)] font-mono-num text-xs"
                                     value={dormer}
                                     onChange={(e) => setWall(i, "dormer_face_sqft", e.target.value)}
                                     data-testid={`ai-measure-wall-dormer-${i}`}
                                   />
                                 </td>
-                                <td className="font-mono-num font-bold text-[#7C3AED]" data-testid={`ai-measure-wall-gable-ft2-${i}`}>
+                                <td className="font-mono-num font-bold text-[var(--ai)]" data-testid={`ai-measure-wall-gable-ft2-${i}`}>
                                   {gableArea > 0 ? gableArea.toFixed(0) : "—"}
                                 </td>
                                 <td className="font-mono-num font-bold">{area.toFixed(0)}</td>
@@ -2281,7 +2281,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                       {confChip.label} {confScore}
                                     </span>
                                   ) : (
-                                    <span className="text-[#A1A1AA]">—</span>
+                                    <span className="text-[var(--muted)]">—</span>
                                   )}
                                 </td>
                               </tr>
@@ -2304,11 +2304,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                               return a + ww * eh + 0.5 * ww * gh + dr;
                             }, 0);
                             return (
-                              <tr className="border-t-2 border-[#09090B]" data-testid="ai-measure-wall-totals">
-                                <td colSpan={5} className="py-1 text-[10px] uppercase tracking-wider font-bold text-[#52525B] text-right">
+                              <tr className="border-t-2 border-[var(--border-strong)]" data-testid="ai-measure-wall-totals">
+                                <td colSpan={5} className="py-1 text-[10px] uppercase tracking-wider font-bold text-[var(--ink-2)] text-right">
                                   Totals
                                 </td>
-                                <td className="font-mono-num font-bold text-[#7C3AED]" data-testid="ai-measure-total-gable-ft2">
+                                <td className="font-mono-num font-bold text-[var(--ai)]" data-testid="ai-measure-total-gable-ft2">
                                   {totalGable > 0 ? totalGable.toFixed(0) : "—"}
                                 </td>
                                 <td className="font-mono-num font-bold">{totalArea.toFixed(0)}</td>
@@ -2320,24 +2320,25 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       </table>
                       {preview.raw_ai.walls.some((w) => Number(w.gable_triangle_height_ft) > 0) && (
                         <>
-                          <div className="text-[11px] text-[#7C3AED] mt-2" data-testid="ai-measure-gable-shake-hint">
-                            💡 Gable ft² is broken out so you can quote shake / scallop siding for those triangles if the homeowner wants a different look up top.
+                          <div className="text-[11px] text-[var(--ai)] mt-2 inline-flex items-start gap-1" data-testid="ai-measure-gable-shake-hint">
+                            <Lightbulb aria-hidden="true" className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                            <span>Gable ft² is broken out so you can quote shake / scallop siding for those triangles if the homeowner wants a different look up top.</span>
                           </div>
-                          <label className="mt-2 flex items-center gap-2 cursor-pointer p-2 border border-[#E4E4E7] hover:border-[#7C3AED] transition-colors">
+                          <label className="mt-2 flex items-center gap-2 cursor-pointer p-2 border border-[var(--border)] hover:border-[var(--ai)] transition-colors">
                             <input
                               type="checkbox"
                               checked={quoteGablesAsShake}
                               onChange={(e) => setQuoteGablesAsShake(e.target.checked)}
                               data-testid="ai-measure-quote-gables-shake"
                             />
-                            <span className="text-xs font-bold uppercase tracking-wider text-[#52525B]">
+                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)]">
                               Quote gables as shake
                             </span>
                             {quoteGablesAsShake && (
                               <select
                                 value={shakeSku}
                                 onChange={(e) => setShakeSku(e.target.value)}
-                                className="ml-2 px-1 py-0.5 border border-[#E4E4E7] text-xs"
+                                className="ml-2 px-1 py-0.5 border border-[var(--border)] text-xs"
                                 data-testid="ai-measure-shake-sku"
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -2347,34 +2348,34 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             )}
                           </label>
                           {quoteGablesAsShake && (
-                            <div className="text-[10px] text-[#52525B] mt-1 ml-7" data-testid="ai-measure-shake-preview">
+                            <div className="text-[10px] text-[var(--ink-2)] mt-1 ml-7" data-testid="ai-measure-shake-preview">
                               On Apply: <span className="font-bold">{shakeSku}</span> qty = {shakeSku.startsWith("LP") ? Math.ceil((preview?.measurements?._ai_gable_sqft || 0) / 4) + " PCS" : Math.ceil((preview?.measurements?._ai_gable_sqft || 0) / 100) + " SQ"} · main siding reduced by {Math.ceil((preview?.measurements?._ai_gable_sqft || 0) / 100)} SQ
                             </div>
                           )}
                         </>
                       )}
                       {wallsDirty && (
-                        <div className="text-[10px] text-[#F97316] uppercase tracking-wider font-bold mt-2" data-testid="ai-measure-walls-dirty">
+                        <div className="text-[10px] text-[var(--brand-text)] uppercase tracking-wider font-bold mt-2" data-testid="ai-measure-walls-dirty">
                           ✎ Edited — line items will refresh on Apply
                         </div>
                       )}
                       {preview.raw_ai.walls.some((w) => Number(w.dormer_face_sqft) > 0) && (
                         <>
-                          <label className="mt-2 flex items-center gap-2 cursor-pointer p-2 border border-[#E4E4E7] hover:border-[#7C3AED] transition-colors">
+                          <label className="mt-2 flex items-center gap-2 cursor-pointer p-2 border border-[var(--border)] hover:border-[var(--ai)] transition-colors">
                             <input
                               type="checkbox"
                               checked={quoteDormersAsShake}
                               onChange={(e) => setQuoteDormersAsShake(e.target.checked)}
                               data-testid="ai-measure-quote-dormers-shake"
                             />
-                            <span className="text-xs font-bold uppercase tracking-wider text-[#52525B]">
+                            <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)]">
                               Quote dormers as shake
                             </span>
                             {quoteDormersAsShake && (
                               <select
                                 value={dormerShakeSku}
                                 onChange={(e) => setDormerShakeSku(e.target.value)}
-                                className="ml-2 px-1 py-0.5 border border-[#E4E4E7] text-xs"
+                                className="ml-2 px-1 py-0.5 border border-[var(--border)] text-xs"
                                 data-testid="ai-measure-dormer-shake-sku"
                                 onClick={(e) => e.stopPropagation()}
                               >
@@ -2384,7 +2385,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             )}
                           </label>
                           {quoteDormersAsShake && (
-                            <div className="text-[10px] text-[#52525B] mt-1 ml-7" data-testid="ai-measure-dormer-shake-preview">
+                            <div className="text-[10px] text-[var(--ink-2)] mt-1 ml-7" data-testid="ai-measure-dormer-shake-preview">
                               On Apply: <span className="font-bold">{dormerShakeSku}</span> qty = {dormerShakeSku.startsWith("LP") ? Math.ceil((preview?.measurements?._ai_dormer_sqft || 0) / 4) + " PCS" : Math.ceil((preview?.measurements?._ai_dormer_sqft || 0) / 100) + " SQ"} · main siding reduced by {Math.ceil((preview?.measurements?._ai_dormer_sqft || 0) / 100)} SQ
                             </div>
                           )}
@@ -2429,10 +2430,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     if (totalLocs === 0 || photoUrls.length === 0) return null;
                     return (
                       <details className="text-xs mb-3" open data-testid="ai-measure-labeled-photos">
-                        <summary className="cursor-pointer text-[#7C3AED] font-bold uppercase tracking-wider">
+                        <summary className="cursor-pointer text-[var(--ai)] font-bold uppercase tracking-wider">
                           Labeled photos — {totalLocs} opening{totalLocs === 1 ? "" : "s"} tagged by Claude
                         </summary>
-                        <div className="text-[11px] text-[#71717A] mt-2 italic">
+                        <div className="text-[11px] text-[var(--muted)] mt-2 italic">
                           Same yellow boxes + labels appear on the photos in the downloaded measurement PDF. If one looks wrong, edit the opening size/style in the Openings schedule below — the label updates automatically.
                         </div>
                         <div className="mt-2 grid grid-cols-2 gap-2">
@@ -2493,7 +2494,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                               .find((p) => Number(p.index) === i) || {};
                             const elev = (meta.elevation || "").toUpperCase();
                             return (
-                              <div key={name} className="relative border border-[#E4E4E7] bg-[#FAFAFA]" data-testid={`ai-measure-labeled-photo-${i}`}>
+                              <div key={name} className="relative border border-[var(--border)] bg-[var(--surface-muted)]" data-testid={`ai-measure-labeled-photo-${i}`}>
                                 <div className="relative aspect-video overflow-hidden">
                                   <img
                                     src={`/api/uploads/${name}`}
@@ -2510,11 +2511,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                     </svg>
                                   )}
                                   {elev && (
-                                    <span className="absolute top-1 left-1 bg-[#7C3AED] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold">
+                                    <span className="absolute top-1 left-1 bg-[var(--ai)] text-white text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold">
                                       {elev}
                                     </span>
                                   )}
-                                  <span className="absolute bottom-1 right-1 bg-[#FACC15] text-[#09090B] text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold" data-testid={`ai-measure-labeled-photo-count-${i}`}>
+                                  <span className="absolute bottom-1 right-1 bg-[#FACC15] text-[var(--ink)] text-[9px] px-1.5 py-0.5 uppercase tracking-wider font-bold" data-testid={`ai-measure-labeled-photo-count-${i}`}>
                                     {photoCallouts.length} tag{photoCallouts.length === 1 ? "" : "s"}
                                   </span>
                                 </div>
@@ -2528,10 +2529,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
                   {(preview.measurements?._ai_openings_schedule?.length ?? 0) > 0 && (
                     <details className="text-xs mb-3" open data-testid="ai-measure-openings-schedule">
-                      <summary className="cursor-pointer text-[#7C3AED] font-bold uppercase tracking-wider">
+                      <summary className="cursor-pointer text-[var(--ai)] font-bold uppercase tracking-wider">
                         Openings schedule — grouped by elevation × size
                       </summary>
-                      <div className="text-[11px] text-[#71717A] mt-2 italic">
+                      <div className="text-[11px] text-[var(--muted)] mt-2 italic">
                         Each elevation is grouped together with a colored chip and total count so it&apos;s easy to verify against the house. Sizes are listed underneath.
                       </div>
                       {/* Iter 57c — Option B: rows grouped by elevation
@@ -2541,10 +2542,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       {(() => {
                         const ELEVATION_COLORS = {
                           front:  { bg: "bg-[#3B82F6]", soft: "bg-[#EFF6FF]", text: "text-[#1E40AF]" },
-                          back:   { bg: "bg-[#16A34A]", soft: "bg-[#F0FDF4]", text: "text-[#166534]" },
-                          left:   { bg: "bg-[#EA580C]", soft: "bg-[#FFF7ED]", text: "text-[#9A3412]" },
-                          right:  { bg: "bg-[#7C3AED]", soft: "bg-[#FAF5FF]", text: "text-[#5B21B6]" },
-                          other:  { bg: "bg-[#52525B]", soft: "bg-[#FAFAFA]", text: "text-[#27272A]" },
+                          back:   { bg: "bg-[var(--success)]", soft: "bg-[#F0FDF4]", text: "text-[#166534]" },
+                          left:   { bg: "bg-[var(--brand-hover)]", soft: "bg-[#FFF7ED]", text: "text-[#9A3412]" },
+                          right:  { bg: "bg-[var(--ai)]", soft: "bg-[#FAF5FF]", text: "text-[#5B21B6]" },
+                          other:  { bg: "bg-[var(--ink-2)]", soft: "bg-[var(--surface-muted)]", text: "text-[#27272A]" },
                         };
                         const schedule = preview.measurements._ai_openings_schedule || [];
                         // Group by elevation in a fixed display order.
@@ -2563,7 +2564,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         return (
                           <div className="mt-2" data-testid="ai-measure-openings-grouped">
                             {/* Tiny house diagram so the colors map to spatial position */}
-                            <div className="flex items-center justify-center gap-3 py-2 mb-2 border-y border-[#E4E4E7]" data-testid="ai-measure-elevation-legend">
+                            <div className="flex items-center justify-center gap-3 py-2 mb-2 border-y border-[var(--border)]" data-testid="ai-measure-elevation-legend">
                               <svg width="56" height="56" viewBox="0 0 56 56" className="flex-shrink-0">
                                 <rect x="14" y="14" width="28" height="28" fill="#FAFAFA" stroke="#A1A1AA" strokeWidth="1" />
                                 <rect x="14" y="11" width="28" height="3" fill="#3B82F6" />
@@ -2575,7 +2576,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                 <text x="8" y="30" fontSize="5" fill="#EA580C" textAnchor="middle" fontWeight="700" transform="rotate(-90 8 30)">LEFT</text>
                                 <text x="48" y="30" fontSize="5" fill="#7C3AED" textAnchor="middle" fontWeight="700" transform="rotate(90 48 30)">RIGHT</text>
                               </svg>
-                              <div className="text-[10px] text-[#A1A1AA] uppercase tracking-wider">
+                              <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider">
                                 Color = which side of the house
                               </div>
                             </div>
@@ -2595,7 +2596,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                     <span className={`text-[11px] font-bold ${color.text}`}>
                                       {totalCount} opening{totalCount !== 1 ? "s" : ""}
                                     </span>
-                                    <span className="text-[10px] text-[#71717A] ml-2 italic">
+                                    <span className="text-[10px] text-[var(--muted)] ml-2 italic">
                                       {items.map((o) => {
                                         const sz = o.size_label || `${Math.round(Number(o.width_in) || 0)}×${Math.round(Number(o.height_in) || 0)} in`;
                                         const st = (o.style || "").trim();
@@ -2603,17 +2604,17 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                       }).join(" · ")}
                                     </span>
                                   </div>
-                                  <table className="w-full text-xs border-b border-[#E4E4E7]">
+                                  <table className="w-full text-xs border-b border-[var(--border)]">
                                     <tbody>
                                       {items.map((o, i) => {
                                         const isWindow = (o.type || "").toLowerCase() === "window";
                                         const styleVal = o.style || "";
                                         const styleConf = Number(o.style_confidence) || 0;
-                                        const confChip = styleConf >= 80 ? "bg-[#16A34A]" : styleConf >= 60 ? "bg-[#CA8A04]" : styleConf >= 30 ? "bg-[#EA580C]" : "bg-[#DC2626]";
+                                        const confChip = styleConf >= 80 ? "bg-[var(--success)]" : styleConf >= 60 ? "bg-[#CA8A04]" : styleConf >= 30 ? "bg-[var(--brand-hover)]" : "bg-[#DC2626]";
                                         const sizeLabel = o.size_label || `${Math.round(Number(o.width_in) || 0)}×${Math.round(Number(o.height_in) || 0)} in`;
                                         return (
-                                          <tr key={i} className="hover:bg-[#FAFAFA]" data-testid={`ai-measure-opening-row-${elev}-${i}`}>
-                                            <td className="py-1 pl-4 capitalize text-[#52525B]" style={{ width: "22%" }}>
+                                          <tr key={i} className="hover:bg-[var(--surface-muted)]" data-testid={`ai-measure-opening-row-${elev}-${i}`}>
+                                            <td className="py-1 pl-4 capitalize text-[var(--ink-2)]" style={{ width: "22%" }}>
                                               {(o.type || "—").replace(/_/g, " ")}
                                             </td>
                                             <td className="font-mono-num text-[#27272A]" style={{ width: "20%" }}>
@@ -2625,7 +2626,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                                   <select
                                                     value={styleVal}
                                                     onChange={(e) => updateOpeningStyle(elev, o.type, o.size_label, o.width_in, o.height_in, e.target.value)}
-                                                    className="text-xs border border-[#E4E4E7] px-1 py-0.5 bg-white hover:border-[#7C3AED] cursor-pointer w-full max-w-[180px]"
+                                                    className="text-xs border border-[var(--border)] px-1 py-0.5 bg-[var(--surface)] hover:border-[var(--ai)] cursor-pointer w-full max-w-[180px]"
                                                     data-testid={`ai-measure-opening-style-${elev}-${i}`}
                                                     title={styleVal ? `Claude's guess: ${styleVal} (${styleConf}% confident). Change if wrong — this flows to the customer PDF and the Vero quote.` : "Pick a window style — flows to the customer PDF and the Vero quote"}
                                                   >
@@ -2643,7 +2644,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                                   )}
                                                 </div>
                                               ) : (
-                                                <span className="text-[#A1A1AA] italic text-[11px]">—</span>
+                                                <span className="text-[var(--muted)] italic text-[11px]">—</span>
                                               )}
                                             </td>
                                             <td className="font-mono-num font-bold text-right pr-2" style={{ width: "13%" }}>
@@ -2665,7 +2666,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
                   {preview.measurements?._ai_double_count_check && (
                     <div
-                      className="text-[11px] text-[#52525B] italic border-l-2 border-[#0EA5E9] pl-3 mb-3"
+                      className="text-[11px] text-[var(--ink-2)] italic border-l-2 border-[#0EA5E9] pl-3 mb-3"
                       data-testid="ai-measure-double-count"
                     >
                       <span className="not-italic font-bold text-[#0EA5E9] mr-1">Cross-check:</span>
@@ -2674,10 +2675,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   )}
                   {preview.measurements && (
                     <details className="text-xs mb-3" open data-testid="ai-measure-lf-table">
-                      <summary className="cursor-pointer text-[#7C3AED] font-bold uppercase tracking-wider">
+                      <summary className="cursor-pointer text-[var(--ai)] font-bold uppercase tracking-wider">
                         Linear measurements — tap to edit
                       </summary>
-                      <div className="text-[11px] text-[#71717A] mt-2 italic">
+                      <div className="text-[11px] text-[var(--muted)] mt-2 italic">
                         If the AI under-counted (often because not every elevation was photographed),
                         type the real numbers. ISS soffit / gutter / capping qty re-derives from these on Apply.
                       </div>
@@ -2694,7 +2695,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           ["patio_door_count", "Patio door count"],
                           ["garage_door_count", "Garage door count"],
                         ].map(([key, label]) => (
-                          <label key={key} className="flex flex-col text-[10px] text-[#71717A] uppercase tracking-wider">
+                          <label key={key} className="flex flex-col text-[10px] text-[var(--muted)] uppercase tracking-wider">
                             <span className="mb-1">{label}</span>
                             <input
                               type="number"
@@ -2702,7 +2703,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                               min="0"
                               value={Number(preview.measurements[key] || 0)}
                               onChange={(e) => setMeasurementField(key, e.target.value)}
-                              className="px-2 py-1 border border-[#E4E4E7] font-mono-num text-sm text-[#09090B] normal-case"
+                              className="px-2 py-1 border border-[var(--border)] font-mono-num text-sm text-[var(--ink)] normal-case"
                               data-testid={`ai-measure-lf-${key}`}
                             />
                           </label>
@@ -2716,23 +2717,23 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       need to see exactly what Claude returned. */}
                   {(preview.raw_ai || preview.measurements) && (
                     <details className="text-xs mb-3" data-testid="ai-measure-raw-debug">
-                      <summary className="cursor-pointer text-[#71717A] font-bold uppercase tracking-wider text-[10px]">
-                        🔍 Show raw AI output (debug)
+                      <summary className="cursor-pointer text-[var(--muted)] font-bold uppercase tracking-wider text-[10px] inline-flex items-center gap-1">
+                        <ScanSearch aria-hidden="true" className="w-3 h-3" /> Show raw AI output (debug)
                       </summary>
                       <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
-                          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+                          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
                             raw_ai (what Claude returned)
                           </div>
-                          <pre className="bg-[#09090B] text-[#22D3EE] p-2 text-[10px] overflow-auto max-h-64 whitespace-pre-wrap break-all" data-testid="ai-measure-raw-ai-json">
+                          <pre className="bg-[var(--bar-bg)] text-[#22D3EE] p-2 text-[10px] overflow-auto max-h-64 whitespace-pre-wrap break-all" data-testid="ai-measure-raw-ai-json">
 {JSON.stringify(preview.raw_ai || {}, null, 2)}
                           </pre>
                         </div>
                         <div>
-                          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+                          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
                             measurements (post-aggregator)
                           </div>
-                          <pre className="bg-[#09090B] text-[#A78BFA] p-2 text-[10px] overflow-auto max-h-64 whitespace-pre-wrap break-all" data-testid="ai-measure-measurements-json">
+                          <pre className="bg-[var(--bar-bg)] text-[#A78BFA] p-2 text-[10px] overflow-auto max-h-64 whitespace-pre-wrap break-all" data-testid="ai-measure-measurements-json">
 {JSON.stringify(preview.measurements || {}, null, 2)}
                           </pre>
                         </div>
@@ -2749,7 +2750,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           );
                           toast.success("Raw AI output copied to clipboard");
                         }}
-                        className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white border border-[#E4E4E7] hover:bg-[#FAFAFA]"
+                        className="mt-2 px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--surface-muted)]"
                         data-testid="ai-measure-copy-raw"
                       >
                         Copy to clipboard
@@ -2764,28 +2765,28 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               )}
             </div>
 
-            <div className="border-t border-[#E4E4E7] px-5 py-4 flex flex-col md:flex-row md:justify-between md:items-center gap-3 relative">
+            <div className="border-t border-[var(--border)] px-5 py-4 flex flex-col md:flex-row md:justify-between md:items-center gap-3 relative">
               {/* Iter 57h — inline calibration popover. Hidden by default;
                   pops up just above the Run button when the contractor
                   hits the "Calibrate window sizing" link. Stays out of
                   the way for the 80% of jobs that don't need it. */}
               {calibOpen && (
                 <div
-                  className="absolute bottom-full right-5 mb-2 bg-white border border-[#7C3AED] shadow-xl p-3 min-w-[280px] z-10"
+                  className="absolute bottom-full right-5 mb-2 bg-[var(--surface)] border border-[var(--ai)] shadow-xl p-3 min-w-[280px] z-10"
                   data-testid="ai-measure-course-sizing"
                   onMouseLeave={() => { /* keep open on hover-leave — user explicitly closes */ }}
                 >
                   <div className="flex items-start justify-between mb-2 gap-2">
-                    <div className="text-[10px] uppercase tracking-wider text-[#7C3AED] font-bold leading-tight">
+                    <div className="text-[10px] uppercase tracking-wider text-[var(--ai)] font-bold leading-tight">
                       Calibrate window sizing
-                      <div className="text-[9px] text-[#A1A1AA] font-normal mt-0.5">
+                      <div className="text-[9px] text-[var(--muted)] font-normal mt-0.5">
                         Tell Claude the brick course or siding row height. Optional — leave blank for defaults.
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setCalibOpen(false)}
-                      className="text-[#A1A1AA] hover:text-[#09090B]"
+                      className="text-[var(--muted)] hover:text-[var(--ink)]"
                       title="Close"
                       data-testid="ai-measure-course-sizing-close"
                     >
@@ -2794,7 +2795,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <label className="block">
-                      <span className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Brick course (in)</span>
+                      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Brick course (in)</span>
                       <input
                         type="number"
                         step="0.25"
@@ -2807,7 +2808,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       />
                     </label>
                     <label className="block">
-                      <span className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Siding exposure (in)</span>
+                      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Siding exposure (in)</span>
                       <input
                         type="number"
                         step="0.25"
@@ -2820,7 +2821,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       />
                     </label>
                   </div>
-                  <div className="text-[9px] text-[#A1A1AA] mt-2 italic">
+                  <div className="text-[9px] text-[var(--muted)] mt-2 italic">
                     Backend snaps every window to nearest standard size after Claude runs, regardless.
                   </div>
                   {/* Iter 79j.44 — Deep Dormer Scan removed. Two-phase
@@ -2831,7 +2832,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       hits on nonexistent walls). UI + request flag gone. */}
                 </div>
               )}
-              <div className="text-[10px] text-[#A1A1AA] flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0">
+              <div className="text-[10px] text-[var(--muted)] flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0">
                 <span className="whitespace-nowrap">Powered by</span>
                 {/* Iter 79j.15 — A/B model picker. Compact select so
                     contractors can flip models per-run without leaving
@@ -2839,7 +2840,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 <select
                   value={modelChoice}
                   onChange={(e) => setModelChoice(e.target.value)}
-                  className="text-[10px] font-bold uppercase tracking-wider bg-white border border-[#E4E4E7] px-1 py-0.5 focus:outline-none focus:border-[#7C3AED]"
+                  className="text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] border border-[var(--border)] px-1 py-0.5 focus:outline-none focus:border-[var(--ai)]"
                   data-testid="ai-measure-model-select"
                   title="Which vision model runs the measurement pass. Opus 4.5 is the current default; try Gemini 3.5 Flash or GPT-5.5 to A/B accuracy vs cost."
                 >
@@ -2856,7 +2857,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   type="button"
                   onClick={() => setCalibOpen((v) => !v)}
                   className={`text-[10px] uppercase tracking-wider font-bold flex items-center gap-1 whitespace-nowrap ${
-                    (brickCourse || sidingExposure) ? "text-[#7C3AED]" : "text-[#A1A1AA] hover:text-[#7C3AED]"
+                    (brickCourse || sidingExposure) ? "text-[var(--ai)]" : "text-[var(--muted)] hover:text-[var(--ai)]"
                   }`}
                   data-testid="ai-measure-course-sizing-toggle"
                   title="Tell Claude the brick course or siding row height (optional)"
@@ -2868,7 +2869,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               <div className="flex flex-wrap items-center justify-end gap-2 min-w-0 [&_button]:whitespace-nowrap">
                 <button
                   type="button"
-                  className="px-3 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider"
+                  className="px-3 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider"
                   onClick={closeAll}
                   disabled={busy}
                   data-testid="ai-measure-cancel"
@@ -2878,7 +2879,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 {(preview || photoUrls.length > 0 || files.length > 0) && (
                   <button
                     type="button"
-                    className="px-3 py-2 bg-white text-[#DC2626] border border-[#DC2626] hover:bg-red-50 text-xs font-bold uppercase tracking-wider"
+                    className="px-3 py-2 bg-[var(--surface)] text-[var(--danger-text)] border border-[#DC2626] hover:bg-red-50 text-xs font-bold uppercase tracking-wider"
                     onClick={startOver}
                     disabled={busy}
                     data-testid="ai-measure-start-over"
@@ -2892,7 +2893,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     type="button"
                     onClick={downloadReportPdf}
                     disabled={reportBusy || busy}
-                    className="px-3 py-2 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-3 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                     data-testid="ai-measure-report-pdf-btn"
                     title="Download a branded HOVER-style measurement report (photos + confidence chips + openings schedule)"
                   >
@@ -2907,13 +2908,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         type="button"
                         onClick={() => setProfileAnnotatorOpen(true)}
                         disabled={busy}
-                        className="px-3 py-2 bg-white text-[#F97316] border border-[#F97316] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 mr-1"
+                        className="px-3 py-2 bg-[var(--surface)] text-[var(--brand-text)] border border-[var(--brand)] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 mr-1"
                         data-testid="ai-measure-tag-profiles-btn"
                         title="Draw boxes to tag Shake / B&B / etc. — guarantees those materials hit the quote"
                       >
                         Tag Profiles
                         {Object.entries(savedProfileAnnotations).filter(([k, v]) => !k.startsWith("_") && Array.isArray(v) && v.length > 0).length > 0 && (
-                          <span className="bg-[#F97316] text-white px-1 py-0 text-[9px]">
+                          <span className="bg-[var(--brand)] text-[var(--on-brand)] px-1 py-0 text-[9px]">
                             {Object.entries(savedProfileAnnotations).reduce((a, [k, v]) => a + (k.startsWith("_") ? 0 : (Array.isArray(v) ? v.length : 0)), 0)}
                           </span>
                         )}
@@ -2923,7 +2924,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       type="button"
                       onClick={runMeasure}
                       disabled={busy || photoUrls.length === 0 || files.length > 0}
-                      className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                       data-testid="ai-measure-run-btn"
                     >
                     {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
@@ -2947,8 +2948,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       onClick={() => setShowAdvanced((v) => !v)}
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border ${
                         showAdvanced
-                          ? "bg-[#FAFAFA] text-[#52525B] border-[#A1A1AA]"
-                          : "bg-white text-[#A1A1AA] border-[#E4E4E7] hover:text-[#52525B]"
+                          ? "bg-[var(--surface-muted)] text-[var(--ink-2)] border-[var(--muted)]"
+                          : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:text-[var(--ink-2)]"
                       } mr-1`}
                       data-testid="ai-measure-advanced-toggle"
                       title="Show / hide the Refine on Photo manual-measure tool"
@@ -2963,7 +2964,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       type="button"
                       onClick={runMeasure}
                       disabled={busy || photoUrls.length === 0 || files.length > 0}
-                      className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                       data-testid="ai-measure-rerun-btn"
                       title="Run the measure again — usually with a different model in the Powered by dropdown to A/B compare accuracy"
                     >
@@ -2983,8 +2984,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         refines; Max keeps the larger of the two; Replace
                         is the legacy overwrite. */}
                     {showAdvanced && (
-                    <div className="flex items-center gap-1 mr-1 border border-[#E4E4E7] rounded-sm overflow-hidden" data-testid="refine-merge-mode">
-                      <span className="px-2 py-2 text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold bg-[#FAFAFA]" title="How to merge values from Refine on Photo into the AI aggregate">
+                    <div className="flex items-center gap-1 mr-1 border border-[var(--border)] rounded-sm overflow-hidden" data-testid="refine-merge-mode">
+                      <span className="px-2 py-2 text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold bg-[var(--surface-muted)]" title="How to merge values from Refine on Photo into the AI aggregate">
                         Refine merge
                       </span>
                       {[
@@ -2999,7 +3000,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition ${
                             refineMergeMode === m.key
                               ? "bg-[#0EA5E9] text-white"
-                              : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+                              : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
                           }`}
                           data-testid={`refine-merge-${m.key}`}
                           title={m.hint}
@@ -3014,7 +3015,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       type="button"
                       onClick={() => setRefineOpen(true)}
                       disabled={busy}
-                      className="px-3 py-2 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                       data-testid="ai-measure-refine-btn"
                       title="Pick one of your photos and tap-measure. Merge mode controls whether refines ADD, take MAX, or REPLACE the AI aggregate."
                     >
@@ -3033,7 +3034,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <button
                         type="button"
                         onClick={() => setDebugOpen(true)}
-                        className="px-3 py-2 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#F5F3FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+                        className="px-3 py-2 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[var(--ai-soft)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
                         data-testid="ai-measure-debug-btn"
                         title="Show per-photo raw observations and the reconciled house JSON with provenance"
                       >
@@ -3050,13 +3051,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         type="button"
                         onClick={() => setProfileAnnotatorOpen(true)}
                         disabled={busy}
-                        className="px-3 py-2 bg-white text-[#F97316] border border-[#F97316] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 mr-1"
+                        className="px-3 py-2 bg-[var(--surface)] text-[var(--brand-text)] border border-[var(--brand)] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 mr-1"
                         data-testid="ai-measure-tag-profiles-btn-preview"
                         title="Draw boxes to tag Shake / B&B / Dormer — guarantees those materials hit the quote even if AI missed them"
                       >
                         Tag Profiles
                         {Object.entries(savedProfileAnnotations).filter(([k, v]) => !k.startsWith("_") && Array.isArray(v) && v.length > 0).length > 0 && (
-                          <span className="bg-[#F97316] text-white px-1 py-0 text-[9px]">
+                          <span className="bg-[var(--brand)] text-[var(--on-brand)] px-1 py-0 text-[9px]">
                             {Object.entries(savedProfileAnnotations).reduce((a, [k, v]) => a + (k.startsWith("_") ? 0 : (Array.isArray(v) ? v.length : 0)), 0)}
                           </span>
                         )}
@@ -3082,7 +3083,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         })
                       }
                       disabled={busy || !preview}
-                      className="px-3 py-2 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                       data-testid="ai-measure-print-btn"
                       title="Print this AI takeoff preview"
                     >
@@ -3092,7 +3093,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       type="button"
                       onClick={apply}
                       disabled={busy}
-                      className="px-3 py-2 bg-[#F97316] text-white hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      className="px-3 py-2 bg-[var(--brand)] text-[var(--on-brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                       data-testid="ai-measure-apply-btn"
                     >
                       {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
@@ -3322,8 +3323,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           eyeball the row height. */}
       {calibPrepOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" data-testid="calib-prep-modal">
-          <div className="bg-white max-w-md w-full shadow-2xl border border-[#7C3AED]">
-            <div className="bg-[#7C3AED] px-4 py-3 flex items-start justify-between gap-3">
+          <div className="bg-[var(--surface)] max-w-md w-full shadow-2xl border border-[var(--ai)]">
+            <div className="bg-[var(--ai)] px-4 py-3 flex items-start justify-between gap-3">
               <div>
                 <div className="text-white text-sm font-heading font-bold uppercase tracking-wider">Calibrate window sizing</div>
                 <div className="text-white/80 text-[11px] mt-0.5 leading-snug">
@@ -3336,7 +3337,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               </button>
             </div>
             <div className="p-4 space-y-3">
-              <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Current siding on the house</div>
+              <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Current siding on the house</div>
               <div className="grid grid-cols-3 gap-1.5">
                 {[
                   { label: "Vinyl D4",    val: "4",  field: "siding" },
@@ -3365,12 +3366,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         }
                       }}
                       className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border ${
-                        active ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white text-[#52525B] border-[#E4E4E7] hover:bg-[#F4F4F5]"
+                        active ? "bg-[var(--ai)] text-white border-[var(--ai)]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
                       }`}
                       data-testid={`calib-prep-chip-${c.label.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
                     >
                       {c.label}
-                      <div className={`text-[9px] font-normal mt-0.5 ${active ? "text-white/80" : "text-[#A1A1AA]"}`}>
+                      <div className={`text-[9px] font-normal mt-0.5 ${active ? "text-white/80" : "text-[var(--bar-muted)]"}`}>
                         {c.val}&quot; {c.field === "brick" ? "course" : "exposure"}
                       </div>
                     </button>
@@ -3378,13 +3379,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 })}
               </div>
 
-              <div className="pt-2 border-t border-[#E4E4E7] space-y-1">
-                <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Or enter exposure directly (in)</div>
+              <div className="pt-2 border-t border-[var(--border)] space-y-1">
+                <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Or enter exposure directly (in)</div>
                 <input
                   type="number"
                   step="0.25"
                   min="0"
-                  className="w-full px-3 py-2 border border-[#E4E4E7] text-sm focus:outline-none focus:border-[#7C3AED]"
+                  className="w-full px-3 py-2 border border-[var(--border)] text-sm focus:outline-none focus:border-[var(--ai)]"
                   placeholder='e.g. 4.5" cedar shake'
                   value={sidingExposure}
                   onChange={(e) => { setSidingExposure(e.target.value); if (e.target.value) setBrickCourse(""); }}
@@ -3393,13 +3394,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               </div>
 
               {(sidingExposure || brickCourse) && (
-                <div className="text-[11px] text-[#16A34A] font-bold flex items-center gap-1.5">
+                <div className="text-[11px] text-[var(--success)] font-bold flex items-center gap-1.5">
                   <Check className="w-3.5 h-3.5" />
                   Calibration set — Claude will cross-check window heights against this.
                 </div>
               )}
             </div>
-            <div className="border-t border-[#E4E4E7] px-4 py-3 flex justify-between items-center gap-2">
+            <div className="border-t border-[var(--border)] px-4 py-3 flex justify-between items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -3408,7 +3409,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   setCalibPrepOpen(false);
                   setWizardOpen(true);
                 }}
-                className="px-3 py-2 bg-white text-[#71717A] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider"
+                className="px-3 py-2 bg-[var(--surface)] text-[var(--muted)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider"
                 data-testid="calib-prep-skip"
                 title="Proceed without calibration — Claude will still snap to standard window sizes"
               >
@@ -3421,7 +3422,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   setWizardOpen(true);
                 }}
                 disabled={!sidingExposure && !brickCourse}
-                className="px-4 py-2 bg-[#16A34A] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                className="px-4 py-2 bg-[var(--success)] text-white hover:bg-[#15803D] text-xs font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                 data-testid="calib-prep-start"
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -3470,20 +3471,20 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           re-fire on retry). */}
       {missingWallsModal && missingWallsModal !== "bypassed" && (
         <div
-          className="fixed inset-0 z-[60] bg-[#09090B]/70 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] bg-[var(--bar-bg)]/70 flex items-center justify-center p-4"
           data-testid="ai-measure-missing-walls-modal"
         >
-          <div className="bg-white max-w-md w-full p-6 shadow-2xl">
-            <div className="text-xs uppercase tracking-wider text-[#F97316] font-bold mb-2">
+          <div className="bg-[var(--surface)] max-w-md w-full p-6 shadow-2xl">
+            <div className="text-xs uppercase tracking-wider text-[var(--brand-text)] font-bold mb-2">
               ⚠️ Missing walls
             </div>
-            <h3 className="text-lg font-bold text-[#09090B] mb-2">
+            <h3 className="text-lg font-bold text-[var(--ink)] mb-2">
               Only {4 - missingWallsModal.missing.length} of 4 primary walls captured
             </h3>
-            <p className="text-sm text-[#52525B] mb-3">
-              Missing: <b className="text-[#F97316]">{missingWallsModal.missing.join(", ")}</b>
+            <p className="text-sm text-[var(--ink-2)] mb-3">
+              Missing: <b className="text-[var(--brand-text)]">{missingWallsModal.missing.join(", ")}</b>
             </p>
-            <p className="text-sm text-[#52525B] mb-4">
+            <p className="text-sm text-[var(--ink-2)] mb-4">
               AI Measure will estimate the missing walls from photos of adjacent
               elevations, which drops accuracy by 10-20%. If the side yard is
               inaccessible, run anyway — otherwise, add the missing shots.
@@ -3495,7 +3496,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   setMissingWallsModal(null);
                   setWizardOpen(true);
                 }}
-                className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider"
+                className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider"
                 data-testid="ai-measure-missing-walls-open-wizard"
               >
                 Capture missing walls
@@ -3510,7 +3511,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   // and re-fired the guard.
                   runMeasure({ bypassMissingWallsGuard: true });
                 }}
-                className="px-3 py-2 bg-white border border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider"
+                className="px-3 py-2 bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider"
                 data-testid="ai-measure-missing-walls-run-anyway"
               >
                 Run anyway
@@ -3518,7 +3519,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               <button
                 type="button"
                 onClick={() => setMissingWallsModal(null)}
-                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA] hover:text-[#71717A]"
+                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] hover:text-[var(--muted)]"
                 data-testid="ai-measure-missing-walls-cancel"
               >
                 Cancel

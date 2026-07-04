@@ -61,21 +61,21 @@ export default function EstimatorTabs({ est, activeTab, onChange, tabs = TABS })
             className={[
               "flex-1 min-w-[140px] px-4 py-3 text-left border transition-colors",
               isActive
-                ? "border-[#F97316] bg-orange-50"
-                : "border-[#E4E4E7] bg-white hover:border-[#A1A1AA]",
+                ? "border-[var(--brand)] bg-orange-50"
+                : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--muted)]",
             ].join(" ")}
           >
             <div className="flex items-center justify-between gap-2">
               <span
                 className={[
                   "text-xs uppercase tracking-[0.18em] font-bold",
-                  isActive ? "text-[#F97316]" : "text-[#52525B]",
+                  isActive ? "text-[var(--brand-text)]" : "text-[var(--ink-2)]",
                 ].join(" ")}
               >
                 {tab.label}
               </span>
               {count > 0 && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[#F4F4F5] text-[#52525B] rounded-sm">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-[var(--bg-app)] text-[var(--ink-2)] rounded-sm">
                   {count}
                 </span>
               )}
@@ -83,7 +83,7 @@ export default function EstimatorTabs({ est, activeTab, onChange, tabs = TABS })
             <div
               className={[
                 "mt-1 font-mono-num text-sm",
-                isActive ? "text-[#09090B] font-bold" : "text-[#71717A]",
+                isActive ? "text-[var(--ink)] font-bold" : "text-[var(--muted)]",
               ].join(" ")}
             >
               {fmt(subtotal)}

@@ -133,7 +133,7 @@ export default function ISSHoverImportButton({ est, applyLines }) {
       />
       <button
         type="button"
-        className="px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+        className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => setShowWarning(true)}
         disabled={busy}
         data-testid="iss-hover-import-btn"
@@ -150,11 +150,11 @@ export default function ISSHoverImportButton({ est, applyLines }) {
           data-testid="iss-hover-warning-backdrop"
         >
           <div
-            className="bg-white max-w-md w-full"
+            className="bg-[var(--surface)] max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
             data-testid="iss-hover-warning-modal"
           >
-            <div className="bg-[#F97316] text-white px-5 py-4 flex items-center gap-3">
+            <div className="bg-[var(--brand)] text-[var(--ink)] px-5 py-4 flex items-center gap-3">
               <AlertTriangle className="w-6 h-6 flex-shrink-0" />
               <div className="font-heading text-lg">Quantity Verification Required</div>
             </div>
@@ -163,10 +163,10 @@ export default function ISSHoverImportButton({ est, applyLines }) {
                 You are responsible for verifying all quantities before submitting this report.
               </p>
             </div>
-            <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-end gap-2">
+            <div className="border-t border-[var(--border)] px-5 py-4 flex justify-end gap-2">
               <button
                 type="button"
-                className="px-4 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-sm font-bold uppercase tracking-wider"
+                className="px-4 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-sm font-bold uppercase tracking-wider"
                 onClick={() => setShowWarning(false)}
                 data-testid="iss-hover-warning-cancel"
               >
@@ -174,7 +174,7 @@ export default function ISSHoverImportButton({ est, applyLines }) {
               </button>
               <button
                 type="button"
-                className="px-4 py-2 bg-[#F97316] text-white border border-[#F97316] hover:bg-[#EA580C] text-sm font-bold uppercase tracking-wider"
+                className="px-4 py-2 bg-[var(--brand)] text-[var(--ink)] border border-[var(--brand)] hover:bg-[var(--brand-hover)] text-sm font-bold uppercase tracking-wider"
                 onClick={() => {
                   setShowWarning(false);
                   fileRef.current?.click();
@@ -196,11 +196,11 @@ export default function ISSHoverImportButton({ est, applyLines }) {
           data-testid="iss-hover-modal-backdrop"
         >
           <div
-            className="bg-white max-w-2xl w-full max-h-[85vh] flex flex-col"
+            className="bg-[var(--surface)] max-w-2xl w-full max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
             data-testid="iss-hover-modal"
           >
-            <div className="bg-[#09090B] text-white px-5 py-4 flex items-center justify-between">
+            <div className="bg-[var(--bar-bg)] text-white px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5" />
                 <div>
@@ -222,8 +222,8 @@ export default function ISSHoverImportButton({ est, applyLines }) {
             </div>
 
             <div className="overflow-y-auto flex-1">
-              <div className="p-5 border-b border-[#E4E4E7] bg-[#FAFAFA]">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-3">
+              <div className="p-5 border-b border-[var(--border)] bg-[var(--surface-muted)]">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-3">
                   Extracted Measurements
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -231,10 +231,10 @@ export default function ISSHoverImportButton({ est, applyLines }) {
                     .filter(([, v]) => v !== null && v !== undefined && v !== "" && typeof v !== "object")
                     .map(([k, v]) => (
                       <div key={k}>
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                        <div className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
                           {KEY_LABELS[k] || k}
                         </div>
-                        <div className="font-mono-num text-sm font-bold text-[#09090B] truncate" title={String(v)}>
+                        <div className="font-mono-num text-sm font-bold text-[var(--ink)] truncate" title={String(v)}>
                           {typeof v === "number"
                             ? `${fmt(v)} ${UNIT_BY_KEY(k)}`.trim()
                             : v}
@@ -245,13 +245,13 @@ export default function ISSHoverImportButton({ est, applyLines }) {
               </div>
 
               <div className="p-5">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-3">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-3">
                   ISS Line Items ({preview.issLines.length})
                 </div>
                 {preview.issLines.length ? (
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-[10px] uppercase tracking-wider text-[#A1A1AA] border-b border-[#E4E4E7]">
+                      <tr className="text-left text-[10px] uppercase tracking-wider text-[var(--muted)] border-b border-[var(--border)]">
                         <th className="py-2 pr-3">Section</th>
                         <th className="py-2 pr-3">Item</th>
                         <th className="py-2 pr-3 text-right">Qty</th>
@@ -262,37 +262,37 @@ export default function ISSHoverImportButton({ est, applyLines }) {
                       {preview.issLines.map((l) => (
                         <tr
                           key={`${l.section}::${l.name}`}
-                          className="border-b border-[#F4F4F5]"
+                          className="border-b border-[var(--bg-app)]"
                           data-testid={`iss-hover-row-${l.section}-${l.name}`}
                         >
-                          <td className="py-2 pr-3 text-xs text-[#52525B]">{l.section}</td>
-                          <td className="py-2 pr-3 text-xs text-[#09090B]">{l.name}</td>
+                          <td className="py-2 pr-3 text-xs text-[var(--ink-2)]">{l.section}</td>
+                          <td className="py-2 pr-3 text-xs text-[var(--ink)]">{l.name}</td>
                           <td className="py-2 pr-3 text-right font-mono-num text-sm font-bold">{l.qty}</td>
-                          <td className="py-2 pr-3 text-xs text-[#52525B]">{l.unit}</td>
+                          <td className="py-2 pr-3 text-xs text-[var(--ink-2)]">{l.unit}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 ) : (
-                  <p className="text-sm text-[#52525B]">
+                  <p className="text-sm text-[var(--ink-2)]">
                     No ISS line items could be derived — the report may be missing standard measurements.
                   </p>
                 )}
-                <p className="text-[10px] text-[#A1A1AA] mt-3 leading-snug">
+                <p className="text-[10px] text-[var(--muted)] mt-3 leading-snug">
                   Default siding line is <strong>Charter Oak (standard colors)</strong>. Switch to Conquest, Ascend Composite, Prodigy, etc.
                   by editing the qty on the appropriate row after import.
                 </p>
               </div>
             </div>
 
-            <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-between items-center">
-              <div className="text-[10px] text-[#A1A1AA]">
+            <div className="border-t border-[var(--border)] px-5 py-4 flex justify-between items-center">
+              <div className="text-[10px] text-[var(--muted)]">
                 Existing ISS lines with matching names will have their qty updated.
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="px-4 py-2 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5"
+                  className="px-4 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5"
                   onClick={() =>
                     printTakeoff({
                       source: "HOVER",
@@ -309,7 +309,7 @@ export default function ISSHoverImportButton({ est, applyLines }) {
                 </button>
                 <button
                   type="button"
-                  className="px-4 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-sm font-bold uppercase tracking-wider"
+                  className="px-4 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-sm font-bold uppercase tracking-wider"
                   onClick={() => setPreview(null)}
                   data-testid="iss-hover-cancel-btn"
                 >
@@ -317,7 +317,7 @@ export default function ISSHoverImportButton({ est, applyLines }) {
                 </button>
                 <button
                   type="button"
-                  className="px-4 py-2 bg-[#F97316] text-white border border-[#F97316] hover:bg-[#EA580C] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 bg-[var(--brand)] text-[var(--ink)] border border-[var(--brand)] hover:bg-[var(--brand-hover)] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   onClick={apply}
                   disabled={!preview.issLines.length || applying}
                   data-testid="iss-hover-apply-btn"

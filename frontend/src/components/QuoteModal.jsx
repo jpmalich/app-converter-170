@@ -8,6 +8,7 @@ import CompanyLogo from "@/components/CompanyLogo";
 import { X, Printer, Send } from "lucide-react";
 import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/emailQuote";
 import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
+import { isValidEmail } from "@/lib/validate";
 
 export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail }) {
   const { company } = useCompany();
@@ -15,7 +16,19 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   const { user } = useAuth();
   const { lang: uiLang } = useLang();
   const t = useT();
-  const [email, setEmail] = useState("");
+  // Iter 79j.47 — Two-way email sync. Prefill the recipient input
+  // from the estimate's own contact fields (customer_email preferred,
+  // then legacy recipient_email). If neither is set, leave blank and
+  // show a note that whatever is entered here will be saved back to
+  // the estimate after send.
+  const [email, setEmail] = useState(
+    () => (estimate?.customer_email || estimate?.recipient_email || "").trim(),
+  );
+  const noStoredEmail = !((estimate?.customer_email || "").trim());
+  // Iter 79j.49 — Soft-warn on invalid recipient; also gates Send.
+  // The backend uses EmailStr and would reject a malformed address
+  // with a 422 anyway — fail helpfully in the UI first.
+  const emailInvalid = !!email && !isValidEmail(email);
   // Per-estimate send language — defaults to the contractor's current UI lang,
   // but the contractor can flip it before sending. Note for the contractor only:
   // the message body resets when they change languages so they don't accidentally
@@ -143,25 +156,45 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
       <div className="min-h-screen flex flex-col items-center py-6 sm:py-10 px-4">
         {/* Floating action bar */}
         <div className="no-print w-full max-w-3xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:flex-1">
-            <input
-              type="email"
-              className="input bg-white h-12 md:h-9 text-base md:text-sm"
-              placeholder={t("quote.recipientPlaceholder")}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              data-testid="email-recipient"
-              style={{ minWidth: 240 }}
-            />
-            <button
-              className="btn-primary h-12 md:h-9 justify-center md:justify-start"
-              onClick={handleEmail}
-              disabled={!email || sending || !emailConfigured}
-              data-testid="send-email-btn"
-              title={!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : ""}
-            >
-              <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
-            </button>
+          <div className="flex flex-col md:flex-1 gap-1">
+            <div className="flex flex-col md:flex-row md:items-center gap-2">
+              <input
+                type="email"
+                className="input bg-white h-12 md:h-9 text-base md:text-sm"
+                placeholder={t("quote.recipientPlaceholder")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={emailInvalid}
+                aria-describedby={emailInvalid ? "quote-email-warn" : undefined}
+                autoComplete="off"
+                data-testid="email-recipient"
+                style={{ minWidth: 240 }}
+              />
+              <button
+                className="btn-primary h-12 md:h-9 justify-center md:justify-start"
+                onClick={handleEmail}
+                disabled={!email || sending || !emailConfigured || emailInvalid}
+                data-testid="send-email-btn"
+                title={!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : ""}
+              >
+                <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
+              </button>
+            </div>
+            {emailInvalid && (
+              <div
+                id="quote-email-warn"
+                role="alert"
+                className="text-[11px] font-bold text-[var(--warning-text)]"
+                data-testid="quote-email-warn"
+              >
+                {t("est.warnEmail")}
+              </div>
+            )}
+            {!emailInvalid && noStoredEmail && (
+              <div className="text-[10px] text-white/70 md:text-[var(--muted)]" data-testid="quote-email-will-save">
+                {t("quote.emailWillSave")}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 justify-between md:justify-end">
             <button
@@ -187,11 +220,11 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
         {/* Editable email preamble + send-language picker */}
         <div className="no-print w-full max-w-3xl mb-4 bg-white border border-[#E4E4E7] p-4" data-testid="email-preamble">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
               {t("quote.subject")}
             </div>
             <div className="flex items-center gap-2" data-testid="send-lang-picker">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
                 {t("quote.langPicker")}
               </span>
               <div className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-[11px] font-bold uppercase tracking-wider">
@@ -211,7 +244,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             </div>
           </div>
           <div className="text-sm font-mono-num text-[#09090B] mb-3 break-words">{subject}</div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-1">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-1">
             {t("quote.personalNote")}
           </div>
           <textarea
@@ -252,7 +285,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-[0.25em] text-[#A1A1AA]">Estimate</div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-[#71717A]">Estimate</div>
               <div className="font-mono-num text-lg text-[#09090B]">{estimate.estimate_number}</div>
               <div className="text-xs text-[#52525B]">{estimate.estimate_date}</div>
             </div>
@@ -260,14 +293,36 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           <div className="px-8 sm:px-12 py-6 grid grid-cols-2 gap-6 border-b border-[#E4E4E7]">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">
                 Prepared For
               </div>
-              <div className="font-semibold text-[#09090B]">{estimate.customer_name || "—"}</div>
+              {/* Iter 79j.47 — Company name (bold) sits above the
+                  customer name when set; contact chip line below the
+                  address; billing address only if it differs. Lead
+                  source, fax, and preferred contact are contractor-
+                  internal — never rendered on customer documents. */}
+              {estimate.customer_company && (
+                <div className="font-semibold text-[#09090B]" data-testid="quote-prepared-company">
+                  {estimate.customer_company}
+                </div>
+              )}
+              <div className={`text-[#09090B] ${estimate.customer_company ? "" : "font-semibold"}`}>
+                {estimate.customer_name || "—"}
+              </div>
               <div className="text-sm text-[#52525B]">{estimate.address || ""}</div>
+              {(estimate.customer_phone || estimate.customer_email) && (
+                <div className="text-xs text-[#52525B] mt-1" data-testid="quote-prepared-contact">
+                  {[estimate.customer_phone, estimate.customer_email].filter(Boolean).join(" · ")}
+                </div>
+              )}
+              {(estimate.billing_address || "").trim() && (
+                <div className="text-xs text-[#52525B] mt-1" data-testid="quote-prepared-billing">
+                  <span className="uppercase tracking-wider text-[10px] font-bold text-[#71717A]">Billing:</span> {estimate.billing_address}
+                </div>
+              )}
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">
                 Estimator
               </div>
               <div className="font-semibold text-[#09090B]">{estimate.estimator || "—"}</div>
@@ -276,7 +331,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           {estimate.notes && (
             <div className="px-8 sm:px-12 py-5 border-b border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-2 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-2 font-bold">
                 Scope of Work
               </div>
               <div className="text-sm whitespace-pre-line text-[#09090B]">{estimate.notes}</div>
@@ -296,7 +351,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             const labels = { front: "Front", back: "Back", left: "Left", right: "Right" };
             return (
               <div className="px-8 sm:px-12 py-5 border-b border-[#E4E4E7]" data-testid="per-elevation-card">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-3 font-bold">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
                   Per-Elevation Siding Breakdown
                 </div>
                 <table className="w-full text-sm">
@@ -313,7 +368,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                           </td>
                           <td className="py-2 text-right text-[#09090B] font-semibold font-mono-num whitespace-nowrap w-[20%]">
                             {Math.round(Number(sqft)).toLocaleString()} ft²
-                            <span className="text-[#A1A1AA] font-normal"> · {pct}%</span>
+                            <span className="text-[#71717A] font-normal"> · {pct}%</span>
                           </td>
                         </tr>
                       );
@@ -334,12 +389,12 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           <div className="px-8 sm:px-12 py-6">
             {tabOrder.map((tabId) => (
               <div key={tabId} className="mb-6">
-                <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#A1A1AA] mb-2">
+                <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#71717A] mb-2">
                   {TAB_LABEL[tabId]}
                 </div>
                 {Object.entries(linesByTab[tabId]).map(([section, items]) => (
                   <div key={section} className="mb-4">
-                    <div className="text-xs uppercase tracking-[0.18em] font-bold text-[#F97316] border-b border-[#09090B] pb-1 mb-2">
+                    <div className="text-xs uppercase tracking-[0.18em] font-bold text-[#C2410C] border-b border-[#09090B] pb-1 mb-2">
                       {tSection(section, sendLang)}
                     </div>
                     {items.map((l) => (
@@ -358,7 +413,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           {(estimate.photos || []).length > 0 && (
             <div className="px-8 sm:px-12 py-4 border-t border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-3 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
                 Job Photos
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -389,13 +444,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           <div className="px-8 sm:px-12 py-8 grid grid-cols-2 gap-8">
             <div>
               <div className="border-b border-[#09090B] h-8" />
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mt-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mt-1 font-bold">
                 Customer Signature
               </div>
             </div>
             <div>
               <div className="border-b border-[#09090B] h-8" />
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mt-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mt-1 font-bold">
                 Date
               </div>
             </div>
@@ -403,7 +458,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           {showSupplierFooter && (
             <div
-              className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] text-center"
+              className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#71717A] text-center"
               data-testid="supplier-footer"
             >
               Materials supplied by {branding.supplier_name}

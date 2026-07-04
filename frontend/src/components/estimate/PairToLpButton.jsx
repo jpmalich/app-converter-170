@@ -64,7 +64,7 @@ export default function PairToLpButton({ est }) {
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider border border-[#E4E4E7] bg-white text-[#09090B] hover:border-[#F97316] hover:text-[#F97316] disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--brand)] hover:text-[var(--brand-text)] disabled:opacity-50"
       title={alreadyPaired ? "Open the LP estimate paired with this draft" : "Spawn an LP estimate carrying customer info + HOVER measurements"}
       data-testid="pair-to-lp-btn"
     >

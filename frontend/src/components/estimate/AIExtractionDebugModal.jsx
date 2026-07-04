@@ -75,13 +75,13 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
   return (
     <div
       id={`debug-photo-${idx}`}
-      className={`border ${focused ? "border-[#0EA5E9] shadow-[0_0_0_2px_#BAE6FD]" : "border-[#E4E4E7]"} bg-white`}
+      className={`border ${focused ? "border-[#0EA5E9] shadow-[0_0_0_2px_#BAE6FD]" : "border-[var(--border)]"} bg-[var(--surface)]`}
       data-testid={`debug-photo-card-${idx}`}
     >
-      <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F4F5] border-b border-[#E4E4E7]">
+      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-app)] border-b border-[var(--border)]">
         <span className="text-[10px] font-bold uppercase tracking-wider text-[#0EA5E9]">P{idx}</span>
-        <span className="text-[11px] text-[#52525B] font-mono">
-          {coalesce(p.elevation)} <span className="text-[#A1A1AA]">·</span>{" "}
+        <span className="text-[11px] text-[var(--ink-2)] font-mono">
+          {coalesce(p.elevation)} <span className="text-[var(--muted)]">·</span>{" "}
           {p.elevation_confidence != null ? `${p.elevation_confidence}%` : "conf ?"}
         </span>
       </div>
@@ -90,7 +90,7 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
           <img
             src={fullUrl}
             alt={`Photo ${idx}`}
-            className="w-24 h-24 object-cover flex-shrink-0 border border-[#E4E4E7]"
+            className="w-24 h-24 object-cover flex-shrink-0 border border-[var(--border)]"
           />
         )}
         <div className="flex-1 min-w-0 space-y-1.5 text-[11px] font-mono-num">
@@ -98,23 +98,23 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
           <Row label="Walls visible">
             {(p.walls_visible && p.walls_visible.length)
               ? p.walls_visible.join(", ")
-              : <span className="text-[#A1A1AA] italic">not reported</span>}
+              : <span className="text-[var(--muted)] italic">not reported</span>}
           </Row>
           <Row label="Eave observed">
             {p.eave_height_ft_observed != null
               ? <span className="font-bold text-[#0EA5E9]">{fmtFt(p.eave_height_ft_observed)}</span>
-              : <span className="text-[#A1A1AA] italic">null (not measurable)</span>}
+              : <span className="text-[var(--muted)] italic">null (not measurable)</span>}
             {p.eave_reasoning && (
-              <div className="text-[10px] text-[#71717A] mt-0.5">{p.eave_reasoning}</div>
+              <div className="text-[10px] text-[var(--muted)] mt-0.5">{p.eave_reasoning}</div>
             )}
           </Row>
           <Row label="Pitch observed">
-            {coalesce(p.pitch_ratio_observed, <span className="text-[#A1A1AA] italic">null</span>)}
+            {coalesce(p.pitch_ratio_observed, <span className="text-[var(--muted)] italic">null</span>)}
           </Row>
           <Row label="Gable Δh">
             {p.gable_triangle_height_ft_observed != null
               ? fmtFt(p.gable_triangle_height_ft_observed)
-              : <span className="text-[#A1A1AA] italic">null</span>}
+              : <span className="text-[var(--muted)] italic">null</span>}
           </Row>
           <Row label="Dormers here">
             <span className={p.dormers_observed_count ? "font-bold text-[#0EA5E9]" : ""}>
@@ -123,23 +123,23 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
           </Row>
           {p.notes && (
             <Row label="Notes">
-              <span className="text-[#71717A]">{p.notes}</span>
+              <span className="text-[var(--muted)]">{p.notes}</span>
             </Row>
           )}
           {p.openings_this_photo && p.openings_this_photo.length > 0 && (
             <div className="pt-1">
-              <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold mb-0.5">
+              <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold mb-0.5">
                 Openings ({p.openings_this_photo.length})
               </div>
               <div className="space-y-0.5">
                 {p.openings_this_photo.map((o, i) => (
                   <div key={i} className="text-[10px] flex items-center gap-1.5">
-                    <span className="text-[#A1A1AA]">·</span>
+                    <span className="text-[var(--muted)]">·</span>
                     <span className="font-bold text-[#3F3F46]">{o.type}</span>
-                    <span className="text-[#52525B]">{fmtIn(o.width_in)}×{fmtIn(o.height_in)}</span>
-                    {o.opening_id && <span className="text-[#71717A] italic">{o.opening_id}</span>}
+                    <span className="text-[var(--ink-2)]">{fmtIn(o.width_in)}×{fmtIn(o.height_in)}</span>
+                    {o.opening_id && <span className="text-[var(--muted)] italic">{o.opening_id}</span>}
                     {o.bbox && Array.isArray(o.bbox) && (
-                      <span className="text-[#A1A1AA]" title="pixel bbox">
+                      <span className="text-[var(--muted)]" title="pixel bbox">
                         [{o.bbox.map((n) => Math.round(n)).join(",")}]
                       </span>
                     )}
@@ -157,7 +157,7 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
 function Row({ label, children }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold w-20 flex-shrink-0">{label}</span>
+      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold w-20 flex-shrink-0">{label}</span>
       <div className="flex-1 min-w-0 break-words">{children}</div>
     </div>
   );
@@ -167,16 +167,16 @@ function WallCard({ w, onFocusPhoto }) {
   const readings = Array.isArray(w._per_photo_readings) ? w._per_photo_readings : [];
   const sourcePhotos = Array.isArray(w._source_photo_indices) ? w._source_photo_indices : [];
   return (
-    <div className="border border-[#E4E4E7] bg-white" data-testid={`debug-wall-${w.label}`}>
-      <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F4F5] border-b border-[#E4E4E7]">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED]">Wall · {w.label}</span>
+    <div className="border border-[var(--border)] bg-[var(--surface)]" data-testid={`debug-wall-${w.label}`}>
+      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--bg-app)] border-b border-[var(--border)]">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ai)]">Wall · {w.label}</span>
         {w.confidence != null && (
-          <span className="text-[10px] text-[#52525B] font-mono">conf {w.confidence}%</span>
+          <span className="text-[10px] text-[var(--ink-2)] font-mono">conf {w.confidence}%</span>
         )}
       </div>
       <div className="p-3 text-[11px] font-mono-num space-y-1.5">
         <Row label="Width">{fmtFt(w.width_ft)}</Row>
-        <Row label="Eave (final)"><span className="font-bold text-[#7C3AED]">{fmtFt(w.height_ft)}</span></Row>
+        <Row label="Eave (final)"><span className="font-bold text-[var(--ai)]">{fmtFt(w.height_ft)}</span></Row>
         <Row label="Gable Δh">{fmtFt(w.gable_triangle_height_ft)}</Row>
         <Row label="Dormer face">{coalesce(w.dormer_face_sqft, 0)} ft²</Row>
         <Row label="Siding %">{coalesce(w.siding_pct_this_wall, 100)}%</Row>
@@ -185,28 +185,28 @@ function WallCard({ w, onFocusPhoto }) {
             ? <div className="flex gap-1 flex-wrap">
                 {sourcePhotos.map((i) => <PhotoChip key={i} idx={i} onFocus={onFocusPhoto} />)}
               </div>
-            : <span className="text-[#A1A1AA] italic">not reported</span>}
+            : <span className="text-[var(--muted)] italic">not reported</span>}
         </Row>
         {readings.length > 0 && (
           <div>
-            <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-0.5">
+            <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold mb-0.5">
               Per-photo readings (before merge)
             </div>
-            <div className="space-y-0.5 pl-2 border-l-2 border-[#E4E4E7]">
+            <div className="space-y-0.5 pl-2 border-l-2 border-[var(--border)]">
               {readings.map((r, i) => (
                 <div key={i} className="text-[10px] flex items-center gap-2">
                   <PhotoChip idx={r.photo_idx} onFocus={onFocusPhoto} />
-                  <span className="text-[#52525B]">
+                  <span className="text-[var(--ink-2)]">
                     eave={fmtFt(r.eave_ft)} · gable={fmtFt(r.gable_triangle_ft)}
                   </span>
-                  {r.notes && <span className="text-[#71717A] italic">{r.notes}</span>}
+                  {r.notes && <span className="text-[var(--muted)] italic">{r.notes}</span>}
                 </div>
               ))}
             </div>
           </div>
         )}
         {w._reconciliation_note && (
-          <div className="mt-1 px-2 py-1 bg-[#EDE9FE] border border-[#DDD6FE] text-[10px] text-[#5B21B6]">
+          <div className="mt-1 px-2 py-1 bg-[var(--ai-soft)] border border-[#DDD6FE] text-[10px] text-[#5B21B6]">
             <b className="uppercase tracking-wider text-[9px]">Reconciliation:</b> {w._reconciliation_note}
           </div>
         )}
@@ -221,20 +221,20 @@ function OpeningRow({ o, i, onFocusPhoto }) {
     : (o.photo_idx != null ? [o.photo_idx] : []);
   return (
     <div
-      className="flex items-center gap-2 px-2 py-1.5 border-b border-[#F4F4F5] last:border-b-0 text-[11px]"
+      className="flex items-center gap-2 px-2 py-1.5 border-b border-[var(--bg-app)] last:border-b-0 text-[11px]"
       data-testid={`debug-opening-${i}`}
     >
-      <span className="w-16 text-[#52525B] font-mono truncate">{o.type}</span>
+      <span className="w-16 text-[var(--ink-2)] font-mono truncate">{o.type}</span>
       <span className="w-14 text-[#3F3F46] font-mono">{fmtIn(o.width_in)}×{fmtIn(o.height_in)}</span>
-      <span className="w-14 text-[#52525B] font-mono truncate" title={o.style}>{o.style || "—"}</span>
-      <span className="w-12 text-[#52525B] font-mono truncate">{o.wall || "—"}</span>
+      <span className="w-14 text-[var(--ink-2)] font-mono truncate" title={o.style}>{o.style || "—"}</span>
+      <span className="w-12 text-[var(--ink-2)] font-mono truncate">{o.wall || "—"}</span>
       <div className="flex gap-1 min-w-0 flex-1">
         {sources.length > 0
           ? sources.map((idx) => <PhotoChip key={idx} idx={idx} onFocus={onFocusPhoto} />)
-          : <span className="text-[#A1A1AA] italic text-[10px]">no photo tag</span>}
+          : <span className="text-[var(--muted)] italic text-[10px]">no photo tag</span>}
       </div>
       {o._reconciliation_note && (
-        <span className="text-[10px] text-[#71717A] italic truncate" title={o._reconciliation_note}>
+        <span className="text-[10px] text-[var(--muted)] italic truncate" title={o._reconciliation_note}>
           {o._reconciliation_note}
         </span>
       )}
@@ -298,26 +298,26 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
 
   return (
     <div
-      className="fixed inset-0 z-[70] bg-[#09090B]/80 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[70] bg-[var(--bar-bg)]/80 flex items-center justify-center p-4"
       data-testid="debug-extraction-modal"
     >
-      <div className="bg-white w-full max-w-[1400px] h-[92vh] flex flex-col border border-[#E4E4E7]">
+      <div className="bg-[var(--surface)] w-full max-w-[1400px] h-[92vh] flex flex-col border border-[var(--border)]">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-[#E4E4E7] bg-[#FAFAFA]">
-          <Layers className="w-4 h-4 text-[#7C3AED]" />
+        <div className="flex items-center gap-3 px-5 py-3 border-b border-[var(--border)] bg-[var(--surface-muted)]">
+          <Layers className="w-4 h-4 text-[var(--ai)]" />
           <div className="flex-1">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[#09090B]" data-testid="debug-modal-title">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-[var(--ink)]" data-testid="debug-modal-title">
               Extraction debug
             </h3>
-            <p className="text-[11px] text-[#71717A] mt-0.5">
+            <p className="text-[11px] text-[var(--muted)] mt-0.5">
               Left: what Claude saw in each photo. Right: the reconciled house — with the photos each final number was drawn from and the merge trace.
             </p>
           </div>
           <span
             className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 border ${
               pipelineLabel === "two_phase"
-                ? "bg-[#DCFCE7] text-[#166534] border-[#16A34A]"
-                : "bg-[#FEF3C7] text-[#92400E] border-[#F59E0B]"
+                ? "bg-[#DCFCE7] text-[#166534] border-[var(--success)]"
+                : "bg-[#FEF3C7] text-[var(--warning-text)] border-[#F59E0B]"
             }`}
             title={pipelineLabel === "two_phase"
               ? "TWO-PHASE: 1 Claude call per photo (real per-photo data) + 1 reconciliation call"
@@ -329,17 +329,17 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
           <button
             type="button"
             onClick={copyRaw}
-            className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#52525B] hover:text-[#09090B] border border-[#E4E4E7] hover:bg-white flex items-center gap-1.5"
+            className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)] hover:text-[var(--ink)] border border-[var(--border)] hover:bg-[var(--surface)] flex items-center gap-1.5"
             data-testid="debug-copy-raw-btn"
             title="Copy the raw AI JSON to clipboard — paste it into a bug report or diff two runs"
           >
-            {copied ? <Check className="w-3 h-3 text-[#16A34A]" /> : <Copy className="w-3 h-3" />}
+            {copied ? <Check className="w-3 h-3 text-[var(--success)]" /> : <Copy className="w-3 h-3" />}
             {copied ? "Copied" : "Copy raw JSON"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-[#52525B] hover:text-[#09090B] hover:bg-[#F4F4F5]"
+            className="p-2 text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--bg-app)]"
             data-testid="debug-close-btn"
           >
             <X className="w-4 h-4" />
@@ -349,7 +349,7 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
         {/* Two-column body */}
         <div className="flex-1 grid grid-cols-2 gap-0 min-h-0">
           {/* LEFT — Per-photo raw observations */}
-          <div className="overflow-y-auto p-4 space-y-3 border-r border-[#E4E4E7] bg-[#FAFAFA]">
+          <div className="overflow-y-auto p-4 space-y-3 border-r border-[var(--border)] bg-[var(--surface-muted)]">
             <div className="flex items-center gap-2 mb-1">
               <Camera className="w-3.5 h-3.5 text-[#0EA5E9]" />
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#0EA5E9]">
@@ -358,7 +358,7 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
               </h4>
             </div>
             {maxIdx < 0 && (
-              <div className="text-[11px] text-[#A1A1AA] italic px-3 py-8 text-center">
+              <div className="text-[11px] text-[var(--muted)] italic px-3 py-8 text-center">
                 No per-photo data. The AI didn&apos;t return a `photos[]` array for this run.
               </div>
             )}
@@ -374,18 +374,18 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
           </div>
 
           {/* RIGHT — Reconciled house JSON with provenance */}
-          <div className="overflow-y-auto p-4 space-y-3 bg-white">
+          <div className="overflow-y-auto p-4 space-y-3 bg-[var(--surface)]">
             <div className="flex items-center gap-2 mb-1">
-              <Layers className="w-3.5 h-3.5 text-[#7C3AED]" />
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED]">
+              <Layers className="w-3.5 h-3.5 text-[var(--ai)]" />
+              <h4 className="text-[10px] font-bold uppercase tracking-wider text-[var(--ai)]">
                 Reconciled house — click any P# chip to jump to that photo
               </h4>
             </div>
 
             {/* Top-level scalars + reconciliation notes */}
-            <div className="border border-[#E4E4E7] bg-white">
-              <div className="px-3 py-2 bg-[#F4F4F5] border-b border-[#E4E4E7]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED]">House-level</span>
+            <div className="border border-[var(--border)] bg-[var(--surface)]">
+              <div className="px-3 py-2 bg-[var(--bg-app)] border-b border-[var(--border)]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ai)]">House-level</span>
               </div>
               <div className="p-3 text-[11px] font-mono-num space-y-1.5">
                 <Row label="Avg eave">{fmtFt(raw.avg_wall_height_ft)}</Row>
@@ -394,16 +394,16 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
                 )}
                 <Row label="Story count">{coalesce(raw.story_count)}</Row>
                 {raw.story_count_reasoning && (
-                  <div className="text-[10px] text-[#71717A] pl-22">{raw.story_count_reasoning}</div>
+                  <div className="text-[10px] text-[var(--muted)] pl-22">{raw.story_count_reasoning}</div>
                 )}
                 <Row label="Roof type">
-                  <span className="font-bold text-[#7C3AED]">{coalesce(raw.roof_type)}</span>
+                  <span className="font-bold text-[var(--ai)]">{coalesce(raw.roof_type)}</span>
                   {raw.roof_type_confidence != null && (
-                    <span className="text-[#A1A1AA] ml-1">({Math.round(raw.roof_type_confidence * 100)}%)</span>
+                    <span className="text-[var(--muted)] ml-1">({Math.round(raw.roof_type_confidence * 100)}%)</span>
                   )}
                 </Row>
                 {raw.roof_type_reasoning && (
-                  <div className="text-[10px] text-[#71717A] pl-22">{raw.roof_type_reasoning}</div>
+                  <div className="text-[10px] text-[var(--muted)] pl-22">{raw.roof_type_reasoning}</div>
                 )}
                 {reconciliation.roof_type && <ReconNote>{reconciliation.roof_type}</ReconNote>}
                 <Row label="Siding cov.">{coalesce(raw.siding_coverage_pct)}%</Row>
@@ -416,9 +416,9 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
             </div>
 
             {dormer && (
-              <div className="border border-[#E4E4E7] bg-white" data-testid="debug-dormer-card">
-                <div className="px-3 py-2 bg-[#F4F4F5] border-b border-[#E4E4E7]">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED]">Dormer</span>
+              <div className="border border-[var(--border)] bg-[var(--surface)]" data-testid="debug-dormer-card">
+                <div className="px-3 py-2 bg-[var(--bg-app)] border-b border-[var(--border)]">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ai)]">Dormer</span>
                 </div>
                 <div className="p-3 text-[11px] font-mono-num space-y-1.5">
                   <Row label="Face">{coalesce(dormer.face)}</Row>
@@ -434,22 +434,22 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
               <WallCard key={`${w.label}-${i}`} w={w} onFocusPhoto={focusPhoto} />
             ))}
 
-            <div className="border border-[#E4E4E7] bg-white" data-testid="debug-openings-card">
-              <div className="px-3 py-2 bg-[#F4F4F5] border-b border-[#E4E4E7]">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#7C3AED]">
+            <div className="border border-[var(--border)] bg-[var(--surface)]" data-testid="debug-openings-card">
+              <div className="px-3 py-2 bg-[var(--bg-app)] border-b border-[var(--border)]">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ai)]">
                   Openings ({openings.length})
                 </span>
               </div>
               {openings.length === 0
-                ? <div className="p-3 text-[11px] text-[#A1A1AA] italic">No openings extracted.</div>
+                ? <div className="p-3 text-[11px] text-[var(--muted)] italic">No openings extracted.</div>
                 : openings.map((o, i) => <OpeningRow key={i} o={o} i={i} onFocusPhoto={focusPhoto} />)}
             </div>
 
-            <details className="border border-[#E4E4E7] bg-white" open={rawExpanded} onToggle={(e) => setRawExpanded(e.target.open)}>
-              <summary className="px-3 py-2 text-[10px] uppercase tracking-wider text-[#71717A] font-bold cursor-pointer bg-[#F4F4F5]">
+            <details className="border border-[var(--border)] bg-[var(--surface)]" open={rawExpanded} onToggle={(e) => setRawExpanded(e.target.open)}>
+              <summary className="px-3 py-2 text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold cursor-pointer bg-[var(--bg-app)]">
                 Full raw JSON
               </summary>
-              <pre className="text-[10px] font-mono-num p-3 overflow-x-auto max-h-96 bg-[#09090B] text-[#E4E4E7]" data-testid="debug-raw-json-pre">
+              <pre className="text-[10px] font-mono-num p-3 overflow-x-auto max-h-96 bg-[var(--bar-bg)] text-[#E4E4E7]" data-testid="debug-raw-json-pre">
                 {JSON.stringify(raw, null, 2)}
               </pre>
             </details>
@@ -462,7 +462,7 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
 
 function ReconNote({ children }) {
   return (
-    <div className="ml-22 mt-1 px-2 py-1 bg-[#EDE9FE] border border-[#DDD6FE] text-[10px] text-[#5B21B6]">
+    <div className="ml-22 mt-1 px-2 py-1 bg-[var(--ai-soft)] border border-[#DDD6FE] text-[10px] text-[#5B21B6]">
       <b className="uppercase tracking-wider text-[9px]">Reconciliation:</b> {children}
     </div>
   );

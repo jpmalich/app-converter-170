@@ -578,7 +578,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
       />
       <button
         type="button"
-        className="w-full justify-center px-3 py-1.5 bg-white text-[#7C3AED] border border-[#7C3AED] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+        className="w-full justify-center px-3 py-1.5 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => {
           // Iter 78 — Waste % flow:
           //   1. If estimate already has waste_pct > 0 → respect it, no prompt.
@@ -636,7 +636,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           type="button"
           onClick={() => setProfileAnnotatorOpen(true)}
           disabled={busy}
-          className="w-full justify-center px-3 py-1.5 bg-white text-[#F97316] border border-[#F97316] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+          className="w-full justify-center px-3 py-1.5 bg-[var(--surface)] text-[var(--brand-text)] border border-[var(--brand)] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
           data-testid="blueprint-tag-profiles-btn"
           title="Draw boxes to tag Shake / B&B / etc. — guarantees those materials hit the quote"
         >
@@ -647,7 +647,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               0,
             );
             return total > 0 ? (
-              <span className="bg-[#F97316] text-white px-1 py-0 text-[9px]">{total}</span>
+              <span className="bg-[var(--brand)] text-[var(--on-brand)] px-1 py-0 text-[9px]">{total}</span>
             ) : null;
           })()}
         </button>
@@ -664,15 +664,15 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         if (!saved) return null;
         return (
           <div
-            className="mt-1.5 text-[10px] uppercase tracking-wider text-[#71717A] flex items-center gap-2"
+            className="mt-1.5 text-[10px] uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
             data-testid="blueprint-waste-default-caption"
           >
             <span>
-              Default waste · <span className="font-bold text-[#09090B]">{saved}%</span>
+              Default waste · <span className="font-bold text-[var(--ink)]">{saved}%</span>
             </span>
             <button
               type="button"
-              className="text-[#7C3AED] hover:underline font-bold"
+              className="text-[var(--ai)] hover:underline font-bold"
               onClick={() => {
                 const raw = window.prompt(
                   `Update default Waste Factor % for ${workspaceLabel(kind)} quotes.\n\nThis replaces the saved default and applies to this estimate too.`,
@@ -692,7 +692,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
             <span className="text-[#D4D4D8]">·</span>
             <button
               type="button"
-              className="text-[#71717A] hover:text-[#DC2626] font-bold"
+              className="text-[var(--muted)] hover:text-[var(--danger-text)] font-bold"
               onClick={() => {
                 clearWasteDefault(kind);
                 // Force re-render by nudging the estimate (any update will do)
@@ -714,10 +714,10 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           Blueprints tile without dominating the page. */}
       {resumeRun && !busy && !result && (
         <div
-          className="mt-1 text-[10px] text-[#92400E] flex items-center gap-1.5 leading-snug flex-wrap"
+          className="mt-1 text-[10px] text-[var(--warning-text)] flex items-center gap-1.5 leading-snug flex-wrap"
           data-testid="blueprint-resume-banner"
         >
-          <AlertTriangle className="w-3 h-3 text-[#92400E] flex-shrink-0" />
+          <AlertTriangle className="w-3 h-3 text-[var(--warning-text)] flex-shrink-0" />
           <span className="font-bold uppercase tracking-wider">
             {resumeRun.status === "done"
               ? `Previous read · ${resumeRun.page_count || "?"} pg · ${Math.round((resumeRun.age_seconds || 0) / 60)} min`
@@ -728,7 +728,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           <button
             type="button"
             onClick={restoreResume}
-            className="text-[#7C3AED] font-bold uppercase tracking-wider hover:underline"
+            className="text-[var(--ai)] font-bold uppercase tracking-wider hover:underline"
             data-testid="blueprint-resume-btn"
           >
             Restore
@@ -737,7 +737,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           <button
             type="button"
             onClick={() => { setResumeDismissed(true); setResumeRun(null); }}
-            className="text-[#A1A1AA] font-bold uppercase tracking-wider hover:text-[#71717A]"
+            className="text-[var(--muted)] font-bold uppercase tracking-wider hover:text-[var(--muted)]"
             data-testid="blueprint-resume-dismiss"
             aria-label="Dismiss restore banner"
           >
@@ -753,7 +753,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           data-testid="blueprint-preview-backdrop"
         >
           <div
-            className="bg-white max-w-3xl w-full max-h-[95vh] flex flex-col"
+            className="bg-[var(--surface)] max-w-3xl w-full max-h-[95vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
             data-testid="blueprint-preview-modal"
           >
@@ -778,14 +778,14 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   sheets stack; 3D pipes result through the SAME
                   HouseModel3D component the AI Photo Measure path
                   uses — zero forked schema, zero forked renderer. */}
-              <div className="flex items-center gap-1 -mb-1 border-b border-[#E4E4E7]" data-testid="blueprint-preview-tabs">
+              <div className="flex items-center gap-1 -mb-1 border-b border-[var(--border)]" data-testid="blueprint-preview-tabs">
                 <button
                   type="button"
                   onClick={() => setPreviewTab("preview")}
                   className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
                     previewTab === "preview"
-                      ? "border-[#7C3AED] text-[#7C3AED]"
-                      : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                      ? "border-[var(--ai)] text-[var(--ai)]"
+                      : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
                   }`}
                   data-testid="blueprint-preview-tab"
                 >
@@ -796,8 +796,8 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   onClick={() => setPreviewTab("3d")}
                   className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${
                     previewTab === "3d"
-                      ? "border-[#7C3AED] text-[#7C3AED]"
-                      : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                      ? "border-[var(--ai)] text-[var(--ai)]"
+                      : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
                   }`}
                   data-testid="blueprint-3d-tab"
                 >
@@ -813,7 +813,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                       className="mb-3 px-3 py-2 bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-[11px] flex items-start gap-2"
                       data-testid="blueprint-3d-recon-warning"
                     >
-                      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#B45309]" />
+                      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[var(--warning-text)]" />
                       <div>
                         <span className="font-bold uppercase text-[10px] tracking-wider">3D vs takeoff reconciliation</span>
                         <div className="mt-0.5 leading-snug">{measurements._source_reconciliation_warning}</div>
@@ -827,7 +827,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               {previewTab === "preview" && (<>
               {/* Confidence + notes banner */}
               {measurements._ai_notes && (
-                <div className="px-3 py-2 bg-[#FEF3C7] border-l-2 border-[#F59E0B] text-[12px] text-[#92400E] flex items-start gap-2" data-testid="blueprint-ai-notes">
+                <div className="px-3 py-2 bg-[#FEF3C7] border-l-2 border-[#F59E0B] text-[12px] text-[var(--warning-text)] flex items-start gap-2" data-testid="blueprint-ai-notes">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                   <div>
                     <span className="font-bold uppercase text-[10px] tracking-wider">AI notes · verify before applying</span>
@@ -839,15 +839,15 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               {/* Sheets identified */}
               {sheets.length > 0 && (
                 <section>
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
                     Plan sheets read
                   </div>
                   <ul className="text-xs space-y-0.5" data-testid="blueprint-sheets">
                     {sheets.map((s, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <span className="font-mono-num text-[#A1A1AA] w-8">p.{s.page}</span>
+                        <span className="font-mono-num text-[var(--muted)] w-8">p.{s.page}</span>
                         <span className="font-bold">{s.sheet_title || "—"}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-[#71717A]">· {s.useful_for}</span>
+                        <span className="text-[10px] uppercase tracking-wider text-[var(--muted)]">· {s.useful_for}</span>
                       </li>
                     ))}
                   </ul>
@@ -863,8 +863,8 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   data-testid="blueprint-warnings-banner"
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-4 h-4 text-[#B45309]" />
-                    <span className="text-[10px] uppercase tracking-wider font-bold text-[#B45309]">
+                    <AlertTriangle className="w-4 h-4 text-[var(--warning-text)]" />
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--warning-text)]">
                       Sanity check · {result.warnings.length} warning{result.warnings.length > 1 ? "s" : ""}
                     </span>
                   </div>
@@ -877,7 +877,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                       >
                         <div className="font-bold">⚠ {w.message}</div>
                         {w.detail && (
-                          <div className="text-[10px] font-mono-num text-[#B45309] mt-0.5">
+                          <div className="text-[10px] font-mono-num text-[var(--warning-text)] mt-0.5">
                             {w.detail}
                           </div>
                         )}
@@ -940,10 +940,10 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   });
                 return (
                   <section data-testid="blueprint-elevation-drawings">
-                    <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
                       Elevation Drawings
                     </div>
-                    <p className="text-[11px] text-[#52525B] mb-2">
+                    <p className="text-[11px] text-[var(--ink-2)] mb-2">
                       Reconstructed from the Blueprint vision pass. Drag any opening to reposition or click Roof to fix the shape.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -964,7 +964,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
 
               {/* Summary numbers */}
               <section>
-                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
                   Takeoff
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" data-testid="blueprint-summary">
@@ -972,10 +972,10 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                     const v = measurements[k];
                     if (v == null) return null;
                     return (
-                      <div key={k} className="border border-[#E4E4E7] px-2 py-1.5">
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{KEY_LABEL[k]}</div>
+                      <div key={k} className="border border-[var(--border)] px-2 py-1.5">
+                        <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">{KEY_LABEL[k]}</div>
                         <div className="font-mono-num font-bold">
-                          {fmtNum(v)} <span className="text-[10px] text-[#71717A]">{UNIT_BY_KEY(k)}</span>
+                          {fmtNum(v)} <span className="text-[10px] text-[var(--muted)]">{UNIT_BY_KEY(k)}</span>
                         </div>
                       </div>
                     );
@@ -1007,12 +1007,12 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               {/* Window schedule */}
               {schedWindows.length > 0 && (
                 <section>
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
                     Window schedule ({schedWindows.length} mark{schedWindows.length === 1 ? "" : "s"})
                   </div>
-                  <div className="border border-[#E4E4E7] max-h-44 overflow-y-auto" data-testid="blueprint-window-schedule">
+                  <div className="border border-[var(--border)] max-h-44 overflow-y-auto" data-testid="blueprint-window-schedule">
                     <table className="w-full text-xs">
-                      <thead className="bg-[#FAFAFA] text-[10px] uppercase tracking-wider text-[#71717A]">
+                      <thead className="bg-[var(--surface-muted)] text-[10px] uppercase tracking-wider text-[var(--muted)]">
                         <tr>
                           <th className="text-left px-2 py-1">Mark</th>
                           <th className="text-right px-2 py-1">W (in)</th>
@@ -1023,18 +1023,18 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                       </thead>
                       <tbody>
                         {schedWindows.map((w, i) => (
-                          <tr key={i} className="border-t border-[#F4F4F5]">
+                          <tr key={i} className="border-t border-[var(--bg-app)]">
                             <td className="px-2 py-1 font-mono-num">{w.id || "—"}</td>
                             <td className="px-2 py-1 text-right font-mono-num">{fmtNum(w.width_in)}</td>
                             <td className="px-2 py-1 text-right font-mono-num">{fmtNum(w.height_in)}</td>
                             <td className="px-2 py-1 text-right font-mono-num">{fmtNum(w.qty || 1)}</td>
-                            <td className="px-2 py-1 text-[11px] text-[#71717A]">{w.type_hint || "—"}</td>
+                            <td className="px-2 py-1 text-[11px] text-[var(--muted)]">{w.type_hint || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                  <div className="text-[10px] text-[#A1A1AA] mt-1.5">
+                  <div className="text-[10px] text-[var(--muted)] mt-1.5">
                     {issMode
                       ? "Window schedule shown for reference only — ISS estimates don't have a Windows tab. Take counts manually if needed."
                       : `Will populate ${est.kind === "windows" ? "this Windows estimate" : "the paired Windows estimate"} on Apply.`}
@@ -1045,12 +1045,12 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               {/* Door schedule */}
               {schedDoors.length > 0 && (
                 <section>
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
                     Door schedule ({schedDoors.length} mark{schedDoors.length === 1 ? "" : "s"})
                   </div>
-                  <div className="border border-[#E4E4E7] max-h-32 overflow-y-auto" data-testid="blueprint-door-schedule">
+                  <div className="border border-[var(--border)] max-h-32 overflow-y-auto" data-testid="blueprint-door-schedule">
                     <table className="w-full text-xs">
-                      <thead className="bg-[#FAFAFA] text-[10px] uppercase tracking-wider text-[#71717A]">
+                      <thead className="bg-[var(--surface-muted)] text-[10px] uppercase tracking-wider text-[var(--muted)]">
                         <tr>
                           <th className="text-left px-2 py-1">Mark</th>
                           <th className="text-right px-2 py-1">W (in)</th>
@@ -1061,12 +1061,12 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                       </thead>
                       <tbody>
                         {schedDoors.map((d, i) => (
-                          <tr key={i} className="border-t border-[#F4F4F5]">
+                          <tr key={i} className="border-t border-[var(--bg-app)]">
                             <td className="px-2 py-1 font-mono-num">{d.id || "—"}</td>
                             <td className="px-2 py-1 text-right font-mono-num">{fmtNum(d.width_in)}</td>
                             <td className="px-2 py-1 text-right font-mono-num">{fmtNum(d.height_in)}</td>
                             <td className="px-2 py-1 text-right font-mono-num">{fmtNum(d.qty || 1)}</td>
-                            <td className="px-2 py-1 text-[11px] text-[#71717A]">{d.type_hint || "—"}</td>
+                            <td className="px-2 py-1 text-[11px] text-[var(--muted)]">{d.type_hint || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1092,14 +1092,14 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                 if (dynamicNotes.length === 0) return null;
                 return (
                   <section data-testid="blueprint-formula-notes">
-                    <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
                       Formula breakdown
                     </div>
-                    <div className="border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2 space-y-1.5">
+                    <div className="border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 space-y-1.5">
                       {dynamicNotes.map((l, i) => (
                         <div key={i} className="text-[11px]">
-                          <span className="font-bold text-[#52525B]">{l.name}:</span>{" "}
-                          <span className="font-mono-num text-[#71717A]">{l.note}</span>
+                          <span className="font-bold text-[var(--ink-2)]">{l.name}:</span>{" "}
+                          <span className="font-mono-num text-[var(--muted)]">{l.note}</span>
                         </div>
                       ))}
                     </div>
@@ -1111,26 +1111,26 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               <details
                 open={showRawJson}
                 onToggle={(e) => setShowRawJson(e.currentTarget.open)}
-                className="border border-[#E4E4E7]"
+                className="border border-[var(--border)]"
               >
-                <summary className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-[#71717A] font-bold cursor-pointer bg-[#FAFAFA]">
+                <summary className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold cursor-pointer bg-[var(--surface-muted)]">
                   Raw AI JSON
                 </summary>
-                <pre className="text-[10px] font-mono-num p-3 overflow-x-auto max-h-64 bg-[#09090B] text-[#E4E4E7]" data-testid="blueprint-raw-json">
+                <pre className="text-[10px] font-mono-num p-3 overflow-x-auto max-h-64 bg-[var(--bar-bg)] text-[#E4E4E7]" data-testid="blueprint-raw-json">
                   {JSON.stringify(result.raw_ai, null, 2)}
                 </pre>
               </details>
               </>)}
             </div>
 
-            <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-between items-center">
-              <div className="text-[10px] text-[#A1A1AA]">
+            <div className="border-t border-[var(--border)] px-5 py-4 flex justify-between items-center">
+              <div className="text-[10px] text-[var(--muted)]">
                 <span>Powered by Claude Opus 4.5</span>
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  className="px-3 py-2 bg-white text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   onClick={() =>
                     printTakeoff({
                       source: "Blueprint",
@@ -1152,7 +1152,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                 </button>
                 <button
                   type="button"
-                  className="px-3 py-2 bg-white text-[#52525B] border border-[#E4E4E7] hover:bg-[#F4F4F5] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                  className="px-3 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
                   onClick={dismissPreview}
                   disabled={applying}
                   data-testid="blueprint-cancel-btn"
@@ -1161,7 +1161,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   type="button"
                   onClick={applyResult}
                   disabled={applying}
-                  className="px-3 py-2 bg-[#7C3AED] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   data-testid="blueprint-apply-btn"
                 >
                   {applying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}

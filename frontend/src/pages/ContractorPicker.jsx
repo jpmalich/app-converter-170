@@ -20,7 +20,7 @@ export default function ContractorPicker() {
       <button
         type="button"
         onClick={() => nav("/")}
-        className="text-xs font-bold uppercase tracking-[0.18em] text-[#52525B] hover:text-[#F97316] mb-6"
+        className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-2)] hover:text-[var(--brand-text)] mb-6"
         data-testid="contractor-picker-back"
       >
         {t("home.back")}
@@ -28,10 +28,10 @@ export default function ContractorPicker() {
 
       <div className="mb-10 sm:mb-12">
         <div className="section-tag mb-3">{t("home.contractorGroupTitle")}</div>
-        <h1 className="font-heading text-3xl sm:text-4xl text-[#09090B]">
+        <h1 className="font-heading text-3xl sm:text-4xl text-[var(--ink)]">
           {t("home.contractor.title")}
         </h1>
-        <p className="mt-2 text-[#52525B] max-w-2xl text-sm sm:text-base">
+        <p className="mt-2 text-[var(--ink-2)] max-w-2xl text-sm sm:text-base">
           {t("home.contractor.subtitle")}
         </p>
       </div>
@@ -40,7 +40,7 @@ export default function ContractorPicker() {
         <button
           type="button"
           onClick={() => nav("/dashboard/windows")}
-          className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors relative"
+          className="card text-left p-6 sm:p-8 group hover:border-[var(--brand)] transition-colors relative"
           data-testid="contractor-card-windows"
         >
           {/* Iter 77 — Howard flagged Contractor Window Quotes as
@@ -48,22 +48,22 @@ export default function ContractorPicker() {
               Windows). Badge stays until the contractor-specific
               labor model lands. */}
           <span
-            className="absolute top-3 right-3 inline-flex items-center px-2.5 py-1 bg-[#FEF3C7] text-[#92400E] text-[10px] font-bold uppercase tracking-[0.16em] border border-[#FCD34D] rounded-sm"
+            className="absolute top-3 right-3 inline-flex items-center px-2.5 py-1 bg-[#FEF3C7] text-[var(--warning-text)] text-[10px] font-bold uppercase tracking-[0.16em] border border-[#FCD34D] rounded-sm"
             data-testid="contractor-windows-under-construction-badge"
           >
             {t("home.underConstruction")}
           </span>
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[var(--brand-text)]">
             <RectangleHorizontal className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl text-[#09090B] mb-2">
+          <h2 className="font-heading text-2xl text-[var(--ink)] mb-2">
             {t("home.windowsTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6">{t("home.windowsDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <p className="text-sm text-[var(--ink-2)] mb-6">{t("home.windowsDesc")}</p>
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-text)] group-hover:underline">
             {t("home.windowsCta")}
           </div>
         </button>
@@ -71,20 +71,20 @@ export default function ContractorPicker() {
         <button
           type="button"
           onClick={() => nav("/dashboard/siding")}
-          className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors"
+          className="card text-left p-6 sm:p-8 group hover:border-[var(--brand)] transition-colors"
           data-testid="contractor-card-siding"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[var(--brand-text)]">
             <HomeIcon className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl text-[#09090B] mb-2">
+          <h2 className="font-heading text-2xl text-[var(--ink)] mb-2">
             {t("home.sidingTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6">{t("home.sidingDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <p className="text-sm text-[var(--ink-2)] mb-6">{t("home.sidingDesc")}</p>
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-text)] group-hover:underline">
             {t("home.sidingCta")}
           </div>
         </button>
@@ -92,7 +92,7 @@ export default function ContractorPicker() {
         <button
           type="button"
           onClick={() => nav("/dashboard/lp_smart")}
-          className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors relative"
+          className="card text-left p-6 sm:p-8 group hover:border-[var(--brand)] transition-colors relative"
           data-testid="contractor-card-lp_smart"
         >
           {/* Iter 78ae — LP SmartSide is open for contractor testing.
@@ -105,17 +105,17 @@ export default function ContractorPicker() {
           >
             Beta · Feedback Welcome
           </span>
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[var(--brand-text)]">
             <Layers className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
             </span>
           </div>
-          <h2 className="font-heading text-2xl text-[#09090B] mb-2">
+          <h2 className="font-heading text-2xl text-[var(--ink)] mb-2">
             {t("home.lpTitle")}
           </h2>
-          <p className="text-sm text-[#52525B] mb-6">{t("home.lpDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <p className="text-sm text-[var(--ink-2)] mb-6">{t("home.lpDesc")}</p>
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brand-text)] group-hover:underline">
             {t("home.lpCta")}
           </div>
         </button>

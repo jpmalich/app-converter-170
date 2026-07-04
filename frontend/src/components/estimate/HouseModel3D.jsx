@@ -1106,7 +1106,7 @@ export default function HouseModel3D({ preview, estimate }) {
   }, [selectedFacade, house]);
 
   if (!house) {
-    return <div className="p-6 text-sm text-[#71717A]">Run AI Measure first — the 3D model builds from the preview.</div>;
+    return <div className="p-6 text-sm text-[var(--muted)]">Run AI Measure first — the 3D model builds from the preview.</div>;
   }
 
   const facade = house.facades.find((f) => f.id === selectedFacade) || house.facades[0];
@@ -1155,8 +1155,8 @@ export default function HouseModel3D({ preview, estimate }) {
   }).slice(0, 10);
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="ai-measure-3d-view">
-      <div className="md:col-span-2 h-[560px] md:h-[640px] border border-[#E4E4E7] bg-[#F7F8FB] relative" ref={mountRef}>
-        <div className="absolute top-2 left-2 text-[10px] uppercase tracking-wider font-bold text-[#7C3AED] bg-white/80 px-2 py-1 border border-[#7C3AED]" data-testid="ai-measure-3d-hint">
+      <div className="md:col-span-2 h-[560px] md:h-[640px] border border-[var(--border)] bg-[#F7F8FB] relative" ref={mountRef}>
+        <div className="absolute top-2 left-2 text-[10px] uppercase tracking-wider font-bold text-[var(--ai)] bg-white/80 px-2 py-1 border border-[var(--ai)]" data-testid="ai-measure-3d-hint">
           Tap a wall to see its takeoff · drag to orbit · scroll to zoom
         </div>
       </div>
@@ -1166,39 +1166,39 @@ export default function HouseModel3D({ preview, estimate }) {
             <button
               key={f.id}
               onClick={() => setSelectedFacade(f.id)}
-              className={`flex-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider border ${selectedFacade === f.id ? "bg-[#7C3AED] text-white border-[#7C3AED]" : "bg-white text-[#52525B] border-[#E4E4E7]"}`}
+              className={`flex-1 px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider border ${selectedFacade === f.id ? "bg-[var(--ai)] text-white border-[var(--ai)]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)]"}`}
               data-testid={`ai-measure-3d-tab-${f.id}`}
             >
               {f.id}
             </button>
           ))}
         </div>
-        <div className="p-3 bg-white border border-[#E4E4E7] space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Geometry — this wall</div>
+        <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-2">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">Geometry — this wall</div>
           <div className="flex items-center gap-2 text-[11px]">
-            <span className="text-[#71717A] w-24">Width (ft)</span>
+            <span className="text-[var(--muted)] w-24">Width (ft)</span>
             <input
               type="number" step="0.5" min="1"
               value={facade.width}
               onChange={(e) => setOverrides((o) => ({ ...o, widths: { ...o.widths, [facade.id]: parseFloat(e.target.value) || facade.width } }))}
-              className="w-20 px-2 py-1 border border-[#E4E4E7] font-mono-num text-right"
+              className="w-20 px-2 py-1 border border-[var(--border)] font-mono-num text-right"
               data-testid={`ai-measure-3d-width-${facade.id}`}
             />
             {facade.estimated && <Amber />}
           </div>
           <div className="flex items-center gap-2 text-[11px]">
-            <span className="text-[#71717A] w-24">Eave height</span>
+            <span className="text-[var(--muted)] w-24">Eave height</span>
             <input
               type="number" step="0.5" min="6"
               value={facade.eaveHeight}
               onChange={(e) => setOverrides((o) => ({ ...o, eaveHeights: { ...o.eaveHeights, [facade.id]: parseFloat(e.target.value) || facade.eaveHeight } }))}
-              className="w-20 px-2 py-1 border border-[#E4E4E7] font-mono-num text-right"
+              className="w-20 px-2 py-1 border border-[var(--border)] font-mono-num text-right"
               data-testid={`ai-measure-3d-eave-${facade.id}`}
             />
             {facade.eaveHeightSource === "default" && <Amber />}
             {facade.eaveHeightSource === "ai" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)]"
                 title={house.sourceKind === "blueprint"
                   ? "Read straight from the elevation drawing's printed dimension"
                   : "Read straight from Claude's per-wall height_ft for this elevation"}
@@ -1209,7 +1209,7 @@ export default function HouseModel3D({ preview, estimate }) {
             )}
             {facade.eaveHeightSource === "ai-avg" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                 title="Claude didn't return a per-wall height for this elevation — using the whole-house average. Verify in the field."
                 data-testid={`ai-measure-3d-eave-avg-${facade.id}`}
               >
@@ -1221,7 +1221,7 @@ export default function HouseModel3D({ preview, estimate }) {
                 because they spread more than 1 ft. */}
             {facade.eaveHeightSource === "ai-disagreement" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                 title="Direct-view eave readings for this wall disagreed by >1 ft. The strongest reading was kept; the others were rejected. Open Debug to see the trace and verify in the field."
                 data-testid={`ai-measure-3d-eave-disagreement-${facade.id}`}
               >
@@ -1234,7 +1234,7 @@ export default function HouseModel3D({ preview, estimate }) {
                 Contractor MUST capture a direct side shot before quoting. */}
             {facade.eaveHeightSource === "ai-no-direct-view" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                 title="No photo directly measured this wall's eave (all shots were aerial, gable-end, or steeply angled). This value is a placeholder from the other walls — capture a direct side view before quoting."
                 data-testid={`ai-measure-3d-eave-no-direct-${facade.id}`}
               >
@@ -1243,7 +1243,7 @@ export default function HouseModel3D({ preview, estimate }) {
             )}
             {facade.eaveHeightSource === "user" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[var(--ai-soft)] text-[#5B21B6] border border-[var(--ai)]"
                 title="You overrode this wall's eave — hit Re-run to feed this back to the estimator"
                 data-testid={`ai-measure-3d-eave-user-${facade.id}`}
               >
@@ -1252,11 +1252,11 @@ export default function HouseModel3D({ preview, estimate }) {
             )}
           </div>
           <div className="flex items-center gap-2 text-[11px]">
-            <span className="text-[#71717A] w-24">Roof pitch</span>
+            <span className="text-[var(--muted)] w-24">Roof pitch</span>
             <select
               value={house.roof.pitch}
               onChange={(e) => setOverrides((o) => ({ ...o, pitch: parseInt(e.target.value, 10) }))}
-              className="w-20 px-2 py-1 border border-[#E4E4E7] text-right"
+              className="w-20 px-2 py-1 border border-[var(--border)] text-right"
               data-testid="ai-measure-3d-pitch"
             >
               {ROOF_PITCHES.map((p) => (
@@ -1266,7 +1266,7 @@ export default function HouseModel3D({ preview, estimate }) {
             {house.roof.pitchSource === "default" && <Amber />}
             {house.roof.pitchSource === "ai" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)]"
                 title={house.sourceKind === "blueprint"
                   ? `Read from the elevation's gable height (${house.roof.pitchAiRaw}/12, snapped to ${house.roof.pitch}/12)`
                   : `Derived from Claude's gable height (raw ${house.roof.pitchAiRaw}/12 across ${house.roof.pitchAiSamples} gable-end wall${house.roof.pitchAiSamples > 1 ? "s" : ""}, snapped to ${house.roof.pitch}/12)`}
@@ -1277,7 +1277,7 @@ export default function HouseModel3D({ preview, estimate }) {
             )}
             {house.roof.pitchSource === "user" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[var(--ai-soft)] text-[#5B21B6] border border-[var(--ai)]"
                 title="You overrode the pitch — hit Re-run to feed this back to the estimator"
                 data-testid="ai-measure-3d-pitch-user"
               >
@@ -1287,11 +1287,11 @@ export default function HouseModel3D({ preview, estimate }) {
           </div>
           {/* Iter 79j.26 — Roof type dropdown */}
           <div className="flex items-center gap-2 text-[11px]">
-            <span className="text-[#71717A] w-24">Roof type</span>
+            <span className="text-[var(--muted)] w-24">Roof type</span>
             <select
               value={house.roof.type}
               onChange={(e) => setOverrides((o) => ({ ...o, roofType: e.target.value }))}
-              className="px-2 py-1 border border-[#E4E4E7] text-left flex-1 min-w-0"
+              className="px-2 py-1 border border-[var(--border)] text-left flex-1 min-w-0"
               data-testid="ai-measure-3d-roof-type"
             >
               {ROOF_TYPES.map((rt) => (
@@ -1301,7 +1301,7 @@ export default function HouseModel3D({ preview, estimate }) {
             {house.roof.typeSource === "default" && <Amber />}
             {house.roof.typeSource === "ai-low-conf" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                 title={`Claude guessed "${house.roof.typeAiRaw}" with only ${Math.round((house.roof.typeAiConfidence || 0) * 100)}% confidence — defaulting to gable. Verify from the photos.`}
                 data-testid="ai-measure-3d-roof-type-lowconf"
               >
@@ -1310,7 +1310,7 @@ export default function HouseModel3D({ preview, estimate }) {
             )}
             {house.roof.typeSource === "ai" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)]"
                 title={house.sourceKind === "blueprint"
                   ? `Determined from printed gable heights across the elevations. ${house.roof.typeAiReasoning || ""}`
                   : `Classified by Claude with ${Math.round((house.roof.typeAiConfidence || 0) * 100)}% confidence. ${house.roof.typeAiReasoning || ""}`}
@@ -1321,7 +1321,7 @@ export default function HouseModel3D({ preview, estimate }) {
             )}
             {house.roof.typeSource === "user" && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[var(--ai-soft)] text-[#5B21B6] border border-[var(--ai)]"
                 title="You changed the roof type — hit Re-run to feed this back to the estimator"
                 data-testid="ai-measure-3d-roof-type-user"
               >
@@ -1340,7 +1340,7 @@ export default function HouseModel3D({ preview, estimate }) {
               data-testid="ai-measure-3d-ridge-mismatch-banner"
             >
               <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: AMBER }} />
-              <div className="text-[#92400E]">
+              <div className="text-[var(--warning-text)]">
                 <strong className="uppercase tracking-wider text-[9px]">Roof orientation may be wrong</strong>
                 <div className="mt-0.5 space-y-0.5">
                   {bannerMessages.map((m, i) => (
@@ -1357,11 +1357,11 @@ export default function HouseModel3D({ preview, estimate }) {
               Hidden for hip roofs — no gable ends, no orientation. */}
           {house.roof.type !== "hip" && (
             <div className="flex items-center gap-2 text-[11px]" data-testid="ai-measure-3d-ridge-row">
-              <span className="text-[#71717A] w-24">Ridge orientation</span>
+              <span className="text-[var(--muted)] w-24">Ridge orientation</span>
               <select
                 value={house.ridgeAxis}
                 onChange={(e) => setOverrides((o) => ({ ...o, ridgeAxis: e.target.value, dormer: { ...(o.dormer || {}), face: undefined } }))}
-                className="px-2 py-1 border border-[#E4E4E7] text-left flex-1 min-w-0"
+                className="px-2 py-1 border border-[var(--border)] text-left flex-1 min-w-0"
                 data-testid="ai-measure-3d-ridge-axis"
               >
                 {RIDGE_AXES.map((r) => (
@@ -1371,7 +1371,7 @@ export default function HouseModel3D({ preview, estimate }) {
               {house.ridgeAxisSource === "default" && <Amber />}
               {house.ridgeAxisSource === "ai" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)]"
                   title={house.sourceKind === "blueprint"
                     ? `Read from the elevations' gable-end walls (${house.ridgeAxisAiRaw === "x" ? "gables on left/right → side-gable" : "gables on front/back → front-gable"})`
                     : `Derived from Claude's gable-end walls (${house.ridgeAxisAiRaw === "x" ? "left/right gables → side-gable" : "front/back gables → front-gable"})`}
@@ -1382,7 +1382,7 @@ export default function HouseModel3D({ preview, estimate }) {
               )}
               {house.ridgeAxisSource === "user" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[var(--ai-soft)] text-[#5B21B6] border border-[var(--ai)]"
                   title="You changed the ridge orientation — hit Re-run to feed this back to the estimator"
                   data-testid="ai-measure-3d-ridge-user"
                 >
@@ -1406,7 +1406,7 @@ export default function HouseModel3D({ preview, estimate }) {
               Overrides are keyed by dormer index in overrides.dormers[]. */}
           {house.roof.type === "gable-shed-dormer" && (house.roof.dormers?.length || 0) > 1 && (
             <div
-              className="flex items-center gap-2 text-[10px] leading-tight bg-[#DCFCE7] border border-[#16A34A] text-[#166534] px-2 py-1"
+              className="flex items-center gap-2 text-[10px] leading-tight bg-[#DCFCE7] border border-[var(--success)] text-[#166534] px-2 py-1"
               data-testid="ai-measure-3d-dormers-count"
               title={house.roof.dormers.map((d, i) => `${i + 1}. ${d.face} · ${d.width.toFixed(1)} ft`).join("\n")}
             >
@@ -1421,9 +1421,9 @@ export default function HouseModel3D({ preview, estimate }) {
               className="flex items-center gap-2 text-[11px]"
               data-testid={`ai-measure-3d-dormer-row-${i}`}
             >
-              <span className="text-[#71717A] w-24">
+              <span className="text-[var(--muted)] w-24">
                 Dormer {i + 1} W (ft)
-                <span className="block text-[9px] italic text-[#A1A1AA] normal-case">{d.face}</span>
+                <span className="block text-[9px] italic text-[var(--muted)] normal-case">{d.face}</span>
               </span>
               <input
                 type="number" step="0.5" min="4"
@@ -1439,12 +1439,12 @@ export default function HouseModel3D({ preview, estimate }) {
                   // working during the transition.
                   ...(i === 0 ? { dormer: { ...(o.dormer || {}), width: parseFloat(e.target.value) || d.width } } : {}),
                 }))}
-                className="w-20 px-2 py-1 border border-[#E4E4E7] font-mono-num text-right"
+                className="w-20 px-2 py-1 border border-[var(--border)] font-mono-num text-right"
                 data-testid={`ai-measure-3d-dormer-width-${i}`}
               />
               {d.widthSource === "ai" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)]"
                   title="Direct-view dormer readings across 2+ photos agreed within ±1 ft — median taken"
                   data-testid={`ai-measure-3d-dormer-width-consensus-${i}`}
                 >
@@ -1453,7 +1453,7 @@ export default function HouseModel3D({ preview, estimate }) {
               )}
               {d.widthSource === "ai-disagreement" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                   title="Direct-view dormer widths disagreed by >1 ft. The strongest reading was kept, others rejected. Open Debug to see the trace."
                   data-testid={`ai-measure-3d-dormer-width-disagreement-${i}`}
                 >
@@ -1462,7 +1462,7 @@ export default function HouseModel3D({ preview, estimate }) {
               )}
               {d.widthSource === "ai-single" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                   title="Only ONE photo captured a direct view of this dormer face — the reading is real but couldn't be cross-checked. Capture a second angle before quoting."
                   data-testid={`ai-measure-3d-dormer-width-single-reading-${i}`}
                 >
@@ -1471,7 +1471,7 @@ export default function HouseModel3D({ preview, estimate }) {
               )}
               {d.widthSource === "ai-back-solved" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                   title="No direct-view width reading — back-solved from a window on the dormer face (window width + 3 ft trim per side). Verify before ordering."
                   data-testid={`ai-measure-3d-dormer-width-back-solved-${i}`}
                 >
@@ -1480,7 +1480,7 @@ export default function HouseModel3D({ preview, estimate }) {
               )}
               {d.widthSource === "ai-no-direct-view" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
                   title="No photo captured a direct view of the dormer face — this is a 12 ft placeholder. Capture a straight-on shot before quoting."
                   data-testid={`ai-measure-3d-dormer-width-no-direct-${i}`}
                 >
@@ -1489,7 +1489,7 @@ export default function HouseModel3D({ preview, estimate }) {
               )}
               {d.widthSource === "user" && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[var(--ai-soft)] text-[#5B21B6] border border-[var(--ai)]"
                   title="You overrode the dormer width — hit Re-run to feed this back to the estimator"
                   data-testid={`ai-measure-3d-dormer-width-user-${i}`}
                 >
@@ -1500,13 +1500,13 @@ export default function HouseModel3D({ preview, estimate }) {
             </div>
           ))}
           {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || (house.roof.dormers || []).some((d) => ["ai-disagreement", "ai-single", "ai-back-solved", "ai-no-direct-view", "default"].includes(d.widthSource))) && (
-            <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
+            <div className="text-[9px] italic text-[var(--warning-text)] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>
           )}
         </div>
-        <div className="p-3 bg-white border border-[#E4E4E7] space-y-1">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold flex items-center justify-between">
+        <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-1">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold flex items-center justify-between">
             <span>This wall — AI takeoff</span>
             {facade.confidence != null && (
               <span className="text-[9px] font-bold" style={{ color: facade.confidence >= 80 ? "#16A34A" : AMBER }}>
@@ -1521,12 +1521,12 @@ export default function HouseModel3D({ preview, estimate }) {
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
           <Row k="Openings" v={facade.openings.length} />
         </div>
-        <div className="p-3 bg-white border border-[#E4E4E7] space-y-1 flex-1 min-h-0 overflow-y-auto">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold sticky top-0 bg-white pb-1" data-testid="ai-measure-3d-materials-heading">
-            Whole-house materials <span className="text-[9px] italic text-[#71717A] font-normal">· from estimator</span>
+        <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-1 flex-1 min-h-0 overflow-y-auto">
+          <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold sticky top-0 bg-[var(--surface)] pb-1" data-testid="ai-measure-3d-materials-heading">
+            Whole-house materials <span className="text-[9px] italic text-[var(--muted)] font-normal">· from estimator</span>
           </div>
           {sidingLines.length === 0 ? (
-            <div className="text-[11px] italic text-[#71717A]">No siding lines in this preview.</div>
+            <div className="text-[11px] italic text-[var(--muted)]">No siding lines in this preview.</div>
           ) : (
             sidingLines.map((ln, i) => (
               <Row key={i} k={ln.name} v={`${ln.qty} ${ln.unit || ""}`} />
@@ -1539,14 +1539,14 @@ export default function HouseModel3D({ preview, estimate }) {
 }
 
 const Row = ({ k, v, bold }) => (
-  <div className={`flex justify-between items-baseline text-[11px] ${bold ? "font-bold text-[#09090B]" : "text-[#52525B]"}`}>
-    <span className="text-[#71717A]">{k}</span>
+  <div className={`flex justify-between items-baseline text-[11px] ${bold ? "font-bold text-[var(--ink)]" : "text-[var(--ink-2)]"}`}>
+    <span className="text-[var(--muted)]">{k}</span>
     <span className="font-mono-num tabular-nums">{v}</span>
   </div>
 );
 
 const Amber = () => (
-  <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]" title="Approximated / low-confidence — verify before you quote" data-testid="ai-measure-3d-amber">
+  <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]" title="Approximated / low-confidence — verify before you quote" data-testid="ai-measure-3d-amber">
     <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> estimated
   </span>
 );

@@ -256,7 +256,7 @@ export function printTakeoff({
     .header .source-tag {
       display: inline-block;
       background: #F97316;
-      color: white;
+      color: #09090B;
       padding: 2px 8px;
       font-size: 10px;
       font-weight: 700;
@@ -272,7 +272,7 @@ export function printTakeoff({
     .header .right {
       text-align: right;
       font-size: 10px;
-      color: #A1A1AA;
+      color: #71717A;
       text-transform: uppercase;
       letter-spacing: 0.16em;
     }
@@ -285,7 +285,7 @@ export function printTakeoff({
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.18em;
-      color: #F97316;
+      color: #C2410C;
       border-bottom: 1px solid #09090B;
       padding-bottom: 3px;
       margin-bottom: 8px;
@@ -301,7 +301,7 @@ export function printTakeoff({
     }
     .cell-label {
       font-size: 9px;
-      color: #A1A1AA;
+      color: #71717A;
       text-transform: uppercase;
       letter-spacing: 0.12em;
     }
@@ -320,7 +320,7 @@ export function printTakeoff({
       font-size: 9px;
       text-transform: uppercase;
       letter-spacing: 0.12em;
-      color: #A1A1AA;
+      color: #71717A;
       padding: 4px 6px;
       border-bottom: 1px solid #09090B;
       font-weight: 700;
@@ -339,7 +339,7 @@ export function printTakeoff({
       padding-top: 10px;
       border-top: 1px solid #E4E4E7;
       font-size: 9px;
-      color: #A1A1AA;
+      color: #71717A;
       text-transform: uppercase;
       letter-spacing: 0.14em;
       display: flex;

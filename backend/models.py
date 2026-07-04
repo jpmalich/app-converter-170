@@ -142,6 +142,37 @@ class EstimateIn(BaseModel):
     estimate_date: str = ""
     estimator: str = ""
     notes: str = ""
+    # Iter 79j.47 — Customer contact + company + billing + lead source.
+    # Every new field is Optional[str] with default None (NOT ""); the
+    # PUT handler's model_dump(exclude_none=True) means a partial payload
+    # from any client (JobInfoPanel, ISS editor, QuoteModal write-back)
+    # never clobbers stored values.
+    customer_email: Optional[str] = None
+    customer_phone: Optional[str] = None            # cell / primary
+    customer_phone_alt: Optional[str] = None        # landline / secondary
+    customer_fax: Optional[str] = None
+    customer_contact_method: Optional[str] = None   # cell|landline|email|text|""
+    customer_company: Optional[str] = None
+    customer_contact_title: Optional[str] = None
+    # Empty string means "same as job address" — no separate boolean flag.
+    billing_address: Optional[str] = None
+    lead_source: Optional[str] = None               # referral|repeat_customer|web|...
+    lead_source_detail: Optional[str] = None
+    # Structured job-address parts. The composed single-line `address`
+    # string above stays canonical (quote docs, CSVs, geocoding all
+    # read that field). These parts drive the 4-field UI grid and are
+    # persisted verbatim so a subsequent PUT payload without them
+    # doesn't lose them.
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    # Structured billing-address parts (only populated when the "same
+    # as job address" checkbox is un-checked).
+    billing_street: Optional[str] = None
+    billing_city: Optional[str] = None
+    billing_state: Optional[str] = None
+    billing_zip: Optional[str] = None
     # Estimate-level color choices (one per material family). Print on the
     # material list so the supplier knows exactly which colors to pull.
     siding_color: str = ""

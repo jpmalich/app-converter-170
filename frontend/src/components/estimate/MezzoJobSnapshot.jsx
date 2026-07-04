@@ -91,19 +91,19 @@ export default function MezzoJobSnapshot({ est }) {
       className="card mb-4 overflow-hidden"
       data-testid="mezzo-job-snapshot"
     >
-      <header className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[#E4E4E7] bg-[#FAFAFA]">
+      <header className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[var(--border)] bg-[var(--surface-muted)]">
         <div>
           <div className="section-tag">Mezzo {t("win.snapshot")}</div>
-          <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+          <div className="text-[10px] text-[var(--muted)] mt-0.5">
             {t("win.snapshot.subtitle")}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)] font-bold">
             {t("win.snapshot.baseTotal")}
           </div>
           <div
-            className="font-mono-num text-2xl font-bold text-[#09090B] leading-tight"
+            className="font-mono-num text-2xl font-bold text-[var(--ink)] leading-tight"
             data-testid="mezzo-snapshot-total"
           >
             {fmt(snapshot.total)}
@@ -112,7 +112,7 @@ export default function MezzoJobSnapshot({ est }) {
       </header>
 
       {isEmpty ? (
-        <div className="px-5 py-5 text-center text-[12px] text-[#A1A1AA]">
+        <div className="px-5 py-5 text-center text-[12px] text-[var(--muted)]">
           {t("win.snapshot.empty")}
         </div>
       ) : (
@@ -150,27 +150,27 @@ export default function MezzoJobSnapshot({ est }) {
 function StatTile({ icon, label, value, sub, accent, testid }) {
   const accentText =
     accent === "orange"
-      ? "text-[#F97316]"
+      ? "text-[var(--brand-text)]"
       : accent === "black"
-        ? "text-[#09090B]"
-        : "text-[#52525B]";
+        ? "text-[var(--ink)]"
+        : "text-[var(--ink-2)]";
   const accentBg =
     accent === "orange"
       ? "bg-[#FFF7ED]"
       : accent === "black"
-        ? "bg-[#FAFAFA]"
-        : "bg-white";
+        ? "bg-[var(--surface-muted)]"
+        : "bg-[var(--surface)]";
   return (
     <div className={`px-4 md:px-5 py-3 ${accentBg}`} data-testid={testid}>
       <div className={`flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-bold ${accentText}`}>
         {icon}
-        <span className="text-[#52525B]">{label}</span>
+        <span className="text-[var(--ink-2)]">{label}</span>
       </div>
-      <div className={`font-mono-num text-lg font-bold mt-1.5 ${accent === "muted" ? "text-[#3F3F46]" : "text-[#09090B]"}`}>
+      <div className={`font-mono-num text-lg font-bold mt-1.5 ${accent === "muted" ? "text-[#3F3F46]" : "text-[var(--ink)]"}`}>
         {value}
       </div>
       {sub ? (
-        <div className="text-[11px] text-[#71717A] font-mono-num mt-0.5 truncate" title={sub}>
+        <div className="text-[11px] text-[var(--muted)] font-mono-num mt-0.5 truncate" title={sub}>
           {sub}
         </div>
       ) : null}

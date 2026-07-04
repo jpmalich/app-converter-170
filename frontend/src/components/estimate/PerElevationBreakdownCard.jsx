@@ -108,19 +108,19 @@ function SwapProfileModal({ currentProfile, role, elevationLabel, sqft, onClose,
       onClick={onClose}
     >
       <div
-        className="bg-white max-w-md w-full border border-[#E4E4E7]"
+        className="bg-[var(--surface)] max-w-md w-full border border-[var(--border)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
               {elevationLabel} · {roleLabel}
             </div>
             <div className="text-sm font-bold">Swap profile</div>
           </div>
           <button
             type="button"
-            className="text-[#71717A] hover:text-[#09090B]"
+            className="text-[var(--muted)] hover:text-[var(--ink)]"
             onClick={onClose}
             data-testid="swap-profile-cancel"
           >
@@ -128,17 +128,17 @@ function SwapProfileModal({ currentProfile, role, elevationLabel, sqft, onClose,
           </button>
         </div>
         <div className="p-4 space-y-3">
-          <p className="text-[11px] text-[#52525B] leading-snug">
+          <p className="text-[11px] text-[var(--ink-2)] leading-snug">
             Change the profile family for this{" "}
             <span className="font-bold">{Math.round(sqft).toLocaleString()} ft² {roleLabel}</span>{" "}
             without re-running AI. The catalog lines will update on the next save.
           </p>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
               Profile
             </span>
             <select
-              className="block w-full mt-1 border border-[#E4E4E7] px-2 py-1.5 text-sm"
+              className="block w-full mt-1 border border-[var(--border)] px-2 py-1.5 text-sm"
               value={profile}
               onChange={(e) => setProfile(e.target.value)}
               data-testid="swap-profile-select"
@@ -148,17 +148,17 @@ function SwapProfileModal({ currentProfile, role, elevationLabel, sqft, onClose,
               ))}
             </select>
           </label>
-          <div className="text-[10px] text-[#A1A1AA] font-mono-num">
-            Current: <span className="text-[#71717A] font-bold">{PROFILE_LABELS[currentProfile] || currentProfile}</span>
+          <div className="text-[10px] text-[var(--muted)] font-mono-num">
+            Current: <span className="text-[var(--muted)] font-bold">{PROFILE_LABELS[currentProfile] || currentProfile}</span>
             {profile !== currentProfile && (
-              <> → <span className="text-[#F97316] font-bold">{PROFILE_LABELS[profile] || profile}</span></>
+              <> → <span className="text-[var(--brand-text)] font-bold">{PROFILE_LABELS[profile] || profile}</span></>
             )}
           </div>
         </div>
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[#E4E4E7] bg-[#FAFAFA]">
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)] bg-[var(--surface-muted)]">
           <button
             type="button"
-            className="border border-[#E4E4E7] px-3 py-1.5 text-sm hover:bg-white"
+            className="border border-[var(--border)] px-3 py-1.5 text-sm hover:bg-[var(--surface)]"
             onClick={onClose}
           >
             Cancel
@@ -166,7 +166,7 @@ function SwapProfileModal({ currentProfile, role, elevationLabel, sqft, onClose,
           <button
             type="button"
             disabled={!canSubmit}
-            className="bg-[#F97316] text-white px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[#EA580C]"
+            className="bg-[var(--brand)] text-[var(--on-brand)] px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[var(--brand-hover)]"
             onClick={submit}
             data-testid="swap-profile-submit"
           >
@@ -227,19 +227,19 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
       onClick={onClose}
     >
       <div
-        className="bg-white max-w-md w-full border border-[#E4E4E7]"
+        className="bg-[var(--surface)] max-w-md w-full border border-[var(--border)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
               {elevationLabel} elevation
             </div>
             <div className="text-sm font-bold">Add accent profile</div>
           </div>
           <button
             type="button"
-            className="text-[#71717A] hover:text-[#09090B]"
+            className="text-[var(--muted)] hover:text-[var(--ink)]"
             onClick={onClose}
             data-testid="add-accent-cancel"
           >
@@ -247,18 +247,18 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
           </button>
         </div>
         <div className="p-4 space-y-3">
-          <p className="text-[11px] text-[#52525B] leading-snug">
+          <p className="text-[11px] text-[var(--ink-2)] leading-snug">
             Use this to inject a profile the AI missed (e.g. a porch column
             wrap or a small B&B panel under a gable). The accent ft² is
             ADDED to that profile&apos;s total — it won&apos;t shrink the
             main wall area.
           </p>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
               Profile
             </span>
             <select
-              className="block w-full mt-1 border border-[#E4E4E7] px-2 py-1.5 text-sm"
+              className="block w-full mt-1 border border-[var(--border)] px-2 py-1.5 text-sm"
               value={profile}
               onChange={(e) => setProfile(e.target.value)}
               data-testid="add-accent-profile"
@@ -269,14 +269,14 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
             </select>
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
               Approx ft²
             </span>
             <input
               type="number"
               min={1}
               step={1}
-              className="block w-full mt-1 border border-[#E4E4E7] px-2 py-1.5 text-sm font-mono-num"
+              className="block w-full mt-1 border border-[var(--border)] px-2 py-1.5 text-sm font-mono-num"
               value={sqft}
               onChange={(e) => setSqft(e.target.value)}
               placeholder="e.g. 48"
@@ -285,12 +285,12 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
             />
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
               Location (optional)
             </span>
             <input
               type="text"
-              className="block w-full mt-1 border border-[#E4E4E7] px-2 py-1.5 text-sm"
+              className="block w-full mt-1 border border-[var(--border)] px-2 py-1.5 text-sm"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. porch face"
@@ -298,10 +298,10 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
             />
           </label>
         </div>
-        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[#E4E4E7] bg-[#FAFAFA]">
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--border)] bg-[var(--surface-muted)]">
           <button
             type="button"
-            className="border border-[#E4E4E7] px-3 py-1.5 text-sm hover:bg-white"
+            className="border border-[var(--border)] px-3 py-1.5 text-sm hover:bg-[var(--surface)]"
             onClick={onClose}
           >
             Cancel
@@ -309,7 +309,7 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
           <button
             type="button"
             disabled={!canSubmit}
-            className="bg-[#F97316] text-white px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[#EA580C]"
+            className="bg-[var(--brand)] text-[var(--on-brand)] px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[var(--brand-hover)]"
             onClick={submit}
             data-testid="add-accent-submit"
           >
@@ -531,11 +531,11 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
 
   return (
     <section
-      className="p-5 border-b border-[#E4E4E7] bg-white"
+      className="p-5 border-b border-[var(--border)] bg-[var(--surface)]"
       data-testid="per-elevation-breakdown"
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA]">
+        <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
           Per-Elevation Breakdown
         </div>
         <div className="flex items-center gap-3">
@@ -544,7 +544,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
               type="button"
               onClick={handleCrossCheck}
               disabled={crossChecking}
-              className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-[#7C3AED] hover:text-[#5B21B6] disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-[var(--ai)] hover:text-[#5B21B6] disabled:opacity-50"
               title="Run a second Claude pass to verify the profile callouts"
               data-testid="cross-check-btn"
             >
@@ -552,17 +552,17 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
               {crossChecking ? "Re-checking…" : "Re-check with AI"}
             </button>
           )}
-          <div className="text-[10px] text-[#71717A]">
+          <div className="text-[10px] text-[var(--muted)]">
             {perElevation.length} elevation{perElevation.length === 1 ? "" : "s"} ·
             {" "}
-            <span className="font-mono-num font-bold text-[#09090B]">
+            <span className="font-mono-num font-bold text-[var(--ink)]">
               {Math.round(sumSidingProfiles).toLocaleString()}
             </span>{" "}
             ft² siding split
           </div>
         </div>
       </div>
-      <p className="text-[11px] text-[#52525B] leading-snug mb-3">
+      <p className="text-[11px] text-[var(--ink-2)] leading-snug mb-3">
         AI reads the wall callouts on each elevation and splits siding into
         separate quote lines per profile.{" "}
         <span className="font-bold">Click any chip</span> to swap the profile
@@ -580,71 +580,71 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
       {/* Iter 78z (Cross-Check) — Recheck results panel */}
       {recheck && (recheck.conflicts?.length > 0 || recheck.suggested_accents?.length > 0) && (
         <div
-          className="border border-[#7C3AED] bg-[#F5F3FF] p-3 mb-3"
+          className="border border-[var(--ai)] bg-[var(--ai-soft)] p-3 mb-3"
           data-testid="cross-check-panel"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={14} className="text-[#7C3AED]" />
+            <Sparkles size={14} className="text-[var(--ai)]" />
             <span className="text-[10px] uppercase tracking-wider font-bold text-[#5B21B6]">
               AI Re-check — {recheck.agreement_pct}% agreement ({recheck.overall_confidence} confidence)
             </span>
           </div>
           {recheck.conflicts?.length > 0 && (
             <div className="mb-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#52525B] font-bold mb-1">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--ink-2)] font-bold mb-1">
                 Conflicts ({recheck.conflicts.length})
               </div>
               <ul className="space-y-1">
                 {recheck.conflicts.map((c, i) => (
                   <li key={i} className="text-[11px] text-[#3F3F46]" data-testid={`recheck-conflict-${i}`}>
                     <span className="font-bold uppercase">{c.elev}</span>{" "}
-                    <span className="text-[#71717A]">{c.role}:</span>{" "}
+                    <span className="text-[var(--muted)]">{c.role}:</span>{" "}
                     primary said{" "}
-                    <span className="font-bold text-[#EF4444]">{PROFILE_LABELS[c.primary] || c.primary || "—"}</span>
+                    <span className="font-bold text-[var(--danger)]">{PROFILE_LABELS[c.primary] || c.primary || "—"}</span>
                     {" "}→ verifier says{" "}
-                    <span className="font-bold text-[#16A34A]">{PROFILE_LABELS[c.verified] || c.verified}</span>
+                    <span className="font-bold text-[var(--success)]">{PROFILE_LABELS[c.verified] || c.verified}</span>
                     {c.confidence && c.confidence !== "high" && (
-                      <span className="text-[10px] text-[#A1A1AA]"> ({c.confidence})</span>
+                      <span className="text-[10px] text-[var(--muted)]"> ({c.confidence})</span>
                     )}
                   </li>
                 ))}
               </ul>
-              <p className="text-[10px] text-[#71717A] mt-1 italic">
+              <p className="text-[10px] text-[var(--muted)] mt-1 italic">
                 Click the affected chip below to swap to the verified profile, or leave as-is if the primary read looks right to you.
               </p>
             </div>
           )}
           {recheck.suggested_accents?.length > 0 && (
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-[#52525B] font-bold mb-1">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--ink-2)] font-bold mb-1">
                 Suggested accents ({recheck.suggested_accents.length})
               </div>
               <div className="space-y-1.5">
                 {recheck.suggested_accents.map((s, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-2 bg-white border border-[#E4E4E7] px-2 py-1.5"
+                    className="flex items-start gap-2 bg-[var(--surface)] border border-[var(--border)] px-2 py-1.5"
                     data-testid={`recheck-suggestion-${i}`}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] text-[#09090B]">
+                      <div className="text-[11px] text-[var(--ink)]">
                         <span className="font-bold uppercase">{s.elev}</span>{" "}
-                        <span className="text-[#71717A]">·</span>{" "}
+                        <span className="text-[var(--muted)]">·</span>{" "}
                         <span className="font-bold">{PROFILE_LABELS[s.profile] || s.profile}</span>{" "}
-                        <span className="text-[#A1A1AA] font-mono-num">{s.approx_sqft} ft²</span>{" "}
-                        <span className="text-[#71717A]">at {s.location}</span>
+                        <span className="text-[var(--muted)] font-mono-num">{s.approx_sqft} ft²</span>{" "}
+                        <span className="text-[var(--muted)]">at {s.location}</span>
                         {s.confidence && s.confidence !== "high" && (
-                          <span className="text-[10px] text-[#A1A1AA]"> ({s.confidence})</span>
+                          <span className="text-[10px] text-[var(--muted)]"> ({s.confidence})</span>
                         )}
                       </div>
                       {s.callout && (
-                        <div className="text-[10px] text-[#71717A] italic mt-0.5">{s.callout}</div>
+                        <div className="text-[10px] text-[var(--muted)] italic mt-0.5">{s.callout}</div>
                       )}
                     </div>
                     <button
                       type="button"
                       onClick={() => acceptSuggestedAccent(s)}
-                      className="bg-[#F97316] text-white text-[10px] uppercase tracking-wider font-bold px-2 py-1 hover:bg-[#EA580C]"
+                      className="bg-[var(--brand)] text-[var(--on-brand)] text-[10px] uppercase tracking-wider font-bold px-2 py-1 hover:bg-[var(--brand-hover)]"
                       data-testid={`recheck-accept-${i}`}
                     >
                       + Add
@@ -652,7 +652,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                     <button
                       type="button"
                       onClick={() => dismissSuggestion(s)}
-                      className="text-[#71717A] hover:text-[#09090B] p-1"
+                      className="text-[var(--muted)] hover:text-[var(--ink)] p-1"
                       title="Dismiss this suggestion"
                       data-testid={`recheck-dismiss-${i}`}
                     >
@@ -670,7 +670,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
           className="flex items-start gap-2 border border-[#F59E0B] bg-[#FEF3C7] px-3 py-2 mb-3"
           data-testid="per-elevation-drift-warning"
         >
-          <AlertTriangle size={14} className="text-[#92400E] flex-shrink-0 mt-0.5" />
+          <AlertTriangle size={14} className="text-[var(--warning-text)] flex-shrink-0 mt-0.5" />
           <div className="text-[11px] text-[#78350F] leading-snug">
             <span className="font-bold">Breakdown total drifts from siding total.</span>{" "}
             Profile sum is{" "}
@@ -690,7 +690,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
           shake gables and lumped everything into lap. */}
       {showSingleProfileNudge && (
         <div
-          className="flex items-start gap-2 border-2 border-[#F97316] bg-[#FFF7ED] px-3 py-2 mb-3"
+          className="flex items-start gap-2 border-2 border-[var(--brand)] bg-[#FFF7ED] px-3 py-2 mb-3"
           data-testid="single-profile-nudge"
         >
           <AlertTriangle size={16} className="text-[#9A3412] flex-shrink-0 mt-0.5" />
@@ -714,7 +714,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                   type="button"
                   onClick={handleCrossCheck}
                   disabled={crossChecking}
-                  className="underline font-bold text-[#7C3AED] hover:text-[#5B21B6] disabled:opacity-50"
+                  className="underline font-bold text-[var(--ai)] hover:text-[#5B21B6] disabled:opacity-50"
                   data-testid="single-profile-recheck-link"
                 >
                   Re-check with AI
@@ -731,16 +731,16 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
           return (
             <div
               key={`${e.label}-${i}`}
-              className="border border-[#E4E4E7] px-3 py-2"
+              className="border border-[var(--border)] px-3 py-2"
               data-testid={`elevation-row-${e.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
             >
               <div className="flex items-center justify-between mb-1.5">
-                <div className="text-xs font-bold uppercase tracking-wider text-[#09090B]">
+                <div className="text-xs font-bold uppercase tracking-wider text-[var(--ink)]">
                   {e.label || `Elevation ${i + 1}`}
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-[#F97316] hover:text-[#EA580C]"
+                  className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-[var(--brand-text)] hover:text-[var(--brand-hover)]"
                   onClick={() => setAccentElev(i)}
                   data-testid={`add-accent-btn-${i}`}
                 >
@@ -785,7 +785,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                   <ProfileChip family="stone" sqft={e.stone_sqft} suffix="not siding" />
                 )}
                 {!bodyOk && !e.gable_sqft && !e.dormer_sqft && !(e.accents || []).length && (
-                  <span className="text-[11px] text-[#A1A1AA] italic">
+                  <span className="text-[11px] text-[var(--muted)] italic">
                     No siding profiles detected on this elevation
                   </span>
                 )}

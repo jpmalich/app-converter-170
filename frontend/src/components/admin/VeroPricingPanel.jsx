@@ -220,10 +220,10 @@ export default function VeroPricingPanel({ token }) {
     return (
       <div className="card p-6 mt-6">
         <div className="flex items-center gap-3 mb-3">
-          <Wrench className="w-5 h-5 text-[#F97316]" />
+          <Wrench className="w-5 h-5 text-[var(--brand-text)]" />
           <div className="section-tag">Vero Window Pricing Matrix</div>
         </div>
-        <div className="text-sm text-[#A1A1AA]">Loading Vero prices…</div>
+        <div className="text-sm text-[var(--muted)]">Loading Vero prices…</div>
       </div>
     );
   }
@@ -234,17 +234,17 @@ export default function VeroPricingPanel({ token }) {
     <div className="card p-6 mt-6" data-testid="vero-pricing-panel">
       <div className="flex items-start justify-between mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <Wrench className="w-5 h-5 text-[#F97316]" />
+          <Wrench className="w-5 h-5 text-[var(--brand-text)]" />
           <div>
             <div className="section-tag">Vero Window Pricing Matrix</div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-0.5">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] mt-0.5">
               4 tiers · 5 products · base prices + adders matrix — paste from Excel
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
-            <span className="text-[10px] uppercase tracking-wider text-[#F97316] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[var(--brand-text)] font-bold">
               Unsaved changes
             </span>
           )}
@@ -259,14 +259,14 @@ export default function VeroPricingPanel({ token }) {
         </div>
       </div>
 
-      <p className="text-sm text-[#52525B] mb-4">
+      <p className="text-sm text-[var(--ink-2)] mb-4">
         Edit any cell or paste a range from the Vero Series pricebook
         (Ctrl/Cmd-V on the top-left target cell). Each (tier × product)
         carries a Base matrix (buckets × sister colors) and an Adders
         matrix (buckets × adder names).
       </p>
 
-      <div className="flex border border-[#E4E4E7] mb-3 overflow-x-auto" data-testid="vero-pricing-tier-tabs">
+      <div className="flex border border-[var(--border)] mb-3 overflow-x-auto" data-testid="vero-pricing-tier-tabs">
         {meta.tiers.map((t) => (
           <button
             key={t}
@@ -276,8 +276,8 @@ export default function VeroPricingPanel({ token }) {
               setActiveTier(t);
               setDirty(false);
             }}
-            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[#E4E4E7] last:border-r-0 transition ${
-              activeTier === t ? "bg-[#09090B] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[var(--border)] last:border-r-0 transition ${
+              activeTier === t ? "bg-[var(--bar-bg)] text-white" : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
             }`}
             data-testid={`vero-pricing-tier-${t}`}
           >
@@ -286,7 +286,7 @@ export default function VeroPricingPanel({ token }) {
         ))}
       </div>
 
-      <div className="flex border border-[#E4E4E7] mb-3 overflow-x-auto" data-testid="vero-pricing-product-tabs">
+      <div className="flex border border-[var(--border)] mb-3 overflow-x-auto" data-testid="vero-pricing-product-tabs">
         {meta.products.map((p) => (
           <button
             key={p}
@@ -299,8 +299,8 @@ export default function VeroPricingPanel({ token }) {
               setActiveGrid(grids2[0]?.id || "base_prices");
               setDirty(false);
             }}
-            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[#E4E4E7] last:border-r-0 transition ${
-              activeProduct === p ? "bg-[#F97316] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+            className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[var(--border)] last:border-r-0 transition ${
+              activeProduct === p ? "bg-[var(--brand)] text-[var(--on-brand)]" : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
             }`}
             data-testid={`vero-pricing-product-${p}`}
           >
@@ -320,7 +320,7 @@ export default function VeroPricingPanel({ token }) {
               setDirty(false);
             }}
             className={`px-3 py-1.5 text-[11px] uppercase tracking-wider font-semibold border ${
-              activeGrid === g.id ? "bg-[#FFF7ED] border-[#F97316] text-[#F97316]" : "bg-white border-[#E4E4E7] text-[#52525B] hover:bg-[#FAFAFA]"
+              activeGrid === g.id ? "bg-[#FFF7ED] border-[var(--brand)] text-[var(--brand-text)]" : "bg-[var(--surface)] border-[var(--border)] text-[var(--ink-2)] hover:bg-[var(--surface-muted)]"
             }`}
             data-testid={`vero-pricing-grid-${g.id}`}
           >
@@ -329,29 +329,29 @@ export default function VeroPricingPanel({ token }) {
         ))}
       </div>
 
-      <div className="text-[11px] text-[#52525B] mb-2 flex items-center gap-1.5">
-        <ClipboardPaste className="w-3.5 h-3.5 text-[#F97316]" />
+      <div className="text-[11px] text-[var(--ink-2)] mb-2 flex items-center gap-1.5">
+        <ClipboardPaste className="w-3.5 h-3.5 text-[var(--brand-text)]" />
         Tip: copy a block from the Vero Excel, click the top-left target
         cell, press <strong className="mx-0.5">Ctrl/Cmd-V</strong>.
       </div>
 
       {isEmpty ? (
-        <div className="border border-dashed border-[#E4E4E7] p-8 text-center text-sm text-[#A1A1AA]">
+        <div className="border border-dashed border-[var(--border)] p-8 text-center text-sm text-[var(--muted)]">
           No data yet for <strong>{activeTier} · {activeProduct}</strong> · {gridSpec.grid.label}.
           {activeTier !== "whole-sale" && (
             <> Seed this grid from your pricebook for {activeTier} or copy the structure from <strong>whole-sale</strong>.</>
           )}
         </div>
       ) : (
-        <div className="border border-[#E4E4E7] overflow-x-auto max-h-[600px]">
+        <div className="border border-[var(--border)] overflow-x-auto max-h-[600px]">
           <table className="w-full border-collapse text-xs" data-testid="vero-pricing-grid">
-            <thead className="bg-[#FAFAFA] sticky top-0 z-10">
+            <thead className="bg-[var(--surface-muted)] sticky top-0 z-10">
               <tr>
-                <th className="sticky left-0 z-10 bg-[#FAFAFA] text-left px-2 py-1.5 text-[10px] uppercase tracking-wider text-[#71717A] font-bold border-r border-[#E4E4E7] min-w-[110px]">
+                <th className="sticky left-0 z-10 bg-[var(--surface-muted)] text-left px-2 py-1.5 text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold border-r border-[var(--border)] min-w-[110px]">
                   {activeSizing === "fixed_model" ? "Model" : "UI Bucket"}
                 </th>
                 {gridSpec.cols.map((c) => (
-                  <th key={c} className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-[#52525B] font-bold border-r border-[#E4E4E7] last:border-r-0 min-w-[120px]" title={c}>
+                  <th key={c} className="px-2 py-1.5 text-[10px] uppercase tracking-wider text-[var(--ink-2)] font-bold border-r border-[var(--border)] last:border-r-0 min-w-[120px]" title={c}>
                     {c}
                   </th>
                 ))}
@@ -359,14 +359,14 @@ export default function VeroPricingPanel({ token }) {
             </thead>
             <tbody>
               {gridSpec.rows.map((rowLabel, rowIdx) => (
-                <tr key={rowLabel} className="border-t border-[#E4E4E7]">
-                  <td className="sticky left-0 z-10 bg-white px-2 py-0 text-[11px] font-mono-num text-[#09090B] font-semibold border-r border-[#E4E4E7] whitespace-nowrap">
+                <tr key={rowLabel} className="border-t border-[var(--border)]">
+                  <td className="sticky left-0 z-10 bg-[var(--surface)] px-2 py-0 text-[11px] font-mono-num text-[var(--ink)] font-semibold border-r border-[var(--border)] whitespace-nowrap">
                     {rowLabel}
                   </td>
                   {gridSpec.cols.map((colLabel, colIdx) => {
                     const v = gridSpec.getCell(rowLabel, colLabel);
                     return (
-                      <td key={colLabel} className="border-r border-[#E4E4E7] last:border-r-0">
+                      <td key={colLabel} className="border-r border-[var(--border)] last:border-r-0">
                         <input
                           type="number"
                           step="0.01"
@@ -388,17 +388,17 @@ export default function VeroPricingPanel({ token }) {
         </div>
       )}
 
-      <div className="mt-3 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
-        Editing: <span className="text-[#09090B] font-bold">{activeTier}</span>
+      <div className="mt-3 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+        Editing: <span className="text-[var(--ink)] font-bold">{activeTier}</span>
         <span className="mx-1">·</span>
-        <span className="text-[#09090B] font-bold">{activeProduct}</span>
+        <span className="text-[var(--ink)] font-bold">{activeProduct}</span>
         <span className="mx-1">·</span>
-        <span className="text-[#09090B] font-bold">{gridSpec.grid.label}</span>
-        <span className="ml-2 text-[#71717A] normal-case">
+        <span className="text-[var(--ink)] font-bold">{gridSpec.grid.label}</span>
+        <span className="ml-2 text-[var(--muted)] normal-case">
           ({gridSpec.rows.length} rows × {gridSpec.cols.length} cols)
         </span>
         {gridSpec.rows[0] && gridSpec.cols[0] && (
-          <span className="ml-2 text-[#71717A] normal-case">
+          <span className="ml-2 text-[var(--muted)] normal-case">
             · Sample: {gridSpec.rows[0]} / {gridSpec.cols[0]} = ${fmt(gridSpec.getCell(gridSpec.rows[0], gridSpec.cols[0]))}
           </span>
         )}
