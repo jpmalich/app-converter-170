@@ -11,7 +11,7 @@ export default function Footer() {
       className="mt-12 py-6 border-t border-[#E4E4E7] bg-white"
       data-testid="site-footer"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#A1A1AA]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#71717A]">
         <div>
           © {year} Pro-Quote Estimating Tool. All rights reserved.
         </div>

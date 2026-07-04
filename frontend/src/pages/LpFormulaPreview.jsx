@@ -57,7 +57,7 @@ export default function LpFormulaPreview() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
         <div className="card p-8 max-w-md w-full">
-          <Shield className="w-10 h-10 text-[#F97316] mb-4" />
+          <Shield className="w-10 h-10 text-[#C2410C] mb-4" />
           <h1 className="font-heading text-2xl text-[#09090B] mb-2">LP Formula Preview</h1>
           <p className="text-sm text-[#52525B]">
             This URL requires an admin token. Append{" "}
@@ -73,7 +73,7 @@ export default function LpFormulaPreview() {
       <div className="max-w-6xl mx-auto">
         <header className="mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <FlaskConical className="w-5 h-5 text-[#F97316]" />
+            <FlaskConical className="w-5 h-5 text-[#C2410C]" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#71717A]">
               Supplier Admin · LP Formula Go/No-Go Gate
             </span>
@@ -176,7 +176,7 @@ export default function LpFormulaPreview() {
                 </div>
                 <div
                   className={`font-mono-num text-2xl font-bold ${
-                    (data.summary?.lines_changed ?? 0) > 0 ? "text-[#F97316]" : "text-[#09090B]"
+                    (data.summary?.lines_changed ?? 0) > 0 ? "text-[#C2410C]" : "text-[#09090B]"
                   }`}
                   data-testid="lp-preview-changed"
                 >
@@ -232,10 +232,10 @@ export default function LpFormulaPreview() {
                           )}
                         </td>
                         <td className="px-3 py-2 text-[12px] text-right font-mono-num text-[#52525B]">
-                          {row.legacy_qty} <span className="text-[#A1A1AA]">{row.unit}</span>
+                          {row.legacy_qty} <span className="text-[#71717A]">{row.unit}</span>
                         </td>
                         <td className="px-3 py-2 text-[12px] text-right font-mono-num text-[#09090B] font-bold">
-                          {row.pdf_qty} <span className="text-[#A1A1AA]">{row.unit}</span>
+                          {row.pdf_qty} <span className="text-[#71717A]">{row.unit}</span>
                         </td>
                         <td
                           className={`px-3 py-2 text-[12px] text-right font-mono-num ${

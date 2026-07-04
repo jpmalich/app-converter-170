@@ -30,7 +30,7 @@
 // PhotoAnnotateModal (elevation + scale ref + zones + windows +
 // profileBoxes).
 import React, { useEffect, useRef, useState } from "react";
-import { Camera, X, Check, ChevronRight, ChevronLeft, SkipForward, Tags, Loader2 } from "lucide-react";
+import { Camera, X, Check, ChevronRight, ChevronLeft, SkipForward, Tags, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
@@ -530,22 +530,22 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               onClick={toggleFastTrack}
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 border font-bold uppercase tracking-wider transition ${
                 fastTrack
-                  ? "bg-[#F97316] border-[#F97316] text-white"
+                  ? "bg-[#F97316] border-[#F97316] text-[#09090B]"
                   : "bg-white border-[#E4E4E7] text-[#71717A] hover:bg-[#FAFAFA]"
               }`}
               data-testid="guided-capture-fast-track-toggle"
               title="Capture all photos first, then annotate them together at the end from the main AI Measure screen"
             >
-              ⚡ Fast Track
+              <Zap aria-hidden="true" className="w-3 h-3" /> Fast Track
             </button>
-            <span className="text-[10px] text-[#A1A1AA] italic ml-1">
+            <span className="text-[10px] text-[#71717A] italic ml-1">
               {fastTrack
                 ? "Fast Track: photos only — annotate later"
                 : "Best for accuracy — annotate each wall as you capture it"}
             </span>
           </div>
 
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
             Elevation: <span className="text-[#7C3AED]">{step.elevation}</span>
           </div>
           <h2 className="text-xl font-bold text-[#09090B] mt-1 mb-2" data-testid="guided-capture-step-title">
@@ -580,7 +580,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               <div className="text-sm font-bold uppercase tracking-wider text-[#7C3AED]">
                 Take / Choose Photo
               </div>
-              <div className="text-xs text-[#A1A1AA]">
+              <div className="text-xs text-[#71717A]">
                 Phone camera or photo library
               </div>
             </button>
@@ -665,7 +665,7 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
               <button
                 type="button"
                 onClick={skip}
-                className="px-3 py-2 bg-white text-[#A1A1AA] border border-[#E4E4E7] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                className="px-3 py-2 bg-white text-[#71717A] border border-[#E4E4E7] hover:bg-[#FAFAFA] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
                 data-testid="guided-capture-skip-btn"
                 title="Skip this step — fewer photos = lower AI accuracy"
               >

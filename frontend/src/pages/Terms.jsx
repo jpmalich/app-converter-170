@@ -21,9 +21,9 @@ export default function Terms() {
       </header>
 
       <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">Legal</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-[#71717A] mb-1">Legal</div>
         <h1 className="font-heading text-4xl text-[#09090B] mb-2">Terms of Service</h1>
-        <p className="text-xs text-[#A1A1AA] mb-8">
+        <p className="text-xs text-[#71717A] mb-8">
           Last updated: {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
         </p>
 
@@ -121,13 +121,13 @@ export default function Terms() {
             <h2 className="font-heading text-xl text-[#09090B] mb-2">10. Contact</h2>
             <p>
               Questions about these Terms? Reach out to{" "}
-              <a href="mailto:hhunt6677@yahoo.com" className="text-[#F97316] hover:underline">
+              <a href="mailto:hhunt6677@yahoo.com" className="text-[#C2410C] hover:underline">
                 hhunt6677@yahoo.com
               </a>.
             </p>
           </section>
 
-          <p className="text-xs text-[#A1A1AA] mt-10 pt-6 border-t border-[#E4E4E7]">
+          <p className="text-xs text-[#71717A] mt-10 pt-6 border-t border-[#E4E4E7]">
             This is a general-purpose template. Consult a licensed attorney to tailor it to your specific business
             and jurisdiction before relying on it as a binding agreement.
           </p>

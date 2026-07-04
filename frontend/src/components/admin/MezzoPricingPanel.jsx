@@ -182,10 +182,10 @@ export default function MezzoPricingPanel({ token }) {
     return (
       <div className="card p-6 mt-6">
         <div className="flex items-center gap-3 mb-3">
-          <Wrench className="w-5 h-5 text-[#F97316]" />
+          <Wrench className="w-5 h-5 text-[#C2410C]" />
           <div className="section-tag">Mezzo Window Pricing Matrix</div>
         </div>
-        <div className="text-sm text-[#A1A1AA]">Loading Mezzo prices…</div>
+        <div className="text-sm text-[#71717A]">Loading Mezzo prices…</div>
       </div>
     );
   }
@@ -194,17 +194,17 @@ export default function MezzoPricingPanel({ token }) {
     <div className="card p-6 mt-6" data-testid="mezzo-pricing-panel">
       <div className="flex items-start justify-between mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <Wrench className="w-5 h-5 text-[#F97316]" />
+          <Wrench className="w-5 h-5 text-[#C2410C]" />
           <div>
             <div className="section-tag">Mezzo Window Pricing Matrix</div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-0.5">
+            <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-0.5">
               4 tiers · 4 products · paste a grid directly from Excel
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
-            <span className="text-[10px] uppercase tracking-wider text-[#F97316] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[#C2410C] font-bold">
               Unsaved changes
             </span>
           )}
@@ -275,7 +275,7 @@ export default function MezzoPricingPanel({ token }) {
               setDirty(false);
             }}
             className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[#E4E4E7] last:border-r-0 transition ${
-              activeProduct === p ? "bg-[#F97316] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+              activeProduct === p ? "bg-[#F97316] text-[#09090B]" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
             }`}
             data-testid={`mezzo-pricing-product-${p}`}
           >
@@ -285,7 +285,7 @@ export default function MezzoPricingPanel({ token }) {
       </div>
 
       <div className="text-[11px] text-[#52525B] mb-2 flex items-center gap-1.5">
-        <ClipboardPaste className="w-3.5 h-3.5 text-[#F97316]" />
+        <ClipboardPaste className="w-3.5 h-3.5 text-[#C2410C]" />
         Tip: copy a block from the Mezzo Excel (Base + adder columns), click
         the top-left cell here, then press <strong className="mx-0.5">Ctrl/Cmd-V</strong>.
       </div>
@@ -354,7 +354,7 @@ export default function MezzoPricingPanel({ token }) {
         </table>
       </div>
 
-      <div className="mt-3 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+      <div className="mt-3 text-[10px] uppercase tracking-wider text-[#71717A]">
         Editing: <span className="text-[#09090B] font-bold">{activeTier}</span>
         <span className="mx-1">·</span>
         <span className="text-[#09090B] font-bold">{activeProduct}</span>

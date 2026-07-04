@@ -71,19 +71,19 @@ export default function Team() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="team-page">
-      <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">Settings</div>
+      <div className="text-xs uppercase tracking-[0.2em] text-[#71717A] mb-1">Settings</div>
       <h1 className="font-heading text-4xl text-[#09090B] mb-8">Company &amp; Team</h1>
 
       {/* Company info + rename */}
       <div className="card p-6 mb-6 max-w-2xl">
         <div className="flex items-center gap-3 mb-4">
-          <Building2 className="w-5 h-5 text-[#F97316]" />
+          <Building2 className="w-5 h-5 text-[#C2410C]" />
           <div className="section-tag">Company</div>
         </div>
         <div className="text-2xl font-heading text-[#09090B] mb-1" data-testid="company-name">
           {company.name}
         </div>
-        <div className="text-xs text-[#A1A1AA] mb-4">
+        <div className="text-xs text-[#71717A] mb-4">
           Created {new Date(company.created_at).toLocaleDateString()}
         </div>
         <div className="flex gap-2">
@@ -108,7 +108,7 @@ export default function Team() {
       {/* Logo upload */}
       <div className="card p-6 mb-6 max-w-2xl" data-testid="logo-panel">
         <div className="flex items-center gap-3 mb-4">
-          <ImageIcon className="w-5 h-5 text-[#F97316]" />
+          <ImageIcon className="w-5 h-5 text-[#C2410C]" />
           <div className="section-tag">Company Logo</div>
         </div>
         <p className="text-sm text-[#52525B] mb-4">
@@ -124,7 +124,7 @@ export default function Team() {
                 data-testid="logo-preview"
               />
             ) : (
-              <div className="font-heading text-[#F97316] text-4xl" data-testid="logo-placeholder">
+              <div className="font-heading text-[#C2410C] text-4xl" data-testid="logo-placeholder">
                 {(company.name || "W").charAt(0).toUpperCase()}
               </div>
             )}
@@ -202,7 +202,7 @@ export default function Team() {
             <Copy className="w-4 h-4" /> Copy
           </button>
         </div>
-        <p className="text-xs text-[#A1A1AA] mt-3 uppercase tracking-wider">
+        <p className="text-xs text-[#71717A] mt-3 uppercase tracking-wider">
           Teammate registers at <span className="font-mono-num text-[#52525B]">/login → Register → Join with code</span>
         </p>
       </div>

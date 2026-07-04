@@ -340,7 +340,7 @@ export default function ISSEstimateEditor() {
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <Loader2 className="w-6 h-6 animate-spin text-[#F97316]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#C2410C]" />
       </main>
     );
   }
@@ -374,11 +374,11 @@ export default function ISSEstimateEditor() {
               className="px-3 py-1 border-l border-[#F97316]"
               data-testid="iss-bar-totals"
             >
-              <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#F97316]">
+              <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#C2410C]">
                 ISS Quote
               </div>
               <div
-                className="font-mono-num text-base sm:text-xl font-bold text-[#F97316]"
+                className="font-mono-num text-base sm:text-xl font-bold text-[#C2410C]"
                 data-testid="iss-grand-total"
               >
                 {fmt(grandTotal)}
@@ -404,12 +404,12 @@ export default function ISSEstimateEditor() {
           <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="section-tag">Job Information</div>
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
                 ISS Quote · {est.estimate_number || "Draft"}
               </div>
             </div>
             {saving && (
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold flex items-center gap-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold flex items-center gap-1.5">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 Saving…
               </div>
@@ -452,7 +452,7 @@ export default function ISSEstimateEditor() {
         <div className="card p-4 mb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Customer</label>
+              <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Customer</label>
               <input
                 className="input h-9 text-sm w-full"
                 value={est.customer_name || ""}
@@ -461,7 +461,7 @@ export default function ISSEstimateEditor() {
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Address</label>
+              <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Address</label>
               <input
                 className="input h-9 text-sm w-full"
                 value={est.address || ""}
@@ -470,7 +470,7 @@ export default function ISSEstimateEditor() {
               />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Date</label>
+              <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Date</label>
               <input
                 type="date"
                 className="input h-9 text-sm w-full"
@@ -484,7 +484,7 @@ export default function ISSEstimateEditor() {
           {/* Scope of Work — same field as siding estimates (notes) so it
               flows through to the PDF/email like the rest of the app. */}
           <div className="mt-3">
-            <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">
+            <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">
               Scope of Work
             </label>
             <textarea
@@ -499,12 +499,12 @@ export default function ISSEstimateEditor() {
           {/* Material Colors — mirrors siding estimate Job Info palette so
               the supplier pulls the right color stock for ISS jobs too. */}
           <div className="mt-4 pt-3 border-t border-[#E4E4E7]">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
               Material Colors
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Siding</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Siding</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.siding_color || ""}
@@ -522,7 +522,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Ascend</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Ascend</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.ascend_color || ""}
@@ -536,7 +536,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Shake (Pelican Bay)</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Shake (Pelican Bay)</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.shake_color || ""}
@@ -554,7 +554,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Board &amp; Batten</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Board &amp; Batten</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.board_batten_color || ""}
@@ -572,7 +572,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Accessories</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Accessories</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.accessories_color || ""}
@@ -590,7 +590,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Outside Corner</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Outside Corner</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.outside_corner_color || ""}
@@ -608,7 +608,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Soffit / Fascia</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Soffit / Fascia</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.soffit_fascia_color || ""}
@@ -626,7 +626,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Window Wrap</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Window Wrap</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.window_wrap_color || ""}
@@ -640,7 +640,7 @@ export default function ISSEstimateEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">Gutter</label>
+                <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">Gutter</label>
                 <select
                   className="input h-9 text-sm w-full"
                   value={est.gutter_color || ""}
@@ -660,7 +660,7 @@ export default function ISSEstimateEditor() {
         {/* Pricing controls — Waste Factor + Profit (no Tax for ISS). */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
           <div className="card p-4" data-testid="iss-waste-card">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
               Waste Factor
             </div>
             <div className="flex items-baseline gap-2">
@@ -675,12 +675,12 @@ export default function ISSEstimateEditor() {
               />
               <span className="text-sm text-[#52525B]">% on siding squares</span>
             </div>
-            <p className="mt-2 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+            <p className="mt-2 text-[10px] uppercase tracking-wider text-[#71717A]">
               Applied to Install Vinyl Siding subtotal · ${totals.sidingSub.toFixed(2)} × {Number(est.waste_pct) || 0}% = ${totals.wasteAdd.toFixed(2)}
             </p>
             {/* Iter 45: soffit overhang for the PCS formula. */}
             <div className="mt-3 pt-3 border-t border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-2">Eave Overhang</div>
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-2">Eave Overhang</div>
               <div className="flex items-baseline gap-2">
                 <input
                   className="input num h-9 text-sm w-24"
@@ -703,7 +703,7 @@ export default function ISSEstimateEditor() {
             return (
               <div className="card p-4" data-testid="iss-profit-card">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+                  <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
                     Profit
                   </div>
                   <div
@@ -811,7 +811,7 @@ export default function ISSEstimateEditor() {
                   {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   <div className="section-tag text-left">{sec.title}</div>
                   {filledCount > 0 && (
-                    <span className="bg-[#F97316] text-white px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                    <span className="bg-[#F97316] text-[#09090B] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
                       {filledCount}
                     </span>
                   )}
@@ -882,7 +882,7 @@ export default function ISSEstimateEditor() {
                             data-testid={`iss-qty-${sec.title}-${it.name}`}
                           />
                         </div>
-                        <div className="w-12 text-center text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+                        <div className="w-12 text-center text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
                           {it.unit}
                         </div>
                         {isMiscMat ? (
@@ -907,7 +907,7 @@ export default function ISSEstimateEditor() {
                             {Number(effectivePrice) !== Number(it.price || 0) && (
                               <button
                                 type="button"
-                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#F97316] text-white text-[10px] leading-none flex items-center justify-center"
+                                className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#F97316] text-[#09090B] text-[10px] leading-none flex items-center justify-center"
                                 onClick={() =>
                                   setQty(sec.title, it.name, it.unit, Number(it.price || 0), qty)
                                 }
@@ -941,7 +941,7 @@ export default function ISSEstimateEditor() {
           <div className="section-tag mb-4 flex items-center gap-2">
             <span>Summary</span>
             <span
-              className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 border border-[#F97316] text-[#F97316]"
+              className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 border border-[#F97316] text-[#C2410C]"
               data-testid="iss-summary-tab-badge"
             >
               ISS Quote
@@ -1040,11 +1040,11 @@ export default function ISSEstimateEditor() {
 function Stat({ label, val, orange, bold, testid }) {
   return (
     <div className="border-l-2 border-[#E4E4E7] pl-3" data-testid={testid ? `${testid}-card` : undefined}>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-[#71717A] font-bold">{label}</div>
       <div
         className={`font-mono-num mt-1 ${
           orange
-            ? "text-2xl font-bold text-[#F97316]"
+            ? "text-2xl font-bold text-[#C2410C]"
             : bold
             ? "text-lg font-bold text-[#09090B]"
             : "text-base text-[#09090B]"

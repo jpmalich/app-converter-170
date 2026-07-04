@@ -70,7 +70,7 @@ export default function BulkApplyConfirm({
           </button>
           <button
             type="button"
-            className="px-4 py-2 bg-[#F97316] text-white border border-[#F97316] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider"
+            className="px-4 py-2 bg-[#F97316] text-[#09090B] border border-[#F97316] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider"
             onClick={onApplyAll}
             data-testid={`${testid}-apply`}
           >

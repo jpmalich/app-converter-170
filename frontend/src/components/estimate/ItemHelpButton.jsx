@@ -37,7 +37,7 @@ export default function ItemHelpButton({ itemName }) {
             e.stopPropagation();
             setOpen((v) => !v);
           }}
-          className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-[#A1A1AA] hover:text-[#3B82F6] hover:bg-[#EFF6FF] focus:outline-none focus:ring-1 focus:ring-[#3B82F6] transition-colors"
+          className="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-[#71717A] hover:text-[#3B82F6] hover:bg-[#EFF6FF] focus:outline-none focus:ring-1 focus:ring-[#3B82F6] transition-colors"
           aria-label={`Help — ${itemName}`}
           data-testid={`item-help-${itemName}`}
         >

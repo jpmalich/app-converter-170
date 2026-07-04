@@ -1174,7 +1174,7 @@ export default function HouseModel3D({ preview, estimate }) {
           ))}
         </div>
         <div className="p-3 bg-white border border-[#E4E4E7] space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">Geometry — this wall</div>
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">Geometry — this wall</div>
           <div className="flex items-center gap-2 text-[11px]">
             <span className="text-[#71717A] w-24">Width (ft)</span>
             <input
@@ -1423,7 +1423,7 @@ export default function HouseModel3D({ preview, estimate }) {
             >
               <span className="text-[#71717A] w-24">
                 Dormer {i + 1} W (ft)
-                <span className="block text-[9px] italic text-[#A1A1AA] normal-case">{d.face}</span>
+                <span className="block text-[9px] italic text-[#71717A] normal-case">{d.face}</span>
               </span>
               <input
                 type="number" step="0.5" min="4"
@@ -1506,7 +1506,7 @@ export default function HouseModel3D({ preview, estimate }) {
           )}
         </div>
         <div className="p-3 bg-white border border-[#E4E4E7] space-y-1">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold flex items-center justify-between">
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold flex items-center justify-between">
             <span>This wall — AI takeoff</span>
             {facade.confidence != null && (
               <span className="text-[9px] font-bold" style={{ color: facade.confidence >= 80 ? "#16A34A" : AMBER }}>
@@ -1522,7 +1522,7 @@ export default function HouseModel3D({ preview, estimate }) {
           <Row k="Openings" v={facade.openings.length} />
         </div>
         <div className="p-3 bg-white border border-[#E4E4E7] space-y-1 flex-1 min-h-0 overflow-y-auto">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold sticky top-0 bg-white pb-1" data-testid="ai-measure-3d-materials-heading">
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold sticky top-0 bg-white pb-1" data-testid="ai-measure-3d-materials-heading">
             Whole-house materials <span className="text-[9px] italic text-[#71717A] font-normal">· from estimator</span>
           </div>
           {sidingLines.length === 0 ? (

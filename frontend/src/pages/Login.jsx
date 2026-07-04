@@ -76,14 +76,14 @@ export default function Login() {
               <div className="font-heading text-xl text-[#09090B] leading-none" data-testid="supplier-name">
                 {branding.supplier_name}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.25em] text-[#A1A1AA] mt-1">
+              <div className="text-[10px] uppercase tracking-[0.25em] text-[#71717A] mt-1">
                 {t("auth.sidingEstimator")}
               </div>
             </div>
           </div>
 
           <div className="mb-7">
-            <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-2">
+            <div className="text-xs uppercase tracking-[0.2em] text-[#71717A] mb-2">
               {mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}
             </div>
             <h1 className="font-heading text-3xl sm:text-4xl text-[#09090B] leading-tight">
@@ -110,7 +110,7 @@ export default function Login() {
                   <div className="flex border-b border-[#E4E4E7] mb-3">
                     <button
                       type="button"
-                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "create" ? "text-[#F97316] border-b-2 border-[#F97316]" : "text-[#A1A1AA]"}`}
+                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "create" ? "text-[#C2410C] border-b-2 border-[#F97316]" : "text-[#71717A]"}`}
                       onClick={() => setJoinMode("create")}
                       data-testid="mode-create-co"
                     >
@@ -118,7 +118,7 @@ export default function Login() {
                     </button>
                     <button
                       type="button"
-                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "join" ? "text-[#F97316] border-b-2 border-[#F97316]" : "text-[#A1A1AA]"}`}
+                      className={`flex-1 py-2 text-xs uppercase tracking-wider font-bold ${joinMode === "join" ? "text-[#C2410C] border-b-2 border-[#F97316]" : "text-[#71717A]"}`}
                       onClick={() => setJoinMode("join")}
                       data-testid="mode-join-co"
                     >
@@ -150,7 +150,7 @@ export default function Login() {
                           required
                           data-testid="signup-code-input"
                         />
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-1">
+                        <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-1">
                           {branding.supplier_tagline}
                         </div>
                       </div>
@@ -167,7 +167,7 @@ export default function Login() {
                         required={joinMode === "join"}
                         data-testid="invite-code-input"
                       />
-                      <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-1">
+                      <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-1">
                         {t("auth.inviteHelp")}
                       </div>
                     </div>
@@ -242,10 +242,10 @@ export default function Login() {
             )}
           </div>
 
-          <div className="mt-10 text-[11px] text-[#A1A1AA] uppercase tracking-widest">
+          <div className="mt-10 text-[11px] text-[#71717A] uppercase tracking-widest">
             {t("auth.providedBy", { supplier: branding.supplier_name })}
           </div>
-          <div className="mt-4 text-[10px] text-[#A1A1AA] flex items-center gap-3">
+          <div className="mt-4 text-[10px] text-[#71717A] flex items-center gap-3">
             <span>© {new Date().getFullYear()} Pro-Quote Estimating Tool</span>
             <span aria-hidden="true">·</span>
             <a href="/terms" className="hover:text-[#09090B]" data-testid="login-terms-link">Terms</a>

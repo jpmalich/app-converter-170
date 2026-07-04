@@ -232,7 +232,7 @@ function CoverageBar({ label, segments, totalLf, pcs, unit, formula }) {
         ))}
       </div>
       {formula && (
-        <div className="text-[10px] font-mono-num text-[#A1A1AA] mt-0.5">{formula}</div>
+        <div className="text-[10px] font-mono-num text-[#71717A] mt-0.5">{formula}</div>
       )}
     </div>
   );
@@ -338,12 +338,12 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
       data-testid="takeoff-recon-card"
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA]">
+        <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
           Takeoff Reconciliation
         </div>
         <div className="text-[10px] uppercase tracking-wider text-[#71717A]">
           Waste · <span className="font-bold text-[#09090B]">{pct}%</span>{" "}
-          <span className="text-[#A1A1AA]">(Siding + Soffit panels only)</span>
+          <span className="text-[#71717A]">(Siding + Soffit panels only)</span>
         </div>
       </div>
       <p className="text-[11px] text-[#52525B] leading-snug mb-3">
@@ -379,7 +379,7 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
                 </td>
                 <td
                   className={`px-3 py-1.5 text-right ${
-                    r.drift ? "text-[#F97316] font-bold" : "text-[#09090B]"
+                    r.drift ? "text-[#C2410C] font-bold" : "text-[#09090B]"
                   }`}
                 >
                   {r.order}
@@ -391,7 +391,7 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
       </div>
       {(showCoverage || showGutterAssumptions) && (
         <div className="mt-4 pt-3 border-t border-[#E4E4E7]" data-testid="coverage-breakdown">
-          <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-2">
+          <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
             Coverage Breakdown
           </div>
           <p className="text-[11px] text-[#52525B] leading-snug mb-3">
@@ -425,7 +425,7 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
           )}
           {showGutterAssumptions && (
             <div className="mt-3 pt-2.5 border-t border-dashed border-[#E4E4E7]" data-testid="gutter-assumptions">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-1.5">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-1.5">
                 Gutter assumptions
               </div>
               <p className="text-[10px] text-[#71717A] leading-snug mb-2">

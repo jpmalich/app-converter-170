@@ -127,7 +127,7 @@ export default function CatalogSyncBanner({ est, update }) {
         data-testid="sync-banner"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex-shrink-0 w-9 h-9 bg-[#F97316] text-white flex items-center justify-center">
+          <div className="flex-shrink-0 w-9 h-9 bg-[#F97316] text-[#09090B] flex items-center justify-center">
             <RefreshCw className="w-4 h-4" />
           </div>
           <div className="min-w-0">
@@ -171,7 +171,7 @@ export default function CatalogSyncBanner({ est, update }) {
             onClick={(e) => e.stopPropagation()}
             data-testid="sync-modal"
           >
-            <div className="bg-[#F97316] text-white px-5 py-4 flex items-center justify-between">
+            <div className="bg-[#F97316] text-[#09090B] px-5 py-4 flex items-center justify-between">
               <div>
                 <div className="font-heading text-lg">{t("est.sync.modal.title")}</div>
                 <div className="text-xs opacity-90 mt-0.5">
@@ -192,7 +192,7 @@ export default function CatalogSyncBanner({ est, update }) {
             <div className="overflow-y-auto flex-1">
               <table className="w-full text-sm">
                 <thead className="bg-[#FAFAFA] border-b border-[#E4E4E7] sticky top-0">
-                  <tr className="text-left text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                  <tr className="text-left text-[10px] uppercase tracking-wider text-[#71717A]">
                     <th className="px-4 py-2">{t("est.sync.col.item")}</th>
                     <th className="px-3 py-2 text-center">{t("est.sync.col.qty")}</th>
                     <th className="px-3 py-2 text-right">{t("est.sync.col.matOld")}</th>
@@ -206,15 +206,15 @@ export default function CatalogSyncBanner({ est, update }) {
                     <tr key={`${c.section}::${c.name}`} className="border-b border-[#F4F4F5]">
                       <td className="px-4 py-2 text-xs">
                         <div className="font-bold text-[#09090B]">{c.name}</div>
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-0.5">{c.section}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-0.5">{c.section}</div>
                       </td>
                       <td className="px-3 py-2 text-center font-mono-num text-xs">{c.qty} {c.unit}</td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.mat_changed ? "text-[#A1A1AA] line-through" : ""}`}>{usd(c.mat_old)}</td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.mat_changed ? (c.mat_new > c.mat_old ? "text-green-700" : "text-red-700") : "text-[#A1A1AA]"}`}>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.mat_changed ? "text-[#71717A] line-through" : ""}`}>{usd(c.mat_old)}</td>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.mat_changed ? (c.mat_new > c.mat_old ? "text-green-700" : "text-red-700") : "text-[#71717A]"}`}>
                         {c.mat_changed ? usd(c.mat_new) : "—"}
                       </td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.lab_changed ? "text-[#A1A1AA] line-through" : ""}`}>{usd(c.lab_old)}</td>
-                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.lab_changed ? (c.lab_new > c.lab_old ? "text-green-700" : "text-red-700") : "text-[#A1A1AA]"}`}>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs ${c.lab_changed ? "text-[#71717A] line-through" : ""}`}>{usd(c.lab_old)}</td>
+                      <td className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${c.lab_changed ? (c.lab_new > c.lab_old ? "text-green-700" : "text-red-700") : "text-[#71717A]"}`}>
                         {c.lab_changed ? usd(c.lab_new) : "—"}
                       </td>
                     </tr>

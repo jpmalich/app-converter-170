@@ -372,7 +372,7 @@ export default function MezzoPanel({ est, update }) {
                       )}
                       <div>
                         <div className="section-tag">{tSection(pt.name, lang)}</div>
-                        <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+                        <div className="text-[10px] text-[#71717A] mt-0.5">
                           {t(openings.length === 1 ? "win.openingsLabel" : "win.openingsLabelPlural", { n: openings.length })}
                         </div>
                       </div>
@@ -380,7 +380,7 @@ export default function MezzoPanel({ est, update }) {
                     <div className="flex items-center gap-3">
                       <span
                         className={`font-mono-num text-sm ${
-                          packageQuoteActive ? "line-through text-[#A1A1AA]" : "text-[#52525B]"
+                          packageQuoteActive ? "line-through text-[#71717A]" : "text-[#52525B]"
                         }`}
                         title={packageQuoteActive ? "Per-window pricing overridden by Window Package Quote" : undefined}
                       >
@@ -403,7 +403,7 @@ export default function MezzoPanel({ est, update }) {
 
                   {isOpen && (openings.length === 0 ? (
                     <div
-                      className="px-5 py-8 text-center text-sm text-[#A1A1AA]"
+                      className="px-5 py-8 text-center text-sm text-[#71717A]"
                       dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t("win.noOpenings")) }}
                     />
                   ) : (
@@ -488,11 +488,11 @@ function OpeningRow({
   return (
     <div className="px-4 md:px-5 py-3" data-testid={`mezzo-opening-${op.id}`}>
       <div className="grid grid-cols-12 gap-3 items-end">
-        <div className="col-span-12 md:col-span-1 text-[11px] uppercase tracking-wider text-[#A1A1AA] font-bold pb-2 md:pb-1">
+        <div className="col-span-12 md:col-span-1 text-[11px] uppercase tracking-wider text-[#71717A] font-bold pb-2 md:pb-1">
           #{(op.label || (bucket ? bucket.label : "—"))}
         </div>
         <div className="col-span-4 md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+          <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
             {t("win.width")}
           </label>
           <input
@@ -508,7 +508,7 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+          <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
             {t("win.height")}
           </label>
           <input
@@ -524,7 +524,7 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-1">
-          <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+          <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
             {t("win.qty")}
           </label>
           <input
@@ -539,7 +539,7 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-2 text-xs">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
             {t("win.ui")} ({(Number(op.width) || 0)}+{(Number(op.height) || 0)})
           </div>
           <div className={`font-mono-num text-sm font-bold ${inRange ? "text-[#09090B]" : "text-[#DC2626]"}`}>
@@ -550,11 +550,11 @@ function OpeningRow({
           </div>
         </div>
         <div className="col-span-4 md:col-span-1 text-xs">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.base")}</div>
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">{t("win.base")}</div>
           <div className="font-mono-num text-sm">{fmt(baseMat)}</div>
         </div>
         <div className="col-span-4 md:col-span-2 text-right">
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.total")}</div>
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">{t("win.total")}</div>
           <div className="font-mono-num text-base font-bold text-[#09090B]">{fmt(total)}</div>
         </div>
         <div className="col-span-12 md:col-span-1 flex md:justify-end gap-1">
@@ -604,7 +604,7 @@ function OpeningRow({
               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               {t("win.upgradeOptions")}
               {(op.adders || []).length > 0 && (
-                <span className="bg-[#F97316] text-white px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                <span className="bg-[#F97316] text-[#09090B] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
                   {op.adders.length}
                 </span>
               )}
@@ -770,7 +770,7 @@ function MezzoBaseIncludedHint({ testid }) {
             <ul className="space-y-1 text-[11px] text-[#3F3F46] leading-snug">
               {MEZZO_BASE_INCLUDED_ITEMS.map((item) => (
                 <li key={item} className="flex items-start gap-1.5">
-                  <span className="text-[#F97316] font-bold mt-px">·</span>
+                  <span className="text-[#C2410C] font-bold mt-px">·</span>
                   <span>{item}</span>
                 </li>
               ))}

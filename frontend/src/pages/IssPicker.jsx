@@ -19,7 +19,7 @@ export default function IssPicker() {
       <button
         type="button"
         onClick={() => nav("/")}
-        className="text-xs font-bold uppercase tracking-[0.18em] text-[#52525B] hover:text-[#F97316] mb-6"
+        className="text-xs font-bold uppercase tracking-[0.18em] text-[#52525B] hover:text-[#C2410C] mb-6"
         data-testid="iss-picker-back"
       >
         {t("home.back")}
@@ -42,7 +42,7 @@ export default function IssPicker() {
           className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors"
           data-testid="iss-card-siding"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[#C2410C]">
             <HomeIcon className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -52,7 +52,7 @@ export default function IssPicker() {
             {t("home.issTitle")}
           </h2>
           <p className="text-sm text-[#52525B] mb-6">{t("home.issDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#C2410C] group-hover:underline">
             {t("home.issCta")}
           </div>
         </button>
@@ -63,7 +63,7 @@ export default function IssPicker() {
           className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors"
           data-testid="iss-card-windows"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[#C2410C]">
             <RectangleHorizontal className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -75,7 +75,7 @@ export default function IssPicker() {
           <p className="text-sm text-[#52525B] mb-6">
             {t("home.issWindowsDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#C2410C] group-hover:underline">
             {t("home.issWindowsCta")}
           </div>
         </button>
@@ -88,7 +88,7 @@ export default function IssPicker() {
           data-testid="iss-card-new-construction"
           aria-disabled="true"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#A1A1AA]">
+          <div className="flex items-center gap-3 mb-4 text-[#71717A]">
             <Hammer className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -100,7 +100,7 @@ export default function IssPicker() {
           <p className="text-sm text-[#52525B] mb-6">
             {t("home.issNewConDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#A1A1AA]">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#71717A]">
             {t("home.issNewConCta")}
           </div>
         </div>

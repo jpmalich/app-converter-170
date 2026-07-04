@@ -95,7 +95,7 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
           </button>
           <button
             type="button"
-            className="px-4 py-2 bg-[#F97316] text-white border border-[#F97316] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+            className="px-4 py-2 bg-[#F97316] text-[#09090B] border border-[#F97316] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
             disabled={selected.size === 0}
             onClick={() => onConfirm(Array.from(selected))}
             data-testid="tab-picker-confirm"

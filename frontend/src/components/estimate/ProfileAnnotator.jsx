@@ -19,7 +19,7 @@
 //
 // The boxes use NORMALIZED coordinates (0-1) so they survive image resizing.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { X, Plus, Trash2, Ruler, Save, MousePointer2, ZoomIn, ZoomOut, Maximize2, Minimize2, AlertTriangle, Loader2 } from "lucide-react";
+import { X, Plus, Trash2, Ruler, Save, MousePointer2, ZoomIn, ZoomOut, Maximize2, Minimize2, AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -611,7 +611,7 @@ export default function ProfileAnnotator({
             <button
               type="button"
               onClick={save}
-              className="bg-[#F97316] text-white text-xs font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-[#EA580C] flex items-center gap-1"
+              className="bg-[#F97316] text-[#09090B] text-xs font-bold uppercase tracking-wider px-3 py-1.5 hover:bg-[#EA580C] flex items-center gap-1"
               data-testid="annotator-save"
             >
               <Save size={12} /> Save
@@ -642,7 +642,7 @@ export default function ProfileAnnotator({
                 >
                   <img src={p.url} alt={`photo ${i}`} className="w-full h-auto block" />
                   {count > 0 && (
-                    <span className="absolute top-1 right-1 bg-[#F97316] text-white text-[9px] font-bold px-1.5 py-0.5">
+                    <span className="absolute top-1 right-1 bg-[#F97316] text-[#09090B] text-[9px] font-bold px-1.5 py-0.5">
                       {count}
                     </span>
                   )}
@@ -908,7 +908,7 @@ export default function ProfileAnnotator({
           {/* Right panel — palette + per-box editor */}
           <div className="w-72 border-l border-[#E4E4E7] flex flex-col">
             <div className="p-3 border-b border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-2">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
                 Draw mode
               </div>
               <div className="grid grid-cols-2 gap-1 mb-3">
@@ -942,7 +942,7 @@ export default function ProfileAnnotator({
                   )}
                 </div>
               )}
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-2">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
                 Profile {drawMode === "rect" ? "(drag to draw box)" : "(click corners on image)"}
               </div>
               <div className="grid grid-cols-3 gap-1">
@@ -962,7 +962,7 @@ export default function ProfileAnnotator({
             </div>
             <div className="p-3 border-b border-[#E4E4E7]">
               <div className="flex items-center justify-between mb-1">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA]">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
                   Scale reference
                 </div>
                 {scaleRef ? (
@@ -970,7 +970,7 @@ export default function ProfileAnnotator({
                     ✓ {scaleRef.real_ft.toFixed(2)}ft / {Math.round(scaleRef.px_height)}px
                   </span>
                 ) : (
-                  <span className="text-[10px] text-[#A1A1AA]">not set</span>
+                  <span className="text-[10px] text-[#71717A]">not set</span>
                 )}
               </div>
               <div className="flex gap-1 mt-1">
@@ -994,7 +994,7 @@ export default function ProfileAnnotator({
                   data-testid="annotator-auto-scale"
                   title="Use AI vision to find a labeled dimension on the image"
                 >
-                  {ocrBusy ? "Reading…" : "✨ Auto-detect"}
+                  {ocrBusy ? "Reading…" : (<><Sparkles aria-hidden="true" className="w-3 h-3" /> Auto-detect</>)}
                 </button>
               </div>
               {scaleRefInput.open && (
@@ -1035,11 +1035,11 @@ export default function ProfileAnnotator({
               )}
             </div>
             <div className="flex-1 overflow-y-auto p-3">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-2">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-2">
                 Boxes on this image ({boxes.length})
               </div>
               {boxes.length === 0 && (
-                <div className="text-[11px] text-[#A1A1AA] italic">
+                <div className="text-[11px] text-[#71717A] italic">
                   <MousePointer2 size={12} className="inline mr-1" />
                   Click and drag on the image to draw a box.
                 </div>

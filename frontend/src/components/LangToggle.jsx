@@ -13,7 +13,7 @@ export default function LangToggle({ tone = "light", className = "" }) {
     "px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider transition";
   const activeLight = "bg-[#09090B] text-white";
   const inactiveLight = "bg-white text-[#52525B] hover:bg-[#F4F4F5]";
-  const activeDark = "bg-[#F97316] text-white";
+  const activeDark = "bg-[#F97316] text-[#09090B]";
   const inactiveDark = "bg-transparent text-white/70 hover:text-white";
 
   const border = isDark ? "border border-white/20" : "border border-[#E4E4E7]";

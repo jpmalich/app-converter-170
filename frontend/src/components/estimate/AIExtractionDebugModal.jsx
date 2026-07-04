@@ -81,7 +81,7 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
       <div className="flex items-center gap-2 px-3 py-2 bg-[#F4F4F5] border-b border-[#E4E4E7]">
         <span className="text-[10px] font-bold uppercase tracking-wider text-[#0EA5E9]">P{idx}</span>
         <span className="text-[11px] text-[#52525B] font-mono">
-          {coalesce(p.elevation)} <span className="text-[#A1A1AA]">·</span>{" "}
+          {coalesce(p.elevation)} <span className="text-[#71717A]">·</span>{" "}
           {p.elevation_confidence != null ? `${p.elevation_confidence}%` : "conf ?"}
         </span>
       </div>
@@ -98,23 +98,23 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
           <Row label="Walls visible">
             {(p.walls_visible && p.walls_visible.length)
               ? p.walls_visible.join(", ")
-              : <span className="text-[#A1A1AA] italic">not reported</span>}
+              : <span className="text-[#71717A] italic">not reported</span>}
           </Row>
           <Row label="Eave observed">
             {p.eave_height_ft_observed != null
               ? <span className="font-bold text-[#0EA5E9]">{fmtFt(p.eave_height_ft_observed)}</span>
-              : <span className="text-[#A1A1AA] italic">null (not measurable)</span>}
+              : <span className="text-[#71717A] italic">null (not measurable)</span>}
             {p.eave_reasoning && (
               <div className="text-[10px] text-[#71717A] mt-0.5">{p.eave_reasoning}</div>
             )}
           </Row>
           <Row label="Pitch observed">
-            {coalesce(p.pitch_ratio_observed, <span className="text-[#A1A1AA] italic">null</span>)}
+            {coalesce(p.pitch_ratio_observed, <span className="text-[#71717A] italic">null</span>)}
           </Row>
           <Row label="Gable Δh">
             {p.gable_triangle_height_ft_observed != null
               ? fmtFt(p.gable_triangle_height_ft_observed)
-              : <span className="text-[#A1A1AA] italic">null</span>}
+              : <span className="text-[#71717A] italic">null</span>}
           </Row>
           <Row label="Dormers here">
             <span className={p.dormers_observed_count ? "font-bold text-[#0EA5E9]" : ""}>
@@ -134,12 +134,12 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
               <div className="space-y-0.5">
                 {p.openings_this_photo.map((o, i) => (
                   <div key={i} className="text-[10px] flex items-center gap-1.5">
-                    <span className="text-[#A1A1AA]">·</span>
+                    <span className="text-[#71717A]">·</span>
                     <span className="font-bold text-[#3F3F46]">{o.type}</span>
                     <span className="text-[#52525B]">{fmtIn(o.width_in)}×{fmtIn(o.height_in)}</span>
                     {o.opening_id && <span className="text-[#71717A] italic">{o.opening_id}</span>}
                     {o.bbox && Array.isArray(o.bbox) && (
-                      <span className="text-[#A1A1AA]" title="pixel bbox">
+                      <span className="text-[#71717A]" title="pixel bbox">
                         [{o.bbox.map((n) => Math.round(n)).join(",")}]
                       </span>
                     )}
@@ -157,7 +157,7 @@ function PhotoCard({ photo, idx, photoUrls, focused }) {
 function Row({ label, children }) {
   return (
     <div className="flex items-baseline gap-2">
-      <span className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold w-20 flex-shrink-0">{label}</span>
+      <span className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold w-20 flex-shrink-0">{label}</span>
       <div className="flex-1 min-w-0 break-words">{children}</div>
     </div>
   );
@@ -185,11 +185,11 @@ function WallCard({ w, onFocusPhoto }) {
             ? <div className="flex gap-1 flex-wrap">
                 {sourcePhotos.map((i) => <PhotoChip key={i} idx={i} onFocus={onFocusPhoto} />)}
               </div>
-            : <span className="text-[#A1A1AA] italic">not reported</span>}
+            : <span className="text-[#71717A] italic">not reported</span>}
         </Row>
         {readings.length > 0 && (
           <div>
-            <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-0.5">
+            <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold mb-0.5">
               Per-photo readings (before merge)
             </div>
             <div className="space-y-0.5 pl-2 border-l-2 border-[#E4E4E7]">
@@ -231,7 +231,7 @@ function OpeningRow({ o, i, onFocusPhoto }) {
       <div className="flex gap-1 min-w-0 flex-1">
         {sources.length > 0
           ? sources.map((idx) => <PhotoChip key={idx} idx={idx} onFocus={onFocusPhoto} />)
-          : <span className="text-[#A1A1AA] italic text-[10px]">no photo tag</span>}
+          : <span className="text-[#71717A] italic text-[10px]">no photo tag</span>}
       </div>
       {o._reconciliation_note && (
         <span className="text-[10px] text-[#71717A] italic truncate" title={o._reconciliation_note}>
@@ -358,7 +358,7 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
               </h4>
             </div>
             {maxIdx < 0 && (
-              <div className="text-[11px] text-[#A1A1AA] italic px-3 py-8 text-center">
+              <div className="text-[11px] text-[#71717A] italic px-3 py-8 text-center">
                 No per-photo data. The AI didn&apos;t return a `photos[]` array for this run.
               </div>
             )}
@@ -399,7 +399,7 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
                 <Row label="Roof type">
                   <span className="font-bold text-[#7C3AED]">{coalesce(raw.roof_type)}</span>
                   {raw.roof_type_confidence != null && (
-                    <span className="text-[#A1A1AA] ml-1">({Math.round(raw.roof_type_confidence * 100)}%)</span>
+                    <span className="text-[#71717A] ml-1">({Math.round(raw.roof_type_confidence * 100)}%)</span>
                   )}
                 </Row>
                 {raw.roof_type_reasoning && (
@@ -441,7 +441,7 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
                 </span>
               </div>
               {openings.length === 0
-                ? <div className="p-3 text-[11px] text-[#A1A1AA] italic">No openings extracted.</div>
+                ? <div className="p-3 text-[11px] text-[#71717A] italic">No openings extracted.</div>
                 : openings.map((o, i) => <OpeningRow key={i} o={o} i={i} onFocusPhoto={focusPhoto} />)}
             </div>
 

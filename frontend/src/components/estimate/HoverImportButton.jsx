@@ -8,7 +8,7 @@
 // them read-only above the line list so the contractor can sanity-check before
 // committing.
 import React, { useRef, useState } from "react";
-import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer } from "lucide-react";
+import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer, ScanSearch } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
@@ -562,7 +562,7 @@ export default function HoverImportButton({ est, update, save }) {
             onClick={(e) => e.stopPropagation()}
             data-testid="hover-warning-modal"
           >
-            <div className="bg-[#F97316] text-white px-5 py-4 flex items-center gap-3">
+            <div className="bg-[#F97316] text-[#09090B] px-5 py-4 flex items-center gap-3">
               <AlertTriangle className="w-6 h-6 flex-shrink-0" />
               <div className="font-heading text-lg">Quantity Verification Required</div>
             </div>
@@ -582,7 +582,7 @@ export default function HoverImportButton({ est, update, save }) {
               </button>
               <button
                 type="button"
-                className="px-4 py-2 bg-[#F97316] text-white border border-[#F97316] hover:bg-[#EA580C] text-sm font-bold uppercase tracking-wider"
+                className="px-4 py-2 bg-[#F97316] text-[#09090B] border border-[#F97316] hover:bg-[#EA580C] text-sm font-bold uppercase tracking-wider"
                 onClick={() => {
                   setShowWarning(false);
                   fileRef.current?.click();
@@ -676,11 +676,11 @@ export default function HoverImportButton({ est, update, save }) {
                               <button
                                 type="button"
                                 onClick={() => runDeepVerify(w)}
-                                className="px-2 py-1 bg-white text-[#B45309] border border-[#B45309] hover:bg-[#FEF3C7] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap"
+                                className="px-2 py-1 bg-white text-[#B45309] border border-[#B45309] hover:bg-[#FEF3C7] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap inline-flex items-center gap-1"
                                 title="Re-measure this elevation using the scale bar (~$0.40, ~10s)"
                                 data-testid={`deep-verify-${w.code}`}
                               >
-                                🔍 Deep Verify
+                                <ScanSearch aria-hidden="true" className="w-3 h-3" /> Deep Verify
                               </button>
                             )}
                             {dv === "loading" && (
@@ -700,10 +700,10 @@ export default function HoverImportButton({ est, update, save }) {
                               data-testid={`deep-verify-result-${w.code}`}
                             >
                               <div className="flex items-center justify-between">
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-[#B45309]">
-                                  🔍 Deep Verify · {dv.label} Elevation
+                                <div className="text-[10px] uppercase tracking-wider font-bold text-[#B45309] inline-flex items-center gap-1">
+                                  <ScanSearch aria-hidden="true" className="w-3 h-3" /> Deep Verify · {dv.label} Elevation
                                 </div>
-                                <div className="text-[9px] text-[#A1A1AA] uppercase tracking-wider">
+                                <div className="text-[9px] text-[#71717A] uppercase tracking-wider">
                                   confidence: {dv.confidence || "—"}
                                 </div>
                               </div>
@@ -718,7 +718,7 @@ export default function HoverImportButton({ est, update, save }) {
                                   <div className="text-[13px] font-bold text-[#09090B]">
                                     {dv.measured_gross_wall_sqft?.toFixed?.(0) || "—"} ft²
                                   </div>
-                                  <div className="text-[9px] text-[#A1A1AA]">
+                                  <div className="text-[9px] text-[#71717A]">
                                     {dv.measured_width_ft?.toFixed?.(0) || "—"}×{dv.measured_height_ft?.toFixed?.(0) || "—"} ft
                                   </div>
                                 </div>
@@ -727,14 +727,14 @@ export default function HoverImportButton({ est, update, save }) {
                                   <div className="text-[13px] font-bold text-[#09090B]">
                                     {dv.phase2_gross_wall_sqft?.toFixed?.(0) || "—"} ft²
                                   </div>
-                                  <div className="text-[9px] text-[#A1A1AA]">{dv.delta_vs_phase2 || "—"}</div>
+                                  <div className="text-[9px] text-[#71717A]">{dv.delta_vs_phase2 || "—"}</div>
                                 </div>
                                 <div className="border border-[#E4E4E7] p-1.5">
                                   <div className="text-[9px] uppercase tracking-wider font-bold text-[#71717A]">Text extract</div>
                                   <div className="text-[13px] font-bold text-[#09090B]">
                                     {dv.text_area_sqft?.toFixed?.(0) || "—"} ft²
                                   </div>
-                                  <div className="text-[9px] text-[#A1A1AA]">{dv.delta_vs_text || "—"}</div>
+                                  <div className="text-[9px] text-[#71717A]">{dv.delta_vs_text || "—"}</div>
                                 </div>
                               </div>
                               {dv.notes && (
@@ -802,7 +802,7 @@ export default function HoverImportButton({ est, update, save }) {
                 };
                 return (
                   <div className="p-5 border-b border-[#E4E4E7] bg-white" data-testid="hover-elevation-drawings">
-                    <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-1">
+                    <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-1">
                       Elevation Drawings
                     </div>
                     <p className="text-[11px] text-[#52525B] mb-3">
@@ -825,7 +825,7 @@ export default function HoverImportButton({ est, update, save }) {
               })()}
               {/* Extracted Measurements block */}
               <div className="p-5 border-b border-[#E4E4E7] bg-[#FAFAFA]">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-3">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-3">
                   Extracted Measurements
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -833,7 +833,7 @@ export default function HoverImportButton({ est, update, save }) {
                     .filter(([, v]) => v !== null && v !== undefined && v !== "" && typeof v !== "object")
                     .map(([k, v]) => (
                       <div key={k}>
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                        <div className="text-[10px] uppercase tracking-wider text-[#71717A]">
                           {KEY_LABELS[k] || k}
                         </div>
                         <div className="font-mono-num text-sm font-bold text-[#09090B] truncate" title={String(v)}>
@@ -862,10 +862,10 @@ export default function HoverImportButton({ est, update, save }) {
               {openings.length > 0 && (
                 <div className="p-5 border-b border-[#E4E4E7]">
                   <div className="flex items-center gap-2 mb-3 pb-1 border-b border-[#09090B]">
-                    <span className="text-xs uppercase tracking-[0.18em] font-bold text-[#F97316]">
+                    <span className="text-xs uppercase tracking-[0.18em] font-bold text-[#C2410C]">
                       Vero Window Openings — Style Guess
                     </span>
-                    <span className="text-[10px] text-[#A1A1AA]">
+                    <span className="text-[10px] text-[#71717A]">
                       ({openings.length} {openings.length === 1 ? "opening" : "openings"} · edit any style before applying)
                     </span>
                   </div>
@@ -875,7 +875,7 @@ export default function HoverImportButton({ est, update, save }) {
                   </p>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                      <tr className="text-left text-[10px] uppercase tracking-wider text-[#71717A]">
                         <th className="py-1 pr-2">HOVER ID</th>
                         <th className="py-1 pr-2 text-right">W</th>
                         <th className="py-1 pr-2 text-right">H</th>
@@ -918,7 +918,7 @@ export default function HoverImportButton({ est, update, save }) {
                           <td className="py-1.5">
                             <button
                               type="button"
-                              className="text-[#A1A1AA] hover:text-[#DC2626] p-1"
+                              className="text-[#71717A] hover:text-[#DC2626] p-1"
                               onClick={() => removeOpening(op.id)}
                               title="Skip this opening"
                               data-testid={`hover-opening-remove-${op.hover_id || op.id}`}
@@ -936,7 +936,7 @@ export default function HoverImportButton({ est, update, save }) {
               {/* Lines block — grouped by tab so the contractor can see at a
                   glance what each option will look like. */}
               <div className="p-5">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA] mb-3">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A] mb-3">
                   Auto-generated Line Items ({result.lines?.length || 0} across {Object.keys(TAB_LABELS).filter(t => (result.lines || []).some(l => (l.tab || "vinyl") === t)).length} tabs)
                 </div>
                 {result.lines?.length ? (
@@ -948,16 +948,16 @@ export default function HoverImportButton({ est, update, save }) {
                     return (
                       <div key={tab} className="mb-5 last:mb-0">
                         <div className="flex items-center gap-2 mb-2 pb-1 border-b border-[#09090B]">
-                          <span className="text-xs uppercase tracking-[0.18em] font-bold text-[#F97316]">
+                          <span className="text-xs uppercase tracking-[0.18em] font-bold text-[#C2410C]">
                             {TAB_LABELS[tab]} tab
                           </span>
-                          <span className="text-[10px] text-[#A1A1AA]">
+                          <span className="text-[10px] text-[#71717A]">
                             ({tabLines.length} {tabLines.length === 1 ? "line" : "lines"})
                           </span>
                         </div>
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="text-left text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+                            <tr className="text-left text-[10px] uppercase tracking-wider text-[#71717A]">
                               <th className="py-1 pr-3">Section</th>
                               <th className="py-1 pr-3">Item</th>
                               <th className="py-1 pr-3 text-right">Qty</th>
@@ -974,7 +974,7 @@ export default function HoverImportButton({ est, update, save }) {
                                 <td className="py-2 pr-3">
                                   <div className="text-xs text-[#09090B]">{l.name}</div>
                                   {l.note && (
-                                    <div className="text-[10px] text-[#A1A1AA] mt-0.5">{l.note}</div>
+                                    <div className="text-[10px] text-[#71717A] mt-0.5">{l.note}</div>
                                   )}
                                 </td>
                                 <td className="py-2 pr-3 text-right font-mono-num text-sm font-bold">{l.qty}</td>
@@ -995,7 +995,7 @@ export default function HoverImportButton({ est, update, save }) {
             </div>
 
             <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-between items-center">
-              <div className="text-[10px] text-[#A1A1AA]">
+              <div className="text-[10px] text-[#71717A]">
                 Existing lines with matching names will have their qty updated. Windows are appended as new openings.
               </div>
               <div className="flex gap-2">
@@ -1027,7 +1027,7 @@ export default function HoverImportButton({ est, update, save }) {
                 </button>
                 <button
                   type="button"
-                  className="px-4 py-2 bg-[#F97316] text-white border border-[#F97316] hover:bg-[#EA580C] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-4 py-2 bg-[#F97316] text-[#09090B] border border-[#F97316] hover:bg-[#EA580C] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   onClick={apply}
                   disabled={(!result.lines?.length && !openings.length) || applying}
                   data-testid="hover-apply-btn"

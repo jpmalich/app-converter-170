@@ -20,7 +20,7 @@ export default function ContractorPicker() {
       <button
         type="button"
         onClick={() => nav("/")}
-        className="text-xs font-bold uppercase tracking-[0.18em] text-[#52525B] hover:text-[#F97316] mb-6"
+        className="text-xs font-bold uppercase tracking-[0.18em] text-[#52525B] hover:text-[#C2410C] mb-6"
         data-testid="contractor-picker-back"
       >
         {t("home.back")}
@@ -53,7 +53,7 @@ export default function ContractorPicker() {
           >
             {t("home.underConstruction")}
           </span>
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[#C2410C]">
             <RectangleHorizontal className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -63,7 +63,7 @@ export default function ContractorPicker() {
             {t("home.windowsTitle")}
           </h2>
           <p className="text-sm text-[#52525B] mb-6">{t("home.windowsDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#C2410C] group-hover:underline">
             {t("home.windowsCta")}
           </div>
         </button>
@@ -74,7 +74,7 @@ export default function ContractorPicker() {
           className="card text-left p-6 sm:p-8 group hover:border-[#F97316] transition-colors"
           data-testid="contractor-card-siding"
         >
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[#C2410C]">
             <HomeIcon className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -84,7 +84,7 @@ export default function ContractorPicker() {
             {t("home.sidingTitle")}
           </h2>
           <p className="text-sm text-[#52525B] mb-6">{t("home.sidingDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#C2410C] group-hover:underline">
             {t("home.sidingCta")}
           </div>
         </button>
@@ -105,7 +105,7 @@ export default function ContractorPicker() {
           >
             Beta · Feedback Welcome
           </span>
-          <div className="flex items-center gap-3 mb-4 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-4 text-[#C2410C]">
             <Layers className="w-8 h-8" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -115,7 +115,7 @@ export default function ContractorPicker() {
             {t("home.lpTitle")}
           </h2>
           <p className="text-sm text-[#52525B] mb-6">{t("home.lpDesc")}</p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#C2410C] group-hover:underline">
             {t("home.lpCta")}
           </div>
         </button>

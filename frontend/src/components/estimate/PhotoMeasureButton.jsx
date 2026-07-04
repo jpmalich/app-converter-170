@@ -697,7 +697,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                     className="bg-white max-w-sm w-full shadow-xl"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="bg-[#F97316] text-white px-4 py-2.5">
+                    <div className="bg-[#F97316] text-[#09090B] px-4 py-2.5">
                       <div className="font-heading text-base">Reference Length</div>
                       <div className="text-[11px] opacity-90 mt-0.5">
                         How long is the object you just tapped in real life?
@@ -705,7 +705,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                     </div>
                     <div className="p-4 space-y-3">
                       <div>
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                           Unit
                         </div>
                         <div className="flex gap-1">
@@ -736,7 +736,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                         </div>
                       </div>
                       <div>
-                        <label className="block text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                        <label className="block text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                           Real length in {calibUnit === "ft" ? "feet" : "inches"}
                         </label>
                         <input
@@ -768,7 +768,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                           </div>
                         )}
                       </div>
-                      <div className="text-[10px] text-[#A1A1AA] leading-snug">
+                      <div className="text-[10px] text-[#71717A] leading-snug">
                         Tip: use something with a known size — a standard entry door is ~<b>7 ft</b>, a single garage door is ~<b>7 ft</b> tall × <b>9 ft</b> wide, a double garage door is ~<b>7 × 16 ft</b>.
                       </div>
                     </div>
@@ -785,7 +785,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                         type="button"
                         onClick={confirmCalibration}
                         disabled={!valid}
-                        className="px-3 py-2 bg-[#F97316] text-white hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                        className="px-3 py-2 bg-[#F97316] text-[#09090B] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider disabled:opacity-50"
                         data-testid="photo-measure-calib-confirm"
                       >
                         Calibrate
@@ -811,7 +811,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                   className="bg-white max-w-md w-full shadow-xl"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="bg-[#F97316] text-white px-4 py-2.5">
+                  <div className="bg-[#F97316] text-[#09090B] px-4 py-2.5">
                     <div className="font-heading text-base">
                       Label this measurement
                     </div>
@@ -831,7 +831,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                           data-testid={`photo-measure-label-${opt.key}`}
                         >
                           {opt.name}
-                          <div className="text-[10px] text-[#A1A1AA] font-normal mt-0.5">
+                          <div className="text-[10px] text-[#71717A] font-normal mt-0.5">
                             {opt.unit === "in" ? "(window size · in)" : "(ft)"}
                           </div>
                         </button>
@@ -859,7 +859,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                   <div>
                     {prefillThumbs.length > 1 && (
                       <div className="mb-3" data-testid="photo-measure-prefill-grid">
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-2">
+                        <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-2">
                           Pick one of your AI photos to refine
                         </div>
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -880,7 +880,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                             </button>
                           ))}
                         </div>
-                        <div className="text-[10px] text-[#A1A1AA] text-center mt-3 uppercase tracking-wider">
+                        <div className="text-[10px] text-[#71717A] text-center mt-3 uppercase tracking-wider">
                           — or upload a different photo —
                         </div>
                       </div>
@@ -1058,7 +1058,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
 
                     {/* Measurement list */}
                     <div className="border-t border-[#E4E4E7] pt-2">
-                      <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+                      <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">
                         Measurements ({measures.length})
                       </div>
                       <ul className="space-y-1 max-h-32 overflow-y-auto" data-testid="photo-measure-list">
@@ -1070,12 +1070,12 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                                 <span className="font-mono-num font-bold">{m.feet.toFixed(1)} ft</span>{" "}
                                 <span className="text-[#71717A]">{m.labelName}</span>
                                 {offPhoto && (
-                                  <span className="ml-1 text-[9px] uppercase tracking-wider text-[#A1A1AA] border border-[#E4E4E7] px-1 py-px rounded-sm" title="Placed on a different photo — still counted in totals">
+                                  <span className="ml-1 text-[9px] uppercase tracking-wider text-[#71717A] border border-[#E4E4E7] px-1 py-px rounded-sm" title="Placed on a different photo — still counted in totals">
                                     other photo
                                   </span>
                                 )}
                               </span>
-                              <button onClick={() => removeMeasurement(m.id)} className="text-[#A1A1AA] hover:text-[#DC2626]">
+                              <button onClick={() => removeMeasurement(m.id)} className="text-[#71717A] hover:text-[#DC2626]">
                                 <Trash2 className="w-3 h-3" />
                               </button>
                             </li>
@@ -1085,7 +1085,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                     </div>
 
                     <div className="border-t border-[#E4E4E7] pt-2">
-                      <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+                      <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">
                         Openings ({openings.length})
                       </div>
                       <ul className="space-y-1 max-h-24 overflow-y-auto">
@@ -1097,7 +1097,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                                 <span className="w-2.5 h-2.5 rounded-full" style={{ background: t?.color }} />
                                 {t?.name}
                               </span>
-                              <button onClick={() => removeOpening(o.id)} className="text-[#A1A1AA] hover:text-[#DC2626]">
+                              <button onClick={() => removeOpening(o.id)} className="text-[#71717A] hover:text-[#DC2626]">
                                 <Trash2 className="w-3 h-3" />
                               </button>
                             </li>
@@ -1108,7 +1108,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
 
                     {/* Zone list (deductions) */}
                     <div className="border-t border-[#E4E4E7] pt-2">
-                      <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+                      <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">
                         No-siding zones ({zones.length})
                       </div>
                       <ul className="space-y-1 max-h-24 overflow-y-auto" data-testid="photo-measure-zone-list">
@@ -1122,26 +1122,26 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                                 <span className="font-mono-num font-bold">-{Math.round(z.area_sqft)} ft²</span>{" "}
                                 <span className="text-[#71717A]">{c?.name}</span>
                                 {offPhoto && (
-                                  <span className="ml-1 text-[9px] uppercase tracking-wider text-[#A1A1AA] border border-[#E4E4E7] px-1 py-px rounded-sm" title="Placed on a different photo">
+                                  <span className="ml-1 text-[9px] uppercase tracking-wider text-[#71717A] border border-[#E4E4E7] px-1 py-px rounded-sm" title="Placed on a different photo">
                                     other photo
                                   </span>
                                 )}
                               </span>
-                              <button onClick={() => removeZone(z.id)} className="text-[#A1A1AA] hover:text-[#DC2626]">
+                              <button onClick={() => removeZone(z.id)} className="text-[#71717A] hover:text-[#DC2626]">
                                 <Trash2 className="w-3 h-3" />
                               </button>
                             </li>
                           );
                         })}
                         {!zones.length && (
-                          <li className="text-[11px] text-[#A1A1AA] italic">No zones yet — switch to &quot;Mask zone&quot; to draw brick/stone/garage/etc.</li>
+                          <li className="text-[11px] text-[#71717A] italic">No zones yet — switch to &quot;Mask zone&quot; to draw brick/stone/garage/etc.</li>
                         )}
                       </ul>
                     </div>
 
                     {/* Live totals */}
                     <div className="border-t border-[#E4E4E7] pt-2 bg-[#FAFAFA] -mx-1 px-2 py-1.5">
-                      <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">Live Totals</div>
+                      <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">Live Totals</div>
                       <div className="grid grid-cols-2 gap-2 text-xs" data-testid="photo-measure-totals">
                         <div>Siding: <span className="font-mono-num font-bold">{totals.siding_sqft} ft²</span></div>
                         <div>Eaves: <span className="font-mono-num font-bold">{totals.eaves_lf} LF</span></div>
@@ -1164,7 +1164,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
             </div>
 
             <div className="border-t border-[#E4E4E7] px-5 py-3 flex justify-between items-center">
-              <div className="text-[10px] text-[#A1A1AA]">
+              <div className="text-[10px] text-[#71717A]">
                 Calibrate once with a reference object, then tap walls + openings
               </div>
               <div className="flex gap-2">
@@ -1178,7 +1178,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                   type="button"
                   onClick={apply}
                   disabled={busy || (!measures.length && !openings.length && !zones.length)}
-                  className="px-3 py-2 bg-[#F97316] text-white hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                  className="px-3 py-2 bg-[#F97316] text-[#09090B] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   data-testid="photo-measure-apply-btn"
                 >
                   {busy ? <Plus className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}

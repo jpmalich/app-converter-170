@@ -129,7 +129,7 @@ export default function AcceptPage() {
         <div
           style={{
             fontSize: 11, fontWeight: 700, letterSpacing: 2,
-            textTransform: "uppercase", color: "#F97316", marginBottom: 8,
+            textTransform: "uppercase", color: "#C2410C", marginBottom: 8,
           }}
         >
           {t("accept.eyebrow")}
@@ -171,7 +171,7 @@ export default function AcceptPage() {
           <label
             style={{
               fontSize: 10, fontWeight: 700, letterSpacing: 2,
-              textTransform: "uppercase", color: "#A1A1AA", display: "block", marginBottom: 6,
+              textTransform: "uppercase", color: "#71717A", display: "block", marginBottom: 6,
             }}
             htmlFor="customer-note"
           >
@@ -226,7 +226,7 @@ export default function AcceptPage() {
             marginTop: 24, width: "100%", padding: "16px 24px",
             fontFamily: FONT_STACK, fontSize: 14, fontWeight: 700,
             letterSpacing: 1.5, textTransform: "uppercase",
-            color: "#FFFFFF", background: !checked || submitting ? "#A1A1AA" : "#F97316",
+            color: "#09090B", background: !checked || submitting ? "#A1A1AA" : "#F97316",
             border: "none", cursor: !checked || submitting ? "not-allowed" : "pointer",
             transition: "background 0.15s",
           }}
@@ -234,7 +234,7 @@ export default function AcceptPage() {
         >
           {submitting ? t("accept.submitting") : t("accept.submit")}
         </button>
-        <p style={{ marginTop: 14, fontSize: 11, color: "#A1A1AA", textAlign: "center" }}>
+        <p style={{ marginTop: 14, fontSize: 11, color: "#71717A", textAlign: "center" }}>
           {t("accept.disclaimer", { company: d.company_name || "" })}
         </p>
       </div>
@@ -287,7 +287,7 @@ function Wrap({ children, company, t }) {
         ) : null}
         {children}
       </div>
-      <p style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "#A1A1AA" }}>
+      <p style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "#71717A" }}>
         {t ? t("accept.secureLink") : "Secure customer-acceptance link."}
       </p>
     </div>

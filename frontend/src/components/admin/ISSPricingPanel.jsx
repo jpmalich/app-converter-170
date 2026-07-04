@@ -88,7 +88,7 @@ export default function ISSPricingPanel({ token }) {
   return (
     <div className="card p-6 mt-6" data-testid="iss-pricing-panel">
       <div className="flex items-center gap-3 mb-2">
-        <RefreshCw className="w-5 h-5 text-[#F97316]" />
+        <RefreshCw className="w-5 h-5 text-[#C2410C]" />
         <div className="section-tag">ISS Pricing Updates</div>
       </div>
       <p className="text-sm text-[#52525B] mb-4">
@@ -125,7 +125,7 @@ export default function ISSPricingPanel({ token }) {
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
           {busy ? "Reading…" : "Upload CSV / Excel"}
         </button>
-        <span className="text-[10px] text-[#A1A1AA] uppercase tracking-wider">
+        <span className="text-[10px] text-[#71717A] uppercase tracking-wider">
           Required columns: section, name, unit, price
         </span>
       </div>
@@ -150,7 +150,7 @@ export default function ISSPricingPanel({ token }) {
               </button>
               <button
                 type="button"
-                className="px-3 py-1.5 bg-[#F97316] text-white hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                className="px-3 py-1.5 bg-[#F97316] text-[#09090B] hover:bg-[#EA580C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                 onClick={applyChanges}
                 disabled={!preview.changes?.length || applying}
                 data-testid="iss-pricing-apply-btn"
@@ -164,7 +164,7 @@ export default function ISSPricingPanel({ token }) {
           {preview.changes?.length ? (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-[10px] uppercase tracking-wider text-[#A1A1AA] border-b border-[#E4E4E7] bg-[#FAFAFA]">
+                <tr className="text-left text-[10px] uppercase tracking-wider text-[#71717A] border-b border-[#E4E4E7] bg-[#FAFAFA]">
                   <th className="px-4 py-2">Section</th>
                   <th className="px-3 py-2">Item</th>
                   <th className="px-3 py-2">Unit</th>
@@ -186,7 +186,7 @@ export default function ISSPricingPanel({ token }) {
                       <td className="px-4 py-2 text-xs text-[#52525B]">{c.section}</td>
                       <td className="px-3 py-2 text-xs text-[#09090B]">{c.name}</td>
                       <td className="px-3 py-2 text-xs text-[#52525B]">{c.unit}</td>
-                      <td className="px-3 py-2 text-right font-mono-num text-xs text-[#A1A1AA] line-through">${c.old.toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right font-mono-num text-xs text-[#71717A] line-through">${c.old.toFixed(2)}</td>
                       <td className="px-3 py-2 text-right font-mono-num text-xs font-bold text-[#09090B]">${c.new.toFixed(2)}</td>
                       <td
                         className={`px-3 py-2 text-right font-mono-num text-xs font-bold ${

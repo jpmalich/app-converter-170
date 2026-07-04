@@ -24,13 +24,17 @@ const esc = (s) =>
 
 const nl2br = (s) => esc(s).replace(/\n/g, "<br>");
 
-// Brand palette — keep in sync with /app/frontend/src/index.css
+// Brand palette — keep in sync with /app/frontend/src/index.css.
+// Iter 79j.45 — WCAG AA. `faint` moved to #71717A (4.83:1 on white);
+// `accentText` for text-on-light uses #C2410C (5.18:1); `accent` stays
+// #F97316 only for fills/borders/CTAs (paired with black labels below).
 const C = {
   ink: "#09090B",
   muted: "#52525B",
-  faint: "#A1A1AA",
+  faint: "#71717A",
   line: "#E4E4E7",
   accent: "#F97316",
+  accentText: "#C2410C",
   bg: "#FAFAFA",
 };
 
@@ -144,7 +148,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
   };
 
   const sectionBlock = ([section, items]) => `
-    <tr><td style="padding:18px 0 6px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.accent};border-bottom:1px solid ${C.ink};">${esc(tSection(section, lang))}</td></tr>
+    <tr><td style="padding:18px 0 6px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.accentText};border-bottom:1px solid ${C.ink};">${esc(tSection(section, lang))}</td></tr>
     ${items
       .map(
         (l) => `
@@ -280,7 +284,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
               <div style="font-family:${FONT};font-size:18px;font-weight:700;color:${C.ink};letter-spacing:0.5px;">${esc(estimate.estimate_number || "—")}</div>
               <div style="font-family:${FONT};font-size:12px;color:${C.muted};">${esc(estimate.estimate_date || "")}</div>
               ${expiryStr
-                ? `<div style="margin-top:8px;display:inline-block;padding:4px 10px;background:#FFF7ED;border:1px solid ${C.accent};color:${C.accent};font-family:${FONT};font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;border-radius:2px;">${esc(t("email.validThrough", { date: expiryStr }))}</div>`
+                ? `<div style="margin-top:8px;display:inline-block;padding:4px 10px;background:#FFF7ED;border:1px solid ${C.accent};color:${C.accentText};font-family:${FONT};font-size:10px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;border-radius:2px;">${esc(t("email.validThrough", { date: expiryStr }))}</div>`
                 : ""}
             </td>
           </tr></table>
@@ -338,7 +342,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
           ? `<!-- Accept CTA -->
         <tr><td align="center" style="padding:24px 32px 8px 32px;">
           <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" bgcolor="${C.accent}" style="border-radius:2px;">
-            <a href="${acceptHref}" style="display:inline-block;padding:14px 28px;font-family:${FONT};font-size:14px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#FFFFFF;text-decoration:none;background:${C.accent};border-radius:2px;">
+            <a href="${acceptHref}" style="display:inline-block;padding:14px 28px;font-family:${FONT};font-size:14px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:${C.ink};text-decoration:none;background:${C.accent};border-radius:2px;">
               ${esc(t("email.acceptCta"))}
             </a>
           </td></tr></table>

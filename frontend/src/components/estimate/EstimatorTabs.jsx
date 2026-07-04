@@ -69,7 +69,7 @@ export default function EstimatorTabs({ est, activeTab, onChange, tabs = TABS })
               <span
                 className={[
                   "text-xs uppercase tracking-[0.18em] font-bold",
-                  isActive ? "text-[#F97316]" : "text-[#52525B]",
+                  isActive ? "text-[#C2410C]" : "text-[#52525B]",
                 ].join(" ")}
               >
                 {tab.label}

@@ -129,7 +129,7 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
               onChange={(e) => update(i, { length_ft: Number(e.target.value) || 0 })}
               data-testid={`porch-length-${i}`}
             />
-            <span className="text-[10px] text-[#A1A1AA]">ft ×</span>
+            <span className="text-[10px] text-[#71717A]">ft ×</span>
             <input
               type="number"
               step="0.5"
@@ -140,7 +140,7 @@ export default function PorchCeilingsCard({ value = [], onChange }) {
               onChange={(e) => update(i, { width_ft: Number(e.target.value) || 0 })}
               data-testid={`porch-width-${i}`}
             />
-            <span className="text-[10px] text-[#A1A1AA]">ft =</span>
+            <span className="text-[10px] text-[#71717A]">ft =</span>
             <span
               className="font-mono-num text-xs text-[#09090B] w-20 text-right tabular-nums"
               data-testid={`porch-area-${i}`}

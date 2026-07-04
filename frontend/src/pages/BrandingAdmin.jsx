@@ -50,7 +50,7 @@ export default function BrandingAdmin() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
         <div className="card p-8 max-w-md w-full">
-          <Shield className="w-10 h-10 text-[#F97316] mb-4" />
+          <Shield className="w-10 h-10 text-[#C2410C] mb-4" />
           <h1 className="font-heading text-2xl text-[#09090B] mb-2">Branding Admin</h1>
           <p className="text-sm text-[#52525B]">
             This URL requires an admin token. Append <code className="font-mono">?token=YOUR_TOKEN</code> to the URL. The token lives in <code className="font-mono">backend/.env</code> as <code className="font-mono">SUPPLIER_ADMIN_TOKEN</code>.
@@ -137,7 +137,7 @@ export default function BrandingAdmin() {
       <header className="bg-[#09090B] text-white">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Shield className="w-5 h-5 text-[#F97316]" />
+            <Shield className="w-5 h-5 text-[#C2410C]" />
             <div>
               <div className="font-heading text-lg">Branding Admin</div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">
@@ -172,7 +172,7 @@ export default function BrandingAdmin() {
               <Copy className="w-4 h-4" /> Copy
             </button>
           </div>
-          <p className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-3">
+          <p className="text-[10px] uppercase tracking-wider text-[#71717A] mt-3">
             To rotate: change SIGNUP_CODE in <span className="font-mono-num">backend/.env</span> &amp; restart backend.
           </p>
         </div>
@@ -211,7 +211,7 @@ export default function BrandingAdmin() {
         {/* Default pricing mode */}
         <div className="card p-6" data-testid="default-pricing-card">
           <div className="flex items-center gap-3 mb-3">
-            <Percent className="w-5 h-5 text-[#F97316]" />
+            <Percent className="w-5 h-5 text-[#C2410C]" />
             <div className="section-tag">Default Pricing Mode</div>
           </div>
           <p className="text-sm text-[#52525B] mb-4">
@@ -267,7 +267,7 @@ export default function BrandingAdmin() {
               {logoUrl ? (
                 <img src={logoUrl} alt="Supplier logo" className="w-full h-full object-contain" data-testid="supplier-logo-preview" />
               ) : (
-                <div className="font-heading text-[#F97316] text-5xl">
+                <div className="font-heading text-[#C2410C] text-5xl">
                   {(supplierName || "A").charAt(0)}
                 </div>
               )}
@@ -308,7 +308,7 @@ export default function BrandingAdmin() {
           </div>
         </div>
 
-        <div className="text-xs text-[#A1A1AA] text-center pt-4">
+        <div className="text-xs text-[#71717A] text-center pt-4">
           Bookmark this URL — it&apos;s how you&apos;ll come back to update branding.
         </div>
 
@@ -386,7 +386,7 @@ function PricingTiersPanel({ token }) {
   return (
     <div className="card p-6 mt-6" data-testid="tiers-panel">
       <div className="flex items-center gap-3 mb-4">
-        <Tags className="w-5 h-5 text-[#F97316]" />
+        <Tags className="w-5 h-5 text-[#C2410C]" />
         <div className="section-tag">Pricing Tiers</div>
       </div>
       <p className="text-sm text-[#52525B] mb-4">
@@ -401,7 +401,7 @@ function PricingTiersPanel({ token }) {
             onClick={() => openEdit(t.id)}
             data-testid={`tier-${t.name}`}
           >
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">Tier</div>
+            <div className="text-[10px] uppercase tracking-wider text-[#71717A]">Tier</div>
             <div className="font-heading text-lg text-[#09090B]">{t.name}</div>
             <div className="text-xs text-[#52525B] mt-1">
               {(t.sections || []).reduce((s, x) => s + (x.items || []).length, 0)} items
@@ -430,7 +430,7 @@ function PricingTiersPanel({ token }) {
                   return (
                     <div key={it.name} className="grid grid-cols-12 gap-2 px-3 py-1 border-t border-[#E4E4E7] items-center">
                       <div className="col-span-6 text-sm">{it.name}</div>
-                      <div className="col-span-1 text-[10px] text-[#A1A1AA] uppercase">{it.unit}</div>
+                      <div className="col-span-1 text-[10px] text-[#71717A] uppercase">{it.unit}</div>
                       <div className="col-span-2">
                         <input
                           className="input num h-8 text-sm"
@@ -492,7 +492,7 @@ function PipelinePanel({ token }) {
   if (!data) {
     return (
       <div className="card p-6 mt-6">
-        <div className="text-sm text-[#A1A1AA]">Loading pipeline…</div>
+        <div className="text-sm text-[#71717A]">Loading pipeline…</div>
       </div>
     );
   }
@@ -531,11 +531,11 @@ function PipelinePanel({ token }) {
 
       {topByWon.length > 0 && (
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
             Top contractors by won revenue
           </div>
           <div className="border border-[#E4E4E7]">
-            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold bg-[#FAFAFA]">
+            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#71717A] font-bold bg-[#FAFAFA]">
               <div className="col-span-5">Contractor</div>
               <div className="col-span-2 text-right">Sent</div>
               <div className="col-span-2 text-right">Accepted</div>
@@ -565,7 +565,7 @@ function PipelineStat({ label, value, sublabel, accent }) {
     <div className="flex border border-[#E4E4E7]">
       <div className={`w-1 ${stripe}`} />
       <div className="px-3 py-2 flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">{label}</div>
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">{label}</div>
         <div className="font-mono-num text-2xl font-bold text-[#09090B] leading-tight">{value}</div>
         {sublabel ? <div className="text-[11px] text-[#71717A] truncate">{sublabel}</div> : null}
       </div>
@@ -625,7 +625,7 @@ function InviteContractorPanel({ token, signupCode }) {
   return (
     <div className="card p-6" data-testid="invite-contractor-panel">
       <div className="flex items-center gap-3 mb-3">
-        <Mail className="w-5 h-5 text-[#F97316]" />
+        <Mail className="w-5 h-5 text-[#C2410C]" />
         <div className="section-tag">Invite a Contractor by Email</div>
       </div>
       <p className="text-sm text-[#52525B] mb-4">
@@ -681,11 +681,11 @@ function InviteContractorPanel({ token, signupCode }) {
 
       {loaded && invitations.length > 0 && (
         <div className="mt-6">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
             Recent invitations ({invitations.length})
           </div>
           <div className="border border-[#E4E4E7] max-h-72 overflow-y-auto" data-testid="invitations-list">
-            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold bg-[#FAFAFA] sticky top-0">
+            <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#71717A] font-bold bg-[#FAFAFA] sticky top-0">
               <div className="col-span-5">Email</div>
               <div className="col-span-3">Sent</div>
               <div className="col-span-2 text-right">Status</div>
@@ -699,7 +699,7 @@ function InviteContractorPanel({ token, signupCode }) {
               >
                 <div className="col-span-5 truncate">
                   <div className="font-semibold text-[#09090B] truncate">{inv.email}</div>
-                  {inv.name && <div className="text-[10px] text-[#A1A1AA] truncate">{inv.name}</div>}
+                  {inv.name && <div className="text-[10px] text-[#71717A] truncate">{inv.name}</div>}
                 </div>
                 <div className="col-span-3 text-xs text-[#52525B]">
                   {new Date(inv.sent_at).toLocaleString()}
@@ -718,7 +718,7 @@ function InviteContractorPanel({ token, signupCode }) {
                 <div className="col-span-2 text-right">
                   <button
                     type="button"
-                    className="text-[10px] text-[#52525B] hover:text-[#F97316] underline"
+                    className="text-[10px] text-[#52525B] hover:text-[#C2410C] underline"
                     onClick={() => {
                       navigator.clipboard.writeText(inv.register_url);
                       toast.success("Signup link copied");
@@ -804,7 +804,7 @@ function CompaniesPanel({ token }) {
   return (
     <div className="card p-6 mt-6" data-testid="companies-panel">
       <div className="flex items-center gap-3 mb-4">
-        <Building2 className="w-5 h-5 text-[#F97316]" />
+        <Building2 className="w-5 h-5 text-[#C2410C]" />
         <div className="section-tag">Contractor Companies ({companies.length})</div>
       </div>
       <p className="text-sm text-[#52525B] mb-4">
@@ -812,7 +812,7 @@ function CompaniesPanel({ token }) {
         next estimate. Existing saved estimates keep their original prices.
       </p>
       <div className="border border-[#E4E4E7] max-h-[500px] overflow-y-auto">
-        <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold bg-[#FAFAFA] sticky top-0">
+        <div className="grid grid-cols-12 gap-3 px-3 py-2 text-[10px] uppercase tracking-wider text-[#71717A] font-bold bg-[#FAFAFA] sticky top-0">
           <div className="col-span-4">Company</div>
           <div className="col-span-3">Tier</div>
           <div className="col-span-2 text-right">Estimates</div>
@@ -823,7 +823,7 @@ function CompaniesPanel({ token }) {
           <div key={c.id} className="grid grid-cols-12 gap-3 px-3 py-2 border-t border-[#E4E4E7] items-center text-sm">
             <div className="col-span-4">
               <div className="font-semibold text-[#09090B]">{c.name}</div>
-              <div className="text-[10px] text-[#A1A1AA] font-mono-num">{c.invite_code}</div>
+              <div className="text-[10px] text-[#71717A] font-mono-num">{c.invite_code}</div>
             </div>
             <div className="col-span-3">
               <select
@@ -839,7 +839,7 @@ function CompaniesPanel({ token }) {
               </select>
             </div>
             <div className="col-span-2 text-right font-mono-num">{c.estimate_count}</div>
-            <div className="col-span-2 text-right text-xs text-[#A1A1AA]">
+            <div className="col-span-2 text-right text-xs text-[#71717A]">
               {new Date(c.created_at).toLocaleDateString()}
             </div>
             <div className="col-span-1 text-right">
@@ -847,7 +847,7 @@ function CompaniesPanel({ token }) {
                 type="button"
                 onClick={() => remove(c)}
                 disabled={busy[c.id]}
-                className="p-1.5 text-[#A1A1AA] hover:text-[#DC2626] hover:bg-[#FEF2F2] rounded-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 text-[#71717A] hover:text-[#DC2626] hover:bg-[#FEF2F2] rounded-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
                 title={`Delete ${c.name}`}
                 data-testid={`delete-company-${c.id}`}
               >

@@ -220,10 +220,10 @@ export default function VeroPricingPanel({ token }) {
     return (
       <div className="card p-6 mt-6">
         <div className="flex items-center gap-3 mb-3">
-          <Wrench className="w-5 h-5 text-[#F97316]" />
+          <Wrench className="w-5 h-5 text-[#C2410C]" />
           <div className="section-tag">Vero Window Pricing Matrix</div>
         </div>
-        <div className="text-sm text-[#A1A1AA]">Loading Vero prices…</div>
+        <div className="text-sm text-[#71717A]">Loading Vero prices…</div>
       </div>
     );
   }
@@ -234,17 +234,17 @@ export default function VeroPricingPanel({ token }) {
     <div className="card p-6 mt-6" data-testid="vero-pricing-panel">
       <div className="flex items-start justify-between mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <Wrench className="w-5 h-5 text-[#F97316]" />
+          <Wrench className="w-5 h-5 text-[#C2410C]" />
           <div>
             <div className="section-tag">Vero Window Pricing Matrix</div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] mt-0.5">
+            <div className="text-[10px] uppercase tracking-wider text-[#71717A] mt-0.5">
               4 tiers · 5 products · base prices + adders matrix — paste from Excel
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           {dirty && (
-            <span className="text-[10px] uppercase tracking-wider text-[#F97316] font-bold">
+            <span className="text-[10px] uppercase tracking-wider text-[#C2410C] font-bold">
               Unsaved changes
             </span>
           )}
@@ -300,7 +300,7 @@ export default function VeroPricingPanel({ token }) {
               setDirty(false);
             }}
             className={`px-4 py-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap border-r border-[#E4E4E7] last:border-r-0 transition ${
-              activeProduct === p ? "bg-[#F97316] text-white" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
+              activeProduct === p ? "bg-[#F97316] text-[#09090B]" : "bg-white text-[#52525B] hover:bg-[#F4F4F5]"
             }`}
             data-testid={`vero-pricing-product-${p}`}
           >
@@ -320,7 +320,7 @@ export default function VeroPricingPanel({ token }) {
               setDirty(false);
             }}
             className={`px-3 py-1.5 text-[11px] uppercase tracking-wider font-semibold border ${
-              activeGrid === g.id ? "bg-[#FFF7ED] border-[#F97316] text-[#F97316]" : "bg-white border-[#E4E4E7] text-[#52525B] hover:bg-[#FAFAFA]"
+              activeGrid === g.id ? "bg-[#FFF7ED] border-[#F97316] text-[#C2410C]" : "bg-white border-[#E4E4E7] text-[#52525B] hover:bg-[#FAFAFA]"
             }`}
             data-testid={`vero-pricing-grid-${g.id}`}
           >
@@ -330,13 +330,13 @@ export default function VeroPricingPanel({ token }) {
       </div>
 
       <div className="text-[11px] text-[#52525B] mb-2 flex items-center gap-1.5">
-        <ClipboardPaste className="w-3.5 h-3.5 text-[#F97316]" />
+        <ClipboardPaste className="w-3.5 h-3.5 text-[#C2410C]" />
         Tip: copy a block from the Vero Excel, click the top-left target
         cell, press <strong className="mx-0.5">Ctrl/Cmd-V</strong>.
       </div>
 
       {isEmpty ? (
-        <div className="border border-dashed border-[#E4E4E7] p-8 text-center text-sm text-[#A1A1AA]">
+        <div className="border border-dashed border-[#E4E4E7] p-8 text-center text-sm text-[#71717A]">
           No data yet for <strong>{activeTier} · {activeProduct}</strong> · {gridSpec.grid.label}.
           {activeTier !== "whole-sale" && (
             <> Seed this grid from your pricebook for {activeTier} or copy the structure from <strong>whole-sale</strong>.</>
@@ -388,7 +388,7 @@ export default function VeroPricingPanel({ token }) {
         </div>
       )}
 
-      <div className="mt-3 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+      <div className="mt-3 text-[10px] uppercase tracking-wider text-[#71717A]">
         Editing: <span className="text-[#09090B] font-bold">{activeTier}</span>
         <span className="mx-1">·</span>
         <span className="text-[#09090B] font-bold">{activeProduct}</span>

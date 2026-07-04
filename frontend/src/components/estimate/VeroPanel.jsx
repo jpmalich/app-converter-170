@@ -418,7 +418,7 @@ export default function VeroPanel({ est, update }) {
                 )}
                 <div>
                   <div className="section-tag">{tSection(pt.name, lang)}</div>
-                  <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+                  <div className="text-[10px] text-[#71717A] mt-0.5">
                     {t(
                       isFixed
                         ? (openings.length === 1 ? "win.openingsLabelFixed" : "win.openingsLabelFixedPlural")
@@ -431,7 +431,7 @@ export default function VeroPanel({ est, update }) {
               <div className="flex items-center gap-3">
                 <span
                   className={`font-mono-num text-sm ${
-                    packageQuoteActive ? "line-through text-[#A1A1AA]" : "text-[#52525B]"
+                    packageQuoteActive ? "line-through text-[#71717A]" : "text-[#52525B]"
                   }`}
                   title={packageQuoteActive ? "Per-window pricing overridden by Window Package Quote" : undefined}
                 >
@@ -468,7 +468,7 @@ export default function VeroPanel({ est, update }) {
 
             {isOpen && (openings.length === 0 ? (
               <div
-                className="px-5 py-8 text-center text-sm text-[#A1A1AA]"
+                className="px-5 py-8 text-center text-sm text-[#71717A]"
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t("win.noOpenings")) }}
               />
             ) : (
@@ -552,13 +552,13 @@ function VeroOpeningRow({
     <div className="px-4 md:px-5 py-3" data-testid={`vero-opening-${op.id}`}>
       <div className="flex items-center gap-3 flex-wrap">
         {!isFixed && (
-          <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold w-[80px] text-right pr-1 hidden md:block">
+          <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold w-[80px] text-right pr-1 hidden md:block">
             {bucket ? `#${bucket.label}` : "—"}
           </div>
         )}
         {isFixed ? (
           <div className="flex-1 min-w-[200px]">
-            <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">{t("win.model")}</label>
+            <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">{t("win.model")}</label>
             <select
               className="input h-9 text-sm w-full"
               value={op.model || ""}
@@ -596,10 +596,10 @@ function VeroOpeningRow({
         />
         {!isFixed && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-0.5">{t("win.ui")} ({Number(op.width) || 0}+{Number(op.height) || 0})</div>
+            <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-0.5">{t("win.ui")} ({Number(op.width) || 0}+{Number(op.height) || 0})</div>
             <div
               className={`font-mono-num text-sm font-bold ${
-                inRange ? "text-[#09090B]" : ui > 0 ? "text-[#DC2626]" : "text-[#A1A1AA]"
+                inRange ? "text-[#09090B]" : ui > 0 ? "text-[#DC2626]" : "text-[#71717A]"
               }`}
               data-testid={`vero-ui-${op.id}`}
             >
@@ -627,11 +627,11 @@ function VeroOpeningRow({
           ) : (
             <>
               <div className="text-right">
-                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.base")}</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">{t("win.base")}</div>
                 <div className="font-mono-num text-sm text-[#09090B]">{fmt(baseMat)}</div>
               </div>
               <div className="text-right pl-2 border-l border-[#E4E4E7]">
-                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{t("win.total")}</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">{t("win.total")}</div>
                 <div className="font-mono-num text-base font-bold text-[#09090B]" data-testid={`vero-total-${op.id}`}>
                   {fmt(total)}
                 </div>
@@ -691,7 +691,7 @@ function VeroOpeningRow({
               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
               {t("win.upgradeOptions")}
               {(op.adders || []).length > 0 && (
-                <span className="bg-[#F97316] text-white px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                <span className="bg-[#F97316] text-[#09090B] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
                   {op.adders.length}
                 </span>
               )}
@@ -787,7 +787,7 @@ function VeroOpeningRow({
 function NumField({ label, value, onChange, testid, minWidth = 78, isQty = false }) {
   return (
     <div style={{ minWidth }}>
-      <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-0.5">{label}</label>
+      <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-0.5">{label}</label>
       <input
         type="number"
         inputMode="decimal"
@@ -867,7 +867,7 @@ function BaseIncludedHint({ testid }) {
             <ul className="space-y-1 text-[11px] text-[#3F3F46] leading-snug">
               {BASE_INCLUDED_ITEMS.map((item) => (
                 <li key={item} className="flex items-start gap-1.5">
-                  <span className="text-[#F97316] font-bold mt-px">·</span>
+                  <span className="text-[#C2410C] font-bold mt-px">·</span>
                   <span>{item}</span>
                 </li>
               ))}

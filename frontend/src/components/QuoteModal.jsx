@@ -187,11 +187,11 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
         {/* Editable email preamble + send-language picker */}
         <div className="no-print w-full max-w-3xl mb-4 bg-white border border-[#E4E4E7] p-4" data-testid="email-preamble">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
               {t("quote.subject")}
             </div>
             <div className="flex items-center gap-2" data-testid="send-lang-picker">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
                 {t("quote.langPicker")}
               </span>
               <div className="inline-flex border border-[#E4E4E7] rounded-sm overflow-hidden text-[11px] font-bold uppercase tracking-wider">
@@ -211,7 +211,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             </div>
           </div>
           <div className="text-sm font-mono-num text-[#09090B] mb-3 break-words">{subject}</div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-1">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-1">
             {t("quote.personalNote")}
           </div>
           <textarea
@@ -252,7 +252,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-[0.25em] text-[#A1A1AA]">Estimate</div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-[#71717A]">Estimate</div>
               <div className="font-mono-num text-lg text-[#09090B]">{estimate.estimate_number}</div>
               <div className="text-xs text-[#52525B]">{estimate.estimate_date}</div>
             </div>
@@ -260,14 +260,14 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           <div className="px-8 sm:px-12 py-6 grid grid-cols-2 gap-6 border-b border-[#E4E4E7]">
             <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">
                 Prepared For
               </div>
               <div className="font-semibold text-[#09090B]">{estimate.customer_name || "—"}</div>
               <div className="text-sm text-[#52525B]">{estimate.address || ""}</div>
             </div>
             <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">
                 Estimator
               </div>
               <div className="font-semibold text-[#09090B]">{estimate.estimator || "—"}</div>
@@ -276,7 +276,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           {estimate.notes && (
             <div className="px-8 sm:px-12 py-5 border-b border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-2 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-2 font-bold">
                 Scope of Work
               </div>
               <div className="text-sm whitespace-pre-line text-[#09090B]">{estimate.notes}</div>
@@ -296,7 +296,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             const labels = { front: "Front", back: "Back", left: "Left", right: "Right" };
             return (
               <div className="px-8 sm:px-12 py-5 border-b border-[#E4E4E7]" data-testid="per-elevation-card">
-                <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-3 font-bold">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
                   Per-Elevation Siding Breakdown
                 </div>
                 <table className="w-full text-sm">
@@ -313,7 +313,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                           </td>
                           <td className="py-2 text-right text-[#09090B] font-semibold font-mono-num whitespace-nowrap w-[20%]">
                             {Math.round(Number(sqft)).toLocaleString()} ft²
-                            <span className="text-[#A1A1AA] font-normal"> · {pct}%</span>
+                            <span className="text-[#71717A] font-normal"> · {pct}%</span>
                           </td>
                         </tr>
                       );
@@ -334,12 +334,12 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           <div className="px-8 sm:px-12 py-6">
             {tabOrder.map((tabId) => (
               <div key={tabId} className="mb-6">
-                <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#A1A1AA] mb-2">
+                <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#71717A] mb-2">
                   {TAB_LABEL[tabId]}
                 </div>
                 {Object.entries(linesByTab[tabId]).map(([section, items]) => (
                   <div key={section} className="mb-4">
-                    <div className="text-xs uppercase tracking-[0.18em] font-bold text-[#F97316] border-b border-[#09090B] pb-1 mb-2">
+                    <div className="text-xs uppercase tracking-[0.18em] font-bold text-[#C2410C] border-b border-[#09090B] pb-1 mb-2">
                       {tSection(section, sendLang)}
                     </div>
                     {items.map((l) => (
@@ -358,7 +358,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           {(estimate.photos || []).length > 0 && (
             <div className="px-8 sm:px-12 py-4 border-t border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mb-3 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
                 Job Photos
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -389,13 +389,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           <div className="px-8 sm:px-12 py-8 grid grid-cols-2 gap-8">
             <div>
               <div className="border-b border-[#09090B] h-8" />
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mt-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mt-1 font-bold">
                 Customer Signature
               </div>
             </div>
             <div>
               <div className="border-b border-[#09090B] h-8" />
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] mt-1 font-bold">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mt-1 font-bold">
                 Date
               </div>
             </div>
@@ -403,7 +403,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           {showSupplierFooter && (
             <div
-              className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] text-center"
+              className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#71717A] text-center"
               data-testid="supplier-footer"
             >
               Materials supplied by {branding.supplier_name}

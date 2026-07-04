@@ -94,12 +94,12 @@ export default function MezzoJobSnapshot({ est }) {
       <header className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[#E4E4E7] bg-[#FAFAFA]">
         <div>
           <div className="section-tag">Mezzo {t("win.snapshot")}</div>
-          <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+          <div className="text-[10px] text-[#71717A] mt-0.5">
             {t("win.snapshot.subtitle")}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
             {t("win.snapshot.baseTotal")}
           </div>
           <div
@@ -112,7 +112,7 @@ export default function MezzoJobSnapshot({ est }) {
       </header>
 
       {isEmpty ? (
-        <div className="px-5 py-5 text-center text-[12px] text-[#A1A1AA]">
+        <div className="px-5 py-5 text-center text-[12px] text-[#71717A]">
           {t("win.snapshot.empty")}
         </div>
       ) : (
@@ -150,7 +150,7 @@ export default function MezzoJobSnapshot({ est }) {
 function StatTile({ icon, label, value, sub, accent, testid }) {
   const accentText =
     accent === "orange"
-      ? "text-[#F97316]"
+      ? "text-[#C2410C]"
       : accent === "black"
         ? "text-[#09090B]"
         : "text-[#52525B]";

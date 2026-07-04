@@ -7,10 +7,11 @@
   --surface: #FFFFFF;
   --ink: #09090B;
   --ink-2: #52525B;
-  --muted: #A1A1AA;
+  --muted: #71717A;
   --border: #E4E4E7;
   --brand: #F97316;
   --brand-hover: #EA580C;
+  --brand-text: #C2410C;
   --profit: #059669;
   --danger: #EF4444;
 }
@@ -42,9 +43,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Brutalist primary button: square, hard shadow */
+/* Brutalist primary button: square, hard shadow. Black label on safety-orange
+   passes WCAG AA (7.10:1) — replaces the older white-on-orange (2.80:1). */
 .btn-primary {
-  @apply inline-flex items-center justify-center gap-2 bg-[#F97316] text-white font-bold uppercase tracking-wider px-5 py-3 border border-[#09090B] transition-all;
+  @apply inline-flex items-center justify-center gap-2 bg-[#F97316] text-[#09090B] font-bold uppercase tracking-wider px-5 py-3 border border-[#09090B] transition-all;
   box-shadow: 4px 4px 0 #09090B;
 }
 .btn-primary:hover { background: #EA580C; transform: translate(2px,2px); box-shadow: 2px 2px 0 #09090B; }
@@ -82,7 +84,7 @@ input[type="number"].input, textarea.input {
   @apply w-full bg-white border-2 border-[#E4E4E7] px-3 text-[#09090B] outline-none transition-colors;
   height: 44px;
 }
-.input:focus { border-color: var(--brand); }
+.input:focus { border-color: var(--brand-text); }
 .input.num { text-align: right; font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", ui-monospace, monospace; }
 textarea.input { height: auto; min-height: 80px; padding: 10px 12px; }
 
@@ -121,4 +123,15 @@ input[type=number] { -moz-appearance: textfield; }
   .no-print { display: none !important; }
   body { background: white; }
   .quote-page { box-shadow: none !important; border: none !important; }
+}
+
+/* WCAG 2.3.3 — Honor the OS-level reduced-motion preference. Zero out
+   animations, transitions, and smooth scroll for users who've opted in. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

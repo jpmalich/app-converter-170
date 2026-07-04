@@ -20,7 +20,7 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
       <div className="section-tag mb-4 flex items-center gap-2">
         <span>{t("est.summary")}</span>
         <span
-          className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 border border-[#F97316] text-[#F97316]"
+          className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 border border-[#F97316] text-[#C2410C]"
           data-testid="summary-tab-badge"
         >
           {t("est.tabOption", { tab: tabLabel })}
@@ -58,11 +58,11 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
 function Stat({ label, val, orange, bold }) {
   return (
     <div className="border-l-2 border-[#E4E4E7] pl-3">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold">{label}</div>
+      <div className="text-[10px] uppercase tracking-[0.18em] text-[#71717A] font-bold">{label}</div>
       <div
         className={`font-mono-num mt-1 ${
           orange
-            ? "text-2xl font-bold text-[#F97316]"
+            ? "text-2xl font-bold text-[#C2410C]"
             : bold
             ? "text-lg font-bold text-[#09090B]"
             : "text-base text-[#09090B]"

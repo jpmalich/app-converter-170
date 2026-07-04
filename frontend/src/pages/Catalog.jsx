@@ -125,7 +125,7 @@ export default function Catalog() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="catalog-page">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1">{t("cat.eyebrow")}</div>
+          <div className="text-xs uppercase tracking-[0.2em] text-[#71717A] mb-1">{t("cat.eyebrow")}</div>
           <h1 className="font-heading text-4xl text-[#09090B]">{t("cat.title")}</h1>
           <div className="flex items-center gap-3 mt-3">
             <span className="inline-flex items-center gap-2 bg-[#09090B] text-[#F97316] px-3 py-1 text-xs font-bold uppercase tracking-wider" data-testid="tier-badge">
@@ -173,14 +173,14 @@ export default function Catalog() {
                 <span
                   className={[
                     "text-xs uppercase tracking-[0.18em] font-bold",
-                    isActive ? "text-[#F97316]" : "text-[#52525B]",
+                    isActive ? "text-[#C2410C]" : "text-[#52525B]",
                   ].join(" ")}
                 >
                   {tab.label}
                 </span>
                 {badge > 0 && (
                   <span
-                    className="text-[10px] font-bold px-1.5 py-0.5 bg-[#F97316] text-white"
+                    className="text-[10px] font-bold px-1.5 py-0.5 bg-[#F97316] text-[#09090B]"
                     title={`${badge} labor override${badge === 1 ? "" : "s"} on this tab`}
                   >
                     {badge}
@@ -198,7 +198,7 @@ export default function Catalog() {
             <div className="px-5 py-3 border-b border-[#E4E4E7]">
               <div className="section-tag">{tSection(s.title, lang)}</div>
             </div>
-            <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold border-b border-[#E4E4E7]">
+            <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#71717A] font-bold border-b border-[#E4E4E7]">
               <div className="col-span-5">{t("cat.col.item")}</div>
               <div className="col-span-1">{t("cat.col.unit")}</div>
               <div className="col-span-2 text-right">{t("cat.col.material")}</div>
@@ -211,11 +211,11 @@ export default function Catalog() {
               return (
                 <div key={it.name} className="grid grid-cols-12 gap-3 px-5 py-2 border-b border-[#E4E4E7] items-center">
                   <div className="col-span-12 md:col-span-5 text-sm text-[#09090B]">{tItem(it.name, lang)}</div>
-                  <div className="col-span-3 md:col-span-1 text-xs text-[#A1A1AA] uppercase tracking-wider">
+                  <div className="col-span-3 md:col-span-1 text-xs text-[#71717A] uppercase tracking-wider">
                     {tUnit(it.unit, lang)}
                   </div>
                   <div className="col-span-4 md:col-span-2 text-right text-sm font-mono-num text-[#52525B] flex items-center justify-end gap-1.5">
-                    <Lock className="w-3 h-3 text-[#A1A1AA]" />
+                    <Lock className="w-3 h-3 text-[#71717A]" />
                     {it.mat.toLocaleString("en-US", { style: "currency", currency: "USD" })}
                   </div>
                   <div className="col-span-4 md:col-span-2">
@@ -231,7 +231,7 @@ export default function Catalog() {
                   <div className="col-span-1 md:col-span-2 text-right">
                     {it.lab_overridden && (
                       <button
-                        className="btn-ghost text-[#F97316]"
+                        className="btn-ghost text-[#C2410C]"
                         onClick={() => resetItem(si, ii)}
                         title="Reset labor to tier default"
                       >

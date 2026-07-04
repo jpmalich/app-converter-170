@@ -44,10 +44,10 @@ export default function WindowPackageQuote({ brand, est, update }) {
     >
       <header className="flex items-center justify-between px-4 md:px-5 py-3 border-b border-[#E4E4E7]">
         <div className="flex items-center gap-2">
-          <Package className={`w-4 h-4 ${enabled ? "text-[#F97316]" : "text-[#A1A1AA]"}`} />
+          <Package className={`w-4 h-4 ${enabled ? "text-[#C2410C]" : "text-[#71717A]"}`} />
           <div>
             <div className="section-tag">Window Package — {label} Quote</div>
-            <div className="text-[10px] text-[#A1A1AA] mt-0.5">
+            <div className="text-[10px] text-[#71717A] mt-0.5">
               Optional override — replaces per-window pricing with one package total.
               Labor + accessories + tax calc normally on top.
             </div>
@@ -70,7 +70,7 @@ export default function WindowPackageQuote({ brand, est, update }) {
       {enabled && (
         <div className="px-4 md:px-5 py-4 grid grid-cols-1 md:grid-cols-12 gap-3">
           <div className="md:col-span-3">
-            <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-1">
+            <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-1">
               Package Total
             </label>
             <div className="flex items-center">
@@ -92,7 +92,7 @@ export default function WindowPackageQuote({ brand, est, update }) {
           </div>
 
           <div className="md:col-span-4">
-            <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-1">
+            <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-1">
               {label} Quote Reference
             </label>
             <input
@@ -106,7 +106,7 @@ export default function WindowPackageQuote({ brand, est, update }) {
           </div>
 
           <div className="md:col-span-5">
-            <label className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold block mb-1">
+            <label className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold block mb-1">
               Notes
             </label>
             <input

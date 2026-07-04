@@ -95,18 +95,18 @@ export default function InstallBanner() {
         <div className="bg-[#09090B] text-white border-t-4 border-[#F97316] shadow-2xl">
           <div className="flex items-center gap-3 px-4 py-3">
             <div className="w-10 h-10 rounded bg-[#F97316] flex items-center justify-center shrink-0">
-              <Smartphone className="w-5 h-5" />
+              <Smartphone className="w-5 h-5 text-[#09090B]" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-bold">Install on your phone</div>
-              <div className="text-[11px] text-[#A1A1AA] leading-snug">
+              <div className="text-[11px] text-[#71717A] leading-snug">
                 Add to your home screen for a faster, app-like experience.
               </div>
             </div>
             <button
               type="button"
               onClick={handleInstall}
-              className="bg-[#F97316] text-white text-xs font-bold uppercase tracking-wider px-3 py-2.5 hover:bg-[#EA580C] transition"
+              className="bg-[#F97316] text-[#09090B] text-xs font-bold uppercase tracking-wider px-3 py-2.5 hover:bg-[#EA580C] transition"
               data-testid="install-banner-action"
             >
               Install
@@ -136,7 +136,7 @@ export default function InstallBanner() {
           >
             <div className="flex items-start justify-between mb-3">
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#F97316]">
+                <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#C2410C]">
                   3-Step Install
                 </div>
                 <h2 className="text-xl font-bold text-[#09090B] mt-1">
@@ -146,7 +146,7 @@ export default function InstallBanner() {
               <button
                 type="button"
                 onClick={dismiss}
-                className="p-2 text-[#A1A1AA] hover:text-[#09090B]"
+                className="p-2 text-[#71717A] hover:text-[#09090B]"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -205,7 +205,7 @@ export default function InstallBanner() {
             >
               Got it
             </button>
-            <p className="mt-3 text-[11px] text-[#A1A1AA] text-center">
+            <p className="mt-3 text-[11px] text-[#71717A] text-center">
               You can re-open this app from your home screen any time.
             </p>
           </div>
@@ -218,13 +218,13 @@ export default function InstallBanner() {
 function Step({ n, label, detail, icon }) {
   return (
     <li className="flex gap-3">
-      <div className="w-8 h-8 rounded-full bg-[#F97316] text-white font-bold text-sm flex items-center justify-center shrink-0">
+      <div className="w-8 h-8 rounded-full bg-[#F97316] text-[#09090B] font-bold text-sm flex items-center justify-center shrink-0">
         {n}
       </div>
       <div className="flex-1 pt-0.5">
         <div className="font-bold text-[#09090B] flex items-center gap-2">
           {label}
-          <span className="text-[#A1A1AA]">{icon}</span>
+          <span className="text-[#71717A]">{icon}</span>
         </div>
         <div className="text-[#52525B] text-[13px] leading-snug mt-0.5">{detail}</div>
       </div>

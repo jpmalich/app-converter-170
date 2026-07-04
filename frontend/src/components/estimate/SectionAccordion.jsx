@@ -210,7 +210,7 @@ export default function SectionAccordion({
           <div className="text-sm font-semibold md:font-normal text-[#09090B] flex items-center gap-2 flex-wrap">
             {isCommon && (
               <Lightbulb
-                className="w-3.5 h-3.5 text-yellow-600 flex-shrink-0"
+                className="w-3.5 h-3.5 text-yellow-700 flex-shrink-0"
                 title="Commonly needed — review qty"
               />
             )}
@@ -227,12 +227,12 @@ export default function SectionAccordion({
             )}
           </div>
         </div>
-        <div className="col-span-3 md:col-span-1 text-xs text-[#A1A1AA] uppercase tracking-wider">
-          <span className="md:hidden text-[10px] text-[#A1A1AA] block">{t("est.col.unit")}</span>
+        <div className="col-span-3 md:col-span-1 text-xs text-[#71717A] uppercase tracking-wider">
+          <span className="md:hidden text-[10px] text-[#71717A] block">{t("est.col.unit")}</span>
           {tUnit(l.unit, lang)}
         </div>
         <div className="col-span-3 md:col-span-2 text-right text-sm font-mono-num text-[#52525B]">
-          <span className="md:hidden text-[10px] text-[#A1A1AA] block text-right">{t("est.col.mat")}</span>
+          <span className="md:hidden text-[10px] text-[#71717A] block text-right">{t("est.col.mat")}</span>
           {/* Iter 78z++++ — Mat $ is editable for every catalog row inside
               the merged "Misc. Labor and Material" section so the
               contractor can override per-job material cost without
@@ -258,7 +258,7 @@ export default function SectionAccordion({
               {l.defaultMat != null && Number(l.mat) !== Number(l.defaultMat) && (
                 <button
                   type="button"
-                  className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[#F97316] text-white text-xs md:text-[10px] leading-none flex items-center justify-center"
+                  className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[#F97316] text-[#09090B] text-xs md:text-[10px] leading-none flex items-center justify-center"
                   onClick={() =>
                     onField(l.tab, l.section, l.name, "mat", l.defaultMat ?? 0)
                   }
@@ -274,7 +274,7 @@ export default function SectionAccordion({
           )}
         </div>
         <div className="col-span-3 md:col-span-1">
-          <label className="md:hidden text-[10px] text-[#A1A1AA] block uppercase tracking-wider mb-1">{t("est.col.qty")}</label>
+          <label className="md:hidden text-[10px] text-[#71717A] block uppercase tracking-wider mb-1">{t("est.col.qty")}</label>
           <input
             className="input num h-11 md:h-9 text-base md:text-sm w-full"
             type="number"
@@ -306,7 +306,7 @@ export default function SectionAccordion({
           })()}
         </div>
         <div className="col-span-3 md:col-span-1 relative">
-          <label className="md:hidden text-[10px] text-[#A1A1AA] block uppercase tracking-wider mb-1">{t("est.col.lab")}</label>
+          <label className="md:hidden text-[10px] text-[#71717A] block uppercase tracking-wider mb-1">{t("est.col.lab")}</label>
           {/* Iter 78k (2026-02-25): Howard reversed the Iter 69 vinyl/ascend
               labor lockdown — labor is now editable on ALL siding tabs
               (vinyl, ascend, lp_smart) and windows. Single editable input
@@ -326,7 +326,7 @@ export default function SectionAccordion({
             {labOverridden && (
               <button
                 type="button"
-                className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[#F97316] text-white text-xs md:text-[10px] leading-none flex items-center justify-center"
+                className="absolute -top-1 -right-1 w-5 h-5 md:w-4 md:h-4 rounded-full bg-[#F97316] text-[#09090B] text-xs md:text-[10px] leading-none flex items-center justify-center"
                 onClick={() => onResetLine(l.tab, l.section, l.name)}
                 title={`Reset to catalog default ($${l.defaultLab})`}
                 data-testid={`reset-lab-${section.title}-${l.name}`}
@@ -337,7 +337,7 @@ export default function SectionAccordion({
           </>
         </div>
         <div className="col-span-12 md:col-span-2 text-right font-mono-num text-base md:text-sm font-bold md:font-semibold text-[#09090B] pt-2 md:pt-0 border-t md:border-t-0 border-[#F4F4F5]">
-          <span className="md:hidden text-[10px] text-[#A1A1AA] uppercase tracking-wider mr-2">{t("est.col.total")}</span>
+          <span className="md:hidden text-[10px] text-[#71717A] uppercase tracking-wider mr-2">{t("est.col.total")}</span>
           {fmt(total)}
         </div>
       </div>
@@ -357,7 +357,7 @@ export default function SectionAccordion({
               )}
               Upgrade Options
               {lineAdders.length > 0 && (
-                <span className="bg-[#F97316] text-white px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
+                <span className="bg-[#F97316] text-[#09090B] px-2 py-0.5 text-[10px] tracking-wider font-bold normal-case">
                   {lineAdders.length}
                 </span>
               )}
@@ -441,7 +441,7 @@ export default function SectionAccordion({
           {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           <span className="section-tag">{tSection(section.title, lang)}</span>
           {filledCount > 0 && (
-            <span className="text-[10px] font-bold px-2 py-0.5 border border-[#F97316] text-[#F97316]">
+            <span className="text-[10px] font-bold px-2 py-0.5 border border-[#F97316] text-[#C2410C]">
               {t("est.itemsBadge", { n: filledCount })}
             </span>
           )}
@@ -460,7 +460,7 @@ export default function SectionAccordion({
       </button>
       {isOpen && (
         <div className="border-t border-[#E4E4E7]">
-          <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold border-b border-[#E4E4E7]">
+          <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[#71717A] font-bold border-b border-[#E4E4E7]">
             <div className="col-span-5">{t("est.col.item")}</div>
             <div className="col-span-1">{t("est.col.unit")}</div>
             <div className="col-span-2 text-right">{t("est.col.mat")}</div>
@@ -496,11 +496,11 @@ export default function SectionAccordion({
                         <span className="text-xs uppercase tracking-[0.14em] font-semibold text-[#3F3F46]">
                           {g.label}
                         </span>
-                        <span className="text-[10px] text-[#A1A1AA] font-mono-num">
+                        <span className="text-[10px] text-[#71717A] font-mono-num">
                           {g.lines.length}
                         </span>
                         {subFilled > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#F97316] text-[#F97316]">
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#F97316] text-[#C2410C]">
                             {t("est.itemsBadge", { n: subFilled })}
                           </span>
                         )}
@@ -526,7 +526,7 @@ export default function SectionAccordion({
           {miscKey && (
             <>
               {miscRows.length > 0 && (
-                <div className="hidden md:grid grid-cols-12 gap-3 px-5 pt-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-[#A1A1AA] font-bold">
+                <div className="hidden md:grid grid-cols-12 gap-3 px-5 pt-3 pb-1 text-[10px] uppercase tracking-[0.18em] text-[#71717A] font-bold">
                   <div className="col-span-6">{t("est.customDesc")}</div>
                   {showMatCol && <div className="col-span-2 text-right">{t("cat.col.material")}</div>}
                   <div className={`col-span-${showMatCol ? 2 : 4} text-right`}>{t("cat.col.labor")}</div>

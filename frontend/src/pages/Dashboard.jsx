@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api, { fmt, formatApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Plus, Trash2, FileText, Search, Download, Copy, Link2 } from "lucide-react";
+import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb } from "lucide-react";
 import EmailPipeline from "@/components/EmailPipeline";
 import { calcTotals as calcTabTotals } from "@/lib/calc";
 
@@ -15,12 +15,12 @@ import { calcTotals as calcTabTotals } from "@/lib/calc";
 // the estimate via the back-compat path in EstimateEditor.
 const KIND_TABS = {
   siding: [
-    { id: "vinyl", label: "Vinyl", color: "#F97316" },
-    { id: "ascend", label: "Ascend", color: "#A1A1AA" },
+    { id: "vinyl", label: "Vinyl", color: "#C2410C" },
+    { id: "ascend", label: "Ascend", color: "#71717A" },
   ],
   windows: [
-    { id: "windows", label: "Vero", color: "#F97316" },
-    { id: "mezzo", label: "Mezzo", color: "#A1A1AA" },
+    { id: "windows", label: "Vero", color: "#C2410C" },
+    { id: "mezzo", label: "Mezzo", color: "#71717A" },
   ],
 };
 
@@ -156,12 +156,12 @@ export default function Dashboard({ kind = "siding" }) {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-[#A1A1AA] mb-1 flex items-center gap-2">
+          <div className="text-xs uppercase tracking-[0.2em] text-[#71717A] mb-1 flex items-center gap-2">
             <span>{isWindows ? "Windows" : isLp ? "LP SmartSiding" : "Siding"} · {t("dash.eyebrow")}</span>
             <button
               type="button"
               onClick={() => nav("/")}
-              className="text-[10px] text-[#F97316] hover:underline"
+              className="text-[10px] text-[#C2410C] hover:underline"
               data-testid="back-to-picker-btn"
             >
               ← Switch workspace
@@ -198,7 +198,7 @@ export default function Dashboard({ kind = "siding" }) {
       </div>
 
       <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#A1A1AA] pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A] pointer-events-none" />
         <input
           className="input !pl-10"
           placeholder={t("dash.search")}
@@ -221,10 +221,10 @@ export default function Dashboard({ kind = "siding" }) {
           <span className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#065F46] mt-0.5 whitespace-nowrap">
             We&apos;d Love Your Feedback
           </span>
-          <div className="text-sm text-[#065F46] leading-relaxed">
-            <span aria-hidden="true" className="mr-1">💡</span>
-            LP SmartSide is fresh out of the lab. Run quotes, kick the tires, and ping Howard
-            with anything that feels off. Your real-world numbers make this better.
+          <div className="text-sm text-[#065F46] leading-relaxed inline-flex items-start gap-1">
+            <Lightbulb aria-hidden="true" className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>LP SmartSide is fresh out of the lab. Run quotes, kick the tires, and ping Howard
+            with anything that feels off. Your real-world numbers make this better.</span>
           </div>
         </div>
       )}
@@ -323,7 +323,7 @@ export default function Dashboard({ kind = "siding" }) {
           <div className="p-8 text-center text-[#52525B]">{t("common.loading")}</div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center" data-testid="empty-state">
-            <FileText className="w-12 h-12 mx-auto text-[#A1A1AA] mb-3" />
+            <FileText className="w-12 h-12 mx-auto text-[#71717A] mb-3" />
             <div className="font-heading text-xl text-[#09090B] mb-1">{t("dash.empty.title")}</div>
             <div className="text-sm text-[#52525B] mb-6">{t("dash.empty.sub")}</div>
             <button className="btn-primary" onClick={createEstimate}>
@@ -341,13 +341,13 @@ export default function Dashboard({ kind = "siding" }) {
                 data-testid={`estimate-row-${e.id}`}
               >
                 <div className="col-span-12 md:col-span-2 font-mono-num text-sm text-[#09090B]">
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] md:hidden">#</div>
+                  <div className="text-[10px] uppercase tracking-wider text-[#71717A] md:hidden">#</div>
                   <div className="flex items-center gap-1.5">
                     <span>{e.estimate_number || "—"}</span>
                     {e.paired_estimate_id && (
                       <button
                         type="button"
-                        className="text-[#71717A] hover:text-[#F97316] p-0.5 -m-0.5"
+                        className="text-[#71717A] hover:text-[#C2410C] p-0.5 -m-0.5"
                         onClick={(ev) => {
                           ev.stopPropagation();
                           nav(`/estimate/${e.paired_estimate_id}`);
@@ -382,7 +382,7 @@ export default function Dashboard({ kind = "siding" }) {
                     ) : null}
                     <EmailPipeline est={e} />
                   </div>
-                  <div className="text-xs text-[#A1A1AA]">{new Date(e.updated_at).toLocaleString()}</div>
+                  <div className="text-xs text-[#71717A]">{new Date(e.updated_at).toLocaleString()}</div>
                 </div>
                 <div className="col-span-12 md:col-span-2 text-sm text-[#52525B] truncate">{e.address || "—"}</div>
                 <div className="col-span-8 md:col-span-4 text-right">
@@ -471,7 +471,7 @@ function StatCard({ label, value, sublabel, accent }) {
     <div className="card flex overflow-hidden">
       <div className={`w-1 ${stripe}`} />
       <div className="px-4 py-3 flex-1 min-w-0">
-        <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold">
           {label}
         </div>
         <div className="font-mono-num text-2xl font-bold text-[#09090B] leading-tight">

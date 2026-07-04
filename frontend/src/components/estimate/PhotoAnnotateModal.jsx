@@ -18,7 +18,7 @@
 // patterns stay consistent, but stripped down: no measurement loop,
 // no openings, no labels — annotations only.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { X, Check, Ruler, Square, Trash2, RotateCcw, ZoomIn, ZoomOut, Maximize, Tags } from "lucide-react";
+import { X, Check, Ruler, Square, Trash2, RotateCcw, ZoomIn, ZoomOut, Maximize, Tags, Pencil, Crosshair, AppWindow, BrickWall, Home } from "lucide-react";
 import { toast } from "sonner";
 
 const MODE_SCALE = "scale";
@@ -1175,7 +1175,7 @@ export default function PhotoAnnotateModal({
                   data-testid="photo-annotate-pencil-chip"
                   title="Apple Pencil detected — you have pixel-precise input"
                 >
-                  ✏️ Precision · Pencil
+                  <Pencil aria-hidden="true" className="w-3 h-3" /> Precision · Pencil
                 </span>
               )}
             </div>
@@ -1252,7 +1252,7 @@ export default function PhotoAnnotateModal({
                       = <b className="font-mono-num">{(inches / 12).toFixed(2)} ft</b> / <b className="font-mono-num">{inches.toFixed(1)} in</b>
                     </div>
                   )}
-                  <div className="text-[10px] text-[#A1A1AA] leading-snug">
+                  <div className="text-[10px] text-[#71717A] leading-snug">
                     {isWindow
                       ? <>Std window widths: <b>24, 28, 30, 32, 36, 40, 44, 48, 54, 60, 72&nbsp;in</b>. Std heights: <b>36, 42, 48, 54, 60, 72&nbsp;in</b>.</>
                       : <>Entry door ≈ <b>7 ft</b>, single garage ≈ <b>7×9 ft</b>, double garage ≈ <b>7×16 ft</b>.</>}
@@ -1286,7 +1286,7 @@ export default function PhotoAnnotateModal({
               </div>
               <div className="p-4 space-y-3">
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">Style</div>
+                  <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">Style</div>
                   <select
                     value={windowStyle}
                     onChange={(e) => setWindowStyle(e.target.value)}
@@ -1299,7 +1299,7 @@ export default function PhotoAnnotateModal({
                     ))}
                   </select>
                 </div>
-                <div className="text-[10px] text-[#A1A1AA] leading-snug">
+                <div className="text-[10px] text-[#71717A] leading-snug">
                   Tip — your tag locks the STYLE only. Claude still measures width &amp; height from the photo using its scale reference. If you also need a specific size, edit it in the openings schedule after Claude runs.
                 </div>
               </div>
@@ -1318,7 +1318,7 @@ export default function PhotoAnnotateModal({
           {/* Canvas */}
           <div className="md:col-span-2">
             {!photo ? (
-              <div className="aspect-video bg-[#FAFAFA] flex items-center justify-center text-[#A1A1AA] text-sm">Loading photo…</div>
+              <div className="aspect-video bg-[#FAFAFA] flex items-center justify-center text-[#71717A] text-sm">Loading photo…</div>
             ) : (
               <div
                 ref={viewportRef}
@@ -1429,12 +1429,12 @@ export default function PhotoAnnotateModal({
                   contractors can see AT A GLANCE which step they're on.
                   Fixes the "banner says both Window and Style, which one
                   am I on?" confusion Howard hit. */}
-              <div className="text-lg font-heading font-bold text-[#09090B] uppercase tracking-wider mb-1">
-                {guidedSteps[guidedStepIdx]?.key === "wall" && "🎯 Wall Measurement"}
-                {guidedSteps[guidedStepIdx]?.key === "window-measure" && "📏 Window Measurement"}
-                {guidedSteps[guidedStepIdx]?.key === "window-style" && "🪟 Window Style"}
-                {guidedSteps[guidedStepIdx]?.key === "mask" && "🧱 Mask (brick / stone)"}
-                {guidedSteps[guidedStepIdx]?.key === "profile" && "🏠 Profile"}
+              <div className="text-lg font-heading font-bold text-[#09090B] uppercase tracking-wider mb-1 inline-flex items-center gap-2">
+                {guidedSteps[guidedStepIdx]?.key === "wall" && (<><Crosshair aria-hidden="true" className="w-5 h-5" /> Wall Measurement</>)}
+                {guidedSteps[guidedStepIdx]?.key === "window-measure" && (<><Ruler aria-hidden="true" className="w-5 h-5" /> Window Measurement</>)}
+                {guidedSteps[guidedStepIdx]?.key === "window-style" && (<><AppWindow aria-hidden="true" className="w-5 h-5" /> Window Style</>)}
+                {guidedSteps[guidedStepIdx]?.key === "mask" && (<><BrickWall aria-hidden="true" className="w-5 h-5" /> Mask (brick / stone)</>)}
+                {guidedSteps[guidedStepIdx]?.key === "profile" && (<><Home aria-hidden="true" className="w-5 h-5" /> Profile</>)}
               </div>
               <div className="text-sm text-[#52525B] font-medium mb-3">
                 {guidedSteps[guidedStepIdx]?.banner}
@@ -1500,7 +1500,7 @@ export default function PhotoAnnotateModal({
                             className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}
                             data-testid="guided-profile-shape-poly">Polygon</button>
                   </div>
-                  <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Profile family</div>
+                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Profile family</div>
                   <div className="grid grid-cols-3 gap-1">
                     {PROFILE_FAMILIES.map((f) => (
                       <button
@@ -1549,7 +1549,7 @@ export default function PhotoAnnotateModal({
                     <span className="text-[#71717A]">wall scale</span>
                   </span>
                   <button type="button" onClick={removeReference}
-                          className="text-[#A1A1AA] hover:text-[#DC2626] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
+                          className="text-[#71717A] hover:text-[#DC2626] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
                           data-testid="guided-wall-ref-remove">
                     <Trash2 className="w-3 h-3" /> Delete
                   </button>
@@ -1563,7 +1563,7 @@ export default function PhotoAnnotateModal({
                     <span className="text-[#71717A]">window scale</span>
                   </span>
                   <button type="button" onClick={removeWindowReference}
-                          className="text-[#A1A1AA] hover:text-[#DC2626] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
+                          className="text-[#71717A] hover:text-[#DC2626] flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider"
                           data-testid="guided-winref-remove">
                     <Trash2 className="w-3 h-3" /> Delete
                   </button>
@@ -1571,7 +1571,7 @@ export default function PhotoAnnotateModal({
               )}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "window-style" && localWindows.length > 0 && (
                 <div className="mb-3 p-2 bg-white border border-[#E4E4E7] space-y-1">
-                  <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Tagged windows ({localWindows.length})</div>
+                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Tagged windows ({localWindows.length})</div>
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {localWindows.map((w) => (
                       <li key={w.id} className="flex items-center justify-between text-[11px]">
@@ -1580,7 +1580,7 @@ export default function PhotoAnnotateModal({
                           <span className="text-[#52525B]">{w.style}</span>
                         </span>
                         <button type="button" onClick={() => removeWindow(w.id)}
-                                className="text-[#A1A1AA] hover:text-[#DC2626]"
+                                className="text-[#71717A] hover:text-[#DC2626]"
                                 data-testid={`guided-window-remove-${w.id}`}
                                 title="Delete this window tag">
                           <Trash2 className="w-3 h-3" />
@@ -1592,7 +1592,7 @@ export default function PhotoAnnotateModal({
               )}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "mask" && localZones.length > 0 && (
                 <div className="mb-3 p-2 bg-white border border-[#E4E4E7] space-y-1">
-                  <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Mask zones ({localZones.length})</div>
+                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Mask zones ({localZones.length})</div>
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {localZones.map((z) => {
                       const c = ZONE_CATEGORIES.find((x) => x.key === z.category);
@@ -1603,7 +1603,7 @@ export default function PhotoAnnotateModal({
                             <span className="text-[#52525B]">{c?.name} ({z.kind})</span>
                           </span>
                           <button type="button" onClick={() => removeZone(z.id)}
-                                  className="text-[#A1A1AA] hover:text-[#DC2626]"
+                                  className="text-[#71717A] hover:text-[#DC2626]"
                                   data-testid={`guided-zone-remove-${z.id}`}
                                   title="Delete this mask zone">
                             <Trash2 className="w-3 h-3" />
@@ -1616,7 +1616,7 @@ export default function PhotoAnnotateModal({
               )}
               {guidedFlow && guidedSteps[guidedStepIdx]?.key === "profile" && localProfileBoxes.length > 0 && (
                 <div className="mb-3 p-2 bg-white border border-[#E4E4E7] space-y-1">
-                  <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Profile boxes ({localProfileBoxes.length})</div>
+                  <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Profile boxes ({localProfileBoxes.length})</div>
                   <ul className="space-y-1 max-h-32 overflow-y-auto">
                     {localProfileBoxes.map((b) => {
                       const fam = PROFILE_FAMILIES.find((f) => f.key === b.profile) || { label: b.profile, bg: "#F4F4F5", fg: "#71717A" };
@@ -1630,7 +1630,7 @@ export default function PhotoAnnotateModal({
                             <span className="text-[#52525B] font-mono-num tabular-nums">{b.sqft} ft²</span>
                           </span>
                           <button type="button" onClick={() => removeProfileBox(b.id)}
-                                  className="text-[#A1A1AA] hover:text-[#DC2626]"
+                                  className="text-[#71717A] hover:text-[#DC2626]"
                                   data-testid={`guided-profile-remove-${b.id}`}
                                   title="Delete this profile box">
                             <Trash2 className="w-3 h-3" />
@@ -1683,7 +1683,7 @@ export default function PhotoAnnotateModal({
                     // manual control. Show the classic toolbar.
                     if (typeof guidedFlow?.onExit === "function") guidedFlow.onExit();
                   }}
-                  className="ml-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#A1A1AA] hover:text-[#71717A] underline underline-offset-2"
+                  className="ml-auto px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#71717A] hover:text-[#71717A] underline underline-offset-2"
                   data-testid="annotate-guided-exit-btn"
                   title="Turn off the guided walkthrough — use the full annotator toolbar instead"
                 >
@@ -1812,7 +1812,7 @@ export default function PhotoAnnotateModal({
                           onClick={() => { setZoneShape("poly"); setPending(null); }}
                           className={`flex-1 px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${zoneShape === "poly" ? "border-[#09090B] bg-[#FAFAFA]" : "border-[#E4E4E7]"}`}>Polygon</button>
                 </div>
-                <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold pt-1">Profile family</div>
+                <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold pt-1">Profile family</div>
                 <div className="grid grid-cols-3 gap-1">
                   {PROFILE_FAMILIES.map((f) => (
                     <button
@@ -1848,7 +1848,7 @@ export default function PhotoAnnotateModal({
                 )}
                 {localProfileBoxes.length > 0 && (
                   <div className="pt-1 space-y-1">
-                    <div className="text-[9px] uppercase tracking-wider text-[#A1A1AA] font-bold">Profile boxes ({localProfileBoxes.length})</div>
+                    <div className="text-[9px] uppercase tracking-wider text-[#71717A] font-bold">Profile boxes ({localProfileBoxes.length})</div>
                     {localProfileBoxes.map((b) => {
                       const fam = PROFILE_FAMILIES.find((f) => f.key === b.profile) || { label: b.profile, bg: "#F4F4F5", fg: "#71717A" };
                       return (
@@ -1894,7 +1894,7 @@ export default function PhotoAnnotateModal({
             {!guidedFlow && (
             <>
             <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">
                 Target house pin
               </div>
               {localTarget ? (
@@ -1904,18 +1904,18 @@ export default function PhotoAnnotateModal({
                       ? `Box ${Math.round(localTarget.x2 - localTarget.x1)}×${Math.round(localTarget.y2 - localTarget.y1)} px`
                       : `Pinned at (${Math.round(localTarget.x)}, ${Math.round(localTarget.y)})`}
                   </span>
-                  <button onClick={removeTarget} className="text-[#A1A1AA] hover:text-[#DC2626]" data-testid="annotate-target-remove">
+                  <button onClick={removeTarget} className="text-[#71717A] hover:text-[#DC2626]" data-testid="annotate-target-remove">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="text-[11px] text-[#A1A1AA] italic">
+                <div className="text-[11px] text-[#71717A] italic">
                   No box drawn — tap two corners around the target structure (e.g. just the garage).
                 </div>
               )}
             </div>
             <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1 flex items-center gap-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-[#DC2626]"></span>
                 Wall scale anchor
               </div>
@@ -1924,16 +1924,16 @@ export default function PhotoAnnotateModal({
                   <span>
                     <span className="font-mono-num font-bold">{localRef.inches}&quot;</span> ({(localRef.inches / 12).toFixed(2)} ft)
                   </span>
-                  <button onClick={removeReference} className="text-[#A1A1AA] hover:text-[#DC2626]" data-testid="annotate-ref-remove">
+                  <button onClick={removeReference} className="text-[#71717A] hover:text-[#DC2626]" data-testid="annotate-ref-remove">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="text-[11px] text-[#A1A1AA] italic">No wall anchor — Wall mode + tap 2 points across a known span (door, garage, eave-to-ground).</div>
+                <div className="text-[11px] text-[#71717A] italic">No wall anchor — Wall mode + tap 2 points across a known span (door, garage, eave-to-ground).</div>
               )}
             </div>
             <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1 flex items-center gap-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-[#2563EB]"></span>
                 Window scale anchor
               </div>
@@ -1942,16 +1942,16 @@ export default function PhotoAnnotateModal({
                   <span>
                     <span className="font-mono-num font-bold">{localWindowRef.inches}&quot;</span> ({(localWindowRef.inches / 12).toFixed(2)} ft)
                   </span>
-                  <button onClick={removeWindowReference} className="text-[#A1A1AA] hover:text-[#2563EB]" data-testid="annotate-winref-remove">
+                  <button onClick={removeWindowReference} className="text-[#71717A] hover:text-[#2563EB]" data-testid="annotate-winref-remove">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
               ) : (
-                <div className="text-[11px] text-[#A1A1AA] italic">No window anchor — Window mode + tap 2 points across a window edge you know (e.g. 36&quot; wide).</div>
+                <div className="text-[11px] text-[#71717A] italic">No window anchor — Window mode + tap 2 points across a window edge you know (e.g. 36&quot; wide).</div>
               )}
             </div>
             <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1">
                 No-siding zones ({localZones.length})
               </div>
               <ul className="space-y-1 max-h-32 overflow-y-auto" data-testid="annotate-zone-list">
@@ -1963,21 +1963,21 @@ export default function PhotoAnnotateModal({
                         <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c?.color }} />
                         {c?.name} ({z.kind})
                       </span>
-                      <button onClick={() => removeZone(z.id)} className="text-[#A1A1AA] hover:text-[#DC2626]">
+                      <button onClick={() => removeZone(z.id)} className="text-[#71717A] hover:text-[#DC2626]">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </li>
                   );
                 })}
                 {!localZones.length && (
-                  <li className="text-[11px] text-[#A1A1AA] italic">No zones yet — switch to Mask zone mode to draw.</li>
+                  <li className="text-[11px] text-[#71717A] italic">No zones yet — switch to Mask zone mode to draw.</li>
                 )}
               </ul>
             </div>
 
             {/* Iter 57e — tagged windows list */}
             <div className="border-t border-[#E4E4E7] pt-2">
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1 flex items-center gap-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 bg-[#FBBF24] border border-[#92400E]"></span>
                 Tagged windows ({localWindows.length})
               </div>
@@ -1987,15 +1987,15 @@ export default function PhotoAnnotateModal({
                     <span className="flex items-center gap-1">
                       <span className="font-bold text-[#92400E]">{STYLE_ABBR[w.style] || "?"}</span>
                       <span>{w.style}</span>
-                      <span className="text-[10px] text-[#A1A1AA]">(Claude sizes)</span>
+                      <span className="text-[10px] text-[#71717A]">(Claude sizes)</span>
                     </span>
-                    <button onClick={() => removeWindow(w.id)} className="text-[#A1A1AA] hover:text-[#DC2626]" data-testid={`annotate-window-remove-${w.id}`}>
+                    <button onClick={() => removeWindow(w.id)} className="text-[#71717A] hover:text-[#DC2626]" data-testid={`annotate-window-remove-${w.id}`}>
                       <Trash2 className="w-3 h-3" />
                     </button>
                   </li>
                 ))}
                 {!localWindows.length && (
-                  <li className="text-[11px] text-[#A1A1AA] italic">No windows tagged — switch to Window mode and tap each window.</li>
+                  <li className="text-[11px] text-[#71717A] italic">No windows tagged — switch to Window mode and tap each window.</li>
                 )}
               </ul>
             </div>
@@ -2005,7 +2005,7 @@ export default function PhotoAnnotateModal({
             {(localRef || localWindowRef || localZones.length > 0 || localTarget || localWindows.length > 0) && (
               <button type="button"
                       onClick={() => { setLocalRef(null); setLocalWindowRef(null); setLocalZones([]); setLocalTarget(null); setLocalWindows([]); setPending(null); setHoverPoint(null); setPolyPoints([]); }}
-                      className="text-[10px] text-[#A1A1AA] uppercase tracking-wider font-bold flex items-center gap-1 hover:text-[#DC2626]"
+                      className="text-[10px] text-[#71717A] uppercase tracking-wider font-bold flex items-center gap-1 hover:text-[#DC2626]"
                       data-testid="annotate-clear-all">
                 <RotateCcw className="w-3 h-3" /> Clear all
               </button>
@@ -2015,7 +2015,7 @@ export default function PhotoAnnotateModal({
         </div>
 
         <div className="border-t border-[#E4E4E7] px-5 py-3 flex justify-between items-center">
-          <div className="text-[10px] text-[#A1A1AA]">
+          <div className="text-[10px] text-[#71717A]">
             {guidedFlow
               ? "Annotations save automatically when you finish the last step."
               : "Annotations are burned into the photo before Claude sees it."}

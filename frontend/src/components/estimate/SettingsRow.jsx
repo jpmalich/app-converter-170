@@ -66,7 +66,7 @@ export default function SettingsRow({ est, update }) {
             />
             <span className="text-[#52525B]">{t("est.wasteSuffix")}</span>
           </div>
-          <p className="mt-2 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+          <p className="mt-2 text-[10px] uppercase tracking-wider text-[#71717A]">
             {t("est.wasteHint")}
           </p>
           {/* Iter 78 — Waste is now baked directly into line qty on HOVER /
@@ -96,7 +96,7 @@ export default function SettingsRow({ est, update }) {
               all-closed for jobs that only use one style. */}
           {est.kind === "lp_smart" && (
             <div className="mt-4 pt-4 border-t border-[#E4E4E7]">
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-2">
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-2">
                 LP Soffit type
               </div>
               <select
@@ -109,7 +109,7 @@ export default function SettingsRow({ est, update }) {
                 <option value="vented">Vented — all soffit qty as Vented (38 Series Vented)</option>
                 <option value="closed">Closed — all soffit qty as Closed (38 Series Closed)</option>
               </select>
-              <p className="mt-2 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+              <p className="mt-2 text-[10px] uppercase tracking-wider text-[#71717A]">
                 Applied on HOVER / Blueprint import — collapses or splits the two soffit lines automatically
               </p>
             </div>
@@ -119,7 +119,7 @@ export default function SettingsRow({ est, update }) {
               Vinyl Soffit line. Lives in the same card as Waste Factor
               since it's the other knob that affects qty-not-price. */}
           <div className="mt-4 pt-4 border-t border-[#E4E4E7]">
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-2">
+            <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-2">
               {t("est.overhang")}
             </div>
             <div className="flex items-baseline gap-2">
@@ -134,7 +134,7 @@ export default function SettingsRow({ est, update }) {
               />
               <span className="text-[#52525B]">in</span>
             </div>
-            <p className="mt-2 text-[10px] uppercase tracking-wider text-[#A1A1AA]">
+            <p className="mt-2 text-[10px] uppercase tracking-wider text-[#71717A]">
               {t("est.overhangHint")}
             </p>
             {/* Iter 78aj — Porch ceilings live right below the overhang

@@ -636,7 +636,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           type="button"
           onClick={() => setProfileAnnotatorOpen(true)}
           disabled={busy}
-          className="w-full justify-center px-3 py-1.5 bg-white text-[#F97316] border border-[#F97316] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+          className="w-full justify-center px-3 py-1.5 bg-white text-[#C2410C] border border-[#F97316] hover:bg-[#FFF7ED] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
           data-testid="blueprint-tag-profiles-btn"
           title="Draw boxes to tag Shake / B&B / etc. — guarantees those materials hit the quote"
         >
@@ -647,7 +647,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               0,
             );
             return total > 0 ? (
-              <span className="bg-[#F97316] text-white px-1 py-0 text-[9px]">{total}</span>
+              <span className="bg-[#F97316] text-[#09090B] px-1 py-0 text-[9px]">{total}</span>
             ) : null;
           })()}
         </button>
@@ -737,7 +737,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           <button
             type="button"
             onClick={() => { setResumeDismissed(true); setResumeRun(null); }}
-            className="text-[#A1A1AA] font-bold uppercase tracking-wider hover:text-[#71717A]"
+            className="text-[#71717A] font-bold uppercase tracking-wider hover:text-[#71717A]"
             data-testid="blueprint-resume-dismiss"
             aria-label="Dismiss restore banner"
           >
@@ -839,13 +839,13 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               {/* Sheets identified */}
               {sheets.length > 0 && (
                 <section>
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                  <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                     Plan sheets read
                   </div>
                   <ul className="text-xs space-y-0.5" data-testid="blueprint-sheets">
                     {sheets.map((s, i) => (
                       <li key={i} className="flex items-center gap-2">
-                        <span className="font-mono-num text-[#A1A1AA] w-8">p.{s.page}</span>
+                        <span className="font-mono-num text-[#71717A] w-8">p.{s.page}</span>
                         <span className="font-bold">{s.sheet_title || "—"}</span>
                         <span className="text-[10px] uppercase tracking-wider text-[#71717A]">· {s.useful_for}</span>
                       </li>
@@ -940,7 +940,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   });
                 return (
                   <section data-testid="blueprint-elevation-drawings">
-                    <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                       Elevation Drawings
                     </div>
                     <p className="text-[11px] text-[#52525B] mb-2">
@@ -964,7 +964,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
 
               {/* Summary numbers */}
               <section>
-                <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                   Takeoff
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs" data-testid="blueprint-summary">
@@ -973,7 +973,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                     if (v == null) return null;
                     return (
                       <div key={k} className="border border-[#E4E4E7] px-2 py-1.5">
-                        <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">{KEY_LABEL[k]}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">{KEY_LABEL[k]}</div>
                         <div className="font-mono-num font-bold">
                           {fmtNum(v)} <span className="text-[10px] text-[#71717A]">{UNIT_BY_KEY(k)}</span>
                         </div>
@@ -1007,7 +1007,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               {/* Window schedule */}
               {schedWindows.length > 0 && (
                 <section>
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                  <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                     Window schedule ({schedWindows.length} mark{schedWindows.length === 1 ? "" : "s"})
                   </div>
                   <div className="border border-[#E4E4E7] max-h-44 overflow-y-auto" data-testid="blueprint-window-schedule">
@@ -1034,7 +1034,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                       </tbody>
                     </table>
                   </div>
-                  <div className="text-[10px] text-[#A1A1AA] mt-1.5">
+                  <div className="text-[10px] text-[#71717A] mt-1.5">
                     {issMode
                       ? "Window schedule shown for reference only — ISS estimates don't have a Windows tab. Take counts manually if needed."
                       : `Will populate ${est.kind === "windows" ? "this Windows estimate" : "the paired Windows estimate"} on Apply.`}
@@ -1045,7 +1045,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               {/* Door schedule */}
               {schedDoors.length > 0 && (
                 <section>
-                  <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                  <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                     Door schedule ({schedDoors.length} mark{schedDoors.length === 1 ? "" : "s"})
                   </div>
                   <div className="border border-[#E4E4E7] max-h-32 overflow-y-auto" data-testid="blueprint-door-schedule">
@@ -1092,7 +1092,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                 if (dynamicNotes.length === 0) return null;
                 return (
                   <section data-testid="blueprint-formula-notes">
-                    <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold mb-1.5">
+                    <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold mb-1.5">
                       Formula breakdown
                     </div>
                     <div className="border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2 space-y-1.5">
@@ -1124,7 +1124,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
             </div>
 
             <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-between items-center">
-              <div className="text-[10px] text-[#A1A1AA]">
+              <div className="text-[10px] text-[#71717A]">
                 <span>Powered by Claude Opus 4.5</span>
               </div>
               <div className="flex gap-2">

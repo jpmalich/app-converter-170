@@ -40,7 +40,7 @@ export default function Layout() {
               <div className="font-heading text-base text-[#09090B]" style={{ minHeight: "1em" }}>
                 {company?.name || "\u00A0"}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA]">{t("nav.estimatorTag")}</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A]">{t("nav.estimatorTag")}</div>
             </div>
           </Link>
           <nav className="hidden sm:flex items-center gap-1">
@@ -60,7 +60,7 @@ export default function Layout() {
               <div className="text-sm font-semibold text-[#09090B]" data-testid="user-name">
                 {user?.name}
               </div>
-              <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA]">{roleLabel}</div>
+              <div className="text-[10px] uppercase tracking-wider text-[#71717A]">{roleLabel}</div>
             </div>
             <button
               className="btn-ghost"

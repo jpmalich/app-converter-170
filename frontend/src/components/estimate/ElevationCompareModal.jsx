@@ -184,7 +184,7 @@ export default function ElevationCompareModal({ est, open, onClose }) {
                 </div>
               ))}
               {compareGroups.length === 0 && (
-                <div className="text-center py-12 text-[12px] text-[#A1A1AA]">
+                <div className="text-center py-12 text-[12px] text-[#71717A]">
                   No matching elevation labels across sources.
                 </div>
               )}

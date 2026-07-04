@@ -13,19 +13,22 @@
     "text": {
       "primary": "#09090B",
       "secondary": "#52525B",
-      "muted": "#A1A1AA",
+      "muted": "#71717A",
+      "muted_on_dark_only": "#A1A1AA",
       "inverse": "#FFFFFF",
       "profit": "#059669"
     },
     "borders": {
       "subtle": "#E4E4E7",
       "strong": "#09090B",
-      "focus": "#F97316"
+      "focus": "#C2410C"
     },
     "brand": {
       "primary": "#F97316",
       "primary_hover": "#EA580C",
       "primary_active": "#C2410C",
+      "primary_text_on_light": "#C2410C",
+      "primary_text_on_dark": "#F97316",
       "secondary": "#09090B"
     },
     "status": {
@@ -47,7 +50,7 @@
       "h4": "text-lg font-semibold tracking-tight text-[#09090B]",
       "body": "text-base font-normal text-[#52525B] leading-relaxed",
       "data_dense": "text-sm font-medium font-['IBM_Plex_Sans'] tracking-tight",
-      "overline": "text-xs font-bold uppercase tracking-[0.2em] text-[#A1A1AA]"
+      "overline": "text-xs font-bold uppercase tracking-[0.2em] text-[#71717A]"
     }
   },
   "spacing_and_layout": {
@@ -62,17 +65,29 @@
     "dashboard_cards": "bg-white border border-[#E4E4E7] rounded-none shadow-sm hover:border-[#09090B] transition-colors",
     "estimate_grid": "border-collapse border border-[#E4E4E7] bg-white rounded-none. Inner rows have border-b border-[#E4E4E7]. No rounded corners for a technical spreadsheet feel.",
     "sticky_totals_bar": "bg-[#09090B] text-white backdrop-blur-xl bg-opacity-95 border-b sm:border-t-0 border-white/20 shadow-xl z-50",
-    "primary_button": "bg-[#F97316] text-white font-bold rounded-none px-6 py-3 hover:bg-[#EA580C] active:translate-y-[1px] shadow-[4px_4px_0px_#09090B] border border-[#09090B] transition-all hover:shadow-[2px_2px_0px_#09090B] hover:translate-x-[2px] hover:translate-y-[2px]"
+    "primary_button": "bg-[#F97316] text-[#09090B] font-bold rounded-none px-6 py-3 hover:bg-[#EA580C] active:translate-y-[1px] shadow-[4px_4px_0px_#09090B] border border-[#09090B] transition-all hover:shadow-[2px_2px_0px_#09090B] hover:translate-x-[2px] hover:translate-y-[2px]. WCAG AA: black-on-safety-orange is 7.10:1; white-on-orange (2.80:1) is deprecated."
   },
   "components": {
-    "inputs": "bg-white border-2 border-[#E4E4E7] rounded-none focus:border-[#F97316] focus:ring-0 text-[#09090B] text-base md:text-sm font-['IBM_Plex_Sans']",
+    "inputs": "bg-white border-2 border-[#E4E4E7] rounded-none focus:border-[#C2410C] focus:ring-0 text-[#09090B] text-base md:text-sm font-['IBM_Plex_Sans']",
     "number_inputs": "Large tap targets, right-aligned text for easy numeric scanning. Spin buttons hidden.",
     "tables": "Flat, unstyled backgrounds. Header rows use overline typography. Zebra striping disabled in favor of strong 1px bottom borders.",
-    "badges": "Square (rounded-none), uppercase, tiny text, bold border. e.g. 'border border-[#F97316] text-[#F97316] px-2 py-1 text-xs font-bold'"
+    "badges": "Square (rounded-none), uppercase, tiny text, bold border. e.g. 'border border-[#F97316] text-[#C2410C] px-2 py-1 text-xs font-bold' — orange text on light MUST use #C2410C for WCAG AA."
   },
   "icons_strategy": {
-    "library": "@phosphor-icons/react",
-    "style": "Duotone or bold weights to match the chunky, industrial architecture of the fonts and buttons."
+    "library": "lucide-react",
+    "style": "Inline SVG icons with aria-hidden=\"true\" and small size classes (w-3, w-4). NEVER use emoji glyphs as UI icons (🔍 🎯 💡 ✏️ ⚡ etc.) — they render inconsistently across platforms and fail screen readers. Emoji is only acceptable inside instructional ASCII/pictograph diagrams that are user-facing content, not UI chrome."
+  },
+  "accessibility": {
+    "wcag_level": "AA",
+    "rules": [
+      "Text on light backgrounds MUST have contrast ratio >= 4.5:1 (normal text) or >= 3:1 (large text >= 18pt bold).",
+      "Orange text on light backgrounds uses #C2410C (5.18:1 on white). Never use #F97316 (2.80:1) as text on light.",
+      "Orange buttons/fills use black (#09090B) labels — never white — for a 7.10:1 ratio.",
+      "#A1A1AA is only permissible as text/icon color on dark surfaces (bg-[#09090B], bg-black) where it delivers 7.76:1. On light surfaces use #71717A (4.83:1).",
+      "Focus indicators use #C2410C at 2px against white (>= 3:1).",
+      "Honor prefers-reduced-motion: reduce with a global animation/transition duration override.",
+      "Never rely on color alone to convey state — pair every color signal with an icon, label, border, or texture cue."
+    ]
   },
   "media": {
     "login_hero_bg": {

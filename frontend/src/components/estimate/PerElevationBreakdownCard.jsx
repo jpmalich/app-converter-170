@@ -113,7 +113,7 @@ function SwapProfileModal({ currentProfile, role, elevationLabel, sqft, onClose,
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7]">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
               {elevationLabel} · {roleLabel}
             </div>
             <div className="text-sm font-bold">Swap profile</div>
@@ -148,10 +148,10 @@ function SwapProfileModal({ currentProfile, role, elevationLabel, sqft, onClose,
               ))}
             </select>
           </label>
-          <div className="text-[10px] text-[#A1A1AA] font-mono-num">
+          <div className="text-[10px] text-[#71717A] font-mono-num">
             Current: <span className="text-[#71717A] font-bold">{PROFILE_LABELS[currentProfile] || currentProfile}</span>
             {profile !== currentProfile && (
-              <> → <span className="text-[#F97316] font-bold">{PROFILE_LABELS[profile] || profile}</span></>
+              <> → <span className="text-[#C2410C] font-bold">{PROFILE_LABELS[profile] || profile}</span></>
             )}
           </div>
         </div>
@@ -166,7 +166,7 @@ function SwapProfileModal({ currentProfile, role, elevationLabel, sqft, onClose,
           <button
             type="button"
             disabled={!canSubmit}
-            className="bg-[#F97316] text-white px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[#EA580C]"
+            className="bg-[#F97316] text-[#09090B] px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[#EA580C]"
             onClick={submit}
             data-testid="swap-profile-submit"
           >
@@ -232,7 +232,7 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E4E7]">
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[#A1A1AA] font-bold">
+            <div className="text-[10px] uppercase tracking-wider text-[#71717A] font-bold">
               {elevationLabel} elevation
             </div>
             <div className="text-sm font-bold">Add accent profile</div>
@@ -309,7 +309,7 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
           <button
             type="button"
             disabled={!canSubmit}
-            className="bg-[#F97316] text-white px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[#EA580C]"
+            className="bg-[#F97316] text-[#09090B] px-3 py-1.5 text-sm font-bold disabled:opacity-50 hover:bg-[#EA580C]"
             onClick={submit}
             data-testid="add-accent-submit"
           >
@@ -535,7 +535,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
       data-testid="per-elevation-breakdown"
     >
       <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] uppercase tracking-wider font-bold text-[#A1A1AA]">
+        <div className="text-[10px] uppercase tracking-wider font-bold text-[#71717A]">
           Per-Elevation Breakdown
         </div>
         <div className="flex items-center gap-3">
@@ -604,7 +604,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                     {" "}→ verifier says{" "}
                     <span className="font-bold text-[#16A34A]">{PROFILE_LABELS[c.verified] || c.verified}</span>
                     {c.confidence && c.confidence !== "high" && (
-                      <span className="text-[10px] text-[#A1A1AA]"> ({c.confidence})</span>
+                      <span className="text-[10px] text-[#71717A]"> ({c.confidence})</span>
                     )}
                   </li>
                 ))}
@@ -631,10 +631,10 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                         <span className="font-bold uppercase">{s.elev}</span>{" "}
                         <span className="text-[#71717A]">·</span>{" "}
                         <span className="font-bold">{PROFILE_LABELS[s.profile] || s.profile}</span>{" "}
-                        <span className="text-[#A1A1AA] font-mono-num">{s.approx_sqft} ft²</span>{" "}
+                        <span className="text-[#71717A] font-mono-num">{s.approx_sqft} ft²</span>{" "}
                         <span className="text-[#71717A]">at {s.location}</span>
                         {s.confidence && s.confidence !== "high" && (
-                          <span className="text-[10px] text-[#A1A1AA]"> ({s.confidence})</span>
+                          <span className="text-[10px] text-[#71717A]"> ({s.confidence})</span>
                         )}
                       </div>
                       {s.callout && (
@@ -644,7 +644,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                     <button
                       type="button"
                       onClick={() => acceptSuggestedAccent(s)}
-                      className="bg-[#F97316] text-white text-[10px] uppercase tracking-wider font-bold px-2 py-1 hover:bg-[#EA580C]"
+                      className="bg-[#F97316] text-[#09090B] text-[10px] uppercase tracking-wider font-bold px-2 py-1 hover:bg-[#EA580C]"
                       data-testid={`recheck-accept-${i}`}
                     >
                       + Add
@@ -740,7 +740,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                 </div>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-[#F97316] hover:text-[#EA580C]"
+                  className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold text-[#C2410C] hover:text-[#EA580C]"
                   onClick={() => setAccentElev(i)}
                   data-testid={`add-accent-btn-${i}`}
                 >
@@ -785,7 +785,7 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
                   <ProfileChip family="stone" sqft={e.stone_sqft} suffix="not siding" />
                 )}
                 {!bodyOk && !e.gable_sqft && !e.dormer_sqft && !(e.accents || []).length && (
-                  <span className="text-[11px] text-[#A1A1AA] italic">
+                  <span className="text-[11px] text-[#71717A] italic">
                     No siding profiles detected on this elevation
                   </span>
                 )}

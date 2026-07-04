@@ -36,7 +36,7 @@ export default function HomePicker() {
           className="card text-left p-6 sm:p-10 group hover:border-[#F97316] transition-colors"
           data-testid="home-group-iss"
         >
-          <div className="flex items-center gap-3 mb-5 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-5 text-[#C2410C]">
             <Building2 className="w-9 h-9" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -48,7 +48,7 @@ export default function HomePicker() {
           <p className="text-sm text-[#52525B] mb-6 leading-relaxed">
             {t("home.issGroupDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#C2410C] group-hover:underline">
             {t("home.issGroupCta")}
           </div>
         </button>
@@ -59,7 +59,7 @@ export default function HomePicker() {
           className="card text-left p-6 sm:p-10 group hover:border-[#F97316] transition-colors"
           data-testid="home-group-contractor"
         >
-          <div className="flex items-center gap-3 mb-5 text-[#F97316]">
+          <div className="flex items-center gap-3 mb-5 text-[#C2410C]">
             <HardHat className="w-9 h-9" />
             <span className="text-[10px] uppercase tracking-[0.2em] font-bold">
               {t("home.workspaceTag")}
@@ -71,7 +71,7 @@ export default function HomePicker() {
           <p className="text-sm text-[#52525B] mb-6 leading-relaxed">
             {t("home.contractorGroupDesc")}
           </p>
-          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#F97316] group-hover:underline">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#C2410C] group-hover:underline">
             {t("home.contractorGroupCta")}
           </div>
         </button>

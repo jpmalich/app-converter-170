@@ -91,7 +91,7 @@ export default function ElevationDrawing({
 
   if (!hasDims) {
     return (
-      <div className="text-[11px] text-[#A1A1AA] p-3 border border-dashed border-[#E4E4E7] text-center">
+      <div className="text-[11px] text-[#71717A] p-3 border border-dashed border-[#E4E4E7] text-center">
         Drawing unavailable &mdash; facade dimensions missing for {elevation?.label || "this elevation"}
       </div>
     );
@@ -332,7 +332,7 @@ export default function ElevationDrawing({
         </g>
       </svg>
       {editable && onOpeningMove && openings.length > 0 && (
-        <div className="text-[9px] text-[#A1A1AA] italic px-2 py-1 border-t border-[#E4E4E7] bg-[#FAFAFA]">
+        <div className="text-[9px] text-[#71717A] italic px-2 py-1 border-t border-[#E4E4E7] bg-[#FAFAFA]">
           Drag any opening to reposition &middot; click &quot;Roof:&quot; to cycle shape
         </div>
       )}

@@ -9,9 +9,10 @@ const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 const C = {
   ink: "#09090B",
   muted: "#52525B",
-  faint: "#A1A1AA",
+  faint: "#71717A",
   line: "#D4D4D8",
   accent: "#F97316",
+  accentText: "#C2410C",
   bg: "#FAFAFA",
   bgRow: "#FAFAFA",
 };
@@ -284,7 +285,7 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
     font-weight: bold;
     letter-spacing: 1.8px;
     text-transform: uppercase;
-    color: ${C.accent};
+    color: ${C.accentText};
   }
   .materials .section-row .section-count {
     float: right;

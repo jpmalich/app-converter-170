@@ -39,7 +39,7 @@ export default function PhotosPanel({ est, update }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         {(est.photos || []).length === 0 && (
-          <div className="col-span-full text-sm text-[#A1A1AA] py-4">{t("est.noPhotos")}</div>
+          <div className="col-span-full text-sm text-[#71717A] py-4">{t("est.noPhotos")}</div>
         )}
         {(est.photos || []).map((p) => {
           const i = est.photos.indexOf(p);

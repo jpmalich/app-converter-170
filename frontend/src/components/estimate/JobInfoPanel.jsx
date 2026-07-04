@@ -35,7 +35,7 @@ function ToolTile({ icon: Icon, label, sub, children, testid, accent = "#7C3AED"
           {label}
         </div>
         {sub && (
-          <span className="text-[9px] text-[#A1A1AA] uppercase tracking-wider truncate ml-auto">
+          <span className="text-[9px] text-[#71717A] uppercase tracking-wider truncate ml-auto">
             {sub}
           </span>
         )}
@@ -88,11 +88,11 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           {collapsed && basicsFilled && (
             <div className="text-xs text-[#52525B] flex items-center gap-2 flex-wrap" data-testid="job-info-summary">
               <span className="font-bold text-[#09090B]">{est.customer_name}</span>
-              <span className="text-[#A1A1AA]">·</span>
+              <span className="text-[#71717A]">·</span>
               <span>{est.address}</span>
               {est.estimate_number && (
                 <>
-                  <span className="text-[#A1A1AA]">·</span>
+                  <span className="text-[#71717A]">·</span>
                   <span className="font-mono-num text-[#71717A]">{est.estimate_number}</span>
                 </>
               )}
@@ -295,7 +295,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             window-only estimates show the Window Colors block below. */}
         {est.kind !== "windows" && (
         <div className="sm:col-span-2 lg:col-span-3 pt-2">
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
             {t("est.colors")}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
@@ -493,7 +493,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               switches that auto-fill the matching install / lead-safe
               rows so contractors don't have to remember to add them. */}
           <div>
-            <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-2">
+            <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-2">
               Window Job Setup
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -524,7 +524,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                     );
                   })}
                 </div>
-                <p className="text-[10px] text-[#A1A1AA] mt-1.5 leading-snug">
+                <p className="text-[10px] text-[#71717A] mt-1.5 leading-snug">
                   Picks which install row the total window count flows into.
                   Override per-row anytime.
                 </p>
@@ -562,7 +562,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           </div>
 
           <div>
-          <div className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] font-bold mb-3">
+          <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] font-bold mb-3">
             {t("est.colors.windows")}
           </div>
 
@@ -574,7 +574,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           <div className="border border-[#E4E4E7] bg-white p-4 mb-3">
             <div className="text-[11px] uppercase tracking-wider text-[#09090B] font-bold mb-3">
               Vero
-              <span className="ml-2 text-[#A1A1AA] font-normal normal-case tracking-normal">
+              <span className="ml-2 text-[#71717A] font-normal normal-case tracking-normal">
                 {t("win.colors.veroDesc")}
               </span>
             </div>
@@ -652,7 +652,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           <div className="border border-[#E4E4E7] bg-white p-4">
             <div className="text-[11px] uppercase tracking-wider text-[#09090B] font-bold mb-3">
               Mezzo
-              <span className="ml-2 text-[#A1A1AA] font-normal normal-case tracking-normal">
+              <span className="ml-2 text-[#71717A] font-normal normal-case tracking-normal">
                 {t("win.colors.mezzoDesc")}
               </span>
             </div>
