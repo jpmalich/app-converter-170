@@ -1,0 +1,68 @@
+# Local development stack: MongoDB + FastAPI backend + CRA frontend.
+#
+#   docker compose up --build
+#
+# Frontend:  http://localhost:3100  (host port 3100 → container 3000; 3000 was
+#            taken by another local stack — override with FRONTEND_PORT)
+# Backend:   http://localhost:8001/api
+#
+# Every ${VAR:-default} below can be overridden by exporting the variable
+# or dropping it in a `.env` file next to this compose file (gitignored).
+# The defaults are DEV-ONLY — set real values for anything internet-facing.
+
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"   # exposed for host-side inspection (mongosh/Compass)
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      DB_NAME: ${DB_NAME:-siding_estimator}
+      # config.py fails closed without these; the defaults are for local dev only.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-0123456789abcdef0123456789abcdef}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin-dev-password}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:${FRONTEND_PORT:-3100}}
+      # Optional integrations — pass through from the host / .env when needed.
+      SIGNUP_CODE: ${SIGNUP_CODE:-}
+      SUPPLIER_ADMIN_TOKEN: ${SUPPLIER_ADMIN_TOKEN:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SENDER_EMAIL: ${SENDER_EMAIL:-onboarding@resend.dev}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      EMERGENT_LLM_KEY: ${EMERGENT_LLM_KEY:-}
+    volumes:
+      # Live-reload: the source tree is mounted over the image copy.
+      - ./backend:/app
+      - backend_uploads:/app/uploads
+    command: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3100}:3000"
+    environment:
+      # The browser (not the container) calls the API, so localhost is correct.
+      REACT_APP_BACKEND_URL: ${REACT_APP_BACKEND_URL:-http://localhost:8001}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules   # keep container-installed deps out of the host tree
+
+volumes:
+  mongo_data:
+  backend_uploads:
