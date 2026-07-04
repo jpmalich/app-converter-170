@@ -32,6 +32,16 @@ const ROOF_TYPES = [
   { id: "hip", label: "Hip" },
   { id: "gable-shed-dormer", label: "Gable + shed dormer" },
 ];
+// Iter 79j.32 — Ridge axis is a first-class user-toggleable choice.
+// Runs perpendicular to the gable-end walls: "x" = ridge runs
+// left↔right (side-gable, gable ends on LEFT + RIGHT walls);
+// "z" = ridge runs front↔back (front-gable, gable ends on FRONT +
+// BACK walls). Flipping this re-derives gableEnd assignment,
+// roof-plane orientation, and dormer slope face in one place.
+const RIDGE_AXES = [
+  { id: "x", label: "Side-gable (ridge L↔R)" },
+  { id: "z", label: "Front-gable (ridge F↔B)" },
+];
 const DEFAULT_PITCH = 6;
 const DEFAULT_EAVE_HEIGHT = 10;
 const AMBER = "#F59E0B";
@@ -40,6 +50,22 @@ const ROOF_TYPE_CONFIDENCE_THRESHOLD = 0.8;
 function pitchRise(widthFt, pitchOver12) {
   // rise across HALF the roof span, e.g. 6/12 on a 40 ft span = 20 × 6/12 = 10 ft.
   return (widthFt / 2) * (pitchOver12 / 12);
+}
+
+// Iter 79j.31 — Derive ridge axis from Claude's per-wall gable data.
+// Rule: gable-end walls are those with gable_triangle_height_ft > 0,
+// and the ridge runs PERPENDICULAR to them. front/back gables ⇒ ridge
+// along Z (front-back); left/right gables ⇒ ridge along X (left-right).
+// Returns null when ambiguous (both axes claim gables) or absent.
+function deriveRidgeAxis(walls) {
+  const gabled = (walls || []).filter((w) => Number(w?.gable_triangle_height_ft || 0) > 0);
+  if (!gabled.length) return null;
+  const labels = gabled.map((w) => (w.label || "").toLowerCase());
+  const hasLR = labels.some((l) => l === "left" || l === "right");
+  const hasFB = labels.some((l) => l === "front" || l === "back");
+  if (hasLR && !hasFB) return "x";
+  if (hasFB && !hasLR) return "z";
+  return null;
 }
 
 // Iter 79j.23 — Derive roof pitch from any gable-end wall Claude found.
@@ -115,6 +141,16 @@ function buildHouseJson(preview, overrides, estimate) {
   const pitchSource = overrides.pitch != null
     ? "user"
     : aiPitch
+    ? "ai"
+    : "default";
+  // Iter 79j.31 — ridge axis cascade. Rides alongside roof.type.
+  // Gable-end walls, roof-plane orientation, dormer slope assignment,
+  // and gable-area math ALL follow from this axis — see buildScene.
+  const aiRidgeAxis = deriveRidgeAxis(walls);
+  const ridgeAxis = overrides.ridgeAxis ?? aiRidgeAxis ?? "x";
+  const ridgeAxisSource = overrides.ridgeAxis
+    ? "user"
+    : aiRidgeAxis
     ? "ai"
     : "default";
   // Match primary walls by label. If a label is missing, keep the wall
@@ -220,22 +256,25 @@ function buildHouseJson(preview, overrides, estimate) {
     ? "ai-low-conf"
     : "default";
 
-  // Dormer geometry (only used when roofType === 'gable-shed-dormer').
-  // Iter 79j.27 — width + offsetX are DERIVED from the horizontal spread
-  // of any openings Claude classified as on_dormer=true, plus a 1.5-ft
-  // margin on each side. This replaces the fixed 50%-of-facade default.
-  // When we derive from openings the source is 'ai-inferred' → amber
-  // "estimated" badge. Otherwise sources cascade normally.
+  // Iter 79j.31 — Dormer face is slope-relative. Legacy "front"/"rear"
+  // is auto-migrated based on ridge axis so persisted data stays valid:
+  //   ridgeAxis="x": front→slope-front, rear/back→slope-back
+  //   ridgeAxis="z": front→slope-left, rear/back→slope-right (arbitrary
+  //                  but stable mapping; user can flip in the panel)
   const aiDormer = preview.measurements?._ai_dormer || null;
   const dormerOverride = overrides.dormer || {};
-  const dormerFace = dormerOverride.face ?? aiDormer?.face ?? "front";
-  // Face wall width for the dormer facade (used to convert dormer-opening
-  // bbox X → world X on the face).
-  const dormerFaceWallWidth = dormerFace === "front"
-    ? widthFront
-    : dormerFace === "rear" || dormerFace === "back"
-    ? widthBack
-    : widthFront;
+  const legacyFace = dormerOverride.face ?? aiDormer?.face ?? "front";
+  const slopesForAxis = ridgeAxis === "x" ? ["slope-front", "slope-back"] : ["slope-left", "slope-right"];
+  const migrateFace = (f) => {
+    if (slopesForAxis.includes(f)) return f;   // already slope-relative
+    if (ridgeAxis === "x") return f === "rear" || f === "back" ? "slope-back" : "slope-front";
+    return f === "rear" || f === "back" ? "slope-right" : "slope-left";
+  };
+  const dormerFace = migrateFace(legacyFace);
+  // Face wall width for the dormer facade: on a slope-facing dormer the
+  // "face" wall runs parallel to the ridge, so its width equals the
+  // ridge-parallel footprint dimension.
+  const dormerFaceWallWidth = ridgeAxis === "x" ? footprintW : footprintD;
   // Position each dormer opening on its face using bbox.x when available.
   // Vertical position on the face is derived from bbox.y relative to the
   // dormer face's height range (mainRoofY at zFace ↔ faceTop).
@@ -294,20 +333,29 @@ function buildHouseJson(preview, overrides, estimate) {
     ? "ai"
     : "default";
 
+  // Iter 79j.31 — gable-end assignment now follows ridge axis.
+  // Every downstream consumer (wall polygons, per-wall takeoff,
+  // dormer eligibility) reads facade.gableEnd instead of hard-coding
+  // by label.
+  const gableEndIds = ridgeAxis === "x" ? new Set(["left", "right"]) : new Set(["front", "back"]);
   const mkFacade = (id, label, widthOverride, wallData, eave) => ({
     id,
     label,
     width: widthOverride,
     eaveHeight: eave.h,
     eaveHeightSource: eave.source,
-    gableEnd: id === "left" || id === "right",
+    gableEnd: gableEndIds.has(id),
     confidence: wallData?.confidence ?? null,
     estimated: !wallData,
+    aiGableTriangleHeightFt: Number(wallData?.gable_triangle_height_ft || 0),
     openings: autoSpace(openingsByWall[id] || [], widthOverride, eave.h),
   });
   return {
     footprint: { width: footprintW, depth: footprintD, estimated: !front || !left },
     avgEaveHeight: avgEave,
+    ridgeAxis,
+    ridgeAxisSource,
+    ridgeAxisAiRaw: aiRidgeAxis,
     roof: {
       type: roofType,
       typeSource: roofTypeSource,        // "user" | "ai" | "ai-low-conf" | "default"
@@ -315,7 +363,7 @@ function buildHouseJson(preview, overrides, estimate) {
       typeAiConfidence: aiRoofTypeConfidence,
       typeAiReasoning: aiRoofTypeReasoning,
       pitch,
-      ridgeAxis: "x",
+      ridgeAxis,
       overhang: 1.25,
       pitchSource,
       pitchAiRaw: aiPitch?.raw ?? null,
@@ -356,20 +404,32 @@ function buildHouseJson(preview, overrides, estimate) {
 }
 
 // Iter 79j.26 — Gable roof planes (2 sloped rectangles).
+// Iter 79j.31 — ridge-axis-aware. For "x" ridge (running left-right)
+// planes tilt around X axis; for "z" ridge (running front-back)
+// planes tilt around Z axis and swap dimensions.
 function buildGableRoofPlanes(scene, house, roofMat, roofRise, avgGableEave) {
   const { footprint, roof } = house;
-  const roofPlaneLen = Math.sqrt(Math.pow(footprint.depth / 2, 2) + Math.pow(roofRise, 2));
-  const roofPlaneGeom = new THREE.PlaneGeometry(footprint.width + roof.overhang * 2, roofPlaneLen + roof.overhang);
-  ["north", "south"].forEach((side) => {
-    const plane = new THREE.Mesh(roofPlaneGeom, roofMat);
-    const angle = Math.atan2(roofRise, footprint.depth / 2);
-    const dir = side === "north" ? 1 : -1;
-    plane.rotation.x = dir * (Math.PI / 2 - angle);
-    plane.position.set(
-      0,
-      avgGableEave + roofRise / 2,
-      side === "north" ? -footprint.depth / 4 : footprint.depth / 4,
-    );
+  const isXRidge = roof.ridgeAxis === "x";
+  // Roof span is perpendicular to the ridge; ridge length is parallel.
+  const span = isXRidge ? footprint.depth : footprint.width;
+  const ridgeLen = isXRidge ? footprint.width : footprint.depth;
+  const planeLen = Math.sqrt(Math.pow(span / 2, 2) + Math.pow(roofRise, 2));
+  const planeGeom = new THREE.PlaneGeometry(ridgeLen + roof.overhang * 2, planeLen + roof.overhang);
+  const angle = Math.atan2(roofRise, span / 2);
+  ["a", "b"].forEach((side) => {
+    const plane = new THREE.Mesh(planeGeom, roofMat);
+    const dir = side === "a" ? 1 : -1;
+    if (isXRidge) {
+      plane.rotation.x = dir * (Math.PI / 2 - angle);
+      plane.position.set(0, avgGableEave + roofRise / 2, side === "a" ? -footprint.depth / 4 : footprint.depth / 4);
+    } else {
+      // Z-axis ridge — planes tilt around Z. Rotate the plane 90°
+      // around Y first so its "top" edge (originally +Y) aligns with
+      // the Z-ridge direction, then tilt around Z.
+      plane.rotation.y = Math.PI / 2;
+      plane.rotation.z = dir * (Math.PI / 2 - angle);
+      plane.position.set(side === "a" ? -footprint.width / 4 : footprint.width / 4, avgGableEave + roofRise / 2, 0);
+    }
     scene.add(plane);
   });
 }
@@ -436,99 +496,105 @@ function buildHipRoof(scene, house, roofMat, ridgeY, avgGableEave) {
   void shortHalf;
 }
 
-// Iter 79j.26 — Shed dormer on one slope of a gable roof. Adds:
-//   • vertical face wall (rectangle) with any openings pinned to it
-//   • two triangular cheek walls filling the gap between the face
-//     top and the main roof surface
-//   • low-slope shed roof from the face top back to the main ridge
-// Iter 79j.28 — openingMats passed through so dormer windows/doors
-// render with the same type-aware factory as the main walls.
+// Iter 79j.26 — Shed dormer on one slope of a gable roof.
+// Iter 79j.31 — slope-relative + ridge-axis-aware. `d.face` is one of
+// slope-front / slope-back (when ridgeAxis="x") OR
+// slope-left  / slope-right (when ridgeAxis="z"). All geometry is
+// computed in a (u, v) local frame where u = perpendicular-to-ridge
+// (the slope direction) and v = parallel-to-ridge (the ridge extent);
+// we then map (u, v) → (world X, Y, Z) based on ridgeAxis.
 function buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, avgGableEave) {
   const { footprint, roof } = house;
   const d = roof.dormer;
   if (!d) return;
-  const halfD = footprint.depth / 2;
-  // Position dormer face at 25% of the roof depth back from the eave
-  // (halfway between eave and ridge on the chosen slope).
-  const zFrac = 0.5;   // fraction of halfD from ridge to eave
-  const faceSign = d.face === "rear" ? -1 : 1;
-  const zFace = faceSign * halfD * zFrac;
-  // Main roof Y at this Z (linear from ridge at Z=0 to eave at Z=±halfD)
-  const mainRoofYAtFace = avgGableEave + roofRise * (1 - Math.abs(zFace) / halfD);
+  const isXRidge = house.ridgeAxis === "x";
+  const spanTotal = isXRidge ? footprint.depth : footprint.width;
+  const halfSpan = spanTotal / 2;
+  const uFrac = 0.5;
+  const negFaces = new Set(["slope-back", "slope-left"]);
+  const faceSign = negFaces.has(d.face) ? -1 : 1;
+  const uFace = faceSign * halfSpan * uFrac;   // along-slope coord of face wall
+  const mainRoofYAtFace = avgGableEave + roofRise * (1 - Math.abs(uFace) / halfSpan);
   const faceBottomY = mainRoofYAtFace;
   const faceTopY = faceBottomY + Number(d.kneeWallHeight);
   const halfWD = Number(d.width) / 2;
-  const cx = Number(d.offsetX) || 0;
+  const cv = Number(d.offsetX) || 0;   // offset along the ridge-parallel axis
+  const ridgeY = avgGableEave + roofRise;
 
-  // 1) Face wall (vertical rectangle in XY at Z=zFace)
+  // (u, v) → (worldX, worldZ) mapping. Y is always vertical.
+  const toWorld = (u, v) => (isXRidge ? [v, u] : [u, v]);   // returns [x, z]
+
+  // 1) Face wall — vertical plane in the u=uFace slice, extending in v.
   const faceShape = new THREE.Shape();
-  faceShape.moveTo(cx - halfWD, faceBottomY);
-  faceShape.lineTo(cx + halfWD, faceBottomY);
-  faceShape.lineTo(cx + halfWD, faceTopY);
-  faceShape.lineTo(cx - halfWD, faceTopY);
-  faceShape.lineTo(cx - halfWD, faceBottomY);
+  faceShape.moveTo(cv - halfWD, faceBottomY);
+  faceShape.lineTo(cv + halfWD, faceBottomY);
+  faceShape.lineTo(cv + halfWD, faceTopY);
+  faceShape.lineTo(cv - halfWD, faceTopY);
+  faceShape.lineTo(cv - halfWD, faceBottomY);
   const faceGeom = new THREE.ShapeGeometry(faceShape);
   const faceMesh = new THREE.Mesh(faceGeom, wallMat.clone());
-  // Face wall normal points outward on the dormer's own axis (+Z for front, -Z for rear)
-  faceMesh.position.set(0, 0, zFace + faceSign * 0.05);
-  if (d.face === "rear") faceMesh.rotation.y = Math.PI;
+  const [fx, fz] = toWorld(uFace + faceSign * 0.05, 0);
+  faceMesh.position.set(fx, 0, fz);
+  // Rotate so the shape's plane (originally XY) aligns with the (v,Y)
+  // plane at u=uFace. For X-ridge (face plane normal along Z), only
+  // the flip for negFaces is needed. For Z-ridge (face plane normal
+  // along X), rotate 90° around Y first.
+  if (!isXRidge) faceMesh.rotation.y = Math.PI / 2;
+  if (negFaces.has(d.face)) faceMesh.rotation.y += Math.PI;
   scene.add(faceMesh);
 
-  // Iter 79j.27+.28 — Render each dormer opening that Claude tagged
-  // on_dormer=true, at its true X and Y position on the face, dispatched
-  // through the same type-aware factory as the main walls. No stock
-  // placeholder window. If no dormer openings were classified, the face
-  // is left blank (valid state for a shed dormer with siding-only).
+  // 2) Dormer openings on the face
   const dormerOpenings = d.openings || [];
-  const worldXForOpening = (o) => (o.cxOnWall - (d.faceWallWidth || footprint.width) / 2);
+  const worldXForOpening = (o) => (o.cxOnWall - (d.faceWallWidth || spanTotal) / 2);
   const faceHeightRange = faceTopY - faceBottomY;
   dormerOpenings.forEach((o) => {
-    const wx = worldXForOpening(o);
-    // If bboxCy is present, place vertically within the face; else center.
+    const wv = worldXForOpening(o);
     const wy = o.bboxCy != null
       ? Math.max(faceBottomY, Math.min(faceTopY - o.h, faceBottomY + faceHeightRange * (1 - o.bboxCy) - o.h / 2))
       : (faceBottomY + faceTopY) / 2 - o.h / 2;
     const g = buildOpeningMesh(o, openingMats);
-    g.position.set(wx, wy, zFace + faceSign * 0.09);
-    if (d.face === "rear") g.rotation.y = Math.PI;
+    const [gx, gz] = toWorld(uFace + faceSign * 0.09, wv);
+    g.position.set(gx, wy, gz);
+    if (!isXRidge) g.rotation.y = Math.PI / 2;
+    if (negFaces.has(d.face)) g.rotation.y = (g.rotation.y || 0) + Math.PI;
     scene.add(g);
   });
 
-  // 2) Cheek walls — two triangles filling the wedge on each side.
-  // Each cheek is a triangle in the XZ (well, YZ at fixed X) plane
-  // with vertices: (X=side_of_dormer, faceTopY, zFace),
-  //                (X=side, faceBottomY, zFace),
-  //                (X=side, ridgeY, 0)  ← where the shed meets ridge
-  const ridgeY = avgGableEave + roofRise;
+  // 3) Cheek walls — 2 triangles filling the gap between face top edge
+  // and the main roof surface. Vertices at (u=uFace, v=cv±halfWD, Y=faceBottom),
+  // (u=uFace, v=cv±halfWD, Y=faceTop), (u=0, v=cv±halfWD, Y=ridgeY).
   const addTri = (v1, v2, v3) => {
     const geom = new THREE.BufferGeometry();
     geom.setAttribute("position", new THREE.Float32BufferAttribute([...v1, ...v2, ...v3], 3));
     geom.computeVertexNormals();
     scene.add(new THREE.Mesh(geom, wallMat.clone()));
   };
-  const cheekXs = [cx - halfWD, cx + halfWD];
-  cheekXs.forEach((x) => {
-    // For rear-facing dormer, the shed slopes DOWN toward the ridge; z of
-    // "back" edge is 0 (ridge), z of face edge is zFace.
+  [cv - halfWD, cv + halfWD].forEach((v) => {
+    const [x1, z1] = toWorld(uFace, v);
+    const [x2, z2] = toWorld(0, v);
     addTri(
-      [x, faceTopY, zFace],
-      [x, faceBottomY, zFace],
-      [x, ridgeY, 0],
+      [x1, faceTopY, z1],
+      [x1, faceBottomY, z1],
+      [x2, ridgeY, z2],
     );
   });
 
-  // 3) Shed roof plane — quad from (X=-halfWD..+halfWD, Y=faceTopY, Z=zFace)
-  // to (X=-halfWD..+halfWD, Y=ridgeY, Z=0)
-  const shedGeomPositions = [
-    cx - halfWD, faceTopY, zFace,
-    cx + halfWD, faceTopY, zFace,
-    cx + halfWD, ridgeY,   0,
-    cx - halfWD, faceTopY, zFace,
-    cx + halfWD, ridgeY,   0,
-    cx - halfWD, ridgeY,   0,
+  // 4) Shed roof plane — quad from face-top edge back to the ridge
+  const quadVerts = [
+    [uFace, cv - halfWD, faceTopY],
+    [uFace, cv + halfWD, faceTopY],
+    [0,     cv + halfWD, ridgeY],
+    [uFace, cv - halfWD, faceTopY],
+    [0,     cv + halfWD, ridgeY],
+    [0,     cv - halfWD, ridgeY],
   ];
+  const positions = [];
+  quadVerts.forEach(([u, v, y]) => {
+    const [x, z] = toWorld(u, v);
+    positions.push(x, y, z);
+  });
   const shedGeom = new THREE.BufferGeometry();
-  shedGeom.setAttribute("position", new THREE.Float32BufferAttribute(shedGeomPositions, 3));
+  shedGeom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   shedGeom.computeVertexNormals();
   scene.add(new THREE.Mesh(shedGeom, roofMat));
 }
@@ -653,14 +719,35 @@ function buildScene(scene, house) {
   const halfD = footprint.depth / 2;
 
   house.facades.forEach((f) => {
-    // Iter 79j.24 — each wall uses its own eave height so split-level
-    // homes render with the correct step in the eave line.
-    // Iter 79j.26 — hip roofs have NO gable triangles on any wall; the
-    // gable-shed-dormer type keeps the gable-end triangles as normal
-    // (dormer geometry is added separately as its own mesh cluster).
+    // Iter 79j.24 — per-wall eave heights.
+    // Iter 79j.31 — ridge-axis-aware gable triangle rise. Roof span
+    // is the horizontal distance perpendicular to the ridge; for
+    // X-axis ridge that's the Z-extent (footprint.depth), for Z-axis
+    // ridge that's the X-extent (footprint.width). Gable-end walls
+    // (perpendicular to the ridge) get the triangle; other walls stay
+    // rectangular. hip type never draws a gable peak.
     const H = f.eaveHeight;
+    const roofSpan = roof.ridgeAxis === "x" ? footprint.depth : footprint.width;
     const hasGablePeak = f.gableEnd && (roof.type === "gable" || roof.type === "gable-shed-dormer");
-    const rise = hasGablePeak ? pitchRise(footprint.depth, roof.pitch) : 0;
+    const rise = hasGablePeak ? pitchRise(roofSpan, roof.pitch) : 0;
+
+    // Iter 79j.32 — Geometry consistency check. Every wall that Claude
+    // reported gable_triangle_height_ft > 0 for MUST render as a
+    // gable-end, and every wall we're rendering as a gable-end MUST
+    // have gable_triangle_height_ft > 0 (i.e. Claude agreed with the
+    // ridge-axis choice). Violations mean the ridgeAxis pick and the
+    // AI takeoff disagree — surface it loudly in the console so the
+    // contractor / dev knows to flip the toggle.
+    const aiSaysGable = f.aiGableTriangleHeightFt > 0;
+    if (aiSaysGable !== hasGablePeak && roof.type !== "hip") {
+      console.error(
+        "[HouseModel3D] gable-area consistency FAILED for wall",
+        f.id,
+        { aiGableHeight: f.aiGableTriangleHeightFt, renderingAsGableEnd: hasGablePeak, ridgeAxis: roof.ridgeAxis },
+        "→ flip Ridge orientation in the panel, or the AI takeoff and 3D drawing disagree.",
+      );
+    }
+
     const shape = new THREE.Shape();
     shape.moveTo(-f.width / 2, 0);
     shape.lineTo(f.width / 2, 0);
@@ -693,14 +780,16 @@ function buildScene(scene, house) {
     });
   });
 
-  // Iter 79j.26 — Roof geometry routes on roof.type. All 3 types share
-  // the same ridge-height math (avgGableEave + rise) so the sanity
-  // check below applies uniformly.
+  // Iter 79j.26 + 79j.31 — Roof geometry routes on roof.type AND ridge
+  // axis. All 3 types share the same ridge-height math (avgGableEave +
+  // rise) so the sanity check below applies uniformly; the axis
+  // decides which footprint dimension is the ROOF SPAN.
   const gableEndFacades = house.facades.filter((f) => f.gableEnd);
   const avgGableEave = gableEndFacades.length
     ? gableEndFacades.reduce((s, f) => s + f.eaveHeight, 0) / gableEndFacades.length
     : house.avgEaveHeight;
-  const roofRise = pitchRise(footprint.depth, roof.pitch);
+  const roofSpan = house.ridgeAxis === "x" ? footprint.depth : footprint.width;
+  const roofRise = pitchRise(roofSpan, roof.pitch);
   const ridgeY = avgGableEave + roofRise;
 
   if (roof.type === "hip") {
@@ -1023,6 +1112,44 @@ export default function HouseModel3D({ preview, estimate }) {
               </span>
             )}
           </div>
+          {/* Iter 79j.32 — Ridge orientation toggle. Flipping the axis
+              re-derives gableEnd assignment, roof-plane orientation,
+              and dormer slope face in one place (see buildHouseJson).
+              Hidden for hip roofs — no gable ends, no orientation. */}
+          {house.roof.type !== "hip" && (
+            <div className="flex items-center gap-2 text-[11px]" data-testid="ai-measure-3d-ridge-row">
+              <span className="text-[#71717A] w-24">Ridge orientation</span>
+              <select
+                value={house.ridgeAxis}
+                onChange={(e) => setOverrides((o) => ({ ...o, ridgeAxis: e.target.value, dormer: { ...(o.dormer || {}), face: undefined } }))}
+                className="px-2 py-1 border border-[#E4E4E7] text-left flex-1 min-w-0"
+                data-testid="ai-measure-3d-ridge-axis"
+              >
+                {RIDGE_AXES.map((r) => (
+                  <option key={r.id} value={r.id}>{r.label}</option>
+                ))}
+              </select>
+              {house.ridgeAxisSource === "default" && <Amber />}
+              {house.ridgeAxisSource === "ai" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                  title={`Derived from Claude's gable-end walls (${house.ridgeAxisAiRaw === "x" ? "left/right gables → side-gable" : "front/back gables → front-gable"})`}
+                  data-testid="ai-measure-3d-ridge-derived"
+                >
+                  <Check className="w-2.5 h-2.5" /> AI-derived
+                </span>
+              )}
+              {house.ridgeAxisSource === "user" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
+                  title="You changed the ridge orientation — hit Re-run to feed this back to the estimator"
+                  data-testid="ai-measure-3d-ridge-user"
+                >
+                  edited
+                </span>
+              )}
+            </div>
+          )}
           {/* Iter 79j.27 — Dormer width row (only when roof is gable-shed-dormer).
               width + offsetX are inferred from the horizontal spread of any
               on_dormer openings + 1.5' margin per side. Amber-flagged as
@@ -1058,7 +1185,7 @@ export default function HouseModel3D({ preview, estimate }) {
               {house.roof.dormer.widthSource === "default" && <Amber />}
             </div>
           )}
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "default") && (
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "default") && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>

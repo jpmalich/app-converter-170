@@ -231,6 +231,14 @@ Schema:
      "confidence_reasoning": "<1 short sentence — what reduces or supports confidence on THIS wall>"
     }
   ],
+  // Iter 79j.32 — REQUIRED classification: EVERY trimmed penetration
+  // (window, entry door, patio door, garage door, large vent) MUST be
+  // emitted as a row in `openings[]`. Never bury a door or window in
+  // the masked/stone/siding_pct math — openings drive J-channel and
+  // surround trim takeoff downstream, and missing them under-quotes
+  // the job. Garage doors especially: a single 16 ft double garage
+  // door is ~112 ft² AND ~40 lf of J-channel — always emit it here
+  // with type=garage_door, never fold it into siding_pct_this_wall.
   "openings": [
     {"type": "window" | "entry_door" | "patio_door" | "garage_door" | "vent" | "other",
      "style": "Double Hung" | "Single Hung" | "Casement" | "Twin Casement" | "Awning" | "Hopper" | "2-Lite Slider" | "3-Lite Slider" | "Picture" | "Twin Double Hung" | "Twin Single Hung" | "Triple Double Hung" | "Bay Window" | "Bow Window" | "Half-Round" | "Quarter-Round" | "Arch" | "Octagon" | "Hexagon" | "Garden Window" | "Other Shape" | "",
@@ -357,12 +365,19 @@ CRITICAL accuracy rules (read every time):
      The wall ref still governs the rest of the geometry; the two refs
      are complementary, not exclusive.
    • Colored hatched zones with a black label like "NO SIDING · Brick"
-     or "NO SIDING · Stone" or "NO SIDING · Garage door" — these areas
-     are NOT clad in siding. They must be EXCLUDED from
-     siding_pct_this_wall calculations for the wall they appear on.
+     or "NO SIDING · Stone" — masonry areas that are NOT clad in siding.
+     They must be EXCLUDED from siding_pct_this_wall calculations for
+     the wall they appear on.
      Example: a wall is 32×9 = 288 ft² gross, with a "NO SIDING · Brick"
      hatched zone covering the lower 3 ft (≈96 ft²) → the remaining
      siding is 192 ft² → siding_pct_this_wall = round(192 / 288 * 100) = 67.
+     NOTE (Iter 79j.32): A "NO SIDING · Garage door" or "NO SIDING · Entry
+     door" annotation, if drawn, is a HINT that a door exists at that
+     location — but doors are OPENINGS, not masked masonry. Emit the
+     door as an entry in `openings[]` with the correct type
+     (garage_door / entry_door / patio_door) and DO NOT reduce
+     siding_pct_this_wall for it. Only genuine masonry (brick, stone,
+     stucco, CMU) reduces siding_pct_this_wall.
    Trust the annotations OVER your own visual judgment of the same photo.
    If a photo has a red ref line you must use it; if it has a NO SIDING
    zone you must subtract it. These were placed deliberately by the
@@ -447,15 +462,63 @@ CRITICAL accuracy rules (read every time):
    on left elevation, ~12 ft × 6 ft = 72 ft² face; gable dormer on right,
    ~4 ft × 4 ft = 16 ft² face."
 
-5. SIDING COVERAGE: A wall area is NOT the same as a siding area.
-   Examine every wall for:
-     - Brick / stone wainscot or full-wall masonry (NO siding)
-     - Garage doors (NO siding behind them)
-     - Stucco / EIFS panels (NO siding)
+5. SIDING COVERAGE — MASKED vs OPENINGS (READ CAREFULLY, THIS IS A
+   HIGH-COST MISCLASSIFICATION):
+
+   There are TWO DIFFERENT categories of "not-siding" area on a wall,
+   and Claude has historically confused them. GET THIS RIGHT:
+
+   (a) MASKED / NON-SIDING (drives `siding_pct_this_wall` DOWN):
+       ONLY genuine, unframed, non-trimmed masonry / cladding that
+       replaces the siding field. Examples:
+         • Brick or stone wainscot / watertable
+         • Full-wall brick, stone, or CMU masonry
+         • Stucco / EIFS panel sections
+         • Attached structures with their own cladding (a stone chimney
+           face, an attached brick porch column wrap)
+       These areas get NO siding, NO J-channel, NO trim — they are
+       excluded from the siding takeoff entirely.
+
+   (b) OPENINGS (belong in `openings[]`, DO NOT reduce siding_pct):
+       Every trimmed penetration in the wall is an OPENING, not a
+       masked area. These MUST be emitted as rows in `openings[]`
+       with the correct `type`:
+         • Windows (all styles)                → type=window
+         • Entry doors / front doors / side    → type=entry_door
+           doors / mudroom doors
+         • Sliding / French / patio doors      → type=patio_door
+         • Garage doors (single OR double,     → type=garage_door
+           overhead OR carriage-style)
+         • Wall vents / attic vents / gable    → type=vent
+           vents / dryer vents (only when
+           large enough to require trim, ≥12")
+       Openings receive J-channel / surround trim in the takeoff.
+       Leaving them out of `openings[]` (or dumping them into masked
+       area via a low siding_pct_this_wall) DROPS the J-channel and
+       under-quotes the job. GARAGE DOORS ARE ESPECIALLY EASY TO GET
+       WRONG — a 16 ft double garage door is ~112 ft² of "not-siding",
+       and if you bake that into siding_pct_this_wall instead of
+       emitting it as `openings[]` type=garage_door, the trim/J-channel
+       takeoff loses ~40 lf of surround per door. ALWAYS emit garage
+       doors as openings.
+
+   Decision tree per non-siding region:
+     - Is there a rectangular framed hole with a trimmed edge?           → OPENING
+     - Is there a door slab (any type — walk, patio, garage)?            → OPENING
+     - Is it stone / brick / CMU / stucco with no trim boundary?         → MASKED (reduce siding_pct)
+     - Is it an attached masonry structure (chimney, brick column)?      → MASKED (reduce siding_pct)
+     - Everything else                                                   → SIDING
+
    For each wall, set siding_pct_this_wall to the visible fraction of
-   the wall actually clad in siding. Compute the global
-   siding_coverage_pct as a weighted average. If a house is 100% siding,
-   that's fine — but DON'T assume it.
+   the wall body that IS siding — i.e., after subtracting ONLY the
+   masked (masonry/stucco) region, NOT the openings. Openings are
+   subtracted separately downstream via the `openings[]` list, so
+   including them in siding_pct_this_wall would double-count.
+
+   Compute the global siding_coverage_pct as a weighted average. If a
+   house is 100% siding (with normal doors + windows but no masonry),
+   siding_coverage_pct should be 100 — the doors/windows come out of
+   the openings list, not the coverage pct.
 
 5b. SIDING PROFILE PER ELEVATION (Iter 78z — REQUIRED):
    Even on a single house, different SURFACES often use different
