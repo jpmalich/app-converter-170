@@ -20,6 +20,11 @@ import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 // Iter 78z+ — Profile annotator (Tag Shake / B&B / etc. on blueprint pages).
 import ProfileAnnotator from "@/components/estimate/ProfileAnnotator";
+// Iter 79j.34 — Reused untouched from the AI Photo Measure path. Second
+// producer (blueprint extraction) emits the same house JSON schema
+// (footprint, eaves, roof type, ridgeAxis, facades, openings, dormer)
+// so the 3D viewer + side panel + material math work without a fork.
+import HouseModel3D from "@/components/estimate/HouseModel3D";
 import { printTakeoff } from "@/lib/printTakeoff";
 import {
   getSavedWasteDefault,
@@ -122,6 +127,10 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
   const [profileAnnotatorOpen, setProfileAnnotatorOpen] = useState(false);
   const [savedProfileAnnotations, setSavedProfileAnnotations] = useState({});
   const [currentRunId, setCurrentRunId] = useState(null);
+  // Iter 79j.34 — Preview / 3D Model toggle. Mirrors AIMeasureButton;
+  // opens on Preview each new blueprint takeoff so contractors see
+  // the numbers first, then can flip to 3D for a spatial sanity check.
+  const [previewTab, setPreviewTab] = useState("preview");
 
   // Check for a recoverable run on mount + after the busy flag drops
   // (so a 502 immediately surfaces a recovery offer).
@@ -764,6 +773,58 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
             </div>
 
             <div className="overflow-y-auto flex-1 p-5 space-y-4">
+              {/* Iter 79j.34 — Preview / 3D Model tab toggle. Preview
+                  keeps the existing takeoff numbers / warnings / plan
+                  sheets stack; 3D pipes result through the SAME
+                  HouseModel3D component the AI Photo Measure path
+                  uses — zero forked schema, zero forked renderer. */}
+              <div className="flex items-center gap-1 -mb-1 border-b border-[#E4E4E7]" data-testid="blueprint-preview-tabs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab("preview")}
+                  className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors ${
+                    previewTab === "preview"
+                      ? "border-[#7C3AED] text-[#7C3AED]"
+                      : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                  }`}
+                  data-testid="blueprint-preview-tab"
+                >
+                  Preview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewTab("3d")}
+                  className={`px-3 py-2 text-[11px] font-bold uppercase tracking-wider border-b-2 transition-colors flex items-center gap-1.5 ${
+                    previewTab === "3d"
+                      ? "border-[#7C3AED] text-[#7C3AED]"
+                      : "border-transparent text-[#71717A] hover:text-[#09090B]"
+                  }`}
+                  data-testid="blueprint-3d-tab"
+                >
+                  3D Model
+                  <span className="text-[9px] px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] tracking-normal">VERIFIED</span>
+                </button>
+              </div>
+
+              {previewTab === "3d" && (
+                <div data-testid="blueprint-3d-panel">
+                  {measurements._source_reconciliation_warning && (
+                    <div
+                      className="mb-3 px-3 py-2 bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-[11px] flex items-start gap-2"
+                      data-testid="blueprint-3d-recon-warning"
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#B45309]" />
+                      <div>
+                        <span className="font-bold uppercase text-[10px] tracking-wider">3D vs takeoff reconciliation</span>
+                        <div className="mt-0.5 leading-snug">{measurements._source_reconciliation_warning}</div>
+                      </div>
+                    </div>
+                  )}
+                  <HouseModel3D preview={result} estimate={est} />
+                </div>
+              )}
+
+              {previewTab === "preview" && (<>
               {/* Confidence + notes banner */}
               {measurements._ai_notes && (
                 <div className="px-3 py-2 bg-[#FEF3C7] border-l-2 border-[#F59E0B] text-[12px] text-[#92400E] flex items-start gap-2" data-testid="blueprint-ai-notes">
@@ -1059,6 +1120,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   {JSON.stringify(result.raw_ai, null, 2)}
                 </pre>
               </details>
+              </>)}
             </div>
 
             <div className="border-t border-[#E4E4E7] px-5 py-4 flex justify-between items-center">

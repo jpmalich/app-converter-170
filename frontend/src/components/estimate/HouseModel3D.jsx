@@ -131,6 +131,12 @@ function hexForPaletteName(name) {
 // Build a house-JSON shape from the AI preview + user overrides.
 function buildHouseJson(preview, overrides, estimate) {
   if (!preview) return null;
+  // Iter 79j.34 — Which producer generated this preview? Set on the
+  // measurements dict by the aggregator ("blueprint" from
+  // ai_blueprint.py, "ai" default for ai_measure.py). Drives badge
+  // wording throughout the panel — a value read from a printed
+  // dimension is BLUEPRINT-verified, not AI-inferred.
+  const sourceKind = preview.measurements?._source_kind === "blueprint" ? "blueprint" : "ai";
   const walls = preview.raw_ai?.walls || [];
   const openings = preview.raw_ai?.openings || [];
   const avgAiEave = preview.measurements?._ai_avg_wall_height_ft;
@@ -353,6 +359,7 @@ function buildHouseJson(preview, overrides, estimate) {
   return {
     footprint: { width: footprintW, depth: footprintD, estimated: !front || !left },
     avgEaveHeight: avgEave,
+    sourceKind,
     ridgeAxis,
     ridgeAxisSource,
     ridgeAxisAiRaw: aiRidgeAxis,
@@ -1133,10 +1140,12 @@ export default function HouseModel3D({ preview, estimate }) {
             {facade.eaveHeightSource === "ai" && (
               <span
                 className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
-                title="Read straight from Claude's per-wall height_ft for this elevation"
+                title={house.sourceKind === "blueprint"
+                  ? "Read straight from the elevation drawing's printed dimension"
+                  : "Read straight from Claude's per-wall height_ft for this elevation"}
                 data-testid={`ai-measure-3d-eave-derived-${facade.id}`}
               >
-                <Check className="w-2.5 h-2.5" /> AI per-wall
+                <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI per-wall"}
               </span>
             )}
             {facade.eaveHeightSource === "ai-avg" && (
@@ -1174,10 +1183,12 @@ export default function HouseModel3D({ preview, estimate }) {
             {house.roof.pitchSource === "ai" && (
               <span
                 className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
-                title={`Derived from Claude's gable height (raw ${house.roof.pitchAiRaw}/12 across ${house.roof.pitchAiSamples} gable-end wall${house.roof.pitchAiSamples > 1 ? "s" : ""}, snapped to ${house.roof.pitch}/12)`}
+                title={house.sourceKind === "blueprint"
+                  ? `Read from the elevation's gable height (${house.roof.pitchAiRaw}/12, snapped to ${house.roof.pitch}/12)`
+                  : `Derived from Claude's gable height (raw ${house.roof.pitchAiRaw}/12 across ${house.roof.pitchAiSamples} gable-end wall${house.roof.pitchAiSamples > 1 ? "s" : ""}, snapped to ${house.roof.pitch}/12)`}
                 data-testid="ai-measure-3d-pitch-derived"
               >
-                <Check className="w-2.5 h-2.5" /> AI-derived
+                <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI-derived"}
               </span>
             )}
             {house.roof.pitchSource === "user" && (
@@ -1216,10 +1227,12 @@ export default function HouseModel3D({ preview, estimate }) {
             {house.roof.typeSource === "ai" && (
               <span
                 className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
-                title={`Classified by Claude with ${Math.round((house.roof.typeAiConfidence || 0) * 100)}% confidence. ${house.roof.typeAiReasoning || ""}`}
+                title={house.sourceKind === "blueprint"
+                  ? `Determined from printed gable heights across the elevations. ${house.roof.typeAiReasoning || ""}`
+                  : `Classified by Claude with ${Math.round((house.roof.typeAiConfidence || 0) * 100)}% confidence. ${house.roof.typeAiReasoning || ""}`}
                 data-testid="ai-measure-3d-roof-type-ai"
               >
-                <Check className="w-2.5 h-2.5" /> AI-classified
+                <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI-classified"}
               </span>
             )}
             {house.roof.typeSource === "user" && (
@@ -1275,10 +1288,12 @@ export default function HouseModel3D({ preview, estimate }) {
               {house.ridgeAxisSource === "ai" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
-                  title={`Derived from Claude's gable-end walls (${house.ridgeAxisAiRaw === "x" ? "left/right gables → side-gable" : "front/back gables → front-gable"})`}
+                  title={house.sourceKind === "blueprint"
+                    ? `Read from the elevations' gable-end walls (${house.ridgeAxisAiRaw === "x" ? "gables on left/right → side-gable" : "gables on front/back → front-gable"})`
+                    : `Derived from Claude's gable-end walls (${house.ridgeAxisAiRaw === "x" ? "left/right gables → side-gable" : "front/back gables → front-gable"})`}
                   data-testid="ai-measure-3d-ridge-derived"
                 >
-                  <Check className="w-2.5 h-2.5" /> AI-derived
+                  <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI-derived"}
                 </span>
               )}
               {house.ridgeAxisSource === "user" && (
