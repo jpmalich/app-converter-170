@@ -100,6 +100,42 @@ def _resolve_model(choice: str | None) -> tuple[str, str, str]:
     return key, provider, model_name
 
 
+def _pick_llm_api_key(provider: str) -> tuple[str | None, str]:
+    """Iter 79j.42 — Backend-only key routing.
+
+    When `ANTHROPIC_API_KEY` is set on the backend .env AND the resolved
+    model provider is `anthropic`, route this run's Claude calls
+    directly to api.anthropic.com (bypasses the Emergent LiteLLM proxy
+    and its per-tenant budget cap). emergentintegrations' LlmChat
+    auto-detects a non-`sk-emergent-` key and uses LiteLLM's native
+    Anthropic path, so no other code changes are needed — this helper
+    just picks the right key.
+
+    Never exposed to the frontend. Gemini and OpenAI providers keep
+    using the Emergent key regardless — this is an ANTHROPIC-only
+    bypass because those are the only calls Howard's contractors are
+    hitting hard enough to exhaust the proxy budget.
+
+    Returns (api_key, source) where source is "anthropic_direct" or
+    "emergent_proxy" for logging / telemetry only. api_key may be None
+    if BOTH env vars are missing — caller must handle.
+    """
+    if provider == "anthropic":
+        direct = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+        if direct:
+            return direct, "anthropic_direct"
+    return (os.environ.get("EMERGENT_LLM_KEY") or None), "emergent_proxy"
+
+
+# Startup log — operators can grep `AI_MEASURE key-routing` to confirm
+# which key each provider will use without decoding the .env by hand.
+_LLM_ROUTING_SUMMARY = (
+    f"anthropic={'ANTHROPIC_API_KEY (direct)' if (os.environ.get('ANTHROPIC_API_KEY') or '').strip() else 'EMERGENT_LLM_KEY (proxy)'}, "
+    f"gemini/openai=EMERGENT_LLM_KEY (proxy)"
+)
+logger.info("[AI_MEASURE key-routing] %s", _LLM_ROUTING_SUMMARY)
+
+
 def _compress_for_claude(img_bytes: bytes, max_raw_bytes: int = 5_500_000) -> bytes:
     """Ensure a single image fits under Anthropic's 10 MB base64 cap.
     Anthropic measures the base64-encoded payload (~1.33× raw), so
@@ -1901,14 +1937,23 @@ async def ai_measure(
         ("image/jpeg", _compress_for_claude(raw)) for _ctype, raw in image_payloads
     ]
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
-
     user_id = user["id"]
     # Iter 79j.15 — resolve the A/B model choice up front so the run doc
     # persists it for reporting + the worker can hand it to LlmChat.
     model_key, model_provider, model_name = _resolve_model(model_choice)
+    # Iter 79j.42 — Backend-only Anthropic direct route. If the
+    # provider is anthropic AND ANTHROPIC_API_KEY is set, use it and
+    # bypass the Emergent LiteLLM proxy (and its shared budget cap).
+    # Falls back to EMERGENT_LLM_KEY otherwise.
+    api_key, _api_key_source = _pick_llm_api_key(model_provider)
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No LLM API key on the server. Set ANTHROPIC_API_KEY (direct) "
+                "or EMERGENT_LLM_KEY (Universal Key)."
+            ),
+        )
 
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
@@ -2038,10 +2083,6 @@ async def ai_measure_rerun(
             len(missing_after_rehydrate), len(paths), missing_after_rehydrate,
         )
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
-
     new_run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
     address = prev.get("address")
@@ -2062,6 +2103,17 @@ async def ai_measure_rerun(
             model_choice_override = _mc.strip()
     model_choice = model_choice_override or prev.get("model_choice") or _DEFAULT_MODEL_KEY
     model_key, model_provider, model_name = _resolve_model(model_choice)
+
+    # Iter 79j.42 — Anthropic-direct routing (backend env only).
+    api_key, _api_key_source = _pick_llm_api_key(model_provider)
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No LLM API key on the server. Set ANTHROPIC_API_KEY (direct) "
+                "or EMERGENT_LLM_KEY (Universal Key)."
+            ),
+        )
 
     # Pull worker params from the previous result's measurements when
     # available; fall back to sane defaults that match the form schema.
@@ -3541,9 +3593,17 @@ async def ai_cross_check(
     else:
         summary = "First pass produced no per-elevation breakdown. Build one from scratch."
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    # Iter 79j.42 — Cross-check is always Anthropic (Opus). Honor
+    # ANTHROPIC_API_KEY when present, else use the Emergent key.
+    api_key, _api_key_source = _pick_llm_api_key("anthropic")
     if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No LLM API key on the server. Set ANTHROPIC_API_KEY (direct) "
+                "or EMERGENT_LLM_KEY (Universal Key)."
+            ),
+        )
 
     session_id = f"ai-cross-check-{user['id']}-{uuid.uuid4().hex[:8]}"
     chat = LlmChat(
@@ -3670,9 +3730,17 @@ async def ocr_scale(
     if not raw:
         raise HTTPException(status_code=400, detail="upload is empty")
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    # Iter 79j.42 — OCR-scale is always Anthropic. Honor
+    # ANTHROPIC_API_KEY when present, else use the Emergent key.
+    api_key, _api_key_source = _pick_llm_api_key("anthropic")
     if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No LLM API key on the server. Set ANTHROPIC_API_KEY (direct) "
+                "or EMERGENT_LLM_KEY (Universal Key)."
+            ),
+        )
 
     # Compress through the same pipeline Claude already uses elsewhere.
     img_bytes = _compress_for_claude(raw)
