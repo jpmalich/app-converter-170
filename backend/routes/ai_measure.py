@@ -184,6 +184,18 @@ Schema:
   // `knee_wall_height_ft` = how tall the vertical face wall stands above
   // where the main roof would be at that Z position, `offset_x_ft` =
   // horizontal offset from the wall center (0 = centered).
+  "dormers": [
+    // Iter 79j.41 — ARRAY, one entry per PHYSICAL dormer. A house may
+    // have shed dormers on BOTH front and rear slopes, or gable
+    // dormers on each side of a hip roof — never collapse them.
+    {"face": "front" | "rear" | "left" | "right",
+     "width_ft": number,
+     "knee_wall_height_ft": number,
+     "offset_x_ft": number}
+  ],
+  // Iter 79j.41 — legacy singular field kept for back-compat with
+  // older parsers. If you emit `dormers[]` above, MIRROR the first
+  // entry here or leave null. New code should ignore this field.
   "dormer": {"face": "front" | "rear", "width_ft": number, "knee_wall_height_ft": number, "offset_x_ft": number} | null,
   // Iter 79j.36 — TOP-LEVEL RECONCILIATION NOTES. One short sentence
   // per aggregate field explaining how you got there when a value
@@ -878,32 +890,60 @@ def apply_roof_type_material_math(raw: dict, walls: list, gable_sqft: float, dor
         return 0.0, dormer_sqft
 
     if roof_type == "gable-shed-dormer":
-        dormer_raw = raw.get("dormer") if isinstance(raw.get("dormer"), dict) else None
-        if not dormer_raw:
+        # Iter 79j.41 — Accept `dormers[]` array first (two-phase
+        # reconciler emits it), fall back to legacy singular `dormer`
+        # wrapped as a 1-element list. Sum face+cheek contributions
+        # across every dormer so a house with 2 shed dormers on
+        # opposite slopes doesn't silently drop half its material.
+        dormers_raw = raw.get("dormers")
+        if isinstance(dormers_raw, list):
+            _dormers_iter = [d for d in dormers_raw if isinstance(d, dict)]
+        else:
+            _legacy = raw.get("dormer")
+            _dormers_iter = [_legacy] if isinstance(_legacy, dict) else []
+        if not _dormers_iter:
             return gable_sqft, dormer_sqft
-        face = str(dormer_raw.get("face") or "front").lower()
-        d_w = float(dormer_raw.get("width_ft") or 0)
-        d_h = float(dormer_raw.get("knee_wall_height_ft") or 0)
-        if d_w <= 0 or d_h <= 0:
-            return gable_sqft, dormer_sqft
-        face_sqft = d_w * d_h
-        # 2 cheek triangles, base = knee height, height = knee height —
-        # matches the frontend geometry which uses knee for both.
-        cheek_sqft = 2 * 0.5 * d_h * d_h
-        openings_area = 0.0
+        openings_by_face: dict[str, float] = {}
+        # Iter 79j.41 — Same face-alias table used below on the dormer
+        # iteration, hoisted so opening face keys normalize too.
+        _face_alias = {"rear": "back", "back": "back", "front": "front",
+                       "left": "left", "right": "right",
+                       "slope-front": "front", "slope-back": "back",
+                       "slope-left": "left", "slope-right": "right"}
         for o in (raw.get("openings") or []):
             if not o.get("on_dormer"):
                 continue
             w_in = float(o.get("width_in") or 0)
             h_in = float(o.get("height_in") or 0)
-            if w_in > 0 and h_in > 0:
-                openings_area += (w_in / 12.0) * (h_in / 12.0)
-        extra = max(0.0, face_sqft + cheek_sqft - openings_area)
-        for w in walls:
-            if (w.get("label") or "").lower() == face:
-                w["dormer_face_sqft"] = float(w.get("dormer_face_sqft") or 0) + extra
-                break
-        return gable_sqft, float(dormer_sqft) + extra
+            if w_in <= 0 or h_in <= 0:
+                continue
+            face_lbl = _face_alias.get(str(o.get("wall") or "front").lower(),
+                                       str(o.get("wall") or "front").lower())
+            openings_by_face[face_lbl] = openings_by_face.get(face_lbl, 0.0) + (w_in / 12.0) * (h_in / 12.0)
+        total_extra = 0.0
+        # Iter 79j.41 — Aliases: Claude may emit "rear" for the back
+        # wall (natural language) but walls[] labels use "back".
+        # Normalise both sides of the match so a rear-slope dormer
+        # actually credits the back wall.
+        face_alias = _face_alias
+        for dormer_raw in _dormers_iter:
+            face_raw = str(dormer_raw.get("face") or "front").lower()
+            face = face_alias.get(face_raw, face_raw)
+            d_w = float(dormer_raw.get("width_ft") or 0)
+            d_h = float(dormer_raw.get("knee_wall_height_ft") or 0)
+            if d_w <= 0 or d_h <= 0:
+                continue
+            face_sqft = d_w * d_h
+            # 2 cheek triangles, base = knee height, height = knee height —
+            # matches the frontend geometry which uses knee for both.
+            cheek_sqft = 2 * 0.5 * d_h * d_h
+            extra = max(0.0, face_sqft + cheek_sqft - openings_by_face.get(face, 0.0))
+            for w in walls:
+                if (w.get("label") or "").lower() == face:
+                    w["dormer_face_sqft"] = float(w.get("dormer_face_sqft") or 0) + extra
+                    break
+            total_extra += extra
+        return gable_sqft, float(dormer_sqft) + total_extra
 
     return gable_sqft, dormer_sqft
 
@@ -1674,8 +1714,27 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     measurements["_ai_roof_type"] = roof_type
     measurements["_ai_roof_type_confidence"] = roof_type_conf
     measurements["_ai_roof_type_reasoning"] = raw.get("roof_type_reasoning") or ""
-    dormer_raw = raw.get("dormer") if isinstance(raw.get("dormer"), dict) else None
-    measurements["_ai_dormer"] = dormer_raw
+    # Iter 79j.41 — Dormers as an ARRAY. A house can have a shed
+    # dormer on the front slope AND a matching one on the back
+    # slope (or gable dormers on left + right). The old `dormer`
+    # singular schema silently lost every dormer past the first,
+    # which was the root cause of the "missing right dormer" bug on
+    # Howard's red house. Two-phase reconciler emits `dormers[]`;
+    # legacy single-call runs (and prompts that still emit a lone
+    # `dormer` object) get wrapped in a 1-element list so downstream
+    # code sees a uniform shape.
+    dormers_raw = raw.get("dormers")
+    if isinstance(dormers_raw, list):
+        _dormers_list = [d for d in dormers_raw if isinstance(d, dict)]
+    else:
+        _legacy_single = raw.get("dormer")
+        _dormers_list = [_legacy_single] if isinstance(_legacy_single, dict) else []
+    measurements["_ai_dormers"] = _dormers_list
+    # Back-compat: first entry stays available under the old key so
+    # any consumer that hasn't been updated to read the array still
+    # gets the primary dormer (and the singular-schema bug it had
+    # before is at least no worse).
+    measurements["_ai_dormer"] = _dormers_list[0] if _dormers_list else None
 
     # Iter 79j.28 — dominant colors sampled from the photos. Each hex is
     # validated (must match #RRGGBB) before surfacing so we don't feed
@@ -2438,22 +2497,26 @@ call worker returns, so downstream code doesn't fork.
   "roof_type_confidence": number,        // 0.0-1.0
   "roof_type_reasoning":  "<1 sentence>",
   "dominant_colors": {"siding_hex": "#RRGGBB" | null, "trim_hex": "#RRGGBB" | null, "roof_hex": "#RRGGBB" | null, "door_hex": "#RRGGBB" | null},
-  "dormer":               {
-    "face":                "front" | "rear" | "left" | "right",
-    "width_ft":            number,
-    "knee_wall_height_ft": number,
-    "offset_x_ft":         number,
-    // Iter 79j.39 — width provenance. Drives the frontend badge:
-    //   direct_consensus         → green (2+ direct views agreed)
-    //   direct_disagreement      → amber (readings spread >1 ft, one kept)
-    //   back_solved_from_opening → amber (no direct view; width back-
-    //                                     solved from a window on the face)
-    //   estimated_no_direct_view → amber-estimated (12 ft placeholder,
-    //                                     capture a direct shot)
-    "width_source":        "direct_consensus" | "direct_disagreement" | "back_solved_from_opening" | "estimated_no_direct_view",
-    "_source_photo_indices": [number],
-    "_per_photo_readings":  [ {"photo_idx": number, "approx_width_ft": number|null, "role": "width" | "face" | "count" | "rejected", "notes": "<why kept/rejected>"} ]
-  } | null,
+  "dormers": [
+    // Iter 79j.41 — ARRAY. A house can carry a dormer on each roof
+    // slope (front + rear shed dormers, or 4 gable dormers on a hip
+    // roof, etc.). Emit ONE entry PER PHYSICAL DORMER. Do NOT collapse
+    // multiple dormers into one — the "missing right dormer" bug on
+    // the red house was a singular-schema truncation.
+    {
+      "face":                "front" | "rear" | "left" | "right",
+      "width_ft":            number,
+      "knee_wall_height_ft": number,
+      "offset_x_ft":         number,          // horizontal offset from wall centerline; 0 = centered
+      // width provenance — same values as the eave rule. Drives the
+      // frontend badge: direct_consensus=green; direct_disagreement,
+      // back_solved_from_opening, estimated_no_direct_view = amber.
+      "width_source":        "direct_consensus" | "direct_disagreement" | "back_solved_from_opening" | "estimated_no_direct_view",
+      "_source_photo_indices": [number],
+      "_per_photo_readings":  [ {"photo_idx": number, "approx_width_ft": number|null, "role": "width" | "face" | "count" | "rejected", "notes": "<why kept/rejected>"} ],
+      "_reconciliation_note":  "<1 sentence explaining face + width choice for THIS dormer>"
+    }
+  ],
   "walls": [
     {"label": "front" | "back" | "left" | "right",
      "width_ft":                   number,
@@ -2513,7 +2576,7 @@ call worker returns, so downstream code doesn't fork.
   "_reconciliation_notes": {
     "avg_wall_height_ft":  "<e.g. 'averaged 4 valid per-photo eaves (photos 0,1,2,4 = 8.5, 8.4, 8.6, 8.5); discarded photo 3 (aerial) and photo 5 (foreshortened corner)'>",
     "roof_type":           "<how the roof-type call was made from the photo counts>",
-    "dormer":              "<how the dormer face/width/offset was chosen>",
+    "dormers":             "<how each dormer's face/width/offset was chosen. Include a count sentence (e.g. 'detected 2 shed dormers on front and rear slopes')>",
     "story_count":         "<how the story count was merged>",
     "siding_coverage_pct": "<how coverage was reconciled across photos>",
     "dominant_colors":     "<which photo's colors were used, and why (sample_quality preference)>",
@@ -2638,8 +2701,16 @@ RECONCILIATION RULES:
    Any photo with `dormers_observed_count > 0` upgrades to
    "gable-shed-dormer".
 
-5. DORMER WIDTH & FACE — same trap as the eave rule. "Widest reading
-   wins" over-counts because a corner shot or a wide-angle lens
+5. DORMERS (ARRAY) — a house can carry a dormer on each roof slope
+   (a matching pair of shed dormers on front + rear is common on
+   cape cods and cross-gabled ranches). Emit ONE ENTRY PER PHYSICAL
+   DORMER in `dormers[]`. Naive schemas that collapse to a single
+   dormer object silently drop the second, third, or fourth dormer —
+   the exact bug that made the red house's right-slope dormer
+   disappear.
+
+   For EACH dormer, run the width-source rules below. "Widest reading
+   wins" was the old trap because a corner shot or a wide-angle lens
    distorts the dormer's apparent width; picking the max amplifies
    whichever photo had the worst geometry.
 
@@ -2669,31 +2740,42 @@ RECONCILIATION RULES:
         • Pick the reading whose photo has the strongest evidence
           (widest bbox at valid angle, visible window fully across
           the face, sharpest horizontals).
-        • Set `dormer.width_source: "direct_disagreement"`.
-        • Note the rejected readings in `_reconciliation_notes.dormer`.
+        • Set `width_source: "direct_disagreement"` for this dormer.
+        • Note the rejected readings in this dormer's
+          `_reconciliation_note`.
 
    c) If NO direct-view width reading exists but at least one photo
       saw a window ON the dormer face (`openings_this_photo[]` has
       an entry with `on_dormer: true` OR `wall_hint: "on_dormer"`),
       BACK-SOLVE the width: dormer_width_ft ≈ max(6, window_width_ft
-      + 3 ft trim margin per side). Set `dormer.width_source:
+      + 3 ft trim margin per side). Set `width_source:
       "back_solved_from_opening"`.
 
    d) If no direct view AND no opening-anchored back-solve, emit
       a placeholder (12 ft is the residential median) and set
-      `dormer.width_source: "estimated_no_direct_view"` so the
+      `width_source: "estimated_no_direct_view"` so the
       frontend renders it AMBER — same "don't quote off this until
       a direct shot exists" signal as the eave rule.
 
    e) If direct readings agree within ±1 ft, take the median.
-      `dormer.width_source: "direct_consensus"`.
+      `width_source: "direct_consensus"`.
 
-   FACE assignment is unchanged from before: use the wall of the
-   FIRST photo that captured the dormer cardinally (a direct
-   perpendicular shot of the face). If no cardinal shot exists,
-   default to `front` (most residential shed dormers face the street).
+   DORMER MATCHING ACROSS PHOTOS — a single physical dormer often
+   appears in 2+ photos (a corner shot + a cardinal shot). Match by
+   `face` (which roof slope) + approximate position. If two photos
+   report a dormer on the SAME face with `approx_width_ft` values
+   within ±3 ft AND their bbox centers align when projected to the
+   wall, they're the same dormer → one entry in `dormers[]` with
+   both photos in `_source_photo_indices`. If the faces differ
+   (photo 0 says front, photo 3 says rear) they're TWO DIFFERENT
+   dormers → two entries. Never collapse different-face dormers.
 
-   The reconciliation trace for the dormer MUST list every photo
+   FACE assignment: use the wall of the FIRST photo that captured
+   the dormer cardinally (a direct perpendicular shot of the face).
+   If no cardinal shot exists, default to `front` for the primary
+   and preserve the aerial-reported face for any additional ones.
+
+   The reconciliation trace for EACH dormer MUST list every photo
    that saw it and whether that photo contributed to width, face,
    count, or was rejected — the same `_per_photo_readings`-style
    trace the walls carry.

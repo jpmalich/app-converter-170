@@ -281,7 +281,14 @@ function buildHouseJson(preview, overrides, estimate) {
   //   ridgeAxis="x": front→slope-front, rear/back→slope-back
   //   ridgeAxis="z": front→slope-left, rear/back→slope-right (arbitrary
   //                  but stable mapping; user can flip in the panel)
-  const aiDormer = preview.measurements?._ai_dormer || null;
+  // Iter 79j.41 — Dormers as ARRAY. `_ai_dormers` is the two-phase
+  // canonical field; `_ai_dormer` is the legacy singular. Coalesce
+  // into one uniform list so the rest of the derivation is agnostic.
+  const _aiDormersRaw = preview.measurements?._ai_dormers;
+  const aiDormersList = Array.isArray(_aiDormersRaw) && _aiDormersRaw.length
+    ? _aiDormersRaw.filter((d) => d && typeof d === "object")
+    : (preview.measurements?._ai_dormer ? [preview.measurements._ai_dormer] : []);
+  const aiDormer = aiDormersList[0] || null;
   const dormerOverride = overrides.dormer || {};
   const legacyFace = dormerOverride.face ?? aiDormer?.face ?? "front";
   const slopesForAxis = ridgeAxis === "x" ? ["slope-front", "slope-back"] : ["slope-left", "slope-right"];
@@ -420,6 +427,52 @@ function buildHouseJson(preview, overrides, estimate) {
             faceWallWidth: dormerFaceWallWidth,
           }
         : null,
+      // Iter 79j.41 — Full dormer array. Entry [0] is the primary
+      // dormer (same object as `dormer` above — kept for back-compat).
+      // Entries [1..N] are additional dormers from _ai_dormers[],
+      // rendered by buildScene without contractor overrides (until
+      // per-dormer override UI ships). Each carries its own face and
+      // width_source so material math and provenance stay correct.
+      dormers: roofType === "gable-shed-dormer"
+        ? [
+            {
+              face: dormerFace,
+              width: dormerWidth,
+              widthSource: dormerWidthSource,
+              kneeWallHeight: dormerKnee,
+              offsetX: dormerOffsetX,
+              openings: dormerOpeningsPositioned,
+              faceWallWidth: dormerFaceWallWidth,
+              _aiIndex: 0,
+              _reconciliationNote: aiDormer?._reconciliation_note || null,
+            },
+            ...aiDormersList.slice(1).map((ad, i) => {
+              // Migrate face label through the same ridge-axis rules.
+              const face = migrateFace(ad?.face || "front");
+              const w = Number(ad?.width_ft || 12);
+              const knee = Number(ad?.knee_wall_height_ft || 4);
+              const offX = Number(ad?.offset_x_ft || 0);
+              const src = (ad?.width_source || "").toLowerCase();
+              const widthSource =
+                src === "direct_consensus" ? "ai"
+                : src === "direct_disagreement" ? "ai-disagreement"
+                : src === "back_solved_from_opening" ? "ai-back-solved"
+                : src === "estimated_no_direct_view" ? "ai-no-direct-view"
+                : "ai";
+              return {
+                face,
+                width: w,
+                widthSource,
+                kneeWallHeight: knee,
+                offsetX: offX,
+                openings: [],           // per-dormer opening assignment is a follow-up
+                faceWallWidth: dormerFaceWallWidth,
+                _aiIndex: i + 1,
+                _reconciliationNote: ad?._reconciliation_note || null,
+              };
+            }),
+          ]
+        : [],
     },
     // Iter 79j.28 — Colors. Priority chain (buildScene reads this):
     //   siding: estimate override (palette name → hex) > AI-sampled hex > default grey
@@ -586,9 +639,12 @@ function buildHipRoof(scene, house, roofMat, ridgeY, avgGableEave) {
 // computed in a (u, v) local frame where u = perpendicular-to-ridge
 // (the slope direction) and v = parallel-to-ridge (the ridge extent);
 // we then map (u, v) → (world X, Y, Z) based on ridgeAxis.
-function buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, avgGableEave) {
+function buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, avgGableEave, dormer) {
   const { footprint, roof } = house;
-  const d = roof.dormer;
+  // Iter 79j.41 — Dormer is now passed as an argument so buildScene
+  // can loop over house.roof.dormers[] and render N of them. Falls
+  // back to roof.dormer (singular) for any caller not yet updated.
+  const d = dormer || roof.dormer;
   if (!d) return;
   const isXRidge = house.ridgeAxis === "x";
   const spanTotal = isXRidge ? footprint.depth : footprint.width;
@@ -879,8 +935,18 @@ function buildScene(scene, house) {
     buildHipRoof(scene, house, roofMat, ridgeY, avgGableEave);
   } else {
     buildGableRoofPlanes(scene, house, roofMat, roofRise, avgGableEave);
-    if (roof.type === "gable-shed-dormer" && roof.dormer) {
-      buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, avgGableEave);
+    // Iter 79j.41 — Render EVERY dormer, not just the first. A house
+    // with a front + rear shed dormer used to silently drop the
+    // second one because the schema was singular. buildHouseJson now
+    // exposes house.roof.dormers[] (with .dormer kept as dormers[0]
+    // for back-compat); we loop end-to-end.
+    if (roof.type === "gable-shed-dormer") {
+      const dormerList = (Array.isArray(roof.dormers) && roof.dormers.length)
+        ? roof.dormers
+        : (roof.dormer ? [roof.dormer] : []);
+      dormerList.forEach((d) => {
+        buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, avgGableEave, d);
+      });
     }
   }
 
@@ -1369,6 +1435,22 @@ export default function HouseModel3D({ preview, estimate }) {
               width + offsetX are inferred from the horizontal spread of any
               on_dormer openings + 1.5' margin per side. Amber-flagged as
               inferred until user overrides. */}
+          {/* Iter 79j.41 — Multi-dormer indicator. Two-phase reconciler
+              emits `_ai_dormers[]` (array); a house with N>1 dormers
+              gets N-1 additional dormers rendered in 3D without a
+              contractor override UI yet. Show the count here so the
+              contractor knows to look at the model. */}
+          {house.roof.type === "gable-shed-dormer" && (house.roof.dormers?.length || 0) > 1 && (
+            <div
+              className="flex items-center gap-2 text-[10px] leading-tight bg-[#DCFCE7] border border-[#16A34A] text-[#166534] px-2 py-1"
+              data-testid="ai-measure-3d-dormers-count"
+              title={house.roof.dormers.map((d, i) => `${i + 1}. ${d.face} · ${d.width.toFixed(1)} ft`).join("\n")}
+            >
+              <Check className="w-3 h-3" />
+              <span className="font-bold uppercase tracking-wider text-[9px]">{house.roof.dormers.length} dormers detected</span>
+              <span className="text-[10px]">— all rendered in 3D; edit the primary below</span>
+            </div>
+          )}
           {house.roof.type === "gable-shed-dormer" && house.roof.dormer && (
             <div className="flex items-center gap-2 text-[11px]" data-testid="ai-measure-3d-dormer-row">
               <span className="text-[#71717A] w-24">Dormer W (ft)</span>

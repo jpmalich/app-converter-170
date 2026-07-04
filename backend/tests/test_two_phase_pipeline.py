@@ -59,7 +59,7 @@ def test_reconcile_prompt_targets_aggregator_schema():
     for field in (
         '"walls":',
         '"openings":',
-        '"dormer":',
+        '"dormers":',      # Iter 79j.41 — ARRAY; singular `dormer` was the missing-right-dormer bug.
         '"avg_wall_height_ft":',
         '"roof_type":',
         '"dominant_colors":',
@@ -169,7 +169,8 @@ def test_dormer_width_rule_matches_eave_rigor():
 
     # Dormer schema block MUST declare width_source (frontend reads
     # aiDormer.width_source; missing key defaults to legacy behaviour).
-    dormer_block = p.split('"dormer":', 1)[1].split('"walls":', 1)[0]
+    # Iter 79j.41 — key is now `dormers` (array), not singular.
+    dormer_block = p.split('"dormers":', 1)[1].split('"walls":', 1)[0]
     assert "width_source" in dormer_block
 
 
@@ -177,6 +178,6 @@ def test_dormer_schema_carries_per_photo_readings():
     """Provenance readings must be requested so the debug view can
     show which photos contributed to width vs face vs count."""
     p = RECONCILE_PROMPT
-    dormer_block = p.split('"dormer":', 1)[1].split('"walls":', 1)[0]
+    dormer_block = p.split('"dormers":', 1)[1].split('"walls":', 1)[0]
     for f in ("_source_photo_indices", "_per_photo_readings", "approx_width_ft"):
         assert f in dormer_block, f"Dormer schema lost per-photo field: {f}"
