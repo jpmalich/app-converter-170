@@ -10,6 +10,19 @@ Siding Estimator — a supplier-distributed B2B SaaS built for Alside Supply. Co
 
 ## Commands
 
+### Docker (recommended way to run the full stack)
+```bash
+docker compose up --build -d    # MongoDB + backend + frontend
+docker compose logs -f backend  # tail a service's logs
+docker compose down             # stop (add -v to wipe the Mongo volume)
+```
+- Frontend: http://localhost:3100 (host port set by `FRONTEND_PORT`, default 3100 because 3000 often collides with other local stacks). Backend: http://localhost:8001/api.
+- Both source trees are bind-mounted; uvicorn and webpack hot-reload inside the containers. Backend deps live in the image — rebuild after changing `requirements.txt` or `package.json`.
+- `docker-compose.yml` ships dev-only defaults for the fail-closed env vars (`JWT_SECRET`, `ADMIN_PASSWORD`, `CORS_ORIGINS`); override anything via a gitignored `.env` next to it. API keys (`ANTHROPIC_API_KEY`, `EMERGENT_LLM_KEY`, `RESEND_API_KEY`) default to empty — set them in `.env` for AI-measure/email features.
+- Dev logins: seeded admin `admin@wolfandson.com` / `admin-dev-password`; contractor signup code is derived from `JWT_SECRET` (default secret → `ALSIDE-27A9E2`).
+- The `Secure; SameSite=None` auth cookie works on plain-http localhost in Chrome but not Safari.
+- The backend image pulls `emergentintegrations` from Emergent's package index (`--extra-index-url` in `backend/Dockerfile`) and bundles the Pango libs WeasyPrint needs.
+
 ### Backend (`backend/`)
 ```bash
 pip install -r requirements.txt
