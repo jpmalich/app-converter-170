@@ -345,10 +345,29 @@ function buildHouseJson(preview, overrides, estimate) {
     dormerOverride.offsetX
     ?? (derivedDormerOffsetX != null ? derivedDormerOffsetX : (aiDormer?.offset_x_ft ?? 0)),
   );
+  // Iter 79j.39 — Prefer the two-phase reconciler's width_source when
+  // it's present. It tags each dormer width with a provenance label
+  // that maps 1:1 to badge colors:
+  //   direct_consensus         → green (2+ direct views agreed)
+  //   direct_disagreement      → amber ("direct reads disagree")
+  //   back_solved_from_opening → amber (no direct view; back-solved)
+  //   estimated_no_direct_view → amber-estimated (placeholder only)
+  // Legacy single-call runs won't emit width_source → fall back to
+  // the old opening-derived / raw-ai / default cascade so nothing
+  // regresses.
+  const aiWidthSource = (aiDormer?.width_source || "").toLowerCase();
   const dormerWidthSource = dormerOverride.width != null
     ? "user"
+    : aiWidthSource === "direct_consensus"
+    ? "ai"
+    : aiWidthSource === "direct_disagreement"
+    ? "ai-disagreement"
+    : aiWidthSource === "back_solved_from_opening"
+    ? "ai-back-solved"
+    : aiWidthSource === "estimated_no_direct_view"
+    ? "ai-no-direct-view"
     : derivedDormerWidth != null
-    ? "ai-inferred"        // amber — derived from openings, not a direct AI measurement
+    ? "ai-inferred"        // legacy amber — derived from openings client-side
     : aiDormer?.width_ft
     ? "ai"
     : "default";
@@ -1360,6 +1379,42 @@ export default function HouseModel3D({ preview, estimate }) {
                 className="w-20 px-2 py-1 border border-[#E4E4E7] font-mono-num text-right"
                 data-testid="ai-measure-3d-dormer-width"
               />
+              {house.roof.dormer.widthSource === "ai" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[#16A34A]"
+                  title="Direct-view dormer readings across 2+ photos agreed within ±1 ft — median taken"
+                  data-testid="ai-measure-3d-dormer-width-consensus"
+                >
+                  <Check className="w-2.5 h-2.5" /> Direct
+                </span>
+              )}
+              {house.roof.dormer.widthSource === "ai-disagreement" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  title="Direct-view dormer widths disagreed by >1 ft. The strongest reading was kept, others rejected. Open Debug to see the trace."
+                  data-testid="ai-measure-3d-dormer-width-disagreement"
+                >
+                  <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Direct reads disagree
+                </span>
+              )}
+              {house.roof.dormer.widthSource === "ai-back-solved" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  title="No direct-view width reading — back-solved from a window on the dormer face (window width + 3 ft trim per side). Verify before ordering."
+                  data-testid="ai-measure-3d-dormer-width-back-solved"
+                >
+                  <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Back-solved
+                </span>
+              )}
+              {house.roof.dormer.widthSource === "ai-no-direct-view" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  title="No photo captured a direct view of the dormer face — this is a 12 ft placeholder. Capture a straight-on shot before quoting."
+                  data-testid="ai-measure-3d-dormer-width-no-direct"
+                >
+                  <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> No direct read
+                </span>
+              )}
               {house.roof.dormer.widthSource === "ai-inferred" && (
                 <span
                   className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
@@ -1381,7 +1436,7 @@ export default function HouseModel3D({ preview, estimate }) {
               {house.roof.dormer.widthSource === "default" && <Amber />}
             </div>
           )}
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "default") && (
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "ai-disagreement" || house.roof.dormer?.widthSource === "ai-back-solved" || house.roof.dormer?.widthSource === "ai-no-direct-view" || house.roof.dormer?.widthSource === "default") && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>

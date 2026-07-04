@@ -2361,7 +2361,22 @@ call worker returns, so downstream code doesn't fork.
   "roof_type_confidence": number,        // 0.0-1.0
   "roof_type_reasoning":  "<1 sentence>",
   "dominant_colors": {"siding_hex": "#RRGGBB" | null, "trim_hex": "#RRGGBB" | null, "roof_hex": "#RRGGBB" | null, "door_hex": "#RRGGBB" | null},
-  "dormer":               {"face": "front" | "rear", "width_ft": number, "knee_wall_height_ft": number, "offset_x_ft": number} | null,
+  "dormer":               {
+    "face":                "front" | "rear" | "left" | "right",
+    "width_ft":            number,
+    "knee_wall_height_ft": number,
+    "offset_x_ft":         number,
+    // Iter 79j.39 — width provenance. Drives the frontend badge:
+    //   direct_consensus         → green (2+ direct views agreed)
+    //   direct_disagreement      → amber (readings spread >1 ft, one kept)
+    //   back_solved_from_opening → amber (no direct view; width back-
+    //                                     solved from a window on the face)
+    //   estimated_no_direct_view → amber-estimated (12 ft placeholder,
+    //                                     capture a direct shot)
+    "width_source":        "direct_consensus" | "direct_disagreement" | "back_solved_from_opening" | "estimated_no_direct_view",
+    "_source_photo_indices": [number],
+    "_per_photo_readings":  [ {"photo_idx": number, "approx_width_ft": number|null, "role": "width" | "face" | "count" | "rejected", "notes": "<why kept/rejected>"} ]
+  } | null,
   "walls": [
     {"label": "front" | "back" | "left" | "right",
      "width_ft":                   number,
@@ -2495,10 +2510,65 @@ RECONCILIATION RULES:
    Any photo with `dormers_observed_count > 0` upgrades to
    "gable-shed-dormer".
 
-5. DORMER — if 2+ photos see dormers, use the photo with the widest
-   `approx_width_ft` reading for the width (dormers are commonly
-   under-counted from corner angles). face = wall of the FIRST photo
-   that captured it cardinally.
+5. DORMER WIDTH & FACE — same trap as the eave rule. "Widest reading
+   wins" over-counts because a corner shot or a wide-angle lens
+   distorts the dormer's apparent width; picking the max amplifies
+   whichever photo had the worst geometry.
+
+   a) A photo's `approx_width_ft` is ONLY valid for dormer WIDTH
+      measurement when the photo has a DIRECT VIEW of the dormer
+      face — the dormer's face wall runs roughly parallel to the
+      camera plane, soffits and window heads are horizontal in-
+      frame, and the dormer is centered enough that its bbox isn't
+      clipped. Valid signals:
+        • window(s) on the dormer face are visible full-front (not
+          foreshortened rhomboids)
+        • horizontal roof edges of the dormer read straight in the
+          image, not tilted by perspective
+        • the dormer's bbox in `openings_this_photo` covers its full
+          width without hitting the photo edge
+      REJECT signals:
+        • aerial photos (bird's-eye compression flattens dormer width
+          unreliably — aerials CAN inform dormer COUNT and which
+          roof-face carries them, but NEVER width)
+        • corner shots >45° off-axis (foreshortening compresses OR
+          exaggerates width depending on angle)
+        • telephoto compression (front-yard shots taken from >100 ft)
+        • dormer partially clipped by the photo edge
+
+   b) Take the valid direct-view widths. If any two disagree by
+      MORE THAN 1 ft, do NOT average or take the max. Instead:
+        • Pick the reading whose photo has the strongest evidence
+          (widest bbox at valid angle, visible window fully across
+          the face, sharpest horizontals).
+        • Set `dormer.width_source: "direct_disagreement"`.
+        • Note the rejected readings in `_reconciliation_notes.dormer`.
+
+   c) If NO direct-view width reading exists but at least one photo
+      saw a window ON the dormer face (`openings_this_photo[]` has
+      an entry with `on_dormer: true` OR `wall_hint: "on_dormer"`),
+      BACK-SOLVE the width: dormer_width_ft ≈ max(6, window_width_ft
+      + 3 ft trim margin per side). Set `dormer.width_source:
+      "back_solved_from_opening"`.
+
+   d) If no direct view AND no opening-anchored back-solve, emit
+      a placeholder (12 ft is the residential median) and set
+      `dormer.width_source: "estimated_no_direct_view"` so the
+      frontend renders it AMBER — same "don't quote off this until
+      a direct shot exists" signal as the eave rule.
+
+   e) If direct readings agree within ±1 ft, take the median.
+      `dormer.width_source: "direct_consensus"`.
+
+   FACE assignment is unchanged from before: use the wall of the
+   FIRST photo that captured the dormer cardinally (a direct
+   perpendicular shot of the face). If no cardinal shot exists,
+   default to `front` (most residential shed dormers face the street).
+
+   The reconciliation trace for the dormer MUST list every photo
+   that saw it and whether that photo contributed to width, face,
+   count, or was rejected — the same `_per_photo_readings`-style
+   trace the walls carry.
 
 6. COLOR SAMPLING — prefer photos whose `colors_sampled.sample_quality`
    is `sunlit`, then `mixed`, then `shaded`, then `backlit`. If no

@@ -125,3 +125,58 @@ def test_eave_disagreement_rule_amber_estimated():
 
     # Must include a "no direct view" fallback description.
     assert "no direct-view" in p_flat.lower() or "no direct view" in p_flat.lower() or "NO direct-view reading" in p
+
+
+def test_dormer_width_rule_matches_eave_rigor():
+    """Iter 79j.39 — "widest reading wins" was the same trap as "average
+    all eave readings". Rewritten Rule 5 must:
+      - reject aerials / corner shots / telephoto for WIDTH (aerials
+        still OK for count & face)
+      - not average or take-max when readings spread > 1 ft
+      - back-solve from an on-dormer opening if no direct view exists
+      - flag amber-estimated (12 ft placeholder) as last resort
+    Guards on the tag values so the frontend badges stay in sync."""
+    p = RECONCILE_PROMPT
+    p_flat = " ".join(p.split())
+
+    # The old naive line must be GONE.
+    assert 'use the photo with the widest' not in p, (
+        "Rule 5 still uses 'widest reading wins' — the trap that inflates "
+        "dormer widths whenever one photo is off-axis."
+    )
+
+    # Must explicitly ban averaging / max-taking on disagreement.
+    assert "do NOT average or take the max" in p_flat, (
+        "Rule 5 disagreement clause missing — averaging or maxing "
+        "dormer widths hides the problem."
+    )
+
+    # Must call out that aerials are OK for count/face but NEVER width.
+    assert "NEVER width" in p_flat or "never width" in p_flat.lower()
+
+    # Must include the four provenance tags the frontend keys off.
+    for tag in (
+        "direct_consensus",
+        "direct_disagreement",
+        "back_solved_from_opening",
+        "estimated_no_direct_view",
+    ):
+        # `direct_consensus` and `direct_disagreement` also appear in
+        # rule 1 (eaves), but back_solved_from_opening only appears
+        # in rule 5 — guarding all four ensures the dormer clause is
+        # self-contained.
+        assert tag in p, f"Rule 5 lost width_source tag: {tag}"
+
+    # Dormer schema block MUST declare width_source (frontend reads
+    # aiDormer.width_source; missing key defaults to legacy behaviour).
+    dormer_block = p.split('"dormer":', 1)[1].split('"walls":', 1)[0]
+    assert "width_source" in dormer_block
+
+
+def test_dormer_schema_carries_per_photo_readings():
+    """Provenance readings must be requested so the debug view can
+    show which photos contributed to width vs face vs count."""
+    p = RECONCILE_PROMPT
+    dormer_block = p.split('"dormer":', 1)[1].split('"walls":', 1)[0]
+    for f in ("_source_photo_indices", "_per_photo_readings", "approx_width_ft"):
+        assert f in dormer_block, f"Dormer schema lost per-photo field: {f}"
