@@ -2365,7 +2365,14 @@ call worker returns, so downstream code doesn't fork.
   "walls": [
     {"label": "front" | "back" | "left" | "right",
      "width_ft":                   number,
-     "height_ft":                  number,        // final EAVE height for this wall
+     "height_ft":                  number,        // final EAVE height for this wall (see rule 1)
+     // Iter 79j.38 — Provenance tag for the eave height. Drives the
+     // frontend badge color: `direct_consensus` = green (verified);
+     // `direct_disagreement` = amber (one direct reading kept, others
+     // rejected); `estimated_no_direct_view` = amber-estimated (no
+     // photo ever measured this wall, don't quote off it without
+     // capturing a direct side shot).
+     "height_ft_source":           "direct_consensus" | "direct_disagreement" | "estimated_no_direct_view",
      "gable_triangle_height_ft":   number,        // 0 if this wall is eave-only
      "dormer_face_sqft":           number,
      "siding_pct_this_wall":       number,        // integer 0-100
@@ -2420,12 +2427,57 @@ call worker returns, so downstream code doesn't fork.
 
 RECONCILIATION RULES:
 
-1. EAVE HEIGHT PER WALL — average the per-photo `eave_height_ft_observed`
-   values ONLY across photos where that wall was in `walls_visible`
-   AND the reading is not null. If the readings agree within 6",
-   pick the median; if they disagree by >6", note which photo you
-   trusted and why in `_reconciliation_note`. DISCARD any photo
-   tagged as `aerial`, `detail`, or `other` for eave averaging.
+1. EAVE HEIGHT PER WALL — this is the highest-variance number across
+   photos (Howard has seen 7 / 8.5 / 12 ft on the same house across
+   3 runs) so the rule is strict:
+
+   a) A photo's `eave_height_ft_observed` is ONLY valid for eave
+      measurement when the photo has a DIRECT SIDE VIEW of that
+      wall's eave line — the soffit/gutter runs roughly horizontal
+      across the frame, not receding into perspective. Signals of a
+      valid direct view (look in `eave_reasoning`):
+        • course counting on THAT wall's siding or brick
+        • contractor's reference dimension visible on THAT wall
+        • window head / sill measured on THAT wall
+      Signals to REJECT:
+        • aerial / roof-only / detail photos
+        • gable-end shots (front-gable elevation on a front-gable
+          house looking at the triangle) — the "eave" the LLM sees
+          there is a foreshortened rake, NOT the eave. Gable-end
+          photos inform `gable_triangle_height_ft` and pitch ONLY;
+          they NEVER inform eave height.
+        • corner shots where THIS wall is at >45° foreshortening
+        • telephoto compression or extreme wide-angle distortion
+
+   b) Take the valid direct-view readings for this wall. If any two
+      valid readings disagree by MORE THAN 1 ft, do NOT average them —
+      averaging incompatible readings hides the problem. Instead:
+        • Pick the reading with the strongest `eave_reasoning` (course
+          counting > contractor reference > head/sill count > pixel
+          ratio) and keep it as `height_ft`.
+        • Set `height_ft_source: "direct_disagreement"` on the wall.
+        • Note the discarded readings and why in
+          `_reconciliation_note` so the contractor can trace them.
+
+   c) If NO direct-view reading exists for this wall (every photo of
+      it was an aerial, gable-end, or extreme angle), do NOT
+      confabulate from the neighbour walls or the avg. Emit
+      `height_ft` = null-safe fallback (use the median of the OTHER
+      walls' final heights ONLY as a placeholder — houses are usually
+      symmetric) and set `height_ft_source: "estimated_no_direct_view"`
+      so the frontend can render the value AMBER / estimated. This
+      is the signal that says "we never actually measured this wall,
+      don't quote off it."
+
+   d) If direct readings agree within ±1 ft, take the median.
+      `height_ft_source: "direct_consensus"`. Note the count of
+      contributing photos in `_reconciliation_note`.
+
+   For every wall, `_per_photo_readings` must include ALL photos that
+   attempted this wall (valid AND rejected) so the debug view shows
+   which readings were kept vs discarded. Tag rejected rows with a
+   `notes` field explaining the rejection (e.g. "rejected — gable-end
+   view; foreshortened rake not eave").
 
 2. `avg_wall_height_ft` = weighted average of the FINAL per-wall
    `height_ft` values across the 4 primary walls. Weight by `confidence`.

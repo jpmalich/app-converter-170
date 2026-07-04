@@ -181,7 +181,21 @@ function buildHouseJson(preview, overrides, estimate) {
   const resolveEave = (id, wallData) => {
     if (eaveOverrides[id] != null) return { h: Number(eaveOverrides[id]), source: "user" };
     const wallH = Number(wallData?.height_ft || 0);
-    if (wallH > 0) return { h: wallH, source: "ai" };
+    if (wallH > 0) {
+      // Iter 79j.38 — Two-phase reconciler tags each wall's eave with
+      // a provenance label. `direct_consensus` = green (multiple
+      // direct side views agreed); `direct_disagreement` = amber
+      // (readings disagreed >1 ft, one kept, others rejected);
+      // `estimated_no_direct_view` = amber-estimated (no photo ever
+      // saw this wall's eave — placeholder only, don't quote off it).
+      // Legacy single-call runs won't emit this field → default to
+      // "ai" so nothing regresses.
+      const hs = (wallData?.height_ft_source || "").toLowerCase();
+      if (hs === "direct_consensus") return { h: wallH, source: "ai" };
+      if (hs === "direct_disagreement") return { h: wallH, source: "ai-disagreement" };
+      if (hs === "estimated_no_direct_view") return { h: wallH, source: "ai-no-direct-view" };
+      return { h: wallH, source: "ai" };
+    }
     const avgH = Number(avgAiEave || 0);
     if (avgH > 0) return { h: avgH, source: "ai-avg" };
     return { h: DEFAULT_EAVE_HEIGHT, source: "default" };
@@ -1157,6 +1171,31 @@ export default function HouseModel3D({ preview, estimate }) {
                 <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> AI avg
               </span>
             )}
+            {/* Iter 79j.38 — Direct-reading disagreement. Two-phase
+                reconciler kept one direct reading and rejected others
+                because they spread more than 1 ft. */}
+            {facade.eaveHeightSource === "ai-disagreement" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                title="Direct-view eave readings for this wall disagreed by >1 ft. The strongest reading was kept; the others were rejected. Open Debug to see the trace and verify in the field."
+                data-testid={`ai-measure-3d-eave-disagreement-${facade.id}`}
+              >
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Direct reads disagree
+              </span>
+            )}
+            {/* Iter 79j.38 — No direct view. Every photo of this wall
+                was aerial / gable-end / extreme angle — the reconciler
+                borrowed the median of the OTHER walls as a placeholder.
+                Contractor MUST capture a direct side shot before quoting. */}
+            {facade.eaveHeightSource === "ai-no-direct-view" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                title="No photo directly measured this wall's eave (all shots were aerial, gable-end, or steeply angled). This value is a placeholder from the other walls — capture a direct side view before quoting."
+                data-testid={`ai-measure-3d-eave-no-direct-${facade.id}`}
+              >
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> No direct read
+              </span>
+            )}
             {facade.eaveHeightSource === "user" && (
               <span
                 className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#EDE9FE] text-[#5B21B6] border border-[#7C3AED]"
@@ -1342,7 +1381,7 @@ export default function HouseModel3D({ preview, estimate }) {
               {house.roof.dormer.widthSource === "default" && <Amber />}
             </div>
           )}
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "default") && (
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || house.roof.dormer?.widthSource === "ai-inferred" || house.roof.dormer?.widthSource === "default") && (
             <div className="text-[9px] italic text-[#92400E] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>

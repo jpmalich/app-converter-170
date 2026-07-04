@@ -91,5 +91,37 @@ def test_reconcile_rules_present():
     assert "RECONCILIATION RULES:" in p
     assert "EAVE HEIGHT PER WALL" in p
     assert "OPENING DEDUP" in p
-    assert "DISCARD any photo tagged as" in p_flat
-    assert "aerial" in p
+    assert "aerial" in p_flat
+    # Old blanket "DISCARD any photo tagged as `aerial`" replaced in
+    # 79j.38 with the more precise direct-view rule below — the reject
+    # list still explicitly names aerial/roof-only/detail shots.
+    assert "Signals to REJECT" in p or "aerial / roof-only" in p
+
+
+def test_eave_disagreement_rule_amber_estimated():
+    """Iter 79j.38 — When direct-view eave readings spread >1 ft, the
+    reconciler must NOT average them. Instead: keep the strongest
+    reading and flag the wall amber. Gable-end photos never inform
+    eave height. Missing direct view → amber-estimated placeholder."""
+    p = RECONCILE_PROMPT
+    p_flat = " ".join(p.split())
+
+    # Must call out the >1 ft disagreement threshold explicitly.
+    assert "MORE THAN 1 ft" in p or "more than 1 ft" in p.lower()
+
+    # Must forbid averaging incompatible readings.
+    assert "do NOT average" in p_flat or "not average them" in p_flat.lower()
+
+    # Must call out that gable-end photos NEVER inform eave height.
+    assert "NEVER inform eave height" in p_flat or "never inform eave height" in p_flat.lower()
+
+    # Must emit the source tag values the frontend badges key off.
+    for tag in ("direct_consensus", "direct_disagreement", "estimated_no_direct_view"):
+        assert tag in p, f"Prompt lost height_ft_source tag: {tag}"
+
+    # walls[] schema must declare height_ft_source explicitly.
+    walls_block = p.split('"walls": [', 1)[1].split('"openings":', 1)[0]
+    assert "height_ft_source" in walls_block
+
+    # Must include a "no direct view" fallback description.
+    assert "no direct-view" in p_flat.lower() or "no direct view" in p_flat.lower() or "NO direct-view reading" in p
