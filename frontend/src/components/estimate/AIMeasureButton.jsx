@@ -509,12 +509,18 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   }, [estimateId, open]);
 
   // Iter 57r — handler: resume polling an in-flight run.
-  const _applyAIResult = (data) => {
+  const _applyAIResult = (data, status) => {
     // Resume path: load the preview directly. The full per-wall
     // recompute + auto-elevation-tagging that the fresh-run path
     // performs assumes the contractor was watching the run live; on
     // resume we trust whatever Claude returned and let them re-edit.
-    setPreview(data);
+    // Iter 79j.37 — Thread the poll `status` payload's per-photo
+    // extractions + pipeline label into the preview object so the
+    // Debug view can show ACTUAL Phase A data.
+    const enriched = status
+      ? { ...data, raw_per_photo: status.raw_per_photo, pipeline: status.pipeline }
+      : data;
+    setPreview(enriched);
   };
 
   // Iter 78z+ — Re-fire AI Measure using cached photo bytes server-side
@@ -541,6 +547,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       setBusyStage(launch?.data?.stage || "starting");
       // Poll the new run to completion using the same 5-min loop.
       let result = null;
+      let finalStatus = null;
       for (let i = 0; i < 100; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         let statusResp;
@@ -553,10 +560,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         const s = statusResp?.data || {};
         if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
         if (s.status === "error") throw new Error(s.error || "AI measure re-run failed");
-        if (s.status === "done") { result = s.result; break; }
+        if (s.status === "done") { result = s.result; finalStatus = s; break; }
       }
       if (!result) throw new Error("Re-run timed out after 5 minutes");
-      _applyAIResult(result);
+      _applyAIResult(result, finalStatus);
       toast.success("Re-run complete · annotations applied to materials list");
     } catch (e) {
       toast.error(e?.response?.data?.detail || e?.message || "Re-run failed");
@@ -580,6 +587,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setLastRun(null);
     try {
       let result = null;
+      let finalStatus = null;
       for (let i = 0; i < 100; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         let statusResp;
@@ -591,11 +599,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         const s = statusResp?.data || {};
         if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
         if (s.status === "error") throw new Error(s.error || "AI measure failed");
-        if (s.status === "done") { result = s.result; break; }
+        if (s.status === "done") { result = s.result; finalStatus = s; break; }
       }
       if (!result) throw new Error("Resume timed out");
       // Mimic the same downstream flow as a normal run completion.
-      _applyAIResult(result);
+      _applyAIResult(result, finalStatus);
       toast.success("AI Measure resumed — preview loaded");
     } catch (e) {
       toast.error(e?.message || "Resume failed");
@@ -613,7 +621,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (paths.length) setPhotoUrls(paths);
     }
     setCurrentRunId(lastRun.run_id);
-    _applyAIResult(lastRun.result);
+    _applyAIResult(lastRun.result, lastRun);
     setLastRun(null);
     toast.success("Last AI run restored — preview loaded");
   };
@@ -1156,6 +1164,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       // Poll until done. Max ~5 min (100 polls × 3 s); each poll is a
       // tiny GET so a misbehaving Claude doesn't hang the UI either.
       let result = null;
+      let finalStatus = null;
       for (let i = 0; i < 100; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         let statusResp;
@@ -1175,6 +1184,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         }
         if (s.status === "done") {
           result = s.result;
+          finalStatus = s;
           break;
         }
       }
@@ -1182,6 +1192,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         throw new Error("AI measure timed out after 5 minutes — please try again with fewer photos or turn off Deep Dormer Scan");
       }
       const data = result;
+      // Iter 79j.37 — Thread per-photo extractions + pipeline flag
+      // into the preview object so the Debug view can show them.
+      if (finalStatus) {
+        data.raw_per_photo = finalStatus.raw_per_photo;
+        data.pipeline = finalStatus.pipeline;
+      }
       // Iter 57: trust the walls. Claude occasionally returns
       // siding_pct_this_wall in a way the aggregator can't recover
       // (e.g. 0.5 meaning 50% but post-clamp becomes 0.5%, deflating

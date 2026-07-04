@@ -28,6 +28,7 @@ import asyncio
 import base64
 import io
 import json
+import time
 import logging
 import os
 import re
@@ -2042,6 +2043,13 @@ async def ai_measure_status(
         "result": doc.get("result"),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
+        # Iter 79j.37 — per-photo extractions (two-phase pipeline only).
+        # Surfaces to the frontend Debug view so it can display what
+        # each individual Claude call ACTUALLY saw, not Claude's after-
+        # the-fact recollection embedded in the reconciled JSON.
+        "raw_per_photo": doc.get("raw_per_photo") or None,
+        "pipeline": ((doc.get("result") or {}).get("raw_ai") or {}).get("_pipeline")
+                    or ("two_phase" if doc.get("raw_per_photo") else "single_call"),
     }
 
 
@@ -2083,6 +2091,12 @@ async def ai_measure_latest_for_estimate(
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,
+            # Iter 79j.37 — carry per-photo extractions on the resume
+            # payload too, so the Debug view still works after a page
+            # reload without re-running.
+            "raw_per_photo": doc.get("raw_per_photo") or None,
+            "pipeline": ((doc.get("result") or {}).get("raw_ai") or {}).get("_pipeline")
+                        or ("two_phase" if doc.get("raw_per_photo") else "single_call"),
         },
     }
 
@@ -2202,6 +2216,468 @@ async def ai_measure_history(
     return {"runs": runs}
 
 
+# =====================================================================
+# Iter 79j.37 — TWO-PHASE EXTRACT + RECONCILE PIPELINE.
+#
+# The single-call worker (below, unchanged) sends every photo to Claude
+# in ONE call — Claude does extraction and reconciliation as a black
+# box. That's opaque: when 3 runs return 7 / 8.5 / 12 ft eaves you can't
+# tell whether the photos disagreed (detection failure) or the merge
+# drifted (reconciliation failure). The two-phase pipeline splits it:
+#
+#   Phase A — one focused Claude call PER PHOTO, running in parallel.
+#             Returns per-photo raw JSON (walls_visible, eave_observed,
+#             pitch, gable Δh, dormers, openings visible in THIS photo,
+#             sampled colors). Persisted verbatim on the run doc as
+#             `raw_per_photo` — the ACTUAL per-photo observations, not
+#             Claude's after-the-fact recollection.
+#
+#   Phase B — one reconciliation Claude call over the array of Phase A
+#             JSONs (no images attached). Prompt asks Claude to MERGE
+#             into the same top-level schema `_aggregate_to_hover_shape`
+#             consumes (walls[], openings[], dormer, avg_wall_height_ft,
+#             etc.) and to emit `_reconciliation_notes` explaining
+#             every merge/dedup/discard decision.
+#
+# Gated behind AI_MEASURE_TWO_PHASE=1 for now so the single-call baseline
+# stays available. Falls back automatically if any Phase A call fails
+# (per-photo failures are isolated — the rest of the run still
+# reconciles from whatever came back).
+
+PER_PHOTO_EXTRACT_PROMPT = """You are a residential exterior measurement expert examining ONE
+photograph. Your job is EXTRACTION ONLY — you're one of N parallel
+readers, and a separate reconciliation step will merge the readings
+across all photos. Do NOT try to guess at values that aren't visible
+in THIS specific photo — leave them null and say why.
+
+Return ONLY JSON matching this schema. No prose, no markdown, no
+```json fences.
+
+{
+  "index":                       number,       // photo index as given by the user prompt
+  "elevation":                   "front" | "front-left" | "left" | "rear-left" | "back" | "rear-right" | "right" | "front-right" | "aerial" | "detail" | "other",
+  "elevation_confidence":        number,       // 0-100
+  "elevation_reasoning":         "<1 sentence — what tells you which side>",
+
+  // WHAT THIS PHOTO SHOWS.
+  "walls_visible":               ["front" | "back" | "left" | "right"],   // 1 for a cardinal shot, 2 for a corner shot, 0 for an aerial/detail
+  "obstructions":                "<1 sentence — anything blocking measurement (trees, vehicles, foreshortening, telephoto compression, low sun, glare)>",
+
+  // EAVE / STORY / PITCH readings FROM THIS PHOTO.
+  // These MUST be measured from what YOU see in the photo. If the
+  // eave line is obscured or angled too steeply for a confident read,
+  // set the number to null and put the reason in the *_reasoning
+  // field. NEVER guess.
+  "eave_height_ft_observed":     number | null,
+  "eave_reasoning":               "<how you measured — course counting, contractor reference, brick coursing, or 'not measurable because …'>",
+  "story_count_observed":         1 | 1.5 | 2 | 2.5 | 3 | null,
+  "pitch_ratio_observed":         "4/12" | "6/12" | "8/12" | "10/12" | "12/12" | null,
+  "pitch_reasoning":              "<if you saw a gable and measured its rise vs run, say so; else null>",
+
+  // GABLE / DORMER readings — ONLY set >0 if visible in THIS photo.
+  "gable_triangle_height_ft_observed": number | null,   // height of the triangular peak above the eave, 0 if this photo shows an eave-only wall, null if not visible
+  "gable_wall_label":                 "front" | "back" | "left" | "right" | null,   // which wall the gable belongs to (may equal an elevation in walls_visible)
+  "dormers_observed_count":           number,           // count of dormers visible in THIS photo (0 if none)
+  "dormer_details": [
+    {"face": "front" | "rear" | "left" | "right",
+     "approx_width_ft": number,
+     "approx_face_sqft": number,
+     "bbox": [x, y, w, h] | null}                         // pixel bbox in this photo's compressed frame
+  ],
+
+  // OPENINGS visible in THIS photo. `opening_id` must be a STABLE id
+  // (e.g. "front-w1", "back-d2") — the reconciliation step will use
+  // it to dedup the same physical opening seen in two photos (a
+  // corner shot + a cardinal shot commonly overlap by 1–3 openings).
+  "openings_this_photo": [
+    {"opening_id":    "<stable string id>",
+     "type":          "window" | "entry_door" | "patio_door" | "garage_door" | "vent" | "other",
+     "style":         "Double Hung" | "Casement" | "Picture" | "Twin Double Hung" | "Twin Casement" | "2-Lite Slider" | "3-Lite Slider" | "Half-Round" | "Awning" | "Hopper" | "Garden Window" | "Bay Window" | "Bow Window" | "",
+     "style_confidence": number,   // 0-100
+     "width_in":      number,
+     "height_in":     number,
+     "wall_hint":     "front" | "back" | "left" | "right" | "on_dormer" | null,
+     "bbox":          [x, y, w, h] | null,
+     "on_dormer":     boolean,
+     "profile_around_opening": "<lap, dutch_lap, shake, board_and_batten, vertical, brick, stone, stucco, or empty>"}
+  ],
+
+  // SIDING PROFILE + COLOR sampling FROM THIS PHOTO.
+  // These feed reconciliation across photos (a sunlit sample beats a
+  // shaded one for color truth).
+  "wall_body_profile_callout":    "<lap 4\\\", dutch lap, shake, board_and_batten, vertical, nickel_gap, or empty>",
+  "gable_profile_callout":        "<same vocab; empty if no gable visible>",
+  "dormer_profile_callout":       "<same vocab; empty if no dormer visible>",
+  "accent_profiles":              [ {"location": "<porch face, column wrap, etc>", "profile_callout": "shake|b&b|vertical|...", "approx_sqft": number} ],
+  "colors_sampled": {
+    "siding_hex":  "#RRGGBB" | null,   // null if this photo is fully shaded or the sample would be untrustworthy
+    "trim_hex":    "#RRGGBB" | null,
+    "roof_hex":    "#RRGGBB" | null,
+    "door_hex":    "#RRGGBB" | null,
+    "sample_quality": "sunlit" | "shaded" | "backlit" | "mixed"
+  },
+  "no_siding_regions": [   // masonry / stucco / EIFS zones on THIS wall that reduce siding coverage
+    {"material": "brick" | "stone" | "cmu" | "stucco" | "eifs",
+     "approx_sqft": number,
+     "bbox": [x, y, w, h] | null}
+  ],
+
+  "confidence": number,   // 0-100 overall confidence in THIS photo's readings
+  "notes":       "<optional additional observations>"
+}
+
+RULES:
+1. NUMBERS ARE HONEST OR NULL. If you can't measure, put null and say
+   why in the *_reasoning field. Merging null across 6 photos is far
+   more useful than merging 6 confabulated numbers.
+2. GARAGE DOORS & ENTRY DOORS ARE OPENINGS, not "no siding" masonry.
+   Emit them in `openings_this_photo` with the correct type.
+3. IF THIS PHOTO IS AERIAL / DETAIL / OTHER, set walls_visible=[] and
+   fill only what the photo actually shows (rooftop shape, dormer
+   count from above, etc). Do NOT invent eave heights from an aerial.
+4. bbox coordinates are PIXEL space in the compressed image you were
+   given (not the original 4K upload). Emit them so we can draw them
+   back on the thumbnail in the debug view.
+"""
+
+
+RECONCILE_PROMPT = """You are a residential exterior measurement expert. You are given
+N per-photo extractions of the SAME house (each is a JSON blob from a
+separate Claude call examining one photo). Your job is RECONCILIATION:
+merge them into a single house measurement, dedup openings, average
+eave heights sensibly, resolve conflicts, and explain every decision.
+
+Return ONLY JSON matching this schema — the SAME schema the single-
+call worker returns, so downstream code doesn't fork.
+
+{
+  "scale_confidence":     "high" | "medium" | "low",
+  "reference_used":       "<short — reference the extractions leaned on most>",
+  "story_count":          1 | 1.5 | 2 | 2.5 | 3,
+  "story_count_reasoning": "<1 sentence>",
+  "avg_wall_height_ft":   number,        // weighted average of the valid per-photo `eave_height_ft_observed` — see rules below
+  "siding_coverage_pct":  number,        // 0-100
+  "roof_type":            "gable" | "hip" | "gable-shed-dormer",
+  "roof_type_confidence": number,        // 0.0-1.0
+  "roof_type_reasoning":  "<1 sentence>",
+  "dominant_colors": {"siding_hex": "#RRGGBB" | null, "trim_hex": "#RRGGBB" | null, "roof_hex": "#RRGGBB" | null, "door_hex": "#RRGGBB" | null},
+  "dormer":               {"face": "front" | "rear", "width_ft": number, "knee_wall_height_ft": number, "offset_x_ft": number} | null,
+  "walls": [
+    {"label": "front" | "back" | "left" | "right",
+     "width_ft":                   number,
+     "height_ft":                  number,        // final EAVE height for this wall
+     "gable_triangle_height_ft":   number,        // 0 if this wall is eave-only
+     "dormer_face_sqft":           number,
+     "siding_pct_this_wall":       number,        // integer 0-100
+     "wall_body_profile_callout":  "<...>",
+     "gable_profile_callout":      "<...>",
+     "dormer_profile_callout":     "<...>",
+     "accent_profiles":            [ ... ],
+     "confidence":                 number,        // 0-100
+     "confidence_reasoning":       "<1 sentence>",
+     // PROVENANCE — every wall carries these fields.
+     "_source_photo_indices":      [number],
+     "_per_photo_readings":        [ {"photo_idx": number, "eave_ft": number|null, "gable_triangle_ft": number|null, "notes": "<optional>"} ],
+     "_reconciliation_note":       "<1 sentence: how the final numbers were merged/averaged/chosen>"}
+  ],
+  "openings": [
+    {"type":     "window" | "entry_door" | "patio_door" | "garage_door" | "vent" | "other",
+     "style":    "Double Hung" | ... | "",
+     "style_confidence": number,
+     "width_in": number,
+     "height_in": number,
+     "wall":     "front" | "back" | "left" | "right" | "other",
+     "photo_idx": number,                            // the PRIMARY photo for this opening (best bbox)
+     "bbox":     {"x": number, "y": number, "w": number, "h": number},   // NORMALIZED 0..1 on photo_idx
+     "on_dormer": boolean,
+     // PROVENANCE.
+     "opening_id":               "<stable id preserved from extractions>",
+     "_source_photo_indices":    [number],
+     "_reconciliation_note":     "<optional — only when you merged or dedup'd>"}
+  ],
+  "openings_schedule": [
+    {"elevation": "<wall>", "type": "<>", "style": "<>", "width_in": number, "height_in": number, "count": number,
+     "size_label": "<e.g. '36\\"×60\\"'>", "locations": [ {"photo_idx": number, "bbox": {"x": number, "y": number, "w": number, "h": number}} ]}
+  ],
+
+  "eaves_lf":             number,
+  "rakes_lf":             number,
+  "starter_lf":           number,
+  "outside_corner_lf":    number,
+  "inside_corner_lf":     number,
+
+  // TOP-LEVEL RECONCILIATION TRACE — one sentence per aggregate.
+  "_reconciliation_notes": {
+    "avg_wall_height_ft":  "<e.g. 'averaged 4 valid per-photo eaves (photos 0,1,2,4 = 8.5, 8.4, 8.6, 8.5); discarded photo 3 (aerial) and photo 5 (foreshortened corner)'>",
+    "roof_type":           "<how the roof-type call was made from the photo counts>",
+    "dormer":              "<how the dormer face/width/offset was chosen>",
+    "story_count":         "<how the story count was merged>",
+    "siding_coverage_pct": "<how coverage was reconciled across photos>",
+    "dominant_colors":     "<which photo's colors were used, and why (sample_quality preference)>",
+    "openings_dedup":      "<how many raw openings across photos → how many after dedup, key overlaps>"
+  }
+}
+
+RECONCILIATION RULES:
+
+1. EAVE HEIGHT PER WALL — average the per-photo `eave_height_ft_observed`
+   values ONLY across photos where that wall was in `walls_visible`
+   AND the reading is not null. If the readings agree within 6",
+   pick the median; if they disagree by >6", note which photo you
+   trusted and why in `_reconciliation_note`. DISCARD any photo
+   tagged as `aerial`, `detail`, or `other` for eave averaging.
+
+2. `avg_wall_height_ft` = weighted average of the FINAL per-wall
+   `height_ft` values across the 4 primary walls. Weight by `confidence`.
+
+3. OPENING DEDUP — the same physical window often shows up in a corner
+   shot AND a cardinal shot. Match by opening_id first, then by
+   (wall_hint, type, size within ±3"). Emit ONE entry in `openings[]`
+   per physical opening with `_source_photo_indices` listing all
+   photos that saw it.
+
+4. ROOF TYPE — count photos where a gable triangle was visible vs
+   photos where the roof ends flat on all sides. Gables on 2+ walls
+   → "gable". Gables on 4 walls → still "gable" (a cross-gable is
+   still gabled). No gables on any wall but slopes visible → "hip".
+   Any photo with `dormers_observed_count > 0` upgrades to
+   "gable-shed-dormer".
+
+5. DORMER — if 2+ photos see dormers, use the photo with the widest
+   `approx_width_ft` reading for the width (dormers are commonly
+   under-counted from corner angles). face = wall of the FIRST photo
+   that captured it cardinally.
+
+6. COLOR SAMPLING — prefer photos whose `colors_sampled.sample_quality`
+   is `sunlit`, then `mixed`, then `shaded`, then `backlit`. If no
+   sunlit sample exists for a field, take the median of the shaded ones.
+
+7. LINEAR FEET — eaves_lf ≈ 2×front.width + 2×back.width for a
+   rectangular footprint. rakes_lf ≈ 2 × sqrt((span/2)² + rise²) per
+   gable end. outside_corner_lf ≈ 4 × avg_wall_height_ft. Don't over-
+   engineer — the aggregator will refine, we just need the ballpark.
+
+8. IF A FIELD CANNOT BE RECONCILED (no photo saw it, all readings
+   null), leave it at a sane default and mention "no photo captured
+   this" in the reconciliation note. Never confabulate.
+
+Return the JSON now. No prose."""
+
+
+def _clean_json_reply(reply: str) -> dict:
+    """Robust JSON parse — tolerates ```json fences, leading prose,
+    trailing commas. Reuses the same extractor the primary path uses."""
+    try:
+        return _json_from_reply(reply or "")
+    except Exception:
+        return {}
+
+
+async def _extract_one_photo(
+    *,
+    api_key: str,
+    user_id: str,
+    model_provider: str,
+    model_name: str,
+    photo_idx: int,
+    raw_bytes: bytes,
+    address: Optional[str],
+    reference_dim: Optional[str],
+    brick_course_in: Optional[float],
+    siding_exposure_in: Optional[float],
+    annotation_hint: str,
+) -> dict:
+    """Phase A. Run ONE Claude call against a single photo, ask for
+    per-photo raw observations only. Returns the parsed JSON tagged
+    with `_photo_idx` and `_latency_ms` (persisted verbatim so the
+    Debug view can show what Claude actually saw)."""
+    t0 = time.time()
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=f"ai-measure-photo-{user_id}-{photo_idx}-{uuid.uuid4().hex[:6]}",
+        system_message=PER_PHOTO_EXTRACT_PROMPT,
+    ).with_model(model_provider, model_name)
+    prompt_lines = [f"This is photo index {photo_idx} of a house being measured for siding."]
+    if address:
+        prompt_lines.append(f"Property address: {address}")
+    if reference_dim:
+        prompt_lines.append(
+            f"Contractor reference dimension available: {reference_dim}. "
+            "If the reference object is visible in THIS photo, anchor scale to it."
+        )
+    if brick_course_in and brick_course_in > 0:
+        prompt_lines.append(
+            f"BRICK COURSE = {brick_course_in:.2f} in. Count courses to size windows if brick is visible in this photo."
+        )
+    if siding_exposure_in and siding_exposure_in > 0:
+        prompt_lines.append(
+            f"SIDING EXPOSURE = {siding_exposure_in:.2f} in per row. Count rows to size windows on siding-clad walls."
+        )
+    if annotation_hint:
+        prompt_lines.append(annotation_hint)
+    prompt_lines.append(
+        "Return your per-photo extraction JSON now, with `index` set to "
+        f"{photo_idx}. No prose."
+    )
+    user_msg = UserMessage(
+        text="\n".join(prompt_lines),
+        file_contents=[ImageContent(image_base64=base64.b64encode(raw_bytes).decode("ascii"))],
+    )
+    try:
+        reply = await asyncio.wait_for(chat.send_message(user_msg), timeout=120)
+    except Exception as e:
+        logger.warning("[ai-measure phase-A] photo %d failed: %s", photo_idx, e)
+        return {"index": photo_idx, "_extraction_error": str(e), "_latency_ms": int((time.time() - t0) * 1000)}
+    parsed = _clean_json_reply(reply or "")
+    parsed["_photo_idx"] = photo_idx
+    parsed.setdefault("index", photo_idx)
+    parsed["_latency_ms"] = int((time.time() - t0) * 1000)
+    return parsed
+
+
+async def _reconcile_extractions(
+    *,
+    api_key: str,
+    user_id: str,
+    model_provider: str,
+    model_name: str,
+    extractions: list[dict],
+    address: Optional[str],
+    reference_dim: Optional[str],
+    annotation_hint: str,
+) -> dict:
+    """Phase B. Send the Phase A extractions as TEXT (no images) and
+    ask for a single reconciled house JSON matching the aggregator's
+    schema. Returns the parsed JSON with `_reconciliation_latency_ms`
+    added for observability."""
+    t0 = time.time()
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=f"ai-measure-reconcile-{user_id}-{uuid.uuid4().hex[:8]}",
+        system_message=RECONCILE_PROMPT,
+    ).with_model(model_provider, model_name)
+    lines = [
+        "You are reconciling the following per-photo extractions into a "
+        "single house measurement. Each JSON below is one photo, in "
+        "order. Photo indices ARE the array positions.",
+        "",
+        f"Photos: {len(extractions)}",
+    ]
+    if address:
+        lines.append(f"Property address: {address}")
+    if reference_dim:
+        lines.append(f"Contractor reference dimension: {reference_dim}")
+    if annotation_hint:
+        lines.append(annotation_hint)
+    lines.append("")
+    lines.append("=== PER-PHOTO EXTRACTIONS ===")
+    for i, ex in enumerate(extractions):
+        # Strip our internal fields — Claude doesn't need to see them.
+        payload = {k: v for k, v in ex.items() if not k.startswith("_")}
+        lines.append(f"\n-- photo[{i}] --")
+        lines.append(json.dumps(payload, ensure_ascii=False, indent=2))
+    lines.append("")
+    lines.append("Return the reconciled house JSON now. No prose.")
+    try:
+        reply = await asyncio.wait_for(
+            chat.send_message(UserMessage(text="\n".join(lines))),
+            timeout=180,
+        )
+    except Exception as e:
+        logger.exception("[ai-measure phase-B] reconciliation failed: %s", e)
+        return {"_reconciliation_error": str(e), "_reconciliation_latency_ms": int((time.time() - t0) * 1000)}
+    parsed = _clean_json_reply(reply or "")
+    parsed["_reconciliation_latency_ms"] = int((time.time() - t0) * 1000)
+    return parsed
+
+
+async def _run_two_phase_pipeline(
+    *,
+    run_id: str,
+    api_key: str,
+    user_id: str,
+    image_payloads: list[tuple[str, bytes]],
+    model_provider: str,
+    model_name: str,
+    address: Optional[str],
+    reference_dim: Optional[str],
+    brick_course_in: Optional[float],
+    siding_exposure_in: Optional[float],
+    annotation_hint: str,
+    set_stage,   # async callable(str) → None
+) -> tuple[dict, list[dict]]:
+    """Orchestrator. Returns (final_raw_after_reconcile, per_photo_extractions).
+    Callers should feed final_raw into `_aggregate_to_hover_shape` — it's
+    already the same shape that the single-call worker returns."""
+    await set_stage("extracting_per_photo")
+    tasks = [
+        _extract_one_photo(
+            api_key=api_key,
+            user_id=user_id,
+            model_provider=model_provider,
+            model_name=model_name,
+            photo_idx=idx,
+            raw_bytes=raw,
+            address=address,
+            reference_dim=reference_dim,
+            brick_course_in=brick_course_in,
+            siding_exposure_in=siding_exposure_in,
+            annotation_hint=annotation_hint,
+        )
+        for idx, (_ct, raw) in enumerate(image_payloads)
+    ]
+    # 5 min total cap for the parallel extraction phase — matches the
+    # existing 4-min single-call ceiling with headroom for larger runs.
+    extractions = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=False), timeout=300)
+    # Persist Phase A immediately — even if Phase B fails downstream,
+    # the Debug view still has the per-photo data to show.
+    await db.ai_measure_runs.update_one(
+        {"run_id": run_id},
+        {"$set": {
+            "raw_per_photo": extractions,
+            "updated_at": datetime.now(timezone.utc),
+        }},
+    )
+
+    await set_stage("reconciling")
+    final = await _reconcile_extractions(
+        api_key=api_key,
+        user_id=user_id,
+        model_provider=model_provider,
+        model_name=model_name,
+        extractions=extractions,
+        address=address,
+        reference_dim=reference_dim,
+        annotation_hint=annotation_hint,
+    )
+    # Preserve the per-photo extractions on the final raw as `photos`
+    # if the reconciliation step didn't emit its own (backward-compat
+    # with `_aggregate_to_hover_shape` which reads `raw.get("photos")`).
+    if not final.get("photos"):
+        final["photos"] = [
+            {
+                "index": e.get("index", i),
+                "elevation": e.get("elevation"),
+                "elevation_confidence": e.get("elevation_confidence"),
+                "elevation_reasoning": e.get("elevation_reasoning"),
+                "walls_visible": e.get("walls_visible") or [],
+                "eave_height_ft_observed": e.get("eave_height_ft_observed"),
+                "eave_reasoning": e.get("eave_reasoning"),
+                "pitch_ratio_observed": e.get("pitch_ratio_observed"),
+                "gable_triangle_height_ft_observed": e.get("gable_triangle_height_ft_observed"),
+                "dormers_observed_count": e.get("dormers_observed_count") or 0,
+                "openings_this_photo": e.get("openings_this_photo") or [],
+                "notes": e.get("notes") or "",
+            }
+            for i, e in enumerate(extractions)
+        ]
+    # Tag telemetry so the Debug view can render "two-phase" vs "single-call".
+    final["_pipeline"] = "two_phase"
+    return final, extractions
+
+
+
+
 async def _execute_ai_measure_worker(
     *,
     run_id: str,
@@ -2250,84 +2726,110 @@ async def _execute_ai_measure_worker(
                 annotations = est_doc.get("profile_annotations") or None
         annotation_hint = _build_annotation_hint(annotations)
 
-        image_contents = [
-            ImageContent(image_base64=base64.b64encode(raw).decode("ascii"))
-            for _ct, raw in image_payloads
-        ]
+        # Iter 79j.37 — TWO-PHASE PIPELINE branch. Env-gated so the
+        # single-call baseline remains available. When AI_MEASURE_TWO_PHASE=1:
+        #   Phase A — parallel per-photo Claude calls (real per-photo data)
+        #   Phase B — one reconciliation call over the Phase A JSONs
+        # Aggregator/mapper/sanity/vero paths downstream are UNCHANGED —
+        # both branches produce the same `raw` shape.
+        two_phase = os.environ.get("AI_MEASURE_TWO_PHASE", "").strip() in ("1", "true", "yes")
+        raw_per_photo: list[dict] = []
         session_id = f"ai-measure-{user_id}-{uuid.uuid4().hex[:8]}"
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=session_id,
-            system_message=SYSTEM_PROMPT,
-        ).with_model(model_provider, model_name)
 
-        prompt_parts = []
-        if address:
-            prompt_parts.append(f"Property address: {address}")
-        if reference_dim:
+        if two_phase:
+            raw, raw_per_photo = await _run_two_phase_pipeline(
+                run_id=run_id,
+                api_key=api_key,
+                user_id=user_id,
+                image_payloads=image_payloads,
+                model_provider=model_provider,
+                model_name=model_name,
+                address=address,
+                reference_dim=reference_dim,
+                brick_course_in=brick_course_in,
+                siding_exposure_in=siding_exposure_in,
+                annotation_hint=annotation_hint,
+                set_stage=_set_stage,
+            )
+        else:
+            image_contents = [
+                ImageContent(image_base64=base64.b64encode(raw).decode("ascii"))
+                for _ct, raw in image_payloads
+            ]
+            chat = LlmChat(
+                api_key=api_key,
+                session_id=session_id,
+                system_message=SYSTEM_PROMPT,
+            ).with_model(model_provider, model_name)
+
+            prompt_parts = []
+            if address:
+                prompt_parts.append(f"Property address: {address}")
+            if reference_dim:
+                prompt_parts.append(
+                    f"Reference dimension provided by contractor: {reference_dim}. "
+                    "Anchor all scale to this."
+                )
+            course_hints = []
+            if brick_course_in and brick_course_in > 0:
+                course_hints.append(
+                    f"BRICK COURSE = {brick_course_in:.2f} inches (one brick + mortar = this height). "
+                    f"If brick is visible anywhere in a photo, COUNT THE COURSES "
+                    f"between the sill and head of each window to size it: "
+                    f"{brick_course_in:.2f} in × course count = window height. "
+                    f"This is far more accurate than estimating pixel ratios."
+                )
+            if siding_exposure_in and siding_exposure_in > 0:
+                course_hints.append(
+                    f"SIDING EXPOSURE = {siding_exposure_in:.2f} inches (one visible "
+                    f"siding row = this height). On siding-clad walls, count visible "
+                    f"siding rows between the sill and head: {siding_exposure_in:.2f} in × "
+                    f"row count = window height."
+                )
+            if course_hints:
+                prompt_parts.append("\n".join(course_hints))
             prompt_parts.append(
-                f"Reference dimension provided by contractor: {reference_dim}. "
-                "Anchor all scale to this."
+                "STANDARD-SIZE RESIDENTIAL WINDOWS — most windows are one of "
+                "these widths: 18, 20, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48, "
+                "54, 60, 66, 72 in. Heights: 24, 30, 36, 38, 40, 42, 44, 46, 48, "
+                "50, 52, 54, 60, 62, 66, 72 in. If your initial pixel measurement "
+                "is within 2-3 inches of a standard, EMIT THE STANDARD (the "
+                "backend will snap exact matches anyway, but rounding yourself "
+                "first reduces noise). Doors: entry 36×80 (or 32×80, 30×80); "
+                "patio 60×80 / 72×80; garage 96×84 (single), 192×84 (double)."
             )
-        course_hints = []
-        if brick_course_in and brick_course_in > 0:
-            course_hints.append(
-                f"BRICK COURSE = {brick_course_in:.2f} inches (one brick + mortar = this height). "
-                f"If brick is visible anywhere in a photo, COUNT THE COURSES "
-                f"between the sill and head of each window to size it: "
-                f"{brick_course_in:.2f} in × course count = window height. "
-                f"This is far more accurate than estimating pixel ratios."
+            prompt_parts.append(
+                "SYMMETRY / REPETITION — if you see 3+ windows on the same wall "
+                "that look identical (same operation style, similar W and H), "
+                "they ARE identical (houses don't have 4 windows in a row of "
+                "different sizes — that's a builder error). Emit them ALL with "
+                "the SAME width_in and height_in. The backend also enforces this "
+                "but you doing it cleanly produces fewer dedupe artefacts."
             )
-        if siding_exposure_in and siding_exposure_in > 0:
-            course_hints.append(
-                f"SIDING EXPOSURE = {siding_exposure_in:.2f} inches (one visible "
-                f"siding row = this height). On siding-clad walls, count visible "
-                f"siding rows between the sill and head: {siding_exposure_in:.2f} in × "
-                f"row count = window height."
+            prompt_parts.append(
+                "Photos attached below. Return the JSON measurement object now."
             )
-        if course_hints:
-            prompt_parts.append("\n".join(course_hints))
-        prompt_parts.append(
-            "STANDARD-SIZE RESIDENTIAL WINDOWS — most windows are one of "
-            "these widths: 18, 20, 24, 28, 30, 32, 34, 36, 40, 42, 44, 48, "
-            "54, 60, 66, 72 in. Heights: 24, 30, 36, 38, 40, 42, 44, 46, 48, "
-            "50, 52, 54, 60, 62, 66, 72 in. If your initial pixel measurement "
-            "is within 2-3 inches of a standard, EMIT THE STANDARD (the "
-            "backend will snap exact matches anyway, but rounding yourself "
-            "first reduces noise). Doors: entry 36×80 (or 32×80, 30×80); "
-            "patio 60×80 / 72×80; garage 96×84 (single), 192×84 (double)."
-        )
-        prompt_parts.append(
-            "SYMMETRY / REPETITION — if you see 3+ windows on the same wall "
-            "that look identical (same operation style, similar W and H), "
-            "they ARE identical (houses don't have 4 windows in a row of "
-            "different sizes — that's a builder error). Emit them ALL with "
-            "the SAME width_in and height_in. The backend also enforces this "
-            "but you doing it cleanly produces fewer dedupe artefacts."
-        )
-        prompt_parts.append(
-            "Photos attached below. Return the JSON measurement object now."
-        )
-        # Iter 78z+ — Annotation hints (ground-truth boxes from the
-        # contractor) inserted right before the schema marker so Claude
-        # can use them throughout its analysis.
-        if annotation_hint:
-            prompt_parts.append(annotation_hint)
-        user_text = "\n".join(prompt_parts)
+            # Iter 78z+ — Annotation hints (ground-truth boxes from the
+            # contractor) inserted right before the schema marker so Claude
+            # can use them throughout its analysis.
+            if annotation_hint:
+                prompt_parts.append(annotation_hint)
+            user_text = "\n".join(prompt_parts)
 
-        # Iter 79e — same 4-min Claude wall-clock cap as the HOVER worker.
-        # If Claude is unresponsive (rare, but the LLM provider can stall),
-        # the asyncio.wait_for raises TimeoutError → outer except flips
-        # the run doc to `status: "error"` instead of leaving it orphaned
-        # at `status: "running"` indefinitely. Frontend polls a 5-min cap
-        # so this aligns to a clean client-side error message.
-        reply_text = await asyncio.wait_for(
-            chat.send_message(
-                UserMessage(text=user_text, file_contents=image_contents),
-            ),
-            timeout=240,
-        )
-        raw = _json_from_reply(reply_text or "")
+            # Iter 79e — same 4-min Claude wall-clock cap as the HOVER worker.
+            # If Claude is unresponsive (rare, but the LLM provider can stall),
+            # the asyncio.wait_for raises TimeoutError → outer except flips
+            # the run doc to `status: "error"` instead of leaving it orphaned
+            # at `status: "running"` indefinitely. Frontend polls a 5-min cap
+            # so this aligns to a clean client-side error message.
+            reply_text = await asyncio.wait_for(
+                chat.send_message(
+                    UserMessage(text=user_text, file_contents=image_contents),
+                ),
+                timeout=240,
+            )
+            raw = _json_from_reply(reply_text or "")
+            raw["_pipeline"] = "single_call"
 
         if deep_dormer_scan:
             await _set_stage("dormer_scan")

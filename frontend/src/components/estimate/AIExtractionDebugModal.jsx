@@ -248,7 +248,17 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
   const [copied, setCopied] = useState(false);
 
   const raw = preview?.raw_ai || {};
-  const photos = useMemo(() => Array.isArray(raw.photos) ? raw.photos : [], [raw.photos]);
+  // Iter 79j.37 — When the two-phase pipeline ran, `preview.raw_per_photo`
+  // contains the ACTUAL per-photo Claude call outputs (one call per
+  // photo), not the after-the-fact recollection embedded in the
+  // reconciled JSON. Prefer those for the LEFT column. Fall back to
+  // the single-call schema (`raw.photos`) for legacy runs.
+  const rawPerPhoto = Array.isArray(preview?.raw_per_photo) ? preview.raw_per_photo : null;
+  const pipelineLabel = preview?.pipeline || raw._pipeline || (rawPerPhoto ? "two_phase" : "single_call");
+  const photos = useMemo(() => {
+    if (rawPerPhoto && rawPerPhoto.length) return rawPerPhoto;
+    return Array.isArray(raw.photos) ? raw.photos : [];
+  }, [rawPerPhoto, raw.photos]);
   const walls = useMemo(() => Array.isArray(raw.walls) ? raw.walls : [], [raw.walls]);
   const openings = useMemo(() => Array.isArray(raw.openings) ? raw.openings : [], [raw.openings]);
   const dormer = raw.dormer;
@@ -303,6 +313,19 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
               Left: what Claude saw in each photo. Right: the reconciled house — with the photos each final number was drawn from and the merge trace.
             </p>
           </div>
+          <span
+            className={`text-[10px] uppercase font-bold tracking-wider px-2 py-1 border ${
+              pipelineLabel === "two_phase"
+                ? "bg-[#DCFCE7] text-[#166534] border-[#16A34A]"
+                : "bg-[#FEF3C7] text-[#92400E] border-[#F59E0B]"
+            }`}
+            title={pipelineLabel === "two_phase"
+              ? "TWO-PHASE: 1 Claude call per photo (real per-photo data) + 1 reconciliation call"
+              : "SINGLE-CALL: all photos in one Claude call — per-photo values below are Claude's after-the-fact recollection, NOT actual per-photo extractions. Set AI_MEASURE_TWO_PHASE=1 on the backend to switch."}
+            data-testid="debug-pipeline-badge"
+          >
+            {pipelineLabel === "two_phase" ? "Two-phase" : "Single-call"}
+          </span>
           <button
             type="button"
             onClick={copyRaw}
@@ -330,7 +353,8 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
             <div className="flex items-center gap-2 mb-1">
               <Camera className="w-3.5 h-3.5 text-[#0EA5E9]" />
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-[#0EA5E9]">
-                Per-photo raw ({photos.length} reported / {photoUrls?.length || 0} uploaded)
+                {pipelineLabel === "two_phase" ? "Per-photo raw (Phase A)" : "Per-photo (Claude's recollection)"}
+                {" "}({photos.length} reported / {photoUrls?.length || 0} uploaded)
               </h4>
             </div>
             {maxIdx < 0 && (
