@@ -51,6 +51,25 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 ## Implementation Timeline
 - **P1 QUEUED (post-Run3)** — **Trace Coverage tile** (Feb 2026): tight fence per user — 4 wall cells + N dormer cells, each showing count of direct-view photos from `_source_photo_indices.length`. Color: green ≥2, amber 1, red 0. Read-only. NO new detection logic — purely a view over data Phase A already emits. Half-day scope. Ship only after Run 3 validates the current defect fixes.
 
+- **Iter 79j.49** — **Soft input validation for customer contact fields** (Feb 2026): warn-don't-block policy across JobInfoPanel, ISS editor, and QuoteModal.
+  - **`src/lib/validate.js`**: four helpers, each treating EMPTY as valid so a draft never gets shouted at.
+    - `isValidEmail`: basic `something@something.tld` regex (catches "gmial.con" typos without over-rejecting valid unusual addresses).
+    - `isValidPhone`: strips non-digits; valid if exactly 10 digits, or 11 with a leading 1. Presence of alpha chars (`x`/`ext.`) treated as intentional extension formatting → skipped.
+    - `isValidZip`: `/^\d{5}(-\d{4})?$/`.
+    - `formatPhoneUS`: returns `(AAA) BBB-CCCC` for cleanly-10 or 11-with-leading-1 inputs; ALL other shapes (extensions, international, in-progress typing) returned untouched.
+  - **`index.css`**: global `.input::placeholder` opacity .55 + italic + `var(--muted)` color so `e.g. (412) 555-0100`-style hint text can never be mistaken for a populated value.
+  - **JobInfoPanel**: per-field `touched` state set on blur; warnings render only when `touched && non-empty && invalid`. Added placeholders (`e.g.`/`p. ej.` prefix per lang) + blur-time phone auto-format for `customer_phone`, `customer_phone_alt`, `customer_fax`; email warning on `customer_email`; ZIP warnings on `address_zip` + `billing_zip`. Every field gains `aria-invalid` + `aria-describedby` pointing at a `<FieldWarning>` component styled with `--warning-text`.
+  - **ISSEstimateEditor**: same treatment on its `iss-customer-email` (email) and `iss-customer-phone` (cell) inputs — placeholder + blur warning + phone auto-format + aria-invalid.
+  - **QuoteModal (send dialog)**: `emailInvalid = !!email && !isValidEmail(email)`. When true, a bold warning line appears next to the recipient input, `aria-invalid="true"` set, AND the Send button is `disabled` — the backend's EmailStr validation would reject the malformed value with a 422 anyway; fail helpfully in the UI. The "will be saved to the estimate" note is suppressed while invalid so the two hints don't stack.
+  - **i18n**: 5 new keys in EN + ES (`est.exampleLead` "e.g."/"p. ej.", `est.warnEmail`, `est.warnPhone`, `est.warnZip`).
+  - **Verification via Playwright smoke** (5/5 tests):
+    1. Typed `"sdasdsf.com"` in email → tab away → warning present, `aria-invalid="true"` ✓
+    2. Fixed to `"valid@example.com"` → warning cleared live, `aria-invalid="false"` ✓
+    3. Typed `"4125550100"` in cell phone → blur → value became `"(412) 555-0100"` ✓
+    4. Typed `"123"` in cell phone → warning shown ✓
+    5. Typed `"123"` in ZIP → warning shown ✓
+  - Frontend + backend lint clean.
+
 - **Iter 79j.48** — **Auto-populate estimator / date / state at create time** (Feb 2026):
   - **Backend** (`routes/estimates.py POST /estimates`): after building `doc` from the request body, fill-if-empty three fields — `estimator` gets the creating user's `name`; `estimate_date` gets `now[:10]` (server-side UTC fallback); `address_state` gets copied from the company's most-recently-updated estimate that has one (most contractors are local, so the last-used state is a strong default). Every fill is `if not (doc.get(...) or "").strip()` — client values are NEVER overridden.
   - **Frontend** (`pages/Dashboard.jsx createEstimate`): swapped `new Date().toISOString().slice(0,10)` (UTC — evening ET rolled to tomorrow) for `new Date().toLocaleDateString("en-CA")` (YYYY-MM-DD in local time).

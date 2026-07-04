@@ -14,6 +14,7 @@ import PairToLpButton from "@/components/estimate/PairToLpButton";
 import { useState } from "react";
 import { Upload, FileText, Sparkles, Layers, ChevronDown, ChevronUp, MoreHorizontal, Lightbulb } from "lucide-react";
 import ElevationCompareModal, { countSources } from "@/components/estimate/ElevationCompareModal";
+import { isValidEmail, isValidPhone, isValidZip, formatPhoneUS } from "@/lib/validate";
 
 // Iter 79j.47 — US-state select options for the structured address grid.
 // Includes DC per USPS. Kept as [code] pairs — labels use the same
@@ -110,6 +111,23 @@ function ToolTile({ icon: Icon, label, sub, children, testid, accent = "#7C3AED"
   );
 }
 
+// Iter 79j.49 — Small warning line under an input. Rendered ONLY when
+// (touched && non-empty && invalid). Uses the theme's --warning-text
+// so it inherits every color palette. The id lets aria-describedby
+// on the input point at it for screen-reader announcements.
+function FieldWarning({ id, children }) {
+  return (
+    <div
+      id={id}
+      role="alert"
+      className="text-[11px] leading-tight mt-1 text-[var(--warning-text)]"
+      data-testid={id}
+    >
+      {children}
+    </div>
+  );
+}
+
 // Iter 79j.47 — Sub-section mini-header (same visual pattern as the
 // "Material Colors" title) shared by the 4 groups of the new form.
 // Defined at module scope so React doesn't destroy/recreate the
@@ -139,6 +157,11 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
   // Auto-collapse when basics become filled on first render (but only
   // once — if the user expands manually we respect their choice).
   const [autoTouched, setAutoTouched] = useState(false);
+  // Iter 79j.49 — Per-field "touched" set. Warnings appear only AFTER
+  // the user first leaves a field (blur), so an empty draft doesn't
+  // shout at the contractor mid-typing. Live-clears once fixed.
+  const [touched, setTouched] = useState({});
+  const markTouched = (name) => setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
   if (!autoTouched && basicsFilled && !collapsed) {
     // schedule once to avoid setState during render
     setTimeout(() => {
@@ -390,9 +413,20 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             type="tel"
             value={est.customer_phone || ""}
             onChange={(e) => update({ customer_phone: e.target.value })}
+            onBlur={(e) => {
+              markTouched("customer_phone");
+              const norm = formatPhoneUS(e.target.value);
+              if (norm !== (est.customer_phone || "")) update({ customer_phone: norm });
+            }}
+            placeholder={`${t("est.exampleLead")} (412) 555-0100`}
+            aria-invalid={touched.customer_phone && !isValidPhone(est.customer_phone)}
+            aria-describedby={touched.customer_phone && !isValidPhone(est.customer_phone) ? "cust-phone-warn" : undefined}
             autoComplete="off"
             data-testid="cust-phone"
           />
+          {touched.customer_phone && !isValidPhone(est.customer_phone) && (
+            <FieldWarning id="cust-phone-warn">{t("est.warnPhone")}</FieldWarning>
+          )}
         </div>
         <div>
           <label className="label" htmlFor="cust-phone-alt">{t("est.phoneAlt")}</label>
@@ -402,9 +436,20 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             type="tel"
             value={est.customer_phone_alt || ""}
             onChange={(e) => update({ customer_phone_alt: e.target.value })}
+            onBlur={(e) => {
+              markTouched("customer_phone_alt");
+              const norm = formatPhoneUS(e.target.value);
+              if (norm !== (est.customer_phone_alt || "")) update({ customer_phone_alt: norm });
+            }}
+            placeholder={`${t("est.exampleLead")} (412) 555-0100`}
+            aria-invalid={touched.customer_phone_alt && !isValidPhone(est.customer_phone_alt)}
+            aria-describedby={touched.customer_phone_alt && !isValidPhone(est.customer_phone_alt) ? "cust-phone-alt-warn" : undefined}
             autoComplete="off"
             data-testid="cust-phone-alt"
           />
+          {touched.customer_phone_alt && !isValidPhone(est.customer_phone_alt) && (
+            <FieldWarning id="cust-phone-alt-warn">{t("est.warnPhone")}</FieldWarning>
+          )}
         </div>
         <div>
           <label className="label" htmlFor="cust-fax">{t("est.fax")}</label>
@@ -414,9 +459,20 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             type="tel"
             value={est.customer_fax || ""}
             onChange={(e) => update({ customer_fax: e.target.value })}
+            onBlur={(e) => {
+              markTouched("customer_fax");
+              const norm = formatPhoneUS(e.target.value);
+              if (norm !== (est.customer_fax || "")) update({ customer_fax: norm });
+            }}
+            placeholder={`${t("est.exampleLead")} (412) 555-0100`}
+            aria-invalid={touched.customer_fax && !isValidPhone(est.customer_fax)}
+            aria-describedby={touched.customer_fax && !isValidPhone(est.customer_fax) ? "cust-fax-warn" : undefined}
             autoComplete="off"
             data-testid="cust-fax"
           />
+          {touched.customer_fax && !isValidPhone(est.customer_fax) && (
+            <FieldWarning id="cust-fax-warn">{t("est.warnPhone")}</FieldWarning>
+          )}
         </div>
         <div>
           <label className="label" htmlFor="cust-email">{t("est.email")}</label>
@@ -426,9 +482,16 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             type="email"
             value={est.customer_email || ""}
             onChange={(e) => update({ customer_email: e.target.value })}
+            onBlur={() => markTouched("customer_email")}
+            placeholder={`${t("est.exampleLead")} name@example.com`}
+            aria-invalid={touched.customer_email && !isValidEmail(est.customer_email)}
+            aria-describedby={touched.customer_email && !isValidEmail(est.customer_email) ? "cust-email-warn" : undefined}
             autoComplete="off"
             data-testid="cust-email"
           />
+          {touched.customer_email && !isValidEmail(est.customer_email) && (
+            <FieldWarning id="cust-email-warn">{t("est.warnEmail")}</FieldWarning>
+          )}
         </div>
         <div>
           <label className="label" htmlFor="cust-contact-method">{t("est.contactMethod")}</label>
@@ -555,9 +618,16 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   maxLength={10}
                   value={disp.zip || ""}
                   onChange={(e) => writeAddress({ zip: e.target.value })}
+                  onBlur={() => markTouched("address_zip")}
+                  placeholder={`${t("est.exampleLead")} 15222`}
+                  aria-invalid={touched.address_zip && !isValidZip(disp.zip)}
+                  aria-describedby={touched.address_zip && !isValidZip(disp.zip) ? "cust-zip-warn" : undefined}
                   autoComplete="off"
                   data-testid="cust-zip"
                 />
+                {touched.address_zip && !isValidZip(disp.zip) && (
+                  <FieldWarning id="cust-zip-warn">{t("est.warnZip")}</FieldWarning>
+                )}
               </div>
             </>
           );
@@ -666,9 +736,16 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   maxLength={10}
                   value={est.billing_zip || ""}
                   onChange={(e) => writeBilling({ zip: e.target.value })}
+                  onBlur={() => markTouched("billing_zip")}
+                  placeholder={`${t("est.exampleLead")} 15222`}
+                  aria-invalid={touched.billing_zip && !isValidZip(est.billing_zip)}
+                  aria-describedby={touched.billing_zip && !isValidZip(est.billing_zip) ? "billing-zip-warn" : undefined}
                   autoComplete="off"
                   data-testid="billing-zip"
                 />
+                {touched.billing_zip && !isValidZip(est.billing_zip) && (
+                  <FieldWarning id="billing-zip-warn">{t("est.warnZip")}</FieldWarning>
+                )}
               </div>
             </>
           );

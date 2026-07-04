@@ -8,6 +8,7 @@ import CompanyLogo from "@/components/CompanyLogo";
 import { X, Printer, Send } from "lucide-react";
 import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/emailQuote";
 import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
+import { isValidEmail } from "@/lib/validate";
 
 export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail }) {
   const { company } = useCompany();
@@ -24,6 +25,10 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
     () => (estimate?.customer_email || estimate?.recipient_email || "").trim(),
   );
   const noStoredEmail = !((estimate?.customer_email || "").trim());
+  // Iter 79j.49 — Soft-warn on invalid recipient; also gates Send.
+  // The backend uses EmailStr and would reject a malformed address
+  // with a 422 anyway — fail helpfully in the UI first.
+  const emailInvalid = !!email && !isValidEmail(email);
   // Per-estimate send language — defaults to the contractor's current UI lang,
   // but the contractor can flip it before sending. Note for the contractor only:
   // the message body resets when they change languages so they don't accidentally
@@ -159,6 +164,8 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                 placeholder={t("quote.recipientPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                aria-invalid={emailInvalid}
+                aria-describedby={emailInvalid ? "quote-email-warn" : undefined}
                 autoComplete="off"
                 data-testid="email-recipient"
                 style={{ minWidth: 240 }}
@@ -166,14 +173,24 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               <button
                 className="btn-primary h-12 md:h-9 justify-center md:justify-start"
                 onClick={handleEmail}
-                disabled={!email || sending || !emailConfigured}
+                disabled={!email || sending || !emailConfigured || emailInvalid}
                 data-testid="send-email-btn"
                 title={!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : ""}
               >
                 <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
               </button>
             </div>
-            {noStoredEmail && (
+            {emailInvalid && (
+              <div
+                id="quote-email-warn"
+                role="alert"
+                className="text-[11px] font-bold text-[var(--warning-text)]"
+                data-testid="quote-email-warn"
+              >
+                {t("est.warnEmail")}
+              </div>
+            )}
+            {!emailInvalid && noStoredEmail && (
               <div className="text-[10px] text-white/70 md:text-[var(--muted)]" data-testid="quote-email-will-save">
                 {t("quote.emailWillSave")}
               </div>

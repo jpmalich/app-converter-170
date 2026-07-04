@@ -242,6 +242,13 @@ input[type="number"].input, textarea.input {
   height: 44px;
 }
 .input:focus { border-color: var(--focus); }
+/* Iter 79j.49 — Placeholder style. Format-example placeholders like
+   "e.g. (412) 555-0100" must never be mistakable for populated
+   values, so we drop opacity + italicize them. Applied globally so
+   every .input variant (input/select/textarea) inherits consistently. */
+.input::placeholder { color: var(--muted); opacity: .55; font-style: italic; }
+.input::-webkit-input-placeholder { color: var(--muted); opacity: .55; font-style: italic; }
+.input::-moz-placeholder { color: var(--muted); opacity: .55; font-style: italic; }
 .input.num { text-align: right; font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", ui-monospace, monospace; }
 textarea.input { height: auto; min-height: 80px; padding: 10px 12px; }
 

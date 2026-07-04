@@ -28,6 +28,8 @@ import { useCompany } from "@/lib/company";
 import { useBranding } from "@/lib/branding";
 import { useLang } from "@/lib/i18n";
 import { recomputeWasteQtys, bakeWasteIntoLines } from "@/lib/wasteLogic";
+import { isValidEmail, isValidPhone, formatPhoneUS } from "@/lib/validate";
+import { useT } from "@/lib/i18n";
 import QuoteModal from "@/components/QuoteModal";
 import ISSHoverImportButton from "@/components/estimate/ISSHoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
@@ -58,6 +60,11 @@ function ISSToolTile({ icon: Icon, label, children, testid, accent = "#7C3AED" }
 }
 
 export default function ISSEstimateEditor() {
+  const t = useT();
+  // Iter 79j.49 — Per-field touched state for soft validation
+  // (email + cell phone). Warnings only appear after blur.
+  const [touched, setTouched] = useState({});
+  const markTouched = (name) => setTouched((prev) => (prev[name] ? prev : { ...prev, [name]: true }));
   const { id } = useParams();
   const nav = useNavigate();
   const [est, setEst] = useState(null);
@@ -491,9 +498,23 @@ export default function ISSEstimateEditor() {
                 className="input h-9 text-sm w-full"
                 value={est.customer_email || ""}
                 onChange={(e) => updateField("customer_email", e.target.value)}
+                onBlur={() => markTouched("customer_email")}
+                placeholder={`${t("est.exampleLead")} name@example.com`}
+                aria-invalid={touched.customer_email && !isValidEmail(est.customer_email)}
+                aria-describedby={touched.customer_email && !isValidEmail(est.customer_email) ? "iss-customer-email-warn" : undefined}
                 autoComplete="off"
                 data-testid="iss-customer-email"
               />
+              {touched.customer_email && !isValidEmail(est.customer_email) && (
+                <div
+                  id="iss-customer-email-warn"
+                  role="alert"
+                  className="text-[11px] leading-tight mt-1 text-[var(--warning-text)]"
+                  data-testid="iss-customer-email-warn"
+                >
+                  {t("est.warnEmail")}
+                </div>
+              )}
             </div>
             <div>
               <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">Cell Phone</label>
@@ -502,9 +523,27 @@ export default function ISSEstimateEditor() {
                 className="input h-9 text-sm w-full"
                 value={est.customer_phone || ""}
                 onChange={(e) => updateField("customer_phone", e.target.value)}
+                onBlur={(e) => {
+                  markTouched("customer_phone");
+                  const norm = formatPhoneUS(e.target.value);
+                  if (norm !== (est.customer_phone || "")) updateField("customer_phone", norm);
+                }}
+                placeholder={`${t("est.exampleLead")} (412) 555-0100`}
+                aria-invalid={touched.customer_phone && !isValidPhone(est.customer_phone)}
+                aria-describedby={touched.customer_phone && !isValidPhone(est.customer_phone) ? "iss-customer-phone-warn" : undefined}
                 autoComplete="off"
                 data-testid="iss-customer-phone"
               />
+              {touched.customer_phone && !isValidPhone(est.customer_phone) && (
+                <div
+                  id="iss-customer-phone-warn"
+                  role="alert"
+                  className="text-[11px] leading-tight mt-1 text-[var(--warning-text)]"
+                  data-testid="iss-customer-phone-warn"
+                >
+                  {t("est.warnPhone")}
+                </div>
+              )}
             </div>
           </div>
 
