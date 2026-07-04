@@ -343,30 +343,54 @@ function buildHouseJson(preview, overrides, estimate) {
     // Convert to world X (offset from wall center):
     derivedDormerOffsetX = ((inferredLeft + inferredRight) / 2) - dormerFaceWallWidth / 2;
   }
+  const aiWidthSource = (aiDormer?.width_ft != null ? (aiDormer?.width_source || "") : "").toLowerCase();
+  // Iter 79j.43 — When the reconciler provided a real AI width_source
+  // (any of the enumerated tags), the value MUST come from
+  // aiDormer.width_ft verbatim. Falling through to derivedDormerWidth
+  // in that case was the "18 ft reconciled → 7.2 ft displayed" bug:
+  // the badge said DIRECT (green) but the value was silently swapped
+  // for an opening-derived guess that could be a fraction of reality.
+  const aiSourceIsAuthoritative = [
+    "direct_consensus",
+    "direct_single_reading",
+    "direct_disagreement",
+    "back_solved_from_opening",
+    "estimated_no_direct_view",
+  ].includes(aiWidthSource);
   const dormerWidth = Number(
     dormerOverride.width
-    ?? (derivedDormerWidth != null ? derivedDormerWidth : (aiDormer?.width_ft ?? Math.min(footprintW * 0.6, 16))),
+    ?? (aiSourceIsAuthoritative
+        ? aiDormer.width_ft
+        : (derivedDormerWidth != null
+           ? derivedDormerWidth
+           : (aiDormer?.width_ft ?? Math.min(footprintW * 0.6, 16)))),
   );
   const dormerKnee = Number(dormerOverride.kneeWallHeight ?? aiDormer?.knee_wall_height_ft ?? 4);
   const dormerOffsetX = Number(
     dormerOverride.offsetX
-    ?? (derivedDormerOffsetX != null ? derivedDormerOffsetX : (aiDormer?.offset_x_ft ?? 0)),
+    ?? (aiSourceIsAuthoritative
+        ? (aiDormer.offset_x_ft ?? 0)
+        : (derivedDormerOffsetX != null
+           ? derivedDormerOffsetX
+           : (aiDormer?.offset_x_ft ?? 0))),
   );
   // Iter 79j.39 — Prefer the two-phase reconciler's width_source when
   // it's present. It tags each dormer width with a provenance label
   // that maps 1:1 to badge colors:
   //   direct_consensus         → green (2+ direct views agreed)
+  //   direct_single_reading    → amber (1 direct view — can't verify)
   //   direct_disagreement      → amber ("direct reads disagree")
   //   back_solved_from_opening → amber (no direct view; back-solved)
   //   estimated_no_direct_view → amber-estimated (placeholder only)
   // Legacy single-call runs won't emit width_source → fall back to
   // the old opening-derived / raw-ai / default cascade so nothing
   // regresses.
-  const aiWidthSource = (aiDormer?.width_source || "").toLowerCase();
   const dormerWidthSource = dormerOverride.width != null
     ? "user"
     : aiWidthSource === "direct_consensus"
     ? "ai"
+    : aiWidthSource === "direct_single_reading"
+    ? "ai-single"
     : aiWidthSource === "direct_disagreement"
     ? "ai-disagreement"
     : aiWidthSource === "back_solved_from_opening"
@@ -455,6 +479,7 @@ function buildHouseJson(preview, overrides, estimate) {
               const src = (ad?.width_source || "").toLowerCase();
               const widthSource =
                 src === "direct_consensus" ? "ai"
+                : src === "direct_single_reading" ? "ai-single"
                 : src === "direct_disagreement" ? "ai-disagreement"
                 : src === "back_solved_from_opening" ? "ai-back-solved"
                 : src === "estimated_no_direct_view" ? "ai-no-direct-view"
@@ -1477,6 +1502,15 @@ export default function HouseModel3D({ preview, estimate }) {
                   data-testid="ai-measure-3d-dormer-width-disagreement"
                 >
                   <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Direct reads disagree
+                </span>
+              )}
+              {house.roof.dormer.widthSource === "ai-single" && (
+                <span
+                  className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]"
+                  title="Only ONE photo captured a direct view of this dormer face — the reading is real but couldn't be cross-checked. Capture a second angle before quoting."
+                  data-testid="ai-measure-3d-dormer-width-single-reading"
+                >
+                  <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Single reading
                 </span>
               )}
               {house.roof.dormer.widthSource === "ai-back-solved" && (

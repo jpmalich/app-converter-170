@@ -2109,6 +2109,51 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     </div>
                   )}
 
+                  {/* Iter 79j.43 — Empty-photo warning banner. When the
+                      two-phase Phase A returned nothing (twice, after
+                      the auto-retry), name the affected photo(s) and
+                      which walls now have no direct-view coverage.
+                      A dead photo must NEVER fail silently. */}
+                  {(preview?.measurements?._ai_empty_photos?.length > 0
+                    || preview?.measurements?._ai_orphaned_walls?.length > 0) && (
+                    <div
+                      className="mb-3 p-3 bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-[11px] flex items-start gap-2"
+                      data-testid="ai-measure-empty-photos-banner"
+                    >
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#B45309]" />
+                      <div className="flex-1">
+                        <div className="font-bold uppercase tracking-wider text-[10px] mb-1">
+                          AI extraction gaps detected
+                        </div>
+                        {preview?.measurements?._ai_empty_photos?.length > 0 && (
+                          <div className="mb-1" data-testid="ai-measure-empty-photos-list">
+                            <b>{preview.measurements._ai_empty_photos.length} photo{preview.measurements._ai_empty_photos.length === 1 ? "" : "s"} returned no useful data</b> after an automatic retry:
+                            <ul className="list-disc list-inside mt-0.5 ml-1">
+                              {preview.measurements._ai_empty_photos.map((p, i) => (
+                                <li key={i}>
+                                  Photo #{Number(p.photo_idx) + 1}
+                                  {p.reason ? ` — ${p.reason}` : ""}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {preview?.measurements?._ai_orphaned_walls?.length > 0 && (
+                          <div className="mb-1" data-testid="ai-measure-orphaned-walls">
+                            <b>Walls with no direct-view coverage:</b>{" "}
+                            {preview.measurements._ai_orphaned_walls.join(", ")}.
+                            Their dimensions are extrapolated — capture a
+                            direct side shot of each and Re-Run before quoting.
+                          </div>
+                        )}
+                        <div className="text-[#92400E]">
+                          Re-shoot the flagged photos (or delete them and re-upload)
+                          then click <b>Re-Run</b> below.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {previewTab === "3d" && (
                     <div className="mb-4" data-testid="ai-measure-3d-panel">
                       <HouseModel3D preview={preview} estimate={estimate} />

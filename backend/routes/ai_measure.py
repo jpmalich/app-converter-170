@@ -1471,7 +1471,18 @@ def _is_skyline_photo(elev: str) -> bool:
 
 
 def _merge_dormer_hits(raw: dict, dormer_hits: list[dict]) -> None:
-    """Merge dormer-scan hits into `openings[]` + `walls[].dormer_face_sqft`."""
+    """Merge dormer-scan hits into `openings[]` + `walls[].dormer_face_sqft`.
+
+    Iter 79j.43 — Every hit from the dormer scan by definition lives
+    on a dormer face, so we MUST tag `on_dormer: True` and attach the
+    opening to the correct dormer entry (not the wall behind it).
+    Also generate a stable `opening_id` (prefixed `dormer_scan_`) and
+    populate `along_wall_ft = null` so downstream provenance + dedup
+    code recognises the row shape. When Claude returns no explicit
+    `dormer_face_sqft` but has valid window dimensions, we synthesise
+    a face_sqft estimate so the wall's takeoff isn't silently under-
+    credited (typical dormer face ≈ 1.4 × window height, capped at
+    the residential 16-72 ft² band)."""
     if not dormer_hits:
         return
     existing_keys: set[tuple] = set()
@@ -1490,6 +1501,7 @@ def _merge_dormer_hits(raw: dict, dormer_hits: list[dict]) -> None:
 
     added_openings = 0
     dormer_sf_by_wall: dict[str, float] = {}
+    synthesized_face_sf = False
     walls = raw.get("walls") or []
     wall_index = {(w.get("label") or "").lower(): w for w in walls}
     for h in dormer_hits:
@@ -1497,22 +1509,46 @@ def _merge_dormer_hits(raw: dict, dormer_hits: list[dict]) -> None:
         hi = float(h.get("height_in") or 0)
         wall = (h.get("wall") or "other").lower()
         dormer_face = float(h.get("dormer_face_sqft") or 0)
+        photo_idx = h.get("_photo_index")
         if wi > 0 and hi > 0:
             key = (wall, "window", round(wi / 6) * 6, round(hi / 6) * 6)
             if key not in existing_keys:
+                # Iter 79j.43 — Tag on_dormer=True so downstream
+                # material math (apply_roof_type_material_math) credits
+                # the dormer face against the correct facade, and so
+                # the frontend routes the opening to the dormer mesh
+                # instead of the wall.
+                opening_id = f"dormer_scan_{uuid.uuid4().hex[:8]}"
                 raw.setdefault("openings", []).append({
+                    "opening_id": opening_id,
                     "type": "window",
                     "style": (h.get("style") or "").strip(),
                     "style_confidence": 90,
                     "width_in": wi,
                     "height_in": hi,
                     "wall": wall,
+                    "on_dormer": True,
+                    "along_wall_ft": None,
+                    "photo_idx": photo_idx,
                     "_via_dormer_scan": True,
+                    "_source_photo_indices": [photo_idx] if photo_idx is not None else [],
                 })
                 existing_keys.add(key)
                 added_openings += 1
         if dormer_face > 0:
             dormer_sf_by_wall[wall] = dormer_sf_by_wall.get(wall, 0) + dormer_face
+        elif wi > 0 and hi > 0:
+            # Iter 79j.43 — Claude often reports width/height for the
+            # window ON the dormer but leaves dormer_face_sqft = 0.
+            # Synthesise an estimated face from the opening dims so
+            # the wall's takeoff still gets credited (empty map was
+            # the bug that hid dormer face SF for every scan run).
+            # Dormer face height ≈ knee(4ft) + window height + 1.5ft
+            # trim margin; face width ≈ window width + 3ft trim margin.
+            est_face = max(16.0, min(72.0,
+                (wi / 12.0 + 3.0) * (hi / 12.0 + 1.5)))
+            dormer_sf_by_wall[wall] = dormer_sf_by_wall.get(wall, 0) + est_face
+            synthesized_face_sf = True
 
     for wall, sf in dormer_sf_by_wall.items():
         w = wall_index.get(wall)
@@ -1533,6 +1569,7 @@ def _merge_dormer_hits(raw: dict, dormer_hits: list[dict]) -> None:
     raw["walls"] = walls
     raw["dormer_scan_added_openings"] = added_openings
     raw["dormer_scan_added_sf_by_wall"] = dormer_sf_by_wall
+    raw["dormer_scan_synthesized_face_sf"] = synthesized_face_sf
     prev_notes = (raw.get("notes") or "").strip()
     total_added_sf = sum(dormer_sf_by_wall.values())
     if added_openings or total_added_sf:
@@ -1540,6 +1577,7 @@ def _merge_dormer_hits(raw: dict, dormer_hits: list[dict]) -> None:
             f"Deep dormer scan added {added_openings} opening"
             f"{'s' if added_openings != 1 else ''}"
             + (f" and {total_added_sf:.0f} ft² of dormer face area" if total_added_sf else "")
+            + (" (face area estimated from window dims)" if synthesized_face_sf else "")
             + " from roofline crops. "
         )
         raw["notes"] = (marker + prev_notes).strip()
@@ -1733,6 +1771,12 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "_ai_openings_schedule": raw.get("openings_schedule") or [],
         "_ai_photos": raw.get("photos") or [],
         "_ai_notes": raw.get("notes") or "",
+        # Iter 79j.43 — Empty-photo / orphaned-wall warnings from
+        # the two-phase orchestrator. Surfaced as-is so the UI can
+        # render a persistent banner naming each dead photo and the
+        # wall(s) it orphans. Empty lists = healthy run.
+        "_ai_empty_photos": raw.get("_empty_photos") or [],
+        "_ai_orphaned_walls": raw.get("_orphaned_walls") or [],
     }
     # Iter 79j.26 — Roof type classification. Cascade: valid Claude
     # value → surface; else null. Confidence threshold enforced on the
@@ -2561,9 +2605,11 @@ call worker returns, so downstream code doesn't fork.
       "knee_wall_height_ft": number,
       "offset_x_ft":         number,          // horizontal offset from wall centerline; 0 = centered
       // width provenance — same values as the eave rule. Drives the
-      // frontend badge: direct_consensus=green; direct_disagreement,
-      // back_solved_from_opening, estimated_no_direct_view = amber.
-      "width_source":        "direct_consensus" | "direct_disagreement" | "back_solved_from_opening" | "estimated_no_direct_view",
+      // frontend badge: direct_consensus=green (2+ direct views agreed);
+      // direct_single_reading=amber (only 1 direct view — can't verify);
+      // direct_disagreement, back_solved_from_opening,
+      // estimated_no_direct_view = amber.
+      "width_source":        "direct_consensus" | "direct_single_reading" | "direct_disagreement" | "back_solved_from_opening" | "estimated_no_direct_view",
       "_source_photo_indices": [number],
       "_per_photo_readings":  [ {"photo_idx": number, "approx_width_ft": number|null, "role": "width" | "face" | "count" | "rejected", "notes": "<why kept/rejected>"} ],
       "_reconciliation_note":  "<1 sentence explaining face + width choice for THIS dormer>"
@@ -2574,12 +2620,14 @@ call worker returns, so downstream code doesn't fork.
      "width_ft":                   number,
      "height_ft":                  number,        // final EAVE height for this wall (see rule 1)
      // Iter 79j.38 — Provenance tag for the eave height. Drives the
-     // frontend badge color: `direct_consensus` = green (verified);
-     // `direct_disagreement` = amber (one direct reading kept, others
-     // rejected); `estimated_no_direct_view` = amber-estimated (no
-     // photo ever measured this wall, don't quote off it without
-     // capturing a direct side shot).
-     "height_ft_source":           "direct_consensus" | "direct_disagreement" | "estimated_no_direct_view",
+     // frontend badge color: `direct_consensus` = green (2+ direct
+     // readings agreed); `direct_single_reading` = amber (only 1
+     // direct view — can't verify); `direct_disagreement` = amber
+     // (one direct reading kept, others rejected);
+     // `estimated_no_direct_view` = amber-estimated (no photo ever
+     // measured this wall, don't quote off it without capturing a
+     // direct side shot).
+     "height_ft_source":           "direct_consensus" | "direct_single_reading" | "direct_disagreement" | "estimated_no_direct_view",
      "gable_triangle_height_ft":   number,        // 0 if this wall is eave-only
      "dormer_face_sqft":           number,
      "siding_pct_this_wall":       number,        // integer 0-100
@@ -2680,9 +2728,16 @@ RECONCILIATION RULES:
       is the signal that says "we never actually measured this wall,
       don't quote off it."
 
-   d) If direct readings agree within ±1 ft, take the median.
-      `height_ft_source: "direct_consensus"`. Note the count of
-      contributing photos in `_reconciliation_note`.
+   d) If TWO OR MORE direct readings agree within ±1 ft, take the
+      median. `height_ft_source: "direct_consensus"`. Note the count
+      of contributing photos in `_reconciliation_note`.
+
+   e) If EXACTLY ONE direct-view reading exists, use it as the eave
+      height but set `height_ft_source: "direct_single_reading"`.
+      A single reading is a real observation — better than an
+      estimated placeholder — but nothing cross-checks it, so the
+      frontend renders it amber. The contractor should capture a
+      second angle before quoting.
 
    For every wall, `_per_photo_readings` must include ALL photos that
    attempted this wall (valid AND rejected) so the debug view shows
@@ -2809,8 +2864,15 @@ RECONCILIATION RULES:
       frontend renders it AMBER — same "don't quote off this until
       a direct shot exists" signal as the eave rule.
 
-   e) If direct readings agree within ±1 ft, take the median.
-      `width_source: "direct_consensus"`.
+   e) If TWO OR MORE direct readings agree within ±1 ft, take the
+      median. `width_source: "direct_consensus"`. A SINGLE direct
+      reading does NOT constitute consensus — see rule (f).
+
+   f) If EXACTLY ONE direct-view reading exists, use it as the width
+      but set `width_source: "direct_single_reading"`. This is a
+      down-graded green: the width came from a real photo, but we
+      couldn't cross-check it. The frontend renders this amber so
+      the contractor knows to capture a second angle before quoting.
 
    DORMER MATCHING ACROSS PHOTOS — a single physical dormer often
    appears in 2+ photos (a corner shot + a cardinal shot). Match by
@@ -2857,6 +2919,30 @@ def _clean_json_reply(reply: str) -> dict:
         return {}
 
 
+def _is_empty_extraction(parsed: dict) -> bool:
+    """Iter 79j.43 — A Phase A extraction is "empty" when Claude
+    returned nothing useful: no walls seen, no openings, no eave
+    reading, no pitch, no dormers, no gable. Empty extractions
+    silently orphan whichever walls only that photo covered, so
+    the orchestrator retries once and (if still empty) flags a
+    UI warning."""
+    if not isinstance(parsed, dict) or parsed.get("_extraction_error"):
+        return True
+    walls_visible = parsed.get("walls_visible") or []
+    openings = parsed.get("openings_this_photo") or []
+    eave = parsed.get("eave_height_ft_observed")
+    pitch = parsed.get("pitch_ratio_observed")
+    gable_h = parsed.get("gable_triangle_height_ft_observed")
+    dormers = parsed.get("dormers_observed_count")
+    has_walls = isinstance(walls_visible, list) and any((w or "").strip() for w in walls_visible if isinstance(w, str))
+    has_openings = isinstance(openings, list) and len(openings) > 0
+    has_eave = eave not in (None, 0, 0.0, "")
+    has_pitch = pitch not in (None, 0, 0.0, "")
+    has_gable = gable_h not in (None, 0, 0.0, "")
+    has_dormers = dormers not in (None, 0, "")
+    return not (has_walls or has_openings or has_eave or has_pitch or has_gable or has_dormers)
+
+
 async def _extract_one_photo(
     *,
     api_key: str,
@@ -2874,13 +2960,12 @@ async def _extract_one_photo(
     """Phase A. Run ONE Claude call against a single photo, ask for
     per-photo raw observations only. Returns the parsed JSON tagged
     with `_photo_idx` and `_latency_ms` (persisted verbatim so the
-    Debug view can show what Claude actually saw)."""
+    Debug view can show what Claude actually saw).
+
+    Iter 79j.43 — If the first call returns empty, retry ONCE with a
+    stronger nudge. Empty photos silently orphan any wall only they
+    covered, so the orchestrator MUST know when this happens."""
     t0 = time.time()
-    chat = LlmChat(
-        api_key=api_key,
-        session_id=f"ai-measure-photo-{user_id}-{photo_idx}-{uuid.uuid4().hex[:6]}",
-        system_message=PER_PHOTO_EXTRACT_PROMPT,
-    ).with_model(model_provider, model_name)
     prompt_lines = [f"This is photo index {photo_idx} of a house being measured for siding."]
     if address:
         prompt_lines.append(f"Property address: {address}")
@@ -2903,19 +2988,52 @@ async def _extract_one_photo(
         "Return your per-photo extraction JSON now, with `index` set to "
         f"{photo_idx}. No prose."
     )
-    user_msg = UserMessage(
-        text="\n".join(prompt_lines),
-        file_contents=[ImageContent(image_base64=base64.b64encode(raw_bytes).decode("ascii"))],
-    )
-    try:
-        reply = await asyncio.wait_for(chat.send_message(user_msg), timeout=120)
-    except Exception as e:
-        logger.warning("[ai-measure phase-A] photo %d failed: %s", photo_idx, e)
-        return {"index": photo_idx, "_extraction_error": str(e), "_latency_ms": int((time.time() - t0) * 1000)}
-    parsed = _clean_json_reply(reply or "")
-    parsed["_photo_idx"] = photo_idx
-    parsed.setdefault("index", photo_idx)
-    parsed["_latency_ms"] = int((time.time() - t0) * 1000)
+    prompt_text = "\n".join(prompt_lines)
+
+    async def _one_call(retry_note: str = "") -> dict:
+        call_t0 = time.time()
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"ai-measure-photo-{user_id}-{photo_idx}-{uuid.uuid4().hex[:6]}",
+            system_message=PER_PHOTO_EXTRACT_PROMPT,
+        ).with_model(model_provider, model_name)
+        text = prompt_text if not retry_note else f"{retry_note}\n\n{prompt_text}"
+        user_msg = UserMessage(
+            text=text,
+            file_contents=[ImageContent(image_base64=base64.b64encode(raw_bytes).decode("ascii"))],
+        )
+        try:
+            reply = await asyncio.wait_for(chat.send_message(user_msg), timeout=120)
+        except Exception as e:
+            logger.warning("[ai-measure phase-A] photo %d call failed: %s", photo_idx, e)
+            return {"index": photo_idx, "_extraction_error": str(e), "_latency_ms": int((time.time() - call_t0) * 1000)}
+        p = _clean_json_reply(reply or "")
+        p["_photo_idx"] = photo_idx
+        p.setdefault("index", photo_idx)
+        p["_latency_ms"] = int((time.time() - call_t0) * 1000)
+        return p
+
+    parsed = await _one_call()
+    # Iter 79j.43 — Empty-extraction retry. One additional call with an
+    # explicit "look harder" nudge. Still empty → mark and continue.
+    if _is_empty_extraction(parsed):
+        logger.warning("[ai-measure phase-A] photo %d returned empty; retrying once", photo_idx)
+        retry_nudge = (
+            "The previous response was empty. This photo DOES show part of "
+            "a house — even a partial view of one wall, one window, or one "
+            "roof edge is worth extracting. Fill every field you can. Only "
+            "if the photo is genuinely NOT a house exterior (e.g. interior, "
+            "landscape, blurry) return an empty JSON with `notes` explaining why."
+        )
+        retry_parsed = await _one_call(retry_note=retry_nudge)
+        retry_parsed["_empty_retry_attempted"] = True
+        if _is_empty_extraction(retry_parsed):
+            retry_parsed["_empty_extraction"] = True
+            retry_parsed["_empty_reason"] = "Two consecutive empty Claude responses — photo may be interior, blurry, or not a house exterior."
+            logger.warning("[ai-measure phase-A] photo %d STILL empty after retry — orphan risk", photo_idx)
+        # Preserve original _latency_ms behaviour but add total
+        retry_parsed["_total_latency_ms"] = int((time.time() - t0) * 1000)
+        return retry_parsed
     return parsed
 
 
@@ -3013,6 +3131,43 @@ async def _run_two_phase_pipeline(
     # 5 min total cap for the parallel extraction phase — matches the
     # existing 4-min single-call ceiling with headroom for larger runs.
     extractions = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=False), timeout=300)
+    # Iter 79j.43 — Empty-extraction bookkeeping. After retry, any
+    # photo still flagged `_empty_extraction: true` orphans the walls
+    # it was the sole cover for. Compute the orphan set BEFORE Phase B
+    # so we can surface it on the final raw.
+    empty_photos: list[dict] = []
+    walls_seen_by_photo: dict[int, set[str]] = {}
+    for e in extractions:
+        idx = int(e.get("_photo_idx", e.get("index", -1)))
+        if e.get("_empty_extraction"):
+            empty_photos.append({
+                "photo_idx": idx,
+                "reason": e.get("_empty_reason") or "empty",
+                "extraction_error": e.get("_extraction_error") or None,
+            })
+            walls_seen_by_photo[idx] = set()
+        elif e.get("_extraction_error"):
+            empty_photos.append({
+                "photo_idx": idx,
+                "reason": f"call failed: {e.get('_extraction_error')}",
+                "extraction_error": e.get("_extraction_error"),
+            })
+            walls_seen_by_photo[idx] = set()
+        else:
+            wv = e.get("walls_visible") or []
+            walls_seen_by_photo[idx] = {
+                (w or "").strip().lower()
+                for w in wv
+                if isinstance(w, str) and (w or "").strip()
+            }
+    all_covered_walls: set[str] = set()
+    for wset in walls_seen_by_photo.values():
+        all_covered_walls |= wset
+    # Any of the 4 cardinal walls that NO non-empty photo saw is orphaned.
+    orphaned_walls: list[str] = sorted(
+        {"front", "back", "left", "right"} - all_covered_walls
+    )
+
     # Persist Phase A immediately — even if Phase B fails downstream,
     # the Debug view still has the per-photo data to show.
     await db.ai_measure_runs.update_one(
@@ -3057,6 +3212,12 @@ async def _run_two_phase_pipeline(
         ]
     # Tag telemetry so the Debug view can render "two-phase" vs "single-call".
     final["_pipeline"] = "two_phase"
+    # Iter 79j.43 — Surface empty-photo + orphaned-wall metadata so
+    # the frontend can render a prominent warning banner and mark
+    # affected wall fields amber. Never fail silently on a dead photo.
+    if empty_photos or orphaned_walls:
+        final["_empty_photos"] = empty_photos
+        final["_orphaned_walls"] = orphaned_walls
     return final, extractions
 
 
