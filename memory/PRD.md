@@ -51,6 +51,11 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 ## Implementation Timeline
 - **P1 QUEUED (post-Run3)** — **Trace Coverage tile** (Feb 2026): tight fence per user — 4 wall cells + N dormer cells, each showing count of direct-view photos from `_source_photo_indices.length`. Color: green ≥2, amber 1, red 0. Read-only. NO new detection logic — purely a view over data Phase A already emits. Half-day scope. Ship only after Run 3 validates the current defect fixes.
 
+- **Iter 79j.48** — **Auto-populate estimator / date / state at create time** (Feb 2026):
+  - **Backend** (`routes/estimates.py POST /estimates`): after building `doc` from the request body, fill-if-empty three fields — `estimator` gets the creating user's `name`; `estimate_date` gets `now[:10]` (server-side UTC fallback); `address_state` gets copied from the company's most-recently-updated estimate that has one (most contractors are local, so the last-used state is a strong default). Every fill is `if not (doc.get(...) or "").strip()` — client values are NEVER overridden.
+  - **Frontend** (`pages/Dashboard.jsx createEstimate`): swapped `new Date().toISOString().slice(0,10)` (UTC — evening ET rolled to tomorrow) for `new Date().toLocaleDateString("en-CA")` (YYYY-MM-DD in local time).
+  - **Verification**: three curl scenarios confirmed — empty body seeds `estimator="Howard Hunt"` + today's date; the next empty-body create picks up `CA` from a prior estimate; explicit `{estimator, estimate_date, address_state}` in the request body all survive verbatim. Backend + frontend lint clean.
+
 - **Iter 79j.47** — **Customer contact + company + billing + lead source on estimates** (Feb 2026): 18 new optional fields wired end-to-end without blocking drafting or autosave.
   - **Backend model** (`models.py` `EstimateIn`): added 10 contact/lead + 8 structured-address fields, all `Optional[str] = None`. The PUT handler's `model_dump(exclude_none=True)` means partial payloads never clobber stored values — verified with a partial PUT that kept email/phone/company/lead intact while only `customer_name` updated.
   - **Frontend payload whitelist** (`useEstimate.js` `buildPayload`): explicit line per field, with `.trim()` on email/phone/fax to strip paste noise, plain `|| ""` on the rest so autosave produces stable JSON.

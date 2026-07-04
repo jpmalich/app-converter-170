@@ -71,6 +71,30 @@ async def create_estimate(body: EstimateIn, user: dict = Depends(get_current_use
     if not doc.get("pricing_mode"):
         b = await get_branding()
         doc["pricing_mode"] = b.get("default_pricing_mode") or "margin"
+    # Iter 79j.48 — Fill-if-empty defaults from data the app already
+    # knows at creation time. NEVER override a client-supplied value —
+    # the contractor can edit everything post-create anyway. `now` is
+    # UTC for created_at consistency; the frontend also passes a
+    # LOCAL-date fallback so evening-US timezones don't get dated
+    # tomorrow.
+    if not (doc.get("estimator") or "").strip():
+        doc["estimator"] = user.get("name") or ""
+    if not (doc.get("estimate_date") or "").strip():
+        doc["estimate_date"] = now[:10]  # YYYY-MM-DD from the same UTC now
+    if not (doc.get("address_state") or "").strip():
+        # Look up the company's most-recently-updated estimate that
+        # HAS a state, and copy it. Most contractors run local, so the
+        # last-used state is a strong default.
+        prior = await db.estimates.find_one(
+            {
+                "company_id": user["company_id"],
+                "address_state": {"$nin": [None, ""]},
+            },
+            sort=[("updated_at", -1)],
+            projection={"address_state": 1},
+        )
+        if prior and prior.get("address_state"):
+            doc["address_state"] = prior["address_state"]
     doc.update({
         "id": est_id,
         "company_id": user["company_id"],
