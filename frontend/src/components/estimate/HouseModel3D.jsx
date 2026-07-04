@@ -403,35 +403,78 @@ function buildHouseJson(preview, overrides, estimate) {
   };
 }
 
-// Iter 79j.26 — Gable roof planes (2 sloped rectangles).
-// Iter 79j.31 — ridge-axis-aware. For "x" ridge (running left-right)
-// planes tilt around X axis; for "z" ridge (running front-back)
-// planes tilt around Z axis and swap dimensions.
-function buildGableRoofPlanes(scene, house, roofMat, roofRise, avgGableEave) {
+// Iter 79j.33 — Shared roof frame. EVERY piece of roof-dependent
+// geometry (gable planes, ridge line, dormer placement, hip planes,
+// bbox envelope) reads from this ONE function so no downstream
+// component ever hardcodes an axis. Returns everything needed to
+// place vertices in world coords without further rotation.
+//
+//   ridgeAxis "x": ridge runs along world X, at z=0
+//   ridgeAxis "z": ridge runs along world Z, at x=0
+//
+// `along` = axis parallel to the ridge (contributes ridge length)
+// `across` = axis perpendicular to the ridge (contributes span, tilt)
+function roofFrame(house, roofRise, avgGableEave) {
   const { footprint, roof } = house;
   const isXRidge = roof.ridgeAxis === "x";
-  // Roof span is perpendicular to the ridge; ridge length is parallel.
-  const span = isXRidge ? footprint.depth : footprint.width;
-  const ridgeLen = isXRidge ? footprint.width : footprint.depth;
-  const planeLen = Math.sqrt(Math.pow(span / 2, 2) + Math.pow(roofRise, 2));
-  const planeGeom = new THREE.PlaneGeometry(ridgeLen + roof.overhang * 2, planeLen + roof.overhang);
-  const angle = Math.atan2(roofRise, span / 2);
-  ["a", "b"].forEach((side) => {
-    const plane = new THREE.Mesh(planeGeom, roofMat);
-    const dir = side === "a" ? 1 : -1;
-    if (isXRidge) {
-      plane.rotation.x = dir * (Math.PI / 2 - angle);
-      plane.position.set(0, avgGableEave + roofRise / 2, side === "a" ? -footprint.depth / 4 : footprint.depth / 4);
-    } else {
-      // Z-axis ridge — planes tilt around Z. Rotate the plane 90°
-      // around Y first so its "top" edge (originally +Y) aligns with
-      // the Z-ridge direction, then tilt around Z.
-      plane.rotation.y = Math.PI / 2;
-      plane.rotation.z = dir * (Math.PI / 2 - angle);
-      plane.position.set(side === "a" ? -footprint.width / 4 : footprint.width / 4, avgGableEave + roofRise / 2, 0);
-    }
-    scene.add(plane);
-  });
+  const halfW = footprint.width / 2;
+  const halfD = footprint.depth / 2;
+  const oh = roof.overhang;
+  const alongHalf = isXRidge ? halfW : halfD;
+  const acrossHalf = isXRidge ? halfD : halfW;
+  const ridgeY = avgGableEave + roofRise;
+  // Build a (along, across, y) → (world x, y, z) mapper.
+  // isXRidge: along = world X, across = world Z
+  // else:     along = world Z, across = world X
+  const toWorld = (a, c, y) => (isXRidge ? [a, y, c] : [c, y, a]);
+  return {
+    isXRidge,
+    alongHalf,
+    acrossHalf,
+    overhang: oh,
+    ridgeY,
+    eaveY: avgGableEave,
+    toWorld,
+  };
+}
+
+// Iter 79j.26 — Gable roof planes (2 sloped rectangles).
+// Iter 79j.33 — rebuilt on explicit BufferGeometry using roofFrame().
+// The prior PlaneGeometry+rotation approach produced a degenerate
+// vertical plane for ridgeAxis="z" because Three.js applies Euler
+// XYZ order Rx*Ry*Rz — Rz was applied first in local frame and did
+// nothing useful for a 2D plane, then Ry(π/2) flattened it against
+// the YZ plane. Explicit corner vertices bypass that ambiguity.
+function buildGableRoofPlanes(scene, house, roofMat, roofRise, avgGableEave) {
+  const F = roofFrame(house, roofRise, avgGableEave);
+  const { alongHalf, acrossHalf, overhang: oh, ridgeY, eaveY, toWorld } = F;
+  // Ridge runs along `a` at c=0, y=ridgeY.
+  // Two eaves at c=±acrossHalf, y=eaveY.
+  // Overhang extends the ridge in the along-axis and the eave in the across-axis.
+  const addQuad = (v1, v2, v3, v4) => {
+    const positions = [
+      ...v1, ...v2, ...v3,
+      ...v1, ...v3, ...v4,
+    ];
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geom.computeVertexNormals();
+    scene.add(new THREE.Mesh(geom, roofMat));
+  };
+  // "Positive-across" slope (front slope for X-ridge, right slope for Z-ridge)
+  addQuad(
+    toWorld(-alongHalf - oh, 0, ridgeY),
+    toWorld(+alongHalf + oh, 0, ridgeY),
+    toWorld(+alongHalf + oh, +acrossHalf + oh, eaveY),
+    toWorld(-alongHalf - oh, +acrossHalf + oh, eaveY),
+  );
+  // "Negative-across" slope
+  addQuad(
+    toWorld(+alongHalf + oh, 0, ridgeY),
+    toWorld(-alongHalf - oh, 0, ridgeY),
+    toWorld(-alongHalf - oh, -acrossHalf - oh, eaveY),
+    toWorld(+alongHalf + oh, -acrossHalf - oh, eaveY),
+  );
 }
 
 // Iter 79j.26 — Hip roof: 4 planes (2 trapezoids on the long sides,
@@ -801,27 +844,19 @@ function buildScene(scene, house) {
     }
   }
 
-  // Iter 79j.25 + .26 — Geometry sanity checks.
+  // Iter 79j.25 + .26 + .33 — Geometry sanity checks. Warnings surface
+  // in the UI via the amber banner in the side panel; console.error is
+  // kept for dev debugging. `warnings` is returned to the React layer.
+  const warnings = [];
   const maxEave = Math.max(...house.facades.map((f) => f.eaveHeight));
   if (ridgeY <= maxEave) {
     console.error(
       "[HouseModel3D] sanity FAILED — ridge not above eave",
       { roofType: roof.type, ridgeY, maxEave, avgGableEave, roofRise, pitch: roof.pitch },
     );
-  }
-  if (roof.type === "hip") {
-    // For hip: ridge length ≥ 0 (i.e. |width - depth| ≥ 0) and all
-    // four planes slope downward from the ridge. `PlaneGeometry` +
-    // BufferGeometry constructions we build ensure downward slope by
-    // construction, so this reduces to a non-negative ridge length.
-    const ridgeLen = Math.abs(footprint.width - footprint.depth);
-    if (ridgeLen < 0) {
-      console.error("[HouseModel3D] hip sanity FAILED — negative ridge length", { ridgeLen });
-    }
+    warnings.push("Ridge height sits at or below the eave — check pitch or eave height.");
   }
   if (roof.type === "gable-shed-dormer" && roof.dormer) {
-    // Dormer face top must sit below the main ridge.
-    // Face bottom sits on the main roof surface at Z=zd.
     const zd = footprint.depth * 0.25;
     const mainRoofY = avgGableEave + roofRise * (1 - zd / (footprint.depth / 2));
     const dormerFaceTop = mainRoofY + Number(roof.dormer.kneeWallHeight || 0);
@@ -830,10 +865,13 @@ function buildScene(scene, house) {
         "[HouseModel3D] dormer sanity FAILED — dormer face top ≥ main ridge",
         { dormerFaceTop, ridgeY, kneeWallHeight: roof.dormer.kneeWallHeight },
       );
+      warnings.push("Dormer face top is above the main ridge — shrink knee-wall height.");
     }
   }
 
-  // Ground shadow disc for visual grounding.
+  // Ground shadow disc for visual grounding. Added BEFORE the bbox
+  // check so we can exclude it explicitly (it extends 1.2× beyond
+  // footprint by design and would trigger false positives).
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(Math.max(footprint.width, footprint.depth) * 1.2, 40),
     new THREE.MeshLambertMaterial({ color: 0xeceff4 })
@@ -842,7 +880,49 @@ function buildScene(scene, house) {
   ground.position.y = -0.01;
   scene.add(ground);
 
-  return wallMeshes;
+  // Iter 79j.33 — Bounding-box envelope check. After every roof mesh
+  // is placed, the union of all non-ground mesh bboxes must fit
+  // inside the expected roof-envelope box:
+  //   X: [-halfW - oh - eps, +halfW + oh + eps]
+  //   Y: [-eps, ridgeY + knee + eps]
+  //   Z: [-halfD - oh - eps, +halfD + oh + eps]
+  // Anything sticking out ≥ TOL feet is either a rotated-90° roof
+  // plane or a dormer poking through the wrong slope. Both were the
+  // exact symptoms Howard flagged on the front-gable render (Iter 79j.33).
+  const halfWEnv = footprint.width / 2;
+  const halfDEnv = footprint.depth / 2;
+  const oh = roof.overhang;
+  const knee = roof.dormer ? Number(roof.dormer.kneeWallHeight || 0) : 0;
+  const TOL = 0.5;   // feet — allow tiny float slop before crying wolf
+  const envMin = new THREE.Vector3(-halfWEnv - oh - TOL, -TOL, -halfDEnv - oh - TOL);
+  const envMax = new THREE.Vector3(+halfWEnv + oh + TOL, ridgeY + knee + TOL, +halfDEnv + oh + TOL);
+  const meshBox = new THREE.Box3();
+  const piercing = [];
+  scene.children.forEach((child) => {
+    if (!child.isMesh) return;
+    if (child === ground) return;              // ground disc extends by design
+    meshBox.setFromObject(child);
+    if (meshBox.isEmpty()) return;
+    const outX = Math.max(0, envMin.x - meshBox.min.x, meshBox.max.x - envMax.x);
+    const outY = Math.max(0, envMin.y - meshBox.min.y, meshBox.max.y - envMax.y);
+    const outZ = Math.max(0, envMin.z - meshBox.min.z, meshBox.max.z - envMax.z);
+    const outWorst = Math.max(outX, outY, outZ);
+    if (outWorst > TOL) {
+      piercing.push({ outFt: outWorst });
+    }
+  });
+  if (piercing.length > 0) {
+    const worst = Math.max(...piercing.map((p) => p.outFt));
+    console.error(
+      "[HouseModel3D] envelope FAILED — mesh(es) extend beyond roof envelope",
+      { pierceCount: piercing.length, worstOverhangFt: worst.toFixed(2), envMin, envMax },
+    );
+    warnings.push(
+      `Roof/dormer geometry extends ${worst.toFixed(1)} ft outside the house envelope — try flipping Ridge orientation.`,
+    );
+  }
+
+  return { wallMeshes, warnings };
 }
 
 export default function HouseModel3D({ preview, estimate }) {
@@ -850,6 +930,11 @@ export default function HouseModel3D({ preview, estimate }) {
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
   const [overrides, setOverrides] = useState({ pitch: null, eaveHeights: {}, widths: {} });
+  // Iter 79j.33 — Geometry warnings from the last buildScene pass.
+  // Populated after every rebuild; surfaced in the amber banner in
+  // the side panel so the contractor sees the message where they can
+  // act on it (right above the Ridge orientation flip control).
+  const [geometryWarnings, setGeometryWarnings] = useState([]);
   const house = useMemo(() => buildHouseJson(preview, overrides, estimate), [preview, overrides, estimate]);
 
   // Mount scene once
@@ -939,7 +1024,10 @@ export default function HouseModel3D({ preview, estimate }) {
         s.scene.remove(child);
       }
     });
-    s.wallMeshes = buildScene(s.scene, house);
+    s.wallMeshes = {};
+    const built = buildScene(s.scene, house);
+    s.wallMeshes = built.wallMeshes;
+    setGeometryWarnings(built.warnings || []);
   }, [house]);
 
   // Highlight selected facade
@@ -976,6 +1064,22 @@ export default function HouseModel3D({ preview, estimate }) {
         return aiSaysGable !== rendersGable;
       });
   const hasRidgeMismatch = ridgeMismatchWalls.length > 0;
+  // Iter 79j.33 — Combine ridge-mismatch (data-driven) + geometry
+  // warnings (bbox-driven) into ONE banner. Both point at the same
+  // fix (flip Ridge orientation), so we merge messages instead of
+  // stacking two banners.
+  const bannerMessages = [];
+  if (hasRidgeMismatch) {
+    const walls = ridgeMismatchWalls.length === 1
+      ? `the ${ridgeMismatchWalls[0].id} wall`
+      : `${ridgeMismatchWalls.map((w) => w.id).join(", ")} walls`;
+    const dir = ridgeMismatchWalls.some((w) => w.aiGableTriangleHeightFt > 0)
+      ? `${walls} report a gable triangle in the AI takeoff but aren't rendering as a gable end.`
+      : `${walls} are rendering as gable ends but the AI didn't detect a gable there.`;
+    bannerMessages.push(dir);
+  }
+  geometryWarnings.forEach((w) => bannerMessages.push(w));
+  const showBanner = bannerMessages.length > 0;
   // Whole-house material lines from the estimator (SSOT). Filter to
   // siding-adjacent categories so the "Materials" section shows the
   // squares / j-channel / starter / corner post the estimate will use.
@@ -1128,12 +1232,12 @@ export default function HouseModel3D({ preview, estimate }) {
               </span>
             )}
           </div>
-          {/* Iter 79j.32 — Ridge/gable consistency warning banner.
-              Fires when Claude's per-wall gable_triangle_height_ft
-              disagrees with which walls we're rendering as gable ends.
-              Points the contractor straight at the Ridge orientation
-              flip control right below it. */}
-          {hasRidgeMismatch && (
+          {/* Iter 79j.32 + 79j.33 — Geometry warning banner. Combines
+              the ridge-mismatch check (AI gable triangles vs current
+              ridgeAxis) with the bbox-envelope check (any mesh
+              extending beyond the house envelope). Both point at the
+              same fix — flip Ridge orientation right below. */}
+          {showBanner && (
             <div
               className="flex items-start gap-2 px-2 py-1.5 bg-[#FEF3C7] border border-[#F59E0B] text-[10px] leading-tight"
               data-testid="ai-measure-3d-ridge-mismatch-banner"
@@ -1141,14 +1245,11 @@ export default function HouseModel3D({ preview, estimate }) {
               <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: AMBER }} />
               <div className="text-[#92400E]">
                 <strong className="uppercase tracking-wider text-[9px]">Roof orientation may be wrong</strong>
-                <div className="mt-0.5">
-                  {ridgeMismatchWalls.length === 1
-                    ? `The ${ridgeMismatchWalls[0].id} wall`
-                    : `${ridgeMismatchWalls.map((w) => w.id).join(", ")} walls`}{" "}
-                  {ridgeMismatchWalls.some((w) => w.aiGableTriangleHeightFt > 0)
-                    ? "report a gable triangle in the AI takeoff but aren't rendering as a gable end."
-                    : "are rendering as gable ends but the AI didn't detect a gable there."}{" "}
-                  Try flipping <strong>Ridge orientation</strong> below.
+                <div className="mt-0.5 space-y-0.5">
+                  {bannerMessages.map((m, i) => (
+                    <div key={i}>{m}</div>
+                  ))}
+                  <div className="pt-0.5">Try flipping <strong>Ridge orientation</strong> below.</div>
                 </div>
               </div>
             </div>
