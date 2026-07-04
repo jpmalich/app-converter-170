@@ -333,6 +333,31 @@ export default function useEstimate(id) {
       estimate_date: source.estimate_date || "",
       estimator: source.estimator || "",
       notes: source.notes || "",
+      // Iter 79j.47 — Customer contact + billing + lead source. Trim
+      // the free-form contact identifiers so trailing whitespace from
+      // paste doesn't fail email/phone matchers downstream.
+      customer_email: (source.customer_email || "").trim(),
+      customer_phone: (source.customer_phone || "").trim(),
+      customer_phone_alt: (source.customer_phone_alt || "").trim(),
+      customer_fax: (source.customer_fax || "").trim(),
+      customer_contact_method: source.customer_contact_method || "",
+      customer_company: source.customer_company || "",
+      customer_contact_title: source.customer_contact_title || "",
+      billing_address: source.billing_address || "",
+      lead_source: source.lead_source || "",
+      lead_source_detail: source.lead_source_detail || "",
+      // Structured address parts (job + billing). The composed single-
+      // line `address` string above stays canonical; these parts feed
+      // the 4-field UI grid and round-trip through PUT so a partial
+      // payload doesn't drop them.
+      address_street: source.address_street || "",
+      address_city: source.address_city || "",
+      address_state: source.address_state || "",
+      address_zip: source.address_zip || "",
+      billing_street: source.billing_street || "",
+      billing_city: source.billing_city || "",
+      billing_state: source.billing_state || "",
+      billing_zip: source.billing_zip || "",
       siding_color: source.siding_color || "",
       ascend_color: source.ascend_color || "",
       accessories_color: source.accessories_color || "",

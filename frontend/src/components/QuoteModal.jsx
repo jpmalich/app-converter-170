@@ -15,7 +15,15 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   const { user } = useAuth();
   const { lang: uiLang } = useLang();
   const t = useT();
-  const [email, setEmail] = useState("");
+  // Iter 79j.47 — Two-way email sync. Prefill the recipient input
+  // from the estimate's own contact fields (customer_email preferred,
+  // then legacy recipient_email). If neither is set, leave blank and
+  // show a note that whatever is entered here will be saved back to
+  // the estimate after send.
+  const [email, setEmail] = useState(
+    () => (estimate?.customer_email || estimate?.recipient_email || "").trim(),
+  );
+  const noStoredEmail = !((estimate?.customer_email || "").trim());
   // Per-estimate send language — defaults to the contractor's current UI lang,
   // but the contractor can flip it before sending. Note for the contractor only:
   // the message body resets when they change languages so they don't accidentally
@@ -143,25 +151,33 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
       <div className="min-h-screen flex flex-col items-center py-6 sm:py-10 px-4">
         {/* Floating action bar */}
         <div className="no-print w-full max-w-3xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-2 md:flex-1">
-            <input
-              type="email"
-              className="input bg-white h-12 md:h-9 text-base md:text-sm"
-              placeholder={t("quote.recipientPlaceholder")}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              data-testid="email-recipient"
-              style={{ minWidth: 240 }}
-            />
-            <button
-              className="btn-primary h-12 md:h-9 justify-center md:justify-start"
-              onClick={handleEmail}
-              disabled={!email || sending || !emailConfigured}
-              data-testid="send-email-btn"
-              title={!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : ""}
-            >
-              <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
-            </button>
+          <div className="flex flex-col md:flex-1 gap-1">
+            <div className="flex flex-col md:flex-row md:items-center gap-2">
+              <input
+                type="email"
+                className="input bg-white h-12 md:h-9 text-base md:text-sm"
+                placeholder={t("quote.recipientPlaceholder")}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="off"
+                data-testid="email-recipient"
+                style={{ minWidth: 240 }}
+              />
+              <button
+                className="btn-primary h-12 md:h-9 justify-center md:justify-start"
+                onClick={handleEmail}
+                disabled={!email || sending || !emailConfigured}
+                data-testid="send-email-btn"
+                title={!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : ""}
+              >
+                <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
+              </button>
+            </div>
+            {noStoredEmail && (
+              <div className="text-[10px] text-white/70 md:text-[var(--muted)]" data-testid="quote-email-will-save">
+                {t("quote.emailWillSave")}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 justify-between md:justify-end">
             <button
@@ -263,8 +279,30 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">
                 Prepared For
               </div>
-              <div className="font-semibold text-[#09090B]">{estimate.customer_name || "—"}</div>
+              {/* Iter 79j.47 — Company name (bold) sits above the
+                  customer name when set; contact chip line below the
+                  address; billing address only if it differs. Lead
+                  source, fax, and preferred contact are contractor-
+                  internal — never rendered on customer documents. */}
+              {estimate.customer_company && (
+                <div className="font-semibold text-[#09090B]" data-testid="quote-prepared-company">
+                  {estimate.customer_company}
+                </div>
+              )}
+              <div className={`text-[#09090B] ${estimate.customer_company ? "" : "font-semibold"}`}>
+                {estimate.customer_name || "—"}
+              </div>
               <div className="text-sm text-[#52525B]">{estimate.address || ""}</div>
+              {(estimate.customer_phone || estimate.customer_email) && (
+                <div className="text-xs text-[#52525B] mt-1" data-testid="quote-prepared-contact">
+                  {[estimate.customer_phone, estimate.customer_email].filter(Boolean).join(" · ")}
+                </div>
+              )}
+              {(estimate.billing_address || "").trim() && (
+                <div className="text-xs text-[#52525B] mt-1" data-testid="quote-prepared-billing">
+                  <span className="uppercase tracking-wider text-[10px] font-bold text-[#71717A]">Billing:</span> {estimate.billing_address}
+                </div>
+              )}
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">

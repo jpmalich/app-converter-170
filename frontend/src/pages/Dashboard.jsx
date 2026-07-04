@@ -149,7 +149,11 @@ export default function Dashboard({ kind = "siding" }) {
       !q ||
       (e.customer_name || "").toLowerCase().includes(q.toLowerCase()) ||
       (e.estimate_number || "").toLowerCase().includes(q.toLowerCase()) ||
-      (e.address || "").toLowerCase().includes(q.toLowerCase())
+      (e.address || "").toLowerCase().includes(q.toLowerCase()) ||
+      // Iter 79j.47 — Also match the new contact/company fields.
+      (e.customer_email || "").toLowerCase().includes(q.toLowerCase()) ||
+      (e.customer_phone || "").toLowerCase().includes(q.toLowerCase()) ||
+      (e.customer_company || "").toLowerCase().includes(q.toLowerCase())
     );
 
   return (

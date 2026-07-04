@@ -298,8 +298,17 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
             <td width="50%" valign="top" style="padding-right:12px;font-family:${FONT};">
               <div style="font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:4px;">${esc(t("email.preparedFor"))}</div>
-              <div style="font-family:${FONT};font-size:15px;font-weight:600;color:${C.ink};">${esc(estimate.customer_name || "—")}</div>
+              ${estimate.customer_company
+                ? `<div style="font-family:${FONT};font-size:15px;font-weight:600;color:${C.ink};">${esc(estimate.customer_company)}</div>`
+                : ""}
+              <div style="font-family:${FONT};font-size:${estimate.customer_company ? "13px" : "15px"};${estimate.customer_company ? "" : "font-weight:600;"}color:${C.ink};">${esc(estimate.customer_name || "—")}</div>
               <div style="font-family:${FONT};font-size:13px;color:${C.muted};">${esc(estimate.address || "")}</div>
+              ${(estimate.customer_phone || estimate.customer_email)
+                ? `<div style="font-family:${FONT};font-size:12px;color:${C.muted};margin-top:4px;">${esc([estimate.customer_phone, estimate.customer_email].filter(Boolean).join(" · "))}</div>`
+                : ""}
+              ${(estimate.billing_address || "").trim()
+                ? `<div style="font-family:${FONT};font-size:12px;color:${C.muted};margin-top:4px;"><span style="text-transform:uppercase;letter-spacing:1.5px;font-size:10px;font-weight:bold;color:${C.faint};">${esc(t("email.billing") || "Billing")}:</span> ${esc(estimate.billing_address)}</div>`
+                : ""}
             </td>
             <td width="50%" valign="top" style="padding-left:12px;font-family:${FONT};">
               <div style="font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};font-weight:bold;margin-bottom:4px;">${esc(t("email.estimator"))}</div>

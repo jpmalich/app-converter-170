@@ -457,6 +457,7 @@ export default function ISSEstimateEditor() {
                 className="input h-9 text-sm w-full"
                 value={est.customer_name || ""}
                 onChange={(e) => updateField("customer_name", e.target.value)}
+                autoComplete="off"
                 data-testid="iss-customer-name"
               />
             </div>
@@ -466,6 +467,7 @@ export default function ISSEstimateEditor() {
                 className="input h-9 text-sm w-full"
                 value={est.address || ""}
                 onChange={(e) => updateField("address", e.target.value)}
+                autoComplete="off"
                 data-testid="iss-address"
               />
             </div>
@@ -477,6 +479,31 @@ export default function ISSEstimateEditor() {
                 value={est.estimate_date || ""}
                 onChange={(e) => updateField("estimate_date", e.target.value)}
                 data-testid="iss-date"
+              />
+            </div>
+            {/* Iter 79j.47 — Email + cell phone. Optional; the ISS
+                editor's PUT payload spreads the whole estimate, so
+                no whitelist change is needed for these to persist. */}
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">Email</label>
+              <input
+                type="email"
+                className="input h-9 text-sm w-full"
+                value={est.customer_email || ""}
+                onChange={(e) => updateField("customer_email", e.target.value)}
+                autoComplete="off"
+                data-testid="iss-customer-email"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">Cell Phone</label>
+              <input
+                type="tel"
+                className="input h-9 text-sm w-full"
+                value={est.customer_phone || ""}
+                onChange={(e) => updateField("customer_phone", e.target.value)}
+                autoComplete="off"
+                data-testid="iss-customer-phone"
               />
             </div>
           </div>
@@ -1025,6 +1052,11 @@ export default function ISSEstimateEditor() {
                 accept_token,
               });
               toast.success("Quote sent");
+              // Iter 79j.47 — Two-way sync. Persist a newly-typed
+              // recipient back to the estimate so it prefills next time.
+              const sent = (recipient_email || "").trim();
+              const stored = (est?.customer_email || "").trim();
+              if (sent && sent !== stored) updateField("customer_email", sent);
               return true;
             } catch (e) {
               toast.error(formatApiError(e.response?.data?.detail));
