@@ -29,13 +29,17 @@ def _reload_module():
     return importlib.import_module("routes.ai_measure")
 
 
-def test_pick_llm_api_key_prefers_anthropic_direct_when_set(monkeypatch):
+def test_pick_llm_api_key_ignores_anthropic_direct_when_disabled(monkeypatch):
+    """Iter 79j.44 — Direct-key routing is currently DISABLED. Even
+    when ANTHROPIC_API_KEY is set on the .env, the helper MUST return
+    the Emergent proxy key. Re-enable only after a standalone
+    api.anthropic.com test call succeeds in isolation."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test-key-12345")
     monkeypatch.setenv("EMERGENT_LLM_KEY", "sk-emergent-fallback")
     m = _reload_module()
     key, source = m._pick_llm_api_key("anthropic")
-    assert key == "sk-ant-test-key-12345"
-    assert source == "anthropic_direct"
+    assert key == "sk-emergent-fallback"
+    assert source == "emergent_proxy"
 
 
 def test_pick_llm_api_key_falls_back_to_emergent_when_anthropic_unset(monkeypatch):

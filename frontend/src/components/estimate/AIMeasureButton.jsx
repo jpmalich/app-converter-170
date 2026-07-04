@@ -1050,6 +1050,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setRunError(null);
     setRunErrorMeta(null);
     runStartTsRef.current = Date.now();
+    // Iter 79j.44 — Mutable stage tracker hoisted OUTSIDE try so the
+    // catch can read it. React's `busyStage` state is captured in the
+    // render closure and does NOT reflect setBusyStage() calls made
+    // inside this async function.
+    let liveStage = "starting";
     try {
       const fd = new FormData();
 
@@ -1161,6 +1166,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       }
       setCurrentRunId(runId);
       setBusyStage(launch?.data?.stage || "starting");
+      liveStage = launch?.data?.stage || "starting";
       // Poll until done. Max ~5 min (100 polls × 3 s); each poll is a
       // tiny GET so a misbehaving Claude doesn't hang the UI either.
       let result = null;
@@ -1176,7 +1182,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           continue;
         }
         const s = statusResp?.data || {};
-        if (s.stage && s.stage !== busyStage) {
+        if (s.stage && s.stage !== liveStage) {
+          liveStage = s.stage;
           setBusyStage(s.stage);
         }
         if (s.status === "error") {
@@ -1184,7 +1191,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           // can tell the user WHICH phase died. `s.error` is now
           // guaranteed non-empty by the backend.
           const err = new Error(s.error || "AI measure failed (no error message from backend)");
-          err._stage = s.stage || busyStage || "unknown";
+          err._stage = s.stage || liveStage || "unknown";
           err._kind = s.error_kind || "";
           throw err;
         }
@@ -1195,7 +1202,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         }
       }
       if (!result) {
-        throw new Error("AI measure timed out after 5 minutes — please try again with fewer photos");
+        // Iter 79j.44 — Stamp the last-known server stage on the
+        // client-side timeout error so the banner never shows
+        // "Phase: UNKNOWN" for a poll that stalled mid-Phase-A.
+        const err = new Error("AI measure timed out after 5 minutes — please try again with fewer photos");
+        err._stage = liveStage || "unknown";
+        err._kind = "ClientPollTimeout";
+        throw err;
       }
       const data = result;
       // Iter 79j.37 — Thread per-photo extractions + pipeline flag
@@ -1293,7 +1306,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       const elapsedMs = runStartTsRef.current ? Date.now() - runStartTsRef.current : 0;
       setRunError(String(msg));
       setRunErrorMeta({
-        stage: e?._stage || busyStage || "unknown",
+        stage: e?._stage || liveStage || busyStage || "unknown",
         elapsedMs,
         kind: e?._kind || "",
       });

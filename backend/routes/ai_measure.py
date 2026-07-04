@@ -101,37 +101,36 @@ def _resolve_model(choice: str | None) -> tuple[str, str, str]:
 
 
 def _pick_llm_api_key(provider: str) -> tuple[str | None, str]:
-    """Iter 79j.42 — Backend-only key routing.
+    """Iter 79j.44 — DIRECT-KEY ROUTING EXPLICITLY DISABLED.
 
-    When `ANTHROPIC_API_KEY` is set on the backend .env AND the resolved
-    model provider is `anthropic`, route this run's Claude calls
-    directly to api.anthropic.com (bypasses the Emergent LiteLLM proxy
-    and its per-tenant budget cap). emergentintegrations' LlmChat
-    auto-detects a non-`sk-emergent-` key and uses LiteLLM's native
-    Anthropic path, so no other code changes are needed — this helper
-    just picks the right key.
+    Every provider now uses the Emergent Universal Key via the LiteLLM
+    proxy. The direct-Anthropic bypass introduced in Iter 79j.42 is
+    turned off until a standalone `api.anthropic.com` test call is
+    proven green in isolation. If `ANTHROPIC_API_KEY` is present on
+    the .env, this function IGNORES it and logs a warning so the
+    operator knows the direct path did not activate.
 
-    Never exposed to the frontend. Gemini and OpenAI providers keep
-    using the Emergent key regardless — this is an ANTHROPIC-only
-    bypass because those are the only calls Howard's contractors are
-    hitting hard enough to exhaust the proxy budget.
-
-    Returns (api_key, source) where source is "anthropic_direct" or
-    "emergent_proxy" for logging / telemetry only. api_key may be None
-    if BOTH env vars are missing — caller must handle.
+    Returns (api_key, source). `source` is always `"emergent_proxy"`.
+    `api_key` may be None if `EMERGENT_LLM_KEY` is missing — the
+    caller raises a 500 in that case.
     """
     if provider == "anthropic":
         direct = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
         if direct:
-            return direct, "anthropic_direct"
+            logger.warning(
+                "[AI_MEASURE key-routing] ANTHROPIC_API_KEY is set but direct-key "
+                "routing is currently disabled. Using EMERGENT_LLM_KEY (proxy) instead."
+            )
     return (os.environ.get("EMERGENT_LLM_KEY") or None), "emergent_proxy"
 
 
 # Startup log — operators can grep `AI_MEASURE key-routing` to confirm
 # which key each provider will use without decoding the .env by hand.
+# Iter 79j.44 — Direct-key routing is DISABLED regardless of .env, so
+# the summary is now a single hard statement.
 _LLM_ROUTING_SUMMARY = (
-    f"anthropic={'ANTHROPIC_API_KEY (direct)' if (os.environ.get('ANTHROPIC_API_KEY') or '').strip() else 'EMERGENT_LLM_KEY (proxy)'}, "
-    f"gemini/openai=EMERGENT_LLM_KEY (proxy)"
+    "anthropic=EMERGENT_LLM_KEY (proxy) [direct-key DISABLED], "
+    "gemini/openai=EMERGENT_LLM_KEY (proxy)"
 )
 logger.info("[AI_MEASURE key-routing] %s", _LLM_ROUTING_SUMMARY)
 
@@ -3046,8 +3045,27 @@ async def _run_two_phase_pipeline(
                 "_total_latency_ms": phase_a_total * 1000,
             }
     # Drain the cancellations so no orphaned task keeps the loop busy.
+    # Iter 79j.44 — CAP the drain at 5s. asyncio.CancelledError only
+    # interrupts at `await` boundaries — a task blocked inside a
+    # synchronous HTTP send (LlmChat -> LiteLLM -> httpx) will NOT
+    # unwind until the underlying request returns. Waiting on it here
+    # is what turned a 300s Phase A cap into a 1153s worker hang when
+    # LiteLLM was retrying budget-exceeded requests. If the drain does
+    # not finish inside 5s, we leave the tasks orphaned (they'll GC
+    # when the HTTP call finally returns) and move on to Phase B.
     if pending_tasks:
-        await asyncio.gather(*pending_tasks, return_exceptions=True)
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*pending_tasks, return_exceptions=True),
+                timeout=5,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "[ai-measure phase-A] drain of %d cancelled task(s) did not "
+                "complete in 5s — leaving orphaned and proceeding to Phase B "
+                "(the HTTP calls will finish in the background).",
+                len(pending_tasks),
+            )
     # Iter 79j.43 — Empty-extraction bookkeeping. After retry, any
     # photo still flagged `_empty_extraction: true` orphans the walls
     # it was the sole cover for. Compute the orphan set BEFORE Phase B
