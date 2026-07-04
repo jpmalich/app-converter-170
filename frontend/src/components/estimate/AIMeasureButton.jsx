@@ -981,6 +981,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // in 4s — for a $-affecting failure like budget-exceeded that's not
   // enough. Cleared automatically on the next successful run.
   const [runError, setRunError] = useState(null);
+  // Iter 79j.44 — Additional context for the persistent error banner.
+  // Stage tells the user which phase failed (Phase A extraction,
+  // Phase B reconcile, or upstream) and elapsed lets them judge
+  // whether it looks like a timeout vs a fast failure.
+  const [runErrorMeta, setRunErrorMeta] = useState(null); // { stage, elapsedMs, kind }
+  const runStartTsRef = useRef(0);
   const primaryWallsCovered = () => {
     const covered = new Set();
     // Iter 79j.35 — Two sources of elevation tags:
@@ -1041,6 +1047,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setMissingWallsModal(null);
     setBusy(true);
     setPreview(null);
+    setRunError(null);
+    setRunErrorMeta(null);
+    runStartTsRef.current = Date.now();
     try {
       const fd = new FormData();
 
@@ -1171,7 +1180,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           setBusyStage(s.stage);
         }
         if (s.status === "error") {
-          throw new Error(s.error || "AI measure failed");
+          // Iter 79j.44 — Include stage/kind so the persistent banner
+          // can tell the user WHICH phase died. `s.error` is now
+          // guaranteed non-empty by the backend.
+          const err = new Error(s.error || "AI measure failed (no error message from backend)");
+          err._stage = s.stage || busyStage || "unknown";
+          err._kind = s.error_kind || "";
+          throw err;
         }
         if (s.status === "done") {
           result = s.result;
@@ -1236,6 +1251,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       }
       setPreview(data);
       setRunError(null);   // Iter 79j.30 — clear any prior failure banner
+      setRunErrorMeta(null);
       // Iter 57: auto-apply Claude's per-photo elevation guesses to
       // any photo that isn't already explicitly tagged. Saves the
       // contractor 4-8 dropdown taps per measurement. Manual tags
@@ -1266,12 +1282,21 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       }
     } catch (e) {
       // Iter 79j.30 — Toasts get covered by the modal + auto-dismiss.
-      // Surface the error as a persistent inline banner too. Budget
+      // Surface the error as a persistent inline banner. Budget
       // exceeded is common enough (Emergent LLM Key runs out) that it
       // gets its own recognizable copy + link to the fix.
+      // Iter 79j.44 — Capture stage + elapsed so the banner tells the
+      // user WHICH phase failed and how long it took. Drop the
+      // transient toast since the modal-body banner is persistent and
+      // Retry-actionable.
       const msg = e?.response?.data?.detail || e?.message || "AI measure failed";
+      const elapsedMs = runStartTsRef.current ? Date.now() - runStartTsRef.current : 0;
       setRunError(String(msg));
-      toast.error(msg);
+      setRunErrorMeta({
+        stage: e?._stage || busyStage || "unknown",
+        elapsedMs,
+        kind: e?._kind || "",
+      });
     } finally {
       setBusy(false);
       setBusyStage("");
@@ -1280,6 +1305,21 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
   const apply = async () => {
     if (!preview?.measurements) return;
+    // Iter 79j.44 — Orphan-wall safety net. If Phase A left one of the
+    // 4 cardinal walls with no direct-view coverage, warn the user
+    // BEFORE writing numbers into the estimate. Their dimensions are
+    // extrapolated, so a silent Apply lets un-measured walls slip into
+    // a customer-facing quote. Bypass via ?window.confirm().
+    const orphaned = preview?.measurements?._ai_orphaned_walls || [];
+    if (orphaned.length > 0) {
+      const ok = window.confirm(
+        `This takeoff has unmeasured walls: ${orphaned.join(", ")}.\n\n` +
+        `Their dimensions are extrapolated from the walls Claude could see. ` +
+        `Apply anyway? (You can also close this dialog, re-shoot the ` +
+        `flagged elevations, and Re-Run first.)`
+      );
+      if (!ok) return;
+    }
     setBusy(true);
     try {
       let toApply = preview;
@@ -1526,7 +1566,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <button
                         type="button"
                         className="text-[10px] font-normal text-[#7F1D1D] underline hover:no-underline"
-                        onClick={() => setRunError(null)}
+                        onClick={() => { setRunError(null); setRunErrorMeta(null); }}
                         data-testid="ai-measure-run-error-dismiss"
                       >
                         dismiss
@@ -1542,6 +1582,37 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     ) : (
                       <div className="whitespace-pre-wrap break-words">{runError}</div>
                     )}
+                    {/* Iter 79j.44 — Phase / elapsed / retry footer.
+                        Never let a failed run disappear in a toast: we
+                        stamp the stage the pipeline was in, wall-clock
+                        elapsed since the user clicked Run, and give a
+                        one-click Retry. */}
+                    {runErrorMeta && (
+                      <div className="mt-2 flex items-center gap-3 text-[10px] uppercase tracking-wider text-[#7F1D1D] opacity-80">
+                        <span data-testid="ai-measure-run-error-stage">
+                          Phase: <b>{runErrorMeta.stage || "unknown"}</b>
+                        </span>
+                        <span data-testid="ai-measure-run-error-elapsed">
+                          Elapsed: <b>{Math.round((runErrorMeta.elapsedMs || 0) / 1000)}s</b>
+                        </span>
+                        {runErrorMeta.kind && (
+                          <span data-testid="ai-measure-run-error-kind">
+                            Kind: <b>{runErrorMeta.kind}</b>
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => { setRunError(null); setRunErrorMeta(null); runMeasure(); }}
+                        disabled={busy || photoUrls.length === 0}
+                        className="px-3 py-1.5 bg-[#7F1D1D] text-white hover:bg-[#991B1B] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-testid="ai-measure-run-error-retry"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Retry Run
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

@@ -2698,6 +2698,21 @@ def _clean_json_reply(reply: str) -> dict:
         return {}
 
 
+def _env_int(name: str, default: int) -> int:
+    """Iter 79j.44 — Read an int env var, tolerating empty / bad values.
+    Used for AI Measure timeout knobs so operators can retune Phase A
+    budgets without a code change."""
+    try:
+        v = os.environ.get(name, "").strip()
+        if not v:
+            return default
+        n = int(v)
+        return n if n > 0 else default
+    except Exception:
+        return default
+
+
+
 def _is_empty_extraction(parsed: dict) -> bool:
     """Iter 79j.43 — A Phase A extraction is "empty" when Claude
     returned nothing useful: no walls seen, no openings, no eave
@@ -2769,6 +2784,13 @@ async def _extract_one_photo(
     )
     prompt_text = "\n".join(prompt_lines)
 
+    # Iter 79j.44 — Env-configurable per-call timeout (default 120s).
+    # Per-call = one LlmChat send. Two calls (initial + empty-retry)
+    # give ~240s worst-case per photo, capped further by
+    # AI_MEASURE_PER_PHOTO_TIMEOUT (see below).
+    per_call_timeout = _env_int("AI_MEASURE_PER_CALL_TIMEOUT", 120)
+    logger.info("[ai-measure phase-A] photo %d start", photo_idx)
+
     async def _one_call(retry_note: str = "") -> dict:
         call_t0 = time.time()
         chat = LlmChat(
@@ -2782,10 +2804,25 @@ async def _extract_one_photo(
             file_contents=[ImageContent(image_base64=base64.b64encode(raw_bytes).decode("ascii"))],
         )
         try:
-            reply = await asyncio.wait_for(chat.send_message(user_msg), timeout=120)
+            reply = await asyncio.wait_for(chat.send_message(user_msg), timeout=per_call_timeout)
+        except asyncio.TimeoutError:
+            elapsed = int((time.time() - call_t0) * 1000)
+            logger.warning("[ai-measure phase-A] photo %d call timed out after %ds", photo_idx, per_call_timeout)
+            return {
+                "index": photo_idx,
+                "_extraction_error": f"per-call timeout after {per_call_timeout}s",
+                "_extraction_error_kind": "timeout",
+                "_latency_ms": elapsed,
+            }
         except Exception as e:
-            logger.warning("[ai-measure phase-A] photo %d call failed: %s", photo_idx, e)
-            return {"index": photo_idx, "_extraction_error": str(e), "_latency_ms": int((time.time() - call_t0) * 1000)}
+            elapsed = int((time.time() - call_t0) * 1000)
+            logger.warning("[ai-measure phase-A] photo %d call failed after %dms: %s", photo_idx, elapsed, e)
+            return {
+                "index": photo_idx,
+                "_extraction_error": str(e) or type(e).__name__,
+                "_extraction_error_kind": "exception",
+                "_latency_ms": elapsed,
+            }
         p = _clean_json_reply(reply or "")
         p["_photo_idx"] = photo_idx
         p.setdefault("index", photo_idx)
@@ -2808,11 +2845,28 @@ async def _extract_one_photo(
         retry_parsed["_empty_retry_attempted"] = True
         if _is_empty_extraction(retry_parsed):
             retry_parsed["_empty_extraction"] = True
-            retry_parsed["_empty_reason"] = "Two consecutive empty Claude responses — photo may be interior, blurry, or not a house exterior."
+            # Iter 79j.44 — If the retry itself was a timeout/exception,
+            # surface that in the reason so the UI can distinguish
+            # "photo unusable" from "network flaked".
+            if retry_parsed.get("_extraction_error_kind") == "timeout":
+                retry_parsed["_empty_reason"] = f"Retry timed out after {per_call_timeout}s — LLM proxy slow or unreachable."
+            elif retry_parsed.get("_extraction_error"):
+                retry_parsed["_empty_reason"] = f"Retry failed: {retry_parsed.get('_extraction_error')}"
+            else:
+                retry_parsed["_empty_reason"] = "Two consecutive empty Claude responses — photo may be interior, blurry, or not a house exterior."
             logger.warning("[ai-measure phase-A] photo %d STILL empty after retry — orphan risk", photo_idx)
         # Preserve original _latency_ms behaviour but add total
         retry_parsed["_total_latency_ms"] = int((time.time() - t0) * 1000)
+        logger.info(
+            "[ai-measure phase-A] photo %d done in %dms (empty=%s, retried=1)",
+            photo_idx, retry_parsed["_total_latency_ms"], bool(retry_parsed.get("_empty_extraction")),
+        )
         return retry_parsed
+    parsed["_total_latency_ms"] = int((time.time() - t0) * 1000)
+    logger.info(
+        "[ai-measure phase-A] photo %d done in %dms (empty=False, error=%s)",
+        photo_idx, parsed["_total_latency_ms"], parsed.get("_extraction_error") or "no",
+    )
     return parsed
 
 
@@ -2891,25 +2945,109 @@ async def _run_two_phase_pipeline(
     Callers should feed final_raw into `_aggregate_to_hover_shape` — it's
     already the same shape that the single-call worker returns."""
     await set_stage("extracting_per_photo")
-    tasks = [
-        _extract_one_photo(
-            api_key=api_key,
-            user_id=user_id,
-            model_provider=model_provider,
-            model_name=model_name,
-            photo_idx=idx,
-            raw_bytes=raw,
-            address=address,
-            reference_dim=reference_dim,
-            brick_course_in=brick_course_in,
-            siding_exposure_in=siding_exposure_in,
-            annotation_hint=annotation_hint,
-        )
+    # Iter 79j.44 — Per-photo hard budget (default 240s = one full call
+    # + one empty-retry at 120s each). Wrapping each task in its own
+    # wait_for guarantees a single slow photo cannot bleed into the
+    # global cap, and — critically — its timeout becomes a per-photo
+    # `_extraction_error` instead of a batch-wide CancelledError.
+    per_photo_budget = _env_int("AI_MEASURE_PER_PHOTO_TIMEOUT", 240)
+    phase_a_total = _env_int("AI_MEASURE_PHASE_A_TIMEOUT", 300)
+    phase_a_started = time.time()
+
+    async def _budgeted_extract(idx: int, raw: bytes) -> dict:
+        try:
+            return await asyncio.wait_for(
+                _extract_one_photo(
+                    api_key=api_key,
+                    user_id=user_id,
+                    model_provider=model_provider,
+                    model_name=model_name,
+                    photo_idx=idx,
+                    raw_bytes=raw,
+                    address=address,
+                    reference_dim=reference_dim,
+                    brick_course_in=brick_course_in,
+                    siding_exposure_in=siding_exposure_in,
+                    annotation_hint=annotation_hint,
+                ),
+                timeout=per_photo_budget,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "[ai-measure phase-A] photo %d exceeded per-photo budget of %ds — flagged empty",
+                idx, per_photo_budget,
+            )
+            return {
+                "index": idx,
+                "_photo_idx": idx,
+                "_extraction_error": f"per-photo budget exceeded ({per_photo_budget}s)",
+                "_extraction_error_kind": "timeout",
+                "_empty_extraction": True,
+                "_empty_reason": f"Photo timed out after {per_photo_budget}s — LLM proxy slow or unresponsive.",
+                "_latency_ms": per_photo_budget * 1000,
+                "_total_latency_ms": per_photo_budget * 1000,
+            }
+        except Exception as e:  # never let one photo kill the batch
+            logger.exception("[ai-measure phase-A] photo %d unexpected failure", idx)
+            return {
+                "index": idx,
+                "_photo_idx": idx,
+                "_extraction_error": str(e) or type(e).__name__,
+                "_extraction_error_kind": "exception",
+                "_empty_extraction": True,
+                "_empty_reason": f"Photo failed with an unexpected error: {e}",
+            }
+
+    budgeted_tasks = [
+        asyncio.create_task(_budgeted_extract(idx, raw))
         for idx, (_ct, raw) in enumerate(image_payloads)
     ]
-    # 5 min total cap for the parallel extraction phase — matches the
-    # existing 4-min single-call ceiling with headroom for larger runs.
-    extractions = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=False), timeout=300)
+    logger.info(
+        "[ai-measure phase-A] dispatching %d photos in parallel (per_photo_budget=%ds, total_cap=%ds)",
+        len(budgeted_tasks), per_photo_budget, phase_a_total,
+    )
+    # asyncio.wait DOES NOT cancel-all on timeout — pending tasks stay
+    # runnable and we get partial results back. We cancel stragglers
+    # ourselves so the whole run doesn't hang past phase_a_total.
+    done_tasks, pending_tasks = await asyncio.wait(budgeted_tasks, timeout=phase_a_total)
+    phase_a_elapsed = int(time.time() - phase_a_started)
+    logger.info(
+        "[ai-measure phase-A] total wall clock %ds — %d done, %d pending",
+        phase_a_elapsed, len(done_tasks), len(pending_tasks),
+    )
+    extractions: list[dict] = [None] * len(budgeted_tasks)
+    for i, t in enumerate(budgeted_tasks):
+        if t in done_tasks:
+            try:
+                extractions[i] = t.result()
+            except Exception as e:  # defensive; _budgeted_extract already traps
+                extractions[i] = {
+                    "index": i,
+                    "_photo_idx": i,
+                    "_extraction_error": str(e) or type(e).__name__,
+                    "_empty_extraction": True,
+                    "_empty_reason": f"Task raised: {e}",
+                }
+        else:
+            # Timed out against the total Phase A cap. Cancel + record.
+            logger.warning(
+                "[ai-measure phase-A] photo %d NOT done at total cap %ds — cancelling and flagging",
+                i, phase_a_total,
+            )
+            t.cancel()
+            extractions[i] = {
+                "index": i,
+                "_photo_idx": i,
+                "_extraction_error": f"phase-A total cap of {phase_a_total}s reached before this photo finished",
+                "_extraction_error_kind": "phase_a_cap",
+                "_empty_extraction": True,
+                "_empty_reason": f"Phase A ran out of time at {phase_a_total}s — this photo did not complete.",
+                "_latency_ms": phase_a_total * 1000,
+                "_total_latency_ms": phase_a_total * 1000,
+            }
+    # Drain the cancellations so no orphaned task keeps the loop busy.
+    if pending_tasks:
+        await asyncio.gather(*pending_tasks, return_exceptions=True)
     # Iter 79j.43 — Empty-extraction bookkeeping. After retry, any
     # photo still flagged `_empty_extraction: true` orphans the walls
     # it was the sole cover for. Compute the orphan set BEFORE Phase B
@@ -3210,12 +3348,17 @@ async def _execute_ai_measure_worker(
     except Exception as e:
         # Log & surface a friendly error to the polling client.
         logger.exception("[ai-measure] worker failed for run_id=%s", run_id)
+        # Iter 79j.44 — str(TimeoutError()) is '' which shows as a
+        # blank toast on the frontend. Always produce a non-empty
+        # human message with the exception class name at minimum.
+        friendly = str(e).strip() or type(e).__name__
         await db.ai_measure_runs.update_one(
             {"run_id": run_id},
             {"$set": {
                 "status": "error",
                 "stage": "error",
-                "error": f"AI measure failed: {e}",
+                "error": f"AI measure failed: {friendly}",
+                "error_kind": type(e).__name__,
                 "completed_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),
             }},
