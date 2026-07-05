@@ -656,82 +656,6 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     return () => clearTimeout(t);
   }, [estimateId, open, sessionChecked, photoUrls, refDim, wallHeight, sidingPct, overhangIn, preview, photoAnnotations]);
 
-  // Iter 79j.45 — Ping AI service health when the modal opens. If a
-  // fresh ping is already in the 45s window, this call short-circuits
-  // to the cached value (no network hit). We don't await — the health
-  // flag flips the Run button state as soon as the response lands,
-  // but the rest of the modal renders immediately.
-  useEffect(() => {
-    if (!open) return;
-    refreshAiHealth();
-  }, [open]);
-
-  // Iter 79j.46 — Auto-recovery event listeners. Only wired up while
-  // the modal is open AND health is red. Detaches immediately when
-  // either condition flips — a green button gets no listeners, so a
-  // healthy user pays zero cost.
-  useEffect(() => {
-    if (!open || !isHealthRed) return;
-    const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        refreshAiHealth({ force: true });
-      }
-    };
-    const onFocus = () => refreshAiHealth({ force: true });
-    document.addEventListener("visibilitychange", onVisible);
-    window.addEventListener("focus", onFocus);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisible);
-      window.removeEventListener("focus", onFocus);
-    };
-  }, [open, isHealthRed]);
-
-  // Iter 79j.46 — Slow-backoff timer, ONLY while the modal is open
-  // AND the status is red. Backoff schedule: 60s → 2min → 5min, then
-  // stays at 5min. Any status change (red → green, red → different
-  // red variant) cancels the timer and restarts fresh. This gives a
-  // topped-up budget a chance to recover without the user re-clicking
-  // Run, but never fires while green (nothing to learn).
-  const backoffTimerRef = useRef(null);
-  const backoffStepRef = useRef(0);
-  useEffect(() => {
-    // Clear any prior timer on every effect run.
-    if (backoffTimerRef.current) {
-      clearTimeout(backoffTimerRef.current);
-      backoffTimerRef.current = null;
-    }
-    if (!open || !isHealthRed) {
-      backoffStepRef.current = 0;
-      return undefined;
-    }
-    const schedule = [60_000, 120_000, 300_000]; // 60s → 2min → 5min → stays 5min
-    const tick = () => {
-      const idx = Math.min(backoffStepRef.current, schedule.length - 1);
-      backoffStepRef.current += 1;
-      backoffTimerRef.current = setTimeout(async () => {
-        // Only ping if we're still red AND the modal is still open.
-        // Otherwise this callback is a no-op that lets React GC the timer.
-        if (!open) return;
-        const latest = await refreshAiHealth({ force: true });
-        if (
-          open &&
-          (latest?.status === "budget_exceeded" || latest?.status === "unavailable")
-        ) {
-          tick();
-        } else {
-          backoffStepRef.current = 0;
-        }
-      }, schedule[idx]);
-    };
-    tick();
-    return () => {
-      if (backoffTimerRef.current) {
-        clearTimeout(backoffTimerRef.current);
-        backoffTimerRef.current = null;
-      }
-    };
-  }, [open, isHealthRed]);
-
 
   const resumeSession = async () => {
     const data = window.__aiMeasurePendingSession;
@@ -1109,6 +1033,83 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // green: a healthy button has nothing to learn from a ping.
   const isHealthRed =
     aiHealth?.status === "budget_exceeded" || aiHealth?.status === "unavailable";
+
+  // Iter 79j.45 — Ping AI service health when the modal opens. If a
+  // fresh ping is already in the 45s window, this call short-circuits
+  // to the cached value (no network hit). We don't await — the health
+  // flag flips the Run button state as soon as the response lands,
+  // but the rest of the modal renders immediately.
+  useEffect(() => {
+    if (!open) return;
+    refreshAiHealth();
+  }, [open]);
+
+  // Iter 79j.46 — Auto-recovery event listeners. Only wired up while
+  // the modal is open AND health is red. Detaches immediately when
+  // either condition flips — a green button gets no listeners, so a
+  // healthy user pays zero cost.
+  useEffect(() => {
+    if (!open || !isHealthRed) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshAiHealth({ force: true });
+      }
+    };
+    const onFocus = () => refreshAiHealth({ force: true });
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [open, isHealthRed]);
+
+  // Iter 79j.46 — Slow-backoff timer, ONLY while the modal is open
+  // AND the status is red. Backoff schedule: 60s → 2min → 5min, then
+  // stays at 5min. Any status change (red → green, red → different
+  // red variant) cancels the timer and restarts fresh. This gives a
+  // topped-up budget a chance to recover without the user re-clicking
+  // Run, but never fires while green (nothing to learn).
+  const backoffTimerRef = useRef(null);
+  const backoffStepRef = useRef(0);
+  useEffect(() => {
+    // Clear any prior timer on every effect run.
+    if (backoffTimerRef.current) {
+      clearTimeout(backoffTimerRef.current);
+      backoffTimerRef.current = null;
+    }
+    if (!open || !isHealthRed) {
+      backoffStepRef.current = 0;
+      return undefined;
+    }
+    const schedule = [60_000, 120_000, 300_000]; // 60s → 2min → 5min → stays 5min
+    const tick = () => {
+      const idx = Math.min(backoffStepRef.current, schedule.length - 1);
+      backoffStepRef.current += 1;
+      backoffTimerRef.current = setTimeout(async () => {
+        // Only ping if we're still red AND the modal is still open.
+        // Otherwise this callback is a no-op that lets React GC the timer.
+        if (!open) return;
+        const latest = await refreshAiHealth({ force: true });
+        if (
+          open &&
+          (latest?.status === "budget_exceeded" || latest?.status === "unavailable")
+        ) {
+          tick();
+        } else {
+          backoffStepRef.current = 0;
+        }
+      }, schedule[idx]);
+    };
+    tick();
+    return () => {
+      if (backoffTimerRef.current) {
+        clearTimeout(backoffTimerRef.current);
+        backoffTimerRef.current = null;
+      }
+    };
+  }, [open, isHealthRed]);
+
   const primaryWallsCovered = () => {
     const covered = new Set();
     // Iter 79j.35 — Two sources of elevation tags:
