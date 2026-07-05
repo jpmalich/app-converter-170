@@ -1235,3 +1235,32 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
   - **Deferred**: bypassing `emergentintegrations` with direct `litellm.acompletion` + explicit `httpx.AsyncClient` pool is the right long-term fix (also the foundation for a future direct-Anthropic path). Queued after red-house validation.
   - **Also killed 3 stuck preview runs** left over from before the fix so DB reflects clean state.
   - **Files**: `backend/routes/ai_measure.py` (shrink helper + pipeline changes). Documented in `memory/prompts.md` (Iter79j.50 entry).
+
+## Iter 79j.51 — QUEUED for next iteration (not shipped today)
+
+Added 2026-02-28 during 79j.50 deploy. Do NOT hold today's deploy for these.
+
+**Trigger context**: On a preview 79j.50 run, Phase A completed 8-for-8 successfully (zero empty extractions, both dormers observed — photo 2 left, photo 6 right). Phase B then hung for 901s and died with `litellm.BadGatewayError: 502`. Phase A's `raw_per_photo` was fully persisted; the reconciled output is null. All the Phase A spend evaporated because there's no path to retry Phase B alone. This is the third documented failure mode of the emergentintegrations/LiteLLM proxy — added to the support email evidence.
+
+### Task 1: Reconcile-only retry endpoint (P0)
+- **What**: New endpoint (likely `POST /api/measure/ai-measure/reconcile-only/{run_id}`) that reads the existing `raw_per_photo` array from the run doc and reruns ONLY Phase B (`_reconcile_extractions`), writing the result back to the same run.
+- **Why**: When Phase B fails (proxy 502, timeout, hang), Phase A's expensive vision work is wasted. Contractor re-pays the full cost. Reconcile-only lets them retry Phase B for pennies.
+- **Files**: `backend/routes/ai_measure.py` (new endpoint), `frontend/src/components/estimate/AIMeasureButton.jsx` (Retry-reconcile button in the persistent error banner when kind matches Phase B failure).
+- **Gotcha**: don't rebuild Phase A stage machinery — jump straight to `set_stage("reconciling")`. Reuse the same run_id.
+
+### Task 2: Failed-reconciliation UI state (P0)
+- **What**: When `run.result.reconciled` is null / empty AND run status is error with `error_kind` indicating Phase B failure, the 3D tab must render explicit "Measurement incomplete — reconciliation failed [Retry reconciliation]" instead of a placeholder house with 0 sf / 0 openings.
+- **Why**: A placeholder house from empty data reads as "catastrophically wrong measurement" instead of "the step didn't produce output". Different failure semantics need different UI.
+- **Files**: `frontend/src/components/estimate/AIMeasureButton.jsx` (3D tab render guard), possibly `frontend/src/components/estimate/HouseView.jsx` or wherever the 3D scene mounts (guard the mount on non-empty measurements).
+- **Rule**: never draw a placeholder house from empty/null geometry data.
+
+### Task 3: Apply Measurements zero-data guard (P0)
+- **What**: `apply()` in `AIMeasureButton.jsx` must be HARD-DISABLED (not just warned) when the reconciled output is null / empty. The existing orphan-wall `window.confirm` is a WARNING pattern for partial data — zero data needs a different pattern: button disabled with tooltip "Reconciliation failed — nothing to apply. Retry Phase B first."
+- **Why**: On the 79j.50 failed run, Apply still wrote outside-corner LF into the estimate derived from placeholder geometry. That's silently wrong data hitting the customer quote.
+- **Files**: `frontend/src/components/estimate/AIMeasureButton.jsx` (add zero-data guard to the Apply button + `apply()` function).
+- **Rule**: distinguish three states — full data (Apply normally) / partial data (Apply with orphan-wall confirm) / zero data (Apply DISABLED, retry required).
+
+### Task 4: Support email update (user-owned)
+- User will add the 79j.50 run's 502 + 901s Phase B hang to the existing support email alongside the 185s-vs-4.89s repro. Reinforces "even TEXT-only reconcile calls exhibit proxy instability under load."
+
+**Priority**: All three code tasks (1-3) are P0 blockers for the next real user run. Ship as a single Iter 79j.51 bundle after 79j.50 has proven stable in production.
