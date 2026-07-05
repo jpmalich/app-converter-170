@@ -1240,7 +1240,9 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 
 Added 2026-02-28 during 79j.50 deploy. Do NOT hold today's deploy for these.
 
-**Trigger context**: On a preview 79j.50 run, Phase A completed 8-for-8 successfully (zero empty extractions, both dormers observed — photo 2 left, photo 6 right). Phase B then hung for 901s and died with `litellm.BadGatewayError: 502`. Phase A's `raw_per_photo` was fully persisted; the reconciled output is null. All the Phase A spend evaporated because there's no path to retry Phase B alone. This is the third documented failure mode of the emergentintegrations/LiteLLM proxy — added to the support email evidence.
+**Trigger context**: On preview Run 3 (pre-79j.50, full-size photos, no shrink), Phase A completed 8-for-8 successfully (zero empty extractions, both dormers observed — photo 2 left, photo 6 right). Phase B then hung for 901s and died with `litellm.BadGatewayError: 502`. Phase A's `raw_per_photo` was fully persisted; the reconciled output is null. All the Phase A spend evaporated because there's no path to retry Phase B alone. This is the third documented failure mode of the emergentintegrations/LiteLLM proxy — added to the support email evidence.
+
+**Note on 79j.50 relevance**: the shrink + concurrency cap did NOT rescue Run 3 (it predates them). Full-size Phase A got to done in this run despite the proxy load. 79j.50 will make future Phase A faster and less serialized; it doesn't change the Phase B failure mode. The reconcile-only retry (Task 1 below) is the ONLY way to recover Run 3's stranded Phase A output.
 
 ### Task 1: Reconcile-only retry endpoint (P0)
 - **What**: New endpoint (likely `POST /api/measure/ai-measure/reconcile-only/{run_id}`) that reads the existing `raw_per_photo` array from the run doc and reruns ONLY Phase B (`_reconcile_extractions`), writing the result back to the same run.
