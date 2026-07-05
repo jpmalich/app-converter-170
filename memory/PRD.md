@@ -1194,3 +1194,14 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
   - **Env knobs**: none new. Reuses `MODEL_NAME` and `EMERGENT_LLM_KEY`.
   - **Files**: `backend/routes/ai_measure.py`, `backend/tests/test_ai_health_ping.py` (new), `backend/tests/test_ai_measure_health_http.py` (new via testing agent), `frontend/src/components/estimate/AIMeasureButton.jsx`.
   - **Status**: SHIPPED + tested. USER VERIFICATION PENDING — open AI Measure with an exhausted budget and confirm the Run button flips to red "Budget exhausted — top up first" instead of hanging for 19 min. On a healthy budget the button stays purple / says "Run AI Measure".
+
+- **Iter 79j.46 — Event-driven AI health auto-recovery (2026-02-28)**: Extension of Iter 79j.45 preflight. No blind polling while green — pings ONLY fire on user-actionable events + a red-only backoff.
+  - **Frontend (`frontend/src/components/estimate/AIMeasureButton.jsx`)**:
+    1. New `isHealthRed` boolean derived from `aiHealth?.status`.
+    2. Event listeners (`visibilitychange` on `document`, `focus` on `window`) attach ONLY when modal is open AND status is red — detach immediately when either flips. Zero cost when healthy.
+    3. Red button is now CLICKABLE as a "re-check" escape hatch. Clicking it forces `refreshAiHealth({force:true})` (bypasses the 45s client cache) instead of dispatching a run. Icon swapped to `RotateCcw`, label becomes "Budget exhausted — click to re-check" / "AI service unavailable — click to re-check", tooltip "Click to re-check the AI service health".
+    4. Slow-backoff timer (60s → 2min → 5min → stays 5min) only runs while red. Cleared on unmount, modal close, or any status change. Green button gets no timer.
+    5. Auto-recovery flow: user tops up in a new tab → returns to app → tab-visible + focus fire → forced ping → status flips green → button turns purple → backoff timer cancels → no further pings.
+  - **Regression guard**: no new tests (behaviour is React-event driven; classifier + endpoint tests from Iter 79j.45 already cover the failure surfaces).
+  - **Files**: `frontend/src/components/estimate/AIMeasureButton.jsx` only.
+  - **Status**: SHIPPED. USER VERIFICATION PENDING — exhaust the budget (or simulate by killing the LLM proxy), open the modal, top up, alt-tab back, and the red button should flip purple without a manual click.

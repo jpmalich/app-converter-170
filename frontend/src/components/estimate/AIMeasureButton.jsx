@@ -666,6 +666,72 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     refreshAiHealth();
   }, [open]);
 
+  // Iter 79j.46 — Auto-recovery event listeners. Only wired up while
+  // the modal is open AND health is red. Detaches immediately when
+  // either condition flips — a green button gets no listeners, so a
+  // healthy user pays zero cost.
+  useEffect(() => {
+    if (!open || !isHealthRed) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshAiHealth({ force: true });
+      }
+    };
+    const onFocus = () => refreshAiHealth({ force: true });
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [open, isHealthRed]);
+
+  // Iter 79j.46 — Slow-backoff timer, ONLY while the modal is open
+  // AND the status is red. Backoff schedule: 60s → 2min → 5min, then
+  // stays at 5min. Any status change (red → green, red → different
+  // red variant) cancels the timer and restarts fresh. This gives a
+  // topped-up budget a chance to recover without the user re-clicking
+  // Run, but never fires while green (nothing to learn).
+  const backoffTimerRef = useRef(null);
+  const backoffStepRef = useRef(0);
+  useEffect(() => {
+    // Clear any prior timer on every effect run.
+    if (backoffTimerRef.current) {
+      clearTimeout(backoffTimerRef.current);
+      backoffTimerRef.current = null;
+    }
+    if (!open || !isHealthRed) {
+      backoffStepRef.current = 0;
+      return undefined;
+    }
+    const schedule = [60_000, 120_000, 300_000]; // 60s → 2min → 5min → stays 5min
+    const tick = () => {
+      const idx = Math.min(backoffStepRef.current, schedule.length - 1);
+      backoffStepRef.current += 1;
+      backoffTimerRef.current = setTimeout(async () => {
+        // Only ping if we're still red AND the modal is still open.
+        // Otherwise this callback is a no-op that lets React GC the timer.
+        if (!open) return;
+        const latest = await refreshAiHealth({ force: true });
+        if (
+          open &&
+          (latest?.status === "budget_exceeded" || latest?.status === "unavailable")
+        ) {
+          tick();
+        } else {
+          backoffStepRef.current = 0;
+        }
+      }, schedule[idx]);
+    };
+    tick();
+    return () => {
+      if (backoffTimerRef.current) {
+        clearTimeout(backoffTimerRef.current);
+        backoffTimerRef.current = null;
+      }
+    };
+  }, [open, isHealthRed]);
+
 
   const resumeSession = async () => {
     const data = window.__aiMeasurePendingSession;
@@ -1036,6 +1102,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       return fallback;
     }
   };
+  // Iter 79j.46 — Event-driven auto-recovery. When the modal is open
+  // AND health is red (budget_exceeded / unavailable), listen for the
+  // browser tab regaining focus or visibility — that's the "went to
+  // the billing page, topped up, came back" moment. Do NOT poll while
+  // green: a healthy button has nothing to learn from a ping.
+  const isHealthRed =
+    aiHealth?.status === "budget_exceeded" || aiHealth?.status === "unavailable";
   const primaryWallsCovered = () => {
     const covered = new Set();
     // Iter 79j.35 — Two sources of elevation tags:
@@ -3096,13 +3169,22 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       </button>
                     )}
                     {(() => {
-                      // Iter 79j.45 — Health-aware Run button state.
+                      // Iter 79j.45 / 79j.46 — Health-aware Run button.
                       // Order of precedence: busy > uploading > health
                       // outage > normal. `ambiguous` NEVER disables the
                       // button — soft warning only, per rule (3): a
                       // broken health check must not lock the product.
+                      //
+                      // Iter 79j.46 — Red state is CLICKABLE. Clicking
+                      // fires a forced health re-ping (bypasses the
+                      // 45s client cache) so the user has a manual
+                      // escape hatch: top up in a new tab → click the
+                      // red button → tab focus event ALREADY fires a
+                      // ping, but the manual click is the belt to
+                      // that suspenders.
                       const budgetOut = aiHealth?.status === "budget_exceeded";
                       const svcOut = aiHealth?.status === "unavailable";
+                      const isRed = budgetOut || svcOut;
                       let label;
                       if (busy) {
                         label = busyStage === "claude" ? "Claude vision…"
@@ -3114,29 +3196,37 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       } else if (files.length > 0) {
                         label = "Uploading…";
                       } else if (budgetOut) {
-                        label = "Budget exhausted — top up first";
+                        label = "Budget exhausted — click to re-check";
                       } else if (svcOut) {
-                        label = "AI service unavailable — retry in a minute";
+                        label = "AI service unavailable — click to re-check";
                       } else {
                         label = "Run AI Measure";
                       }
-                      const gate = budgetOut || svcOut;
-                      const cls = gate
-                        ? "px-3 py-2 bg-[var(--danger)] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                      const cls = isRed
+                        ? "px-3 py-2 bg-[var(--danger)] text-white hover:bg-[#B91C1C] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer disabled:opacity-70"
                         : "px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50";
+                      const onClickHandler = isRed
+                        ? () => refreshAiHealth({ force: true })
+                        : runMeasure;
                       return (
                         <button
                           type="button"
-                          onClick={runMeasure}
-                          disabled={busy || photoUrls.length === 0 || files.length > 0 || gate}
+                          onClick={onClickHandler}
+                          // Iter 79j.46 — Red state stays clickable for
+                          // the re-check escape hatch. Only truly
+                          // disabled during a live run / upload / with
+                          // zero photos. `data-health-status` lets QA
+                          // & automation drive the recovery path.
+                          disabled={busy || photoUrls.length === 0 || files.length > 0}
                           className={cls}
                           data-testid="ai-measure-run-btn"
                           data-health-status={aiHealth?.status || "unknown"}
+                          title={isRed ? "Click to re-check the AI service health" : undefined}
                         >
                           {busy
                             ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            : gate
-                              ? <AlertTriangle className="w-3.5 h-3.5" />
+                            : isRed
+                              ? <RotateCcw className="w-3.5 h-3.5" />
                               : <Upload className="w-3.5 h-3.5" />}
                           {label}
                         </button>
