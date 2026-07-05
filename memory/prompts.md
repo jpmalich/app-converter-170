@@ -356,3 +356,100 @@ Agent cannot find it and support gives multiple wrong click-paths.
 **Regression guard**:
 - N/A — this is a runbook, not a code feature. Verified in production
   during 2026-02-28 key-rotation incident.
+
+---
+
+### Platform Health Probe + Admin Debug-Log-Tail (Deployment Diagnostics)
+
+- **Version**: Iter79j.49
+- **Created**: 2026-02-28T18:15:00Z
+- **Last updated**: 2026-02-28T18:15:00Z
+- **Change log**: initial entry.
+
+**Problem it solves**: Two production diagnostics gaps discovered
+during a live incident: (1) the platform hits `GET /health` (bare, no
+`/api` prefix) every 2s as a liveness probe — a 404 makes the pod look
+unhealthy and can trigger restarts. (2) The platform log viewer shows
+only HTTP access lines; application `logger.info/warning/error` output
+is invisible. During an incident we need to grep our own instrumented
+log lines (e.g. `[ai-measure phase-A] photo N done in Nms`) but had no
+way to reach them without shell access to the container.
+
+**Prompt**:
+> Add two diagnostics endpoints to the FastAPI backend.
+>
+> **1. Bare platform-probe endpoint `GET /health`**:
+> - Lives OUTSIDE the `/api` prefix (`@app.get("/health")` on the app
+>   object, NOT on the api_router). Do not gate with auth — platform
+>   probes are unauthenticated.
+> - Returns `{"status": "ok"}` with 200.
+> - Do not add work here — must respond in <5ms.
+>
+> **2. Admin-gated debug-log-tail `GET /api/<domain>/debug-log-tail`**:
+> - Attach a ring-buffer `logging.Handler` (deque with `maxlen=2000`)
+>   to the ROOT logger BEFORE importing any router modules. Router
+>   imports trigger module-level `logger.info` calls (e.g. key-routing
+>   summaries) — attaching the handler after these imports means their
+>   output never lands in the buffer.
+> - Watch out for `logging.basicConfig(level=INFO)` calls in imported
+>   modules — `basicConfig` is a no-op if handlers already exist, so
+>   priming the root logger first is essential.
+> - Endpoint accepts `?grep=<needle>[,<needle>]&lines=<N>` query
+>   params. `grep` is case-insensitive substring; multiple terms
+>   comma-separated are OR-combined. `lines` capped at buffer capacity.
+> - Admin-only: check `user["role"]` against `{"owner", "admin",
+>   "supplier_admin"}`. Return 403 otherwise.
+> - **Ship for incident diagnostics, remove after resolution.** Add a
+>   comment at the top of the endpoint stating this is temporary.
+> - Import the ring buffer with a lazy `from server import LOG_RING`
+>   inside the endpoint to avoid circular import at module load.
+>
+> **Response shape**:
+> ```
+> {
+>   "count": <returned line count>,
+>   "total_in_buffer": <total records in ring>,
+>   "grep": "<echoed query>",
+>   "lines": ["<formatted log line>", ...]
+> }
+> ```
+>
+> **Formatter**:
+> ```
+> logging.Formatter(
+>   "%(asctime)s %(levelname)s %(name)s: %(message)s",
+>   datefmt="%Y-%m-%dT%H:%M:%SZ",
+> )
+> ```
+>
+> **Not to do**:
+> - Do NOT tail a log FILE (`/var/log/supervisor/backend.err.log`).
+>   Log file paths differ between preview and deployed environments;
+>   in-memory ring buffer works uniformly.
+> - Do NOT store secrets in the buffer. If you log token values
+>   anywhere, redact BEFORE logging, not in the endpoint.
+
+**Regression guard**:
+- Manual: `curl <base>/health` → 200 `{"status":"ok"}`, no auth
+  needed, sub-5ms.
+- Manual: after backend restart, `curl -b <admin cookie>
+  <base>/api/measure/ai-measure/debug-log-tail?grep=key-routing` →
+  returns at least the startup key-routing log line, confirming
+  the ring buffer captured module-import-time logging.
+- Manual: `curl -b <non-admin cookie>` → 403.
+
+---
+
+# Meta
+
+**Convention going forward**: after every feature/build the main agent
+appends a new entry OR updates an existing one (via the `Change log`
+section). Prompts are pinned to iteration numbers matching the code
+comments so a grep of the codebase (`grep -rn "Iter79j.49" backend/`)
+reveals every touch site.
+
+**Backfill status**: entries below Iter79j.44 are NOT included. Older
+features (WCAG AA pass, theme system, customer-contact fields, soft
+validation, auto-populate on Create, two-phase pipeline base build,
+etc.) are documented in `PRD.md` but not yet turned into portable
+prompts. Backfill on request.

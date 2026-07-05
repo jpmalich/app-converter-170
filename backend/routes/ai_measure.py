@@ -2100,6 +2100,65 @@ def _classify_health_error(err_msg: str) -> tuple[str, str]:
     return "ambiguous", f"AI service returned an unexpected response: {err_msg[:180]}"
 
 
+# ---------------------------------------------------------------------
+# Iter 79j.49 — Admin-gated debug log tail.
+#
+# TEMPORARY. Ship for the current production incident, then REMOVE once
+# the LiteLLM latency root cause is understood. The deployed platform's
+# log viewer only shows raw HTTP access lines, not application logger
+# output, so we surface the last N in-memory log records via a
+# curl-friendly endpoint.
+#
+# Reads from the ring buffer attached to the ROOT logger in server.py
+# (see `_RingBufferLogHandler`) — captures every `logger.info/warn/error`
+# call across all modules, including the `[ai-measure phase-A] photo N`
+# instrumentation.
+#
+# Auth: admin-only (role in {"owner", "supplier_admin"}). Never expose
+# to end users.
+# ---------------------------------------------------------------------
+_ADMIN_ROLES = {"owner", "supplier_admin", "admin"}
+
+
+@router.get("/ai-measure/debug-log-tail")
+async def ai_measure_debug_log_tail(
+    grep: str | None = None,
+    lines: int = 300,
+    user: dict = Depends(get_current_user),
+):
+    """Return the last N in-memory log records, optionally filtered by
+    a substring match. Admin-only.
+
+    Query params:
+        grep:  case-insensitive substring; if provided, only records
+               containing it are returned. Multiple terms may be
+               separated by `,` — a record matching ANY term is kept.
+        lines: cap on returned records (default 300, max 2000).
+    """
+    role = (user.get("role") or "").lower()
+    if role not in _ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="admin only")
+
+    # Import lazily to avoid a circular import between server.py and
+    # this route module at startup.
+    from server import LOG_RING
+
+    all_lines = list(LOG_RING.buffer)
+    if grep:
+        needles = [t.strip().lower() for t in grep.split(",") if t.strip()]
+        if needles:
+            all_lines = [ln for ln in all_lines if any(n in ln.lower() for n in needles)]
+
+    cap = max(1, min(lines, 2000))
+    tail = all_lines[-cap:]
+    return {
+        "count": len(tail),
+        "total_in_buffer": len(LOG_RING.buffer),
+        "grep": grep,
+        "lines": tail,
+    }
+
+
 @router.get("/ai-measure/health")
 async def ai_measure_health(user: dict = Depends(get_current_user)):
     """Cheap round-trip to the LLM proxy so the UI can flip the Run
