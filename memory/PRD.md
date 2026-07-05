@@ -1173,3 +1173,24 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
   - **Regression guard**: `backend/tests/test_phase_a_resilience.py` — pytest suite (2 tests, no pytest-asyncio dependency) drives the real pipeline with monkey-patched `_extract_one_photo` / `_reconcile_extractions` / `db`. Verifies a hanging photo is flagged with a proper reason and the other photos still reach Phase B intact. Both tests pass locally in ~3s.
   - **Env knobs** (default in parentheses): `AI_MEASURE_PER_CALL_TIMEOUT` (120s), `AI_MEASURE_PER_PHOTO_TIMEOUT` (240s), `AI_MEASURE_PHASE_A_TIMEOUT` (300s). All accept blank/invalid → default without erroring.
   - **Status**: SHIPPED + regression-tested. USER VERIFICATION PENDING — kick off an AI Measure and watch backend logs for the new `[ai-measure phase-A] photo N done in Nms` lines to confirm true per-photo latencies (should be ~15-25s parallel; anything >60s indicates an LLM proxy issue worth investigating further per the P0 diagnosis clause). Also confirm the persistent red banner + Retry button + orphan-wall Apply confirm dialog on the front end.
+
+- **Iter 79j.45 — AI Measure health-preflight endpoint (2026-02-28)**: Added a cached preflight so a full ~5 min Phase A no longer wastes a run when the LiteLLM budget is exhausted or the LLM proxy is unreachable.
+  - **Backend (`backend/routes/ai_measure.py`)**:
+    1. New `GET /api/measure/ai-measure/health` endpoint. Fires the smallest possible Claude call (`max_tokens=1`, 5s deadline) against the same MODEL_NAME the worker uses (opus-4-5) so the health path exactly mirrors the run path. Returns `{status, detail, checked_at, cached, latency_ms}`.
+    2. Server-side cache TTL 45s (module-level `_AI_HEALTH_CACHE` dict). Cached responses skip the network call and set `latency_ms: null, cached: true`.
+    3. Pure `_classify_health_error(err_msg)` mapper: budget → `budget_exceeded`, timeout/connection/DNS → `unavailable`, unauthorised/invalid-key/forbidden → `unavailable`, everything else → `ambiguous` (never collapses unknown errors into "budget"). The ambiguous bucket carries the truncated raw error string.
+    4. Also added `error_kind` to `GET /api/measure/ai-measure/status/{run_id}` response so the persistent frontend error banner can show `Kind: TimeoutError`.
+    5. HARD-DISABLED direct-key routing in `_pick_llm_api_key` (Iter 79j.44 continuation). Even if `ANTHROPIC_API_KEY` is set on `.env`, the function ignores it and returns the Emergent proxy key — logging a `WARNING` so the operator sees the branch was skipped. Startup log stamps `[direct-key DISABLED]`.
+  - **Frontend (`frontend/src/components/estimate/AIMeasureButton.jsx`)**:
+    1. Health state: `aiHealth` + `aiHealthLastRef` + `refreshAiHealth({force})` helper. Client-side TTL 45s to match server. On modal open + before every `runMeasure` dispatch we refresh (short-circuits to the cached value if fresh).
+    2. Run button label + colour flip based on status:
+       - `ok` (or absent) → normal violet "Run AI Measure" button.
+       - `budget_exceeded` → red button labelled "Budget exhausted — top up first", disabled.
+       - `unavailable` → red button labelled "AI service unavailable — retry in a minute", disabled.
+       - `ambiguous` → normal violet Run button STAYS enabled + soft amber banner at modal top saying "AI health check inconclusive". A broken health check MUST NOT lock the product.
+    3. `runMeasure()` calls `refreshAiHealth()` first and short-circuits on `budget_exceeded` / `unavailable` (writes a persistent error banner with `Phase: preflight` + `Kind: BudgetExceeded` / `ServiceUnavailable`). Never actually dispatches Phase A when the preflight fails hard.
+    4. Data-testids on the button (`ai-measure-run-btn` retained) + `data-health-status` attribute for automation. New banner `ai-measure-health-warning-banner`.
+  - **Regression guard**: `backend/tests/test_ai_health_ping.py` — 4 pure-function classifier tests. Testing agent's iteration_34 ran 21 pytests + 9 live HTTP tests → 30/30 PASSED. Confirmed: unauth request 401, auth request returns valid shape, 2nd call within 45s served from cache (`cached: true`), health endpoint uses Emergent proxy (never direct-key).
+  - **Env knobs**: none new. Reuses `MODEL_NAME` and `EMERGENT_LLM_KEY`.
+  - **Files**: `backend/routes/ai_measure.py`, `backend/tests/test_ai_health_ping.py` (new), `backend/tests/test_ai_measure_health_http.py` (new via testing agent), `frontend/src/components/estimate/AIMeasureButton.jsx`.
+  - **Status**: SHIPPED + tested. USER VERIFICATION PENDING — open AI Measure with an exhausted budget and confirm the Run button flips to red "Budget exhausted — top up first" instead of hanging for 19 min. On a healthy budget the button stays purple / says "Run AI Measure".

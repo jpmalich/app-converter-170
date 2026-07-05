@@ -2092,7 +2092,7 @@ def _classify_health_error(err_msg: str) -> tuple[str, str]:
         return "unavailable", "AI service is not responding right now — retry in a minute."
     if "connection" in low or "unreachable" in low or "dns" in low or "network" in low:
         return "unavailable", "Can't reach the AI service — retry in a minute."
-    if "unauthor" in low or "invalid" in low and "key" in low or "forbidden" in low:
+    if "unauthor" in low or ("invalid" in low and "key" in low) or "forbidden" in low:
         return "unavailable", "AI service refused the request — the key may be misconfigured."
     # Anything we don't recognise is ambiguous — the frontend keeps
     # Run enabled with a soft warning. NEVER collapse an unknown error
