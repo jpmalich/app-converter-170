@@ -538,10 +538,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (!newRunId) throw new Error("Backend didn't return a new run_id");
       setCurrentRunId(newRunId);
       setBusyStage(launch?.data?.stage || "starting");
-      // Poll the new run to completion using the same 5-min loop.
+      // Poll the new run to completion. Iter 79j.48 — bumped 100→200
+      // iterations (300s→600s) so client budget exceeds server worst
+      // case (Phase A 300s + drain 5s + Phase B 180s ≈ 485s).
       let result = null;
       let finalStatus = null;
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 200; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         let statusResp;
         try {
@@ -555,7 +557,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         if (s.status === "error") throw new Error(s.error || "AI measure re-run failed");
         if (s.status === "done") { result = s.result; finalStatus = s; break; }
       }
-      if (!result) throw new Error("Re-run timed out after 5 minutes");
+      if (!result) throw new Error("Re-run did not complete within 10 minutes — the server may still be finishing in the background");
       _applyAIResult(result, finalStatus);
       toast.success("Re-run complete · annotations applied to materials list");
     } catch (e) {
@@ -581,7 +583,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     try {
       let result = null;
       let finalStatus = null;
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 200; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         let statusResp;
         try {
@@ -594,7 +596,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         if (s.status === "error") throw new Error(s.error || "AI measure failed");
         if (s.status === "done") { result = s.result; finalStatus = s; break; }
       }
-      if (!result) throw new Error("Resume timed out");
+      if (!result) throw new Error("Resume timed out — the server may still be finishing in the background");
       // Mimic the same downstream flow as a normal run completion.
       _applyAIResult(result, finalStatus);
       toast.success("AI Measure resumed — preview loaded");
@@ -1312,11 +1314,26 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       setCurrentRunId(runId);
       setBusyStage(launch?.data?.stage || "starting");
       liveStage = launch?.data?.stage || "starting";
-      // Poll until done. Max ~5 min (100 polls × 3 s); each poll is a
-      // tiny GET so a misbehaving Claude doesn't hang the UI either.
+      // Iter 79j.48 — Poll until done. Client budget MUST comfortably
+      // exceed the server's legitimate worst case so a run the server
+      // is about to finish never gets phantom-failed as a client
+      // timeout. Server worst case with two-phase pipeline:
+      //   Phase A total cap (300s) + drain (5s) + Phase B (~180s) ≈ 485s
+      // Client: 200 polls × 3s ≈ 600s → 115s cushion.
+      //
+      // We also track `lastUpdatedAt` (server-side heartbeat via the
+      // run doc's `updated_at`). If the server IS still progressing
+      // when the client is about to give up (updated_at within last
+      // 30s), we grant an additional grace-poll window instead of
+      // wasting a run that would have completed in the next 5-10s.
       let result = null;
       let finalStatus = null;
-      for (let i = 0; i < 100; i++) {
+      let lastUpdatedAtSeen = null;
+      const MAX_POLLS = 200;         // 200 × 3s = 600s hard ceiling
+      const GRACE_POLLS = 40;        // +120s if the server is still alive at the end
+      let extraGraceGranted = false;
+      let i = 0;
+      while (i < MAX_POLLS) {
         await new Promise((r) => setTimeout(r, 3000));
         let statusResp;
         try {
@@ -1324,12 +1341,20 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         } catch (e) {
           // Transient network blip — just retry on the next tick.
           if (i >= 5) console.warn("ai-measure status poll failed", e?.message);
+          i += 1;
           continue;
         }
         const s = statusResp?.data || {};
         if (s.stage && s.stage !== liveStage) {
           liveStage = s.stage;
           setBusyStage(s.stage);
+        }
+        // Heartbeat: the /status endpoint returns `elapsed_ms` computed
+        // from `updated_at`. We only care whether the doc is still
+        // being written to — a stalled heartbeat suggests the worker
+        // died silently and grace polls would just delay the failure.
+        if (typeof s.elapsed_ms === "number") {
+          lastUpdatedAtSeen = { at: Date.now(), elapsedMs: s.elapsed_ms };
         }
         if (s.status === "error") {
           // Iter 79j.44 — Include stage/kind so the persistent banner
@@ -1345,12 +1370,31 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           finalStatus = s;
           break;
         }
+        i += 1;
+        // If we're at the tail of the normal budget AND the server
+        // heartbeat is fresh (worker still writing), extend once with
+        // a bounded grace window — a run about to finish is worth 2
+        // extra minutes over a phantom "client timeout" failure.
+        if (i === MAX_POLLS && !extraGraceGranted && lastUpdatedAtSeen &&
+            (Date.now() - lastUpdatedAtSeen.at) < 30_000) {
+          extraGraceGranted = true;
+          console.info("[ai-measure] client-poll: server heartbeat still fresh — granting +120s grace");
+          setBusyStage(liveStage + " (finishing…)");
+          i = MAX_POLLS - GRACE_POLLS;
+        }
       }
       if (!result) {
         // Iter 79j.44 — Stamp the last-known server stage on the
         // client-side timeout error so the banner never shows
         // "Phase: UNKNOWN" for a poll that stalled mid-Phase-A.
-        const err = new Error("AI measure timed out after 5 minutes — please try again with fewer photos");
+        // Iter 79j.48 — Copy now names the ACTUAL timeout (10 min +
+        // grace) and hints that the server may still be running.
+        const elapsedMin = Math.round((MAX_POLLS * 3) / 60);
+        const err = new Error(
+          `AI measure did not complete within ${elapsedMin} minutes — the server may still ` +
+          `be finishing this run in the background. Check the estimate again in a minute ` +
+          `or re-run with fewer photos.`
+        );
         err._stage = liveStage || "unknown";
         err._kind = "ClientPollTimeout";
         throw err;
