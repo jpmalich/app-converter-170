@@ -440,6 +440,87 @@ way to reach them without shell access to the container.
 
 ---
 
+### AI Vision — Payload Shrink + Concurrency Cap (Proxy Serialization Workaround)
+
+- **Version**: Iter79j.50
+- **Created**: 2026-02-28T19:45:00Z
+- **Last updated**: 2026-02-28T19:45:00Z
+- **Change log**: initial entry.
+
+**Problem it solves**: The upstream LLM proxy (LiteLLM behind
+`emergentintegrations.LlmChat`) serializes concurrent large-payload
+`send_message` calls even though small-payload calls parallelize fine.
+Empirically observed: 3 parallel calls with `max_tokens=4000` +
+3000×4000 JPEG take 185s wall clock (ratio 3.0 = serial); 3 parallel
+calls with tiny payloads take 4.89s wall clock (ratio 1.00 = truly
+parallel). Also: `asyncio.wait_for(chat.send_message(), timeout=N)`
+does NOT cancel in-flight calls — they run to natural completion,
+making all client-side timeouts decorative. `t.cancel()` on a running
+task has no effect either.
+
+Without this workaround, 8-photo AI Measure runs take 400-500s
+**per photo** (~8min/photo) when the proxy is serializing, blowing past
+any client polling window.
+
+**Prompt**:
+> When a vision-heavy pipeline dispatches N concurrent
+> `emergentintegrations.LlmChat` calls, apply both of these before
+> the dispatch:
+>
+> **1. Aggressive per-photo shrink**:
+> - Add a helper `_shrink_for_phase_a(raw_bytes, max_dim=1600,
+>   jpeg_q=80)` that PIL-resizes each photo to a max long-edge of
+>   1600px and re-encodes JPEG q80. Contractor phone photos are
+>   typically 3000-4500px and 3-5 MB — this yields ~10-50 KB per
+>   photo (100-300× reduction).
+> - Wrap in try/except and fall back to any existing looser compressor
+>   (`_compress_for_claude` with 5.5 MB cap) so a broken image doesn't
+>   kill the run.
+> - Log per-photo before/after: `logger.info("[phase-A] photo N shrunk
+>   3000x4000 → 1200x1600 (4200000 → 47000 bytes, 0.011x)")`. This is
+>   essential diagnostic evidence — proves the shrink actually ran and
+>   quantifies the reduction.
+> - Env-configurable: `<APP>_PHASE_A_MAX_DIM` (default 1600),
+>   `<APP>_PHASE_A_JPEG_Q` (default 80).
+>
+> **2. Concurrency semaphore**:
+> - Cap concurrent LLM calls with `asyncio.Semaphore(N)` inside the
+>   per-photo coroutine, NOT around `asyncio.create_task`. The
+>   semaphore must be entered AFTER task creation so:
+>   - `asyncio.wait` sees each task as immediately scheduled.
+>   - Each task's per-photo timer starts only when the semaphore
+>     grants entry, not while waiting in the queue (otherwise queue
+>     time counts against the timeout budget).
+> - Default N=2 matches the empirically-observed proxy concurrency
+>   sweet spot. Env-configurable: `<APP>_PHASE_A_CONCURRENCY`.
+> - Note: this is a WORKAROUND for a proxy-side bug. File a support
+>   ticket with the reproduction script (see the "empirical evidence"
+>   section below). When the proxy is fixed, raise N back to `len(photos)`.
+>
+> **Empirical evidence** (paste in the support ticket):
+> ```python
+> # Small calls: wall clock 4.89s, ratio 1.00 (parallel)
+> tasks = [chat.with_params(max_tokens=5).send_message(text_only) ...]
+> # Large calls: wall clock 185s, ratio 3.0 (serial)
+> tasks = [chat.with_params(max_tokens=4000).send_message(big_image) ...]
+> # asyncio.wait(tasks, timeout=2) returned at 185.21s (should be 2s)
+> # t.cancel() on pending tasks had zero effect — they ran to completion
+> ```
+
+**Regression guard**:
+- Manual: kick an 8-photo run with the semaphore active. Watch the
+  backend log — the `photo N start` lines should batch (2 at a time,
+  not 8 at once). Total wall clock should be roughly
+  ceil(N/concurrency) × per-photo-latency.
+- Manual: `curl /api/measure/ai-measure/debug-log-tail?grep=shrunk` —
+  should return N `photo M shrunk WxH → wxh` lines confirming every
+  photo was downscaled.
+- Follow-up: once Emergent fixes the proxy serialization bug, raise
+  `AI_MEASURE_PHASE_A_CONCURRENCY` back to a value ≥ N-photos and
+  confirm wall clock drops to ~1× per-photo latency.
+
+---
+
 # Meta
 
 **Convention going forward**: after every feature/build the main agent
