@@ -172,6 +172,51 @@ def _compress_for_claude(img_bytes: bytes, max_raw_bytes: int = 5_500_000) -> by
         return img_bytes
 
 
+def _shrink_for_phase_a(img_bytes: bytes, max_dim: int = 1600, jpeg_q: int = 80) -> tuple[bytes, dict]:
+    """Iter 79j.50 — Aggressive per-photo downscale for Phase A vision.
+
+    Empirical finding (2026-02-28): the LiteLLM proxy serializes
+    concurrent `LlmChat.send_message` calls when payloads are large
+    (documented in prompts.md Iter79j.50). Small payloads parallelize
+    fine. Attack the root cause by shrinking each photo BEFORE dispatch:
+    max long-edge 1600px, JPEG quality 80. Contractor phone photos are
+    typically 3000-4500px and 3-5MB → this gets them under ~400KB.
+
+    The reconciler (Phase B) is text-only and unaffected. `_compress_for_claude`
+    (5.5MB cap) is retained for other flows that need higher fidelity.
+
+    Returns (shrunk_bytes, stats) where stats has original/final size +
+    dimensions for diagnostic logging.
+    """
+    stats = {"original_bytes": len(img_bytes)}
+    try:
+        with Image.open(io.BytesIO(img_bytes)) as im:
+            stats["original_dim"] = f"{im.width}x{im.height}"
+            if im.mode not in ("RGB", "L"):
+                im = im.convert("RGB")
+            longest = max(im.width, im.height)
+            if longest > max_dim:
+                scale = max_dim / longest
+                new_w = max(1, int(im.width * scale))
+                new_h = max(1, int(im.height * scale))
+                im = im.resize((new_w, new_h), Image.LANCZOS)
+            stats["final_dim"] = f"{im.width}x{im.height}"
+            buf = io.BytesIO()
+            im.save(buf, format="JPEG", quality=jpeg_q, optimize=True)
+            data = buf.getvalue()
+            stats["final_bytes"] = len(data)
+            stats["ratio"] = round(stats["final_bytes"] / max(1, stats["original_bytes"]), 3)
+            return data, stats
+    except Exception:
+        logger.exception("[ai-measure] shrink-for-phase-a failed; using compress fallback")
+        fallback = _compress_for_claude(img_bytes)
+        stats["final_bytes"] = len(fallback)
+        stats["final_dim"] = "compress-fallback"
+        stats["ratio"] = round(stats["final_bytes"] / max(1, stats["original_bytes"]), 3)
+        return fallback, stats
+
+
+
 SYSTEM_PROMPT = """\
 You are a residential exterior measurement assistant for a vinyl-siding and
 window contractor. The user will upload 2–8 photos of a house. Your job is
@@ -3142,57 +3187,100 @@ async def _run_two_phase_pipeline(
     phase_a_total = _env_int("AI_MEASURE_PHASE_A_TIMEOUT", 300)
     phase_a_started = time.time()
 
+    # Iter 79j.50 — Aggressive per-photo shrink before dispatch. The
+    # LiteLLM proxy was empirically shown to serialize concurrent
+    # large-payload calls (185s wall clock for 3 parallel large calls
+    # vs 4.89s for 3 parallel small calls, same model + endpoint).
+    # Shrink attacks the root cause — small payloads truly parallelize.
+    max_dim = _env_int("AI_MEASURE_PHASE_A_MAX_DIM", 1600)
+    jpeg_q = _env_int("AI_MEASURE_PHASE_A_JPEG_Q", 80)
+    shrunk_payloads: list[tuple[str, bytes]] = []
+    total_before = 0
+    total_after = 0
+    for idx, (_ct, raw) in enumerate(image_payloads):
+        shrunk, stats = _shrink_for_phase_a(raw, max_dim=max_dim, jpeg_q=jpeg_q)
+        total_before += stats["original_bytes"]
+        total_after += stats["final_bytes"]
+        logger.info(
+            "[ai-measure phase-A] photo %d shrunk %s → %s (%d → %d bytes, %.2fx)",
+            idx,
+            stats.get("original_dim", "?"),
+            stats.get("final_dim", "?"),
+            stats["original_bytes"],
+            stats["final_bytes"],
+            stats.get("ratio", 1.0),
+        )
+        shrunk_payloads.append(("image/jpeg", shrunk))
+    if total_before > 0:
+        logger.info(
+            "[ai-measure phase-A] total payload %d → %d bytes (%.1fx reduction)",
+            total_before, total_after, total_before / max(1, total_after),
+        )
+
+    # Iter 79j.50 — Concurrency limit. Even with shrunk payloads there's
+    # residual per-key rate limiting on the proxy. Semaphore caps
+    # concurrent Claude calls to N (default 2). 2 keeps us under any
+    # proxy throttling while still parallel enough that 8 photos finish
+    # in 4×per_photo_latency instead of 8×.
+    concurrency = _env_int("AI_MEASURE_PHASE_A_CONCURRENCY", 2)
+    sem = asyncio.Semaphore(max(1, concurrency))
+
     async def _budgeted_extract(idx: int, raw: bytes) -> dict:
-        try:
-            return await asyncio.wait_for(
-                _extract_one_photo(
-                    api_key=api_key,
-                    user_id=user_id,
-                    model_provider=model_provider,
-                    model_name=model_name,
-                    photo_idx=idx,
-                    raw_bytes=raw,
-                    address=address,
-                    reference_dim=reference_dim,
-                    brick_course_in=brick_course_in,
-                    siding_exposure_in=siding_exposure_in,
-                    annotation_hint=annotation_hint,
-                ),
-                timeout=per_photo_budget,
-            )
-        except asyncio.TimeoutError:
-            logger.warning(
-                "[ai-measure phase-A] photo %d exceeded per-photo budget of %ds — flagged empty",
-                idx, per_photo_budget,
-            )
-            return {
-                "index": idx,
-                "_photo_idx": idx,
-                "_extraction_error": f"per-photo budget exceeded ({per_photo_budget}s)",
-                "_extraction_error_kind": "timeout",
-                "_empty_extraction": True,
-                "_empty_reason": f"Photo timed out after {per_photo_budget}s — LLM proxy slow or unresponsive.",
-                "_latency_ms": per_photo_budget * 1000,
-                "_total_latency_ms": per_photo_budget * 1000,
-            }
-        except Exception as e:  # never let one photo kill the batch
-            logger.exception("[ai-measure phase-A] photo %d unexpected failure", idx)
-            return {
-                "index": idx,
-                "_photo_idx": idx,
-                "_extraction_error": str(e) or type(e).__name__,
-                "_extraction_error_kind": "exception",
-                "_empty_extraction": True,
-                "_empty_reason": f"Photo failed with an unexpected error: {e}",
-            }
+        # The semaphore MUST be inside the coroutine (not around
+        # create_task) so `asyncio.wait` sees each task as immediately
+        # scheduled and its per-photo timer starts only when the sem
+        # actually grants entry, not while waiting in the queue.
+        async with sem:
+            try:
+                return await asyncio.wait_for(
+                    _extract_one_photo(
+                        api_key=api_key,
+                        user_id=user_id,
+                        model_provider=model_provider,
+                        model_name=model_name,
+                        photo_idx=idx,
+                        raw_bytes=raw,
+                        address=address,
+                        reference_dim=reference_dim,
+                        brick_course_in=brick_course_in,
+                        siding_exposure_in=siding_exposure_in,
+                        annotation_hint=annotation_hint,
+                    ),
+                    timeout=per_photo_budget,
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "[ai-measure phase-A] photo %d exceeded per-photo budget of %ds — flagged empty",
+                    idx, per_photo_budget,
+                )
+                return {
+                    "index": idx,
+                    "_photo_idx": idx,
+                    "_extraction_error": f"per-photo budget exceeded ({per_photo_budget}s)",
+                    "_extraction_error_kind": "timeout",
+                    "_empty_extraction": True,
+                    "_empty_reason": f"Photo timed out after {per_photo_budget}s — LLM proxy slow or unresponsive.",
+                    "_latency_ms": per_photo_budget * 1000,
+                    "_total_latency_ms": per_photo_budget * 1000,
+                }
+            except Exception as e:  # never let one photo kill the batch
+                logger.exception("[ai-measure phase-A] photo %d unexpected failure", idx)
+                return {
+                    "index": idx,
+                    "_photo_idx": idx,
+                    "_extraction_error": str(e) or type(e).__name__,
+                    "_extraction_error_kind": "exception",
+                    "_empty_extraction": True,
+                    "_empty_reason": f"Photo failed with an unexpected error: {e}",
+                }
 
     budgeted_tasks = [
         asyncio.create_task(_budgeted_extract(idx, raw))
-        for idx, (_ct, raw) in enumerate(image_payloads)
+        for idx, (_ct, raw) in enumerate(shrunk_payloads)
     ]
     logger.info(
-        "[ai-measure phase-A] dispatching %d photos in parallel (per_photo_budget=%ds, total_cap=%ds)",
-        len(budgeted_tasks), per_photo_budget, phase_a_total,
+        "[ai-measure phase-A] dispatching %d photos (concurrency=%d, per_photo_budget=%ds, total_cap=%ds)",
+        len(budgeted_tasks), concurrency, per_photo_budget, phase_a_total,
     )
     # asyncio.wait DOES NOT cancel-all on timeout — pending tasks stay
     # runnable and we get partial results back. We cancel stragglers
