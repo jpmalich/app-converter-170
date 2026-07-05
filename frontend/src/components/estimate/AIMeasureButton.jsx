@@ -656,6 +656,17 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     return () => clearTimeout(t);
   }, [estimateId, open, sessionChecked, photoUrls, refDim, wallHeight, sidingPct, overhangIn, preview, photoAnnotations]);
 
+  // Iter 79j.45 — Ping AI service health when the modal opens. If a
+  // fresh ping is already in the 45s window, this call short-circuits
+  // to the cached value (no network hit). We don't await — the health
+  // flag flips the Run button state as soon as the response lands,
+  // but the rest of the modal renders immediately.
+  useEffect(() => {
+    if (!open) return;
+    refreshAiHealth();
+  }, [open]);
+
+
   const resumeSession = async () => {
     const data = window.__aiMeasurePendingSession;
     if (!data) {
@@ -987,6 +998,44 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // whether it looks like a timeout vs a fast failure.
   const [runErrorMeta, setRunErrorMeta] = useState(null); // { stage, elapsedMs, kind }
   const runStartTsRef = useRef(0);
+  // Iter 79j.45 — AI service health ping. `aiHealth` is the last
+  // response from GET /api/measure/ai-measure/health. Cached on the
+  // client for 45s (matching the server-side TTL) so we ping at most
+  // once every 45s across all sources (modal-open, Run-click).
+  //
+  // Rules (per Howard):
+  //   1. Never ping on every render. Only on modal-open + Run-click.
+  //   2. Distinguish outcomes — do NOT collapse every failure into
+  //      "budget exhausted".
+  //   3. A broken health check must NOT hard-lock Run. `ambiguous`
+  //      keeps the Run button enabled with a soft warning banner.
+  const [aiHealth, setAiHealth] = useState(null); // {status, detail, checked_at, cached}
+  const aiHealthLastRef = useRef(0);
+  const AI_HEALTH_CLIENT_TTL_MS = 45_000;
+  const refreshAiHealth = async ({ force = false } = {}) => {
+    const now = Date.now();
+    if (!force && aiHealth && (now - aiHealthLastRef.current) < AI_HEALTH_CLIENT_TTL_MS) {
+      return aiHealth; // still fresh — no network call
+    }
+    try {
+      const { data } = await api.get("/measure/ai-measure/health");
+      aiHealthLastRef.current = Date.now();
+      setAiHealth(data);
+      return data;
+    } catch (e) {
+      // If the health endpoint itself is broken, treat as ambiguous
+      // so the Run button STAYS ENABLED. A broken health check must
+      // never be able to disable the product.
+      const fallback = {
+        status: "ambiguous",
+        detail: "Couldn't reach the AI health check. You can still run — proceed with caution.",
+        raw_error: e?.message || String(e),
+      };
+      aiHealthLastRef.current = Date.now();
+      setAiHealth(fallback);
+      return fallback;
+    }
+  };
   const primaryWallsCovered = () => {
     const covered = new Set();
     // Iter 79j.35 — Two sources of elevation tags:
@@ -1045,6 +1094,28 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       }
     }
     setMissingWallsModal(null);
+    // Iter 79j.45 — Health gate. Refresh the AI service health right
+    // before dispatching (may serve from cache if <45s old). Only two
+    // outcomes hard-block the run: `budget_exceeded` and `unavailable`.
+    // `ambiguous` and any other value proceed — a broken health check
+    // must NEVER be able to lock the Run button.
+    const health = await refreshAiHealth();
+    if (health?.status === "budget_exceeded") {
+      setRunError(
+        "Universal Key budget is exhausted. Open Profile → Universal Key → " +
+        "Add Balance (or enable Auto Top-up), then retry the run."
+      );
+      setRunErrorMeta({ stage: "preflight", elapsedMs: 0, kind: "BudgetExceeded" });
+      return;
+    }
+    if (health?.status === "unavailable") {
+      setRunError(
+        (health?.detail || "AI service is not responding right now.") +
+        " Retry in a minute."
+      );
+      setRunErrorMeta({ stage: "preflight", elapsedMs: 0, kind: "ServiceUnavailable" });
+      return;
+    }
     setBusy(true);
     setPreview(null);
     setRunError(null);
@@ -1562,6 +1633,26 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             </div>
 
             <div className="overflow-y-auto flex-1 p-5">
+              {/* Iter 79j.45 — Soft health-warning banner. Only shown
+                  when the health ping returned `ambiguous` (unknown
+                  response format). The Run button STAYS enabled — a
+                  broken health check must not lock the product. */}
+              {aiHealth?.status === "ambiguous" && (
+                <div
+                  className="mb-4 p-3 border border-[#F59E0B] bg-[#FEF3C7] text-[#78350F] text-[11px] flex items-start gap-2"
+                  data-testid="ai-measure-health-warning-banner"
+                >
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--warning-text)]" />
+                  <div className="flex-1">
+                    <div className="font-bold uppercase tracking-wider text-[10px] mb-1">
+                      AI health check inconclusive
+                    </div>
+                    <div className="whitespace-pre-wrap break-words">
+                      {aiHealth.detail || "Health check returned an unexpected response — you can still run, but if the run fails, check the LLM proxy."}
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Iter 79j.30 — persistent run-error banner shown at the
                   very top of the modal body (above Resume) so a budget-
                   exceeded or worker failure ALWAYS surfaces, even when
@@ -3004,23 +3095,53 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         )}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={runMeasure}
-                      disabled={busy || photoUrls.length === 0 || files.length > 0}
-                      className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
-                      data-testid="ai-measure-run-btn"
-                    >
-                    {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    {busy
-                      ? (busyStage === "claude" ? "Claude vision…"
-                        : busyStage === "dormer_scan" ? "Deep dormer scan…"
-                        : busyStage === "aggregating" ? "Aggregating walls…"
-                        : busyStage === "mapping" ? "Mapping to catalog…"
-                        : busyStage === "starting" ? "Starting…"
-                        : "Analyzing…")
-                      : files.length > 0 ? "Uploading…" : "Run AI Measure"}
-                  </button>
+                    {(() => {
+                      // Iter 79j.45 — Health-aware Run button state.
+                      // Order of precedence: busy > uploading > health
+                      // outage > normal. `ambiguous` NEVER disables the
+                      // button — soft warning only, per rule (3): a
+                      // broken health check must not lock the product.
+                      const budgetOut = aiHealth?.status === "budget_exceeded";
+                      const svcOut = aiHealth?.status === "unavailable";
+                      let label;
+                      if (busy) {
+                        label = busyStage === "claude" ? "Claude vision…"
+                          : busyStage === "dormer_scan" ? "Deep dormer scan…"
+                          : busyStage === "aggregating" ? "Aggregating walls…"
+                          : busyStage === "mapping" ? "Mapping to catalog…"
+                          : busyStage === "starting" ? "Starting…"
+                          : "Analyzing…";
+                      } else if (files.length > 0) {
+                        label = "Uploading…";
+                      } else if (budgetOut) {
+                        label = "Budget exhausted — top up first";
+                      } else if (svcOut) {
+                        label = "AI service unavailable — retry in a minute";
+                      } else {
+                        label = "Run AI Measure";
+                      }
+                      const gate = budgetOut || svcOut;
+                      const cls = gate
+                        ? "px-3 py-2 bg-[var(--danger)] text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed"
+                        : "px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50";
+                      return (
+                        <button
+                          type="button"
+                          onClick={runMeasure}
+                          disabled={busy || photoUrls.length === 0 || files.length > 0 || gate}
+                          className={cls}
+                          data-testid="ai-measure-run-btn"
+                          data-health-status={aiHealth?.status || "unknown"}
+                        >
+                          {busy
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : gate
+                              ? <AlertTriangle className="w-3.5 h-3.5" />
+                              : <Upload className="w-3.5 h-3.5" />}
+                          {label}
+                        </button>
+                      );
+                    })()}
                   </>
                 ) : (
                   <>

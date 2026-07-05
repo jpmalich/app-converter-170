@@ -1,0 +1,33 @@
+{
+  "summary": "Validated Iter 79j.45 AI Measure health preflight endpoint end-to-end. All 4 pre-existing pytest suites (21 tests) pass + 9 new live HTTP tests pass. Health endpoint returns correct shape, respects auth, and 45s cache TTL works. Direct-key routing confirmed disabled via startup log.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": { "ui_bugs": [], "integration_issues": [], "design_issues": [] },
+  "test_report_links": [
+    "/app/backend/tests/test_ai_measure_health_http.py",
+    "/app/backend/tests/test_ai_health_ping.py",
+    "/app/backend/tests/test_phase_a_resilience.py",
+    "/app/backend/tests/test_two_phase_pipeline.py",
+    "/app/backend/tests/test_anthropic_direct_key.py",
+    "/app/test_reports/pytest/iter34_health.xml",
+    "/app/test_reports/pytest/iter34_health_http.xml"
+  ],
+  "verification_details": {
+    "pytest_suites": "21/21 PASSED across test_ai_health_ping.py (4), test_phase_a_resilience.py (2), test_two_phase_pipeline.py (8), test_anthropic_direct_key.py (7). First test in test_anthropic_direct_key.py is correctly named test_pick_llm_api_key_ignores_anthropic_direct_when_disabled.",
+    "live_http_tests": "9/9 PASSED in new test_ai_measure_health_http.py: (a) unauth GET /api/measure/ai-measure/health returns 401, (b) auth GET returns 200 with status ∈ {ok,budget_exceeded,unavailable,ambiguous} — observed status=ok, (c) 2nd call within 45s returns cached:true with latency_ms=null and preserved checked_at, (d) GET /api/measure/ai-measure/status/{unknown_id} returns 404 (no 500), (e) rerun/latest-for-estimate/history all 401 without cookie, (f) authenticated latest-for-estimate/unknown returns {run:null}, history/unknown returns {runs:[]}.",
+    "direct_key_disabled_log": "grep of /var/log/supervisor/backend.err.log confirms startup line `[AI_MEASURE key-routing] anthropic=EMERGENT_LLM_KEY (proxy) [direct-key DISABLED], gemini/openai=EMERGENT_LLM_KEY (proxy)`.",
+    "error_kind_field": "ai_measure_status endpoint (line 2043-2047 of routes/ai_measure.py) returns `error_kind` key sourced from doc.get('error_kind'). For unknown run_ids it returns 404 as expected."
+  },
+  "action_items": [],
+  "critical_code_review_comments": [
+    "In _classify_health_error (line 2095), the boolean expression `\"unauthor\" in low or \"invalid\" in low and \"key\" in low or \"forbidden\" in low` is parsed as `\"unauthor\" in low OR (\"invalid\" in low AND \"key\" in low) OR \"forbidden\" in low` due to Python operator precedence. This matches the docstring intent (recognise 'invalid key' but not bare 'invalid'), but the precedence is fragile — recommend explicit parens: `\"unauthor\" in low or (\"invalid\" in low and \"key\" in low) or \"forbidden\" in low`. Non-blocking; pure-function tests pass because the current parse matches intent.",
+    "routes/ai_measure.py is 4015 lines — well past the 700-line file-size guideline. Consider extracting the health/status endpoints and the two-phase pipeline into submodules (routes/ai_measure/health.py, routes/ai_measure/pipeline.py). Not blocking this iteration.",
+    "Health endpoint uses a module-level dict `_AI_HEALTH_CACHE` without a lock. Under concurrent requests two callers could both miss the cache and issue duplicate LLM pings — acceptable given 45s TTL and 5s timeout (worst case: 2×$0.00003), but worth documenting."
+  ],
+  "updated_files": ["/app/backend/tests/test_ai_measure_health_http.py (new)"],
+  "success_rate": { "backend": "100%", "frontend": "N/A (backend-only per request)" },
+  "test_credentials": "Admin: hhunt6677@yahoo.com / Admin123! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Live tests use unknown ids and safely-shaped negative responses.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Live health endpoint currently returns status=ok (LiteLLM proxy healthy). If budget is later exhausted, status will flip to budget_exceeded — that ALSO validates the flow. Cache TTL is 45s; to force an uncached response in tests, either wait 46s or reload the backend (supervisorctl restart backend). The direct-key disabled invariant is enforced in code and would take a code change to violate — no env-var toggle exists."
+}

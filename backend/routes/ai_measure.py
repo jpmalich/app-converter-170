@@ -2040,6 +2040,11 @@ async def ai_measure_status(
         "stage": doc.get("stage"),
         "result": doc.get("result"),
         "error": doc.get("error"),
+        # Iter 79j.44 — Surface `error_kind` (exception class name) so
+        # the frontend banner can render a "Kind: TimeoutError" hint
+        # and the health-check UI can distinguish a per-run failure
+        # from a systemic outage.
+        "error_kind": doc.get("error_kind"),
         "elapsed_ms": elapsed_ms,
         # Iter 79j.37 — per-photo extractions (two-phase pipeline only).
         # Surfaces to the frontend Debug view so it can display what
@@ -2049,6 +2054,131 @@ async def ai_measure_status(
         "pipeline": ((doc.get("result") or {}).get("raw_ai") or {}).get("_pipeline")
                     or ("two_phase" if doc.get("raw_per_photo") else "single_call"),
     }
+
+
+# ---------------------------------------------------------------------
+# Iter 79j.45 — AI Measure health ping.
+#
+# Contractors were seeing a full ~5 min Phase A hang whenever the
+# Emergent LLM Key budget was already exhausted (every LiteLLM request
+# retried internally and eventually returned "Budget has been
+# exceeded"). This endpoint fires the smallest possible Claude call
+# (max_tokens=1, tight 5s deadline) so the frontend can flip the Run
+# button to a specific "budget exhausted" / "service unavailable"
+# state BEFORE the contractor wastes a full run.
+#
+# Design rules (per Howard):
+#   1. Cache 45s server-side. Never ping on every render.
+#   2. Distinguish outcomes: ok | budget_exceeded | unavailable |
+#      ambiguous. Do NOT collapse every failure into "budget".
+#   3. A broken health check must NEVER hard-lock the Run button —
+#      "ambiguous" is a soft warning and the frontend keeps Run enabled.
+# ---------------------------------------------------------------------
+
+_AI_HEALTH_CACHE: dict = {"checked_at": 0.0, "payload": None}
+_AI_HEALTH_TTL_SEC = 45
+
+
+def _classify_health_error(err_msg: str) -> tuple[str, str]:
+    """Map a raw exception string to (status, detail). Kept ONLY for
+    the health endpoint — the main pipeline needs no such heuristics."""
+    low = (err_msg or "").lower()
+    if "budget has been exceeded" in low or "budget exceeded" in low or "max budget" in low:
+        return "budget_exceeded", (
+            "Universal Key budget is spent. Open Profile → Universal Key → "
+            "Add Balance (or enable Auto Top-up) in the top-right platform menu."
+        )
+    if "timeout" in low or "timed out" in low or "read timed" in low:
+        return "unavailable", "AI service is not responding right now — retry in a minute."
+    if "connection" in low or "unreachable" in low or "dns" in low or "network" in low:
+        return "unavailable", "Can't reach the AI service — retry in a minute."
+    if "unauthor" in low or "invalid" in low and "key" in low or "forbidden" in low:
+        return "unavailable", "AI service refused the request — the key may be misconfigured."
+    # Anything we don't recognise is ambiguous — the frontend keeps
+    # Run enabled with a soft warning. NEVER collapse an unknown error
+    # into "budget exhausted" or the next diagnosis will be wrong.
+    return "ambiguous", f"AI service returned an unexpected response: {err_msg[:180]}"
+
+
+@router.get("/ai-measure/health")
+async def ai_measure_health(user: dict = Depends(get_current_user)):
+    """Cheap round-trip to the LLM proxy so the UI can flip the Run
+    button state before a full Phase A is dispatched. Cached 45s.
+
+    Returns:
+        {
+          status: "ok" | "budget_exceeded" | "unavailable" | "ambiguous",
+          detail: str,
+          checked_at: iso-8601,
+          cached: bool,          # true if served from the 45s cache
+          latency_ms: int | None # None when cached
+        }
+    """
+    now = time.time()
+    cached = _AI_HEALTH_CACHE.get("payload")
+    if cached and (now - _AI_HEALTH_CACHE.get("checked_at", 0.0) < _AI_HEALTH_TTL_SEC):
+        return {**cached, "cached": True, "latency_ms": None}
+
+    api_key, _source = _pick_llm_api_key("anthropic")
+    if not api_key:
+        payload = {
+            "status": "unavailable",
+            "detail": "No EMERGENT_LLM_KEY configured on the server — contact your admin.",
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+        }
+        _AI_HEALTH_CACHE["payload"] = payload
+        _AI_HEALTH_CACHE["checked_at"] = now
+        return {**payload, "cached": False, "latency_ms": 0}
+
+    # Smallest possible ping: 1-token completion, tight 5s deadline.
+    # Reuses the AI Measure default model so we're testing the SAME
+    # provider path a real run would hit — no risk of a health check
+    # succeeding against a cheap model while the expensive model fails.
+    # Cost ≈ 1 token out × opus rate ≈ $0.00003 per uncached ping.
+    t0 = time.time()
+    ping_error: str | None = None
+    try:
+        chat = (
+            LlmChat(
+                api_key=api_key,
+                session_id=f"ai-measure-health-{uuid.uuid4().hex[:8]}",
+                system_message="ok",
+            )
+            .with_model("anthropic", MODEL_NAME)
+            .with_params(max_tokens=1)
+        )
+        await asyncio.wait_for(
+            chat.send_message(UserMessage(text=".")),
+            timeout=5,
+        )
+    except asyncio.TimeoutError:
+        ping_error = "timeout after 5s"
+    except Exception as e:
+        ping_error = str(e) or type(e).__name__
+    latency_ms = int((time.time() - t0) * 1000)
+
+    if ping_error is None:
+        payload = {
+            "status": "ok",
+            "detail": "AI service reachable.",
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+        }
+    else:
+        status, detail = _classify_health_error(ping_error)
+        payload = {
+            "status": status,
+            "detail": detail,
+            "raw_error": ping_error[:400],
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+        }
+        logger.warning(
+            "[ai-measure health] status=%s latency=%dms raw=%s",
+            status, latency_ms, ping_error[:200],
+        )
+
+    _AI_HEALTH_CACHE["payload"] = payload
+    _AI_HEALTH_CACHE["checked_at"] = now
+    return {**payload, "cached": False, "latency_ms": latency_ms}
 
 
 @router.get("/ai-measure/latest-for-estimate/{estimate_id}")
