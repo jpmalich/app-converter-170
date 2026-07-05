@@ -1205,3 +1205,11 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
   - **Regression guard**: no new tests (behaviour is React-event driven; classifier + endpoint tests from Iter 79j.45 already cover the failure surfaces).
   - **Files**: `frontend/src/components/estimate/AIMeasureButton.jsx` only.
   - **Status**: SHIPPED. USER VERIFICATION PENDING — exhaust the budget (or simulate by killing the LLM proxy), open the modal, top up, alt-tab back, and the red button should flip purple without a manual click.
+
+- **Iter 79j.47 — Deploy Secrets click-path (2026-02-28, verified during live incident)**: Empirically confirmed by user during production key rotation.
+  - **Path**: **Home tab → Manage Deployments → [your deployed app] → Secrets tab**.
+  - **Deploy-side env vars are separate from preview `/app/backend/.env`.** Editing preview `.env` does NOT propagate to production. Env vars are stored in the deployment record and shown as either "Currently live" (in use by the running deployment) or "Updated, not live yet" (edited but pending next Redeploy).
+  - **Update flow**: Secrets tab → edit value → **Save and Redeploy** button (single action; there is no env-only apply, so any Save-and-Redeploy will also ship whatever preview code is current).
+  - **Rollback**: previously-deployed versions remain accessible; env vars persist across rollbacks (verify manually after any rollback per support's guidance).
+  - **Not reachable via**: clicking the deployed app card on Home (goes back to chat), clicking "View Task" (also goes back to chat). This is the specific UI trap that caused two failed click-path guesses during the incident.
+  - **Not doable via main agent**: I cannot read or write deploy-side Secrets — this is user-only UI territory.
