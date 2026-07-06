@@ -519,6 +519,39 @@ any client polling window.
   `AI_MEASURE_PHASE_A_CONCURRENCY` back to a value ≥ N-photos and
   confirm wall clock drops to ~1× per-photo latency.
 
+
+---
+
+# Support Datapoint — 2026-07-06 03:33 UTC — Emergent LiteLLM proxy: instant Phase B 502 (not slow, not timeout)
+
+**Estimate**: `673707d5-9b7e-4d8f-8eaf-63c86820f611`
+**Target Run**: `22af2eb2ad784c7bbd662222e16001ab` — 8 photos, Phase A extractions intact, model `claude-fable-5`.
+**Endpoint invoked**: `POST /api/measure/ai-measure/reconcile-only/{run_id}` (text-only Phase B, no image payload).
+**Observed behavior**: proxy hard-rejected the reconcile request with `litellm.BadGatewayError: BadGatewayError: OpenAIException - Error code: 502` — response arrived within seconds, not the ~900s hang seen in Iter 79j.50/51.
+
+**Why this matters**:
+- Prior 79j.50 failure was a Phase B **hang → 502 after 901s** (long-tail latency, consistent with a proxy backend that eventually gave up).
+- This datapoint is a Phase B **instant 502** (fast rejection). The proxy is *actively refusing* text-only reconciliation on a stable estimate whose 8-for-8 Phase A extractions are already persisted.
+- Combined with 79j.50/51's evidence, the LiteLLM proxy now exhibits **at least three distinct failure modes** on the same Universal Key routing anthropic/claude-fable-5:
+    1. Silent serialization → long-tail hang → eventual 502 (79j.44/45).
+    2. Payload-driven 502 after ~900s hang (79j.50/51).
+    3. **Instant 502 hard-rejection on text-only Phase B (79j.52 → this datapoint).**
+- Support has already confirmed in writing that **no documented concurrency, payload-queueing, or cancellation behavior exists** for the Universal Key path (see PRD.md → "Standing Justification for Post-Validation Direct-API Rewrite"). This datapoint is the third failure mode to attach to that thread.
+
+**What we did NOT do**:
+- Retry the reconcile after the 502.
+- Fire any further reconcile attempts.
+- Change the model or the proxy routing.
+- (Per user gate: no further calls until sort fix + read-only Resume land — both landed in 79j.53.)
+
+**What we DID do (79j.53)**:
+- Status-aware sort on `latest-for-estimate` so failed retries never bury successful reconciliations.
+- Session-autosave guard (both debounced + close-time) that refuses to persist a `_reconciliation_error` preview.
+- Historic-error banner framing on Resume — "Prior reconciliation failed", "Restored from a previous session — no fresh call was made", origin badge, elapsed suppressed. Contractors will no longer misread a resumed failed session as a fresh instant-502.
+- One-shot direct DB repoint of the estimate's session back to Run 3.
+
+**Action item for support ticket**: append this timestamp + error string as evidence #3 alongside the 79j.50 901s hang + 79j.51 reconcile 502. All three occurred on the same key/model/route with no code change on our side — the proxy's behavior is unstable, not our payload.
+
 ---
 
 # Meta

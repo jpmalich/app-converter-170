@@ -692,6 +692,17 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     // photo_urls + non-null preview mismatch poisoned the session so
     // Resume rehydrated 0 photos and Re-Run silently bailed.
     if (!photoUrls.length && preview) return;
+    // Iter 79j.53 — HARD GUARD: never persist a preview that carries a
+    // `_reconciliation_error`. A failed reconcile attempt would
+    // otherwise silently clobber the last-good preview on the next
+    // debounced autosave and bury the working reconciled house. The
+    // run doc (ai_measure_runs) is authoritative for the retry
+    // target; the session's job is to remember successful state
+    // only. If the current preview is a failure state, skip the
+    // autosave entirely — the last-good session preview stays put.
+    if (preview && preview?.raw_ai?._reconciliation_error) {
+      return;
+    }
     const t = setTimeout(() => {
       api
         .put(`/measure/sessions/${estimateId}`, {
@@ -755,11 +766,22 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     // silently restored a preview whose raw_ai._reconciliation_error
     // was set but ONLY the run-time (fresh-run) error path could
     // render the banner.
+    // Iter 79j.53 — Mark the error as HISTORIC (origin="resume") so
+    // the banner reads "Prior reconciliation failed" and does NOT
+    // display "Elapsed: 0s" as if a fresh call just returned. This
+    // was misleading contractors into thinking Resume auto-fired a
+    // retry. Resume is read-only — it never calls Phase B; retries
+    // are always explicit user clicks.
     const reconErr = data?.preview?.raw_ai?._reconciliation_error;
     const resumedRunId = data?.preview?.run_id || null;
     if (reconErr) {
       setRunError(String(reconErr));
-      setRunErrorMeta({ stage: "reconciling", elapsedMs: 0, kind: "BadGateway" });
+      setRunErrorMeta({
+        stage: "reconciling",
+        elapsedMs: null,
+        kind: "PriorFailure",
+        origin: "resume",
+      });
       if (resumedRunId) setCurrentRunId(resumedRunId);
     } else if (resumedRunId) {
       // Non-failure resume: still remember the run id so a manual
@@ -1793,7 +1815,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     // would silently never reach MongoDB and the "Resume" prompt wouldn't
     // appear when the contractor came back. Fire-and-forget; local state
     // is the source of truth either way.
-    if (estimateId && (photoUrls.length > 0 || preview != null)) {
+    // Iter 79j.53 — Never persist a failed preview on close. Same
+    // guard as the debounced autosave: the run doc is the retry
+    // target, the session's job is to remember success only. A
+    // failed preview on close would silently overwrite the last-good
+    // one and bury a reconciled house.
+    const previewIsFailure = !!(preview && preview?.raw_ai?._reconciliation_error);
+    if (estimateId && (photoUrls.length > 0 || preview != null) && !previewIsFailure) {
       api
         .put(`/measure/sessions/${estimateId}`, {
           estimate_id: estimateId,
@@ -1897,7 +1925,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--danger-text)]" />
                   <div className="flex-1">
                     <div className="font-bold uppercase tracking-wider text-[10px] mb-1 flex items-center justify-between">
-                      <span>{/Budget/i.test(runError) ? "Universal Key budget exhausted" : "AI Measure failed"}</span>
+                      <span>{
+                        /Budget/i.test(runError)
+                          ? "Universal Key budget exhausted"
+                          : (runErrorMeta?.origin === "resume"
+                              ? "Prior reconciliation failed"
+                              : "AI Measure failed")
+                      }</span>
                       <button
                         type="button"
                         className="text-[10px] font-normal text-[#7F1D1D] underline hover:no-underline"
@@ -1915,7 +1949,15 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         again — nothing on this estimate is lost.
                       </div>
                     ) : (
-                      <div className="whitespace-pre-wrap break-words">{runError}</div>
+                      <div className="whitespace-pre-wrap break-words">
+                        {runErrorMeta?.origin === "resume" && (
+                          <div className="mb-1 italic text-[#7F1D1D] opacity-80">
+                            Restored from a previous session — no fresh call was made.
+                            Click Retry Reconciliation below to try Phase B again.
+                          </div>
+                        )}
+                        {runError}
+                      </div>
                     )}
                     {/* Iter 79j.44 — Phase / elapsed / retry footer.
                         Never let a failed run disappear in a toast: we
@@ -1927,12 +1969,19 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         <span data-testid="ai-measure-run-error-stage">
                           Phase: <b>{runErrorMeta.stage || "unknown"}</b>
                         </span>
-                        <span data-testid="ai-measure-run-error-elapsed">
-                          Elapsed: <b>{Math.round((runErrorMeta.elapsedMs || 0) / 1000)}s</b>
-                        </span>
+                        {runErrorMeta.elapsedMs != null && (
+                          <span data-testid="ai-measure-run-error-elapsed">
+                            Elapsed: <b>{Math.round((runErrorMeta.elapsedMs || 0) / 1000)}s</b>
+                          </span>
+                        )}
                         {runErrorMeta.kind && (
                           <span data-testid="ai-measure-run-error-kind">
                             Kind: <b>{runErrorMeta.kind}</b>
+                          </span>
+                        )}
+                        {runErrorMeta.origin === "resume" && (
+                          <span data-testid="ai-measure-run-error-origin">
+                            Origin: <b>resumed session</b>
                           </span>
                         )}
                       </div>

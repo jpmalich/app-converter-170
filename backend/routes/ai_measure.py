@@ -2492,16 +2492,48 @@ async def ai_measure_latest_for_estimate(
     "Restore preview" banner after a page reload / screen lock.
     """
     user_id = user.get("id") or "anon"
-    # Iter 79j.52 — Sort by updated_at (most recent activity) with
-    # created_at as tiebreaker. Prior sort was created_at only, which
-    # surfaced the newest RUN rather than the most recently reconciled
-    # / updated run. A reconcile-only retry on an older run would
-    # succeed silently but the UI would still restore the newer
-    # failed run's preview.
-    doc = await db.ai_measure_runs.find_one(
-        {"user_id": user_id, "estimate_id": estimate_id},
-        sort=[("updated_at", -1), ("created_at", -1)],
-    )
+    # Iter 79j.53 — Status-aware sort. Prior sort was updated_at DESC,
+    # which buried a successful reconciliation the instant a subsequent
+    # retry failed (its `updated_at` from the error-write beat the
+    # older success). A failed Phase B retry MUST NEVER outrank a
+    # successful reconciliation for the same estimate, no matter how
+    # recent. Ordering:
+    #   1. Successful reconciliation (status=done AND result.raw_ai
+    #      exists AND no `_reconciliation_error`) — score = 2
+    #   2. In-flight run (status=running) — score = 1
+    #   3. Failed / errored / stranded-phase-a — score = 0
+    # Recency (updated_at → created_at) only breaks ties WITHIN the
+    # same score.
+    pipeline = [
+        {"$match": {"user_id": user_id, "estimate_id": estimate_id}},
+        {"$addFields": {
+            "_score": {
+                "$switch": {
+                    "branches": [
+                        {
+                            "case": {
+                                "$and": [
+                                    {"$eq": ["$status", "done"]},
+                                    {"$ifNull": ["$result.raw_ai", False]},
+                                    {"$in": [
+                                        {"$ifNull": ["$result.raw_ai._reconciliation_error", None]},
+                                        [None, ""],
+                                    ]},
+                                ],
+                            },
+                            "then": 2,
+                        },
+                        {"case": {"$eq": ["$status", "running"]}, "then": 1},
+                    ],
+                    "default": 0,
+                },
+            },
+        }},
+        {"$sort": {"_score": -1, "updated_at": -1, "created_at": -1}},
+        {"$limit": 1},
+    ]
+    docs = await db.ai_measure_runs.aggregate(pipeline).to_list(length=1)
+    doc = docs[0] if docs else None
     if not doc:
         return {"run": None}
     created = _as_aware_utc(doc.get("created_at"))
