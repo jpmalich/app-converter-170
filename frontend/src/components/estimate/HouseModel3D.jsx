@@ -293,10 +293,28 @@ function buildHouseJson(preview, overrides, estimate) {
   const dormerOverridesMap = overrides.dormers || {};
   const primaryOverride = dormerOverridesMap[0] || overrides.dormer || {};
   const slopesForAxis = ridgeAxis === "x" ? ["slope-front", "slope-back"] : ["slope-left", "slope-right"];
+  // Iter 79j.58 — migrateFace must return DIFFERENT slopes for
+  // different input face labels so two dormers reconciled on
+  // opposite roof faces don't collapse onto the same slope in 3D.
+  // Rules (input can be any of: front, back, rear, left, right,
+  // slope-*, or missing):
+  //   ridgeAxis="x" (slopes face front/back):
+  //     • front → slope-front       • back/rear → slope-back
+  //     • left  → slope-front (arbitrary but stable split)
+  //     • right → slope-back  (so left≠right in multi-dormer)
+  //   ridgeAxis="z" (slopes face left/right):
+  //     • left  → slope-left        • right → slope-right
+  //     • front → slope-left  (arbitrary but stable split)
+  //     • back/rear → slope-right
   const migrateFace = (f) => {
-    if (slopesForAxis.includes(f)) return f;   // already slope-relative
-    if (ridgeAxis === "x") return f === "rear" || f === "back" ? "slope-back" : "slope-front";
-    return f === "rear" || f === "back" ? "slope-right" : "slope-left";
+    const s = String(f || "").toLowerCase();
+    if (slopesForAxis.includes(s)) return s;   // already slope-relative
+    if (ridgeAxis === "x") {
+      if (s === "back" || s === "rear" || s === "right") return "slope-back";
+      return "slope-front";   // "front", "left", missing
+    }
+    if (s === "right" || s === "back" || s === "rear") return "slope-right";
+    return "slope-left";      // "left", "front", missing
   };
   // Face wall width for the dormer facade: on a slope-facing dormer the
   // "face" wall runs parallel to the ridge, so its width equals the
@@ -609,13 +627,28 @@ function buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, 
   const isXRidge = house.ridgeAxis === "x";
   const spanTotal = isXRidge ? footprint.depth : footprint.width;
   const halfSpan = spanTotal / 2;
-  const uFrac = 0.5;
+  // Iter 79j.58 — Knee-aware placement. The face wall used to sit at
+  // uFrac=0.5 (midway between ridge and eave). When the AI-reported
+  // knee_wall_height was tall (>0.5 × roofRise) the face top poked
+  // above the ridge and fired the "dormer face top above main ridge"
+  // sanity banner. We now:
+  //   1) Clamp the effective knee to 95% of roofRise (unphysical
+  //      inputs still show a warning below, but rendering stays sane).
+  //   2) Push the face wall DOWN-slope (larger uFrac) just enough so
+  //      the top of the knee lands under the ridge with 5% headroom.
+  //   3) Never let uFrac fall below 0.5 (visual identity of a shed
+  //      dormer — face still noticeably up-slope from the eave) or
+  //      exceed 0.9 (face still visibly separated from the eave).
+  const kneeRaw = Number(d.kneeWallHeight) || 0;
+  const kneeEff = roofRise > 0 ? Math.min(kneeRaw, roofRise * 0.95) : kneeRaw;
+  const uFracMin = roofRise > 0 ? (kneeEff / roofRise) + 0.05 : 0.5;
+  const uFrac = Math.max(0.5, Math.min(0.9, uFracMin));
   const negFaces = new Set(["slope-back", "slope-left"]);
   const faceSign = negFaces.has(d.face) ? -1 : 1;
   const uFace = faceSign * halfSpan * uFrac;   // along-slope coord of face wall
   const mainRoofYAtFace = avgGableEave + roofRise * (1 - Math.abs(uFace) / halfSpan);
   const faceBottomY = mainRoofYAtFace;
-  const faceTopY = faceBottomY + Number(d.kneeWallHeight);
+  const faceTopY = faceBottomY + kneeEff;
   const halfWD = Number(d.width) / 2;
   const cv = Number(d.offsetX) || 0;   // offset along the ridge-parallel axis
   const ridgeY = avgGableEave + roofRise;
@@ -922,16 +955,34 @@ function buildScene(scene, house) {
     );
     warnings.push("Ridge height sits at or below the eave — check pitch or eave height.");
   }
-  if (roof.type === "gable-shed-dormer" && roof.dormer) {
-    const zd = footprint.depth * 0.25;
-    const mainRoofY = avgGableEave + roofRise * (1 - zd / (footprint.depth / 2));
-    const dormerFaceTop = mainRoofY + Number(roof.dormer.kneeWallHeight || 0);
-    if (dormerFaceTop >= ridgeY) {
-      console.error(
-        "[HouseModel3D] dormer sanity FAILED — dormer face top ≥ main ridge",
-        { dormerFaceTop, ridgeY, kneeWallHeight: roof.dormer.kneeWallHeight },
-      );
-      warnings.push("Dormer face top is above the main ridge — shrink knee-wall height.");
+  if (roof.type === "gable-shed-dormer") {
+    // Iter 79j.58 — Multi-dormer sanity + knee-aware placement.
+    // Match the exact math buildShedDormer() uses so the banner
+    // reflects what's ACTUALLY drawn: kneeEff is clamped to 95% of
+    // roofRise and uFrac is bumped down-slope to keep the face top
+    // under the ridge. The banner only fires when the AI-reported
+    // knee is unphysical (≥ 95% of roofRise) — every other knee
+    // now renders cleanly on its correct slope without warning.
+    const dormerList = (Array.isArray(roof.dormers) && roof.dormers.length)
+      ? roof.dormers
+      : (roof.dormer ? [roof.dormer] : []);
+    for (let idx = 0; idx < dormerList.length; idx += 1) {
+      const dd = dormerList[idx];
+      const kneeRaw = Number(dd?.kneeWallHeight || 0);
+      const kneeEff = roofRise > 0 ? Math.min(kneeRaw, roofRise * 0.95) : kneeRaw;
+      const uFracMin = roofRise > 0 ? (kneeEff / roofRise) + 0.05 : 0.5;
+      const uFrac = Math.max(0.5, Math.min(0.9, uFracMin));
+      const mainRoofY = avgGableEave + roofRise * (1 - uFrac);
+      const dormerFaceTop = mainRoofY + kneeEff;
+      if (dormerFaceTop >= ridgeY - 0.01) {
+        console.error(
+          "[HouseModel3D] dormer sanity FAILED — dormer face top ≥ main ridge",
+          { idx, face: dd?.face, dormerFaceTop, ridgeY, kneeRaw, kneeEff, uFrac },
+        );
+        warnings.push(
+          `Dormer #${idx + 1} face top is above the main ridge — knee-wall (${kneeRaw.toFixed(1)} ft) exceeds usable roof rise (${roofRise.toFixed(1)} ft). Shrink knee-wall height.`,
+        );
+      }
     }
   }
 

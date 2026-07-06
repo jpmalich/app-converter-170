@@ -1599,3 +1599,30 @@ Diff SHIPPED (env-gated, safe by default). Diagnostic path forward for the uvico
 ### Support datapoint update
 `memory/prompts.md` — Iter 79j.56 Option D shipping under user direction is proven viable in isolation; the four proxy failure modes (79j.44/45 hang, 79j.50/51 payload-driven 502, 79j.53 instant 502, 79j.54 15-min hang→502) are still fully justified by the standing thread. Add today's PROXY-fallback SUCCESS at 18:33 UTC as a fifth datapoint: the same proxy that failed with 15-min hang→502 at 12:04 UTC on the same exact payload succeeded at 18:33 UTC in ~5 min — **the proxy is nondeterministic**, further reinforcing the case for direct routing as the durable path.
 
+
+
+## Iter 79j.58 — Red-House Gate GRADUATES · 3D dormer slope mapping + knee-aware placement (2026-07-06)
+
+**Status**: SHIPPED · Red-House Run 4 validation complete end-to-end (data → reconciliation → 3D render).
+
+### Bugs fixed
+1. **`migrateFace` collapsed different faces onto the same slope.** Prior logic mapped anything not literally `"back"/"rear"` to `slope-front` (or `slope-left`), so two dormers reconciled on faces `"left"` and `"right"` both landed on the *same* slope in 3D — the exact regression Howard flagged. Rewrote as a full disambiguation table for both ridge axes so opposite faces render on opposite slopes.
+
+2. **Dormer face wall poked above the main ridge → false sanity banner.** `uFrac` (how far up-slope the dormer face wall sits) was hardcoded at `0.5`. With Red-House knee=4.3 ft and roofRise=6.75 ft, `faceTop = eave + rise*0.5 + 4.3 = eave + 7.675 > ridgeY = eave + 6.75` → banner fired even though the input geometry was physically valid (knee < rise). Now:
+   - `kneeEff = min(kneeRaw, roofRise * 0.95)` — never allow visual overflow.
+   - `uFrac = clamp(0.5, 0.9, kneeEff / roofRise + 0.05)` — push face down-slope just enough to fit under the ridge with 5% headroom.
+   - Sanity check now uses the same math and only warns when the AI-reported knee is truly unphysical (≥ 95% × roofRise). Iterates all `roof.dormers[]` so multi-dormer houses get per-dormer warnings.
+
+### File touched
+- `/app/frontend/src/components/estimate/HouseModel3D.jsx`
+  - `migrateFace` (buildHouseJson) — full input-label disambiguation for both ridgeAxis values.
+  - `buildShedDormer` — knee-aware `kneeEff` and dynamic `uFrac`.
+  - Sanity check block — iterates all dormers, uses the same clamped math.
+
+### Validated on Red-House estimate `673707d5-9b7e-4d8f-8eaf-63c86820f611`
+- Ridge axis correctly derived as `z` (front/back gables in walls[]).
+- Dormer 1 (15.5 ft) → `slope-left`, Dormer 2 (15 ft) → `slope-right` — opposite slopes, distinct rendering.
+- No `above the main ridge` banner. No `roof orientation may be wrong` banner. No `shrink knee` copy.
+- Flipping ridge orientation to `x` still shows correct opposite-slope mapping (front/back) — the envelope banner correctly fires because the axis truly is wrong for this house.
+
+**Gate status**: ✅ GRADUATED. Ready to proceed to Iter 79j.52a and beyond.
