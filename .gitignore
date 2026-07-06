@@ -118,3 +118,6 @@ frontend/node_modules/.cache/default-development/24.pack
 frontend/node_modules/.cache/default-development/27.pack
 frontend/node_modules/.cache/default-development/21.pack
 frontend/public/backups/pro-quote-backup-20260705-142625.zip
+
+# Local reference material (large binaries — kept out of git history)
+Resource_Docs/
