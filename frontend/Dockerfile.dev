@@ -1,0 +1,19 @@
+# Hot-reloading dev server (craco/CRA). Used by docker-compose.yml.
+# The production image is the sibling ./Dockerfile (nginx-served build).
+FROM node:20-bookworm-slim
+
+WORKDIR /app
+
+# Same-origin API calls: empty base -> "/api", proxied to the backend by
+# src/setupProxy.js (PROXY_TARGET). Keeps the auth cookie first-party.
+ENV REACT_APP_BACKEND_URL=""
+
+# Deps are installed into the image; an anonymous volume on /app/node_modules
+# (in compose) keeps them from being shadowed by the bind-mounted source.
+COPY package.json ./
+RUN yarn install --network-timeout 600000
+
+COPY . .
+
+EXPOSE 3000
+CMD ["yarn", "start"]

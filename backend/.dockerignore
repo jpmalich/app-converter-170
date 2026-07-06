@@ -1,0 +1,11 @@
+# Keep the build context small — code is bind-mounted at runtime anyway.
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+tests/
+uploads/
+.env
+.venv/
+venv/

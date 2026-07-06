@@ -1,0 +1,65 @@
+# Local self-hosted stack: MongoDB + FastAPI backend + React/nginx frontend.
+#   docker compose up --build
+#   frontend  -> http://localhost:3100  (nginx serves the build, proxies /api)
+#   backend   -> http://localhost:8000  (also reachable directly)
+#   mongo     -> localhost:27017        (exposed for debugging)
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      # Bind-mount source for live --reload; uploads persist on the host.
+      - ./backend:/app
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  frontend:
+    # Hot-reloading craco dev server. For a production-style static build,
+    # swap dockerfile to `Dockerfile` (nginx) and drop the volumes/environment.
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    restart: unless-stopped
+    environment:
+      # setupProxy.js forwards /api to the backend (same-origin -> cookie works).
+      - PROXY_TARGET=http://backend:8000
+      # Docker-on-Mac can't deliver inotify events across the bind mount, so
+      # force polling for reliable hot reload.
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      # HMR websocket is reached via the host port (3100), not the container's.
+      - WDS_SOCKET_PORT=3100
+      - HOST=0.0.0.0
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+    ports:
+      # Host 3100 (3000 is often taken by other local projects) -> dev server :3000
+      - "3100:3000"
+    volumes:
+      - ./frontend:/app
+      # Keep the image's node_modules (host has none) from being shadowed.
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
