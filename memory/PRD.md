@@ -1413,3 +1413,17 @@ Confirmed `resumeSession` and `restoreLastRun` never call `retryReconcileOnly`, 
 ### User gate reaffirmed
 No further Phase B reconcile attempts fired during this iteration. Red-house validation still pending. Once user graduates the gate on Run 3, we can (optionally) invoke reconcile-only on Run 4 baseline, then proceed to Option D.
 
+
+## Queued for post-gate — Iter 79j.52b: Session self-heal on Resume when a successful reconciliation exists
+
+**Scope**: ~10 min of work. Parallel guarantee to 79j.53's status-aware sort: enforce the "successful reconciliation always wins" contract at the session-doc layer too, so orphaned client-persisted failure previews self-heal on Resume.
+
+**Behavior to ship**:
+- On modal open, alongside the existing `/measure/sessions/{estimate_id}` GET, fetch `/measure/ai-measure/latest-for-estimate/{estimate_id}` (already fetched today for the `lastRun` banner — reuse that response).
+- If `session.preview.raw_ai._reconciliation_error` is set AND `latest.run.status === "done"` AND `latest.run.result.raw_ai._reconciliation_error` is null/empty AND `latest.run.result.raw_ai.walls.length > 0`, PREFER the latest run's result over the session preview when stashing into `window.__aiMeasurePendingSession`. Also update the session doc via a background PUT so future Resume calls skip the check.
+- Never regress the currently-successful session; only self-heal broken ones.
+
+**Files**: `frontend/src/components/estimate/AIMeasureButton.jsx` — modify the session-check useEffect (line ~436) to cross-reference `lastRun` when the fetched session preview is a failure state.
+
+**Priority**: P1. Do NOT ship before red-house gate graduates.
+
