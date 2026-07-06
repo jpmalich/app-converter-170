@@ -100,38 +100,70 @@ def _resolve_model(choice: str | None) -> tuple[str, str, str]:
     return key, provider, model_name
 
 
-def _pick_llm_api_key(provider: str) -> tuple[str | None, str]:
-    """Iter 79j.44 — DIRECT-KEY ROUTING EXPLICITLY DISABLED.
+def _pick_llm_api_key(provider: str, *, phase: str | None = None) -> tuple[str | None, str]:
+    """Iter 79j.44 — DIRECT-KEY ROUTING DISABLED BY DEFAULT.
+    Iter 79j.56 — Scoped Phase B bypass added.
 
-    Every provider now uses the Emergent Universal Key via the LiteLLM
-    proxy. The direct-Anthropic bypass introduced in Iter 79j.42 is
-    turned off until a standalone `api.anthropic.com` test call is
-    proven green in isolation. If `ANTHROPIC_API_KEY` is present on
-    the .env, this function IGNORES it and logs a warning so the
-    operator knows the direct path did not activate.
+    Every provider still uses the Emergent Universal Key via the LiteLLM
+    proxy for Phase A vision + all non-anthropic calls. The direct-
+    Anthropic path is opt-in via `ANTHROPIC_DIRECT_ROUTE=phase_b_only`:
+    when the flag is set, the caller must pass `phase="B"` to route the
+    reconciliation call directly through `api.anthropic.com` using
+    `ANTHROPIC_API_KEY`. Phase A (`phase="A"`) and non-anthropic
+    providers stay on the proxy regardless of the flag.
 
-    Returns (api_key, source). `source` is always `"emergent_proxy"`.
-    `api_key` may be None if `EMERGENT_LLM_KEY` is missing — the
-    caller raises a 500 in that case.
+    Rationale (see `memory/prompts.md` support datapoints #1-#4): the
+    Emergent proxy exhibits four documented failure modes on the same
+    `claude-fable-5` route — hangs, instant 502s, 900s+ payload
+    stalls, and 15-min hang → 502 on marginally larger Phase B
+    payloads. The direct API has documented rate limits and
+    cancellation semantics we can code against. This function is the
+    only place that decides which key to hand back; upstream call
+    sites drive the phase via keyword arg.
+
+    Returns (api_key, source). `source` values:
+        - `"anthropic_direct"` — direct api.anthropic.com routing (only
+          when flag is on AND phase="B" AND provider="anthropic" AND
+          ANTHROPIC_API_KEY is set)
+        - `"emergent_proxy"` — everything else
     """
     if provider == "anthropic":
-        direct = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
-        if direct:
-            logger.warning(
-                "[AI_MEASURE key-routing] ANTHROPIC_API_KEY is set but direct-key "
-                "routing is currently disabled. Using EMERGENT_LLM_KEY (proxy) instead."
+        flag = (os.environ.get("ANTHROPIC_DIRECT_ROUTE") or "").strip().lower()
+        direct_key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+        if flag == "phase_b_only" and phase == "B" and direct_key:
+            return direct_key, "anthropic_direct"
+        # A direct key is on file but the flag / phase disqualify this
+        # call. Log once per boot at INFO so operators can tell why the
+        # bypass didn't fire without decoding the env by hand.
+        if direct_key and phase == "B" and flag != "phase_b_only":
+            logger.info(
+                "[AI_MEASURE key-routing] ANTHROPIC_API_KEY present but "
+                "ANTHROPIC_DIRECT_ROUTE=%r — Phase B stays on proxy.",
+                flag or "(unset)",
             )
     return (os.environ.get("EMERGENT_LLM_KEY") or None), "emergent_proxy"
 
 
 # Startup log — operators can grep `AI_MEASURE key-routing` to confirm
 # which key each provider will use without decoding the .env by hand.
-# Iter 79j.44 — Direct-key routing is DISABLED regardless of .env, so
-# the summary is now a single hard statement.
-_LLM_ROUTING_SUMMARY = (
-    "anthropic=EMERGENT_LLM_KEY (proxy) [direct-key DISABLED], "
-    "gemini/openai=EMERGENT_LLM_KEY (proxy)"
-)
+# Iter 79j.56 — Summary now reflects the opt-in Phase B bypass.
+_direct_key_present = bool((os.environ.get("ANTHROPIC_API_KEY") or "").strip())
+_direct_route_flag = (os.environ.get("ANTHROPIC_DIRECT_ROUTE") or "").strip().lower()
+if _direct_key_present and _direct_route_flag == "phase_b_only":
+    _LLM_ROUTING_SUMMARY = (
+        "anthropic Phase B=ANTHROPIC_API_KEY (direct api.anthropic.com), "
+        "anthropic Phase A=EMERGENT_LLM_KEY (proxy), "
+        "gemini/openai=EMERGENT_LLM_KEY (proxy)"
+    )
+else:
+    _LLM_ROUTING_SUMMARY = (
+        "anthropic=EMERGENT_LLM_KEY (proxy) "
+        "[direct route flag=%r, key=%s]" % (
+            _direct_route_flag or "unset",
+            "present" if _direct_key_present else "absent",
+        )
+        + ", gemini/openai=EMERGENT_LLM_KEY (proxy)"
+    )
 logger.info("[AI_MEASURE key-routing] %s", _LLM_ROUTING_SUMMARY)
 
 
@@ -3465,7 +3497,72 @@ async def _reconcile_extractions(
     """Phase B. Send the Phase A extractions as TEXT (no images) and
     ask for a single reconciled house JSON matching the aggregator's
     schema. Returns the parsed JSON with `_reconciliation_latency_ms`
-    added for observability."""
+    added for observability.
+
+    Iter 79j.56 — Dispatches to the direct Anthropic Messages API
+    (`_reconcile_extractions_direct`) when the ANTHROPIC_DIRECT_ROUTE
+    env flag is set to `phase_b_only`, the provider is anthropic, and
+    ANTHROPIC_API_KEY is on file. On direct-route failure this
+    function falls back to the proxy path so a single bad direct call
+    doesn't strand a reconciliation the proxy would happily serve
+    (per user: "proxy as fallback"). Transport is the ONLY thing that
+    changes — same model, same system prompt, same slim payload — so
+    the reconciled result stays comparable across routes.
+    """
+    direct_key, source = _pick_llm_api_key(model_provider, phase="B")
+    if source == "anthropic_direct":
+        logger.info(
+            "[ai-measure phase-B] routing via direct api.anthropic.com "
+            "(ANTHROPIC_DIRECT_ROUTE=phase_b_only) user_id=%s model=%s",
+            user_id, model_name,
+        )
+        direct_result = await _reconcile_extractions_direct(
+            api_key=direct_key,
+            user_id=user_id,
+            model_name=model_name,
+            extractions=extractions,
+            address=address,
+            reference_dim=reference_dim,
+            annotation_hint=annotation_hint,
+        )
+        if not direct_result.get("_reconciliation_error"):
+            direct_result.setdefault("_transport", "anthropic_direct")
+            return direct_result
+        # Direct route errored — log and fall through to the proxy path
+        # using the original `api_key` (Emergent proxy key). Preserves
+        # the "proxy as fallback" contract without silently swallowing
+        # signal.
+        logger.warning(
+            "[ai-measure phase-B] direct-route failed, falling back to proxy: %s",
+            (direct_result.get("_reconciliation_error") or "")[:200],
+        )
+    return await _reconcile_extractions_via_proxy(
+        api_key=api_key,
+        user_id=user_id,
+        model_provider=model_provider,
+        model_name=model_name,
+        extractions=extractions,
+        address=address,
+        reference_dim=reference_dim,
+        annotation_hint=annotation_hint,
+    )
+
+
+async def _reconcile_extractions_via_proxy(
+    *,
+    api_key: str,
+    user_id: str,
+    model_provider: str,
+    model_name: str,
+    extractions: list[dict],
+    address: Optional[str],
+    reference_dim: Optional[str],
+    annotation_hint: str,
+) -> dict:
+    """Phase B via Emergent LiteLLM proxy (LlmChat). This is the
+    original implementation renamed so `_reconcile_extractions` can
+    dispatch between direct + proxy transports without duplicating
+    the payload assembly."""
     t0 = time.time()
     chat = LlmChat(
         api_key=api_key,
@@ -3521,9 +3618,187 @@ async def _reconcile_extractions(
         )
     except Exception as e:
         logger.exception("[ai-measure phase-B] reconciliation failed: %s", e)
-        return {"_reconciliation_error": str(e), "_reconciliation_latency_ms": int((time.time() - t0) * 1000)}
+        return {
+            "_reconciliation_error": str(e),
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "emergent_proxy",
+        }
     parsed = _clean_json_reply(reply or "")
     parsed["_reconciliation_latency_ms"] = int((time.time() - t0) * 1000)
+    parsed["_transport"] = "emergent_proxy"
+    return parsed
+
+
+# Iter 79j.56 — Direct Anthropic Messages API path for Phase B only.
+# Same slim payload assembly + same system prompt as the proxy path.
+# Transport is the ONLY thing that changes — enabled via
+# `ANTHROPIC_DIRECT_ROUTE=phase_b_only` env flag. Signature mirrors
+# `_reconcile_extractions_via_proxy` minus `model_provider` (always
+# "anthropic" on this route).
+async def _reconcile_extractions_direct(
+    *,
+    api_key: str,
+    user_id: str,
+    model_name: str,
+    extractions: list[dict],
+    address: Optional[str],
+    reference_dim: Optional[str],
+    annotation_hint: str,
+) -> dict:
+    """Phase B via direct api.anthropic.com. Uses the anthropic-python
+    SDK's AsyncAnthropic + messages.create(...). Returns the parsed
+    JSON with `_reconciliation_latency_ms` + `_transport` for
+    observability, or `{"_reconciliation_error": "...", ...}` on
+    failure so the dispatcher can fall back to the proxy.
+
+    Rate-limit + timeout policy:
+        - SDK default retry-on-timeout is TWO retries (see
+          `memory/prompts.md` — Anthropic support-thread issue #9).
+          To avoid stacking with our app-level policy we set the SDK
+          `max_retries=0` and enforce a hard 180s ceiling via
+          `asyncio.wait_for`. That matches the proxy path's timeout
+          and lets the direct route be a drop-in swap.
+        - `RateLimitError` and `APIError` are returned as
+          `_reconciliation_error` sentinels so the caller can log +
+          fall back rather than raise. Rate-limit headers are
+          preserved in the error string for the support thread.
+    """
+    # Local imports so this module still imports cleanly if the
+    # anthropic SDK is not installed (backward-compat with any pod
+    # that hasn't pulled the requirements.txt update yet).
+    try:
+        from anthropic import AsyncAnthropic, APIError, APITimeoutError, RateLimitError
+    except ImportError as e:
+        return {
+            "_reconciliation_error": f"anthropic SDK not installed: {e}",
+            "_reconciliation_latency_ms": 0,
+            "_transport": "anthropic_direct_import_failed",
+        }
+
+    t0 = time.time()
+    client = AsyncAnthropic(api_key=api_key, max_retries=0)
+    lines = [
+        "You are reconciling the following per-photo extractions into a "
+        "single house measurement. Each JSON below is one photo, in "
+        "order. Photo indices ARE the array positions.",
+        "",
+        f"Photos: {len(extractions)}",
+    ]
+    if address:
+        lines.append(f"Property address: {address}")
+    if reference_dim:
+        lines.append(f"Contractor reference dimension: {reference_dim}")
+    if annotation_hint:
+        lines.append(annotation_hint)
+    lines.append("")
+    lines.append("=== PER-PHOTO EXTRACTIONS ===")
+    total_slim_bytes = 0
+    total_orig_bytes = 0
+    for i, ex in enumerate(extractions):
+        slim = _slim_extraction_for_reconcile(ex)
+        slim_json = json.dumps(slim, ensure_ascii=False, indent=2)
+        total_slim_bytes += len(slim_json)
+        total_orig_bytes += len(json.dumps(
+            {k: v for k, v in ex.items() if not k.startswith("_")},
+            ensure_ascii=False, indent=2,
+        ))
+        lines.append(f"\n-- photo[{i}] --")
+        lines.append(slim_json)
+    logger.info(
+        "[ai-measure phase-B direct] reconcile payload %d → %d bytes (%.2fx) model=%s",
+        total_orig_bytes, total_slim_bytes,
+        total_orig_bytes / max(1, total_slim_bytes),
+        model_name,
+    )
+    lines.append("")
+    lines.append("Return the reconciled house JSON now. No prose.")
+    user_text = "\n".join(lines)
+
+    try:
+        response = await asyncio.wait_for(
+            client.messages.create(
+                model=model_name,
+                max_tokens=4000,
+                system=RECONCILE_PROMPT,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [{"type": "text", "text": user_text}],
+                    }
+                ],
+            ),
+            timeout=180,
+        )
+    except APITimeoutError as e:
+        logger.exception("[ai-measure phase-B direct] APITimeoutError: %s", e)
+        return {
+            "_reconciliation_error": f"Anthropic direct APITimeoutError: {e}",
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "anthropic_direct",
+        }
+    except RateLimitError as e:
+        # Preserve retry-after / anthropic-ratelimit-* headers in the
+        # error string so the support thread can see them if this ever
+        # fires. Never raises; the dispatcher will fall back to proxy.
+        headers = {}
+        try:
+            headers = dict(getattr(getattr(e, "response", None), "headers", {}) or {})
+        except Exception:
+            pass
+        rl_snapshot = {k: v for k, v in headers.items() if k.lower().startswith("anthropic-") or k.lower() == "retry-after"}
+        logger.warning("[ai-measure phase-B direct] RateLimitError headers=%s", rl_snapshot)
+        return {
+            "_reconciliation_error": f"Anthropic direct RateLimitError: {e} ratelimit_headers={rl_snapshot}",
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "anthropic_direct",
+        }
+    except APIError as e:
+        logger.exception("[ai-measure phase-B direct] APIError: %s", e)
+        return {
+            "_reconciliation_error": f"Anthropic direct APIError: {e}",
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "anthropic_direct",
+        }
+    except asyncio.TimeoutError:
+        logger.warning("[ai-measure phase-B direct] local asyncio.wait_for ceiling hit")
+        return {
+            "_reconciliation_error": "Anthropic direct: local 180s wait_for ceiling hit",
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "anthropic_direct",
+        }
+    except Exception as e:
+        logger.exception("[ai-measure phase-B direct] unexpected error: %s", e)
+        return {
+            "_reconciliation_error": f"Anthropic direct unexpected error: {e}",
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "anthropic_direct",
+        }
+
+    # Extract the text response. For text-only calls the SDK returns
+    # `content` as a list of blocks; we concatenate any `type == "text"`
+    # blocks so partial responses aren't silently dropped.
+    try:
+        text_blocks = []
+        for block in response.content or []:
+            btype = getattr(block, "type", None)
+            if btype == "text":
+                text_blocks.append(getattr(block, "text", "") or "")
+        raw_text = "".join(text_blocks).strip()
+    except Exception as e:
+        return {
+            "_reconciliation_error": f"Anthropic direct: failed to extract text blocks: {e}",
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "anthropic_direct",
+        }
+    if not raw_text:
+        return {
+            "_reconciliation_error": "Anthropic direct: empty text content",
+            "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
+            "_transport": "anthropic_direct",
+        }
+    parsed = _clean_json_reply(raw_text)
+    parsed["_reconciliation_latency_ms"] = int((time.time() - t0) * 1000)
+    parsed["_transport"] = "anthropic_direct"
     return parsed
 
 

@@ -1498,3 +1498,57 @@ User confirmed today's marker-annotated Re-run (`dcd8574a`) hit tape-accurate nu
 **Support datapoint logged**: `memory/prompts.md` now contains a full timeline table under "Support Datapoint — 2026-07-06 12:19 UTC — Failure mode #4" ready to attach to the standing support thread.
 
 **Sequencing next**: Option D (direct Anthropic Messages API) is now the only path to graduate the gate. Phase B migrates first. No further proxy reconcile attempts fire without explicit user direction — the endpoint is a coin-flip and every failure is a burned proxy call, even though our guards prevent user-facing re-burial.
+
+## Iter 79j.56 — Option D drafted: direct Anthropic Messages API for Phase B (STAGED, not activated) (2026-07-06)
+
+**Trigger**: user green-lit Option D after Run 4 reconcile-only 15-min hang → 502 (failure mode #4). User provisioning `ANTHROPIC_API_KEY` in parallel to this diff.
+
+### Contract
+- Env flag `ANTHROPIC_DIRECT_ROUTE=phase_b_only` (unset by default → zero behavior change).
+- When set AND provider is anthropic AND phase="B" AND `ANTHROPIC_API_KEY` is present, Phase B routes via `api.anthropic.com` using the official `anthropic` Python SDK (`AsyncAnthropic.messages.create(...)`).
+- All other calls (Phase A vision, gemini, openai text/image) stay on the Emergent LiteLLM proxy regardless of the flag.
+- Same model, same slim payload, same system prompt — **transport is the only thing that changes**. Run 4's reconciled result stays comparable across routes.
+- On direct-route failure the dispatcher falls back to the proxy automatically (per user: "proxy as fallback"). No user-facing regression when the direct route errors.
+
+### Files changed
+- `backend/requirements.txt` — pinned `anthropic==0.116.0` via pip freeze.
+- `backend/routes/ai_measure.py`:
+  - `_pick_llm_api_key(provider, *, phase=None)` — new keyword arg; returns `(key, "anthropic_direct")` only when flag + phase + key line up; otherwise `(EMERGENT_LLM_KEY, "emergent_proxy")` unchanged.
+  - `_LLM_ROUTING_SUMMARY` — now reflects flag/key state explicitly at boot so operators can grep `AI_MEASURE key-routing` to see which lane Phase B will use.
+  - `_reconcile_extractions` — becomes a dispatcher: checks routing, calls `_reconcile_extractions_direct` first when eligible, falls back to `_reconcile_extractions_via_proxy` on error.
+  - `_reconcile_extractions_via_proxy` — the original LlmChat-based proxy implementation, renamed. Stamps `_transport: emergent_proxy`.
+  - `_reconcile_extractions_direct` — NEW. Uses `AsyncAnthropic(api_key=..., max_retries=0)` + `messages.create(model=..., max_tokens=4000, system=RECONCILE_PROMPT, messages=[{"role":"user","content":[{"type":"text","text":...}]}])`. 180s `asyncio.wait_for` ceiling to match the proxy path. Catches `APITimeoutError`, `RateLimitError` (preserves ratelimit headers in the error string), `APIError`, `asyncio.TimeoutError`, and any Exception — never raises. Returns parsed JSON with `_reconciliation_latency_ms` + `_transport: anthropic_direct` on success.
+
+### Model mapping (per Anthropic docs — confirmed by integration playbook)
+- `claude-fable-5` → `claude-fable-5` (Claude API ID = alias, no rename needed).
+- `claude-opus-4-5` → `claude-opus-4-5-20251101`.
+- `claude-sonnet-4-5` → `claude-sonnet-4-5-20250929`.
+- `claude-haiku-4-5` → `claude-haiku-4-5-20251001`.
+Aliases resolve on the direct API too, so the model string passed through the UI works verbatim.
+
+### Verification (staged, not activated)
+- **Flag OFF (current prod state)**: `_LLM_ROUTING_SUMMARY` reads `anthropic=EMERGENT_LLM_KEY (proxy) [direct route flag='unset', key=absent], gemini/openai=EMERGENT_LLM_KEY (proxy)`. Both Phase A and Phase B route to proxy. Zero behavior change.
+- **Flag ON + fake key**: `_pick_llm_api_key("anthropic", phase="B")` returns `source="anthropic_direct"`. Phase A stays on proxy. Gemini stays on proxy.
+- **Direct SDK reachability**: `_reconcile_extractions_direct(api_key="sk-ant-fake", model_name="claude-fable-5", ...)` connected to `api.anthropic.com` in 262 ms, got HTTP 401 with a valid `request_id`, converted to `_reconciliation_error` sentinel without raising. `_transport: anthropic_direct` correctly stamped.
+- **Fallback dispatcher**: with flag ON + fake key, `_reconcile_extractions(...)` calls direct → 401 → logs `"[ai-measure phase-B] direct-route failed, falling back to proxy: ..."` → invokes proxy path → returns `walls=4, _transport: emergent_proxy`. Fallback contract holds.
+- **Backend tests**: `tests/test_reconcile_only_retry.py` 5/5 passing. Lint clean.
+
+### Activation checklist (once user provisions the real key)
+1. Add `ANTHROPIC_API_KEY=sk-ant-...` to `/app/backend/.env` (env-based supply chain).
+2. Add `ANTHROPIC_DIRECT_ROUTE=phase_b_only` to `/app/backend/.env`.
+3. `sudo supervisorctl restart backend` (env change requires it).
+4. Grep `AI_MEASURE key-routing` in backend logs — should read `anthropic Phase B=ANTHROPIC_API_KEY (direct api.anthropic.com), anthropic Phase A=EMERGENT_LLM_KEY (proxy), gemini/openai=EMERGENT_LLM_KEY (proxy)`.
+5. Fire `POST /api/measure/ai-measure/reconcile-only/9c8248df8e854590b4d8671d51dd6da2` — Phase B of Run 4 now flows through `api.anthropic.com`.
+6. Watch the run doc + `_transport` field in the reconciled result: `anthropic_direct` proves the bypass fired.
+
+### Acceptance for red-house gate
+- If reconciled `dormers.length == 2`: `(A=2)` flag on Run 4's picker button clears to `2/2` → **gate graduates**.
+- If reconciled `dormers.length == 1` with Phase A `dormers_observed_photos = 2` on the same run: **collapse bug caught red-handed** with a clean transport trace → we now have deterministic Phase B data to file as a Claude prompt/reconciler bug rather than a proxy bug.
+
+Either outcome closes the standing gate. No new proxy failure modes to chase.
+
+### Gate protocol
+- Diff is staged, not activated. No traffic changes until user provisions the key and sets the flag.
+- The 79j.53 status-aware sort + session-autosave guard remain in force — they don't interact with the transport choice.
+- The 79j.54 debug picker now includes a `_transport` breadcrumb in the reconciled `raw_ai` — a future picker column could surface it, queued as a P2 polish.
+
