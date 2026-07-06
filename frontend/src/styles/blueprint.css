@@ -92,7 +92,12 @@
   --success:       var(--bp-pos);
   --danger:        var(--bp-neg);
   --danger-text:   var(--bp-neg);
-  --ai:            var(--bp-mark);
+  /* Redline discipline (spec §1, §5): safety orange = --bp-mark is markup ONLY,
+     scarce and high-signal. AI / smart-import actions are CTAs, so they take the
+     primary line accent like every other CTA — the sparkle icon carries the "AI"
+     signal, not color. This keeps --bp-mark free for genuine redline (flags,
+     deltas, "verify…" notes). */
+  --ai:            var(--bp-line);
 }
 
 /* ---------------------------------------------------------------- primitives */
