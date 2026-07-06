@@ -1298,3 +1298,38 @@ Invoked `/reconcile-only/22af2eb2ad784c7bbd662222e16001ab` (earlier of the two 8
 
 ### Gate status
 Red-house validation NOT yet graduated. User must eyeball the reconciled numbers on preview before feature work resumes.
+
+## Standing Justification for Post-Validation Direct-API Rewrite (Option D)
+
+**Date logged**: 2026-07-06 · **Source**: Emergent Support (written confirmation on the 79j.51 ticket).
+
+### What support confirmed (verbatim intent)
+Emergent Support stated in writing that there is **no documented concurrency, payload-queueing, or cancellation behavior for the Universal Key / Emergent LiteLLM proxy**. The serialization behavior we have been repeatedly observing under load (large payloads, 2-3 concurrent Phase A/B calls) is therefore either:
+1. An **undocumented internal policy** (throttling, queueing, or bucketing we cannot inspect or plan around), OR
+2. A **bug** in the proxy layer.
+
+Either way, we cannot design around it because the contract does not exist.
+
+### What our own evidence shows (backs the support statement)
+- **Iter 79j.44/45/50** progressively shrunk photos, capped Phase A concurrency at 2, added per-photo timeouts. Reduced *frequency* of proxy hangs but did not eliminate them.
+- **Iter 79j.51 Phase B 502**: text-only reconciliation call (no images) hung 901s then died with `litellm.BadGatewayError: 502`. Purely text payloads exhibit the same instability — this is not a vision-payload-only issue.
+- **Iter 79j.51 proxy probe** (`backend/scripts/proxy_probe.py`, 3 parallel · max_tokens=4000): fable=84s wall, sonnet-4-5=131s wall. Even the "faster" model showed ~28-43s per call at concurrency=3, meaning individual 4KB text calls are being serialized by the proxy at very modest concurrency.
+- Support's own suggestion (throttled default bucket for unlisted models) does **not** fit the data — fable is faster than a listed model.
+
+### Why this justifies Option D (direct provider API rewrite) after red-house validation graduates
+- **No SLA to code against**: with the proxy's concurrency/queue/cancel behavior undocumented, every future scaling task (batch quoting, background reconciles, higher photo counts, retry policies) is guesswork against a moving target.
+- **Undocumented ≠ safe**: we have already burned iterations on defensive downscaling, semaphores, timeouts, and now a reconcile-only escape hatch. Each is a workaround for a proxy behavior we cannot see.
+- **Direct provider APIs (Anthropic Messages API, plus Gemini's native SDK) have documented rate limits, retry semantics, streaming, and cancellation** — a contract we can plan capacity and error handling around.
+- **Cost / spend model does not change materially** — the direct-key path was already implemented and hard-disabled in Iter 79j.4x (see `_pick_llm_api_key` in `backend/routes/ai_measure.py`); reversing that toggle is scoped work, not a rewrite of the pipeline.
+- **Retains fable/opus/sonnet A-B testing**: Anthropic Messages API supports all three model IDs directly; the model-selector UI does not change.
+
+### Sequencing (do NOT start until red-house gate graduates)
+1. Red-house validation gate (Runs 3 & 4 human-eyeball on preview) — currently pending.
+2. Once graduated, re-enable direct Anthropic key routing in `_pick_llm_api_key` for `provider="anthropic"` when `ANTHROPIC_API_KEY` is present; keep proxy as fallback only for gemini/openai text.
+3. Add per-provider concurrency + retry policy (documented Anthropic limits: 50 rpm / 40k tpm for standard tier — plan Phase A worker pool to that number, not to a guess).
+4. Migrate Phase B off proxy first (text-only, most-often-failing path) as a safe pilot; migrate Phase A after Phase B stability is confirmed.
+5. Leave `EMERGENT_LLM_KEY` in place as an emergency fallback path, but off the default hot path.
+
+### Explicit user gate on this work
+This item **remains blocked** until the user personally graduates the red-house validation (Iter 79j.51 Run 3 reconciled output on preview). No provider-swap code lands until then. This PRD entry exists so the rationale survives session forks — not as a work order.
+
