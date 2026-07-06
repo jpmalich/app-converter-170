@@ -1358,3 +1358,16 @@ Rewrote the estimate's session preview to point at reconciled Run 3 (`22af2eb2�
 - `backend/routes/ai_measure.py` — reconcile-only worker + `latest-for-estimate` sort.
 - `frontend/src/components/estimate/AIMeasureButton.jsx` — `_applyAIResult`, `resumeSession`, `apply` guard, Apply button predicate, 3D tab render guard.
 
+
+## Queued for post-gate — Iter 79j.52a: Auto-clear stale reconciliation-failure session on dismiss
+
+**Scope**: ~15 min of work. When a user clicks the `dismiss` link on the resumed reconciliation-failure banner, the current stale `_reconciliation_error` preview stays in `ai_measure_sessions` — so the next open of the modal keeps offering to Resume broken data.
+
+**Behavior to ship**:
+- When the user dismisses the runError banner AND the underlying `preview.raw_ai._reconciliation_error` is set, downgrade the persisted session to a "photos-only" state: keep `photo_urls`, `photo_annotations`, `reference_dim`, `wall_height`, `siding_pct`, drop `preview`.
+- Contractor can still Resume (recovers the uploaded photos + form state, no wasted spend) but the modal opens clean — no stale failure banner, no phantom 3D empty-state, no disabled Apply on ghost data.
+
+**Files**: `frontend/src/components/estimate/AIMeasureButton.jsx` — modify the banner's dismiss `onClick` to also fire a small session PUT if the current runError originated from a stale reconciliation preview.
+
+**Priority**: P1. Do NOT ship before the red-house validation gate graduates.
+
