@@ -22,7 +22,7 @@ import PhotosPanel from "@/components/estimate/PhotosPanel";
 import SectionAccordion from "@/components/estimate/SectionAccordion";
 import TotalsSummary from "@/components/estimate/TotalsSummary";
 import CatalogSyncBanner from "@/components/estimate/CatalogSyncBanner";
-import EstimatorTabs from "@/components/estimate/EstimatorTabs";
+import EstimatorTabs, { TABPANEL_ID, tabButtonId } from "@/components/estimate/EstimatorTabs";
 import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, SIDING_KIND_TAB_IDS } from "@/lib/tabsConfig";
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
@@ -334,6 +334,7 @@ export default function EstimateEditor() {
 
         <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} />
 
+        <div role="tabpanel" id={TABPANEL_ID} aria-labelledby={tabButtonId(activeTab)}>
         {activeTab === "mezzo" ? (
           <>
             <MezzoJobSnapshot est={est} />
@@ -408,6 +409,7 @@ export default function EstimateEditor() {
             />
           ))
         )}
+        </div>
 
         <TotalsSummary
           est={est}
