@@ -1455,3 +1455,46 @@ Four runs on file for estimate 673707d5:
 ### Marker-annotated Re-run accuracy note
 User confirmed today's marker-annotated Re-run (`dcd8574a`) hit tape-accurate numbers: dormer width 15.0 ft, wall height 10.3 ft. The calibration markers are producing real accuracy gains — worth codifying into the standard capture workflow when we resume feature work.
 
+
+## Queued for post-gate — Iter 79j.54a: Debug view "diff two runs" mode
+
+**Scope**: ~30 min of work. Extend the 79j.54 run picker from a switcher into a two-slot A/B compare — the right tool for marker-vs-no-marker and model-vs-model comparisons.
+
+**Behavior to ship**:
+- Add a second selector in the debug modal header ("Compare against ▾") that pins a second run alongside the primary.
+- When two runs are selected, both LEFT (Phase A) and RIGHT (reconciled) columns render side-by-side or stacked, with a diff strip that highlights fields where the two reconciled outputs differ: dormer count, avg eave, wall widths per elevation, siding sqft, opening counts.
+- Green/red badges on numeric deltas; italic muted for equal-value rows.
+- No new backend endpoint required — reuse `/status/{run_id}` for both loads.
+
+**Files**: `frontend/src/components/estimate/AIExtractionDebugModal.jsx` (add a `secondaryRun` state + diff computation + render).
+
+**Priority**: P1. Do NOT ship before red-house gate graduates.
+
+
+
+## Iter 79j.55 — Run 4 reconcile-only FAILED · gate remains ungraduated (2026-07-06)
+
+**Task**: user re-sequenced Run 4 reconcile-only as the actual gate (not post-gate), because Run 4's Phase A is the only dataset that observed both dormers and can therefore validate the reconciliation-collapse hypothesis.
+
+**Kicked off**: `POST /api/measure/ai-measure/reconcile-only/9c8248df8e854590b4d8671d51dd6da2` at 12:04:06 UTC.
+
+**Result**: **502 after 15 min 2 s** (12:19:08 UTC). `error="Reconciliation retry failed: Failed to generate chat completion: litellm.BadGatewayError: BadGatewayError: OpenAIException - Error code: 502"`. Run doc correctly transitioned to `status=error, stage=error`. `raw_ai.walls=0, dormers=0`.
+
+**Same-day Phase B track record on the same key/model/route** (all `claude-fable-5` via Universal Key proxy):
+- 02:38 UTC — Run 3 reconcile-only, 1 phase-A dormer, ~4 min, **success**
+- 03:33 UTC — (unnamed) Run 3 replay, **instant 502**
+- 11:29 UTC — Fresh Re-run `dcd8574a`, 1 phase-A dormer, ~10 min two-phase, **success**
+- **12:04 UTC — Run 4 reconcile-only, 2 phase-A dormers, 15 min → 502**
+
+**Containment (79j.53 guards held)**:
+- Status-aware sort kept `dcd8574a` on top after Run 4 flipped to `status=error`. `/latest-for-estimate` returns the successful run.
+- Session autosave guard prevented Run 4's failure preview from clobbering the client-persisted session (still `dcd8574a`'s reconciled data).
+- Debug picker still shows Run 4 with the `(A=2)` amber flag — the collapse-bug indicator remains visible.
+
+**Verdict on `(A=2)` collapse bug**: **neither confirmed nor disproven.** Phase B never completed on Run 4. Cannot be resolved via the proxy.
+
+**Gate status**: **red-house validation remains ungraduated.** Run 4's 2-dormer Phase A is the only dataset that can graduate a two-dormer property, and the proxy has repeatedly refused it.
+
+**Support datapoint logged**: `memory/prompts.md` now contains a full timeline table under "Support Datapoint — 2026-07-06 12:19 UTC — Failure mode #4" ready to attach to the standing support thread.
+
+**Sequencing next**: Option D (direct Anthropic Messages API) is now the only path to graduate the gate. Phase B migrates first. No further proxy reconcile attempts fire without explicit user direction — the endpoint is a coin-flip and every failure is a burned proxy call, even though our guards prevent user-facing re-burial.

@@ -567,3 +567,45 @@ features (WCAG AA pass, theme system, customer-contact fields, soft
 validation, auto-populate on Create, two-phase pipeline base build,
 etc.) are documented in `PRD.md` but not yet turned into portable
 prompts. Backfill on request.
+
+---
+
+# Support Datapoint — 2026-07-06 12:19 UTC — Failure mode #4: 15-min hang → 502 on Phase B reconcile-only (same call path that succeeded 9.5h earlier)
+
+**Estimate**: `673707d5-9b7e-4d8f-8eaf-63c86820f611`
+**Target Run**: `9c8248df8e854590b4d8671d51dd6da2` (Run 4) — 8 photos, Phase A intact, **2 dormers observed** (photos 2 + 6), model `claude-fable-5`, provider `anthropic`.
+**Endpoint invoked**: `POST /api/measure/ai-measure/reconcile-only/{run_id}` — same code path that reconciled Run 3 (`22af2eb2`) in ~4 min at 02:38 UTC same day.
+**Timeline**:
+- 12:04:06 UTC — worker kicked off, `status=running, stage=reconciling`
+- 12:04:06 → 12:19:08 UTC — 15 min 2 s in-flight, no writes to run doc during the interval
+- 12:19:08 UTC — worker terminated, `status=error`, `error="Reconciliation retry failed: Failed to generate chat completion: litellm.BadGatewayError: BadGatewayError: OpenAIException - Error code: 502"`
+
+**Comparison with same-day Phase B calls on same key/model/route**:
+| when | run | photos | phase-A dormers | payload class | wall time | outcome |
+|---|---|---|---|---|---|---|
+| 02:38 UTC | Run 3 (`22af2eb2`) | 8 | 1 | slim reconcile | ~4 min | ✓ done, walls=4/dormers=1/1598 sqft |
+| 03:33 UTC | (support datapoint #3, unnamed) | 8 | — | slim reconcile | ~seconds | **instant 502** |
+| 11:29 UTC | fresh Re-run (`dcd8574a`) | 8 | 1 | full two-phase | ~10 min | ✓ done, walls=4/dormers=1/1517 sqft |
+| **12:04 UTC** | **Run 4 (`9c8248df`)** | **8** | **2** | **slim reconcile** | **15 min → 502** | **✗ error** |
+
+**Why this matters**:
+- Run 4's Phase B payload is *marginally* larger than Run 3's (2 dormers → ~15-20% more `dormers_observed` fields, same 8 photos, same slim strip).
+- Same endpoint, same worker, same key, same model, same route.
+- No app-side change between Run 3's success and Run 4's failure — only the proxy's own behavior varied.
+- Now four distinct proxy failure modes observed on the Universal Key `claude-fable-5` route:
+    1. Silent serialization → long-tail → 502 (79j.44/45).
+    2. Payload-driven ~900s hang → 502 (79j.50/51).
+    3. Instant 502 hard-rejection on text-only Phase B (79j.53 03:33 UTC).
+    4. **~15 min hang → 502 on payload marginally larger than a same-day success (this datapoint).**
+
+**Observed containment (79j.53 guards worked)**:
+- Status-aware sort (`_score` in `latest-for-estimate` and `debug-runs` aggregations) correctly kept the successful reconciled runs on top after Run 4 flipped to `status=error`. `latest-for-estimate` returns `dcd8574a` (today's marker-annotated success), Run 4 sits at `score=0`.
+- Session-autosave guard on `preview.raw_ai._reconciliation_error` prevented Run 4's failure state from clobbering the client-persisted session. Session still holds `dcd8574a`'s reconciled preview (walls=4, dormers=1, siding 1517.7 sqft).
+- User-facing UI has NOT been re-buried. The Debug picker still shows Run 4 with the `(A=2)` amber flag — the collapse-bug indicator remains visible for future diagnosis.
+
+**Direct implication for the standing support thread**:
+- Option D (direct Anthropic Messages API for Phase B first, then Phase A) is now not just justified by an undocumented contract — it is the **only path** to graduate the red-house validation gate. Run 4's 2-dormer Phase A is the only dataset that can prove or disprove the reconciliation-collapse hypothesis, and the proxy has repeatedly refused to reconcile that dataset (instant 502 on 03:33 attempt on Run 3 with 1 dormer, 15-min hang → 502 on 12:04 attempt on Run 4 with 2 dormers).
+- Attach this timestamp + timeline as evidence #4 alongside the 79j.50 901s hang, 79j.51 reconcile 502, and 79j.53 03:33 UTC instant 502.
+
+**Do NOT retry Run 4 reconcile-only without explicit user direction.** Per gate: every failure re-buries the good run at the session layer (guarded now) and burns proxy budget on a coin-flip endpoint. Standing plan is Option D on Phase B first.
+
