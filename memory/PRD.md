@@ -1626,3 +1626,33 @@ Diff SHIPPED (env-gated, safe by default). Diagnostic path forward for the uvico
 - Flipping ridge orientation to `x` still shows correct opposite-slope mapping (front/back) — the envelope banner correctly fires because the axis truly is wrong for this house.
 
 **Gate status**: ✅ GRADUATED. Ready to proceed to Iter 79j.52a and beyond.
+
+## Iter 79j.52a — Dismiss reconcile-failure downgrades session to photos-only (2026-07-06)
+**Status**: SHIPPED · testing agent iter35 PASS.
+- `AIMeasureButton.jsx::dismissRunError` (new) clears the local runError + runErrorMeta and, when the current preview carries `raw_ai._reconciliation_error`, additionally clears `preview` + `currentRunId` and immediately PUTs `/measure/sessions/{id}` with `preview: null` so a page nav + Resume can't re-summon the stale failure banner. Photos, ref dim, wall height, siding %, annotations are preserved.
+- Per Howard 2026-07-06 (option a): `currentRunId` is cleared on dismiss — Debug View still holds the run history server-side, so no data is actually lost.
+
+## Iter 79j.52b — Session self-heal on Resume when a good reconciliation exists on the server (2026-07-06)
+**Status**: SHIPPED · testing agent iter35 PASS.
+- `resumeSession()` now checks GET `/measure/ai-measure/latest-for-estimate/{id}` when the persisted preview carries `_reconciliation_error`. If the latest run doc is `status=done` with no reconciliation error, the healed run's `result` replaces the stale preview locally AND is PUT back to the session so subsequent resumes stay healed. Falls back to the existing "Prior reconciliation failed" banner if no fresher good run exists. Toast: "Resumed — session self-healed from a newer successful reconciliation."
+
+## Iter 79j.54a — Diff mode in Debug View (2026-07-06)
+**Status**: SHIPPED · UI verified · DiffPanel with real 2-run data pending future run.
+- `AIExtractionDebugModal.jsx`: added a compare-pill (`data-testid=debug-run-diff-toggle-<run_id>`) next to each non-active run in the picker. Selecting one loads that run via `/status/{run_id}` and renders `DiffPanel` at the top of the reconciled column — a 3-column table (Field · Run A · Run B · Δ) covering roof type, avg eave, wall count / per-wall widths / heights / gable Δh, dormer count / per-dormer face + width + knee, opening count. Rows where A≠B highlight amber. Clear via `debug-diff-close-btn` or clicking the same compare pill again.
+- Testing agent note: Red-House has only 1 graduated run so the panel could not be exercised end-to-end with real data. Storybook fixture or a fixture-driven pytest would let us regression-test the amber-highlighting path without burning a live run.
+
+## Iter 79j.57c — First-visit onboarding checklist modal (2026-07-06)
+**Status**: SHIPPED · testing agent iter35 PASS.
+- `AIMeasureButton.jsx`: new `showOnboarding` state + localStorage key `aiMeasureOnboardingSeen`. On first modal open, an overlay appears with 6 concrete tips (3 markers per elevation, one per dormer face, never rely on corner shots as primary reads, all 4 elevations, add the free aerial, reference dim flips scale conf LOW→HIGH). Dismisses via "Got it, don't show again" and persists. A `Tips` button in the AI Measure header (`data-testid=ai-measure-open-onboarding`) re-opens it on demand.
+
+## Iter 79j.57d — Re-run confirmation dialog on done+reconciled runs (2026-07-06)
+**Status**: SHIPPED · testing agent iter35 PASS.
+- `AIMeasureButton.jsx`: `attemptRerun` interposed between the Re-run button and `runMeasure`. Only fires the confirm dialog when the preview has a NON-error reconciliation AND walls[].length > 0 (per Howard 2026-07-06 option a — silent on failed runs so we don't train click-through).
+- Confirm dialog body is SPECIFIC (not generic): "This estimate has a successful reconciled run — N walls, N dormers, N openings, N sqft siding. Re-running will replace it as the active result." followed by a per-dormer bullet list ("Dormer 1: face left, width 15.5 ft"). Prior run stays in Debug View history.
+- Testing agent verified the confirm dialog blocks Re-run, Cancel restores state without triggering busy, and specific stats populate from `preview.raw_ai`.
+
+## Follow-ups queued (from testing agent code review)
+- **AIMeasureButton.jsx refactor** — file is now 4451 lines. Recommend extracting: `OnboardingChecklist`, `RerunConfirmDialog`, `RunErrorBanner` as separate sub-components in a new `AIMeasureBanners/` dir. Non-blocking but the next feature landing here should split proactively.
+- **Debug button gate** — `showAdvanced && preview` uses a `useState` initializer that only reads localStorage once at component mount. If a user toggles Advanced in a different tab, the current tab won't see the change. Consider re-reading on modal open or exposing Debug as a first-class affordance.
+- **Iter 54a fixture testing** — the diff-panel amber-highlighting code path can't be exercised against Red-House (only 1 run). Either (a) capture a JSON fixture pair after a future 2-run session, or (b) build a Storybook story.
+
