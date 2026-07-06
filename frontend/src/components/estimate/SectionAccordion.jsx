@@ -431,11 +431,14 @@ export default function SectionAccordion({
     );
   };
 
+  const panelId = `sec-panel-${section.title.replace(/[^a-zA-Z0-9]+/g, "-")}`;
   return (
     <section className="card mb-4" data-testid={`section-${section.title}`}>
       <button
         className="w-full flex items-center justify-between px-5 py-4 text-left"
         onClick={onToggle}
+        aria-expanded={isOpen}
+        aria-controls={panelId}
       >
         <div className="flex items-center gap-3">
           {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -459,7 +462,7 @@ export default function SectionAccordion({
         <div className="font-mono-num text-sm text-[var(--ink-2)]">{fmt(sectionSell)}</div>
       </button>
       {isOpen && (
-        <div className="border-t border-[var(--border)]">
+        <div id={panelId} className="border-t border-[var(--border)]">
           <div className="hidden md:grid grid-cols-12 gap-3 px-5 py-2 text-[10px] uppercase tracking-[0.18em] text-[var(--muted)] font-bold border-b border-[var(--border)]">
             <div className="col-span-5">{t("est.col.item")}</div>
             <div className="col-span-1">{t("est.col.unit")}</div>
