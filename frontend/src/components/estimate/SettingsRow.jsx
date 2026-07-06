@@ -1,6 +1,7 @@
 import React from "react";
 import { useT } from "@/lib/i18n";
 import { recomputeWasteQtys, recomputeAllWaste } from "@/lib/wasteLogic";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import PorchCeilingsCard from "./PorchCeilingsCard";
 
 export default function SettingsRow({ est, update }) {
@@ -17,29 +18,27 @@ export default function SettingsRow({ est, update }) {
   // Iter 78b — Retroactive recompute for legacy estimates where lines
   // were stored before the cut-prone classifier was fixed. Treats every
   // cut-prone line's current qty as the raw value, stamps raw_qty, and
-  // recomputes qty against the current waste %. Gated by confirm() so
-  // manual edits don't get clobbered by accident.
+  // recomputes qty against the current waste %. Gated by a ConfirmDialog
+  // (Radix AlertDialog) so manual edits don't get clobbered by accident.
+  const wastePctNow = Number(est?.waste_pct) || 0;
+  const recomputeCandidateCount = (est?.lines || []).filter((l) => {
+    if (!l) return false;
+    const hasRaw = l.raw_qty != null && Number(l.raw_qty) > 0;
+    return !hasRaw; // candidate lines that would be stamped
+  }).length;
   const recomputeAllNow = () => {
-    const pct = Number(est?.waste_pct) || 0;
-    const count = (est?.lines || []).filter((l) => {
-      if (!l) return false;
-      const hasRaw = l.raw_qty != null && Number(l.raw_qty) > 0;
-      return !hasRaw; // candidate lines that would be stamped
-    }).length;
-    const ok = window.confirm(
-      `Re-bake ${pct}% waste into every cut-prone line on this estimate.\n\n` +
-      `This treats each line's current qty as the raw measurement, then ` +
-      `applies the waste %.\n\n` +
-      `${count} line(s) without a stored raw_qty will be updated. ` +
-      `Lines already imported with raw_qty are also recomputed (same ` +
-      `effect as changing the % field).\n\n` +
-      `Heads-up: any manual qty edits on cut-prone lines (siding, soffit, ` +
-      `J-channel, trim, corners, starter) will be treated as raw and bumped ` +
-      `by ${pct}%. Continue?`
-    );
-    if (!ok) return;
-    update({ lines: recomputeAllWaste(est?.lines, pct) });
+    update({ lines: recomputeAllWaste(est?.lines, wastePctNow) });
   };
+  const recomputeConfirmText =
+    `Re-bake ${wastePctNow}% waste into every cut-prone line on this estimate.\n\n` +
+    `This treats each line's current qty as the raw measurement, then ` +
+    `applies the waste %.\n\n` +
+    `${recomputeCandidateCount} line(s) without a stored raw_qty will be updated. ` +
+    `Lines already imported with raw_qty are also recomputed (same ` +
+    `effect as changing the % field).\n\n` +
+    `Heads-up: any manual qty edits on cut-prone lines (siding, soffit, ` +
+    `J-channel, trim, corners, starter) will be treated as raw and bumped ` +
+    `by ${wastePctNow}%.`;
   // Live preview of the multiplier so the contractor knows what %  actually does
   const pct = Math.min(Number(est.margin_pct) || 0, 99);
   const effectiveMultiplier = isMargin
@@ -81,15 +80,22 @@ export default function SettingsRow({ est, update }) {
               cut-prone-classifier fix landed, where qty was stored
               raw and raw_qty=null. One-tap fix that doesn't require
               re-uploading the blueprint. */}
-          <button
-            type="button"
-            className="mt-2 px-3 py-1.5 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[#FAF5FF] text-[10px] font-bold uppercase tracking-wider"
-            onClick={recomputeAllNow}
-            data-testid="recompute-all-waste-btn"
-            title="Stamp raw_qty + recompute every cut-prone line at the current waste %"
-          >
-            Recompute waste on existing lines
-          </button>
+          <ConfirmDialog
+            trigger={
+              <button
+                type="button"
+                className="mt-2 px-3 py-1.5 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[var(--surface-muted)] text-[10px] font-bold uppercase tracking-wider"
+                data-testid="recompute-all-waste-btn"
+                title="Stamp raw_qty + recompute every cut-prone line at the current waste %"
+              >
+                Recompute waste on existing lines
+              </button>
+            }
+            title="Recompute waste on existing lines"
+            description={recomputeConfirmText}
+            confirmLabel="Recompute"
+            onConfirm={recomputeAllNow}
+          />
           {/* Iter 78 — LP soffit steering (LP-only). Backend's HOVER spec
               splits LP soffit into Vented (eaves) + Closed (rakes) by
               surface. This knob lets Howard collapse to all-vented or
