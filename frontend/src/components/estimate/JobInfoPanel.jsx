@@ -807,8 +807,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
             <div>
-              <label className="label">{isLp ? t("est.color.lpSiding") : t("est.color.siding")}</label>
+              <label className="label" htmlFor="color-siding">{isLp ? t("est.color.lpSiding") : t("est.color.siding")}</label>
               <select
+                id="color-siding"
                 className="input"
                 value={est.siding_color || ""}
                 onChange={(e) => update({ siding_color: e.target.value })}
@@ -833,8 +834,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 the LP workspace. Siding (vinyl/ascend) and ISS keep them. */}
             {est.kind !== "lp_smart" && (
             <div>
-              <label className="label">{t("est.color.ascend")}</label>
+              <label className="label" htmlFor="color-ascend">{t("est.color.ascend")}</label>
               <select
+                id="color-ascend"
                 className="input"
                 value={est.ascend_color || ""}
                 onChange={(e) => update({ ascend_color: e.target.value })}
@@ -849,8 +851,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             )}
             {est.kind !== "lp_smart" && (
             <div>
-              <label className="label">{t("est.color.shake")}</label>
+              <label className="label" htmlFor="color-shake">{t("est.color.shake")}</label>
               <select
+                id="color-shake"
                 className="input"
                 value={est.shake_color || ""}
                 onChange={(e) => update({ shake_color: e.target.value })}
@@ -868,8 +871,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             </div>
             )}
             <div>
-              <label className="label">{t("est.color.boardBatten")}</label>
+              <label className="label" htmlFor="color-board-batten">{t("est.color.boardBatten")}</label>
               <select
+                id="color-board-batten"
                 className="input"
                 value={est.board_batten_color || ""}
                 onChange={(e) => update({ board_batten_color: e.target.value })}
@@ -890,8 +894,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               </select>
             </div>
             <div>
-              <label className="label">{isLp ? t("est.color.trim") : t("est.color.accessories")}</label>
+              <label className="label" htmlFor="color-accessories">{isLp ? t("est.color.trim") : t("est.color.accessories")}</label>
               <select
+                id="color-accessories"
                 className="input"
                 value={est.accessories_color || ""}
                 onChange={(e) => update({ accessories_color: e.target.value })}
@@ -912,8 +917,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               </select>
             </div>
             <div>
-              <label className="label">{t("est.color.outsideCorner")}</label>
+              <label className="label" htmlFor="color-outside-corner">{t("est.color.outsideCorner")}</label>
               <select
+                id="color-outside-corner"
                 className="input"
                 value={est.outside_corner_color || ""}
                 onChange={(e) => update({ outside_corner_color: e.target.value })}
@@ -934,8 +940,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               </select>
             </div>
             <div>
-              <label className="label">{t("est.color.soffitFascia")}</label>
+              <label className="label" htmlFor="color-soffit-fascia">{t("est.color.soffitFascia")}</label>
               <select
+                id="color-soffit-fascia"
                 className="input"
                 value={est.soffit_fascia_color || ""}
                 onChange={(e) => update({ soffit_fascia_color: e.target.value })}
@@ -959,8 +966,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 trim handles window perimeters); hide the picker on LP. */}
             {!isLp && (
             <div>
-              <label className="label">{t("est.color.windowWrap")}</label>
+              <label className="label" htmlFor="color-window-wrap">{t("est.color.windowWrap")}</label>
               <select
+                id="color-window-wrap"
                 className="input"
                 value={est.window_wrap_color || ""}
                 onChange={(e) => update({ window_wrap_color: e.target.value })}
@@ -974,8 +982,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             </div>
             )}
             <div>
-              <label className="label">{t("est.color.gutter")}</label>
+              <label className="label" htmlFor="color-gutter">{t("est.color.gutter")}</label>
               <select
+                id="color-gutter"
                 className="input"
                 value={est.gutter_color || ""}
                 onChange={(e) => update({ gutter_color: e.target.value })}
@@ -1087,8 +1096,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="label">{t("win.color.exterior")}</label>
+                <label className="label" htmlFor="color-vero-exterior">{t("win.color.exterior")}</label>
                 <select
+                  id="color-vero-exterior"
                   className="input"
                   value={est.window_exterior_color || ""}
                   onChange={(e) => update({ window_exterior_color: e.target.value })}
@@ -1105,8 +1115,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 </select>
               </div>
               <div>
-                <label className="label">{t("win.color.interior")}</label>
+                <label className="label" htmlFor="color-vero-interior">{t("win.color.interior")}</label>
                 <select
+                  id="color-vero-interior"
                   className="input"
                   value={est.window_interior_color || ""}
                   onChange={(e) => update({ window_interior_color: e.target.value })}
@@ -1165,8 +1176,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="label">{t("win.color.exterior")}</label>
+                <label className="label" htmlFor="color-mezzo-exterior">{t("win.color.exterior")}</label>
                 <select
+                  id="color-mezzo-exterior"
                   className="input"
                   value={est.mezzo_exterior_color || ""}
                   onChange={(e) => update({ mezzo_exterior_color: e.target.value })}
@@ -1183,8 +1195,9 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 </select>
               </div>
               <div>
-                <label className="label">{t("win.color.interior")}</label>
+                <label className="label" htmlFor="color-mezzo-interior">{t("win.color.interior")}</label>
                 <select
+                  id="color-mezzo-interior"
                   className="input"
                   value={est.mezzo_interior_color || ""}
                   onChange={(e) => update({ mezzo_interior_color: e.target.value })}
