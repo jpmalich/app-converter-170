@@ -19,6 +19,7 @@ import LpFormulaPreview from "@/pages/LpFormulaPreview";
 import AcceptPage from "@/pages/AcceptPage";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import BlueprintPreview from "@/pages/BlueprintPreview";
 import Layout from "@/components/Layout";
 
 function Protected({ children }) {
@@ -50,6 +51,8 @@ function App() {
                   <Route path="/accept/:token" element={<AcceptPage />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
+                  {/* Design-system foundation preview (redesign/blueprint). Not in nav. */}
+                  <Route path="/design/blueprint" element={<BlueprintPreview />} />
                   <Route
                     element={
                       <Protected>
