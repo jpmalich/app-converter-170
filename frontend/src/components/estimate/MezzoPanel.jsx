@@ -5,6 +5,7 @@ import { Plus, Trash2, X, ChevronDown, ChevronRight, StickyNote, HelpCircle } fr
 import { v4 as uuid } from "uuid";
 import { useT, useLang } from "@/lib/i18n";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { DimensionLine } from "@/components/ui/blueprint";
 import { tSection } from "@/lib/catalogTranslations";
 import BulkApplyConfirm from "./BulkApplyConfirm";
 import WindowPackageQuote from "./WindowPackageQuote";
@@ -591,6 +592,13 @@ function OpeningRow({
           />
         </div>
       </div>
+
+      {(Number(op.width) > 0 || Number(op.height) > 0) && (
+        <DimensionLine
+          className="mt-2"
+          value={`${Number(op.width) || 0} × ${Number(op.height) || 0} in`}
+        />
+      )}
 
       {isNotesOpen && (
         <div className="mt-2 pl-0 md:pl-[8.333%]">

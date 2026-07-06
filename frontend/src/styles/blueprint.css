@@ -158,6 +158,9 @@
 [data-design="blueprint"] .bp-dlabel__note { font-size: 11px; color: var(--bp-muted); text-transform: uppercase; letter-spacing: .12em; }
 
 /* Dimension line — measurements drawn, not just typed */
+/* Dimension lines are a blueprint-only flourish — hidden in every other theme
+   so an unconditionally-rendered <DimensionLine> never leaks stray text. */
+.bp-dim { display: none; }
 [data-design="blueprint"] .bp-dim { display: flex; align-items: center; gap: 9px; color: var(--bp-line); }
 [data-design="blueprint"] .bp-dim__rule { flex: 1; height: 0; border-top: 1px solid currentColor; position: relative; }
 [data-design="blueprint"] .bp-dim__rule::before,
