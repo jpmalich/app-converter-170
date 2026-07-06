@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb } from "lucide-react";
 import EmailPipeline from "@/components/EmailPipeline";
 import { calcTotals as calcTabTotals } from "@/lib/calc";
+import { BlueprintScope, Stamp } from "@/components/ui/blueprint";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 // Iter 78z++++ — per-kind tab definitions. Mirrors what the in-estimate
 // StickyBar renders, so the dashboard list row shows the same per-tab
@@ -13,14 +15,17 @@ import { calcTotals as calcTabTotals } from "@/lib/calc";
 // own workspace (Iter 73) so siding rows show only Vinyl + Ascend;
 // legacy estimates with LP qty > 0 still surface the LP tab inside
 // the estimate via the back-compat path in EstimateEditor.
+// Tab accent colors go through CSS vars (not hardcoded hex) so the active
+// theme — including the Blueprint token bridge — recolors them. Primary tab
+// takes the brand accent, secondary the muted ink.
 const KIND_TABS = {
   siding: [
-    { id: "vinyl", label: "Vinyl", color: "#C2410C" },
-    { id: "ascend", label: "Ascend", color: "#71717A" },
+    { id: "vinyl", label: "Vinyl", color: "var(--brand)" },
+    { id: "ascend", label: "Ascend", color: "var(--muted)" },
   ],
   windows: [
-    { id: "windows", label: "Vero", color: "#C2410C" },
-    { id: "mezzo", label: "Mezzo", color: "#71717A" },
+    { id: "windows", label: "Vero", color: "var(--brand)" },
+    { id: "mezzo", label: "Mezzo", color: "var(--muted)" },
   ],
 };
 
@@ -87,11 +92,16 @@ export default function Dashboard({ kind = "siding" }) {
     }
   };
 
-  const del = async (id) => {
-    if (!window.confirm(t("dash.confirmDelete"))) return;
-    await api.delete(`/estimates/${id}`);
-    setItems((x) => x.filter((e) => e.id !== id));
-    toast.success(t("dash.deleted"));
+  // Delete is gated by a ConfirmDialog at the call site (retiring the old
+  // window.confirm); this just performs the removal.
+  const doDelete = async (id) => {
+    try {
+      await api.delete(`/estimates/${id}`);
+      setItems((x) => x.filter((e) => e.id !== id));
+      toast.success(t("dash.deleted"));
+    } catch (e) {
+      toast.error(formatApiError(e.response?.data?.detail));
+    }
   };
 
   const duplicate = async (id) => {
@@ -159,7 +169,11 @@ export default function Dashboard({ kind = "siding" }) {
       (e.customer_company || "").toLowerCase().includes(q.toLowerCase())
     );
 
+  const bpTheme =
+    document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+
   return (
+    <BlueprintScope theme={bpTheme}>
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
@@ -371,22 +385,26 @@ export default function Dashboard({ kind = "siding" }) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="font-semibold text-[var(--ink)]">{e.customer_name || t("dash.untitled")}</div>
                     {e.accepted_at ? (
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC] rounded-sm"
+                      <Stamp
+                        variant="won"
                         title={`Accepted ${new Date(e.accepted_at).toLocaleString()}`}
                         data-testid={`status-accepted-${e.id}`}
                       >
-                        ✓ {t("dash.badge.accepted")}
-                      </span>
+                        {t("dash.badge.accepted")}
+                      </Stamp>
                     ) : e.last_sent_at ? (
-                      <span
-                        className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[#FFF7ED] text-[var(--brand-text)] border border-[#FED7AA] rounded-sm"
+                      <Stamp
+                        variant="sent"
                         title={`Sent ${new Date(e.last_sent_at).toLocaleString()}`}
                         data-testid={`status-sent-${e.id}`}
                       >
                         {t("dash.badge.sent")}
-                      </span>
-                    ) : null}
+                      </Stamp>
+                    ) : (
+                      <Stamp variant="draft" data-testid={`status-draft-${e.id}`}>
+                        {t("dash.badge.draft")}
+                      </Stamp>
+                    )}
                     <EmailPipeline est={e} />
                   </div>
                   <div className="text-xs text-[var(--muted)]">{new Date(e.updated_at).toLocaleString()}</div>
@@ -446,17 +464,24 @@ export default function Dashboard({ kind = "siding" }) {
                   >
                     <Copy className="w-4 h-4" />
                   </button>
-                  <button
-                    className="btn-danger"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      del(e.id);
-                    }}
-                    aria-label={t("dash.delete.aria")}
-                    data-testid={`delete-${e.id}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <ConfirmDialog
+                    trigger={
+                      <button
+                        className="btn-danger"
+                        onClick={(ev) => ev.stopPropagation()}
+                        aria-label={t("dash.delete.aria")}
+                        data-testid={`delete-${e.id}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    }
+                    title={t("dash.confirmDelete")}
+                    description={t("dash.deleteDesc")}
+                    confirmLabel={t("common.delete")}
+                    cancelLabel={t("common.cancel")}
+                    destructive
+                    onConfirm={() => doDelete(e.id)}
+                  />
                 </div>
               </div>
             );
@@ -464,6 +489,7 @@ export default function Dashboard({ kind = "siding" }) {
         )}
       </div>
     </main>
+    </BlueprintScope>
   );
 }
 

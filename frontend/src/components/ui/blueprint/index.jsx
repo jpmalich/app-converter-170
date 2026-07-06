@@ -97,6 +97,10 @@ export function InstrumentKpi({ label, value, delta, direction }) {
 }
 
 // Rubber-stamp status. `variant` = "won" | "sent" | "draft".
-export function Stamp({ variant = "draft", children }) {
-  return <span className={cx("bp-stamp", `bp-stamp--${variant}`)}>{children}</span>;
+export function Stamp({ variant = "draft", children, className, ...rest }) {
+  return (
+    <span className={cx("bp-stamp", `bp-stamp--${variant}`, className)} {...rest}>
+      {children}
+    </span>
+  );
 }
