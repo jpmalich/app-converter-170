@@ -159,7 +159,9 @@ App-affecting items also need a `PromptsForEmergent.md` entry when completed (se
          the precedence chain: user pick > company theme > supplier default > app default.
       Suggested path: design-system spec first (like `docs/specs/theme-picker.md`), with
       before/after mockups of Dashboard + Estimate editor for Howard's sign-off before
-      any code.
+      any code. **Spec written: `docs/specs/redesign-system.md`** (2026-07-06 — evolve the
+      Swiss/industrial system, orange stays; before/after mockup in
+      `docs/specs/redesign-mockup.html`).
 - [ ] **Bring the admin pages into the theme system + modernization scope** — the six
       established themes should fully apply to `/branding-admin` and
       `/lp-formula-preview` too. The theme codemod did migrate those pages and the
@@ -287,6 +289,31 @@ plus a live visual review. Contrast/color items are excluded (fixed earlier that
       (`EstimateEditor.jsx:149`), Dashboard delete lacks try/catch, `window.alert` for PDF
       errors, persistent `will-change` on the photo pan layer, Login hero image not
       full-bleed (white letterboxing on the right pane).
+
+### Estimate Editor re-audit (baseline-ui, 2026-07-06)
+
+Re-ran the baseline-ui checklist against the Estimate Editor screen specifically. Most
+findings re-confirm the open items above; recorded here only where new or newly-specific.
+Confirmed already-good: `$` figures use the `.font-mono-num` tabular class throughout,
+`prefers-reduced-motion` is honored globally, and the `z-50` sticky header uses the scale.
+
+- [ ] **Convert the product-line tab strip to Radix Tabs** — `EstimatorTabs.jsx:42–96` is
+      hand-rolled `<button>`s: it has `role="tab"` but no arrow-key navigation, no roving
+      `tabindex` (every tab is a stop), and no `aria-controls`/tabpanel wiring, so keyboard
+      users can't move between Vinyl/Ascend/Vero/Mezzo. The app already depends on
+      `@radix-ui/react-tabs`. *(Distinct from the hand-rolled-modal and accordion items.)*
+- [ ] **StickyBar profit/loss inline hex** — `StickyBar.jsx:104–106` hardcodes `#10B981` /
+      `#F87171` for +/- profit instead of semantic tokens, so it ignores the theme; promote
+      to `var(--pos)`/`var(--neg)`. *(Same class as the TakeoffReconCard inline-fill item,
+      separate from the AI-purple accent policy.)*
+
+Re-confirmed (already tracked — no new action): hand-rolled `QuoteModal` /
+`TabPickerModal` / `CatalogSyncBanner` → Radix Dialog (High-impact modal item);
+`SectionAccordion` missing `aria-expanded` (Semantics item); unlabeled `JobInfoPanel`
+color selects + Vero NumField/model/notes inputs ("Name the estimate-grid inputs");
+unguarded photo / Vero-opening removes + `SettingsRow.jsx:29` `window.confirm` +
+`QuoteModal` `window.alert` (P1 "Custom confirmation modal"); `min-h-screen`→`min-h-dvh`
+(h-dvh item); `text-balance`/`text-pretty` on headings/body (Low-impact cleanup).
 
 ## 🔧 Tech debt
 
