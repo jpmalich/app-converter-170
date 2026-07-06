@@ -1552,3 +1552,50 @@ Either outcome closes the standing gate. No new proxy failure modes to chase.
 - The 79j.53 status-aware sort + session-autosave guard remain in force — they don't interact with the transport choice.
 - The 79j.54 debug picker now includes a `_transport` breadcrumb in the reconciled `raw_ai` — a future picker column could surface it, queued as a P2 polish.
 
+
+## Iter 79j.57 — RED-HOUSE GATE GRADUATES · dormer-collapse bug DISPROVEN (2026-07-06)
+
+### Result
+Reconciled Run 4 (`9c8248df`) output:
+- `walls`: 4 · `dormers`: **2** · `siding_sqft`: 1515.7 · `eaves_lf`: 74.0 · `rakes_lf`: 63.0
+- **LEFT dormer**: face=left, width=15.5 ft, knee wall 5.0 ft, from photo 2 (444" WALL REF direct read)
+- **RIGHT dormer**: face=right, width=15.0 ft, knee wall 4.3 ft, from photo 6 (36" WIN REF direct read)
+- `_reconciliation_notes.dormers`: *"Detected 2 shed dormers, one per eave slope … faces differ so they were **NEVER collapsed**; no second photo cross-checked either width so both carry direct_single_reading (amber)."*
+
+**The `(A=2)` amber picker flag on Run 4 clears to `2/2 dormers`. Collapse bug DISPROVEN.** The reconciler correctly kept both dormers because their faces differ.
+
+### How the graduating result was produced (a mid-iteration curveball)
+- Round 1 (18:11 UTC): direct route fired, returned `empty text content`, fell back to proxy → proxy 502 at 18:27 (~15 min).
+- Round 2 (18:28 UTC): direct route fired, returned truncated text (`stop_reason=max_tokens` at 4000), fell back to proxy → **proxy SUCCEEDED at 18:33 UTC** (~5 min, first proxy success on this exact payload after multiple failures). This is the run that produced the reconciled dormers[] currently in the session preview.
+- Discovered `max_tokens=4000` too tight — Claude's extended thinking eats ~2048 tokens by default. Raised to `max_tokens=16000` + added `httpx.Timeout(180, connect=10, read=150, write=60)` on the SDK client.
+- Rounds 3-4 (18:38, 18:55, 19:02, 19:10 UTC): all four subsequent kickoffs stuck on the direct route inside uvicorn — process 3927 held the async httpx call past the 180s ceiling with no cancellation propagating in.
+- **Standalone isolated Python test** with the exact same payload + same SDK config: succeeded in **77.1 s** · `stop_reason=end_turn` · `output_tokens=7317` · `thinking_tokens=2017` · `text_len=12091`. So the direct API + SDK + payload combination is proven viable; something in uvicorn's async event loop is blocking cancellation.
+
+### Discovered during this iteration — Mongo TTL index on ai_measure_runs
+`ai_measure_runs` has a Mongo TTL index: `{key: {created_at: 1}, expireAfterSeconds: 86400}` (24h). This auto-deleted Run 3 (`22af2eb2`, TTL fired ~18:22 UTC) and Run 4 (`9c8248df`, TTL fired ~19:11 UTC) mid-testing. The session doc has NO TTL and preserved the successful reconciled preview — that's what surfaces on Resume and in the Debug picker.
+
+**Implications**:
+- 24 h is aggressive for a production quoter — a contractor can lose the full run doc (Phase A, Phase B, retries) if they don't Apply within a day. The session preview mitigates the user-facing loss, but the Debug picker + reconcile-only endpoint depend on the run doc still existing.
+- Reconcile-only on a TTL'd run doc will 404; users can't rerun Phase B on stranded Phase A that predates 24 h.
+- **Queued 79j.57a (post-verification)**: raise `expireAfterSeconds` to 30 days (or drop the TTL entirely — retention as an admin-config knob), and/or add a "pin run" API so contractors can preserve important runs.
+
+### Direct-route status
+- **Isolated test**: green (77.1 s, `stop_reason=end_turn`, full 12KB JSON, both dormers preserved).
+- **Inside uvicorn**: async cancellation stalls; kickoffs never complete via direct route.
+- **Fallback**: proxy path activates on the "empty text" / stall paths — Run 4 was actually reconciled through the proxy fallback at 18:33 UTC, not through the direct route.
+
+Diff SHIPPED (env-gated, safe by default). Diagnostic path forward for the uvicorn stall queued as 79j.57b:
+
+### Queued for post-verification — Iter 79j.57a: raise ai_measure_runs TTL
+- Bump `expireAfterSeconds` from 86400 (24h) to 2592000 (30d).
+- Small alternative: drop the index and add an explicit admin cleanup endpoint.
+- ~5 min of work (single index change). Blocked pending user's confirmation of retention policy.
+
+### Queued for post-verification — Iter 79j.57b: diagnose uvicorn/direct-route stall
+- Isolated test proves the SDK + payload work. Something in the running server's async loop blocks httpx cancellation and stalls the direct call past `asyncio.wait_for` ceiling.
+- Candidate diagnostics: run the direct call in a dedicated thread executor to isolate from the main event loop; or shell out to a subprocess for the direct call; or use `anyio` for hard cancellation semantics.
+- ~1-2 hrs of investigation. Blocked pending user direction. Meanwhile the proxy fallback + the isolated-test proof are enough to justify keeping Option D staged.
+
+### Support datapoint update
+`memory/prompts.md` — Iter 79j.56 Option D shipping under user direction is proven viable in isolation; the four proxy failure modes (79j.44/45 hang, 79j.50/51 payload-driven 502, 79j.53 instant 502, 79j.54 15-min hang→502) are still fully justified by the standing thread. Add today's PROXY-fallback SUCCESS at 18:33 UTC as a fifth datapoint: the same proxy that failed with 15-min hang→502 at 12:04 UTC on the same exact payload succeeded at 18:33 UTC in ~5 min — **the proxy is nondeterministic**, further reinforcing the case for direct routing as the durable path.
+

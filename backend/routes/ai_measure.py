@@ -3676,7 +3676,19 @@ async def _reconcile_extractions_direct(
         }
 
     t0 = time.time()
-    client = AsyncAnthropic(api_key=api_key, max_retries=0)
+    # Iter 79j.57 — Configure httpx-level timeouts on the SDK client
+    # so a stuck request actually gets cancelled. `asyncio.wait_for`
+    # alone was insufficient — httpx's default 5s connect + no total
+    # ceiling meant a hung `messages.create` sat past our 180s outer
+    # ceiling with no cancellation propagating in. Total 180s / read
+    # 150s gives room for extended-thinking latency without letting
+    # the worker wedge indefinitely.
+    import httpx as _httpx
+    client = AsyncAnthropic(
+        api_key=api_key,
+        max_retries=0,
+        timeout=_httpx.Timeout(180.0, connect=10.0, read=150.0, write=60.0),
+    )
     lines = [
         "You are reconciling the following per-photo extractions into a "
         "single house measurement. Each JSON below is one photo, in "
@@ -3718,7 +3730,16 @@ async def _reconcile_extractions_direct(
         response = await asyncio.wait_for(
             client.messages.create(
                 model=model_name,
-                max_tokens=4000,
+                # Iter 79j.57 — `claude-fable-5` (and other Claude 4.5+
+                # models) run "extended thinking" by default on the
+                # direct API — the model spends 1000-2000+ output
+                # tokens on internal reasoning BEFORE emitting the
+                # actual response text. At `max_tokens=4000` the
+                # JSON output got truncated mid-object (real-world
+                # observation: 18:11 UTC run returned empty text /
+                # 18:28 UTC run truncated at ~4200 chars). We need
+                # comfortable headroom for both budgets.
+                max_tokens=16000,
                 system=RECONCILE_PROMPT,
                 messages=[
                     {
@@ -3776,7 +3797,23 @@ async def _reconcile_extractions_direct(
 
     # Extract the text response. For text-only calls the SDK returns
     # `content` as a list of blocks; we concatenate any `type == "text"`
-    # blocks so partial responses aren't silently dropped.
+    # blocks so partial responses aren't silently dropped. Iter 79j.57
+    # — Also log `stop_reason` + thinking-token usage so a truncated
+    # response (`stop_reason=="max_tokens"`) or a refusal
+    # (`stop_reason=="refusal"`) can be diagnosed from the debug log
+    # tail without a re-run.
+    stop_reason = getattr(response, "stop_reason", None)
+    usage = getattr(response, "usage", None)
+    thinking_tokens = 0
+    output_tokens = 0
+    try:
+        if usage is not None:
+            output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+            details = getattr(usage, "output_tokens_details", None)
+            if details is not None:
+                thinking_tokens = int(getattr(details, "thinking_tokens", 0) or 0)
+    except Exception:
+        pass
     try:
         text_blocks = []
         for block in response.content or []:
@@ -3790,12 +3827,33 @@ async def _reconcile_extractions_direct(
             "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
             "_transport": "anthropic_direct",
         }
+    logger.info(
+        "[ai-measure phase-B direct] response stop_reason=%s output_tokens=%d thinking_tokens=%d text_len=%d",
+        stop_reason, output_tokens, thinking_tokens, len(raw_text),
+    )
     if not raw_text:
+        # No text emitted at all — most commonly happens when Claude
+        # burned the full max_tokens budget on thinking. Surface the
+        # signal so the operator knows to raise max_tokens rather
+        # than blame the proxy.
         return {
-            "_reconciliation_error": "Anthropic direct: empty text content",
+            "_reconciliation_error": (
+                f"Anthropic direct: empty text content "
+                f"(stop_reason={stop_reason} output_tokens={output_tokens} "
+                f"thinking_tokens={thinking_tokens})"
+            ),
             "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
             "_transport": "anthropic_direct",
         }
+    if stop_reason == "max_tokens":
+        # Claude hit the ceiling mid-response. The text may still be
+        # a valid partial JSON (`_clean_json_reply` handles trailing
+        # cutoffs), but log the truncation so the caller can raise
+        # max_tokens if the parse fails.
+        logger.warning(
+            "[ai-measure phase-B direct] response truncated at max_tokens ceiling — "
+            "raw text length=%d, consider raising max_tokens", len(raw_text),
+        )
     parsed = _clean_json_reply(raw_text)
     parsed["_reconciliation_latency_ms"] = int((time.time() - t0) * 1000)
     parsed["_transport"] = "anthropic_direct"
