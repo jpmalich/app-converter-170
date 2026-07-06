@@ -2682,6 +2682,120 @@ async def ai_measure_history(
     return {"runs": runs}
 
 
+# ---------------------------------------------------------------------
+# Iter 79j.54 — Debug run picker.
+# ---------------------------------------------------------------------
+# The Debug view (AIExtractionDebugModal) reads from the currently-
+# loaded `preview` — which is whatever run the user last resumed /
+# ran. When multiple successful runs exist for an estimate (e.g. an
+# original reconciled Run 3 + this morning's marker-annotated Re-run)
+# contractors need to be able to switch between them to compare
+# Phase A observations vs reconciled output.
+#
+# This endpoint returns a lightweight picker list for a given
+# estimate: ALL runs (any status), with the fields the picker needs
+# to render a meaningful label plus enough hints to prioritize. Sort
+# mirrors the status-aware sort used by latest-for-estimate so
+# successful reconciliations bubble to the top.
+# ---------------------------------------------------------------------
+@router.get("/ai-measure/debug-runs/{estimate_id}")
+async def ai_measure_debug_runs(
+    estimate_id: str,
+    user: dict = Depends(get_current_user),
+):
+    user_id = user.get("id") or "anon"
+    pipeline = [
+        {"$match": {"user_id": user_id, "estimate_id": estimate_id}},
+        {"$addFields": {
+            "_score": {
+                "$switch": {
+                    "branches": [
+                        {
+                            "case": {
+                                "$and": [
+                                    {"$eq": ["$status", "done"]},
+                                    {"$ifNull": ["$result.raw_ai", False]},
+                                    {"$in": [
+                                        {"$ifNull": ["$result.raw_ai._reconciliation_error", None]},
+                                        [None, ""],
+                                    ]},
+                                ],
+                            },
+                            "then": 2,
+                        },
+                        {"case": {"$eq": ["$status", "running"]}, "then": 1},
+                    ],
+                    "default": 0,
+                },
+            },
+        }},
+        {"$sort": {"_score": -1, "updated_at": -1, "created_at": -1}},
+        {"$limit": 30},
+    ]
+    docs = await db.ai_measure_runs.aggregate(pipeline).to_list(length=30)
+    out = []
+    for doc in docs:
+        result = doc.get("result") or {}
+        raw_ai = result.get("raw_ai") if isinstance(result, dict) else None
+        raw_ai = raw_ai if isinstance(raw_ai, dict) else {}
+        measurements = (result.get("measurements") if isinstance(result, dict) else None) or {}
+        walls = raw_ai.get("walls") if isinstance(raw_ai.get("walls"), list) else []
+        dormers = raw_ai.get("dormers") if isinstance(raw_ai.get("dormers"), list) else []
+        openings = raw_ai.get("openings") if isinstance(raw_ai.get("openings"), list) else []
+        recon_err = raw_ai.get("_reconciliation_error")
+        # Phase A dormer signal: how many photos observed a dormer,
+        # regardless of whether reconciliation kept them. Helps the
+        # contractor spot collapsed observations at a glance.
+        rpp = doc.get("raw_per_photo") or []
+        phase_a_dormer_photos = 0
+        phase_a_dormer_total = 0
+        if isinstance(rpp, list):
+            for p in rpp:
+                if not isinstance(p, dict):
+                    continue
+                n = p.get("dormers_observed_count") or 0
+                try:
+                    n = int(n)
+                except (TypeError, ValueError):
+                    n = 0
+                if n > 0:
+                    phase_a_dormer_photos += 1
+                    phase_a_dormer_total += n
+        created = _as_aware_utc(doc.get("created_at"))
+        completed = _as_aware_utc(doc.get("completed_at") or doc.get("updated_at"))
+        elapsed_ms = None
+        if created is not None and completed is not None:
+            elapsed_ms = int((completed - created).total_seconds() * 1000)
+        out.append({
+            "run_id": doc.get("run_id"),
+            "status": doc.get("status"),
+            "stage": doc.get("stage"),
+            "score": doc.get("_score", 0),
+            "created_at": created.isoformat() if created else None,
+            "completed_at": completed.isoformat() if completed else None,
+            "elapsed_ms": elapsed_ms,
+            "model_choice": doc.get("model_choice"),
+            "photo_count": doc.get("photo_count") or 0,
+            "deep_dormer_scan": bool(doc.get("deep_dormer_scan")),
+            "reconciled": bool(walls) and not recon_err,
+            "reconciliation_error": (recon_err or None)
+                if isinstance(recon_err, str) and recon_err.strip() else None,
+            "wall_count": len(walls),
+            "dormer_count": len(dormers),
+            "opening_count": len(openings),
+            "phase_a_dormer_photos": phase_a_dormer_photos,
+            "phase_a_dormer_total": phase_a_dormer_total,
+            "siding_sqft": measurements.get("siding_sqft") or 0,
+            "pipeline": raw_ai.get("_pipeline")
+                        or ("two_phase" if rpp else "single_call"),
+            "reconcile_only_retry_at": (
+                doc.get("reconcile_only_retry_at").isoformat()
+                if doc.get("reconcile_only_retry_at") else None
+            ),
+        })
+    return {"runs": out}
+
+
 # =====================================================================
 # Iter 79j.37 — TWO-PHASE EXTRACT + RECONCILE PIPELINE.
 #

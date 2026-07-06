@@ -4022,6 +4022,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         <AIExtractionDebugModal
           preview={preview}
           photoUrls={photoUrls}
+          estimateId={estimateId}
           onClose={() => setDebugOpen(false)}
         />
       )}

@@ -26,8 +26,10 @@
 // provenance field — we render "not reported" placeholders so it's
 // obvious whether the model omitted the trace vs the value.
 
-import React, { useMemo, useState } from "react";
-import { X, Camera, Layers, Copy, Check } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { X, Camera, Layers, Copy, Check, GitBranch, Loader2 } from "lucide-react";
+
+import api from "@/lib/api";
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -242,19 +244,91 @@ function OpeningRow({ o, i, onFocusPhoto }) {
   );
 }
 
-export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) {
+export default function AIExtractionDebugModal({ preview, photoUrls, estimateId, onClose }) {
   const [focusedPhoto, setFocusedPhoto] = useState(null);
   const [rawExpanded, setRawExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Iter 79j.54 — Run picker. When multiple runs exist for this
+  // estimate (e.g. an original reconciled Run 3 + this morning's
+  // marker-annotated Re-run), let the contractor switch between
+  // them without leaving the modal. `pickerRuns` is the list from
+  // /ai-measure/debug-runs; `activeRun` is the run currently
+  // displayed. If null, we fall back to the `preview` prop the
+  // parent gave us. Selecting a different run fetches its full
+  // result via /status/{run_id} and swaps the local state.
+  const [pickerRuns, setPickerRuns] = useState([]);
+  const [pickerLoading, setPickerLoading] = useState(false);
+  const [activeRun, setActiveRun] = useState(null); // { run_id, result, raw_per_photo, pipeline }
+  const [switchingRunId, setSwitchingRunId] = useState(null);
 
-  const raw = preview?.raw_ai || {};
+  useEffect(() => {
+    if (!estimateId) return;
+    let cancelled = false;
+    setPickerLoading(true);
+    api.get(`/measure/ai-measure/debug-runs/${estimateId}`)
+      .then((r) => {
+        if (cancelled) return;
+        setPickerRuns(Array.isArray(r?.data?.runs) ? r.data.runs : []);
+      })
+      .catch(() => { if (!cancelled) setPickerRuns([]); })
+      .finally(() => { if (!cancelled) setPickerLoading(false); });
+    return () => { cancelled = true; };
+  }, [estimateId]);
+
+  const switchToRun = async (runId) => {
+    if (!runId || switchingRunId) return;
+    setSwitchingRunId(runId);
+    try {
+      const { data } = await api.get(`/measure/ai-measure/status/${runId}`);
+      if (!data || data.status === "error") {
+        // For failed runs the result is None but we can still show
+        // Phase A / reconciliation_error via the run doc's saved
+        // state. `raw_per_photo` alone drives the LEFT column.
+      }
+      setActiveRun({
+        run_id: runId,
+        result: data?.result || null,
+        raw_per_photo: data?.raw_per_photo || null,
+        pipeline: data?.pipeline || null,
+        status: data?.status,
+        stage: data?.stage,
+        error: data?.error,
+      });
+      setFocusedPhoto(null);
+    } catch {
+      // Non-fatal — keep the current view.
+    } finally {
+      setSwitchingRunId(null);
+    }
+  };
+
+  // Resolve which run's data to render. If the picker has swapped
+  // to a different run, use that; otherwise fall back to whatever
+  // preview the parent handed us.
+  const view = activeRun
+    ? {
+        raw_ai: (activeRun.result || {}).raw_ai || { _reconciliation_error: null, photos: [] },
+        raw_per_photo: activeRun.raw_per_photo,
+        pipeline: activeRun.pipeline,
+      }
+    : {
+        raw_ai: preview?.raw_ai || {},
+        raw_per_photo: preview?.raw_per_photo,
+        pipeline: preview?.pipeline,
+      };
+  const activeRunId = activeRun?.run_id
+    || preview?.run_id
+    || (pickerRuns.find((r) => r.score === 2)?.run_id)
+    || null;
+
+  const raw = view.raw_ai || {};
   // Iter 79j.37 — When the two-phase pipeline ran, `preview.raw_per_photo`
   // contains the ACTUAL per-photo Claude call outputs (one call per
   // photo), not the after-the-fact recollection embedded in the
   // reconciled JSON. Prefer those for the LEFT column. Fall back to
   // the single-call schema (`raw.photos`) for legacy runs.
-  const rawPerPhoto = Array.isArray(preview?.raw_per_photo) ? preview.raw_per_photo : null;
-  const pipelineLabel = preview?.pipeline || raw._pipeline || (rawPerPhoto ? "two_phase" : "single_call");
+  const rawPerPhoto = Array.isArray(view.raw_per_photo) ? view.raw_per_photo : null;
+  const pipelineLabel = view.pipeline || raw._pipeline || (rawPerPhoto ? "two_phase" : "single_call");
   const photos = useMemo(() => {
     if (rawPerPhoto && rawPerPhoto.length) return rawPerPhoto;
     return Array.isArray(raw.photos) ? raw.photos : [];
@@ -345,6 +419,96 @@ export default function AIExtractionDebugModal({ preview, photoUrls, onClose }) 
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Iter 79j.54 — Run picker. Shown only when the estimate has
+            more than one run on record. Successful reconciliations
+            are marked with a green dot; failed / stranded runs with
+            an amber dot. Selecting a run swaps the whole modal
+            (Phase A left + reconciled right) to that run's data.
+            Doesn't touch the parent's session preview. */}
+        {estimateId && (pickerRuns.length > 1 || pickerLoading) && (
+          <div
+            className="flex items-center gap-2 px-5 py-2 border-b border-[var(--border)] bg-[var(--surface)] flex-wrap"
+            data-testid="debug-run-picker"
+          >
+            <GitBranch className="w-3.5 h-3.5 text-[var(--muted)]" />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+              Inspect run:
+            </span>
+            {pickerLoading && pickerRuns.length === 0 ? (
+              <span className="text-[11px] text-[var(--muted)] italic inline-flex items-center gap-1">
+                <Loader2 className="w-3 h-3 animate-spin" /> loading runs…
+              </span>
+            ) : (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {pickerRuns.map((r) => {
+                  const isActive = activeRunId === r.run_id;
+                  const isSwitching = switchingRunId === r.run_id;
+                  const dot = r.score === 2
+                    ? "bg-[var(--success)]"
+                    : r.score === 1
+                    ? "bg-[#F59E0B]"
+                    : "bg-[#DC2626]";
+                  const shortId = (r.run_id || "").slice(0, 6);
+                  const when = r.completed_at
+                    ? new Date(r.completed_at).toLocaleString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })
+                    : "";
+                  const dormerBadge = r.phase_a_dormer_total > r.dormer_count
+                    ? ` · Phase A saw ${r.phase_a_dormer_total}d, reconciled ${r.dormer_count}d`
+                    : ` · ${r.dormer_count}d`;
+                  const reconMark = r.reconciled
+                    ? "✓ reconciled"
+                    : r.reconciliation_error
+                    ? "recon 502"
+                    : r.status === "error"
+                    ? "errored"
+                    : "no result";
+                  return (
+                    <button
+                      key={r.run_id}
+                      type="button"
+                      onClick={() => switchToRun(r.run_id)}
+                      disabled={isSwitching}
+                      className={`text-[10px] font-mono px-2 py-1 border inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
+                        isActive
+                          ? "border-[var(--ai)] bg-[var(--ai)]/10 text-[var(--ink)]"
+                          : "border-[var(--border)] bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--surface-muted)]"
+                      }`}
+                      title={`${r.run_id}\n${r.model_choice || "?"} · ${r.photo_count}p · ${reconMark}${dormerBadge}\n${r.reconciliation_error || ""}`}
+                      data-testid={`debug-run-picker-${r.run_id}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} aria-hidden />
+                      <span className="font-bold">{shortId}</span>
+                      <span className="text-[var(--muted)]">·</span>
+                      <span>{when}</span>
+                      <span className="text-[var(--muted)]">·</span>
+                      <span className="font-mono">
+                        {r.wall_count}w · {r.dormer_count}d
+                        {r.phase_a_dormer_total > r.dormer_count && (
+                          <span className="text-[#F59E0B]" title="Phase A observed more dormers than reconciliation kept">
+                            {" "}(A={r.phase_a_dormer_total})
+                          </span>
+                        )}
+                        {" · "}{Math.round(r.siding_sqft || 0)}sf
+                      </span>
+                      {isSwitching && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {isActive && !isSwitching && (
+                        <span className="text-[9px] uppercase tracking-wider text-[var(--ai)] font-bold ml-0.5">
+                          viewing
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Two-column body */}
         <div className="flex-1 grid grid-cols-2 gap-0 min-h-0">

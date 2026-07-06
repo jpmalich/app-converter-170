@@ -1427,3 +1427,31 @@ No further Phase B reconcile attempts fired during this iteration. Red-house val
 
 **Priority**: P1. Do NOT ship before red-house gate graduates.
 
+
+## Iter 79j.54 — Debug view run picker + dormer collapse audit (2026-07-06)
+
+**Trigger**: user asked to inspect Run 3's dormers[] to confirm whether reconciliation collapsed one, and requested a picker so multiple successful runs can be compared without leaving the modal.
+
+### Dormer collapse audit (Run 3 = `22af2eb2`)
+Direct DB inspection confirmed **Phase A on Run 3 observed exactly 1 dormer** (photo 2, left elevation, width 13ft, face 62 sqft). Reconciliation kept 1 of 1 — no collapse. The "two dormers" memory belongs to **Run 4 (`9c8248df`)**, whose Phase A did see two (photo 2 left + photo 6 right) but whose Phase B 502'd, so Run 4 has never produced a reconciled output. `_reconciliation_notes.dormers` for Run 3 explicitly reads: *"Detected 1 shed dormer, on the left roof slope … photo 1 corroborated presence via the two oblique 'upper' windows; no other photo reported dormers, so exactly one entry emitted."*
+
+Four runs on file for estimate 673707d5:
+- `dcd8574a` (07-06 11:29, marker-annotated Re-run) — 8p · 1 phase-A dormer · 1 reconciled · 1460 sf · ✓ done
+- `22af2eb2` (07-05 18:22, "Run 3") — 8p · 1 phase-A dormer · 1 reconciled · 1598 sf · ✓ done (via reconcile-only)
+- `1caae946` (07-05 19:04) — 0p · killed · errored
+- `9c8248df` (07-05 19:11, "Run 4") — 8p · 2 phase-A dormers · 0 reconciled · Phase B 502 (reserve stranded)
+
+### Run picker shipped
+1. **Backend**: `GET /api/measure/ai-measure/debug-runs/{estimate_id}` (`backend/routes/ai_measure.py`). Reuses the status-aware aggregation (score 2 = successful reconciliation, 1 = running, 0 = errored/stranded). Returns run_id, timestamps, model_choice, photo_count, reconciled boolean, `reconciliation_error` snippet, `wall_count`, `dormer_count`, `opening_count`, `phase_a_dormer_photos`, `phase_a_dormer_total`, `siding_sqft`, `pipeline`, `reconcile_only_retry_at`.
+2. **Frontend**: `AIExtractionDebugModal` (`frontend/src/components/estimate/AIExtractionDebugModal.jsx`) accepts `estimateId` prop; on mount fetches the picker list; renders a row of buttons (`data-testid="debug-run-picker-{run_id}"`) below the modal header when >1 run exists. Each button shows the short id, completed time, wall count, dormer count, siding sqft, and an amber `(A=<n>)` badge whenever `phase_a_dormer_total > reconciled_dormer_count` — the collapsed-observation signal the user asked for. Clicking a run fetches `/status/{run_id}` and swaps both columns to that run's data without touching the parent session preview.
+3. **AIMeasureButton**: threads `estimateId` into the modal.
+
+### Verification
+- HTTP endpoint returns all 4 runs correctly ordered (2 score-2 first, 2 score-0 last).
+- Modal picker screenshots (both runs): picker row renders under the header; Run 4's button shows `(A=2)` amber flag; switching to Run 4 empties the reconciled RIGHT column (Phase B 502 — no result) while LEFT still shows Phase A observations; switching to `dcd857` shows the marker-annotated Re-run's per-photo eave reads (10.5 ft direct on photo 0 via 324" WALL REF) and reconciliation notes ("Confidence-weighted average … = 10.3 ft"). All A/B compare live in one modal.
+- No reconcile fired during this iteration (per gate).
+- Lint + backend tests clean (`test_reconcile_only_retry.py` 5/5).
+
+### Marker-annotated Re-run accuracy note
+User confirmed today's marker-annotated Re-run (`dcd8574a`) hit tape-accurate numbers: dormer width 15.0 ft, wall height 10.3 ft. The calibration markers are producing real accuracy gains — worth codifying into the standard capture workflow when we resume feature work.
+
