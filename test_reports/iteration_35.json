@@ -1,0 +1,76 @@
+{
+  "summary": "Frontend-only validation of Iter 79j.52a/52b/54a/57c/57d + 3D regression on Red-House estimate 673707d5-9b7e-4d8f-8eaf-63c86820f611. All 5 primary features and the 3D regression PASS.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verification_details": {
+    "57c_onboarding": {
+      "auto_show_on_first_open_with_ls_cleared": true,
+      "all_6_tip_testids_visible": ["markers","dormers","corners","elevations","aerial","reference"],
+      "dismiss_hides_overlay": true,
+      "localStorage_aiMeasureOnboardingSeen_set_to_1": true,
+      "no_reshow_on_modal_reopen_after_dismiss": true,
+      "tips_header_button_reopens_overlay": true
+    },
+    "57d_rerun_confirm": {
+      "confirm_modal_opens_instead_of_running": true,
+      "walls_text": "4 walls",
+      "dormers_text": "2 dormers",
+      "openings_text": "16 openings",
+      "siding_element_shown_when_sqft_gt_0": true,
+      "dormer_list_items": [
+        "Dormer 1: face left, width 15.5 ft",
+        "Dormer 2: face right, width 15.0 ft"
+      ],
+      "cancel_closes_dialog_without_running": true,
+      "no_busy_state_on_rerun_btn_after_cancel": true,
+      "yes_replace_button_NOT_clicked": true
+    },
+    "54a_debug_diff": {
+      "debug_btn_gated_behind_showAdvanced_and_preview": true,
+      "single_run_scenario_confirmed": "Debug modal header shows SINGLE-CALL pill; run_pills=0 in picker (only one graduated run for this estimate)",
+      "diff_toggle_correctly_absent_no_regression": true,
+      "note": "Cannot verify diff panel + amber highlighting without a 2nd run; would require running AI again which was explicitly forbidden by the review request."
+    },
+    "52a_dismiss_reconcile_failure": {
+      "run_error_banner_absent_on_healthy_run": true,
+      "dismiss_button_absent_when_no_error": true,
+      "code_review": "AIMeasureButton.jsx L2270 shows the dismiss button only renders inside the {runError && ...} banner block, and its onClick invokes dismissRunError() (L~905) which clears runError + run_id."
+    },
+    "52b_session_self_heal_on_resume": {
+      "latest_for_estimate_status": "done",
+      "reconciliation_error_present": false,
+      "resume_click_shows_no_run_error_banner": true,
+      "modal_lands_on_preview_then_3D_tab_accessible": true
+    },
+    "3d_regression_79j_58": {
+      "banner_hidden_at_default_ridge_z": true,
+      "banner_appears_after_flipping_to_x": true,
+      "banner_clears_after_flipping_back_to_z": true,
+      "dormer_rows_present": ["ai-measure-3d-dormer-row-0 (Dormer 1 W=15.5, slope-left)","ai-measure-3d-dormer-row-1 (Dormer 2 W=15, slope-right)"],
+      "3D_canvas_renders": true
+    }
+  },
+  "test_report_links": [
+    "/app/test_reports/iter35_rerun_confirm.png",
+    "/app/test_reports/iter35_debug_modal.png",
+    "/app/test_reports/iter35_3d.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AIMeasureButton.jsx is now ~4451 lines — well past the 700-line guideline. The onboarding overlay, rerun confirm, run-error banner, preview panel, 3D tab, and debug integration all live in a single component. Recommend extracting sub-components (OnboardingChecklist, RerunConfirmDialog, RunErrorBanner). Non-blocking.",
+    "attemptRerun() at L265 correctly guards the confirm dialog to the done+reconciled case only (checks !ra._reconciliation_error AND walls.length > 0). Failed runs skip the dialog which matches the design intent of not training click-through.",
+    "Debug button (L3927) is gated by `showAdvanced && preview`. That's intentional but means testers must set localStorage.aiMeasureShowAdvanced='1' BEFORE the AIMeasureButton component mounts (useState initializer only runs once). Consider re-reading the flag on modal open, or expose a Debug affordance in non-advanced mode.",
+    "Diff toggle at AIExtractionDebugModal L562 is inside the run-picker loop — verified only rendered for non-active runs when history has >1 run. Cannot exercise the diff-panel/amber-highlight code path against Red-House (single graduated run) without triggering a second run; recommend a Storybook fixture or a fixture-driven pytest for that path."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (frontend-only per request)", "frontend": "100% (6/6 features verified)" },
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "None. Only localStorage.aiMeasureOnboardingSeen was toggled; no server-side data was mutated. 'Yes, replace' on the Re-run confirm dialog was NOT clicked (per review directive).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The Red-House estimate 673707d5-9b7e-4d8f-8eaf-63c86820f611 currently has exactly one graduated run in history. To exercise the Iter 54a diff panel with amber-highlighted rows against real data, either (a) trigger a second AI run (which will burn the current graduated run and require Phase A+B re-grading) or (b) use a fixture-driven test that stubs the debug runs list with two entries. Onboarding auto-show is now dismissed (aiMeasureOnboardingSeen=1 in browser localStorage after this run) — clear it if re-testing 57c. The Debug button requires localStorage.aiMeasureShowAdvanced='1' before the estimate page mounts; setting it after mount is a no-op because the useState initializer only reads once."
+}

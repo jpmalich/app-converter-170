@@ -27,7 +27,7 @@
 // obvious whether the model omitted the trace vs the value.
 
 import React, { useEffect, useMemo, useState } from "react";
-import { X, Camera, Layers, Copy, Check, GitBranch, Loader2 } from "lucide-react";
+import { X, Camera, Layers, Copy, Check, GitBranch, Loader2, GitCompareArrows } from "lucide-react";
 
 import api from "@/lib/api";
 
@@ -260,6 +260,12 @@ export default function AIExtractionDebugModal({ preview, photoUrls, estimateId,
   const [pickerLoading, setPickerLoading] = useState(false);
   const [activeRun, setActiveRun] = useState(null); // { run_id, result, raw_per_photo, pipeline }
   const [switchingRunId, setSwitchingRunId] = useState(null);
+  // Iter 79j.54a — Diff mode. `diffRun` is the SECOND run loaded for
+  // side-by-side comparison. When set, a DiffPanel renders at the
+  // top of the reconciled column showing per-field deltas (A vs B).
+  // Selecting the SAME run as the active view clears diff mode.
+  const [diffRun, setDiffRun] = useState(null); // { run_id, raw_ai }
+  const [diffLoadingRunId, setDiffLoadingRunId] = useState(null);
 
   useEffect(() => {
     if (!estimateId) return;
@@ -299,6 +305,31 @@ export default function AIExtractionDebugModal({ preview, photoUrls, estimateId,
       // Non-fatal — keep the current view.
     } finally {
       setSwitchingRunId(null);
+    }
+  };
+
+  // Iter 79j.54a — Toggle a run into the diff slot. Clicking the
+  // compare pill on the ACTIVE run is a no-op (nothing to diff
+  // against itself); clicking the pill on the ALREADY-DIFFED run
+  // clears the diff. Otherwise we fetch that run's status and stash
+  // its raw_ai payload for the DiffPanel to consume.
+  const toggleDiffRun = async (runId) => {
+    if (!runId) return;
+    if (runId === activeRunId) return;                 // can't diff against self
+    if (diffRun?.run_id === runId) {                    // clicking same → clear
+      setDiffRun(null);
+      return;
+    }
+    if (diffLoadingRunId) return;
+    setDiffLoadingRunId(runId);
+    try {
+      const { data } = await api.get(`/measure/ai-measure/status/${runId}`);
+      const rawAi = data?.result?.raw_ai || null;
+      setDiffRun({ run_id: runId, raw_ai: rawAi, status: data?.status });
+    } catch {
+      // Non-fatal — silent skip; user can retry.
+    } finally {
+      setDiffLoadingRunId(null);
     }
   };
 
@@ -469,40 +500,75 @@ export default function AIExtractionDebugModal({ preview, photoUrls, estimateId,
                     ? "errored"
                     : "no result";
                   return (
-                    <button
+                    <div
                       key={r.run_id}
-                      type="button"
-                      onClick={() => switchToRun(r.run_id)}
-                      disabled={isSwitching}
-                      className={`text-[10px] font-mono px-2 py-1 border inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
+                      className={`inline-flex items-stretch border ${
                         isActive
                           ? "border-[var(--ai)] bg-[var(--ai)]/10 text-[var(--ink)]"
+                          : diffRun?.run_id === r.run_id
+                          ? "border-[#F59E0B] bg-[#FEF3C7] text-[var(--ink)]"
                           : "border-[var(--border)] bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--surface-muted)]"
-                      }`}
-                      title={`${r.run_id}\n${r.model_choice || "?"} · ${r.photo_count}p · ${reconMark}${dormerBadge}\n${r.reconciliation_error || ""}`}
-                      data-testid={`debug-run-picker-${r.run_id}`}
+                      } transition-colors`}
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} aria-hidden />
-                      <span className="font-bold">{shortId}</span>
-                      <span className="text-[var(--muted)]">·</span>
-                      <span>{when}</span>
-                      <span className="text-[var(--muted)]">·</span>
-                      <span className="font-mono">
-                        {r.wall_count}w · {r.dormer_count}d
-                        {r.phase_a_dormer_total > r.dormer_count && (
-                          <span className="text-[#F59E0B]" title="Phase A observed more dormers than reconciliation kept">
-                            {" "}(A={r.phase_a_dormer_total})
+                      <button
+                        type="button"
+                        onClick={() => switchToRun(r.run_id)}
+                        disabled={isSwitching}
+                        className="text-[10px] font-mono px-2 py-1 inline-flex items-center gap-1.5 disabled:opacity-50"
+                        title={`${r.run_id}\n${r.model_choice || "?"} · ${r.photo_count}p · ${reconMark}${dormerBadge}\n${r.reconciliation_error || ""}`}
+                        data-testid={`debug-run-picker-${r.run_id}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} aria-hidden />
+                        <span className="font-bold">{shortId}</span>
+                        <span className="text-[var(--muted)]">·</span>
+                        <span>{when}</span>
+                        <span className="text-[var(--muted)]">·</span>
+                        <span className="font-mono">
+                          {r.wall_count}w · {r.dormer_count}d
+                          {r.phase_a_dormer_total > r.dormer_count && (
+                            <span className="text-[#F59E0B]" title="Phase A observed more dormers than reconciliation kept">
+                              {" "}(A={r.phase_a_dormer_total})
+                            </span>
+                          )}
+                          {" · "}{Math.round(r.siding_sqft || 0)}sf
+                        </span>
+                        {isSwitching && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {isActive && !isSwitching && (
+                          <span className="text-[9px] uppercase tracking-wider text-[var(--ai)] font-bold ml-0.5">
+                            viewing
                           </span>
                         )}
-                        {" · "}{Math.round(r.siding_sqft || 0)}sf
-                      </span>
-                      {isSwitching && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {isActive && !isSwitching && (
-                        <span className="text-[9px] uppercase tracking-wider text-[var(--ai)] font-bold ml-0.5">
-                          viewing
-                        </span>
+                      </button>
+                      {/* Iter 79j.54a — Compare pill. Only shown for
+                          runs that are NOT currently the active view;
+                          otherwise diffing self vs self is a no-op.
+                          Clicking sets the run as the diff target;
+                          clicking again clears. */}
+                      {!isActive && (
+                        <button
+                          type="button"
+                          onClick={() => toggleDiffRun(r.run_id)}
+                          disabled={diffLoadingRunId === r.run_id}
+                          className={`px-1.5 border-l ${
+                            diffRun?.run_id === r.run_id
+                              ? "border-[#F59E0B] bg-[#FEF3C7] text-[#78350F]"
+                              : "border-[var(--border)] text-[var(--muted)] hover:text-[var(--ink-2)] hover:bg-[var(--surface-muted)]"
+                          } disabled:opacity-50`}
+                          title={
+                            diffRun?.run_id === r.run_id
+                              ? "Clear diff target"
+                              : "Diff against the currently viewing run"
+                          }
+                          data-testid={`debug-run-diff-toggle-${r.run_id}`}
+                        >
+                          {diffLoadingRunId === r.run_id
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : diffRun?.run_id === r.run_id
+                            ? <span className="text-[9px] font-bold uppercase tracking-wider">diff · B</span>
+                            : <GitCompareArrows className="w-3 h-3" />}
+                        </button>
                       )}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -539,6 +605,19 @@ export default function AIExtractionDebugModal({ preview, photoUrls, estimateId,
 
           {/* RIGHT — Reconciled house JSON with provenance */}
           <div className="overflow-y-auto p-4 space-y-3 bg-[var(--surface)]">
+            {/* Iter 79j.54a — Diff panel appears above the standard
+                per-field cards when a compare target is set. Non-blocking
+                (the full cards still render below so the eye can drill
+                down); the panel just surfaces deltas up-front. */}
+            {diffRun && diffRun.raw_ai && (
+              <DiffPanel
+                activeRaw={raw}
+                activeRunId={activeRunId}
+                diffRaw={diffRun.raw_ai}
+                diffRunId={diffRun.run_id}
+                onClose={() => setDiffRun(null)}
+              />
+            )}
             <div className="flex items-center gap-2 mb-1">
               <Layers className="w-3.5 h-3.5 text-[var(--ai)]" />
               <h4 className="text-[10px] font-bold uppercase tracking-wider text-[var(--ai)]">
@@ -628,6 +707,108 @@ function ReconNote({ children }) {
   return (
     <div className="ml-22 mt-1 px-2 py-1 bg-[var(--ai-soft)] border border-[#DDD6FE] text-[10px] text-[#5B21B6]">
       <b className="uppercase tracking-wider text-[9px]">Reconciliation:</b> {children}
+    </div>
+  );
+}
+
+// Iter 79j.54a — DiffPanel. Renders a compact 3-column table
+// (Field · A · B) of key reconciliation outputs so contractors can
+// see WHY two runs on the same house produced different quotes.
+// Deliberately minimal: no full JSON diff — just the fields that
+// actually drive line items (roof type, avg eave, wall count / per-wall
+// widths + heights, dormer count / per-dormer face + width + knee,
+// opening count). Any row where A ≠ B gets the amber Δ marker so the
+// eye lands on differences before values.
+function fmtVal(v) {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "number") {
+    if (!Number.isFinite(v)) return "—";
+    if (Number.isInteger(v)) return String(v);
+    return v.toFixed(2);
+  }
+  return String(v);
+}
+function DiffRow({ label, a, b }) {
+  const same = fmtVal(a) === fmtVal(b);
+  return (
+    <div
+      className={`grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_24px] gap-2 px-2 py-1 text-[10px] font-mono-num border-b border-[var(--bg-app)] last:border-b-0 ${same ? "" : "bg-[#FEF3C7]"}`}
+      data-testid={`debug-diff-row-${label.replace(/\s+/g, "-").toLowerCase()}`}
+    >
+      <span className="text-[var(--muted)] uppercase tracking-wider font-bold text-[9px] truncate" title={label}>{label}</span>
+      <span className={`truncate ${same ? "text-[var(--ink-2)]" : "text-[var(--ink)] font-bold"}`}>{fmtVal(a)}</span>
+      <span className={`truncate ${same ? "text-[var(--ink-2)]" : "text-[var(--ink)] font-bold"}`}>{fmtVal(b)}</span>
+      <span className={`text-[9px] font-bold text-right ${same ? "text-[var(--muted)]" : "text-[#B45309]"}`}>{same ? "" : "Δ"}</span>
+    </div>
+  );
+}
+function DiffPanel({ activeRaw, activeRunId, diffRaw, diffRunId, onClose }) {
+  const shortA = (activeRunId || "").slice(0, 6);
+  const shortB = (diffRunId || "").slice(0, 6);
+  const wallsByLabel = (raw) => {
+    const m = new Map();
+    (raw?.walls || []).forEach((w) => m.set((w.label || "").toLowerCase(), w));
+    return m;
+  };
+  const wA = wallsByLabel(activeRaw);
+  const wB = wallsByLabel(diffRaw);
+  const wallLabels = Array.from(new Set([...wA.keys(), ...wB.keys()])).filter(Boolean).sort();
+  const dormersA = Array.isArray(activeRaw?.dormers) ? activeRaw.dormers : (activeRaw?.dormer ? [activeRaw.dormer] : []);
+  const dormersB = Array.isArray(diffRaw?.dormers) ? diffRaw.dormers : (diffRaw?.dormer ? [diffRaw.dormer] : []);
+  const maxDormerIdx = Math.max(dormersA.length, dormersB.length);
+  return (
+    <div
+      className="border border-[#F59E0B] bg-[var(--surface)]"
+      data-testid="debug-diff-panel"
+    >
+      <div className="flex items-center gap-2 px-3 py-2 bg-[#FEF3C7] border-b border-[#F59E0B]">
+        <GitCompareArrows className="w-3.5 h-3.5 text-[#B45309]" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-[#78350F]">
+          Diff · A={shortA} vs B={shortB}
+        </span>
+        <span className="text-[10px] text-[#78350F] flex-1 truncate">
+          amber rows show differences that will move quote quantities
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-[10px] text-[#78350F] underline hover:no-underline"
+          data-testid="debug-diff-close-btn"
+        >
+          exit diff
+        </button>
+      </div>
+      <div>
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_24px] gap-2 px-2 py-1 bg-[var(--surface-muted)] text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">
+          <span>Field</span>
+          <span>Run A</span>
+          <span>Run B</span>
+          <span></span>
+        </div>
+        <DiffRow label="Roof type" a={activeRaw?.roof_type} b={diffRaw?.roof_type} />
+        <DiffRow label="Roof pitch conf" a={activeRaw?.roof_type_confidence} b={diffRaw?.roof_type_confidence} />
+        <DiffRow label="Story count" a={activeRaw?.story_count} b={diffRaw?.story_count} />
+        <DiffRow label="Avg eave (ft)" a={activeRaw?.avg_wall_height_ft} b={diffRaw?.avg_wall_height_ft} />
+        <DiffRow label="Siding cov %" a={activeRaw?.siding_coverage_pct} b={diffRaw?.siding_coverage_pct} />
+        <DiffRow label="Scale conf" a={activeRaw?.scale_confidence} b={diffRaw?.scale_confidence} />
+        <DiffRow label="Wall count" a={(activeRaw?.walls || []).length} b={(diffRaw?.walls || []).length} />
+        <DiffRow label="Opening count" a={(activeRaw?.openings || []).length} b={(diffRaw?.openings || []).length} />
+        <DiffRow label="Dormer count" a={dormersA.length} b={dormersB.length} />
+        {wallLabels.map((label) => (
+          <React.Fragment key={label}>
+            <DiffRow label={`${label} · width`} a={wA.get(label)?.width_ft} b={wB.get(label)?.width_ft} />
+            <DiffRow label={`${label} · eave`} a={wA.get(label)?.height_ft} b={wB.get(label)?.height_ft} />
+            <DiffRow label={`${label} · gable Δh`} a={wA.get(label)?.gable_triangle_height_ft} b={wB.get(label)?.gable_triangle_height_ft} />
+          </React.Fragment>
+        ))}
+        {[...Array(maxDormerIdx)].map((_, i) => (
+          <React.Fragment key={`d${i}`}>
+            <DiffRow label={`dormer ${i + 1} · face`} a={dormersA[i]?.face} b={dormersB[i]?.face} />
+            <DiffRow label={`dormer ${i + 1} · width`} a={dormersA[i]?.width_ft} b={dormersB[i]?.width_ft} />
+            <DiffRow label={`dormer ${i + 1} · knee`} a={dormersA[i]?.knee_wall_height_ft} b={dormersB[i]?.knee_wall_height_ft} />
+          </React.Fragment>
+        ))}
+      </div>
     </div>
   );
 }

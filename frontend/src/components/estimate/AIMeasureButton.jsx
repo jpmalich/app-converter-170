@@ -9,7 +9,7 @@
 // shape as HOVER, so we hand it to the same `onApply` callback the page
 // already uses for HOVER.
 import React, { useEffect, useRef, useState } from "react";
-import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug, Lightbulb, ScanSearch } from "lucide-react";
+import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug, Lightbulb, ScanSearch, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
@@ -237,6 +237,42 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       localStorage.setItem("aiMeasureShowAdvanced", showAdvanced ? "1" : "0");
     } catch { /* ignore */ }
   }, [showAdvanced]);
+
+  // Iter 79j.57c — First-run onboarding checklist. Explains the marker
+  // SOP so contractors don't ship 8-photo runs that only mark corners
+  // (which the reconciler treats as low-confidence). localStorage
+  // remembers the dismissal so it doesn't nag every session, but the
+  // in-modal Tips button re-opens it on demand.
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try {
+      return localStorage.getItem("aiMeasureOnboardingSeen") !== "1";
+    } catch {
+      return true;
+    }
+  });
+  const dismissOnboarding = () => {
+    try { localStorage.setItem("aiMeasureOnboardingSeen", "1"); } catch { /* ignore */ }
+    setShowOnboarding(false);
+  };
+
+  // Iter 79j.57d — Re-run confirmation. Howard buried a graduating run
+  // once with a stray click; a confirmation dialog now guards ONLY the
+  // done+reconciled case (dismissing on failed runs would just train
+  // click-through). The dialog is intentionally SPECIFIC — "N dormers,
+  // N sqft" instead of "are you sure?" — because generic warnings get
+  // reflexively dismissed.
+  const [rerunConfirm, setRerunConfirm] = useState(false);
+  const attemptRerun = () => {
+    const ra = preview?.raw_ai || null;
+    const hasGoodReconciled = !!(ra
+      && !ra._reconciliation_error
+      && (Array.isArray(ra.walls) ? ra.walls.length : 0) > 0);
+    if (hasGoodReconciled) {
+      setRerunConfirm(true);
+      return;
+    }
+    runMeasure();
+  };
 
   // Iter 57d — Window styles dropdown. Kept in display order grouped
   // by category so the contractor can scan it quickly. Empty option
@@ -774,15 +810,68 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     // are always explicit user clicks.
     const reconErr = data?.preview?.raw_ai?._reconciliation_error;
     const resumedRunId = data?.preview?.run_id || null;
+    // Iter 79j.52b — Session self-heal on Resume. If the persisted
+    // preview says reconciliation failed, but the LATEST run doc on
+    // the server has a successful reconciliation (typically because a
+    // retry ran after the session was persisted), replace the stale
+    // failure with the fresh good result AND overwrite the session
+    // doc so subsequent resumes stay healed. Falls back to the
+    // existing "Prior reconciliation failed" banner if no fresher
+    // good run exists.
+    let didSelfHeal = false;
     if (reconErr) {
-      setRunError(String(reconErr));
-      setRunErrorMeta({
-        stage: "reconciling",
-        elapsedMs: null,
-        kind: "PriorFailure",
-        origin: "resume",
-      });
-      if (resumedRunId) setCurrentRunId(resumedRunId);
+      try {
+        const { data: freshData } = await api.get(
+          `/measure/ai-measure/latest-for-estimate/${estimateId}`,
+        );
+        const freshRun = freshData?.run;
+        const freshResult = freshRun?.result;
+        const freshHasError = !!freshResult?.raw_ai?._reconciliation_error;
+        const freshOk = freshRun?.status === "done"
+          && freshResult
+          && freshResult.raw_ai
+          && !freshHasError;
+        if (freshOk) {
+          const healedPreview = { ...freshResult, run_id: freshRun.run_id };
+          setPreview(healedPreview);
+          setCurrentRunId(freshRun.run_id);
+          setRunError(null);
+          setRunErrorMeta(null);
+          // Persist the self-heal so a page navigation + Resume later
+          // doesn't re-summon the stale failure banner.
+          try {
+            await api.put(`/measure/sessions/${estimateId}`, {
+              estimate_id: estimateId,
+              photo_urls: urls,
+              reference_dim: data.reference_dim || "",
+              wall_height: data.wall_height || "",
+              siding_pct: data.siding_pct || "",
+              overhang_in: Number(data.overhang_in ?? 12),
+              preview: healedPreview,
+              photo_annotations: data.photo_annotations || {},
+            });
+          } catch {
+            // Non-fatal — next debounced autosave will retry.
+          }
+          toast.success(
+            "Resumed — session self-healed from a newer successful reconciliation",
+          );
+          didSelfHeal = true;
+        }
+      } catch {
+        // Latest-run lookup failed (network / 404). Fall through to
+        // the "Prior reconciliation failed" banner path.
+      }
+      if (!didSelfHeal) {
+        setRunError(String(reconErr));
+        setRunErrorMeta({
+          stage: "reconciling",
+          elapsedMs: null,
+          kind: "PriorFailure",
+          origin: "resume",
+        });
+        if (resumedRunId) setCurrentRunId(resumedRunId);
+      }
     } else if (resumedRunId) {
       // Non-failure resume: still remember the run id so a manual
       // Retry Reconciliation (if the user opens it later) has the
@@ -791,7 +880,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     }
     setResumePrompt(false);
     delete window.__aiMeasurePendingSession;
-    if (urls.length > 0) {
+    if (urls.length > 0 && !didSelfHeal) {
       toast.success("Resumed your last AI Measure session");
     }
   };
@@ -813,6 +902,48 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       } catch {
         // ignore
       }
+    }
+  };
+
+  // Iter 79j.52a — Dismiss handler for the run-error banner. Behavior
+  // depends on WHAT kind of error is on screen:
+  //   • Reconciliation-failure preview (either resumed or fresh):
+  //     downgrade the session to PHOTOS-ONLY. That means:
+  //       - clear the failed preview from local state,
+  //       - clear currentRunId (per Howard 2026-07-06: dismiss = clean
+  //         slate; Debug View still holds the run history server-side),
+  //       - IMMEDIATELY PUT the session with preview=null so the next
+  //         Resume doesn't restore the failed banner (the debounced
+  //         autosave alone would leave a race window on navigation).
+  //     Photos, ref dim, wall height, siding % and annotations are
+  //     preserved so the contractor can just click Run AI Measure again
+  //     without re-uploading a thing.
+  //   • Any other error kind (budget, generic fresh-run failure):
+  //     just clear the local banner state — nothing on the session
+  //     needs to change because those errors never wrote a failed
+  //     preview (the autosave guard on line 703 prevented it).
+  const dismissRunError = async () => {
+    const hasReconcileFailure = !!(preview && preview?.raw_ai?._reconciliation_error);
+    setRunError(null);
+    setRunErrorMeta(null);
+    if (!hasReconcileFailure) return;   // budget / fresh-error: nothing to persist
+    setPreview(null);
+    setCurrentRunId(null);
+    if (!estimateId) return;
+    try {
+      await api.put(`/measure/sessions/${estimateId}`, {
+        estimate_id: estimateId,
+        photo_urls: photoUrls,
+        reference_dim: refDim,
+        wall_height: wallHeight,
+        siding_pct: sidingPct,
+        overhang_in: Number(overhangIn ?? 12),
+        preview: null,
+        photo_annotations: photoAnnotations,
+      });
+    } catch {
+      // Non-fatal — local state is already clean; the next debounced
+      // autosave will retry the persistence.
     }
   };
 
@@ -1870,6 +2001,191 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             onClick={(e) => e.stopPropagation()}
             data-testid="ai-measure-modal"
           >
+            {/* Iter 79j.57c — Onboarding checklist overlay. Opens the
+                first time a user reaches AI Measure (localStorage
+                remembers the dismissal) and can be re-opened from the
+                purple "Tips" button in the header. Explains Howard's
+                marker SOP so 8-photo runs don't ship with corners-only
+                markers (which the reconciler treats as amber). */}
+            {showOnboarding && (
+              <div
+                className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6"
+                onClick={dismissOnboarding}
+                data-testid="ai-measure-onboarding-backdrop"
+              >
+                <div
+                  className="bg-[var(--surface)] max-w-lg w-full flex flex-col shadow-2xl border border-[var(--border)]"
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid="ai-measure-onboarding-modal"
+                >
+                  <div className="bg-[var(--ai)] text-white px-4 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4" />
+                      <div className="font-bold uppercase tracking-wider text-[11px]">
+                        Photo checklist — read this once
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={dismissOnboarding}
+                      className="text-white/90 hover:text-white"
+                      aria-label="Close onboarding"
+                      data-testid="ai-measure-onboarding-close"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="p-5 space-y-3 text-[12px] text-[var(--ink)] leading-relaxed">
+                    <p className="text-[var(--ink-2)]">
+                      The AI measures from what it can <b>see and scale</b>. Follow this
+                      checklist and 4–6 photos will beat 10 sloppy ones:
+                    </p>
+                    <ul className="space-y-2.5">
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-markers">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>3 markers per elevation.</b> Left side, right side, and a wall
+                          reference dimension (a taped 4&apos;&nbsp;or&nbsp;5&apos; strip works). The
+                          reconciler uses the two edge markers to check for lens distortion
+                          and the wall-ref to lock scale.
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-dormers">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>One marker per dormer face.</b> Stand square to the dormer if you
+                          can. Without a direct read, width is back-solved from the window
+                          and comes in <span className="text-[#F59E0B] font-bold">amber</span>.
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-corners">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>Never rely on corner shots as your primary read.</b> Corners get
+                          the reconciler mixed up on which wall belongs to which elevation.
+                          Fine as a supplement — <i>never</i> as the only view of a wall.
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-elevations">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>All 4 elevations.</b> Front, right, back, left. Any missing wall
+                          is flagged in the result and comes in as an estimate, not a
+                          measurement.
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-aerial">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>Add the free aerial view.</b> One click, no extra cost — it
+                          confirms footprint and catches walls the ground photos miss.
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-reference">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>Reference dimension counts for a lot.</b> A single accurate
+                          reference (a wall width you measured, or a standard 3&apos;0&quot; door
+                          you know) flips scale confidence from LOW to HIGH.
+                        </span>
+                      </li>
+                    </ul>
+                    <div className="text-[10px] text-[var(--muted)] italic pt-1 border-t border-[var(--border)]">
+                      You can re-open this checklist any time from the <b>Tips</b> button in
+                      the AI Measure header.
+                    </div>
+                  </div>
+                  <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={dismissOnboarding}
+                      className="px-4 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-[11px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5"
+                      data-testid="ai-measure-onboarding-dismiss"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      Got it, don&apos;t show again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Iter 79j.57d — Re-run confirmation. Only appears when a
+                successful reconciliation exists; specific stats make
+                the warning concrete instead of generic. */}
+            {rerunConfirm && (() => {
+              const ra = preview?.raw_ai || {};
+              const dormers = Array.isArray(ra.dormers)
+                ? ra.dormers
+                : (ra.dormer ? [ra.dormer] : []);
+              const sidingSqft = Math.round(preview?.measurements?.siding_sqft || 0);
+              const wallCount = Array.isArray(ra.walls) ? ra.walls.length : 0;
+              const openingCount = Array.isArray(ra.openings) ? ra.openings.length : 0;
+              return (
+                <div
+                  className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6"
+                  onClick={() => setRerunConfirm(false)}
+                  data-testid="ai-measure-rerun-confirm-backdrop"
+                >
+                  <div
+                    className="bg-[var(--surface)] max-w-md w-full flex flex-col shadow-2xl border border-[#F59E0B]"
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid="ai-measure-rerun-confirm-modal"
+                  >
+                    <div className="bg-[#FEF3C7] px-4 py-3 flex items-center gap-2 border-b border-[#F59E0B]">
+                      <AlertTriangle className="w-4 h-4 text-[#B45309]" />
+                      <div className="font-bold uppercase tracking-wider text-[11px] text-[#78350F]">
+                        Replace the active reconciled result?
+                      </div>
+                    </div>
+                    <div className="p-5 space-y-3 text-[12px] text-[var(--ink)] leading-relaxed">
+                      <p>
+                        This estimate has a <b>successful reconciled run</b> —{" "}
+                        <b data-testid="ai-measure-rerun-confirm-walls">{wallCount} walls</b>,{" "}
+                        <b data-testid="ai-measure-rerun-confirm-dormers">{dormers.length} dormer{dormers.length === 1 ? "" : "s"}</b>,{" "}
+                        <b data-testid="ai-measure-rerun-confirm-openings">{openingCount} openings</b>
+                        {sidingSqft > 0 && (
+                          <>, <b data-testid="ai-measure-rerun-confirm-siding">{sidingSqft} sqft siding</b></>
+                        )}.
+                      </p>
+                      <p className="text-[var(--ink-2)]">
+                        Re-running will <b>replace it as the active result</b>. The prior run
+                        stays in Debug View history — but this estimate&apos;s applied
+                        measurements, line items and 3D render will switch to the new one.
+                      </p>
+                      {dormers.length > 0 && (
+                        <ul className="text-[11px] text-[var(--muted)] list-disc pl-5 space-y-0.5" data-testid="ai-measure-rerun-confirm-dormer-list">
+                          {dormers.map((d, i) => (
+                            <li key={i}>
+                              Dormer {i + 1}: face <b className="text-[var(--ink-2)]">{d.face || "—"}</b>,
+                              width <b className="text-[var(--ink-2)]">{d.width_ft != null ? `${Number(d.width_ft).toFixed(1)} ft` : "—"}</b>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRerunConfirm(false)}
+                        className="px-4 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[11px] font-bold uppercase tracking-wider"
+                        data-testid="ai-measure-rerun-confirm-cancel"
+                      >
+                        Keep current
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setRerunConfirm(false); runMeasure(); }}
+                        className="px-4 py-2 bg-[#B45309] text-white hover:bg-[#92400E] text-[11px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5"
+                        data-testid="ai-measure-rerun-confirm-proceed"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        Yes, replace
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-5 h-5" />
@@ -1880,15 +2196,30 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                className="text-white/90 hover:text-white"
-                onClick={closeAll}
-                aria-label="Close"
-                data-testid="ai-measure-close"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Iter 79j.57c — Re-open the onboarding checklist on
+                    demand. Small, unobtrusive; the checklist itself
+                    only auto-opens the FIRST time (localStorage). */}
+                <button
+                  type="button"
+                  className="text-white/90 hover:text-white p-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold"
+                  onClick={() => setShowOnboarding(true)}
+                  data-testid="ai-measure-open-onboarding"
+                  title="Show the photo-capture checklist"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  Tips
+                </button>
+                <button
+                  type="button"
+                  className="text-white/90 hover:text-white"
+                  onClick={closeAll}
+                  aria-label="Close"
+                  data-testid="ai-measure-close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="overflow-y-auto flex-1 p-5">
@@ -1935,7 +2266,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <button
                         type="button"
                         className="text-[10px] font-normal text-[#7F1D1D] underline hover:no-underline"
-                        onClick={() => { setRunError(null); setRunErrorMeta(null); }}
+                        onClick={dismissRunError}
                         data-testid="ai-measure-run-error-dismiss"
                       >
                         dismiss
@@ -3525,7 +3856,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         the "Powered by" dropdown. */}
                     <button
                       type="button"
-                      onClick={runMeasure}
+                      onClick={attemptRerun}
                       disabled={busy || photoUrls.length === 0 || files.length > 0}
                       className="px-3 py-2 bg-[var(--ai)] text-white hover:bg-[#6D28D9] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                       data-testid="ai-measure-rerun-btn"
