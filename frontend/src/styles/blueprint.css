@@ -26,6 +26,7 @@
   --bp-mark:   #F26419;   /* redline / markup — scarce, high-signal */
   --bp-pos:    #0E7C66;
   --bp-neg:    #C63B3B;
+  --bp-on-brand: #FFFFFF; /* text on a --bp-line fill */
   --bp-shadow: 0 1px 2px rgba(11,31,58,.06), 0 8px 24px rgba(11,31,58,.08);
 
   /* ---- type ---- */
@@ -59,7 +60,39 @@
   --bp-mark:   #FF9247;
   --bp-pos:    #34D399;
   --bp-neg:    #FF6B6B;
+  --bp-on-brand: #081327; /* dark text on the lighter dark-theme --bp-line */
   --bp-shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+}
+
+/* ---------------------------------------------------------------- token bridge
+   Remap the app's existing semantic tokens to Blueprint values inside the
+   scope, so existing components (which use var(--ink)/--brand/--surface/…)
+   adopt the Blueprint palette automatically as screens are converted. Screens
+   opt in by carrying data-design="blueprint" on a wrapper. */
+[data-design="blueprint"] {
+  --bg-app:        var(--bp-paper);
+  --surface:       var(--bp-sheet);
+  --surface-muted: var(--bp-paper);
+  --table-header:  var(--bp-paper);
+  --ink:           var(--bp-ink);
+  --ink-2:         var(--bp-ink-2);
+  --muted:         var(--bp-muted);
+  --border:        var(--bp-border);
+  --border-strong: var(--bp-ink);
+  --edge:          var(--bp-ink);
+  --focus:         var(--bp-line);
+  --brand:         var(--bp-line);
+  --brand-hover:   var(--bp-ink);
+  --brand-text:    var(--bp-line);
+  --on-brand:      var(--bp-on-brand);
+  --bar-bg:        var(--bp-ink);
+  --bar-ink:       #FFFFFF;
+  --bar-muted:     var(--bp-line-2);
+  --profit:        var(--bp-pos);
+  --success:       var(--bp-pos);
+  --danger:        var(--bp-neg);
+  --danger-text:   var(--bp-neg);
+  --ai:            var(--bp-mark);
 }
 
 /* ---------------------------------------------------------------- primitives */

@@ -26,6 +26,7 @@ import EstimatorTabs from "@/components/estimate/EstimatorTabs";
 import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, SIDING_KIND_TAB_IDS } from "@/lib/tabsConfig";
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
+import { BlueprintScope, TitleBlock } from "@/components/ui/blueprint";
 
 export default function EstimateEditor() {
   const { id } = useParams();
@@ -294,11 +295,33 @@ export default function EstimateEditor() {
     }
   };
 
+  // Blueprint Instrument conversion: whiteprint (light) by default, cyanotype
+  // (dark) when the app theme is dark. The scope remaps the app's semantic
+  // tokens to Blueprint values (see styles/blueprint.css token bridge), so the
+  // existing child panels adopt the palette; the drawing sheet + title block
+  // add the signature devices on top.
+  const bpTheme =
+    typeof document !== "undefined" &&
+    document.documentElement.getAttribute("data-theme") === "dark"
+      ? "dark"
+      : "light";
   return (
-    <>
+    <BlueprintScope theme={bpTheme}>
       <StickyBar est={est} tabTotals={tabTotals} activeTab={activeTab} tabs={visibleTabDefs} />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24" data-testid="estimate-editor">
-        <CatalogSyncBanner est={est} update={update} />
+        <div className="bp-sheet">
+          <div className="bp-sheet__pad">
+            <TitleBlock
+              title={est.customer_name || t("est.untitled")}
+              subtitle={est.estimate_number || t("est.untitled")}
+              cells={[
+                { k: "Sheet", v: "A-03" },
+                { k: "Kind", v: (est.kind || "siding").toUpperCase() },
+                { k: "Items", v: String((est.lines || []).filter((l) => (l.qty || 0) > 0).length) },
+              ]}
+            />
+            <div className="mt-4" />
+            <CatalogSyncBanner est={est} update={update} />
         <JobInfoPanel
           est={est}
           update={update}
@@ -397,6 +420,8 @@ export default function EstimateEditor() {
           onExportCsv={handleExportCsv}
           onPrintMaterials={handleOpenMaterials}
         />
+          </div>
+        </div>
       </main>
 
       <TabPickerModal
@@ -447,6 +472,6 @@ export default function EstimateEditor() {
           }}
         />
       )}
-    </>
+    </BlueprintScope>
   );
 }
