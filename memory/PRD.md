@@ -1333,3 +1333,28 @@ Either way, we cannot design around it because the contract does not exist.
 ### Explicit user gate on this work
 This item **remains blocked** until the user personally graduates the red-house validation (Iter 79j.51 Run 3 reconciled output on preview). No provider-swap code lands until then. This PRD entry exists so the rationale survives session forks — not as a work order.
 
+
+## Iter 79j.52 — Reconcile-only reachability + resumed-failure UI fixes (2026-07-06)
+
+**Trigger**: user reported that after 79j.51 landed, the reconciled Run 3 result was unreachable in the UI. Resume kept restoring the OLD failed 79j.50 run (`_reconciliation_error: 502`, walls=[], dormers=[]) even after a hard refresh. Root cause: the reconcile-only endpoint only wrote to the `ai_measure_runs` doc — it never touched the `ai_measure_sessions` doc that the Resume banner restores from. Separately, the 79j.51 failure-state UI (banner + Retry Reconciliation + 3D suppression + Apply disable) fired only on fresh-run failure paths; resumed sessions carrying a stale `_reconciliation_error` silently loaded the placeholder preview.
+
+### Fixes shipped
+1. **Backend — `_execute_reconcile_only_worker`** (`backend/routes/ai_measure.py`): on success, look up `estimate_id` + `company_id` and upsert `ai_measure_sessions.preview` with the reconciled `raw_ai + measurements + run_id + model`. Also bump the run doc's `updated_at`. `latest-for-estimate` now sorts by `updated_at DESC, created_at DESC` so a reconcile-only completion on an older run correctly outranks a newer-but-failed run.
+2. **Frontend — `_applyAIResult`**: stamps `run_id` into the persisted preview so future resumes carry the correct target for Retry Reconciliation.
+3. **Frontend — `resumeSession`**: on Resume, detect `data.preview.raw_ai._reconciliation_error`; if present, hoist it into `runError` + `runErrorMeta({stage:"reconciling", kind:"BadGateway"})` and set `currentRunId` from `data.preview.run_id`. The existing 79j.51 failure banner + Retry Reconciliation button now fire on resumed sessions.
+4. **Frontend — 3D tab render guard**: when `raw_ai._reconciliation_error` OR (`walls.length == 0 && dormers.length == 0`), render a `data-testid="ai-measure-3d-empty-state"` panel with the failure text and an in-panel Retry Reconciliation button instead of `<HouseModel3D>`. Never draw a placeholder house from empty geometry.
+5. **Frontend — Apply button disable predicate + runtime guard**: prior 79j.51 code checked `measurements.walls[].length` — that field is never populated by the aggregator, so the guard was false-positive-blocking valid runs. Fixed to check `raw_ai.walls / dormers / openings` array lengths + `measurements.siding_sqft / eaves_lf`. Now Apply disables only when reconciliation actually failed.
+
+### Direct DB repoint (one-shot for estimate `673707d5-9b7e-4d8f-8eaf-63c86820f611`)
+Rewrote the estimate's session preview to point at reconciled Run 3 (`22af2eb2…`): walls=4, dormers=1, siding_sqft=1598, `_reconciliation_error=None`. Also bumped that run's `updated_at` so `latest-for-estimate` surfaces it correctly.
+
+### Acceptance verification (screenshots captured)
+- Preview tab after Resume: shows Per-Elevation Breakdown across 4 elevations (FRONT LAP 290+81, BACK LAP 261+108+STONE 29, LEFT LAP 463+SHAKE 114+49) with 1,756 ft² total siding split. Apply Measurements enabled.
+- 3D Model tab after Resume: renders the parametric house (dark roof, red walls, white windows, geometry sidebar with Width 27ft / Eave 10.75 / Roof 6/12 / dormer-orientation warning). Not a placeholder box.
+- Failure state (verified by temporarily injecting `_reconciliation_error` into the session preview): red "AI MEASURE FAILED" banner + Retry Run + Retry Reconciliation buttons + Phase/Elapsed/Kind row + 3D panel replaced by "Measurement incomplete" state with its own Retry Reconciliation button + Apply Measurements disabled. All `data-testid` hooks intact. Session was restored to the good state afterwards.
+- Backend `tests/test_reconcile_only_retry.py`: 5/5 passing.
+
+### Files changed
+- `backend/routes/ai_measure.py` — reconcile-only worker + `latest-for-estimate` sort.
+- `frontend/src/components/estimate/AIMeasureButton.jsx` — `_applyAIResult`, `resumeSession`, `apply` guard, Apply button predicate, 3D tab render guard.
+

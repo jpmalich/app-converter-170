@@ -2179,6 +2179,46 @@ async def _execute_reconcile_only_worker(
                 "updated_at": datetime.now(timezone.utc),
             }},
         )
+        # Iter 79j.52 — Repoint the estimate's ai_measure_sessions doc
+        # so the UI's Resume path surfaces the reconciled result. The
+        # session preview is a client-persisted mirror of the last
+        # apply-eligible run output; without this hop the frontend
+        # restores the pre-failure preview (which still has
+        # `_reconciliation_error` and empty walls/dormers). Stamp the
+        # run_id into the preview so the Retry Reconciliation button
+        # keeps working on future resumes.
+        try:
+            src_run = await db.ai_measure_runs.find_one({"run_id": run_id})
+            estimate_id = (src_run or {}).get("estimate_id")
+            if estimate_id:
+                run_user = await db.users.find_one({"id": user_id})
+                company_id = (run_user or {}).get("company_id")
+                preview_payload = {
+                    **result,
+                    "run_id": run_id,
+                    "model": model_name,
+                    "model_provider": model_provider,
+                }
+                await db.ai_measure_sessions.update_one(
+                    {"estimate_id": estimate_id, "company_id": company_id},
+                    {"$set": {
+                        "preview": preview_payload,
+                        "updated_at": datetime.now(timezone.utc).isoformat(),
+                    }},
+                    upsert=False,
+                )
+                logger.info(
+                    "[ai-measure phase-B] reconcile-only session repointed "
+                    "run_id=%s estimate_id=%s", run_id, estimate_id,
+                )
+        except Exception:
+            # Non-fatal: the run doc itself is authoritative; missing
+            # session update just means the Resume banner surfaces the
+            # older preview until the user re-opens the estimate.
+            logger.exception(
+                "[ai-measure phase-B] reconcile-only session repoint failed run_id=%s",
+                run_id,
+            )
         logger.info("[ai-measure phase-B] reconcile-only retry DONE run_id=%s", run_id)
     except Exception as e:
         logger.exception("[ai-measure phase-B] reconcile-only worker crashed for run_id=%s", run_id)
@@ -2452,9 +2492,15 @@ async def ai_measure_latest_for_estimate(
     "Restore preview" banner after a page reload / screen lock.
     """
     user_id = user.get("id") or "anon"
+    # Iter 79j.52 — Sort by updated_at (most recent activity) with
+    # created_at as tiebreaker. Prior sort was created_at only, which
+    # surfaced the newest RUN rather than the most recently reconciled
+    # / updated run. A reconcile-only retry on an older run would
+    # succeed silently but the UI would still restore the newer
+    # failed run's preview.
     doc = await db.ai_measure_runs.find_one(
         {"user_id": user_id, "estimate_id": estimate_id},
-        sort=[("created_at", -1)],
+        sort=[("updated_at", -1), ("created_at", -1)],
     )
     if not doc:
         return {"run": None}

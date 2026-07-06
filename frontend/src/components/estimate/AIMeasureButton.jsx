@@ -510,9 +510,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     // Iter 79j.37 — Thread the poll `status` payload's per-photo
     // extractions + pipeline label into the preview object so the
     // Debug view can show ACTUAL Phase A data.
+    // Iter 79j.52 — Stamp run_id into the preview so the session
+    // persistence flow saves it, and so a resumed failed session
+    // can wire the Retry Reconciliation button back to the correct
+    // run doc.
+    const runIdForPreview = status?.run_id || currentRunId || data?.run_id || null;
     const enriched = status
-      ? { ...data, raw_per_photo: status.raw_per_photo, pipeline: status.pipeline }
-      : data;
+      ? { ...data, raw_per_photo: status.raw_per_photo, pipeline: status.pipeline, run_id: runIdForPreview }
+      : { ...data, run_id: runIdForPreview };
     setPreview(enriched);
   };
 
@@ -742,6 +747,26 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setSidingPct(data.siding_pct || "");
     if (data.preview) setPreview(data.preview);
     if (data.photo_annotations) setPhotoAnnotations(data.photo_annotations);
+    // Iter 79j.52 — If the resumed preview carries a stale
+    // reconciliation failure, hoist it into `runError` so the
+    // top-level failure banner (with the Retry Reconciliation
+    // button) surfaces, the 3D tab suppresses its placeholder
+    // render, and the Apply button disables. Without this the UI
+    // silently restored a preview whose raw_ai._reconciliation_error
+    // was set but ONLY the run-time (fresh-run) error path could
+    // render the banner.
+    const reconErr = data?.preview?.raw_ai?._reconciliation_error;
+    const resumedRunId = data?.preview?.run_id || null;
+    if (reconErr) {
+      setRunError(String(reconErr));
+      setRunErrorMeta({ stage: "reconciling", elapsedMs: 0, kind: "BadGateway" });
+      if (resumedRunId) setCurrentRunId(resumedRunId);
+    } else if (resumedRunId) {
+      // Non-failure resume: still remember the run id so a manual
+      // Retry Reconciliation (if the user opens it later) has the
+      // right target.
+      setCurrentRunId(resumedRunId);
+    }
     setResumePrompt(false);
     delete window.__aiMeasurePendingSession;
     if (urls.length > 0) {
@@ -1566,11 +1591,28 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     // object with 0 walls / 0 openings. Applying that writes silently-
     // wrong data (extrapolated outside-corner LF from a nonexistent
     // footprint) into the customer quote. Hard-block, don't warn.
+    // Iter 79j.52 — Signals live in `raw_ai` (walls/dormers/openings
+    // arrays) and `measurements.siding_sqft` / `eaves_lf`, NOT in
+    // `measurements.walls` (which was never populated). The prior
+    // predicate was permanently false-positive-blocking successful
+    // runs; the runtime guard would trigger even when reconciliation
+    // succeeded. Trust siding sqft + raw_ai geometry counts instead.
+    const ra = preview?.raw_ai || {};
+    if (ra._reconciliation_error) {
+      toast.error(
+        "Reconciliation failed — Apply is disabled. " +
+        "Use Retry Reconciliation on the failed run first."
+      );
+      return;
+    }
     const m = preview?.measurements || {};
-    const wallCount = Array.isArray(m.walls) ? m.walls.length : 0;
-    const openingCount = Array.isArray(m.openings) ? m.openings.length : 0;
-    const perimeter = Number(m._ai_walls_total_lf || m.walls_total_lf || 0);
-    const hasReconciledFootprint = wallCount > 0 || openingCount > 0 || perimeter > 0;
+    const raWalls = Array.isArray(ra.walls) ? ra.walls.length : 0;
+    const raDormers = Array.isArray(ra.dormers) ? ra.dormers.length : 0;
+    const raOpenings = Array.isArray(ra.openings) ? ra.openings.length : 0;
+    const sidingSqft = Number(m.siding_sqft || 0);
+    const eavesLf = Number(m.eaves_lf || 0);
+    const hasReconciledFootprint =
+      raWalls > 0 || raDormers > 0 || raOpenings > 0 || sidingSqft > 0 || eavesLf > 0;
     if (!hasReconciledFootprint) {
       toast.error(
         "Reconciliation produced no measurement — Apply is disabled. " +
@@ -2529,7 +2571,50 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
                   {previewTab === "3d" && (
                     <div className="mb-4" data-testid="ai-measure-3d-panel">
-                      <HouseModel3D preview={preview} estimate={estimate} />
+                      {(() => {
+                        // Iter 79j.52 — Never draw a placeholder house
+                        // when reconciliation failed or produced zero
+                        // geometry. Different failure semantics need
+                        // different UI: an empty box implies "we
+                        // measured a tiny house", the incomplete
+                        // banner correctly reads "we didn't measure".
+                        const ra = preview?.raw_ai || {};
+                        const failed = !!ra._reconciliation_error;
+                        const wallsN = Array.isArray(ra.walls) ? ra.walls.length : 0;
+                        const dormersN = Array.isArray(ra.dormers) ? ra.dormers.length : 0;
+                        const empty = !failed && wallsN === 0 && dormersN === 0;
+                        if (failed || empty) {
+                          return (
+                            <div
+                              className="p-4 border border-dashed border-[var(--danger)] bg-[#FEE2E2] text-[#7F1D1D] text-[11px]"
+                              data-testid="ai-measure-3d-empty-state"
+                            >
+                              <div className="font-bold uppercase tracking-wider text-[10px] mb-2 flex items-center gap-1.5">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Measurement incomplete — reconciliation failed
+                              </div>
+                              <div className="mb-3 whitespace-pre-wrap break-words">
+                                {failed
+                                  ? String(ra._reconciliation_error)
+                                  : "Phase B produced no walls or dormers — nothing to render in 3D. Retry reconciliation on the saved Phase A extractions before applying."}
+                              </div>
+                              {currentRunId && (
+                                <button
+                                  type="button"
+                                  onClick={() => retryReconcileOnly(currentRunId)}
+                                  disabled={busy}
+                                  className="px-3 py-1.5 bg-[#7F1D1D] text-white hover:bg-[#991B1B] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  data-testid="ai-measure-3d-retry-reconciliation"
+                                  title="Retry ONLY Phase B (reconciliation). Keeps Phase A's vision output."
+                                >
+                                  <RotateCcw className="w-3 h-3" /> Retry Reconciliation
+                                </button>
+                              )}
+                            </div>
+                          );
+                        }
+                        return <HouseModel3D preview={preview} estimate={estimate} />;
+                      })()}
                     </div>
                   )}
 
@@ -3521,9 +3606,31 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     <button
                       type="button"
                       onClick={apply}
-                      disabled={busy}
-                      className="px-3 py-2 bg-[var(--brand)] text-[var(--on-brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
+                      disabled={busy || (() => {
+                        // Iter 79j.52 — Visually mirror the runtime
+                        // hard-block in apply(). Signals live in
+                        // raw_ai (walls/dormers/openings arrays) and
+                        // measurements.siding_sqft / eaves_lf — NOT
+                        // in measurements.walls (that field is never
+                        // populated by the aggregator).
+                        const ra = preview?.raw_ai || {};
+                        if (ra._reconciliation_error) return true;
+                        const raWalls = Array.isArray(ra.walls) ? ra.walls.length : 0;
+                        const raDormers = Array.isArray(ra.dormers) ? ra.dormers.length : 0;
+                        const raOpenings = Array.isArray(ra.openings) ? ra.openings.length : 0;
+                        const m = preview?.measurements || {};
+                        const sidingSqft = Number(m.siding_sqft || 0);
+                        const eavesLf = Number(m.eaves_lf || 0);
+                        const hasFootprint =
+                          raWalls > 0 || raDormers > 0 || raOpenings > 0 ||
+                          sidingSqft > 0 || eavesLf > 0;
+                        return !hasFootprint;
+                      })()}
+                      className="px-3 py-2 bg-[var(--brand)] text-[var(--on-brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="ai-measure-apply-btn"
+                      title={preview?.raw_ai?._reconciliation_error
+                        ? "Reconciliation failed — nothing to apply. Retry Phase B first."
+                        : "Apply the AI takeoff to the estimate"}
                     >
                       {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                       {busy ? "Saving…" : "Apply Measurements"}
