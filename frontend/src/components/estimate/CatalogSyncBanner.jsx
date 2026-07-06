@@ -11,6 +11,7 @@ import { RefreshCw, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import Modal from "@/components/ui/Modal";
 
 const DISMISS_KEY = (id) => `sync-banner-dismissed-${id}`;
 
@@ -160,17 +161,13 @@ export default function CatalogSyncBanner({ est, update }) {
         </div>
       </div>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={() => !busy && setOpen(false)}
-          data-testid="sync-modal-backdrop"
-        >
-          <div
-            className="bg-[var(--surface)] max-w-3xl w-full max-h-[85vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-            data-testid="sync-modal"
-          >
+      <Modal
+        open={open}
+        onClose={() => { if (!busy) setOpen(false); }}
+        title={t("est.sync.modal.title")}
+        testid="sync-modal"
+        contentClassName="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-3xl max-h-[85vh] flex flex-col bg-[var(--surface)] border border-[var(--border-strong)] shadow-2xl outline-none"
+      >
             <div className="bg-[var(--brand)] text-[var(--on-brand)] px-5 py-4 flex items-center justify-between">
               <div>
                 <div className="font-heading text-lg">{t("est.sync.modal.title")}</div>
@@ -243,9 +240,7 @@ export default function CatalogSyncBanner({ est, update }) {
                 {busy ? t("est.sync.applying") : t("est.sync.applyButton", { n: changes.length })}
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </>
   );
 }
