@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import Modal from "@/components/ui/Modal";
 
 const TAB_ORDER = ["vinyl", "ascend", "lp_smart", "windows"];
 
@@ -25,8 +26,6 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
     if (open) setSelected(new Set(orderedTabs));
   }, [open, orderedTabs]);
 
-  if (!open) return null;
-
   const title = mode === "quote" ? t("tabPicker.title.quote") : t("tabPicker.title.material");
   const helper = mode === "quote" ? t("tabPicker.helper.quote") : t("tabPicker.helper.material");
 
@@ -40,15 +39,13 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center px-4"
-      data-testid="tab-picker-modal"
-      onClick={onClose}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      testid="tab-picker-modal"
+      contentClassName="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-md bg-[var(--surface)] border border-[var(--border-strong)] shadow-2xl outline-none"
     >
-      <div
-        className="bg-[var(--surface)] max-w-md w-full border border-[var(--border-strong)] shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-3">
           <div className="text-sm uppercase tracking-[0.18em] font-bold text-[var(--ink)]">
             {title}
@@ -103,7 +100,6 @@ export default function TabPickerModal({ open, mode, tabsWithData, onClose, onCo
             {t("tabPicker.continue", { n: selected.size })}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
