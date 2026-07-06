@@ -1266,3 +1266,35 @@ Added 2026-02-28 during 79j.50 deploy. Do NOT hold today's deploy for these.
 - User will add the 79j.50 run's 502 + 901s Phase B hang to the existing support email alongside the 185s-vs-4.89s repro. Reinforces "even TEXT-only reconcile calls exhibit proxy instability under load."
 
 **Priority**: All three code tasks (1-3) are P0 blockers for the next real user run. Ship as a single Iter 79j.51 bundle after 79j.50 has proven stable in production.
+
+
+## Iter 79j.51 — Reconcile-only retry SHIPPED + validated (2026-07-06)
+
+### Backend
+- ✅ `POST /api/measure/ai-measure/reconcile-only/{run_id}` implemented in `backend/routes/ai_measure.py`. Reuses run's `raw_per_photo` — no Phase A revisit. Auth: cookie owner OR admin role.
+- ✅ Phase B payload trimmed: `bbox` fields dropped in the slim step before proxy send (5 tests pass in `tests/test_reconcile_only_retry.py`).
+
+### Frontend
+- ✅ `retryReconcileOnly(runId)` handler added to `AIMeasureButton.jsx` (defined before `rerunWithAnnotations`). Polls same run_id for up to 4 min.
+- ✅ "Retry Reconciliation" button renders only when `currentRunId && /reconcil|BadGateway|502|Phase\s*B/i.test(runError)`.
+- ✅ Apply button + 3D render guards remain as previously shipped: banner shows "Measurement incomplete — reconciliation failed", 3D scene suppressed, Apply disabled.
+- ✅ Lint clean.
+
+### Proxy latency probe (support email followup)
+Ran 3 parallel large-payload (max_tokens=4000, ~4KB prompt) calls per model via `backend/scripts/proxy_probe.py`, isolated from the app:
+- `claude-fable-5`: **wall=84.2s**, avg call=28.1s, 3/3 OK (one call returned only 41 chars — reply truncation curiosity)
+- `claude-sonnet-4-5`: **wall=131.3s**, avg call=43.8s, 3/3 OK
+Conclusion: fable is faster than sonnet-4-5 at concurrency=3, so support's "unlisted model → throttled default bucket" theory is not supported by evidence. Phase B 502s are payload/timeout related, not per-model throttle. App model UNCHANGED per user gate.
+
+### Run 3 red-house reconciliation (via new endpoint)
+Invoked `/reconcile-only/22af2eb2ad784c7bbd662222e16001ab` (earlier of the two 8-for-8 stranded Phase A runs):
+- Wall time: **4 min 18 s** (kicked off 02:38:04 → done 02:42:22 UTC 2026-07-06)
+- Model: claude-fable-5
+- Status: done · `_reconciliation_error`: null
+- Story count: 1.5 · siding_sqft: **1598.0**
+- Full raw_ai populated: walls, dormers, openings, LF tallies (eaves/rakes/starter/OC/IC)
+- 8/8 Phase A extractions reused — no vision spend
+- Reserve stranded run `9c8248df8e854590b4d8671d51dd6da2` untouched for Run 4.
+
+### Gate status
+Red-house validation NOT yet graduated. User must eyeball the reconciled numbers on preview before feature work resumes.

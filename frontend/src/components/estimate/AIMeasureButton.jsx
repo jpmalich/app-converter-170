@@ -516,6 +516,59 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setPreview(enriched);
   };
 
+  // Iter 79j.51 — Reconcile-only retry. When Phase A succeeded but
+  // Phase B (LLM reconciliation) 502'd on the proxy, we can re-run
+  // JUST Phase B against the saved raw_per_photo — costing pennies
+  // instead of paying for vision extraction again. Polls the same
+  // run_id (backend re-uses the run doc, flips status back to
+  // running / stage=reconciling).
+  const retryReconcileOnly = async (runId) => {
+    if (!runId) {
+      toast.error("No run to reconcile — try Retry Run instead");
+      return;
+    }
+    setBusy(true);
+    setBusyStage("reconciling");
+    setRunError(null);
+    setRunErrorMeta(null);
+    const t0 = Date.now();
+    try {
+      const launch = await api.post(`/measure/ai-measure/reconcile-only/${runId}`);
+      if (!launch?.data?.run_id) throw new Error("Backend didn't accept the reconcile-only retry");
+      let result = null;
+      let finalStatus = null;
+      // Phase B alone should finish in ~3 min; give it 4 min budget.
+      for (let i = 0; i < 80; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        let statusResp;
+        try {
+          statusResp = await api.get(`/measure/ai-measure/status/${runId}`);
+        } catch (e) {
+          if (i >= 5) console.warn("reconcile-only status poll failed", e?.message);
+          continue;
+        }
+        const s = statusResp?.data || {};
+        if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
+        if (s.status === "error") throw new Error(s.error || "Reconciliation retry failed");
+        if (s.status === "done") { result = s.result; finalStatus = s; break; }
+      }
+      if (!result) throw new Error("Reconciliation retry timed out — the server may still be finishing in the background");
+      _applyAIResult(result, finalStatus);
+      toast.success("Reconciliation retry complete · measurements applied");
+    } catch (e) {
+      const msg = e?.response?.data?.detail || e?.message || "Reconciliation retry failed";
+      setRunError(String(msg));
+      setRunErrorMeta({
+        stage: "reconciling",
+        elapsedMs: Date.now() - t0,
+        kind: e?.response?.status === 502 ? "BadGateway" : "ReconcileRetryFailed",
+      });
+    } finally {
+      setBusy(false);
+      setBusyStage("");
+    }
+  };
+
   // Iter 78z+ — Re-fire AI Measure using cached photo bytes server-side
   // (no re-upload). Triggered from ProfileAnnotator's "Save & Re-run".
   // Mirrors `resumeRunPolling` but kicks off a fresh worker first.
@@ -1507,6 +1560,24 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
   const apply = async () => {
     if (!preview?.measurements) return;
+    // Iter 79j.51 — Zero-data safety net. Distinct from the orphan-wall
+    // partial-data warning below. When Phase B (reconciliation) fails
+    // entirely, the aggregator still emits a placeholder measurements
+    // object with 0 walls / 0 openings. Applying that writes silently-
+    // wrong data (extrapolated outside-corner LF from a nonexistent
+    // footprint) into the customer quote. Hard-block, don't warn.
+    const m = preview?.measurements || {};
+    const wallCount = Array.isArray(m.walls) ? m.walls.length : 0;
+    const openingCount = Array.isArray(m.openings) ? m.openings.length : 0;
+    const perimeter = Number(m._ai_walls_total_lf || m.walls_total_lf || 0);
+    const hasReconciledFootprint = wallCount > 0 || openingCount > 0 || perimeter > 0;
+    if (!hasReconciledFootprint) {
+      toast.error(
+        "Reconciliation produced no measurement — Apply is disabled. " +
+        "Use Retry Reconciliation on the failed run first."
+      );
+      return;
+    }
     // Iter 79j.44 — Orphan-wall safety net. If Phase A left one of the
     // 4 cardinal walls with no direct-view coverage, warn the user
     // BEFORE writing numbers into the estimate. Their dimensions are
@@ -1824,7 +1895,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         )}
                       </div>
                     )}
-                    <div className="mt-2">
+                    <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => { setRunError(null); setRunErrorMeta(null); runMeasure(); }}
@@ -1834,6 +1905,24 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       >
                         <RotateCcw className="w-3 h-3" /> Retry Run
                       </button>
+                      {/* Iter 79j.51 — Reconcile-only retry button.
+                          Only shown when the run failure was in Phase B
+                          (reconciliation) AND we have a currentRunId
+                          whose raw_per_photo is still on disk. Runs
+                          Phase B alone against the saved extractions —
+                          skips paying for Phase A vision again. */}
+                      {currentRunId && /reconcil|BadGateway|502|Phase\s*B/i.test(runError || "") && (
+                        <button
+                          type="button"
+                          onClick={() => retryReconcileOnly(currentRunId)}
+                          disabled={busy}
+                          className="px-3 py-1.5 bg-[#7F1D1D] text-white hover:bg-[#991B1B] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          data-testid="ai-measure-reconcile-only-retry"
+                          title="Retry ONLY Phase B (reconciliation). Keeps Phase A's vision output — costs pennies instead of a full re-run."
+                        >
+                          <RotateCcw className="w-3 h-3" /> Retry Reconciliation
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

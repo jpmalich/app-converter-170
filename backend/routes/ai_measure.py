@@ -2041,6 +2041,162 @@ async def ai_measure_rerun(
     }
 
 
+# ---------------------------------------------------------------------
+# Iter 79j.51 — Reconcile-only retry.
+#
+# When Phase B fails (proxy 502, hang, timeout) but Phase A's
+# `raw_per_photo` is persisted, this endpoint reruns Phase B against
+# the saved extractions WITHOUT touching Phase A. Recovers a stranded
+# run for pennies instead of forcing a full ~$1-$5 re-run.
+#
+# Auth-gated to the run's owner (or admin). Idempotent: re-invoking
+# on an already-successful run resets its Phase B output and re-runs
+# reconciliation — callers should confirm before re-running a
+# succeeded run (the frontend surfaces this option only on failure).
+# ---------------------------------------------------------------------
+@router.post("/ai-measure/reconcile-only/{run_id}")
+async def ai_measure_reconcile_only(
+    run_id: str,
+    user: dict = Depends(get_current_user),
+):
+    run = await db.ai_measure_runs.find_one({"run_id": run_id})
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if run.get("user_id") != user["id"] and (user.get("role") or "").lower() not in _ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Not your run")
+    raw_per_photo = run.get("raw_per_photo") or []
+    if not isinstance(raw_per_photo, list) or not raw_per_photo:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No saved per-photo extractions on this run — reconcile-only "
+                "requires a Phase A output. Use rerun instead."
+            ),
+        )
+    api_key, _source = _pick_llm_api_key("anthropic")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+    model_key = run.get("model_choice") or "claude-opus-4-5"
+    _key, model_provider, model_name = _resolve_model(model_key)
+
+    now = datetime.now(timezone.utc)
+    await db.ai_measure_runs.update_one(
+        {"run_id": run_id},
+        {"$set": {
+            "status": "running",
+            "stage": "reconciling",
+            "error": None,
+            "error_kind": None,
+            "completed_at": None,
+            "updated_at": now,
+            "reconcile_only_retry_at": now,
+        }},
+    )
+    asyncio.create_task(_execute_reconcile_only_worker(
+        run_id=run_id,
+        api_key=api_key,
+        user_id=user["id"],
+        extractions=raw_per_photo,
+        model_provider=model_provider,
+        model_name=model_name,
+        address=run.get("address"),
+        reference_dim=run.get("reference_dim"),
+        annotation_hint=run.get("annotation_hint") or "",
+    ))
+    logger.info(
+        "[ai-measure phase-B] reconcile-only retry dispatched run_id=%s (%d photos in raw_per_photo)",
+        run_id, len(raw_per_photo),
+    )
+    return {
+        "run_id": run_id,
+        "status": "running",
+        "stage": "reconciling",
+        "retry_kind": "reconcile_only",
+    }
+
+
+async def _execute_reconcile_only_worker(
+    *,
+    run_id: str,
+    api_key: str,
+    user_id: str,
+    extractions: list[dict],
+    model_provider: str,
+    model_name: str,
+    address: Optional[str],
+    reference_dim: Optional[str],
+    annotation_hint: str,
+) -> None:
+    """Background worker for reconcile-only retry. Runs Phase B against
+    the persisted extractions and writes result + raw_ai back onto the
+    same run document.
+    """
+    try:
+        final = await _reconcile_extractions(
+            api_key=api_key,
+            user_id=user_id,
+            model_provider=model_provider,
+            model_name=model_name,
+            extractions=extractions,
+            address=address,
+            reference_dim=reference_dim,
+            annotation_hint=annotation_hint,
+        )
+        if final.get("_reconciliation_error"):
+            friendly = final.get("_reconciliation_error") or "unknown"
+            logger.warning("[ai-measure phase-B] reconcile-only retry FAILED: %s", friendly)
+            await db.ai_measure_runs.update_one(
+                {"run_id": run_id},
+                {"$set": {
+                    "status": "error",
+                    "stage": "error",
+                    "error": f"Reconciliation retry failed: {friendly}",
+                    "error_kind": "ReconciliationRetryError",
+                    "completed_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc),
+                }},
+            )
+            return
+        # Rebuild the same `result` shape a full pipeline would produce.
+        # Downstream code (frontend, apply-measurements) reads
+        # `result.raw_ai` + `result.measurements` — we produce both
+        # via the same aggregator the main worker uses.
+        measurements = _aggregate_to_hover_shape(final, annotations=[])
+        result = {
+            "raw_ai": final,
+            "measurements": measurements,
+            "_pipeline": "two_phase_reconcile_only_retry",
+        }
+        await db.ai_measure_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {
+                "status": "done",
+                "stage": "done",
+                "result": result,
+                "error": None,
+                "error_kind": None,
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+        logger.info("[ai-measure phase-B] reconcile-only retry DONE run_id=%s", run_id)
+    except Exception as e:
+        logger.exception("[ai-measure phase-B] reconcile-only worker crashed for run_id=%s", run_id)
+        friendly = str(e).strip() or type(e).__name__
+        await db.ai_measure_runs.update_one(
+            {"run_id": run_id},
+            {"$set": {
+                "status": "error",
+                "stage": "error",
+                "error": f"Reconciliation retry crashed: {friendly}",
+                "error_kind": type(e).__name__,
+                "completed_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }},
+        )
+
+
+
 def _as_aware_utc(dt):
     """Coerce a datetime to a timezone-aware UTC datetime. MongoDB may
     return naive datetimes depending on the driver/codec settings, which
@@ -3139,11 +3295,31 @@ async def _reconcile_extractions(
         lines.append(annotation_hint)
     lines.append("")
     lines.append("=== PER-PHOTO EXTRACTIONS ===")
+    total_slim_bytes = 0
+    total_orig_bytes = 0
     for i, ex in enumerate(extractions):
-        # Strip our internal fields — Claude doesn't need to see them.
-        payload = {k: v for k, v in ex.items() if not k.startswith("_")}
+        # Iter 79j.51 — Every KB off the Phase B payload matters given
+        # the payload-driven proxy serialization documented in Iter 79j.50.
+        # `_slim_extraction_for_reconcile` strips fields the reconciler
+        # doesn't consume (per-photo pixel bboxes — the reconciler emits
+        # its own normalized bboxes on the primary photo, and doesn't
+        # have source-photo dimensions to convert from pixel space anyway).
+        # Reasoning strings, confidence, notes, along_wall_ft — all
+        # RETAINED because RECONCILE_PROMPT explicitly cites them.
+        slim = _slim_extraction_for_reconcile(ex)
+        slim_json = json.dumps(slim, ensure_ascii=False, indent=2)
+        total_slim_bytes += len(slim_json)
+        total_orig_bytes += len(json.dumps(
+            {k: v for k, v in ex.items() if not k.startswith("_")},
+            ensure_ascii=False, indent=2,
+        ))
         lines.append(f"\n-- photo[{i}] --")
-        lines.append(json.dumps(payload, ensure_ascii=False, indent=2))
+        lines.append(slim_json)
+    logger.info(
+        "[ai-measure phase-B] reconcile payload %d → %d bytes (%.2fx)",
+        total_orig_bytes, total_slim_bytes,
+        total_orig_bytes / max(1, total_slim_bytes),
+    )
     lines.append("")
     lines.append("Return the reconciled house JSON now. No prose.")
     try:
@@ -3157,6 +3333,45 @@ async def _reconcile_extractions(
     parsed = _clean_json_reply(reply or "")
     parsed["_reconciliation_latency_ms"] = int((time.time() - t0) * 1000)
     return parsed
+
+
+def _slim_extraction_for_reconcile(ex: dict) -> dict:
+    """Iter 79j.51 — Return a copy of `ex` with reconciler-unread bulk
+    stripped. See docstring comment above for the rationale.
+
+    KEEP:
+        - `elevation_reasoning`, `eave_reasoning`, `pitch_reasoning`,
+          `obstructions`, `notes`, `confidence_reasoning`, `notes` —
+          RECONCILE_PROMPT explicitly cites these for its
+          `_reconciliation_note` generation.
+        - `along_wall_ft` on openings — required for cross-photo dedup.
+        - `style_confidence`, `elevation_confidence`, `confidence`,
+          `sample_quality` — used to weight readings.
+
+    DROP:
+        - `bbox` on `openings_this_photo`, `dormer_details`,
+          `no_siding_regions`. These are pixel-space in the compressed
+          image. The reconciler outputs its own NORMALIZED bboxes and
+          doesn't have source-photo dimensions in this payload to
+          convert accurately from pixel space anyway.
+        - Any leading-underscore keys (internal state — already stripped
+          by the pre-existing rule).
+    """
+    slim: dict = {}
+    for k, v in ex.items():
+        if k.startswith("_"):
+            continue
+        if k == "openings_this_photo" and isinstance(v, list):
+            slim[k] = [{ok: ov for ok, ov in o.items() if ok != "bbox"} for o in v]
+            continue
+        if k == "dormer_details" and isinstance(v, list):
+            slim[k] = [{dk: dv for dk, dv in d.items() if dk != "bbox"} for d in v]
+            continue
+        if k == "no_siding_regions" and isinstance(v, list):
+            slim[k] = [{rk: rv for rk, rv in r.items() if rk != "bbox"} for r in v]
+            continue
+        slim[k] = v
+    return slim
 
 
 async def _run_two_phase_pipeline(
