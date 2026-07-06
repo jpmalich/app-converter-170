@@ -4,6 +4,7 @@ import DOMPurify from "dompurify";
 import { Plus, Trash2, X, ChevronDown, ChevronRight, StickyNote, HelpCircle } from "lucide-react";
 import { v4 as uuid } from "uuid";
 import { useT, useLang } from "@/lib/i18n";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { tSection } from "@/lib/catalogTranslations";
 import BulkApplyConfirm from "./BulkApplyConfirm";
 import WindowPackageQuote from "./WindowPackageQuote";
@@ -567,15 +568,24 @@ function OpeningRow({
           >
             <StickyNote className="w-4 h-4" />
           </button>
-          <button
-            type="button"
-            className="p-1.5 text-[var(--muted)] hover:text-[var(--danger-text)]"
+          <ConfirmDialog
+            trigger={
+              <button
+                type="button"
+                className="p-1.5 text-[var(--muted)] hover:text-[var(--danger-text)]"
+                title={t("win.removeOpening")}
+                data-testid={`mezzo-remove-${op.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            }
             title={t("win.removeOpening")}
-            onClick={onRemove}
-            data-testid={`mezzo-remove-${op.id}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+            description={t("confirm.removeOpening.desc")}
+            confirmLabel={t("common.remove")}
+            cancelLabel={t("common.cancel")}
+            destructive
+            onConfirm={onRemove}
+          />
         </div>
       </div>
 

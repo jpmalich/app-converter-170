@@ -3,6 +3,7 @@ import api, { formatApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { ImagePlus, X } from "lucide-react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 export default function PhotosPanel({ est, update }) {
   const fileRef = useRef();
@@ -50,13 +51,22 @@ export default function PhotosPanel({ est, update }) {
               alt=""
               className="w-full h-full object-cover"
             />
-            <button
-              className="absolute top-1 right-1 bg-[var(--surface)] border border-[var(--border-strong)] p-1"
-              onClick={() => update({ photos: est.photos.filter((_, j) => j !== i) })}
-              aria-label="Remove photo"
-            >
-              <X className="w-3 h-3" />
-            </button>
+            <ConfirmDialog
+              trigger={
+                <button
+                  className="absolute top-1 right-1 bg-[var(--surface)] border border-[var(--border-strong)] p-1"
+                  aria-label={t("confirm.removePhoto.title")}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              }
+              title={t("confirm.removePhoto.title")}
+              description={t("confirm.removePhoto.desc")}
+              confirmLabel={t("common.remove")}
+              cancelLabel={t("common.cancel")}
+              destructive
+              onConfirm={() => update({ photos: est.photos.filter((_, j) => j !== i) })}
+            />
           </div>
           );
         })}
