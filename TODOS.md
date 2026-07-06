@@ -159,9 +159,10 @@ App-affecting items also need a `PromptsForEmergent.md` entry when completed (se
          the precedence chain: user pick > company theme > supplier default > app default.
       Suggested path: design-system spec first (like `docs/specs/theme-picker.md`), with
       before/after mockups of Dashboard + Estimate editor for Howard's sign-off before
-      any code. **Spec written: `docs/specs/redesign-system.md`** (2026-07-06 — evolve the
-      Swiss/industrial system, orange stays; before/after mockup in
-      `docs/specs/redesign-mockup.html`).
+      any code. **Spec written: `docs/specs/redesign-system.md`** (2026-07-06, rev 2 —
+      "Blueprint Instrument": a distinctive drafting-inspired identity that *replaces* the flat
+      industrial look; blueprint-blue accent + safety-orange as redline markup; whiteprint/
+      cyanotype themes. Interactive mockup: `docs/specs/redesign-mockup.html`).
 - [ ] **Bring the admin pages into the theme system + modernization scope** — the six
       established themes should fully apply to `/branding-admin` and
       `/lp-formula-preview` too. The theme codemod did migrate those pages and the

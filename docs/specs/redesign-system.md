@@ -1,164 +1,175 @@
-# Full App Redesign — Design System Specification
+# Blueprint Instrument — Design System Specification
 
 *Companion to [`theme-picker.md`](./theme-picker.md). Sign-off doc for the P2 "Full app
-redesign" TODO. Written 2026-07-06.*
+redesign" TODO. Interactive mockup: [`redesign-mockup.html`](./redesign-mockup.html)
+([hosted](https://claude.ai/code/artifact/715bd989-d070-4356-8b9b-fc4043f118fb)). Rev 2,
+2026-07-06.*
 
 ## 1. Summary
 
-The redesign **evolves the existing Swiss/industrial system rather than replacing it.** The
-current black (`#09090B`) + safety-orange (`#F97316`) language is already the *correct*
-design direction for a professional construction tool — the goal is to modernize its
-elevation, spacing, density, and component states, retire the open UI/UX audit debt in the
-same pass, and add per-company branding on top of the semantic-token foundation.
+**Blueprint Instrument** is a distinctive, ground-up visual identity for Pro-Quote —
+**a replacement for the flat industrial look, not an evolution of it.** The app presents as
+a working **drafting sheet**: a drawing frame with a title block, a faint graph-paper
+substrate, measurements rendered as **dimension lines**, tabular-mono numerals as the hero of
+every surface, and safety orange used only as **redline markup**. The classic **cyanotype**
+(white-on-navy) is the dark theme, not an inversion.
 
-This is a **decision + spec** document. It does not change code. The next deliverable is
-before/after mockups of the Dashboard and Estimate Editor for Howard's sign-off.
+This is a **decision + spec** document; it does not change code. Rev 1 recommended *evolving*
+the existing Swiss/industrial system; that was overridden by the direction to build something
+unique — this rev supersedes it.
 
-## 2. Why evolve, not replace (the evidence)
+## 2. Why this direction
 
-A design-intelligence pass (`ui-ux-pro-max`) was run for this product profile (B2B SaaS
-estimator, professional trade tool, field-use). The matched guidance **validates the current
-direction**:
+- **It belongs to the subject.** The product's whole world is *measurement* — takeoffs,
+  squares, linear feet, elevations, HOVER sheets, waste %. A drafting/blueprint language makes
+  the tool read as a precision instrument a tradesperson already trusts, instead of a generic
+  SaaS dashboard. The domain, not a template, generated the identity.
+- **It is logically functional.** Numbers and dimensions are the content; the design promotes
+  them to the hero rather than decorating around them. Summary reads before detail; state is
+  encoded in *form* (stamps, redlines, gauges), not only color.
+- **It is genuinely differentiated.** It deliberately avoids the current AI-generic looks
+  (cream+serif, purple gradient, near-black+acid-green, Inter-everywhere). The one aesthetic
+  risk — the drawing-board metaphor taken literally (graph paper, dimension lines, stamps) —
+  is spent in one place; everything else stays quiet.
+- **Brand fit.** Alside's safety orange survives as the **redline/markup** color (scarce, high
+  signal). Blueprint blue becomes the primary accent — which doubles as the per-company brand
+  hook (§8).
 
-- **Style — "Swiss Modernism 2.0"**: grid system, `#000/#FFF/#F5F5F5` + *a single vibrant
-  accent*, mathematical spacing, **WCAG AAA**, Tailwind fit 10/10. This is essentially what
-  the app already is. The sibling **"Data-Dense Dashboard"** style (KPI cards, minimal
-  padding, space-efficient tables) matches the estimate grid.
-- **Color — "Construction/Architecture" palette**: explicitly pairs grey + **orange as the
-  safety/CTA accent (`#F97316`)** + blueprint blue. The app's brand orange *is* the
-  domain-correct accent — not something to swap for generic SaaS blue.
-- **Typography — "Dashboard Data"**: mono for numbers, sans for labels. The app already does
-  this (JetBrains Mono numerals + Archivo/IBM Plex Sans).
+## 3. Design language — "the app is a drawing"
 
-**Rejected option:** the generator's default "Flat + professional blue (`#0369A1`)" SaaS
-look. It's competent but generic and would discard Alside's brand identity and the
-domain-appropriate safety-orange signal. We keep orange.
-
-**What "modernize" means concretely** (the "bland widgets" note from the Howie call): softer,
-consistent elevation instead of flat/hard edges; a real spacing scale; refined interactive
-states (hover/focus/active/disabled/loading); skeletons over bare spinners; and adopting the
-installed Radix primitives so dialogs/tabs/accordions feel first-class.
-
-## 3. Goals & non-goals
-
-**Goals**
-- One coherent, modern visual language across **every** page (editor, dashboard, catalog,
-  admin, auth).
-- Keep the semantic-token architecture; the redesign is mostly *token + component* work, not
-  a rewrite.
-- Fold in the open UI/UX audit items (Radix dialogs/tabs/accordions, skeletons, input
-  labels, section rollups, z-index scale) so the redesign **retires** that debt.
-- Add **per-company branding inside the app** (not just on quotes), derived from one brand
-  color and accessibility-validated.
-
-**Non-goals**
-- No blue rebrand; no consumer-flashy gradients/glow.
-- No change to business logic, calc, or data model.
-- Not a Tailwind→other-framework migration.
-
-## 4. Design language
-
-| Axis | Decision |
+| Device | Meaning |
 |---|---|
-| **System** | Swiss Modernism 2.0, evolved — 12-col grid, mathematical spacing, high contrast, one accent per view. |
-| **Density** | Data-Dense Dashboard for the estimate grid / totals; comfortable density for forms & marketing/auth. |
-| **Accent** | Safety orange `--brand` stays the single primary accent. Blueprint blue reserved as an optional **data/secondary** accent (charts, informational chips) — not a second brand color. |
-| **Elevation** | Move from hard brutalist shadow to a **3-step soft elevation scale** (see §6). Keep one deliberate "industrial" hard-edge treatment for the sticky sell-bar only. |
-| **Motion** | 150–200ms, `transform`/`opacity` only, `prefers-reduced-motion` honored (already global). |
-| **Icons** | SVG only (Lucide, already in use). No emoji icons. |
+| **Drawing frame** | Every screen sits inside a double-rule sheet border — you're working *on a sheet*. |
+| **Title block** | Architect's corner block (sheet / rev / scale) as the app header & card headers. |
+| **Graph-paper substrate** | Two-scale faint grid behind the sheet; everything aligns to it. |
+| **Dimension lines** | Measurements drawn (`⊢—— 24.0 SQ ——⊣`), not just typed. |
+| **Drawing labels** | Sections coded like sheets (`A-01`, `01 · Vinyl Siding`). |
+| **Stamps** | Status (Won/Sent/Draft) and profit rendered as rubber-stamp marks. |
+| **Redline** | Safety orange = a reviewer's markup pen; flags, deltas, "verify…" notes only. |
 
-## 5. Color system
+## 4. Color tokens
 
-Keep the existing semantic tokens (`index.css :root`). Refinements:
+Two themes ship at launch; both are first-class (not inverts). All components style through
+tokens — never hardcode hex (retires the StickyBar inline-hex audit finding).
 
-- **Primary accent:** `--brand #F97316` / `--brand-hover #EA580C` / `--brand-text #C2410C` /
-  `--on-brand #09090B` — unchanged (domain-correct safety orange).
-- **Neutrals:** keep the zinc ramp (`--ink #09090B`, `--ink-2 #52525B`, `--muted #71717A`,
-  `--border #E4E4E7`, `--bg-app #F4F4F5`).
-- **Add semantic profit/loss tokens** `--pos` / `--neg` and retire the inline hex
-  (`#10B981`/`#F87171`) in `StickyBar.jsx:104–106` (audit finding).
-- **Blueprint blue** as `--data` (informational only), so it can't be confused with the brand
-  CTA. Revisit whether the AI-feature purple (`--ai #7C3AED`) stays a sanctioned accent or
-  folds into `--data` (open UI/UX item "Purple AI-feature styling").
-- **Six shipped themes stay:** default orange + `blueprint`, `dark`, `forest`, `highvis`,
-  `steel`. Every theme continues to pass the accessibility gate (§8).
-
-## 6. Elevation, spacing, radius (the modernization levers)
-
-- **Spacing scale (8pt):** `4 / 8 / 12 / 16 / 24 / 32 / 48`. Audit `w-N h-N` squares →
-  `size-N`; adopt `cn()` for the ~137 template-literal classNames.
-- **Radius:** introduce a small consistent radius token (`--radius: 6px`) for cards, inputs,
-  buttons, dialogs — replacing today's sharp 0px corners on most surfaces (keep 0px only for
-  the intentional industrial sell-bar).
-- **Elevation:** `--e1` (resting card), `--e2` (raised/hover), `--e3` (dialog/popover) — soft,
-  low-spread shadows tuned per light/dark theme. Replaces the flat hard-edge look that read as
-  "bland."
-
-## 7. Component language (all on Radix primitives)
-
-Every interactive component uses the installed `components/ui/*` Radix primitives — this is
-also how the redesign retires the audit's a11y debt:
-
-| Component | Spec | Retires audit item |
+**Whiteprint (light) — default**
+| Token | Hex | Role |
 |---|---|---|
-| **Dialog / AlertDialog** | Radix `Dialog` for all modals (focus trap, Esc, `aria-modal`); `AlertDialog` for every destructive action. | ~22 hand-rolled modals; `window.confirm`/`alert`; unguarded photo/opening removes |
-| **Tabs** | Radix `Tabs` for the product-line strip (arrow-key nav, roving tabindex). | `EstimatorTabs` keyboard nav |
-| **Accordion** | Radix `Accordion` for `SectionAccordion` (`aria-expanded`/`aria-controls`). | Accordion semantics |
-| **Inputs** | Always `label htmlFor`/`id`; `inputmode`/`type=number`; right-aligned `.input.num` tabular. | Unnamed grid/color/Vero inputs |
-| **Buttons** | States: rest / hover (color-opacity) / focus-visible ring / active / disabled / **loading** (disable during async). | Double-submit guards on Totals actions |
-| **Feedback** | Skeletons (`ui/skeleton.jsx`) for loads; inline error text near the field + toast for API; persistent saved/saving/error chip near the sell-bar. | Skeletons; autosave-failure surfacing |
-| **Touch** | ≥44×44px targets (photo-remove X, reset ↺, adder qty). | Sub-44px targets |
-| **Z-index** | Token scale: `--z-header/sticky/modal/popover/toast` — no ad-hoc `z-[70]` literals. | z-index scale |
+| `--desk` | `#E4E7EC` | canvas behind the sheet |
+| `--paper` | `#F7F8FA` | sheet ground |
+| `--sheet` | `#FFFFFF` | card/panel surface |
+| `--ink` | `#0B1F3A` | blueprint-navy text / frame |
+| `--ink-2` | `#47566B` | secondary text |
+| `--muted` | `#8493A8` | labels, meta |
+| `--line` | `#1E6FEB` | **primary accent** — dimension lines, rules, focus, CTAs |
+| `--line-2` | `#A9C4F5` | inner frame, soft rules |
+| `--grid` / `--grid-2` | `rgba(30,111,235,.07 / .14)` | minor / major graph grid |
+| `--border` | `#D3DBE6` | panel borders |
+| `--mark` | `#F26419` | **redline** — markup only, scarce |
+| `--pos` | `#0E7C66` | profit / positive stamp |
+| `--neg` | `#C63B3B` | loss / redline negative |
+
+**Blueprint (dark) — cyanotype**
+| Token | Hex |
+|---|---|
+| `--desk` `#05070D` · `--paper` `#081327` · `--sheet` `#0B1F3A` |
+| `--ink` `#EAF1FF` · `--ink-2` `#A7BEDE` · `--muted` `#6E86A8` |
+| `--line` `#5B9BFF` · `--border` `#1C3355` · `--mark` `#FF9247` |
+| `--pos` `#34D399` · `--neg` `#FF6B6B` |
+
+Theme selection: `prefers-color-scheme` default + explicit `data-theme` override (same
+mechanism as the existing theme picker). Semantic color (`pos`/`neg`/`mark`) is **separate
+from the accent** and never the sole signal.
+
+## 5. Typography
+
+- **Display / UI:** a technical grotesque (International/Swiss lineage — e.g. a licensed
+  Aeonik/Basis-grotesque; the mockup approximates with Helvetica/Arial). Headings tight
+  (`-0.02em`); labels uppercase, wide-tracked (`.12–.16em`) like drafting annotations.
+- **Numerals & measurements — the hero:** **JetBrains Mono**, `tabular-nums`, on *every*
+  dollar amount, quantity, and dimension. This is the single most identity-defining type rule.
+- Keep body line-length ≈ 65ch; type scale fixed; `text-wrap: balance` on headings.
+
+## 6. Spacing, grid, frame
+
+- **8px base grid** (`4 / 8 / 12 / 16 / 24 / 32 / 48`) — literally the graph-paper module.
+- **Drawing frame:** 1.5px `--line` outer + 1px `--line-2` inner offset (the classic sheet
+  border). Panels are square-cornered (drafting has no rounding) — *radius is intentionally 0*,
+  which is the opposite call from Rev 1 and correct for this identity.
+- Wide content (register table, line-item grid) scrolls inside its own `overflow-x:auto`.
+
+## 7. Signature components (all on Radix primitives)
+
+Building these on the installed `components/ui/*` Radix primitives is also how the redesign
+**retires the open UI/UX audit debt**:
+
+| Component | Spec | Retires |
+|---|---|---|
+| **Title block** | Header + card headers as bordered metadata cells (sheet/rev/scale). | — (new) |
+| **Dimension line** | `rule–value–rule` with tick ends; renders any measurement. | — (new) |
+| **Instrument KPI** | Label + big mono value + delta + mini tick-gauge. | — (new) |
+| **Stamp status** | Outlined uppercase mark; profit = rotated stamp. | status-as-text |
+| **Dialog / AlertDialog** | Radix `Dialog` for all modals; `AlertDialog` for every destructive action, styled as a "revision / confirm" stamp. | ~22 hand-rolled modals; `window.confirm`/`alert` |
+| **Tabs (layers)** | Radix `Tabs` for product lines, styled as drawing layers. | `EstimatorTabs` keyboard nav |
+| **Accordion** | Radix `Accordion` for sections (`aria-expanded`). | accordion semantics |
+| **Inputs** | Mono, right-aligned, `label`+`id`, `inputmode`; focus = `--line` ring. | unnamed grid/color/Vero inputs |
+| **Buttons** | Square, uppercase; rest/hover/focus-visible/disabled/**loading**. | double-submit guards |
+| **Feedback** | Skeletons on load; inline error near field + toast for API; redline for flags. | skeletons; autosave surfacing |
+| **Z-index** | Token scale (`--z-header/sticky/modal/popover/toast`). | ad-hoc z literals |
 
 ## 8. Per-company branding
 
-Each contractor company gets in-app branding, built on the token system (not a fork):
+The identity is built to rebrand per contractor from **one brand color**:
 
-- A **company theme is a generated `data-theme` block** derived from one brand color:
-  `brand → brand-hover / brand-text / on-brand` computed and **validated for contrast**
-  before it can be saved (build `frontend/scripts/validate-themes.py`, referenced by CLAUDE.md
-  but not yet created — this is a prerequisite, like Phase 1 was for the theme picker).
-- **Precedence chain:** `user pick > company theme > supplier default > app default`.
-  Overlaps with theme-picker Phase 3 (supplier-pinned default); design them together.
-- Company logo already lives on the company record and shows on quotes/nav — extend it to the
-  in-app header.
-- Contractors **cannot pick an inaccessible combo** — the validator is the gate (same AAA/AA
-  discipline as the six built-in themes).
+- The **primary accent lives in a single token** (`--line`). A company theme regenerates
+  `--line` (+ its focus/hover derivations) from the company's brand color — the drawing stays
+  a drawing; only the ink color of the lines changes.
+- **Precedence:** `user pick > company theme > supplier default > app default`.
+- **Contrast gate:** company colors are validated (build `frontend/scripts/validate-themes.py`,
+  referenced by CLAUDE.md but not yet created) so no contractor can pick an accent that fails
+  the §9 gates against `--paper` and `--sheet`, light and dark.
+- Company logo (already on the company record) slots into the title block.
 
-## 9. Accessibility gates (unchanged, non-negotiable)
+## 9. Accessibility gates (non-negotiable)
 
-Every theme (built-in or company-generated) and every component must pass:
-- Text contrast ≥ 4.5:1 (headings 3:1); `--brand`-on-`--on-brand` legible in all six themes.
+Every theme (built-in or company) and component must pass:
+- Text contrast ≥ 4.5:1 (headings ≥ 3:1); `--line` and `--mark` legible on `--paper`/`--sheet`
+  in both themes.
 - Visible `focus-visible` ring on all interactive elements.
-- Color never the sole signal (profit/loss also carries sign/label).
-- `prefers-reduced-motion` respected (already global).
-- Responsive with no horizontal scroll at 375 / 768 / 1024 / 1440; tables → horizontal-scroll
-  or card layout on mobile.
+- Color never the sole signal — stamps carry a label, redlines carry text, profit carries sign.
+- `prefers-reduced-motion` honored (the sheet's entrance + hovers disable).
+- No horizontal page scroll at 375 / 768 / 1024 / 1440; dense tables scroll within their panel.
 
 ## 10. Delivery plan
 
-1. **This spec** → Howard sign-off on *evolve-not-replace + orange stays*.
-2. **Before/after mockups** of Dashboard + Estimate Editor (interactive HTML, theme-switchable)
-   — the visual proof before any code.
-3. **Foundation PR:** spacing/radius/elevation tokens, `--pos`/`--neg`/`--data`, z-index
-   tokens, `radius`. No visual regression beyond intended.
-4. **Component PRs (retire audit debt):** Radix Dialog/AlertDialog → Tabs → Accordion →
-   inputs/labels → skeletons/loading states. One family per PR, screen-by-screen.
-5. **Per-company theming:** build `validate-themes.py` gate → company-theme generator →
-   precedence chain → admin UI.
+1. **This spec + mockup** → Howard sign-off on the Blueprint Instrument direction.
+2. **Foundation PR:** the token sets (§4), spacing/frame, `--line`/`--mark`/`--pos`/`--neg`,
+   z-index tokens, mono-numeral rule. Ship the two themes behind the existing theme system.
+3. **Primitive components:** title block, dimension line, stamp, instrument KPI, totals gauge
+   — as reusable components in `components/ui/`.
+4. **Screen conversions (retire audit debt), one per PR:** Dashboard → Estimate Editor →
+   Catalog → Admin → Auth, swapping in Radix Dialog/Tabs/Accordion + labeled inputs + skeletons
+   as each screen is redrawn.
+5. **Per-company theming:** build `validate-themes.py` gate → `--line` generator → precedence
+   chain → admin UI.
 6. **Sweep:** remaining audit low-impact items (skip-to-content, `cn()` adoption, dead-weight
    cleanup, bilingual `aria-label` gaps).
 
 ## 11. Open questions
 
-- Does the AI-feature purple stay a sanctioned accent, or fold into `--data` (blueprint blue)?
-- Radius: 6px everywhere, or keep some surfaces sharp for industrial character?
-- Company theme: single brand color (derive the rest) or a small guided palette per company?
-- Typography: keep Archivo/IBM Plex/JetBrains, or evaluate the "Dashboard Data" (Fira) pairing
-  the generator surfaced? (Lean: keep — the current stack already satisfies the intent.)
+- **Metaphor dial:** full drafting treatment on every screen, or reserve the heaviest devices
+  (graph paper, dimension lines) for the estimate/measure surfaces and keep Dashboard/Admin
+  calmer?
+- **Redline scope:** markup orange for flags/deltas only, or also for primary destructive
+  actions (delete)?
+- **Company accent:** does a company brand color replace blueprint-blue entirely, or tint
+  toward it so every tenant still reads as "a blueprint"? (Lean: constrain toward blueprint so
+  the identity survives rebrand.)
+- **Type budget:** license a distinctive grotesque, or ship with a high-quality system stack +
+  JetBrains Mono to start?
 
 ## 12. Next step
 
-Build the **interactive before/after mockup** of Dashboard + Estimate Editor (theme-switchable
-HTML artifact) so Howard can see the evolved system on real screens before committing to the
-foundation PR.
+On sign-off, begin the **Foundation PR** (§10.2): land the two token themes and the
+mono-numeral + frame primitives, with no behavior change — the substrate every screen
+conversion builds on.
