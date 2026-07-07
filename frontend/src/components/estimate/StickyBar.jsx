@@ -38,7 +38,7 @@ export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }
   return (
     <div className="sell-bar" data-testid="sticky-bar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center gap-3 sm:gap-6">
-        <Link to={backTo} className="text-white/70 hover:text-white" aria-label="Back" data-testid="estimate-back-btn">
+        <Link to={backTo} className="text-white/70 hover:text-white p-1.5 -m-1.5" aria-label={t("common.back")} data-testid="estimate-back-btn">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1 min-w-[180px]">

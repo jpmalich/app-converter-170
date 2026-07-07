@@ -170,6 +170,7 @@ export default function SettingsRow({ est, update }) {
             className="input num w-24"
             type="number"
             step="0.01"
+            aria-label={t("est.taxRate.aria")}
             disabled={!est.tax_enabled}
             value={est.tax_rate || 0}
             onChange={(e) => update({ tax_rate: Number(e.target.value) || 0 })}
@@ -218,6 +219,7 @@ export default function SettingsRow({ est, update }) {
             step="1"
             min="0"
             max={isMargin ? 99 : undefined}
+            aria-label={t("est.profitPct.aria")}
             value={est.margin_pct || 0}
             onChange={(e) => update({ margin_pct: Number(e.target.value) || 0 })}
             data-testid="margin-pct"
@@ -234,6 +236,8 @@ export default function SettingsRow({ est, update }) {
           value={est.margin_pct || 0}
           onChange={(e) => update({ margin_pct: Number(e.target.value) || 0 })}
           className="w-full accent-[var(--brand)]"
+          aria-label={t("est.profitPct.aria")}
+          aria-valuetext={`${est.margin_pct || 0}%`}
           data-testid="margin-slider"
         />
         <div className="mt-2 text-[11px] text-[var(--muted)] font-mono-num">

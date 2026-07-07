@@ -185,7 +185,10 @@
 [data-design="blueprint"] .bp-stamp { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; padding: 3px 9px; border: 1.5px solid currentColor; }
 [data-design="blueprint"] .bp-stamp--won { color: var(--bp-pos); }
 [data-design="blueprint"] .bp-stamp--sent { color: var(--bp-line); }
-[data-design="blueprint"] .bp-stamp--draft { color: var(--bp-muted); }
+/* --bp-ink-2 (not --bp-muted): the draft label is 10px, and muted (#8493A8)
+   is only ~3.1:1 on the sheet — below WCAG AA. ink-2 clears 4.5:1 while still
+   reading as the quietest of the three stamps. */
+[data-design="blueprint"] .bp-stamp--draft { color: var(--bp-ink-2); }
 
 /* Buttons */
 [data-design="blueprint"] .bp-btn {

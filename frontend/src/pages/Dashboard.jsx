@@ -222,6 +222,8 @@ export default function Dashboard({ kind = "siding" }) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
         <input
           className="input !pl-10"
+          type="search"
+          aria-label={t("dash.search")}
           placeholder={t("dash.search")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -341,7 +343,20 @@ export default function Dashboard({ kind = "siding" }) {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-[var(--ink-2)]">{t("common.loading")}</div>
+          <div aria-busy="true" aria-label={t("common.loading")}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-12 gap-4 px-5 py-4 border-t border-[var(--border)] items-center"
+              >
+                <div className="col-span-2 h-4 bg-[var(--surface-muted)] animate-pulse" />
+                <div className="col-span-3 h-4 bg-[var(--surface-muted)] animate-pulse" />
+                <div className="col-span-2 h-4 bg-[var(--surface-muted)] animate-pulse" />
+                <div className="col-span-4 h-4 bg-[var(--surface-muted)] animate-pulse justify-self-end w-24" />
+                <div className="col-span-1 h-4 bg-[var(--surface-muted)] animate-pulse justify-self-end w-8" />
+              </div>
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center" data-testid="empty-state">
             <FileText className="w-12 h-12 mx-auto text-[var(--muted)] mb-3" />

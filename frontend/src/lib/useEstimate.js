@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import api, { formatApiError } from "@/lib/api";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 
 // ---------------------------------------------------------------------------
 // Tab model
@@ -45,6 +46,8 @@ function lineKey(tab, section, name) {
 }
 
 export default function useEstimate(id) {
+  // `tr` (not `t`) — a local `t` is reused as a setTimeout handle further down.
+  const tr = useT();
   const [est, setEst] = useState(null);
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -472,7 +475,7 @@ export default function useEstimate(id) {
     try {
       const { data } = await api.put(`/estimates/${id}`, buildPayload(source));
       savedUpToRef.current = editsAtSave;
-      toast.success("Saved");
+      toast.success(tr("common.saved"));
       return data;
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail));
