@@ -2529,6 +2529,119 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   </div>
                 );
               })()}
+              {/* Iter 79j.62 — Marker Coverage Tile. Read-only 4-cell
+                  grid (front / right / back / left) that lights green
+                  when the elevation has ≥1 `_scale_refs` entry, red
+                  when it doesn't, and amber when a dormer pin sits on
+                  a ref-less elevation (that's the specific accuracy
+                  risk the 79j.61 plumbing quantifies). Same data
+                  source as the contextual nudge — `photoAnnotations`
+                  — no new state or network. Persistent so contractors
+                  see the accuracy contract at every stage (upload,
+                  running, results). */}
+              {photoUrls.length > 0 && (() => {
+                const cardinals = ["front", "right", "back", "left"];
+                const perPhotoElevations = {};   // photoIdx → Set<elev>
+                const perPhotoDormerElevations = {};   // photoIdx → Set<elev with dormer callout>
+                for (const [key, boxes] of Object.entries(photoAnnotations || {})) {
+                  if (key.startsWith("_")) continue;
+                  if (!Array.isArray(boxes)) continue;
+                  const s = new Set();
+                  const ds = new Set();
+                  boxes.forEach((b) => {
+                    const e = (b?.elevation_label || "").toLowerCase();
+                    if (e) s.add(e);
+                    if (e && (b?.callout || "").toLowerCase() === "dormer") ds.add(e);
+                  });
+                  perPhotoElevations[key] = s;
+                  perPhotoDormerElevations[key] = ds;
+                }
+                const scaleRefsMap = photoAnnotations?._scale_refs || {};
+                const cellFor = (elev) => {
+                  let hasRef = false;
+                  let hasPin = false;
+                  let hasDormerPin = false;
+                  for (const [key, elevs] of Object.entries(perPhotoElevations)) {
+                    if (!elevs.has(elev)) continue;
+                    hasPin = true;
+                    if (scaleRefsMap[key]) hasRef = true;
+                    if ((perPhotoDormerElevations[key] || new Set()).has(elev)) hasDormerPin = true;
+                  }
+                  // Also count a scale ref as coverage even if no pin
+                  // has elevation_label yet — contractors sometimes
+                  // draw the marker before tagging elevation.
+                  if (!hasPin && scaleRefsMap) {
+                    for (const [key] of Object.entries(scaleRefsMap)) {
+                      const elevs = perPhotoElevations[key];
+                      if (elevs && elevs.has(elev)) { hasRef = true; break; }
+                    }
+                  }
+                  if (hasRef && hasDormerPin) return { state: "green_dormer", label: "Ref + dormer covered" };
+                  if (hasRef) return { state: "green", label: "Marker set" };
+                  if (hasDormerPin) return { state: "amber", label: "Dormer pinned, NO marker" };
+                  if (hasPin) return { state: "red", label: "Pinned, no marker" };
+                  return { state: "grey", label: "No coverage yet" };
+                };
+                const cells = cardinals.map((c) => ({ elev: c, ...cellFor(c) }));
+                const anyAmber = cells.some((c) => c.state === "amber");
+                const anyRedOrGrey = cells.some((c) => c.state === "red" || c.state === "grey");
+                return (
+                  <div
+                    className="mb-4 border border-[var(--border)] bg-[var(--surface-muted)]"
+                    data-testid="ai-measure-marker-coverage"
+                  >
+                    <div className="px-3 py-1.5 border-b border-[var(--border)] flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                        Reference marker coverage
+                      </span>
+                      <span
+                        className="text-[10px] text-[var(--muted)]"
+                        data-testid="ai-measure-marker-coverage-summary"
+                      >
+                        {anyAmber
+                          ? "Dormer pinned without a marker — widths will drift 25–90%"
+                          : anyRedOrGrey
+                          ? "Some elevations missing markers — accuracy risk on those"
+                          : "All 4 elevations anchored · tape-grade"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-1.5 p-2">
+                      {cells.map((c) => {
+                        let cls;
+                        let dotCls;
+                        if (c.state === "green" || c.state === "green_dormer") {
+                          cls = "border-[var(--success)] bg-[var(--success)]/10 text-[#065F46]";
+                          dotCls = "bg-[var(--success)]";
+                        } else if (c.state === "amber") {
+                          cls = "border-[#F59E0B] bg-[#FEF3C7] text-[#78350F]";
+                          dotCls = "bg-[#B45309]";
+                        } else if (c.state === "red") {
+                          cls = "border-[var(--danger)] bg-[var(--danger)]/10 text-[#7F1D1D]";
+                          dotCls = "bg-[var(--danger)]";
+                        } else {
+                          cls = "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]";
+                          dotCls = "bg-[var(--border)]";
+                        }
+                        return (
+                          <div
+                            key={c.elev}
+                            className={`border ${cls} p-1.5 flex flex-col items-start gap-0.5`}
+                            data-testid={`ai-measure-marker-coverage-cell-${c.elev}`}
+                            data-state={c.state}
+                            title={`${c.elev.toUpperCase()} — ${c.label}`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${dotCls}`} aria-hidden />
+                              <span className="text-[10px] font-bold uppercase tracking-wider">{c.elev}</span>
+                            </div>
+                            <div className="text-[9px] leading-tight">{c.label}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
               {/* Iter 57r — Resume last AI run banner */}
               {lastRun && (lastRun.status === "running" || (lastRun.status === "done" && lastRun.result) || lastRun.status === "error") && (
                 <div

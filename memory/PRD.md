@@ -1806,3 +1806,39 @@ Quantified. Contextual. Fires at the exact moment the accuracy risk exists — n
 ### Follow-ups still open (Howard sign-off / next session)
 - **Clean re-fire of the confirmation run** — same 8 photos, direct-A + direct-B with scale-refs plumbing + 32k max_tokens. Should produce dormer widths within ±1-2% of Howard's taped 15/15 ft ground truth. Ready to fire via UI (or `curl` on `/api/measure/ai-measure` with the same `photo_paths`).
 - **Wave HUD live-test** during the re-fire — HUD is coded, verified in isolation, but not yet e2e-observed during a live 8-photo Phase A.
+
+## Iter 79j.62 — Reference Marker Coverage Tile (2026-07-07 evening)
+
+**Status**: SHIPPED · smoke-tested via screenshot · grey/red/amber/green states all render.
+
+### The accuracy contract is now visible at every stage
+Read-only 4-cell grid (front / right / back / left) rendered in the AI Measure modal body between the Wave HUD and the upload area. Same data source as the contextual accuracy nudge (`photoAnnotations`) — no new state, no new network. Cells transition through:
+
+- **Grey** — no pins on this elevation yet. Neutral state during upload.
+- **Red** — pins exist but no `_scale_refs` covers any photo of this elevation. Coverage but no anchor.
+- **Amber** — dormer pin exists on this elevation AND no `_scale_refs`. This is the specific accuracy hazard the 79j.61 plumbing quantifies (dormer widths drift 25-90% unanchored).
+- **Green** — at least one `_scale_refs` entry on a photo tagged to this elevation. Tape-grade coverage.
+- **Green + dormer emblem** — anchored AND a dormer pin present. The gold-standard case.
+
+Summary line at the top of the tile:
+- Any amber → *"Dormer pinned without a marker — widths will drift 25-90%"*
+- Any red/grey → *"Some elevations missing markers — accuracy risk on those"*
+- All green → *"All 4 elevations anchored · tape-grade"*
+
+### Data flow (no new pipes)
+- Iterates `photoAnnotations` boxes per photo, collects `elevation_label` + `callout` sets.
+- Cross-references `photoAnnotations._scale_refs` keyed by photo idx.
+- Also credits a scale ref as coverage even when no pin tags the elevation yet — contractors often draw markers before tagging (per Howard SOP).
+
+### Test IDs
+- `ai-measure-marker-coverage` (container)
+- `ai-measure-marker-coverage-summary` (top-right status text)
+- `ai-measure-marker-coverage-cell-{front|right|back|left}` (each cell)
+- `data-state` attribute on each cell for QA drive: `green` / `green_dormer` / `amber` / `red` / `grey`
+
+### Rendered together, the accuracy stack is now:
+1. **Marker Coverage Tile** (before running) — green/red/amber grid, visible before Run
+2. **Contextual Accuracy Nudge** (on upload without markers) — quantified 25-90% warning, checklist
+3. **Wave HUD** (during Phase A) — per-photo dots + contractor-plain status
+4. **Amber gap banner + Rule 4 flag** (after running) — per-hint re-shoot copy for unanchored dormer widths + missing elevations + dormer pins on empty photos
+
