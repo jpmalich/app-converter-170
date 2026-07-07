@@ -1656,3 +1656,57 @@ Diff SHIPPED (env-gated, safe by default). Diagnostic path forward for the uvico
 - **Debug button gate** — `showAdvanced && preview` uses a `useState` initializer that only reads localStorage once at component mount. If a user toggles Advanced in a different tab, the current tab won't see the change. Consider re-reading on modal open or exposing Debug as a first-class affordance.
 - **Iter 54a fixture testing** — the diff-panel amber-highlighting code path can't be exercised against Red-House (only 1 run). Either (a) capture a JSON fixture pair after a future 2-run session, or (b) build a Storybook story.
 
+
+## Iter 79j.59 — Direct Phase A, per-wave scheduling, split flags, pin-gap-signal (2026-07-07)
+**Status**: SHIPPED · 18/18 pytest PASS (`backend/tests/test_pin_gap_and_key_routing.py`) · frontend banner regression-clean via screenshot.
+
+### This morning's run — the justification (support datapoint #6)
+- Phase B via `anthropic_direct` **succeeded in 142s** — first live confirmation the 79j.57b stall fix survives a real Anthropic round-trip.
+- Phase A on the proxy **killed 5 of 8 photos at the 300s total cap** — proxy crawling; the right elevation never extracted; the right dormer was correctly NOT emitted (no confabulation). **Log this as datapoint #6: "142s success on REDUCED PAYLOAD (5/8 empty), full-payload confirmation pending."** The stall fix isn't proven until a direct Phase B survives a full 8-photo reconciliation.
+- Trace quote for the no-confabulation moment (Howard to paste; keeping placeholder so we don't lose the thread): **`[EXEMPLARY-TRACE-PASTE-HERE]`**.
+
+### 1) Split per-phase direct flags with legacy auto-migration
+- Old: single `ANTHROPIC_DIRECT_ROUTE=phase_b_only`.
+- New: **orthogonal flags** `ANTHROPIC_DIRECT_A=1` and `ANTHROPIC_DIRECT_B=1`. `_pick_llm_api_key(provider, phase=)` returns direct only when the matching flag is set AND `ANTHROPIC_API_KEY` is on file AND `provider=="anthropic"`.
+- **Auto-migration**: when neither new flag is set but `ANTHROPIC_DIRECT_ROUTE=phase_b_only` is on file (Howard's current pod), Phase B is routed direct with no manual .env edit required.
+- Startup log now reads: `[flags: A=unset, B=1, legacy=phase_b_only, key=present]` — grep-friendly.
+
+### 2) Direct Phase A vision path + per-photo proxy fallback
+- New `_extract_one_photo_direct(...)` uses `AsyncAnthropic` (SDK path already used by Phase B) with:
+  - `max_retries=0` + explicit `httpx.Timeout` + outer `asyncio.wait_for(per_call_timeout)`.
+  - **429 backoff with jitter**, capped at `AI_MEASURE_PHASE_A_DIRECT_MAX_RETRIES=2` per photo. Honors `Retry-After` header when present.
+  - Same **Iter 79j.50 shrink** (max 1600px, JPEG q=80) applies via the shared upstream shrink loop — the direct path benefits identically. NOT proxy-only.
+- `_extract_one_photo(...)` is now a router: picks direct vs proxy per photo. Non-recoverable direct errors (`timeout` / `api_error` / `exception` / exhausted `rate_limit`) **fall back to proxy for that photo only** — the proxy stays as a safety net.
+- Concurrency: hidden env `AI_MEASURE_PHASE_A_DIRECT_CONCURRENCY` (default 2, matches proxy pattern). Start at 2, bump in production once real 429 patterns are observed against the tier (50 rpm / 40k tpm).
+
+### 3) Wave-based Phase A dispatcher (removes the 300s cap footgun)
+- Old: global 300s total cap over a semaphore-throttled batch → one hung LiteLLM wave silently ate the remaining photos' budget (this morning's incident).
+- New: **per-wave budgets**. Photos are split into waves of `concurrency`, each wave gets its own `per_wave_budget = per_photo_budget + 10s`. A stuck wave times out ONLY the two photos in it, not the queue behind. `AI_MEASURE_PHASE_A_TIMEOUT` is now a no-op (logged for legacy operators).
+- **Per-wave progress** published live to the run doc as `phase_a_progress: {wave, waves_total, done, failed, total, last_wave_elapsed_s, last_wave_photo_indices, last_wave_failed_photo_indices, transport, concurrency}` and surfaced through `GET /ai-measure/status/{run_id}`. Frontend can render "wave 2/4 · 3 ok · 1 timed out" between waves instead of waiting for the whole batch.
+- Cancellation drain capped at 5s per wave — same defensive pattern that fixed the 1153s Phase-A hang in 79j.44.
+
+### 4) Contractor-pin gap-signal in the UI
+- New `_derive_pin_gap_hints(annotations, walls, dormers, orphaned_walls, empty_photos)` runs after Phase B. Three rules, deduplicated by `(kind, elevation)`, sorted for stable polling order:
+  1. **Orphaned elevation with pin** — pin on `right`, right elevation not in walls[]: *"Your pins on the right elevation indicate coverage there, but no photo extracted that wall. Re-shoot the right side before quoting."*
+  2. **Missing dormer from pin** — pin `callout=dormer` on right, no dormer emitted for right: *"Your pins indicate a possible dormer on the right slope — reconciliation did not emit one there. Re-shoot the right elevation squarely..."* (Howard's exact copy).
+  3. **Empty photo with pin** — pin on photo #4, photo #4 timed out: *"Your pin on photo #5 tagged the left elevation, but that photo's extraction failed."*
+- Surfaced as `raw_ai._pin_gap_hints[]` → `measurements._ai_pin_gap_hints[]` → rendered in the existing `ai-measure-empty-photos-banner` under a new "Your pins suggest coverage the AI didn't confirm" sub-section (data-testid `ai-measure-pin-gap-hints`, per-hint testids `ai-measure-pin-gap-hint-<kind>-<elevation>`). Each hint carries a `re_shoot_elevation` string — **no bare warnings, per Howard**.
+
+### Files touched
+- `backend/routes/ai_measure.py`:
+  - `_pick_llm_api_key(...)` — split flags + auto-migration
+  - Startup log rewrite with `[flags: A=..., B=..., legacy=..., key=...]`
+  - `_extract_one_photo_direct(...)` NEW
+  - `_extract_one_photo(...)` refactored as transport router with per-photo proxy fallback
+  - `_run_two_phase_pipeline(...)` — new `annotations` kwarg; wave-based dispatcher replacing the semaphore + global-cap loop; `_publish_progress` helper writing to `phase_a_progress`
+  - `_derive_pin_gap_hints(...)` NEW
+  - `_aggregate_to_hover_shape` — new `_ai_pin_gap_hints` field
+  - `ai_measure_status` — surfaces `phase_a_progress`
+- `backend/tests/test_pin_gap_and_key_routing.py` NEW (18 tests: 9 routing + 8 pin-gap + 1 shared)
+- `frontend/src/components/estimate/AIMeasureButton.jsx` — gap banner surfaces `_ai_pin_gap_hints[]` with actionable per-hint copy
+
+### Follow-ups
+- **Full-payload direct Phase B confirmation still pending** — requires an 8-photo Red-House re-run where Phase A completes cleanly.
+- **Iter 54a fixture testing** — still blocked on getting two graduated runs; the direct-Phase-A path should make this cheap to acquire.
+- **Frontend per-wave progress rendering** — backend now publishes `phase_a_progress` per wave; frontend still shows a single "Extracting per photo" state. Wire a "wave 2/4 · 3 ok · 1 timed out" line into the status pill next.
+

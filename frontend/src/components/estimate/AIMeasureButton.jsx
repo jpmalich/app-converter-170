@@ -2910,7 +2910,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       which walls now have no direct-view coverage.
                       A dead photo must NEVER fail silently. */}
                   {(preview?.measurements?._ai_empty_photos?.length > 0
-                    || preview?.measurements?._ai_orphaned_walls?.length > 0) && (
+                    || preview?.measurements?._ai_orphaned_walls?.length > 0
+                    || preview?.measurements?._ai_pin_gap_hints?.length > 0) && (
                     <div
                       className="mb-3 p-3 bg-[#FEF3C7] border border-[#F59E0B] text-[#78350F] text-[11px] flex items-start gap-2"
                       data-testid="ai-measure-empty-photos-banner"
@@ -2939,6 +2940,36 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             {preview.measurements._ai_orphaned_walls.join(", ")}.
                             Their dimensions are extrapolated — capture a
                             direct side shot of each and Re-Run before quoting.
+                          </div>
+                        )}
+                        {/* Iter 79j.59 — Contractor-pin gap-signal.
+                            When user pins tag a feature on an elevation
+                            the reconciled output couldn't cover, we
+                            promote that mismatch from the trace into
+                            the banner. Each hint carries an actionable
+                            re-shoot elevation — no bare warnings. */}
+                        {preview?.measurements?._ai_pin_gap_hints?.length > 0 && (
+                          <div className="mb-1" data-testid="ai-measure-pin-gap-hints">
+                            <b>Your pins suggest coverage the AI didn&apos;t confirm:</b>
+                            <ul className="list-disc list-inside mt-0.5 ml-1">
+                              {preview.measurements._ai_pin_gap_hints.map((h, i) => (
+                                <li
+                                  key={`${h.kind}-${h.elevation}-${i}`}
+                                  data-testid={`ai-measure-pin-gap-hint-${h.kind}-${h.elevation}`}
+                                >
+                                  {h.message}
+                                  {Array.isArray(h.source_photo_idxs) && h.source_photo_idxs.length > 0 && (
+                                    <span className="text-[10px] text-[var(--muted)] ml-1">
+                                      (pin
+                                      {h.source_photo_idxs.length === 1 ? " on " : "s on "}
+                                      photo{h.source_photo_idxs.length === 1 ? "" : "s"}
+                                      {" "}
+                                      {h.source_photo_idxs.map((n) => `#${n + 1}`).join(", ")})
+                                    </span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         )}
                         <div className="text-[var(--warning-text)]">

@@ -103,67 +103,88 @@ def _resolve_model(choice: str | None) -> tuple[str, str, str]:
 def _pick_llm_api_key(provider: str, *, phase: str | None = None) -> tuple[str | None, str]:
     """Iter 79j.44 — DIRECT-KEY ROUTING DISABLED BY DEFAULT.
     Iter 79j.56 — Scoped Phase B bypass added.
+    Iter 79j.59 — Split into orthogonal per-phase flags with backward-
+    compat auto-migration from the legacy single `ANTHROPIC_DIRECT_ROUTE`
+    value.
 
-    Every provider still uses the Emergent Universal Key via the LiteLLM
-    proxy for Phase A vision + all non-anthropic calls. The direct-
-    Anthropic path is opt-in via `ANTHROPIC_DIRECT_ROUTE=phase_b_only`:
-    when the flag is set, the caller must pass `phase="B"` to route the
-    reconciliation call directly through `api.anthropic.com` using
-    `ANTHROPIC_API_KEY`. Phase A (`phase="A"`) and non-anthropic
-    providers stay on the proxy regardless of the flag.
+    Anthropic-only bypass. Every non-anthropic provider stays on the
+    Emergent Universal Key via LiteLLM proxy regardless. For anthropic,
+    the caller passes `phase="A"` (vision extraction) or `phase="B"`
+    (reconciliation) and this function returns the direct
+    `ANTHROPIC_API_KEY` when the matching per-phase flag is set:
+        - `ANTHROPIC_DIRECT_A=1` → route Phase A vision calls direct
+        - `ANTHROPIC_DIRECT_B=1` → route Phase B reconciliation direct
+
+    Legacy auto-migration: when neither new flag is set but
+    `ANTHROPIC_DIRECT_ROUTE=phase_b_only` is on file (as on the pod
+    that landed the 79j.56 fix), Phase B is routed direct. This keeps
+    existing deployments working without a manual .env edit.
 
     Rationale (see `memory/prompts.md` support datapoints #1-#4): the
     Emergent proxy exhibits four documented failure modes on the same
     `claude-fable-5` route — hangs, instant 502s, 900s+ payload
     stalls, and 15-min hang → 502 on marginally larger Phase B
-    payloads. The direct API has documented rate limits and
-    cancellation semantics we can code against. This function is the
-    only place that decides which key to hand back; upstream call
-    sites drive the phase via keyword arg.
+    payloads. Iter 79j.58 added a fifth: Phase A 300s total-cap kill
+    of 5/8 photos on a proxy-crawling morning. The direct API has
+    documented rate limits and cancellation semantics we can code
+    against. This function is the only place that decides which key
+    to hand back; upstream call sites drive the phase via keyword arg.
 
     Returns (api_key, source). `source` values:
         - `"anthropic_direct"` — direct api.anthropic.com routing (only
-          when flag is on AND phase="B" AND provider="anthropic" AND
-          ANTHROPIC_API_KEY is set)
+          when the matching per-phase flag is set AND provider="anthropic"
+          AND ANTHROPIC_API_KEY is present)
         - `"emergent_proxy"` — everything else
     """
     if provider == "anthropic":
-        flag = (os.environ.get("ANTHROPIC_DIRECT_ROUTE") or "").strip().lower()
         direct_key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
-        if flag == "phase_b_only" and phase == "B" and direct_key:
+        flag_a = (os.environ.get("ANTHROPIC_DIRECT_A") or "").strip().lower()
+        flag_b = (os.environ.get("ANTHROPIC_DIRECT_B") or "").strip().lower()
+        legacy = (os.environ.get("ANTHROPIC_DIRECT_ROUTE") or "").strip().lower()
+        truthy = {"1", "true", "yes", "on"}
+        # Auto-migrate legacy `ANTHROPIC_DIRECT_ROUTE=phase_b_only` when
+        # neither new flag is set (empty string counts as unset).
+        if not flag_a and not flag_b and legacy == "phase_b_only":
+            flag_b = "1"
+        want_a = phase == "A" and flag_a in truthy
+        want_b = phase == "B" and flag_b in truthy
+        if (want_a or want_b) and direct_key:
             return direct_key, "anthropic_direct"
         # A direct key is on file but the flag / phase disqualify this
         # call. Log once per boot at INFO so operators can tell why the
         # bypass didn't fire without decoding the env by hand.
-        if direct_key and phase == "B" and flag != "phase_b_only":
+        if direct_key and phase in ("A", "B") and not (want_a or want_b):
             logger.info(
-                "[AI_MEASURE key-routing] ANTHROPIC_API_KEY present but "
-                "ANTHROPIC_DIRECT_ROUTE=%r — Phase B stays on proxy.",
-                flag or "(unset)",
+                "[AI_MEASURE key-routing] ANTHROPIC_API_KEY present but phase %s "
+                "not enabled (ANTHROPIC_DIRECT_A=%r, ANTHROPIC_DIRECT_B=%r, legacy=%r) "
+                "— staying on proxy.",
+                phase, flag_a or "(unset)", flag_b or "(unset)", legacy or "(unset)",
             )
     return (os.environ.get("EMERGENT_LLM_KEY") or None), "emergent_proxy"
 
 
 # Startup log — operators can grep `AI_MEASURE key-routing` to confirm
 # which key each provider will use without decoding the .env by hand.
-# Iter 79j.56 — Summary now reflects the opt-in Phase B bypass.
+# Iter 79j.59 — Summary now reflects the split per-phase bypass flags
+# with auto-migration from the legacy single flag.
 _direct_key_present = bool((os.environ.get("ANTHROPIC_API_KEY") or "").strip())
-_direct_route_flag = (os.environ.get("ANTHROPIC_DIRECT_ROUTE") or "").strip().lower()
-if _direct_key_present and _direct_route_flag == "phase_b_only":
-    _LLM_ROUTING_SUMMARY = (
-        "anthropic Phase B=ANTHROPIC_API_KEY (direct api.anthropic.com), "
-        "anthropic Phase A=EMERGENT_LLM_KEY (proxy), "
-        "gemini/openai=EMERGENT_LLM_KEY (proxy)"
-    )
-else:
-    _LLM_ROUTING_SUMMARY = (
-        "anthropic=EMERGENT_LLM_KEY (proxy) "
-        "[direct route flag=%r, key=%s]" % (
-            _direct_route_flag or "unset",
-            "present" if _direct_key_present else "absent",
-        )
-        + ", gemini/openai=EMERGENT_LLM_KEY (proxy)"
-    )
+_flag_a = (os.environ.get("ANTHROPIC_DIRECT_A") or "").strip().lower()
+_flag_b = (os.environ.get("ANTHROPIC_DIRECT_B") or "").strip().lower()
+_legacy = (os.environ.get("ANTHROPIC_DIRECT_ROUTE") or "").strip().lower()
+_truthy = {"1", "true", "yes", "on"}
+if not _flag_a and not _flag_b and _legacy == "phase_b_only":
+    _flag_b = "1"    # for the boot log; matches _pick_llm_api_key semantics
+_direct_a_on = _direct_key_present and _flag_a in _truthy
+_direct_b_on = _direct_key_present and _flag_b in _truthy
+_phase_a_route = "ANTHROPIC_API_KEY (direct)" if _direct_a_on else "EMERGENT_LLM_KEY (proxy)"
+_phase_b_route = "ANTHROPIC_API_KEY (direct)" if _direct_b_on else "EMERGENT_LLM_KEY (proxy)"
+_LLM_ROUTING_SUMMARY = (
+    f"anthropic Phase A={_phase_a_route}, "
+    f"anthropic Phase B={_phase_b_route}, "
+    f"gemini/openai=EMERGENT_LLM_KEY (proxy) "
+    f"[flags: A={_flag_a or 'unset'}, B={_flag_b or 'unset'}, "
+    f"legacy={_legacy or 'unset'}, key={'present' if _direct_key_present else 'absent'}]"
+)
 logger.info("[AI_MEASURE key-routing] %s", _LLM_ROUTING_SUMMARY)
 
 
@@ -1425,6 +1446,115 @@ def _build_annotation_hint(annotations: dict | None) -> str:
     return hint
 
 
+def _derive_pin_gap_hints(
+    *,
+    annotations: dict | None,
+    walls: list,
+    dormers: list,
+    orphaned_walls: list[str],
+    empty_photos: list[dict],
+) -> list[dict]:
+    """Iter 79j.59 — Contractor-pin gap-signal.
+
+    When contractor pins tag a feature (via `elevation_label` and
+    `callout`) on an elevation the reconciled output couldn't cover,
+    return a hint list the frontend surfaces in the gap banner. This
+    is DIFFERENT from `_orphaned_walls` (which says "no photo covered
+    this wall") because a pin represents CONTRACTOR ground truth that
+    the photos DIDN'T back up — meaning the contractor knew about the
+    feature but the AI didn't get a clean read.
+
+    Rules (kept intentionally simple — the goal is actionable text,
+    not a full ontology):
+        1. Pin on elevation ∈ orphaned_walls → "photo of {elev}
+           didn't extract; re-shoot before quoting"
+        2. Pin with callout="dormer" on any elevation, where the
+           reconciled dormers[] has NO entry facing that elevation →
+           "your pins indicate a possible dormer on {face}; re-shoot"
+        3. Pin with callout="gable" on an orphaned or dormer-less
+           elevation → "gable feature pinned but no gable-triangle
+           extracted; verify"
+    Deduplicates by (kind, elevation) so a burst of 6 pins on the
+    right elevation only produces ONE right-elevation hint.
+    """
+    hints: dict[tuple[str, str], dict] = {}
+    if not isinstance(annotations, dict) or not annotations:
+        return []
+    orph = {(w or "").strip().lower() for w in (orphaned_walls or [])}
+    dormer_faces = {(d.get("face") or "").strip().lower() for d in (dormers or []) if isinstance(d, dict)}
+    # Which cardinal elevations have at least one wall extraction?
+    wall_labels = {(w.get("label") or "").strip().lower() for w in walls if isinstance(w, dict)}
+    empty_photo_idxs = {int(ep.get("photo_idx", -1)) for ep in (empty_photos or [])}
+    # An elevation is "unmeasured" if it's orphaned OR every photo
+    # tagged to that elevation ended up empty. The second case catches
+    # the specific failure mode from this morning: 5/8 photos killed
+    # → right elevation had one pin-tagged photo, and it was empty.
+    for key, boxes in annotations.items():
+        if not isinstance(boxes, list) or key.startswith("_"):
+            continue
+        try:
+            photo_idx = int(key)
+        except (TypeError, ValueError):
+            photo_idx = -1
+        for b in boxes:
+            if not isinstance(b, dict):
+                continue
+            elev = (b.get("elevation_label") or "").strip().lower()
+            callout = (b.get("callout") or "").strip().lower()
+            if not elev or elev in ("other", "unknown", ""):
+                continue
+            # Rule 1: orphaned elevation → hint
+            if elev in orph or (elev not in wall_labels and elev in {"front", "back", "left", "right"}):
+                k = ("orphaned_elevation_with_pin", elev)
+                hints.setdefault(k, {
+                    "kind": "orphaned_elevation_with_pin",
+                    "elevation": elev,
+                    "re_shoot_elevation": elev,
+                    "message": (
+                        f"Your pins on the {elev} elevation indicate coverage there, "
+                        f"but no photo extracted that wall. Re-shoot the {elev} side "
+                        f"before quoting."
+                    ),
+                    "source_photo_idxs": [],
+                })
+                if photo_idx >= 0 and photo_idx not in hints[k]["source_photo_idxs"]:
+                    hints[k]["source_photo_idxs"].append(photo_idx)
+            # Rule 2: dormer pin on missing dormer face
+            if callout == "dormer":
+                if elev not in dormer_faces and elev not in {"other", "unknown", ""}:
+                    k = ("missing_dormer_from_pin", elev)
+                    hints.setdefault(k, {
+                        "kind": "missing_dormer_from_pin",
+                        "elevation": elev,
+                        "re_shoot_elevation": elev,
+                        "message": (
+                            f"Your pins indicate a possible dormer on the {elev} slope — "
+                            f"reconciliation did not emit one there. Re-shoot the {elev} "
+                            f"elevation squarely so the AI can read the dormer face."
+                        ),
+                        "source_photo_idxs": [],
+                    })
+                    if photo_idx >= 0 and photo_idx not in hints[k]["source_photo_idxs"]:
+                        hints[k]["source_photo_idxs"].append(photo_idx)
+            # Rule 3: source photo was empty AND we haven't already
+            # made a Rule 1 hint for this elevation
+            if photo_idx in empty_photo_idxs and elev in {"front", "back", "left", "right"}:
+                k = ("empty_photo_with_pin", elev)
+                hints.setdefault(k, {
+                    "kind": "empty_photo_with_pin",
+                    "elevation": elev,
+                    "re_shoot_elevation": elev,
+                    "message": (
+                        f"Your pin on photo #{photo_idx + 1} tagged the {elev} elevation, "
+                        f"but that photo's extraction failed. Re-shoot before quoting."
+                    ),
+                    "source_photo_idxs": [photo_idx],
+                })
+    # Stable order: alphabetical by (kind, elevation) so the UI list
+    # doesn't shuffle between polls.
+    return [v for _, v in sorted(hints.items())]
+
+
 # =====================================================================
 # Iter 79j.44 — REMOVED: Deep-Dormer-Scan subsystem
 # =====================================================================
@@ -1632,6 +1762,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # wall(s) it orphans. Empty lists = healthy run.
         "_ai_empty_photos": raw.get("_empty_photos") or [],
         "_ai_orphaned_walls": raw.get("_orphaned_walls") or [],
+        # Iter 79j.59 — Contractor-pin gap hints. Present when the
+        # contractor drew pins on a photo tagged to an elevation
+        # whose reconciled output couldn't cover it. Frontend renders
+        # under the gap banner as actionable "re-shoot X" prompts.
+        "_ai_pin_gap_hints": raw.get("_pin_gap_hints") or [],
     }
     # Iter 79j.26 — Roof type classification. Cascade: valid Claude
     # value → surface; else null. Confidence threshold enforced on the
@@ -2326,6 +2461,11 @@ async def ai_measure_status(
         "raw_per_photo": doc.get("raw_per_photo") or None,
         "pipeline": ((doc.get("result") or {}).get("raw_ai") or {}).get("_pipeline")
                     or ("two_phase" if doc.get("raw_per_photo") else "single_call"),
+        # Iter 79j.59 — Per-wave Phase A progress. Updated live as each
+        # concurrency-sized wave completes so the UI can show
+        # "Extracting photos wave 2/4 · 3 done · 1 timed out" instead
+        # of a silent 5-min bar. Absent for single-call runs.
+        "phase_a_progress": doc.get("phase_a_progress") or None,
     }
 
 
@@ -3350,29 +3490,18 @@ def _is_empty_extraction(parsed: dict) -> bool:
     return not (has_walls or has_openings or has_eave or has_pitch or has_gable or has_dormers)
 
 
-async def _extract_one_photo(
+def _build_phase_a_prompt(
     *,
-    api_key: str,
-    user_id: str,
-    model_provider: str,
-    model_name: str,
     photo_idx: int,
-    raw_bytes: bytes,
     address: Optional[str],
     reference_dim: Optional[str],
     brick_course_in: Optional[float],
     siding_exposure_in: Optional[float],
     annotation_hint: str,
-) -> dict:
-    """Phase A. Run ONE Claude call against a single photo, ask for
-    per-photo raw observations only. Returns the parsed JSON tagged
-    with `_photo_idx` and `_latency_ms` (persisted verbatim so the
-    Debug view can show what Claude actually saw).
-
-    Iter 79j.43 — If the first call returns empty, retry ONCE with a
-    stronger nudge. Empty photos silently orphan any wall only they
-    covered, so the orchestrator MUST know when this happens."""
-    t0 = time.time()
+) -> str:
+    """Iter 79j.59 — Extracted so the proxy and direct paths share the
+    EXACT same prompt text. Do NOT diverge these — the whole point of
+    a transport swap is that only the transport changes."""
     prompt_lines = [f"This is photo index {photo_idx} of a house being measured for siding."]
     if address:
         prompt_lines.append(f"Property address: {address}")
@@ -3395,16 +3524,211 @@ async def _extract_one_photo(
         "Return your per-photo extraction JSON now, with `index` set to "
         f"{photo_idx}. No prose."
     )
-    prompt_text = "\n".join(prompt_lines)
+    return "\n".join(prompt_lines)
+
+
+async def _extract_one_photo_direct(
+    *,
+    api_key: str,
+    model_name: str,
+    photo_idx: int,
+    raw_bytes: bytes,
+    prompt_text: str,
+    per_call_timeout: int,
+) -> dict:
+    """Iter 79j.59 — Phase A vision call via direct api.anthropic.com.
+    Mirrors `_extract_one_photo_via_proxy`'s output shape 1:1 so the
+    dispatcher / retry / empty-check logic upstream is unchanged.
+
+    Rate-limit + timeout policy (matches Phase B direct):
+        - SDK `max_retries=0` + explicit httpx timeouts + outer
+          `asyncio.wait_for(per_call_timeout)` so a stuck call actually
+          gets cancelled.
+        - `RateLimitError` / `APIError` returned as
+          `_extraction_error` sentinels so the caller can log and fall
+          back to proxy per-photo without raising into the orchestrator.
+        - The IMAGE is expected to be the already-shrunk payload from
+          `_shrink_for_phase_a` (Iter 79j.50) — shrink applies to both
+          transports; the direct path benefits identically.
+    """
+    call_t0 = time.time()
+    try:
+        from anthropic import AsyncAnthropic, APIError, APITimeoutError, RateLimitError
+    except ImportError as e:
+        return {
+            "index": photo_idx,
+            "_photo_idx": photo_idx,
+            "_extraction_error": f"anthropic SDK not installed: {e}",
+            "_extraction_error_kind": "import_failed",
+            "_transport": "anthropic_direct_import_failed",
+            "_latency_ms": 0,
+        }
+    import httpx as _httpx
+    client = AsyncAnthropic(
+        api_key=api_key,
+        max_retries=0,
+        timeout=_httpx.Timeout(per_call_timeout, connect=10.0, read=per_call_timeout - 15, write=45.0),
+    )
+    image_b64 = base64.b64encode(raw_bytes).decode("ascii")
+    try:
+        response = await asyncio.wait_for(
+            client.messages.create(
+                model=model_name,
+                max_tokens=8000,      # per-photo output is smaller than reconcile
+                system=PER_PHOTO_EXTRACT_PROMPT,
+                messages=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "image", "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_b64,
+                        }},
+                        {"type": "text", "text": prompt_text},
+                    ],
+                }],
+            ),
+            timeout=per_call_timeout,
+        )
+    except APITimeoutError as e:
+        elapsed = int((time.time() - call_t0) * 1000)
+        logger.warning("[ai-measure phase-A direct] photo %d APITimeoutError after %dms: %s", photo_idx, elapsed, e)
+        return {
+            "index": photo_idx,
+            "_photo_idx": photo_idx,
+            "_extraction_error": f"direct APITimeoutError after {per_call_timeout}s",
+            "_extraction_error_kind": "timeout",
+            "_transport": "anthropic_direct",
+            "_latency_ms": elapsed,
+        }
+    except RateLimitError as e:
+        elapsed = int((time.time() - call_t0) * 1000)
+        headers = getattr(getattr(e, "response", None), "headers", {}) or {}
+        retry_after = headers.get("retry-after") or headers.get("Retry-After") or "?"
+        logger.warning(
+            "[ai-measure phase-A direct] photo %d RateLimitError retry_after=%s: %s",
+            photo_idx, retry_after, e,
+        )
+        return {
+            "index": photo_idx,
+            "_photo_idx": photo_idx,
+            "_extraction_error": f"direct 429 rate-limited (retry-after={retry_after}): {e}",
+            "_extraction_error_kind": "rate_limit",
+            "_extraction_retry_after": retry_after,
+            "_transport": "anthropic_direct",
+            "_latency_ms": elapsed,
+        }
+    except APIError as e:
+        elapsed = int((time.time() - call_t0) * 1000)
+        logger.warning("[ai-measure phase-A direct] photo %d APIError after %dms: %s", photo_idx, elapsed, e)
+        return {
+            "index": photo_idx,
+            "_photo_idx": photo_idx,
+            "_extraction_error": f"direct APIError: {e}",
+            "_extraction_error_kind": "api_error",
+            "_transport": "anthropic_direct",
+            "_latency_ms": elapsed,
+        }
+    except asyncio.TimeoutError:
+        elapsed = int((time.time() - call_t0) * 1000)
+        logger.warning("[ai-measure phase-A direct] photo %d outer asyncio timeout after %ds", photo_idx, per_call_timeout)
+        return {
+            "index": photo_idx,
+            "_photo_idx": photo_idx,
+            "_extraction_error": f"direct outer timeout after {per_call_timeout}s",
+            "_extraction_error_kind": "timeout",
+            "_transport": "anthropic_direct",
+            "_latency_ms": elapsed,
+        }
+    except Exception as e:
+        elapsed = int((time.time() - call_t0) * 1000)
+        logger.exception("[ai-measure phase-A direct] photo %d unexpected: %s", photo_idx, e)
+        return {
+            "index": photo_idx,
+            "_photo_idx": photo_idx,
+            "_extraction_error": f"direct unexpected: {e}",
+            "_extraction_error_kind": "exception",
+            "_transport": "anthropic_direct",
+            "_latency_ms": elapsed,
+        }
+    # Extract text — Claude 4.5+ returns interleaved thinking + text
+    # blocks on the direct API; we ignore thinking and concatenate
+    # visible text blocks. Matches _reconcile_extractions_direct's
+    # parsing.
+    reply_parts = []
+    for block in getattr(response, "content", []) or []:
+        btype = getattr(block, "type", None) or (block.get("type") if isinstance(block, dict) else None)
+        if btype == "text":
+            reply_parts.append(getattr(block, "text", None) or (block.get("text") if isinstance(block, dict) else "") or "")
+    reply_text = "".join(reply_parts)
+    parsed = _clean_json_reply(reply_text or "")
+    parsed["_photo_idx"] = photo_idx
+    parsed.setdefault("index", photo_idx)
+    parsed["_latency_ms"] = int((time.time() - call_t0) * 1000)
+    parsed["_transport"] = "anthropic_direct"
+    return parsed
+
+
+async def _extract_one_photo(
+    *,
+    api_key: str,
+    user_id: str,
+    model_provider: str,
+    model_name: str,
+    photo_idx: int,
+    raw_bytes: bytes,
+    address: Optional[str],
+    reference_dim: Optional[str],
+    brick_course_in: Optional[float],
+    siding_exposure_in: Optional[float],
+    annotation_hint: str,
+) -> dict:
+    """Phase A. Run ONE Claude call against a single photo, ask for
+    per-photo raw observations only. Returns the parsed JSON tagged
+    with `_photo_idx` and `_latency_ms` (persisted verbatim so the
+    Debug view can show what Claude actually saw).
+
+    Iter 79j.43 — If the first call returns empty, retry ONCE with a
+    stronger nudge. Empty photos silently orphan any wall only they
+    covered, so the orchestrator MUST know when this happens.
+
+    Iter 79j.59 — Transport-agnostic router. When `ANTHROPIC_DIRECT_A=1`
+    (and provider=anthropic and ANTHROPIC_API_KEY on file) the vision
+    call goes direct via `_extract_one_photo_direct`; otherwise it
+    uses LlmChat through the Emergent LiteLLM proxy. Per-photo proxy
+    fallback for non-429/non-rate-limit direct failures is handled
+    here so a bad direct call doesn't tank the photo — the proxy
+    stays as a safety net. Any 429 (rate-limit) surfaces as
+    `_extraction_error_kind="rate_limit"` and gets a bounded retry
+    with jitter (max 2) BEFORE falling back to proxy, since burning
+    the proxy allocation on a temporary tier-throttle is wasteful.
+    """
+    t0 = time.time()
+    prompt_text = _build_phase_a_prompt(
+        photo_idx=photo_idx,
+        address=address,
+        reference_dim=reference_dim,
+        brick_course_in=brick_course_in,
+        siding_exposure_in=siding_exposure_in,
+        annotation_hint=annotation_hint,
+    )
 
     # Iter 79j.44 — Env-configurable per-call timeout (default 120s).
     # Per-call = one LlmChat send. Two calls (initial + empty-retry)
     # give ~240s worst-case per photo, capped further by
     # AI_MEASURE_PER_PHOTO_TIMEOUT (see below).
     per_call_timeout = _env_int("AI_MEASURE_PER_CALL_TIMEOUT", 120)
-    logger.info("[ai-measure phase-A] photo %d start", photo_idx)
+    # Iter 79j.59 — Route selection. Direct key is chosen once at the
+    # top of the coroutine; we keep the proxy key around for per-photo
+    # fallback.
+    direct_key, source = _pick_llm_api_key(model_provider, phase="A")
+    use_direct = source == "anthropic_direct"
+    logger.info(
+        "[ai-measure phase-A] photo %d start (transport=%s)",
+        photo_idx, "anthropic_direct" if use_direct else "emergent_proxy",
+    )
 
-    async def _one_call(retry_note: str = "") -> dict:
+    async def _one_call_proxy(retry_note: str = "") -> dict:
         call_t0 = time.time()
         chat = LlmChat(
             api_key=api_key,
@@ -3420,27 +3744,90 @@ async def _extract_one_photo(
             reply = await asyncio.wait_for(chat.send_message(user_msg), timeout=per_call_timeout)
         except asyncio.TimeoutError:
             elapsed = int((time.time() - call_t0) * 1000)
-            logger.warning("[ai-measure phase-A] photo %d call timed out after %ds", photo_idx, per_call_timeout)
+            logger.warning("[ai-measure phase-A] photo %d proxy call timed out after %ds", photo_idx, per_call_timeout)
             return {
                 "index": photo_idx,
                 "_extraction_error": f"per-call timeout after {per_call_timeout}s",
                 "_extraction_error_kind": "timeout",
+                "_transport": "emergent_proxy",
                 "_latency_ms": elapsed,
             }
         except Exception as e:
             elapsed = int((time.time() - call_t0) * 1000)
-            logger.warning("[ai-measure phase-A] photo %d call failed after %dms: %s", photo_idx, elapsed, e)
+            logger.warning("[ai-measure phase-A] photo %d proxy call failed after %dms: %s", photo_idx, elapsed, e)
             return {
                 "index": photo_idx,
                 "_extraction_error": str(e) or type(e).__name__,
                 "_extraction_error_kind": "exception",
+                "_transport": "emergent_proxy",
                 "_latency_ms": elapsed,
             }
         p = _clean_json_reply(reply or "")
         p["_photo_idx"] = photo_idx
         p.setdefault("index", photo_idx)
         p["_latency_ms"] = int((time.time() - call_t0) * 1000)
+        p["_transport"] = "emergent_proxy"
         return p
+
+    async def _one_call_direct_with_retry(retry_note: str = "") -> dict:
+        """Direct call with bounded 429 backoff. On non-429 failure,
+        falls back to proxy for THIS photo (once) so a transient
+        Anthropic 500 or connection blip doesn't kill the extraction."""
+        # Prepend retry_note to keep the same prompt shape as proxy path.
+        effective_prompt = prompt_text if not retry_note else f"{retry_note}\n\n{prompt_text}"
+        max_backoff_retries = _env_int("AI_MEASURE_PHASE_A_DIRECT_MAX_RETRIES", 2)
+        for attempt in range(max_backoff_retries + 1):
+            result = await _extract_one_photo_direct(
+                api_key=direct_key,
+                model_name=model_name,
+                photo_idx=photo_idx,
+                raw_bytes=raw_bytes,
+                prompt_text=effective_prompt,
+                per_call_timeout=per_call_timeout,
+            )
+            kind = result.get("_extraction_error_kind")
+            if kind != "rate_limit":
+                # 429 is the only case we auto-retry inside the direct
+                # path. Timeout / api_error / import_failed / no-error
+                # all return immediately (either success or the caller
+                # decides whether to fall back to proxy).
+                break
+            if attempt >= max_backoff_retries:
+                break
+            retry_after = result.get("_extraction_retry_after")
+            try:
+                sleep_s = float(retry_after)
+            except (TypeError, ValueError):
+                sleep_s = 2.0 * (2 ** attempt)
+            # Add jitter (0-40% of sleep) to avoid thundering-herd on
+            # the next retry wave if multiple photos 429 simultaneously.
+            jitter = sleep_s * 0.4 * (uuid.uuid4().int % 1000) / 1000.0
+            sleep_s = min(30.0, sleep_s + jitter)
+            logger.info(
+                "[ai-measure phase-A direct] photo %d rate-limited, sleeping %.1fs before retry %d/%d",
+                photo_idx, sleep_s, attempt + 1, max_backoff_retries,
+            )
+            await asyncio.sleep(sleep_s)
+        # Direct returned a non-recoverable error (or exhausted 429
+        # retries). Fall back to proxy for THIS photo so we still get
+        # data on Howard's monitor.
+        if result.get("_extraction_error") and result.get("_extraction_error_kind") in (
+            "timeout", "api_error", "exception", "import_failed", "rate_limit",
+        ):
+            logger.info(
+                "[ai-measure phase-A] photo %d direct FAILED (%s) — falling back to proxy",
+                photo_idx, result.get("_extraction_error_kind"),
+            )
+            proxy_result = await _one_call_proxy(retry_note=retry_note)
+            proxy_result["_direct_fallback_reason"] = result.get("_extraction_error")
+            proxy_result["_direct_fallback_kind"] = result.get("_extraction_error_kind")
+            return proxy_result
+        return result
+
+    async def _one_call(retry_note: str = "") -> dict:
+        if use_direct and direct_key:
+            return await _one_call_direct_with_retry(retry_note=retry_note)
+        return await _one_call_proxy(retry_note=retry_note)
 
     parsed = await _one_call()
     # Iter 79j.43 — Empty-extraction retry. One additional call with an
@@ -3913,6 +4300,7 @@ async def _run_two_phase_pipeline(
     siding_exposure_in: Optional[float],
     annotation_hint: str,
     set_stage,   # async callable(str) → None
+    annotations: dict | None = None,
 ) -> tuple[dict, list[dict]]:
     """Orchestrator. Returns (final_raw_after_reconcile, per_photo_extractions).
     Callers should feed final_raw into `_aggregate_to_hover_shape` — it's
@@ -3924,7 +4312,14 @@ async def _run_two_phase_pipeline(
     # global cap, and — critically — its timeout becomes a per-photo
     # `_extraction_error` instead of a batch-wide CancelledError.
     per_photo_budget = _env_int("AI_MEASURE_PER_PHOTO_TIMEOUT", 240)
-    phase_a_total = _env_int("AI_MEASURE_PHASE_A_TIMEOUT", 300)
+    # Iter 79j.59 — `AI_MEASURE_PHASE_A_TIMEOUT` is no longer the
+    # primary budget — per-wave budgets are the source of truth. We
+    # log its value so operators know what would have happened under
+    # the old code, then move on.
+    logger.info(
+        "[ai-measure phase-A] legacy AI_MEASURE_PHASE_A_TIMEOUT=%d ignored — per-wave scheduling in effect",
+        _env_int("AI_MEASURE_PHASE_A_TIMEOUT", 900),
+    )
     phase_a_started = time.time()
 
     # Iter 79j.50 — Aggressive per-photo shrink before dispatch. The
@@ -3957,132 +4352,225 @@ async def _run_two_phase_pipeline(
             total_before, total_after, total_before / max(1, total_after),
         )
 
-    # Iter 79j.50 — Concurrency limit. Even with shrunk payloads there's
-    # residual per-key rate limiting on the proxy. Semaphore caps
-    # concurrent Claude calls to N (default 2). 2 keeps us under any
-    # proxy throttling while still parallel enough that 8 photos finish
-    # in 4×per_photo_latency instead of 8×.
-    concurrency = _env_int("AI_MEASURE_PHASE_A_CONCURRENCY", 2)
-    sem = asyncio.Semaphore(max(1, concurrency))
+    # Iter 79j.59 — Transport-aware concurrency. Direct route has its
+    # own hidden env override so operators can bump it in production
+    # once real 429 patterns are observed against the tier limits (50
+    # rpm / 40k tpm on the current Anthropic tier per Howard). Proxy
+    # concurrency stays at 2 per the 79j.50 empirical finding.
+    _direct_probe_key, _phase_a_src = _pick_llm_api_key(model_provider, phase="A")
+    is_direct = _phase_a_src == "anthropic_direct"
+    if is_direct:
+        concurrency = _env_int("AI_MEASURE_PHASE_A_DIRECT_CONCURRENCY", 2)
+    else:
+        concurrency = _env_int("AI_MEASURE_PHASE_A_CONCURRENCY", 2)
+    concurrency = max(1, concurrency)
+
+    total_photos = len(shrunk_payloads)
+    wave_size = concurrency
+    num_waves = (total_photos + wave_size - 1) // wave_size
+
+    async def _publish_progress(**fields):
+        """Write phase_a_progress into the run doc so the frontend's
+        status poll can surface per-wave state without waiting for the
+        whole batch. Non-fatal on failure — progress is a hint, not
+        the source of truth."""
+        try:
+            await db.ai_measure_runs.update_one(
+                {"run_id": run_id},
+                {"$set": {
+                    "phase_a_progress": {
+                        **fields,
+                        "transport": "anthropic_direct" if is_direct else "emergent_proxy",
+                        "concurrency": concurrency,
+                    },
+                    "updated_at": datetime.now(timezone.utc),
+                }},
+            )
+        except Exception as e:
+            logger.warning("[ai-measure phase-A] progress publish failed: %s", e)
 
     async def _budgeted_extract(idx: int, raw: bytes) -> dict:
-        # The semaphore MUST be inside the coroutine (not around
-        # create_task) so `asyncio.wait` sees each task as immediately
-        # scheduled and its per-photo timer starts only when the sem
-        # actually grants entry, not while waiting in the queue.
-        async with sem:
-            try:
-                return await asyncio.wait_for(
-                    _extract_one_photo(
-                        api_key=api_key,
-                        user_id=user_id,
-                        model_provider=model_provider,
-                        model_name=model_name,
-                        photo_idx=idx,
-                        raw_bytes=raw,
-                        address=address,
-                        reference_dim=reference_dim,
-                        brick_course_in=brick_course_in,
-                        siding_exposure_in=siding_exposure_in,
-                        annotation_hint=annotation_hint,
-                    ),
-                    timeout=per_photo_budget,
-                )
-            except asyncio.TimeoutError:
-                logger.warning(
-                    "[ai-measure phase-A] photo %d exceeded per-photo budget of %ds — flagged empty",
-                    idx, per_photo_budget,
-                )
-                return {
-                    "index": idx,
-                    "_photo_idx": idx,
-                    "_extraction_error": f"per-photo budget exceeded ({per_photo_budget}s)",
-                    "_extraction_error_kind": "timeout",
-                    "_empty_extraction": True,
-                    "_empty_reason": f"Photo timed out after {per_photo_budget}s — LLM proxy slow or unresponsive.",
-                    "_latency_ms": per_photo_budget * 1000,
-                    "_total_latency_ms": per_photo_budget * 1000,
-                }
-            except Exception as e:  # never let one photo kill the batch
-                logger.exception("[ai-measure phase-A] photo %d unexpected failure", idx)
-                return {
-                    "index": idx,
-                    "_photo_idx": idx,
-                    "_extraction_error": str(e) or type(e).__name__,
-                    "_extraction_error_kind": "exception",
-                    "_empty_extraction": True,
-                    "_empty_reason": f"Photo failed with an unexpected error: {e}",
-                }
-
-    budgeted_tasks = [
-        asyncio.create_task(_budgeted_extract(idx, raw))
-        for idx, (_ct, raw) in enumerate(shrunk_payloads)
-    ]
-    logger.info(
-        "[ai-measure phase-A] dispatching %d photos (concurrency=%d, per_photo_budget=%ds, total_cap=%ds)",
-        len(budgeted_tasks), concurrency, per_photo_budget, phase_a_total,
-    )
-    # asyncio.wait DOES NOT cancel-all on timeout — pending tasks stay
-    # runnable and we get partial results back. We cancel stragglers
-    # ourselves so the whole run doesn't hang past phase_a_total.
-    done_tasks, pending_tasks = await asyncio.wait(budgeted_tasks, timeout=phase_a_total)
-    phase_a_elapsed = int(time.time() - phase_a_started)
-    logger.info(
-        "[ai-measure phase-A] total wall clock %ds — %d done, %d pending",
-        phase_a_elapsed, len(done_tasks), len(pending_tasks),
-    )
-    extractions: list[dict] = [None] * len(budgeted_tasks)
-    for i, t in enumerate(budgeted_tasks):
-        if t in done_tasks:
-            try:
-                extractions[i] = t.result()
-            except Exception as e:  # defensive; _budgeted_extract already traps
-                extractions[i] = {
-                    "index": i,
-                    "_photo_idx": i,
-                    "_extraction_error": str(e) or type(e).__name__,
-                    "_empty_extraction": True,
-                    "_empty_reason": f"Task raised: {e}",
-                }
-        else:
-            # Timed out against the total Phase A cap. Cancel + record.
-            logger.warning(
-                "[ai-measure phase-A] photo %d NOT done at total cap %ds — cancelling and flagging",
-                i, phase_a_total,
-            )
-            t.cancel()
-            extractions[i] = {
-                "index": i,
-                "_photo_idx": i,
-                "_extraction_error": f"phase-A total cap of {phase_a_total}s reached before this photo finished",
-                "_extraction_error_kind": "phase_a_cap",
-                "_empty_extraction": True,
-                "_empty_reason": f"Phase A ran out of time at {phase_a_total}s — this photo did not complete.",
-                "_latency_ms": phase_a_total * 1000,
-                "_total_latency_ms": phase_a_total * 1000,
-            }
-    # Drain the cancellations so no orphaned task keeps the loop busy.
-    # Iter 79j.44 — CAP the drain at 5s. asyncio.CancelledError only
-    # interrupts at `await` boundaries — a task blocked inside a
-    # synchronous HTTP send (LlmChat -> LiteLLM -> httpx) will NOT
-    # unwind until the underlying request returns. Waiting on it here
-    # is what turned a 300s Phase A cap into a 1153s worker hang when
-    # LiteLLM was retrying budget-exceeded requests. If the drain does
-    # not finish inside 5s, we leave the tasks orphaned (they'll GC
-    # when the HTTP call finally returns) and move on to Phase B.
-    if pending_tasks:
+        """Iter 79j.59 — Semaphore removed. Wave scheduling below caps
+        concurrency by only ever awaiting one wave's worth of tasks at
+        a time, so the semaphore is redundant AND was making per-wave
+        timing hard to reason about (tasks queued behind the sem got
+        starved of wall-clock budget)."""
         try:
-            await asyncio.wait_for(
-                asyncio.gather(*pending_tasks, return_exceptions=True),
-                timeout=5,
+            return await asyncio.wait_for(
+                _extract_one_photo(
+                    api_key=api_key,
+                    user_id=user_id,
+                    model_provider=model_provider,
+                    model_name=model_name,
+                    photo_idx=idx,
+                    raw_bytes=raw,
+                    address=address,
+                    reference_dim=reference_dim,
+                    brick_course_in=brick_course_in,
+                    siding_exposure_in=siding_exposure_in,
+                    annotation_hint=annotation_hint,
+                ),
+                timeout=per_photo_budget,
             )
         except asyncio.TimeoutError:
             logger.warning(
-                "[ai-measure phase-A] drain of %d cancelled task(s) did not "
-                "complete in 5s — leaving orphaned and proceeding to Phase B "
-                "(the HTTP calls will finish in the background).",
-                len(pending_tasks),
+                "[ai-measure phase-A] photo %d exceeded per-photo budget of %ds — flagged empty",
+                idx, per_photo_budget,
             )
+            return {
+                "index": idx,
+                "_photo_idx": idx,
+                "_extraction_error": f"per-photo budget exceeded ({per_photo_budget}s)",
+                "_extraction_error_kind": "timeout",
+                "_empty_extraction": True,
+                "_empty_reason": f"Photo timed out after {per_photo_budget}s — LLM proxy slow or unresponsive.",
+                "_latency_ms": per_photo_budget * 1000,
+                "_total_latency_ms": per_photo_budget * 1000,
+            }
+        except Exception as e:  # never let one photo kill the batch
+            logger.exception("[ai-measure phase-A] photo %d unexpected failure", idx)
+            return {
+                "index": idx,
+                "_photo_idx": idx,
+                "_extraction_error": str(e) or type(e).__name__,
+                "_extraction_error_kind": "exception",
+                "_empty_extraction": True,
+                "_empty_reason": f"Photo failed with an unexpected error: {e}",
+            }
+
+    # Iter 79j.59 — WAVE-BASED DISPATCHER. Iter 79j.44's approach used
+    # a global 300s cap over an entire semaphore-throttled batch; a
+    # single hung LiteLLM wave silently ate the remaining photos'
+    # budget (this morning's incident: 5/8 photos killed at the total
+    # cap). Now each wave gets its OWN budget = per_photo_budget + 10s
+    # overhead, so a stuck wave times out ONLY the two photos in it
+    # instead of poisoning the queue.
+    #
+    # Between waves we publish progress into the run doc so the
+    # frontend polling loop can surface "wave 2/4 done" immediately —
+    # without waiting for the entire Phase A to finish before showing
+    # a status change.
+    per_wave_budget = per_photo_budget + 10
+    logger.info(
+        "[ai-measure phase-A] dispatching %d photos across %d wave(s) "
+        "(wave_size=%d, per_photo_budget=%ds, per_wave_budget=%ds, transport=%s)",
+        total_photos, num_waves, wave_size, per_photo_budget, per_wave_budget,
+        "anthropic_direct" if is_direct else "emergent_proxy",
+    )
+    await _publish_progress(
+        wave=0, waves_total=num_waves, done=0, failed=0, total=total_photos,
+        per_wave_budget_s=per_wave_budget, phase="starting",
+    )
+
+    extractions: list[dict] = [None] * total_photos
+    done_count = 0
+    failed_count = 0
+    for wave_idx in range(num_waves):
+        wave_started = time.time()
+        wave_start = wave_idx * wave_size
+        wave_end = min(wave_start + wave_size, total_photos)
+        wave_photo_indices = list(range(wave_start, wave_end))
+        wave_tasks = [
+            asyncio.create_task(_budgeted_extract(idx, shrunk_payloads[idx][1]))
+            for idx in wave_photo_indices
+        ]
+        logger.info(
+            "[ai-measure phase-A] wave %d/%d dispatching photos %s (budget=%ds)",
+            wave_idx + 1, num_waves, wave_photo_indices, per_wave_budget,
+        )
+        wave_done, wave_pending = await asyncio.wait(wave_tasks, timeout=per_wave_budget)
+        for local_i, t in enumerate(wave_tasks):
+            photo_idx = wave_photo_indices[local_i]
+            if t in wave_done:
+                try:
+                    extractions[photo_idx] = t.result()
+                except Exception as e:
+                    extractions[photo_idx] = {
+                        "index": photo_idx,
+                        "_photo_idx": photo_idx,
+                        "_extraction_error": str(e) or type(e).__name__,
+                        "_extraction_error_kind": "exception",
+                        "_empty_extraction": True,
+                        "_empty_reason": f"Task raised: {e}",
+                    }
+            else:
+                # Wave-level timeout. Cancel this specific task and
+                # record — CRITICALLY the next wave still starts on
+                # schedule; the 79j.58 morning-run failure mode
+                # (silent starvation of later waves) is gone.
+                logger.warning(
+                    "[ai-measure phase-A] wave %d photo %d NOT done at per-wave budget %ds — cancelling",
+                    wave_idx + 1, photo_idx, per_wave_budget,
+                )
+                t.cancel()
+                extractions[photo_idx] = {
+                    "index": photo_idx,
+                    "_photo_idx": photo_idx,
+                    "_extraction_error": f"per-wave budget of {per_wave_budget}s reached before this photo finished",
+                    "_extraction_error_kind": "phase_a_wave_cap",
+                    "_empty_extraction": True,
+                    "_empty_reason": f"Wave {wave_idx + 1}/{num_waves} ran out of time at {per_wave_budget}s — this photo did not complete.",
+                    "_latency_ms": per_wave_budget * 1000,
+                    "_total_latency_ms": per_wave_budget * 1000,
+                }
+        # Cap the drain at 5s per wave so a hung LiteLLM send doesn't
+        # keep us out of the next wave.
+        if wave_pending:
+            try:
+                await asyncio.wait_for(
+                    asyncio.gather(*wave_pending, return_exceptions=True),
+                    timeout=5,
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "[ai-measure phase-A] wave %d drain of %d cancelled task(s) "
+                    "did not complete in 5s — leaving orphaned and proceeding to next wave.",
+                    wave_idx + 1, len(wave_pending),
+                )
+        # Wave complete — recompute counters and publish immediately
+        # so the frontend polling loop lights up NOW instead of after
+        # the whole batch.
+        wave_done_count = 0
+        wave_failed_count = 0
+        for photo_idx in wave_photo_indices:
+            ex = extractions[photo_idx]
+            if ex and not (ex.get("_extraction_error") or ex.get("_empty_extraction")):
+                wave_done_count += 1
+            else:
+                wave_failed_count += 1
+        done_count += wave_done_count
+        failed_count += wave_failed_count
+        wave_elapsed = int(time.time() - wave_started)
+        logger.info(
+            "[ai-measure phase-A] wave %d/%d complete in %ds — %d ok, %d failed (cumulative: %d ok, %d failed of %d)",
+            wave_idx + 1, num_waves, wave_elapsed,
+            wave_done_count, wave_failed_count, done_count, failed_count, total_photos,
+        )
+        await _publish_progress(
+            wave=wave_idx + 1,
+            waves_total=num_waves,
+            done=done_count,
+            failed=failed_count,
+            total=total_photos,
+            last_wave_elapsed_s=wave_elapsed,
+            last_wave_photo_indices=wave_photo_indices,
+            last_wave_failed_photo_indices=[
+                pi for pi in wave_photo_indices
+                if (extractions[pi] or {}).get("_extraction_error")
+                or (extractions[pi] or {}).get("_empty_extraction")
+            ],
+            phase="extracting" if wave_idx + 1 < num_waves else "reconciling_next",
+        )
+
+    phase_a_elapsed = int(time.time() - phase_a_started)
+    logger.info(
+        "[ai-measure phase-A] TOTAL wall clock %ds across %d wave(s) — %d ok, %d failed of %d",
+        phase_a_elapsed, num_waves, done_count, failed_count, total_photos,
+    )
+    # Backward-compat: `budgeted_tasks` / `pending_tasks` are gone; the
+    # per-wave loop already handled cancellation. Any downstream code
+    # that referenced those was inside this function (the drain block)
+    # so nothing else needs to change.
     # Iter 79j.43 — Empty-extraction bookkeeping. After retry, any
     # photo still flagged `_empty_extraction: true` orphans the walls
     # it was the sole cover for. Compute the orphan set BEFORE Phase B
@@ -4170,6 +4658,26 @@ async def _run_two_phase_pipeline(
     if empty_photos or orphaned_walls:
         final["_empty_photos"] = empty_photos
         final["_orphaned_walls"] = orphaned_walls
+    # Iter 79j.59 — Contractor-pin gap hints. When a user drew pins
+    # (profile annotations) on a photo but the reconciled walls[] /
+    # dormers[] don't include the pinned elevation or feature, surface
+    # the mismatch as an actionable hint on the raw. Frontend renders
+    # it in the gap banner alongside orphaned-wall warnings:
+    #   "Your pins indicate a possible dormer on the right slope —
+    #    that elevation didn't extract. Re-shoot the right side."
+    pin_hints = _derive_pin_gap_hints(
+        annotations=annotations,
+        walls=final.get("walls") or [],
+        dormers=(
+            final.get("dormers")
+            if isinstance(final.get("dormers"), list) and final.get("dormers")
+            else ([final.get("dormer")] if final.get("dormer") else [])
+        ),
+        orphaned_walls=orphaned_walls,
+        empty_photos=empty_photos,
+    )
+    if pin_hints:
+        final["_pin_gap_hints"] = pin_hints
     return final, extractions
 
 
@@ -4247,6 +4755,7 @@ async def _execute_ai_measure_worker(
                 siding_exposure_in=siding_exposure_in,
                 annotation_hint=annotation_hint,
                 set_stage=_set_stage,
+                annotations=annotations,
             )
         else:
             image_contents = [
