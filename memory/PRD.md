@@ -48,6 +48,28 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 - `GET /api/email/status` · `POST /api/estimates/{id}/email`
 - `GET /api/exports/estimates.csv` · `GET /api/exports/estimates/{id}.csv`
 
+## ACTIVE GATE — Post-79j.61 Ordering (do not violate)
+**Standing order (Feb 2026, re-affirmed Jul 7 2026 after fork resume):**
+
+1. **Confirmation Run 3** — clean full-payload run on the Red-House fixture
+   estimate `673707d5-9b7e-4d8f-8eaf-63c86820f611` with all 8 taped photos +
+   all four wall-scale-ref anchors placed. Required env: `ANTHROPIC_DIRECT_A=1`,
+   `ANTHROPIC_DIRECT_ROUTE=phase_b_only`, `ANTHROPIC_API_KEY` set,
+   `AI_MEASURE_RECONCILE_DIRECT_MAX_TOKENS=32000` (default). Acceptance criteria:
+   - both dormer widths within ±1 ft of taped 15.0 / 15.0
+   - `raw_ai._scale_refs_used` truthy AND cited in `raw_ai._reconcile_notes`
+   - `_phase_b_transport == "anthropic_direct"`
+   - Phase A + B both green, no `_empty_photos`, no `_orphaned_walls`
+   - Total wall-clock < 5 min end-to-end
+2. **Per-dormer bbox routing** + true bbox-derived opening (x, y, w, h) — fixes
+   the scattered-window placement on the 3D walls. Blocked until step 1 passes.
+3. **Three.js static 3D PNG generation** — headless canvas export.
+4. **Embed the PNG in the Customer Quote PDF + email.** Only after 1–3 land.
+
+**NOTHING ELSE SHIPS BETWEEN STEPS.** Marker Coverage tile is done pending user
+sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
+`ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
+
 ## Implementation Timeline
 - **P2 (FROZEN)** — **Refactor `AIMeasureButton.jsx` (3534 lines) + `HouseModel3D.jsx` (1553 lines)** — explicit gate before this touches production:
   - Prerequisite 1: red-house photos pass the stability pair (two consecutive runs producing equivalent JSON).
