@@ -1967,6 +1967,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       // starting over. State is wiped only when the user explicitly
       // cancels via the "Start Over" button.
       setOpen(false);
+      // Iter 79j.63 — Same re-arm as closeAll(). Apply also closes the
+      // modal; if local state is later cleared before the user
+      // reopens, we want the session-check effect to re-fire and
+      // surface the Resume banner from the freshly-persisted server
+      // doc. Symmetric with closeAll — every path that flips
+      // `open=false` must reset the latch.
+      setSessionChecked(false);
     } catch (e) {
       toast.error(e.message || "Apply failed");
     } finally {
@@ -2006,6 +2013,18 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         .catch(() => { /* non-fatal */ });
     }
     setOpen(false);
+    // Iter 79j.63 — Re-arm the session-check latch on close so the
+    // next modal open re-fetches the server session doc. Before this
+    // fix, `sessionChecked` stayed `true` for the lifetime of the
+    // mount, meaning any transient local-state loss (photoUrls
+    // silently cleared to [] by some code path, e.g. the Jul 7 2026
+    // Refine on Photo incident on EST-910869) became unrecoverable:
+    // close+reopen the modal, sessionChecked was still true, GET
+    // /measure/sessions was skipped, resumePrompt stayed false, the
+    // Resume banner never appeared even though the DB doc was intact.
+    // Resetting here means the next open always re-syncs against the
+    // server — the DB is the source of truth for cross-open recovery.
+    setSessionChecked(false);
   };
 
   const conf = preview?.measurements?._ai_scale_confidence || "low";
