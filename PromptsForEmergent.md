@@ -26,6 +26,7 @@ re-run that entry's prompt (they are written to be safely re-applied in full).
 | 4 | Auto-populate estimate fields at creation | r1 | 2026-07-03 | ☐ rev: ____ date: ____ |
 | 5 | Soft input validation + format tips | r2 | 2026-07-03 | ☐ rev: ____ date: ____ |
 | 6 | Post-merge adaptations (2026-07-04 code merge) | r1 | 2026-07-04 | ☐ rev: ____ date: ____ |
+| 7 | Blueprint Instrument redesign + interaction accessibility | r1 | 2026-07-06 | ☐ rev: ____ date: ____ |
 
 **Excluded by design:** anything related to decoupling this repo from the Emergent platform
 (the direct-Anthropic LLM client, Docker self-hosting, removal of Emergent branding/telemetry,
@@ -494,6 +495,130 @@ Three small follow-ups to the AI Measure feature set:
 Verify: ISS estimate's AI Measure modal renders the 3D tab with palette-fallback colors;
 the Re-run button shows an SVG icon; no hardcoded hex classes remain in the three files'
 UI chrome; the app builds.
+```
+
+---
+
+## 7 — Blueprint Instrument redesign + interaction accessibility (2026-07-06)
+
+**Revision:** r1 · last updated 2026-07-06
+**Change log:**
+- r1 (2026-07-06) — initial
+
+**What changed here:** a new "Blueprint Instrument" visual identity (a drafting /
+measurement-instrument look — graph-paper sheet, architect's title block, measurements drawn
+as dimension lines, tabular-mono numerals, safety orange demoted to scarce redline) applied
+to the Estimate Editor and the Dashboard, built as a **scoped theme layer on top of the
+existing semantic-token system** (entry 2) via a token bridge, plus new drafting primitives.
+Shipped alongside an **interaction-accessibility pass** (Radix dialogs for every confirm and
+modal, keyboard-navigable product-line tabs, associated form labels) that is theme-independent
+and beneficial on its own. New files: `frontend/src/styles/blueprint.css`,
+`frontend/src/components/ui/blueprint/index.jsx` (primitives), `frontend/src/components/ui/Modal.jsx`,
+`frontend/src/components/ui/ConfirmDialog.jsx`.
+
+**Prompt for Emergent:**
+
+```
+Two coordinated frontend changes. PART D (accessibility) works in every theme and can be
+applied independently; PARTS A–C add a new "Blueprint Instrument" visual design layer on top
+of the existing semantic-token theme system (the one with --ink / --brand / --surface / --danger
+tokens and the data-theme themes). Keep all existing behavior and copy; this is presentation +
+interaction only. The UI is bilingual — every new user-facing string needs an EN and an ES
+entry in lib/dictionaries.js.
+
+PART A — the Blueprint design system (new files)
+
+A1. Create src/styles/blueprint.css and import it once globally (in index.js). Define a SCOPED
+theme that only activates inside an element carrying data-design="blueprint", with a light
+sub-theme ("whiteprint") and a dark sub-theme ("cyanotype") selected by a data-bp-theme
+attribute. Define a --bp-* palette on that scope:
+- --bp-paper / --bp-sheet (page + card grounds), --bp-ink / --bp-ink-2 / --bp-muted (text),
+  --bp-border, --bp-grid / --bp-grid-2 (graph-paper lines).
+- --bp-line #1E6FEB — the SINGLE primary accent: dimension lines, rules, focus, and ALL CTAs.
+- --bp-mark #F26419 — safety orange, used ONLY as scarce redline/markup (flags, deltas,
+  "verify…" notes). Never a default button color.
+- --bp-pos (green), --bp-neg (red), --bp-on-brand (text on a --bp-line fill).
+Give the dark (cyanotype) sub-theme its own lighter values for each.
+
+A2. Token bridge — the key mechanism. Inside [data-design="blueprint"], REMAP the app's
+existing semantic tokens onto the --bp-* values so existing components recolor with no
+per-component edits: --surface→--bp-sheet, --ink→--bp-ink, --brand and --brand-text→--bp-line,
+--focus→--bp-line, --danger/--danger-text→--bp-neg, --profit/--success→--bp-pos, --muted→
+--bp-muted, --border→--bp-border, etc. CRITICAL: map --ai→--bp-line (NOT --bp-mark). The app's
+--ai token drives the "smart"/AI action buttons (HOVER import, Read Blueprints, AI Measure);
+in blueprint they must read as ordinary blue CTAs — the sparkle icon carries the "AI" signal,
+not color — so orange stays reserved for redline.
+
+A3. Numerals rule: every dollar amount, quantity, and measurement renders in a tabular
+monospace face (the app already has a .font-mono-num helper — reuse it).
+
+A4. New primitive components in src/components/ui/blueprint/index.jsx:
+- BlueprintScope: a <div data-design="blueprint" data-bp-theme={light|dark}> wrapper.
+- DrawingSheet: a framed card with a faint graph-paper (repeating-linear-gradient) substrate.
+- TitleBlock: an architect's title block — brand mark + title/subtitle + a row of key/value
+  cells (e.g. Sheet, Kind, Items).
+- DimensionLine({value}): renders rule–value–rule with short tick ends (⊢—— value ——⊣), value
+  in mono, colored --bp-line. IMPORTANT: style .bp-dim as display:none by DEFAULT and
+  display:flex only under [data-design="blueprint"], so an unconditionally-rendered
+  DimensionLine never leaks stray text into other themes.
+- Stamp({variant}): an outlined, uppercase, letter-spaced rubber-stamp mark; variants
+  won=green, sent=blue, draft=muted. Forward extra props (title, data-testid) to the element.
+- InstrumentKpi: a stat card with mono value + label (optional).
+
+PART B — apply Blueprint to the Estimate Editor (pages/EstimateEditor.jsx)
+- Wrap the screen's return in <BlueprintScope theme={t}> where t is "dark" if
+  document.documentElement data-theme is dark, else "light".
+- Put the estimate body on a DrawingSheet; add a TitleBlock header (customer name / estimate
+  number / cells: Sheet, Kind, Items = count of lines with qty>0).
+- In the Vero and Mezzo window panels, under each operable opening's W/H/Qty inputs, render a
+  <DimensionLine value={`${width} × ${height} in`} /> (skip fixed-model units that have no W×H).
+
+PART C — apply Blueprint to the Dashboard (pages/Dashboard.jsx)
+- Wrap the screen in <BlueprintScope theme={…}> (same light/dark logic).
+- Replace the status pills (accepted / sent) with <Stamp>: accepted→variant="won",
+  sent→variant="sent", and add a draft stamp (variant="draft") for estimates that are neither,
+  so every row shows a status stamp. Keep the existing titles/testids by forwarding them.
+- The per-product-line row totals use a small color table (Vinyl/Ascend, Vero/Mezzo). Move those
+  off hardcoded hex onto CSS vars so the theme (and the bridge) recolor them: primary line uses
+  var(--brand-text), secondary uses var(--muted). Do NOT use var(--brand) for text on the white
+  row — --brand is the safety-orange fill token and fails contrast on white; --brand-text is the
+  WCAG-safe text token (blue under the bridge, dark orange in the default theme).
+
+PART D — interaction accessibility (theme-independent; apply everywhere)
+
+D1. Reusable ConfirmDialog (src/components/ui/ConfirmDialog.jsx) built on @radix-ui/react-alert-dialog:
+props trigger, title, description, confirmLabel, cancelLabel, destructive, onConfirm. Use it to
+REPLACE every window.confirm in the app with a focus-trapped, Esc-dismissible, role=alertdialog
+prompt: the "recompute waste on existing lines" action (SettingsRow), photo remove (PhotosPanel),
+Vero and Mezzo opening remove, and the Dashboard estimate delete. For triggers that sit inside a
+clickable row (dashboard delete), the trigger button must stopPropagation so opening the dialog
+does not also navigate the row.
+
+D2. Reusable Modal (src/components/ui/Modal.jsx) built on @radix-ui/react-dialog (focus trap, Esc,
+outside-click, aria-modal, focus restore; requires a visually-hidden Dialog.Title for screen
+readers). Rebuild the hand-rolled `fixed inset-0` overlays on it: TabPickerModal, QuoteModal, and
+CatalogSyncBanner's price-review dialog (preserve its "can't dismiss while a sync is applying"
+guard). In QuoteModal also: replace its window.alert (PDF failure) with a toast.error, change
+min-h-screen to min-h-dvh, and drop the backdrop-blur on the full scrolling viewport.
+
+D3. Product-line tabs (components/estimate/EstimatorTabs.jsx): implement the WAI-ARIA tablist
+pattern — role="tablist" on the container, role="tab" + aria-selected + aria-controls on each
+button, roving tabindex (only the active tab is tabbable), and ArrowLeft/Right/Home/End keyboard
+navigation that moves focus and selection. Give the rendered section a matching role="tabpanel"
+with aria-labelledby pointing at the active tab.
+
+D4. Associate every form label with its control. For the JobInfoPanel color/window selects, the
+Vero model select, and the Vero/Mezzo width/height/qty fields, add matching id + htmlFor (use a
+generated id where the field is a reusable component). For the compact inline "notes" inputs that
+have only a placeholder, add an aria-label. Add aria-expanded + aria-controls to the
+SectionAccordion disclosure header.
+
+Verify: on the Estimate Editor and Dashboard wrapped in blueprint, buttons/rules/CTAs are blue
+and orange appears only as sparse redline; each window opening shows a drawn "W × H in" dimension
+line; dashboard rows show status stamps and blue (not orange) tab totals. Keyboard-only: arrow
+keys move between product-line tabs; every delete/confirm opens a focus-trapped dialog and Esc
+closes it; modals are role=dialog. Screen reader announces every form field by its label. The
+app builds.
 ```
 
 ---
