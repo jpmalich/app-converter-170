@@ -1663,7 +1663,7 @@ Diff SHIPPED (env-gated, safe by default). Diagnostic path forward for the uvico
 ### This morning's run — the justification (support datapoint #6)
 - Phase B via `anthropic_direct` **succeeded in 142s** — first live confirmation the 79j.57b stall fix survives a real Anthropic round-trip.
 - Phase A on the proxy **killed 5 of 8 photos at the 300s total cap** — proxy crawling; the right elevation never extracted; the right dormer was correctly NOT emitted (no confabulation). **Log this as datapoint #6: "142s success on REDUCED PAYLOAD (5/8 empty), full-payload confirmation pending."** The stall fix isn't proven until a direct Phase B survives a full 8-photo reconciliation.
-- Trace quote for the no-confabulation moment (Howard to paste; keeping placeholder so we don't lose the thread): **`[EXEMPLARY-TRACE-PASTE-HERE]`**.
+- Trace quote for the no-confabulation moment: **"Contractor annotations on the empty photo-7 extraction (3 slider pins, symmetric SHAKE) suggest a POSSIBLE matching right-slope dormer, but with zero photo data it was not emitted — re-shoot the right elevation rather than confabulate."**
 
 ### 1) Split per-phase direct flags with legacy auto-migration
 - Old: single `ANTHROPIC_DIRECT_ROUTE=phase_b_only`.

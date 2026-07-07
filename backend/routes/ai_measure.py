@@ -4540,6 +4540,19 @@ async def _run_two_phase_pipeline(
                 wave_failed_count += 1
         done_count += wave_done_count
         failed_count += wave_failed_count
+        # Iter 79j.60 — Cumulative per-photo status map. Every photo
+        # processed by any wave so far gets tagged "ok" or "failed";
+        # photos in later waves are omitted (frontend treats missing
+        # keys as "pending"). Keys are strings for JSON safety.
+        cumulative_status: dict[str, str] = {}
+        for pi in range(total_photos):
+            ex = extractions[pi]
+            if ex is None:
+                continue    # photo hasn't run yet (later wave)
+            if ex.get("_extraction_error") or ex.get("_empty_extraction"):
+                cumulative_status[str(pi)] = "failed"
+            else:
+                cumulative_status[str(pi)] = "ok"
         wave_elapsed = int(time.time() - wave_started)
         logger.info(
             "[ai-measure phase-A] wave %d/%d complete in %ds — %d ok, %d failed (cumulative: %d ok, %d failed of %d)",
@@ -4559,6 +4572,7 @@ async def _run_two_phase_pipeline(
                 if (extractions[pi] or {}).get("_extraction_error")
                 or (extractions[pi] or {}).get("_empty_extraction")
             ],
+            photo_status=cumulative_status,
             phase="extracting" if wave_idx + 1 < num_waves else "reconciling_next",
         )
 

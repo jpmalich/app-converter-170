@@ -140,6 +140,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Run button so the contractor knows progress is happening. Empty
   // string when idle.
   const [busyStage, setBusyStage] = useState("");
+  // Iter 79j.60 — Live per-photo progress from the two-phase pipeline.
+  // Populated by every /status/{run_id} poll from `phase_a_progress`.
+  // Rendered as a contractor-plain HUD (photo dots + plain-english
+  // status line — no wave/proxy/phase jargon per Howard 2026-07-07).
+  // `null` = pipeline hasn't started or is single-call.
+  const [photoProgress, setPhotoProgress] = useState(null);
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(null); // {measurements, raw_ai}
   // Iter 79j.22 — Preview / 3D Model tab toggle inside the results block.
@@ -590,6 +596,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         }
         const s = statusResp?.data || {};
         if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
+        if (s.phase_a_progress) setPhotoProgress(s.phase_a_progress);
         if (s.status === "error") throw new Error(s.error || "Reconciliation retry failed");
         if (s.status === "done") { result = s.result; finalStatus = s; break; }
       }
@@ -648,6 +655,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         }
         const s = statusResp?.data || {};
         if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
+        if (s.phase_a_progress) setPhotoProgress(s.phase_a_progress);
         if (s.status === "error") throw new Error(s.error || "AI measure re-run failed");
         if (s.status === "done") { result = s.result; finalStatus = s; break; }
       }
@@ -687,6 +695,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         }
         const s = statusResp?.data || {};
         if (s.stage && s.stage !== busyStage) setBusyStage(s.stage);
+        if (s.phase_a_progress) setPhotoProgress(s.phase_a_progress);
         if (s.status === "error") throw new Error(s.error || "AI measure failed");
         if (s.status === "done") { result = s.result; finalStatus = s; break; }
       }
@@ -1386,6 +1395,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       return;
     }
     setNoPhotosBanner(false);
+    // Iter 79j.60 — Reset the per-photo HUD on every fresh run so the
+    // previous run's failed dots don't linger into a new attempt.
+    setPhotoProgress(null);
     // Iter 79i — pre-flight guardrail. Skip if the caller passes
     // `bypassMissingWallsGuard: true` (from the "Run anyway" button in
     // the missing-walls modal). Iter 79j.20: switched from a state
@@ -1580,6 +1592,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           liveStage = s.stage;
           setBusyStage(s.stage);
         }
+        if (s.phase_a_progress) setPhotoProgress(s.phase_a_progress);
         // Heartbeat: the /status endpoint returns `elapsed_ms` computed
         // from `updated_at`. We only care whether the doc is still
         // being written to — a stalled heartbeat suggests the worker
@@ -2378,6 +2391,99 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   </div>
                 </div>
               )}
+              {/* Iter 79j.60 — Live per-photo HUD. Contractor-plain
+                  language ONLY — the strip says "photo 3 didn't
+                  complete", not "wave 2 timed out". Renders while a
+                  Phase A run is in flight AND briefly after it
+                  finishes so the failed dots stay visible next to
+                  the gap banner below. Cleared on the next Run. */}
+              {photoProgress && photoProgress.total > 0 && (() => {
+                const status = photoProgress.photo_status || {};
+                const total = photoProgress.total;
+                const failedList = [];
+                const okList = [];
+                const pendingList = [];
+                let inFlightList = [];
+                for (let i = 0; i < total; i += 1) {
+                  const st = status[String(i)];
+                  if (st === "failed") failedList.push(i);
+                  else if (st === "ok") okList.push(i);
+                  else pendingList.push(i);
+                }
+                // Contractor-plain status line: prefer failures (they
+                // are the actionable news) over throughput counts.
+                let statusLine;
+                if (failedList.length > 0 && (okList.length + failedList.length) === total) {
+                  statusLine = failedList.length === 1
+                    ? `Photo ${failedList[0] + 1} didn't complete — you can re-shoot it later.`
+                    : `Photos ${failedList.map((n) => n + 1).join(", ")} didn't complete — you can re-shoot them later.`;
+                } else if (failedList.length > 0) {
+                  const doneStr = failedList.length === 1
+                    ? `Photo ${failedList[0] + 1} didn't complete.`
+                    : `Photos ${failedList.map((n) => n + 1).join(", ")} didn't complete.`;
+                  statusLine = `Reading photos… ${doneStr} Continuing with the rest.`;
+                } else if (okList.length === total) {
+                  statusLine = `All ${total} photos read.`;
+                } else if (okList.length > 0) {
+                  // Guess in-flight = the smallest pending index (first
+                  // photo of the current wave). Simple heuristic —
+                  // contractor-plain "reading photo N".
+                  inFlightList = pendingList.slice(0, Math.max(1, Math.min(pendingList.length, photoProgress.concurrency || 2)));
+                  const inFlightStr = inFlightList.length === 1
+                    ? `photo ${inFlightList[0] + 1}`
+                    : `photos ${inFlightList.map((n) => n + 1).join(" & ")}`;
+                  statusLine = `Read ${okList.length} of ${total} · working on ${inFlightStr}…`;
+                } else {
+                  statusLine = `Reading photos 1–${total}…`;
+                }
+                return (
+                  <div
+                    className="mb-4 p-3 border border-[var(--border)] bg-[var(--surface-muted)]"
+                    data-testid="ai-measure-photo-hud"
+                  >
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5">
+                      Photo progress
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 items-center mb-2" data-testid="ai-measure-photo-hud-dots">
+                      {Array.from({ length: total }).map((_, i) => {
+                        const st = status[String(i)];
+                        let dotCls;
+                        let dotLabel;
+                        if (st === "ok") {
+                          dotCls = "bg-[var(--success)] text-white";
+                          dotLabel = `Photo ${i + 1}: read`;
+                        } else if (st === "failed") {
+                          dotCls = "bg-[#B45309] text-white";
+                          dotLabel = `Photo ${i + 1}: didn't complete`;
+                        } else if (inFlightList.includes(i)) {
+                          dotCls = "bg-[var(--ai)] text-white animate-pulse";
+                          dotLabel = `Photo ${i + 1}: reading now`;
+                        } else {
+                          dotCls = "bg-[var(--border)] text-[var(--muted)]";
+                          dotLabel = `Photo ${i + 1}: pending`;
+                        }
+                        return (
+                          <span
+                            key={i}
+                            className={`inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 text-[10px] font-bold ${dotCls}`}
+                            title={dotLabel}
+                            data-testid={`ai-measure-photo-hud-dot-${i}`}
+                            data-status={st || (inFlightList.includes(i) ? "in_progress" : "pending")}
+                          >
+                            {i + 1}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div
+                      className="text-[11px] text-[var(--ink-2)]"
+                      data-testid="ai-measure-photo-hud-status-line"
+                    >
+                      {statusLine}
+                    </div>
+                  </div>
+                );
+              })()}
               {/* Iter 57r — Resume last AI run banner */}
               {lastRun && (lastRun.status === "running" || (lastRun.status === "done" && lastRun.result) || lastRun.status === "error") && (
                 <div
