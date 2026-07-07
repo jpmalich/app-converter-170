@@ -26,7 +26,7 @@ re-run that entry's prompt (they are written to be safely re-applied in full).
 | 4 | Auto-populate estimate fields at creation | r1 | 2026-07-03 | ☐ rev: ____ date: ____ |
 | 5 | Soft input validation + format tips | r2 | 2026-07-03 | ☐ rev: ____ date: ____ |
 | 6 | Post-merge adaptations (2026-07-04 code merge) | r1 | 2026-07-04 | ☐ rev: ____ date: ____ |
-| 7 | Blueprint Instrument redesign + interaction accessibility | r1 | 2026-07-06 | ☐ rev: ____ date: ____ |
+| 7 | Blueprint Instrument redesign + interaction accessibility | r2 | 2026-07-06 | ☐ rev: ____ date: ____ |
 
 **Excluded by design:** anything related to decoupling this repo from the Emergent platform
 (the direct-Anthropic LLM client, Docker self-hosting, removal of Emergent branding/telemetry,
@@ -501,9 +501,17 @@ UI chrome; the app builds.
 
 ## 7 — Blueprint Instrument redesign + interaction accessibility (2026-07-06)
 
-**Revision:** r1 · last updated 2026-07-06
+**Revision:** r2 · last updated 2026-07-06
 **Change log:**
 - r1 (2026-07-06) — initial
+- r2 (2026-07-06) — UX-audit quick wins folded into the same body of work:
+  extended the D4 label list (sales-tax rate, profit margin input + slider,
+  dashboard search), draft-stamp contrast fix (A4), dashboard load skeleton (C),
+  and two polish items (i18n save toast, back-button hit area) as a new D5. Each
+  addition is tagged "(r2)" inline.
+
+**If you applied r1 in Emergent:** apply only the items tagged "(r2)" below (in
+A4, PART C, D4, and the new D5); the rest is unchanged.
 
 **What changed here:** a new "Blueprint Instrument" visual identity (a drafting /
 measurement-instrument look — graph-paper sheet, architect's title block, measurements drawn
@@ -562,7 +570,10 @@ A4. New primitive components in src/components/ui/blueprint/index.jsx:
   display:flex only under [data-design="blueprint"], so an unconditionally-rendered
   DimensionLine never leaks stray text into other themes.
 - Stamp({variant}): an outlined, uppercase, letter-spaced rubber-stamp mark; variants
-  won=green, sent=blue, draft=muted. Forward extra props (title, data-testid) to the element.
+  won=green, sent=blue, draft. Forward extra props (title, data-testid) to the element.
+  (r2) Color the draft label with a mid-ink token (e.g. --bp-ink-2), NOT the lightest muted
+  gray — the stamp text is ~10px, and muted (#8493A8) is only ~3.1:1 on the sheet (fails WCAG
+  AA); ink-2 clears 4.5:1.
 - InstrumentKpi: a stat card with mono value + label (optional).
 
 PART B — apply Blueprint to the Estimate Editor (pages/EstimateEditor.jsx)
@@ -583,6 +594,11 @@ PART C — apply Blueprint to the Dashboard (pages/Dashboard.jsx)
   var(--brand-text), secondary uses var(--muted). Do NOT use var(--brand) for text on the white
   row — --brand is the safety-orange fill token and fails contrast on white; --brand-text is the
   WCAG-safe text token (blue under the bridge, dark orange in the default theme).
+- (r2) While the estimate list is loading, render ~5 skeleton rows matching the table grid
+  (with aria-busy) instead of a single centered "Loading…" line — reserves space, avoids layout
+  shift.
+- (r2) Give the search input an aria-label (reuse its placeholder text) and type="search"; a
+  placeholder alone is not an accessible name.
 
 PART D — interaction accessibility (theme-independent; apply everywhere)
 
@@ -611,7 +627,15 @@ D4. Associate every form label with its control. For the JobInfoPanel color/wind
 Vero model select, and the Vero/Mezzo width/height/qty fields, add matching id + htmlFor (use a
 generated id where the field is a reusable component). For the compact inline "notes" inputs that
 have only a placeholder, add an aria-label. Add aria-expanded + aria-controls to the
-SectionAccordion disclosure header.
+SectionAccordion disclosure header. (r2) Also label the SettingsRow sales-tax rate input, the
+profit margin percent input, and its range slider — and give the slider an aria-valuetext (e.g.
+"38%") so it announces its value.
+
+D5. (r2) Two small polish items. (a) i18n the manual-save success toast — it was a hardcoded
+"Saved"; route it through the translation function (if the hook already binds `t` to another
+value, name the translator differently, e.g. `tr`). (b) The sticky top-bar Back link is a 20px
+icon; pad it to a >=24px (aim 32px) hit area and give it a translated aria-label instead of a
+literal "Back".
 
 Verify: on the Estimate Editor and Dashboard wrapped in blueprint, buttons/rules/CTAs are blue
 and orange appears only as sparse redline; each window opening shows a drawn "W × H in" dimension
