@@ -15,6 +15,53 @@ from deps import hash_password, verify_password
 from services import create_company, ensure_tiers_seeded, get_default_tier_id
 
 
+async def _ensure_ttl(db, collection_name, index_name, *, keys, expire_after_seconds):
+    """Create-or-modify a TTL index in place.
+
+    `create_index` refuses to change `expireAfterSeconds` on an existing
+    index (raises IndexOptionsConflict / OperationFailure code 85 or 86).
+    Path:
+      1. Try create_index — no-op if the index already matches.
+      2. On conflict, run `collMod` to update the live TTL without
+         dropping the index (avoids a brief window where writes could
+         insert docs that would be missed by the TTL scanner).
+    """
+    coll = db[collection_name]
+    try:
+        await coll.create_index(keys, expireAfterSeconds=expire_after_seconds)
+        return
+    except Exception as create_err:
+        msg = str(create_err).lower()
+        conflict = (
+            "indexoptionsconflict" in msg
+            or "already exists with different options" in msg
+            or "code\":85" in msg
+            or "code\":86" in msg
+        )
+        if not conflict:
+            raise
+    try:
+        await db.command({
+            "collMod": collection_name,
+            "index": {
+                "name": index_name,
+                "expireAfterSeconds": expire_after_seconds,
+            },
+        })
+        logger.info(
+            "TTL updated in place: %s.%s -> expireAfterSeconds=%d",
+            collection_name, index_name, expire_after_seconds,
+        )
+    except Exception as mod_err:
+        logger.warning(
+            "collMod TTL update failed for %s.%s (%s); "
+            "dropping + recreating index as fallback",
+            collection_name, index_name, mod_err,
+        )
+        await coll.drop_index(index_name)
+        await coll.create_index(keys, expireAfterSeconds=expire_after_seconds)
+
+
 async def run_startup():
     # Indexes
     await db.users.create_index("email", unique=True)
@@ -45,19 +92,31 @@ async def run_startup():
         "created_at", expireAfterSeconds=86400,
     )
 
-    # Iter 79e — same 24h TTL + unique run_id on the sibling async-run
-    # collections so they don't accumulate forever. Each doc holds image
-    # payloads + result objects (non-trivial size). Contractors always
-    # poll the result inside the 5-min frontend window, so a day is more
-    # than enough retention. Run docs include both AI Measure (photo
-    # takeoffs) + AI Blueprint (PDF plan-sheet takeoffs).
+    # Iter 79e — sibling async-run collections. Unique run_id + TTL on
+    # created_at. Retention diverges on purpose (Iter 79j.62, Jul 2026):
+    #   • ai_measure_runs → 30 DAYS. Contractors need to reference
+    #     "graduation" runs (validated red-house-style baselines) for
+    #     weeks while iterating on placement math, PDF export, and
+    #     bbox routing. A 24h TTL ate the Feb 2026 Red-House graduation
+    #     run mid-fork; never again.
+    #   • ai_blueprint_runs → 24 HOURS (unchanged). Plan-sheet takeoffs
+    #     are quoted same-day; keeping the older window here since these
+    #     docs carry heavier image payloads and stack up faster.
+    # The collMod fallback below force-updates the live TTL when the
+    # index already exists but with the wrong expireAfterSeconds
+    # (`create_index` alone raises IndexOptionsConflict).
+    AI_MEASURE_TTL_SECONDS = 30 * 24 * 60 * 60  # 30 days
+    AI_BLUEPRINT_TTL_SECONDS = 24 * 60 * 60      # 24 hours
+
     await db.ai_measure_runs.create_index("run_id", unique=True)
-    await db.ai_measure_runs.create_index(
-        "created_at", expireAfterSeconds=86400,
+    await _ensure_ttl(
+        db, "ai_measure_runs", "created_at_1",
+        keys="created_at", expire_after_seconds=AI_MEASURE_TTL_SECONDS,
     )
     await db.ai_blueprint_runs.create_index("run_id", unique=True)
-    await db.ai_blueprint_runs.create_index(
-        "created_at", expireAfterSeconds=86400,
+    await _ensure_ttl(
+        db, "ai_blueprint_runs", "created_at_1",
+        keys="created_at", expire_after_seconds=AI_BLUEPRINT_TTL_SECONDS,
     )
 
     # Seed the 4 price tiers
