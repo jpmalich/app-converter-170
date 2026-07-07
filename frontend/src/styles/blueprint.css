@@ -1,0 +1,212 @@
+/* ============================================================================
+   Blueprint Instrument — design-system foundation (Rev 2).
+   Spec: docs/specs/redesign-system.md · Mockup: docs/specs/redesign-mockup.html
+
+   INERT BY DESIGN. Every token and class here is scoped under
+   [data-design="blueprint"], so importing this file changes nothing until a
+   subtree opts in. Screen-by-screen conversion happens in later PRs.
+
+   Themes: default = Whiteprint (light). Add [data-bp-theme="dark"] on the same
+   opted-in element for the cyanotype Blueprint (dark) palette.
+   ========================================================================== */
+
+[data-design="blueprint"] {
+  /* ---- Whiteprint (light) tokens ---- */
+  --bp-desk:   #E4E7EC;
+  --bp-paper:  #F7F8FA;
+  --bp-sheet:  #FFFFFF;
+  --bp-ink:    #0B1F3A;
+  --bp-ink-2:  #47566B;
+  --bp-muted:  #8493A8;
+  --bp-line:   #1E6FEB;   /* single primary accent — dimension lines, rules, focus, CTA */
+  --bp-line-2: #A9C4F5;
+  --bp-grid:   rgba(30, 111, 235, .07);
+  --bp-grid-2: rgba(30, 111, 235, .14);
+  --bp-border: #D3DBE6;
+  --bp-mark:   #F26419;   /* redline / markup — scarce, high-signal */
+  --bp-pos:    #0E7C66;
+  --bp-neg:    #C63B3B;
+  --bp-on-brand: #FFFFFF; /* text on a --bp-line fill */
+  --bp-shadow: 0 1px 2px rgba(11,31,58,.06), 0 8px 24px rgba(11,31,58,.08);
+
+  /* ---- type ---- */
+  --bp-font-sans: "Helvetica Neue", Arial, system-ui, sans-serif;
+  --bp-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ---- z-index scale (tokenized — no ad-hoc literals) ---- */
+  --bp-z-header: 10;
+  --bp-z-sticky: 20;
+  --bp-z-popover: 40;
+  --bp-z-modal: 50;
+  --bp-z-toast: 60;
+
+  color: var(--bp-ink);
+  font-family: var(--bp-font-sans);
+}
+
+[data-design="blueprint"][data-bp-theme="dark"] {
+  /* ---- Blueprint (dark / cyanotype) tokens ---- */
+  --bp-desk:   #05070D;
+  --bp-paper:  #081327;
+  --bp-sheet:  #0B1F3A;
+  --bp-ink:    #EAF1FF;
+  --bp-ink-2:  #A7BEDE;
+  --bp-muted:  #6E86A8;
+  --bp-line:   #5B9BFF;
+  --bp-line-2: #294A7D;
+  --bp-grid:   rgba(120, 170, 255, .10);
+  --bp-grid-2: rgba(120, 170, 255, .20);
+  --bp-border: #1C3355;
+  --bp-mark:   #FF9247;
+  --bp-pos:    #34D399;
+  --bp-neg:    #FF6B6B;
+  --bp-on-brand: #081327; /* dark text on the lighter dark-theme --bp-line */
+  --bp-shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.5);
+}
+
+/* ---------------------------------------------------------------- token bridge
+   Remap the app's existing semantic tokens to Blueprint values inside the
+   scope, so existing components (which use var(--ink)/--brand/--surface/…)
+   adopt the Blueprint palette automatically as screens are converted. Screens
+   opt in by carrying data-design="blueprint" on a wrapper. */
+[data-design="blueprint"] {
+  --bg-app:        var(--bp-paper);
+  --surface:       var(--bp-sheet);
+  --surface-muted: var(--bp-paper);
+  --table-header:  var(--bp-paper);
+  --ink:           var(--bp-ink);
+  --ink-2:         var(--bp-ink-2);
+  --muted:         var(--bp-muted);
+  --border:        var(--bp-border);
+  --border-strong: var(--bp-ink);
+  --edge:          var(--bp-ink);
+  --focus:         var(--bp-line);
+  --brand:         var(--bp-line);
+  --brand-hover:   var(--bp-ink);
+  --brand-text:    var(--bp-line);
+  --on-brand:      var(--bp-on-brand);
+  --bar-bg:        var(--bp-ink);
+  --bar-ink:       #FFFFFF;
+  --bar-muted:     var(--bp-line-2);
+  --profit:        var(--bp-pos);
+  --success:       var(--bp-pos);
+  --danger:        var(--bp-neg);
+  --danger-text:   var(--bp-neg);
+  /* Redline discipline (spec §1, §5): safety orange = --bp-mark is markup ONLY,
+     scarce and high-signal. AI / smart-import actions are CTAs, so they take the
+     primary line accent like every other CTA — the sparkle icon carries the "AI"
+     signal, not color. This keeps --bp-mark free for genuine redline (flags,
+     deltas, "verify…" notes). */
+  --ai:            var(--bp-line);
+}
+
+/* ---------------------------------------------------------------- primitives */
+
+/* Numerals — the identity-defining rule. Every $ / qty / measure. */
+[data-design="blueprint"] .bp-num {
+  font-family: var(--bp-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Drawing sheet — frame + graph-paper substrate */
+[data-design="blueprint"] .bp-sheet {
+  position: relative;
+  background-color: var(--bp-paper);
+  border: 1.5px solid var(--bp-line);
+  box-shadow: var(--bp-shadow);
+  background-image:
+    repeating-linear-gradient(0deg,  transparent 0 7px,  var(--bp-grid)   7px 8px),
+    repeating-linear-gradient(90deg, transparent 0 7px,  var(--bp-grid)   7px 8px),
+    repeating-linear-gradient(0deg,  transparent 0 55px, var(--bp-grid-2) 55px 56px),
+    repeating-linear-gradient(90deg, transparent 0 55px, var(--bp-grid-2) 55px 56px);
+}
+[data-design="blueprint"] .bp-sheet::before {
+  content: ""; position: absolute; inset: 6px;
+  border: 1px solid var(--bp-line-2); pointer-events: none;
+}
+[data-design="blueprint"] .bp-sheet__pad { padding: clamp(16px, 2.6vw, 34px); position: relative; }
+
+/* Title block — architect's metadata cells */
+[data-design="blueprint"] .bp-titleblock {
+  display: flex; align-items: stretch; flex-wrap: wrap;
+  border: 1.5px solid var(--bp-ink); background: var(--bp-sheet);
+}
+[data-design="blueprint"] .bp-titleblock__brand {
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  flex: 1 1 240px; border-right: 1.5px solid var(--bp-ink);
+}
+[data-design="blueprint"] .bp-titleblock__mark {
+  width: 34px; height: 34px; flex: none; border: 1.5px solid var(--bp-line);
+  display: grid; place-items: center; font-weight: 800; color: var(--bp-line);
+  font-size: 13px; letter-spacing: -.04em;
+}
+[data-design="blueprint"] .bp-titleblock__brand h1 { font-size: 15px; margin: 0; font-weight: 800; letter-spacing: -.01em; }
+[data-design="blueprint"] .bp-titleblock__brand p { font-size: 10.5px; margin: 2px 0 0; color: var(--bp-muted); text-transform: uppercase; letter-spacing: .16em; }
+[data-design="blueprint"] .bp-titleblock__cell {
+  padding: 8px 14px; border-right: 1.5px solid var(--bp-ink);
+  display: flex; flex-direction: column; justify-content: center; min-width: 88px;
+}
+[data-design="blueprint"] .bp-titleblock__cell:last-child { border-right: none; }
+[data-design="blueprint"] .bp-titleblock__cell .k { font-size: 8.5px; text-transform: uppercase; letter-spacing: .14em; color: var(--bp-muted); font-weight: 700; }
+[data-design="blueprint"] .bp-titleblock__cell .v { font-family: var(--bp-font-mono); font-size: 13px; font-weight: 600; margin-top: 2px; }
+
+/* Drawing label — section eyebrow */
+[data-design="blueprint"] .bp-dlabel { display: flex; align-items: baseline; gap: 12px; margin: 30px 0 14px; }
+[data-design="blueprint"] .bp-dlabel__code { font-family: var(--bp-font-mono); font-size: 12px; font-weight: 700; color: var(--bp-line); border: 1px solid var(--bp-line); padding: 1px 7px; }
+[data-design="blueprint"] .bp-dlabel__title { font-size: 17px; margin: 0; letter-spacing: .02em; text-transform: uppercase; font-weight: 800; }
+[data-design="blueprint"] .bp-dlabel__rule { flex: 1; height: 1px; background: var(--bp-border); }
+[data-design="blueprint"] .bp-dlabel__note { font-size: 11px; color: var(--bp-muted); text-transform: uppercase; letter-spacing: .12em; }
+
+/* Dimension line — measurements drawn, not just typed */
+/* Dimension lines are a blueprint-only flourish — hidden in every other theme
+   so an unconditionally-rendered <DimensionLine> never leaks stray text. */
+.bp-dim { display: none; }
+[data-design="blueprint"] .bp-dim { display: flex; align-items: center; gap: 9px; color: var(--bp-line); }
+[data-design="blueprint"] .bp-dim__rule { flex: 1; height: 0; border-top: 1px solid currentColor; position: relative; }
+[data-design="blueprint"] .bp-dim__rule::before,
+[data-design="blueprint"] .bp-dim__rule::after { content: ""; position: absolute; top: -3.5px; width: 1px; height: 8px; background: currentColor; }
+[data-design="blueprint"] .bp-dim__rule::before { left: 0; }
+[data-design="blueprint"] .bp-dim__rule::after { right: 0; }
+[data-design="blueprint"] .bp-dim__val { font-family: var(--bp-font-mono); font-size: 11px; font-weight: 600; letter-spacing: .02em; white-space: nowrap; }
+
+/* Panel */
+[data-design="blueprint"] .bp-panel { background: var(--bp-sheet); border: 1px solid var(--bp-border); box-shadow: var(--bp-shadow); }
+
+/* Instrument KPI */
+[data-design="blueprint"] .bp-kpi { padding: 14px 15px 12px; position: relative; overflow: hidden; }
+[data-design="blueprint"] .bp-kpi__k { font-size: 9.5px; text-transform: uppercase; letter-spacing: .13em; color: var(--bp-muted); font-weight: 700; }
+[data-design="blueprint"] .bp-kpi__v { font-family: var(--bp-font-mono); font-size: 27px; font-weight: 700; letter-spacing: -.02em; margin: 5px 0 8px; font-variant-numeric: tabular-nums; }
+[data-design="blueprint"] .bp-kpi__foot { display: flex; align-items: center; gap: 6px; font-family: var(--bp-font-mono); font-size: 11px; font-weight: 600; }
+[data-design="blueprint"] .bp-up { color: var(--bp-pos); }
+[data-design="blueprint"] .bp-down { color: var(--bp-neg); }
+[data-design="blueprint"] .bp-markup { color: var(--bp-mark); font-family: var(--bp-font-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; }
+
+/* Stamp status */
+[data-design="blueprint"] .bp-stamp { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; padding: 3px 9px; border: 1.5px solid currentColor; }
+[data-design="blueprint"] .bp-stamp--won { color: var(--bp-pos); }
+[data-design="blueprint"] .bp-stamp--sent { color: var(--bp-line); }
+[data-design="blueprint"] .bp-stamp--draft { color: var(--bp-muted); }
+
+/* Buttons */
+[data-design="blueprint"] .bp-btn {
+  font: inherit; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  cursor: pointer; padding: 10px 14px; border: 1.5px solid var(--bp-ink);
+  background: var(--bp-sheet); color: var(--bp-ink);
+  transition: background .15s, color .15s;
+}
+[data-design="blueprint"] .bp-btn:hover { background: var(--bp-ink); color: var(--bp-paper); }
+[data-design="blueprint"] .bp-btn--go { background: var(--bp-line); border-color: var(--bp-line); color: #fff; }
+[data-design="blueprint"] .bp-btn--go:hover { background: var(--bp-ink); border-color: var(--bp-ink); }
+[data-design="blueprint"] .bp-btn:focus-visible { outline: 2px solid var(--bp-mark); outline-offset: 2px; }
+
+/* Mono input */
+[data-design="blueprint"] .bp-input {
+  font-family: var(--bp-font-mono); font-variant-numeric: tabular-nums; text-align: right; width: 100%;
+  font-size: 13px; padding: 6px 9px; border: 1px solid var(--bp-border);
+  background: var(--bp-paper); color: var(--bp-ink);
+}
+[data-design="blueprint"] .bp-input:focus { outline: 2px solid var(--bp-line); outline-offset: 0; border-color: var(--bp-line); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-design="blueprint"] * { transition: none !important; }
+}

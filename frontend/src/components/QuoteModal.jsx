@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/auth";
 import { useLang, useT } from "@/lib/i18n";
 import CompanyLogo from "@/components/CompanyLogo";
 import { X, Printer, Send } from "lucide-react";
+import { toast } from "sonner";
+import Modal from "@/components/ui/Modal";
 import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/emailQuote";
 import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
 import { isValidEmail } from "@/lib/validate";
@@ -145,15 +147,22 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e) {
-      window.alert(`Could not generate PDF: ${e.message}`);
+      toast.error(t("quote.pdfFailed"));
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-[#09090B]/70 backdrop-blur-sm overflow-y-auto" data-testid="quote-modal">
-      <div className="min-h-screen flex flex-col items-center py-6 sm:py-10 px-4">
+    <Modal
+      open
+      onClose={onClose}
+      title={t("quote.modalTitle")}
+      testid="quote-modal"
+      overlayStyle={{ background: "rgba(9,9,11,.7)" }}
+      contentClassName="fixed inset-0 overflow-y-auto outline-none"
+    >
+      <div className="min-h-dvh flex flex-col items-center py-6 sm:py-10 px-4">
         {/* Floating action bar */}
         <div className="no-print w-full max-w-3xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div className="flex flex-col md:flex-1 gap-1">
@@ -466,7 +475,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }
 

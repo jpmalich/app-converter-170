@@ -4,6 +4,8 @@ import DOMPurify from "dompurify";
 import { Plus, Trash2, X, ChevronDown, ChevronRight, StickyNote, HelpCircle } from "lucide-react";
 import { v4 as uuid } from "uuid";
 import { useT, useLang } from "@/lib/i18n";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { DimensionLine } from "@/components/ui/blueprint";
 import { tSection } from "@/lib/catalogTranslations";
 import BulkApplyConfirm from "./BulkApplyConfirm";
 import WindowPackageQuote from "./WindowPackageQuote";
@@ -492,10 +494,11 @@ function OpeningRow({
           #{(op.label || (bucket ? bucket.label : "—"))}
         </div>
         <div className="col-span-4 md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
+          <label htmlFor={`mezzo-width-${op.id}`} className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
             {t("win.width")}
           </label>
           <input
+            id={`mezzo-width-${op.id}`}
             type="number"
             inputMode="decimal"
             step="0.125"
@@ -508,10 +511,11 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-2">
-          <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
+          <label htmlFor={`mezzo-height-${op.id}`} className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
             {t("win.height")}
           </label>
           <input
+            id={`mezzo-height-${op.id}`}
             type="number"
             inputMode="decimal"
             step="0.125"
@@ -524,10 +528,11 @@ function OpeningRow({
           />
         </div>
         <div className="col-span-4 md:col-span-1">
-          <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
+          <label htmlFor={`mezzo-qty-${op.id}`} className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
             {t("win.qty")}
           </label>
           <input
+            id={`mezzo-qty-${op.id}`}
             type="number"
             inputMode="decimal"
             step="1"
@@ -567,23 +572,40 @@ function OpeningRow({
           >
             <StickyNote className="w-4 h-4" />
           </button>
-          <button
-            type="button"
-            className="p-1.5 text-[var(--muted)] hover:text-[var(--danger-text)]"
+          <ConfirmDialog
+            trigger={
+              <button
+                type="button"
+                className="p-1.5 text-[var(--muted)] hover:text-[var(--danger-text)]"
+                title={t("win.removeOpening")}
+                data-testid={`mezzo-remove-${op.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            }
             title={t("win.removeOpening")}
-            onClick={onRemove}
-            data-testid={`mezzo-remove-${op.id}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+            description={t("confirm.removeOpening.desc")}
+            confirmLabel={t("common.remove")}
+            cancelLabel={t("common.cancel")}
+            destructive
+            onConfirm={onRemove}
+          />
         </div>
       </div>
+
+      {(Number(op.width) > 0 || Number(op.height) > 0) && (
+        <DimensionLine
+          className="mt-2"
+          value={`${Number(op.width) || 0} × ${Number(op.height) || 0} in`}
+        />
+      )}
 
       {isNotesOpen && (
         <div className="mt-2 pl-0 md:pl-[8.333%]">
           <input
             type="text"
             className="input h-8 text-sm"
+            aria-label={t("win.notesPlaceholder")}
             placeholder={t("win.notesPlaceholder")}
             value={op.label || ""}
             onChange={(e) => onUpdate({ label: e.target.value })}

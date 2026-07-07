@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useId, useMemo, useState } from "react";
 import axios from "axios";
 import DOMPurify from "dompurify";
 import { Plus, Trash2, X, ChevronDown, ChevronRight, StickyNote, HelpCircle } from "lucide-react";
 import { v4 as uuid } from "uuid";
 import { useT, useLang } from "@/lib/i18n";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { DimensionLine } from "@/components/ui/blueprint";
 import { tSection } from "@/lib/catalogTranslations";
 import BulkApplyConfirm from "./BulkApplyConfirm";
 import WindowPackageQuote from "./WindowPackageQuote";
@@ -558,8 +560,9 @@ function VeroOpeningRow({
         )}
         {isFixed ? (
           <div className="flex-1 min-w-[200px]">
-            <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">{t("win.model")}</label>
+            <label htmlFor={`vero-model-${op.id}`} className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">{t("win.model")}</label>
             <select
+              id={`vero-model-${op.id}`}
               className="input h-9 text-sm w-full"
               value={op.model || ""}
               onChange={(e) => onUpdate({ model: e.target.value })}
@@ -647,22 +650,39 @@ function VeroOpeningRow({
           >
             <StickyNote className="w-4 h-4" />
           </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="text-[var(--danger-text)] hover:text-[#991B1B] p-1"
+          <ConfirmDialog
+            trigger={
+              <button
+                type="button"
+                className="text-[var(--danger-text)] hover:text-[var(--neg,#991B1B)] p-1"
+                title={t("win.removeOpening")}
+                data-testid={`vero-remove-${op.id}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            }
             title={t("win.removeOpening")}
-            data-testid={`vero-remove-${op.id}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+            description={t("confirm.removeOpening.desc")}
+            confirmLabel={t("common.remove")}
+            cancelLabel={t("common.cancel")}
+            destructive
+            onConfirm={onRemove}
+          />
         </div>
       </div>
+
+      {!isFixed && (Number(op.width) > 0 || Number(op.height) > 0) && (
+        <DimensionLine
+          className="mt-2"
+          value={`${Number(op.width) || 0} × ${Number(op.height) || 0} in`}
+        />
+      )}
 
       {isNotesOpen && (
         <div className="mt-2 flex items-center gap-2">
           <input
             className="input h-8 text-xs flex-1"
+            aria-label={t("win.notesPlaceholder")}
             placeholder={t("win.notesPlaceholder")}
             value={op.label || ""}
             onChange={(e) => onUpdate({ label: e.target.value })}
@@ -785,10 +805,12 @@ function VeroOpeningRow({
 }
 
 function NumField({ label, value, onChange, testid, minWidth = 78, isQty = false }) {
+  const fieldId = useId();
   return (
     <div style={{ minWidth }}>
-      <label className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">{label}</label>
+      <label htmlFor={fieldId} className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold block mb-0.5">{label}</label>
       <input
+        id={fieldId}
         type="number"
         inputMode="decimal"
         className="input num h-9 text-sm text-center w-full"
