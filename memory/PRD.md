@@ -49,6 +49,33 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 - `GET /api/exports/estimates.csv` · `GET /api/exports/estimates/{id}.csv`
 
 ## ACTIVE GATE — Post-79j.61 Ordering (do not violate)
+
+**PERMANENT RULE — Code freeze during active AI Measure runs (Iter 79j.62,
+Jul 7 2026):** Do NOT edit any file under `/app/backend/` while an AI
+Measure or AI Blueprint run is in flight (`status='running'`). `uvicorn`
+hot-reload cancels the event loop; anything spawned via
+`asyncio.create_task` (Phase A extractors, Phase B reconciler, worker
+schedulers) is silently orphaned when reload fires. The run doc stays
+frozen at whatever state it was in when the reload hit, and the browser
+polls forever seeing that frozen snapshot.
+- **Applies to**: every future fork/agent working on this codebase, not
+  just the current run. Cost of one accidental edit = a burned run + at
+  minimum minutes of contractor time watching grey dots.
+- **Detector shipped** (Iter 79j.62): the `/status/{run_id}` endpoint
+  now flips a stale `running` doc to `error` when `updated_at` has been
+  idle for more than `max(60s, 2 × per_wave_budget_s)` (default 500s
+  ceiling). Test coverage: `tests/test_stale_worker_detector.py` (6/6
+  PASS). This makes accidental reload survivable but does NOT excuse
+  the freeze rule — a mid-Phase-A kill still burns any Anthropic calls
+  already dispatched in the killed wave.
+- **When to unfreeze**: only after the run's status has flipped to
+  `done` or `error` in Mongo (verified via `/status/{run_id}` or direct
+  Mongo query), OR after 30 days (TTL). Never before.
+- **Frontend edits during a run**: also risky (React hot-reload re-mounts
+  the component tree, resetting the polling loop's `useEffect`). Same
+  freeze rule applies to `/app/frontend/src/components/estimate/AIMeasureButton.jsx`
+  and its direct dependencies.
+
 **Standing order (Feb 2026, re-affirmed Jul 7 2026 after fork resume):**
 
 1. **Confirmation Run 3** — clean full-payload run on the Red-House fixture

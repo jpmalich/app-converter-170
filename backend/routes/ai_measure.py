@@ -2561,6 +2561,69 @@ async def ai_measure_status(
         raise HTTPException(status_code=404, detail="Run not found")
     if doc.get("user_id") != user["id"]:
         raise HTTPException(status_code=403, detail="Not your run")
+
+    # Iter 79j.62 — Stale-worker detector.
+    # `asyncio.create_task` workers do NOT survive uvicorn hot-reload —
+    # the event loop is cancelled and the task dies silently with no
+    # chance to update the run doc. Result: `status: 'running'` sticks
+    # forever, the browser polls forever, the user sees grey dots
+    # forever. On the Jul 7 2026 red-house confirmation attempt this
+    # burned 820s of contractor time.
+    #
+    # Detection: if the doc is still `running` and `updated_at` has
+    # been idle for MORE than `max(60s, 2 × per_wave_budget_s)`, we
+    # flip it to `error` in place with a specific `error_kind` so the
+    # frontend's existing run-error banner renders a Retry Run button
+    # (same UX pattern as reconciliation-failure — no new UI needed).
+    #
+    # Threshold rationale: a healthy Phase A worker writes progress at
+    # the end of every wave (per_wave_budget_s caps the wait). 2×
+    # wave-budget gives 500s ceiling on the default 250s budget —
+    # generous enough to never false-flag a slow-but-alive wave. 60s
+    # floor prevents old code paths without per_wave_budget from
+    # spinning forever.
+    if doc.get("status") == "running":
+        updated_at = _as_aware_utc(doc.get("updated_at") or doc.get("created_at"))
+        pa_prog = doc.get("phase_a_progress") or {}
+        wave_budget_s = int(pa_prog.get("per_wave_budget_s") or 250)
+        stale_threshold_s = max(60, 2 * wave_budget_s)
+        if updated_at is not None:
+            idle_s = (datetime.now(timezone.utc) - updated_at).total_seconds()
+            if idle_s > stale_threshold_s:
+                stage_at_death = doc.get("stage") or (pa_prog.get("phase") if isinstance(pa_prog, dict) else None) or "unknown"
+                photos_done = int(pa_prog.get("done") or 0) if isinstance(pa_prog, dict) else 0
+                photos_total = int(pa_prog.get("total") or 0) if isinstance(pa_prog, dict) else 0
+                err_msg = (
+                    f"Worker task died silently (no progress for {int(idle_s)}s, "
+                    f"threshold {stale_threshold_s}s). Most likely cause: a backend "
+                    f"restart or hot-reload cancelled the asyncio task. "
+                    f"Last known stage: '{stage_at_death}'"
+                    + (f", {photos_done}/{photos_total} photos done." if photos_total else ".")
+                    + " Click Retry Run to fire a fresh worker — no partial "
+                    "extractions were saved and no additional Anthropic charges "
+                    "were incurred beyond photos that already completed."
+                )
+                now_utc = datetime.now(timezone.utc)
+                await db.ai_measure_runs.update_one(
+                    {"run_id": run_id, "status": "running"},
+                    {"$set": {
+                        "status": "error",
+                        "stage": "worker_died",
+                        "error": err_msg,
+                        "error_kind": "WorkerDied",
+                        "completed_at": now_utc,
+                        "updated_at": now_utc,
+                    }},
+                )
+                logger.warning(
+                    "[ai-measure] stale-worker detector: flipped run %s to error "
+                    "(idle %ds > threshold %ds, stage=%s, %d/%d photos)",
+                    run_id, int(idle_s), stale_threshold_s,
+                    stage_at_death, photos_done, photos_total,
+                )
+                # Refresh the doc so the response below reflects the flip
+                doc = await db.ai_measure_runs.find_one({"run_id": run_id}) or doc
+
     created = _as_aware_utc(doc.get("created_at"))
     completed = _as_aware_utc(doc.get("completed_at") or doc.get("updated_at"))
     elapsed_ms = None
