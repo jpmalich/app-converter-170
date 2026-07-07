@@ -1710,3 +1710,54 @@ Diff SHIPPED (env-gated, safe by default). Diagnostic path forward for the uvico
 - **Iter 54a fixture testing** — still blocked on getting two graduated runs; the direct-Phase-A path should make this cheap to acquire.
 - **Frontend per-wave progress rendering** — backend now publishes `phase_a_progress` per wave; frontend still shows a single "Extracting per photo" state. Wire a "wave 2/4 · 3 ok · 1 timed out" line into the status pill next.
 
+
+## Iter 79j.60 — Direct-Phase-A confirmation, Wave HUD, unanchored-dormer amber flag, direct-B timeout bump (2026-07-07 afternoon)
+
+**Status**: SHIPPED · 23/23 pytest PASS · direct-A empirically confirmed on identical 8-photo input.
+
+### 🟢 Support datapoint #7 — Transport indicted
+Same 8 photos, same estimate (`a2329f30-2228-4a43-b9f7-9f34eb5970f7`), same model (`claude-fable-5`):
+- **Proxy Phase A (morning)**: 5/8 photos dead at the 300s total-cap, 4 empty extractions on the successful reconcile → dormer count = 0.
+- **Direct Phase A (afternoon, run `3c9bfd1d2c7e496d9cd7661039fddcd2`)**: **8/8 extractions succeeded**, all via `anthropic_direct`. avg latency 47.4s/photo, max 68.6s. Phase A wall-clock ~194s (well under the 300s that was killing proxy runs).
+- **Transport is the bottleneck.** Same input, same photos, same model — direct route delivers full extractions where proxy drops 62% of them. The direct route is now the durable path for Phase A.
+
+### 🔴 New finding — Direct Phase B ceiling exposed
+With Phase A finally delivering a full 8-photo payload to reconciliation, direct Phase B on `claude-fable-5` hit the httpx `read=150s` cap I set in 79j.57 and timed out. Proxy fallback saved the run at ~244s. Fix:
+- Bumped direct-B httpx timeouts to `total=360s / read=300s / write=60s`.
+- Exposed `AI_MEASURE_RECONCILE_DIRECT_READ_TIMEOUT` env override so the ceiling can be tuned in production without a code push. Set to 300 by default; total is always `read + 60`.
+- This morning's 142s direct-B success is now correctly logged as "142s on REDUCED payload (3/8 valid photos)" — full-payload direct-B confirmation still pending an 8/8 run with the raised ceiling.
+
+### 🔴 Counter-evidence for the marker SOP — 79j.57c isn't polish, it's an accuracy requirement
+Same afternoon run reconciled dormers at **19 ft (left)** and **28 ft (right)** vs Howard's taped ground truth of **~15/15 ft**. Root-cause investigation:
+- **`_build_annotation_hint` completely ignores `_scale_refs`** — the profile boxes reach Claude's prompt (5 SHAKE hints on 5 elevations were fed in) but the WALL_REF / WIN_REF marker coordinates Howard physically drew on the photos are NEVER surfaced as explicit measurement anchors in the prompt text.
+- Claude occasionally reads a drawn marker VISUALLY (see `reference_used: "Contractor WALL REF 324\" (27 ft) on the front..."`), but not reliably — hence 25-90% drift on the two dormer widths.
+- The graduated 79j.58 Red-House (15.5 / 15 ft) had markers in the photos AND Claude happened to read them cleanly; today's run drifted because the AI wasn't explicitly TOLD where to read.
+
+### Rule 4 — Unanchored dormer amber flag
+- `_derive_pin_gap_hints` now emits `kind="unanchored_dormer_width"` for any dormer whose width was derived WITHOUT a cited anchor (regex: `WALL_REF | WIN_REF | reference[- ]?dim | scale[- ]?bar | taped_dim | anchor`) AND no `_scale_refs` entry on the dormer's `source_photos`.
+- Runs even when the contractor drew ZERO pins — an unanchored width is a problem regardless of whether the contractor annotated.
+- Copy: *"Dormer on the {face} slope reports {W} ft wide but NO reference marker was in frame. Unanchored dormer widths drift 25-90% — re-shoot the {face} elevation with a WALL_REF or WIN_REF bar in frame before quoting."*
+- Surfaces in the existing amber gap banner via `_ai_pin_gap_hints[]` — no new UI needed; the frontend banner already renders every hint kind with amber styling.
+
+### Wave HUD — contractor-plain, no jargon
+- Shipped `data-testid="ai-measure-photo-hud"` in the modal body. Photo dots (green=read, amber=didn't complete, purple-pulse=reading now, grey=pending) + a plain-english status line:
+  - `Read 6 of 8 · working on photo 7…`
+  - `Photo 3 didn't complete — you can re-shoot it later.`
+  - `All 8 photos read.`
+- Driven by `phase_a_progress.photo_status` (cumulative per-photo map) which the backend now publishes on every wave completion. Ready to use on the NEXT run.
+
+### Files touched
+- `backend/routes/ai_measure.py`:
+  - Rule 4 addition to `_derive_pin_gap_hints` + regex-based anchor detection
+  - Direct-B httpx timeout bump + `AI_MEASURE_RECONCILE_DIRECT_READ_TIMEOUT` env override
+  - `_publish_progress` cumulative `photo_status` field
+- `backend/tests/test_pin_gap_and_key_routing.py`:
+  - +5 tests for Rule 4 (cited-anchor no flag, no-anchor flags, source-photo scale_refs no flag, no-annotations still fires, no-width no flag)
+- `backend/.env`: `ANTHROPIC_DIRECT_A=1`, `ANTHROPIC_DIRECT_B=1` added (legacy `ANTHROPIC_DIRECT_ROUTE=phase_b_only` left in for reversibility; new flags take precedence)
+- `frontend/src/components/estimate/AIMeasureButton.jsx`: Wave HUD component (photo dots + contractor-plain status line), `photoProgress` state, polling loops updated to capture `phase_a_progress`
+
+### Follow-ups (Howard sign-off needed before shipping)
+- **PROPOSED: Plumb `_scale_refs` into Phase A prompt.** Currently the drawn marker coordinates live only on the estimate — never in the prompt text. If we surface them as explicit anchors ("photo 6 has a 15-ft horizontal reference bar from x=0.08 to x=0.89 at y=0.545 — use this to scale everything else in this photo"), Claude should stop drifting on unanchored dormer widths. This is a Phase A prompt change; wants explicit approval since it modifies the extraction contract.
+- **Full-payload direct Phase B confirmation** — re-fire the afternoon run with the raised read timeout to prove direct-B on full 8-photo payloads. Should complete in ~250s.
+- **Frontend: Wave HUD live-test on the NEXT run** — HUD is coded; verified visually via component but not yet end-to-end during a live extraction.
+

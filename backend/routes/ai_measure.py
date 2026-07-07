@@ -1455,6 +1455,7 @@ def _derive_pin_gap_hints(
     empty_photos: list[dict],
 ) -> list[dict]:
     """Iter 79j.59 — Contractor-pin gap-signal.
+    Iter 79j.60 — Added `unanchored_dormer_width` hint kind.
 
     When contractor pins tag a feature (via `elevation_label` and
     `callout`) on an elevation the reconciled output couldn't cover,
@@ -1474,21 +1475,81 @@ def _derive_pin_gap_hints(
         3. Pin with callout="gable" on an orphaned or dormer-less
            elevation → "gable feature pinned but no gable-triangle
            extracted; verify"
+        4. Iter 79j.60 — Dormer width WITHOUT a cited scale anchor
+           (no WALL_REF / WIN_REF / reference-dim mention in
+           width_source or width_reasoning) → amber-flag with
+           "reference bar not in frame — dormer widths drift 25-90%
+           without one." Howard 2026-07-07: this is the counter-
+           evidence for the marker SOP — the onboarding checklist
+           isn't optional polish, it's an accuracy requirement.
     Deduplicates by (kind, elevation) so a burst of 6 pins on the
     right elevation only produces ONE right-elevation hint.
     """
+    import re as _re
     hints: dict[tuple[str, str], dict] = {}
-    if not isinstance(annotations, dict) or not annotations:
-        return []
     orph = {(w or "").strip().lower() for w in (orphaned_walls or [])}
     dormer_faces = {(d.get("face") or "").strip().lower() for d in (dormers or []) if isinstance(d, dict)}
-    # Which cardinal elevations have at least one wall extraction?
     wall_labels = {(w.get("label") or "").strip().lower() for w in walls if isinstance(w, dict)}
     empty_photo_idxs = {int(ep.get("photo_idx", -1)) for ep in (empty_photos or [])}
+
+    # Iter 79j.60 — Rule 4 runs even when the contractor drew ZERO
+    # pins. A dormer with drifting width is a problem whether the
+    # contractor annotated the photos or not.
+    _anchor_pat = _re.compile(
+        r"(WALL[_ -]?REF|WIN[_ -]?REF|reference[_ -]?(dim|bar|mark|line)?|contractor[- ]?ref"
+        r"|scale[- ]?bar|taped[_ -]?dim|tape[_ -]?measure|anchor)",
+        _re.I,
+    )
+    scale_refs_by_photo: dict[int, bool] = {}
+    if isinstance(annotations, dict) and isinstance(annotations.get("_scale_refs"), dict):
+        for k, v in annotations["_scale_refs"].items():
+            if isinstance(v, dict) and v.get("inches"):
+                try:
+                    scale_refs_by_photo[int(k)] = True
+                except (TypeError, ValueError):
+                    continue
+    for idx, d in enumerate(dormers or []):
+        if not isinstance(d, dict):
+            continue
+        face = (d.get("face") or "").strip().lower()
+        width_ft = d.get("width_ft")
+        text_blob = " ".join([
+            str(d.get("width_source") or ""),
+            str(d.get("width_reasoning") or ""),
+            str(d.get("reasoning") or ""),
+        ])
+        cites_anchor = bool(_anchor_pat.search(text_blob))
+        # Consider a dormer "anchored" if either (a) the text cites a
+        # marker, or (b) at least one photo covering the dormer's
+        # face carries an explicit `_scale_refs` entry. The second
+        # condition catches the case where the AI silently used a
+        # marker without naming it.
+        source_photos = d.get("source_photos") or d.get("_source_photos") or []
+        photo_has_ref = any(scale_refs_by_photo.get(int(p), False) for p in source_photos if isinstance(p, (int, str)) and str(p).lstrip("-").isdigit())
+        if not cites_anchor and not photo_has_ref and width_ft:
+            k = ("unanchored_dormer_width", face or f"dormer{idx + 1}")
+            hints.setdefault(k, {
+                "kind": "unanchored_dormer_width",
+                "elevation": face or "unknown",
+                "re_shoot_elevation": face or "the affected slope",
+                "dormer_index": idx,
+                "dormer_width_ft": width_ft,
+                "message": (
+                    f"Dormer on the {face or 'unknown'} slope reports "
+                    f"{float(width_ft):.1f} ft wide but NO reference "
+                    f"marker was in frame. Unanchored dormer widths "
+                    f"drift 25-90% — re-shoot the {face or 'dormer'} "
+                    f"elevation with a WALL_REF or WIN_REF bar in frame "
+                    f"before quoting."
+                ),
+                "source_photo_idxs": [],
+            })
+
+    if not isinstance(annotations, dict) or not annotations:
+        return [v for _, v in sorted(hints.items())]
+
     # An elevation is "unmeasured" if it's orphaned OR every photo
-    # tagged to that elevation ended up empty. The second case catches
-    # the specific failure mode from this morning: 5/8 photos killed
-    # → right elevation had one pin-tagged photo, and it was empty.
+    # tagged to that elevation ended up empty.
     for key, boxes in annotations.items():
         if not isinstance(boxes, list) or key.startswith("_"):
             continue
@@ -1550,8 +1611,6 @@ def _derive_pin_gap_hints(
                     ),
                     "source_photo_idxs": [photo_idx],
                 })
-    # Stable order: alphabetical by (kind, elevation) so the UI list
-    # doesn't shuffle between polls.
     return [v for _, v in sorted(hints.items())]
 
 
@@ -4067,14 +4126,27 @@ async def _reconcile_extractions_direct(
     # so a stuck request actually gets cancelled. `asyncio.wait_for`
     # alone was insufficient — httpx's default 5s connect + no total
     # ceiling meant a hung `messages.create` sat past our 180s outer
-    # ceiling with no cancellation propagating in. Total 180s / read
-    # 150s gives room for extended-thinking latency without letting
-    # the worker wedge indefinitely.
+    # ceiling with no cancellation propagating in.
+    #
+    # Iter 79j.60 — Bump. The morning 142s success was on a REDUCED
+    # payload (3 of 8 valid Phase A photos). This afternoon's FULL
+    # 8-photo direct Phase B hit the 150s read cap and had to fall
+    # back to proxy. Full-payload direct-B on `claude-fable-5` with
+    # extended thinking needs ≥250s of read time in practice. Now
+    # tunable per-deployment so we can raise it in the field without
+    # a code push (Howard 2026-07-07 Q1).
+    read_timeout_s = _env_int("AI_MEASURE_RECONCILE_DIRECT_READ_TIMEOUT", 300)
+    total_timeout_s = read_timeout_s + 60
     import httpx as _httpx
     client = AsyncAnthropic(
         api_key=api_key,
         max_retries=0,
-        timeout=_httpx.Timeout(180.0, connect=10.0, read=150.0, write=60.0),
+        timeout=_httpx.Timeout(
+            float(total_timeout_s),
+            connect=10.0,
+            read=float(read_timeout_s),
+            write=60.0,
+        ),
     )
     lines = [
         "You are reconciling the following per-photo extractions into a "
@@ -4135,7 +4207,7 @@ async def _reconcile_extractions_direct(
                     }
                 ],
             ),
-            timeout=180,
+            timeout=total_timeout_s,
         )
     except APITimeoutError as e:
         logger.exception("[ai-measure phase-B direct] APITimeoutError: %s", e)

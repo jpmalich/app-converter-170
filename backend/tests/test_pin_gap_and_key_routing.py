@@ -307,3 +307,107 @@ class TestDerivePinGapHints:
             empty_photos=[],
         )
         assert hints == []
+
+
+class TestRule4UnanchoredDormer:
+    """Iter 79j.60 — Rule 4: any dormer whose width was derived
+    without a scale anchor gets amber-flagged. This is the primary
+    countermeasure against the 19/28 ft vs taped 15/15 drift Howard
+    documented in the 2026-07-07 afternoon run."""
+
+    def _walls(self, labels):
+        return [{"label": lb} for lb in labels]
+
+    def test_dormer_width_no_anchor_no_scale_ref(self, ai_measure):
+        """The exact afternoon-run scenario: dormers report widths
+        via `direct_single_reading` (no marker cited) AND no
+        `_scale_refs` entry exists for the dormer's source photo."""
+        dormers = [
+            {"face": "left", "width_ft": 19, "width_source": "direct_single_reading",
+             "width_reasoning": "estimated from vertical extent"},
+            {"face": "right", "width_ft": 28, "width_source": "direct_single_reading",
+             "width_reasoning": ""},
+        ]
+        hints = ai_measure._derive_pin_gap_hints(
+            annotations={},
+            walls=self._walls(["front", "back", "left", "right"]),
+            dormers=dormers,
+            orphaned_walls=[],
+            empty_photos=[],
+        )
+        kinds = {(h["kind"], h["elevation"]) for h in hints}
+        assert ("unanchored_dormer_width", "left") in kinds
+        assert ("unanchored_dormer_width", "right") in kinds
+        # Actionable copy — re-shoot elevation surfaced, drift range cited
+        left = next(h for h in hints if h["elevation"] == "left")
+        assert "19.0 ft" in left["message"]
+        assert "reference marker" in left["message"].lower() or "wall_ref" in left["message"].lower() or "win_ref" in left["message"].lower()
+        assert "25-90%" in left["message"]
+        assert left["re_shoot_elevation"] == "left"
+
+    def test_dormer_width_cited_anchor_no_flag(self, ai_measure):
+        """When `width_reasoning` cites a WALL_REF / WIN_REF / any
+        anchor keyword, we TRUST it — no amber flag. This is what a
+        healthy graduated Red-House run looks like."""
+        dormers = [{
+            "face": "left", "width_ft": 15.5,
+            "width_source": "direct_measurement",
+            "width_reasoning": "aligned with the 180-inch WALL_REF bar on photo 2",
+        }]
+        hints = ai_measure._derive_pin_gap_hints(
+            annotations={},
+            walls=self._walls(["front", "back", "left", "right"]),
+            dormers=dormers,
+            orphaned_walls=[],
+            empty_photos=[],
+        )
+        assert not any(h["kind"] == "unanchored_dormer_width" for h in hints)
+
+    def test_dormer_with_scale_ref_on_source_photo_no_flag(self, ai_measure):
+        """Even if width_reasoning doesn't cite the anchor by name,
+        if the SOURCE PHOTO carries a `_scale_refs` entry we assume
+        the AI silently used it — no flag."""
+        dormers = [{
+            "face": "left", "width_ft": 15.5,
+            "width_source": "direct_single_reading",
+            "width_reasoning": "",
+            "source_photos": [2, 3],
+        }]
+        annotations = {
+            "_scale_refs": {
+                "2": {"inches": 180, "p1_x_norm": 0, "p1_y_norm": 0, "p2_x_norm": 1, "p2_y_norm": 0},
+            },
+        }
+        hints = ai_measure._derive_pin_gap_hints(
+            annotations=annotations,
+            walls=self._walls(["front", "back", "left", "right"]),
+            dormers=dormers,
+            orphaned_walls=[],
+            empty_photos=[],
+        )
+        assert not any(h["kind"] == "unanchored_dormer_width" for h in hints)
+
+    def test_rule4_fires_without_any_annotations(self, ai_measure):
+        """Contractor may not draw ANY pins — Rule 4 must still fire
+        so unanchored widths never sneak through unflagged."""
+        hints = ai_measure._derive_pin_gap_hints(
+            annotations=None,
+            walls=self._walls(["front", "back", "left", "right"]),
+            dormers=[{"face": "left", "width_ft": 19, "width_source": "direct_single_reading"}],
+            orphaned_walls=[],
+            empty_photos=[],
+        )
+        assert any(h["kind"] == "unanchored_dormer_width" for h in hints)
+
+    def test_rule4_no_width_no_flag(self, ai_measure):
+        """A dormer with `width_ft` missing/zero can't be flagged
+        for drift — the flag would be meaningless copy."""
+        dormers = [{"face": "left", "width_source": "direct_single_reading"}]
+        hints = ai_measure._derive_pin_gap_hints(
+            annotations={},
+            walls=self._walls(["front"]),
+            dormers=dormers,
+            orphaned_walls=[],
+            empty_photos=[],
+        )
+        assert not any(h["kind"] == "unanchored_dormer_width" for h in hints)
