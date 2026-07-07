@@ -8,7 +8,7 @@
 // The backend (/api/measure/ai-measure) returns the same `measurements`
 // shape as HOVER, so we hand it to the same `onApply` callback the page
 // already uses for HOVER.
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug, Lightbulb, ScanSearch, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -258,8 +258,34 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   });
   const dismissOnboarding = () => {
     try { localStorage.setItem("aiMeasureOnboardingSeen", "1"); } catch { /* ignore */ }
+    try { localStorage.setItem("aiMeasureUnanchoredNudgeSeen", "1"); } catch { /* ignore */ }
     setShowOnboarding(false);
+    setUnanchoredNudgeActive(false);
   };
+
+  // Iter 79j.61 — Contextual accuracy nudge. Howard 2026-07-07: once
+  // scale-refs plumbing is live, auto-trigger the checklist the FIRST
+  // time a contractor uploads photos WITHOUT any `_scale_refs`, so
+  // the warning lands at the exact moment the accuracy risk exists.
+  // Uses a SEPARATE localStorage key from the first-run nudge so
+  // dismissing "show once" doesn't also dismiss "you have photos but
+  // no markers".
+  const hasAnyScaleRef = useMemo(() => {
+    const refs = photoAnnotations?._scale_refs;
+    return refs && typeof refs === "object" && Object.keys(refs).length > 0;
+  }, [photoAnnotations]);
+  const [unanchoredNudgeActive, setUnanchoredNudgeActive] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    if (photoUrls.length === 0) return;      // no photos → nothing to nudge
+    if (hasAnyScaleRef) return;               // markers present → healthy
+    let seen = false;
+    try { seen = localStorage.getItem("aiMeasureUnanchoredNudgeSeen") === "1"; }
+    catch { seen = false; }
+    if (seen) return;
+    setShowOnboarding(true);
+    setUnanchoredNudgeActive(true);
+  }, [open, photoUrls.length, hasAnyScaleRef]);
 
   // Iter 79j.57d — Re-run confirmation. Howard buried a graduating run
   // once with a stray click; a confirmation dialog now guards ONLY the
@@ -2049,6 +2075,25 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     </button>
                   </div>
                   <div className="p-5 space-y-3 text-[12px] text-[var(--ink)] leading-relaxed">
+                    {/* Iter 79j.61 — Quantified contextual warning.
+                        Appears at the top of the checklist only when
+                        the modal was auto-opened because the user has
+                        photos but no scale refs (Howard 2026-07-07:
+                        "quantified warnings get obeyed; vague ones
+                        get dismissed"). */}
+                    {unanchoredNudgeActive && (
+                      <div
+                        className="p-3 border border-[#F59E0B] bg-[#FEF3C7] text-[#78350F] text-[12px]"
+                        data-testid="ai-measure-onboarding-unanchored-nudge"
+                      >
+                        <div className="font-bold uppercase tracking-wider text-[10px] mb-1 text-[#B45309]">
+                          Your uploaded photos have no reference markers
+                        </div>
+                        Photos without reference markers can drift <b>25–90% on dormers
+                        and upper features</b>. Add a <b>WALL REF</b> or <b>WIN REF</b> to
+                        each elevation for tape-grade accuracy.
+                      </div>
+                    )}
                     <p className="text-[var(--ink-2)]">
                       The AI measures from what it can <b>see and scale</b>. Follow this
                       checklist and 4–6 photos will beat 10 sloppy ones:

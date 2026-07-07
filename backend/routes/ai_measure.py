@@ -1446,6 +1446,72 @@ def _build_annotation_hint(annotations: dict | None) -> str:
     return hint
 
 
+def _scale_ref_hint_for_photo(annotations: dict | None, photo_idx: int) -> str:
+    """Iter 79j.61 — Convert a `_scale_refs` entry into an explicit
+    per-photo prompt line so Claude uses the drawn marker as a hard
+    anchor instead of hoping it notices the visible bar.
+
+    Motivation (Howard 2026-07-07 afternoon): the previous
+    `_build_annotation_hint` piped only `profile_annotations` into
+    the prompt — the `_scale_refs` sibling that records the exact
+    inches + normalized coordinates of every WALL_REF / WIN_REF bar
+    was never surfaced. Claude sometimes read the visible marker,
+    sometimes didn't; dormer widths drifted 25-90% on the runs where
+    it missed. This helper closes that loop.
+
+    Returns "" when the photo has no scale ref or the ref is
+    malformed. The caller injects the string INTO the per-photo
+    Phase A prompt (see `_build_phase_a_prompt`).
+    """
+    if not isinstance(annotations, dict):
+        return ""
+    refs = annotations.get("_scale_refs")
+    if not isinstance(refs, dict):
+        return ""
+    ref = refs.get(str(photo_idx)) or refs.get(photo_idx)
+    if not isinstance(ref, dict):
+        return ""
+    try:
+        inches_f = float(ref.get("inches") or 0)
+    except (TypeError, ValueError):
+        return ""
+    if inches_f <= 0:
+        return ""
+    p1x = ref.get("p1_x_norm")
+    p1y = ref.get("p1_y_norm")
+    p2x = ref.get("p2_x_norm")
+    p2y = ref.get("p2_y_norm")
+    if p1x is None or p1y is None or p2x is None or p2y is None:
+        return ""
+    try:
+        dx = abs(float(p2x) - float(p1x))
+        dy = abs(float(p2y) - float(p1y))
+    except (TypeError, ValueError):
+        return ""
+    orient = "horizontal" if dx > dy * 3 else "vertical" if dy > dx * 3 else "diagonal"
+    feet = int(inches_f // 12)
+    rem_in = inches_f - feet * 12
+    if feet > 0 and rem_in >= 0.5:
+        dim_str = f'{feet}′ {int(round(rem_in))}″ ({int(round(inches_f))}″ / {inches_f/12:.2f} ft)'
+    elif feet > 0:
+        dim_str = f'{feet}′ ({int(round(inches_f))}″ / {inches_f/12:.2f} ft)'
+    else:
+        dim_str = f'{int(round(inches_f))}″ ({inches_f/12:.2f} ft)'
+    return (
+        f"CONTRACTOR-DRAWN SCALE REFERENCE ON THIS PHOTO — a "
+        f"{orient} reference bar of {dim_str} runs from normalized "
+        f"pixel coordinates (x={float(p1x):.3f}, y={float(p1y):.3f}) "
+        f"to (x={float(p2x):.3f}, y={float(p2y):.3f}). USE THIS BAR "
+        f"to lock scale for this photo — everything else in the frame "
+        f"is measured against it. Cite this bar in `width_reasoning` / "
+        f"`height_reasoning` whenever a dimension was scaled from it "
+        f"(e.g. `scaled off contractor {dim_str} reference bar`). "
+        f"When this bar is present, dormer / gable / upper-feature "
+        f"widths should read to within ±1-2%; without it the same "
+        f"features drift 25-90%."
+    )
+
+
 def _derive_pin_gap_hints(
     *,
     annotations: dict | None,
@@ -3557,10 +3623,17 @@ def _build_phase_a_prompt(
     brick_course_in: Optional[float],
     siding_exposure_in: Optional[float],
     annotation_hint: str,
+    scale_ref_hint: str = "",
 ) -> str:
     """Iter 79j.59 — Extracted so the proxy and direct paths share the
     EXACT same prompt text. Do NOT diverge these — the whole point of
-    a transport swap is that only the transport changes."""
+    a transport swap is that only the transport changes.
+
+    Iter 79j.61 — Adds `scale_ref_hint`. When the contractor drew a
+    scale-reference bar on THIS photo, we surface the bar's dimension
+    + normalized coordinates in the prompt so Claude anchors scale
+    against it explicitly instead of hoping to notice the drawn line.
+    """
     prompt_lines = [f"This is photo index {photo_idx} of a house being measured for siding."]
     if address:
         prompt_lines.append(f"Property address: {address}")
@@ -3577,6 +3650,8 @@ def _build_phase_a_prompt(
         prompt_lines.append(
             f"SIDING EXPOSURE = {siding_exposure_in:.2f} in per row. Count rows to size windows on siding-clad walls."
         )
+    if scale_ref_hint:
+        prompt_lines.append(scale_ref_hint)
     if annotation_hint:
         prompt_lines.append(annotation_hint)
     prompt_lines.append(
@@ -3741,6 +3816,7 @@ async def _extract_one_photo(
     brick_course_in: Optional[float],
     siding_exposure_in: Optional[float],
     annotation_hint: str,
+    scale_ref_hint: str = "",
 ) -> dict:
     """Phase A. Run ONE Claude call against a single photo, ask for
     per-photo raw observations only. Returns the parsed JSON tagged
@@ -3770,6 +3846,7 @@ async def _extract_one_photo(
         brick_course_in=brick_course_in,
         siding_exposure_in=siding_exposure_in,
         annotation_hint=annotation_hint,
+        scale_ref_hint=scale_ref_hint,
     )
 
     # Iter 79j.44 — Env-configurable per-call timeout (default 120s).
@@ -4196,9 +4273,18 @@ async def _reconcile_extractions_direct(
                 # actual response text. At `max_tokens=4000` the
                 # JSON output got truncated mid-object (real-world
                 # observation: 18:11 UTC run returned empty text /
-                # 18:28 UTC run truncated at ~4200 chars). We need
-                # comfortable headroom for both budgets.
-                max_tokens=16000,
+                # 18:28 UTC run truncated at ~4200 chars).
+                #
+                # Iter 79j.61 — Bumped to 32000. Once scale-refs are
+                # plumbed into Phase A prompts, Claude does MORE
+                # thinking during Phase B to align the anchor
+                # geometry across photos. Empirical: 8-photo Red-
+                # House with scale refs burned 13,768 thinking
+                # tokens + 5,136 text tokens → hit the 16k ceiling
+                # and truncated. 32k gives ~2× headroom and stays
+                # well under the 64k model limit. Tunable per-
+                # deployment via env for future prompt changes.
+                max_tokens=_env_int("AI_MEASURE_RECONCILE_DIRECT_MAX_TOKENS", 32000),
                 system=RECONCILE_PROMPT,
                 messages=[
                     {
@@ -4466,7 +4552,12 @@ async def _run_two_phase_pipeline(
         concurrency by only ever awaiting one wave's worth of tasks at
         a time, so the semaphore is redundant AND was making per-wave
         timing hard to reason about (tasks queued behind the sem got
-        starved of wall-clock budget)."""
+        starved of wall-clock budget).
+
+        Iter 79j.61 — Per-photo `scale_ref_hint` derived from
+        `annotations._scale_refs[idx]` and prepended to the prompt so
+        Claude explicitly anchors scale off the contractor-drawn bar.
+        """
         try:
             return await asyncio.wait_for(
                 _extract_one_photo(
@@ -4481,6 +4572,7 @@ async def _run_two_phase_pipeline(
                     brick_course_in=brick_course_in,
                     siding_exposure_in=siding_exposure_in,
                     annotation_hint=annotation_hint,
+                    scale_ref_hint=_scale_ref_hint_for_photo(annotations, idx),
                 ),
                 timeout=per_photo_budget,
             )

@@ -1761,3 +1761,48 @@ Same afternoon run reconciled dormers at **19 ft (left)** and **28 ft (right)** 
 - **Full-payload direct Phase B confirmation** — re-fire the afternoon run with the raised read timeout to prove direct-B on full 8-photo payloads. Should complete in ~250s.
 - **Frontend: Wave HUD live-test on the NEXT run** — HUD is coded; verified visually via component but not yet end-to-end during a live extraction.
 
+
+
+## Iter 79j.61 — Scale-refs plumbed into Phase A prompt + contextual accuracy nudge + direct-B max_tokens bump (2026-07-07 late afternoon)
+
+**Status**: SHIPPED · 29/29 pytest PASS · scale-ref plumbing EMPIRICALLY VERIFIED in Phase A output.
+
+### 1) `_scale_refs` now reach Claude as explicit prompt anchors
+Root cause diagnosed in this turn (backing datapoint #7): `_build_annotation_hint` piped only `profile_annotations` into the Phase A prompt — the WALL_REF / WIN_REF marker coordinates Howard drew on the photos NEVER surfaced as text. Claude only read them when it visually noticed the drawn line, which it did unreliably (afternoon 19/28 ft dormer drift = Claude missed the markers).
+
+Fix: new `_scale_ref_hint_for_photo(annotations, photo_idx)` helper renders each `_scale_refs` entry as:
+
+```
+CONTRACTOR-DRAWN SCALE REFERENCE ON THIS PHOTO — a horizontal reference bar
+of 15′ (180″ / 15.00 ft) runs from normalized pixel coordinates
+(x=0.080, y=0.545) to (x=0.890, y=0.545). USE THIS BAR to lock scale for
+this photo — everything else in the frame is measured against it. Cite this
+bar in `width_reasoning` / `height_reasoning` whenever a dimension was
+scaled from it. When this bar is present, dormer / gable / upper-feature
+widths should read to within ±1-2%; without it the same features drift
+25-90%.
+```
+
+Threaded through `_build_phase_a_prompt` → `_extract_one_photo` → wave dispatcher. Both proxy AND direct transports get identical text (as always).
+
+**Empirical validation** — run `04c9539b…` Phase A output cites the marker explicitly on photo 0:
+> "Wall dimensions: eave to grade at side corners ~9.8 ft. Used WALL REF = 324″ spanning ~1107 px (0.293 in/px); side eave corner sits ~400 px above grade → ~117 in ~ 9.8 ft. Pitch **8/12** (was 6/12 before scale-refs), gable triangle 8.3 ft above eaves."
+
+This is exactly the anchored-scale behavior Howard wanted — Claude explicitly citing the marker in `width_reasoning`.
+
+### 2) Direct-B max_tokens bumped to 32k
+Post-scale-refs, run `12958ff1…` hit the OLD 16k max_tokens cap: Claude burned 13,768 tokens on extended thinking (aligning anchor geometry across 5 marked photos) + only 5,136 tokens of visible JSON → response truncated → Phase B returned empty walls/dormers.
+
+Bumped `max_tokens=32000` for direct-B (env-tunable via `AI_MEASURE_RECONCILE_DIRECT_MAX_TOKENS`). Still well under model's 64k output limit. Retest run `04c9539b…` was interrupted by env-flag restart mid-Phase-B (marked `error` in mongo) — full-payload direct-B validation with 32k max_tokens PENDING a clean re-fire.
+
+### 3) Contextual accuracy nudge (Howard 2026-07-07 quantified copy)
+`AIMeasureButton.jsx` now auto-opens the onboarding checklist when a contractor has uploaded photos but `_scale_refs` is empty. Separate localStorage key (`aiMeasureUnanchoredNudgeSeen`) so dismissing the first-run nudge doesn't silence this contextual one. Overlay renders Howard's exact copy at the top of the checklist:
+
+> **Your uploaded photos have no reference markers**
+> Photos without reference markers can drift 25-90% on dormers and upper features. Add a WALL REF or WIN REF to each elevation for tape-grade accuracy.
+
+Quantified. Contextual. Fires at the exact moment the accuracy risk exists — not once at first-visit and then never again.
+
+### Follow-ups still open (Howard sign-off / next session)
+- **Clean re-fire of the confirmation run** — same 8 photos, direct-A + direct-B with scale-refs plumbing + 32k max_tokens. Should produce dormer widths within ±1-2% of Howard's taped 15/15 ft ground truth. Ready to fire via UI (or `curl` on `/api/measure/ai-measure` with the same `photo_paths`).
+- **Wave HUD live-test** during the re-fire — HUD is coded, verified in isolation, but not yet e2e-observed during a live 8-photo Phase A.

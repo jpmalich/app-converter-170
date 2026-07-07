@@ -411,3 +411,107 @@ class TestRule4UnanchoredDormer:
             empty_photos=[],
         )
         assert not any(h["kind"] == "unanchored_dormer_width" for h in hints)
+
+
+class TestScaleRefHintForPhoto:
+    """Iter 79j.61 — Every drawn `_scale_refs` entry must reach the
+    Phase A prompt as an explicit anchor. This is the causal fix for
+    the 19/28 ft vs taped 15/15 dormer drift Howard documented on
+    2026-07-07 afternoon."""
+
+    def test_horizontal_bar(self, ai_measure):
+        """A 180-inch horizontal bar (15 ft, common WALL_REF setup)
+        must be described as horizontal, cite the exact coordinates,
+        and quote the drift range so the model knows why to obey."""
+        annotations = {
+            "_scale_refs": {
+                "2": {
+                    "p1_x_norm": 0.08, "p1_y_norm": 0.545,
+                    "p2_x_norm": 0.89, "p2_y_norm": 0.545,
+                    "inches": 180,
+                },
+            },
+        }
+        s = ai_measure._scale_ref_hint_for_photo(annotations, 2)
+        assert "horizontal" in s
+        assert "15′" in s or "15'" in s or "15 ft" in s.lower()
+        assert "180" in s          # explicit inches for redundancy
+        assert "x=0.080" in s and "x=0.890" in s
+        assert "25-90%" in s        # drift range must be cited (Howard 2026-07-07)
+
+    def test_vertical_bar(self, ai_measure):
+        """A 48-inch vertical bar (4 ft, common WIN_REF setup)."""
+        annotations = {
+            "_scale_refs": {
+                "3": {
+                    "p1_x_norm": 0.71, "p1_y_norm": 0.23,
+                    "p2_x_norm": 0.71, "p2_y_norm": 0.35,
+                    "inches": 48,
+                },
+            },
+        }
+        s = ai_measure._scale_ref_hint_for_photo(annotations, 3)
+        assert "vertical" in s
+        assert "48" in s
+        assert "4′" in s or "4'" in s or "4.00" in s or "4 ft" in s.lower()
+
+    def test_diagonal_bar(self, ai_measure):
+        """A diagonal WALL_REF (48" measured along a slope)."""
+        annotations = {
+            "_scale_refs": {
+                "7": {
+                    "p1_x_norm": 0.79, "p1_y_norm": 0.34,
+                    "p2_x_norm": 0.77, "p2_y_norm": 0.52,
+                    "inches": 48,
+                },
+            },
+        }
+        s = ai_measure._scale_ref_hint_for_photo(annotations, 7)
+        # diagonal because dy/dx > 3 → actually vertical here; let's
+        # test a genuinely diagonal case
+        assert s   # non-empty
+        annotations2 = {
+            "_scale_refs": {
+                "7": {
+                    "p1_x_norm": 0.1, "p1_y_norm": 0.1,
+                    "p2_x_norm": 0.5, "p2_y_norm": 0.5,
+                    "inches": 60,
+                },
+            },
+        }
+        s2 = ai_measure._scale_ref_hint_for_photo(annotations2, 7)
+        assert "diagonal" in s2
+
+    def test_no_scale_ref_returns_empty(self, ai_measure):
+        assert ai_measure._scale_ref_hint_for_photo(None, 0) == ""
+        assert ai_measure._scale_ref_hint_for_photo({}, 0) == ""
+        assert ai_measure._scale_ref_hint_for_photo({"_scale_refs": {}}, 0) == ""
+        assert ai_measure._scale_ref_hint_for_photo(
+            {"_scale_refs": {"5": {"inches": 180, "p1_x_norm": 0, "p1_y_norm": 0, "p2_x_norm": 1, "p2_y_norm": 0}}},
+            0,   # different photo idx
+        ) == ""
+
+    def test_malformed_ref_returns_empty(self, ai_measure):
+        """Missing / zero / non-numeric inches → empty (never emit a
+        malformed prompt line)."""
+        bad = [
+            {"_scale_refs": {"0": {"inches": 0, "p1_x_norm": 0, "p1_y_norm": 0, "p2_x_norm": 1, "p2_y_norm": 0}}},
+            {"_scale_refs": {"0": {"inches": "not-a-number", "p1_x_norm": 0, "p1_y_norm": 0, "p2_x_norm": 1, "p2_y_norm": 0}}},
+            {"_scale_refs": {"0": {"inches": 60, "p1_x_norm": None, "p1_y_norm": 0, "p2_x_norm": 1, "p2_y_norm": 0}}},
+        ]
+        for annot in bad:
+            assert ai_measure._scale_ref_hint_for_photo(annot, 0) == ""
+
+    def test_string_and_int_keys_both_work(self, ai_measure):
+        """The frontend stores `_scale_refs` with string keys; some
+        legacy paths use ints. Look up should tolerate both."""
+        annot = {"_scale_refs": {"2": {
+            "p1_x_norm": 0, "p1_y_norm": 0, "p2_x_norm": 1, "p2_y_norm": 0,
+            "inches": 180,
+        }}}
+        assert ai_measure._scale_ref_hint_for_photo(annot, 2) != ""
+        annot2 = {"_scale_refs": {2: {
+            "p1_x_norm": 0, "p1_y_norm": 0, "p2_x_norm": 1, "p2_y_norm": 0,
+            "inches": 180,
+        }}}
+        assert ai_measure._scale_ref_hint_for_photo(annot2, 2) != ""
