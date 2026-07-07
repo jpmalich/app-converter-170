@@ -20,11 +20,11 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 // takes the brand accent, secondary the muted ink.
 const KIND_TABS = {
   siding: [
-    { id: "vinyl", label: "Vinyl", color: "var(--brand)" },
+    { id: "vinyl", label: "Vinyl", color: "var(--brand-text)" },
     { id: "ascend", label: "Ascend", color: "var(--muted)" },
   ],
   windows: [
-    { id: "windows", label: "Vero", color: "var(--brand)" },
+    { id: "windows", label: "Vero", color: "var(--brand-text)" },
     { id: "mezzo", label: "Mezzo", color: "var(--muted)" },
   ],
 };
