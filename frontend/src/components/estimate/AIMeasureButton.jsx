@@ -2583,45 +2583,49 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   see the accuracy contract at every stage (upload,
                   running, results). */}
               {photoUrls.length > 0 && (() => {
+                // Iter 79j.63 — Coverage tile rewired to read the SESSION
+                // shape of `photoAnnotations` (keyed by photo name,
+                // entries are `{elevation, reference, windowReference,
+                // zones, ...}`) — NOT the ProfileAnnotator shape (keyed
+                // by index string, entries are arrays of boxes).
+                //
+                // The original Iter 79j.61 tile iterated the wrong
+                // shape and skipped every entry via
+                // `Array.isArray(boxes)`, so all 4 cardinals rendered
+                // "No coverage yet" even when the contractor had
+                // placed all 8 WALL_REFs + 8 WIN_REFs. The Jul 7 2026
+                // Red-House incident surfaced this — the operator's
+                // 324/444/324/etc. refs were present verbatim in the
+                // session doc but the tile insisted no coverage
+                // existed. This is a pure display bug, not data loss.
                 const cardinals = ["front", "right", "back", "left"];
-                const perPhotoElevations = {};   // photoIdx → Set<elev>
-                const perPhotoDormerElevations = {};   // photoIdx → Set<elev with dormer callout>
-                for (const [key, boxes] of Object.entries(photoAnnotations || {})) {
-                  if (key.startsWith("_")) continue;
-                  if (!Array.isArray(boxes)) continue;
-                  const s = new Set();
-                  const ds = new Set();
-                  boxes.forEach((b) => {
-                    const e = (b?.elevation_label || "").toLowerCase();
-                    if (e) s.add(e);
-                    if (e && (b?.callout || "").toLowerCase() === "dormer") ds.add(e);
-                  });
-                  perPhotoElevations[key] = s;
-                  perPhotoDormerElevations[key] = ds;
-                }
-                const scaleRefsMap = photoAnnotations?._scale_refs || {};
-                const cellFor = (elev) => {
+                // A cardinal is "covered" if ANY photo whose elevation
+                // matches (or contains) that cardinal has a wall or
+                // window reference. Corner photos (front-right,
+                // rear-left, etc.) count toward BOTH cardinals they
+                // border — a well-placed WIN_REF on a front-right shot
+                // supplies scale for both front and right dormers.
+                const matchesCardinal = (elev, card) => {
+                  if (!elev) return false;
+                  const e = String(elev).toLowerCase();
+                  if (e === card) return true;
+                  // corner photos like "front-right" match both parts
+                  return e.split(/[-_/ ]/).includes(card);
+                };
+                const cellFor = (card) => {
                   let hasRef = false;
+                  let hasWinRef = false;
                   let hasPin = false;
-                  let hasDormerPin = false;
-                  for (const [key, elevs] of Object.entries(perPhotoElevations)) {
-                    if (!elevs.has(elev)) continue;
-                    hasPin = true;
-                    if (scaleRefsMap[key]) hasRef = true;
-                    if ((perPhotoDormerElevations[key] || new Set()).has(elev)) hasDormerPin = true;
+                  for (const [name, entry] of Object.entries(photoAnnotations || {})) {
+                    if (name.startsWith("_")) continue;
+                    if (!entry || typeof entry !== "object") continue;
+                    if (!matchesCardinal(entry.elevation, card)) continue;
+                    hasPin = true; // photo has this elevation tagged
+                    if (entry.reference && entry.reference.inches > 0) hasRef = true;
+                    if (entry.windowReference && entry.windowReference.inches > 0) hasWinRef = true;
                   }
-                  // Also count a scale ref as coverage even if no pin
-                  // has elevation_label yet — contractors sometimes
-                  // draw the marker before tagging elevation.
-                  if (!hasPin && scaleRefsMap) {
-                    for (const [key] of Object.entries(scaleRefsMap)) {
-                      const elevs = perPhotoElevations[key];
-                      if (elevs && elevs.has(elev)) { hasRef = true; break; }
-                    }
-                  }
-                  if (hasRef && hasDormerPin) return { state: "green_dormer", label: "Ref + dormer covered" };
-                  if (hasRef) return { state: "green", label: "Marker set" };
-                  if (hasDormerPin) return { state: "amber", label: "Dormer pinned, NO marker" };
+                  if (hasRef) return { state: "green", label: `Wall ref set` };
+                  if (hasWinRef) return { state: "green", label: `Win ref set` };
                   if (hasPin) return { state: "red", label: "Pinned, no marker" };
                   return { state: "grey", label: "No coverage yet" };
                 };

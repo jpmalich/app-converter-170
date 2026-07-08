@@ -1,0 +1,48 @@
+{
+  "_id": "6a4a9ede454c0bd1e56afc2c",
+  "note": "Reconstructed by stripping post-heal derived fields (px_height, real_ft, img_w, img_h). Original inches/p1_*_norm/p2_*_norm untouched by heal per script logic.",
+  "profile_annotations_scale_refs": {
+    "1": {
+      "p1_x_norm": 0.42575814776561266,
+      "p1_y_norm": 0.18506242179647006,
+      "p2_x_norm": 0.42575814776561266,
+      "p2_y_norm": 0.31290523542753684,
+      "inches": 48
+    },
+    "2": {
+      "p1_x_norm": 0.08012375550173867,
+      "p1_y_norm": 0.5452429461561422,
+      "p2_x_norm": 0.891894024436999,
+      "p2_y_norm": 0.5452429461561422,
+      "inches": 444
+    },
+    "3": {
+      "p1_x_norm": 0.7080252433564337,
+      "p1_y_norm": 0.23098250901153822,
+      "p2_x_norm": 0.7080252433564337,
+      "p2_y_norm": 0.35061038095608027,
+      "inches": 48
+    },
+    "5": {
+      "p1_x_norm": 0.3841203982647467,
+      "p1_y_norm": 0.6381073208248373,
+      "p2_x_norm": 0.3841203982647467,
+      "p2_y_norm": 0.42513246881038025,
+      "inches": 84
+    },
+    "6": {
+      "p1_x_norm": 0.33183579099736393,
+      "p1_y_norm": 0.4661932613562483,
+      "p2_x_norm": 0.6506835481733836,
+      "p2_y_norm": 0.4661932613562483,
+      "inches": 180
+    },
+    "7": {
+      "p1_x_norm": 0.7919380135146019,
+      "p1_y_norm": 0.3413104784533439,
+      "p2_x_norm": 0.770882934488495,
+      "p2_y_norm": 0.5209827470716092,
+      "inches": 48
+    }
+  }
+}

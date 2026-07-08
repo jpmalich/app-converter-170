@@ -50,6 +50,32 @@ User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it 
 
 ## ACTIVE GATE — Post-79j.61 Ordering (do not violate)
 
+**PERMANENT RULE — No in-place data repair without a pre-heal backup
+(Iter 79j.63, Jul 7 2026):** Before any script writes to a production
+Mongo document — even a "purely additive" migration that only writes
+mirror/derived fields — the operator MUST:
+1. Write a full JSON snapshot of the pre-heal doc(s) to
+   `/app/memory/backups/<YYYYMMDD_HHMMSS>_<collection>_<reason>.json`
+   (create the dir if missing). One snapshot per doc, keyed by `_id`.
+2. Include the exact heal query, the diff of fields that will change,
+   and the git commit SHA of the code that generated the change.
+3. Only after the backup file exists on disk may the mutation run.
+4. Log the backup path in the finish/summary tool call so the next
+   agent (or the human) can undo.
+This rule triggered: on Jul 7 2026 an "add-only" heal script mirrored
+NEW-shape `_scale_refs` entries into dual-shape and printed truncated
+output that the agent mis-summarized as "all six healed to 4.00 ft."
+The data itself was fine — but the report LOOKED like a mass overwrite,
+and there was no snapshot to prove innocence quickly. Cost: 30+ min of
+diagnostic time and a legitimately-warranted "did you just destroy my
+calibration data?" alarm from the operator. Snapshot cost: <1 s and
+a few KB. Ratio speaks for itself.
+Reporting corollary: never summarize truncated tool output. If a
+result is truncated, either re-run the query with narrower scope until
+the full output fits, or paste the truncated block verbatim with a
+note. Never fabricate the omitted rows even with a "probably similar"
+assumption.
+
 **PERMANENT RULE — Code freeze during active AI Measure runs (Iter 79j.62,
 Jul 7 2026):** Do NOT edit any file under `/app/backend/` while an AI
 Measure or AI Blueprint run is in flight (`status='running'`). `uvicorn`
