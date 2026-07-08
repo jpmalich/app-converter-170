@@ -57,6 +57,57 @@ function computeSqftFromBox(boxNorm, imgPx, scaleRef) {
   return Math.max(0, Math.round(sqft));
 }
 
+// Iter 79j.63 — Normalize a scale_ref to the display-safe `{px_height,
+// real_ft, img_w, img_h}` shape regardless of which writer produced it.
+//
+// The wound (Jul 7 2026, EST-910869): two code paths write
+// `_scale_refs` entries with two different shapes:
+//   • ProfileAnnotator's own save (below at ~L374): OLD shape
+//     `{px_height, real_ft, img_w, img_h}`.
+//   • AIMeasureButton wizard save (AIMeasureButton.jsx ~L1148): NEW
+//     shape `{p1_x_norm, p1_y_norm, p2_x_norm, p2_y_norm, inches}`.
+// The display line below (`scaleRef.real_ft.toFixed(2)`) only handled
+// the OLD shape; NEW-shape entries crashed with
+// `TypeError: Cannot read properties of undefined (reading 'toFixed')`,
+// which unmounted the entire React tree — buttons went inert, F12
+// swallowed, "invisible annotations" reported.
+//
+// Normalizer derives the OLD shape from the NEW shape on the fly.
+// `img_w`/`img_h` fall back to `imgPx` (loaded natural dimensions) so
+// stored refs written before img dims were persisted still resolve.
+// Returns `null` for anything genuinely malformed — the display path
+// renders "invalid" instead of crashing.
+function normalizeScaleRef(raw, imgPx) {
+  if (!raw || typeof raw !== "object") return null;
+  // Old shape — trust it if the two required numbers are finite + positive
+  if (Number.isFinite(raw.real_ft) && Number.isFinite(raw.px_height) && raw.px_height > 0) {
+    return {
+      real_ft: raw.real_ft,
+      px_height: raw.px_height,
+      img_w: Number(raw.img_w) || imgPx?.w || 0,
+      img_h: Number(raw.img_h) || imgPx?.h || 0,
+    };
+  }
+  // New shape — {p1_x_norm, p1_y_norm, p2_x_norm, p2_y_norm, inches}.
+  // Need imgPx (natural dimensions) to convert normalized coords to
+  // pixel distance. If we haven't loaded the image yet, defer — the
+  // effect that sets imgPx will re-run this normalization on re-render.
+  const keys = ["p1_x_norm", "p1_y_norm", "p2_x_norm", "p2_y_norm", "inches"];
+  if (keys.every((k) => Number.isFinite(raw[k]))) {
+    const inches = Number(raw.inches);
+    const real_ft = inches > 0 ? inches / 12 : 0;
+    const w = Number(raw.img_w) || imgPx?.w || 0;
+    const h = Number(raw.img_h) || imgPx?.h || 0;
+    if (!w || !h || real_ft <= 0) return null;
+    const dxPx = (raw.p2_x_norm - raw.p1_x_norm) * w;
+    const dyPx = (raw.p2_y_norm - raw.p1_y_norm) * h;
+    const px_height = Math.sqrt(dxPx * dxPx + dyPx * dyPx);
+    if (!Number.isFinite(px_height) || px_height <= 0) return null;
+    return { real_ft, px_height, img_w: w, img_h: h };
+  }
+  return null;
+}
+
 // Iter 78z+ — Polygon support. Shoelace area (in pixel space) → ft²
 // via the same scale ref. Used for irregular shapes (gables, porch
 // faces) where a bounding rectangle would massively over-count.
@@ -128,7 +179,10 @@ export default function ProfileAnnotator({
   const photoKey = String(selectedIdx);
   const boxes = (annotations[photoKey] || []).filter((b) => b && typeof b === "object");
   const scaleRefs = annotations._scale_refs || {};
-  const scaleRef = scaleRefs[photoKey] || null;
+  // Iter 79j.63 — Normalize both schemas before ANY consumer reads
+  // real_ft / px_height. Prevents the wizard-shape `{p1_*, p2_*, inches}`
+  // from crashing `scaleRef.real_ft.toFixed(2)` on the display path.
+  const scaleRef = normalizeScaleRef(scaleRefs[photoKey], imgPx) || null;
 
   // Default elevation label for new boxes — pulled from AI's auto-tag
   // when available, otherwise "other".
@@ -313,7 +367,17 @@ export default function ProfileAnnotator({
         setScaleDraft(null);
         return;
       }
-      setScaleRefInput({ open: true, pxHeight, realFt: scaleRefInput.realFt });
+      // Iter 79j.63 — Capture the raw normalized endpoints so
+      // `confirmScale` can persist both schemas of `_scale_refs`.
+      setScaleRefInput({
+        open: true,
+        pxHeight,
+        realFt: scaleRefInput.realFt,
+        p1_x_norm: scaleDraft.x0,
+        p1_y_norm: scaleDraft.y0,
+        p2_x_norm: scaleDraft.x1,
+        p2_y_norm: scaleDraft.y1,
+      });
       setScaleDraft(null);
       return;
     }
@@ -371,6 +435,7 @@ export default function ProfileAnnotator({
     }
     const newRefs = { ...(annotations._scale_refs || {}) };
     newRefs[photoKey] = {
+      // OLD shape (backend + display consumers)
       px_height: scaleRefInput.pxHeight,
       real_ft: realFt,
       // Iter 78z+++ — store the display image dimensions at calibration
@@ -378,6 +443,17 @@ export default function ProfileAnnotator({
       // coords if a sentinel 50-default ever slips through.
       img_w: imgPx?.w || 0,
       img_h: imgPx?.h || 0,
+      // Iter 79j.63 — NEW-shape parity with AIMeasureButton wizard
+      // writer so both consumers work without a normalizer round-trip.
+      ...(Number.isFinite(scaleRefInput.p1_x_norm) && Number.isFinite(scaleRefInput.p2_x_norm)
+        ? {
+            p1_x_norm: scaleRefInput.p1_x_norm,
+            p1_y_norm: scaleRefInput.p1_y_norm,
+            p2_x_norm: scaleRefInput.p2_x_norm,
+            p2_y_norm: scaleRefInput.p2_y_norm,
+            inches: realFt * 12,
+          }
+        : {}),
     };
     // Re-compute sqft for every existing box on this photo using the new ref
     const newBoxes = (annotations[photoKey] || []).map((b) => {
@@ -965,9 +1041,21 @@ export default function ProfileAnnotator({
                 <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
                   Scale reference
                 </div>
-                {scaleRef ? (
-                  <span className="text-[10px] text-[var(--success)] font-bold">
+                {scaleRef && Number.isFinite(scaleRef.real_ft) && Number.isFinite(scaleRef.px_height) ? (
+                  <span className="text-[10px] text-[var(--success)] font-bold" data-testid="annotator-scale-ok">
                     ✓ {scaleRef.real_ft.toFixed(2)}ft / {Math.round(scaleRef.px_height)}px
+                  </span>
+                ) : scaleRefs[photoKey] ? (
+                  // Iter 79j.63 — raw ref exists but normalizeScaleRef
+                  // couldn't derive numeric fields (usually because the
+                  // image hasn't finished loading yet, so imgPx is 0/0).
+                  // Show a placeholder instead of crashing the tree.
+                  <span
+                    className="text-[10px] text-[var(--warning-text)] font-bold"
+                    data-testid="annotator-scale-pending"
+                    title="Scale reference is stored but the image dimensions aren't loaded yet — refresh if this persists."
+                  >
+                    ⏳ resolving…
                   </span>
                 ) : (
                   <span className="text-[10px] text-[var(--muted)]">not set</span>

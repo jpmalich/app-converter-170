@@ -18,6 +18,7 @@ import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
 // Shake / B&B / etc. so the AI worker treats those regions as
 // authoritative accent material. Both AI Measure + Blueprint share it.
 import ProfileAnnotator from "@/components/estimate/ProfileAnnotator";
+import AnnotatorErrorBoundary from "@/components/estimate/AnnotatorErrorBoundary";
 import GuidedCaptureWizard from "@/components/estimate/GuidedCaptureWizard";
 import { renderAnnotated, describeAnnotations } from "@/lib/photoAnnotate";
 // Iter 78s — HOVER-style elevation drawings, generated from the AI Measure
@@ -1143,14 +1144,37 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           // Persist the wall scale anchor too so the backend safety-
           // net can recompute polygon sqft server-side if a box's
           // sqft slipped through as the sentinel 50.
+          //
+          // Iter 79j.63 — Write BOTH schemas in a single ref entry:
+          //   • NEW (p1_*_norm, p2_*_norm, inches) — what this writer
+          //     historically produced; used by any consumer that
+          //     resolves the ref against loaded image dimensions at
+          //     render time.
+          //   • OLD (px_height, real_ft, img_w, img_h) — what
+          //     `profile_callouts._recompute_box_sqft` on the backend
+          //     AND `ProfileAnnotator`'s display path both expect.
+          //     Missing this shape triggered the Jul 7 2026 crash
+          //     (`scaleRef.real_ft.toFixed(2)` on undefined).
+          // Writing both is idempotent + <100 bytes and eliminates the
+          // schema mismatch class of bug for future consumers.
           const ref = annotations?.reference;
           if (ref && Array.isArray(ref?.p1) === false && ref?.p1 && ref?.p2 && ref?.inches) {
+            const dxPx = (ref.p2.x - ref.p1.x);
+            const dyPx = (ref.p2.y - ref.p1.y);
+            const pxHeight = Math.sqrt(dxPx * dxPx + dyPx * dyPx);
+            const realFt = Number(ref.inches) / 12;
             refs[String(idx)] = {
+              // NEW shape
               p1_x_norm: ref.p1.x / naturalW,
               p1_y_norm: ref.p1.y / naturalH,
               p2_x_norm: ref.p2.x / naturalW,
               p2_y_norm: ref.p2.y / naturalH,
               inches: ref.inches,
+              // OLD shape — mirror for backend + ProfileAnnotator
+              px_height: pxHeight > 0 ? pxHeight : 0,
+              real_ft: realFt > 0 ? realFt : 0,
+              img_w: naturalW,
+              img_h: naturalH,
             };
           }
         });
@@ -4416,6 +4440,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             });
             // Build a fresh scale_ref from the wall anchor for backend
             // sqft recompute parity.
+            //
+            // Iter 79j.63 — Write BOTH schemas so future consumers
+            // reading either shape work. See wizard-path counterpart
+            // for the full rationale.
             const ref = reference;
             let scaleRef = null;
             if (ref && ref.p1 && ref.p2 && ref.inches > 0) {
@@ -4424,10 +4452,17 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               const dist = Math.sqrt(dx * dx + dy * dy);
               if (dist > 0) {
                 scaleRef = {
+                  // OLD shape (backend + ProfileAnnotator display)
                   px_height: dist,
                   real_ft: ref.inches / 12,
                   img_w: naturalW,
                   img_h: naturalH,
+                  // NEW shape (parity with wizard writer)
+                  p1_x_norm: ref.p1.x / naturalW,
+                  p1_y_norm: ref.p1.y / naturalH,
+                  p2_x_norm: ref.p2.x / naturalW,
+                  p2_y_norm: ref.p2.y / naturalH,
+                  inches: ref.inches,
                 };
               }
             }
@@ -4671,29 +4706,36 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           onClose={() => setDebugOpen(false)}
         />
       )}
-      {/* Iter 78z — Profile Annotator (Tag Shake / B&B / etc.) */}
+      {/* Iter 78z — Profile Annotator (Tag Shake / B&B / etc.)
+          Iter 79j.63 — Wrapped in an ErrorBoundary. Any render crash
+          inside the annotator (e.g. the Jul 7 2026 scale_ref schema
+          mismatch that crashed via `.toFixed` on undefined) now
+          surfaces a recoverable dialog instead of unmounting the
+          entire estimate editor. */}
       {profileAnnotatorOpen && estimateId && (
-        <ProfileAnnotator
-          estimateId={estimateId}
-          photos={photoUrls.map((name, i) => ({
-            url: `/api/uploads/${name}`,
-            label: photoAnnotations[name]?.elevation || `#${i + 1}`,
-          }))}
-          initialAnnotations={savedProfileAnnotations}
-          defaultElevationByIdx={photoUrls.map((name) => photoAnnotations[name]?.elevation || "other")}
-          /* Iter 78z+++ — thread the Wall Scale Anchor from PhotoAnnotateModal
-             so the contractor doesn't have to set scale twice. */
-          wallScaleRefByPhotoKey={Object.fromEntries(
-            photoUrls.map((name, i) => [String(i), photoAnnotations[name]?.reference || null])
-          )}
-          onClose={() => setProfileAnnotatorOpen(false)}
-          onSaved={(saved) => {
-            setSavedProfileAnnotations(saved);
-          }}
-          onSaveAndRerun={currentRunId ? async () => {
-            rerunWithAnnotations();
-          } : null}
-        />
+        <AnnotatorErrorBoundary onClose={() => setProfileAnnotatorOpen(false)}>
+          <ProfileAnnotator
+            estimateId={estimateId}
+            photos={photoUrls.map((name, i) => ({
+              url: `/api/uploads/${name}`,
+              label: photoAnnotations[name]?.elevation || `#${i + 1}`,
+            }))}
+            initialAnnotations={savedProfileAnnotations}
+            defaultElevationByIdx={photoUrls.map((name) => photoAnnotations[name]?.elevation || "other")}
+            /* Iter 78z+++ — thread the Wall Scale Anchor from PhotoAnnotateModal
+               so the contractor doesn't have to set scale twice. */
+            wallScaleRefByPhotoKey={Object.fromEntries(
+              photoUrls.map((name, i) => [String(i), photoAnnotations[name]?.reference || null])
+            )}
+            onClose={() => setProfileAnnotatorOpen(false)}
+            onSaved={(saved) => {
+              setSavedProfileAnnotations(saved);
+            }}
+            onSaveAndRerun={currentRunId ? async () => {
+              rerunWithAnnotations();
+            } : null}
+          />
+        </AnnotatorErrorBoundary>
       )}
       {/* Iter 79i (Phase 4) — Missing-wall pre-flight modal. Fires
           before runMeasure() if fewer than 4 primary walls are covered.
