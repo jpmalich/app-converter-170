@@ -190,6 +190,15 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
       15.0/15.0 (front/back left null — stepped walls, single height
       ill-defined until the stepped-wall backlog item ships).
 
+- **P1 QUEUED (behind the gate) — Accuracy Report PDF (user-approved Jul 8 2026):**
+  One-page PDF export of the Tape Check history for the September supplier
+  pitch. Must include: methodology line verbatim — "AI reads scored against
+  contractor tape, per wall, per run" — per-run scores with per-wall deltas
+  and trend, AND the honest-flag counts (how many misses the pipeline
+  self-flagged amber before scoring: single-reading tags, assumed-symmetric
+  widths, below-typical heights, pin-gap hints). Ships only after the gate
+  (validation run → bbox routing → Three.js PNG → PDF embed).
+
 - **P1 QUEUED — Pricing test seeds vs live DB drift (user-ordered Jul 8 2026):**
   ~14 failures + 8 errors in pricing/catalog suites (`test_pricing_parity`,
   `test_mezzo_pricing`, `test_iteration34_siding_split`, `test_iteration5/6`,
