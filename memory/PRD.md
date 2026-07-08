@@ -131,6 +131,46 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Iter 79j.67 — (a) Re-run calibration fix + (b)(c) prompt candidate (SHIPPED Jul 8 2026):**
+  **CONTROL CASE, VERBATIM (the depth rule's justification forever):
+  "same ref, same plane = exact; same ref, cross-plane = +45%."**
+  - **(a) STANDALONE BUG FIX** — the Re-run path hardcoded
+    `siding_exposure_in=None` / `brick_course_in=None` / `reference_dim=None`
+    / `elevation_tags=None`: every re-run ever fired silently discarded
+    contractor calibration. Fixed at three layers:
+    1. Run docs now persist all four calibration fields at creation;
+       rerun rehydrates them (rerun-of-rerun chains keep them).
+    2. Rerun body accepts CURRENT Calibrate popover values
+       (`brick_course_in`, `siding_exposure_in`) — body > prev doc > None
+       (legacy docs predate persistence; popover may change between runs).
+       Frontend sends them on every Re-run.
+    3. Sessions persist + restore `brick_course_in`/`siding_exposure_in`
+       (recovered sessions no longer lose calibration; all 5 session PUT
+       sites + resume hydration updated).
+    Tests: `tests/test_rerun_calibration_iter67.py` (8/8: carryover,
+    body-precedence, legacy-null, prompt content, failed-revision
+    isolation).
+  - **(b)+(c) PROMPT CANDIDATE (ONE revision, live now, validation run
+    pending)** — none of the failed 79j.65 revision's other pieces
+    returned (verified by test):
+    - (b) Exposure-based course counting for WALL HEIGHTS: the injected
+      SIDING EXPOSURE line now says count courses grade→eave × exposure =
+      eave height, report in `eave_courses_counted`; courses are
+      plane-correct by construction. Static rule 5 added.
+    - (c) Depth-plane rule (static rule 6): a vertical ref may only scale
+      its OWN wall plane; dormer-window WIN_REF scales dormer dims only.
+      When the only vertical ref is cross-plane it may be used LAST-RESORT
+      but must set `eave_scale_cross_plane: true` — never silently.
+      Reconciler rejects cross-plane reads when a course-counted or
+      same-plane read exists; if kept as the only reading, wall gets
+      `height_scale_flag: "cross_plane"` → frontend renders amber
+      **"Cross-plane scale — verify"** badge (fail-loudly doctrine).
+  - **(d) RE-VALIDATION PENDING (user fires)**: same 8 photos, same tape,
+    acceptance L 10.31 ±0.5 / R 7.19 ±0.5. ⚠️ OPERATOR PREREQ: enter
+    3.75 in the Calibrate popover before hitting Re-run (the failed run
+    and Run 3 are legacy docs with no stored calibration — the popover
+    value is what flows through the new body path).
+
 - **Iter 79j.67 — Validation run FAILED → prompt ROLLED BACK to baseline (Jul 8 2026):**
   Run `aab33c65` scored **83.2% vs 88.9% baseline** (tape-check panel).
   Right wall 10.4 vs 7.19 tape (+3.21, inverted direction); left dormer

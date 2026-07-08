@@ -198,6 +198,13 @@ function buildHouseJson(preview, overrides, estimate) {
       if (wallData?._height_flag === "below_typical_range") {
         return { h: wallH, source: "ai-below-typical" };
       }
+      // Iter 79j.67(c) — the kept eave reading's vertical scale came
+      // from a reference on a DIFFERENT wall plane (e.g. dormer-window
+      // WIN_REF scaling the main wall). Control case: same ref, same
+      // plane = exact; same ref, cross-plane = +45%.
+      if ((wallData?.height_scale_flag || "").toLowerCase() === "cross_plane") {
+        return { h: wallH, source: "ai-cross-plane" };
+      }
       if (hs === "direct_consensus") return { h: wallH, source: "ai" };
       if (hs === "direct_disagreement") return { h: wallH, source: "ai-disagreement" };
       if (hs === "estimated_no_direct_view") return { h: wallH, source: "ai-no-direct-view" };
@@ -1321,6 +1328,17 @@ export default function HouseModel3D({ preview, estimate, runId }) {
                 <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Under 7 ft — verify
               </span>
             )}
+            {/* Iter 79j.67(c) — fail-loudly on borrowed vertical scale.
+                Same ref, same plane = exact; same ref, cross-plane = +45%. */}
+            {facade.eaveHeightSource === "ai-cross-plane" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
+                title="This wall's height was scaled from a reference on a DIFFERENT wall plane (e.g. a dormer window's WIN_REF) — cross-plane scaling has produced +45% errors on taped fixtures. Tape this wall or add a same-plane reference and re-run."
+                data-testid={`ai-measure-3d-eave-cross-plane-${facade.id}`}
+              >
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Cross-plane scale — verify
+              </span>
+            )}
             {/* Iter 79j.64 — Width provenance. The reconciler copied the
                 opposite wall's width because no reference bar covered
                 this span. Real houses aren't always symmetric. */}
@@ -1584,7 +1602,7 @@ export default function HouseModel3D({ preview, estimate, runId }) {
               {d.widthSource === "default" && <Amber />}
             </div>
           ))}
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || facade.eaveHeightSource === "ai-below-typical" || facade.widthSource === "assumed_symmetric" || facade.widthSource === "estimated_no_direct_view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || (house.roof.dormers || []).some((d) => ["ai-disagreement", "ai-single", "ai-back-solved", "ai-no-direct-view", "default"].includes(d.widthSource))) && (
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || facade.eaveHeightSource === "ai-below-typical" || facade.eaveHeightSource === "ai-cross-plane" || facade.widthSource === "assumed_symmetric" || facade.widthSource === "estimated_no_direct_view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || (house.roof.dormers || []).some((d) => ["ai-disagreement", "ai-single", "ai-back-solved", "ai-no-direct-view", "default"].includes(d.widthSource))) && (
             <div className="text-[9px] italic text-[var(--warning-text)] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>

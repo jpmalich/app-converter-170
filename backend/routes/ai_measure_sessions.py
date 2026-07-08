@@ -34,6 +34,11 @@ class AIMeasureSessionIn(BaseModel):
     estimate_id: str
     photo_urls: List[str] = []
     reference_dim: Optional[str] = ""
+    # Iter 79j.67(a) — contractor calibration (Calibrate popover) must
+    # survive session recovery, else a recovered session re-runs with no
+    # exposure and course counting never fires.
+    brick_course_in: Optional[float] = None
+    siding_exposure_in: Optional[float] = None
     wall_height: Optional[str] = ""
     siding_pct: Optional[str] = ""
     overhang_in: Optional[float] = 12.0

@@ -2225,6 +2225,15 @@ async def ai_measure(
         "model_choice": model_key,
         "model_provider": model_provider,
         "model_name": model_name,
+        # Iter 79j.67(a) — persist contractor calibration on the run doc.
+        # The Re-run path used to hardcode these to None, silently
+        # discarding contractor calibration on EVERY re-run ever fired.
+        # Persisting here lets rerun (and rerun-of-rerun chains)
+        # rehydrate them.
+        "reference_dim": reference_dim,
+        "brick_course_in": brick_course_in,
+        "siding_exposure_in": siding_exposure_in,
+        "elevation_tags": elevation_tags,
         "created_at": now,
         "updated_at": now,
         "completed_at": None,
@@ -2370,6 +2379,28 @@ async def ai_measure_rerun(
     except Exception:
         prev_overhang = 12.0
 
+    # Iter 79j.67(a) — rehydrate contractor calibration. Precedence:
+    # request body (the contractor's CURRENT Calibrate popover values —
+    # legacy run docs predate persistence and the popover may have been
+    # updated between runs) > previous run doc > None. These were
+    # hardcoded to None here, which silently discarded the contractor's
+    # calibration on every re-run (found when the validation run's
+    # course counting never fired: the 3.75" exposure never reached
+    # Phase A).
+    def _body_float(key: str) -> Optional[float]:
+        if isinstance(payload, dict) and payload.get(key) is not None:
+            try:
+                v = float(payload[key])
+                return v if v > 0 else None
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    prev_reference_dim = prev.get("reference_dim") or None
+    prev_brick_course = _body_float("brick_course_in") or prev.get("brick_course_in") or None
+    prev_siding_exposure = _body_float("siding_exposure_in") or prev.get("siding_exposure_in") or None
+    prev_elevation_tags = prev.get("elevation_tags") or None
+
     await db.ai_measure_runs.insert_one({
         "run_id":          new_run_id,
         "user_id":         user_id,
@@ -2383,6 +2414,12 @@ async def ai_measure_rerun(
         "address":         address,
         "model_choice":    model_key,
         "rerun_of":        prev_run_id,
+        # Iter 79j.67(a) — carry calibration forward so rerun chains
+        # never lose it.
+        "reference_dim":   prev_reference_dim,
+        "brick_course_in": prev_brick_course,
+        "siding_exposure_in": prev_siding_exposure,
+        "elevation_tags":  prev_elevation_tags,
         "created_at":      now,
         "updated_at":      now,
         "completed_at":    None,
@@ -2395,13 +2432,13 @@ async def ai_measure_rerun(
         api_key=api_key,
         user_id=user_id,
         address=address,
-        reference_dim=None,
+        reference_dim=prev_reference_dim,
         kind=kind,
         overhang_in=prev_overhang,
-        brick_course_in=None,
-        siding_exposure_in=None,
+        brick_course_in=prev_brick_course,
+        siding_exposure_in=prev_siding_exposure,
         deep_dormer_scan=deep_dormer_scan,
-        elevation_tags=None,
+        elevation_tags=prev_elevation_tags,
         estimate_id=estimate_id,
         model_provider=model_provider,
         model_name=model_name,
@@ -3296,6 +3333,9 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
   // field. NEVER guess.
   "eave_height_ft_observed":     number | null,
   "eave_reasoning":               "<how you measured — course counting, contractor reference, brick coursing, or 'not measurable because …'>",
+  // Iter 79j.67(b)+(c) — course-count + scale-plane provenance:
+  "eave_courses_counted":        number | null,   // lap-course count grade→eave when SIDING EXPOSURE is provided and courses are countable (see rule 5)
+  "eave_scale_cross_plane":      boolean,         // true ONLY when the vertical scale for this eave read came from a reference on a DIFFERENT wall plane (see rule 6)
   "story_count_observed":         1 | 1.5 | 2 | 2.5 | 3 | null,
   "pitch_ratio_observed":         "4/12" | "6/12" | "8/12" | "10/12" | "12/12" | null,
   "pitch_reasoning":              "<if you saw a gable and measured its rise vs run, say so; else null>",
@@ -3376,6 +3416,25 @@ RULES:
 4. bbox coordinates are PIXEL space in the compressed image you were
    given (not the original 4K upload). Emit them so we can draw them
    back on the thumbnail in the debug view.
+5. COURSE COUNTING FOR WALL HEIGHTS. When a SIDING EXPOSURE value is
+   provided in this prompt and lap courses are visible on a wall,
+   COUNT the courses from grade to the eave line: courses × exposure
+   = eave height. Report the count in `eave_courses_counted` and cite
+   it in `eave_reasoning`. A course count is inherently PLANE-CORRECT
+   (every course lives on the wall being measured) and survives
+   perspective, tilt and depth compression — when a count and a
+   pixel-scale read disagree, report the course-count value.
+6. SCALE REFERENCES ONLY WORK ON THEIR OWN WALL PLANE. A vertical
+   reference (WIN_REF bar, window height, door height) may only set
+   px-per-inch for measurements on ITS OWN wall plane. A WIN_REF on a
+   DORMER window scales the dormer's dimensions only — never the main
+   wall below it: the dormer face is set back and higher, so its
+   px-per-inch is wrong for the wall plane (taped control case: same
+   ref, same plane = exact; same ref, cross-plane = +45% error). If
+   the ONLY vertical reference available for a wall is cross-plane,
+   you may use it as a last resort but MUST set
+   `eave_scale_cross_plane: true` and say so in `eave_reasoning` —
+   never use one silently.
 """
 
 
@@ -3436,6 +3495,11 @@ call worker returns, so downstream code doesn't fork.
      //                               SAY SO, the frontend renders it amber
      //   "estimated_no_direct_view" = no photo measured this span (amber)
      "width_ft_source":            "direct_ref" | "direct_single_reading" | "assumed_symmetric" | "estimated_no_direct_view",
+     // Iter 79j.67(c) — emit ONLY when the kept eave reading's vertical
+     // scale came from a cross-plane reference (see eave rule) so the
+     // frontend can render "cross-plane scale — verify" amber. Omit
+     // otherwise.
+     "height_scale_flag":          "cross_plane" | null,
      "height_ft":                  number,        // final EAVE height for this wall (see rule 1)
      // Iter 79j.38 — Provenance tag for the eave height. Drives the
      // frontend badge color: `direct_consensus` = green (2+ direct
@@ -3525,6 +3589,18 @@ RECONCILIATION RULES:
           they NEVER inform eave height.
         • corner shots where THIS wall is at >45° foreshortening
         • telephoto compression or extreme wide-angle distortion
+        • Iter 79j.67(c) — readings with `eave_scale_cross_plane: true`
+          (vertical scale borrowed from a reference on a different
+          wall plane, e.g. a dormer-window WIN_REF used for the main
+          wall). These are WEAK: reject whenever a course-counted or
+          same-plane reading exists for the same wall. If a
+          cross-plane reading is the ONLY one available, keep it but
+          set the wall's `height_scale_flag: "cross_plane"` so the
+          frontend renders it amber ("cross-plane scale — verify").
+          Taped control case: same ref, same plane = exact; same ref,
+          cross-plane = +45% error. Prefer `eave_courses_counted`
+          readings over everything — course counts are plane-correct
+          by construction.
 
    b) Take the valid direct-view readings for this wall. If any two
       valid readings disagree by MORE THAN 1 ft, do NOT average them —
@@ -3811,8 +3887,16 @@ def _build_phase_a_prompt(
             f"BRICK COURSE = {brick_course_in:.2f} in. Count courses to size windows if brick is visible in this photo."
         )
     if siding_exposure_in and siding_exposure_in > 0:
+        # Iter 79j.67(b) — exposure-based course counting now covers WALL
+        # HEIGHTS, not just window sizing. Courses are inherently
+        # plane-correct: every course lives ON the wall being measured,
+        # so a count survives perspective, tilt and depth mismatch.
         prompt_lines.append(
-            f"SIDING EXPOSURE = {siding_exposure_in:.2f} in per row. Count rows to size windows on siding-clad walls."
+            f"SIDING EXPOSURE = {siding_exposure_in:.2f} in per row (contractor-calibrated). "
+            "Count rows to size windows on siding-clad walls, AND use it for WALL HEIGHTS: "
+            f"count lap courses from grade to the eave line — courses × {siding_exposure_in:.2f} in = eave height. "
+            "Report the count in `eave_courses_counted`. A course count is plane-correct and beats "
+            "pixel-scale math; when the two disagree, report the course-count value."
         )
     if scale_ref_hint:
         prompt_lines.append(scale_ref_hint)
@@ -4989,6 +5073,7 @@ async def _run_two_phase_pipeline(
                 # prompt doesn't emit these → they stay null.
                 "eave_vertical_scale_basis": e.get("eave_vertical_scale_basis") or "",
                 "eave_courses_counted": e.get("eave_courses_counted"),
+                "eave_scale_cross_plane": bool(e.get("eave_scale_cross_plane")),
                 "grade_occluded": bool(e.get("grade_occluded")),
                 "grade_occluded_estimate_in": e.get("grade_occluded_estimate_in"),
                 "pitch_ratio_observed": e.get("pitch_ratio_observed"),

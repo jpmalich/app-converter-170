@@ -724,9 +724,20 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       // Iter 79j.35 — Pass the current "Powered by" dropdown selection
       // so Re-Run honors the model the contractor picked. Prior version
       // silently reused the original run's model, defeating A/B testing.
+      // Iter 79j.67(a) — also pass the CURRENT calibration values.
+      // Legacy run docs predate calibration persistence, and the
+      // contractor may have updated the Calibrate popover between runs —
+      // body values win over the previous run's stored ones.
+      const rerunBody = {
+        ...(modelChoice ? { model_choice: modelChoice } : {}),
+        ...(brickCourse && parseFloat(brickCourse) > 0
+          ? { brick_course_in: parseFloat(brickCourse) } : {}),
+        ...(sidingExposure && parseFloat(sidingExposure) > 0
+          ? { siding_exposure_in: parseFloat(sidingExposure) } : {}),
+      };
       const launch = await api.post(
         `/measure/ai-measure/rerun/${currentRunId}`,
-        modelChoice ? { model_choice: modelChoice } : {},
+        rerunBody,
       );
       const newRunId = launch?.data?.run_id;
       if (!newRunId) throw new Error("Backend didn't return a new run_id");
@@ -847,6 +858,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           estimate_id: estimateId,
           photo_urls: photoUrls,
           reference_dim: refDim,
+          brick_course_in: brickCourse && parseFloat(brickCourse) > 0 ? parseFloat(brickCourse) : null,
+          siding_exposure_in: sidingExposure && parseFloat(sidingExposure) > 0 ? parseFloat(sidingExposure) : null,
           wall_height: wallHeight,
           siding_pct: sidingPct,
           overhang_in: Number(overhangIn ?? 12),
@@ -892,6 +905,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     }
     setPhotoUrls(urls);
     setRefDim(data.reference_dim || "");
+    // Iter 79j.67(a) — restore contractor calibration on session resume;
+    // without this a recovered session re-runs with no exposure and
+    // course counting never fires.
+    if (data.brick_course_in != null) setBrickCourse(String(data.brick_course_in));
+    if (data.siding_exposure_in != null) setSidingExposure(String(data.siding_exposure_in));
     setWallHeight(data.wall_height || "");
     setSidingPct(data.siding_pct || "");
     if (data.preview) setPreview(data.preview);
@@ -946,6 +964,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               estimate_id: estimateId,
               photo_urls: urls,
               reference_dim: data.reference_dim || "",
+              brick_course_in: data.brick_course_in ?? null,
+              siding_exposure_in: data.siding_exposure_in ?? null,
               wall_height: data.wall_height || "",
               siding_pct: data.siding_pct || "",
               overhang_in: Number(data.overhang_in ?? 12),
@@ -1038,6 +1058,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         estimate_id: estimateId,
         photo_urls: photoUrls,
         reference_dim: refDim,
+        brick_course_in: brickCourse && parseFloat(brickCourse) > 0 ? parseFloat(brickCourse) : null,
+        siding_exposure_in: sidingExposure && parseFloat(sidingExposure) > 0 ? parseFloat(sidingExposure) : null,
         wall_height: wallHeight,
         siding_pct: sidingPct,
         overhang_in: Number(overhangIn ?? 12),
@@ -2056,6 +2078,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             estimate_id: estimateId,
             photo_urls: photoUrls,
             reference_dim: refDim,
+            brick_course_in: brickCourse && parseFloat(brickCourse) > 0 ? parseFloat(brickCourse) : null,
+            siding_exposure_in: sidingExposure && parseFloat(sidingExposure) > 0 ? parseFloat(sidingExposure) : null,
             wall_height: wallHeight,
             siding_pct: sidingPct,
             overhang_in: Number(overhangIn ?? 12),
@@ -2109,6 +2133,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           estimate_id: estimateId,
           photo_urls: photoUrls,
           reference_dim: refDim,
+          brick_course_in: brickCourse && parseFloat(brickCourse) > 0 ? parseFloat(brickCourse) : null,
+          siding_exposure_in: sidingExposure && parseFloat(sidingExposure) > 0 ? parseFloat(sidingExposure) : null,
           wall_height: wallHeight,
           siding_pct: sidingPct,
           overhang_in: Number(overhangIn ?? 12),
