@@ -481,6 +481,55 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setWallsDirty(true);
   };
 
+  // Iter 79j.66 — Edit a dormer's WIDTH or KNEE height straight from the
+  // Wall Breakdown and have the wall's dormer face ft² recompute itself.
+  // Correcting a dormer used to mean knowing the face-area formula by
+  // heart (face ft² includes cheeks/shed-rise beyond w×knee); instead we
+  // RESCALE the AI's ft² by the ratio of the w×knee products, which
+  // preserves the AI's geometry factor while making the correction
+  // formula-free. Editing here mutates `raw_ai.dormers` — the same
+  // object the 3D sidebar reads — so the model updates in lock-step.
+  const setDormerDims = (dormerIdx, wallIdx, key, val) => {
+    setPreview((p) => {
+      if (!p?.raw_ai?.dormers?.[dormerIdx] || !p?.raw_ai?.walls?.[wallIdx]) return p;
+      const num = val === "" ? 0 : Number(val);
+      const wallLabel = ((p.raw_ai.walls[wallIdx].label || "")).toLowerCase();
+      const product = (d) =>
+        (Number(d.width_ft) || 0) * (Number(d.knee_wall_height_ft) || 0);
+      const matched = p.raw_ai.dormers
+        .map((d, j) => ({ d, j }))
+        .filter(({ d }) => (d.face || "").toLowerCase() === wallLabel);
+      const before = matched.reduce((a, { d }) => a + product(d), 0);
+      const dormers = p.raw_ai.dormers.map((d, j) =>
+        j === dormerIdx ? { ...d, [key]: num } : d
+      );
+      const after = matched.reduce(
+        (a, { j }) => a + product(dormers[j]), 0
+      );
+      const walls = p.raw_ai.walls.map((w, i) => {
+        if (i !== wallIdx) return w;
+        const sqft = Number(w.dormer_face_sqft) || 0;
+        const next = before > 0 && sqft > 0
+          ? sqft * (after / before)   // preserve AI's cheek/rise factor
+          : after;                    // no basis — fall back to Σ w×knee
+        return { ...w, dormer_face_sqft: Math.round(next * 10) / 10 };
+      });
+      const totals = recomputeFromWalls(walls);
+      return {
+        ...p,
+        raw_ai: { ...p.raw_ai, walls, dormers },
+        measurements: {
+          ...p.measurements,
+          siding_sqft: totals.siding_sqft,
+          siding_with_openings_sqft: totals.siding_sqft,
+          _ai_gable_sqft: totals._ai_gable_sqft,
+          _ai_dormer_sqft: totals._ai_dormer_sqft,
+        },
+      };
+    });
+    setWallsDirty(true);
+  };
+
   // Edit any of the linear-measurement fields (eaves, rakes, starter,
   // corners, opening perimeter) inline. ISS soffit/gutter/etc. and the
   // siding-flow soffit/J-channel rows all derive their qty from these,
@@ -3597,6 +3646,43 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                     onChange={(e) => setWall(i, "dormer_face_sqft", e.target.value)}
                                     data-testid={`ai-measure-wall-dormer-${i}`}
                                   />
+                                  {/* Iter 79j.66 — the ft² alone forces the
+                                      contractor to know the face-area formula.
+                                      Expose the matched dormer's W × knee (the
+                                      same fields the 3D sidebar shows); edits
+                                      rescale the ft² automatically. */}
+                                  {(preview.raw_ai.dormers || [])
+                                    .map((d, j) => ({ d, j }))
+                                    .filter(({ d }) => (d.face || "").toLowerCase() === (w.label || "").toLowerCase())
+                                    .map(({ d, j }) => (
+                                      <div
+                                        key={j}
+                                        className="flex items-center gap-0.5 mt-0.5 text-[9px] text-[var(--muted)]"
+                                        title="Dormer width × knee-wall height (ft) — same fields as the 3D sidebar. Editing rescales the face ft² using the AI's geometry factor, and the 3D model follows."
+                                        data-testid={`ai-measure-wall-dormer-dims-${i}-${j}`}
+                                      >
+                                        <input
+                                          type="number"
+                                          step="0.5"
+                                          min="0"
+                                          className="w-11 px-1 py-0.5 border border-[var(--border)] font-mono-num text-[10px]"
+                                          value={Number(d.width_ft) || 0}
+                                          onChange={(e) => setDormerDims(j, i, "width_ft", e.target.value)}
+                                          data-testid={`ai-measure-wall-dormer-w-${i}-${j}`}
+                                        />
+                                        <span>×</span>
+                                        <input
+                                          type="number"
+                                          step="0.25"
+                                          min="0"
+                                          className="w-11 px-1 py-0.5 border border-[var(--border)] font-mono-num text-[10px]"
+                                          value={Number(d.knee_wall_height_ft) || 0}
+                                          onChange={(e) => setDormerDims(j, i, "knee_wall_height_ft", e.target.value)}
+                                          data-testid={`ai-measure-wall-dormer-knee-${i}-${j}`}
+                                        />
+                                        <span className="uppercase tracking-wider">w×knee</span>
+                                      </div>
+                                    ))}
                                 </td>
                                 <td className="font-mono-num font-bold text-[var(--ai)]" data-testid={`ai-measure-wall-gable-ft2-${i}`}>
                                   {gableArea > 0 ? gableArea.toFixed(0) : "—"}

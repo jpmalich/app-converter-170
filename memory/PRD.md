@@ -131,6 +131,20 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Iter 79j.66 — Wall Breakdown dormer W×knee editors (SHIPPED Jul 8 2026):**
+  The Breakdown's dormer column was a bare ft² input — correcting a dormer
+  meant knowing the face-area formula by heart. Now each wall's matched
+  dormer(s) (face === wall label) render W × knee mini-inputs under the ft²
+  field. Edits RESCALE the ft² by the ratio of w×knee products (preserves
+  the AI's cheek/shed-rise geometry factor; falls back to Σ w×knee when no
+  basis), recompute headline totals, and mutate `raw_ai.dormers` — the same
+  object the 3D model reads, so it follows in lock-step. NOTE: 3D sidebar
+  dormer edits remain display-only overrides (need Re-run); the Breakdown
+  W×knee fields are the canonical path. `setDormerDims()` in
+  AIMeasureButton.jsx; testids `ai-measure-wall-dormer-dims-{wall}-{j}`,
+  `-w-{wall}-{j}`, `-knee-{wall}-{j}`. Verified live: 118.25 ft² × (15/15.5)
+  → 114.4.
+
 - **Iter 79j.65 — Compression prompt revision + Tape Check panel (SHIPPED Jul 8 2026):**
   - **RESEQUENCED by operator**: compression fix + validation run now comes
     BEFORE per-dormer bbox routing ("wall heights are square footage and
