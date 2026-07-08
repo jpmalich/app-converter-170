@@ -4342,6 +4342,25 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     Start Over
                   </button>
                 )}
+                {/* Iter 79j.69 — surgical photo swap. Previously there
+                    was NO path to edit photos once a preview loaded
+                    except the destructive Start Over. Clears only the
+                    LOCAL preview so the picker/gallery re-render; photos,
+                    markers and calibration stay; the completed run stays
+                    in run history (Restore preview) and Tape Check keeps
+                    its scores. */}
+                {preview && photoUrls.length > 0 && (
+                  <button
+                    type="button"
+                    className="px-3 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider"
+                    onClick={() => { setPreview(null); setWallsDirty(false); }}
+                    disabled={busy}
+                    data-testid="ai-measure-adjust-photos"
+                    title="Go back to the photo list to remove, replace or add photos — keeps everything else. The current result stays in run history."
+                  >
+                    Adjust Photos
+                  </button>
+                )}
                 {preview && estimateId && (
                   <button
                     type="button"
