@@ -3623,7 +3623,15 @@ RECONCILIATION RULES:
       don't quote off it."
 
    d) If TWO OR MORE direct readings agree within ±1 ft, take the
-      median. `height_ft_source: "direct_consensus"`. Note the count
+      median — UNLESS one of them is COUNT-DERIVED (its photo carried
+      `eave_courses_counted`): a course count outranks pixel reads even
+      inside the agreement band, so take the count-derived value
+      instead of the median (counts are plane-correct physical rulers;
+      pixel reads carry scale/shade noise that dilutes them — red-house
+      exam: median of count 10.0 + shaded pixel 9.3 gave 9.7 against a
+      10.31 tape; the count alone was within 0.31). With multiple
+      count-derived readings, median those counts only.
+      `height_ft_source: "direct_consensus"`. Note the count
       of contributing photos in `_reconciliation_note`.
 
    e) If EXACTLY ONE direct-view reading exists, use it as the eave

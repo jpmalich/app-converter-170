@@ -168,6 +168,13 @@ class TestPromptCandidate:
         assert '"height_scale_flag"' in blob or "height_scale_flag" in blob
         assert "cross_plane" in blob
 
+    def test_count_outranks_pixel_within_agreement_band(self):
+        """Iter 79j.69 micro-candidate — a count-derived reading wins
+        over the median even when readings agree within ±1 ft."""
+        blob = open("/app/backend/routes/ai_measure.py").read()
+        assert "COUNT-DERIVED" in blob
+        assert "outranks pixel reads even" in blob
+
     def test_failed_revision_rules_stay_out(self):
         """The rolled-back 79j.65 mitigations must NOT ride back in with
         this candidate (experiment isolation)."""

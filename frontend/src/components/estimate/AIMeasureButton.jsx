@@ -2266,6 +2266,17 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           and comes in <span className="text-[#F59E0B] font-bold">amber</span>.
                         </span>
                       </li>
+                      {/* Iter 79j.69 — SOP line from the red-house exam
+                          (right wall: shrubs hid the bottom courses, count
+                          declined, cross-plane fallback read +1.5 ft). */}
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-short-walls">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>Short or cluttered walls:</b> shoot straight-on and close enough
+                          that the bottom siding courses are visible — the AI counts courses
+                          to verify height, and it can&apos;t count what shrubs hide.
+                        </span>
+                      </li>
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-corners">
                         <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
                         <span>

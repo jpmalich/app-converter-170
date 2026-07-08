@@ -131,6 +131,35 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Iter 79j.69 — Count-outranks-pixel micro-candidate + SOP checklist line (SHIPPED Jul 8 2026):**
+  Re-validation run `8586333a` scored **93.3% — new best** (dormers exact
+  via the plane rule; left 9.7 count-diluted −0.61; right correctly
+  x-plane-flagged, fallback read +1.51). Trace answers:
+  - LEFT's miss was NOT a 31-course miscount: photo 1 counted **32**
+    courses (one bottom row behind the woodpile) = 10.0, then the
+    reconciler MEDIANED it with photo 2's shaded pixel 9.3 → 9.7. Photos
+    0 & 4 counted **33 at the left corner = 10.4** (tape 10.31 ✓) —
+    counts are landing when unobstructed.
+  - RIGHT declined to count honestly: "shrubs and shadow obscure the
+    lower half" → capture problem, not prompt problem. Pipeline behaved
+    correctly (cross-plane flag, amber, re-shoot instruction).
+  Changes shipped (option c):
+  1. **Reconcile rule d amended (ONE line of substance)**: a
+     count-derived reading OUTRANKS pixel reads even within the ±1 ft
+     agreement band (median of counts only when multiple counts exist).
+     Would have made left = 10.0 → Δ −0.31 → PASS.
+  2. **SOP line added to onboarding checklist, verbatim per user**:
+     "Short or cluttered walls: shoot straight-on and close enough that
+     the bottom siding courses are visible — the AI counts courses to
+     verify height, and it can't count what shrubs hide."
+     (testid `ai-measure-onboarding-tip-short-walls`)
+  **NEXT VALIDATION RUN (user fires)**: user re-shoots the right
+  elevation per SOP (straighter, closer, bottom courses visible, clear
+  of shrubs, WALL REF same plane) + this rule, same tape, same
+  acceptance (L 10.31 ±0.5 / R 7.19 ±0.5). Both walls land → 93.3 is
+  the floor, gate resumes at per-dormer bbox routing, red house
+  exam-complete.
+
 - **Iter 79j.68 — Measurement mode per wall in Tape Check history (SHIPPED Jul 8 2026):**
   Purpose (user's words): over a few houses this column tells us which
   mode earns its keep — if count-derived consistently beats
