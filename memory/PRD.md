@@ -131,6 +131,47 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Iter 79j.67 — Validation run FAILED → prompt ROLLED BACK to baseline (Jul 8 2026):**
+  Run `aab33c65` scored **83.2% vs 88.9% baseline** (tape-check panel).
+  Right wall 10.4 vs 7.19 tape (+3.21, inverted direction); left dormer
+  regressed to 17.5; right dormer EXACT at 15.0. Trace answers:
+  1. **Course counting never ran** — `eave_courses_counted: null` on all 8
+     photos ("Lap courses too indistinct… to count reliably"). The
+     exposure×default hypothesis was falsified: nothing count-derived.
+  2. **Exposure plumbing has two gaps**: (a) the calibration prompt line is
+     WINDOWS-ONLY by wording ("Count rows to size windows…", line ~3878);
+     (b) the **Re-run path hardcodes `siding_exposure_in=None` /
+     `brick_course_in=None`** (line ~2402) — the contractor's 3.75″ never
+     reached this run at all.
+  3. **Actual failure mechanism: depth-mismatched vertical references.**
+     The vertical-scale mandate pushed the model off horizontal bars onto
+     the only vertical ref in frame — the 36″ WIN_REF on the DORMER
+     window — which sits on a DIFFERENT PLANE (set back + higher than the
+     main wall). Photo 6: dormer-derived 2.31 px/in applied to main-wall
+     pixels (true main-wall scale ≈3.4–3.5 px/in from tape) → +3.21 ft.
+     Photo 2 self-flagged it verbatim: "dormer is set back so main-wall
+     vertical scale may be slightly larger, biasing this read". CLEAN
+     CONFIRMATION: the right dormer used the same WIN_REF on its OWN
+     plane → exact 15.0. Same ref, same plane = perfect; same ref,
+     cross-plane = +45%.
+  **Rollback executed**: `git` reverse-apply of commit `cf03de7` (the
+  revision was isolated in one commit; parent verified to contain all
+  79j.64 fixes). Kept ONLY the zero-behavior python surfacing of the
+  trace fields (null under baseline). Verified: mitigation rules absent,
+  original examples restored, 16/16 asymmetric tests + backend healthy.
+  **BASELINE PROMPT IS LIVE.**
+  **Next candidate (pending user approval), informed by the trace:**
+  a. Fix the Re-run calibration-drop bug (persist `siding_exposure_in` /
+     `brick_course_in` on the session; reuse on re-run) — a real bug
+     independent of prompt experiments.
+  b. Extend the exposure prompt line to WALL HEIGHTS (count rows ×
+     3.75″), not just window sizing.
+  c. DEPTH-PLANE rule for vertical refs: a vertical reference may only
+     scale measurements on ITS OWN wall plane; dormer-face refs scale
+     dormer dims only (this is what made the right dormer exact).
+  d. Re-validation against the same tape, same acceptance (L 10.31 ±0.5,
+     R 7.19 ±0.5).
+
 - **Iter 79j.66 — Wall Breakdown dormer W×knee editors (SHIPPED Jul 8 2026):**
   The Breakdown's dormer column was a bare ft² input — correcting a dormer
   meant knowing the face-area formula by heart. Now each wall's matched
