@@ -34,6 +34,29 @@ const VerdictChip = ({ verdict, delta }) => {
   );
 };
 
+// Iter 79j.68 — measurement mode per wall (from the scored run's trace).
+// Over multiple houses this tag shows which mode earns its keep — the
+// evidence base for making exposure entry a required capture step.
+const MODE_CFG = {
+  count: { label: "count", title: "Count-derived: lap courses × contractor exposure — plane-correct by construction", fg: "#166534", bg: "#DCFCE7" },
+  pixel: { label: "px", title: "Pixel-derived: scaled from a reference bar's px-per-inch", fg: "#475569", bg: "#F1F5F9" },
+  "cross-plane": { label: "x-plane", title: "Cross-plane scale: vertical ref borrowed from a different wall plane — verify (control case: same plane = exact; cross-plane = +45%)", fg: "#92400E", bg: "#FEF3C7" },
+};
+
+const ModeTag = ({ mode }) => {
+  const cfg = MODE_CFG[mode];
+  if (!cfg) return null;
+  return (
+    <span
+      className="text-[8px] font-bold uppercase tracking-wider px-1 py-0.5"
+      style={{ color: cfg.fg, background: cfg.bg }}
+      title={cfg.title}
+    >
+      {cfg.label}
+    </span>
+  );
+};
+
 export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) {
   const [expanded, setExpanded] = useState(false);
   const [tape, setTape] = useState({ front: "", back: "", left: "", right: "" });
@@ -145,8 +168,9 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                   style={{ width: "4.5rem" }}
                   data-testid={`tape-check-input-${w}`}
                 />
-                <span data-testid={`tape-check-verdict-${w}`}>
+                <span data-testid={`tape-check-verdict-${w}`} className="inline-flex items-center gap-1">
                   <VerdictChip verdict={row?.verdict} delta={row?.delta} />
+                  {row?.mode && <span data-testid={`tape-check-mode-${w}`}><ModeTag mode={row.mode} /></span>}
                 </span>
               </div>
             );
@@ -199,15 +223,29 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
             <div className="pt-1 space-y-1" data-testid="tape-check-history">
               <div className="text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold">Accuracy history</div>
               {history.slice(0, 8).map((h) => (
-                <div key={h.run_id + h.scored_at} className="flex items-center justify-between text-[10px] text-[var(--ink-2)]">
-                  <span className="font-mono-num tabular-nums">{(h.scored_at || "").slice(0, 10)}</span>
-                  <span className="truncate mx-1 text-[var(--muted)]" style={{ maxWidth: "6rem" }}>{h.model}</span>
-                  <span className="font-mono-num tabular-nums">
-                    <b>{h.accuracy_pct}%</b>
-                    <span className="text-[#16A34A] ml-1">{h.passes}✓</span>
-                    <span className="text-[#B45309] ml-0.5">{h.ambers}⚠</span>
-                    <span className="text-[#B91C1C] ml-0.5">{h.fails}✗</span>
-                  </span>
+                <div key={h.run_id + h.scored_at} className="text-[10px] text-[var(--ink-2)]">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono-num tabular-nums">{(h.scored_at || "").slice(0, 10)}</span>
+                    <span className="truncate mx-1 text-[var(--muted)]" style={{ maxWidth: "6rem" }}>{h.model}</span>
+                    <span className="font-mono-num tabular-nums">
+                      <b>{h.accuracy_pct}%</b>
+                      <span className="text-[#16A34A] ml-1">{h.passes}✓</span>
+                      <span className="text-[#B45309] ml-0.5">{h.ambers}⚠</span>
+                      <span className="text-[#B91C1C] ml-0.5">{h.fails}✗</span>
+                    </span>
+                  </div>
+                  {/* Iter 79j.68 — per-wall measurement mode. Legacy
+                      entries (scored before modes existed) skip this. */}
+                  {Object.values(h.walls || {}).some((r) => r.mode) && (
+                    <div className="flex items-center gap-1 mt-0.5 pl-1" data-testid={`tape-check-history-modes-${h.run_id}`}>
+                      {WALLS.filter((w) => h.walls?.[w]).map((w) => (
+                        <span key={w} className="inline-flex items-center gap-0.5">
+                          <span className="text-[8px] uppercase text-[var(--muted)]">{w[0]}</span>
+                          <ModeTag mode={h.walls[w].mode} />
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

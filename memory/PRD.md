@@ -131,6 +131,26 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Iter 79j.68 — Measurement mode per wall in Tape Check history (SHIPPED Jul 8 2026):**
+  Purpose (user's words): over a few houses this column tells us which
+  mode earns its keep — if count-derived consistently beats
+  pixel-derived, that's the EVIDENCE for making exposure entry a
+  required capture step rather than optional.
+  - Backend: `score_tape_check` derives `mode` per wall from the run
+    trace — `"count"` (a contributing photo in `_source_photo_indices`
+    carries `eave_courses_counted`), `"cross-plane"`
+    (`height_scale_flag`), else `"pixel"` (incl. legacy runs). Stored in
+    each history entry's wall rows.
+  - Frontend (`TapeCheckPanel.jsx`): `ModeTag` chips (count=green,
+    px=slate, x-plane=amber w/ control-case tooltip) on wall rows +
+    per-wall mode line under each history row. Legacy entries (scored
+    pre-79j.67) skip the line. Testids: `tape-check-mode-{wall}`,
+    `tape-check-history-modes-{run_id}`.
+  - Tests: `test_tape_check.py` 9/9 (count/cross-plane/pixel derivation +
+    legacy-run default).
+  - FUTURE DECISION HOOK: once ≥3 houses show count > pixel accuracy,
+    promote exposure entry to a required capture step (P2 backlog).
+
 - **Iter 79j.67 — (a) Re-run calibration fix + (b)(c) prompt candidate (SHIPPED Jul 8 2026):**
   **CONTROL CASE, VERBATIM (the depth rule's justification forever):
   "same ref, same plane = exact; same ref, cross-plane = +45%."**

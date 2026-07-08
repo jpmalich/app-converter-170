@@ -700,6 +700,28 @@ async def score_tape_check(
     }
     ai_dormers = [d for d in (raw.get("dormers") or []) if isinstance(d, dict)]
 
+    # Iter 79j.68 — measurement mode per wall. Over multiple houses this
+    # column shows which mode earns its keep; if count-derived
+    # consistently beats pixel-derived, that's the evidence for making
+    # exposure entry a REQUIRED capture step instead of optional.
+    #   "count"       = a contributing photo carried eave_courses_counted
+    #   "cross-plane" = reconciler kept a cross-plane-scaled read
+    #                   (height_scale_flag) — already amber in the 3D view
+    #   "pixel"       = everything else (incl. legacy runs w/o the fields)
+    photos_by_idx = {
+        p.get("index"): p for p in (raw.get("photos") or []) if isinstance(p, dict)
+    }
+
+    def _wall_mode(w: dict) -> str:
+        if (w.get("height_scale_flag") or "").lower() == "cross_plane":
+            return "cross-plane"
+        for i in (w.get("_source_photo_indices") or []):
+            p = photos_by_idx.get(i)
+            if p and p.get("eave_courses_counted") is not None \
+                    and p.get("eave_height_ft_observed") is not None:
+                return "count"
+        return "pixel"
+
     wall_rows: dict = {}
     deltas_rel: list[float] = []
     passes = ambers = fails = 0
@@ -715,6 +737,7 @@ async def score_tape_check(
             "ai": round(ai_v, 2), "tape": float(tape_v),
             "delta": delta, "verdict": verdict,
             "source": ai_w.get("height_ft_source") or "",
+            "mode": _wall_mode(ai_w),
         }
         deltas_rel.append(abs(delta) / float(tape_v))
         passes += verdict == "pass"

@@ -54,14 +54,28 @@ def fixture_ids(session):
         "updated_at": datetime.now(timezone.utc),
         "result": {"raw_ai": {
             "walls": [
-                {"label": "front", "height_ft": 9.0, "height_ft_source": "direct_consensus"},
-                {"label": "back", "height_ft": 9.3, "height_ft_source": "direct_consensus"},
-                {"label": "left", "height_ft": 9.0, "height_ft_source": "direct_consensus"},
-                {"label": "right", "height_ft": 8.5, "height_ft_source": "direct_single_reading"},
+                {"label": "front", "height_ft": 9.0, "height_ft_source": "direct_consensus",
+                 "_source_photo_indices": [0]},
+                {"label": "back", "height_ft": 9.3, "height_ft_source": "direct_consensus",
+                 "_source_photo_indices": [4]},
+                {"label": "left", "height_ft": 9.0, "height_ft_source": "direct_consensus",
+                 "_source_photo_indices": [2]},
+                {"label": "right", "height_ft": 8.5, "height_ft_source": "direct_single_reading",
+                 "height_scale_flag": "cross_plane", "_source_photo_indices": [6]},
             ],
             "dormers": [
                 {"face": "left", "width_ft": 15.5},
                 {"face": "right", "width_ft": 16.5},
+            ],
+            # Iter 79j.68 — photo traces drive per-wall measurement mode:
+            # photo 2 carries a course count → LEFT is count-derived;
+            # photos 0/4 have no count → FRONT/BACK pixel-derived;
+            # RIGHT carries height_scale_flag → cross-plane.
+            "photos": [
+                {"index": 0, "eave_height_ft_observed": 9.0, "eave_courses_counted": None},
+                {"index": 2, "eave_height_ft_observed": 9.0, "eave_courses_counted": 29},
+                {"index": 4, "eave_height_ft_observed": 9.3, "eave_courses_counted": None},
+                {"index": 6, "eave_height_ft_observed": 8.5, "eave_courses_counted": None},
             ],
         }},
     })
@@ -105,10 +119,12 @@ def test_put_and_score_red_house_truth(session, fixture_ids):
     e = r.json()["entry"]
     assert e["walls"]["left"] == {
         "ai": 9.0, "tape": 10.3125, "delta": -1.31,
-        "verdict": "fail", "source": "direct_consensus",
+        "verdict": "fail", "source": "direct_consensus", "mode": "count",
     }
     assert e["walls"]["right"]["delta"] == 1.31
     assert e["walls"]["right"]["verdict"] == "fail"
+    # Iter 79j.68 — per-wall measurement mode from the run trace.
+    assert e["walls"]["right"]["mode"] == "cross-plane"
     # front/back have no tape → not scored
     assert "front" not in e["walls"] and "back" not in e["walls"]
     dorm = {d["face"]: d for d in e["dormers"]}
@@ -138,6 +154,29 @@ def test_amber_band(session, fixture_ids):
                      json={"run_id": fixture_ids["run_id"]}, timeout=15)
     e = r.json()["entry"]
     assert e["walls"]["back"]["verdict"] == "amber"
+    assert e["walls"]["back"]["mode"] == "pixel"
+
+
+def test_legacy_run_without_trace_fields_scores_as_pixel(session, fixture_ids):
+    """Runs scored before Iter 79j.67 have no photos/flags — mode must
+    default to 'pixel', never crash."""
+    user = MONGO.users.find_one({"email": EMAIL})
+    run_id = uuid.uuid4().hex
+    MONGO.ai_measure_runs.insert_one({
+        "run_id": run_id, "estimate_id": fixture_ids["est_id"],
+        "user_id": user["id"], "status": "done",
+        "created_at": datetime.now(timezone.utc),
+        "result": {"raw_ai": {"walls": [
+            {"label": "back", "height_ft": 9.3},
+        ]}},
+    })
+    try:
+        r = session.post(f"{BASE}/estimates/{fixture_ids['est_id']}/tape-check/score",
+                         json={"run_id": run_id}, timeout=15)
+        assert r.status_code == 200, r.text
+        assert r.json()["entry"]["walls"]["back"]["mode"] == "pixel"
+    finally:
+        MONGO.ai_measure_runs.delete_one({"run_id": run_id})
 
 
 def test_tape_persists_across_score(session, fixture_ids):
