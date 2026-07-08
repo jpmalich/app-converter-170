@@ -102,20 +102,22 @@ polls forever seeing that frozen snapshot.
   freeze rule applies to `/app/frontend/src/components/estimate/AIMeasureButton.jsx`
   and its direct dependencies.
 
-**Standing order (Feb 2026, re-affirmed Jul 7 2026 after fork resume):**
+**Standing order (Feb 2026, re-affirmed Jul 7 2026; Run 3 executed Jul 8 2026):**
 
-1. **Confirmation Run 3** — clean full-payload run on the Red-House fixture
-   estimate `673707d5-9b7e-4d8f-8eaf-63c86820f611` with all 8 taped photos +
-   all four wall-scale-ref anchors placed. Required env: `ANTHROPIC_DIRECT_A=1`,
-   `ANTHROPIC_DIRECT_ROUTE=phase_b_only`, `ANTHROPIC_API_KEY` set,
-   `AI_MEASURE_RECONCILE_DIRECT_MAX_TOKENS=32000` (default). Acceptance criteria:
-   - both dormer widths within ±1 ft of taped 15.0 / 15.0
-   - `raw_ai._scale_refs_used` truthy AND cited in `raw_ai._reconcile_notes`
-   - `_phase_b_transport == "anthropic_direct"`
-   - Phase A + B both green, no `_empty_photos`, no `_orphaned_walls`
-   - Total wall-clock < 5 min end-to-end
+1. **Confirmation Run 3** — ✅ EXECUTED Jul 8 2026 (`f423c216`, status done,
+   8m52s wall-clock). Verdict basis changed by operator: **per-wall tape
+   validation** replaces single-number acceptance. Tape truth: LEFT 10.3125 ·
+   RIGHT 7.1875 · FRONT/BACK stepped 10.31→7.19 over last 13'4" · dormers
+   15.0/15.0. Scoring + height-compression diagnosis recorded under
+   Iter 79j.64 in the timeline. The three approved asymmetry fixes
+   (per-corner LF, clamp-to-amber, width_ft_source) SHIPPED same day.
+   Prompt-level compression mitigations STAGED pending approval.
 2. **Per-dormer bbox routing** + true bbox-derived opening (x, y, w, h) — fixes
-   the scattered-window placement on the 3D walls. Blocked until step 1 passes.
+   the scattered-window placement on the 3D walls. **UNBLOCKED (next up).**
+   Run 3 confirmed the root cause: Phase A emits real per-photo bboxes
+   (`front-w1: [712,340,168,116]` etc) but every bbox in the final
+   `openings` / `openings_schedule` is zeroed `{0,0,0,0}` — Phase B drops
+   them. Plumbing job, not new detection.
 3. **Three.js static 3D PNG generation** — headless canvas export.
 4. **Embed the PNG in the Customer Quote PDF + email.** Only after 1–3 land.
 
@@ -124,6 +126,86 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Iter 79j.64 — Confirmation Run 3 verdict + per-wall tape truth (Jul 8 2026):**
+  Run 3 (`f423c216`) completed clean: 8/8 photos, anthropic_direct both phases,
+  no empty photos / orphaned walls, dedup 39→15, wall-clock 8m52s (missed the
+  5-min target — Phase A concurrency 2 + 4-min Phase B; tuning deferred).
+  User then taped every wall (sketch: `red house.pdf` artifact):
+  **LEFT 10.3125 ft uniform · RIGHT 7.1875 ft uniform · FRONT/BACK 27 ft gable
+  ends carrying a 39" step over the last 13'4" · dormers 15.0/15.0 ·
+  knees 4.06 both.** Scoring: widths exact; left dormer +0.5 (pass);
+  right dormer +1.5 (single anchored read, amber-tagged, miss); LEFT height
+  9.0 (−1.3) under a `direct_consensus` badge — **consensus was confidently
+  wrong**; RIGHT 8.5 (+1.3) amber. Diagnosis of the systematic height
+  compression (both walls regressed toward 8.5–9):
+  1. **Horizontal-bar px/in applied to vertical measurements** — photo 2's own
+     data shows horizontal 2.93 px/in vs vertical 2.64 px/in (11% skew).
+  2. **Grade occlusion** — woodpile (left) / shrubs (right) hid the wall base;
+     reads measured to VISIBLE grade.
+  3. **Prior anchoring** — Phase A/B prompt examples are saturated with
+     8.4–9.0 values ("snapped to 9"); photo 2 computed 8.3 then "rounded to
+     ~8.5" toward the prior. NOTE: front/back reads (8.5/9.3) are near the
+     area-weighted truth of the stepped wall (≈8.77) — the compression story
+     is a left/right (uniform wall) story.
+  **Acceptance basis going forward is PER-WALL tape validation, not a single
+  aggregate number.** Prompt-level mitigations (vertical-scale mandate,
+  course-counting cross-check on 4" lap, grade-occlusion flag, neutralized
+  prompt examples) are STAGED, pending user approval + a validation run.
+
+- **P1 BACKLOG — Stepped-wall detection (v1 = detect-and-amber-flag, NOT full modeling):**
+  Fixture: the red house (`673707d5-9b7e-4d8f-8eaf-63c86820f611`) — front/back
+  27 ft gable ends step from 10.3125 ft down to 7.1875 ft over the last 13'4"
+  (39" drop). A single `height_ft` per wall is ill-defined on such walls.
+  v1 scope: Phase A/B emit `stepped: true` (+ optional `step_profile`) when a
+  wall's eave line visibly changes height; frontend renders an amber
+  "this wall appears stepped — verify area" chip; area math keeps using the
+  area-average height. Full multi-segment wall modeling is explicitly OUT of
+  v1.
+
+- **Iter 79j.64 — Asymmetric-wall fixes (SHIPPED Jul 8 2026):**
+  1. **Per-corner `outside_corner_lf`** — new `_corner_lf_from_walls()`:
+     corner posts stand at eave lines; per corner use the adjoining
+     EAVE-side (non-gable) wall's height, min() for hip/ambiguous. Overrides
+     Claude's estimate whenever all 4 walls carry heights. Tape check:
+     2×10.31 + 2×7.19 = 35.0 ✓ (old formula: 4×8.9 = 35.6).
+  2. **Clamp-to-amber** — the <7 ft "nonsense" clamp now only replaces <4 ft
+     junk (story-units / 0.7-ft fractions). 4–7 ft readings are KEPT +
+     `_height_flag: "below_typical_range"` + amber "Under 7 ft — verify"
+     badge in HouseModel3D (red-house right wall tapes 7.19 ft — one low
+     read and the old clamp would have erased real asymmetry).
+  3. **`width_ft_source` provenance** — Phase B schema now requires width
+     provenance per wall (`direct_ref` / `direct_single_reading` /
+     `assumed_symmetric` / `estimated_no_direct_view`); HouseModel3D renders
+     an amber "Width assumed symmetric" badge (Run 3's right wall width was
+     silently "assumed symmetric with left wall" — only discoverable in note
+     text).
+  4. **Pin-gap false-positive fix** — Run 3 flagged BOTH dormers "unanchored"
+     though each width was anchored to a contractor wall bar. Two dead paths
+     fixed in `_derive_pin_gap_hints`: source-photo lookup used nonexistent
+     keys (`source_photos` → real `_source_photo_indices`), and the anchor
+     regex never scanned `_per_photo_readings[role=width].notes` /
+     `_reconciliation_note` where citations actually live (also added
+     `bar scale`/`wall bar` variants + dual-schema `_scale_refs` support:
+     `inches` OR `real_ft`). Hints now carry real `source_photo_idxs`.
+  Tests: `tests/test_asymmetric_walls_iter64.py` (16/16) — includes the
+  exact Run 3 dormer payloads as regression fixtures. Full AI-measure domain
+  suite 157/157 green.
+
+- **Iter 79j.64 — Session Recovery Fix 2 + Fix 3 (SHIPPED Jul 8 2026):**
+  - **Fix 2 (loud recovery banner)**: when the server session holds photos but
+    the device has nothing loaded, the old quiet sky-blue "Resume?" strip is
+    now a bordered amber banner with an "SAVED WORK FOUND ON THE SERVER"
+    header bar naming the specifics (N photos / reconciled AI result /
+    markers on N photos) pulled from the session at detection time
+    (`pendingSessionMeta`). Testids: `ai-measure-resume-banner`,
+    `ai-measure-recovery-details`, `ai-measure-resume-btn`,
+    `ai-measure-discard-btn`.
+  - **Fix 3 (destructive confirms)**: Start Over (footer), Start Fresh
+    (recovery banner) and per-photo Remove (×) now open a red confirm modal
+    stating EXACTLY what gets destroyed (photo counts, AI result, marker
+    counts, "including the markers you drew on it" for photo removal) before
+    executing. Testids: `ai-measure-destructive-confirm-{backdrop,modal,details,cancel,proceed}`.
+
 - **P2 (FROZEN)** — **Refactor `AIMeasureButton.jsx` (3534 lines) + `HouseModel3D.jsx` (1553 lines)** — explicit gate before this touches production:
   - Prerequisite 1: red-house photos pass the stability pair (two consecutive runs producing equivalent JSON).
   - Prerequisite 2: ranch + hip-roof houses successfully validate through the two-phase pipeline (proves the current code isn't accidentally red-house-shaped).

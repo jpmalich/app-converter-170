@@ -92,6 +92,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Iter 56c — free aerial fetch via Esri World Imagery.
   const [satBusy, setSatBusy] = useState(false);
   const [resumePrompt, setResumePrompt] = useState(false); // shows banner
+  // Iter 79j.64 — Fix 2: specifics for the loud recovery banner
+  // (photo count / result / marker counts pulled from the server
+  // session at detection time).
+  const [pendingSessionMeta, setPendingSessionMeta] = useState(null);
+  // Iter 79j.64 — Fix 3: destructive-action confirm state.
+  // null | { kind: "start_over" | "start_fresh" | "remove_photo", idx?, name? }
+  const [destructiveConfirm, setDestructiveConfirm] = useState(null);
   const [refDim, setRefDim] = useState("");
   const [wallHeight, setWallHeight] = useState("");
   const [sidingPct, setSidingPct] = useState("");
@@ -514,6 +521,16 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         const hasFreshState = photoUrls.length > 0 || preview != null;
         if (!hasFreshState && (data.photo_urls?.length || data.preview)) {
           setResumePrompt(true);
+          // Iter 79j.64 — Fix 2: capture WHAT the server holds so the
+          // recovery banner can be specific instead of generic.
+          const pa = data.photo_annotations || {};
+          setPendingSessionMeta({
+            photos: data.photo_urls?.length || 0,
+            hasResult: !!data.preview,
+            annotated: Object.keys(pa).filter(
+              (k) => !k.startsWith("_") && pa[k] && Object.keys(pa[k]).length > 0
+            ).length,
+          });
           // Stash for the Resume button to consume.
           window.__aiMeasurePendingSession = data;
         }
@@ -923,6 +940,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
   const startOver = async () => {
     setResumePrompt(false);
+    setPendingSessionMeta(null);
     setPreview(null);
     setPhotoUrls([]);
     setFiles([]);
@@ -1254,6 +1272,20 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   };
 
   const removePhoto = (idx) => {    setPhotoUrls((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Iter 79j.64 — Fix 3: proceed handler for the destructive-action
+  // confirm modal. "start_over" and "start_fresh" both wipe the local
+  // state AND delete the server session; "remove_photo" drops one photo.
+  const proceedDestructive = () => {
+    const dc = destructiveConfirm;
+    setDestructiveConfirm(null);
+    if (!dc) return;
+    if (dc.kind === "remove_photo") {
+      removePhoto(dc.idx);
+      return;
+    }
+    startOver();
   };
 
   // Iter 79i (Phase 4) — Missing-wall warning modal. Before firing
@@ -2287,6 +2319,98 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 </div>
               );
             })()}
+            {/* Iter 79j.64 — Fix 3: destructive-action confirm. Guards
+                Start Over, Start Fresh (recovery banner) and per-photo
+                Remove with a SPECIFIC data-loss statement — not a
+                generic "are you sure". */}
+            {destructiveConfirm && (() => {
+              const dc = destructiveConfirm;
+              const isPhoto = dc.kind === "remove_photo";
+              const isFresh = dc.kind === "start_fresh";
+              // What exactly gets destroyed:
+              const localPhotos = photoUrls.length;
+              const localMarkers = photoUrls.filter((n) => !annotEmpty(photoAnnotations[n])).length;
+              const serverPhotos = pendingSessionMeta?.photos || 0;
+              const serverHasResult = !!pendingSessionMeta?.hasResult;
+              const serverMarkers = pendingSessionMeta?.annotated || 0;
+              const photoAnnot = isPhoto ? (photoAnnotations[dc.name] || {}) : {};
+              const photoHasMarkers = isPhoto && !annotEmpty(photoAnnot);
+              const title = isPhoto
+                ? `Remove photo ${dc.idx + 1} of ${localPhotos}?`
+                : isFresh
+                  ? "Permanently delete the saved session?"
+                  : "Wipe this AI Measure session?";
+              return (
+                <div
+                  className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6"
+                  onClick={() => setDestructiveConfirm(null)}
+                  data-testid="ai-measure-destructive-confirm-backdrop"
+                >
+                  <div
+                    className="bg-[var(--surface)] max-w-md w-full flex flex-col shadow-2xl border border-[#DC2626]"
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid="ai-measure-destructive-confirm-modal"
+                  >
+                    <div className="bg-[#FEE2E2] px-4 py-3 flex items-center gap-2 border-b border-[#DC2626]">
+                      <AlertTriangle className="w-4 h-4 text-[#B91C1C]" />
+                      <div className="font-bold uppercase tracking-wider text-[11px] text-[#7F1D1D]">
+                        {title}
+                      </div>
+                    </div>
+                    <div className="p-5 space-y-3 text-[12px] text-[var(--ink)] leading-relaxed" data-testid="ai-measure-destructive-confirm-details">
+                      {isPhoto ? (
+                        <p>
+                          This deletes the photo from the session
+                          {photoHasMarkers && (
+                            <> — <b>including the markers you drew on it</b>
+                            {photoAnnot.reference ? " (wall reference bar)" : ""}
+                            {photoAnnot.windowReference ? " (window reference)" : ""}</>
+                          )}
+                          . You&apos;ll need to re-upload and re-mark it to get it back.
+                        </p>
+                      ) : isFresh ? (
+                        <p>
+                          The server session holds{" "}
+                          <b>{serverPhotos} photo{serverPhotos === 1 ? "" : "s"}</b>
+                          {serverHasResult && <>, <b>a reconciled AI result</b></>}
+                          {serverMarkers > 0 && <>, <b>markers on {serverMarkers} photo{serverMarkers === 1 ? "" : "s"}</b></>}
+                          . Start Fresh <b>permanently deletes all of it from the server</b> — there is no undo.
+                          If you want that work, click Cancel and hit Resume instead.
+                        </p>
+                      ) : (
+                        <p>
+                          This wipes{" "}
+                          <b>{localPhotos} uploaded photo{localPhotos === 1 ? "" : "s"}</b>
+                          {preview != null && <>, <b>the current AI result</b></>}
+                          {localMarkers > 0 && <>, <b>markers on {localMarkers} photo{localMarkers === 1 ? "" : "s"}</b></>}
+                          {" "}and <b>deletes the saved session from the server</b>. Prior runs stay in
+                          Debug View history, but this working session cannot be recovered.
+                        </p>
+                      )}
+                    </div>
+                    <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDestructiveConfirm(null)}
+                        className="px-4 py-2 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[11px] font-bold uppercase tracking-wider"
+                        data-testid="ai-measure-destructive-confirm-cancel"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={proceedDestructive}
+                        className="px-4 py-2 bg-[#DC2626] text-white hover:bg-[#B91C1C] text-[11px] font-bold uppercase tracking-wider inline-flex items-center gap-1.5"
+                        data-testid="ai-measure-destructive-confirm-proceed"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        {isPhoto ? "Yes, remove photo" : "Yes, delete it"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="bg-gradient-to-r from-[#7C3AED] to-[#A855F7] text-white px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Sparkles className="w-5 h-5" />
@@ -2452,30 +2576,48 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               )}
               {resumePrompt && (
                 <div
-                  className="mb-4 p-3 border border-[#0EA5E9] bg-sky-50 flex items-center justify-between gap-3 flex-wrap"
+                  className="mb-4 border-2 border-[#F59E0B] bg-[#FFFBEB]"
                   data-testid="ai-measure-resume-banner"
                 >
-                  <div className="text-xs text-[#075985]">
-                    <span className="font-bold uppercase tracking-wider text-[10px] mr-2">Resume?</span>
-                    You have a saved AI Measure session for this estimate — photos, AI result, and any edits.
+                  {/* Iter 79j.64 — Fix 2: LOUD recovery banner. Fires when
+                      the server holds a saved session but this device's
+                      memory is empty — the exact state where a stray
+                      "Start fresh" click destroys real work. Names the
+                      specific contents so the choice is informed. */}
+                  <div className="bg-[#F59E0B] px-3 py-1.5 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-white" />
+                    <span className="text-white font-bold uppercase tracking-wider text-[11px]">
+                      Saved work found on the server
+                    </span>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={resumeSession}
-                      className="px-3 py-1.5 bg-[#0EA5E9] text-white hover:bg-[#0284C7] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
-                      data-testid="ai-measure-resume-btn"
-                    >
-                      <RotateCcw className="w-3 h-3" /> Resume
-                    </button>
-                    <button
-                      type="button"
-                      onClick={startOver}
-                      className="px-3 py-1.5 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider"
-                      data-testid="ai-measure-discard-btn"
-                    >
-                      Start fresh
-                    </button>
+                  <div className="p-3 flex items-center justify-between gap-3 flex-wrap">
+                    <div className="text-xs text-[#78350F] leading-relaxed" data-testid="ai-measure-recovery-details">
+                      This device has nothing loaded, but the server holds your saved AI Measure session:{" "}
+                      <b>{pendingSessionMeta?.photos || 0} photo{(pendingSessionMeta?.photos || 0) === 1 ? "" : "s"}</b>
+                      {pendingSessionMeta?.hasResult && <>, <b>a reconciled AI result</b></>}
+                      {(pendingSessionMeta?.annotated || 0) > 0 && (
+                        <>, <b>markers on {pendingSessionMeta.annotated} photo{pendingSessionMeta.annotated === 1 ? "" : "s"}</b></>
+                      )}
+                      . <b>Resume</b> restores everything. <b>Start fresh</b> permanently deletes it.
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={resumeSession}
+                        className="px-4 py-2 bg-[#0EA5E9] text-white hover:bg-[#0284C7] text-xs font-bold uppercase tracking-wider flex items-center gap-1"
+                        data-testid="ai-measure-resume-btn"
+                      >
+                        <RotateCcw className="w-3 h-3" /> Resume
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDestructiveConfirm({ kind: "start_fresh" })}
+                        className="px-3 py-2 bg-[var(--surface)] text-[var(--danger-text)] border border-[#DC2626] hover:bg-red-50 text-xs font-bold uppercase tracking-wider"
+                        data-testid="ai-measure-discard-btn"
+                      >
+                        Start fresh
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -2934,7 +3076,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                   )}
                                   <button
                                     type="button"
-                                    onClick={(e) => { e.stopPropagation(); removePhoto(i); }}
+                                    onClick={(e) => { e.stopPropagation(); setDestructiveConfirm({ kind: "remove_photo", idx: i, name }); }}
                                     className="absolute top-0.5 right-0.5 bg-[var(--bar-bg)] text-white w-5 h-5 flex items-center justify-center text-xs hover:bg-[#DC2626]"
                                     data-testid={`ai-measure-photo-remove-${i}`}
                                     title="Remove this photo"
@@ -4069,7 +4211,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                   <button
                     type="button"
                     className="px-3 py-2 bg-[var(--surface)] text-[var(--danger-text)] border border-[#DC2626] hover:bg-red-50 text-xs font-bold uppercase tracking-wider"
-                    onClick={startOver}
+                    onClick={() => setDestructiveConfirm({ kind: "start_over" })}
                     disabled={busy}
                     data-testid="ai-measure-start-over"
                     title="Wipe photos + AI result and start fresh"

@@ -1563,13 +1563,15 @@ def _derive_pin_gap_hints(
     # contractor annotated the photos or not.
     _anchor_pat = _re.compile(
         r"(WALL[_ -]?REF|WIN[_ -]?REF|reference[_ -]?(dim|bar|mark|line)?|contractor[- ]?ref"
-        r"|scale[- ]?bar|taped[_ -]?dim|tape[_ -]?measure|anchor)",
+        r"|scale[- ]?bar|bar[- ]?scale|(?:wall|win|ref)[- ]?bar|taped[_ -]?dim|tape[_ -]?measure|anchor)",
         _re.I,
     )
     scale_refs_by_photo: dict[int, bool] = {}
     if isinstance(annotations, dict) and isinstance(annotations.get("_scale_refs"), dict):
         for k, v in annotations["_scale_refs"].items():
-            if isinstance(v, dict) and v.get("inches"):
+            # Dual-schema: the UI wizard writes {p1_*, p2_*, inches};
+            # the ProfileAnnotator writes {px_height, real_ft}.
+            if isinstance(v, dict) and (v.get("inches") or v.get("real_ft")):
                 try:
                     scale_refs_by_photo[int(k)] = True
                 except (TypeError, ValueError):
@@ -1579,18 +1581,39 @@ def _derive_pin_gap_hints(
             continue
         face = (d.get("face") or "").strip().lower()
         width_ft = d.get("width_ft")
-        text_blob = " ".join([
-            str(d.get("width_source") or ""),
-            str(d.get("width_reasoning") or ""),
-            str(d.get("reasoning") or ""),
-        ])
+        # Iter 79j.64 — FALSE-POSITIVE FIX (red-house Run 3): the anchor
+        # citation usually lives in the kept width reading's `notes`
+        # ("anchored to 444\" wall bar") or `_reconciliation_note`, NOT
+        # in width_source (which is an enum like "direct_single_reading").
+        # Scan all of them.
+        text_blob = " ".join(
+            [
+                str(d.get("width_source") or ""),
+                str(d.get("width_reasoning") or ""),
+                str(d.get("reasoning") or ""),
+                str(d.get("_reconciliation_note") or ""),
+            ]
+            + [
+                str(r.get("notes") or "")
+                for r in (d.get("_per_photo_readings") or [])
+                if isinstance(r, dict) and r.get("role") == "width"
+            ]
+        )
         cites_anchor = bool(_anchor_pat.search(text_blob))
         # Consider a dormer "anchored" if either (a) the text cites a
         # marker, or (b) at least one photo covering the dormer's
         # face carries an explicit `_scale_refs` entry. The second
         # condition catches the case where the AI silently used a
         # marker without naming it.
-        source_photos = d.get("source_photos") or d.get("_source_photos") or []
+        # Iter 79j.64 — the schema field is `_source_photo_indices`
+        # (the old `source_photos` keys never existed → this path was
+        # permanently dead and every dormer got flagged unanchored).
+        source_photos = (
+            d.get("_source_photo_indices")
+            or d.get("source_photos")
+            or d.get("_source_photos")
+            or []
+        )
         photo_has_ref = any(scale_refs_by_photo.get(int(p), False) for p in source_photos if isinstance(p, (int, str)) and str(p).lstrip("-").isdigit())
         if not cites_anchor and not photo_has_ref and width_ft:
             k = ("unanchored_dormer_width", face or f"dormer{idx + 1}")
@@ -1608,7 +1631,10 @@ def _derive_pin_gap_hints(
                     f"elevation with a WALL_REF or WIN_REF bar in frame "
                     f"before quoting."
                 ),
-                "source_photo_idxs": [],
+                "source_photo_idxs": [
+                    int(p) for p in source_photos
+                    if isinstance(p, (int, str)) and str(p).lstrip("-").isdigit()
+                ],
             })
 
     if not isinstance(annotations, dict) or not annotations:
@@ -1694,6 +1720,51 @@ def _derive_pin_gap_hints(
 # compatibility but is now a no-op — see `_execute_ai_measure_worker`.
 
 
+def _corner_lf_from_walls(walls: list) -> float:
+    """Iter 79j.64 — Per-corner outside-corner LF from per-wall heights.
+
+    Replaces the old `4 × avg_wall_height_ft` symmetry assumption, which
+    smears real asymmetry (red-house tape: left 10.31 ft vs right
+    7.19 ft → true corner LF 35.0, not 4 × 8.9 = 35.6-by-luck; on more
+    asymmetric houses the error grows to several LF per corner).
+
+    Physics: corner posts stand at the EAVE line. On a gable-ended house
+    the corner height equals the adjoining EAVE-side wall's height — the
+    gable wall's `height_ft` may be an area-average on stepped walls and
+    must not drive the corner. Per corner: prefer the non-gable adjoining
+    wall's height; when both adjoining walls are eave walls (hip) or both
+    are gables, take the min (the eave line can't sit above the shorter
+    wall).
+
+    Returns 0.0 when any of the 4 primary walls is missing or
+    unmeasured so the caller falls back to Claude's estimate.
+    """
+    by: dict[str, dict] = {}
+    for w in walls or []:
+        if not isinstance(w, dict):
+            continue
+        lbl = (w.get("label") or "").strip().lower()
+        h = float(w.get("height_ft") or 0)
+        if lbl in ("front", "back", "left", "right") and h > 0:
+            by[lbl] = {
+                "h": h,
+                "gable": float(w.get("gable_triangle_height_ft") or 0) > 0,
+            }
+    if set(by) != {"front", "back", "left", "right"}:
+        return 0.0
+    total = 0.0
+    for a, b in (("front", "left"), ("front", "right"),
+                 ("back", "left"), ("back", "right")):
+        wa, wb = by[a], by[b]
+        if wa["gable"] and not wb["gable"]:
+            total += wb["h"]
+        elif wb["gable"] and not wa["gable"]:
+            total += wa["h"]
+        else:
+            total += min(wa["h"], wb["h"])
+    return round(total, 1)
+
+
 def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dict:
     """Roll up Claude's per-wall / per-opening estimates into the same
     measurements dict that the HOVER PDF importer returns. The frontend
@@ -1750,10 +1821,15 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         eave_h = float(w.get("height_ft") or 0)
         # Iter 55: HARD CLAMP — Claude occasionally returns wall heights
         # as story-units (1.0 = 1 story) or stupidly small fractions
-        # (0.7 ft) which deflates the whole quote by 10–100×. No real
-        # exterior wall is < 7 ft. If we get something nonsensical, fall
-        # back to the global avg_wall_height_ft, then the story-default.
-        if 0 < eave_h < 7:
+        # (0.7 ft) which deflates the whole quote by 10–100×. Those junk
+        # shapes are always < 4 ft. If we get one, fall back to the
+        # global avg_wall_height_ft, then the story-default.
+        # Iter 79j.64 — the old threshold was 7 ft, which silently
+        # OVERWROTE genuinely short walls with the average (red-house
+        # right wall tapes 7.19 ft; stepped walls drop lower). 4–7 ft
+        # readings are now KEPT and amber-flagged instead: real
+        # observation > erased asymmetry.
+        if 0 < eave_h < 4:
             avg = float(raw.get("avg_wall_height_ft") or 0)
             story = float(raw.get("story_count") or 1)
             if avg >= 7:
@@ -1764,6 +1840,13 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                 eave_h = 12.0
             else:
                 eave_h = 9.0
+        elif 4 <= eave_h < 7:
+            w["_height_flag"] = "below_typical_range"
+            w["_reconciliation_note"] = (
+                (w.get("_reconciliation_note") or "")
+                + " [backend: eave height under 7 ft KEPT — short/stepped"
+                " walls exist; verify with tape before quoting]"
+            ).strip()
         # Same defensive clamp for width — no real house wall is < 5 ft.
         # Single-digit widths usually mean Claude returned a meaningless
         # fraction. Skip the wall (don't try to guess a width).
@@ -1845,11 +1928,14 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # course as the eaves on a basic 1-story rectangle. The contractor
         # can adjust on the line item if the house has porches / walk-outs.
         "starter_lf": round(float(raw.get("starter_lf") or raw.get("eaves_lf") or 0), 1),
-        # Corners — AI estimates from visible elevations. Fall back to a
-        # reasonable default for a basic rectangular house (4 outside
-        # corners × avg wall height, 0 inside corners).
+        # Corners — Iter 79j.64: computed per-corner from the reconciled
+        # per-wall heights (corner posts stand at eave lines; on stepped
+        # or asymmetric houses `4 × avg` over/under-counts by several
+        # LF). Falls back to the AI estimate, then the legacy 4 × avg,
+        # when any primary wall is unmeasured.
         "outside_corner_lf": round(float(
-            raw.get("outside_corner_lf")
+            _corner_lf_from_walls(walls)
+            or raw.get("outside_corner_lf")
             or 4 * float(raw.get("avg_wall_height_ft") or 0)
         ), 1),
         "inside_corner_lf": round(float(raw.get("inside_corner_lf") or 0), 1),
@@ -3338,6 +3424,18 @@ call worker returns, so downstream code doesn't fork.
   "walls": [
     {"label": "front" | "back" | "left" | "right",
      "width_ft":                   number,
+     // Iter 79j.64 — Provenance tag for the WIDTH, mirroring the eave
+     // rule. Never silently assume symmetry — stepped and L-shaped
+     // houses exist. Values:
+     //   "direct_ref"              = a full-span reference bar (WALL_REF)
+     //                               or taped dim covered this wall's span
+     //   "direct_single_reading"   = one direct view measured it without
+     //                               a full-span ref (amber)
+     //   "assumed_symmetric"       = you copied the opposite wall's width
+     //                               because no ref covered this span —
+     //                               SAY SO, the frontend renders it amber
+     //   "estimated_no_direct_view" = no photo measured this span (amber)
+     "width_ft_source":            "direct_ref" | "direct_single_reading" | "assumed_symmetric" | "estimated_no_direct_view",
      "height_ft":                  number,        // final EAVE height for this wall (see rule 1)
      // Iter 79j.38 — Provenance tag for the eave height. Drives the
      // frontend badge color: `direct_consensus` = green (2+ direct
@@ -3620,8 +3718,11 @@ RECONCILIATION RULES:
 
 7. LINEAR FEET — eaves_lf ≈ 2×front.width + 2×back.width for a
    rectangular footprint. rakes_lf ≈ 2 × sqrt((span/2)² + rise²) per
-   gable end. outside_corner_lf ≈ 4 × avg_wall_height_ft. Don't over-
-   engineer — the aggregator will refine, we just need the ballpark.
+   gable end. outside_corner_lf: corner posts stand at eave lines —
+   sum the 4 corners using each corner's adjoining EAVE-side wall
+   height (NOT an average; asymmetric houses carry different heights
+   per side, and the aggregator recomputes this from your per-wall
+   heights anyway). Don't over-engineer — we just need the ballpark.
 
 8. IF A FIELD CANNOT BE RECONCILED (no photo saw it, all readings
    null), leave it at a sane default and mention "no photo captured

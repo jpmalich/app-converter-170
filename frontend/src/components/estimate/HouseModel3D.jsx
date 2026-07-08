@@ -191,6 +191,11 @@ function buildHouseJson(preview, overrides, estimate) {
       // Legacy single-call runs won't emit this field → default to
       // "ai" so nothing regresses.
       const hs = (wallData?.height_ft_source || "").toLowerCase();
+      // Iter 79j.64 — backend keeps 4-7 ft readings (short/stepped walls
+      // exist) but flags them; render amber even under a consensus tag.
+      if (wallData?._height_flag === "below_typical_range") {
+        return { h: wallH, source: "ai-below-typical" };
+      }
       if (hs === "direct_consensus") return { h: wallH, source: "ai" };
       if (hs === "direct_disagreement") return { h: wallH, source: "ai-disagreement" };
       if (hs === "estimated_no_direct_view") return { h: wallH, source: "ai-no-direct-view" };
@@ -1301,6 +1306,33 @@ export default function HouseModel3D({ preview, estimate }) {
                 edited
               </span>
             )}
+            {/* Iter 79j.64 — Backend kept a 4-7 ft eave reading instead of
+                overwriting it with the average (short/stepped walls are
+                real — red-house right wall tapes 7.19 ft). Amber so the
+                contractor verifies with tape. */}
+            {facade.eaveHeightSource === "ai-below-typical" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
+                title="This wall's eave reads under 7 ft. Short and stepped walls exist, so the reading was KEPT — but verify with a tape before quoting."
+                data-testid={`ai-measure-3d-eave-below-typical-${facade.id}`}
+              >
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Under 7 ft — verify
+              </span>
+            )}
+            {/* Iter 79j.64 — Width provenance. The reconciler copied the
+                opposite wall's width because no reference bar covered
+                this span. Real houses aren't always symmetric. */}
+            {(facade.widthSource === "assumed_symmetric" || facade.widthSource === "estimated_no_direct_view") && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
+                title={facade.widthSource === "assumed_symmetric"
+                  ? "No reference bar covered this wall's full span — the width was copied from the opposite wall. Stepped and L-shaped houses break this assumption; verify with tape."
+                  : "No photo measured this wall's span — the width is an estimate. Verify with tape."}
+                data-testid={`ai-measure-3d-width-assumed-${facade.id}`}
+              >
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Width {facade.widthSource === "assumed_symmetric" ? "assumed symmetric" : "estimated"}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-[11px]">
             <span className="text-[var(--muted)] w-24">Roof pitch</span>
@@ -1550,7 +1582,7 @@ export default function HouseModel3D({ preview, estimate }) {
               {d.widthSource === "default" && <Amber />}
             </div>
           ))}
-          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || (house.roof.dormers || []).some((d) => ["ai-disagreement", "ai-single", "ai-back-solved", "ai-no-direct-view", "default"].includes(d.widthSource))) && (
+          {(facade.estimated || facade.eaveHeightSource === "default" || facade.eaveHeightSource === "ai-avg" || facade.eaveHeightSource === "ai-disagreement" || facade.eaveHeightSource === "ai-no-direct-view" || facade.eaveHeightSource === "ai-below-typical" || facade.widthSource === "assumed_symmetric" || facade.widthSource === "estimated_no_direct_view" || house.roof.pitchSource === "default" || house.roof.typeSource === "default" || house.roof.typeSource === "ai-low-conf" || house.ridgeAxisSource === "default" || (house.roof.dormers || []).some((d) => ["ai-disagreement", "ai-single", "ai-back-solved", "ai-no-direct-view", "default"].includes(d.widthSource))) && (
             <div className="text-[9px] italic text-[var(--warning-text)] leading-tight pt-1 border-t border-[#F59E0B]">
               Edits update the 3D drawing only. To make the estimator match, hit <strong>Re-run</strong> in the footer.
             </div>
