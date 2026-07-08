@@ -112,8 +112,13 @@ polls forever seeing that frozen snapshot.
    Iter 79j.64 in the timeline. The three approved asymmetry fixes
    (per-corner LF, clamp-to-amber, width_ft_source) SHIPPED same day.
    Prompt-level compression mitigations STAGED pending approval.
-2. **Per-dormer bbox routing** + true bbox-derived opening (x, y, w, h) — fixes
-   the scattered-window placement on the 3D walls. **UNBLOCKED (next up).**
+2. **Compression prompt revision + validation run** — RESEQUENCED ahead of
+   bbox routing (Jul 8 2026, operator order: "money outranks cosmetics").
+   Prompt revision SHIPPED (Iter 79j.65); validation run is the user's to
+   fire on the same 8 red-house photos. Acceptance: LEFT 10.31 ±0.5,
+   RIGHT 7.19 ±0.5, scored via the Tape Check panel. Pass → new baseline.
+3. **Per-dormer bbox routing** + true bbox-derived opening (x, y, w, h) — fixes
+   the scattered-window placement on the 3D walls. **After validation run.**
    Run 3 confirmed the root cause: Phase A emits real per-photo bboxes
    (`front-w1: [712,340,168,116]` etc) but every bbox in the final
    `openings` / `openings_schedule` is zeroed `{0,0,0,0}` — Phase B drops
@@ -126,6 +131,64 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Iter 79j.65 — Compression prompt revision + Tape Check panel (SHIPPED Jul 8 2026):**
+  - **RESEQUENCED by operator**: compression fix + validation run now comes
+    BEFORE per-dormer bbox routing ("wall heights are square footage and
+    money; opening placement is pixels").
+  - **ONE prompt revision, all four mitigations** (Phase A + Phase B +
+    legacy single-call examples):
+    1. Vertical-scale mandate — horizontal-bar px/in NEVER applied to
+       vertical measurements; new Phase A fields `eave_vertical_scale_basis`,
+       plus rule 5. Reconciler rejects readings citing a horizontal bar
+       whenever a vertically-scaled read exists (rule 1a addition).
+    2. Course-counting cross-check — `eave_courses_counted` field + rule 6
+       (courses × exposure beats pixel math; report course-count value on
+       disagreement).
+    3. Grade-occlusion flag — `grade_occluded` + `grade_occluded_estimate_in`
+       fields + rule 7 (add hidden inches, state the split) + reconcile
+       rule a2 (prefer non-occluded reads).
+    4. Neutralized prior anchors — all "8.5/8.7/9.0 → snapped to 9" style
+       examples replaced with placeholders + explicit "no typical wall
+       height / no rounding toward typical / no symmetry bias" rules
+       (Phase A rule 7 tail, reconcile rule a3, rule 1c reworded).
+  - **VALIDATION RUN PENDING (user fires)**: same 8 red-house photos.
+    Acceptance: LEFT 10.31 ±0.5, RIGHT 7.19 ±0.5 (the two walls compression
+    hurt most). Pass → new baseline prompt. Heights improve but something
+    regresses → diff and decide. Score it with the Tape Check panel.
+  - **Tape Check panel** (user-approved enhancement with persistence
+    scope): tape values persist on the estimate as ground-truth fixtures
+    (`estimates.tape_check`), per-wall Δ + pass/amber/fail
+    (|Δ|≤0.5/≤1.0/>1.0), house-level accuracy % accumulating across runs —
+    the history table is the accuracy artifact for the September pitch.
+    - Backend: `GET/PUT /api/estimates/{id}/tape-check`,
+      `POST /api/estimates/{id}/tape-check/score` (run_id optional →
+      latest done run; re-score replaces the same run's entry; history
+      capped 50). Tests: `tests/test_tape_check.py` (8/8, includes the
+      exact red-house truth values as fixtures).
+    - Frontend: `TapeCheckPanel.jsx` mounted at the bottom of the 3D view
+      side panel (collapsible, shows latest accuracy % in header). Dormer
+      faces normalized from the 3D model's slope-relative vocabulary
+      (`slope-left` → `left`). Testids: `tape-check-panel/-toggle/-accuracy/
+      -input-{wall}/-dormer-input-{face}/-verdict-{wall}/-save/-score/-history`.
+    - **Run 3 scored as the baseline history entry: 88.9%** (left −1.31 fail
+      under direct_consensus, right +1.31 fail, dormers +0.5 pass /
+      +1.5 fail) with user's tape: left 10.3125, right 7.1875, dormers
+      15.0/15.0 (front/back left null — stepped walls, single height
+      ill-defined until the stepped-wall backlog item ships).
+
+- **P1 QUEUED — Pricing test seeds vs live DB drift (user-ordered Jul 8 2026):**
+  ~14 failures + 8 errors in pricing/catalog suites (`test_pricing_parity`,
+  `test_mezzo_pricing`, `test_iteration34_siding_split`, `test_iteration5/6`,
+  `test_vero_pricing`, `test_lp_admin_preview_http`, `test_estimator_api`
+  email/auth) because live DB prices drifted from hardcoded seed
+  expectations (e.g. Starter 7.64 vs expected 7.46 — supplier applied
+  pricing-admin bumps). User verdict: "a permanently-failing pricing suite
+  guards nothing; ignored failures are how a real pricing bug ships into a
+  $23k estimate." Fix: have the tests read expected prices from the catalog
+  source of truth (live catalog endpoint / seed loader) instead of frozen
+  literals — or regenerate seeds as a snapshot artifact with a refresh
+  script. Also triage the auth/email errors in the same pass.
+
 - **Iter 79j.64 — Confirmation Run 3 verdict + per-wall tape truth (Jul 8 2026):**
   Run 3 (`f423c216`) completed clean: 8/8 photos, anthropic_direct both phases,
   no empty photos / orphaned walls, dedup 39→15, wall-clock 8m52s (missed the

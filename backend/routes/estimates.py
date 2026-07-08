@@ -561,3 +561,212 @@ async def set_profile_annotations(
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"ok": True, "annotations": annotations}
+
+
+# ---------------------------------------------------------------------------
+# Iter 79j.65 — Tape Check: persistent per-wall ground truth + accuracy
+# history.
+#
+# The contractor tapes each wall (and dormer) in the field and enters
+# the values once; they persist on the estimate as ground-truth
+# fixtures. Every AI Measure run can then be SCORED against the tape:
+# per-wall Δ, pass/amber/fail, and a house-level accuracy % that
+# accumulates across runs. The history table is the accuracy artifact
+# for supplier pitches ("run N scored 96.2% on a taped fixture").
+#
+# Storage (free-form dict on `estimates.tape_check`):
+#   {
+#     "walls":   {"front": 10.31|null, "back": ..., "left": ..., "right": ...},
+#     "dormers": [{"face": "left", "width_ft": 15.0}, ...],
+#     "updated_at": iso,
+#     "history": [ {run_id, scored_at, model, walls:{label:{ai,tape,delta,verdict}},
+#                   dormers:[{face,ai,tape,delta,verdict}], accuracy_pct,
+#                   passes, ambers, fails}, ... ]   # capped at 50
+#   }
+# Verdicts: |Δ| ≤ 0.5 ft = pass · ≤ 1.0 = amber · > 1.0 = fail
+# ---------------------------------------------------------------------------
+_TAPE_WALL_LABELS = ("front", "back", "left", "right")
+
+
+def _tape_verdict(delta: float) -> str:
+    a = abs(delta)
+    if a <= 0.5:
+        return "pass"
+    if a <= 1.0:
+        return "amber"
+    return "fail"
+
+
+@router.get("/estimates/{est_id}/tape-check")
+async def get_tape_check(est_id: str, user: dict = Depends(get_current_user)):
+    doc = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "tape_check": 1},
+    )
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    tc = doc.get("tape_check") or {}
+    return {
+        "walls": tc.get("walls") or {},
+        "dormers": tc.get("dormers") or [],
+        "history": tc.get("history") or [],
+        "updated_at": tc.get("updated_at"),
+    }
+
+
+@router.put("/estimates/{est_id}/tape-check")
+async def set_tape_check(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    """Save taped ground-truth values. Walls: dict of label→ft (or null
+    to clear). Dormers: list of {face, width_ft}. History is preserved."""
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="payload must be an object")
+    walls_in = payload.get("walls") or {}
+    if not isinstance(walls_in, dict):
+        raise HTTPException(status_code=400, detail="'walls' must be an object")
+    walls: dict = {}
+    for label in _TAPE_WALL_LABELS:
+        v = walls_in.get(label)
+        if v in (None, ""):
+            walls[label] = None
+            continue
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail=f"walls.{label} must be a number")
+        if not (1.0 <= fv <= 60.0):
+            raise HTTPException(status_code=400, detail=f"walls.{label} out of range (1-60 ft)")
+        walls[label] = round(fv, 4)
+    dormers_in = payload.get("dormers") or []
+    if not isinstance(dormers_in, list):
+        raise HTTPException(status_code=400, detail="'dormers' must be a list")
+    dormers = []
+    for d in dormers_in:
+        if not isinstance(d, dict):
+            continue
+        face = str(d.get("face") or "").strip().lower()
+        try:
+            wf = float(d.get("width_ft"))
+        except (TypeError, ValueError):
+            continue
+        if face and 1.0 <= wf <= 60.0:
+            dormers.append({"face": face, "width_ft": round(wf, 4)})
+    res = await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"$set": {
+            "tape_check.walls": walls,
+            "tape_check.dormers": dormers,
+            "tape_check.updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc),
+        }},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True, "walls": walls, "dormers": dormers}
+
+
+@router.post("/estimates/{est_id}/tape-check/score")
+async def score_tape_check(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    """Score an AI Measure run against the stored tape values and append
+    the entry to the accuracy history. `run_id` optional — falls back to
+    the latest terminal run for this estimate. Re-scoring the same
+    run_id replaces its history entry (tape edits re-score cleanly)."""
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "tape_check": 1},
+    )
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    tc = est.get("tape_check") or {}
+    tape_walls = tc.get("walls") or {}
+    tape_dormers = tc.get("dormers") or []
+    if not any(tape_walls.get(k) for k in _TAPE_WALL_LABELS) and not tape_dormers:
+        raise HTTPException(status_code=400, detail="No tape values saved — enter tape measurements first")
+
+    run_id = (payload or {}).get("run_id")
+    q: dict = {"estimate_id": est_id, "status": "done"}
+    if run_id:
+        q["run_id"] = run_id
+    run = await db.ai_measure_runs.find_one(q, sort=[("created_at", -1)])
+    if run is None:
+        raise HTTPException(status_code=404, detail="No completed AI Measure run found for this estimate")
+    raw = ((run.get("result") or {}).get("raw_ai")) or {}
+    ai_walls = {
+        (w.get("label") or "").strip().lower(): w
+        for w in (raw.get("walls") or []) if isinstance(w, dict)
+    }
+    ai_dormers = [d for d in (raw.get("dormers") or []) if isinstance(d, dict)]
+
+    wall_rows: dict = {}
+    deltas_rel: list[float] = []
+    passes = ambers = fails = 0
+    for label in _TAPE_WALL_LABELS:
+        tape_v = tape_walls.get(label)
+        ai_w = ai_walls.get(label)
+        ai_v = float(ai_w.get("height_ft") or 0) if ai_w else 0.0
+        if tape_v is None or ai_v <= 0:
+            continue
+        delta = round(ai_v - float(tape_v), 2)
+        verdict = _tape_verdict(delta)
+        wall_rows[label] = {
+            "ai": round(ai_v, 2), "tape": float(tape_v),
+            "delta": delta, "verdict": verdict,
+            "source": ai_w.get("height_ft_source") or "",
+        }
+        deltas_rel.append(abs(delta) / float(tape_v))
+        passes += verdict == "pass"
+        ambers += verdict == "amber"
+        fails += verdict == "fail"
+
+    dormer_rows = []
+    used_ai_idx: set = set()
+    for td in tape_dormers:
+        face = (td.get("face") or "").lower()
+        tape_v = td.get("width_ft")
+        match_i = next(
+            (i for i, d in enumerate(ai_dormers)
+             if i not in used_ai_idx and (d.get("face") or "").lower() == face),
+            None,
+        )
+        if match_i is None or not tape_v:
+            continue
+        used_ai_idx.add(match_i)
+        ai_v = float(ai_dormers[match_i].get("width_ft") or 0)
+        if ai_v <= 0:
+            continue
+        delta = round(ai_v - float(tape_v), 2)
+        verdict = _tape_verdict(delta)
+        dormer_rows.append({
+            "face": face, "ai": round(ai_v, 2), "tape": float(tape_v),
+            "delta": delta, "verdict": verdict,
+        })
+        deltas_rel.append(abs(delta) / float(tape_v))
+        passes += verdict == "pass"
+        ambers += verdict == "amber"
+        fails += verdict == "fail"
+
+    if not deltas_rel:
+        raise HTTPException(status_code=400, detail="Run has no AI values matching your taped walls/dormers")
+    accuracy_pct = round(max(0.0, 100.0 * (1 - sum(deltas_rel) / len(deltas_rel))), 1)
+    entry = {
+        "run_id": run.get("run_id"),
+        "scored_at": datetime.now(timezone.utc).isoformat(),
+        "model": run.get("model_name") or run.get("model_choice") or "",
+        "walls": wall_rows,
+        "dormers": dormer_rows,
+        "accuracy_pct": accuracy_pct,
+        "passes": passes, "ambers": ambers, "fails": fails,
+    }
+    # Replace any prior entry for the same run, then append (cap 50).
+    await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"$pull": {"tape_check.history": {"run_id": entry["run_id"]}}},
+    )
+    await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"$push": {"tape_check.history": {"$each": [entry], "$slice": -50}}},
+    )
+    return {"ok": True, "entry": entry}

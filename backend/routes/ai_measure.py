@@ -338,7 +338,7 @@ Schema:
   // reconciling multiple readings inconsistently (a merge problem).
   // Leave a value empty if it wasn't reconciled from multiple sources.
   "_reconciliation_notes": {
-    "avg_wall_height_ft": "<e.g. 'averaged 3 valid observations 8.5, 8.7, 9.0 → 8.7 → snapped to 9' | ''>",
+    "avg_wall_height_ft": "<e.g. 'averaged N valid observations W, X, Y → Z' — cite actual computed values; do NOT snap or round toward a typical height | ''>",
     "roof_type":          "<e.g. 'gable-shed-dormer — photo 0 showed 1 dormer, photos 2 and 3 confirmed from side' | ''>",
     "dormer":             "<e.g. 'width read from photo 0 bbox → 12 ft, offset centered' | ''>",
     "story_count":        "<e.g. 'photos 0 and 1 both showed 2 rows of windows → 2 stories' | ''>",
@@ -403,7 +403,7 @@ Schema:
         "gable_triangle_ft": number | null,
         "notes": "<optional per-photo note (e.g. 'front-right corner — foreshortening'>"}
      ],
-     "_reconciliation_note": "<short sentence: e.g. 'averaged 2 readings 8.5 and 8.7 → 8.6, snapped to 9' or 'photo 0 read 12 ft but discarded — aerial view compresses foreshortening'>",
+     "_reconciliation_note": "<short sentence: e.g. 'averaged 2 readings X and Y → Z (actual computed values — never snap toward a typical height)' or 'photo 0 read 12 ft but discarded — aerial view compresses foreshortening'>",
      // Iter 78z — Profile callouts per elevation. Capture the raw text or
      // visible siding pattern so the catalog mapper can split LAP / SHAKE /
      // B&B / DUTCH LAP into SEPARATE quote lines. Without these, mixed
@@ -3296,6 +3296,14 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
   // field. NEVER guess.
   "eave_height_ft_observed":     number | null,
   "eave_reasoning":               "<how you measured — course counting, contractor reference, brick coursing, or 'not measurable because …'>",
+  // Iter 79j.65 — vertical-scale provenance + occlusion flags. These
+  // exist because red-house tape validation caught systematic height
+  // compression: horizontal-bar px/in applied vertically + occluded
+  // grade lines + prior-anchored rounding. See rules 5-7.
+  "eave_vertical_scale_basis":   "<the VERTICAL reference that set px-per-inch for this eave read — e.g. 'WIN_REF 36in vertical bar', 'patio door 80in', '31 lap courses x 4in'. Empty string if eave is null>",
+  "eave_courses_counted":        number | null,   // lap/brick course count grade→eave when countable (rule 6)
+  "grade_occluded":              boolean,         // true when the wall base / true grade line is hidden (woodpile, shrubs, snow, vehicles, deck)
+  "grade_occluded_estimate_in":  number | null,   // estimated inches of wall hidden by the obstruction (null when not occluded)
   "story_count_observed":         1 | 1.5 | 2 | 2.5 | 3 | null,
   "pitch_ratio_observed":         "4/12" | "6/12" | "8/12" | "10/12" | "12/12" | null,
   "pitch_reasoning":              "<if you saw a gable and measured its rise vs run, say so; else null>",
@@ -3376,6 +3384,38 @@ RULES:
 4. bbox coordinates are PIXEL space in the compressed image you were
    given (not the original 4K upload). Emit them so we can draw them
    back on the thumbnail in the debug view.
+5. VERTICAL SCALE FOR VERTICAL MEASUREMENTS. A horizontal reference
+   bar (a wall-width WALL_REF) gives you px-per-inch along the
+   HORIZONTAL at that wall's depth — camera tilt and perspective make
+   the vertical px-per-inch DIFFERENT (commonly 10-15% off; on a taped
+   fixture this single error compressed a 10.31 ft wall to a reported
+   8.25). For `eave_height_ft_observed` and all opening HEIGHTS you
+   MUST derive a vertical scale from a VERTICAL reference: a vertical
+   WIN_REF bar, a known door height (80" patio slider, ~84" garage
+   opening), a window height you already sized on that wall, or course
+   counting (rule 6). Name the vertical reference you used in
+   `eave_vertical_scale_basis`. If NO vertical reference exists in this
+   photo, set eave_height_ft_observed = null with reason "no vertical
+   scale available" — do NOT reuse a horizontal bar's px/in vertically.
+6. COURSE COUNTING BEATS PIXEL MATH. When horizontal lap siding (or
+   brick coursing) is visible and its exposure is known — contractor
+   calibration, or the callout on the wall (e.g. lap 4") — COUNT the
+   courses from grade to the eave line: courses × exposure = eave
+   height. A course count is a physical ruler that survives
+   perspective, tilt and compression. Report the count in
+   `eave_courses_counted`, cite it in `eave_reasoning`, and when a
+   course count and a pixel read disagree, REPORT THE COURSE-COUNT
+   value.
+7. GRADE OCCLUSION + NO ROUNDING TOWARD "TYPICAL". If the wall base is
+   hidden (woodpile, shrubs, snow, vehicles, deck), you are measuring
+   to VISIBLE grade, not true grade — that silently truncates the
+   wall. Set `grade_occluded: true`, estimate the hidden inches in
+   `grade_occluded_estimate_in`, ADD that estimate into
+   eave_height_ft_observed, and state the split in eave_reasoning
+   (e.g. "99in to visible grade + ~14in hidden by woodpile = 9.4 ft").
+   And NEVER round a computed value toward a "typical" wall height —
+   if your arithmetic says 8.3, report 8.3, not "rounded to ~8.5".
+   Real exterior walls range 6 to 13+ ft; there is no typical.
 """
 
 
@@ -3492,7 +3532,7 @@ call worker returns, so downstream code doesn't fork.
 
   // TOP-LEVEL RECONCILIATION TRACE — one sentence per aggregate.
   "_reconciliation_notes": {
-    "avg_wall_height_ft":  "<e.g. 'averaged 4 valid per-photo eaves (photos 0,1,2,4 = 8.5, 8.4, 8.6, 8.5); discarded photo 3 (aerial) and photo 5 (foreshortened corner)'>",
+    "avg_wall_height_ft":  "<e.g. 'averaged N valid per-photo eaves (photos i,j,k = W, X, Y ft); discarded photo m (aerial) and photo n (foreshortened corner)' — cite the ACTUAL values you computed, never round toward a typical height>",
     "roof_type":           "<how the roof-type call was made from the photo counts>",
     "dormers":             "<how each dormer's face/width/offset was chosen. Include a count sentence (e.g. 'detected 2 shed dormers on front and rear slopes')>",
     "story_count":         "<how the story count was merged>",
@@ -3525,6 +3565,27 @@ RECONCILIATION RULES:
           they NEVER inform eave height.
         • corner shots where THIS wall is at >45° foreshortening
         • telephoto compression or extreme wide-angle distortion
+        • Iter 79j.65 — readings whose `eave_vertical_scale_basis` is
+          empty or cites a HORIZONTAL bar (a wall-width WALL_REF used
+          for a vertical measurement). Horizontal px/in applied
+          vertically systematically compresses tall walls; treat such
+          a reading as WEAK — reject it whenever ANY vertically-scaled
+          or course-counted reading exists for the same wall.
+
+   a2) Iter 79j.65 — GRADE-OCCLUDED READS. When a reading carries
+      `grade_occluded: true`, sanity-check that the hidden-base
+      estimate was actually added (the eave_reasoning should show the
+      split). If the extractor measured only to visible grade, the
+      reading UNDERSTATES the wall — prefer a non-occluded reading
+      when one exists, and mention the occlusion in the wall's
+      `_reconciliation_note` either way.
+
+   a3) Iter 79j.65 — NO PRIOR, NO SYMMETRY BIAS ON HEIGHTS. There is
+      no typical wall height and houses are NOT height-symmetric:
+      taped fixtures carry a 10.31 ft wall opposite a 7.19 ft wall on
+      the same house. Never regress an uncertain reading toward
+      8-9 ft, never trim an outlier because it "looks tall", and never
+      let one wall's height influence another measured wall's height.
 
    b) Take the valid direct-view readings for this wall. If any two
       valid readings disagree by MORE THAN 1 ft, do NOT average them —
@@ -3540,8 +3601,10 @@ RECONCILIATION RULES:
       it was an aerial, gable-end, or extreme angle), do NOT
       confabulate from the neighbour walls or the avg. Emit
       `height_ft` = null-safe fallback (use the median of the OTHER
-      walls' final heights ONLY as a placeholder — houses are usually
-      symmetric) and set `height_ft_source: "estimated_no_direct_view"`
+      walls' final heights ONLY as an explicit PLACEHOLDER — this is
+      a fallback mechanic, NOT a belief that houses are symmetric;
+      asymmetric and stepped houses are common) and set
+      `height_ft_source: "estimated_no_direct_view"`
       so the frontend can render the value AMBER / estimated. This
       is the signal that says "we never actually measured this wall,
       don't quote off it."
@@ -4984,6 +5047,11 @@ async def _run_two_phase_pipeline(
                 "walls_visible": e.get("walls_visible") or [],
                 "eave_height_ft_observed": e.get("eave_height_ft_observed"),
                 "eave_reasoning": e.get("eave_reasoning"),
+                # Iter 79j.65 — vertical-scale provenance + occlusion.
+                "eave_vertical_scale_basis": e.get("eave_vertical_scale_basis") or "",
+                "eave_courses_counted": e.get("eave_courses_counted"),
+                "grade_occluded": bool(e.get("grade_occluded")),
+                "grade_occluded_estimate_in": e.get("grade_occluded_estimate_in"),
                 "pitch_ratio_observed": e.get("pitch_ratio_observed"),
                 "gable_triangle_height_ft_observed": e.get("gable_triangle_height_ft_observed"),
                 "dormers_observed_count": e.get("dormers_observed_count") or 0,

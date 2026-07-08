@@ -3477,7 +3477,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             </div>
                           );
                         }
-                        return <HouseModel3D preview={preview} estimate={estimate} />;
+                        return <HouseModel3D preview={preview} estimate={estimate} runId={currentRunId} />;
                       })()}
                     </div>
                   )}

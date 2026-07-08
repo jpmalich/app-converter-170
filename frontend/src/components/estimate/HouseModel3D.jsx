@@ -25,6 +25,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { AlertTriangle, Check } from "lucide-react";
+// Iter 79j.65 — Tape Check: persistent per-wall ground truth + accuracy history.
+import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
 
 const ROOF_PITCHES = [4, 6, 8, 10, 12];
 const ROOF_TYPES = [
@@ -1047,7 +1049,7 @@ function buildScene(scene, house) {
   return { wallMeshes, warnings };
 }
 
-export default function HouseModel3D({ preview, estimate }) {
+export default function HouseModel3D({ preview, estimate, runId }) {
   const mountRef = useRef(null);
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
@@ -1616,6 +1618,12 @@ export default function HouseModel3D({ preview, estimate }) {
             ))
           )}
         </div>
+        <TapeCheckPanel
+          estimateId={estimate?.id}
+          runId={runId}
+          facades={house.facades}
+          dormers={house.roof.dormers || []}
+        />
       </div>
     </div>
   );
