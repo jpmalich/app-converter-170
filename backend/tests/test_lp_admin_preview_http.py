@@ -2,10 +2,15 @@
 import os
 import pytest
 import requests
+from dotenv import dotenv_values
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-converter-170.preview.emergentagent.com").rstrip("/")
-ADMIN_TOKEN = "OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE"
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
+ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 HDR = {"X-Admin-Token": ADMIN_TOKEN, "Content-Type": "application/json"}
+# Live flag state from backend/.env — the endpoint must report it truthfully.
+LP_FLAG_ENABLED = str(_ENV.get("LP_AI_FORMULAS_V1", "")).strip().lower() in {"1", "true", "yes", "on"}
 
 
 # ─── GET /api/admin/lp-formula-preview/presets ─────────────────────────────
@@ -83,9 +88,12 @@ class TestPreviewDiff:
         r = self._post({})
         assert r.status_code == 400, r.text
 
-    def test_flag_default_off(self):
+    def test_flag_reports_live_env_state(self):
         d = self._post({"preset": "campbell"}).json()
-        assert d["flag_currently_enabled"] is False
+        assert d["flag_currently_enabled"] is LP_FLAG_ENABLED, (
+            f"endpoint reports {d['flag_currently_enabled']}, "
+            f".env LP_AI_FORMULAS_V1 says {LP_FLAG_ENABLED}"
+        )
 
     def test_403_without_token(self):
         r = requests.post(

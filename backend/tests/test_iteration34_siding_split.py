@@ -18,16 +18,27 @@ Covers:
 """
 import io
 import os
+import sys
 import uuid
 
 import pytest
 import requests
+from dotenv import dotenv_values
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-converter-170.preview.emergentagent.com").rstrip("/")
+sys.path.insert(0, "/app/backend")
+import catalog_seed as _seed  # noqa: E402
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin123!")
-SUPPLIER_ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "test-admin-token")
+SUPPLIER_ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
+
+
+def _seed_section(title):
+    return next(s for s in _seed.DEFAULT_SECTIONS if s["title"] == title)
 
 
 # ---- shared fixtures ----------------------------------------------------- #
@@ -80,10 +91,12 @@ class TestAuth:
 
 # =========================== VINYL SIDING SECTION ======================== #
 class TestVinylSidingSection:
-    def test_section_present_and_27_items(self, catalog):
+    def test_section_present_and_item_count_matches_seed(self, catalog):
         sec = _section(catalog, "Vinyl Siding")
-        assert len(sec["items"]) == 27, (
-            f"Expected 27 items in Vinyl Siding, got {len(sec['items'])}: "
+        expected = len(_seed_section("Vinyl Siding")["items"])
+        assert len(sec["items"]) == expected, (
+            f"Expected {expected} items in Vinyl Siding (catalog_seed source of truth), "
+            f"got {len(sec['items'])}: "
             f"{[i['name'] for i in sec['items']]}"
         )
 
@@ -106,19 +119,24 @@ class TestVinylSidingSection:
         missing = expected - names
         assert not missing, f"Missing variants: {missing}"
 
-    def test_siding_profile_lab_is_125_and_mat_nonzero(self, catalog):
+    def test_siding_profile_lab_valid_and_mat_nonzero(self, catalog):
+        # Labor is contractor-editable (Howard sets it in the admin UI) —
+        # assert structural validity, never a pinned dollar amount.
         sec = _section(catalog, "Vinyl Siding")
         for it in sec["items"]:
-            assert it["lab"] == 125, f"{it['name']} lab={it['lab']} (expected 125)"
+            assert isinstance(it["lab"], (int, float)) and it["lab"] >= 0, \
+                f"{it['name']} lab={it['lab']} (expected non-negative number)"
             assert it["mat"] > 0, f"{it['name']} mat=0 (expected non-zero)"
 
 
 # =========================== SIDING ACCESSORIES ========================== #
 class TestSidingAccessoriesSection:
-    def test_22_items(self, catalog):
+    def test_item_count_matches_seed(self, catalog):
         sec = _section(catalog, "Siding Accessories")
-        assert len(sec["items"]) == 22, (
-            f"Expected 22 items, got {len(sec['items'])}: {[i['name'] for i in sec['items']]}"
+        expected = len(_seed_section("Siding Accessories")["items"])
+        assert len(sec["items"]) == expected, (
+            f"Expected {expected} items (catalog_seed source of truth), "
+            f"got {len(sec['items'])}: {[i['name'] for i in sec['items']]}"
         )
 
     def test_new_color_variants_present(self, catalog):
@@ -152,23 +170,23 @@ class TestSidingAccessoriesSection:
 
 # =========================== VINYL SOFFIT SECTION ======================== #
 class TestVinylSoffitSection:
-    def test_16_items(self, catalog):
+    def test_item_count_matches_seed(self, catalog):
         sec = _section(catalog, "Vinyl Soffit with Siding")
-        assert len(sec["items"]) == 16, (
-            f"Expected 16 items, got {len(sec['items'])}: {[i['name'] for i in sec['items']]}"
+        expected = len(_seed_section("Vinyl Soffit with Siding")["items"])
+        assert len(sec["items"]) == expected, (
+            f"Expected {expected} items (catalog_seed source of truth), "
+            f"got {len(sec['items'])}: {[i['name'] for i in sec['items']]}"
         )
 
     def test_charter_oak_soffit_variants(self, catalog):
         sec = _section(catalog, "Vinyl Soffit with Siding")
         names = {i["name"] for i in sec["items"]}
         expected = {
-            'Soffit & fascia up to 13" wide Charter Oak Standard color',
-            'Soffit & fascia up to 13" wide Charter Oak Architectural color',
-            'Soffit & fascia up to 13"-30" wide Charter Oak Standard color',
-            'Soffit & fascia up to 13"-30" wide Charter Oak Architectural color',
-            '3/4" Soffit J-Channel (Charter Oak) Standard color',
-            '3/4" Soffit J-Channel (Charter Oak) Architectural color',
+            i["name"]
+            for i in _seed_section("Vinyl Soffit with Siding")["items"]
+            if "Charter Oak" in i["name"]
         }
+        assert expected, "seed has no Charter Oak soffit variants — check catalog_seed"
         missing = expected - names
         assert not missing, f"Missing Charter Oak soffit variants: {missing}"
 
@@ -206,13 +224,11 @@ class TestTierPrices:
             name = t.get("name") or t.get("tier_name") or t.get("id")
             by_name[name] = t
 
-        expected = {
-            "whole-sale": 151.31,
-            "Contractor": 136.22,
-            "Builder-Dealer": 125.46,
-            "one-opp": 113.57,
-        }
         item_name = 'Charter Oak Standard color Clap 4.5" .046'
+        # Expected material prices come from catalog_seed.TIER_PRICES —
+        # the live source of truth — never a hardcoded snapshot.
+        expected = {tier: _seed.TIER_PRICES[tier][item_name] for tier in by_name if tier in _seed.TIER_PRICES}
+        assert expected, f"No known tiers among {list(by_name)}"
         for tier, expected_mat in expected.items():
             assert tier in by_name, f"Tier {tier!r} missing. Have: {list(by_name)}"
             sections = by_name[tier].get("sections", [])

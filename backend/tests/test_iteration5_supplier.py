@@ -18,16 +18,22 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL",
-    "https://app-converter-170.preview.emergentagent.com",
-).rstrip("/")
+from dotenv import dotenv_values
+
+import sys
+
+sys.path.insert(0, "/app/backend")
+import catalog_seed as _seed  # noqa: E402
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", "admin@wolfandson.com")
-ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD", "Admin123!")
-SIGNUP_CODE = os.environ.get("TEST_SIGNUP_CODE") or os.environ.get("SIGNUP_CODE", "")
-ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL") or _ENV.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD") or _ENV.get("ADMIN_PASSWORD", "Admin123!")
+SIGNUP_CODE = os.environ.get("TEST_SIGNUP_CODE") or os.environ.get("SIGNUP_CODE") or _ENV.get("SIGNUP_CODE", "")
+ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 
 if not SIGNUP_CODE or not ADMIN_TOKEN:
     pytest.skip(
@@ -140,20 +146,26 @@ class TestAlsideDefaultCatalog:
         sections = cat.get("sections", [])
         assert len(sections) > 0, "catalog has no sections"
         first = sections[0]
-        assert first["title"] == "Install Vinyl Siding"
+        # Expectations derive from catalog_seed.DEFAULT_SECTIONS — the
+        # live source of truth — not a hardcoded snapshot.
+        seed_first = _seed.DEFAULT_SECTIONS[0]
+        assert first["title"] == seed_first["title"]
         assert first["items"], "first section has no items"
         first_item = first["items"][0]
-        # iteration-6 catalog seed uses the full SKU name; default tier is whole-sale.
-        assert first_item["name"] == "Conquest .040"
-        assert first_item["unit"] == "SQ"
+        assert first_item["name"] == seed_first["items"][0]["name"]
+        assert first_item["unit"] == seed_first["items"][0]["unit"]
         assert first_item["mat"] > 0  # tier-specific; concrete price asserted in iteration-6 tests
-        assert first_item["lab"] > 0
+        # Labor defaults to 0 in the seed — contractors set their own labor.
+        assert first_item["lab"] >= 0
 
     def test_default_catalog_has_ascend_section(self, new_owner):
         cat = new_owner["session"].get(f"{API}/catalog").json()
-        ascend = [s for s in cat["sections"] if s.get("ascend") is True]
-        assert ascend, "no ASCEND section flagged"
-        assert ascend[0]["title"] == "Ascend Cladding/Accessories"
+        ascend_titles = {s["title"] for s in cat["sections"] if s.get("ascend") is True}
+        seed_ascend_titles = {s["title"] for s in _seed.DEFAULT_SECTIONS if s.get("ascend") is True}
+        assert seed_ascend_titles, "seed has no ascend-flagged sections — check catalog_seed"
+        assert ascend_titles == seed_ascend_titles, (
+            f"ascend sections {ascend_titles} != seed {seed_ascend_titles}"
+        )
 
 
 # --------------------------------------------------------------------------- #

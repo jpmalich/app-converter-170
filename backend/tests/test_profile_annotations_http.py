@@ -74,11 +74,11 @@ class TestProfileAnnotationEndpoints:
         admin_session.put(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
             json={"annotations": {}},
-            timeout=10,
+            timeout=30,
         )
         r = admin_session.get(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
-            timeout=10,
+            timeout=30,
         )
         assert r.status_code == 200, r.text
         body = r.json()
@@ -103,14 +103,14 @@ class TestProfileAnnotationEndpoints:
         }
         r = admin_session.put(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
-            json=payload, timeout=10,
+            json=payload, timeout=30,
         )
         assert r.status_code == 200, r.text
         assert r.json()["ok"] is True
 
         r2 = admin_session.get(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
-            timeout=10,
+            timeout=30,
         )
         assert r2.status_code == 200, r2.text
         got = r2.json()["annotations"]
@@ -125,7 +125,7 @@ class TestProfileAnnotationEndpoints:
         admin_session.put(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
             json={"annotations": {}},
-            timeout=10,
+            timeout=30,
         )
 
 
@@ -135,35 +135,35 @@ class TestProfileAnnotationAuth:
     def test_get_unauthenticated(self, estimate_id):
         r = requests.get(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
-            timeout=10,
+            timeout=30,
         )
         assert r.status_code in (401, 403), r.text
 
     def test_put_unauthenticated(self, estimate_id):
         r = requests.put(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
-            json={"annotations": {}}, timeout=10,
+            json={"annotations": {}}, timeout=30,
         )
         assert r.status_code in (401, 403), r.text
 
     def test_get_wrong_est_id(self, admin_session):
         r = admin_session.get(
             f"{BASE_URL}/api/estimates/does-not-exist-xyz/profile-annotations",
-            timeout=10,
+            timeout=30,
         )
         assert r.status_code == 404, r.text
 
     def test_put_wrong_est_id(self, admin_session):
         r = admin_session.put(
             f"{BASE_URL}/api/estimates/does-not-exist-xyz/profile-annotations",
-            json={"annotations": {}}, timeout=10,
+            json={"annotations": {}}, timeout=30,
         )
         assert r.status_code == 404, r.text
 
     def test_put_missing_annotations_key(self, admin_session, estimate_id):
         r = admin_session.put(
             f"{BASE_URL}/api/estimates/{estimate_id}/profile-annotations",
-            json={"oops": "no annotations key"}, timeout=10,
+            json={"oops": "no annotations key"}, timeout=30,
         )
         assert r.status_code == 400, r.text
 

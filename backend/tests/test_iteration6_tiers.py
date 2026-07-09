@@ -26,10 +26,17 @@ BASE_URL = os.environ.get(
 ).rstrip("/")
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", "admin@wolfandson.com")
-ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD", "Admin123!")
-SIGNUP_CODE = os.environ.get("TEST_SIGNUP_CODE") or os.environ.get("SIGNUP_CODE", "")
-ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+from dotenv import dotenv_values
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
+API = f"{BASE_URL}/api"
+
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL") or _ENV.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD") or _ENV.get("ADMIN_PASSWORD", "Admin123!")
+SIGNUP_CODE = os.environ.get("TEST_SIGNUP_CODE") or os.environ.get("SIGNUP_CODE") or _ENV.get("SIGNUP_CODE", "")
+ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 
 if not SIGNUP_CODE or not ADMIN_TOKEN:
     pytest.skip(

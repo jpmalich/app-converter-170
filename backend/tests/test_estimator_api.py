@@ -5,12 +5,17 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-converter-170.preview.emergentagent.com").rstrip("/")
+from dotenv import dotenv_values
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
 API = f"{BASE_URL}/api"
 
-ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL", "admin@wolfandson.com")
-ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD", "Admin123!")
-SIGNUP_CODE = os.environ.get("TEST_SIGNUP_CODE") or os.environ.get("SIGNUP_CODE", "")
+ADMIN_EMAIL = os.environ.get("TEST_ADMIN_EMAIL") or _ENV.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASSWORD") or _ENV.get("ADMIN_PASSWORD", "Admin123!")
+SIGNUP_CODE = os.environ.get("TEST_SIGNUP_CODE") or os.environ.get("SIGNUP_CODE") or _ENV.get("SIGNUP_CODE", "")
+SENDER_EMAIL = _ENV.get("SENDER_EMAIL", "")
 
 if not SIGNUP_CODE:
     pytest.skip(
@@ -270,7 +275,11 @@ class TestEmail:
         assert r.status_code == 200
         data = r.json()
         assert data["configured"] is True
-        assert data["sender"] == "onboarding@resend.dev"
+        # Sender comes from backend/.env SENDER_EMAIL — the live source of
+        # truth — not a hardcoded snapshot.
+        assert data["sender"] == SENDER_EMAIL, (
+            f"sender {data['sender']!r} != .env SENDER_EMAIL {SENDER_EMAIL!r}"
+        )
 
     def test_email_send_requires_auth(self):
         # Unauthenticated POST returns 401

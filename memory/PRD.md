@@ -2255,3 +2255,20 @@ SHAKE 584.3 ft² = 275.2 geometry dormers (face DOUBLE-added: reconciler fills w
 `tests/test_shake_composition_iter71.py` — 11 tests pinning the exact 584.3 fixture → new composition 301.4 (dormers 139.25 once + annotations 162.1 once, echoes skipped), overrides, crash-hardening, amber lines. 133 pass across all profile/annotation suites; full backend suite: 644 pass, 9 fail + 15 errors ALL pre-existing on pristine main (stale catalog-seed asserts in test_iteration34/5/6, estimator_api email/status, lp_admin_preview flag — same disease as the pricing seeds, queued).
 ### Acceptance status
 Run-4 data through the new math: dormers 86.1 + 88 = 174.1 ft² ∈ Howard's taped 155–200 band ✓ (unit-verified). NOTE: run 4's PERSISTED walls still carry the pre-fix double-add (171.09/163) — re-apply from that stale preview won't recompute. Acceptance closes on the NEXT AI run (Howard re-confirming cheek depth first). Run-4 dormer callout came back "lap", so shake arrives via the (now guarded) dormer toggle or a dormer-located annotation box.
+
+## Iter 79j.72 — Stale test suites repaired: full backend suite GREEN (2026-07-09)
+Howard promoted this ahead of the ranch run: "a real regression can't hide among known-stale failures."
+### Root causes (24 failing-on-main tests)
+1. **Dead admin account**: iteration5/6/estimator_api defaulted to `admin@wolfandson.com` (doesn't exist in users collection) → 401 setup ERRORs on 15 tests. NOT rate limiting (SEC-005 only counts failed logins and security tests use synthetic XFF IPs).
+2. **Stale pins vs evolved seed**: iteration34 pinned 22/16/27 item counts, soffit "up to 13 inch wide" variant names, and lab==125 — the SEED evolved (27/12/27) and labor is contractor-editable. estimator_api pinned sender `onboarding@resend.dev` (env now quotes@pro-quotes.com). iteration5 pinned first section "Install Vinyl Siding"/"Conquest .040" (seed: "Vinyl Siding"/full SKU) and lab>0 (seed labor is 0). lp_admin_preview pinned flag OFF (env has LP_AI_FORMULAS_V1=true) + hardcoded admin token in source.
+3. **10s read timeouts under full-suite load** in profile_annotations_http.
+### Live-source treatment applied
+- All 6 files load creds/URLs via `dotenv_values('/app/backend/.env'|frontend)`: ADMIN_EMAIL/PASSWORD, SIGNUP_CODE, SUPPLIER_ADMIN_TOKEN, SENDER_EMAIL, LP_AI_FORMULAS_V1.
+- iteration34 expectations derive from `catalog_seed.DEFAULT_SECTIONS` / `TIER_PRICES` (counts, Charter Oak soffit variants, tier prices). Labor asserts structural validity (numeric ≥ 0), never a pinned dollar amount.
+- lp preview test now asserts endpoint reports the LIVE flag state truthfully.
+- profile_annotations timeouts 10→30s.
+### Result
+`pytest tests/` (excl. test_anthropic_direct_key.py which calls the paid Anthropic API): **668 passed, 1 skipped (intentional obsolete marker), 0 failed, 0 errors** in 2m16s. Suite is a trustworthy regression gate for ranch data.
+### Roadmap update per Howard
+- "Where every ft² comes from" composition expander in Breakdown card: QUEUED right behind Three.js PNG → PDF work (transparency = the material-quantity twin of Tape Check; uses `_per_profile_composition` already persisted per run).
+- Run 4 stale composition: confirmed NO re-apply needed; tape-truth panel edits stand; new math proves itself on the ranch.
