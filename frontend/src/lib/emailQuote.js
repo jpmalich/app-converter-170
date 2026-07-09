@@ -168,6 +168,18 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
     ${SOFFIT_SECTIONS.has(section) ? renderPorchCeilingNote() : ""}
   `;
 
+  // Iter 79j.74 — 3D model snapshot from AI photo measurements. Rendered
+  // above the job photos: the parametric house built from the same
+  // measurements the quote prices — transparency no competitor prints.
+  const model3dBlock = estimate.model3d_png_url
+    ? `
+      <tr><td style="padding:24px 0 4px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.faint};">${esc(t("email.model3d"))}</td></tr>
+      <tr><td style="padding:0;">
+        <img src="${absUrl(estimate.model3d_png_url)}" alt="${esc(t("email.model3d"))}" width="520" style="display:block;width:100%;max-width:520px;height:auto;border:1px solid ${C.line};border-radius:2px;background:#F7F8FB;">
+        <div style="font-family:${FONT};font-size:10px;color:${C.muted};padding-top:4px;">${esc(t("email.model3dNote"))}</div>
+      </td></tr>`
+    : "";
+
   const photoGrid = (estimate.photos || []).length
     ? `
       <tr><td style="padding:24px 0 8px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.faint};">${esc(t("email.jobPhotos"))}</td></tr>
@@ -330,6 +342,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
         <tr><td style="padding:0 32px 20px 32px;border-top:1px solid ${C.line};">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             ${Object.entries(linesByCat).map(sectionBlock).join("")}
+            ${model3dBlock}
             ${photoGrid}
           </table>
         </td></tr>

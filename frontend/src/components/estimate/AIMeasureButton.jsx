@@ -90,6 +90,17 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Iter 78z — Profile annotator modal (box-tag Shake / B&B regions).
   const [profileAnnotatorOpen, setProfileAnnotatorOpen] = useState(false);
   const [savedProfileAnnotations, setSavedProfileAnnotations] = useState({});
+  // Iter 79j.74 — 3D snapshot → Customer Quote PDF. Tracks a save done
+  // this session so the auto-capture doesn't refire after the first one.
+  const [modelSnapshotSaved, setModelSnapshotSaved] = useState(false);
+  const saveModelSnapshot = async (blob) => {
+    const fd = new FormData();
+    fd.append("file", blob, "model3d.png");
+    const { data } = await api.post("/uploads", fd);
+    await api.put(`/estimates/${estimateId}/model3d-snapshot`, { url: data.url });
+    setModelSnapshotSaved(true);
+    toast.success("3D model snapshot saved — it will appear on the Customer Quote PDF");
+  };
   // Iter 56c — free aerial fetch via Esri World Imagery.
   const [satBusy, setSatBusy] = useState(false);
   const [resumePrompt, setResumePrompt] = useState(false); // shows banner
@@ -3594,7 +3605,15 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             </div>
                           );
                         }
-                        return <HouseModel3D preview={preview} estimate={estimate} runId={currentRunId} />;
+                        return (
+                          <HouseModel3D
+                            preview={preview}
+                            estimate={estimate}
+                            runId={currentRunId}
+                            onSnapshot={estimateId ? saveModelSnapshot : undefined}
+                            hasSnapshot={modelSnapshotSaved || !!estimate?.model3d_png_url}
+                          />
+                        );
                       })()}
                     </div>
                   )}

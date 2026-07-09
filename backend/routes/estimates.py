@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from db import db
 from deps import get_current_user
@@ -491,6 +492,33 @@ async def delete_estimate(est_id: str, user: dict = Depends(get_current_user)):
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"ok": True}
+
+
+# Iter 79j.74 — 3D model snapshot for the Customer Quote PDF. The
+# frontend captures the Three.js canvas as a PNG, uploads it via
+# /api/uploads, then registers the URL here. buildEmailHtml embeds it
+# in the quote HTML which WeasyPrint renders into the PDF.
+class Model3DSnapshotIn(BaseModel):
+    url: str
+
+
+@router.put("/estimates/{est_id}/model3d-snapshot")
+async def save_model3d_snapshot(
+    est_id: str, body: Model3DSnapshotIn, user: dict = Depends(get_current_user)
+):
+    url = (body.url or "").strip()
+    if not url.startswith("/api/uploads/") or ".." in url or url.count("/") != 3:
+        raise HTTPException(status_code=400, detail="Snapshot must be an uploaded file URL")
+    res = await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"$set": {
+            "model3d_png_url": url,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True, "model3d_png_url": url}
 
 
 

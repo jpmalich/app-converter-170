@@ -411,6 +411,24 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             ))}
           </div>
 
+          {/* Iter 79j.74 — mirrors the model3dBlock in buildEmailHtml so
+              the on-screen preview matches the emailed/PDF quote. */}
+          {estimate.model3d_png_url && (
+            <div className="px-8 sm:px-12 py-4 border-t border-[#E4E4E7]" data-testid="quote-3d-model-block">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
+                Your Home — 3D Model
+              </div>
+              <img
+                src={`${process.env.REACT_APP_BACKEND_URL}${estimate.model3d_png_url}`}
+                alt="3D model of your home"
+                className="w-full max-w-[520px] border border-[#E4E4E7] bg-[#F7F8FB]"
+              />
+              <div className="text-[10px] text-[#71717A] mt-1">
+                Built from AI photo measurements of your home — the same measurements this quote is priced from.
+              </div>
+            </div>
+          )}
+
           {(estimate.photos || []).length > 0 && (
             <div className="px-8 sm:px-12 py-4 border-t border-[#E4E4E7]">
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">

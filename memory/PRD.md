@@ -2283,3 +2283,15 @@ Rendered at the top of the AI Measure modal's pre-run (photo) screen (`!preview`
 - data-testids: run-readiness-checklist / -toggle / -count / -item-{key} / -check-{key}.
 ### Testing
 Screenshot-verified on a fresh estimate: renders 7 items, amber states for missing calibration + empty tape, checkbox tick persisted and chip updated 2/7. Smoke-test estimate deleted after. Frontend compiles clean.
+
+## Iter 79j.74 — Three.js 3D PNG → Customer Quote PDF (2026-07-09) [GATE TASK SHIPPED]
+### Chain (all E2E-verified in preview)
+1. **Capture** (`HouseModel3D.jsx`): "Use in Quote PDF" button on the 3D canvas (camera icon, top-right; states idle/saving/"On Quote PDF"). `renderer.render()` then `canvas.toBlob()` (NOT fetch(dataURL) — that failed silently). **Auto-capture** fires once ~1.5s after mount when the estimate has no snapshot (zero-click default 3/4 view); contractor can re-frame + re-click any time. GOTCHA fixed: latch `autoSnapDone` INSIDE the timer — parent re-renders change `onSnapshot` identity, re-running the effect and cancelling the timer while the latch was already set (silent one-shot failure).
+2. **Persist**: blob → POST /api/uploads → PUT `/api/estimates/{id}/model3d-snapshot` (new endpoint, validates url startswith /api/uploads/, no traversal; company-scoped; stores `estimate.model3d_png_url`).
+3. **Quote surfaces**: `emailQuote.js` model3dBlock ("Your Home — 3D Model" + "Built from AI photo measurements..." caption, en+es keys in dictionaries.js) rendered above Job Photos; `QuoteModal.jsx` mirrors the block in the on-screen preview (data-testid quote-3d-model-block). WeasyPrint fetches the public upload URL → PDF verified with embedded Image XObject via curl of POST /estimates/{id}/pdf (payload field is `recipient_email`, not `to`).
+### Testing
+- Playwright: manual button E2E (uploads 200 → snapshot PUT 200 → "ON QUOTE PDF"), zero-click auto-capture E2E after clearing the field, quote modal shows the 3D image.
+- `tests/test_model3d_snapshot_iter74.py`: roundtrip + validation (400s for external/traversal/nested URLs) + auth. 22 passed with estimator_api.
+- NOTE: `DELETE /api/estimates/{id}` exists and is used by tests for cleanup.
+### Lesson
+An earlier search_replace of the HouseModel3D render site reported success but was later found absent — ALWAYS grep-verify critical prop wiring after batch edits.

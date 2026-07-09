@@ -24,7 +24,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, Camera, Loader2 } from "lucide-react";
 // Iter 79j.65 — Tape Check: persistent per-wall ground truth + accuracy history.
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
 
@@ -1095,7 +1095,7 @@ function buildScene(scene, house) {
   return { wallMeshes, warnings };
 }
 
-export default function HouseModel3D({ preview, estimate, runId }) {
+export default function HouseModel3D({ preview, estimate, runId, onSnapshot, hasSnapshot }) {
   const mountRef = useRef(null);
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
@@ -1105,7 +1105,50 @@ export default function HouseModel3D({ preview, estimate, runId }) {
   // the side panel so the contractor sees the message where they can
   // act on it (right above the Ridge orientation flip control).
   const [geometryWarnings, setGeometryWarnings] = useState([]);
+  // Iter 79j.74 — Quote PDF snapshot state. "idle" → "saving" → "saved".
+  const [snapState, setSnapState] = useState("idle");
+  const autoSnapDone = useRef(false);
   const house = useMemo(() => buildHouseJson(preview, overrides, estimate), [preview, overrides, estimate]);
+
+  // Iter 79j.74 — capture the current WebGL frame as a PNG and hand it
+  // to the parent (upload + persist). Renders synchronously right
+  // before toBlob so the buffer is fresh (no preserveDrawingBuffer
+  // needed).
+  const captureSnapshot = async () => {
+    const s = sceneRef.current;
+    if (!s?.renderer || !onSnapshot || snapState === "saving") return;
+    try {
+      setSnapState("saving");
+      s.renderer.render(s.scene, s.camera);
+      const blob = await new Promise((resolve, reject) => {
+        s.renderer.domElement.toBlob(
+          (b) => (b ? resolve(b) : reject(new Error("toBlob returned null"))),
+          "image/png",
+        );
+      });
+      await onSnapshot(blob);
+      setSnapState("saved");
+    } catch (e) {
+      console.error("3D snapshot failed:", e);
+      setSnapState("idle");
+    }
+  };
+
+  // Auto-capture once per mount when the estimate has no snapshot yet —
+  // the default 3/4 camera is a good PDF angle and the contractor can
+  // re-frame + hit the button for a better one any time.
+  useEffect(() => {
+    if (!onSnapshot || hasSnapshot || autoSnapDone.current || !house) return;
+    // Latch INSIDE the timer: parent re-renders change onSnapshot's
+    // identity and re-run this effect — latching before the timer let
+    // the cleanup cancel the one and only attempt.
+    const t = setTimeout(() => {
+      autoSnapDone.current = true;
+      captureSnapshot();
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [house, onSnapshot, hasSnapshot]);
 
   // Mount scene once
   useEffect(() => {
@@ -1263,6 +1306,29 @@ export default function HouseModel3D({ preview, estimate, runId }) {
         <div className="absolute top-2 left-2 text-[10px] uppercase tracking-wider font-bold text-[var(--ai)] bg-white/80 px-2 py-1 border border-[var(--ai)]" data-testid="ai-measure-3d-hint">
           Tap a wall to see its takeoff · drag to orbit · scroll to zoom
         </div>
+        {/* Iter 79j.74 — snapshot-to-quote button. Frame the house,
+            click, and this exact view lands on the Customer Quote PDF. */}
+        {onSnapshot && (
+          <button
+            type="button"
+            onClick={captureSnapshot}
+            disabled={snapState === "saving"}
+            className={`absolute top-2 right-2 flex items-center gap-1.5 px-2 py-1 text-[10px] uppercase tracking-wider font-bold border transition-colors ${
+              snapState === "saved"
+                ? "bg-[#DCFCE7] text-[#166534] border-[var(--success)]"
+                : "bg-white/90 text-[var(--ai)] border-[var(--ai)] hover:bg-[var(--ai)] hover:text-white"
+            }`}
+            title="Capture this exact view — it will appear on the Customer Quote PDF. Re-click after re-framing to update."
+            data-testid="ai-measure-3d-snapshot-btn"
+          >
+            {snapState === "saving"
+              ? <Loader2 className="w-3 h-3 animate-spin" />
+              : snapState === "saved"
+              ? <Check className="w-3 h-3" />
+              : <Camera className="w-3 h-3" />}
+            {snapState === "saved" ? "On Quote PDF" : "Use in Quote PDF"}
+          </button>
+        )}
       </div>
       <div className="h-[560px] md:h-[640px] flex flex-col gap-2 min-h-0">
         <div className="flex gap-1">
