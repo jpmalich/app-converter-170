@@ -6,11 +6,12 @@ import os
 import uuid
 import requests
 
-BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL",
-    "https://app-converter-170.preview.emergentagent.com",
-).rstrip("/")
-ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "test-admin-token")
+from dotenv import dotenv_values
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
+ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 ADMIN_HEADERS = {"X-Admin-Token": ADMIN_TOKEN}
 
 

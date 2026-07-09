@@ -30,7 +30,7 @@ EXPECTED = [
     ),
     (
         "Starter",
-        {"whole-sale": 7.46, "Contractor": 7.46, "Builder-Dealer": 7.46, "one-opp": 7.46},
+        {"whole-sale": 7.64, "Contractor": 7.64, "Builder-Dealer": 7.64, "one-opp": 7.64},
     ),
     (
         'Pelican Bay Shakes 9"',

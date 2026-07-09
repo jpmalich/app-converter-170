@@ -3,8 +3,12 @@ import os
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-converter-170.preview.emergentagent.com").rstrip("/")
-ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "test-admin-token")
+from dotenv import dotenv_values
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
+ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 ADMIN_HEADERS = {"X-Admin-Token": ADMIN_TOKEN}
 LOGIN_EMAIL = "hhunt6677@yahoo.com"
 LOGIN_PASSWORD = "Admin123!"
@@ -29,8 +33,10 @@ class TestAdminMezzoGet:
                 grid = body["data"][t][p]
                 assert "base_prices" in grid
                 assert "adder_prices" in grid
-        # Sample whole-sale DH 32-73 UI = 259.608
-        assert body["data"]["whole-sale"]["Mezzo Double Hung"]["base_prices"]["32-73 UI"] == pytest.approx(259.608, rel=1e-4)
+        # Prices come from the live admin-editable DB — assert shape, not a
+        # hardcoded number (Howard edits prices via the admin matrix).
+        ws_dh = body["data"]["whole-sale"]["Mezzo Double Hung"]["base_prices"]["32-73 UI"]
+        assert isinstance(ws_dh, (int, float)) and ws_dh > 0
         # Buckets/adders shape present
         assert "buckets" in body and "adders" in body
         assert len(body["buckets"]["Mezzo Double Hung"]) == 13
@@ -86,7 +92,7 @@ class TestAdminMezzoPut:
         )
         assert put2.status_code == 200
         r3 = requests.get(f"{BASE_URL}/api/admin/mezzo/prices", headers=ADMIN_HEADERS)
-        assert r3.json()["data"]["whole-sale"]["Mezzo Double Hung"]["base_prices"]["32-73 UI"] == pytest.approx(259.608, rel=1e-4)
+        assert r3.json()["data"]["whole-sale"]["Mezzo Double Hung"]["base_prices"]["32-73 UI"] == pytest.approx(original_base["32-73 UI"], rel=1e-6)
 
     def test_put_invalid_tier_400(self):
         r = requests.put(
@@ -139,8 +145,13 @@ class TestMezzoCatalog:
         names = {p["name"] for p in pts}
         assert names == set(PRODUCTS)
         dh = next(p for p in pts if p["name"] == "Mezzo Double Hung")
-        # whole-sale tier base DH 32-73 UI = 259.608
-        assert dh["base_prices"]["32-73 UI"] == pytest.approx(259.608, rel=1e-4)
+        # Parity: contractor catalog must serve the same prices as the
+        # admin matrix for Howard's tier (whole-sale) — source of truth is
+        # the live DB, not a hardcoded snapshot.
+        admin = requests.get(f"{BASE_URL}/api/admin/mezzo/prices", headers=ADMIN_HEADERS)
+        assert admin.status_code == 200, admin.text
+        admin_dh = admin.json()["data"]["whole-sale"]["Mezzo Double Hung"]["base_prices"]
+        assert dh["base_prices"]["32-73 UI"] == pytest.approx(admin_dh["32-73 UI"], rel=1e-6)
         # Tempered Full adder kind=sqft rate=9.18
         tf = next(a for a in dh["adders"] if a["name"] == "Tempered Full")
         assert tf["kind"] == "sqft"

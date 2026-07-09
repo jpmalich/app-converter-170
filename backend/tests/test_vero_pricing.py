@@ -13,11 +13,12 @@ Iter 78y (2026-02-13): Vero collapsed per Howard's master pricing file.
 import os
 import requests
 
-BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL",
-    "https://app-converter-170.preview.emergentagent.com",
-).rstrip("/")
-ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "test-admin-token")
+from dotenv import dotenv_values
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE_ENV = dotenv_values("/app/frontend/.env")
+BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
+ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 ADMIN_HEADERS = {"X-Admin-Token": ADMIN_TOKEN}
 
 
@@ -46,7 +47,7 @@ def test_admin_get_matrix_returns_3_tiers_3_products():
 
 
 def test_admin_get_matrix_requires_token():
-    r = requests.get(f"{BASE_URL}/api/admin/vero/prices", timeout=10, headers=ADMIN_HEADERS)
+    r = requests.get(f"{BASE_URL}/api/admin/vero/prices", timeout=10)
     assert r.status_code in (401, 403)
 
 
