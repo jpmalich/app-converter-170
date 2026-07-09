@@ -2009,11 +2009,26 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
       const gableSqft = preview?.measurements?._ai_gable_sqft || 0;
       const dormerSqft = preview?.measurements?._ai_dormer_sqft || 0;
+      // Iter 79j.71 — single-owner guard: when the per-elevation profile
+      // breakdown already quotes a surface as shake (its own SKU line),
+      // the toggle would bill the same ft² twice AND deduct it from a lap
+      // line that never contained it.
+      const perElev = preview?.measurements?._per_elevation_breakdown || [];
+      const dormerAlreadyShake = perElev.some((e) => (e.dormer_sqft || 0) > 0 && e.dormer_profile === "shake");
+      const gableAlreadyShake = perElev.some((e) => (e.gable_sqft || 0) > 0 && e.gable_profile === "shake");
       if (quoteGablesAsShake && gableSqft > 0) {
-        toApply = swapSidingToShake(toApply, gableSqft, shakeSku);
+        if (gableAlreadyShake) {
+          toast.info("Gables are already quoted as shake by the profile breakdown — toggle skipped to avoid double-counting.");
+        } else {
+          toApply = swapSidingToShake(toApply, gableSqft, shakeSku);
+        }
       }
       if (quoteDormersAsShake && dormerSqft > 0) {
-        toApply = swapSidingToShake(toApply, dormerSqft, dormerShakeSku);
+        if (dormerAlreadyShake) {
+          toast.info("Dormers are already quoted as shake by the profile breakdown — toggle skipped to avoid double-counting.");
+        } else {
+          toApply = swapSidingToShake(toApply, dormerSqft, dormerShakeSku);
+        }
       }
 
       // Iter 78s — stash the rendered elevation drawings (with any

@@ -2239,3 +2239,19 @@ Phase A DOES emit real pixel bboxes per opening — no regression. `_slim_extrac
 - `tests/test_bbox_restore_iter70.py` — 7 tests (id/suffix/positional match, zero-drop, no-dims drop, dormer routing) all pass. 66 pipeline regression tests pass. Screenshot-verified 3D: windows spread along walls, both dormers render their own windows.
 - NOTE: full E2E of backend restore path needs the NEXT AI run (ranch) — existing run 4 raw_per_photo lacks `_image_w/_image_h` stamps.
 ### Gate order next: Three.js static PNG → embed in Customer Quote PDF.
+
+## Iter 79j.71 — Shake quantity composition audit + single-owner fix (2026-07-09)
+### Audit finding (run f423c216, produced the estimate's 6.0 SQ Pelican line)
+SHAKE 584.3 ft² = 275.2 geometry dormers (face DOUBLE-added: reconciler fills walls[].dormer_face_sqft with the face, then apply_roof_type_material_math added face+cheeks on top) + 147.0 Claude ECHOES of the contractor's annotator boxes as accent_profiles ("contractor ground truth") + 162.1 annotation overlay (same boxes AGAIN). Left dormer face counted 3×. Tape truth ~155 ft². Separately, run 4 crashed the whole breakdown (accent_profiles emitted as strings) → _per_profile_sqft {} → zero shake. Both directions silent.
+### Fixes (all five, Howard-approved)
+1. **apply_roof_type_material_math**: single owner for the face — reconciler value wins when present, geometry fills the gap; cheeks always geometry; openings deducted once. Stamps `_dormer_composition` {face_owner, face_sqft, cheek_sqft, openings_deducted} on the wall.
+2. **Echo skip**: accents with `from_annotation: true` (new prompt field on Phase A + reconcile schemas + hint instruction) or ground-truth phrasing (`_ANNOTATION_ECHO_RE`) are skipped; annotation overlay is sole owner. Counter `skipped_echo_accents` surfaced.
+3. **Annotation override**: box located dormer/gable overlapping geometry → overrides the surface PROFILE (callout `user:<profile>`), never adds ft²; "body" boxes deduct their ft² from wall_body_sqft (area moves families). Frontend guard: "quote dormers/gables as shake" toggles skip (toast) when the breakdown already owns the surface as shake.
+4. **Hardened parsing**: non-dict accents skip w/ `malformed_accents` counter — breakdown survives (run-4 regression).
+5. **Composition tripwire**: `_finalize_breakdown` builds per-surface `composition` {family: [{elevation, surface, owner, sqft}]}; per_profile totals = component sum by construction; `_dormer_composition` mismatch or accent-duplicates-dormer → `conflicts`. `_profile_siding_lines` (hover.py) amber-flags conflicted families: qty 0 + "⚠ ... composition conflict — verify by hand", clean lines carry itemized composition note ("= left dormer 86.1 + ..." ).
+### New measurement keys
+`_per_profile_composition`, `_profile_composition_conflicts`, `_skipped_echo_accents`, `_malformed_accents`.
+### Testing
+`tests/test_shake_composition_iter71.py` — 11 tests pinning the exact 584.3 fixture → new composition 301.4 (dormers 139.25 once + annotations 162.1 once, echoes skipped), overrides, crash-hardening, amber lines. 133 pass across all profile/annotation suites; full backend suite: 644 pass, 9 fail + 15 errors ALL pre-existing on pristine main (stale catalog-seed asserts in test_iteration34/5/6, estimator_api email/status, lp_admin_preview flag — same disease as the pricing seeds, queued).
+### Acceptance status
+Run-4 data through the new math: dormers 86.1 + 88 = 174.1 ft² ∈ Howard's taped 155–200 band ✓ (unit-verified). NOTE: run 4's PERSISTED walls still carry the pre-fix double-add (171.09/163) — re-apply from that stale preview won't recompute. Acceptance closes on the NEXT AI run (Howard re-confirming cheek depth first). Run-4 dormer callout came back "lap", so shake arrives via the (now guarded) dormer toggle or a dormer-located annotation box.

@@ -34,6 +34,18 @@ import re
 from typing import Optional
 
 
+# Iter 79j.71 — Claude sometimes ECHOES the contractor's ProfileAnnotator
+# boxes back as accent_profiles rows ("contractor ground truth",
+# "user-annotated SHAKE ≈ 59 ft²"). Those surfaces are owned by the
+# annotation overlay (apply_annotations_to_breakdown) — counting the echo
+# too billed the same square footage twice. New prompt runs tag them
+# `from_annotation: true`; this regex catches older phrasing.
+_ANNOTATION_ECHO_RE = re.compile(
+    r"contractor|ground.?truth|user[\s-]?annotat|user[\s-]?tag|annotation",
+    re.IGNORECASE,
+)
+
+
 # Each tuple: (regex pattern, canonical family). Order matters — first
 # match wins, so put the more specific patterns first (e.g. "dutch lap"
 # before bare "lap").
@@ -157,13 +169,15 @@ def _safe_float(v, default=0.0):
 def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -> dict:
     """Aggregate Claude's per-wall callouts into a structured rollup.
 
-    Returns a dict with two top-level keys:
+    Returns a dict with top-level keys:
         per_elevation: [{label, wall_body_sqft, wall_body_profile,
                          gable_sqft, gable_profile,
                          dormer_sqft, dormer_profile,
                          accents: [{location, profile, sqft}],
                          stone_sqft}, ...]
         per_profile_sqft: {profile_family: total_sqft}
+        conflicts: [{family, reason}] — composition tripwires (Iter 79j.71)
+        skipped_echo_accents / malformed_accents — traceability counters
 
     Conventions:
       - Wall body ft² = width × eave_height × (siding_pct / 100). Stone /
@@ -172,16 +186,27 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
       - Gable triangle ft² = 0.5 × width × gable_triangle_height_ft. Only
         when gable_triangle_height_ft > 0. Profile inherits from body
         when gable_profile_callout is empty.
-      - Dormer ft² = Claude's dormer_face_sqft verbatim. Profile inherits
+      - Dormer ft² = wall's dormer_face_sqft verbatim (single owner: the
+        reconciler/geometry math already composed face + cheeks −
+        openings — see apply_roof_type_material_math). Profile inherits
         from body when dormer_profile_callout is empty.
       - Accents are summed into per_profile_sqft but kept as separate
         rows in per_elevation so the UI can show their location.
+        Iter 79j.71 — accents that only exist because they ECHO the
+        contractor's ProfileAnnotator boxes (`from_annotation: true` or
+        ground-truth phrasing) are SKIPPED: the annotation overlay in
+        apply_annotations_to_breakdown is the single owner of those
+        surfaces. Non-dict accents are skipped instead of crashing the
+        whole breakdown (the run-4 string-accent regression).
       - default_body_profile is what we fall back to when Claude returns
         empty / unknown for wall_body_profile_callout. "lap" is the safe
         default (80% of new builds in Howard's market).
     """
     per_elevation = []
     per_profile = {}
+    conflicts: list[dict] = []
+    skipped_echo = 0
+    malformed = 0
 
     def _add(family: str, sqft: float):
         if sqft <= 0 or family in ("", "unknown") or is_non_siding_family(family):
@@ -227,23 +252,62 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
         if dormer_sqft > 0:
             dormer_family = classify_profile(w.get("dormer_profile_callout")) or body_family
             _add(dormer_family, dormer_sqft)
+            # Iter 79j.71 tripwire — when apply_roof_type_material_math
+            # stamped its composition, the wall's dormer_face_sqft must
+            # equal (face − openings) + cheeks. A mismatch means a second
+            # writer touched the surface → flag, don't trust the number.
+            comp = w.get("_dormer_composition")
+            if isinstance(comp, dict):
+                expected = (
+                    max(0.0, _safe_float(comp.get("face_sqft")) - _safe_float(comp.get("openings_deducted")))
+                    + _safe_float(comp.get("cheek_sqft"))
+                )
+                if abs(dormer_sqft - expected) > 0.6:
+                    conflicts.append({
+                        "family": dormer_family,
+                        "reason": (
+                            f"dormer face composition mismatch on '{label}' — "
+                            f"carried {dormer_sqft:.1f} ft² vs composed {expected:.1f} ft² "
+                            "(possible double-count)"
+                        ),
+                    })
 
         # Accents (B&B porch face, shake column wrap, etc.)
         accents = []
         for a in (w.get("accent_profiles") or []):
+            if not isinstance(a, dict):
+                malformed += 1
+                continue
+            # Iter 79j.71 — annotation echoes are never owners.
+            loc_text = f"{a.get('location') or ''} {a.get('profile_callout') or ''}"
+            if a.get("from_annotation") or _ANNOTATION_ECHO_RE.search(loc_text):
+                skipped_echo += 1
+                continue
             a_sqft = _safe_float(a.get("approx_sqft"))
             if a_sqft <= 0:
                 continue
             a_family = classify_profile(a.get("profile_callout"))
             if not a_family or a_family == "unknown":
                 a_family = body_family
+            a_loc = str(a.get("location") or "").strip()
             accents.append({
-                "location":  str(a.get("location") or "").strip(),
+                "location":  a_loc,
                 "profile":   a_family,
                 "callout":   a.get("profile_callout") or "",
                 "sqft":      round(a_sqft, 1),
             })
             _add(a_family, a_sqft)
+            # Tripwire: a Claude accent describing the dormer on a wall
+            # whose dormer surface already carries the same family is a
+            # second owner for the same physical face.
+            if dormer_sqft > 0 and a_family == dormer_family and "dormer" in a_loc.lower():
+                conflicts.append({
+                    "family": a_family,
+                    "reason": (
+                        f"accent '{a_loc}' on '{label}' duplicates the dormer "
+                        "surface already owned by geometry"
+                    ),
+                })
 
         per_elevation.append({
             "label":              label,
@@ -265,8 +329,11 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
     per_profile_rounded = {fam: round(sq, 1) for fam, sq in per_profile.items()}
 
     return {
-        "per_elevation":      per_elevation,
-        "per_profile_sqft":   per_profile_rounded,
+        "per_elevation":         per_elevation,
+        "per_profile_sqft":      per_profile_rounded,
+        "conflicts":             conflicts,
+        "skipped_echo_accents":  skipped_echo,
+        "malformed_accents":     malformed,
     }
 
 
@@ -366,12 +433,24 @@ def apply_annotations_to_breakdown(
             None or empty → returns breakdown unchanged.
 
     Returns:
-        Same shape as input breakdown. `per_elevation[*].accents` may
-        have new entries; `per_profile_sqft` is re-aggregated to
-        reflect the added accent sqft.
+        Same shape as input breakdown plus:
+          - `composition`: {family: [{elevation, surface, owner, sqft}]} —
+            every square foot traced to exactly one owned surface.
+          - `conflicts`: [{family, reason}] — tripwires carried from the
+            wall-level breakdown plus any found here.
+        Iter 79j.71 single-owner rules:
+          - box location "dormer"/"gable" overlapping a geometry surface
+            → the box overrides that surface's PROFILE; its ft² is NOT
+            added (geometry stays the sqft owner).
+          - box location "body" on a known elevation → accent row added
+            AND the same ft² is deducted from wall_body_sqft (area moves
+            families instead of being counted twice).
+          - unmatched elevation label → synthetic accent row (annotation
+            is sole owner).
     """
+    conflicts: list[dict] = list(breakdown.get("conflicts") or [])
     if not annotations or not isinstance(annotations, dict):
-        return breakdown
+        return _finalize_breakdown(breakdown, conflicts)
     per_elev = list(breakdown.get("per_elevation") or [])
     # Index elevations by lowercased label so annotations match
     # case-insensitively.
@@ -440,12 +519,13 @@ def apply_annotations_to_breakdown(
             new_accents_by_label.setdefault(label, []).append(entry)
 
     if not new_accents_by_label:
-        return breakdown
+        return _finalize_breakdown({**breakdown, "per_elevation": per_elev}, conflicts)
 
-    # Merge accents onto matching elevations + create synthetic
-    # elevation rows when an annotation targets a label that Claude
-    # didn't surface (rare, e.g. annotated a "porch" elevation that
-    # wasn't in the per_elevation breakdown).
+    # Iter 79j.71 — Single-owner merge. Boxes located on a geometry
+    # surface (dormer / gable) OVERRIDE that surface's profile — they
+    # never add their own ft². "body" boxes move area between families
+    # (accent added, wall body deducted). Unmatched labels get a
+    # synthetic row where the annotation is sole owner.
     for label, new_accents in new_accents_by_label.items():
         elev = by_label.get(label)
         if elev is None:
@@ -467,32 +547,82 @@ def apply_annotations_to_breakdown(
             per_elev.append(synth)
             by_label[label] = synth
             continue
-        existing = list(elev.get("accents") or [])
-        existing.extend(new_accents)
-        elev["accents"] = existing
+        kept_accents = list(elev.get("accents") or [])
+        for entry in new_accents:
+            loc = str(entry.get("location") or "").lower()
+            if loc == "dormer" and float(elev.get("dormer_sqft") or 0) > 0:
+                elev["dormer_profile"] = entry["profile"]
+                elev["dormer_callout"] = f"user:{entry['profile']}"
+                continue
+            if loc == "gable" and float(elev.get("gable_sqft") or 0) > 0:
+                elev["gable_profile"] = entry["profile"]
+                elev["gable_callout"] = f"user:{entry['profile']}"
+                continue
+            if loc == "body":
+                body = float(elev.get("wall_body_sqft") or 0)
+                deduct = min(entry["sqft"], body)
+                elev["wall_body_sqft"] = round(body - deduct, 1)
+            kept_accents.append(entry)
+        elev["accents"] = kept_accents
 
-    # Re-aggregate per_profile_sqft from the mutated per_elevation list.
-    per_profile: dict[str, float] = {}
+    return _finalize_breakdown({**breakdown, "per_elevation": per_elev}, conflicts)
+
+
+def _finalize_breakdown(breakdown: dict, conflicts: list[dict]) -> dict:
+    """Iter 79j.71 — Rebuild per_profile_sqft FROM a per-surface
+    composition trace so the total is the sum of its owned surfaces by
+    construction, then attach the trace + conflicts. Every square foot
+    in per_profile_sqft appears exactly once in `composition`."""
+    per_elev = list(breakdown.get("per_elevation") or [])
     SIDING_KEEPERS = {
         "lap", "dutch_lap", "shake", "board_batten",
         "vertical", "nickel_gap",
     }
+    composition: dict[str, list] = {}
 
-    def _bump(fam: str, sq: float):
-        if not fam or fam == "unknown" or fam not in SIDING_KEEPERS:
+    def _own(fam: str, sq: float, label: str, surface: str, owner: str):
+        if not fam or fam == "unknown" or fam not in SIDING_KEEPERS or sq <= 0:
             return
-        if sq <= 0:
-            return
-        per_profile[fam] = per_profile.get(fam, 0.0) + sq
+        composition.setdefault(fam, []).append({
+            "elevation": label, "surface": surface,
+            "owner": owner, "sqft": round(sq, 1),
+        })
 
     for e in per_elev:
-        _bump(e.get("wall_body_profile") or "", float(e.get("wall_body_sqft") or 0))
-        _bump(e.get("gable_profile") or "", float(e.get("gable_sqft") or 0))
-        _bump(e.get("dormer_profile") or "", float(e.get("dormer_sqft") or 0))
+        label = e.get("label") or "unknown"
+        _own(e.get("wall_body_profile") or "", float(e.get("wall_body_sqft") or 0),
+             label, "body", "geometry")
+        _own(e.get("gable_profile") or "", float(e.get("gable_sqft") or 0),
+             label, "gable",
+             "geometry+user-profile" if str(e.get("gable_callout") or "").startswith("user:") else "geometry")
+        _own(e.get("dormer_profile") or "", float(e.get("dormer_sqft") or 0),
+             label, "dormer",
+             "geometry+user-profile" if str(e.get("dormer_callout") or "").startswith("user:") else "geometry")
         for a in (e.get("accents") or []):
-            _bump(a.get("profile") or "", float(a.get("sqft") or 0))
+            owner = "annotation" if a.get("_source") == "annotation" else "ai-accent"
+            _own(a.get("profile") or "", float(a.get("sqft") or 0),
+                 label, f"accent:{a.get('location') or 'accent'}", owner)
+
+    per_profile: dict[str, float] = {}
+    for fam, surfaces in composition.items():
+        per_profile[fam] = round(sum(s["sqft"] for s in surfaces), 1)
+
+    # Tripwire: the rounded total must equal the component sum (it does
+    # by construction — a divergence means a future edit broke the
+    # single-owner invariant).
+    for fam, total in per_profile.items():
+        comp_sum = round(sum(s["sqft"] for s in composition.get(fam, [])), 1)
+        if abs(total - comp_sum) > 0.5:
+            conflicts.append({
+                "family": fam,
+                "reason": f"total {total} ft² diverges from component sum {comp_sum} ft²",
+            })
 
     return {
-        "per_elevation":    per_elev,
-        "per_profile_sqft": {fam: round(sq, 1) for fam, sq in per_profile.items()},
+        "per_elevation":        per_elev,
+        "per_profile_sqft":     per_profile,
+        "composition":          composition,
+        "conflicts":            conflicts,
+        "skipped_echo_accents": breakdown.get("skipped_echo_accents", 0),
+        "malformed_accents":    breakdown.get("malformed_accents", 0),
     }

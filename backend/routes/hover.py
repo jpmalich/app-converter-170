@@ -1667,6 +1667,31 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
     positive = {f: s for f, s in per_profile.items() if isinstance(s, (int, float)) and s > 0}
     if len(positive) <= 1:
         return []
+    # Iter 79j.71 — composition tripwire. Families flagged with a
+    # composition conflict get an amber line (qty 0 + warning note)
+    # instead of a number: a silently wrong quantity is worse than a
+    # blank the contractor must fill.
+    conflicts_raw = measurements.get("_profile_composition_conflicts") or []
+    conflict_reasons: dict[str, str] = {}
+    for c in conflicts_raw:
+        if isinstance(c, dict) and c.get("family"):
+            fam = str(c["family"])
+            conflict_reasons.setdefault(fam, str(c.get("reason") or "composition conflict"))
+    composition = measurements.get("_per_profile_composition") or {}
+
+    def _composition_note(family: str, sqft: float) -> str:
+        base = f"Per-elevation breakdown: {family.upper().replace('_', ' ')} {sqft:.0f} ft²"
+        surfaces = composition.get(family) if isinstance(composition, dict) else None
+        if not isinstance(surfaces, list) or not surfaces:
+            return base
+        parts = [
+            f"{s.get('elevation')} {s.get('surface')} {s.get('sqft')}"
+            for s in surfaces[:6] if isinstance(s, dict)
+        ]
+        if len(surfaces) > 6:
+            parts.append(f"+{len(surfaces) - 6} more")
+        return base + " = " + " + ".join(parts)
+
     out: list[dict] = []
     for tab in ("vinyl", "ascend", "lp_smart"):
         section = _PROFILE_SECTION_BY_TAB[tab]
@@ -1684,6 +1709,21 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
             item, unit, sqft_per_unit = sku
             if sqft_per_unit <= 0:
                 continue
+            # Iter 79j.71 — amber-flag conflicted families: qty 0 + loud
+            # note, never a number.
+            if family in conflict_reasons:
+                out.append({
+                    "tab": tab,
+                    "section": section,
+                    "name": item,
+                    "unit": unit,
+                    "qty": 0,
+                    "note": (
+                        f"⚠ {family.upper().replace('_', ' ')} quantity composition "
+                        f"conflict — verify by hand ({conflict_reasons[family]})"
+                    ),
+                })
+                continue
             # Iter 78ab — LP tab applies 10% waste + round-up per PDF.
             # Vinyl + Ascend keep the legacy 1-decimal quantity to
             # preserve existing quote behaviour.
@@ -1699,7 +1739,7 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
                 "name": item,
                 "unit": unit,
                 "qty": qty,
-                "note": f"Per-elevation breakdown: {family.upper().replace('_', ' ')} {sqft:.0f} ft²",
+                "note": _composition_note(family, sqft),
             })
     return out
 

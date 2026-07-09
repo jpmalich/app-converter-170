@@ -34,9 +34,15 @@ def _base_breakdown():
 def test_no_annotations_returns_breakdown_unchanged():
     bd = _base_breakdown()
     out = apply_annotations_to_breakdown(bd, None)
-    assert out == bd
+    # Iter 79j.71 — the finalizer now always attaches a composition trace
+    # + conflicts, but the numbers must be untouched.
+    assert out["per_elevation"] == bd["per_elevation"]
+    assert out["per_profile_sqft"] == bd["per_profile_sqft"]
+    assert out["conflicts"] == []
+    assert "composition" in out
     out2 = apply_annotations_to_breakdown(bd, {})
-    assert out2 == bd
+    assert out2["per_elevation"] == bd["per_elevation"]
+    assert out2["per_profile_sqft"] == bd["per_profile_sqft"]
 
 
 def test_shake_annotation_injects_as_accent():

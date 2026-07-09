@@ -1066,16 +1066,35 @@ def apply_roof_type_material_math(raw: dict, walls: list, gable_sqft: float, dor
             d_h = float(dormer_raw.get("knee_wall_height_ft") or 0)
             if d_w <= 0 or d_h <= 0:
                 continue
-            face_sqft = d_w * d_h
+            geometry_face_sqft = d_w * d_h
             # 2 cheek triangles, base = knee height, height = knee height —
             # matches the frontend geometry which uses knee for both.
             cheek_sqft = 2 * 0.5 * d_h * d_h
-            extra = max(0.0, face_sqft + cheek_sqft - openings_by_face.get(face, 0.0))
+            openings_sqft = openings_by_face.get(face, 0.0)
             for w in walls:
                 if (w.get("label") or "").lower() == face:
-                    w["dormer_face_sqft"] = float(w.get("dormer_face_sqft") or 0) + extra
+                    # Iter 79j.71 — SINGLE OWNER for the face area. The
+                    # reconciler usually fills walls[].dormer_face_sqft
+                    # with its own face read; the old code added
+                    # face+cheeks ON TOP, double-counting every dormer
+                    # face (the 584.3 ft² shake audit). Reconciler value
+                    # wins when present; geometry only fills the gap.
+                    # Cheeks are always geometry-owned; on_dormer opening
+                    # area is deducted from the face once.
+                    existing = float(w.get("dormer_face_sqft") or 0)
+                    face_sqft = existing if existing > 0 else geometry_face_sqft
+                    face_owner = "reconciler" if existing > 0 else "geometry"
+                    openings_deducted = min(openings_sqft, face_sqft)
+                    net = max(0.0, face_sqft - openings_sqft) + cheek_sqft
+                    w["dormer_face_sqft"] = net
+                    w["_dormer_composition"] = {
+                        "face_owner": face_owner,
+                        "face_sqft": round(face_sqft, 2),
+                        "cheek_sqft": round(cheek_sqft, 2),
+                        "openings_deducted": round(openings_deducted, 2),
+                    }
+                    total_extra += net - existing
                     break
-            total_extra += extra
         return gable_sqft, float(dormer_sqft) + total_extra
 
     return gable_sqft, dormer_sqft
@@ -1442,6 +1461,13 @@ def _build_annotation_hint(annotations: dict | None) -> str:
         "REGARDLESS of what you return — but the more accurately "
         "you reflect them in `per_elevation` walls, the more "
         "useful your output is to the contractor."
+        "\n\nCRITICAL — DO NOT DOUBLE-COUNT: the annotated regions above "
+        "are ALREADY counted once downstream, straight from the boxes. "
+        "Do NOT re-emit them as `accent_profiles` entries. If you must "
+        "reference one (e.g. to note the region on that wall), set "
+        "`from_annotation: true` on that entry so it is excluded from "
+        "material quantities. Only `from_annotation: false` accents you "
+        "INDEPENDENTLY observed count toward material."
     )
     return hint
 
@@ -2053,6 +2079,15 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         breakdown = apply_annotations_to_breakdown(breakdown, annotations)
         measurements["_per_elevation_breakdown"] = breakdown["per_elevation"]
         measurements["_per_profile_sqft"] = breakdown["per_profile_sqft"]
+        # Iter 79j.71 — composition trace + tripwires. The catalog mapper
+        # amber-flags any family listed in conflicts instead of printing
+        # a quantity.
+        measurements["_per_profile_composition"] = breakdown.get("composition") or {}
+        measurements["_profile_composition_conflicts"] = breakdown.get("conflicts") or []
+        if breakdown.get("skipped_echo_accents"):
+            measurements["_skipped_echo_accents"] = breakdown["skipped_echo_accents"]
+        if breakdown.get("malformed_accents"):
+            measurements["_malformed_accents"] = breakdown["malformed_accents"]
     except Exception:
         # Never let the breakdown helper block a successful measurement
         # response — Claude's wall data may have unusual shapes from old
