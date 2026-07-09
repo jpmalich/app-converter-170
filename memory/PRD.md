@@ -2272,3 +2272,14 @@ Howard promoted this ahead of the ranch run: "a real regression can't hide among
 ### Roadmap update per Howard
 - "Where every ft² comes from" composition expander in Breakdown card: QUEUED right behind Three.js PNG → PDF work (transparency = the material-quantity twin of Tape Check; uses `_per_profile_composition` already persisted per run).
 - Run 4 stale composition: confirmed NO re-apply needed; tape-truth panel edits stand; new math proves itself on the ranch.
+
+## Iter 79j.73 — Run Readiness checklist (2026-07-09)
+Generic pre-run checklist for ANY new property, written once for two audiences (field SOP + first-house contractor onboarding), per Howard's spec.
+### Component: `/app/frontend/src/components/estimate/RunReadinessChecklist.jsx`
+Rendered at the top of the AI Measure modal's pre-run (photo) screen (`!preview` branch in AIMeasureButton). Collapsible, N/7 ready chip, header tagline "Same checklist every property — first house or fiftieth".
+- **Auto-detected (3):** calibration exposure entered (amber when empty — points to the Calibrate control); Tape Check pre-filled (GET /estimates/{id}/tape-check, shows n/4 walls, "scoring is one click after the run"); profile boxes location-tagged (counts untagged boxes; neutral when zero boxes).
+- **Manual, persisted per estimate in localStorage `runReadiness:{estimateId}` (4):** siding exposure MEASURED on this house ("Never assume 3.75″ — the most-assumed number in siding", the trap named explicitly); WALL REF per elevation on the wall's OWN plane (cross-plane rejection warning); WIN_REFs on dormers/upper features; bottom courses visible (SOP).
+- Onboarding modal got a closing note pointing to the checklist as the per-property SOP (single source, both audiences).
+- data-testids: run-readiness-checklist / -toggle / -count / -item-{key} / -check-{key}.
+### Testing
+Screenshot-verified on a fresh estimate: renders 7 items, amber states for missing calibration + empty tape, checkbox tick persisted and chip updated 2/7. Smoke-test estimate deleted after. Frontend compiles clean.

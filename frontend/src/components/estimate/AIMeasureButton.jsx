@@ -29,6 +29,7 @@ import { renderAnnotated, describeAnnotations } from "@/lib/photoAnnotate";
 import { buildElevationsFromAIMeasure } from "@/lib/elevationBuilder";
 // Iter 78z (P1.3) — Per-Elevation Breakdown card + "+ Add Accent" override
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
+import RunReadinessChecklist from "@/components/estimate/RunReadinessChecklist";
 import { printTakeoff } from "@/lib/printTakeoff";
 // Iter 79j.22 — 3D House Model view (parametric Three.js render from raw_ai)
 import HouseModel3D from "@/components/estimate/HouseModel3D";
@@ -2328,6 +2329,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       You can re-open this checklist any time from the <b>Tips</b> button in
                       the AI Measure header.
                     </div>
+                    <div
+                      className="text-[10px] text-[var(--ink)] pt-1"
+                      data-testid="ai-measure-onboarding-run-readiness-note"
+                    >
+                      <b>Every property after this one:</b> the <b>Run Readiness</b> checklist
+                      at the top of the photo screen is the per-property SOP — the same short
+                      list whether it&apos;s your first house or your fiftieth.
+                    </div>
                   </div>
                   <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-end gap-2">
                     <button
@@ -3006,6 +3015,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
               {!preview && (
                 <>
+                  {/* Iter 79j.73 — pre-run readiness checklist (dual
+                      audience: field SOP + first-house onboarding). */}
+                  <RunReadinessChecklist
+                    estimateId={estimateId}
+                    sidingExposure={sidingExposure}
+                    annotations={savedProfileAnnotations}
+                  />
                   {/* File picker */}
                   <label className="block mb-3">
                     <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
