@@ -235,9 +235,15 @@ function buildHouseJson(preview, overrides, estimate) {
     (acc[k] = acc[k] || []).push(o);
     return acc;
   }, {});
-  // True per-wall X-positioning using photo bbox (Iter 79j.27). If a
-  // bbox is present, use its X center as a fraction of the wall width;
-  // otherwise fall back to even auto-spacing so nothing regresses.
+  // True per-wall X-positioning (Iter 79j.70): along_wall_ft (wall-local
+  // ft, reconciler-verified center from left corner) outranks the photo
+  // bbox X-fraction (assumes wall spans the whole frame); even spacing
+  // is the last resort. Y still comes from the bbox when present.
+  // hasBbox: text-only reconciler runs used to emit {0,0,0,0}
+  // placeholders which put every opening at the wall corner — a bbox is
+  // only trustworthy when it has real area.
+  const hasBbox = (b) => !!b && Number.isFinite(b.x) && Number.isFinite(b.y)
+    && Number.isFinite(b.w) && Number.isFinite(b.h) && b.w > 0 && b.h > 0;
   const autoSpace = (list, wallWidth, wallHeight) => {
     if (!list?.length) return [];
     const n = list.length;
@@ -247,12 +253,13 @@ function buildHouseJson(preview, overrides, estimate) {
       // Iter 79j.28 — true Y positioning from bbox. Photo Y origin is
       // top-left, so worldY (from ground) = wallHeight × (1 − photoY).
       // Doors that Claude bbox'd near the floor land at Y≈0 naturally.
-      const bboxCx = o.bbox && Number.isFinite(o.bbox.x) && Number.isFinite(o.bbox.w)
+      const bboxCx = hasBbox(o.bbox)
         ? Math.min(1, Math.max(0, o.bbox.x + o.bbox.w / 2))
         : null;
-      const bboxCy = o.bbox && Number.isFinite(o.bbox.y) && Number.isFinite(o.bbox.h)
+      const bboxCy = hasBbox(o.bbox)
         ? Math.min(1, Math.max(0, o.bbox.y + o.bbox.h / 2))
         : null;
+      const alongFt = Number.isFinite(o.along_wall_ft) ? o.along_wall_ft : null;
       const isDoor = (o.type || "").toLowerCase().includes("door");
       // Fallback Y (no bbox): entry/patio/garage doors at floor, windows at 3.2ft.
       const fallbackY = isDoor ? 0 : 3.2;
@@ -260,7 +267,9 @@ function buildHouseJson(preview, overrides, estimate) {
         ? Math.max(0, Math.min(wallHeight - h, wallHeight * (1 - bboxCy) - h / 2))
         : fallbackY;
       const slot = wallWidth / n;
-      const cx = bboxCx != null ? bboxCx * wallWidth : slot * (i + 0.5);
+      const cx = alongFt != null
+        ? alongFt
+        : bboxCx != null ? bboxCx * wallWidth : slot * (i + 0.5);
       return {
         type: (o.type || "window").toLowerCase(),
         style: o.style,
@@ -334,28 +343,41 @@ function buildHouseJson(preview, overrides, estimate) {
   // "face" wall runs parallel to the ridge, so its width equals the
   // ridge-parallel footprint dimension.
   const dormerFaceWallWidth = ridgeAxis === "x" ? footprintW : footprintD;
-  // Position each dormer opening on its face using bbox.x when available.
-  // Vertical position on the face is derived from bbox.y relative to the
-  // dormer face's height range (mainRoofY at zFace ↔ faceTop).
+  // Position each dormer opening on its face: along_wall_ft (wall-local
+  // ft) preferred, then bbox X-fraction, then face center. Vertical
+  // position is derived from bbox.y relative to the dormer face's
+  // height range (mainRoofY at zFace ↔ faceTop). Iter 79j.70 — each
+  // opening also carries `dormerFace` (backend `dormer_face`, falling
+  // back to its wall label) so resolveDormer can route it to the
+  // correct dormer instead of piling everything on the primary.
   const dormerOpeningsPositioned = dormerOpeningsRaw.map((o) => {
     const w = (o.width_in || 30) / 12;
     const h = (o.height_in || 42) / 12;
-    const bboxCenter = o.bbox && Number.isFinite(o.bbox.x) && Number.isFinite(o.bbox.w)
+    const bboxCenter = hasBbox(o.bbox)
       ? Math.min(1, Math.max(0, o.bbox.x + o.bbox.w / 2))
-      : 0.5;
-    const bboxCy = o.bbox && Number.isFinite(o.bbox.y) && Number.isFinite(o.bbox.h)
+      : null;
+    const bboxCy = hasBbox(o.bbox)
       ? Math.min(1, Math.max(0, o.bbox.y + o.bbox.h / 2))
       : null;
-    const cxOnWall = bboxCenter * dormerFaceWallWidth;
+    const alongFt = Number.isFinite(o.along_wall_ft) ? o.along_wall_ft : null;
+    const cxOnWall = alongFt != null
+      ? alongFt
+      : bboxCenter != null
+      ? bboxCenter * dormerFaceWallWidth
+      : dormerFaceWallWidth / 2;
     return {
       w, h,
       cxOnWall,           // center X in wall-local coords, 0 = left edge of wall
       bboxCy,             // vertical fraction on the photo (null → default center)
+      dormerFace: String(o.dormer_face || o.wall || "").toLowerCase() || null,
       type: (o.type || "window").toLowerCase(),
       style: o.style,
       confidence: o.style_confidence ?? o.confidence ?? null,
     };
   });
+  // Iter 79j.70 — routing is only trusted when at least one opening
+  // carries a face label; otherwise legacy behavior (all → primary).
+  const dormerRoutingActive = dormerOpeningsPositioned.some((op) => op.dormerFace);
 
   // Iter 79j.44 — Per-dormer resolver. Each dormer in aiDormersList
   // gets independently resolved: its OWN width_ft, width_source,
@@ -402,15 +424,23 @@ function buildHouseJson(preview, overrides, estimate) {
       : ad?.width_ft
       ? "ai"
       : "default";
+    // Iter 79j.70 — Per-dormer bbox routing. Openings whose face label
+    // migrates to THIS dormer's slope render on it; face-less orphans
+    // stay on the primary dormer. When no opening carries a face label
+    // (legacy runs) the primary keeps everything, as before.
+    const routedHere = dormerRoutingActive
+      ? dormerOpeningsPositioned.filter((op) => op.dormerFace && migrateFace(op.dormerFace) === face)
+      : [];
+    const orphans = dormerRoutingActive
+      ? dormerOpeningsPositioned.filter((op) => !op.dormerFace)
+      : dormerOpeningsPositioned;
     return {
       face,
       width,
       widthSource,
       kneeWallHeight,
       offsetX,
-      // Only the primary dormer receives the on_dormer opening list
-      // for now (bbox-to-dormer routing is a follow-up).
-      openings: i === 0 ? dormerOpeningsPositioned : [],
+      openings: i === 0 ? routedHere.concat(orphans) : routedHere,
       faceWallWidth: dormerFaceWallWidth,
       _aiIndex: i,
       _reconciliationNote: ad?._reconciliation_note || null,
@@ -691,7 +721,16 @@ function buildShedDormer(scene, house, roofMat, wallMat, openingMats, roofRise, 
 
   // 2) Dormer openings on the face
   const dormerOpenings = d.openings || [];
-  const worldXForOpening = (o) => (o.cxOnWall - (d.faceWallWidth || spanTotal) / 2);
+  // Iter 79j.70 — clamp each opening inside the dormer face extent
+  // (cv ± halfWD) so a wall-coordinate cx can't strand a window out on
+  // the main roof plane.
+  const worldXForOpening = (o) => {
+    const raw = o.cxOnWall - (d.faceWallWidth || spanTotal) / 2;
+    const lo = cv - halfWD + o.w / 2 + 0.2;
+    const hi = cv + halfWD - o.w / 2 - 0.2;
+    if (lo > hi) return cv;
+    return Math.max(lo, Math.min(hi, raw));
+  };
   const faceHeightRange = faceTopY - faceBottomY;
   dormerOpenings.forEach((o) => {
     const wv = worldXForOpening(o);

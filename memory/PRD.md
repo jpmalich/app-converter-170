@@ -2215,3 +2215,27 @@ Summary line at the top of the tile:
 3. **Wave HUD** (during Phase A) — per-photo dots + contractor-plain status
 4. **Amber gap banner + Rule 4 flag** (after running) — per-hint re-shoot copy for unanchored dormer widths + missing elevations + dormer pins on empty photos
 
+
+## Iter 79j.69 — Run 4 verdict (91.3%) + pricing suite repaired (2026-07-09)
+- Re-validation run (swapped right photo) scored **91.3%**: left 9.4 amber (tape 10.31), right 8.1 amber/count (tape 7.19, mode flipped cross-plane→count — new prompt rules VERIFIED), left dormer 17 fail (tape 15), right dormer 15 pass. First no-fail wall result.
+- Howard's ruling: red-house prompt iteration CLOSED. Candidate shelf: "when courses uncountable, weight same-plane ref scaling over generic pixel reads" — test against NEXT house (the ranch), not this one.
+- Pricing tests fixed (staged in /tmp during code freeze, applied post-terminal, zero mid-run reloads): admin token now read from backend/.env via dotenv_values (was defaulting to fake token → 403s); `test_admin_get_matrix_requires_token` now sends NO headers; stale hardcoded Mezzo 259.608 replaced with live-DB parity asserts; Starter parity lock 7.46→7.64. **44/44 pricing tests green** (was 11 failing).
+- LESSON: uvicorn --reload watches /app/backend/tests/ too — editing test files DOES restart the backend and kills in-flight asyncio runs.
+
+## Iter 79j.70 — Per-dormer bbox routing + true bbox-derived opening positions (2026-07-09)
+### Root cause (pre-flight confirmed)
+Phase A DOES emit real pixel bboxes per opening — no regression. `_slim_extraction_for_reconcile` strips them from the text-only reconciler payload, so Phase B can only emit {0,0,0,0} placeholders (its own note admitted this). Frontend treated 0 as a finite coordinate → every opening piled at the wall corner/top = "scattered openings".
+### Backend (`routes/ai_measure.py`)
+- New `_restore_bboxes_from_phase_a(final, extractions)`: post-reconcile join of final openings back to Phase A pixel bboxes. Match order: exact opening_id → reconciler-suffixed id (`right-w1-p6`→`right-w1`) → positional (type + along_wall ±3ft + width ±12in). Normalizes by compressed-photo dims; sets `bbox` (normalized), `bbox_photo_idx`, `_bbox_source`. Unmatched zero-bboxes → `bbox: null`.
+- Per-photo dims (`_image_w`/`_image_h`) stamped on extractions before raw_per_photo persist (underscore keys auto-stripped from reconciler payload; persists for reconcile-only retries).
+- On-dormer openings get `dormer_face` routed via wall label match → dormer `_source_photo_indices` fallback.
+- Called in `_run_two_phase_pipeline` (before return) AND `_execute_reconcile_only_worker`.
+### Frontend (`HouseModel3D.jsx`)
+- `hasBbox()` guard: bbox only trusted with real area (w>0,h>0) — legacy zero-placeholders now ignored.
+- X-positioning priority: `along_wall_ft` (wall-local ft, reconciler-verified center) > bbox X-fraction > even spacing. Y still bbox-derived.
+- Per-dormer routing live: openings route to dormer whose `migrateFace(dormerFace)` matches; face-less orphans stay on primary; legacy (no faces) keeps all-to-primary.
+- Dormer openings clamped inside face extent (cv ± halfWD).
+### Testing
+- `tests/test_bbox_restore_iter70.py` — 7 tests (id/suffix/positional match, zero-drop, no-dims drop, dormer routing) all pass. 66 pipeline regression tests pass. Screenshot-verified 3D: windows spread along walls, both dormers render their own windows.
+- NOTE: full E2E of backend restore path needs the NEXT AI run (ranch) — existing run 4 raw_per_photo lacks `_image_w/_image_h` stamps.
+### Gate order next: Three.js static PNG → embed in Customer Quote PDF.

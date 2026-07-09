@@ -2576,6 +2576,7 @@ async def _execute_reconcile_only_worker(
         # Downstream code (frontend, apply-measurements) reads
         # `result.raw_ai` + `result.measurements` — we produce both
         # via the same aggregator the main worker uses.
+        _restore_bboxes_from_phase_a(final, extractions)
         measurements = _aggregate_to_hover_shape(final, annotations=[])
         result = {
             "raw_ai": final,
@@ -4700,6 +4701,130 @@ def _slim_extraction_for_reconcile(ex: dict) -> dict:
     return slim
 
 
+def _restore_bboxes_from_phase_a(final: dict, extractions: list[dict]) -> None:
+    """Iter 79j.70 — Re-join reconciled openings to their Phase A pixel
+    bboxes. The reconciler is text-only (bboxes are stripped from its
+    payload by `_slim_extraction_for_reconcile`) so it can only emit
+    0-placeholders. Phase A DID localize each opening in pixel space;
+    normalize those boxes by the compressed-photo dims stamped at
+    extraction time (`_image_w`/`_image_h`) and put the real coordinates
+    back on the final openings. Also routes each on_dormer opening to
+    its dormer face (`dormer_face`) so the 3D model can place dormer
+    windows on the correct dormer instead of piling them on the primary.
+    Mutates `final` in place; never raises."""
+    openings = final.get("openings")
+    if not isinstance(openings, list):
+        return
+    by_photo: dict[int, list[dict]] = {}
+    dims: dict[int, tuple[float, float]] = {}
+    for e in extractions or []:
+        if not isinstance(e, dict):
+            continue
+        idx = e.get("_photo_idx", e.get("index"))
+        if not isinstance(idx, int):
+            continue
+        by_photo[idx] = [o for o in (e.get("openings_this_photo") or []) if isinstance(o, dict)]
+        w, h = e.get("_image_w"), e.get("_image_h")
+        if isinstance(w, (int, float)) and isinstance(h, (int, float)) and w > 0 and h > 0:
+            dims[idx] = (float(w), float(h))
+
+    def _px_bbox(o: dict):
+        b = o.get("bbox")
+        if isinstance(b, (list, tuple)) and len(b) == 4:
+            x, y, w, h = b
+            if all(isinstance(v, (int, float)) for v in (x, y, w, h)) and w > 0 and h > 0:
+                return float(x), float(y), float(w), float(h)
+        return None
+
+    def _match_in_photo(op: dict, photo_idx: int):
+        cands = by_photo.get(photo_idx) or []
+        oid = str(op.get("opening_id") or "")
+        # The reconciler sometimes suffixes ids it kept from a non-primary
+        # photo (e.g. "right-w1-p6" from photo 6's "right-w1").
+        stripped = re.sub(r"-p\d+$", "", oid)
+        for want in ((oid,) if oid == stripped else (oid, stripped)):
+            for c in cands:
+                if str(c.get("opening_id") or "") == want and _px_bbox(c):
+                    return c, "id"
+        # Positional fallback: same type, along_wall within 3 ft, width within 12 in.
+        typ = (op.get("type") or "").lower()
+        along = op.get("along_wall_ft")
+        width = op.get("width_in")
+        best, best_d = None, None
+        for c in cands:
+            if (c.get("type") or "").lower() != typ or not _px_bbox(c):
+                continue
+            c_along, c_width = c.get("along_wall_ft"), c.get("width_in")
+            if along is None or c_along is None:
+                continue
+            d = abs(float(along) - float(c_along))
+            if d <= 3.0 and (width is None or c_width is None or abs(float(width) - float(c_width)) <= 12):
+                if best_d is None or d < best_d:
+                    best, best_d = c, d
+        return (best, "position") if best else (None, None)
+
+    for op in openings:
+        if not isinstance(op, dict):
+            continue
+        candidates: list[int] = []
+        pi = op.get("photo_idx")
+        if isinstance(pi, int):
+            candidates.append(pi)
+        for s in (op.get("_source_photo_indices") or []):
+            if isinstance(s, int) and s not in candidates:
+                candidates.append(s)
+        restored = False
+        for photo_idx in candidates:
+            if photo_idx not in dims:
+                continue
+            src, how = _match_in_photo(op, photo_idx)
+            if not src:
+                continue
+            x, y, w, h = _px_bbox(src)
+            iw, ih = dims[photo_idx]
+            op["bbox"] = {
+                "x": max(0.0, min(1.0, x / iw)),
+                "y": max(0.0, min(1.0, y / ih)),
+                "w": max(0.0, min(1.0, w / iw)),
+                "h": max(0.0, min(1.0, h / ih)),
+            }
+            op["bbox_photo_idx"] = photo_idx
+            op["_bbox_source"] = f"phase_a_{how}"
+            restored = True
+            break
+        if not restored:
+            b = op.get("bbox")
+            # Zero-placeholder from the text-only reconciler → drop it so
+            # the frontend falls back to along_wall_ft / auto-spacing
+            # instead of piling every opening at the wall corner.
+            if isinstance(b, dict) and not (float(b.get("w") or 0) > 0 and float(b.get("h") or 0) > 0):
+                op["bbox"] = None
+
+    dormers = final.get("dormers") if isinstance(final.get("dormers"), list) else []
+    if not dormers:
+        return
+    face_set = {str(d.get("face") or "").lower() for d in dormers if isinstance(d, dict)}
+    photo_to_face: dict[int, str] = {}
+    for d in dormers:
+        if not isinstance(d, dict):
+            continue
+        f = str(d.get("face") or "").lower()
+        for s in (d.get("_source_photo_indices") or []):
+            if isinstance(s, int):
+                photo_to_face.setdefault(s, f)
+    for op in openings:
+        if not isinstance(op, dict) or not op.get("on_dormer"):
+            continue
+        wall = str(op.get("wall") or "").lower()
+        if wall in face_set:
+            op["dormer_face"] = wall
+            continue
+        for photo_idx in [op.get("photo_idx")] + list(op.get("_source_photo_indices") or []):
+            if isinstance(photo_idx, int) and photo_idx in photo_to_face:
+                op["dormer_face"] = photo_to_face[photo_idx]
+                break
+
+
 async def _run_two_phase_pipeline(
     *,
     run_id: str,
@@ -5042,6 +5167,18 @@ async def _run_two_phase_pipeline(
         {"front", "back", "left", "right"} - all_covered_walls
     )
 
+    # Iter 79j.70 — Stamp compressed-photo dims on each extraction so
+    # bbox restore (including reconcile-only retries reading persisted
+    # raw_per_photo) can normalize Phase A pixel bboxes. Underscore
+    # keys are auto-stripped from the reconciler payload.
+    for _idx, _ex in enumerate(extractions):
+        if isinstance(_ex, dict) and "_image_w" not in _ex and _idx < len(shrunk_payloads):
+            try:
+                with Image.open(io.BytesIO(shrunk_payloads[_idx][1])) as _im:
+                    _ex["_image_w"], _ex["_image_h"] = _im.size
+            except Exception:
+                pass
+
     # Persist Phase A immediately — even if Phase B fails downstream,
     # the Debug view still has the per-photo data to show.
     await db.ai_measure_runs.update_one(
@@ -5120,6 +5257,7 @@ async def _run_two_phase_pipeline(
     )
     if pin_hints:
         final["_pin_gap_hints"] = pin_hints
+    _restore_bboxes_from_phase_a(final, extractions)
     return final, extractions
 
 
