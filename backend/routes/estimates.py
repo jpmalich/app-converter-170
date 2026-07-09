@@ -614,6 +614,70 @@ async def set_profile_annotations(
 # Verdicts: |Δ| ≤ 0.5 ft = pass · ≤ 1.0 = amber · > 1.0 = fail
 # ---------------------------------------------------------------------------
 _TAPE_WALL_LABELS = ("front", "back", "left", "right")
+_TAPE_START_REFS = ("grade", "foundation_top", "brick_ledge", "siding_start")
+
+
+def _parse_tape_wall(label: str, v):
+    """Iter 79j.76 — a tape wall is a number (legacy), null, or a stepped
+    object: {"segments": [{"height_ft": 9.2, "courses": 26}, ...],
+    "start_ref": "siding_start"}. On unfinished-grade new construction
+    the siding start-line staircases around the building, so 'wall
+    height' is a per-segment quantity (Letrick fixture; red house
+    stepped wall). Returns the normalized stored value or raises."""
+    if v in (None, ""):
+        return None
+    if isinstance(v, (int, float, str)):
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail=f"walls.{label} must be a number or segments object")
+        if not (1.0 <= fv <= 60.0):
+            raise HTTPException(status_code=400, detail=f"walls.{label} out of range (1-60 ft)")
+        return round(fv, 4)
+    if isinstance(v, dict):
+        segs_in = v.get("segments") or []
+        if not isinstance(segs_in, list) or not (1 <= len(segs_in) <= 4):
+            raise HTTPException(status_code=400, detail=f"walls.{label}.segments must be a list of 1-4 entries")
+        segs = []
+        for s in segs_in:
+            if not isinstance(s, dict):
+                raise HTTPException(status_code=400, detail=f"walls.{label}.segments entries must be objects")
+            try:
+                h = float(s.get("height_ft"))
+            except (TypeError, ValueError):
+                raise HTTPException(status_code=400, detail=f"walls.{label} segment height_ft must be a number")
+            if not (1.0 <= h <= 60.0):
+                raise HTTPException(status_code=400, detail=f"walls.{label} segment height out of range (1-60 ft)")
+            seg = {"height_ft": round(h, 4)}
+            if s.get("courses") not in (None, ""):
+                try:
+                    cv = int(s["courses"])
+                except (TypeError, ValueError):
+                    raise HTTPException(status_code=400, detail=f"walls.{label} segment courses must be an integer")
+                if not (1 <= cv <= 200):
+                    raise HTTPException(status_code=400, detail=f"walls.{label} segment courses out of range")
+                seg["courses"] = cv
+            segs.append(seg)
+        out = {"segments": segs}
+        sr = v.get("start_ref")
+        if sr:
+            if sr not in _TAPE_START_REFS:
+                raise HTTPException(status_code=400, detail=f"walls.{label}.start_ref must be one of {_TAPE_START_REFS}")
+            out["start_ref"] = sr
+        return out
+    raise HTTPException(status_code=400, detail=f"walls.{label} must be a number, null, or segments object")
+
+
+def _tape_wall_values(v):
+    """Normalize a stored tape wall to (heights list, start_ref, stepped)."""
+    if v is None:
+        return [], None, False
+    if isinstance(v, (int, float)):
+        return [float(v)], None, False
+    if isinstance(v, dict):
+        heights = [float(s["height_ft"]) for s in (v.get("segments") or []) if s.get("height_ft") is not None]
+        return heights, v.get("start_ref"), len(heights) > 1
+    return [], None, False
 
 
 def _tape_verdict(delta: float) -> str:
@@ -655,17 +719,7 @@ async def set_tape_check(
         raise HTTPException(status_code=400, detail="'walls' must be an object")
     walls: dict = {}
     for label in _TAPE_WALL_LABELS:
-        v = walls_in.get(label)
-        if v in (None, ""):
-            walls[label] = None
-            continue
-        try:
-            fv = float(v)
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=400, detail=f"walls.{label} must be a number")
-        if not (1.0 <= fv <= 60.0):
-            raise HTTPException(status_code=400, detail=f"walls.{label} out of range (1-60 ft)")
-        walls[label] = round(fv, 4)
+        walls[label] = _parse_tape_wall(label, walls_in.get(label))
     dormers_in = payload.get("dormers") or []
     if not isinstance(dormers_in, list):
         raise HTTPException(status_code=400, detail="'dormers' must be a list")
@@ -754,20 +808,36 @@ async def score_tape_check(
     deltas_rel: list[float] = []
     passes = ambers = fails = 0
     for label in _TAPE_WALL_LABELS:
-        tape_v = tape_walls.get(label)
+        heights, start_ref, stepped = _tape_wall_values(tape_walls.get(label))
         ai_w = ai_walls.get(label)
         ai_v = float(ai_w.get("height_ft") or 0) if ai_w else 0.0
-        if tape_v is None or ai_v <= 0:
+        if not heights or ai_v <= 0:
             continue
-        delta = round(ai_v - float(tape_v), 2)
+        # Iter 79j.76 — stepped walls score against the segment RANGE:
+        # neither the tape nor the AI is "wrong" for reading a different
+        # segment of the same staircased start-line. Inside the range =
+        # pass (delta 0); outside = delta to the nearest bound.
+        lo, hi = min(heights), max(heights)
+        if lo <= ai_v <= hi:
+            delta = 0.0
+            nearest = ai_v
+        else:
+            nearest = hi if ai_v > hi else lo
+            delta = round(ai_v - nearest, 2)
         verdict = _tape_verdict(delta)
-        wall_rows[label] = {
-            "ai": round(ai_v, 2), "tape": float(tape_v),
+        row = {
+            "ai": round(ai_v, 2), "tape": nearest if stepped else heights[0],
             "delta": delta, "verdict": verdict,
             "source": ai_w.get("height_ft_source") or "",
             "mode": _wall_mode(ai_w),
         }
-        deltas_rel.append(abs(delta) / float(tape_v))
+        if stepped:
+            row["tape_segments"] = heights
+            row["stepped"] = True
+        if start_ref:
+            row["start_ref"] = start_ref
+        wall_rows[label] = row
+        deltas_rel.append(abs(delta) / (nearest if nearest > 0 else heights[0]))
         passes += verdict == "pass"
         ambers += verdict == "amber"
         fails += verdict == "fail"

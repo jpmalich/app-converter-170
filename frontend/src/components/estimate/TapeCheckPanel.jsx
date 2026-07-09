@@ -60,6 +60,13 @@ const ModeTag = ({ mode }) => {
 export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) {
   const [expanded, setExpanded] = useState(false);
   const [tape, setTape] = useState({ front: "", back: "", left: "", right: "" });
+  // Iter 79j.76 — stepped walls: on unfinished-grade new construction the
+  // siding start-line staircases, so a wall can carry two corner-to-corner
+  // readings. start line (grade / foundation top / brick ledge / siding
+  // start) is recorded so counts with different references don't fight.
+  const [tape2, setTape2] = useState({ front: "", back: "", left: "", right: "" });
+  const [steppedW, setSteppedW] = useState({ front: false, back: false, left: false, right: false });
+  const [startRef, setStartRef] = useState("");
   const [tapeDormers, setTapeDormers] = useState({}); // face → width string
   const [history, setHistory] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -73,10 +80,24 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
         const { data } = await api.get(`/estimates/${estimateId}/tape-check`);
         if (cancelled) return;
         const w = data.walls || {};
-        setTape({
-          front: w.front ?? "", back: w.back ?? "",
-          left: w.left ?? "", right: w.right ?? "",
+        const t1 = {}, t2 = {}, st = {};
+        let sr = "";
+        WALLS.forEach((k) => {
+          const v = w[k];
+          if (v && typeof v === "object") {
+            const segs = v.segments || [];
+            t1[k] = segs[0]?.height_ft ?? "";
+            t2[k] = segs[1]?.height_ft ?? "";
+            st[k] = segs.length > 1;
+            if (v.start_ref) sr = v.start_ref;
+          } else {
+            t1[k] = v ?? "";
+            t2[k] = "";
+            st[k] = false;
+          }
         });
+        setTape(t1); setTape2(t2); setSteppedW(st);
+        if (sr) setStartRef(sr);
         const dd = {};
         (data.dormers || []).forEach((d) => { dd[d.face] = d.width_ft; });
         setTapeDormers(dd);
@@ -101,7 +122,17 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
     setBusy(true);
     try {
       await api.put(`/estimates/${estimateId}/tape-check`, {
-        walls: Object.fromEntries(WALLS.map((k) => [k, tape[k] === "" ? null : Number(tape[k])])),
+        walls: Object.fromEntries(WALLS.map((k) => {
+          if (tape[k] === "") return [k, null];
+          const seg1 = { height_ft: Number(tape[k]) };
+          if (steppedW[k] && tape2[k] !== "") {
+            const obj = { segments: [seg1, { height_ft: Number(tape2[k]) }] };
+            if (startRef) obj.start_ref = startRef;
+            return [k, obj];
+          }
+          if (startRef) return [k, { segments: [seg1], start_ref: startRef }];
+          return [k, Number(tape[k])];
+        })),
         dormers: Object.entries(tapeDormers)
           .filter(([, v]) => v !== "" && v != null)
           .map(([face, width_ft]) => ({ face, width_ft: Number(width_ft) })),
@@ -149,6 +180,22 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
         <>
           <div className="text-[10px] text-[var(--muted)] leading-snug">
             Enter taped eave heights (ft). Values persist on this estimate and every run scores against them.
+            Use <b>⇢</b> when a wall's start-line steps (stepped foundation) — the AI scores against the segment range.
+          </div>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="text-[var(--muted)] uppercase text-[9px] font-bold tracking-wider">Start line</span>
+            <select
+              value={startRef}
+              onChange={(e) => setStartRef(e.target.value)}
+              className="px-1 py-0.5 border border-[var(--border)] text-[10px] bg-white"
+              data-testid="tape-check-start-ref"
+            >
+              <option value="">— not recorded —</option>
+              <option value="grade">grade</option>
+              <option value="foundation_top">foundation top</option>
+              <option value="brick_ledge">brick ledge</option>
+              <option value="siding_start">siding start</option>
+            </select>
           </div>
           {WALLS.map((w) => {
             const f = (facades || []).find((x) => x.id === w);
@@ -168,8 +215,33 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                   style={{ width: "4.5rem" }}
                   data-testid={`tape-check-input-${w}`}
                 />
+                <button
+                  type="button"
+                  onClick={() => setSteppedW((s) => ({ ...s, [w]: !s[w] }))}
+                  className={`px-1 py-0.5 text-[10px] border ${steppedW[w] ? "bg-[var(--ai)] text-white border-[var(--ai)]" : "text-[var(--muted)] border-[var(--border)]"}`}
+                  title="Stepped wall — add a second corner-to-corner reading"
+                  data-testid={`tape-check-stepped-toggle-${w}`}
+                >
+                  ⇢
+                </button>
+                {steppedW[w] && (
+                  <input
+                    type="number" step="0.01" min="1" max="60"
+                    placeholder="seg 2"
+                    value={tape2[w]}
+                    onChange={(e) => setTape2((t) => ({ ...t, [w]: e.target.value }))}
+                    className="px-1.5 py-0.5 border border-[var(--border)] font-mono-num text-right text-[11px]"
+                    style={{ width: "4.5rem" }}
+                    data-testid={`tape-check-input2-${w}`}
+                  />
+                )}
                 <span data-testid={`tape-check-verdict-${w}`} className="inline-flex items-center gap-1">
                   <VerdictChip verdict={row?.verdict} delta={row?.delta} />
+                  {row?.stepped && (
+                    <span className="text-[9px] text-[var(--muted)]" title={`scored against range ${Math.min(...(row.tape_segments || [0]))}–${Math.max(...(row.tape_segments || [0]))} ft`}>
+                      ⇢ range
+                    </span>
+                  )}
                   {row?.mode && <span data-testid={`tape-check-mode-${w}`}><ModeTag mode={row.mode} /></span>}
                 </span>
               </div>
