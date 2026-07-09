@@ -12,6 +12,7 @@ import React, { useMemo, useState } from "react";
 import { Plus, X, AlertTriangle, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import CompositionTrace from "@/components/estimate/CompositionTrace";
 
 const PROFILE_LABELS = {
   lap:          "Lap",
@@ -577,6 +578,13 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
           </>
         )}
       </p>
+      {/* Iter 79j.75 — per-surface composition trace, one owner each. */}
+      <CompositionTrace
+        perElevation={perElevation}
+        conflicts={measurements?._profile_composition_conflicts}
+        sidingFamilies={SIDING_FAMILIES}
+        profileLabels={PROFILE_LABELS}
+      />
       {/* Iter 78z (Cross-Check) — Recheck results panel */}
       {recheck && (recheck.conflicts?.length > 0 || recheck.suggested_accents?.length > 0) && (
         <div

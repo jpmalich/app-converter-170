@@ -2295,3 +2295,15 @@ Screenshot-verified on a fresh estimate: renders 7 items, amber states for missi
 - NOTE: `DELETE /api/estimates/{id}` exists and is used by tests for cleanup.
 ### Lesson
 An earlier search_replace of the HouseModel3D render site reported success but was later found absent — ALWAYS grep-verify critical prop wiring after batch edits.
+
+## Iter 79j.75 — "Where every ft² comes from" composition expander (2026-07-09) [GATE TASK SHIPPED]
+The shake audit as a permanent self-service tool — material-quantity twin of the Tape Check panel.
+### Component: `/app/frontend/src/components/estimate/CompositionTrace.jsx`
+Collapsible expander inside PerElevationBreakdownCard (below the description, above the cross-check panel). Header: "Where every ft² comes from · Each surface once, one owner each". Per family: total ft² + surface count, then a row per surface (elevation · surface · ft² · owner). Owners: AI geometry / AI geometry·your profile (user: callouts) / your annotation box (_source=annotation) / manual accent / AI accent.
+### Design decision
+Trace is recomputed CLIENT-SIDE from the live `_per_elevation_breakdown` (not the run-time `_per_profile_composition`) so it stays true through chip swaps and added accents, and works on pre-iter-71 runs. Run-time `_profile_composition_conflicts` render as amber banners ("quote line amber-flagged qty 0 until verified"); client-side duplicate (elevation,surface) detection for body/gable/dormer adds its own amber rows.
+### Testing
+Playwright on a throwaway estimate+session seeded from run f423c216's stored result: expander renders LAP 1327.6 = 6 surfaces, SHAKE 584.3 = 13 surfaces with owners — on that pre-fix run the echo accents are visibly identifiable, which is the audit intent. Fixtures deleted after. Frontend compiles clean.
+### Roadmap updates per Howard
+- Accept-page interactive 3D MERGES with the queued photo/3D side-by-side as ONE block. Constraints: read-only (no panels/numbers a homeowner could misread as editable — just their house, orbiting) + graceful degradation to the static PNG on weak phones. Queued post-gate.
+- Gate remainder: accuracy sparkline (floor: ≥3 runs, always paired with current score, never trend alone) → then the RANCH RUN outranks everything.
