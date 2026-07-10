@@ -267,7 +267,18 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                   />
                 )}
                 <span data-testid={`tape-check-verdict-${w}`} className="inline-flex items-center gap-1">
-                  <VerdictChip verdict={row?.verdict} delta={row?.delta} />
+                  {row?.imputed ? (
+                    <span
+                      className="text-[9px] font-bold px-1 py-0.5 border"
+                      style={{ background: "#F1F5F9", color: "#475569", borderColor: "#CBD5E1" }}
+                      title="No valid AI read for this wall in the scored run — the pipeline imputed a placeholder. Excluded from scoring."
+                      data-testid={`tape-check-imputed-${w}`}
+                    >
+                      unread
+                    </span>
+                  ) : (
+                    <VerdictChip verdict={row?.verdict} delta={row?.delta} />
+                  )}
                   {row?.stepped && (
                     <span className="text-[9px] text-[var(--muted)]" title={`scored against range ${Math.min(...(row.tape_segments || [0]))}–${Math.max(...(row.tape_segments || [0]))} ft`}>
                       ⇢ range

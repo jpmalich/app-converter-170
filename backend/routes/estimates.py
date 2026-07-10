@@ -813,6 +813,24 @@ async def score_tape_check(
         ai_v = float(ai_w.get("height_ft") or 0) if ai_w else 0.0
         if not heights or ai_v <= 0:
             continue
+        # Iter 79j.78 — reconciler honesty: a wall whose height was
+        # imputed (no valid photo read — e.g. the back photo failed and
+        # the reconciler copied the front wall) must NOT score as if it
+        # were a measurement. Surface it as unread and exclude it.
+        src = (ai_w.get("height_ft_source") or "").strip().lower()
+        if src == "estimated_no_direct_view" or ai_w.get("height_imputed"):
+            row = {
+                "ai": round(ai_v, 2), "tape": heights[0],
+                "delta": None, "verdict": None,
+                "imputed": True, "source": src or "imputed",
+            }
+            if len(heights) > 1:
+                row["tape_segments"] = heights
+                row["stepped"] = True
+            if start_ref:
+                row["start_ref"] = start_ref
+            wall_rows[label] = row
+            continue
         # Iter 79j.76 — stepped walls score against the segment RANGE:
         # neither the tape nor the AI is "wrong" for reading a different
         # segment of the same staircased start-line. Inside the range =

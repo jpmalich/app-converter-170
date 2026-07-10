@@ -3888,6 +3888,17 @@ def _env_int(name: str, default: int) -> int:
 
 
 
+def _stamp_empty_diagnostics(parsed: dict, reply_text: str, stop_reason) -> dict:
+    """Iter 79j.78 — when an extraction is judged empty, persist WHAT
+    Claude actually returned (stop_reason, text length, excerpt) so the
+    failure class is diagnosable after the fact instead of a mystery."""
+    parsed["_stop_reason"] = str(stop_reason) if stop_reason is not None else None
+    parsed["_raw_text_len"] = len(reply_text or "")
+    if _is_empty_extraction(parsed):
+        parsed["_raw_response_excerpt"] = (reply_text or "")[:400]
+    return parsed
+
+
 def _is_empty_extraction(parsed: dict) -> bool:
     """Iter 79j.43 — A Phase A extraction is "empty" when Claude
     returned nothing useful: no walls seen, no openings, no eave
@@ -4107,6 +4118,7 @@ async def _extract_one_photo_direct(
     parsed.setdefault("index", photo_idx)
     parsed["_latency_ms"] = int((time.time() - call_t0) * 1000)
     parsed["_transport"] = "anthropic_direct"
+    _stamp_empty_diagnostics(parsed, reply_text, getattr(response, "stop_reason", None))
     return parsed
 
 
@@ -4210,6 +4222,7 @@ async def _extract_one_photo(
         p.setdefault("index", photo_idx)
         p["_latency_ms"] = int((time.time() - call_t0) * 1000)
         p["_transport"] = "emergent_proxy"
+        _stamp_empty_diagnostics(p, reply or "", None)
         return p
 
     async def _one_call_direct_with_retry(retry_note: str = "") -> dict:
