@@ -1398,6 +1398,9 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
   - **Verification**: `testing_agent_v3_fork` iter 28 — 100% pass. All 5 step titles + banners + skip labels + Next/Save-&-Continue label + progress-dot counts + "Step X of 5" counter verified end-to-end on a fresh Vinyl+Ascend estimate. Howard's regression definitively fixed.
   - **Status**: SHIPPED + testing agent verified. USER VERIFICATION PENDING.
 
+## Shareable read-only accuracy report link (APPROVED but BACKLOGGED, 2026-07-10)
+Sequenced behind the FIRST PASSING BLIND HOUSE — the accuracy-claim section it would share is currently empty; build distribution after there's something to distribute. Small build, reuse the Accept page pattern. **Hard requirement**: the read-only view carries the same honest framing pinned by the PDF tests — methodology exhibit vs. accuracy claim kept separate, no blended aggregate — because a shared link travels without Howard in the room to caveat it.
+
 ## Visualizer position (Howard's ruling, 2026-07-10)
 - **KEEP**: flat-color product swapping on the 3D model — already part of LP package item 8 (ExpertFinish selector repaints meshes).
 - **CUT from roadmap entirely**: texture-mapped realism. LP has its own visualizer; our September position is complementary ("my measurement layer + their visualizer"), not competitive.
