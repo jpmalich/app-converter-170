@@ -43,6 +43,36 @@ const MODE_CFG = {
   "cross-plane": { label: "x-plane", title: "Cross-plane scale: vertical ref borrowed from a different wall plane — verify (control case: same plane = exact; cross-plane = +45%)", fg: "#92400E", bg: "#FEF3C7" },
 };
 
+// Iter 79j.77 — accuracy trend sparkline. Floor: renders ONLY with ≥3
+// scored runs (2 points is a line, not a trend) and always sits next to
+// the current score, never alone.
+const AccuracySparkline = ({ history }) => {
+  if (!history || history.length < 3) return null;
+  const pts = history.slice().reverse().map((h) => h.accuracy_pct); // chronological
+  const W = 56, H = 14, PAD = 2;
+  const lo = Math.min(...pts), hi = Math.max(...pts);
+  const span = hi - lo || 1;
+  const xy = pts.map((v, i) => [
+    PAD + (i * (W - 2 * PAD)) / (pts.length - 1),
+    H - PAD - ((v - lo) / span) * (H - 2 * PAD),
+  ]);
+  const d = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const [lx, ly] = xy[xy.length - 1];
+  const trendUp = pts[pts.length - 1] >= pts[0];
+  return (
+    <svg
+      width={W} height={H} viewBox={`0 0 ${W} ${H}`}
+      className="inline-block align-middle"
+      data-testid="tape-check-sparkline"
+      aria-label={`Accuracy trend across ${pts.length} runs: ${pts.join("%, ")}%`}
+    >
+      <title>{pts.map((p) => `${p}%`).join(" → ")}</title>
+      <polyline points={d} fill="none" stroke={trendUp ? "#16A34A" : "#DC2626"} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={lx} cy={ly} r="1.8" fill={trendUp ? "#16A34A" : "#DC2626"} />
+    </svg>
+  );
+};
+
 const ModeTag = ({ mode }) => {
   const cfg = MODE_CFG[mode];
   if (!cfg) return null;
@@ -168,6 +198,7 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
           <Ruler className="w-3 h-3" /> Tape Check — ground truth
         </span>
         <span className="inline-flex items-center gap-2">
+          <AccuracySparkline history={history} />
           {latest && (
             <span className="text-[10px] font-bold font-mono-num tabular-nums text-[var(--ink)]" data-testid="tape-check-accuracy">
               {latest.accuracy_pct}%
