@@ -24,19 +24,26 @@ API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASSWORD = "Admin123!"
 
-HASH_1A = "f23780909828f9a8"  # Howard-confirmed 1a-validated contract
+# Iter 79j.84 — 1c contract: 1a-validated base + the pre-registered 1c
+# anchor/pixel rules (count_anchor_corner, pixel-never-corroborates).
+HASH_1C = "07318d7b10de9fb4"
 
 
-def test_reversion_hash_matches_1a_era():
-    assert _prompt_version_hash() == HASH_1A
+def test_contract_hash_pinned_1c():
+    assert _prompt_version_hash() == HASH_1C
 
 
 def test_1b_markers_absent():
     for p in (PER_PHOTO_EXTRACT_PROMPT, RECONCILE_PROMPT):
         assert "COUNT FIRST, HEIGHT SECOND" not in p
         assert "count_enumeration_evidence" not in p
-        assert "count_disputed_by_pixel" not in p
         assert "arithmetic, not corroboration" not in p
+
+
+def test_1c_markers_present():
+    assert "count_anchor_corner" in PER_PHOTO_EXTRACT_PROMPT
+    assert "count_disputed_by_pixel" in PER_PHOTO_EXTRACT_PROMPT
+    assert "never authors and never corroborates" in PER_PHOTO_EXTRACT_PROMPT
 
 
 @pytest.fixture(scope="module")

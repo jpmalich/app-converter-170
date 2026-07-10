@@ -1039,13 +1039,22 @@ async def score_tape_check(
             ai_c = int(ai_c) if ai_c is not None else None
         except (TypeError, ValueError):
             ai_c = None
+        count_tier = (ai_w.get("count_tier") or "").strip().lower()
         courses_list = _tape_wall_courses(tape_walls.get(label))
         pairs = [(h, c) for h, c in zip(heights, courses_list) if c is not None]
         tape_c = min(pairs, key=lambda p: abs(p[0] - ai_v))[1] if pairs else None
         if ai_c is not None or tape_c is not None:
             row["ai_courses"] = ai_c
             row["tape_courses"] = tape_c
-            if ai_c is not None and tape_c is not None:
+            if count_tier:
+                row["count_tier"] = count_tier
+            if ai_w.get("possible_partial_top"):
+                row["possible_partial_top"] = True
+            if ai_w.get("corner_count_conflict"):
+                row["corner_count_conflict"] = True
+            # Iter 79j.84 (1c) — estimated-tier counts are takeoff-usable
+            # but EXCLUDED from accuracy claims: no Δc for them.
+            if ai_c is not None and tape_c is not None and count_tier != "estimated":
                 row["course_delta"] = ai_c - tape_c
         wall_rows[label] = row
         deltas_rel.append(abs(delta) / (nearest if nearest > 0 else heights[0]))

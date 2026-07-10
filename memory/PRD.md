@@ -2477,3 +2477,42 @@ The killer cross-check — each physical corner was counted from TWO photos in t
 | Rear-right | p4: 30c | p5: 24c | **6 courses** | 28 |
 | Front-right | p6: 23c | p7: 25c ✓ | **2 courses** | 25 |
 Same anchor, same run, 2–6-course disagreements → these are not deterministic enumerations; the model learned the evidence FORMAT, not the act. Also note: every full-wall count's reasoning still ends "pixel cross-check agrees" (p0: 27c=114.75″ vs pixel 117″). 1c direction (Howard's, from ruling): **two-tier reporting** (enumerated w/ evidence = scoreable; `estimated: true` = amber, takeoff-usable, excluded from accuracy claims) + **cross-photo same-corner count verification** as the mechanic that catches fabricated enumerations.
+
+## Iter 79j.84 — CANDIDATE 1c (2026-07 / restored post-fork)
+
+### PRE-REGISTRATION (Howard-APPROVED with 2 edits folded — verdicts render against THIS TEXT ONLY)
+The 1b evidence audit already ruled: evidence fabrication is the disease → 1c is a VERIFICATION MECHANIC, not stronger instructions. No audit redo, no rule re-litigation.
+
+**Rules (mechanical gate, deterministic Python after Phase B — no LLM can fabricate past it):**
+1. **Two-tier counts**: `enumerated` (corner-verified, scoreable) vs `estimated: true` (amber chips, takeoff-usable, EXCLUDED from accuracy claims and Δc).
+2. **Structured `count_anchor_corner`** (Phase A): every count names the physical corner it ran along. Same-corner cross-check between photos sharing that corner GATES the enumerated tier.
+3. **Deterministic consensus**: exact match → value. Differ by exactly 1 → the LOWER count + `possible_partial_top: true`. NEVER average, NEVER take the higher count.
+4. **>1 disagreement** → BOTH counts demote to estimated + `corner_count_conflict` — never silently pick one.
+5. **Pixel-citation demotion**: a count whose reasoning cites pixel agreement as SUPPORT demotes to the estimated tier (the flagged-dispute path `count_disputed_by_pixel` does NOT demote — pixel reads never author and never corroborate a count).
+6. **Single-photo corners can never reach the enumerated tier** (intentional).
+7. **Correlated-error residual logged openly in the run doc** (`_count_corner_audit.residual_note`): same-corner agreement cannot catch two photos fabricating the SAME wrong count.
+
+**Pass criteria (per-wall verdict; aggregate recorded, NO VOTE):**
+- Letrick: front **25** (26 acceptable w/ partial-top) / back **28** / 9.92′ — on the ENUMERATED tier only. Same-corner pairs agree ±1 or are flagged (a silent >1 disagreement ANYWHERE = FAIL). Enumerated corners land **25/28**. Zero occlusion flags. valid-8/8 required (void rule carries).
+- Red house: aggregate 91–93. Counts REAPPEAR as the estimated tier (1b's total suppression must not recur). Zero enumerated counts without corner agreement. Occlusion flags unchanged.
+
+**Sequencing (Howard directive):** code frozen, one run in flight. Letrick fix run first → score → report → THEN red house fires.
+
+### IMPLEMENTATION (shipped)
+- Phase A prompt: 1c anchor + pixel rules (`count_anchor_corner`, `count_disputed_by_pixel`, "never authors and never corroborates"). Contract hash moved `f23780909828f9a8` → **`07318d7b10de9fb4`** (pinned in iter81 tests, rewritten as 1c pins).
+- `_apply_count_tiering()` in `ai_measure.py` — deterministic post-Phase-B gate applying rules 1–7; called from `_run_two_phase` and the reconcile-only retry worker. Stamps `count_tier`, `possible_partial_top`, `corner_count_conflict`, `count_segments` (stepped walls with two legitimately-different enumerated corners), and `_count_corner_audit` (persisted on the run doc via result.raw_ai).
+- Scoring (`estimates.py` tape-check score): estimated-tier counts surface (`ai_courses`, `count_tier`) but emit NO `course_delta` — excluded from Δc and accuracy claims.
+- TapeCheckPanel: amber `est Nc` chip (estimated tier), `+1?` chip (possible_partial_top).
+- Pin tests: `test_count_tiering_iter84.py` (corner consensus, pixel gate, wall stamping, stepped-wall non-conflict, Δc exclusion e2e).
+
+### 1c FIX-RUN — LETRICK (2026-07-10, run `73cca7fa9d4c4a91b333c11945948da9`, hash-locked `07318d7b10de9fb4`, valid 8/8, zero occlusion flags)
+Per-photo counts (truth: front corners 25 / rear corners 28):
+| Corner | Photos | Counts | Gate result |
+|---|---|---|---|
+| front_left | p0 (front) / p1 (front-left) | 28 / 24 | Δ4 → CONFLICT, both demoted, flagged |
+| rear_left | p2 (left, disputed_by_pixel) / p3 (rear-left) / p4 (back, disputed_by_pixel) | 27 / 23 / 26 | spread 4 → CONFLICT, demoted, flagged |
+| rear_right | p5 (rear-right) / p6 (right) | 24 / 30 | p6 cited pixel agreement as support → live demotion; 1 clean left → estimated |
+| front_right | p7 (front-right) | 25 (= truth) | single photo → estimated (by design) |
+Walls: all 4 counts landed ESTIMATED tier, amber, excluded from Δc/claims. Heights: 1 pass / 3 amber / 0 fail, aggregate 93.8 (recorded, NO VOTE). `prompt_unchanged: true`.
+
+**VERDICT vs pre-registration: FAIL on the enumerated-tier count criteria** (zero counts reached the enumerated tier; front 25 / back 28 never landed corner-agreed). **PASS on the honesty criteria**: no silent >1 disagreement anywhere — every conflict flagged, pixel-citation caught live (p6), zero occlusion flags, valid 8/8. The gate did exactly what the 1b evidence audit predicted it must: the model's "enumerations" are not deterministic (p0 read 27 in the 1b run, 28 now — same photo), and the mechanic now quarantines them as estimated instead of letting them masquerade as tape-provable. Awaiting Howard's ruling before the red house fires (sequencing directive: one run in flight).

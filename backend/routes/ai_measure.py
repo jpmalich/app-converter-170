@@ -2615,6 +2615,7 @@ async def _execute_reconcile_only_worker(
         # `result.raw_ai` + `result.measurements` — we produce both
         # via the same aggregator the main worker uses.
         _restore_bboxes_from_phase_a(final, extractions)
+        _apply_count_tiering(final, extractions)
         measurements = _aggregate_to_hover_shape(final, annotations=[])
         result = {
             "raw_ai": final,
@@ -3374,6 +3375,8 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
   "eave_reasoning":               "<how you measured — course counting, contractor reference, brick coursing, or 'not measurable because …'>",
   // Iter 79j.67(b)+(c) — course-count + scale-plane provenance:
   "eave_courses_counted":        number | null,   // lap-course count siding-start→eave when SIDING EXPOSURE is provided and courses are countable (see rule 5)
+  "count_anchor_corner":         "front_left" | "front_right" | "rear_left" | "rear_right" | "other" | null,   // the physical house corner the course count ran along (rule 5)
+  "count_disputed_by_pixel":     boolean,         // a pixel-scale read disagrees with the count — count kept, both numbers reported (rule 5)
   "start_line_occluded":         boolean,         // true ONLY when the siding start line (bottom of first course) was hidden and you estimated it from course rhythm (see rule 5)
   "eave_scale_cross_plane":      boolean,         // true ONLY when the vertical scale for this eave read came from a reference on a DIFFERENT wall plane (see rule 6)
   "story_count_observed":         1 | 1.5 | 2 | 2.5 | 3 | null,
@@ -3476,6 +3479,17 @@ RULES:
    (every course lives on the wall being measured) and survives
    perspective, tilt and depth compression — when a count and a
    pixel-scale read disagree, report the course-count value.
+   1c ANCHOR + PIXEL RULES:
+   • Report `count_anchor_corner`: the physical house corner your
+     count ran along — "front_left", "front_right", "rear_left",
+     "rear_right", or "other". Corner-anchored counts are
+     cross-checked between photos sharing that corner; only
+     corner-agreed counts earn the tape-provable tier downstream.
+   • Pixel-scale reads may appear ONLY as flagged disputes: if a
+     pixel read disagrees with your count, keep the count, set
+     `count_disputed_by_pixel`: true and state both numbers. NEVER
+     cite pixel-scale agreement as support for a count — a pixel
+     read never authors and never corroborates a count.
 6. SCALE REFERENCES ONLY WORK ON THEIR OWN WALL PLANE. A vertical
    reference (WIN_REF bar, window height, door height) may only set
    px-per-inch for measurements on ITS OWN wall plane. A WIN_REF on a
@@ -4807,6 +4821,148 @@ def _slim_extraction_for_reconcile(ex: dict) -> dict:
     return slim
 
 
+# Iter 79j.84 — Candidate 1c: pixel-citation-as-support detection.
+# Matches reasoning that cites pixel agreement to SUPPORT a count
+# ("pixel cross-check agrees") but NOT the legit flagged-dispute path
+# ("pixel read disagrees; count kept").
+_PIXEL_SUPPORT_RE = re.compile(
+    r"pixel[^.;\n]{0,80}?\b(?:(?<!dis)agree\w*|confirm\w*|consistent|corroborat\w*|support\w*|match\w*|checks?\s+out)\b"
+    r"|\b(?:(?<!dis)agree\w*|confirm\w*|consistent|corroborat\w*|support\w*)\b[^.;\n]{0,60}?pixel",
+    re.IGNORECASE,
+)
+
+_CORNER_WALLS = {
+    "front_left": ("front", "left"),
+    "front_right": ("front", "right"),
+    "rear_left": ("back", "left"),
+    "rear_right": ("back", "right"),
+}
+
+
+def _norm_anchor_corner(v) -> Optional[str]:
+    c = str(v or "").strip().lower().replace("-", "_").replace("back_", "rear_")
+    return c if c in _CORNER_WALLS else None
+
+
+def _apply_count_tiering(final: dict, extractions: list[dict]) -> None:
+    """Iter 79j.84 — Candidate 1c (pre-registered, Howard-approved).
+    Deterministic two-tier course counts, applied in Python AFTER Phase B
+    so no LLM can fabricate its way past the gate:
+      • Corner-anchored counts are cross-checked between photos sharing
+        the physical corner. Only corner-agreed counts earn the
+        "enumerated" (tape-provable) tier.
+      • Consensus is deterministic: exact match → value; differ by
+        exactly 1 → the LOWER count + possible_partial_top. Never
+        average, never take the higher count.
+      • >1 disagreement → BOTH counts demote to "estimated" +
+        corner_count_conflict — never silently pick one.
+      • A photo whose eave_reasoning cites pixel agreement as SUPPORT
+        is demoted to the estimated pool (evidence-fabrication gate).
+        The flagged-dispute path (count_disputed_by_pixel) does NOT demote.
+      • Single-photo corners can never reach the enumerated tier.
+      • Estimated-tier counts stay takeoff-usable (amber) but are
+        excluded from accuracy claims and Δc downstream.
+    The correlated-error residual is logged openly on the run doc via
+    final["_count_corner_audit"]."""
+    photo_counts: list[dict] = []
+    for i, ex in enumerate(extractions):
+        if not isinstance(ex, dict):
+            continue
+        try:
+            c = int(ex.get("eave_courses_counted"))
+        except (TypeError, ValueError):
+            continue
+        if c <= 0:
+            continue
+        photo_counts.append({
+            "photo_idx": ex.get("index", i),
+            "count": c,
+            "corner": _norm_anchor_corner(ex.get("count_anchor_corner")),
+            "pixel_cited": bool(_PIXEL_SUPPORT_RE.search(str(ex.get("eave_reasoning") or ""))),
+        })
+    if not photo_counts:
+        return
+
+    corners: dict = {}
+    for corner in _CORNER_WALLS:
+        group = [p for p in photo_counts if p["corner"] == corner]
+        if not group:
+            continue
+        clean = [p for p in group if not p["pixel_cited"]]
+        entry: dict = {"photos": [
+            {"photo_idx": p["photo_idx"], "count": p["count"], "pixel_cited": p["pixel_cited"]}
+            for p in group
+        ]}
+        vals = sorted({p["count"] for p in clean})
+        if len(clean) >= 2 and len({p["photo_idx"] for p in clean}) >= 2:
+            spread = vals[-1] - vals[0]
+            if spread == 0:
+                entry.update(tier="enumerated", value=vals[0])
+            elif spread == 1:
+                entry.update(tier="enumerated", value=vals[0], possible_partial_top=True)
+            else:
+                entry.update(tier="estimated", value=vals[0],
+                             corner_count_conflict=True, reason="corner_count_conflict")
+        else:
+            pool = vals or sorted({p["count"] for p in group})
+            entry.update(
+                tier="estimated", value=pool[0],
+                reason="single_photo" if len(group) < 2 else "pixel_citation_demotion",
+            )
+        corners[corner] = entry
+
+    wall_photos: dict[str, set] = {}
+    for w in final.get("walls") or []:
+        label = (w.get("label") or "").strip().lower()
+        idxs = {r.get("photo_idx") for r in (w.get("_per_photo_readings") or [])
+                if isinstance(r, dict) and r.get("photo_idx") is not None}
+        idxs.update(i for i in (w.get("_source_photo_indices") or []) if i is not None)
+        wall_photos[label] = idxs
+
+    for w in final.get("walls") or []:
+        label = (w.get("label") or "").strip().lower()
+        adj = [c for c, ws in _CORNER_WALLS.items() if label in ws and c in corners]
+        enum_vals = sorted({corners[c]["value"] for c in adj if corners[c]["tier"] == "enumerated"})
+        partial = any(corners[c].get("possible_partial_top") for c in adj
+                      if corners[c]["tier"] == "enumerated")
+        conflict = any(corners[c].get("corner_count_conflict") for c in adj)
+        est_pool = sorted(
+            {corners[c]["value"] for c in adj if corners[c]["tier"] == "estimated"}
+            | {p["count"] for p in photo_counts
+               if p["corner"] is None and p["photo_idx"] in wall_photos.get(label, set())}
+        )
+        if enum_vals:
+            spread = enum_vals[-1] - enum_vals[0]
+            w["count_tier"] = "enumerated"
+            if spread <= 1:
+                w["eave_courses_counted"] = enum_vals[0]
+                if spread == 1 or partial:
+                    w["possible_partial_top"] = True
+            else:
+                # two enumerated corners legitimately differ >1 (stepped
+                # wall) — no single wall count; expose per-corner values.
+                w["eave_courses_counted"] = None
+                w["count_segments"] = enum_vals
+                if partial:
+                    w["possible_partial_top"] = True
+        elif est_pool:
+            w["eave_courses_counted"] = est_pool[0]
+            w["count_tier"] = "estimated"
+        if conflict and (enum_vals or est_pool):
+            w["corner_count_conflict"] = True
+
+    final["_count_corner_audit"] = {
+        "corners": corners,
+        "uncornered": [p for p in photo_counts if p["corner"] is None],
+        "residual_note": (
+            "Correlated-error residual (logged per 1c pre-registration): "
+            "same-corner agreement cannot catch two photos fabricating the "
+            "SAME wrong count — the enumerated tier is corner-verified, "
+            "not tape-verified."
+        ),
+    }
+
+
 def _restore_bboxes_from_phase_a(final: dict, extractions: list[dict]) -> None:
     """Iter 79j.70 — Re-join reconciled openings to their Phase A pixel
     bboxes. The reconciler is text-only (bboxes are stripped from its
@@ -5431,6 +5587,7 @@ async def _run_two_phase_pipeline(
     if pin_hints:
         final["_pin_gap_hints"] = pin_hints
     _restore_bboxes_from_phase_a(final, extractions)
+    _apply_count_tiering(final, extractions)
     return final, extractions
 
 

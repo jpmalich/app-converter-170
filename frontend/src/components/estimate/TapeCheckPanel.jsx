@@ -323,6 +323,26 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                       Δc {row.course_delta > 0 ? "+" : ""}{row.course_delta}
                     </span>
                   )}
+                  {row?.count_tier === "estimated" && row?.ai_courses != null && (
+                    <span
+                      className="text-[9px] font-bold px-1 py-0.5 border font-mono-num tabular-nums"
+                      style={{ background: "#FEF3C7", color: "#92400E", borderColor: "#FCD34D" }}
+                      title={`Estimated-tier count (${row.corner_count_conflict ? "same-corner photos disagreed by >1 course" : "no corner-agreed enumeration"}) — takeoff-usable, excluded from Δc and accuracy claims`}
+                      data-testid={`tape-check-count-est-${w}`}
+                    >
+                      est {row.ai_courses}c
+                    </span>
+                  )}
+                  {row?.possible_partial_top && (
+                    <span
+                      className="text-[9px] font-bold px-1 py-0.5 border"
+                      style={{ background: "#FEF3C7", color: "#92400E", borderColor: "#FCD34D" }}
+                      title="Same-corner counts differed by exactly 1 — consensus took the LOWER count; a partial top course may exist"
+                      data-testid={`tape-check-partial-top-${w}`}
+                    >
+                      +1?
+                    </span>
+                  )}
                   {row?.stepped && (
                     <span className="text-[9px] text-[var(--muted)]" title={`scored against range ${Math.min(...(row.tape_segments || [0]))}–${Math.max(...(row.tape_segments || [0]))} ft`}>
                       ⇢ range
