@@ -1,0 +1,232 @@
+{
+ "estimate_id": "c864939b-b8d4-49c2-b41e-dceb7fedebd1",
+ "estimate_number": "EST-191890",
+ "backed_up_at": "2026-07-10",
+ "reason": "Ground-truth supersede: corrected enumeration (front 25+cut sliver, back 28; side steps RISE toward back \u2014 previous 26->23 falling direction was wrong)",
+ "tape_check": {
+  "dormers": [],
+  "updated_at": "2026-07-10T00:19:46.003165+00:00",
+  "walls": {
+   "front": {
+    "segments": [
+     {
+      "height_ft": 8.9,
+      "courses": 25
+     }
+    ],
+    "start_ref": "siding_start"
+   },
+   "back": {
+    "segments": [
+     {
+      "height_ft": 9.9,
+      "courses": 28
+     }
+    ],
+    "start_ref": "siding_start"
+   },
+   "left": {
+    "segments": [
+     {
+      "height_ft": 9.21,
+      "courses": 26
+     },
+     {
+      "height_ft": 8.15,
+      "courses": 23
+     }
+    ],
+    "start_ref": "siding_start"
+   },
+   "right": {
+    "segments": [
+     {
+      "height_ft": 8.15,
+      "courses": 23
+     },
+     {
+      "height_ft": 9.21,
+      "courses": 26
+     }
+    ],
+    "start_ref": "siding_start"
+   }
+  },
+  "history": [
+   {
+    "run_id": "fb8cf60e9d9d49759138d88797d04e22",
+    "scored_at": "2026-07-10T00:19:58.002198+00:00",
+    "model": "claude-fable-5",
+    "walls": {
+     "front": {
+      "ai": 10.5,
+      "tape": 8.9,
+      "delta": 1.6,
+      "verdict": "fail",
+      "source": "direct_single_reading",
+      "mode": "count",
+      "start_ref": "siding_start"
+     },
+     "back": {
+      "ai": 11.3,
+      "tape": 9.9,
+      "delta": 1.4,
+      "verdict": "fail",
+      "source": "direct_single_reading",
+      "mode": "count",
+      "start_ref": "siding_start"
+     },
+     "left": {
+      "ai": 11.5,
+      "tape": 9.21,
+      "delta": 2.29,
+      "verdict": "fail",
+      "source": "direct_disagreement",
+      "mode": "count",
+      "tape_segments": [
+       9.21,
+       8.15
+      ],
+      "stepped": true,
+      "start_ref": "siding_start"
+     },
+     "right": {
+      "ai": 10.3,
+      "tape": 9.21,
+      "delta": 1.09,
+      "verdict": "fail",
+      "source": "direct_disagreement",
+      "mode": "count",
+      "tape_segments": [
+       8.15,
+       9.21
+      ],
+      "stepped": true,
+      "start_ref": "siding_start"
+     }
+    },
+    "dormers": [],
+    "accuracy_pct": 82.8,
+    "passes": 0,
+    "ambers": 0,
+    "fails": 4
+   },
+   {
+    "run_id": "29e03bee3a4747bda5655f718d3cc20f",
+    "scored_at": "2026-07-10T01:28:13.331601+00:00",
+    "model": "claude-fable-5",
+    "walls": {
+     "front": {
+      "ai": 9.6,
+      "tape": 8.9,
+      "delta": 0.7,
+      "verdict": "amber",
+      "source": "direct_disagreement",
+      "mode": "count",
+      "start_ref": "siding_start"
+     },
+     "back": {
+      "ai": 9.6,
+      "tape": 9.9,
+      "delta": null,
+      "verdict": null,
+      "imputed": true,
+      "source": "estimated_no_direct_view",
+      "start_ref": "siding_start"
+     },
+     "left": {
+      "ai": 10.6,
+      "tape": 9.21,
+      "delta": 1.39,
+      "verdict": "fail",
+      "source": "direct_disagreement",
+      "mode": "count",
+      "tape_segments": [
+       9.21,
+       8.15
+      ],
+      "stepped": true,
+      "start_ref": "siding_start"
+     },
+     "right": {
+      "ai": 9.2,
+      "tape": 9.2,
+      "delta": 0.0,
+      "verdict": "pass",
+      "source": "direct_consensus",
+      "mode": "count",
+      "tape_segments": [
+       8.15,
+       9.21
+      ],
+      "stepped": true,
+      "start_ref": "siding_start"
+     }
+    },
+    "dormers": [],
+    "accuracy_pct": 92.3,
+    "passes": 1,
+    "ambers": 1,
+    "fails": 1
+   },
+   {
+    "run_id": "97d99abb9b6d4ef89717fba690aacea3",
+    "scored_at": "2026-07-10T01:42:31.189028+00:00",
+    "model": "claude-fable-5",
+    "walls": {
+     "front": {
+      "ai": 10.3,
+      "tape": 8.9,
+      "delta": 1.4,
+      "verdict": "fail",
+      "source": "direct_single_reading",
+      "mode": "count",
+      "start_ref": "siding_start"
+     },
+     "back": {
+      "ai": 10.6,
+      "tape": 9.9,
+      "delta": 0.7,
+      "verdict": "amber",
+      "source": "direct_disagreement",
+      "mode": "count",
+      "start_ref": "siding_start"
+     },
+     "left": {
+      "ai": 8.85,
+      "tape": 8.85,
+      "delta": 0.0,
+      "verdict": "pass",
+      "source": "direct_consensus",
+      "mode": "count",
+      "tape_segments": [
+       9.21,
+       8.15
+      ],
+      "stepped": true,
+      "start_ref": "siding_start"
+     },
+     "right": {
+      "ai": 8.1,
+      "tape": 8.15,
+      "delta": -0.05,
+      "verdict": "pass",
+      "source": "direct_disagreement",
+      "mode": "count",
+      "tape_segments": [
+       8.15,
+       9.21
+      ],
+      "stepped": true,
+      "start_ref": "siding_start"
+     }
+    },
+    "dormers": [],
+    "accuracy_pct": 94.1,
+    "passes": 2,
+    "ambers": 1,
+    "fails": 1
+   }
+  ]
+ }
+}

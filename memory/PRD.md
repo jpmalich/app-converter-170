@@ -2400,3 +2400,12 @@ Howard approved the toggle with the constraint: hash locks at capture time, not 
 - Report PDF: "Prompt hash" column on both tables (locked / changed / — legacy); blind section states only "locked" rows support the claim.
 - Tests: `test_blind_run_hash_iter80.py` (5 — algorithm pinned, held_out roundtrip, unchanged/changed/legacy-null scoring). Suite 699 passed (same standalone-passing timing flake).
 - NOTE: a file-write race dropped two staged edits this session (Rule 5 text, Lock import) after the tool reported success — both caught by tests/screenshot and reapplied. Verify greps after multi-edit batches.
+
+## Iter 79j.81 — GROUND-TRUTH SUPERSEDE: Letrick tape corrected by enumeration (2026-07-10) ✅
+Howard recounted with boundary-explicit enumeration. Pre-supersede entries backed up (standing rule) at `/app/memory/backups/tape_check_letrick_pre-supersede_2026-07-10.json`.
+- **Corrected truth (all start_ref=siding_start, top of brown block line; no occlusion — start_line_occluded must NOT fire on these photos)**:
+  - FRONT: 25 enumerable courses + cut top sliver (~1¼″ reveal, 26th physical strip) = **8.96′**. AI-count criteria: 25 = pass; 26 = pass only with a partial-top flag; 27+ = fail.
+  - BACK: 28 courses even = **9.92′**, full height, no cut.
+  - LEFT & RIGHT: corners forced by the eave walls — 25(+cut)=8.96′ at both FRONT corners, 28=9.92′ at both BACK corners. **The step is the ROOFLINE rising toward the back (~3 courses / ~12¾″); ground and bottom course are LEVEL.** Previous stepped entry (26→23 falling to back) was WRONG in direction and values.
+- **Superseded-convention note (OPEN, unresolved — do not repair retroactively)**: old side-wall entries (23/26) and the AI's corner reads (8.1′/9.2′) share a uniform **−2** vs corrected enumeration. Cause unknown. Photo 6 RETAINS mechanism-(a) control status; photo 6's and run 3's "delta 0" corner-accuracy claims are **RETRACTED**.
+- **Re-scores against corrected truth** (all 3 run docs annotated with `tape_supersede_note`): RUN1 82.8→**87.3%** (right 10.3 now +0.38 pass vs 9.92 bound) · RUN2 92.3→**95.3%** (back still unread; right 9.2 inside range) · RUN3 94.1→**91.8%** (front 10.3 +1.34 FAIL, right 8.1 now −0.86 amber). Sparkline now 87.3→95.3→91.8. Note: aggregate moved UP on runs 1-2, not down — the corrected side-wall ranges are wider/higher and forgive high reads; the honest signal lives in the per-wall front/back rows, not the aggregate. Front remains the 1b anchor: 30/27/29 counted vs 25 enumerable.
