@@ -2307,3 +2307,18 @@ Playwright on a throwaway estimate+session seeded from run f423c216's stored res
 ### Roadmap updates per Howard
 - Accept-page interactive 3D MERGES with the queued photo/3D side-by-side as ONE block. Constraints: read-only (no panels/numbers a homeowner could misread as editable — just their house, orbiting) + graceful degradation to the static PNG on weak phones. Queued post-gate.
 - Gate remainder: accuracy sparkline (floor: ≥3 runs, always paired with current score, never trend alone) → then the RANCH RUN outranks everything.
+
+## Iter 79j.76 — Stepped tape-check segments + start_ref (2026-07-10) ✅
+Letrick ranch (EST-191890 / c864939b) has a stepped foundation: siding start-line staircases, so a wall carries multiple course-counts/heights.
+- **Backend** (`routes/estimates.py`): tape wall now accepts number (legacy), null, or `{"segments":[{"height_ft","courses?"}...1-4], "start_ref": grade|foundation_top|brick_ledge|siding_start}`. Scoring: stepped walls score AI against the NEAREST segment bound (inside range = delta 0 pass); history rows carry `tape_segments`, `stepped`, `start_ref`.
+- **Frontend** (`TapeCheckPanel.jsx`): per-wall ⇢ stepped toggle + seg-2 input, start-line select, load-normalization (stored segment objects hydrate seg1/seg2/toggle/start_ref instead of dumping an object into the number input).
+- **Tests**: `test_tape_segments_iter76.py` (roundtrip + validation + range scoring) — full suite **678 passed / 1 skipped** (one load-timing flake in `test_phase_a_resilience` passes standalone).
+- **Letrick tape entered (Howard-confirmed, exposure 4.25″, all counts from bottom siding course → start_ref=siding_start)**: FRONT 25c=8.9′ single · BACK 28c=9.9′ single · LEFT stepped 26c=9.21′→23c=8.15′ · RIGHT stepped (mirror, per Howard's annotated right-elevation photo) 23c=8.15′→26c=9.21′. Courses stored on segments.
+- **RE-SCORE run fb8cf60e**: **82.8%** (was 80.7% flat) — 0✓ 0⚠ 4✗. Deltas: front +1.6, back +1.4, left +2.29 (vs nearest bound 9.21), right +1.09. AI overreads every wall even against the TALL segment bound — consistent with the right-gable overread finding. AI prompt untouched per Howard's sequencing directive (observe baseline first).
+- Verified live in UI: stepped toggles hydrate, 82.8% chip, ⇢ range markers.
+
+### Next (unchanged queue)
+1. Blueprint Measure baseline on Letrick prints (4-way comparison)
+2. Accuracy sparkline (≥3 runs floor) — Letrick now has 1 scored run
+3. Right gable overread root-cause + appendage gap (chimney chase) — part of held AI prompt-tuning phase
+4. Interactive 3D on Accept page; Contractor Window labor divergence; PDF upgrade lines; PWA icons; ISS New Construction Siding catalog
