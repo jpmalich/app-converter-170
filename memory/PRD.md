@@ -1,5 +1,8 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## THESIS
+ProQuotes exists to give contractors accurate, reliable, tape-provable takeoffs WITHOUT costing them margin the way per-scan tools do. Accuracy and honesty are the product. Everything else is optional. When prioritizing, features that serve measurement accuracy, honesty, or contractor margin outrank features that serve appearance or homeowner persuasion.
+
 ## Original Problem & Pivot
 User uploaded a self-contained Vinyl Siding Estimator HTML and asked to turn it into an app. After initial build, user revealed they work for **Alside Supply** and intend to distribute this tool to their contractor customers as a value-add. Architecture pivoted to a **supplier-distributed B2B SaaS**:
 
@@ -1394,6 +1397,12 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
   - **Files**: `frontend/src/components/estimate/PhotoAnnotateModal.jsx` only. Lint clean.
   - **Verification**: `testing_agent_v3_fork` iter 28 — 100% pass. All 5 step titles + banners + skip labels + Next/Save-&-Continue label + progress-dot counts + "Step X of 5" counter verified end-to-end on a fresh Vinyl+Ascend estimate. Howard's regression definitively fixed.
   - **Status**: SHIPPED + testing agent verified. USER VERIFICATION PENDING.
+
+## Visualizer position (Howard's ruling, 2026-07-10)
+- **KEEP**: flat-color product swapping on the 3D model — already part of LP package item 8 (ExpertFinish selector repaints meshes).
+- **CUT from roadmap entirely**: texture-mapped realism. LP has its own visualizer; our September position is complementary ("my measurement layer + their visualizer"), not competitive.
+- **STANDS**: no generative AI renders in the priced view, ever.
+- If texture realism ever returns, it returns as an LP partnership request, not our initiative.
 
 ## Backlog (P1)
 - Dollar amount per elevation under each bar in Per-Elevation Breakdown card
