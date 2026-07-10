@@ -24,17 +24,19 @@ def _prompt(**kw):
 
 def test_rule5_counts_from_siding_start_not_grade():
     p = PER_PHOTO_EXTRACT_PROMPT
-    assert "BOTTOM OF THE FIRST SIDING COURSE" in p
+    # Iter 79j.81 superseded the wording: boundary is now "first course
+    # on the starter, at the top of the block line" (count-first contract)
+    assert "the one on the starter" in p
     assert "siding start line" in p
     assert "COUNT the courses from grade" not in p
     assert "count lap courses from grade" not in p
 
 
 def test_rule5_prohibition_covers_count_and_inches():
-    p = PER_PHOTO_EXTRACT_PROMPT
-    assert "NEVER include exposed foundation" in p
-    assert "not in the course" in p and "not as added inches" in p
-    assert "siding-start-to-eave, NOT grade-to-eave" in p
+    flat = PER_PHOTO_EXTRACT_PROMPT.replace("\n   ", " ")
+    assert "NEVER include exposed foundation" in flat
+    assert "not in the course count and not as added inches" in flat
+    assert "siding-start-to-eave, NOT grade-to-eave" in flat
 
 
 def test_rule5_occlusion_fallback_never_grade():
@@ -46,7 +48,8 @@ def test_rule5_occlusion_fallback_never_grade():
 
 def test_exposure_injection_line_uses_start_line():
     p = _prompt()
-    assert "FIRST siding course (the siding start line) to the eave" in p
+    # Iter 79j.81 superseded: injection now enumerates from the starter
+    assert "first course on the starter (top of the block line)" in p
     assert "NEVER add exposed foundation/membrane/parging below the siding start" in p
     assert "never fall back to grade" in p
 

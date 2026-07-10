@@ -3373,7 +3373,10 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
   "eave_height_ft_observed":     number | null,
   "eave_reasoning":               "<how you measured — course counting, contractor reference, brick coursing, or 'not measurable because …'>",
   // Iter 79j.67(b)+(c) — course-count + scale-plane provenance:
-  "eave_courses_counted":        number | null,   // lap-course count siding-start→eave when SIDING EXPOSURE is provided and courses are countable (see rule 5)
+  "eave_courses_counted":        number | null,   // ENUMERATED lap-course count siding-start→frieze when SIDING EXPOSURE is provided (see rule 5) — null when not enumerable
+  "count_enumeration_evidence":  "<anchor edge + start/stop course named — REQUIRED for any non-null count (rule 5)>" | null,
+  "partial_top_course":          boolean,         // true when the top strip is cut to a sub-exposure reveal; its measured reveal is included in the height (rule 5)
+  "count_disputed_by_pixel":     boolean,         // true when a pixel-scale read disputes the enumerated count — count kept, both reported (rule 5)
   "start_line_occluded":         boolean,         // true ONLY when the siding start line (bottom of first course) was hidden and you estimated it from course rhythm (see rule 5)
   "eave_scale_cross_plane":      boolean,         // true ONLY when the vertical scale for this eave read came from a reference on a DIFFERENT wall plane (see rule 6)
   "story_count_observed":         1 | 1.5 | 2 | 2.5 | 3 | null,
@@ -3456,26 +3459,38 @@ RULES:
 4. bbox coordinates are PIXEL space in the compressed image you were
    given (not the original 4K upload). Emit them so we can draw them
    back on the thumbnail in the debug view.
-5. COURSE COUNTING FOR WALL HEIGHTS. When a SIDING EXPOSURE value is
-   provided in this prompt and lap courses are visible on a wall,
-   COUNT the courses from the BOTTOM OF THE FIRST SIDING COURSE (the
-   siding start line, sitting on the starter strip) to the eave line:
-   courses × exposure = eave height. The FIRST counted course is the
-   one on the starter. NEVER include exposed foundation, waterproofing
-   membrane or parging below the siding start — not in the course
-   count and not as added inches. `eave_height_ft_observed` is
-   siding-start-to-eave, NOT grade-to-eave. If a foundation band is
-   visible below the siding (common on ungraded new construction),
-   note its height in `notes` but EXCLUDE it from the height and the
-   count. If the siding start line is hidden (bushes, deck, snow,
-   vehicles), estimate its position from the visible course rhythm,
-   set `start_line_occluded`: true and lower your confidence — never
+5. COURSE COUNTING FOR WALL HEIGHTS — COUNT FIRST, HEIGHT SECOND.
+   When a SIDING EXPOSURE value is provided and lap courses are
+   visible, ENUMERATE the courses. A count is only reportable when
+   you actually enumerated it: name the anchor edge you counted
+   along and identify the start and stop course in
+   `count_enumeration_evidence`. Estimated or derived counts are NOT
+   counts — if you cannot enumerate, set `eave_courses_counted`:
+   null. NEVER back-derive a count from a pixel height.
+   BOUNDARIES: the FIRST counted course is the one on the starter,
+   at the top of the block line; the LAST is the course meeting the
+   frieze/soffit line.
+   HEIGHT IS DERIVED SECOND: `eave_height_ft_observed` = count ×
+   exposure, plus the measured reveal of a cut partial top strip if
+   one exists (set `partial_top_course`: true and state the reveal).
+   Never author the height first and fit the count to it.
+   NEVER include exposed foundation, waterproofing membrane or
+   parging below the siding start — not in the course count and not
+   as added inches. `eave_height_ft_observed` is siding-start-to-eave,
+   NOT grade-to-eave. If a foundation band is visible below the
+   siding (common on ungraded new construction), note its height in
+   `notes` but EXCLUDE it from the height and the count. If the
+   siding start line is hidden (bushes, deck, snow, vehicles),
+   estimate its position from the visible course rhythm, set
+   `start_line_occluded`: true and lower your confidence — never
    fall back to measuring from grade, and never silently guess.
-   Report the count in `eave_courses_counted` and cite
-   it in `eave_reasoning`. A course count is inherently PLANE-CORRECT
+   A course count is inherently PLANE-CORRECT
    (every course lives on the wall being measured) and survives
-   perspective, tilt and depth compression — when a count and a
-   pixel-scale read disagree, report the course-count value.
+   perspective, tilt and depth compression. A pixel-scale read may
+   DISPUTE an enumerated count but may never AUTHOR one: on
+   disagreement keep the enumerated value, set
+   `count_disputed_by_pixel`: true, and report both numbers in
+   `eave_reasoning` — flag the conflict, do not harmonize it.
 6. SCALE REFERENCES ONLY WORK ON THEIR OWN WALL PLANE. A vertical
    reference (WIN_REF bar, window height, door height) may only set
    px-per-inch for measurements on ITS OWN wall plane. A WIN_REF on a
@@ -3553,6 +3568,10 @@ call worker returns, so downstream code doesn't fork.
      // otherwise.
      "height_scale_flag":          "cross_plane" | null,
      "height_ft":                  number,        // final EAVE height for this wall (see rule 1)
+     // Iter 79j.81 — the ENUMERATED course count backing height_ft.
+     // Carry it from the winning photo's `eave_courses_counted`; null
+     // when the kept height did not come from an enumerated count.
+     "eave_courses_counted":       number | null,
      // Iter 79j.38 — Provenance tag for the eave height. Drives the
      // frontend badge color: `direct_consensus` = green (2+ direct
      // readings agreed); `direct_single_reading` = amber (only 1
@@ -3683,6 +3702,14 @@ RECONCILIATION RULES:
       exam: median of count 10.0 + shaded pixel 9.3 gave 9.7 against a
       10.31 tape; the count alone was within 0.31). With multiple
       count-derived readings, median those counts only.
+      Iter 79j.81 — a count qualifies as COUNT-DERIVED only when its
+      photo carries `count_enumeration_evidence`. Derived height NEVER
+      corroborates its own count: height = count × exposure is
+      arithmetic, not corroboration. Only enumeration evidence or
+      independent cross-photo ENUMERATED counts corroborate a count.
+      Carry the winning enumerated count into the wall's
+      `eave_courses_counted` (null when the height didn't come from a
+      count).
       `height_ft_source: "direct_consensus"`. Note the count
       of contributing photos in `_reconciliation_note`.
 
@@ -3867,13 +3894,43 @@ RECONCILIATION RULES:
 Return the JSON now. No prose."""
 
 
+_TRAILING_COMMA_RE = re.compile(r",\s*([}\]])")
+# unescaped inch-mark inside a string: a `"` right after a digit that is
+# NOT followed by a JSON delimiter (so it can't be a legitimate close)
+_INCH_QUOTE_RE = re.compile(r'(?<=\d)"(?!\s*[,:\}\]])')
+
+
 def _clean_json_reply(reply: str) -> dict:
-    """Robust JSON parse — tolerates ```json fences, leading prose,
-    trailing commas. Reuses the same extractor the primary path uses."""
-    try:
-        return _json_from_reply(reply or "")
-    except Exception:
-        return {}
+    """Iter 79j.82 — genuinely lenient JSON parse for Phase A replies.
+    The strict json.loads path silently produced 'empty extractions'
+    (both 1b void runs: 3.5KB end_turn responses judged empty). Ladder:
+    1. raw_decode from the first '{' (tolerates trailing prose)
+    2. + trailing-comma repair
+    3. + unescaped inch-quote repair (`min 4" clearance` inside strings)
+    Repaired parses carry `_json_repaired: true`; unparseable replies
+    carry `_parse_error` so the failure is diagnosable, never silent."""
+    text = (reply or "").strip()
+    fence = re.match(r"^```(?:json)?\s*(.*?)\s*```$", text, re.DOTALL)
+    if fence:
+        text = fence.group(1).strip()
+    start = text.find("{")
+    if start < 0:
+        return {"_parse_error": "no JSON object found"}
+    body = text[start:]
+    with_commas = _TRAILING_COMMA_RE.sub(r"\1", body)
+    candidates = [body, with_commas, _INCH_QUOTE_RE.sub('\\"', with_commas)]
+    decoder = json.JSONDecoder()
+    last_err = None
+    for i, cand in enumerate(candidates):
+        try:
+            obj, _ = decoder.raw_decode(cand)
+            if isinstance(obj, dict):
+                if i > 0:
+                    obj["_json_repaired"] = True
+                return obj
+        except Exception as e:
+            last_err = e
+    return {"_parse_error": str(last_err) if last_err else "unparseable"}
 
 
 def _env_int(name: str, default: int) -> int:
@@ -3974,12 +4031,12 @@ def _build_phase_a_prompt(
         # so a count survives perspective, tilt and depth mismatch.
         prompt_lines.append(
             f"SIDING EXPOSURE = {siding_exposure_in:.2f} in per row (contractor-calibrated). "
-            "Count rows to size windows on siding-clad walls, AND use it for WALL HEIGHTS: "
-            f"count lap courses from the bottom of the FIRST siding course (the siding start line) to the eave — courses × {siding_exposure_in:.2f} in = eave height. "
-            "The first counted course sits on the starter strip. NEVER add exposed foundation/membrane/parging below the siding start — not to the count, not as inches. "
+            "Count rows to size windows on siding-clad walls, AND use it for WALL HEIGHTS — COUNT FIRST, HEIGHT SECOND: "
+            f"ENUMERATE lap courses from the first course on the starter (top of the block line) to the course meeting the frieze/soffit line, then derive height = courses × {siding_exposure_in:.2f} in (+ measured reveal of a cut top strip, flagged `partial_top_course`). "
+            "A count needs enumeration evidence (`count_enumeration_evidence`: anchor edge + start/stop course); if you cannot enumerate, report `eave_courses_counted`: null — never back-derive a count from a pixel height. "
+            "NEVER add exposed foundation/membrane/parging below the siding start — not to the count, not as inches. "
             "If the start line is hidden, estimate it from the course rhythm and set `start_line_occluded`: true — never fall back to grade. "
-            "Report the count in `eave_courses_counted`. A course count is plane-correct and beats "
-            "pixel-scale math; when the two disagree, report the course-count value."
+            "A pixel-scale read may DISPUTE an enumerated count but never AUTHOR one (a course count is plane-correct): on disagreement keep the count, set `count_disputed_by_pixel`: true, report both."
         )
     if scale_ref_hint:
         prompt_lines.append(scale_ref_hint)

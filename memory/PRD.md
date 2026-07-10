@@ -2409,3 +2409,49 @@ Howard recounted with boundary-explicit enumeration. Pre-supersede entries backe
   - LEFT & RIGHT: corners forced by the eave walls — 25(+cut)=8.96′ at both FRONT corners, 28=9.92′ at both BACK corners. **The step is the ROOFLINE rising toward the back (~3 courses / ~12¾″); ground and bottom course are LEVEL.** Previous stepped entry (26→23 falling to back) was WRONG in direction and values.
 - **Superseded-convention note (OPEN, unresolved — do not repair retroactively)**: old side-wall entries (23/26) and the AI's corner reads (8.1′/9.2′) share a uniform **−2** vs corrected enumeration. Cause unknown. Photo 6 RETAINS mechanism-(a) control status; photo 6's and run 3's "delta 0" corner-accuracy claims are **RETRACTED**.
 - **Re-scores against corrected truth** (all 3 run docs annotated with `tape_supersede_note`): RUN1 82.8→**87.3%** (right 10.3 now +0.38 pass vs 9.92 bound) · RUN2 92.3→**95.3%** (back still unread; right 9.2 inside range) · RUN3 94.1→**91.8%** (front 10.3 +1.34 FAIL, right 8.1 now −0.86 amber). Sparkline now 87.3→95.3→91.8. Note: aggregate moved UP on runs 1-2, not down — the corrected side-wall ranges are wider/higher and forgive high reads; the honest signal lives in the per-wall front/back rows, not the aggregate. Front remains the 1b anchor: 30/27/29 counted vs 25 enumerable.
+
+## Iter 79j.82 — CANDIDATE 1b: count-first with enumeration evidence (2026-07-10)
+
+### PRE-REGISTRATION (Howard-approved with 3 edits folded — verdicts render against THIS TEXT ONLY)
+*Fix requirements:*
+1. Count-first with enumeration evidence: a course count is only reportable when the reasoning demonstrates enumeration (anchor edge named, start and stop course identified). Estimated/derived counts are not counts.
+2. Height is derived second: `eave_height_ft_observed` = count × exposure (+ any partial top course, explicitly flagged). Never the other way around. **[Edit 3 corollary]** The reconciler must not cite derived height as evidence for a count — height = count × exposure is arithmetic, not corroboration. Only enumeration evidence or independent cross-photo enumerated counts corroborate. This closes the door on Phase B rebuilding the circularity one layer up.
+3. Count/height disagreement is FLAGGED, not harmonized: if a pixel-scale read disputes the enumerated count, report both and flag the conflict — the pixel read may dispute but never author a count.
+4. Explicit boundaries: top = the course meeting the frieze/soffit line; bottom = the first course on the starter, at the top of the block line.
+5. Partial top course: if the top strip is cut (sub-exposure reveal), report the enumerable count + `partial_top_course: true` and add the measured reveal to height.
+*Fix deliverable:* per-wall signed course-delta row (AI count − tape count) in the Tape Check panel as a first-class metric, alongside the existing aggregate.
+
+*Pass criteria — Letrick (rerun from cached photos, one run in flight, code frozen during run):*
+- FRONT: count 25 = pass · 26 = pass ONLY with partial-top flag · 27+ = fail. Height ~8.96′.
+- BACK: 28 courses / 9.92′. **[Edit 1]** An empty extraction VOIDS the run — rerun under the one-run-at-a-time rule; the candidate is scored only on runs where all 8 photos returned valid extractions. Candidate FAIL is reserved for valid reads that miss criteria. Two voided runs in a row reopens the empty-extraction stability fix as a blocking item before 1b continues.
+- CORNER-ANCHORED READS: land 25/28 (±0 courses), NOT 23/26. The −2 convention gap must close under enumeration-evidence counting or be surfaced as a flagged conflict — silent persistence of −2 is a fail.
+- `start_line_occluded` fires on ZERO Letrick photos.
+*Pass criteria — Red house:* aggregate holds 91–93 · woodpile photo count unchanged · no course-count regressions on scored walls · occlusion flags keep firing where they fired before.
+**[Edit 2] Verdict metric is per-wall, not aggregate**: the 1b pass/fail verdict is rendered on the per-wall count criteria ALONE; the aggregate percentage is recorded but has no vote. (The supersede re-score proved the aggregate can rise while the front wall stays 4–5 courses wrong.)
+*Protocol:* partial movement on front (e.g. 29→27) = FAIL, report-don't-ship. Both fixtures scored, before/after per-wall deltas in the run docs. Fix runs are development runs (prompt hash differs from prior captures — not blind runs).
+
+### Implementation (SHIPPED, pin-tested, suite 705 green)
+- **Phase A** (`PER_PHOTO_EXTRACT_PROMPT` rule 5 + exposure injection): COUNT FIRST HEIGHT SECOND; new fields `count_enumeration_evidence` (required for any non-null count), `partial_top_course`, `count_disputed_by_pixel`; explicit starter/block-line bottom + frieze/soffit top boundaries; "pixel may DISPUTE, never AUTHOR"; cannot-enumerate → null (no back-derivation).
+- **Phase B** (`RECONCILE_PROMPT`): count-derived requires enumeration evidence; "arithmetic, not corroboration" clause; per-wall `eave_courses_counted` carried into the reconciled walls schema.
+- **Scoring** (`estimates.py`): per-wall `ai_courses` / `tape_courses` (nearest-height segment) / signed `course_delta` on every history entry. **Panel**: Δc chip per wall (green 0 / amber ±1 / red ≥2).
+- Tests: `test_count_first_iter81.py` (6) + iter67/iter77 pins updated to the superseding contract.
+
+### 1b FIX-RUN RESULTS (2026-07-10) — VERDICT: FAIL vs pre-registration (per-wall, aggregate has no vote)
+**Run ledger (one at a time, code frozen during runs):**
+- Letrick attempt 1 (6c411870): **VOID** — photo 7 empty. NEW diagnostics caught the real bug: Claude returned 3,520 chars of valid-looking JSON (stop_reason end_turn, correct elevation) that our STRICT parser rejected → judged "empty". False positive in our own code.
+- Letrick attempt 2 (799ff0f2): **VOID #2** — photo 5, same class (3,660 chars, end_turn). Two voids in a row → Edit 1 tripped, **stability fix reopened as BLOCKING and shipped**: `_clean_json_reply` rewritten as a lenient parse ladder (raw_decode tolerates trailing prose → trailing-comma repair → unescaped inch-quote repair), repaired parses stamped `_json_repaired`, unparseable replies stamped `_parse_error` (never silent). Pin tests: `test_json_repair_iter82.py` (7). Suite 712 green.
+- Letrick attempt 3 (4e376d2d): **VALID 8/8** — enumeration evidence on every photo (anchor edge + start/stop course named), zero occlusion flags, zero repairs needed. SCORED (95.3% aggregate, recorded, no vote).
+- Red house (fd4d01f9): **VOID** — photo 3 (the woodpile photo) hit the 240s per-photo timeout. THIRD distinct empty class: (1) parse false-positive [FIXED], (2) wave-cap concurrency [operational rule], (3) per-photo LLM timeout [open]. NOT scored.
+
+**Letrick per-wall verdict (valid run 4e376d2d vs pre-registered criteria):**
+| Criterion | Result | Verdict |
+|---|---|---|
+| FRONT 25c (26 w/ partial-top) | 27c / 9.56′, no partial-top flag | **FAIL** (partial movement again: photo p0 count history 30→27→29→27) |
+| BACK 28c / 9.92′ | 30c / 10.6′ | **FAIL** (+2) |
+| Corners land 25/28, no silent −2 | MIXED: p2=28✓ p3=25✓ p7=25✓, but p1=24, p5=24 (rear-right corner, should be 28), p6=23 — silent, no flagged conflict | **FAIL** (silent −2/−5 persistence) |
+| start_line_occluded fires on 0 photos | 0 fired | **PASS** |
+Notable: LEFT reconciled 28c/9.92′ = Δc 0 dead-on; RIGHT 24c/8.5′ = Δc −1. The Δc panel chips + per-wall course rows worked as specified.
+
+**Red house independent observation (from the void run's 7 valid photos, unscored):** ALL counts came back null — the strict enumeration-evidence bar caused Claude to DECLINE to count on the harder two-story fixture rather than count carefully; heights went pixel-only (p1 read 14.5′ with occl=true). Over-suppression risk: the bar that fixed circularity on Letrick may have priced counting out of reach on red-house-class photos. This alone would likely fail "no course-count regressions" if the run had been valid.
+
+**Status: candidate 1b prompt is in the code (shipped with pin tests) but FAILS its pre-registration. Awaiting Howard's ruling: keep / revert / amend. Front count inflation is now isolated to specific photos (p0 front, p4 back full-wall reads) while corner-anchored enumeration hits 25/28 on half the corners.**

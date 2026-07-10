@@ -307,6 +307,22 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                   ) : (
                     <VerdictChip verdict={row?.verdict} delta={row?.delta} />
                   )}
+                  {typeof row?.course_delta === "number" && (
+                    <span
+                      className="text-[9px] font-bold px-1 py-0.5 border font-mono-num tabular-nums"
+                      style={
+                        row.course_delta === 0
+                          ? { background: "#DCFCE7", color: "#166534", borderColor: "#86EFAC" }
+                          : Math.abs(row.course_delta) === 1
+                            ? { background: "#FEF3C7", color: "#92400E", borderColor: "#FCD34D" }
+                            : { background: "#FEE2E2", color: "#991B1B", borderColor: "#FCA5A5" }
+                      }
+                      title={`AI counted ${row.ai_courses} courses vs your ${row.tape_courses} — signed course delta`}
+                      data-testid={`tape-check-course-delta-${w}`}
+                    >
+                      Δc {row.course_delta > 0 ? "+" : ""}{row.course_delta}
+                    </span>
+                  )}
                   {row?.stepped && (
                     <span className="text-[9px] text-[var(--muted)]" title={`scored against range ${Math.min(...(row.tape_segments || [0]))}–${Math.max(...(row.tape_segments || [0]))} ft`}>
                       ⇢ range
