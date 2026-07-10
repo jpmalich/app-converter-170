@@ -215,3 +215,21 @@ def test_estimated_tier_excluded_from_course_delta(admin_session, mongo_db):
     finally:
         mongo_db.ai_measure_runs.delete_one({"run_id": run_id})
         s.delete(f"{API}/estimates/{est_id}", timeout=15)
+
+
+def test_accuracy_pdf_carries_corner_cross_check_table(admin_session):
+    """1c ruling item 3 — the accuracy report PDF renders the persisted
+    _count_corner_audit as a same-corner cross-check methodology table.
+    Uses the Letrick fixture (has 1c runs with audits)."""
+    s = admin_session
+    est_id = "c864939b-b8d4-49c2-b41e-dceb7fedebd1"
+    r = s.get(f"{API}/estimates/{est_id}/tape-check/report-pdf", timeout=60)
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"].startswith("application/pdf")
+    import io
+    from pypdf import PdfReader
+    text = "".join(p.extract_text() for p in PdfReader(io.BytesIO(r.content)).pages)
+    low = text.lower()
+    assert "same-corner count cross-check" in low
+    assert "correlated-error residual" in low
+    assert "enumerated" in low and "estimated" in low

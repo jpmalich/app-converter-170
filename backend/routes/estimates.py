@@ -742,6 +742,67 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
         f"{voided_runs} voided run(s) (≥1 empty/failed photo — excluded from candidate verdicts)"
         + (f" · {unknown_runs} legacy run(s) without per-photo records" if unknown_runs else "")
     )
+
+    # Iter 79j.84 (1c ruling) — same-corner count cross-check table in the
+    # methodology section. Renders the persisted _count_corner_audit of
+    # the most recent runs so the honesty mechanics are visible on paper.
+    corner_sections: list[str] = []
+    residual_note = ""
+    async for r in db.ai_measure_runs.find(
+        {"estimate_id": est_id, "status": "done"},
+        {"_id": 0, "run_id": 1, "created_at": 1, "result.raw_ai._count_corner_audit": 1},
+    ).sort("created_at", -1):
+        audit = ((r.get("result") or {}).get("raw_ai") or {}).get("_count_corner_audit")
+        if not audit or len(corner_sections) >= 3:
+            continue
+        residual_note = audit.get("residual_note") or residual_note
+        rows = []
+        for corner, e in (audit.get("corners") or {}).items():
+            photos = " · ".join(
+                f"p{p.get('photo_idx')}: {p.get('count')}c"
+                + (" <span style='color:#B45309'>(pixel-cited)</span>" if p.get("pixel_cited") else "")
+                for p in e.get("photos") or []
+            )
+            if e.get("tier") == "enumerated":
+                gate = f"<span style='color:#16A34A;font-weight:bold'>enumerated · {e.get('value')}c</span>"
+                if e.get("possible_partial_top"):
+                    gate += " <span style='color:#B45309'>(lower kept — possible partial top)</span>"
+            else:
+                reason = {
+                    "corner_count_conflict": "same-corner photos disagreed &gt;1 — both demoted",
+                    "single_photo": "single photo — cannot cross-check",
+                    "pixel_citation_demotion": "pixel agreement cited as support — demoted",
+                }.get(e.get("reason") or "", e.get("reason") or "")
+                gate = (f"<span style='color:#B45309;font-weight:bold'>estimated · {e.get('value')}c</span>"
+                        f" <span class='muted'>({reason})</span>")
+            rows.append(
+                f"<tr><td style='text-transform:uppercase;font-weight:bold'>{corner.replace('_', '-')}</td>"
+                f"<td>{photos}</td><td>{gate}</td></tr>"
+            )
+        for p in audit.get("uncornered") or []:
+            rows.append(
+                f"<tr><td style='text-transform:uppercase;font-weight:bold'>no anchor</td>"
+                f"<td>p{p.get('photo_idx')}: {p.get('count')}c</td>"
+                f"<td><span style='color:#B45309;font-weight:bold'>estimated · {p.get('count')}c</span>"
+                f" <span class='muted'>(no corner anchor — cannot cross-check)</span></td></tr>"
+            )
+        if rows:
+            corner_sections.append(
+                f"<p class='muted' style='margin:4px 0 2px'>Run {str(r.get('run_id') or '')[:8]} · "
+                f"{str(r.get('created_at'))[:10]}</p>"
+                f"<table><tr><th>Physical corner</th><th>Per-photo counts</th><th>Gate result</th></tr>"
+                f"{''.join(rows)}</table>"
+            )
+    corner_html = (
+        "<h2>Same-corner count cross-check — 1c mechanical gate (methodology)</h2>"
+        "<p class='muted' style='margin:2px 0'>Course counts are estimates by default and tier-labeled always. "
+        "The <b>enumerated</b> tier is earned only by independent same-corner agreement between photos and will be "
+        "rare; when two counts differ by exactly 1 the LOWER count is kept. <b>Estimated</b>-tier counts stay "
+        "takeoff-usable but are excluded from accuracy claims and course-delta scoring. Accuracy claims ride on "
+        "tape-scored heights and areas, never raw counts.</p>"
+        + "".join(corner_sections)
+        + (f"<p class='muted' style='margin:2px 0;font-style:italic'>{residual_note}</p>" if residual_note else "")
+    ) if corner_sections else ""
     branding = await get_branding()
     company = branding.get("supplier_name") or "Pro-Quote Estimating Tool"
     addr = est.get("address") or " ".join(
@@ -842,6 +903,7 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
       <h2>Taped ground truth (entered in the field)</h2>
       <table><tr><th>Wall</th><th>Tape value</th></tr>{tape_rows}{dormer_rows}</table>
       <p class="muted" style="margin:4px 0" data-role="run-integrity">{integrity_line}</p>
+      {corner_html}
       <h2>Development validation — tuned fixture (methodology exhibit)</h2>
       <p class="muted" style="margin:2px 0">Runs below were scored on a fixture used during prompt development.
       They demonstrate methodology and progress, <b>not</b> field accuracy.</p>
