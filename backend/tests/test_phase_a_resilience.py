@@ -58,6 +58,7 @@ async def _slow_photo_body(monkeypatch):
 
     # Shrink the budgets so the test stays under a couple seconds.
     monkeypatch.setenv("AI_MEASURE_PER_PHOTO_TIMEOUT", "1")
+    monkeypatch.setenv("AI_MEASURE_TIMEOUT_RETRY_BUDGET", "1")
     monkeypatch.setenv("AI_MEASURE_PHASE_A_TIMEOUT", "3")
     monkeypatch.setenv("AI_MEASURE_PER_CALL_TIMEOUT", "1")
 
@@ -120,6 +121,8 @@ async def _slow_photo_body(monkeypatch):
     assert extractions[1].get("_empty_extraction") is True
     assert "timed out" in (extractions[1].get("_empty_reason") or "").lower()
     assert "budget" in (extractions[1].get("_extraction_error") or "").lower()
+    # Iter 79j.82 — the salvage pass fired and its failure is recorded.
+    assert extractions[1].get("_timeout_retry_attempted") is True
     # Orphan bookkeeping ran → walls the slow photo would've contributed
     # to (nothing here since it never reported walls_visible) surface on
     # the final raw.

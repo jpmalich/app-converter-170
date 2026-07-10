@@ -81,5 +81,8 @@ def test_report_html_framing_no_blended_aggregate():
     assert "Held-out blind runs — accuracy claim" in src
     assert "zero prompt changes between capture and scoring" in src
     assert "not</b> field accuracy" in src
+    # Iter 79j.82 — run-integrity line pinned (voided vs valid runs)
+    assert "Run integrity:" in src
+    assert "excluded from candidate verdicts" in src
     # the two sections must never blend: no combined-average code path
     assert "blended" not in src.lower() or "never\n      combined" in src or "never combined" in src.replace("\n      ", " ")

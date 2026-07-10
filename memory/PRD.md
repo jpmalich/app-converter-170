@@ -2455,3 +2455,25 @@ Notable: LEFT reconciled 28c/9.92′ = Δc 0 dead-on; RIGHT 24c/8.5′ = Δc −
 **Red house independent observation (from the void run's 7 valid photos, unscored):** ALL counts came back null — the strict enumeration-evidence bar caused Claude to DECLINE to count on the harder two-story fixture rather than count carefully; heights went pixel-only (p1 read 14.5′ with occl=true). Over-suppression risk: the bar that fixed circularity on Letrick may have priced counting out of reach on red-house-class photos. This alone would likely fail "no course-count regressions" if the run had been valid.
 
 **Status: candidate 1b prompt is in the code (shipped with pin tests) but FAILS its pre-registration. Awaiting Howard's ruling: keep / revert / amend. Front count inflation is now isolated to specific photos (p0 front, p4 back full-wall reads) while corner-anchored enumeration hits 25/28 on half the corners.**
+
+## Iter 79j.83 — 1b REVERTED (Howard's ruling) + timeout salvage + run-integrity + evidence audit (2026-07-10) ✅
+
+### Reversion (hash-confirmed)
+1b prompt changes reverted to the 1a-validated contract by splicing the exact constants from commit `023cbf9`. **Runtime prompt hash `f23780909828f9a8` — AST-verified equal to the 1a-era contract hash.** KEPT (separately validated infrastructure): parser repair ladder + `_parse_error`/`_json_repaired` diagnostics, `_stamp_empty_diagnostics`, prompt-hash stamping, per-wall course-delta scoring + Δc panel chips, run ledger, all findings. Tests: iter77 restored to 1a pins; iter81 rewritten as reversion pins (hash == `f23780909828f9a8`, 1b markers absent) + the kept course-delta scoring test.
+
+### Empty class 3 fix — timeout SALVAGE PASS (blocking item, shipped)
+Photos killed by the per-photo budget (240s) or the wave cap now get ONE sequential retry with a fresh budget (`AI_MEASURE_TIMEOUT_RETRY_BUDGET`, default 120s) AFTER all waves complete — outside the wave scheduler so the cap can't kill the retry mid-flight. Provenance: `_timeout_retry_attempted` on both outcomes. Pin tests: `test_salvage_retry_iter82.py` (recovery path) + `test_phase_a_resilience.py` updated (retry-then-fail path). All three empty classes now handled: (1) parse false-positive → repair ladder, (2) wave-cap concurrency → one-run rule + salvage, (3) LLM timeout → salvage retry.
+
+### Run-integrity line in accuracy report PDF (approved, shipped)
+"Run integrity: N valid run(s) · M voided run(s) (≥1 empty/failed photo — excluded from candidate verdicts) · K legacy". Verified live on Letrick: 2 valid / 4 voided — exact. Pinned in `test_accuracy_report_iter79.py`.
+
+### EVIDENCE AUDIT — 1b valid run 4e376d2d (deliverable, pre-1c)
+Every one of the 8 counts presented FORMALLY COMPLETE enumeration evidence (anchor edge named, start course on starter at block line, stop course at frieze/soffit). The failing counts did NOT leak scale-consistency language past the gate — they wore perfect evidence dress. **Per Howard's pre-declared branch: evidence fabrication is the disease → 1c needs verification mechanics, not stronger instructions.**
+The killer cross-check — each physical corner was counted from TWO photos in the SAME run:
+| Physical corner | Photo A | Photo B | Disagreement | Howard truth |
+|---|---|---|---|---|
+| Front-left | p0: 27c | p1: 24c | **3 courses** | 25 |
+| Rear-left | p2: 28c ✓ | p3: 25c | **3 courses** | 28 |
+| Rear-right | p4: 30c | p5: 24c | **6 courses** | 28 |
+| Front-right | p6: 23c | p7: 25c ✓ | **2 courses** | 25 |
+Same anchor, same run, 2–6-course disagreements → these are not deterministic enumerations; the model learned the evidence FORMAT, not the act. Also note: every full-wall count's reasoning still ends "pixel cross-check agrees" (p0: 27c=114.75″ vs pixel 117″). 1c direction (Howard's, from ruling): **two-tier reporting** (enumerated w/ evidence = scoreable; `estimated: true` = amber, takeoff-usable, excluded from accuracy claims) + **cross-photo same-corner count verification** as the mechanic that catches fabricated enumerations.

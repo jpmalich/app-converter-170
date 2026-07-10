@@ -1,6 +1,6 @@
-"""Iter 79j.77 — count-boundary candidate 1: siding-start (not grade) is
-the course-count origin. Pins the prompt contract so a regression can't
-silently revert to grade-to-eave."""
+"""Iter 79j.77 — count-boundary candidate 1a: siding-start (not grade) is
+the course-count origin. Pins the 1a-VALIDATED contract (candidate 1b was
+reverted per pre-registration FAIL, iter 79j.82)."""
 import sys
 from pathlib import Path
 
@@ -24,9 +24,7 @@ def _prompt(**kw):
 
 def test_rule5_counts_from_siding_start_not_grade():
     p = PER_PHOTO_EXTRACT_PROMPT
-    # Iter 79j.81 superseded the wording: boundary is now "first course
-    # on the starter, at the top of the block line" (count-first contract)
-    assert "the one on the starter" in p
+    assert "BOTTOM OF THE FIRST SIDING COURSE" in p
     assert "siding start line" in p
     assert "COUNT the courses from grade" not in p
     assert "count lap courses from grade" not in p
@@ -48,8 +46,7 @@ def test_rule5_occlusion_fallback_never_grade():
 
 def test_exposure_injection_line_uses_start_line():
     p = _prompt()
-    # Iter 79j.81 superseded: injection now enumerates from the starter
-    assert "first course on the starter (top of the block line)" in p
+    assert "FIRST siding course (the siding start line) to the eave" in p
     assert "NEVER add exposed foundation/membrane/parging below the siding start" in p
     assert "never fall back to grade" in p
 

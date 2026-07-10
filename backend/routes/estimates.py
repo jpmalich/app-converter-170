@@ -719,6 +719,29 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
         raise HTTPException(status_code=400, detail="No scored runs yet — score at least one run first")
 
     held_out = bool(tc.get("held_out"))
+
+    # Iter 79j.82 — run integrity per fixture (Howard-approved): voided
+    # runs (any photo empty/errored) vs valid runs (all photos returned
+    # valid extractions). Voided runs never carry a candidate verdict.
+    valid_runs = voided_runs = unknown_runs = 0
+    async for r in db.ai_measure_runs.find(
+        {"estimate_id": est_id, "status": "done"}, {"_id": 0, "raw_per_photo": 1},
+    ):
+        rpp = r.get("raw_per_photo")
+        if not rpp:
+            unknown_runs += 1
+            continue
+        bad = any(
+            isinstance(p, dict) and (p.get("_empty_extraction") or p.get("_extraction_error"))
+            for p in rpp
+        )
+        voided_runs += 1 if bad else 0
+        valid_runs += 0 if bad else 1
+    integrity_line = (
+        f"Run integrity: {valid_runs} valid run(s) (all photos returned valid extractions) · "
+        f"{voided_runs} voided run(s) (≥1 empty/failed photo — excluded from candidate verdicts)"
+        + (f" · {unknown_runs} legacy run(s) without per-photo records" if unknown_runs else "")
+    )
     branding = await get_branding()
     company = branding.get("supplier_name") or "Pro-Quote Estimating Tool"
     addr = est.get("address") or " ".join(
@@ -818,6 +841,7 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
       Only held-out blind runs support an accuracy claim.</div>
       <h2>Taped ground truth (entered in the field)</h2>
       <table><tr><th>Wall</th><th>Tape value</th></tr>{tape_rows}{dormer_rows}</table>
+      <p class="muted" style="margin:4px 0" data-role="run-integrity">{integrity_line}</p>
       <h2>Development validation — tuned fixture (methodology exhibit)</h2>
       <p class="muted" style="margin:2px 0">Runs below were scored on a fixture used during prompt development.
       They demonstrate methodology and progress, <b>not</b> field accuracy.</p>
