@@ -50,7 +50,7 @@ const STEPS = [
     key: "front-left",
     elevation: "front-left",
     title: "Front-Left Corner",
-    hint: "Step to the front-left corner. Frame the front wall AND the left wall at ~45°.",
+    hint: "Step to the front-left corner. Frame the front wall AND the left wall at ~45°. Get the corner trim and both walls' bottom courses in frame — this corner's course count is cross-checked against the front and left wall shots.",
     diagram: "🏠     ↙ YOU",
   },
   {
@@ -64,7 +64,7 @@ const STEPS = [
     key: "rear-left",
     elevation: "rear-left",
     title: "Rear-Left Corner",
-    hint: "Step to the rear-left corner. Frame the left wall AND the back wall at ~45°.",
+    hint: "Step to the rear-left corner. Frame the left wall AND the back wall at ~45°. Get the corner trim and both walls' bottom courses in frame — this corner's course count is cross-checked against the left and back wall shots.",
     diagram: "↘ YOU\n🏠",
   },
   {
@@ -78,7 +78,7 @@ const STEPS = [
     key: "rear-right",
     elevation: "rear-right",
     title: "Rear-Right Corner",
-    hint: "Step to the rear-right corner. Frame the back wall AND the right wall at ~45°.",
+    hint: "Step to the rear-right corner. Frame the back wall AND the right wall at ~45°. Get the corner trim and both walls' bottom courses in frame — this corner's course count is cross-checked against the back and right wall shots.",
     diagram: "    YOU ↙\n🏠",
   },
   {
@@ -92,7 +92,7 @@ const STEPS = [
     key: "front-right",
     elevation: "front-right",
     title: "Front-Right Corner",
-    hint: "Last one — step to the front-right corner. Frame the front wall AND the right wall at ~45°.",
+    hint: "Last one — step to the front-right corner. Frame the front wall AND the right wall at ~45°. Get the corner trim and both walls' bottom courses in frame — this corner's course count is cross-checked against the front and right wall shots.",
     diagram: "🏠   ↘ YOU",
   },
   // Iter 79i (Phase 4) — Optional aerial/satellite step. Contractor
@@ -551,7 +551,15 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
           <h2 className="text-xl font-bold text-[var(--ink)] mt-1 mb-2" data-testid="guided-capture-step-title">
             {step.title}
           </h2>
-          <p className="text-sm text-[var(--ink-2)] mb-4">{step.hint}</p>
+          <p className="text-sm text-[var(--ink-2)] mb-2">{step.hint}</p>
+          <p
+            className="text-[11px] text-[#92400E] bg-[#FEF3C7] border border-[#FCD34D] px-2 py-1.5 mb-4"
+            data-testid="guided-capture-corner-pair-note"
+          >
+            <b>Shoot each corner from both walls.</b> Course counts anchor at corners, and only
+            matching same-corner counts from two photos earn the enumerated (tape-provable) tier —
+            everything else stays an amber estimate.
+          </p>
 
           {/* Diagram */}
           <div className="bg-[var(--surface-muted)] border border-[var(--border)] py-6 px-4 mb-4 text-center font-mono-num text-2xl whitespace-pre leading-relaxed">

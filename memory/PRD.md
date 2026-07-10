@@ -2535,3 +2535,29 @@ Scored: aggregate **94.1** (1 pass / 0 amber / 1 fail; left wall AI 9.1 vs tape 
 - (3) Accuracy Report PDF now renders the persisted `_count_corner_audit` as a "Same-corner count cross-check — 1c mechanical gate (methodology)" table (up to 3 most recent audited runs: per-photo counts, pixel-cited markers, gate results, no-anchor rows) + the correlated-error residual note + the ruling's framing language verbatim. Pinned in `test_count_tiering_iter84.py::test_accuracy_pdf_carries_corner_cross_check_table`.
 
 **Queue now unfrozen. NEXT: right-gable overread (P1) → candidate 3 appendage detection (P1, corner-locations acceptance; photo-3/photo-4 autopsy questions owed) → LP-native package assembly for September.**
+
+## Iter 79j.85 — Red-house acceptance rider + left-wall trace + capture guidance + right-gable evidence (2026-07-10)
+
+### Occlusion stochasticity — LOGGED PROPERTY (Howard-accepted, on run doc e0e704f6 + here)
+Occlusion detection is honest but placement-stochastic — mechanism intact, photo-level stability not guaranteed (1a run 56589e26 flagged p3,p7 → 1c run e0e704f6 flagged p2,p6,p7; only p7 stable). Constrains future capture guidance: "reshoot flagged photos" cannot assume flags are stable.
+
+### LEFT-WALL TRACE (red house) — READ DRIFTED, ground truth never moved. No supersede event.
+- Tape entry: **10.3125 in all 6 score entries**, unchanged; `tape_check.updated_at` 2026-07-09 00:12 — before both later runs; still stored as a legacy single float (never migrated/re-segmented under the stepped schema).
+- AI left-wall read across runs: 9.0 → 9.7 → 9.7 → 9.4 → 9.4 → **9.1** (source flipped direct_consensus → direct_disagreement in the 1c run). Read drift = another non-determinism data point, logged not fixed.
+- Premise correction: 9.4 was never a pass — it scored AMBER (Δ−0.91). Left has never passed on this fixture (best Δ−0.61).
+- Why the aggregate rose while left flipped to fail: **composition, not accuracy** — the right wall (historic worst: Δ+0.91…+3.21, fail in 3 of 5 prior runs) dropped out as honestly-imputed this run, leaving left(fail) + left dormer(exact pass).
+
+### Capture guidance shipped (guidance layer only, per approval)
+GuidedCaptureWizard: all 4 corner steps now instruct framing the corner trim + BOTH walls' bottom courses ("this corner's course count is cross-checked against the adjacent wall shots") + a standing amber note on every step: same-corner pairs are the sole path to the enumerated (tape-provable) tier. AI Measure onboarding checklist corner tip rewritten with the same standing note; the now-falsified "corner counts are repeatedly tape-exact" claim removed.
+
+### RIGHT-GABLE OVERREAD (P1) — EVIDENCE DELIVERABLE (no fix, per candidate protocol)
+Target: ~8.75′ rise (7/12 × 15′ half-span on the 30′/360″ gable ends; blueprint's 8.5′ was drawing-scaled, NOT the target). Left and right gable ends are geometrically identical — same span, same ridge.
+**Asymmetry is PERSISTENT, not stochastic**: final right gable across all 7 Letrick runs = 12.6 / 10.3 / 12.6 / 9.75 / 10.0 / 10.2 / 9.5 (always over); left = 8.5 / 9.3 / 8.8 / 9.3 / 9.0 / 7.9 / 8.8 (straddles target). Right > left in every run.
+Per-photo (3 valid runs): right reads p5 (rear-right oblique) 12.5 / 12.5 / 10, p6 (square-on) 12.6 / 10.3 / 9.5, p7 (front-right oblique) 7.5 / 10.0 / 7.5. Left reads 7.0–10.0.
+**Mechanism classification — four stacked causes, dominant two are structural:**
+1. **Pitch-ladder quantization (STRUCTURAL, code-confirmed)**: Phase A schema hard-limits `pitch_ratio_observed` to `4/12|6/12|8/12|10/12|12/12` — the true 7/12 is INEXPRESSIBLE. Rise reads are literally pitch×15′: 7.5′ (6/12), 10.0′ (8/12), 12.5′ (10/12) recur verbatim. Smoking gun: run 97d99abb p2 measured "~7.1/12" (≈ truth) then rounded UP: "nearest allowed ratio is 8/12" → 8.8′ becomes 10′ downstream. Best-case error on this house is ±1.25′ by construction. Affects BOTH gables.
+2. **Oblique foreshortening inflation (PERSISTENT, right side)**: the rear-right corner photo p5 always reads highest (11.7/12 raw in 4e376d2d — its own reasoning ADMITS "horizontal foreshortening inflates the vertical conversion" and still lands 10/12 → 12.5′).
+3. **Apex/eave pixel placement instability (STOCHASTIC)**: the same square-on right photo p6 read rise 437 px (97d99abb) then 330 px (73cca7fa) — a 32% swing on the identical triangle → 10/12 vs 8/12. Same non-determinism disease as counting.
+4. **No same-plane vertical anchor on the right (ASYMMETRY DRIVER)**: the right gable wall is windowless (noted in every run) — no WIN_REF on that plane; vertical conversion rides pixel ratios alone. The left wall carries a Pella window WIN_REF and its reads cluster tighter.
+Answer to the framing question: not a single mechanism — scale error (4) + apex mislocation (3) feed a ratio that foreshortening (2) inflates and the even-only ladder (1) quantizes upward. The 1c-era run landed 9.5′ only because p6 happened to read low that run; the floor set by (1) means the pipeline cannot express 8.75′ at all.
+**Status: mechanism shown. Any fix (e.g., odd pitches in the ladder, oblique down-weighting for gable rise, square-on-only gable reads) requires pre-registration before a fix run. Awaiting Howard's ruling.**

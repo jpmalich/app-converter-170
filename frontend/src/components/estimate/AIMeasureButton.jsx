@@ -2307,9 +2307,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-corners">
                         <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
                         <span>
-                          <b>Prefer a corner-angle shot of each wall over square-on.</b>{" "}
-                          Course counts anchored at a corner edge are repeatedly tape-exact;
-                          distant square-on reads drift. Frame the corner so the wall you&apos;re
+                          <b>Shoot each corner from both walls.</b>{" "}
+                          Course counts anchor at corners, and only matching same-corner counts
+                          from two photos earn the enumerated (tape-provable) tier — everything
+                          else stays an amber estimate. Frame the corner so the wall you&apos;re
                           measuring fills most of the shot, and still cover every wall.
                         </span>
                       </li>
