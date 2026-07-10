@@ -24,9 +24,9 @@ API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASSWORD = "Admin123!"
 
-# Iter 79j.84 — 1c contract: 1a-validated base + the pre-registered 1c
-# anchor/pixel rules (count_anchor_corner, pixel-never-corroborates).
-HASH_1C = "07318d7b10de9fb4"
+# Iter 79j.87 — Candidate 2 contract: 1c base + pitch ladder expanded to
+# all integer pitches 3/12–14/12 (measured pitch at integer resolution).
+HASH_1C = "53f2bfa3344b1057"
 
 
 def test_contract_hash_pinned_1c():
@@ -44,6 +44,12 @@ def test_1c_markers_present():
     assert "count_anchor_corner" in PER_PHOTO_EXTRACT_PROMPT
     assert "count_disputed_by_pixel" in PER_PHOTO_EXTRACT_PROMPT
     assert "never authors and never corroborates" in PER_PHOTO_EXTRACT_PROMPT
+
+
+def test_candidate2_pitch_ladder_expanded():
+    # Iter 79j.87 — even-only ladder retired; integer pitches 3–14/12.
+    assert '"4/12" | "6/12" | "8/12"' not in PER_PHOTO_EXTRACT_PROMPT
+    assert "integer from 3 to 14" in PER_PHOTO_EXTRACT_PROMPT
 
 
 @pytest.fixture(scope="module")

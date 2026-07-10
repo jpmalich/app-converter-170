@@ -3364,6 +3364,11 @@ async def ai_measure_debug_runs(
             "completed_at": completed.isoformat() if completed else None,
             "elapsed_ms": elapsed_ms,
             "model_choice": doc.get("model_choice"),
+            "model_config": doc.get("model_config"),
+            # Iter 79j.87 — ACTUAL cost/run from live token telemetry
+            # (None for pre-telemetry or proxy-transport runs).
+            "cost_usd": ((_cost_from_usage(doc.get("model_config"), doc.get("token_usage")) or {}).get("total")),
+            "usage_probe": bool(doc.get("usage_probe")),
             "photo_count": doc.get("photo_count") or 0,
             "deep_dormer_scan": bool(doc.get("deep_dormer_scan")),
             "reconciled": bool(walls) and not recon_err,
@@ -3446,7 +3451,7 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
   "start_line_occluded":         boolean,         // true ONLY when the siding start line (bottom of first course) was hidden and you estimated it from course rhythm (see rule 5)
   "eave_scale_cross_plane":      boolean,         // true ONLY when the vertical scale for this eave read came from a reference on a DIFFERENT wall plane (see rule 6)
   "story_count_observed":         1 | 1.5 | 2 | 2.5 | 3 | null,
-  "pitch_ratio_observed":         "4/12" | "6/12" | "8/12" | "10/12" | "12/12" | null,
+  "pitch_ratio_observed":         "<N>/12 where N is an integer from 3 to 14 (e.g. '7/12')" | null,   // Iter 79j.87 Candidate 2 — report the MEASURED pitch at integer resolution; do not round to an even ladder
   "pitch_reasoning":              "<if you saw a gable and measured its rise vs run, say so; else null>",
 
   // GABLE / DORMER readings — ONLY set >0 if visible in THIS photo.

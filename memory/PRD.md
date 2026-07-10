@@ -2625,3 +2625,36 @@ Per-phase model plumbing (`model_phase_a`/`model_phase_b` rerun payload keys →
 **NEW LOGGED RESIDUAL — anchor-integrity dependency:** the 1c same-corner gate assumes truthful `count_anchor_corner` labels. Cheaper models scramble anchors AND count to gable peaks on gable-end photos (48–61 "courses", eaves read 16–19′), converting the cross-check from a fabrication-catcher into a false-agreement generator. On fable-5, anchors stayed consistent across all 1c-era runs. Corollary: any future model swap must re-validate anchor integrity BEFORE trusting the enumerated tier.
 
 **Cost-table corollary (deliverable):** incumbent actual is $3.61/run — 2.5× the pre-run estimate; the understatement was thinking tokens (fable-5 ~3.3K thinking/photo). Future per-run cost work has actuals infrastructure permanently in place.
+
+### HOWARD'S BAKE-OFF RULING (2026-07-10) — CLOSED per pre-registration
+No challenger passes (all fail accuracy criteria 1–2 despite clearing cost); incumbent fable-5 stays for both phases. Cost table banked: A0 actual $3.61/run, estimate-vs-actual gap attributed to thinking tokens, telemetry now permanent. A1's "actuals decide" retention: **vindicated on the cost gate** (actuals cleared ≥40% where the estimate said marginal) **and mooted by accuracy** — both halves logged.
+
+**STANDING PRD RULE — anchor integrity (elevated from logged residual, verbatim per ruling):** The 1c tiering gate's enumerated tier depends on the integrity of count_anchor_corner labels, which is model-specific capability, not architecture. A1's false same-corner pair (mislabeled rear-right agreeing with genuine rear_left → unearned enumerated 24c vs truth 28) is the canonical failure. RULE: any model change in either phase requires an anchor-integrity validation on gable-end-bearing fixtures — labels verified against known geometry — BEFORE tiering-gate outputs are trusted, in addition to the standard controlled-run comparison.
+**Portable/non-portable split:** honesty mechanics (pixel-citation demotion, conflict flags, imputed exclusion) generalized across all three challengers; anchor labeling did not.
+The false-pair verbatim excerpt now ships in the Accuracy PDF's corner cross-check methodology section.
+
+**BACKLOG — GPT-5.5:** excluded from the closed round per pre-registration (adapter cost: API/response format, parser repair ladder and empty-class handling are Claude-specific, behavioral map restarts from zero). Revisit trigger: (a) fable per-run cost becomes a business constraint at production volume, or (b) a forced or elective model swap opens a new bake-off round — GPT-5.5 rides as one candidate, adapter work estimated and approved separately first. Anchor-integrity validation rule applies.
+
+**Approved & shipped:** cost/run line in the run-history (async jobs) debug view, computed from live token telemetry (`cost_usd` on `/ai-measure/debug-runs`, rendered per run row).
+
+## Iter 79j.87 — CANDIDATE 2 PRE-REGISTRATION (Howard-drafted 2026-07-10; finalized; verdicts render against THIS TEXT ONLY)
+**Change:** pitch ladder expands to all integer pitches 3/12–14/12 inclusive; measured pitch reported at integer resolution; NO other extraction changes bundled. Contract hash moves `07318d7b10de9fb4` → **`53f2bfa3344b1057`** (pinned).
+**Pass criteria — Letrick:** right gable rise lands 8.75′ ±0.5′ on square-on photos; left gable holds or tightens 7.9–9.3; ladder artifacts (7.5/10.0/12.5 verbatim recurrences) disappear from the read series. **Red house:** no regressions on pitch-dependent reads (dormer, main roof); aggregate holds band; honesty criteria unchanged.
+**Protocol:** both fixtures, cached photos, valid 8/8 or void, one run in flight, code frozen during runs, per-wall verdict aggregate-no-vote, before/after read series in run docs.
+**Scope walls:** oblique admitted-inflation stays OUT (queued as a future demotion-rule candidate); apex stochasticity stays logged-not-fixed; windowless-gable capture note ships with guidance.
+
+### CANDIDATE 2 RUN REPORT (2026-07-10/11, hash `53f2bfa3344b1057`, fable-5 both phases, before/after read series stamped on run docs)
+**Runs:** Letrick attempt 1 `ae3722ca` VOID (p2,p5 empty) → attempt 2 `96238edd` valid 8/8 ($3.49, 9.5min). Red attempt 1 `7e9897e3` VOID (p6 empty) → attempt 2 `8fcc46ed` valid 8/8 ($4.16, 10.1min). Voids non-consecutive per candidate — no UNSTABLE verdict, but note: 1c-era runs had ZERO voids; C2 era had 2/4.
+**Letrick (`96238edd`):**
+- 7/12 EXPRESSED and used (p2,p3,p7); two EXACT 8.75′ gable reads (p3, p7)
+- Right gable square-on (p6): 9.6′ @ 8/12 → **FAIL** the 8.75±0.5 gate by 0.35′ (apex placement, the logged stochastic mechanism — p6 read 437px→330px→now ~9.6′ across eras)
+- Left gable: final 8.75′ → **PASS** (tightened from 7.9–9.3 band to exact)
+- Ladder artifacts: reduced from wholesale to ONE verbatim recurrence — p5 rear-right oblique 12.5 @ 10/12 (the perennial inflator, out-of-scope mechanism) → strict criterion "disappear" **FAIL**
+- Heights (recorded, no vote): aggregate **95.6 — best Letrick ever** (front +0.94a / back **−0.02p** / left +0.68a / right **0.00p**)
+- Honesty: all 4 corners conflict-flagged (spreads 2–6), zero enumerated, pixel-citation demotion fired on p4 (4th live catch), zero occlusion flags ✓
+**Red house (`8fcc46ed`):**
+- Aggregate **87.4 — out of band** → **FAIL**; left −1.56f (incumbent −1.21f, stayed fail), right +0.91a (read directly this run vs incumbent imputed)
+- **Dormer 16.5 vs tape 15.0 → FAIL (incumbent 0.00 PASS → pass→fail regression on a pitch-dependent read)** → criterion FAIL
+- p3 rear-left oblique still inflated (14.1′ eave @ 10/12) — out-of-scope oblique mechanism
+- Honesty unchanged ✓ (rear_left 28/45/29 conflict flagged, zero enumerated, occlusion flags fired ×5)
+**VERDICT vs pre-registration: CANDIDATE 2 FAILS** (right-gable gate missed 0.35′; one artifact recurrence; red-house band miss + dormer regression). What it PROVED: the quantization floor is real and removable — 7/12 reads appeared immediately and landed exact-true twice; the residual misses concentrate in the two explicitly out-of-scope mechanisms (oblique inflation, apex stochasticity). **Awaiting Howard's ruling. Nothing else moves.**

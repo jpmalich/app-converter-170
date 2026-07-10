@@ -803,6 +803,14 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
         "tape-scored heights and areas, never raw counts.</p>"
         + "".join(corner_sections)
         + (f"<p class='muted' style='margin:2px 0;font-style:italic'>{residual_note}</p>" if residual_note else "")
+        + "<p class='muted' style='margin:2px 0'><b>Anchor-integrity dependency (standing rule):</b> the enumerated "
+          "tier depends on the integrity of count_anchor_corner labels, which is model-specific capability, not "
+          "architecture. Canonical failure (model bake-off, Sonnet 4.6 Phase A, run 03f2ad42): a rear-right photo "
+          "reasoned <i>\u201cCounted lap courses along the rear-left corner of the back wall\u2026 approximately 24 "
+          "courses\u201d</i> — the mislabeled rear_left anchor matched a genuine rear_left count of 24 from a different "
+          "physical corner, earning an unearned enumerated 24c against a taped truth of 28. Any model change in either "
+          "phase requires anchor-integrity validation on gable-end-bearing fixtures before tiering-gate outputs are "
+          "trusted.</p>"
     ) if corner_sections else ""
     branding = await get_branding()
     company = branding.get("supplier_name") or "Pro-Quote Estimating Tool"

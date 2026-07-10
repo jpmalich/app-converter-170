@@ -26,7 +26,9 @@ ADMIN_PASSWORD = "Admin123!"
 
 
 def test_prompt_contract_untouched_by_infra():
-    assert _prompt_version_hash() == "07318d7b10de9fb4"
+    # updated to the Candidate 2 contract hash (pitch ladder expansion —
+    # the only prompt change since 1c; bake-off infra changed nothing).
+    assert _prompt_version_hash() == "53f2bfa3344b1057"
 
 
 def test_haiku_registered():
