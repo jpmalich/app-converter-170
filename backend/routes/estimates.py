@@ -740,6 +740,14 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
         for d in (tc.get("dormers") or [])
     )
 
+    def _hash_cell(h):
+        pu = h.get("prompt_unchanged")
+        if pu is True:
+            return "<span style='color:#16A34A;font-weight:bold'>locked</span>"
+        if pu is False:
+            return "<span style='color:#B91C1C;font-weight:bold'>changed</span>"
+        return "<span style='color:#94A3B8'>—</span>"
+
     def _entry_rows(entries):
         rows = []
         for h in entries:
@@ -760,6 +768,7 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
                 f"<tr><td>{(h.get('scored_at') or '')[:10]}</td><td>{h.get('model') or ''}</td>"
                 f"<td style='font-weight:bold'>{h.get('accuracy_pct')}%</td>"
                 f"<td>{h.get('passes')}✓ {h.get('ambers')}⚠ {h.get('fails')}✗</td>"
+                f"<td>{_hash_cell(h)}</td>"
                 f"<td style='font-size:8px'>{' · '.join(per_wall)}</td></tr>"
             )
         return "".join(rows)
@@ -769,15 +778,17 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
     curve = " → ".join(f"{h.get('accuracy_pct')}%" for h in dev_entries)
 
     blind_html = (
-        f"<table><tr><th>Date</th><th>Model</th><th>Accuracy</th><th>Verdicts</th><th>Per-wall</th></tr>{_entry_rows(blind_entries)}</table>"
+        "<p style='margin:2px 0;font-size:9px'>Only rows marked <b style='color:#16A34A'>locked</b> "
+        "(prompt hash stamped at capture, unchanged at scoring) support the accuracy claim.</p>"
+        f"<table><tr><th>Date</th><th>Model</th><th>Accuracy</th><th>Verdicts</th><th>Prompt hash</th><th>Per-wall</th></tr>{_entry_rows(blind_entries)}</table>"
         if blind_entries else
         "<p style='color:#64748B;font-style:italic'>None recorded yet. This section is populated only by fresh "
-        "houses scored with <b>zero prompt changes between capture and scoring</b>. It is the only section "
-        "that supports an accuracy claim.</p>"
+        "houses scored with <b>zero prompt changes between capture and scoring</b> — provable via the prompt "
+        "hash locked onto each run at capture. It is the only section that supports an accuracy claim.</p>"
     )
     dev_html = (
         f"<p style='margin:2px 0'>Accuracy curve: <b>{curve}</b></p>"
-        f"<table><tr><th>Date</th><th>Model</th><th>Accuracy</th><th>Verdicts</th><th>Per-wall (AI vs tape, ft)</th></tr>{_entry_rows(dev_entries)}</table>"
+        f"<table><tr><th>Date</th><th>Model</th><th>Accuracy</th><th>Verdicts</th><th>Prompt hash</th><th>Per-wall (AI vs tape, ft)</th></tr>{_entry_rows(dev_entries)}</table>"
         if dev_entries else
         "<p style='color:#64748B;font-style:italic'>No development-fixture runs on this property.</p>"
     )
@@ -834,6 +845,7 @@ async def get_tape_check(est_id: str, user: dict = Depends(get_current_user)):
         "walls": tc.get("walls") or {},
         "dormers": tc.get("dormers") or [],
         "history": tc.get("history") or [],
+        "held_out": bool(tc.get("held_out")),
         "updated_at": tc.get("updated_at"),
     }
 
@@ -866,18 +878,20 @@ async def set_tape_check(
             continue
         if face and 1.0 <= wf <= 60.0:
             dormers.append({"face": face, "width_ft": round(wf, 4)})
+    held_out = bool(payload.get("held_out"))
     res = await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"$set": {
             "tape_check.walls": walls,
             "tape_check.dormers": dormers,
+            "tape_check.held_out": held_out,
             "tape_check.updated_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc),
         }},
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
-    return {"ok": True, "walls": walls, "dormers": dormers}
+    return {"ok": True, "walls": walls, "dormers": dormers, "held_out": held_out}
 
 
 @router.post("/estimates/{est_id}/tape-check/score")
@@ -1031,6 +1045,15 @@ async def score_tape_check(
         "accuracy_pct": accuracy_pct,
         "passes": passes, "ambers": ambers, "fails": fails,
     }
+    # Iter 79j.80 — blind-run provability: the hash was locked at
+    # CAPTURE (run creation). Compare against the contract as it stands
+    # at scoring; only unchanged==True supports a blind-accuracy claim.
+    from routes.ai_measure import _prompt_version_hash  # local import dodges cycle
+    capture_hash = run.get("prompt_hash")
+    entry["prompt_hash"] = capture_hash
+    entry["prompt_unchanged"] = (
+        capture_hash == _prompt_version_hash() if capture_hash else None
+    )
     # Replace any prior entry for the same run, then append (cap 50).
     await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]},

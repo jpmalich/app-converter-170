@@ -10,7 +10,7 @@
 //
 // Verdicts (backend-computed): |Δ| ≤ 0.5 ft pass · ≤ 1.0 amber · > 1.0 fail.
 import React, { useEffect, useState } from "react";
-import { Ruler, Loader2, ChevronDown, ChevronRight, Check, AlertTriangle, X, FileText } from "lucide-react";
+import { Ruler, Loader2, ChevronDown, ChevronRight, Check, AlertTriangle, X, FileText, Lock } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -97,6 +97,7 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
   const [tape2, setTape2] = useState({ front: "", back: "", left: "", right: "" });
   const [steppedW, setSteppedW] = useState({ front: false, back: false, left: false, right: false });
   const [startRef, setStartRef] = useState("");
+  const [heldOut, setHeldOut] = useState(false);
   const [tapeDormers, setTapeDormers] = useState({}); // face → width string
   const [history, setHistory] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -166,6 +167,7 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
         dormers: Object.entries(tapeDormers)
           .filter(([, v]) => v !== "" && v != null)
           .map(([face, width_ft]) => ({ face, width_ft: Number(width_ft) })),
+        held_out: heldOut,
       });
       toast.success("Tape values saved — they persist on this estimate");
     } catch (e) {
@@ -243,6 +245,17 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
               <option value="siding_start">siding start</option>
             </select>
           </div>
+          <label className="flex items-center gap-1.5 text-[10px] cursor-pointer" title="Held-out blind fixture: this house was NOT used for prompt tuning. Its scored runs land in the accuracy-claim section of the report — provable via the prompt hash locked at capture.">
+            <input
+              type="checkbox"
+              checked={heldOut}
+              onChange={(e) => setHeldOut(e.target.checked)}
+              data-testid="tape-check-held-out"
+            />
+            <span className="text-[var(--muted)] uppercase text-[9px] font-bold tracking-wider inline-flex items-center gap-1">
+              <Lock className="w-2.5 h-2.5" /> Held-out blind fixture
+            </span>
+          </label>
           {WALLS.map((w) => {
             const f = (facades || []).find((x) => x.id === w);
             const row = latest?.walls?.[w];
@@ -369,7 +382,13 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                   <div className="flex items-center justify-between">
                     <span className="font-mono-num tabular-nums">{(h.scored_at || "").slice(0, 10)}</span>
                     <span className="truncate mx-1 text-[var(--muted)]" style={{ maxWidth: "6rem" }}>{h.model}</span>
-                    <span className="font-mono-num tabular-nums">
+                    <span className="font-mono-num tabular-nums inline-flex items-center gap-1">
+                      {h.prompt_unchanged === true && (
+                        <Lock className="w-2.5 h-2.5 text-[#16A34A]" data-testid={`tape-check-hash-locked-${h.run_id}`} title="Prompt hash locked at capture — unchanged at scoring" />
+                      )}
+                      {h.prompt_unchanged === false && (
+                        <AlertTriangle className="w-2.5 h-2.5 text-[#B45309]" title="Prompt changed between capture and scoring — not a blind run" />
+                      )}
                       <b>{h.accuracy_pct}%</b>
                       <span className="text-[#16A34A] ml-1">{h.passes}✓</span>
                       <span className="text-[#B45309] ml-0.5">{h.ambers}⚠</span>

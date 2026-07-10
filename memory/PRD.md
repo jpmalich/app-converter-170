@@ -2379,3 +2379,12 @@ R2 front px 115-120″ → 27c · R3 front px 125″ → 29c (125/4.25 = 29.4) �
 
 ### Next
 Awaiting Howard's boundary-explicit front/left recounts (start course / stop course / per-segment anchors) → fresh 1b pre-registration → fix run on both fixtures, code frozen. Candidate 3 (appendage detection, acceptance = corner LOCATIONS not pieces) queued behind 1b.
+
+## Iter 79j.80 — Blind-run provability: prompt hash locked at CAPTURE (2026-07-10) ✅
+Howard approved the toggle with the constraint: hash locks at capture time, not score time.
+- `_prompt_version_hash()` = sha256(PER_PHOTO_EXTRACT_PROMPT + RECONCILE_PROMPT)[:16]; stamped as `prompt_hash` on every ai_measure run doc at insert (primary launch + rerun).
+- Scoring records `prompt_hash` (capture) + `prompt_unchanged` (capture hash == contract hash at scoring; None for legacy runs without a hash). Only `prompt_unchanged: true` supports a blind-accuracy claim.
+- Panel: "Held-out blind fixture" checkbox (persists via `tape_check.held_out`, routes the fixture's history to the report's accuracy-claim section); history rows show a green lock (unchanged) / amber warning (changed) per entry.
+- Report PDF: "Prompt hash" column on both tables (locked / changed / — legacy); blind section states only "locked" rows support the claim.
+- Tests: `test_blind_run_hash_iter80.py` (5 — algorithm pinned, held_out roundtrip, unchanged/changed/legacy-null scoring). Suite 699 passed (same standalone-passing timing flake).
+- NOTE: a file-write race dropped two staged edits this session (Rule 5 text, Lock import) after the tool reported success — both caught by tests/screenshot and reapplied. Verify greps after multi-edit batches.

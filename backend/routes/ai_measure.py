@@ -29,6 +29,7 @@ import base64
 import io
 import json
 import time
+import hashlib
 import logging
 import os
 import re
@@ -2245,6 +2246,7 @@ async def ai_measure(
         "run_id": run_id,
         "user_id": user_id,
         "estimate_id": estimate_id,
+        "prompt_hash": _prompt_version_hash(),
         "status": "running",
         "stage": "starting",
         "photo_count": len(image_payloads),
@@ -2440,6 +2442,7 @@ async def ai_measure_rerun(
         "run_id":          new_run_id,
         "user_id":         user_id,
         "estimate_id":     estimate_id,
+        "prompt_hash":     _prompt_version_hash(),
         "status":          "running",
         "stage":           "starting",
         "photo_count":     len(image_payloads),
@@ -3886,6 +3889,16 @@ def _env_int(name: str, default: int) -> int:
     except Exception:
         return default
 
+
+
+def _prompt_version_hash() -> str:
+    """Iter 79j.80 — sha256 over the extraction contract (Phase A +
+    Phase B prompt constants). Stamped on every run doc AT CAPTURE so a
+    held-out blind run can PROVE "zero prompt changes between capture
+    and scoring" instead of asserting it."""
+    return hashlib.sha256(
+        (PER_PHOTO_EXTRACT_PROMPT + RECONCILE_PROMPT).encode("utf-8")
+    ).hexdigest()[:16]
 
 
 def _stamp_empty_diagnostics(parsed: dict, reply_text: str, stop_reason) -> dict:
