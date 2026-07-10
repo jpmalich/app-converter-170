@@ -2602,3 +2602,26 @@ Bake-off runs will record ACTUAL per-phase usage; the cost column uses actuals f
 4. Surface wall-clock + retry/void counts as columns (latency stamps + `_timeout_retry_attempted` already persisted)
 
 **STATUS: pre-registration drafted + cost baseline filled. WAITING FOR HOWARD'S GO. Sequence: this bake-off (4–6 runs) → Howard's ruling → right-gable evidence work under the winning model.**
+
+### GO received (2026-07-10): A1 stays (actuals decide); A0 usage-only probe approved (scores discarded, `usage_probe: true`).
+
+### INFRA SHIPPED (pin-tested, prompt hash unchanged `07318d7b10de9fb4`)
+Per-phase model plumbing (`model_phase_a`/`model_phase_b` rerun payload keys → `model_config` stamped at capture); ACTUAL token telemetry persisted per phase (`token_usage`, direct transport); `_price_for_model_id` + `_cost_from_usage` (haiku-4-5 added to registry+pricing); `usage_probe` runs refused by scoring (400), excluded from accuracy history, latest-for-estimate, and PDF run-integrity counts. Pins: `test_bakeoff_infra_iter86.py` (24 tests green incl. hash pin).
+
+### BAKE-OFF RESULTS (2026-07-10, 7 runs, all valid 8/8, zero voids, zero retries, one in flight throughout)
+| Candidate | Letrick per-wall Δ (F/B/L/R) | agg | Red per-wall Δ | agg | Honesty | ACTUAL cost/run | Clock |
+|---|---|---|---|---|---|---|---|
+| **A0** fable-5 both (banked 1c runs; probe `1ec3f42a` for cost) | +0.94a / −0.72a / 0.00p / +0.68a | 93.8 | L −1.21f / R imputed / dormer 0.00p | 94.1 | all mechanics ✓ | **$3.61** (probe actual: A 62.9K in/32.8K out; B 21.6K/22.5K) | 8.4–11.0 min |
+| A1 sonnet-4-6 A + fable-5 B (`03f2ad42`,`3fc2bc2c`) | −0.46p / **−1.42f (worse +0.70✗)** / −0.46p (**+0.46✗**) / −0.46p | 92.6 | L −1.56f / **R +2.19f (new fail✗)** / dormer −1.0a | **82.6✗** | mechanics ✓, CAUTION: false same-corner pairs (below) | $1.06 / $1.02 (−71%✓) | 4.2 min |
+| A2 sonnet-4-6 both (`8bb3f597`,`aba1fd00`) | −0.45p / **−1.69f✗** / −0.45p✗ / −0.45p | 92.0 | **L +3.79f✗ / R +2.50f✗** / dormer −1.0a | **73.9✗** | mechanics ✓, same CAUTION | $0.49 / $0.51 (−86%✓) | 4.0 min |
+| A3 haiku-4-5 A + sonnet-4-6 B (`b97852d5`,`6117d209`) | −0.69a / **−1.42f✗** / +0.35p✗ / +0.50p | 92.4 | L −1.25f / R imputed / **dormer −9.8f (pass→fail✗)** | **61.3✗** | mechanics ✓ incl. live pixel-citation demotion | $0.34 / $0.41 (−91%✓) | 2.3–2.6 min |
+
+**VERDICT (per pre-registered criteria): NO CHALLENGER PASSES — incumbent claude-fable-5 stays; bake-off CLOSES with this table as deliverable.** Every challenger clears cost (gate ≤$2.17) and stability, and every honesty MECHANIC held (conflicts flagged, zero mechanically-unearned enumerated, pixel-citation demotion fired live on Haiku, occlusion flags fired, imputed excluded) — but ALL fail accuracy criteria 1+2: red-house aggregates 82.6/73.9/61.3 vs band 91–94; Letrick back Δ worsens ≥0.70 on all three.
+
+**Honesty-criterion events (verbatim excerpts on file above; full text in run docs):**
+- A3-L p5 (Haiku): "Pixel-scale cross-check … Count agrees closely with pixel measure; reported value is 8.48 ft (average of 97.75″ and 101.6″)" — cited pixel as support AND averaged → demoted by the gate (3rd live catch).
+- A1-L p4/p5 (Sonnet): p5 (a rear-RIGHT photo) reasoned "Counted lap courses along the rear-left corner of the back wall…24 courses" — mislabeled anchor `rear_left` matched p4's genuine rear_left 24 → FALSE same-corner agreement → enumerated 24c on back vs truth 28 (Δc −4). Same pattern in A2-L (23c enumerated, Δc −5).
+
+**NEW LOGGED RESIDUAL — anchor-integrity dependency:** the 1c same-corner gate assumes truthful `count_anchor_corner` labels. Cheaper models scramble anchors AND count to gable peaks on gable-end photos (48–61 "courses", eaves read 16–19′), converting the cross-check from a fabrication-catcher into a false-agreement generator. On fable-5, anchors stayed consistent across all 1c-era runs. Corollary: any future model swap must re-validate anchor integrity BEFORE trusting the enumerated tier.
+
+**Cost-table corollary (deliverable):** incumbent actual is $3.61/run — 2.5× the pre-run estimate; the understatement was thinking tokens (fable-5 ~3.3K thinking/photo). Future per-run cost work has actuals infrastructure permanently in place.

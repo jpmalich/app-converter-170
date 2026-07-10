@@ -80,6 +80,7 @@ _MODEL_CHOICES: dict[str, tuple[str, str]] = {
     "claude-opus-4-8":         ("anthropic", "claude-opus-4-8"),
     "claude-sonnet-4-6":       ("anthropic", "claude-sonnet-4-6"),
     "claude-fable-5":          ("anthropic", "claude-fable-5"),
+    "claude-haiku-4-5":        ("anthropic", "claude-haiku-4-5-20251001"),
     "gemini-3.5-flash":        ("gemini",    "gemini-3.5-flash"),
     "gemini-3.1-pro":          ("gemini",    "gemini-3.1-pro-preview"),
     "gpt-5.5":                 ("openai",    "gpt-5.5"),
@@ -2395,6 +2396,19 @@ async def ai_measure_rerun(
     model_choice = model_choice_override or prev.get("model_choice") or _DEFAULT_MODEL_KEY
     model_key, model_provider, model_name = _resolve_model(model_choice)
 
+    # Iter 79j.86 — bake-off per-phase model overrides + usage-probe flag.
+    # `model_phase_a`/`model_phase_b` accept _MODEL_CHOICES keys; when
+    # either is present they define the run condition (model_choice is
+    # superseded). `usage_probe: true` marks a telemetry-only run:
+    # scores are refused, accuracy history untouched.
+    model_name_phase_b: Optional[str] = None
+    if isinstance(payload, dict) and (payload.get("model_phase_a") or payload.get("model_phase_b")):
+        _ka, _pa, _na = _resolve_model(payload.get("model_phase_a") or model_key)
+        _kb, _pb, _nb = _resolve_model(payload.get("model_phase_b") or payload.get("model_phase_a") or model_key)
+        model_key, model_provider, model_name = _ka, _pa, _na
+        model_name_phase_b = _nb
+    usage_probe = bool(isinstance(payload, dict) and payload.get("usage_probe"))
+
     # Iter 79j.42 — Anthropic-direct routing (backend env only).
     api_key, _api_key_source = _pick_llm_api_key(model_provider)
     if not api_key:
@@ -2451,6 +2465,8 @@ async def ai_measure_rerun(
         "kind":            kind,
         "address":         address,
         "model_choice":    model_key,
+        "model_config":    {"phase_a": model_name, "phase_b": model_name_phase_b or model_name},
+        "usage_probe":     usage_probe,
         "rerun_of":        prev_run_id,
         # Iter 79j.67(a) — carry calibration forward so rerun chains
         # never lose it.
@@ -2480,6 +2496,7 @@ async def ai_measure_rerun(
         estimate_id=estimate_id,
         model_provider=model_provider,
         model_name=model_name,
+        model_name_phase_b=model_name_phase_b,
     ))
     return {
         "run_id":           new_run_id,
@@ -3028,7 +3045,7 @@ async def ai_measure_latest_for_estimate(
     # Recency (updated_at → created_at) only breaks ties WITHIN the
     # same score.
     pipeline = [
-        {"$match": {"user_id": user_id, "estimate_id": estimate_id}},
+        {"$match": {"user_id": user_id, "estimate_id": estimate_id, "usage_probe": {"$ne": True}}},
         {"$addFields": {
             "_score": {
                 "$switch": {
@@ -3102,11 +3119,60 @@ _MODEL_PRICING_PER_M: dict[str, dict[str, float]] = {
     "claude-opus-4-8":       {"input": 5.00, "output": 25.00},
     "claude-sonnet-4-6":     {"input": 3.00, "output": 15.00},
     "claude-fable-5":        {"input": 10.00, "output": 50.00},
+    "claude-haiku-4-5":      {"input": 1.00, "output": 5.00},
     "gemini-3.5-flash":      {"input": 1.50, "output": 9.00},
     "gemini-3.1-pro":        {"input": 5.00, "output": 25.00},
     "gpt-5.5":               {"input": 5.00, "output": 30.00},
     "gpt-5.4":               {"input": 5.00, "output": 30.00},
 }
+
+
+def _price_for_model_id(model_id: str | None) -> dict[str, float] | None:
+    """Iter 79j.86 — price lookup by API model id: strips a trailing
+    -YYYYMMDD date suffix so 'claude-opus-4-5-20251101' matches the
+    'claude-opus-4-5' pricing key."""
+    if not model_id:
+        return None
+    key = re.sub(r"-\d{8}$", "", model_id.strip().lower())
+    return _MODEL_PRICING_PER_M.get(key)
+
+
+def _cost_from_usage(model_config: dict | None, token_usage: dict | None) -> dict | None:
+    """Iter 79j.86 — ACTUAL per-run cost from persisted token usage
+    (bake-off column). Returns {phase_a, phase_b, total} USD or None."""
+    if not token_usage or not model_config:
+        return None
+    out: dict = {}
+    total = 0.0
+    for phase in ("phase_a", "phase_b"):
+        u = token_usage.get(phase)
+        price = _price_for_model_id(model_config.get(phase))
+        if not u or not price:
+            out[phase] = None
+            continue
+        c = (int(u.get("input_tokens") or 0) / 1_000_000) * price["input"] \
+            + (int(u.get("output_tokens") or 0) / 1_000_000) * price["output"]
+        out[phase] = round(c, 4)
+        total += c
+    out["total"] = round(total, 4)
+    return out
+
+
+def _aggregate_token_usage(final: dict, extractions: list[dict]) -> dict | None:
+    """Iter 79j.86 — sum per-call ACTUAL token usage into a per-phase
+    record for the run doc. Phase A from per-extraction `_usage` stamps
+    (direct transport only), Phase B from `_reconciliation_usage`."""
+    pa = {"input_tokens": 0, "output_tokens": 0, "calls": 0}
+    for e in extractions or []:
+        u = e.get("_usage") if isinstance(e, dict) else None
+        if isinstance(u, dict):
+            pa["input_tokens"] += int(u.get("input_tokens") or 0)
+            pa["output_tokens"] += int(u.get("output_tokens") or 0)
+            pa["calls"] += 1
+    pb = final.get("_reconciliation_usage") if isinstance(final, dict) else None
+    if pa["calls"] == 0 and not pb:
+        return None
+    return {"phase_a": pa if pa["calls"] else None, "phase_b": pb or None}
 
 
 def _estimate_run_cost_usd(model_choice: str | None, photo_count: int, deep_dormer: bool) -> float | None:
@@ -4176,6 +4242,13 @@ async def _extract_one_photo_direct(
     parsed["_latency_ms"] = int((time.time() - call_t0) * 1000)
     parsed["_transport"] = "anthropic_direct"
     _stamp_empty_diagnostics(parsed, reply_text, getattr(response, "stop_reason", None))
+    # Iter 79j.86 — persist ACTUAL token usage for the bake-off cost column.
+    _usage = getattr(response, "usage", None)
+    if _usage is not None:
+        parsed["_usage"] = {
+            "input_tokens": int(getattr(_usage, "input_tokens", 0) or 0),
+            "output_tokens": int(getattr(_usage, "output_tokens", 0) or 0),
+        }
     return parsed
 
 
@@ -4728,8 +4801,10 @@ async def _reconcile_extractions_direct(
     usage = getattr(response, "usage", None)
     thinking_tokens = 0
     output_tokens = 0
+    input_tokens = 0
     try:
         if usage is not None:
+            input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
             output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
             details = getattr(usage, "output_tokens_details", None)
             if details is not None:
@@ -4779,6 +4854,12 @@ async def _reconcile_extractions_direct(
     parsed = _clean_json_reply(raw_text)
     parsed["_reconciliation_latency_ms"] = int((time.time() - t0) * 1000)
     parsed["_transport"] = "anthropic_direct"
+    parsed["_reconciliation_usage"] = {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "thinking_tokens": thinking_tokens,
+        "calls": 1,
+    }
     return parsed
 
 
@@ -5102,6 +5183,7 @@ async def _run_two_phase_pipeline(
     annotation_hint: str,
     set_stage,   # async callable(str) → None
     annotations: dict | None = None,
+    model_name_phase_b: Optional[str] = None,
 ) -> tuple[dict, list[dict]]:
     """Orchestrator. Returns (final_raw_after_reconcile, per_photo_extractions).
     Callers should feed final_raw into `_aggregate_to_hover_shape` — it's
@@ -5522,7 +5604,7 @@ async def _run_two_phase_pipeline(
         api_key=api_key,
         user_id=user_id,
         model_provider=model_provider,
-        model_name=model_name,
+        model_name=model_name_phase_b or model_name,
         extractions=extractions,
         address=address,
         reference_dim=reference_dim,
@@ -5612,6 +5694,7 @@ async def _execute_ai_measure_worker(
     # defaults so the rerun path (which doesn't pass these) still works.
     model_provider: str = "anthropic",
     model_name: str = MODEL_NAME,
+    model_name_phase_b: Optional[str] = None,
 ):
     """Background worker — runs the Claude call(s), aggregates, maps to
     catalog lines, and writes the final result back to the run doc.
@@ -5789,12 +5872,16 @@ async def _execute_ai_measure_worker(
             "session_id": session_id,
             "warnings": warnings,
         }
+        # Iter 79j.86 — ACTUAL per-phase token usage for the bake-off
+        # cost column (None on proxy transport / single-call runs).
+        token_usage = _aggregate_token_usage(raw, raw_per_photo)
         await db.ai_measure_runs.update_one(
             {"run_id": run_id},
             {"$set": {
                 "status": "done",
                 "stage": "done",
                 "result": result,
+                "token_usage": token_usage,
                 "completed_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),
             }},

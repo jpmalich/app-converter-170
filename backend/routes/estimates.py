@@ -725,7 +725,8 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
     # valid extractions). Voided runs never carry a candidate verdict.
     valid_runs = voided_runs = unknown_runs = 0
     async for r in db.ai_measure_runs.find(
-        {"estimate_id": est_id, "status": "done"}, {"_id": 0, "raw_per_photo": 1},
+        {"estimate_id": est_id, "status": "done", "usage_probe": {"$ne": True}},
+        {"_id": 0, "raw_per_photo": 1},
     ):
         rpp = r.get("raw_per_photo")
         if not rpp:
@@ -1014,6 +1015,10 @@ async def score_tape_check(
     run = await db.ai_measure_runs.find_one(q, sort=[("created_at", -1)])
     if run is None:
         raise HTTPException(status_code=404, detail="No completed AI Measure run found for this estimate")
+    # Iter 79j.86 — usage-probe runs are telemetry-only: never scored,
+    # never in accuracy history.
+    if run.get("usage_probe"):
+        raise HTTPException(status_code=400, detail="Usage-probe run — telemetry only, excluded from accuracy scoring")
     raw = ((run.get("result") or {}).get("raw_ai")) or {}
     ai_walls = {
         (w.get("label") or "").strip().lower(): w
