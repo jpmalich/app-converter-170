@@ -2322,3 +2322,21 @@ Letrick ranch (EST-191890 / c864939b) has a stepped foundation: siding start-lin
 2. Accuracy sparkline (≥3 runs floor) — Letrick now has 1 scored run
 3. Right gable overread root-cause + appendage gap (chimney chase) — part of held AI prompt-tuning phase
 4. Interactive 3D on Accept page; Contractor Window labor divergence; PDF upgrade lines; PWA icons; ISS New Construction Siding catalog
+
+## Iter 79j.77 — Blueprint baseline + sparkline + Candidate 1 (count boundary) RUN DOC (2026-07-10)
+
+### Blueprint Measure baseline — Letrick (run 1358273a, scale confidence HIGH, 10 sheets)
+Walls uniform 9.5′ · footprint 54×30 · pitch 7/12 (roof plan) · gables 127.5 ft²/end (emitted `gable_triangle_height_ft: 8.5` per gable wall) · siding 1,851 ft² · 10 windows + 2 doors (sheet-7 schedule) · 6 OSC + 2 ISC.
+- **Howard ledger confirmations**: corner count CORRECT — chimney chase (rear) is the only bump-out; 4 base corners + 2 OSC + 2 ISC at the chase. Truck's 10 OSC vs blueprint 6 is **pieces vs locations** (chase corners run ~18-19′ full height, consume extra posts). **Corner answer key: 6 locations / 10 pieces** — candidate 3 acceptance must score LOCATIONS detected, never piece count.
+- **Appendage blindness is photo-side only** — chase is on the prints and blueprint caught it. Photo autopsy (pre-candidate-3): (a) why a photo fails with two consecutive empty extractions, (b) why the back-elevation photo that images the chase reported no appendage.
+- **Gable open item RESOLVED**: blueprint's 8.5′ is a drawing-scaled read rounded to 0.5′, NOT pitch-derived (7/12 × 15′ half-span = 8.75′; raised heel ~1′6″ per roof plan would make the true triangle taller still). Right-gable investigation must target the pitch(+heel) computation, not the blueprint 8.5.
+
+### Accuracy sparkline (TapeCheckPanel)
+SVG polyline in the header, chronological, green/red by trend, paired with the current % chip. Hard floor: renders ONLY at ≥3 scored runs. Verified: red house (4 runs) renders; Letrick (1 run) does not.
+
+### Candidate 1 — count-boundary (siding-start, not grade) — SHIPPED TO CODE, VERDICT MIXED vs pre-registration
+**Change** (`ai_measure.py`): Rule 5 + SIDING EXPOSURE injection now count from the BOTTOM OF THE FIRST SIDING COURSE (siding start line); explicit prohibition covers the count AND added inches (foundation/membrane/parging → `notes` only); occlusion fallback = estimate from course rhythm + `start_line_occluded: true`, never grade, no silent guessing. New schema field `start_line_occluded` plumbed through `final["photos"]`. Pin tests: `test_count_boundary_iter77.py` (6). Suite 678 green. Supporting fixture: prints show exposed concrete w/ brick forms between foundation top and approx. grade; "final grade determined on site".
+**Validation** (both fixtures, cached photos, code frozen):
+- **Letrick rerun 29e03bee**: 82.8% → **93.5%** (2✓ 1⚠ 1✗). Mechanism (a) foundation-inclusion ELIMINATED — all 7 valid photos cite the exclusion; the 23c corners read 8.1′ (tape 8.15′) and the 26c corners read 9.2′ (tape 9.21′) — the stepped mirror structure is now visible in the AI's own reads. **BUT pre-registered front criterion FAILED: 27 courses/9.6′ vs Howard's 25/8.9′ (partial movement 30→27)** — finding (b) count inflation is a REAL SECOND MECHANISM (also left photo2: 30c vs Howard 26 max, unchanged). Back criterion NOT ASSESSABLE: back photo (idx 4) returned two consecutive empty extractions this run — note the empty photo MOVED (prior run idx 3 failed, idx 4 read fine; this run idx 3 fine, idx 4 failed) → intermittent per-photo failure, not a bad photo. Reconciled back=9.6 is a front copy; its -0.3 "pass" is accidental.
+- **Red house rerun 56589e26**: 91.3% → **92.8%**, in the 91–93 band ✓. Scored walls IDENTICAL to prior (left 9.4, right 8.1); woodpile photo count unchanged (30c); `start_line_occluded` fired correctly on the woodpile/shrub photos; honest nulls where courses unresolvable. Left dormer improved 17→15 (now delta 0).
+**Per pre-registration this is a FAIL verdict — reported, not silently shipped.** Awaiting Howard's ruling: keep boundary change (mechanism a killed, no regressions anywhere) and open candidate 1b for count inflation, or revert.

@@ -3370,7 +3370,8 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
   "eave_height_ft_observed":     number | null,
   "eave_reasoning":               "<how you measured — course counting, contractor reference, brick coursing, or 'not measurable because …'>",
   // Iter 79j.67(b)+(c) — course-count + scale-plane provenance:
-  "eave_courses_counted":        number | null,   // lap-course count grade→eave when SIDING EXPOSURE is provided and courses are countable (see rule 5)
+  "eave_courses_counted":        number | null,   // lap-course count siding-start→eave when SIDING EXPOSURE is provided and courses are countable (see rule 5)
+  "start_line_occluded":         boolean,         // true ONLY when the siding start line (bottom of first course) was hidden and you estimated it from course rhythm (see rule 5)
   "eave_scale_cross_plane":      boolean,         // true ONLY when the vertical scale for this eave read came from a reference on a DIFFERENT wall plane (see rule 6)
   "story_count_observed":         1 | 1.5 | 2 | 2.5 | 3 | null,
   "pitch_ratio_observed":         "4/12" | "6/12" | "8/12" | "10/12" | "12/12" | null,
@@ -3454,8 +3455,20 @@ RULES:
    back on the thumbnail in the debug view.
 5. COURSE COUNTING FOR WALL HEIGHTS. When a SIDING EXPOSURE value is
    provided in this prompt and lap courses are visible on a wall,
-   COUNT the courses from grade to the eave line: courses × exposure
-   = eave height. Report the count in `eave_courses_counted` and cite
+   COUNT the courses from the BOTTOM OF THE FIRST SIDING COURSE (the
+   siding start line, sitting on the starter strip) to the eave line:
+   courses × exposure = eave height. The FIRST counted course is the
+   one on the starter. NEVER include exposed foundation, waterproofing
+   membrane or parging below the siding start — not in the course
+   count and not as added inches. `eave_height_ft_observed` is
+   siding-start-to-eave, NOT grade-to-eave. If a foundation band is
+   visible below the siding (common on ungraded new construction),
+   note its height in `notes` but EXCLUDE it from the height and the
+   count. If the siding start line is hidden (bushes, deck, snow,
+   vehicles), estimate its position from the visible course rhythm,
+   set `start_line_occluded`: true and lower your confidence — never
+   fall back to measuring from grade, and never silently guess.
+   Report the count in `eave_courses_counted` and cite
    it in `eave_reasoning`. A course count is inherently PLANE-CORRECT
    (every course lives on the wall being measured) and survives
    perspective, tilt and depth compression — when a count and a
@@ -3938,7 +3951,9 @@ def _build_phase_a_prompt(
         prompt_lines.append(
             f"SIDING EXPOSURE = {siding_exposure_in:.2f} in per row (contractor-calibrated). "
             "Count rows to size windows on siding-clad walls, AND use it for WALL HEIGHTS: "
-            f"count lap courses from grade to the eave line — courses × {siding_exposure_in:.2f} in = eave height. "
+            f"count lap courses from the bottom of the FIRST siding course (the siding start line) to the eave — courses × {siding_exposure_in:.2f} in = eave height. "
+            "The first counted course sits on the starter strip. NEVER add exposed foundation/membrane/parging below the siding start — not to the count, not as inches. "
+            "If the start line is hidden, estimate it from the course rhythm and set `start_line_occluded`: true — never fall back to grade. "
             "Report the count in `eave_courses_counted`. A course count is plane-correct and beats "
             "pixel-scale math; when the two disagree, report the course-count value."
         )
@@ -5256,6 +5271,7 @@ async def _run_two_phase_pipeline(
                 "eave_scale_cross_plane": bool(e.get("eave_scale_cross_plane")),
                 "grade_occluded": bool(e.get("grade_occluded")),
                 "grade_occluded_estimate_in": e.get("grade_occluded_estimate_in"),
+                "start_line_occluded": bool(e.get("start_line_occluded")),
                 "pitch_ratio_observed": e.get("pitch_ratio_observed"),
                 "gable_triangle_height_ft_observed": e.get("gable_triangle_height_ft_observed"),
                 "dormers_observed_count": e.get("dormers_observed_count") or 0,
