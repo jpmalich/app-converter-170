@@ -2561,3 +2561,44 @@ Per-photo (3 valid runs): right reads p5 (rear-right oblique) 12.5 / 12.5 / 10, 
 4. **No same-plane vertical anchor on the right (ASYMMETRY DRIVER)**: the right gable wall is windowless (noted in every run) — no WIN_REF on that plane; vertical conversion rides pixel ratios alone. The left wall carries a Pella window WIN_REF and its reads cluster tighter.
 Answer to the framing question: not a single mechanism — scale error (4) + apex mislocation (3) feed a ratio that foreshortening (2) inflates and the even-only ladder (1) quantizes upward. The 1c-era run landed 9.5′ only because p6 happened to read low that run; the floor set by (1) means the pipeline cannot express 8.75′ at all.
 **Status: mechanism shown. Any fix (e.g., odd pitches in the ladder, oblique down-weighting for gable rise, square-on-only gable reads) requires pre-registration before a fix run. Awaiting Howard's ruling.**
+
+## Iter 79j.86 — MODEL BAKE-OFF PRE-REGISTRATION (Howard-drafted 2026-07-10, sequenced after left-wall trace, BEFORE right-gable work. Verdicts render against THIS TEXT ONLY. NO RUN FIRES WITHOUT HOWARD'S GO.)
+
+### Candidates (Phase A vision extraction is the cost center)
+- **A0** — claude-fable-5 both phases (incumbent). Scores = the two hash-locked 1c runs `73cca7fa` (Letrick) + `e0e704f6` (red house). DO NOT RE-RUN.
+- **A1** — claude-sonnet-4-6 Phase A + claude-fable-5 Phase B (split-tier)
+- **A2** — claude-sonnet-4-6 both phases
+- **A3** — claude-haiku-4-5-20251001 Phase A + claude-sonnet-4-6 Phase B (cheap-tier probe)
+- GPT-class EXCLUDED this round (parser ladder/empty-class handling don't transfer; engineering cost > information value). Revisit only if no Anthropic config wins.
+- Model IDs verified live against the Anthropic /v1/models endpoint 2026-07-10.
+
+### Protocol
+Both fixtures per candidate, cached photos, code frozen, one run in flight. Run doc records prompt hash + per-phase model IDs (`model_config: {phase_a, phase_b}`) — prompt hash alone no longer uniquely identifies a condition. Void rule carries: valid 8/8 or rerun; two consecutive voids = candidate reports UNSTABLE (itself a result). Per-wall scoring vs existing ground truth; aggregate recorded, no vote. NEW REQUIRED COLUMNS: cost/run (actual input+output tokens × current rates, per phase), wall-clock time, retry/void counts. No prompt changes for any candidate — same contract, same hash. Format-compliance failure (JSON breaks the repair ladder) reports as INCOMPATIBLE, never tuned for.
+
+### Pre-registered win criteria (challenger defeats incumbent only if ALL hold)
+1. Red house aggregate within 91–94 AND no scored wall flips pass→fail vs incumbent per-wall results
+2. Letrick per-wall heights: no wall's Δ worsens by >0.3′ vs incumbent
+3. Honesty parity, zero tolerance: conflicts flagged (no silent same-corner >1), zero unearned enumerated counts, pixel-citation demotion fires where citations occur, occlusion flags fire (placement stochasticity tolerated per logged property; absence = fail), imputed walls excluded
+4. Cost ≥40% below incumbent per-run
+5. Stability: no more empty-extraction voids than incumbent across the pair
+Tie-breaks: all-pass → cheapest wins. Honesty+cost pass with in-tolerance accuracy degradation → VIABLE-DEGRADED with specific walls, Howard's ruling not auto-win. None pass → incumbent stays, cost table is the deliverable.
+Deliverable: one table — candidate × (per-wall deltas both fixtures, honesty checklist, cost/run, time, voids) + verbatim reasoning excerpts for any honesty-criterion event. Nothing switches without Howard's ruling.
+
+### COST BASELINE — A0 incumbent (estimate-derived; actual usage was NOT persisted at run time and A0 is do-not-rerun)
+Method: image tokens = w×h/750 from persisted compressed dims (1600×1200 ≈ 2,560 tok/photo; totals 20,480 / 17,875 across the two runs); prompt sizes measured (Phase A 10,126 chars ≈ 2.5K tok; Phase B 21,059 chars ≈ 5.3K tok); output estimated from persisted reply JSON chars/4 (UNDERSTATES if thinking tokens billed — flagged).
+- Phase A / run: input ≈ 41.6K tok, output ≈ 7.7K tok → fable-5 ($10/$50 per M) ≈ **$0.80**
+- Phase B / run: input ≈ 12.3K tok, output ≈ 10.5K tok → fable-5 ≈ **$0.65**
+- **A0 ≈ $1.45/run** (range $1.35–1.60) · wall-clock 9.8 / 11.0 min · voids 0 / 0 · retries 0 / 0
+Challenger projections (same token profile; rates: sonnet-4-6 $3/$15, haiku-4-5 $1/$5, web+code-table confirmed):
+- A1 ≈ $0.89/run → **~39% below — MARGINAL vs the ≥40% gate** (fable-5 Phase B output dominates residual cost)
+- A2 ≈ $0.44/run → ~70% below ✓ (projection)
+- A3 ≈ $0.28/run → ~81% below ✓ (projection)
+Bake-off runs will record ACTUAL per-phase usage; the cost column uses actuals for challengers, estimate for A0 (marked).
+
+### Infra required BEFORE runs (pin-tested, zero prompt changes — pending Howard's go)
+1. Per-phase model plumbing (`model_config.phase_a/phase_b`, defaults = incumbent single-model behavior)
+2. Run-doc condition record: per-phase model IDs stamped at capture alongside prompt hash
+3. Actual token telemetry: persist input/output(+thinking) tokens per phase on the run doc; cost computed from the rates table (add haiku-4-5)
+4. Surface wall-clock + retry/void counts as columns (latency stamps + `_timeout_retry_attempted` already persisted)
+
+**STATUS: pre-registration drafted + cost baseline filled. WAITING FOR HOWARD'S GO. Sequence: this bake-off (4–6 runs) → Howard's ruling → right-gable evidence work under the winning model.**
