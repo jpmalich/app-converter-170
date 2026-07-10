@@ -10,7 +10,7 @@
 //
 // Verdicts (backend-computed): |Δ| ≤ 0.5 ft pass · ≤ 1.0 amber · > 1.0 fail.
 import React, { useEffect, useState } from "react";
-import { Ruler, Loader2, ChevronDown, ChevronRight, Check, AlertTriangle, X } from "lucide-react";
+import { Ruler, Loader2, ChevronDown, ChevronRight, Check, AlertTriangle, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -185,6 +185,21 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
     } finally { setBusy(false); }
   };
 
+  const downloadReport = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.get(`/estimates/${estimateId}/tape-check/report-pdf`, { responseType: "blob" });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "accuracy-report.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to build the accuracy report");
+    } finally { setBusy(false); }
+  };
+
   if (!estimateId) return null;
   return (
     <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-2" data-testid="tape-check-panel">
@@ -332,6 +347,19 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
               {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
               Score this run
             </button>
+            {history.length > 0 && (
+              <button
+                type="button"
+                onClick={downloadReport}
+                disabled={busy}
+                className="px-2.5 py-1 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 disabled:opacity-50"
+                title="Accuracy report PDF — development-fixture curve labeled as methodology exhibit; held-out blind runs are the only accuracy claim"
+                data-testid="tape-check-report-pdf"
+              >
+                <FileText className="w-3 h-3" />
+                Accuracy PDF
+              </button>
+            )}
           </div>
           {history.length > 0 && (
             <div className="pt-1 space-y-1" data-testid="tape-check-history">

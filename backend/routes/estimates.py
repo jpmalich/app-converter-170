@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from db import db
@@ -687,6 +687,138 @@ def _tape_verdict(delta: float) -> str:
     if a <= 1.0:
         return "amber"
     return "fail"
+
+
+@router.get("/estimates/{est_id}/tape-check/report-pdf")
+async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_user)):
+    """Iter 79j.79 — Accuracy report PDF with honest framing baked in.
+    The fixture curve is labeled DEVELOPMENT VALIDATION (methodology
+    exhibit); the accuracy claim section holds only held-out blind
+    runs (fresh houses, zero prompt changes between capture and score)
+    and renders empty until one exists. No blended aggregate."""
+    from pdf import render_pdf, safe_filename
+    from services import get_branding
+
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "tape_check": 1, "estimate_number": 1, "customer_name": 1,
+         "address": 1, "address_street": 1, "address_city": 1, "address_state": 1},
+    )
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    tc = est.get("tape_check") or {}
+    history = tc.get("history") or []
+    if not history:
+        raise HTTPException(status_code=400, detail="No scored runs yet — score at least one run first")
+
+    held_out = bool(tc.get("held_out"))
+    branding = await get_branding()
+    company = branding.get("supplier_name") or "Pro-Quote Estimating Tool"
+    addr = est.get("address") or " ".join(
+        x for x in (est.get("address_street"), est.get("address_city"), est.get("address_state")) if x
+    )
+
+    def _tape_cell(v):
+        if v is None:
+            return "—"
+        if isinstance(v, dict):
+            segs = v.get("segments") or []
+            parts = []
+            for sg in segs:
+                c = f" ({sg['courses']}c)" if sg.get("courses") else ""
+                parts.append(f"{sg.get('height_ft')}′{c}")
+            sr = v.get("start_ref")
+            return " ⇢ ".join(parts) + (f" · from {sr.replace('_', ' ')}" if sr else "")
+        return f"{v}′"
+
+    tape_rows = "".join(
+        f"<tr><td style='text-transform:uppercase;font-weight:bold'>{lbl}</td><td>{_tape_cell((tc.get('walls') or {}).get(lbl))}</td></tr>"
+        for lbl in _TAPE_WALL_LABELS
+    )
+    dormer_rows = "".join(
+        f"<tr><td style='text-transform:uppercase;font-weight:bold'>{d.get('face')} dormer</td><td>{d.get('width_ft')}′ wide</td></tr>"
+        for d in (tc.get("dormers") or [])
+    )
+
+    def _entry_rows(entries):
+        rows = []
+        for h in entries:
+            per_wall = []
+            for lbl in _TAPE_WALL_LABELS:
+                r = (h.get("walls") or {}).get(lbl)
+                if not r:
+                    continue
+                if r.get("imputed"):
+                    per_wall.append(f"{lbl}: <span style='color:#64748B'>unread</span>")
+                else:
+                    color = {"pass": "#16A34A", "amber": "#B45309", "fail": "#B91C1C"}.get(r.get("verdict"), "#334155")
+                    per_wall.append(f"{lbl}: <span style='color:{color}'>{r.get('ai')} vs {r.get('tape')} (Δ{r.get('delta'):+})</span>")
+            for d in h.get("dormers") or []:
+                color = {"pass": "#16A34A", "amber": "#B45309", "fail": "#B91C1C"}.get(d.get("verdict"), "#334155")
+                per_wall.append(f"{d.get('face')} drm: <span style='color:{color}'>{d.get('ai')} vs {d.get('tape')} (Δ{d.get('delta'):+})</span>")
+            rows.append(
+                f"<tr><td>{(h.get('scored_at') or '')[:10]}</td><td>{h.get('model') or ''}</td>"
+                f"<td style='font-weight:bold'>{h.get('accuracy_pct')}%</td>"
+                f"<td>{h.get('passes')}✓ {h.get('ambers')}⚠ {h.get('fails')}✗</td>"
+                f"<td style='font-size:8px'>{' · '.join(per_wall)}</td></tr>"
+            )
+        return "".join(rows)
+
+    dev_entries = [] if held_out else history
+    blind_entries = history if held_out else []
+    curve = " → ".join(f"{h.get('accuracy_pct')}%" for h in dev_entries)
+
+    blind_html = (
+        f"<table><tr><th>Date</th><th>Model</th><th>Accuracy</th><th>Verdicts</th><th>Per-wall</th></tr>{_entry_rows(blind_entries)}</table>"
+        if blind_entries else
+        "<p style='color:#64748B;font-style:italic'>None recorded yet. This section is populated only by fresh "
+        "houses scored with <b>zero prompt changes between capture and scoring</b>. It is the only section "
+        "that supports an accuracy claim.</p>"
+    )
+    dev_html = (
+        f"<p style='margin:2px 0'>Accuracy curve: <b>{curve}</b></p>"
+        f"<table><tr><th>Date</th><th>Model</th><th>Accuracy</th><th>Verdicts</th><th>Per-wall (AI vs tape, ft)</th></tr>{_entry_rows(dev_entries)}</table>"
+        if dev_entries else
+        "<p style='color:#64748B;font-style:italic'>No development-fixture runs on this property.</p>"
+    )
+
+    html = f"""<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      @page {{ size: letter; margin: 18mm 14mm; }}
+      body {{ font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #0F172A; }}
+      h1 {{ font-size: 16px; margin: 0 0 2px; }}
+      h2 {{ font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 2px solid #0F172A; padding-bottom: 3px; margin: 16px 0 6px; }}
+      table {{ width: 100%; border-collapse: collapse; margin: 4px 0; }}
+      th, td {{ text-align: left; padding: 3px 6px; border-bottom: 1px solid #E2E8F0; font-size: 9px; vertical-align: top; }}
+      th {{ text-transform: uppercase; font-size: 8px; color: #475569; }}
+      .banner {{ background: #FEF3C7; border: 1px solid #F59E0B; padding: 6px 8px; font-size: 9px; margin: 8px 0; }}
+      .muted {{ color: #64748B; }}
+    </style></head><body>
+      <h1>AI Measurement Accuracy Report</h1>
+      <div class="muted">{company} · {est.get('estimate_number') or ''} · {est.get('customer_name') or ''} · {addr} · generated {datetime.now(timezone.utc).date().isoformat()}</div>
+      <div class="banner"><b>How to read this report:</b> the two sections below are NOT comparable and are never
+      combined. Development-fixture runs demonstrate methodology and progress on houses used during prompt tuning.
+      Only held-out blind runs support an accuracy claim.</div>
+      <h2>Taped ground truth (entered in the field)</h2>
+      <table><tr><th>Wall</th><th>Tape value</th></tr>{tape_rows}{dormer_rows}</table>
+      <h2>Development validation — tuned fixture (methodology exhibit)</h2>
+      <p class="muted" style="margin:2px 0">Runs below were scored on a fixture used during prompt development.
+      They demonstrate methodology and progress, <b>not</b> field accuracy.</p>
+      {dev_html}
+      <h2>Held-out blind runs — accuracy claim</h2>
+      {blind_html}
+      <p class="muted" style="margin-top:14px">Verdicts: |Δ| ≤ 0.5′ pass · ≤ 1.0′ amber · &gt; 1.0′ fail.
+      "unread" = the pipeline had no valid read for that wall; excluded from scoring. Stepped walls score
+      against the taped segment range.</p>
+    </body></html>"""
+
+    pdf_bytes = render_pdf(html)
+    filename = safe_filename(est.get("estimate_number"), est.get("customer_name"))
+    filename = filename.rsplit(".pdf", 1)[0] + "-accuracy.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/estimates/{est_id}/tape-check")

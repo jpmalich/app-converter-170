@@ -2360,3 +2360,22 @@ Two DISTINCT error classes, not one:
 Front photo 0 (square-on, SAME image, 3 runs): counts **30 → 27 → 29** (Howard 25) — the full-wall count is stochastic and always high. Left photo 2: **30 → 30 → 26** (Howard max 26) — run 3 nailed it. Back photo 4: 29 → empty → 30 (Howard 28).
 **Signature per Howard's hypothesis**: corner/segment-anchored counts (23/24/25/26 — courses large in frame) are repeatedly dead-on (run 3 photo 3: 25c/8.9′ = Howard's front count exactly; right wall corners 23c/8.15′ + 26c/9.21′ mirror the tape). Full-elevation square-on counts (~27-30, courses small in frame) inflate and fluctuate ±2. Tell in the reasoning text: full-wall counts are always "~N" approximations that "cross-check consistent with WALL REF pixel scale" — suspicion: the count is back-derived from the pixel read rather than independently counted. Top-boundary language also varies on back wall: "to eave line" / "to frieze" / "to the soffit" — possible top-boundary slop worth a look in 1b.
 **Suite: 691 passed** (1 known load-timing flake passes standalone).
+
+## Iter 79j.79 — Circularity confirmed + corner-shot guidance + Accuracy Report PDF (2026-07-10) ✅
+
+### 1b circularity check — CONFIRMED (evidence-level, no fix proposed)
+For every verifiable inflated full-wall count, reported count ≡ round(cited pixel inches ÷ 4.25) within ±1:
+R2 front px 115-120″ → 27c · R3 front px 125″ → 29c (125/4.25 = 29.4) · R2 left px 131″ → 30c (30.8) · R3 back px ~131″ → 30c (30.9). Counts fluctuate across runs (30→27→29 on the SAME front image) because the pixel read fluctuates — enumeration would be deterministic. Every tape-exact count (23/24/25/26c on corner-anchored reads) either carries NO pixel citation or explicitly rejects it ("corner perspective distorts px-per-inch"; R3 left called pixel "similar-but-noisier, so course count is reported" — the one full-wall read that got 26 RIGHT). **Signature: count and eave height are ONE measurement (pixel), not two independent ones, on distant square-on walls.** Run 3's 94.1% carries the asterisk (front 29 vs 25); finding 1b logged OPEN regardless of aggregate. Top-boundary language wander (eave/frieze/soffit on back wall) parked as 1b sub-item — verify whether an explicit-boundaries fix resolves it, don't assume.
+
+### Photo protocol (guidance only, shipped)
+`AIMeasureButton.jsx` onboarding tip flipped: "Prefer a corner-angle shot of each wall over square-on" (corner-anchored counts repeatedly tape-exact; distant square-on reads drift). "Short or cluttered walls" tip no longer says "straight-on". Photo picker tip now reads "corner-angle shot of each wall (preferred)". No extraction contract change.
+
+### Accuracy Report PDF (shipped, honest framing pinned)
+`GET /api/estimates/{id}/tape-check/report-pdf` (WeasyPrint) + "Accuracy PDF" button in TapeCheckPanel (renders only with ≥1 scored run).
+- Section 1: **Development validation — tuned fixture (methodology exhibit)** — banner: "demonstrate methodology and progress, NOT field accuracy". Tape table (segments + courses + start_ref), accuracy curve (Letrick: 82.8% → 92.3% → 94.1%), full history with per-wall Δ + "unread" for imputed walls.
+- Section 2: **Held-out blind runs — accuracy claim** — renders empty with the criteria: "populated only by fresh houses scored with zero prompt changes between capture and scoring". `tape_check.held_out` flag routes a fixture's history to this section when a blind run exists.
+- NO blended aggregate anywhere; header banner states the sections are never combined.
+- Tests: `test_accuracy_report_iter79.py` (3 — 400 w/o runs, real PDF bytes, framing strings pinned at source). Verified rendered PDF text: curve, segments, unread, criteria all present. **Suite: 694 passed.**
+
+### Next
+Awaiting Howard's boundary-explicit front/left recounts (start course / stop course / per-segment anchors) → fresh 1b pre-registration → fix run on both fixtures, code frozen. Candidate 3 (appendage detection, acceptance = corner LOCATIONS not pieces) queued behind 1b.

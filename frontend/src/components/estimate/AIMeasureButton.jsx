@@ -2299,7 +2299,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-short-walls">
                         <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
                         <span>
-                          <b>Short or cluttered walls:</b> shoot straight-on and close enough
+                          <b>Short or cluttered walls:</b> shoot close enough
                           that the bottom siding courses are visible — the AI counts courses
                           to verify height, and it can&apos;t count what shrubs hide.
                         </span>
@@ -2307,9 +2307,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-corners">
                         <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
                         <span>
-                          <b>Never rely on corner shots as your primary read.</b> Corners get
-                          the reconciler mixed up on which wall belongs to which elevation.
-                          Fine as a supplement — <i>never</i> as the only view of a wall.
+                          <b>Prefer a corner-angle shot of each wall over square-on.</b>{" "}
+                          Course counts anchored at a corner edge are repeatedly tape-exact;
+                          distant square-on reads drift. Frame the corner so the wall you&apos;re
+                          measuring fills most of the shot, and still cover every wall.
                         </span>
                       </li>
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-elevations">
@@ -3059,7 +3060,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         {photoUrls.length > 0 ? "Add more photos" : "Choose / Take Photos"}
                       </button>
                       <div className="text-[10px] text-[var(--muted)] mt-1">
-                        Tip: front, back, left, right elevations + any tricky corners
+                        Tip: corner-angle shot of each wall (preferred) — front, back, left, right
                       </div>
                       {/* Iter 57: HOVER-style guided capture wizard. Walks
                           contractor through 8 standard positions and
