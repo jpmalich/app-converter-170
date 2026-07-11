@@ -5369,6 +5369,30 @@ def _apply_corner_locations(final: dict, extractions: list[dict]) -> None:
         confirmed = len(set(loc["photo_idxs"])) >= 2 and not loc.get("geometry_mismatch")
         loc["tier"] = "confirmed" if confirmed else "unconfirmed"
 
+    # Iter 79j.92 — maintenance-class annotation (Howard-approved, C3 Red
+    # House closeout): the same elevated post seen from two ADJACENT wall
+    # frames lands as two one-wall detections that share no dedupe key.
+    # Flag (never merge) so the field question sharpens from "is this a
+    # corner?" to "same post seen twice?". Post-processing only —
+    # detection, prompts and the contract hash untouched.
+    for i, a in enumerate(locations):
+        for b in locations[i + 1:]:
+            if not (len(a["walls"]) == 1 and len(b["walls"]) == 1):
+                continue
+            if not (a.get("elevated") and b.get("elevated")):
+                continue
+            if a["type"] != b["type"] or a["walls"] == b["walls"]:
+                continue
+            pair = {a["walls"][0], b["walls"][0]}
+            if pair in ({"front", "back"}, {"left", "right"}):
+                continue  # opposite frames can't show the same post
+            if a["position_frac"] is None or b["position_frac"] is None:
+                continue
+            tol = max(_tol_frac(a["walls"]), _tol_frac(b["walls"]))
+            if abs(a["position_frac"] - b["position_frac"]) <= tol:
+                a["adjacent_frame_candidate"] = True
+                b["adjacent_frame_candidate"] = True
+
     final["corner_locations"] = locations
     final["_corner_location_audit"] = {
         "sightings": sightings,

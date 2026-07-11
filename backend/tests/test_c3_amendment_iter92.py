@@ -162,3 +162,51 @@ def test_one_photo_echo_never_confirms():
     assert locs[0]["sightings"] == 2
     assert locs[0]["photo_idxs"] == [3]
     assert locs[0]["tier"] == "unconfirmed"  # echo is not agreement
+
+
+# ---- (3) adjacent_frame_candidate — maintenance-class (C3 Red House closeout) ----
+
+def _elev(ctype, walls, pos, locator="post"):
+    return {"type": ctype, "walls": walls, "position_frac": pos,
+            "locator": locator, "elevated": True}
+
+
+def test_adjacent_frame_candidate_p6_p7_fixture():
+    # live fixture from run 8ddb8932: clerestory pop-up right post seen as
+    # front@0.70 (p7) and right@0.75 (p6) — flagged, NEVER merged
+    f = _final({"front": 30, "right": 26})
+    _apply_corner_locations(f, [
+        _ex(6, [_elev("outside", ["right"], 0.75)]),
+        _ex(7, [_elev("outside", ["front"], 0.70)]),
+    ])
+    locs = f["corner_locations"]
+    assert len(locs) == 2  # never merged
+    assert all(l.get("adjacent_frame_candidate") for l in locs)
+    assert all(l["tier"] == "unconfirmed" for l in locs)  # amber-on-amber
+
+
+def test_adjacent_frame_candidate_opposite_frames_not_flagged():
+    f = _final({"front": 30, "back": 30})
+    _apply_corner_locations(f, [
+        _ex(0, [_elev("outside", ["front"], 0.5)]),
+        _ex(4, [_elev("outside", ["back"], 0.5)]),
+    ])
+    assert not any(l.get("adjacent_frame_candidate") for l in f["corner_locations"])
+
+
+def test_adjacent_frame_candidate_requires_elevated():
+    f = _final({"front": 30, "right": 26})
+    _apply_corner_locations(f, [
+        _ex(6, [_sight("outside", ["right"], 0.75)]),
+        _ex(7, [_sight("outside", ["front"], 0.70)]),
+    ])
+    assert not any(l.get("adjacent_frame_candidate") for l in f["corner_locations"])
+
+
+def test_adjacent_frame_candidate_distant_fracs_not_flagged():
+    f = _final({"front": 30, "right": 26})
+    _apply_corner_locations(f, [
+        _ex(6, [_elev("outside", ["right"], 0.9)]),
+        _ex(7, [_elev("outside", ["front"], 0.1)]),
+    ])
+    assert not any(l.get("adjacent_frame_candidate") for l in f["corner_locations"])
