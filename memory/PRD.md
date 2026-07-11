@@ -2673,7 +2673,7 @@ The false-pair verbatim excerpt now ships in the Accuracy PDF's corner cross-che
 **Excerpts (verbatim, run docs):** 1c p2: *"Direct square-on left elevation; dormer face parallel to camera, both dormer windows full-front, width read against 444″ wall ref — kept"* (→15.0). C2 p2: *"Kept — only direct straight-on view of the left slope; dormer face parallel to camera, two contractor-pinned sliders visible full-front"* (→16.5).
 **Status: reported, no fix proposed. Awaiting ruling if any.**
 
-## Iter 79j.89 — OBLIQUE DEMOTION-RULE CANDIDATE — PRE-REGISTRATION DRAFT (awaiting Howard's edits/GO; NOTHING implemented, no run fires)
+## Iter 79j.89 — OBLIQUE DEMOTION-RULE CANDIDATE — PRE-REGISTRATION (Howard GO 2026-07-11 with 3 edits folded verbatim; verdicts render against THIS TEXT ONLY)
 **Target mechanism:** admitted-unreliability on oblique gable/pitch reads — a photo whose own reasoning ADMITS foreshortening/oblique inflation while keeping the high value (canonical: red-house p5 in 4e376d2d, *"horizontal foreshortening inflates the vertical conversion"* → kept 10/12 → 12.5′; Letrick p5's perennial 12.5′). Same disease family as pixel-citation: the reasoning self-documents the defect; the value rides anyway.
 **Proposed rule (deterministic Python, post Phase B — mirrors the 1c gate pattern, zero LLM trust):**
 1. A photo's gable/pitch read is DEMOTED when its pitch_reasoning/notes admit foreshortening, oblique-view inflation, or unreliable vertical conversion (regex family, pinned by tests against the canonical excerpts — the flagged-honest path "cannot be measured from this photo" with a null read does NOT demote; only admit-and-keep does).
@@ -2681,8 +2681,27 @@ The false-pair verbatim excerpt now ships in the Accuracy PDF's corner cross-che
 3. If ONLY demoted reads exist for a gable: value kept but flagged `gable_estimated: true` (amber downstream, excluded from accuracy claims — consistent with the two-tier count precedent).
 4. Demotions + re-selection logged openly in the run doc (`_gable_demotion_audit`).
 **Prompt changes: NONE** (pure post-processing; contract hash `53f2bfa3344b1057` unchanged) — this is a mechanics candidate, not a prompt candidate.
+**HOWARD'S 3 EDITS (verbatim, folded):**
+1. *Deterministic detector:* explicit pattern set (foreshortening/oblique/angle vocabulary + retained numeric read), pin-tested against ALL historical p5 excerpts (every admitted-inflation verbatim trips it; every honest cannot-measure null does not). Edge ruled: **admits-and-compensates DEMOTES** — self-certified correction is not exempt, per the pixel-citation precedent.
+2. *Deterministic re-selection:* n=1 non-demoted square-on read → that value; n=2 → the LOWER, both recorded, `gable_pair_low: true` flagged; n≥3 → median. Never average, never the higher.
+3. *Two-part criteria, explicit:* VERDICT tier — demotion fires on all admitted-inflation reads, zero honest nulls demoted, no final gable sources from a demoted read, honesty mechanics unchanged both fixtures. RECORDED tier (no vote) — right gable square-on vs 8.75±0.5, aggregates, artifact recurrence. Residual logged openly: **rule catches admitted inflation only; silent inflation passes and remains a noted field risk.**
 **Two-part pre-registration (per the new protocol amendment):**
 - *Targeted-mechanism criteria (render keep/revert):* Letrick — the p5-class 12.5′ oblique read no longer drives any final gable; right gable final comes from a square-on/non-admitted read; demotion fires on the canonical excerpts (pinned). Red house — p3-class inflated obliques (14.1′ @ 10/12) demoted where admission language occurs; no demotion of honest "cannot measure" nulls.
 - *Overall-score criteria (recorded, cannot force reversion):* Letrick right gable toward 8.75±0.5 on the final; left gable holds; red-house aggregate recorded vs band; honesty criteria unchanged.
 **Protocol:** both fixtures, cached photos, valid 8/8 or void (void-rate watch active: 2 voids within next 4 attempts = stability BLOCKING), one run in flight, code frozen during runs, before/after gable series on run docs.
 **Sequenced after ruling:** candidate 3 scoping (appendage detection, acceptance = corner LOCATIONS not pieces) + the still-owed photo-3/photo-4 autopsy answers ((a) photo 3's original failure class; (b) why photo 4 imaged the chase and reported no appendage). September package assembly follows the queue.
+
+### 79j.89 RUN REPORT (2026-07-11, hash `53f2bfa3344b1057` unchanged, fable-5, code frozen, one in flight; before/after series stamped on run docs)
+**Runs:** Letrick `2d60a27c` valid 8/8 (11.5 min) · Red `32a55599` valid 8/8 (12.0 min). **Void-watch: 0 voids in 2 attempts** (0 of the 2-in-4 threshold; 2 of 4 window attempts consumed).
+**VERDICT TIER (renders keep/revert):**
+1. *Demotion fires on all admitted-inflation reads:* Letrick **4/4** ✓ (p1 "corrected for mild perspective tilt", p3 "moderate confidence due to corner perspective", p5 "with perspective correction", p7 "perspective tilt adds some uncertainty"). Red house **1 of 2 — DETECTOR ESCAPE**: p3 read 10.5 @ 10/12 with *"the gable face is angled away so run is compressed - read as ~10/12 with moderate confidence"* — admits-and-keeps via NOVEL vocabulary ("angled away… compressed") absent from the pinned historical corpus → not demoted. Final unaffected (square-on preference selected p4's clean 8.3), but strictly a criterion-1 miss, reported not hidden.
+2. *Zero honest nulls demoted:* ✓ both fixtures.
+3. *No final gable sources from a demoted read:* ✓ both (left ← p2 clean square-on 8.7; right ← p6 clean square-on 9.2; back ← p4 clean square-on 8.3).
+4. *Honesty mechanics unchanged:* ✓ both (all same-corner conflicts flagged, zero enumerated, occlusion flags fired red-house ×5 / Letrick zero, no pixel citations occurred).
+**RECORDED TIER (no vote):**
+- Right gable square-on vs 8.75±0.5: final **9.2 — IN BAND for the first time on file**
+- Aggregates: Letrick **97.9 (best ever**; front −0.11p, left 0.00p, right 0.00p, back −0.72a) · Red **95.9 (best ever**; left −0.51a = best-ever left, right +0.81a, BOTH dormers 15.0 exact)
+- Artifact recurrence: **ZERO** 7.5/10.0/12.5 verbatim recurrences across both runs; odd pitches in live use (7/12 ×6, 9/12 ×2)
+- Anomaly (label-integrity disease, honest surface): Letrick p5 mislabeled its gable read wall="back" (11.0 @ 9/12) → back wall (a 0-gable eave wall) carries `gable_estimated: true` cosmetically.
+**Residual (logged openly, per pre-registration):** rule catches ADMITTED inflation only; silent inflation passes — and the red-house p3 escape shows admission VOCABULARY itself is open-class: the pinned pattern set covers the historical corpus, not future phrasings.
+**Awaiting Howard's keep/revert ruling (criterion-1 partial miss via novel-vocabulary escape is the open question: fail the verdict tier, or extend the pattern set as a follow-on). Then candidate 3 scoping + the owed photo-3/photo-4 autopsy.**

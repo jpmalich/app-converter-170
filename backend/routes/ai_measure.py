@@ -2633,6 +2633,7 @@ async def _execute_reconcile_only_worker(
         # via the same aggregator the main worker uses.
         _restore_bboxes_from_phase_a(final, extractions)
         _apply_count_tiering(final, extractions)
+        _apply_gable_demotion(final, extractions)
         measurements = _aggregate_to_hover_shape(final, annotations=[])
         result = {
             "raw_ai": final,
@@ -5049,6 +5050,97 @@ def _apply_count_tiering(final: dict, extractions: list[dict]) -> None:
     }
 
 
+# Iter 79j.89 — oblique demotion detector: foreshortening/oblique/angle
+# vocabulary. A read is demoted only when the vocabulary co-occurs with a
+# RETAINED numeric read (honest cannot-measure nulls never demote).
+# Admits-and-compensates DEMOTES — self-certified correction is not
+# exempt, per the pixel-citation precedent.
+_OBLIQUE_VOCAB_RE = re.compile(
+    r"foreshorten\w*|oblique|perspective|skew\w*|tilt\w*"
+    r"|(?:camera|viewing|corner)\s+angle|wall'?s?\s+(?:slight\s+)?angle",
+    re.IGNORECASE,
+)
+
+
+def _apply_gable_demotion(final: dict, extractions: list[dict]) -> None:
+    """Iter 79j.89 (pre-registered, Howard-approved w/ 3 edits) —
+    deterministic post-Phase-B demotion of admitted-inflation gable/pitch
+    reads. Re-selection: n=1 non-demoted square-on → value; n=2 → LOWER
+    + gable_pair_low; n≥3 → lower-median. Never average, never higher.
+    All-demoted → reconciler value kept, gable_estimated flag. Residual:
+    catches ADMITTED inflation only — silent inflation passes."""
+    reads: list[dict] = []
+    for i, ex in enumerate(extractions):
+        if not isinstance(ex, dict):
+            continue
+        g = ex.get("gable_triangle_height_ft_observed")
+        try:
+            g = float(g)
+        except (TypeError, ValueError):
+            g = None
+        pitch = (ex.get("pitch_ratio_observed") or "").strip() if isinstance(ex.get("pitch_ratio_observed"), str) else None
+        if not g or g <= 0:
+            continue  # no retained numeric gable read → never demoted, never in pool
+        wall = (ex.get("gable_wall_label") or "").strip().lower()
+        if wall not in ("front", "back", "left", "right"):
+            continue
+        elev = (ex.get("elevation") or "").strip().lower()
+        reasoning = str(ex.get("pitch_reasoning") or "")
+        reads.append({
+            "photo_idx": ex.get("index", i),
+            "wall": wall,
+            "value": g,
+            "pitch": pitch,
+            "square_on": elev == wall,
+            "demoted": bool(_OBLIQUE_VOCAB_RE.search(reasoning)),
+        })
+    if not reads:
+        return
+
+    audit_walls: dict = {}
+    for w in final.get("walls") or []:
+        label = (w.get("label") or "").strip().lower()
+        pool = [r for r in reads if r["wall"] == label]
+        if not pool or not any(r["demoted"] for r in pool):
+            continue  # minimal intervention: only walls touched by a demotion
+        clean = [r for r in pool if not r["demoted"]]
+        entry: dict = {"photos": [
+            {k: r[k] for k in ("photo_idx", "value", "pitch", "square_on", "demoted")} for r in pool
+        ]}
+        if not clean:
+            entry["rule"] = "all_demoted_estimated"
+            entry["selected"] = w.get("gable_triangle_height_ft")
+            w["gable_estimated"] = True
+        else:
+            pick = [r for r in clean if r["square_on"]] or clean
+            vals = sorted(r["value"] for r in pick)
+            if len(vals) == 1:
+                entry["rule"] = "single_non_demoted"
+                sel = vals[0]
+            elif len(vals) == 2:
+                entry["rule"] = "pair_low"
+                sel = vals[0]
+                entry["gable_pair_low"] = True
+                w["gable_pair_low"] = True
+            else:
+                entry["rule"] = "lower_median"
+                sel = vals[(len(vals) - 1) // 2]
+            entry["selected"] = sel
+            w["gable_triangle_height_ft"] = sel
+        audit_walls[label] = entry
+
+    if audit_walls:
+        final["_gable_demotion_audit"] = {
+            "walls": audit_walls,
+            "residual_note": (
+                "Oblique demotion residual (logged per 79j.89 pre-registration): "
+                "the rule catches ADMITTED inflation only — a read whose "
+                "reasoning is silently inflated passes undetected and remains "
+                "a noted field risk."
+            ),
+        }
+
+
 def _restore_bboxes_from_phase_a(final: dict, extractions: list[dict]) -> None:
     """Iter 79j.70 — Re-join reconciled openings to their Phase A pixel
     bboxes. The reconciler is text-only (bboxes are stripped from its
@@ -5675,6 +5767,7 @@ async def _run_two_phase_pipeline(
         final["_pin_gap_hints"] = pin_hints
     _restore_bboxes_from_phase_a(final, extractions)
     _apply_count_tiering(final, extractions)
+    _apply_gable_demotion(final, extractions)
     return final, extractions
 
 
