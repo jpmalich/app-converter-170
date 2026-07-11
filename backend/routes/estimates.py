@@ -724,9 +724,10 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
     # runs (any photo empty/errored) vs valid runs (all photos returned
     # valid extractions). Voided runs never carry a candidate verdict.
     valid_runs = voided_runs = unknown_runs = 0
+    valid_ids: set = set()
     async for r in db.ai_measure_runs.find(
         {"estimate_id": est_id, "status": "done", "usage_probe": {"$ne": True}},
-        {"_id": 0, "raw_per_photo": 1},
+        {"_id": 0, "run_id": 1, "raw_per_photo": 1},
     ):
         rpp = r.get("raw_per_photo")
         if not rpp:
@@ -738,11 +739,37 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
         )
         voided_runs += 1 if bad else 0
         valid_runs += 0 if bad else 1
+        if not bad and r.get("run_id"):
+            valid_ids.add(r["run_id"])
     integrity_line = (
         f"Run integrity: {valid_runs} valid run(s) (all photos returned valid extractions) · "
         f"{voided_runs} voided run(s) (≥1 empty/failed photo — excluded from candidate verdicts)"
         + (f" · {unknown_runs} legacy run(s) without per-photo records" if unknown_runs else "")
     )
+
+    # Iter 79j.88 (Howard-approved; "best validated run" DECLINED as
+    # cherry-picking) — per-fixture CURRENT VALIDATED BASELINE: the
+    # latest VALID run scored under the CURRENT contract hash, shown
+    # with the valid-run count and min–max range under that contract.
+    from routes.ai_measure import _prompt_version_hash
+    current_hash = _prompt_version_hash()
+    contract_entries = [
+        e for e in history
+        if e.get("prompt_hash") == current_hash and e.get("run_id") in valid_ids
+        and e.get("accuracy_pct") is not None
+    ]
+    baseline_line = ""
+    if contract_entries:
+        latest = contract_entries[-1]
+        accs = [e["accuracy_pct"] for e in contract_entries]
+        rng = (f" · range {min(accs)}–{max(accs)}" if len(accs) > 1
+               else " · single scored run under this contract")
+        baseline_line = (
+            f"Current validated baseline (contract {current_hash[:8]}): "
+            f"<b>{latest['accuracy_pct']}</b> — run {str(latest.get('run_id') or '')[:8]}, "
+            f"latest valid run under the current measurement contract · "
+            f"{len(contract_entries)} scored valid run(s){rng}"
+        )
 
     # Iter 79j.84 (1c ruling) — same-corner count cross-check table in the
     # methodology section. Renders the persisted _count_corner_audit of
@@ -912,6 +939,7 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
       <h2>Taped ground truth (entered in the field)</h2>
       <table><tr><th>Wall</th><th>Tape value</th></tr>{tape_rows}{dormer_rows}</table>
       <p class="muted" style="margin:4px 0" data-role="run-integrity">{integrity_line}</p>
+      {f'<p class="muted" style="margin:4px 0" data-role="validated-baseline">{baseline_line}</p>' if baseline_line else ''}
       {corner_html}
       <h2>Development validation — tuned fixture (methodology exhibit)</h2>
       <p class="muted" style="margin:2px 0">Runs below were scored on a fixture used during prompt development.

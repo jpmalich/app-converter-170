@@ -233,3 +233,7 @@ def test_accuracy_pdf_carries_corner_cross_check_table(admin_session):
     assert "same-corner count cross-check" in low
     assert "correlated-error residual" in low
     assert "enumerated" in low and "estimated" in low
+    # Iter 79j.88 — anchor-integrity standing rule + current validated
+    # baseline line (latest valid run under current contract hash).
+    assert "anchor-integrity dependency" in low
+    assert "current validated baseline" in low
