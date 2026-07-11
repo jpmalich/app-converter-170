@@ -146,3 +146,19 @@ def test_salvage_helper_complete_object_roundtrip():
     # must not drop anything when input happens to be complete
     out = _salvage_truncated_json('{"a": 1, "b": "x"}')
     assert out == {"a": 1, "b": "x"}
+
+
+def test_one_photo_echo_never_confirms():
+    # Howard ruling (C3 Letrick verdict, sub-item b): confirmed tier
+    # requires >=2 DISTINCT PHOTOS, never >=2 sightings. Fixture is the
+    # live p3 double-sighting: one photo echoing the same chase edge twice.
+    f = _final({"back": 40})
+    _apply_corner_locations(f, [
+        _ex(3, [_sight("outside", ["back"], 0.60),
+                _sight("outside", ["back"], 0.61)]),
+    ])
+    locs = f["corner_locations"]
+    assert len(locs) == 1
+    assert locs[0]["sightings"] == 2
+    assert locs[0]["photo_idxs"] == [3]
+    assert locs[0]["tier"] == "unconfirmed"  # echo is not agreement
