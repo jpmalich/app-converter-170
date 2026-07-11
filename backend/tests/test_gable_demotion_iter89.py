@@ -160,10 +160,47 @@ def test_untouched_wall_left_alone():
     assert "_gable_demotion_audit" not in f
 
 
+# CORPUS MAINTENANCE pins (standing protocol) — each entry logged with
+# its source run. #1: red house 32a55599 p3.
+MAINTENANCE_ESCAPES = [
+    ("32a55599", "Measured rise vs half-span on the visible back gable triangle; "
+                 "the gable face is angled away so run is compressed - read as ~10/12 with moderate confidence."),
+]
+
+
+def test_maintenance_corpus_trips():
+    for src, text in MAINTENANCE_ESCAPES:
+        assert _OBLIQUE_VOCAB_RE.search(text), f"maintenance escape not covered ({src})"
+
+
+def test_all_demoted_zero_gable_wall_suppresses_cosmetic_flag():
+    # Letrick p5 mislabel case: wall="back" carries no gable geometry —
+    # the estimated flag is suppressed, the audit records why.
+    f = _final()  # back has no gable_triangle_height_ft
+    _apply_gable_demotion(f, [
+        _ex(5, 11.0, "back", "rear-right", ADMITTED_INFLATION[4], pitch="9/12"),
+    ])
+    w = _wall(f, "back")
+    assert "gable_estimated" not in w
+    a = f["_gable_demotion_audit"]["walls"]["back"]
+    assert a["rule"] == "all_demoted_estimated"
+    assert a["flag_suppressed"] == "no_gable_geometry"
+
+
+def test_amended_residual_language():
+    f = _final(gables={"right": 12.5})
+    _apply_gable_demotion(f, [
+        _ex(5, 12.5, "right", "rear-right", ADMITTED_INFLATION[3]),
+        _ex(6, 8.75, "right", "right", CLEAN_READS[0]),
+    ])
+    note = f["_gable_demotion_audit"]["residual_note"]
+    assert "second net, not a wall" in note and "pinned corpus" in note
+
+
 def test_residual_logged_openly():
     f = _final(gables={"right": 12.5})
     _apply_gable_demotion(f, [
         _ex(5, 12.5, "right", "rear-right", ADMITTED_INFLATION[3]),
         _ex(6, 8.75, "right", "right", CLEAN_READS[0]),
     ])
-    assert "ADMITTED inflation only" in f["_gable_demotion_audit"]["residual_note"]
+    assert "admitted inflation only" in f["_gable_demotion_audit"]["residual_note"]

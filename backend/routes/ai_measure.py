@@ -5055,9 +5055,14 @@ def _apply_count_tiering(final: dict, extractions: list[dict]) -> None:
 # RETAINED numeric read (honest cannot-measure nulls never demote).
 # Admits-and-compensates DEMOTES — self-certified correction is not
 # exempt, per the pixel-citation precedent.
+# CORPUS MAINTENANCE (standing protocol, Howard 2026-07-11): novel
+# admission phrasings that escape are added here with pin tests — no
+# fixture runs, hash unchanged, each addition logged with source run.
+#   #1: "angled away … run is compressed" (red house run 32a55599 p3).
 _OBLIQUE_VOCAB_RE = re.compile(
     r"foreshorten\w*|oblique|perspective|skew\w*|tilt\w*"
-    r"|(?:camera|viewing|corner)\s+angle|wall'?s?\s+(?:slight\s+)?angle",
+    r"|(?:camera|viewing|corner)\s+angle|wall'?s?\s+(?:slight\s+)?angle"
+    r"|angled\s+(?:away|off)|compress\w*",
     re.IGNORECASE,
 )
 
@@ -5110,7 +5115,17 @@ def _apply_gable_demotion(final: dict, extractions: list[dict]) -> None:
         if not clean:
             entry["rule"] = "all_demoted_estimated"
             entry["selected"] = w.get("gable_triangle_height_ft")
-            w["gable_estimated"] = True
+            # Geometry check (Howard 2026-07-11): a wall whose reconciled
+            # gable is 0/None has no gable to estimate — suppress the
+            # cosmetic flag (Letrick p5 wall-label mislabel case).
+            try:
+                has_gable = float(w.get("gable_triangle_height_ft") or 0) > 0
+            except (TypeError, ValueError):
+                has_gable = False
+            if has_gable:
+                w["gable_estimated"] = True
+            else:
+                entry["flag_suppressed"] = "no_gable_geometry"
         else:
             pick = [r for r in clean if r["square_on"]] or clean
             vals = sorted(r["value"] for r in pick)
@@ -5133,10 +5148,13 @@ def _apply_gable_demotion(final: dict, extractions: list[dict]) -> None:
         final["_gable_demotion_audit"] = {
             "walls": audit_walls,
             "residual_note": (
-                "Oblique demotion residual (logged per 79j.89 pre-registration): "
-                "the rule catches ADMITTED inflation only — a read whose "
-                "reasoning is silently inflated passes undetected and remains "
-                "a noted field risk."
+                "Oblique demotion residual (amended per 79j.89 ruling): "
+                "lexical demotion catches admitted inflation only where the "
+                "admission matches the pinned corpus; novel phrasings escape "
+                "until added; fully silent inflation always passes. Primary "
+                "defense is independent geometry (square-on preference, "
+                "corner agreement); lexical demotion is a second net, not a "
+                "wall."
             ),
         }
 
