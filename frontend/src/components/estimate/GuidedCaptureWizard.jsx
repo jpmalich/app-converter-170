@@ -553,12 +553,20 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
           </h2>
           <p className="text-sm text-[var(--ink-2)] mb-2">{step.hint}</p>
           <p
-            className="text-[11px] text-[#92400E] bg-[#FEF3C7] border border-[#FCD34D] px-2 py-1.5 mb-4"
+            className="text-[11px] text-[#92400E] bg-[#FEF3C7] border border-[#FCD34D] px-2 py-1.5 mb-2"
             data-testid="guided-capture-corner-pair-note"
           >
             <b>Shoot each corner from both walls.</b> Course counts anchor at corners, and only
             matching same-corner counts from two photos earn the enumerated (tape-provable) tier —
             everything else stays an amber estimate.
+          </p>
+          <p
+            className="text-[11px] text-[#92400E] bg-[#FEF3C7] border border-[#FCD34D] px-2 py-1.5 mb-4"
+            data-testid="guided-capture-foreshortening-note"
+          >
+            <b>Foreshortened shots are a known extraction risk.</b> If a wall can only be seen at
+            a sharp angle (openings compressing toward the far end), prefer a corner-angle reshoot
+            that shows both walls — heavily foreshortened elevations can fail AI extraction entirely.
           </p>
 
           {/* Diagram */}

@@ -3995,6 +3995,7 @@ def _clean_json_reply(reply: str) -> dict:
     candidates = [body, with_commas, _INCH_QUOTE_RE.sub('\\"', with_commas)]
     decoder = json.JSONDecoder()
     last_err = None
+    truncation_suspected = False
     for i, cand in enumerate(candidates):
         try:
             obj, _ = decoder.raw_decode(cand)
@@ -4002,9 +4003,70 @@ def _clean_json_reply(reply: str) -> dict:
                 if i > 0:
                     obj["_json_repaired"] = True
                 return obj
+        except json.JSONDecodeError as e:
+            last_err = e
+            # end-of-input signature: parser consumed everything and wanted
+            # more, or the input ran out inside a string (no closing quote
+            # before EOF — "Unterminated string" pins pos at string START).
+            if e.pos >= len(cand) - 2 or e.msg.startswith("Unterminated string"):
+                truncation_suspected = True
         except Exception as e:
             last_err = e
+    # Iter 79j.92 — rung 4: truncation salvage (empty class 4: natural
+    # mid-JSON stop, stop_reason=end_turn, deterministic on heavily-
+    # foreshortened photos, retry-immune). Gated on the end-of-input
+    # parse-failure signature so non-truncation errors stay diagnosable.
+    # Constraint (Howard-ruled): salvage ONLY fields fully parsed before
+    # the stop — never close structures with invented values, never fill.
+    if truncation_suspected:
+        salvaged = _salvage_truncated_json(with_commas)
+        if salvaged:
+            salvaged["_json_repaired"] = "truncation"
+            salvaged["_extraction_partial"] = True
+            return salvaged
     return {"_parse_error": str(last_err) if last_err else "unparseable"}
+
+
+def _salvage_truncated_json(body: str) -> Optional[dict]:
+    """Iter 79j.92 — walk the top-level object field by field, keeping
+    only key:value pairs whose values parsed COMPLETELY before the stop.
+    A truncated value (and everything after it) is dropped entirely — a
+    flagged partial, never a plausible completion. A bare number ending
+    exactly at end-of-input is dropped too (its digits may be cut)."""
+    decoder = json.JSONDecoder()
+    n = len(body)
+    i = body.find("{")
+    if i < 0:
+        return None
+    i += 1
+    out: dict = {}
+    while i < n:
+        while i < n and body[i] in " \t\r\n,":
+            i += 1
+        if i >= n or body[i] == "}":
+            break
+        try:
+            key, i = decoder.raw_decode(body, i)
+        except Exception:
+            break
+        if not isinstance(key, str):
+            break
+        while i < n and body[i] in " \t\r\n":
+            i += 1
+        if i >= n or body[i] != ":":
+            break
+        i += 1
+        while i < n and body[i] in " \t\r\n":
+            i += 1
+        try:
+            val, end = decoder.raw_decode(body, i)
+        except Exception:
+            break
+        if end >= n and isinstance(val, (int, float)) and not isinstance(val, bool):
+            break
+        out[key] = val
+        i = end
+    return out or None
 
 
 def _env_int(name: str, default: int) -> int:
@@ -4459,6 +4521,16 @@ async def _extract_one_photo(
                 retry_parsed["_empty_reason"] = f"Retry timed out after {per_call_timeout}s — LLM proxy slow or unreachable."
             elif retry_parsed.get("_extraction_error"):
                 retry_parsed["_empty_reason"] = f"Retry failed: {retry_parsed.get('_extraction_error')}"
+            elif retry_parsed.get("_parse_error") and str(retry_parsed.get("_stop_reason")) == "end_turn":
+                # Empty class 4 (79j.92): natural mid-JSON stop — not a
+                # token limit, retry-immune, deterministic on heavily-
+                # foreshortened photos. Truncation salvage found nothing.
+                retry_parsed["_empty_reason"] = (
+                    "Empty class 4: Claude ended its turn mid-JSON (natural stop, not a "
+                    "token limit) and truncation salvage recovered no complete fields. "
+                    "Known risk on heavily-foreshortened elevations — prefer a "
+                    "corner-angle reshoot showing both walls."
+                )
             else:
                 retry_parsed["_empty_reason"] = "Two consecutive empty Claude responses — photo may be interior, blurry, or not a house exterior."
             logger.warning("[ai-measure phase-A] photo %d STILL empty after retry — orphan risk", photo_idx)
@@ -5247,16 +5319,23 @@ def _apply_corner_locations(final: dict, extractions: list[dict]) -> None:
         for loc in locations:
             if loc["walls"] != s["walls"]:
                 continue
-            near = (
+            # Iter 79j.92 — clarifying amendment to 79j.91 (Howard-ruled,
+            # dedupe-bug class): two walls intersect at exactly one
+            # vertical, so an identical two-wall pair set IS one physical
+            # junction — merge regardless of position_frac (frac is
+            # frame-relative: 0.0 from one wall = 1.0 from the adjacent).
+            near = len(s["walls"]) == 2 or (
                 loc["position_frac"] is not None and s["position_frac"] is not None
                 and abs(loc["position_frac"] - s["position_frac"]) <= _tol_frac(s["walls"])
-            ) or (loc["position_frac"] is None and s["position_frac"] is None
-                  and len(s["walls"]) == 2)  # house corners w/o positions: same wall-pair = same corner
+            )
             if not near:
                 continue
             if loc["type"] != s["type"]:
-                # opposite types NEVER merge (non-negotiable safeguard)
-                same_spot = (
+                # opposite types NEVER merge (non-negotiable safeguard).
+                # 79j.92: on an identical two-wall pair there is only one
+                # junction, so a type disagreement there is a same-spot
+                # dispute (corner_type_conflict), never "adjacent".
+                same_spot = len(s["walls"]) == 2 or (
                     loc["position_frac"] is not None and s["position_frac"] is not None
                     and abs(loc["position_frac"] - s["position_frac"]) <= _SAME_SPOT_EPS_FRAC
                 )
