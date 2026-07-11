@@ -2634,6 +2634,7 @@ async def _execute_reconcile_only_worker(
         _restore_bboxes_from_phase_a(final, extractions)
         _apply_count_tiering(final, extractions)
         _apply_gable_demotion(final, extractions)
+        _apply_corner_locations(final, extractions)
         measurements = _aggregate_to_hover_shape(final, annotations=[])
         result = {
             "raw_ai": final,
@@ -3464,6 +3465,20 @@ Return ONLY JSON matching this schema. No prose, no markdown, no
      "approx_width_ft": number,
      "approx_face_sqft": number,
      "bbox": [x, y, w, h] | null}                         // pixel bbox in this photo's compressed frame
+  ],
+
+  // Iter 79j.91 Candidate 3 — SIDING CORNER LOCATIONS visible in THIS photo.
+  // Report EVERY siding corner LOCATION (not pieces): house corners,
+  // bump-outs / chimney chases, recessed entries, and DORMER corner posts.
+  // Elevated posts COUNT — never skip a corner because it does not reach
+  // the ground. An outside corner next to an inside corner is normal
+  // (that is what a chase or recessed entry looks like) — report both.
+  "corner_locations_this_photo": [
+    {"type": "outside" | "inside",                        // outside corner post (OSC) vs inside corner (ISC)
+     "walls": ["front" | "back" | "left" | "right"],      // two walls for a house corner; one wall for an appendage/dormer corner on that wall's plane
+     "position_frac": number,                             // 0.0-1.0 along the FIRST named wall from its LEFT end as you view that wall from outside
+     "locator": "<short, e.g. 'front-left house corner', 'chase left edge', 'left dormer left post'>",
+     "elevated": true | false}                            // true when the post does NOT reach the ground (dormer posts etc.)
   ],
 
   // OPENINGS visible in THIS photo. `opening_id` must be a STABLE id
@@ -5159,6 +5174,140 @@ def _apply_gable_demotion(final: dict, extractions: list[dict]) -> None:
         }
 
 
+_WALL_LABELS = ("front", "back", "left", "right")
+# corner_type_conflict epsilon: positions this close are treated as ONE
+# disputed location (two photos disputing what one corner is); beyond it
+# but within merge tolerance, opposite types are adjacent_opposite_type.
+_SAME_SPOT_EPS_FRAC = 0.025
+
+
+def _apply_corner_locations(final: dict, extractions: list[dict]) -> None:
+    """Iter 79j.91 — Candidate 3 (pre-registered, Howard-approved).
+    Deterministic corner-LOCATION aggregation. Presence guarantee: ALL
+    detected corners enter the takeoff; tiers label confidence, never
+    delete. Dedupe tolerance: ±10% of wall length or ±2 ft, whichever is
+    larger, HARD-CAPPED at ±4 ft. Opposite types NEVER merge. Same-spot
+    opposite types → corner_type_conflict; nearby opposite types →
+    adjacent_opposite_type. Elevated posts (dormers) count — no
+    ground-contact requirement anywhere."""
+    wall_len = {}
+    for w in final.get("walls") or []:
+        lbl = (w.get("label") or "").strip().lower()
+        try:
+            wall_len[lbl] = float(w.get("length_ft") or 0) or None
+        except (TypeError, ValueError):
+            wall_len[lbl] = None
+
+    sightings = []
+    for i, ex in enumerate(extractions):
+        if not isinstance(ex, dict):
+            continue
+        vis = {str(v).strip().lower() for v in (ex.get("walls_visible") or [])}
+        for c in ex.get("corner_locations_this_photo") or []:
+            if not isinstance(c, dict):
+                continue
+            ctype = str(c.get("type") or "").strip().lower()
+            if ctype not in ("outside", "inside"):
+                continue
+            walls = tuple(sorted(
+                w for w in (str(x).strip().lower() for x in (c.get("walls") or []))
+                if w in _WALL_LABELS
+            ))
+            if not walls:
+                continue
+            try:
+                pos = float(c.get("position_frac"))
+            except (TypeError, ValueError):
+                pos = None
+            pos = min(max(pos, 0.0), 1.0) if pos is not None else None
+            # anchor-integrity geometry check: demote (never delete) when
+            # the photo cannot see the claimed wall(s)
+            geo_ok = not vis or any(w in vis for w in walls)
+            sightings.append({
+                "photo_idx": ex.get("index", i),
+                "type": ctype,
+                "walls": walls,
+                "position_frac": pos,
+                "locator": str(c.get("locator") or "")[:80],
+                "elevated": bool(c.get("elevated")),
+                "geometry_mismatch": not geo_ok,
+            })
+    if not sightings:
+        return
+
+    def _tol_frac(walls: tuple) -> float:
+        L = wall_len.get(walls[0]) if walls else None
+        if not L or L <= 0:
+            return 0.10
+        return min(max(0.10, 2.0 / L), 4.0 / L)
+
+    locations: list[dict] = []
+    for s in sightings:
+        merged = False
+        for loc in locations:
+            if loc["walls"] != s["walls"]:
+                continue
+            near = (
+                loc["position_frac"] is not None and s["position_frac"] is not None
+                and abs(loc["position_frac"] - s["position_frac"]) <= _tol_frac(s["walls"])
+            ) or (loc["position_frac"] is None and s["position_frac"] is None
+                  and len(s["walls"]) == 2)  # house corners w/o positions: same wall-pair = same corner
+            if not near:
+                continue
+            if loc["type"] != s["type"]:
+                # opposite types NEVER merge (non-negotiable safeguard)
+                same_spot = (
+                    loc["position_frac"] is not None and s["position_frac"] is not None
+                    and abs(loc["position_frac"] - s["position_frac"]) <= _SAME_SPOT_EPS_FRAC
+                )
+                flag = "corner_type_conflict" if same_spot else "adjacent_opposite_type"
+                loc[flag] = True
+                s[flag] = True
+                continue
+            loc["photo_idxs"] = sorted(set(loc["photo_idxs"]) | {s["photo_idx"]})
+            loc["sightings"] += 1
+            if s.get("geometry_mismatch"):
+                loc["geometry_mismatch"] = True
+            if s.get("elevated"):
+                loc["elevated"] = True
+            merged = True
+            break
+        if not merged:
+            locations.append({
+                "type": s["type"],
+                "walls": s["walls"],
+                "position_frac": s["position_frac"],
+                "locator": s["locator"],
+                "elevated": s.get("elevated", False),
+                "geometry_mismatch": s.get("geometry_mismatch", False),
+                "photo_idxs": [s["photo_idx"]],
+                "sightings": 1,
+                **({"corner_type_conflict": True} if s.get("corner_type_conflict") else {}),
+                **({"adjacent_opposite_type": True} if s.get("adjacent_opposite_type") else {}),
+            })
+
+    for loc in locations:
+        confirmed = len(set(loc["photo_idxs"])) >= 2 and not loc.get("geometry_mismatch")
+        loc["tier"] = "confirmed" if confirmed else "unconfirmed"
+
+    final["corner_locations"] = locations
+    final["_corner_location_audit"] = {
+        "sightings": sightings,
+        "totals": {
+            "outside": sum(1 for l in locations if l["type"] == "outside"),
+            "inside": sum(1 for l in locations if l["type"] == "inside"),
+            "confirmed": sum(1 for l in locations if l["tier"] == "confirmed"),
+            "unconfirmed": sum(1 for l in locations if l["tier"] == "unconfirmed"),
+        },
+        "residual_note": (
+            "Corner-location residual (79j.91): presence guarantee means "
+            "phantoms are flagged for field check, never auto-deleted; "
+            "omission by the model remains the primary risk and is only "
+            "caught against a field-counted key."
+        ),
+    }
+
+
 def _restore_bboxes_from_phase_a(final: dict, extractions: list[dict]) -> None:
     """Iter 79j.70 — Re-join reconciled openings to their Phase A pixel
     bboxes. The reconciler is text-only (bboxes are stripped from its
@@ -5786,6 +5935,7 @@ async def _run_two_phase_pipeline(
     _restore_bboxes_from_phase_a(final, extractions)
     _apply_count_tiering(final, extractions)
     _apply_gable_demotion(final, extractions)
+    _apply_corner_locations(final, extractions)
     return final, extractions
 
 

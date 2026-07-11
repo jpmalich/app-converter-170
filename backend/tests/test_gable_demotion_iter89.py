@@ -80,7 +80,7 @@ def _wall(f, label):
 
 def test_prompt_contract_unchanged():
     # 79j.89 is a mechanics candidate — zero prompt changes.
-    assert _prompt_version_hash() == "53f2bfa3344b1057"
+    assert _prompt_version_hash() == "cbcb392fc94104fa"
 
 
 def test_detector_trips_on_every_historical_admitted_inflation():

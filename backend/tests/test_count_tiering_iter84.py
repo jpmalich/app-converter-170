@@ -217,7 +217,7 @@ def test_estimated_tier_excluded_from_course_delta(admin_session, mongo_db):
         s.delete(f"{API}/estimates/{est_id}", timeout=15)
 
 
-def test_accuracy_pdf_carries_corner_cross_check_table(admin_session):
+def test_accuracy_pdf_carries_corner_cross_check_table(admin_session, mongo_db):
     """1c ruling item 3 — the accuracy report PDF renders the persisted
     _count_corner_audit as a same-corner cross-check methodology table.
     Uses the Letrick fixture (has 1c runs with audits)."""
@@ -233,7 +233,15 @@ def test_accuracy_pdf_carries_corner_cross_check_table(admin_session):
     assert "same-corner count cross-check" in low
     assert "correlated-error residual" in low
     assert "enumerated" in low and "estimated" in low
-    # Iter 79j.88 — anchor-integrity standing rule + current validated
-    # baseline line (latest valid run under current contract hash).
+    # Iter 79j.88 — anchor-integrity standing rule always present; the
+    # current-validated-baseline line appears only once a valid run has
+    # been scored under the CURRENT contract hash (hash bumps empty it).
     assert "anchor-integrity dependency" in low
-    assert "current validated baseline" in low
+    from routes.ai_measure import _prompt_version_hash
+    h = _prompt_version_hash()
+    est = mongo_db.estimates.find_one({"id": est_id}, {"tape_check.history": 1})
+    hist = (est.get("tape_check") or {}).get("history") or []
+    if any(e.get("prompt_hash") == h for e in hist):
+        assert "current validated baseline" in low
+    else:
+        assert "current validated baseline" not in low

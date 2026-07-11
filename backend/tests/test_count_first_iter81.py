@@ -26,7 +26,7 @@ ADMIN_PASSWORD = "Admin123!"
 
 # Iter 79j.87 — Candidate 2 contract: 1c base + pitch ladder expanded to
 # all integer pitches 3/12–14/12 (measured pitch at integer resolution).
-HASH_1C = "53f2bfa3344b1057"
+HASH_1C = "cbcb392fc94104fa"
 
 
 def test_contract_hash_pinned_1c():
