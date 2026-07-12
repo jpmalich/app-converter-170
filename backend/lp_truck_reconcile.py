@@ -122,19 +122,19 @@ def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None
         "from an unstated rule",
     ))
 
-    # ── Soffit — basis recovered; rake-corrected derivation HELD pending
-    # Howard's confirmation that the rakes were soffited
+    # ── Soffit — SCORED (amendment: vinyl soffit panels eaves+rakes is
+    # the per-system rule; the held rake question is resolved at rule level)
     overhang_in = float(g.get("overhang_in") or 12)
     eaves_area = round(eaves_lf * overhang_in / 12.0, 1)
     full_area = round((eaves_lf + rakes_lf) * overhang_in / 12.0, 1)
     eaves_only = int(math.ceil(eaves_area / SOFFIT_SQFT_PER_PC * (1 + DEFAULT_WASTE) - 1e-9))
     rake_corrected = int(math.ceil(full_area / SOFFIT_SQFT_PER_PC * (1 + DEFAULT_WASTE) - 1e-9))
     lines.append(_line(
-        "Soffit", 24, rake_corrected, "pending_confirmation",
-        f"basis: {SOFFIT_PANEL_BASIS}; eaves-only {eaves_area:g} sqft → {eaves_only} pcs "
-        f"(the original derivation error); rake-corrected {full_area:g} sqft (rake slope "
-        f"{rakes_lf:g} LF, never plan-view) → {rake_corrected} pcs; residual vs 24 = crew "
-        "cushion/carton — HELD pending Howard's rake-soffit confirmation",
+        "Soffit", 24, rake_corrected, "deviation",
+        f"RECONCILED: basis {SOFFIT_PANEL_BASIS}; VINYL system rule = soffit panels "
+        f"eaves+rakes → {full_area:g} sqft (rake slope {rakes_lf:g} LF, never plan-view) "
+        f"→ {rake_corrected} pcs (eaves-only error would give {eaves_only}); residual vs "
+        "24 = crew cushion/carton, per the whole-square precedent",
         basis=SOFFIT_PANEL_BASIS,
     ))
 
@@ -152,4 +152,4 @@ def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None
         counts[l["status"]] = counts.get(l["status"], 0) + 1
     return {"lines": lines, "summary": counts,
             "note": "Truck reconciliation runs BEFORE the ±3% vs-hand-takeoff test. "
-                    "Held lines: Soffit (rake confirmation), Finish trim (rule not on record)."}
+                    "Held line: Finish trim (vinyl formula not on record)."}

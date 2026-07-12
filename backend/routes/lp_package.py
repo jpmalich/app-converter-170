@@ -49,11 +49,13 @@ async def lp_package_preview(
     """Assemble the LP-native package from an AI Measure run. `run_id`
     optional — falls back to the latest terminal run. `substitutions`
     optional {line_name: new_item} — table-limited, re-derived, provenance-
-    carried, never remembered (Howard's substitution ruling)."""
+    carried, never remembered. `colors` optional {"all": X, group: Y} —
+    per-component line-level colors (Howard's color architecture)."""
     run = await _load_run(est_id, user, (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
-                              substitutions=(payload or {}).get("substitutions"))
+                              substitutions=(payload or {}).get("substitutions"),
+                              colors=(payload or {}).get("colors"))
     pkg["run_id"] = run.get("run_id")
     return pkg
 

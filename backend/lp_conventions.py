@@ -58,13 +58,25 @@ FASCIA_RAKE_ITEM = "440 Series Trim 4/4\" x 8\" x 16'"    # fascia + rake boards
 WRAP_TRIM_ITEM = "540 Series Trim 5/4\" x 4\" x 16'"      # window/door wrap
 TRIM_STICK_LEN_FT = 16.0
 
+# Per-system derivation table (Howard amendment, 2026-07-11 — any line
+# crossing systems is a composition bug):
+#   VINYL: soffit (eaves+rakes) + coil fascia + J + finish trim
+#   LP:    soffit (EAVES ONLY, no rake soffit wrap) + 440 4/4"×8"
+#          (eaves fascia + rake boards, one product both run types)
+#          + 540 trim system + NO J / NO finish trim / NO coil
+SYSTEM_DERIVATION = {
+    "vinyl": {"soffit_runs": "eaves+rakes", "fascia": "aluminum coil by run length",
+              "openings": "J-channel + finish trim"},
+    "lp": {"soffit_runs": "eaves only (no rake soffit wrap)",
+           "fascia_and_rakes": "440 Series Trim 4/4\" x 8\" x 16'",
+           "openings": "540 trim system",
+           "forbidden": ("j-channel", "finish trim", "coil")},
+}
+
 PENDING_CONFIRMATIONS = {
     "osc_stick_length": "540 OSC stick length pending Howard's confirmation (192\" = 16' assumed, flagged).",
     "door_trim_sides": "Door trim 3-side vs 4-side pending Howard's ruling — current wrap derivation uses full opening perimeter (4-side), flagged.",
     "corner_splice_rule": "Splice rule on corner runs over 16' pending (splice-and-round-up-sticks vs full-stick-per-segment) — held flagged, not defaulted.",
-    "fascia_rake_splice": "Fascia/rake splice convention on runs >16' pending — splice-and-round-up-sticks assumed per fascia practice, flagged.",
-    "fascia_rake_presence": "Fascia/rake always-present on LP-native vs job-conditional toggle (remodels keeping existing fascia) pending — flagged.",
-    "letrick_rake_soffit": "Letrick rake-soffit presence pending Howard's field confirmation — harness soffit line held.",
 }
 
 
@@ -187,9 +199,10 @@ def soffit_run_area_sqft(eaves_lf: float, rakes_lf: float, overhang_in: float,
 
 
 def fascia_rake_takeoff(eaves_lf: float, rakes_lf: float, waste: float = DEFAULT_WASTE) -> dict:
-    """LP fascia + rake boards: 440 Series Trim 4/4"×8"×16'. LF = eave
-    runs + rake SLOPE lengths. Whole 16' sticks, waste per doctrine.
-    Splice-and-round-up assumed (pending confirmation, flagged)."""
+    """LP fascia + rake boards: 440 Series Trim 4/4"×8"×16' — one product
+    across both run types (RULED, amendment 2026-07-11). LF = eave runs +
+    rake SLOPE lengths (never plan-view). Splice-and-round-up TOTAL
+    sticks (ruled); always present on LP-native (ruled)."""
     total_lf = float(eaves_lf or 0) + float(rakes_lf or 0)
     if total_lf <= 0:
         return {"total_lf": 0.0, "ordered_pcs": 0, "flags": []}
@@ -198,8 +211,7 @@ def fascia_rake_takeoff(eaves_lf: float, rakes_lf: float, waste: float = DEFAULT
         "total_lf": round(total_lf, 1),
         "waste_lf": round(adj, 1),
         "ordered_pcs": int(math.ceil(adj / TRIM_STICK_LEN_FT - 1e-9)),
-        "flags": [PENDING_CONFIRMATIONS["fascia_rake_splice"],
-                  PENDING_CONFIRMATIONS["fascia_rake_presence"]],
+        "flags": [],
     }
 
 

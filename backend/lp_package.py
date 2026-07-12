@@ -130,7 +130,8 @@ def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
 
 
 def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=None,
-                        substitutions: dict | None = None) -> dict:
+                        substitutions: dict | None = None,
+                        colors: dict | None = None) -> dict:
     from routes.hover import _build_lines  # local import to dodge cycle
 
     with override_flag(True):
@@ -140,6 +141,20 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     removed = lp_composition_bugs(lines)
     if removed:
         lines = [l for l in lines if l.get("name") not in removed]
+
+    # PER-SYSTEM TABLE (amendment): LP soffit panels EAVES ONLY — the
+    # rake-driven Closed soffit row is a cross-system line on LP-native
+    # (rakes carry 440 4/4"×8" rake boards instead)
+    system_enforced = []
+    rake_soffit = next((l for l in lines if l["name"] == "38 Series Soffit 16 x 16 Closed"), None)
+    if rake_soffit is not None:
+        lines.remove(rake_soffit)
+        system_enforced.append(
+            "38 Series Soffit 16 x 16 Closed removed — LP soffit panels eaves only "
+            "(no rake soffit wrap); rakes carry 440 4/4\"×8\" rake boards")
+    for l in lines:
+        if l["name"] == "38 Series Soffit 16 x 16 Vented":
+            l["note"] = f"{l.get('note') or ''} — LP soffit panels eaves only (per-system rule)".strip(" —")
 
     # whole-piece rounding at the SKU level, everywhere
     for l in lines:
@@ -215,8 +230,8 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         _set_line(
             FASCIA_RAKE_ITEM, "LP SmartSide Trim", fr["ordered_pcs"],
             f"Fascia (eaves {eaves_lf:g} LF) + rake slope ({rakes_lf:g} LF) = {fr['total_lf']} LF "
-            f"× 1.10 ÷ 16' sticks = {fr['ordered_pcs']} — splice-and-round-up assumed (pending); "
-            "presence toggle pending (remodels keeping existing fascia)",
+            f"× 1.10 ÷ 16' sticks = {fr['ordered_pcs']} — one product both run types; "
+            "splice-and-round-up total sticks (ruled); always present on LP-native (ruled)",
             _derivation={"kind": "fascia_rake", "total_lf": fr["total_lf"]})
 
     # ── 540 wrap: door side-count pending — flag, do not change derivation
@@ -292,9 +307,12 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                PENDING_CONFIRMATIONS["door_trim_sides"]]
     if osc and any("splice" in f.lower() for f in osc.get("flags") or []):
         pending.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
-    if fr["ordered_pcs"] > 0:
-        pending += [PENDING_CONFIRMATIONS["fascia_rake_splice"],
-                    PENDING_CONFIRMATIONS["fascia_rake_presence"]]
+
+    # ── COLOR ARCHITECTURE (ruled): per-component line-level colors;
+    # identity = (name, color); availability flagged while unverified
+    from lp_colors import apply_colors, consolidate_lines
+    group_colors, color_errors = apply_colors(lines, colors)
+    lines = consolidate_lines(lines)
 
     return {
         "lines": lines,
@@ -306,7 +324,10 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             **({"isc_detail": isc} if isc else {}),
             "fascia_rake": fr,
             "composition_guard_removed": removed,
+            "system_table_enforced": system_enforced,
             "substitution_errors": sub_errors,
+            "group_colors": group_colors,
+            "color_errors": color_errors,
             "flags": flags,
             "pending_confirmations": pending,
         },

@@ -90,8 +90,17 @@ def test_assemble_ruled_trim_system():
     assert "ISC locations" in by[ISC_TRIM_ITEM]["note"]
     # 440 4/4"×8" fascia + rake: (108 + 73.4) × 1.10 ÷ 16 = 12.47 → 13
     assert by[FASCIA_RAKE_ITEM]["qty"] == 13
-    assert "splice-and-round-up assumed" in by[FASCIA_RAKE_ITEM]["note"]
+    assert "splice-and-round-up total sticks (ruled)" in by[FASCIA_RAKE_ITEM]["note"]
     assert pkg["summary"]["osc_source"] == "c3_corner_locations"
+
+
+def test_lp_soffit_eaves_only_per_system_table():
+    pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
+    names = {l["name"] for l in pkg["lines"]}
+    assert "38 Series Soffit 16 x 16 Closed" not in names  # rake soffit = cross-system on LP
+    vented = next(l for l in pkg["lines"] if l["name"] == "38 Series Soffit 16 x 16 Vented")
+    assert "eaves only" in vented["note"]
+    assert any("rake boards" in s for s in pkg["summary"]["system_table_enforced"])
 
 
 def test_assemble_composition_guard_strips_coil():
@@ -129,7 +138,7 @@ def test_assemble_pendings_surfaced():
     pend = " ".join(pkg["summary"]["pending_confirmations"])
     assert "stick length" in pend
     assert "3-side vs 4-side" in pend
-    assert "splice convention" in pend or "Fascia/rake splice" in pend
+    assert len(pkg["summary"]["pending_confirmations"]) == 2  # fascia pendings RULED away
 
 
 # ── Howard rulings: default width, starter line, substitution ──

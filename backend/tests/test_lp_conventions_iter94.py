@@ -120,8 +120,7 @@ def test_fascia_rake_takeoff():
     fr = fascia_rake_takeoff(108.0, 73.4)
     assert fr["total_lf"] == 181.4
     assert fr["ordered_pcs"] == 13  # × 1.10 = 199.5 ÷ 16 → 13 sticks
-    assert any("splice" in f.lower() for f in fr["flags"])
-    assert any("toggle" in f.lower() or "always-present" in f.lower() for f in fr["flags"])
+    assert fr["flags"] == []  # splice-and-round-up + always-present RULED
 
 
 def test_lp_composition_bugs_detector():
@@ -136,8 +135,15 @@ def test_lp_composition_bugs_detector():
 def test_pending_confirmations_ruled_set():
     assert set(PENDING_CONFIRMATIONS) == {
         "osc_stick_length", "door_trim_sides", "corner_splice_rule",
-        "fascia_rake_splice", "fascia_rake_presence", "letrick_rake_soffit",
     }
+
+
+def test_per_system_derivation_table():
+    from lp_conventions import SYSTEM_DERIVATION, soffit_run_area_sqft
+    assert "eaves only" in SYSTEM_DERIVATION["lp"]["soffit_runs"]
+    assert SYSTEM_DERIVATION["vinyl"]["soffit_runs"] == "eaves+rakes"
+    assert soffit_run_area_sqft(108, 73.4, 12, include_rakes=False) == 108.0
+    assert soffit_run_area_sqft(108, 73.4, 12, include_rakes=True) == 181.4
 
 
 # ── Letrick truck-list harness (per consolidated rulings) ──
@@ -179,11 +185,13 @@ def test_truck_reconcile_per_rulings():
     # coil + soffit-J derive to exact matches under rules on file
     assert by["Coil"]["status"] == "match" and by["Coil"]["derived_qty"] == 2
     assert by["Soffit J"]["status"] == "match" and by["Soffit J"]["derived_qty"] == 18
-    # soffit: basis explicit, rake-corrected, HELD pending
-    assert by["Soffit"]["status"] == "pending_confirmation"
+    # soffit: SCORED per amendment (vinyl system rule = eaves+rakes)
+    assert by["Soffit"]["status"] == "deviation"
+    assert "RECONCILED" in by["Soffit"]["cause"]
     assert "Charter Oak" in by["Soffit"]["basis"]
     assert by["Soffit"]["derived_qty"] == 20
     # finish trim: rule not on record — never derived from air
     assert by["Finish trim"]["status"] == "pending_rule_on_record"
     assert by["Finish trim"]["derived_qty"] is None
     assert out["summary"]["match"] == 3
+    assert "pending_confirmation" not in out["summary"]
