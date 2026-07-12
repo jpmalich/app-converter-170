@@ -1,9 +1,8 @@
-"""Iter 79j.94 — pins for the LP material-usage CONVENTIONS layer
-(Howard's spec block) + the Letrick truck-list acceptance harness.
-Doctrine pins: waste before whole-piece round-up; trap check (8\" lap
-face is 7-7/8\" NOT 7-1/4\"); shake reveal never silently defaulted;
-pendings never filled from other sources; discrepancies flagged never
-silently picked."""
+"""Iter 79j.94 — pins for the LP material-usage CONVENTIONS layer +
+Letrick truck-list harness, updated to Howard's consolidated rulings
+(shake waste ruled 10% provisional; LP composition: no J/finish trim/coil;
+whole-square doctrine + near_boundary; OSC reconciled-by-key; ISC exact;
+soffit basis explicit + rake-corrected held pending)."""
 import sys
 from pathlib import Path
 
@@ -15,10 +14,11 @@ load_dotenv(Path("/app/backend/.env"))
 from lp_conventions import (  # noqa: E402
     LAP8_WRONG_FACE_IN, LAP_FACE_IN, LAP_PCS_PER_SQUARE_12FT,
     LAP_PCS_PER_SQUARE_16FT, PENDING_CONFIRMATIONS, SOFFIT_BUNDLE_PCS,
-    batten_takeoff_flags, coverage_per_board_sqft, line_math,
-    pieces_per_square, reveal_from_face, shake_takeoff,
-    soffit_panel_for_overhang, soffit_takeoff_eave_length,
-    spec_discrepancies,
+    batten_takeoff_flags, coverage_per_board_sqft, fascia_rake_takeoff,
+    line_math, lp_composition_bugs, near_boundary, pieces_per_square,
+    rake_slope_length_ft, reveal_from_face, shake_takeoff,
+    soffit_panel_for_overhang, soffit_run_area_sqft,
+    soffit_takeoff_eave_length, spec_discrepancies,
 )
 from lp_smartside_formulas import NICKEL_GAP_COVERAGE_SQFT_PER_PC  # noqa: E402
 from lp_truck_reconcile import LETRICK_TRUCK_LIST, reconcile_letrick_truck  # noqa: E402
@@ -34,11 +34,9 @@ def test_lap_tables_16ft_and_12ft():
 
 
 def test_estimating_trap_8_lap_face():
-    # face 7-7/8" → reveal 6-7/8" → 9.17 sqft/board → 11 pcs/square
     assert reveal_from_face(LAP_FACE_IN["8\" Lap"]) == 6.875
     assert coverage_per_board_sqft(6.875, 16) == 9.17
     assert pieces_per_square(6.875, 16) == 11
-    # the WRONG 7-1/4" face changes the answer — the check has teeth
     assert pieces_per_square(reveal_from_face(LAP8_WRONG_FACE_IN), 16) != 11
 
 
@@ -47,31 +45,38 @@ def test_no_internal_spec_discrepancies():
 
 
 def test_shake_pcs_per_square_bounds():
-    assert pieces_per_square(6.875, 4) == 44   # minimum reveal
-    assert pieces_per_square(9.875, 4) == 31   # maximum reveal
+    assert pieces_per_square(6.875, 4) == 44
+    assert pieces_per_square(9.875, 4) == 31
 
 
 def test_nickel_gap_locked():
-    assert NICKEL_GAP_COVERAGE_SQFT_PER_PC == 9.33  # fixed 7" reveal, never job-variable
+    assert NICKEL_GAP_COVERAGE_SQFT_PER_PC == 9.33
 
 
-# ── doctrine: waste before round-up, transparency triple ──
+# ── doctrine: waste before round-up, near-boundary annotation ──
 
 def test_waste_before_whole_piece_roundup():
     m = line_math(100.0, 9.17)
     assert m["base_qty"] == 10.91
-    assert m["ordered_pcs"] == 12  # ceil(10.905 × 1.10) — waste FIRST, then up
+    assert m["ordered_pcs"] == 12
     assert m["waste_pct"] == 10
 
 
-# ── shake reveal: never silently defaulted ──
+def test_near_boundary_annotation():
+    assert near_boundary(20.16) is True    # within 0.5 of lower whole square
+    assert near_boundary(20.4) is True
+    assert near_boundary(20.7) is False
+    assert near_boundary(21.0) is False    # exact whole square — no boundary call
+
+
+# ── shake: reveal never silently defaulted; waste RULED 10% (no flag) ──
 
 def test_shake_unspecified_reveal_flags_and_worst_cases():
     m = shake_takeoff(500.0)
-    assert m["reveal_in"] == 6.875  # minimum reveal = worst case, more pieces
+    assert m["reveal_in"] == 6.875
     assert any("reveal: unconfirmed" in f for f in m["flags"])
-    assert any("PENDING" in f for f in m["flags"])  # shake waste pending
-    specified = shake_takeoff(500.0, reveal_in=9.875, waste=0.10)
+    assert not any("PENDING" in f for f in m["flags"])  # waste ruled, no longer pending
+    specified = shake_takeoff(500.0, reveal_in=9.875)
     assert specified["flags"] == []
     assert m["ordered_pcs"] > specified["ordered_pcs"]
 
@@ -81,11 +86,10 @@ def test_batten_spacing_flag():
     assert batten_takeoff_flags("16\" o.c.") == []
 
 
-# ── soffit: width matching, rip waste, bundles ──
+# ── soffit: width matching, rakes included, rip waste, bundles ──
 
 def test_soffit_next_width_up_with_rip_note():
     assert soffit_panel_for_overhang(12)["panel"] == "12\" Soffit"
-    assert soffit_panel_for_overhang(12)["rip_waste_note"] is None
     sel17 = soffit_panel_for_overhang(17)
     assert sel17["panel"] == "24\" Soffit"
     assert "rip waste" in sel17["rip_waste_note"]
@@ -93,19 +97,50 @@ def test_soffit_next_width_up_with_rip_note():
 
 def test_soffit_eave_length_method():
     m = soffit_takeoff_eave_length(108.0, 12.0)
-    assert m["panel"] == "12\" Soffit"
-    assert m["base_qty"] == 6.75          # 108 ÷ 16' boards
-    assert m["ordered_pcs"] == 8          # × 1.10 → 7.43 → up
+    assert m["base_qty"] == 6.75
+    assert m["ordered_pcs"] == 8
     assert str(SOFFIT_BUNDLE_PCS) in m["bundle_note"]
 
 
-# ── pendings: never filled from other sources ──
+def test_soffit_run_area_panels_eaves_and_rakes():
+    # conventions fix: eaves AND rakes, wherever overhangs carry soffit
+    assert soffit_run_area_sqft(108, 73.4, 12) == 181.4
+    assert soffit_run_area_sqft(108, 73.4, 12, include_rakes=False) == 108.0
 
-def test_pending_confirmations_exactly_two():
-    assert set(PENDING_CONFIRMATIONS) == {"shake_waste_factor", "lp_trim_accessory_conventions"}
+
+def test_rake_slope_never_plan_view():
+    # 7/12 over 15' half-span ≈ 17.4' slope
+    assert abs(rake_slope_length_ft(7, 15) - 17.37) < 0.05
+    assert rake_slope_length_ft(7, 15) > 15  # slope always exceeds plan view
 
 
-# ── Letrick truck-list harness ──
+# ── LP fascia/rake + composition guard ──
+
+def test_fascia_rake_takeoff():
+    fr = fascia_rake_takeoff(108.0, 73.4)
+    assert fr["total_lf"] == 181.4
+    assert fr["ordered_pcs"] == 13  # × 1.10 = 199.5 ÷ 16 → 13 sticks
+    assert any("splice" in f.lower() for f in fr["flags"])
+    assert any("toggle" in f.lower() or "always-present" in f.lower() for f in fr["flags"])
+
+
+def test_lp_composition_bugs_detector():
+    lines = [{"name": ".019 Coil"}, {"name": "Finish trim 12'"},
+             {"name": "1/2\" J-Channel"}, {"name": "J blocks"},
+             {"name": "38 Series Lap 3/8\" x 8\" x 16'"}]
+    bugs = lp_composition_bugs(lines)
+    assert ".019 Coil" in bugs and "Finish trim 12'" in bugs and "1/2\" J-Channel" in bugs
+    assert "J blocks" not in bugs  # mounting blocks, not channel
+
+
+def test_pending_confirmations_ruled_set():
+    assert set(PENDING_CONFIRMATIONS) == {
+        "osc_stick_length", "door_trim_sides", "corner_splice_rule",
+        "fascia_rake_splice", "fascia_rake_presence", "letrick_rake_soffit",
+    }
+
+
+# ── Letrick truck-list harness (per consolidated rulings) ──
 
 LETRICK_GEOMETRY = {
     "siding_sqft": 1832.7, "eaves_lf": 108.0, "rakes_lf": 73.4,
@@ -113,13 +148,11 @@ LETRICK_GEOMETRY = {
 }
 
 
-def _c3_locations(n_isc=3):
-    osc = [{"type": "outside", "walls": ["front", "left"], "tier": "confirmed"}] * 4 + \
-          [{"type": "outside", "walls": ["back"], "tier": "confirmed"}] * 2 + \
-          [{"type": "outside", "walls": ["back"], "tier": "unconfirmed"}]
-    isc = [{"type": "inside", "walls": ["back"], "tier": "confirmed"}] + \
-          [{"type": "inside", "walls": ["back"], "tier": "unconfirmed"}] * (n_isc - 1)
-    return osc + isc
+def _c3_locations():
+    return ([{"type": "outside", "walls": ["front"], "tier": "confirmed"}] * 6
+            + [{"type": "outside", "walls": ["back"], "tier": "unconfirmed"}]
+            + [{"type": "inside", "walls": ["back"], "tier": "confirmed"}] * 2
+            + [{"type": "inside", "walls": ["back"], "tier": "unconfirmed"}])
 
 
 def test_truck_fixture_is_pinned():
@@ -129,21 +162,28 @@ def test_truck_fixture_is_pinned():
     }
 
 
-def test_truck_reconcile_statuses():
+def test_truck_reconcile_per_rulings():
     out = reconcile_letrick_truck(LETRICK_GEOMETRY, _c3_locations())
     by = {l["item"]: l for l in out["lines"]}
-    assert by["D4.5 siding"]["derived_qty"] == 21  # 18.33 sq × 1.10 → whole-square up
-    assert by["OSC"]["derived_qty"] == 7 and by["OSC"]["status"] == "deviation"
-    assert "10-pieces/6-locations" in by["OSC"]["cause"]
-    assert by["ISC"]["derived_qty"] == 3 and "amber" in by["ISC"]["cause"]
-    # pending lines never derived from unconfirmed rules
-    for item in ("Starter", "J-channel", "Coil", "Finish trim", "Soffit J"):
-        assert by[item]["status"] == "pending_confirmation"
-        assert by[item]["derived_qty"] is None
-    assert out["summary"]["pending_confirmation"] == 5
-
-
-def test_truck_reconcile_isc_match_when_two():
-    out = reconcile_letrick_truck(LETRICK_GEOMETRY, _c3_locations(n_isc=2))
-    by = {l["item"]: l for l in out["lines"]}
+    # whole-square doctrine + near_boundary annotation
+    assert by["D4.5 siding"]["derived_qty"] == 21
+    assert "crew_judgment_short_order" in by["D4.5 siding"]["cause"]
+    assert "trim-or-keep" in by["D4.5 siding"]["near_boundary"]
+    # OSC reconciled-by-key; ISC exact match, distinct causes
+    assert by["OSC"]["status"] == "reconciled_by_key" and by["OSC"]["derived_qty"] == 10
+    assert "conversion" in by["OSC"]["cause"]
     assert by["ISC"]["status"] == "match" and by["ISC"]["derived_qty"] == 2
+    assert "no pieces/locations conversion" in by["ISC"]["cause"]
+    # starter comment/code discrepancy FLAGGED, never silently picked
+    assert "discrepancy" in by["Starter"]["cause"]
+    # coil + soffit-J derive to exact matches under rules on file
+    assert by["Coil"]["status"] == "match" and by["Coil"]["derived_qty"] == 2
+    assert by["Soffit J"]["status"] == "match" and by["Soffit J"]["derived_qty"] == 18
+    # soffit: basis explicit, rake-corrected, HELD pending
+    assert by["Soffit"]["status"] == "pending_confirmation"
+    assert "Charter Oak" in by["Soffit"]["basis"]
+    assert by["Soffit"]["derived_qty"] == 20
+    # finish trim: rule not on record — never derived from air
+    assert by["Finish trim"]["status"] == "pending_rule_on_record"
+    assert by["Finish trim"]["derived_qty"] is None
+    assert out["summary"]["match"] == 3

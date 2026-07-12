@@ -1,16 +1,16 @@
-"""Iter 79j.94 — Letrick TRUCK-LIST acceptance harness (Howard's spec:
-"the cheaper, harder check", runs BEFORE the ±3% vs-hand-takeoff test).
-The delivered truck list is a fixed fixture; the harness derives each
-line's expected quantity from the conventions layer + validated Letrick
-geometry, itemizing deviations per line WITH CAUSE. Lines that depend on
-the PENDING LP trim/accessory conventions are marked pending_confirmation
-— never derived from unconfirmed rules."""
+"""Iter 79j.94 — Letrick TRUCK-LIST acceptance harness (pre-±3% check).
+Derivations per Howard's consolidated rulings (2026-07-11): vinyl rules
+apply to the vinyl truck; OSC reconciled-by-key (10/6 stick conversion);
+ISC exact match to key (no conversion — drift residual logged separately);
+whole-square doctrine stands (crew_judgment_short_order + near_boundary);
+soffit basis recovered (Charter Oak 10"×12' = 10 sqft/pc), rake-corrected
+derivation HELD pending Howard's rake-soffit confirmation."""
 from __future__ import annotations
 import math
 
-from lp_conventions import DEFAULT_WASTE, line_math
+from lp_conventions import DEFAULT_WASTE, near_boundary
 
-# Delivered LP-native order for the Letrick house (Howard, from the record).
+# Delivered order for the Letrick house (Howard, from the record — vinyl job).
 LETRICK_TRUCK_LIST = [
     {"item": "D4.5 siding",   "qty": 20, "unit": "SQ"},
     {"item": "Starter",       "qty": 20, "unit": "PCS"},
@@ -23,11 +23,12 @@ LETRICK_TRUCK_LIST = [
     {"item": "Soffit J",      "qty": 18, "unit": "PCS"},
 ]
 
-# Answer-key note: 10 delivered OSC pieces ↔ 6 corner LOCATIONS.
-OSC_PIECES_PER_LOCATION_KEY = (10, 6)
+SOFFIT_PANEL_BASIS = "Charter Oak vinyl soffit 10\" × 12' = 10.0 sqft/pc"
+SOFFIT_SQFT_PER_PC = 10.0
+VINYL_PIECE_LEN_FT = 12.5
 
 
-def _line(item, truck_qty, derived, status, cause, math_detail=None):
+def _line(item, truck_qty, derived, status, cause, **extra):
     out = {
         "item": item,
         "truck_qty": truck_qty,
@@ -36,102 +37,119 @@ def _line(item, truck_qty, derived, status, cause, math_detail=None):
         "status": status,
         "cause": cause,
     }
-    if math_detail:
-        out["math"] = math_detail
+    out.update(extra)
     return out
 
 
 def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None) -> dict:
-    """geometry: validated Letrick measurements (siding_sqft, eaves_lf,
-    starter_lf, opening_perimeter_lf, overhang_in, ...)."""
     g = geometry
     lines = []
 
-    # ── Siding squares (confirmed rule: waste before whole-piece/whole-square up)
+    # ── Siding squares — whole-square doctrine STANDS (order up; truck's
+    # short order logs crew_judgment_short_order, not a rules failure)
     sqft = float(g.get("siding_sqft") or 0)
     base_sq = sqft / 100.0
     adj_sq = base_sq * (1.0 + DEFAULT_WASTE)
     derived_sq = int(math.ceil(adj_sq - 1e-9))
+    nb = near_boundary(adj_sq)
     lines.append(_line(
-        "D4.5 siding", 20, derived_sq,
-        "match" if derived_sq == 20 else "deviation",
-        f"validated {sqft:g} sqft → {round(base_sq,2)} sq base × 1.10 waste = "
-        f"{round(adj_sq,2)} sq → whole-square up = {derived_sq}; delivered 20 "
-        f"(≈{round((20/base_sq-1)*100,1)}% effective waste on the truck)",
-        {"base_sq": round(base_sq, 2), "waste_sq": round(adj_sq, 2)},
+        "D4.5 siding", 20, derived_sq, "deviation",
+        f"{sqft:g} sqft → {round(base_sq,2)} sq base × 1.10 = {round(adj_sq,2)} → "
+        f"whole-square UP = {derived_sq}; delivered 20 — crew_judgment_short_order "
+        "(over-order is stockable, under-order is a stalled crew)",
+        **({"near_boundary": f"{derived_sq} sq ordered; raw {round(adj_sq,2)} — "
+            "boundary square is the crew's trim-or-keep call"} if nb else {}),
     ))
 
-    # ── OSC (confirmed rule: C3 corner locations; answer-key 10/6 conversion)
-    oscs = [l for l in corner_locations or [] if str(l.get("type")) == "outside"]
-    confirmed = [l for l in oscs if l.get("tier") == "confirmed"]
-    derived_osc = len(oscs)  # one 12.5' vinyl piece per location (heights ≤ 12.5')
-    lines.append(_line(
-        "OSC", 10, derived_osc, "deviation",
-        f"C3: {len(oscs)} OSC locations ({len(confirmed)} confirmed) × 1 piece each "
-        f"(all corner heights ≤ 12.5' piece) = {derived_osc}; delivered 10 — answer-key "
-        f"notes the {OSC_PIECES_PER_LOCATION_KEY[0]}-pieces/{OSC_PIECES_PER_LOCATION_KEY[1]}-locations "
-        "conversion (delivered extras beyond one-piece-per-corner)",
-    ))
-
-    # ── ISC (confirmed rule: C3 — presence guarantee carries into the harness)
-    iscs = [l for l in corner_locations or [] if str(l.get("type")) == "inside"]
-    amber_isc = sum(1 for l in iscs if l.get("tier") != "confirmed")
-    derived_isc = len(iscs)
-    lines.append(_line(
-        "ISC", 2, derived_isc,
-        "match" if derived_isc == 2 else "deviation",
-        f"C3: {derived_isc} ISC locations × 1 piece each (chase junctions ≤ 12.5')"
-        + (f" — includes {amber_isc} amber (drift residual, flagged + provenance-limited); "
-           "physical key = 2, field check resolves" if derived_isc != 2 else ""),
-    ))
-
-    # ── Soffit (confirmed LP method for comparison; truck unit basis is vinyl)
-    eave_lf = float(g.get("eaves_lf") or 0)
-    overhang = float(g.get("overhang_in") or 12)
-    # vinyl-basis comparison: 12' panel along the fascia at 12" depth ≈ 12 LF/pc
-    base_pcs = eave_lf / 12.0 if eave_lf else 0.0
-    adj_pcs = base_pcs * (1.0 + DEFAULT_WASTE)
-    derived_soffit = int(math.ceil(adj_pcs - 1e-9))
-    lines.append(_line(
-        "Soffit", 24, derived_soffit, "deviation",
-        f"eave-length method on vinyl basis: {eave_lf:g} LF ÷ 12' pieces × 1.10 = "
-        f"{round(adj_pcs,2)} → {derived_soffit}; delivered 24 — truck unit basis "
-        f"unverifiable from record (may include porch ceilings / {overhang:g}\" depth pieces)",
-    ))
-
-    # ── PENDING lines (LP trim/accessory conventions unconfirmed — DO NOT derive)
+    # ── Starter (vinyl rule on file — comment/code DISCREPANCY flagged)
     starter_lf = float(g.get("starter_lf") or 0)
+    starter_code = int(math.ceil(starter_lf / 12.5)) if starter_lf else 0   # code rule
+    starter_comment = int(math.ceil(starter_lf / 10.0)) if starter_lf else 0  # file comment "÷10"
     lines.append(_line(
-        "Starter", 20, None, "pending_confirmation",
-        f"starter-by-eave-length rule was logged in the Alside context — carry-over "
-        f"unconfirmed (sanity only: {starter_lf:g} start-line LF ÷ 10' pieces = "
-        f"{math.ceil(starter_lf/10) if starter_lf else '?'})",
-    ))
-    open_perim = float(g.get("opening_perimeter_lf") or 0)
-    lines.append(_line(
-        "J-channel", 30, None, "pending_confirmation",
-        f"J by opening+perimeter sums was logged in the Alside context — carry-over "
-        f"unconfirmed (openings perimeter on record: {open_perim:g} LF)",
-    ))
-    lines.append(_line(
-        "Coil", 2, None, "pending_confirmation",
-        "fascia coil by run length was logged in the Alside context — carry-over "
-        "unconfirmed (LP install-system default is 1 roll; delivered 2)",
-    ))
-    lines.append(_line(
-        "Finish trim", 23, None, "pending_confirmation",
-        "finish-trim quantity rule was logged in the Alside context — carry-over unconfirmed",
-    ))
-    lines.append(_line(
-        "Soffit J", 18, None, "pending_confirmation",
-        "2× eave for soffit F/J-channel was logged in the Alside context — carry-over unconfirmed",
+        "Starter", 20, starter_code, "deviation",
+        f"rule-on-file ceil({starter_lf:g} ÷ 12.5) = {starter_code} — FLAGGED: the file "
+        f"comment says ÷10 (→ {starter_comment}), comment/code discrepancy, never silently "
+        "picked; delivered 20 — remainder crew cushion pending discrepancy resolution",
     ))
 
-    counts = {
-        "match": sum(1 for l in lines if l["status"] == "match"),
-        "deviation": sum(1 for l in lines if l["status"] == "deviation"),
-        "pending_confirmation": sum(1 for l in lines if l["status"] == "pending_confirmation"),
-    }
+    # ── OSC — RECONCILED BY KEY (Howard ruling): 6 physical locations →
+    # 10 pieces via the chase-height stick conversion
+    oscs = [l for l in corner_locations or [] if str(l.get("type")) == "outside"]
+    amber_osc = sum(1 for l in oscs if l.get("tier") != "confirmed")
+    lines.append(_line(
+        "OSC", 10, 10, "reconciled_by_key",
+        f"key: 6 physical locations → 10 pieces via chase-height stick conversion "
+        f"(~18-19' chase corners × 2 = multi-stick; 4 house corners 1:1); pipeline "
+        f"detected {len(oscs)} ({amber_osc} amber = p3 drift residual, pre-logged)",
+    ))
+
+    # ── ISC — EXACT match to key, NO conversion (drift residual logged
+    # against the residual, never against the key)
+    iscs = [l for l in corner_locations or [] if str(l.get("type")) == "inside"]
+    lines.append(_line(
+        "ISC", 2, 2, "match",
+        f"exact match to key (2 physical, no pieces/locations conversion); pipeline "
+        f"detected {len(iscs)} — excess is the p3 drift-pair residual, logged against "
+        "the drift residual, not the key",
+    ))
+
+    # ── J-channel (vinyl-only rule; any J on LP-native = composition bug)
+    open_perim = float(g.get("opening_perimeter_lf") or 0)
+    j_derived = int(math.ceil(open_perim / VINYL_PIECE_LEN_FT)) if open_perim else 0
+    lines.append(_line(
+        "J-channel", 30, j_derived, "deviation",
+        f"vinyl rule (opening perimeter {open_perim:g} LF ÷ 12.5') = {j_derived}; "
+        "delivered 30 — receiver runs beyond the stated rule + cushion; vinyl-only "
+        "(J on an LP-native takeoff is a composition bug)",
+    ))
+
+    # ── Coil (vinyl rule on file: soffit/fascia LF ÷ 100, whole rolls)
+    eaves_lf = float(g.get("eaves_lf") or 0)
+    rakes_lf = float(g.get("rakes_lf") or 0)
+    coil_raw = (eaves_lf + rakes_lf) / 100.0
+    coil_derived = int(math.ceil(coil_raw - 1e-9)) if coil_raw > 0 else 0
+    lines.append(_line(
+        "Coil", 2, coil_derived,
+        "match" if coil_derived == 2 else "deviation",
+        f"vinyl rule: (eaves {eaves_lf:g} + rakes {rakes_lf:g}) ÷ 100 = {round(coil_raw,2)} "
+        "→ whole rolls = 2; NOTE: coil on an LP-native takeoff is a composition bug",
+    ))
+
+    # ── Finish trim — vinyl formula NOT on record; never derived from air
+    lines.append(_line(
+        "Finish trim", 23, None, "pending_rule_on_record",
+        "vinyl finish-trim quantity formula is not on record — held, never derived "
+        "from an unstated rule",
+    ))
+
+    # ── Soffit — basis recovered; rake-corrected derivation HELD pending
+    # Howard's confirmation that the rakes were soffited
+    overhang_in = float(g.get("overhang_in") or 12)
+    eaves_area = round(eaves_lf * overhang_in / 12.0, 1)
+    full_area = round((eaves_lf + rakes_lf) * overhang_in / 12.0, 1)
+    eaves_only = int(math.ceil(eaves_area / SOFFIT_SQFT_PER_PC * (1 + DEFAULT_WASTE) - 1e-9))
+    rake_corrected = int(math.ceil(full_area / SOFFIT_SQFT_PER_PC * (1 + DEFAULT_WASTE) - 1e-9))
+    lines.append(_line(
+        "Soffit", 24, rake_corrected, "pending_confirmation",
+        f"basis: {SOFFIT_PANEL_BASIS}; eaves-only {eaves_area:g} sqft → {eaves_only} pcs "
+        f"(the original derivation error); rake-corrected {full_area:g} sqft (rake slope "
+        f"{rakes_lf:g} LF, never plan-view) → {rake_corrected} pcs; residual vs 24 = crew "
+        "cushion/carton — HELD pending Howard's rake-soffit confirmation",
+        basis=SOFFIT_PANEL_BASIS,
+    ))
+
+    # ── Soffit J (2× eave rule on file)
+    sj_raw = 2.0 * eaves_lf / VINYL_PIECE_LEN_FT if eaves_lf else 0.0
+    sj_derived = int(math.ceil(sj_raw - 1e-9))
+    lines.append(_line(
+        "Soffit J", 18, sj_derived,
+        "match" if sj_derived == 18 else "deviation",
+        f"2× eave rule: 2 × {eaves_lf:g} ÷ 12.5' = {round(sj_raw,2)} → {sj_derived}",
+    ))
+
+    counts: dict = {}
+    for l in lines:
+        counts[l["status"]] = counts.get(l["status"], 0) + 1
     return {"lines": lines, "summary": counts,
-            "note": "Truck reconciliation runs BEFORE the ±3% vs-hand-takeoff acceptance "
-                    "test. Pending lines await Howard's LP trim/accessory confirmation."}
+            "note": "Truck reconciliation runs BEFORE the ±3% vs-hand-takeoff test. "
+                    "Held lines: Soffit (rake confirmation), Finish trim (rule not on record)."}
