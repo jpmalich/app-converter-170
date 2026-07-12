@@ -1,19 +1,19 @@
 """Iter 79j.93/.94 — September LP-native package assembly.
-Deterministic: runs the shared `_build_lines` mapping with the LP PDF
-formulas forced ON, keeps LP lines only, whole-piece rounding at the SKU
-level everywhere, and applies the RULED LP trim system (2026-07-11):
-  - 540 Series OSC per outside-corner location, WHOLE STICKS PER LOCATION
-    (stick length 16' pending confirmation, flagged; splice rule on >16'
-    corners pending, flagged)
-  - 440 Series Trim 4/4"×4"×16' per INSIDE-corner location (C3-driven)
-  - 440 Series Trim 4/4"×8"×16' fascia + rake boards (rake = slope
-    length, never plan-view; splice + presence pendings flagged)
-  - 540 Series Trim 5/4"×4"×16' window/door wrap (door 3/4-side pending)
-  - COMPOSITION GUARD: J-channel / finish trim / coil lines on an
-    LP-native takeoff are composition bugs — stripped and reported.
-Amber corner locations included per presence guarantee, flagged —
-honesty carries into the takeoff."""
+Deterministic engine per Howard's rulings (2026-07-11):
+  - 540 OSC 5/4"×6"×16' DEFAULT (Howard's convention) — whole sticks per
+    outside-corner location; 440 4/4"×4" per ISC location; 440 4/4"×8"
+    fascia+rake (slope LF, never plan-view); 540 5/4"×4" window/door wrap.
+  - COMPOSITION GUARD: J-channel / finish trim / coil = composition bugs.
+  - LP STARTER: non-SKU informational line, ALWAYS present — LF derived
+    from start-course length, 0 pieces by default (field-ripped from
+    siding stock); thin-waste-margin annotation per near-boundary doctrine.
+  - MATERIAL-LIST SUBSTITUTION: per-line, opt-in, limited to the known LP
+    product table, triggers FULL RE-DERIVATION from stored geometry
+    (never a reprice of a stale count), carries substituted_from
+    provenance. Defaults remain Howard's conventions — nothing is
+    silently remembered as a new global default."""
 import math
+import re
 
 from lp_conventions import (
     FASCIA_RAKE_ITEM, ISC_TRIM_ITEM, PENDING_CONFIRMATIONS, TRIM_STICK_LEN_FT,
@@ -21,9 +21,31 @@ from lp_conventions import (
 )
 from lp_smartside_formulas import lap_coverage_sqft_per_pc, override_flag
 
-OSC_ITEM = "540 Series OSC 5/4\" x 4\" x 16'"
+OSC_ITEM = "540 Series OSC 5/4\" x 6\" x 16'"   # Howard's default width
 LAP8_ITEM = "38 Series Lap 3/8\" x 8\" x 16'"
-OSC_PIECE_LEN_FT = 16.0
+STARTER_LINE_NAME = "LP Starter — field-ripped from siding stock"
+SIDING_BOARD_LEN_FT = 16.0
+
+_STICK_LEN_RE = re.compile(r"x\s*(\d+)'")
+
+
+def _stick_len_ft(item_name: str) -> float:
+    m = _STICK_LEN_RE.search(item_name or "")
+    return float(m.group(1)) if m else 16.0
+
+
+def _lp_product_table() -> dict:
+    """Known LP product table from the catalog seed — substitution
+    options never include free-text SKUs inventing products."""
+    import catalog_seed as cs
+    out = {"osc": [], "trim": []}
+    for sec in cs.SECTION_LAYOUT:
+        name, _, items = sec[0], sec[1], sec[2]
+        if name == "LP Siding Accessories":
+            out["osc"] = [i for i in items if "OSC" in i]
+        elif name == "LP SmartSide Trim":
+            out["trim"] = [i for i in items if "Series Trim" in i]
+    return out
 
 
 def _corner_height_ft(loc: dict, wall_heights: dict, avg_h) -> float:
@@ -43,78 +65,72 @@ def _corner_height_ft(loc: dict, wall_heights: dict, avg_h) -> float:
         return 0.0
 
 
-def _corner_sticks(locs, wall_heights: dict, avg_height_ft, stick_len: float):
-    """RULED: whole sticks PER LOCATION (never pooled LF). Returns
-    (sticks, total_lf, amber, elevated, any_over_stick)."""
+def corner_sticks_for_length(heights: list, stick_len_ft: float) -> int:
+    """RULED: whole sticks PER LOCATION; stick-length changes recompute
+    piece counts (10.44' corner: 1×16' vs 2×10'), never a stale reprice."""
     sticks = 0
-    total_lf = 0.0
-    amber = elevated = 0
-    over = False
-    for l in locs:
-        h = _corner_height_ft(l, wall_heights, avg_height_ft)
-        total_lf += h
-        sticks += max(1, int(math.ceil(h / stick_len - 1e-9))) if h > 0 else 1
-        if h > stick_len:
-            over = True
-        if l.get("tier") != "confirmed":
-            amber += 1
-        if l.get("elevated"):
-            elevated += 1
-    return sticks, round(total_lf, 1), amber, elevated, over
+    for h in heights:
+        sticks += max(1, int(math.ceil(float(h) / stick_len_ft - 1e-9))) if h and h > 0 else 1
+    return sticks
 
 
-def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft):
-    """540 OSC takeoff: whole sticks per outside-corner location (Howard
-    ruling). Elevated posts priced at full wall height (conservative)."""
-    oscs = [l for l in corner_locations or [] if str(l.get("type")) == "outside"]
-    if not oscs:
-        return None
-    sticks, total_lf, amber, elevated, over = _corner_sticks(
-        oscs, wall_heights, avg_height_ft, OSC_PIECE_LEN_FT)
-    note_bits = [
-        f"C3: {len(oscs)} OSC locations, whole sticks per location = {sticks} "
-        f"({total_lf} LF; 16' stick length pending confirmation)"
-    ]
-    flags = [PENDING_CONFIRMATIONS["osc_stick_length"]]
-    if over:
-        note_bits.append("corner run(s) over 16' — splice rule pending, ceil-per-location held")
-        flags.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
-    if amber:
-        note_bits.append(f"includes {amber} unconfirmed (amber) location(s) — field verify")
-    if elevated:
-        note_bits.append(
-            f"{elevated} elevated post(s) priced at full wall height — trim to post height in field"
-        )
+def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
+    heights = [_corner_height_ft(l, wall_heights, avg_height_ft) for l in locs]
+    amber = sum(1 for l in locs if l.get("tier") != "confirmed")
+    elevated = sum(1 for l in locs if l.get("elevated"))
     return {
-        "qty": sticks,
-        "note": "; ".join(note_bits),
-        "osc_count": len(oscs),
+        "heights": [round(h, 2) for h in heights],
+        "sticks": corner_sticks_for_length(heights, stick_len),
+        "total_lf": round(sum(heights), 1),
         "amber": amber,
         "elevated": elevated,
-        "total_lf": total_lf,
-        "flags": flags,
+        "over_stick": any(h > stick_len for h in heights),
     }
 
 
-def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft):
-    """440 4/4"×4"×16' per inside-corner location (ruled)."""
+def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft,
+                              stick_len: float = 16.0):
+    oscs = [l for l in corner_locations or [] if str(l.get("type")) == "outside"]
+    if not oscs:
+        return None
+    t = _corner_takeoff(oscs, wall_heights, avg_height_ft, stick_len)
+    note_bits = [
+        f"C3: {len(oscs)} OSC locations, whole sticks per location = {t['sticks']} "
+        f"({t['total_lf']} LF; 16' stick length pending confirmation)"
+    ]
+    flags = [PENDING_CONFIRMATIONS["osc_stick_length"]]
+    if t["over_stick"]:
+        note_bits.append("corner run(s) over stick length — splice rule pending, ceil-per-location held")
+        flags.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
+    if t["amber"]:
+        note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
+    if t["elevated"]:
+        note_bits.append(
+            f"{t['elevated']} elevated post(s) priced at full wall height — trim to post height in field")
+    return {"qty": t["sticks"], "note": "; ".join(note_bits), "osc_count": len(oscs),
+            "amber": t["amber"], "elevated": t["elevated"], "total_lf": t["total_lf"],
+            "heights": t["heights"], "flags": flags}
+
+
+def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft,
+                              stick_len: float = TRIM_STICK_LEN_FT):
     iscs = [l for l in corner_locations or [] if str(l.get("type")) == "inside"]
     if not iscs:
         return None
-    sticks, total_lf, amber, _, over = _corner_sticks(
-        iscs, wall_heights, avg_height_ft, TRIM_STICK_LEN_FT)
-    note_bits = [f"C3: {len(iscs)} ISC locations, whole sticks per location = {sticks} ({total_lf} LF)"]
+    t = _corner_takeoff(iscs, wall_heights, avg_height_ft, stick_len)
+    note_bits = [f"C3: {len(iscs)} ISC locations, whole sticks per location = {t['sticks']} ({t['total_lf']} LF)"]
     flags = []
-    if over:
-        note_bits.append("run(s) over 16' — splice rule pending")
+    if t["over_stick"]:
+        note_bits.append("run(s) over stick length — splice rule pending")
         flags.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
-    if amber:
-        note_bits.append(f"includes {amber} unconfirmed (amber) location(s) — field verify")
-    return {"qty": sticks, "note": "; ".join(note_bits), "isc_count": len(iscs),
-            "amber": amber, "total_lf": total_lf, "flags": flags}
+    if t["amber"]:
+        note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
+    return {"qty": t["sticks"], "note": "; ".join(note_bits), "isc_count": len(iscs),
+            "amber": t["amber"], "total_lf": t["total_lf"], "heights": t["heights"], "flags": flags}
 
 
-def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=None) -> dict:
+def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=None,
+                        substitutions: dict | None = None) -> dict:
     from routes.hover import _build_lines  # local import to dodge cycle
 
     with override_flag(True):
@@ -137,73 +153,144 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         l["qty"] = rq
 
     flags = []
-    # transparency math on the formula-driven siding line
     try:
         sqft = float(measurements.get("siding_sqft") or 0)
     except (TypeError, ValueError):
         sqft = 0.0
+    lap_math = None
     if sqft > 0:
         for l in lines:
             if l["name"] == LAP8_ITEM:
-                l["math"] = line_math(sqft, lap_coverage_sqft_per_pc())
+                lap_math = line_math(sqft, lap_coverage_sqft_per_pc())
+                l["math"] = lap_math
 
-    def _set_line(name: str, section: str, qty: int, note: str):
+    def _set_line(name: str, section: str, qty: int, note: str, **extra):
         for l in lines:
             if l["name"] == name:
                 l["qty"] = qty
                 l["note"] = note
-                return
-        lines.append({"tab": "lp_smart", "section": section, "name": name,
-                      "unit": "PCS", "qty": qty, "note": note})
+                l.update(extra)
+                return l
+        new = {"tab": "lp_smart", "section": section, "name": name,
+               "unit": "PCS", "qty": qty, "note": note, **extra}
+        lines.append(new)
+        return new
 
     avg_h = measurements.get("_ai_avg_wall_height_ft")
+
+    # ── OSC: Howard's default width 5/4"×6" — spec-emitted OSC rows superseded
+    lines[:] = [l for l in lines if "540 Series OSC" not in l["name"]]
     osc = osc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
     if osc:
-        _set_line(OSC_ITEM, "LP Siding Accessories", osc["qty"], osc["note"])
+        _set_line(OSC_ITEM, "LP Siding Accessories", osc["qty"], osc["note"],
+                  _derivation={"kind": "osc", "heights": osc["heights"]})
         if osc["amber"]:
-            flags.append(
-                f"{osc['amber']} amber corner location(s) included per presence guarantee — field verify before ordering"
-            )
+            flags.append(f"{osc['amber']} amber corner location(s) included per presence guarantee — field verify before ordering")
         if osc["elevated"]:
             flags.append(f"{osc['elevated']} elevated post(s) priced at full wall height")
     else:
-        # fallback path still honors whole-piece (legacy spec round() under-orders)
         try:
             lf = float(measurements.get("outside_corner_lf") or 0)
         except (TypeError, ValueError):
             lf = 0.0
         if lf > 0:
-            q = max(1, math.ceil(lf / OSC_PIECE_LEN_FT - 1e-9))
+            q = max(1, math.ceil(lf / 16.0 - 1e-9))
             _set_line(OSC_ITEM, "LP Siding Accessories", q,
-                      f"LP 16' outside-corner pieces — whole-piece: {lf:g} LF ÷ 16' = {q}")
+                      f"LP 16' outside-corner pieces — whole-piece: {lf:g} LF ÷ 16' = {q}",
+                      _derivation={"kind": "osc_lf", "lf": lf})
 
-    # 440 4/4"×4": ISC locations ONLY (horizontal runs superseded by the
-    # 4/4"×8" fascia/rake item — full profile spec always, never bare)
+    # ── 440 4/4"×4": ISC locations only (full profile spec, never bare)
     isc = isc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
     if isc:
-        _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", isc["qty"], isc["note"])
+        _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", isc["qty"], isc["note"],
+                  _derivation={"kind": "isc", "heights": isc["heights"]})
         if isc["amber"]:
             flags.append(f"{isc['amber']} amber inside-corner location(s) included — field verify")
 
-    # 440 4/4"×8": fascia + rake boards (rake = measured slope LF, never plan-view)
-    fr = fascia_rake_takeoff(measurements.get("eaves_lf") or 0, measurements.get("rakes_lf") or 0)
+    # ── 440 4/4"×8": fascia + rake boards
+    eaves_lf = float(measurements.get("eaves_lf") or 0)
+    rakes_lf = float(measurements.get("rakes_lf") or 0)
+    fr = fascia_rake_takeoff(eaves_lf, rakes_lf)
     if fr["ordered_pcs"] > 0:
         _set_line(
             FASCIA_RAKE_ITEM, "LP SmartSide Trim", fr["ordered_pcs"],
-            f"Fascia (eaves {measurements.get('eaves_lf') or 0:g} LF) + rake slope "
-            f"({measurements.get('rakes_lf') or 0:g} LF) = {fr['total_lf']} LF × 1.10 "
-            f"÷ 16' sticks = {fr['ordered_pcs']} — splice-and-round-up assumed (pending); "
+            f"Fascia (eaves {eaves_lf:g} LF) + rake slope ({rakes_lf:g} LF) = {fr['total_lf']} LF "
+            f"× 1.10 ÷ 16' sticks = {fr['ordered_pcs']} — splice-and-round-up assumed (pending); "
             "presence toggle pending (remodels keeping existing fascia)",
-        )
+            _derivation={"kind": "fascia_rake", "total_lf": fr["total_lf"]})
 
-    # 540 wrap: door side-count pending — flag, do not change derivation
+    # ── 540 wrap: door side-count pending — flag, do not change derivation
     for l in lines:
         if l["name"] == WRAP_TRIM_ITEM:
             l["note"] = f"{l.get('note') or ''} — door trim 3-side vs 4-side pending (4-side derivation held)".strip(" —")
 
+    # ── LP STARTER (ruled): non-SKU informational line, ALWAYS present
+    try:
+        starter_lf = float(measurements.get("starter_lf") or 0)
+    except (TypeError, ValueError):
+        starter_lf = 0.0
+    if starter_lf > 0:
+        note = (f"start-course {starter_lf:g} LF — material: field-ripped from siding stock "
+                "(top-run offcuts / cut pieces); pieces added: 0 (rip-from-waste)")
+        thin_margin = bool(lap_math and (lap_math["ordered_pcs"] - lap_math["waste_qty"]) < 0.5)
+        if thin_margin:
+            note += (f" — THIN WASTE MARGIN on siding (cushion "
+                     f"{round(lap_math['ordered_pcs'] - lap_math['waste_qty'], 2)} pc): "
+                     "starter rips may consume the cushion")
+            flags.append("thin siding waste margin — starter rips may consume the cushion")
+        lines.append({"tab": "lp_smart", "section": "LP Siding Accessories",
+                      "name": STARTER_LINE_NAME, "unit": "LF",
+                      "qty": int(math.ceil(starter_lf)), "pieces_added": 0,
+                      "non_sku": True, "note": note,
+                      "_derivation": {"kind": "starter", "starter_lf": starter_lf}})
+
+    # ── MATERIAL-LIST SUBSTITUTION (ruled): re-derive, provenance, table-limited
+    sub_errors = []
+    if substitutions:
+        table = _lp_product_table()
+        for old_name, new_name in substitutions.items():
+            target = next((l for l in lines if l["name"] == old_name), None)
+            if target is None or not target.get("_derivation"):
+                sub_errors.append(f"{old_name}: not a derived line — substitution refused")
+                continue
+            d = target["_derivation"]
+            if d["kind"] in ("osc", "osc_lf"):
+                allowed = table["osc"]
+            elif d["kind"] in ("isc", "fascia_rake"):
+                allowed = table["trim"]
+            elif d["kind"] == "starter":
+                allowed = ["dedicated-rip"]
+            else:
+                allowed = []
+            if new_name not in allowed:
+                sub_errors.append(
+                    f"{old_name} → {new_name}: not in the known LP product table — refused (no free-text SKUs)")
+                continue
+            if d["kind"] == "starter":
+                pcs = int(math.ceil(d["starter_lf"] / SIDING_BOARD_LEN_FT - 1e-9))
+                target["pieces_added"] = pcs
+                target["note"] = (f"SUBSTITUTED: dedicated-rip approach — re-derived pieces = "
+                                  f"ceil({d['starter_lf']:g} LF ÷ {SIDING_BOARD_LEN_FT:g}') = {pcs}")
+                target["substituted_from"] = "field-ripped from siding stock"
+                continue
+            stick = _stick_len_ft(new_name)
+            if d["kind"] in ("osc", "isc"):
+                qty = corner_sticks_for_length(d["heights"], stick)
+                how = f"whole sticks per location at {stick:g}' = {qty}"
+            elif d["kind"] == "osc_lf":
+                qty = max(1, int(math.ceil(d["lf"] / stick - 1e-9)))
+                how = f"{d['lf']:g} LF ÷ {stick:g}' = {qty}"
+            else:  # fascia_rake
+                qty = int(math.ceil(d["total_lf"] * 1.10 / stick - 1e-9))
+                how = f"{d['total_lf']:g} LF × 1.10 ÷ {stick:g}' = {qty}"
+            target["substituted_from"] = target["name"]
+            target["name"] = new_name
+            target["qty"] = qty
+            target["note"] = f"SUBSTITUTED from {target['substituted_from']} — RE-DERIVED from stored geometry: {how}"
+
     pending = [PENDING_CONFIRMATIONS["osc_stick_length"],
                PENDING_CONFIRMATIONS["door_trim_sides"]]
-    if osc and any("splice" in f for f in osc.get("flags") or []):
+    if osc and any("splice" in f.lower() for f in osc.get("flags") or []):
         pending.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
     if fr["ordered_pcs"] > 0:
         pending += [PENDING_CONFIRMATIONS["fascia_rake_splice"],
@@ -219,6 +306,7 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             **({"isc_detail": isc} if isc else {}),
             "fascia_rake": fr,
             "composition_guard_removed": removed,
+            "substitution_errors": sub_errors,
             "flags": flags,
             "pending_confirmations": pending,
         },

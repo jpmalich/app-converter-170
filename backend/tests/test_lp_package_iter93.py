@@ -12,8 +12,8 @@ load_dotenv(Path("/app/backend/.env"))
 
 from lp_conventions import FASCIA_RAKE_ITEM, ISC_TRIM_ITEM  # noqa: E402
 from lp_package import (  # noqa: E402
-    OSC_ITEM, assemble_lp_package, isc_from_corner_locations,
-    osc_from_corner_locations,
+    OSC_ITEM, STARTER_LINE_NAME, assemble_lp_package, corner_sticks_for_length,
+    isc_from_corner_locations, osc_from_corner_locations,
 )
 
 LETRICK_HEIGHTS = {"front": 8.5, "back": 10.3, "left": 8.3, "right": 8.5}
@@ -40,7 +40,7 @@ def _letrick_locations():
 MEAS = {"siding_sqft": 1832.7, "outside_corner_lf": 37.6, "inside_corner_lf": 40.0,
         "_ai_avg_wall_height_ft": 8.9, "eaves_lf": 108.0, "rakes_lf": 73.4,
         "opening_count": 12, "window_count": 10, "entry_door_count": 2,
-        "opening_perimeter_lf": 219.3}
+        "opening_perimeter_lf": 219.3, "starter_lf": 168.0}
 
 
 def test_osc_whole_sticks_per_location():
@@ -130,3 +130,55 @@ def test_assemble_pendings_surfaced():
     assert "stick length" in pend
     assert "3-side vs 4-side" in pend
     assert "splice convention" in pend or "Fascia/rake splice" in pend
+
+
+# ── Howard rulings: default width, starter line, substitution ──
+
+def test_default_osc_is_howards_six_inch():
+    assert 'x 6"' in OSC_ITEM
+    pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
+    osc_lines = [l for l in pkg["lines"] if "540 Series OSC" in l["name"]]
+    assert len(osc_lines) == 1 and osc_lines[0]["name"] == OSC_ITEM
+
+
+def test_starter_line_always_present_non_sku():
+    pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
+    st = next(l for l in pkg["lines"] if l["name"] == STARTER_LINE_NAME)
+    assert st["unit"] == "LF" and st["qty"] == 168
+    assert st["pieces_added"] == 0 and st["non_sku"] is True
+    assert "field-ripped from siding stock" in st["note"]
+    # Letrick lap cushion = 220 − 219.84 = 0.16 pc → thin-margin annotation fires
+    assert "THIN WASTE MARGIN" in st["note"]
+    assert any("starter rips" in f for f in pkg["summary"]["flags"])
+
+
+def test_corner_sticks_recompute_on_stick_length():
+    # ruling's example: a 10.44' corner is 1×16' stick but 2×10' sticks
+    assert corner_sticks_for_length([10.44], 16.0) == 1
+    assert corner_sticks_for_length([10.44], 10.0) == 2
+
+
+def test_substitution_rederives_with_provenance():
+    other_osc = '540 Series OSC 5/4" x 4" x 16\''
+    pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS,
+                              substitutions={OSC_ITEM: other_osc})
+    line = next(l for l in pkg["lines"] if l["name"] == other_osc)
+    assert line["substituted_from"] == OSC_ITEM
+    assert line["qty"] == 7  # same 16' stick → same count, but RE-DERIVED
+    assert "RE-DERIVED from stored geometry" in line["note"]
+    assert pkg["summary"]["substitution_errors"] == []
+
+
+def test_substitution_free_text_refused():
+    pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS,
+                              substitutions={OSC_ITEM: "Bob's Discount Corner 20'"})
+    assert any("no free-text SKUs" in e for e in pkg["summary"]["substitution_errors"])
+    assert any(l["name"] == OSC_ITEM for l in pkg["lines"])  # default untouched
+
+
+def test_starter_dedicated_rip_substitution():
+    pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS,
+                              substitutions={STARTER_LINE_NAME: "dedicated-rip"})
+    st = next(l for l in pkg["lines"] if l["name"] == STARTER_LINE_NAME)
+    assert st["pieces_added"] == 11  # ceil(168 ÷ 16') — re-derived, not hand-typed
+    assert "dedicated-rip" in st["note"]
