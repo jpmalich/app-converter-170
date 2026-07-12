@@ -6,7 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from catalog_seed import DEFAULT_TIER_NAME, SECTION_LAYOUT, product_lines_for
 from db import db
 from deps import check_admin_token, get_company_for, get_current_user
+from lp_costs import (CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS, DEFAULT_TIER,
+                      LP_SECTION_TITLES, lp_engine_mat)
 from models import CatalogOverridesIn, CompanyTierAssign, TierUpdate
+from routes.lp_admin import load_lp_native_mode, load_margin_cfg
 from services import calc_totals, ensure_tiers_seeded
 
 router = APIRouter()
@@ -32,13 +35,25 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
     cat = await db.catalogs.find_one({"company_id": company["id"]}, {"_id": 0})
     overrides = (cat or {}).get("overrides", {})
 
+    # ── THE CUT (ruled 2026-07-12): LP rows price EXCLUSIVELY from the
+    # cost×margin engine at the company-mapped margin tier (IDENTITY
+    # mapping: tier-list name == margin tier name). Legacy LP list
+    # values are retired (archived in db.lp_legacy_price_archive) and
+    # never read here. Exceptions: the 5 cross-domain manual-add rows
+    # keep their vinyl-domain price, flagged.
+    margin_cfg = await load_margin_cfg()
+    _tiers_map = margin_cfg.get("tiers") or {}
+    lp_margin_pct = float(_tiers_map.get(
+        tier["name"], _tiers_map.get(margin_cfg.get("default_tier") or DEFAULT_TIER, 30.0)))
+
     sections = []
     for s in tier["sections"]:
+        is_lp = s["title"] in LP_SECTION_TITLES
         items_out = []
         for it in s["items"]:
             k = _key(s["title"], it["name"])
             ov = overrides.get(k, {})
-            items_out.append({
+            row = {
                 "name": it["name"], "unit": it["unit"],
                 "mat": float(ov["mat"]) if "mat" in ov else float(it["mat"]),
                 "lab": float(ov["lab"]) if "lab" in ov else float(it["lab"]),
@@ -47,7 +62,23 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
                 "mat_overridden": "mat" in ov,
                 "lab_overridden": "lab" in ov,
                 "ami_part": it.get("ami_part"),    # carry SKU through for material list
-            })
+            }
+            if is_lp:
+                if it["name"] in CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS:
+                    row["cross_domain_manual_add"] = True  # vinyl-domain price, manual adds only
+                else:
+                    row["pricing_source"] = "lp_cost_engine"
+                    engine = lp_engine_mat(it["name"], lp_margin_pct)
+                    if engine is None:
+                        # PINNED: no unpriced fall-through — explicit flag, never a silent $0
+                        row["pricing_pending"] = True
+                        row["mat"] = 0.0
+                        row["tier_mat"] = 0.0
+                    else:
+                        row["mat"] = engine
+                        row["tier_mat"] = engine
+                        row["mat_overridden"] = False
+            items_out.append(row)
         section_out = {
             "title": s["title"],
             "ascend": s.get("ascend", False),
@@ -74,7 +105,14 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
     # fall to the end of the list.
     layout_order = {title: i for i, (title, _, _) in enumerate(SECTION_LAYOUT)}
     sections.sort(key=lambda s: layout_order.get(s["title"], 10_000))
-    return {"sections": sections, "tier_id": tier["id"], "tier_name": tier["name"]}
+    out = {"sections": sections, "tier_id": tier["id"], "tier_name": tier["name"]}
+    # LP-NATIVE MODE (ruled): presentation-layer filter — in LP mode no
+    # non-LP product, price, or catalog reference leaves the server.
+    out["lp_native_mode"] = await load_lp_native_mode()
+    if out["lp_native_mode"]:
+        out["sections"] = [s for s in out["sections"]
+                           if "lp_smart" in (s.get("product_lines") or [])]
+    return out
 
 
 @router.get("/catalog")

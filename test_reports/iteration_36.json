@@ -1,0 +1,31 @@
+{
+  "summary": "Frontend E2E testing for LP-native mode + LP single-source pricing. Login, workspace picker, catalog tabs/prices, /branding-admin toggle, redirects, and regression on LP estimate open all verified. One confidentiality leak found in estimate editor: label 'SELL (30% MARGIN)', a toggle button labelled 'Margin', and helper text '% profit margin'.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Estimate editor summary (LP Smart)",
+        "issue": "Confidentiality leak: renders 'SELL (30% MARGIN)' summary column label, a 'Margin' toggle button, and helper text '% profit margin'. Per review request, contractor surfaces must not display the word 'margin' nor tier percentages (30% is the Contractor default tier margin). Reproduced on /estimate/1d913c95-66a2-484a-918f-fe95db76d514 (mode OFF and ON).",
+        "selector": "text=SELL (30% MARGIN), text=% profit margin, button:has-text('Margin')",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Estimate editor: remove/rename the 'SELL (30% MARGIN)' column label, the 'Margin' toggle, and '% profit margin' helper text to satisfy confidentiality rule (or, if this is the contractor's own markup control by design, explicitly whitelist those strings in the review spec). Note the 30% shown equals the Contractor tier margin, making the leak two-fold (word + tier %)."
+  ],
+  "critical_code_review_comments": [
+    "BrandingProvider fetches lp_native_mode once at app load. Toggling in /branding-admin requires a hard reload on contractor pages — verified working, but consider a global broadcast (event/subscribe) so users don't need to reload."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "~93% (7 of ~8 checks pass; 1 confidentiality leak)"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! ; Admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "LP-native mode was left OFF at end of run (verified '/' shows both ISS Quotes and Contractor Quotes cards). Estimate id used for regression: 1d913c95-66a2-484a-918f-fe95db76d514 (LP Smart, EST-942852). Other estimate in list: Iter97 Mixed Fixture. Catalog tab behavior verified: mode OFF shows Vinyl/Ascend/LP Smart/Vero/Mezzo; mode ON shows only LP Smart. LP Smart tab shows engine prices: 38 Series Lap = $33.37 (whole-sale tier, 35% margin) and .019 Coil cross-domain exception = $161.33. All redirects when mode ON confirmed (/ -> /dashboard/lp_smart, /picker/iss, /picker/contractor, /dashboard/siding, /dashboard/windows all redirect to /dashboard/lp_smart).",
+  "rca_of_the_issue": "Estimate editor summary component includes hard-coded copy 'Sell (30% margin)', a 'Margin' toggle, and '% profit margin' helper. Even if this is a contractor-set markup UI, the strings collide with the review's confidentiality scan for 'margin' and 30% tier %. Recommend renaming to 'Sell (30% markup)' + 'Markup' + '% profit markup' to distinguish contractor markup from supplier tier margin — or update review spec to permit these strings on the estimate editor."
+}

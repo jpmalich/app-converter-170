@@ -229,9 +229,26 @@ def _diff_upload(tiers: list[dict], rows: list[dict]) -> tuple[list[dict], list[
     return changes, unmatched
 
 
-async def _apply_changes(changes: list[dict]) -> int:
+async def _apply_changes(changes: list[dict]) -> tuple[int, list[dict]]:
     """Apply a list of changes to the price_tiers collection.
-    Groups by tier_id so each tier is written exactly once."""
+    Groups by tier_id so each tier is written exactly once.
+    Iter97 CUT GUARD: LP engine-priced rows are retired from the legacy
+    lists — hand-edits to their `mat` are REFUSED (never silently
+    applied-then-ignored). The 5 cross-domain manual-add exceptions
+    remain editable (they price from the vinyl domain)."""
+    from lp_costs import CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS, LP_SECTION_TITLES
+    refused = []
+    allowed = []
+    for c in changes:
+        if (c["section"] in LP_SECTION_TITLES and c["field"] == "mat"
+                and c["name"] not in CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS):
+            refused.append({**c, "refused_reason":
+                            "LP prices resolve exclusively from the cost×margin engine "
+                            "(legacy LP list entries retired 2026-07-12) — edit BlueLinx "
+                            "costs / margin tiers instead"})
+        else:
+            allowed.append(c)
+    changes = allowed
     by_tier: dict[str, list[dict]] = {}
     for c in changes:
         by_tier.setdefault(c["tier_id"], []).append(c)
@@ -260,12 +277,7 @@ async def _apply_changes(changes: list[dict]) -> int:
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }},
         )
-    return applied
-
-
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
+    return applied, refused
 @router.post("/admin/pricing/preview-bump")
 async def preview_bump(body: BumpIn, request: Request):
     """Compute a diff for a % bump WITHOUT touching the database."""
@@ -288,9 +300,10 @@ async def upload_pricing(request: Request, file: UploadFile = File(...), commit:
     tiers = await _load_all_tiers()
     changes, unmatched = _diff_upload(tiers, rows)
     applied = 0
+    refused = []
     if commit.lower() == "true":
-        applied = await _apply_changes(changes)
-    return {"changes": changes, "unmatched": unmatched, "applied": applied}
+        applied, refused = await _apply_changes(changes)
+    return {"changes": changes, "unmatched": unmatched, "applied": applied, "refused": refused}
 
 
 @router.post("/admin/pricing/apply")
@@ -299,9 +312,9 @@ async def apply_changes(body: ApplyIn, request: Request):
     /preview-bump or /upload, lets the user review, then POSTs it here."""
     check_admin_token(request)
     if not body.changes:
-        return {"applied": 0}
-    applied = await _apply_changes([c.model_dump() for c in body.changes])
-    return {"applied": applied}
+        return {"applied": 0, "refused": []}
+    applied, refused = await _apply_changes([c.model_dump() for c in body.changes])
+    return {"applied": applied, "refused": refused}
 
 
 @router.get("/admin/pricing/export")

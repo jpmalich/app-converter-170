@@ -52,17 +52,31 @@ from db import db  # noqa: E402
 from lp_costs import DEFAULT_TIER, MARGIN_TIER_SEED  # noqa: E402
 
 TIER_DOC_ID = "lp_margin_tiers"
-TIER_NAMES = tuple(MARGIN_TIER_SEED)  # fixed A/B/C — names are not editable
+TIER_NAMES = tuple(MARGIN_TIER_SEED)  # Howard's real tier names — not editable
+MODE_DOC_ID = "lp_native_mode"
 
 
 async def load_margin_cfg() -> dict:
     doc = await db.settings.find_one({"id": TIER_DOC_ID}, {"_id": 0})
+    if doc and set(doc.get("tiers") or {}) != set(MARGIN_TIER_SEED):
+        # MARGIN CORRECTION (ruled 2026-07-12): the P0-era A/B/C ladder is
+        # superseded by the corrected four-name ladder everywhere.
+        await db.settings.update_one(
+            {"id": TIER_DOC_ID},
+            {"$set": {"tiers": dict(MARGIN_TIER_SEED), "default_tier": DEFAULT_TIER}})
+        doc["tiers"] = dict(MARGIN_TIER_SEED)
+        doc["default_tier"] = DEFAULT_TIER
     if not doc:
         doc = {"id": TIER_DOC_ID, "tiers": dict(MARGIN_TIER_SEED),
                "default_tier": DEFAULT_TIER,
                "category_overrides": {}, "line_overrides": {}}
         await db.settings.update_one({"id": TIER_DOC_ID}, {"$setOnInsert": dict(doc)}, upsert=True)
     return doc
+
+
+async def load_lp_native_mode() -> bool:
+    doc = await db.settings.find_one({"id": MODE_DOC_ID}, {"_id": 0})
+    return bool(doc and doc.get("enabled"))
 
 
 def _validate_pcts(d: dict, label: str):
@@ -115,14 +129,33 @@ async def put_estimate_pricing_tier(est_id: str, payload: dict, request: Request
     """Per-quote tier PICKER (admin-side only, ruled): the quote's
     pricing changes by changing its tier — never by typing a margin."""
     check_admin_token(request)
-    tier = str(payload.get("tier") or "").upper()
-    if tier not in TIER_NAMES:
+    want = str(payload.get("tier") or "").strip().lower()
+    tier = next((t for t in TIER_NAMES if t.lower() == want), None)
+    if tier is None:
         raise HTTPException(status_code=400,
                             detail=f"tier must be one of {sorted(TIER_NAMES)} — no free-type margin (ruled)")
     res = await db.estimates.update_one({"id": est_id}, {"$set": {"lp_pricing_tier": tier}})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Estimate not found")
     return {"id": est_id, "lp_pricing_tier": tier}
+
+
+@router.get("/admin/lp-native-mode")
+async def get_lp_native_mode(request: Request):
+    check_admin_token(request)
+    return {"enabled": await load_lp_native_mode()}
+
+
+@router.put("/admin/lp-native-mode")
+async def put_lp_native_mode(payload: dict, request: Request):
+    """LP-NATIVE DEMO MODE (ruled 2026-07-12): admin toggle filtering ALL
+    surfaces to the LP domain. Other domains HIDDEN, not deleted —
+    presentation-layer only. September demo runs with this ON."""
+    check_admin_token(request)
+    enabled = bool(payload.get("enabled"))
+    await db.settings.update_one({"id": MODE_DOC_ID},
+                                 {"$set": {"id": MODE_DOC_ID, "enabled": enabled}}, upsert=True)
+    return {"enabled": enabled}
 
 
 # Howard's hand-built sample measurement payloads. Each one targets a

@@ -109,7 +109,9 @@ def test_assemble_composition_guard_strips_coil():
     pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
     names = {l["name"] for l in pkg["lines"]}
     assert not any("coil" in n.lower() for n in names)  # coil = composition bug
-    assert any("Coil" in n for n in pkg["summary"]["composition_guard_removed"])
+    # iter97: .019 Coil auto-add RETIRED AT SOURCE (hover LP spec) — the
+    # guard no longer has anything to strip; it stays as defense-in-depth
+    assert not pkg["summary"]["composition_guard_removed"]
     # J blocks are mounting blocks, NOT J-channel — must survive the guard
     assert "J blocks" in names
 

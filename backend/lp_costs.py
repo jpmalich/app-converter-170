@@ -67,14 +67,32 @@ def _norm(name) -> str:
 
 _COSTS_NORM = {_norm(k): v for k, v in BLUELINX_COSTS.items()}
 
-# ── MARGIN ARCHITECTURE — FINAL (Howard ruling, 2026): named tiers in
-# SUPPLIER ADMIN, all TRUE MARGIN: sell = cost ÷ (1 − tier%). NOT markup.
-# Tier B = 25% is the global default. Percentages editable ONLY in admin;
-# quotes carry a tier PICKER (no free-type margin field, ever).
-# Resolution: line override > category override > quote's tier.
+# ── MARGIN ARCHITECTURE — CORRECTED LADDER (Howard ruling, 2026-07-12,
+# supersedes the P0-era A/B/C 30/25/20 everywhere): named tiers carry
+# Howard's REAL tier names, all TRUE MARGIN: sell = cost ÷ (1 − tier%).
+# whole-sale = 35% · Contractor = 30% (DEFAULT) · Builder-Dealer = 25% ·
+# one-opp = 20%. Percentages editable ONLY in admin; quotes carry a tier
+# PICKER (no free-type margin field, ever). Resolution: line override >
+# category override > quote's tier. Company→margin mapping is IDENTITY
+# (tier-list name == margin tier name) — no company changes margin level.
 # Per-contractor pricing OUT of scope until post-September (PRD backlog).
-MARGIN_TIER_SEED = {"A": 30.0, "B": 25.0, "C": 20.0}
-DEFAULT_TIER = "B"
+MARGIN_TIER_SEED = {"whole-sale": 35.0, "Contractor": 30.0,
+                    "Builder-Dealer": 25.0, "one-opp": 20.0}
+DEFAULT_TIER = "Contractor"
+
+# ── LP DOMAIN (single-source cut, ruled 2026-07-12) ──
+LP_SECTION_TITLES = frozenset({
+    "LP Smart Siding", "LP SmartSide Trim",
+    "LP Siding Accessories", "LP SmartSide Soffit",
+})
+# The ONLY LP-section rows allowed to price from outside the LP cost
+# engine: explicit cross-domain MANUAL-ADD exceptions (vinyl-domain
+# prices, flagged, provenance-logged). The derived takeoff NEVER
+# composes these — exemption is by name, manual adds only (ruled).
+CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS = frozenset({
+    ".019 Coil", "Trim Coil Aluminum 24\" x 50'", "PVC Trim Coil",
+    "Performance G8 Trim Coil", "Flash tape 3 3/4\" x 90'",
+})
 
 # Confidential keys — stripped from EVERY contractor/customer-facing
 # payload by redact_external(). Cost, margins, tier identity, and the
@@ -199,6 +217,18 @@ def redact_external(obj):
     if isinstance(obj, list):
         return [redact_external(v) for v in obj]
     return obj
+
+
+def lp_engine_mat(item_name: str, margin_pct: float):
+    """Catalog-surface engine price: MILL basis (the legacy estimate
+    builder has no color context — finish keying lives on Phase 2
+    surfaces). Returns None when no mill cost exists on the sheet —
+    the caller MUST flag pricing pending; falling through to $0 or a
+    legacy list price is the pinned bug class."""
+    mill = cost_for(item_name, "mill")
+    if mill is None:
+        return None
+    return sell_price(mill, margin_pct)
 
 
 def finish_basis_for_color(color) -> str:

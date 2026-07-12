@@ -45,9 +45,11 @@ def test_sell_is_true_margin_not_markup():
     assert sell_price(100.0, 25.0) != 125.00         # markup ×1.25 is WRONG
 
 
-def test_tier_seed_values():
-    assert MARGIN_TIER_SEED == {"A": 30.0, "B": 25.0, "C": 20.0}
-    assert DEFAULT_TIER == "B"
+def test_tier_seed_values_corrected_ladder():
+    # MARGIN CORRECTION (2026-07-12): Howard's real names supersede A/B/C
+    assert MARGIN_TIER_SEED == {"whole-sale": 35.0, "Contractor": 30.0,
+                                "Builder-Dealer": 25.0, "one-opp": 20.0}
+    assert DEFAULT_TIER == "Contractor"
 
 
 # ── cost keyed by product + finish ──
@@ -75,25 +77,25 @@ def test_finish_basis_from_color():
 
 # ── resolution order: line > category > tier ──
 def test_override_resolution_order():
-    cfg = {"tiers": dict(MARGIN_TIER_SEED), "default_tier": "B",
+    cfg = {"tiers": dict(MARGIN_TIER_SEED), "default_tier": DEFAULT_TIER,
            "category_overrides": {"LP SmartSide Trim": 22.0},
            "line_overrides": {LAP8_ITEM: 18.0}}
-    assert resolve_margin_pct(cfg, "B", LAP8_ITEM, "LP Smart Siding") == 18.0
-    assert resolve_margin_pct(cfg, "B", "440 Series Trim 4/4\" x 8\" x 16'",
+    assert resolve_margin_pct(cfg, "Contractor", LAP8_ITEM, "LP Smart Siding") == 18.0
+    assert resolve_margin_pct(cfg, "Contractor", "440 Series Trim 4/4\" x 8\" x 16'",
                               "LP SmartSide Trim") == 22.0
-    assert resolve_margin_pct(cfg, "B", "other", "other") == 25.0
+    assert resolve_margin_pct(cfg, "Contractor", "other", "other") == 30.0
 
 
 # ── package pricing integration ──
-def test_mill_pricing_default_tier_b():
+def test_mill_pricing_default_tier_contractor():
     pkg = _pkg()
     lap = _line(pkg, LAP8_ITEM)
     assert lap["cost_basis"] == "mill"
     assert lap["unit_cost"] == 21.69
-    assert lap["unit_sell"] == round(21.69 / 0.75, 2)
+    assert lap["unit_sell"] == round(21.69 / 0.70, 2)   # Contractor 30% default
     assert lap["line_sell"] == round(lap["unit_sell"] * lap["qty"], 2)
     assert lap["pricing_status"] == "priced"
-    assert pkg["summary"]["pricing"]["tier"] == "B"
+    assert pkg["summary"]["pricing"]["tier"] == "Contractor"
 
 
 def test_expertfinish_selection_changes_cost_basis():
@@ -101,7 +103,7 @@ def test_expertfinish_selection_changes_cost_basis():
     lap = _line(pkg, LAP8_ITEM)
     assert lap["cost_basis"] == "expertfinish"
     assert lap["unit_cost"] == 32.54
-    assert lap["unit_sell"] == round(32.54 / 0.75, 2)
+    assert lap["unit_sell"] == round(32.54 / 0.70, 2)
 
 
 def test_expertfinish_missing_price_is_pending_never_mill():
@@ -122,11 +124,11 @@ def test_primed_basis_pending_not_mill():
     assert "primed" in lap["cost_pending_reason"].lower()
 
 
-def test_tier_a_and_c_reprice():
-    a = _line(_pkg(tier="A"), LAP8_ITEM)
-    c = _line(_pkg(tier="C"), LAP8_ITEM)
-    assert a["unit_sell"] == round(21.69 / 0.70, 2)
-    assert c["unit_sell"] == round(21.69 / 0.80, 2)
+def test_all_four_tiers_reprice():
+    for tier, m in (("whole-sale", 0.65), ("Contractor", 0.70),
+                    ("Builder-Dealer", 0.75), ("one-opp", 0.80)):
+        lap = _line(_pkg(tier=tier), LAP8_ITEM)
+        assert lap["unit_sell"] == round(21.69 / m, 2), tier
 
 
 def test_starter_priced_from_source_sku_at_siding_color_basis():
@@ -164,7 +166,7 @@ def test_external_redaction_strips_all_confidential_keys():
     ext = redact_external(_pkg(colors={"all": "Quarry Gray"}))
     _assert_no_confidential(ext)
     lap = next(l for l in ext["lines"] if l["name"] == LAP8_ITEM)
-    assert lap["unit_sell"] == round(32.54 / 0.75, 2)   # sell survives
+    assert lap["unit_sell"] == round(32.54 / 0.70, 2)   # sell survives
     assert lap["pricing_status"] == "priced"
     assert "total_sell" in ext["summary"]["pricing"]
     assert "total_cost" not in ext["summary"]["pricing"]

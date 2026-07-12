@@ -658,17 +658,12 @@ HOVER_MAPPING_SPEC = [
         ),
         "note": "190 Series batten strips — wall_sqft × 0.75 LF/sqft ÷ 16 (PDF default 16\" o.c.)",
     },
-    # .019 Coil — default 1 ROLL for flashing transitions (siding ↔ brick/
-    # stone, kickout flashing, etc.). Contractor zeros it out on pure-
-    # siding jobs with no flashing transitions.
-    {
-        "tabs": ["lp_smart"],
-        "section": "LP Siding Accessories",
-        "item": '.019 Coil',
-        "unit": "ROLL",
-        "extract": lambda m: 1,
-        "note": "Default 1 roll — flashing transitions (stone ↔ siding, kickouts)",
-    },
+    # .019 Coil LP AUTO-ADD RETIRED (iter97 composition ruling, 2026-07-12):
+    # an auto-add is DERIVED composition — coil on an LP-native derived
+    # takeoff is a cross-domain composition bug. The row remains in the
+    # LP Siding Accessories catalog as a flagged cross_domain_manual_add
+    # exception; contractors add it by hand when a job needs flashing.
+    # (Iter 68/79b mapping superseded on the lp_smart tab only.)
     # Touch up kits — 1 per job per color. We don't know the color count
     # from HOVER, so default 1 and let the contractor bump it if multi-
     # color.

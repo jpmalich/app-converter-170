@@ -26,11 +26,13 @@ router = APIRouter()
 @router.get("/branding")
 async def public_branding():
     b = await get_branding()
+    from routes.lp_admin import load_lp_native_mode
     return {
         "supplier_name": b.get("supplier_name") or SUPPLIER_NAME,
         "supplier_tagline": b.get("supplier_tagline") or SUPPLIER_TAGLINE,
         "supplier_logo_url": b.get("supplier_logo_url"),
         "default_pricing_mode": b.get("default_pricing_mode") or "margin",
+        "lp_native_mode": await load_lp_native_mode(),
     }
 
 

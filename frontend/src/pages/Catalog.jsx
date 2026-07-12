@@ -15,6 +15,7 @@ export default function Catalog() {
   // Excel-style tab strip so contractors can edit labor on Vinyl, Ascend
   // and Windows independently without scrolling through all sections.
   const [activeTab, setActiveTab] = useState(VISIBLE_TAB_IDS[0] || "vinyl");
+  const [lpNativeMode, setLpNativeMode] = useState(false);
   const t = useT();
   const { lang } = useLang();
 
@@ -32,6 +33,10 @@ export default function Catalog() {
       });
       setSections(visible);
       setTierName(data.tier_name || "");
+      // LP-native demo mode: backend already filters sections to the LP
+      // domain — mirror it on the tab strip (presentation-layer only)
+      setLpNativeMode(!!data.lp_native_mode);
+      if (data.lp_native_mode) setActiveTab("lp_smart");
     } catch (e) {
       toast.error(formatApiError(e.response?.data?.detail));
     } finally {
@@ -151,7 +156,10 @@ export default function Catalog() {
         role="tablist"
         data-testid="catalog-tabs"
       >
-        {VISIBLE_TAB_DEFS.map((tab) => {
+        {(lpNativeMode
+          ? VISIBLE_TAB_DEFS.filter((tb) => tb.id === "lp_smart")
+          : VISIBLE_TAB_DEFS
+        ).map((tab) => {
           const isActive = activeTab === tab.id;
           const badge = tabBadges[tab.id] || 0;
           return (

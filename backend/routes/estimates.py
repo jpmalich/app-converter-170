@@ -298,6 +298,8 @@ async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
                         "lab": float(it.get("lab") or 0),
                         "unit": it.get("unit") or "",
                         "ami_part": it.get("ami_part"),
+                        "pricing_pending": bool(it.get("pricing_pending")),
+                        "pricing_source": it.get("pricing_source"),
                     }
         # _build_lines emits lines for ALL tabs — we only want lp_smart on
         # the LP-pair workspace. Map each spec to an EstimateLine doc.
@@ -308,7 +310,7 @@ async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
             if qty <= 0:
                 continue
             cat_row = price_idx.get((ln.get("section"), ln.get("name")), {})
-            seeded_lines.append({
+            line_doc = {
                 "section": ln.get("section", ""),
                 "name": ln.get("name", ""),
                 "unit": ln.get("unit") or cat_row.get("unit", ""),
@@ -318,7 +320,15 @@ async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
                 "ami_part": cat_row.get("ami_part"),
                 "tab": "lp_smart",
                 "adders": [],
-            })
+            }
+            # PINNED (iter97 cut): the old `cat_row.get("mat", 0)` was a
+            # silent unpriced fall-through. A line with no catalog price
+            # (or an engine-pending price) is flagged, never a quiet $0.
+            if not cat_row or cat_row.get("pricing_pending"):
+                line_doc["pricing_pending"] = True
+            if cat_row.get("pricing_source"):
+                line_doc["pricing_source"] = cat_row["pricing_source"]
+            seeded_lines.append(line_doc)
 
     new_doc = {
         "id": new_id,

@@ -19,6 +19,7 @@ export default function BrandingAdmin() {
   const [supplierName, setSupplierName] = useState("");
   const [supplierTagline, setSupplierTagline] = useState("");
   const [defaultPricingMode, setDefaultPricingMode] = useState("margin");
+  const [lpNativeMode, setLpNativeMode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef();
@@ -35,6 +36,7 @@ export default function BrandingAdmin() {
         setSupplierName(b.data.supplier_name || "");
         setSupplierTagline(b.data.supplier_tagline || "");
         setDefaultPricingMode(b.data.default_pricing_mode || "margin");
+        setLpNativeMode(!!b.data.lp_native_mode);
         setSignupCode(s.data.signup_code);
       } catch (e) {
         setError(
@@ -254,6 +256,43 @@ export default function BrandingAdmin() {
               ? "Margin: sell = base ÷ (1 − %)  — 30% gives a ×1.429 multiplier"
               : "Markup: sell = base × (1 + %)  — 30% gives a ×1.300 multiplier"}
           </div>
+        </div>
+
+        {/* LP-native demo mode */}
+        <div className="card p-6" data-testid="lp-native-mode-card">
+          <div className="section-tag mb-3">LP-Native Mode</div>
+          <p className="text-sm text-[var(--ink-2)] mb-4">
+            Filters ALL contractor surfaces to the LP SmartSide domain — pickers,
+            catalog, tabs. Other domains are hidden, not deleted (presentation-layer
+            only). The September demo runs with this ON.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            className={`px-5 py-2 rounded-sm text-sm font-bold uppercase tracking-wider transition ${
+              lpNativeMode
+                ? "bg-[var(--bar-bg)] text-white"
+                : "bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)]"
+            }`}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const { data } = await axios.put(
+                  `${API}/admin/lp-native-mode`,
+                  { enabled: !lpNativeMode },
+                  { headers: { "X-Admin-Token": token } }
+                );
+                setLpNativeMode(!!data.enabled);
+              } catch (e) {
+                setError("Failed to toggle LP-native mode");
+              } finally {
+                setBusy(false);
+              }
+            }}
+            data-testid="lp-native-mode-toggle"
+          >
+            {lpNativeMode ? "ON — LP domain only" : "OFF — all domains visible"}
+          </button>
         </div>
 
         {/* Supplier logo */}

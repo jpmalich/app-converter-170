@@ -1,7 +1,8 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Home as HomeIcon, RectangleHorizontal, Layers } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useBranding } from "@/lib/branding";
 
 /**
  * Iter 76 — Step 2B: Contractor Quotes sub-picker.
@@ -15,6 +16,8 @@ import { useT } from "@/lib/i18n";
 export default function ContractorPicker() {
   const t = useT();
   const nav = useNavigate();
+  const { lp_native_mode } = useBranding();
+  if (lp_native_mode) return <Navigate to="/dashboard/lp_smart" replace />;
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
       <button

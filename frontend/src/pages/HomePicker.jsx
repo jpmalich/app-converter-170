@@ -1,7 +1,8 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Building2, HardHat } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { useBranding } from "@/lib/branding";
 
 /**
  * Iter 76 — Two-step workspace picker (Howard's sketch).
@@ -17,6 +18,9 @@ import { useT } from "@/lib/i18n";
 export default function HomePicker() {
   const t = useT();
   const nav = useNavigate();
+  const { lp_native_mode } = useBranding();
+  // LP-native demo mode: the only workspace is LP — skip the pickers
+  if (lp_native_mode) return <Navigate to="/dashboard/lp_smart" replace />;
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
       <div className="mb-10 sm:mb-12">

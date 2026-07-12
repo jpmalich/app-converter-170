@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import api, { fmt, formatApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { useBranding } from "@/lib/branding";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb } from "lucide-react";
 import EmailPipeline from "@/components/EmailPipeline";
@@ -38,6 +39,7 @@ export default function Dashboard({ kind = "siding" }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const t = useT();
   const nav = useNavigate();
+  const { lp_native_mode: lpNativeMode } = useBranding();
   // Branding flag we use to gate copy + create-estimate metadata.
   const isWindows = kind === "windows";
   const isIss = kind === "iss";
@@ -158,6 +160,11 @@ export default function Dashboard({ kind = "siding" }) {
       (e.customer_phone || "").toLowerCase().includes(q.toLowerCase()) ||
       (e.customer_company || "").toLowerCase().includes(q.toLowerCase())
     );
+
+  // LP-native demo mode: non-LP workspaces are hidden (not deleted)
+  if (lpNativeMode && kind !== "lp_smart") {
+    return <Navigate to="/dashboard/lp_smart" replace />;
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-testid="dashboard">
