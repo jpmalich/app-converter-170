@@ -1,0 +1,643 @@
+{
+ "generated": "2026-07-12",
+ "hypothesis": "legacy LP tier price = BlueLinx PIT00003 MILL cost / (1 - m), m: whole-sale 35% / Contractor 30% / Builder-Dealer 25% / one-opp 20%",
+ "rows": [
+  {
+   "section": "LP Siding Accessories",
+   "name": ".019 Coil",
+   "bluelinx_mill_cost": null,
+   "legacy": {
+    "one-opp": 133.23,
+    "Builder-Dealer": 161.33,
+    "Contractor": 161.33,
+    "whole-sale": 161.33
+   },
+   "engine": "NO BLUELINX COST \u2014 engine pending (cross-domain or non-sheet item)",
+   "delta_vs_margin_equivalent": {}
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "540 Series OSC 5/4\" x 4\" x 16'",
+   "bluelinx_mill_cost": 126.78,
+   "legacy": {
+    "one-opp": 158.47,
+    "Builder-Dealer": 169.04,
+    "Contractor": 181.11,
+    "whole-sale": 195.05
+   },
+   "engine": {
+    "A": 181.11,
+    "B": 169.04,
+    "C": 158.47
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 195.05 = mill/(1-0.35)=195.05 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "540 Series OSC 5/4\" x 6\" x 16'",
+   "bluelinx_mill_cost": 190.18,
+   "legacy": {
+    "one-opp": 237.72,
+    "Builder-Dealer": 253.57,
+    "Contractor": 271.69,
+    "whole-sale": 292.58
+   },
+   "engine": {
+    "A": 271.69,
+    "B": 253.57,
+    "C": 237.72
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 292.58 = mill/(1-0.35)=292.58 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "Flash tape 3 3/4\" x 90'",
+   "bluelinx_mill_cost": null,
+   "legacy": {
+    "one-opp": 41.12,
+    "Builder-Dealer": 41.12,
+    "Contractor": 41.12,
+    "whole-sale": 41.12
+   },
+   "engine": "NO BLUELINX COST \u2014 engine pending (cross-domain or non-sheet item)",
+   "delta_vs_margin_equivalent": {}
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "J blocks",
+   "bluelinx_mill_cost": 40.0,
+   "legacy": {
+    "one-opp": 50.0,
+    "Builder-Dealer": 53.33,
+    "Contractor": 57.14,
+    "whole-sale": 61.54
+   },
+   "engine": {
+    "A": 57.14,
+    "B": 53.33,
+    "C": 50.0
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 61.54 = mill/(1-0.35)=61.54 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "Mini Splits",
+   "bluelinx_mill_cost": 56.0,
+   "legacy": {
+    "one-opp": 70.0,
+    "Builder-Dealer": 74.67,
+    "Contractor": 80.0,
+    "whole-sale": 86.15
+   },
+   "engine": {
+    "A": 80.0,
+    "B": 74.67,
+    "C": 70.0
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 86.15 = mill/(1-0.35)=86.15 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "OSI Quad Max Caulking",
+   "bluelinx_mill_cost": 9.82,
+   "legacy": {
+    "one-opp": 12.28,
+    "Builder-Dealer": 13.09,
+    "Contractor": 14.03,
+    "whole-sale": 15.11
+   },
+   "engine": {
+    "A": 14.03,
+    "B": 13.09,
+    "C": 12.28
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 15.11 = mill/(1-0.35)=15.11 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "PVC Trim Coil",
+   "bluelinx_mill_cost": null,
+   "legacy": {
+    "one-opp": 149.74,
+    "Builder-Dealer": 167.08,
+    "Contractor": 167.08,
+    "whole-sale": 167.08
+   },
+   "engine": "NO BLUELINX COST \u2014 engine pending (cross-domain or non-sheet item)",
+   "delta_vs_margin_equivalent": {}
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "Performance G8 Trim Coil",
+   "bluelinx_mill_cost": null,
+   "legacy": {
+    "one-opp": 145.89,
+    "Builder-Dealer": 170.53,
+    "Contractor": 170.53,
+    "whole-sale": 170.53
+   },
+   "engine": "NO BLUELINX COST \u2014 engine pending (cross-domain or non-sheet item)",
+   "delta_vs_margin_equivalent": {}
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "Touch up kits",
+   "bluelinx_mill_cost": 42.67,
+   "legacy": {
+    "one-opp": 53.34,
+    "Builder-Dealer": 56.89,
+    "Contractor": 60.96,
+    "whole-sale": 65.65
+   },
+   "engine": {
+    "A": 60.96,
+    "B": 56.89,
+    "C": 53.34
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 65.65 = mill/(1-0.35)=65.65 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Siding Accessories",
+   "name": "Trim Coil Aluminum 24\" x 50'",
+   "bluelinx_mill_cost": null,
+   "legacy": {
+    "one-opp": 195.31,
+    "Builder-Dealer": 208.33,
+    "Contractor": 223.21,
+    "whole-sale": 240.38
+   },
+   "engine": "NO BLUELINX COST \u2014 engine pending (cross-domain or non-sheet item)",
+   "delta_vs_margin_equivalent": {}
+  },
+  {
+   "section": "LP Smart Siding",
+   "name": "38 Series 4' x 10' Panel",
+   "bluelinx_mill_cost": 96.56,
+   "legacy": {
+    "one-opp": 120.7,
+    "Builder-Dealer": 128.75,
+    "Contractor": 137.94,
+    "whole-sale": 148.55
+   },
+   "engine": {
+    "A": 137.94,
+    "B": 128.75,
+    "C": 120.7
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 148.55 = mill/(1-0.35)=148.55 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Smart Siding",
+   "name": "38 Series 4' x 8' Panel",
+   "bluelinx_mill_cost": 72.13,
+   "legacy": {
+    "one-opp": 90.16,
+    "Builder-Dealer": 96.17,
+    "Contractor": 103.04,
+    "whole-sale": 110.97
+   },
+   "engine": {
+    "A": 103.04,
+    "B": 96.17,
+    "C": 90.16
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 110.97 = mill/(1-0.35)=110.97 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Smart Siding",
+   "name": "38 Series Lap 3/8\" x 8\" x 16'",
+   "bluelinx_mill_cost": 21.69,
+   "legacy": {
+    "one-opp": 27.11,
+    "Builder-Dealer": 28.92,
+    "Contractor": 30.99,
+    "whole-sale": 33.37
+   },
+   "engine": {
+    "A": 30.99,
+    "B": 28.92,
+    "C": 27.11
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 33.37 = mill/(1-0.35)=33.37 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Smart Siding",
+   "name": "38 Series Vertical Panel",
+   "bluelinx_mill_cost": 51.45,
+   "legacy": {
+    "one-opp": 64.31,
+    "Builder-Dealer": 68.6,
+    "Contractor": 73.5,
+    "whole-sale": 79.15
+   },
+   "engine": {
+    "A": 73.5,
+    "B": 68.6,
+    "C": 64.31
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 79.15 = mill/(1-0.35)=79.15 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Smart Siding",
+   "name": "Nickel Gap",
+   "bluelinx_mill_cost": 50.64,
+   "legacy": {
+    "one-opp": 63.3,
+    "Builder-Dealer": 67.52,
+    "Contractor": 72.34,
+    "whole-sale": 77.91
+   },
+   "engine": {
+    "A": 72.34,
+    "B": 67.52,
+    "C": 63.3
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 77.91 = mill/(1-0.35)=77.91 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP Smart Siding",
+   "name": "Shake",
+   "bluelinx_mill_cost": 16.62,
+   "legacy": {
+    "one-opp": 20.77,
+    "Builder-Dealer": 22.16,
+    "Contractor": 23.74,
+    "whole-sale": 25.57
+   },
+   "engine": {
+    "A": 23.74,
+    "B": 22.16,
+    "C": 20.77
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 25.57 = mill/(1-0.35)=25.57 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Soffit",
+   "name": "24 inch CTW soffit",
+   "bluelinx_mill_cost": 87.46,
+   "legacy": {
+    "one-opp": 109.32,
+    "Builder-Dealer": 116.61,
+    "Contractor": 124.94,
+    "whole-sale": 134.55
+   },
+   "engine": {
+    "A": 124.94,
+    "B": 116.61,
+    "C": 109.32
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 134.55 = mill/(1-0.35)=134.55 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Soffit",
+   "name": "24 inch VSSFT",
+   "bluelinx_mill_cost": 93.95,
+   "legacy": {
+    "one-opp": 117.44,
+    "Builder-Dealer": 125.27,
+    "Contractor": 134.21,
+    "whole-sale": 144.54
+   },
+   "engine": {
+    "A": 134.21,
+    "B": 125.27,
+    "C": 117.44
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 144.54 = mill/(1-0.35)=144.54 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Soffit",
+   "name": "38 Series Soffit 16 x 16 Vented",
+   "bluelinx_mill_cost": 60.08,
+   "legacy": {
+    "one-opp": 75.1,
+    "Builder-Dealer": 80.11,
+    "Contractor": 85.83,
+    "whole-sale": 92.43
+   },
+   "engine": {
+    "A": 85.83,
+    "B": 80.11,
+    "C": 75.1
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 92.43 = mill/(1-0.35)=92.43 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "190 Series Trim 19/32\" x 3\" x 16'",
+   "bluelinx_mill_cost": 13.76,
+   "legacy": {
+    "one-opp": 17.2,
+    "Builder-Dealer": 18.35,
+    "Contractor": 19.66,
+    "whole-sale": 21.17
+   },
+   "engine": {
+    "A": 19.66,
+    "B": 18.35,
+    "C": 17.2
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 21.17 = mill/(1-0.35)=21.17 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "440 Series Trim 4/4\" x 10\" x 16'",
+   "bluelinx_mill_cost": 51.47,
+   "legacy": {
+    "one-opp": 64.34,
+    "Builder-Dealer": 68.63,
+    "Contractor": 73.53,
+    "whole-sale": 79.18
+   },
+   "engine": {
+    "A": 73.53,
+    "B": 68.63,
+    "C": 64.34
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 79.18 = mill/(1-0.35)=79.18 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "440 Series Trim 4/4\" x 12\" x 16'",
+   "bluelinx_mill_cost": 61.74,
+   "legacy": {
+    "one-opp": 77.17,
+    "Builder-Dealer": 82.32,
+    "Contractor": 88.2,
+    "whole-sale": 94.98
+   },
+   "engine": {
+    "A": 88.2,
+    "B": 82.32,
+    "C": 77.17
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 94.98 = mill/(1-0.35)=94.98 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "440 Series Trim 4/4\" x 4\" x 16'",
+   "bluelinx_mill_cost": 19.74,
+   "legacy": {
+    "one-opp": 24.67,
+    "Builder-Dealer": 26.32,
+    "Contractor": 28.2,
+    "whole-sale": 30.37
+   },
+   "engine": {
+    "A": 28.2,
+    "B": 26.32,
+    "C": 24.67
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 30.37 = mill/(1-0.35)=30.37 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "440 Series Trim 4/4\" x 6\" x 16'",
+   "bluelinx_mill_cost": 29.62,
+   "legacy": {
+    "one-opp": 37.02,
+    "Builder-Dealer": 39.49,
+    "Contractor": 42.31,
+    "whole-sale": 45.57
+   },
+   "engine": {
+    "A": 42.31,
+    "B": 39.49,
+    "C": 37.02
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 45.57 = mill/(1-0.35)=45.57 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "440 Series Trim 4/4\" x 8\" x 16'",
+   "bluelinx_mill_cost": 39.5,
+   "legacy": {
+    "one-opp": 49.38,
+    "Builder-Dealer": 52.67,
+    "Contractor": 56.43,
+    "whole-sale": 60.77
+   },
+   "engine": {
+    "A": 56.43,
+    "B": 52.67,
+    "C": 49.38
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 60.77 = mill/(1-0.35)=60.77 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "540 Series Trim 5/4\" x 10\" x 16'",
+   "bluelinx_mill_cost": 62.87,
+   "legacy": {
+    "one-opp": 78.59,
+    "Builder-Dealer": 83.83,
+    "Contractor": 89.81,
+    "whole-sale": 96.72
+   },
+   "engine": {
+    "A": 89.81,
+    "B": 83.83,
+    "C": 78.59
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 96.72 = mill/(1-0.35)=96.72 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "540 Series Trim 5/4\" x 12\" x 16'",
+   "bluelinx_mill_cost": 75.41,
+   "legacy": {
+    "one-opp": 94.26,
+    "Builder-Dealer": 100.55,
+    "Contractor": 107.73,
+    "whole-sale": 116.02
+   },
+   "engine": {
+    "A": 107.73,
+    "B": 100.55,
+    "C": 94.26
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 116.02 = mill/(1-0.35)=116.02 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "540 Series Trim 5/4\" x 4\" x 16'",
+   "bluelinx_mill_cost": 24.01,
+   "legacy": {
+    "one-opp": 30.01,
+    "Builder-Dealer": 32.01,
+    "Contractor": 34.3,
+    "whole-sale": 36.94
+   },
+   "engine": {
+    "A": 34.3,
+    "B": 32.01,
+    "C": 30.01
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 36.94 = mill/(1-0.35)=36.94 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "540 Series Trim 5/4\" x 6\" x 16'",
+   "bluelinx_mill_cost": 36.01,
+   "legacy": {
+    "one-opp": 45.01,
+    "Builder-Dealer": 48.01,
+    "Contractor": 51.44,
+    "whole-sale": 55.4
+   },
+   "engine": {
+    "A": 51.44,
+    "B": 48.01,
+    "C": 45.01
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 55.4 = mill/(1-0.35)=55.4 \u2014 35% margin, NO counterpart in A/B/C"
+  },
+  {
+   "section": "LP SmartSide Trim",
+   "name": "540 Series Trim 5/4\" x 8\" x 16'",
+   "bluelinx_mill_cost": 48.01,
+   "legacy": {
+    "one-opp": 60.01,
+    "Builder-Dealer": 64.01,
+    "Contractor": 68.59,
+    "whole-sale": 73.86
+   },
+   "engine": {
+    "A": 68.59,
+    "B": 64.01,
+    "C": 60.01
+   },
+   "delta_vs_margin_equivalent": {
+    "Contractor vs Tier A": 0.0,
+    "Builder-Dealer vs Tier B": 0.0,
+    "one-opp vs Tier C": 0.0
+   },
+   "whole_sale_note": "legacy whole-sale 73.86 = mill/(1-0.35)=73.86 \u2014 35% margin, NO counterpart in A/B/C"
+  }
+ ]
+}
