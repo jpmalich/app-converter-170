@@ -69,6 +69,10 @@ async def lp_truck_reconcile_endpoint(
     itemized per line with cause. Runs BEFORE the ±3% acceptance test."""
     run = await _load_run(est_id, user, (payload or {}).get("run_id"))
     measurements, corner_locations, _ = _extract(run)
-    out = reconcile_letrick_truck(measurements, corner_locations)
+    raw_ai = (run.get("result") or {}).get("raw_ai") or {}
+    window_widths = [float(o.get("width_in") or 0) / 12.0
+                     for o in raw_ai.get("openings") or []
+                     if str(o.get("type")) == "window" and o.get("width_in")]
+    out = reconcile_letrick_truck(measurements, corner_locations, window_widths)
     out["run_id"] = run.get("run_id")
     return out

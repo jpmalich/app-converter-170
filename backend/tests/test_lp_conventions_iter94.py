@@ -133,9 +133,14 @@ def test_lp_composition_bugs_detector():
 
 
 def test_pending_confirmations_ruled_set():
+    # six-ruling block reconciled — genuinely open items only
     assert set(PENDING_CONFIRMATIONS) == {
-        "osc_stick_length", "door_trim_sides", "corner_splice_rule",
+        "starter_rule_divisor", "expertfinish_availability_matrix",
+        "bluelinx_sku_upload", "letrick_hand_takeoff",
     }
+    # starter item must state BOTH derivations precisely
+    s = PENDING_CONFIRMATIONS["starter_rule_divisor"]
+    assert "14" in s and "17" in s and "12.5" in s and "10" in s
 
 
 def test_per_system_derivation_table():
@@ -169,15 +174,16 @@ def test_truck_fixture_is_pinned():
 
 
 def test_truck_reconcile_per_rulings():
-    out = reconcile_letrick_truck(LETRICK_GEOMETRY, _c3_locations())
+    widths = [6.0, 6.0, 6.0, 2.33, 3.67, 3.0, 3.0, 2.5, 3.0, 2.0]  # Σ 37.5
+    out = reconcile_letrick_truck(LETRICK_GEOMETRY, _c3_locations(), widths)
     by = {l["item"]: l for l in out["lines"]}
     # whole-square doctrine + near_boundary annotation
     assert by["D4.5 siding"]["derived_qty"] == 21
     assert "crew_judgment_short_order" in by["D4.5 siding"]["cause"]
     assert "trim-or-keep" in by["D4.5 siding"]["near_boundary"]
-    # OSC reconciled-by-key; ISC exact match, distinct causes
+    # OSC reconciled-by-key + splice verification; ISC exact, distinct causes
     assert by["OSC"]["status"] == "reconciled_by_key" and by["OSC"]["derived_qty"] == 10
-    assert "conversion" in by["OSC"]["cause"]
+    assert "SPLICE-RULE VERIFICATION" in by["OSC"]["cause"]
     assert by["ISC"]["status"] == "match" and by["ISC"]["derived_qty"] == 2
     assert "no pieces/locations conversion" in by["ISC"]["cause"]
     # starter comment/code discrepancy FLAGGED, never silently picked
@@ -190,8 +196,9 @@ def test_truck_reconcile_per_rulings():
     assert "RECONCILED" in by["Soffit"]["cause"]
     assert "Charter Oak" in by["Soffit"]["basis"]
     assert by["Soffit"]["derived_qty"] == 20
-    # finish trim: rule not on record — never derived from air
-    assert by["Finish trim"]["status"] == "pending_rule_on_record"
-    assert by["Finish trim"]["derived_qty"] is None
+    # finish trim: ruled formula validated vs 23 — NOT reproduced, reported
+    assert by["Finish trim"]["status"] == "deviation"
+    assert by["Finish trim"]["derived_qty"] == 12  # (37.5 + 108) ÷ 12.5
+    assert "NOT reproduced" in by["Finish trim"]["cause"]
     assert out["summary"]["match"] == 3
     assert "pending_confirmation" not in out["summary"]

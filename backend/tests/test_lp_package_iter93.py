@@ -51,15 +51,17 @@ def test_osc_whole_sticks_per_location():
     assert osc["osc_count"] == 7
     assert osc["qty"] == 7
     assert osc["amber"] == 1
-    assert "stick length pending" in osc["note"]
+    assert "CONFIRMED" in osc["note"]  # 16' (192") stick length ruled
     assert "field verify" in osc["note"]
 
 
-def test_osc_over_stick_flags_splice_pending():
+def test_osc_over_stick_splice_and_round_up_pooled():
+    # RULED: >16' runs splice-and-round-up, tails POOLED (uniform with
+    # fascia/rake): two 18.5' chase corners = 2 full sticks + ceil(5/16)
     osc = osc_from_corner_locations(
-        [_loc(["back"])], {"back": 18.5}, 8.9)
-    assert osc["qty"] == 2  # ceil(18.5/16) held pending splice ruling
-    assert "splice rule pending" in osc["note"]
+        [_loc(["back"]), _loc(["back"])], {"back": 18.5}, 8.9)
+    assert osc["qty"] == 3  # not 4 (full-stick-per-segment rejected)
+    assert "splice-and-round-up" in osc["note"]
 
 
 def test_isc_sticks_per_location():
@@ -136,9 +138,19 @@ def test_assemble_whole_piece_everywhere_and_lp_only():
 def test_assemble_pendings_surfaced():
     pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
     pend = " ".join(pkg["summary"]["pending_confirmations"])
-    assert "stick length" in pend
-    assert "3-side vs 4-side" in pend
-    assert len(pkg["summary"]["pending_confirmations"]) == 2  # fascia pendings RULED away
+    assert "ExpertFinish matrix" in pend
+    assert "BlueLinx" in pend
+    assert len(pkg["summary"]["pending_confirmations"]) == 2  # six-ruling block reconciled
+
+
+def test_wrap_doors_three_side_ruled():
+    pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
+    from lp_conventions import WRAP_TRIM_ITEM
+    wrap = next(l for l in pkg["lines"] if l["name"] == WRAP_TRIM_ITEM)
+    # 10 windows × 14 + 2 entry × 18 (21 − 3' sill, 3-SIDE ruled) = 176 → 11
+    assert wrap["qty"] == 11
+    assert "3-SIDE" in wrap["note"]
+    assert "garage" not in wrap["note"]  # no garage doors on Letrick
 
 
 # ── Howard rulings: default width, starter line, substitution ──

@@ -66,11 +66,26 @@ def _corner_height_ft(loc: dict, wall_heights: dict, avg_h) -> float:
 
 
 def corner_sticks_for_length(heights: list, stick_len_ft: float) -> int:
-    """RULED: whole sticks PER LOCATION; stick-length changes recompute
-    piece counts (10.44' corner: 1×16' vs 2×10'), never a stale reprice."""
+    """RULED (six-ruling block): whole stick per location for runs ≤ stick
+    length; runs OVER stick length SPLICE-AND-ROUND-UP TOTAL STICKS —
+    full sticks per run + over-length tails POOLED into shared sticks
+    (uniform with fascia/rake). Stick-length changes recompute counts."""
     sticks = 0
+    tails = 0.0
     for h in heights:
-        sticks += max(1, int(math.ceil(float(h) / stick_len_ft - 1e-9))) if h and h > 0 else 1
+        h = float(h or 0)
+        if h <= 0:
+            sticks += 1
+            continue
+        if h <= stick_len_ft + 1e-9:
+            sticks += 1
+        else:
+            sticks += int(h // stick_len_ft)
+            rem = h % stick_len_ft
+            if rem > 1e-9:
+                tails += rem
+    if tails > 0:
+        sticks += int(math.ceil(tails / stick_len_ft - 1e-9))
     return sticks
 
 
@@ -96,12 +111,11 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     t = _corner_takeoff(oscs, wall_heights, avg_height_ft, stick_len)
     note_bits = [
         f"C3: {len(oscs)} OSC locations, whole sticks per location = {t['sticks']} "
-        f"({t['total_lf']} LF; 16' stick length pending confirmation)"
+        f"({t['total_lf']} LF; 16' (192\") stick length CONFIRMED)"
     ]
-    flags = [PENDING_CONFIRMATIONS["osc_stick_length"]]
+    flags = []
     if t["over_stick"]:
-        note_bits.append("corner run(s) over stick length — splice rule pending, ceil-per-location held")
-        flags.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
+        note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     if t["elevated"]:
@@ -121,8 +135,7 @@ def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     note_bits = [f"C3: {len(iscs)} ISC locations, whole sticks per location = {t['sticks']} ({t['total_lf']} LF)"]
     flags = []
     if t["over_stick"]:
-        note_bits.append("run(s) over stick length — splice rule pending")
-        flags.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
+        note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     return {"qty": t["sticks"], "note": "; ".join(note_bits), "isc_count": len(iscs),
@@ -234,10 +247,26 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             "splice-and-round-up total sticks (ruled); always present on LP-native (ruled)",
             _derivation={"kind": "fascia_rake", "total_lf": fr["total_lf"]})
 
-    # ── 540 wrap: door side-count pending — flag, do not change derivation
-    for l in lines:
-        if l["name"] == WRAP_TRIM_ITEM:
-            l["note"] = f"{l.get('note') or ''} — door trim 3-side vs 4-side pending (4-side derivation held)".strip(" —")
+    # ── 540 wrap: DOOR TRIM 3-SIDE RULED (head + legs; windows 4-side).
+    # Howard's Iter 57ee per-opening constants adjusted: entry 21−3' sill
+    # = 18, patio 25−6' sill = 19; garage 32 HELD (16 + 2×8 is already
+    # 3-side by inspection — flagged for confirmation, never silently cut)
+    wc = int(measurements.get("window_count") or 0)
+    ec = int(measurements.get("entry_door_count") or 0)
+    pc = int(measurements.get("patio_door_count") or 0)
+    gc = int(measurements.get("garage_door_count") or 0)
+    if wc + ec + pc + gc > 0:
+        from lp_smartside_formulas import shake_540_series_bump
+        wrap_lf = wc * 14 + ec * 18 + pc * 19 + gc * 32
+        bump = shake_540_series_bump(
+            float((measurements.get("_per_profile_sqft") or {}).get("shake") or 0))
+        wrap_qty = max(1, math.ceil(wrap_lf / 16.0)) + bump
+        note = (f"windows 4-side ({wc}×14') + doors 3-SIDE head+legs (ruled): entry {ec}×18' "
+                f"(21−3 sill), patio {pc}×19' (25−6 sill) = {wrap_lf} LF ÷ 16"
+                + (f" + {bump} shake belly-band pcs" if bump else ""))
+        if gc:
+            note += f"; garage {gc}×32' held (16+2×8 already reads 3-side — confirm)"
+        _set_line(WRAP_TRIM_ITEM, "LP SmartSide Trim", wrap_qty, note)
 
     # ── LP STARTER (ruled): non-SKU informational line, ALWAYS present
     try:
@@ -303,10 +332,8 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             target["qty"] = qty
             target["note"] = f"SUBSTITUTED from {target['substituted_from']} — RE-DERIVED from stored geometry: {how}"
 
-    pending = [PENDING_CONFIRMATIONS["osc_stick_length"],
-               PENDING_CONFIRMATIONS["door_trim_sides"]]
-    if osc and any("splice" in f.lower() for f in osc.get("flags") or []):
-        pending.append(PENDING_CONFIRMATIONS["corner_splice_rule"])
+    pending = [PENDING_CONFIRMATIONS["expertfinish_availability_matrix"],
+               PENDING_CONFIRMATIONS["bluelinx_sku_upload"]]
 
     # ── COLOR ARCHITECTURE (ruled): per-component line-level colors;
     # identity = (name, color); availability flagged while unverified

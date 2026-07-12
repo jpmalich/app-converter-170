@@ -2844,3 +2844,15 @@ The original finding (Letrick run failed to identify vertical appendages — chi
 **Palette (verified against LP's published page, 2026-06):** 16 core colors incl. Sand Dunes (2026 Color of the Year) + 6 Naturals Collection (Bonsai Black, Weathered Walnut, Aged Amber, Saffron Cedar, Smoky Slate, Washed White) + Primed = 23 options, pinned.
 **Pins:** `tests/test_lp_colors_iter95.py` (7 tests). LP suite total 44+ green. Live endpoint verified with mixed per-group colors.
 **Phase 2 remaining:** selector UI per component group + 3D mesh-group repaint + color-matched accessory threading (touch-up kits/caulk) + ExpertFinish availability matrix verification.
+
+## Iter 79j.96 — STATE CHECK RECONCILIATION: SIX-RULING BLOCK RESTORED (Howard, 2026-07-11)
+**Stale pendings restored from Howard's message and applied:**
+1. **OSC stick length CONFIRMED 16' (192")** — flag removed, line notes updated.
+2. **Door trim 3-SIDE (head + legs); windows 4-side** — 540 wrap re-derived: entry 21−3' sill = 18', patio 25−6' sill = 19'; Letrick wrap 10×14 + 2×18 = 176 LF → 11 pcs (was 12). GARAGE 32' HELD: 16 + 2×8 reads as already-3-side by inspection — flagged on line when garage present, never silently cut.
+3. **Corner splice >16': SPLICE-AND-ROUND-UP TOTAL STICKS, uniform across corners/fascia/rake** — `corner_sticks_for_length` re-implemented: whole stick per location ≤16'; over-length runs = full sticks + POOLED tails (two 18.5' chase corners = 2 full + ceil(5/16) = 3 sticks, not 4). Pinned. Substitution re-derivation inherits the rule.
+4. **Finish trim (vinyl) RULED formula: Σ window widths + eave run** — validated vs Letrick's 23: Σ widths 37.5 LF + 108 = 145.5 ÷ 12.5' = **12, NOT reproduced (Δ−11)**; per-opening-whole-piece alternative = 19, also short. Reported for Howard's refinement. Harness line scored deviation.
+5. **Splice-rule verification vs 10-OSC truck count:** ruled splice at 12.5' vinyl derives 7; full-stick-per-segment 8; delivered 10 → +2/+3 crew extras — the truck count does NOT discriminate between splice conventions. Logged in OSC cause.
+6. Confirmed already logged: rake-soffit per-system amendment ✓, fascia always-present ✓, color-per-component architecture ✓.
+**GENUINELY OPEN (exactly 4):** (a) starter ÷12.5 (→14) vs ÷10 (→17) comment/code discrepancy — both derivations stated, Howard to rule; (b) ExpertFinish availability matrix — LOOKUP task (ingest published color-by-product matrix, flag unsupported combos; BlueLinx sheet = stocking overlay); (c) BlueLinx SKU upload (Howard); (d) Letrick hand-takeoff (Howard, gates ±3%).
+**Harness after reconciliation: 3 match · 1 reconciled_by_key · 5 deviation (all itemized w/ cause) · 0 held.** All 77 LP pins green, live verified.
+**PHASE 2 SCOPE (GO on clean readback):** Material List tab (flags visible, live re-derivation, read-only until explicit edit) · component-group color selector with apply-to-all · mesh-group flat repaint.

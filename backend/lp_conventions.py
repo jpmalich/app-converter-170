@@ -74,9 +74,18 @@ SYSTEM_DERIVATION = {
 }
 
 PENDING_CONFIRMATIONS = {
-    "osc_stick_length": "540 OSC stick length pending Howard's confirmation (192\" = 16' assumed, flagged).",
-    "door_trim_sides": "Door trim 3-side vs 4-side pending Howard's ruling — current wrap derivation uses full opening perimeter (4-side), flagged.",
-    "corner_splice_rule": "Splice rule on corner runs over 16' pending (splice-and-round-up-sticks vs full-stick-per-segment) — held flagged, not defaulted.",
+    "starter_rule_divisor": (
+        "Starter rule discrepancy — BOTH derivations stated: code rule "
+        "ceil(start-course LF ÷ 12.5) [Letrick: ceil(168/12.5) = 14] vs file "
+        "comment ÷ 10 [ceil(168/10) = 17]; delivered 20. Howard to rule."
+    ),
+    "expertfinish_availability_matrix": (
+        "LOOKUP (not a ruling): ingest LP's published color-by-product-line "
+        "ExpertFinish matrix; flag combinations our lines use that the matrix "
+        "doesn't support; BlueLinx sheet = stocking-reality overlay when it lands."
+    ),
+    "bluelinx_sku_upload": "Howard's BlueLinx SKU sheet upload pending — BlueLinx names only until then.",
+    "letrick_hand_takeoff": "Howard's Letrick hand-takeoff pending — gates the ±3% Phase 3 acceptance test.",
 }
 
 

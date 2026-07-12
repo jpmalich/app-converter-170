@@ -41,7 +41,8 @@ def _line(item, truck_qty, derived, status, cause, **extra):
     return out
 
 
-def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None) -> dict:
+def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None,
+                            window_widths_ft: list | None = None) -> dict:
     g = geometry
     lines = []
 
@@ -72,15 +73,22 @@ def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None
         "picked; delivered 20 — remainder crew cushion pending discrepancy resolution",
     ))
 
-    # ── OSC — RECONCILED BY KEY (Howard ruling): 6 physical locations →
-    # 10 pieces via the chase-height stick conversion
+    # ── OSC — RECONCILED BY KEY + splice-rule verification (ruled check)
     oscs = [l for l in corner_locations or [] if str(l.get("type")) == "outside"]
     amber_osc = sum(1 for l in oscs if l.get("tier") != "confirmed")
+    # verification at vinyl 12.5' sticks, chase ~18.5' per key: ruled
+    # splice-and-round-up = 4 house (1 ea) + chase 2 full + pooled tails
+    # ceil(12/12.5) = 7; full-stick-per-segment would give 8; delivered 10
     lines.append(_line(
         "OSC", 10, 10, "reconciled_by_key",
         f"key: 6 physical locations → 10 pieces via chase-height stick conversion "
         f"(~18-19' chase corners × 2 = multi-stick; 4 house corners 1:1); pipeline "
-        f"detected {len(oscs)} ({amber_osc} amber = p3 drift residual, pre-logged)",
+        f"detected {len(oscs)} ({amber_osc} amber = p3 drift residual, pre-logged). "
+        "SPLICE-RULE VERIFICATION: ruled splice-and-round-up at 12.5' vinyl sticks "
+        "derives 7 (4 house + chase 2 full + pooled 12' tails = 1); full-stick-per-"
+        "segment derives 8; delivered 10 → +2/+3 = crew extras, consistent with the "
+        "reconciled-by-key ruling — the truck count does NOT discriminate between "
+        "splice conventions",
     ))
 
     # ── ISC — EXACT match to key, NO conversion (drift residual logged
@@ -115,12 +123,26 @@ def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None
         "→ whole rolls = 2; NOTE: coil on an LP-native takeoff is a composition bug",
     ))
 
-    # ── Finish trim — vinyl formula NOT on record; never derived from air
-    lines.append(_line(
-        "Finish trim", 23, None, "pending_rule_on_record",
-        "vinyl finish-trim quantity formula is not on record — held, never derived "
-        "from an unstated rule",
-    ))
+    # ── Finish trim — RULED formula: window widths + eave run length;
+    # validated against Letrick's 23 delivered, reported honestly
+    win_w = round(sum(window_widths_ft or []), 1)
+    if win_w > 0:
+        ft_lf = round(win_w + eaves_lf, 1)
+        ft_derived = int(math.ceil(ft_lf / VINYL_PIECE_LEN_FT - 1e-9))
+        alt = len(window_widths_ft) + int(math.ceil(eaves_lf / VINYL_PIECE_LEN_FT - 1e-9))
+        lines.append(_line(
+            "Finish trim", 23, ft_derived, "deviation",
+            f"ruled formula: Σ window widths {win_w:g} LF + eave run {eaves_lf:g} LF = "
+            f"{ft_lf:g} LF ÷ 12.5' = {ft_derived}; delivered 23 — NOT reproduced "
+            f"(Δ{ft_derived - 23:+d}). Alternative per-opening-whole-piece reading "
+            f"(1 pc per window + eave pieces) = {alt}, also short. Reported for "
+            "Howard's formula refinement",
+        ))
+    else:
+        lines.append(_line(
+            "Finish trim", 23, None, "pending_rule_on_record",
+            "ruled formula needs per-window widths — not available in this geometry payload",
+        ))
 
     # ── Soffit — SCORED (amendment: vinyl soffit panels eaves+rakes is
     # the per-system rule; the held rake question is resolved at rule level)
