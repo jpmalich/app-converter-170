@@ -268,24 +268,22 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             note += f"; garage {gc}×32' held (16+2×8 already reads 3-side — confirm)"
         _set_line(WRAP_TRIM_ITEM, "LP SmartSide Trim", wrap_qty, note)
 
-    # ── LP STARTER (ruled): non-SKU informational line, ALWAYS present
+    # ── LP STARTER (rip yield RULED FINAL): 3 strips per 16' board =
+    # 48 LF/board; pieces = ceil(starter LF ÷ 48), line-itemed as starter
+    # stock (ripped) carrying the 38 Series 8" lap source SKU
     try:
         starter_lf = float(measurements.get("starter_lf") or 0)
     except (TypeError, ValueError):
         starter_lf = 0.0
     if starter_lf > 0:
-        note = (f"start-course {starter_lf:g} LF — material: field-ripped from siding stock "
-                "(top-run offcuts / cut pieces); pieces added: 0 (rip-from-waste)")
-        thin_margin = bool(lap_math and (lap_math["ordered_pcs"] - lap_math["waste_qty"]) < 0.5)
-        if thin_margin:
-            note += (f" — THIN WASTE MARGIN on siding (cushion "
-                     f"{round(lap_math['ordered_pcs'] - lap_math['waste_qty'], 2)} pc): "
-                     "starter rips may consume the cushion")
-            flags.append("thin siding waste margin — starter rips may consume the cushion")
+        rip_pcs = int(math.ceil(starter_lf / 48.0 - 1e-9))
         lines.append({"tab": "lp_smart", "section": "LP Siding Accessories",
                       "name": STARTER_LINE_NAME, "unit": "LF",
-                      "qty": int(math.ceil(starter_lf)), "pieces_added": 0,
-                      "non_sku": True, "note": note,
+                      "qty": int(math.ceil(starter_lf)), "pieces_added": rip_pcs,
+                      "non_sku": True, "source_sku": LAP8_ITEM,
+                      "note": (f"start-course {starter_lf:g} LF — starter stock ripped from "
+                               f"38 Series 8\" lap (3 strips per 16' board = 48 LF/board): "
+                               f"pieces = ceil({starter_lf:g} ÷ 48) = {rip_pcs}"),
                       "_derivation": {"kind": "starter", "starter_lf": starter_lf}})
 
     # ── MATERIAL-LIST SUBSTITUTION (ruled): re-derive, provenance, table-limited
