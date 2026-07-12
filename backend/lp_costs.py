@@ -55,14 +55,150 @@ BLUELINX_COSTS = {
 }
 
 
+import math
+import re as _re
+
+_NORM_RE = _re.compile(r"\s+")
+
+
+def _norm(name) -> str:
+    return _NORM_RE.sub(" ", str(name or "").strip().lower())
+
+
+_COSTS_NORM = {_norm(k): v for k, v in BLUELINX_COSTS.items()}
+
+# ── MARGIN ARCHITECTURE — FINAL (Howard ruling, 2026): named tiers in
+# SUPPLIER ADMIN, all TRUE MARGIN: sell = cost ÷ (1 − tier%). NOT markup.
+# Tier B = 25% is the global default. Percentages editable ONLY in admin;
+# quotes carry a tier PICKER (no free-type margin field, ever).
+# Resolution: line override > category override > quote's tier.
+# Per-contractor pricing OUT of scope until post-September (PRD backlog).
+MARGIN_TIER_SEED = {"A": 30.0, "B": 25.0, "C": 20.0}
+DEFAULT_TIER = "B"
+
+# Confidential keys — stripped from EVERY contractor/customer-facing
+# payload by redact_external(). Cost, margins, tier identity, and the
+# dealer-sheet provenance never render externally.
+CONFIDENTIAL_KEYS = frozenset({
+    "unit_cost", "line_cost", "total_cost", "cost_basis",
+    "cost_pending_reason", "margin_pct", "tier", "tier_pct", "tiers",
+    "default_tier", "category_overrides", "line_overrides",
+    "quote_ref", "basis_doctrine",
+})
+
+
 def cost_for(item_name: str, finish: str):
     """Strict (product, finish) lookup. Returns None when the selected
     finish has no sheet price — cost: pending. NEVER falls back to mill
-    for a prefinished selection (pinned)."""
-    prices = BLUELINX_COSTS.get(item_name)
+    for a prefinished selection (pinned). Name match is whitespace/case
+    tolerant (catalog 'Nickel Gap' ↔ sheet 'NICKEL GAP'), never fuzzy."""
+    prices = BLUELINX_COSTS.get(item_name) or _COSTS_NORM.get(_norm(item_name))
     if not prices:
         return None
     return prices.get(finish)
+
+
+def sell_price(cost: float, margin_pct: float) -> float:
+    """MARGIN RULING (pinned direction): TRUE MARGIN on sell —
+    sell = cost ÷ (1 − m). A 25% markup (× 1.25) is WRONG and lands lower:
+    cost 75 @ 25% margin = 100.00, not 93.75."""
+    m = float(margin_pct) / 100.0
+    if not (0.0 <= m < 1.0):
+        raise ValueError(f"margin_pct out of range: {margin_pct}")
+    return round(float(cost) / (1.0 - m), 2)
+
+
+def resolve_margin_pct(cfg: dict, tier_name: str, line_name=None, category=None) -> float:
+    """Resolution order (ruled): line > category > quote tier. Tiers are
+    the primary mechanism; overrides are scaffold, empty until populated."""
+    lo = cfg.get("line_overrides") or {}
+    if line_name in lo:
+        return float(lo[line_name])
+    co = cfg.get("category_overrides") or {}
+    if category in co:
+        return float(co[category])
+    tiers = cfg.get("tiers") or MARGIN_TIER_SEED
+    return float(tiers[tier_name])
+
+
+def _mark_pending(line: dict, reason: str):
+    line["pricing_status"] = "pending"
+    line["cost_pending_reason"] = reason
+    line["unit_sell"] = None
+    line["line_sell"] = None
+
+
+def price_package(pkg: dict, cfg: dict, tier_name=None) -> dict:
+    """Attach the confidential cost layer + sell prices to an assembled
+    LP package IN PLACE. Caller MUST pass the result through
+    redact_external() before returning it on any contractor-facing
+    surface. Starter rip stock is priced from its source SKU at the
+    SIDING group's color basis (the boards come from siding stock)."""
+    tiers = cfg.get("tiers") or dict(MARGIN_TIER_SEED)
+    tier = tier_name if tier_name in tiers else (cfg.get("default_tier") or DEFAULT_TIER)
+    group_colors = (pkg.get("summary") or {}).get("group_colors") or {}
+    total_cost = total_sell = 0.0
+    priced = pending = 0
+    for l in pkg.get("lines") or []:
+        is_rip = bool(l.get("source_sku"))
+        name = l["source_sku"] if is_rip else l.get("name")
+        color = group_colors.get("siding") if is_rip else l.get("color")
+        basis = finish_basis_for_color(color)
+        margin_pct = resolve_margin_pct(cfg, tier, line_name=l.get("name"),
+                                        category=l.get("section"))
+        l["margin_pct"] = margin_pct
+        if basis == "pending":
+            _mark_pending(l, "primed cost basis pending — never assumed mill (ruled)")
+            pending += 1
+            continue
+        l["cost_basis"] = basis
+        unit_cost = cost_for(name, basis)
+        if unit_cost is None:
+            if basis in PREFINISHED_FINISHES:
+                reason = (f"no dealer cost on {QUOTE_REF} for this product at ExpertFinish — "
+                          "cost pending; NEVER falls back to mill for a prefinished selection (ruled)")
+            else:
+                reason = f"no dealer cost on {QUOTE_REF} for this product — cost pending"
+            _mark_pending(l, reason)
+            pending += 1
+            continue
+        try:
+            q = float((l.get("pieces_added") if is_rip else l.get("qty")) or 0)
+        except (TypeError, ValueError):
+            q = 0.0
+        l["unit_cost"] = unit_cost
+        l["line_cost"] = round(unit_cost * q, 2)
+        l["unit_sell"] = sell_price(unit_cost, margin_pct)
+        l["line_sell"] = round(l["unit_sell"] * q, 2)
+        l["pricing_status"] = "priced"
+        if is_rip:
+            l["priced_unit"] = "per ripped source board"
+        total_cost += l["line_cost"]
+        total_sell += l["line_sell"]
+        priced += 1
+    pkg.setdefault("summary", {})["pricing"] = {
+        "tier": tier,
+        "tier_pct": float(tiers.get(tier, MARGIN_TIER_SEED[DEFAULT_TIER])),
+        "quote_ref": QUOTE_REF,
+        "basis_doctrine": ("cost keyed by product + finish; sell = cost ÷ (1 − margin) — "
+                           "true margin on sell, never markup; resolution line > category > tier"),
+        "total_cost": round(total_cost, 2),
+        "total_sell": round(total_sell, 2),
+        "priced_lines": priced,
+        "pending_lines": pending,
+    }
+    return pkg
+
+
+def redact_external(obj):
+    """Deep-strip every confidential key from a payload bound for any
+    contractor/customer-facing surface. The external view keeps
+    unit_sell / line_sell / pricing_status / total_sell only."""
+    if isinstance(obj, dict):
+        return {k: redact_external(v) for k, v in obj.items() if k not in CONFIDENTIAL_KEYS}
+    if isinstance(obj, list):
+        return [redact_external(v) for v in obj]
+    return obj
 
 
 def finish_basis_for_color(color) -> str:

@@ -1,19 +1,26 @@
 """Iter 79j.93 — LP package preview endpoint (September package assembly, Phase 1).
-Iter 79j.94 — truck-list reconciliation endpoint (pre-±3% acceptance harness)."""
-from fastapi import APIRouter, Depends, HTTPException
+Iter 79j.94 — truck-list reconciliation endpoint (pre-±3% acceptance harness).
+Iter 79j.96 — confidential cost layer + tiered sell pricing. Contractor-facing
+preview is ALWAYS redacted (sell only); the unredacted cost view exists only
+behind the supplier-admin token."""
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from db import db
-from deps import get_current_user
+from deps import check_admin_token, get_current_user
+from lp_costs import price_package, redact_external
 from lp_package import assemble_lp_package
 from lp_truck_reconcile import reconcile_letrick_truck
+from routes.lp_admin import load_margin_cfg
 
 router = APIRouter()
 
 
-async def _load_run(est_id: str, user: dict, run_id=None):
-    est = await db.estimates.find_one(
-        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "id": 1},
-    )
+async def _load_run(est_id: str, company_id=None, run_id=None):
+    """company_id=None is the supplier-admin path (token-checked upstream)."""
+    q_est: dict = {"id": est_id}
+    if company_id is not None:
+        q_est["company_id"] = company_id
+    est = await db.estimates.find_one(q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
     q: dict = {"estimate_id": est_id, "status": "done"}
@@ -22,7 +29,7 @@ async def _load_run(est_id: str, user: dict, run_id=None):
     run = await db.ai_measure_runs.find_one(q, sort=[("created_at", -1)])
     if run is None:
         raise HTTPException(status_code=404, detail="No completed AI Measure run for this estimate")
-    return run
+    return est, run
 
 
 def _extract(run: dict):
@@ -50,12 +57,35 @@ async def lp_package_preview(
     optional — falls back to the latest terminal run. `substitutions`
     optional {line_name: new_item} — table-limited, re-derived, provenance-
     carried, never remembered. `colors` optional {"all": X, group: Y} —
-    per-component line-level colors (Howard's color architecture)."""
-    run = await _load_run(est_id, user, (payload or {}).get("run_id"))
+    per-component line-level colors (Howard's color architecture).
+    PRICING: sell prices at the estimate's admin-assigned tier (default
+    Tier B/25%) — the payload can NEVER set a tier or margin here; the
+    tier picker is admin-side only. Response is ALWAYS redacted:
+    cost / margin / tier never leave the server on this surface."""
+    est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
+    cfg = await load_margin_cfg()
+    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    pkg["run_id"] = run.get("run_id")
+    return redact_external(pkg)
+
+
+@router.post("/admin/estimates/{est_id}/lp-package/cost-preview")
+async def lp_package_cost_preview(est_id: str, request: Request, payload: dict | None = None):
+    """SUPPLIER-ADMIN ONLY (X-Admin-Token): the unredacted package with
+    the confidential cost layer — dealer cost, margin, tier resolution.
+    This payload must never be proxied to a contractor surface."""
+    check_admin_token(request)
+    est, run = await _load_run(est_id, None, (payload or {}).get("run_id"))
+    measurements, corner_locations, wall_heights = _extract(run)
+    pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
+                              substitutions=(payload or {}).get("substitutions"),
+                              colors=(payload or {}).get("colors"))
+    cfg = await load_margin_cfg()
+    price_package(pkg, cfg, (payload or {}).get("tier") or est.get("lp_pricing_tier"))
     pkg["run_id"] = run.get("run_id")
     return pkg
 
@@ -67,7 +97,7 @@ async def lp_truck_reconcile_endpoint(
     """Letrick truck-list acceptance harness — derives each delivered
     line from the conventions layer + validated geometry, deviations
     itemized per line with cause. Runs BEFORE the ±3% acceptance test."""
-    run = await _load_run(est_id, user, (payload or {}).get("run_id"))
+    _est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
     measurements, corner_locations, _ = _extract(run)
     raw_ai = (run.get("result") or {}).get("raw_ai") or {}
     window_widths = [float(o.get("width_in") or 0) / 12.0

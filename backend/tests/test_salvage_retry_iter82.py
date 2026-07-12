@@ -15,7 +15,6 @@ from dotenv import load_dotenv
 sys.path.insert(0, "/app/backend")
 load_dotenv(Path("/app/backend/.env"))
 
-from routes.ai_measure import _run_two_phase_pipeline  # noqa: E402
 
 
 def test_salvage_retry_recovers_timed_out_photo(monkeypatch):
@@ -59,7 +58,8 @@ async def _salvage_body(monkeypatch):
     monkeypatch.setattr(ai_measure, "_reconcile_extractions", fake_reconcile)
     monkeypatch.setattr(ai_measure, "db", AsyncMock())
 
-    final, extractions = await _run_two_phase_pipeline(
+    # live-module call — see test_phase_a_resilience note on stale bindings
+    final, extractions = await ai_measure._run_two_phase_pipeline(
         run_id="test-salvage-xyz",
         api_key="test-key",
         user_id="test-user",

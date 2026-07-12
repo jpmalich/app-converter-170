@@ -166,8 +166,9 @@ def test_starter_line_always_present_non_sku():
     pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
     st = next(l for l in pkg["lines"] if l["name"] == STARTER_LINE_NAME)
     assert st["unit"] == "LF" and st["qty"] == 168
-    assert st["pieces_added"] == 0 and st["non_sku"] is True
-    assert "field-ripped from siding stock" in st["note"]
+    # rip yield RULED FINAL: 3 strips/board = 48 LF/board → ceil(168/48) = 4
+    assert st["pieces_added"] == 4 and st["non_sku"] is True
+    assert "ripped from" in st["note"] and "48 LF/board" in st["note"]
     # Letrick lap cushion = 220 − 219.84 = 0.16 pc → thin-margin annotation fires
     assert "THIN WASTE MARGIN" in st["note"]
     assert any("starter rips" in f for f in pkg["summary"]["flags"])

@@ -44,6 +44,86 @@ from routes.hover import _build_lines
 
 router = APIRouter()
 
+# ── Iter 79j.96 — MARGIN TIERS (admin-only home, ruled FINAL) ──
+# Tier A = 30% · Tier B = 25% (DEFAULT) · Tier C = 20% — all TRUE margin.
+# Percentages editable ONLY here; quotes carry a tier picker, never a
+# free-type margin field. Confidential: tiers never render externally.
+from db import db  # noqa: E402
+from lp_costs import DEFAULT_TIER, MARGIN_TIER_SEED  # noqa: E402
+
+TIER_DOC_ID = "lp_margin_tiers"
+TIER_NAMES = tuple(MARGIN_TIER_SEED)  # fixed A/B/C — names are not editable
+
+
+async def load_margin_cfg() -> dict:
+    doc = await db.settings.find_one({"id": TIER_DOC_ID}, {"_id": 0})
+    if not doc:
+        doc = {"id": TIER_DOC_ID, "tiers": dict(MARGIN_TIER_SEED),
+               "default_tier": DEFAULT_TIER,
+               "category_overrides": {}, "line_overrides": {}}
+        await db.settings.update_one({"id": TIER_DOC_ID}, {"$setOnInsert": dict(doc)}, upsert=True)
+    return doc
+
+
+def _validate_pcts(d: dict, label: str):
+    for k, v in d.items():
+        try:
+            pct = float(v)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail=f"{label} '{k}': margin % must be a number")
+        if not (0.0 <= pct < 100.0):
+            raise HTTPException(status_code=400,
+                                detail=f"{label} '{k}': true margin % must be ≥ 0 and < 100")
+
+
+@router.get("/admin/lp-margin-tiers")
+async def get_lp_margin_tiers(request: Request):
+    check_admin_token(request)
+    return await load_margin_cfg()
+
+
+@router.put("/admin/lp-margin-tiers")
+async def put_lp_margin_tiers(payload: dict, request: Request):
+    """Edit tier PERCENTAGES (names fixed A/B/C) and the override
+    scaffold (category/line). Changing a % reprices future quotes only —
+    issued quotes keep the sell prices they were issued at (a quote is a
+    document, not a live formula)."""
+    check_admin_token(request)
+    cfg = await load_margin_cfg()
+    updates = {}
+    if "tiers" in payload:
+        tiers = payload["tiers"] or {}
+        if set(tiers) != set(TIER_NAMES):
+            raise HTTPException(status_code=400,
+                                detail=f"tiers must define exactly {sorted(TIER_NAMES)} — names are fixed")
+        _validate_pcts(tiers, "tier")
+        updates["tiers"] = {k: float(v) for k, v in tiers.items()}
+    for key in ("category_overrides", "line_overrides"):
+        if key in payload:
+            ov = payload[key] or {}
+            _validate_pcts(ov, key)
+            updates[key] = {str(k): float(v) for k, v in ov.items()}
+    if not updates:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    await db.settings.update_one({"id": TIER_DOC_ID}, {"$set": updates}, upsert=True)
+    cfg.update(updates)
+    return cfg
+
+
+@router.put("/admin/estimates/{est_id}/lp-pricing-tier")
+async def put_estimate_pricing_tier(est_id: str, payload: dict, request: Request):
+    """Per-quote tier PICKER (admin-side only, ruled): the quote's
+    pricing changes by changing its tier — never by typing a margin."""
+    check_admin_token(request)
+    tier = str(payload.get("tier") or "").upper()
+    if tier not in TIER_NAMES:
+        raise HTTPException(status_code=400,
+                            detail=f"tier must be one of {sorted(TIER_NAMES)} — no free-type margin (ruled)")
+    res = await db.estimates.update_one({"id": est_id}, {"$set": {"lp_pricing_tier": tier}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Estimate not found")
+    return {"id": est_id, "lp_pricing_tier": tier}
+
 
 # Howard's hand-built sample measurement payloads. Each one targets a
 # specific LP scenario so the admin preview surface useful comparison

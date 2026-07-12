@@ -277,13 +277,20 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         starter_lf = 0.0
     if starter_lf > 0:
         rip_pcs = int(math.ceil(starter_lf / 48.0 - 1e-9))
+        note = (f"start-course {starter_lf:g} LF — starter stock ripped from "
+                f"38 Series 8\" lap (3 strips per 16' board = 48 LF/board): "
+                f"pieces = ceil({starter_lf:g} ÷ 48) = {rip_pcs}")
+        thin_margin = bool(lap_math and (lap_math["ordered_pcs"] - lap_math["waste_qty"]) < 0.5)
+        if thin_margin:
+            note += (f" — THIN WASTE MARGIN on siding (cushion "
+                     f"{round(lap_math['ordered_pcs'] - lap_math['waste_qty'], 2)} pc): "
+                     "starter rips may consume the cushion")
+            flags.append("thin siding waste margin — starter rips may consume the cushion")
         lines.append({"tab": "lp_smart", "section": "LP Siding Accessories",
                       "name": STARTER_LINE_NAME, "unit": "LF",
                       "qty": int(math.ceil(starter_lf)), "pieces_added": rip_pcs,
                       "non_sku": True, "source_sku": LAP8_ITEM,
-                      "note": (f"start-course {starter_lf:g} LF — starter stock ripped from "
-                               f"38 Series 8\" lap (3 strips per 16' board = 48 LF/board): "
-                               f"pieces = ceil({starter_lf:g} ÷ 48) = {rip_pcs}"),
+                      "note": note,
                       "_derivation": {"kind": "starter", "starter_lf": starter_lf}})
 
     # ── MATERIAL-LIST SUBSTITUTION (ruled): re-derive, provenance, table-limited

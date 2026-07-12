@@ -26,7 +26,7 @@ sys.path.insert(0, "/app/backend")
 sys.path.insert(0, "/app/backend/routes")
 load_dotenv(Path("/app/backend/.env"))
 
-from routes.ai_measure import _env_int, _run_two_phase_pipeline  # noqa: E402
+from routes.ai_measure import _env_int  # noqa: E402
 
 
 def test_env_int_defaults_when_missing_or_bad():
@@ -98,7 +98,11 @@ async def _slow_photo_body(monkeypatch):
     fake_db = AsyncMock()
     monkeypatch.setattr(ai_measure, "db", fake_db)
 
-    final, extractions = await _run_two_phase_pipeline(
+    # call via the LIVE module — earlier tests (anthropic_direct_key,
+    # run1_defects) del sys.modules["routes.ai_measure"] and re-import,
+    # so the collection-time function binding points at a stale instance
+    # whose globals our monkeypatches never touch
+    final, extractions = await ai_measure._run_two_phase_pipeline(
         run_id="test-run-xyz",
         api_key="test-key",
         user_id="test-user",
