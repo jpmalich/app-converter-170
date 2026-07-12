@@ -2787,3 +2787,22 @@ The original finding (Letrick run failed to identify vertical appendages — chi
 **Live Letrick verification (run `ed613872`):** 22-line package, 260 total pieces, OSC = 5 pcs from 7 C3 locations (64.5 LF: 8.3+8.5+8.3+8.5 house + 3×10.3 chase/drift), amber residual flagged in line note + summary flags, `osc_source: c3_corner_locations`. Fallback path (no corner locations) verified → `outside_corner_lf` ceil.
 **Pins:** `tests/test_lp_package_iter93.py` (8 tests: Letrick pattern, ISC never counted, shorter-adjacent-wall rule, elevated flag, override-replaces-spec-line, fallback whole-piece, whole-piece-everywhere/LP-only, install auto-adds present). LP + pricing + corner suites green.
 **NEXT:** Phase 2 (ExpertFinish palette) → Phase 3 (±3% harness — BLOCKED on Howard's Letrick hand-takeoff numbers) → Phase 4 (flag flip).
+
+## Iter 79j.94 — LP MATERIAL-USAGE CONVENTIONS INGESTED + LETRICK TRUCK-LIST HARNESS (Howard's spec block, 2026-07-11)
+**Conventions layer shipped (`backend/lp_conventions.py`)** — authoritative until the original workbook uploads; workbook disagreement = FLAG, never silently pick (`spec_discrepancies()` audit pinned to []):
+- Core lap formula: reveal = face − 1"; coverage = length × reveal/12; pcs/square = ROUNDUP(100/coverage). 16' table {6":16, 7":13, 8":11, 12":7}; 12' table {21, 18, 15, 10} — all pinned.
+- **ESTIMATING TRAP encoded as validation:** 8" lap face is 7-7/8" NOT 7-1/4" (reveal 6-7/8" → 9.17 → 11/sq). Pin proves the wrong face changes the answer (→13/sq).
+- Shakes: reveal JOB-SPECIFIC, never silently defaulted — unspecified → `reveal: unconfirmed` flag + priced at minimum reveal 6-7/8" (worst case, 44/sq). Bounds pinned: 44 @ min, 31 @ max.
+- B&B battens: spacing job-specific, flag if unspecified (PDF-standard 16" o.c. applied visibly).
+- Nickel Gap: fixed 7" locked (9.33), pinned.
+- Soffit: width matched to overhang; non-standard (e.g. 17") → next width up + rip-waste line note; both ordering methods (area, eave-length); 38 Series 9 pcs/bundle noted.
+- **Waste doctrine (package-wide):** 10% default lap/soffit, waste BEFORE whole-piece round-up, per-line always-up never averaged; every formula line carries the transparency triple {base_qty, waste_qty, ordered_pcs} — live Letrick lap line: 199.86 → 219.84 → 220 ✓.
+- **TWO PENDINGS (never filled from other sources, surfaced in package summary):** (1) shake waste factor (lap 10% used, FLAGGED pending); (2) LP trim/accessory conventions carry-over from Alside context (starter/J/finish-trim/soffit-F/fascia-coil) — NOT encoded until Howard confirms.
+**Truck-list harness shipped (`backend/lp_truck_reconcile.py` + `POST /api/estimates/{id}/lp-package/truck-reconcile`)** — the pre-±3% "cheaper, harder check". Fixture pinned: 20 sq D4.5 / 20 starter / 10 OSC / 2 ISC / 30 J / 2 coil / 23 finish trim / 24 soffit / 18 soffit-J.
+**LIVE LETRICK RESULTS (run ed613872): 0 match, 4 deviation (itemized w/ cause), 5 pending_confirmation:**
+- D4.5: derived 21 vs 20 (18.33 sq × 1.10 → whole-square up; truck ran ≈9.1% effective waste)
+- OSC: derived 7 (6 confirmed + 1 amber) vs 10 — answer-key 10/6 conversion, delivered extras beyond one-piece-per-corner
+- ISC: derived 3 vs 2 — includes 2 amber (drift residual, flagged + provenance-limited), physical key 2, field check resolves
+- Soffit: derived 10 (eave-length, vinyl basis) vs 24 — truck unit basis unverifiable from record
+- Starter/J/Coil/Finish trim/Soffit J: pending_confirmation (Alside-context conventions, sanity notes carried: starter 168 LF ÷ 10' = 17; openings perimeter 219.3 LF)
+**Pins:** `tests/test_lp_conventions_iter94.py` (14 tests). LP suites 54 green.

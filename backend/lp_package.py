@@ -9,9 +9,11 @@ the existing mapping spec unchanged. Dealer lines carry BlueLinx names
 only for September (Howard ruling)."""
 import math
 
-from lp_smartside_formulas import override_flag
+from lp_conventions import PENDING_CONFIRMATIONS, line_math
+from lp_smartside_formulas import lap_coverage_sqft_per_pc, override_flag
 
 OSC_ITEM = "540 Series OSC 5/4\" x 4\" x 16'"
+LAP8_ITEM = "38 Series Lap 3/8\" x 8\" x 16'"
 OSC_PIECE_LEN_FT = 16.0
 
 
@@ -85,6 +87,17 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         l["qty"] = rq
 
     flags = []
+    # 79j.94 transparency math: base / waste-adjusted / ordered on the
+    # formula-driven siding line — the contractor sees the math
+    try:
+        sqft = float(measurements.get("siding_sqft") or 0)
+    except (TypeError, ValueError):
+        sqft = 0.0
+    if sqft > 0:
+        for l in lines:
+            if l["name"] == LAP8_ITEM:
+                l["math"] = line_math(sqft, lap_coverage_sqft_per_pc())
+
     avg_h = measurements.get("_ai_avg_wall_height_ft")
     osc = osc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
     if osc:
@@ -132,5 +145,16 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             "osc_source": "c3_corner_locations" if osc else "outside_corner_lf",
             **({"osc_detail": osc} if osc else {}),
             "flags": flags,
+            "pending_confirmations": _pending_confirmations(measurements),
         },
     }
+
+
+def _pending_confirmations(measurements: dict) -> list:
+    """79j.94 — the two Howard-flagged pendings, surfaced, never filled."""
+    out = []
+    per_profile = measurements.get("_per_profile_sqft") or {}
+    if isinstance(per_profile, dict) and any("shake" in str(k).lower() for k in per_profile):
+        out.append(PENDING_CONFIRMATIONS["shake_waste_factor"])
+    out.append(PENDING_CONFIRMATIONS["lp_trim_accessory_conventions"])
+    return out
