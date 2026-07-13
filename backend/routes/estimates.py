@@ -5,7 +5,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -1067,12 +1067,69 @@ async def _accuracy_report_data(est_id: str, company_id: str):
     return html, est, content_hash
 
 
+async def _freeze_accuracy_snapshot(est_id: str, company_id: str, html: str,
+                                    est: dict, content_hash: str):
+    """Mint a frozen /r/ share token for the EXACT report html."""
+    import secrets
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+    token = secrets.token_urlsafe(24)
+    expires = (now + timedelta(days=90)).isoformat()
+    await db.accuracy_report_snapshots.insert_one({
+        "token": token, "estimate_id": est_id, "company_id": company_id,
+        "html": html, "content_hash": content_hash,
+        "meta": {"estimate_number": est.get("estimate_number"),
+                 "customer_name": est.get("customer_name")},
+        "created_at": now.isoformat(),
+        "expires_at": expires,
+        "revoked": False,
+    })
+    return token, expires
+
+
+def _qr_data_uri(url: str) -> str:
+    import base64
+    import io
+
+    import qrcode
+
+    qr = qrcode.QRCode(box_size=4, border=1)
+    qr.add_data(url)
+    qr.make(fit=True)
+    buf = io.BytesIO()
+    qr.make_image().save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
 @router.get("/estimates/{est_id}/tape-check/report-pdf")
-async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_user)):
+async def tape_check_report_pdf(est_id: str, request: Request,
+                                user: dict = Depends(get_current_user)):
+    """Approved: every printed accuracy PDF carries a QR to a frozen /r/
+    link — same frozen-version + drift-banner doctrine as the material
+    list. Audience is suppliers; the QR's job is provability."""
     from pdf import render_pdf, safe_filename
 
-    html, est, _hash = await _accuracy_report_data(est_id, user["company_id"])
-    pdf_bytes = render_pdf(html)
+    html, est, content_hash = await _accuracy_report_data(est_id, user["company_id"])
+    token, _expires = await _freeze_accuracy_snapshot(
+        est_id, user["company_id"], html, est, content_hash)
+    proto = request.headers.get("x-forwarded-proto") or request.url.scheme
+    host = request.headers.get("x-forwarded-host") or request.url.netloc
+    share_url = f"{proto}://{host}/r/{token}"
+    footer = f"""
+      <div style="margin-top:16px;border-top:1px solid #E2E8F0;padding-top:8px">
+        <table style="width:100%;border-collapse:collapse"><tr>
+          <td style="width:66px;padding:0;border:none"><img src="{_qr_data_uri(share_url)}" style="width:60px;height:60px"></td>
+          <td style="padding:0 0 0 8px;border:none;font-size:8px;color:#64748B;vertical-align:top">
+            <b>Scan for the verifiable version of this report.</b><br>
+            The QR resolves to the EXACT frozen version generated {datetime.now(timezone.utc).date().isoformat()};
+            if newer scored runs exist, the page banners it — the frozen report never silently changes.<br>
+            {share_url} · link valid 90 days
+          </td>
+        </tr></table>
+      </div>
+    """
+    pdf_bytes = render_pdf(html.replace("</body>", footer + "</body>"))
     filename = safe_filename(est.get("estimate_number"), est.get("customer_name"))
     filename = filename.rsplit(".pdf", 1)[0] + "-accuracy.pdf"
     return Response(
@@ -1087,23 +1144,10 @@ async def accuracy_report_freeze(est_id: str, user: dict = Depends(get_current_u
     """Shareable read-only accuracy report — same /m/ doctrine: freeze the
     EXACT report server-side, mint a tokenized expiring link. The public
     view banners when newer scored runs exist — never a silent live view."""
-    import secrets
-    from datetime import timedelta
-
     html, est, content_hash = await _accuracy_report_data(est_id, user["company_id"])
-    now = datetime.now(timezone.utc)
-    token = secrets.token_urlsafe(24)
-    await db.accuracy_report_snapshots.insert_one({
-        "token": token, "estimate_id": est_id, "company_id": user["company_id"],
-        "html": html, "content_hash": content_hash,
-        "meta": {"estimate_number": est.get("estimate_number"),
-                 "customer_name": est.get("customer_name")},
-        "created_at": now.isoformat(),
-        "expires_at": (now + timedelta(days=90)).isoformat(),
-        "revoked": False,
-    })
-    return {"token": token, "share_path": f"/r/{token}",
-            "expires_at": (now + timedelta(days=90)).isoformat()}
+    token, expires = await _freeze_accuracy_snapshot(
+        est_id, user["company_id"], html, est, content_hash)
+    return {"token": token, "share_path": f"/r/{token}", "expires_at": expires}
 
 
 @router.get("/public/accuracy-report/{token}")

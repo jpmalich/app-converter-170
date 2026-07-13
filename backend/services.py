@@ -900,7 +900,9 @@ async def ensure_tiers_seeded():
         '38 Series Lap 3/8" x 6" x 16\'',
         '38 Series Soffit 12 x 16 Vented',
         '38 Series Soffit 12 x 16 Closed',
-        '38 Series Soffit 16 x 16 Closed',
+        # 16 x 16 Closed REMOVED from this drop list 2026-06 (Howard's
+        # dealer ruling: Naturals verification supersedes the sheet drop;
+        # SKU re-added to the catalog, BlueLinx-engine priced only).
     ]
     await db.price_tiers.update_many(
         {"sections.items.name": {"$in": LP_DROP_NAMES_78X}},

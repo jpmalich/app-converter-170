@@ -87,11 +87,11 @@ NATURALS_PROFILES = frozenset({
     "38 Series Vertical Panel",
 })
 
-# Catalog cross-check (ruled: Naturals-scoped profiles must be quotable
-# or flagged `catalog: pending`, never silently missing). 16x16 Closed
-# soffit runs Naturals per the dealer but was dropped from the catalog
-# in Iter 78x (Feb 2026 supplier sheet no longer ships it) — pending.
-NATURALS_CATALOG_PENDING = frozenset({"38 Series Soffit 16 x 16 Closed"})
+# Catalog cross-check (ruled): all Naturals-scoped profiles are quotable.
+# 16x16 Closed soffit was catalog-pending after the Iter 78x sheet drop;
+# Howard's 2026-06 dealer ruling RE-ADDED the SKU (BlueLinx-engine priced,
+# archived February list price never revived) — pending set now empty.
+NATURALS_CATALOG_PENDING = frozenset()
 
 # Starter is field-ripped from lap siding stock — its color availability
 # follows the lap profile it is ripped from.

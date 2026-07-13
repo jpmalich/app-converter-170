@@ -24,8 +24,11 @@ DROPPED_LP_SKUS = {
     '38 Series Lap 3/8" x 6" x 16\'',
     '38 Series Soffit 12 x 16 Vented',
     '38 Series Soffit 12 x 16 Closed',
-    '38 Series Soffit 16 x 16 Closed',
+    # 16 x 16 Closed re-added 2026-06 by Howard's dealer ruling — see
+    # test_soffit_16x16_closed_readded_bluelinx_only below.
 }
+
+READDED_SOFFIT_CLOSED = '38 Series Soffit 16 x 16 Closed'
 
 NEW_TRIM_COIL = 'Trim Coil Aluminum 24" x 50\''
 
@@ -60,6 +63,22 @@ def test_lp_dropped_skus_not_in_tier_prices():
                 f"LP SKU '{sku}' was dropped — must not appear in "
                 f"TIER_PRICES['{tier_name}']."
             )
+
+
+def test_soffit_16x16_closed_readded_bluelinx_only():
+    """2026-06 dealer ruling: 16x16 Closed re-enters the catalog because
+    it is Naturals-scoped (dealer-verified). It prices EXCLUSIVELY via the
+    BlueLinx cost engine — the archived February list price is NEVER
+    revived (stays out of LP_COSTS and TIER_PRICES)."""
+    from lp_costs import cost_for, lp_engine_mat
+
+    assert READDED_SOFFIT_CLOSED in _all_layout_names()
+    assert READDED_SOFFIT_CLOSED not in LP_COSTS
+    for _tier, prices in TIER_PRICES.items():
+        assert READDED_SOFFIT_CLOSED not in prices
+    # current BlueLinx cost exists (PIT00003 2.26.2026) → engine prices it
+    assert cost_for(READDED_SOFFIT_CLOSED, "mill") == 51.45
+    assert lp_engine_mat(READDED_SOFFIT_CLOSED, 30.0) == round(51.45 / 0.70, 2)
 
 
 def test_new_trim_coil_aluminum_present():

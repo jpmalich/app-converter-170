@@ -77,12 +77,13 @@ def test_naturals_exact_profile_list():
         assert "never silently substituted" in r["note"]
 
 
-def test_naturals_catalog_pending_never_silently_missing():
-    # 16x16 Closed runs Naturals but was dropped from the supplier sheet
-    assert NATURALS_CATALOG_PENDING == frozenset({"38 Series Soffit 16 x 16 Closed"})
+def test_naturals_catalog_pending_cleared_after_readd():
+    # 2026-06 ruling: 16x16 Closed re-added to the catalog → the pending
+    # set is empty and Naturals on it is plainly available
+    assert NATURALS_CATALOG_PENDING == frozenset()
     r = check_combo("38 Series Soffit 16 x 16 Closed", "Bonsai Black")
-    assert r["status"] == "gap"
-    assert "catalog: pending" in r["note"]
+    assert r["status"] == "available"
+    assert "dealer-verified" in r["note"]
 
 
 def test_naturals_profiles_quotable_or_flagged():

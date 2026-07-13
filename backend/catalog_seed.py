@@ -126,6 +126,12 @@ SECTION_LAYOUT = [
         # (12 x 16 Vented, 12 x 16 Closed, 16 x 16 Closed) — supplier sheet
         # only has 16x16 Vented, 24x16 Vented (CTW), and 24x16 Solid (VSSFT).
         '38 Series Soffit 16 x 16 Vented',
+        # 2026-06 dealer ruling (Howard): 16x16 Closed RE-ADDED — dealer
+        # verification (Naturals profile list) supersedes the Feb 2026
+        # sheet drop. Priced EXCLUSIVELY via the BlueLinx cost engine
+        # (current PIT00003 cost exists); the archived February list
+        # price is never revived (stays out of LP_COSTS/TIER_PRICES).
+        '38 Series Soffit 16 x 16 Closed',
         '24 inch CTW soffit',
         '24 inch VSSFT',
     ]),
@@ -465,6 +471,7 @@ ITEM_META = {
     'J blocks': ("Each", 0),
     'Mini Splits': ("Each", 0),
     '38 Series Soffit 16 x 16 Vented': ("PCS", 0),
+    '38 Series Soffit 16 x 16 Closed': ("PCS", 0),
     '24 inch CTW soffit': ("PCS", 0),
     '24 inch VSSFT': ("PCS", 0),
     # Iter 78x (2026-02-13): LP-branded trim coil added per supplier sheet.

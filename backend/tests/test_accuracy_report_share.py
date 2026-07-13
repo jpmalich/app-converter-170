@@ -123,3 +123,22 @@ def test_revoke_kills_link(admin_session, scored_estimate):
 
 def test_bogus_token_404():
     assert requests.get(f"{API}/public/accuracy-report/nope", timeout=15).status_code == 404
+
+
+def test_report_pdf_embeds_frozen_qr(admin_session, mongo_db, scored_estimate):
+    """Approved doctrine: every printed accuracy PDF mints a frozen /r/
+    snapshot and carries a QR + purpose note in the footer."""
+    est_id, _ = scored_estimate
+    n0 = mongo_db.accuracy_report_snapshots.count_documents({"estimate_id": est_id})
+    r = admin_session.get(f"{API}/estimates/{est_id}/tape-check/report-pdf", timeout=60)
+    assert r.status_code == 200, r.text[:200]
+    assert r.content[:5] == b"%PDF-"
+    snaps = list(mongo_db.accuracy_report_snapshots.find({"estimate_id": est_id}))
+    assert len(snaps) == n0 + 1
+    # the frozen snapshot resolves publicly (same doctrine as /m/)
+    tok = snaps[-1]["token"]
+    assert requests.get(f"{API}/public/accuracy-report/{tok}", timeout=30).status_code == 200
+    # purpose note + QR pinned at source level
+    src = (Path(__file__).resolve().parent.parent / "routes" / "estimates.py").read_text()
+    assert "Scan for the verifiable version of this report" in src
+    assert "_qr_data_uri" in src
