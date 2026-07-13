@@ -135,11 +135,15 @@ def test_lp_composition_bugs_detector():
 
 
 def test_pending_confirmations_ruled_set():
-    # six-ruling block reconciled — genuinely open items only
+    # Phase 4 (2026-07-13): letrick_hand_takeoff RESOLVED (C4 PASS) —
+    # moved to MILESTONES. Genuinely open items only.
     assert set(PENDING_CONFIRMATIONS) == {
         "starter_rule_divisor", "expertfinish_availability_matrix",
-        "bluelinx_sku_upload", "letrick_hand_takeoff",
+        "bluelinx_sku_upload",
     }
+    from lp_conventions import MILESTONES
+    m = MILESTONES["phase4_flag_flip"]
+    assert "9/9" in m and "6/8" in m and "NEVER blended" in m
     # starter item must state BOTH derivations precisely
     s = PENDING_CONFIRMATIONS["starter_rule_divisor"]
     assert "14" in s and "17" in s and "12.5" in s and "10" in s

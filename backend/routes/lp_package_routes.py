@@ -23,7 +23,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
     if company_id is not None:
         q_est["company_id"] = company_id
     est = await db.estimates.find_one(
-        q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1,
+        q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -63,6 +63,31 @@ def _extract(run: dict):
     return measurements, corner_locations, wall_heights
 
 
+def _amber_items(corner_locations, verify_state):
+    """Amber field-verify checklist (approved post-C4): the presence-
+    guarantee doctrine surfaced to the user. Unconfirmed (amber) corner
+    locations are INCLUDED in stick counts and flagged; a contractor
+    ratifies each in the field. Verification is ratification only —
+    counts never change here."""
+    import re
+    items = []
+    for i, c in enumerate(corner_locations):
+        if str(c.get("tier") or "confirmed") == "confirmed":
+            continue
+        locator = str(c.get("locator") or "").strip() or f"corner {i + 1}"
+        kind = "ISC" if str(c.get("type") or "") == "inside" else "OSC"
+        slug = re.sub(r"[^a-z0-9]+", "-", locator.lower()).strip("-")[:60]
+        key = f"corner:{kind.lower()}:{slug}"
+        st = (verify_state or {}).get(key) or {}
+        items.append({
+            "key": key, "kind": kind, "locator": locator,
+            "walls": c.get("walls") or [],
+            "status": st.get("status") or "unverified",
+            "verified_at": st.get("at"), "verified_by": st.get("by"),
+        })
+    return items
+
+
 @router.get("/lp-package/colors")
 async def lp_package_colors(user: dict = Depends(get_current_user)):
     """ExpertFinish palette + component groups for the Material List
@@ -99,7 +124,33 @@ async def lp_package_preview(
     cfg = await load_margin_cfg()
     price_package(pkg, cfg, est.get("lp_pricing_tier"))
     pkg["run_id"] = run.get("run_id")
+    pkg["amber_items"] = _amber_items(corner_locations, est.get("lp_field_verify"))
     return redact_external(pkg)
+
+
+@router.post("/estimates/{est_id}/lp-field-verify")
+async def lp_field_verify(est_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    """Mark an amber item field-verified (or revert). Ratification only —
+    stick counts already include ambers (presence guarantee)."""
+    key = str((payload or {}).get("key") or "").strip()
+    status = (payload or {}).get("status")
+    if not key or "." in key or status not in ("verified", "unverified"):
+        raise HTTPException(status_code=400, detail="key and status (verified|unverified) required")
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "id": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    from datetime import datetime, timezone
+    if status == "verified":
+        entry = {"status": "verified",
+                 "at": datetime.now(timezone.utc).isoformat(),
+                 "by": user.get("email") or user.get("id")}
+        await db.estimates.update_one(
+            {"id": est_id}, {"$set": {f"lp_field_verify.{key}": entry}})
+        return {"ok": True, "key": key, **entry}
+    await db.estimates.update_one(
+        {"id": est_id}, {"$unset": {f"lp_field_verify.{key}": ""}})
+    return {"ok": True, "key": key, "status": "unverified"}
 
 
 @router.post("/admin/estimates/{est_id}/lp-package/cost-preview")

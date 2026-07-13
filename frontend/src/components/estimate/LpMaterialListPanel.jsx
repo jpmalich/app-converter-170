@@ -15,7 +15,7 @@
 //     meshes pending — flagged, not faked).
 //   • Lines without a cost basis render "pricing pending", never $0.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Lock, Pencil, RefreshCcw } from "lucide-react";
+import { Loader2, Lock, MapPin, Pencil, RefreshCcw, ShieldCheck } from "lucide-react";
 import api, { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { lpHex, LP_GROUP_LABELS } from "@/lib/lpColors";
@@ -63,6 +63,23 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   const [subs, setSubs] = useState({});
   const [colors, setColors] = useState(() => est?.lp_colors || {});
   const [noRun, setNoRun] = useState(false);
+
+  const toggleVerify = async (item, status) => {
+    try {
+      const { data } = await api.post(`/estimates/${estId}/lp-field-verify`, {
+        key: item.key, status,
+      });
+      setPkg((p) => (p ? {
+        ...p,
+        amber_items: (p.amber_items || []).map((a) =>
+          a.key === item.key
+            ? { ...a, status, verified_at: data.at || null, verified_by: data.by || null }
+            : a),
+      } : p));
+    } catch {
+      // verification is best-effort; state stays amber on failure
+    }
+  };
 
   // Iter 99 one-surface rule: expose the live package upstream so the
   // MATERIAL LIST button prints the exact same composition (colors +
@@ -358,6 +375,47 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           {t("lp.mat.total")}: <span className="font-mono-num">{fmt(pricing.total_sell || 0)}</span>
         </div>
       </div>
+
+      {/* amber field-verify checklist — presence-guarantee ratification */}
+      {(pkg.amber_items || []).length > 0 && (
+        <div className="border-t border-[var(--border)] px-4 py-3 bg-[#FFFBEB]" data-testid="lp-field-verify-card">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#92400E] mb-1 flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" /> {t("lp.fv.title")}
+          </div>
+          <div className="text-[11px] text-[#92400E] mb-2">{t("lp.fv.note")}</div>
+          <div className="space-y-1.5">
+            {pkg.amber_items.map((it) => (
+              <div key={it.key} className="flex flex-wrap items-center justify-between gap-2 text-xs" data-testid={`lp-fv-item-${it.key}`}>
+                <div className="flex items-center gap-1.5 text-[var(--ink)]">
+                  <MapPin className="w-3 h-3 text-[#B45309]" />
+                  <span className="font-mono text-[10px] uppercase text-[#B45309]">{it.kind}</span>
+                  <span>{it.locator}</span>
+                </div>
+                {it.status === "verified" ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleVerify(it, "unverified")}
+                    className="text-[10px] font-bold uppercase tracking-wider text-emerald-700"
+                    data-testid={`lp-fv-verified-${it.key}`}
+                    title={`${it.verified_by || ""} ${it.verified_at ? new Date(it.verified_at).toLocaleDateString() : ""}`}
+                  >
+                    ✓ {t("lp.fv.verified")}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleVerify(it, "verified")}
+                    className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#B45309] text-white"
+                    data-testid={`lp-fv-verify-${it.key}`}
+                  >
+                    {t("lp.fv.verify")}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 3D — mesh-group flat repaints */}
       {preview3d && (

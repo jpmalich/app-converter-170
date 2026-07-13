@@ -85,7 +85,21 @@ PENDING_CONFIRMATIONS = {
         "doesn't support; BlueLinx sheet = stocking-reality overlay when it lands."
     ),
     "bluelinx_sku_upload": "Howard's BlueLinx SKU sheet upload pending — BlueLinx names only until then.",
-    "letrick_hand_takeoff": "Howard's Letrick hand-takeoff pending — gates the ±3% Phase 3 acceptance test.",
+}
+
+# ─────────────────────── Milestones (ruled log) ───────────────────────
+MILESTONES = {
+    "phase4_flag_flip": (
+        "2026-07-13 — C4 RULED PASS; PHASE 4 FLAG-FLIP AUTHORIZED: "
+        "LP_AI_FORMULAS_V1 live — the LP-native package is the production "
+        "composition path. September numbers (ruled framing, NEVER blended): "
+        "conventions-on-verified-geometry = 9/9 within ±3% vs Howard's sealed "
+        "Letrick hand-takeoff (the engine's claim); end-to-end photos-to-order "
+        "= 6/8 within ±3% with ambers flagging the extraction residual "
+        "(the pipeline's claim, honestly labeled). "
+        "Ground truth: letrick_hand_takeoff_key.py; runs 4a009e93 (C4 e2e), "
+        "5005d6eb (pre-C4); reports in /app/memory/."
+    ),
 }
 
 
