@@ -16,6 +16,7 @@
 //   • Lines without a cost basis render "pricing pending", never $0.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Lock, MapPin, Pencil, RefreshCcw, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 import api, { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { lpHex, LP_GROUP_LABELS } from "@/lib/lpColors";
@@ -78,7 +79,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
             : a),
       } : p));
     } catch {
-      // verification is best-effort; state stays amber on failure
+      toast.error("Could not save field verification — try again.");
     }
   };
 

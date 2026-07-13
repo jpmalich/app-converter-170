@@ -4,6 +4,7 @@
 // extraction. Skippable; unconfirmed flags persist.
 import React, { useState } from "react";
 import { DoorOpen, Eye } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/lib/api";
 
 const TYPE_LABELS = {
@@ -28,7 +29,7 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
       setCorrecting(null);
       onChanged?.(); // corrections can shift derived counts — refetch
     } catch {
-      // best-effort; flags persist server-side
+      toast.error("Could not save the openings review — try again.");
     } finally {
       setBusyKey(null);
     }
