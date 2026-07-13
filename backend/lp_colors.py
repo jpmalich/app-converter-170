@@ -30,11 +30,13 @@ ALL_COLORS = EXPERTFINISH_CORE_16 + NATURALS_COLLECTION + [PRIMED]
 
 COMPONENT_GROUPS = ("siding", "soffit_fascia", "opening_trim", "osc", "isc")
 
-# Availability per product line NOT yet verified against LP's matrix —
-# while False, every colored line carries the verification flag.
-AVAILABILITY_VERIFIED = False
-AVAILABILITY_FLAG = ("color availability for this profile pending verification against "
-                     "LP's published ExpertFinish matrix — flagged, never silently substituted")
+# Availability now ingested from LP's PUBLISHED matrix (2026-07-13) —
+# see lp_expertfinish_matrix.py. Dealer/BlueLinx verification pending;
+# combos flag per status: unsupported (published-absent) / gap (published
+# ambiguity). Never silently substituted.
+AVAILABILITY_VERIFIED = "published-ingested"
+AVAILABILITY_FLAG = ("color availability per published ExpertFinish matrix — "
+                     "dealer verification pending; flagged, never silently substituted")
 
 
 def group_for_line(line: dict):
@@ -83,13 +85,21 @@ def apply_colors(lines: list, colors: dict | None):
     """Every material line carries its own color field (None when no
     group color assigned). Returns (resolved_group_colors, errors)."""
     resolved, errors = resolve_group_colors(colors)
+    from lp_expertfinish_matrix import check_combo
     for l in lines:
         g = group_for_line(l)
         l["component_group"] = g
         c = resolved.get(g) if g else None
         l["color"] = c
-        if c and not AVAILABILITY_VERIFIED:
-            l["color_flags"] = [AVAILABILITY_FLAG]
+        if c:
+            res = check_combo(l.get("name") or "", c)
+            l["color_status"] = res["status"]
+            if res["status"] == "unsupported":
+                l["color_flags"] = [f"UNSUPPORTED COMBINATION: {res['note']}"]
+            elif res["status"] == "gap":
+                l["color_flags"] = [f"AVAILABILITY GAP: {res['note']}"]
+            else:
+                l.pop("color_flags", None)
     return resolved, errors
 
 

@@ -322,6 +322,15 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                           {t("lp.mat.substituted")} {l.substituted_from} — re-derived
                         </div>
                       )}
+                      {(l.color_flags || []).map((f, fi) => (
+                        <div
+                          key={fi}
+                          className={`text-[10px] font-semibold ${l.color_status === "unsupported" ? "text-red-700" : "text-[#B45309]"}`}
+                          data-testid={`lp-line-color-flag-${l.name}`}
+                        >
+                          ⚑ {f}
+                        </div>
+                      ))}
                       {l.note && (
                         <details className="text-[10px] text-[var(--muted)] mt-0.5">
                           <summary className="cursor-pointer select-none">{t("lp.mat.provenance")}</summary>

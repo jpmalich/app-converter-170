@@ -97,28 +97,15 @@ SECTION_LAYOUT = [
     ("LP SmartSide Trim", False, [
         # Iter 67: renamed to supplier-spec names + flipped LF → PCS per 16'
         # board. Trim dimensions corrected (5/8 → 19/32, 3/4 → 4/4/5/4).
-        # 190 series — 4/4 thick
-        '190 Series Trim 19/32" x 3" x 16\'',
-        # 440 series — 4/4 thick
-        '440 Series Trim 4/4" x 4" x 16\'',
-        '440 Series Trim 4/4" x 6" x 16\'',
-        '440 Series Trim 4/4" x 8" x 16\'',
-        '440 Series Trim 4/4" x 10" x 16\'',
-        '440 Series Trim 4/4" x 12" x 16\'',
-        # 540 series — 5/4 thick
-        '540 Series Trim 5/4" x 4" x 16\'',
-        '540 Series Trim 5/4" x 6" x 16\'',
-        '540 Series Trim 5/4" x 8" x 16\'',
-        '540 Series Trim 5/4" x 10" x 16\'',
-        '540 Series Trim 5/4" x 12" x 16\'',
+        # Fork-boundary fix: SKU table single-sourced from lp_conventions.
+        *__import__("lp_conventions").LP_TRIM_SKUS,
     ]),
     ("LP Siding Accessories", False, [
         # Iter 67: renamed to supplier-spec names. Outside Corners moved into
         # the 540 series (5/4 thick). LP Color Match Coil dropped; the 3
         # vinyl coil items (.019 / PVC / Performance G8) added in its
         # place with vinyl-matching per-tier pricing.
-        '540 Series OSC 5/4" x 4" x 16\'',
-        '540 Series OSC 5/4" x 6" x 16\'',
+        *__import__("lp_conventions").LP_OSC_SKUS,
         'Touch up kits',
         'OSI Quad Max Caulking',
         'J blocks',

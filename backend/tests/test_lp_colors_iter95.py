@@ -61,7 +61,15 @@ def test_every_line_carries_color_field_and_availability_flag():
     osc_line = next(l for l in pkg["lines"] if l["name"] == OSC_ITEM)
     lap = next(l for l in pkg["lines"] if "38 Series Lap" in l["name"])
     assert osc_line["color"] == "Abyss Black" and lap["color"] == "Terra Brown"
-    assert AVAILABILITY_FLAG in osc_line["color_flags"]  # matrix unverified → flagged
+    # Matrix ingested (2026-07-13): trim + lap in core colors = available;
+    # 16" soffit in anything but Snowscape White = unsupported, FLAGGED
+    # (never substituted — color stays as requested).
+    assert osc_line["color_status"] == "available" and "color_flags" not in osc_line
+    assert lap["color_status"] == "available"
+    soffit = next(l for l in pkg["lines"] if "Soffit" in l["name"])
+    assert soffit["color"] == "Terra Brown"
+    assert soffit["color_status"] == "unsupported"
+    assert any("UNSUPPORTED COMBINATION" in f for f in soffit["color_flags"])
 
 
 def test_consolidation_splits_on_color():

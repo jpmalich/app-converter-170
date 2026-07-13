@@ -162,6 +162,11 @@ export default function MaterialListShare() {
                             substituted from {l.substituted_from} — re-derived
                           </div>
                         )}
+                        {(l.color_flags || []).map((f, fi) => (
+                          <div key={fi} className={`text-[10px] font-semibold ${l.color_status === "unsupported" ? "text-red-700" : "text-amber-700"}`}>
+                            ⚑ {f}
+                          </div>
+                        ))}
                       </td>
                       <td className="px-2 py-2 text-xs text-zinc-600">{l.color || "—"}</td>
                       <td className="px-2 py-2 text-right font-mono">{l.qty}</td>

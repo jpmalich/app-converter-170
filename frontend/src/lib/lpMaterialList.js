@@ -40,9 +40,12 @@ export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang
         const sub = l.substituted_from
           ? `<div style="font-size:8.5px;color:${C.faint};">${es ? "sustituido de" : "substituted from"} ${esc(l.substituted_from)} — re-derived</div>`
           : "";
+        const colorFlags = (l.color_flags || [])
+          .map((f) => `<div style="font-size:8px;font-weight:700;color:${l.color_status === "unsupported" ? "#B91C1C" : "#B45309"};">⚑ ${esc(f)}</div>`)
+          .join("");
         return `
       <tr style="border-bottom:1px solid ${C.line};">
-        <td style="padding:6px 8px;font-size:10px;color:${C.ink};">${esc(l.name)}${sub}</td>
+        <td style="padding:6px 8px;font-size:10px;color:${C.ink};">${esc(l.name)}${sub}${colorFlags}</td>
         <td style="padding:6px 8px;font-size:9.5px;color:${C.muted};">${esc(l.color || "—")}</td>
         <td style="padding:6px 8px;font-size:10px;text-align:right;">${esc(l.qty)}</td>
         <td style="padding:6px 8px;font-size:9.5px;color:${C.muted};">${esc(l.unit)}</td>

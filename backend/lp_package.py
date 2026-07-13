@@ -35,17 +35,12 @@ def _stick_len_ft(item_name: str) -> float:
 
 
 def _lp_product_table() -> dict:
-    """Known LP product table from the catalog seed — substitution
-    options never include free-text SKUs inventing products."""
-    import catalog_seed as cs
-    out = {"osc": [], "trim": []}
-    for sec in cs.SECTION_LAYOUT:
-        name, _, items = sec[0], sec[1], sec[2]
-        if name == "LP Siding Accessories":
-            out["osc"] = [i for i in items if "OSC" in i]
-        elif name == "LP SmartSide Trim":
-            out["trim"] = [i for i in items if "Series Trim" in i]
-    return out
+    """Known LP product table — single-sourced from lp_conventions (fork
+    boundary): substitution options never include free-text SKUs
+    inventing products."""
+    from lp_conventions import LP_OSC_SKUS, LP_TRIM_SKUS
+    return {"osc": list(LP_OSC_SKUS),
+            "trim": [i for i in LP_TRIM_SKUS if "Series Trim" in i]}
 
 
 def _corner_height_ft(loc: dict, wall_heights: dict, avg_h) -> float:

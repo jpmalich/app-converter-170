@@ -72,6 +72,28 @@ SYSTEM_DERIVATION = {
            "openings": "540 trim system",
            "forbidden": ("j-channel", "finish trim", "coil")},
 }
+# ─────────────── LP product SKU tables (single source) ───────────────
+# Fork-boundary fix (2026-07-13): these lived as literals in the shared
+# catalog seed while lp_package imported the seed to read them — a core
+# boundary violation caught by the CI drift check. The tables now live
+# HERE; catalog_seed imports them (legal app → LP direction).
+LP_TRIM_SKUS = (
+    '190 Series Trim 19/32" x 3" x 16\'',
+    '440 Series Trim 4/4" x 4" x 16\'',
+    '440 Series Trim 4/4" x 6" x 16\'',
+    '440 Series Trim 4/4" x 8" x 16\'',
+    '440 Series Trim 4/4" x 10" x 16\'',
+    '440 Series Trim 4/4" x 12" x 16\'',
+    '540 Series Trim 5/4" x 4" x 16\'',
+    '540 Series Trim 5/4" x 6" x 16\'',
+    '540 Series Trim 5/4" x 8" x 16\'',
+    '540 Series Trim 5/4" x 10" x 16\'',
+    '540 Series Trim 5/4" x 12" x 16\'',
+)
+LP_OSC_SKUS = (
+    '540 Series OSC 5/4" x 4" x 16\'',
+    '540 Series OSC 5/4" x 6" x 16\'',
+)
 
 PENDING_CONFIRMATIONS = {
     "starter_rule_divisor": (
