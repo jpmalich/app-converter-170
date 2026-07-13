@@ -35,20 +35,39 @@ function Swatch({ name }) {
   );
 }
 
-function ColorSelect({ value, onChange, colors, disabled, testId }) {
+function ColorSelect({ value, onChange, colors, disabled, testId, matrix }) {
+  // Approved constraint: badged combos remain SELECTABLE — the matrix
+  // informs, never forbids (dealer verification pending).
+  const badge = (c) => {
+    const m = matrix?.[c];
+    if (!m || m.status === "available") return "";
+    return m.status === "unsupported" ? " ⛔" : " ⚑";
+  };
+  const sel = matrix?.[value];
   return (
-    <select
-      className="input text-xs py-1 max-w-[170px]"
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value || null)}
-      disabled={disabled}
-      data-testid={testId}
-    >
-      <option value="">—</option>
-      {colors.map((c) => (
-        <option key={c} value={c}>{c}</option>
-      ))}
-    </select>
+    <span className="inline-flex flex-col">
+      <select
+        className="input text-xs py-1 max-w-[190px]"
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value || null)}
+        disabled={disabled}
+        data-testid={testId}
+      >
+        <option value="">—</option>
+        {colors.map((c) => (
+          <option key={c} value={c}>{c}{badge(c)}</option>
+        ))}
+      </select>
+      {value && sel && sel.status !== "available" && (
+        <span
+          className={`text-[10px] font-semibold max-w-[190px] ${sel.status === "unsupported" ? "text-red-700" : "text-[#B45309]"}`}
+          data-testid={`${testId}-warning`}
+        >
+          {sel.status === "unsupported" ? "⛔" : "⚑"} not in LP's published matrix — verify with dealer
+          {sel.flagged_items > 0 && sel.item_count > 1 ? ` (${sel.flagged_items}/${sel.item_count} items)` : ""}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -248,6 +267,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               onChange={(v) => setGroupColor("all", v)}
               colors={allColors}
               testId="lp-color-all"
+              matrix={pkg.color_matrix?.all}
             />
           </label>
           {groups.map((g) => (
@@ -259,6 +279,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                 onChange={(v) => setGroupColor(g, v)}
                 colors={allColors}
                 testId={`lp-color-${g}`}
+                matrix={pkg.color_matrix?.[g]}
               />
             </label>
           ))}

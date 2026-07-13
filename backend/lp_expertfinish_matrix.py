@@ -5,16 +5,29 @@ flag gaps, never guess):
   - lpcorp.com ExpertFinish color pages + product catalog
   - LP SmartSide ExpertFinish contractor checklist
   - LP product-line pages (lap siding / trim / soffit)
-Status: PUBLISHED-INGESTED — dealer-reality + BlueLinx sheet verification
-by Howard pending; only gaps publishing doesn't cover get filled by him.
+Status: OPEN — NOT closed. Dealer-reality + BlueLinx sheet verification
+by Howard is PENDING (state correction 2026-06): entries stay flagged
+UNVERIFIED and picker warnings stay conservative until his answers land.
 
 Doctrine (standing ruling): unsupported combinations FLAG — never
 silently substitute. Ambiguity is a GAP, not an assumption.
 """
 from lp_colors import EXPERTFINISH_CORE_16, NATURALS_COLLECTION, PRIMED
 
-MATRIX_STATUS = ("published-ingested 2026-07-13 (lpcorp.com) — "
-                 "dealer/BlueLinx verification pending")
+MATRIX_STATUS = ("published-ingested 2026-07-13 (lpcorp.com) — OPEN: "
+                 "dealer-reality verification pending; entries UNVERIFIED "
+                 "until Howard's answers land")
+
+# Standing OPEN questions (Howard's dealer-reality verification). The
+# matrix is NOT closed until every item lands.
+VERIFICATION_PENDING = (
+    "Garden Sage on panels — published 'some', dealer confirmation pending",
+    "Naturals Collection scoping — per-product availability unpublished",
+    "shakes/vertical regional availability — published as regional only",
+    "trim sizes-per-color — published qualifier 'standard sizes only'",
+    "BlueLinx sheet cross-check — distributor reality vs published",
+    "stocked-vs-published policy — dealer stocking vs published availability",
+)
 
 _CORE = frozenset(EXPERTFINISH_CORE_16)
 _NATURALS = frozenset(NATURALS_COLLECTION)
@@ -30,7 +43,7 @@ FAMILIES = {
     "trim": {
         "available": _CORE,
         "ambiguous": frozenset(),
-        "note": "all 16 core colors published for trim — STANDARD SIZES only (published qualifier)",
+        "note": "all 16 core colors published for trim — STANDARD SIZES only (published qualifier; sizes-per-color dealer verification pending)",
     },
     "vertical": {
         "available": frozenset(),

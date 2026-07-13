@@ -49,6 +49,20 @@ def test_primed_always_available():
     assert check_combo("38 Series Soffit 16 x 16 Vented", PRIMED)["status"] == "available"
 
 
+def test_matrix_is_open_until_dealer_verification_lands():
+    """State correction pin: the matrix is NOT closed — Howard's
+    dealer-reality verification is pending; entries stay unverified."""
+    from lp_expertfinish_matrix import MATRIX_STATUS, VERIFICATION_PENDING
+    assert "OPEN" in MATRIX_STATUS and "pending" in MATRIX_STATUS
+    joined = " ".join(VERIFICATION_PENDING).lower()
+    for item in ("garden sage", "naturals", "shakes/vertical",
+                 "trim sizes-per-color", "bluelinx", "stocked-vs-published"):
+        assert item in joined
+    # trim shows available but carries the pending qualifier in its note
+    assert "pending" in check_combo('440 Series Trim 4/4" x 8" x 16\'',
+                                    "Snowscape White")["note"]
+
+
 def test_apply_colors_flags_unsupported_never_substitutes():
     lines = [
         {"name": "38 Series Soffit 16 x 16 Vented", "section": "LP SmartSide Soffit"},

@@ -10,7 +10,7 @@
 //
 // Verdicts (backend-computed): |Δ| ≤ 0.5 ft pass · ≤ 1.0 amber · > 1.0 fail.
 import React, { useEffect, useState } from "react";
-import { Ruler, Loader2, ChevronDown, ChevronRight, Check, AlertTriangle, X, FileText, Lock } from "lucide-react";
+import { Ruler, Loader2, ChevronDown, ChevronRight, Check, AlertTriangle, X, FileText, Lock, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -199,6 +199,22 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
       URL.revokeObjectURL(url);
     } catch {
       toast.error("Failed to build the accuracy report");
+    } finally { setBusy(false); }
+  };
+
+  const shareReport = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/estimates/${estimateId}/accuracy-report/freeze`);
+      const url = `${window.location.origin}${data.share_path}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Read-only report link copied — frozen snapshot, valid 90 days");
+      } catch {
+        toast.success(`Share link (valid 90 days): ${url}`);
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to create the share link");
     } finally { setBusy(false); }
   };
 
@@ -407,6 +423,19 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
               >
                 <FileText className="w-3 h-3" />
                 Accuracy PDF
+              </button>
+            )}
+            {history.length > 0 && (
+              <button
+                type="button"
+                onClick={shareReport}
+                disabled={busy}
+                className="px-2.5 py-1 bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--surface-muted)] text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 disabled:opacity-50"
+                title="Freeze this exact report and copy a read-only share link (/r/…) — honest framing carries verbatim; viewers see a banner if newer runs land"
+                data-testid="tape-check-share-report"
+              >
+                <Link2 className="w-3 h-3" />
+                Share link
               </button>
             )}
           </div>

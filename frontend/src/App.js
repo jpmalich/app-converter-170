@@ -18,6 +18,7 @@ import BrandingAdmin from "@/pages/BrandingAdmin";
 import LpFormulaPreview from "@/pages/LpFormulaPreview";
 import AcceptPage from "@/pages/AcceptPage";
 import MaterialListShare from "@/pages/MaterialListShare";
+import AccuracyReportShare from "@/pages/AccuracyReportShare";
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import Layout from "@/components/Layout";
@@ -50,6 +51,7 @@ function App() {
                   <Route path="/lp-formula-preview" element={<LpFormulaPreview />} />
                   <Route path="/accept/:token" element={<AcceptPage />} />
                   <Route path="/m/:token" element={<MaterialListShare />} />
+                  <Route path="/r/:token" element={<AccuracyReportShare />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route

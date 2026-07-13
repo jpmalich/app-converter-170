@@ -573,6 +573,28 @@ async def update_estimate(est_id: str, body: EstimateIn, user: dict = Depends(ge
     return await db.estimates.find_one({"id": est_id}, {"_id": 0})
 
 
+@router.patch("/estimates/{est_id}")
+async def patch_estimate(est_id: str, body: dict, user: dict = Depends(get_current_user)):
+    """MERGE-SEMANTICS partial update (hardening, ruled 2026-07-13 after
+    a partial PUT full-replaced a fixture): only fields PRESENT in the
+    request body are written; everything else is untouched. Fields are
+    validated against the EstimateIn schema."""
+    if not isinstance(body, dict) or not body:
+        raise HTTPException(status_code=400, detail="empty patch")
+    allowed = set(EstimateIn.model_fields.keys())
+    unknown = set(body.keys()) - allowed
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"unknown fields: {sorted(unknown)}")
+    validated = EstimateIn.model_validate(body).model_dump(include=set(body.keys()))
+    validated["updated_at"] = datetime.now(timezone.utc).isoformat()
+    res = await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"$set": validated}
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return await db.estimates.find_one({"id": est_id}, {"_id": 0})
+
+
 @router.delete("/estimates/{est_id}")
 async def delete_estimate(est_id: str, user: dict = Depends(get_current_user)):
     res = await db.estimates.delete_one({"id": est_id, "company_id": user["company_id"]})
@@ -783,18 +805,16 @@ def _tape_verdict(delta: float) -> str:
     return "fail"
 
 
-@router.get("/estimates/{est_id}/tape-check/report-pdf")
-async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_user)):
-    """Iter 79j.79 — Accuracy report PDF with honest framing baked in.
+async def _accuracy_report_data(est_id: str, company_id: str):
+    """Iter 79j.79 — Accuracy report with honest framing baked in.
     The fixture curve is labeled DEVELOPMENT VALIDATION (methodology
     exhibit); the accuracy claim section holds only held-out blind
     runs (fresh houses, zero prompt changes between capture and score)
-    and renders empty until one exists. No blended aggregate."""
-    from pdf import render_pdf, safe_filename
-    from services import get_branding
-
+    and renders empty until one exists. No blended aggregate.
+    Shared builder for BOTH the PDF endpoint and the frozen /r/ share
+    link, so the honest-framing sections carry verbatim to every surface."""
     est = await db.estimates.find_one(
-        {"id": est_id, "company_id": user["company_id"]},
+        {"id": est_id, "company_id": company_id},
         {"_id": 0, "tape_check": 1, "estimate_number": 1, "customer_name": 1,
          "address": 1, "address_street": 1, "address_city": 1, "address_state": 1},
     )
@@ -1039,6 +1059,19 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
       against the taped segment range.</p>
     </body></html>"""
 
+    import hashlib
+    import json as _json
+    content_hash = hashlib.sha256(_json.dumps(
+        {"history": history, "held_out": held_out}, sort_keys=True, default=str
+    ).encode()).hexdigest()
+    return html, est, content_hash
+
+
+@router.get("/estimates/{est_id}/tape-check/report-pdf")
+async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_user)):
+    from pdf import render_pdf, safe_filename
+
+    html, est, _hash = await _accuracy_report_data(est_id, user["company_id"])
     pdf_bytes = render_pdf(html)
     filename = safe_filename(est.get("estimate_number"), est.get("customer_name"))
     filename = filename.rsplit(".pdf", 1)[0] + "-accuracy.pdf"
@@ -1047,6 +1080,64 @@ async def tape_check_report_pdf(est_id: str, user: dict = Depends(get_current_us
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.post("/estimates/{est_id}/accuracy-report/freeze")
+async def accuracy_report_freeze(est_id: str, user: dict = Depends(get_current_user)):
+    """Shareable read-only accuracy report — same /m/ doctrine: freeze the
+    EXACT report server-side, mint a tokenized expiring link. The public
+    view banners when newer scored runs exist — never a silent live view."""
+    import secrets
+    from datetime import timedelta
+
+    html, est, content_hash = await _accuracy_report_data(est_id, user["company_id"])
+    now = datetime.now(timezone.utc)
+    token = secrets.token_urlsafe(24)
+    await db.accuracy_report_snapshots.insert_one({
+        "token": token, "estimate_id": est_id, "company_id": user["company_id"],
+        "html": html, "content_hash": content_hash,
+        "meta": {"estimate_number": est.get("estimate_number"),
+                 "customer_name": est.get("customer_name")},
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(days=90)).isoformat(),
+        "revoked": False,
+    })
+    return {"token": token, "share_path": f"/r/{token}",
+            "expires_at": (now + timedelta(days=90)).isoformat()}
+
+
+@router.get("/public/accuracy-report/{token}")
+async def accuracy_report_public(token: str):
+    """Public, read-only, frozen report HTML verbatim (framing pins carry).
+    Flags when newer scored runs exist — never a silent swap."""
+    snap = await db.accuracy_report_snapshots.find_one({"token": token}, {"_id": 0})
+    if not snap or snap.get("revoked"):
+        raise HTTPException(status_code=404, detail="Link not found or revoked")
+    if snap.get("expires_at") and snap["expires_at"] < datetime.now(timezone.utc).isoformat():
+        raise HTTPException(status_code=410, detail="Link expired")
+    newer_available = False
+    try:
+        _h, _e, current_hash = await _accuracy_report_data(
+            snap["estimate_id"], snap["company_id"])
+        newer_available = current_hash != snap.get("content_hash")
+    except HTTPException:
+        pass
+    return {"html": snap["html"], "meta": snap.get("meta") or {},
+            "generated_at": snap.get("created_at"),
+            "newer_available": newer_available}
+
+
+@router.post("/estimates/{est_id}/accuracy-report/revoke")
+async def accuracy_report_revoke(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    res = await db.accuracy_report_snapshots.update_one(
+        {"token": str(payload.get("token") or ""), "estimate_id": est_id,
+         "company_id": user["company_id"]},
+        {"$set": {"revoked": True}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Link not found")
+    return {"revoked": True}
 
 
 @router.get("/estimates/{est_id}/tape-check")

@@ -89,6 +89,40 @@ def _amber_items(corner_locations, verify_state):
     return items
 
 
+def _color_matrix(lines):
+    """Per-group availability of EVERY palette color against the group's
+    actual items (picker badging, approved with the honest constraint:
+    the matrix INFORMS, never forbids — flagged combos stay selectable)."""
+    from lp_colors import ALL_COLORS, group_for_line
+    from lp_expertfinish_matrix import check_combo
+    rank = {"available": 0, "gap": 1, "unsupported": 2}
+    by_group: dict = {}
+    for l in lines:
+        g = l.get("component_group") or group_for_line(l)
+        if g:
+            by_group.setdefault(g, set()).add(str(l.get("name") or ""))
+    if not by_group:
+        return {}
+    entries = list(by_group.items())
+    entries.append(("all", set().union(*by_group.values())))
+    out = {}
+    for g, names in entries:
+        gm = {}
+        for c in ALL_COLORS:
+            worst = {"status": "available", "note": ""}
+            flagged = 0
+            for n in names:
+                r = check_combo(n, c)
+                if r["status"] != "available":
+                    flagged += 1
+                if rank[r["status"]] > rank[worst["status"]]:
+                    worst = r
+            gm[c] = {"status": worst["status"], "note": worst["note"],
+                     "flagged_items": flagged, "item_count": len(names)}
+        out[g] = gm
+    return out
+
+
 # ───────────── Confirm-openings review (approved post-C4) ─────────────
 # One-tap ratification of detected openings BEFORE package derivation.
 # user_confirmed promotes to verified standing; user_corrected shifts the
@@ -195,6 +229,7 @@ async def lp_package_preview(
     pkg["run_id"] = run.get("run_id")
     pkg["amber_items"] = _amber_items(corner_locations, est.get("lp_field_verify"))
     pkg["openings_review"] = {**op_summary, "items": op_items}
+    pkg["color_matrix"] = _color_matrix(pkg.get("lines") or [])
     return redact_external(pkg)
 
 
