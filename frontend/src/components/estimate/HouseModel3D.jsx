@@ -1095,7 +1095,7 @@ function buildScene(scene, house) {
   return { wallMeshes, warnings };
 }
 
-export default function HouseModel3D({ preview, estimate, runId, onSnapshot, hasSnapshot }) {
+export default function HouseModel3D({ preview, estimate, runId, onSnapshot, hasSnapshot, lpGroupColors }) {
   const mountRef = useRef(null);
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
@@ -1108,7 +1108,21 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
   // Iter 79j.74 — Quote PDF snapshot state. "idle" → "saving" → "saved".
   const [snapState, setSnapState] = useState("idle");
   const autoSnapDone = useRef(false);
-  const house = useMemo(() => buildHouseJson(preview, overrides, estimate), [preview, overrides, estimate]);
+  const house = useMemo(() => {
+    const h = buildHouseJson(preview, overrides, estimate);
+    // Iter 98 — LP Material List mesh-group flat repaints: component-group
+    // colors outrank estimate/AI-sampled colors. siding → wall meshes,
+    // opening_trim → frame/trim meshes. (Corner/fascia meshes pending —
+    // flagged, not faked.)
+    if (h && lpGroupColors && (lpGroupColors.siding || lpGroupColors.opening_trim)) {
+      h.colors = {
+        ...h.colors,
+        ...(lpGroupColors.siding ? { siding: lpGroupColors.siding } : {}),
+        ...(lpGroupColors.opening_trim ? { trim: lpGroupColors.opening_trim } : {}),
+      };
+    }
+    return h;
+  }, [preview, overrides, estimate, lpGroupColors]);
 
   // Iter 79j.74 — capture the current WebGL frame as a PNG and hand it
   // to the parent (upload + persist). Renders synchronously right

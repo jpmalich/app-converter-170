@@ -142,6 +142,10 @@ class EstimateIn(BaseModel):
     estimate_date: str = ""
     estimator: str = ""
     notes: str = ""
+    # Iter 98 — LP component-group color selections (Material List tab).
+    # {"all": name} or {group: name}; names validated against the LP
+    # palette by the package endpoint, stored verbatim here.
+    lp_colors: Optional[dict] = None
     # Iter 79j.47 — Customer contact + company + billing + lead source.
     # Every new field is Optional[str] with default None (NOT ""); the
     # PUT handler's model_dump(exclude_none=True) means a partial payload

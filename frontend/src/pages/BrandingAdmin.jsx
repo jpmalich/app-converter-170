@@ -354,6 +354,9 @@ export default function BrandingAdmin() {
         {/* Pricing Tiers */}
         <PricingTiersPanel token={token} />
 
+        {/* LP Margin Tiers — cost×margin engine ladder + per-quote picker */}
+        <LpMarginTiersPanel token={token} />
+
         {/* Bulk pricing updates (% bump, CSV/Excel upload, export) */}
         <PricingUpdatePanel token={token} />
 
@@ -373,6 +376,147 @@ export default function BrandingAdmin() {
     </div>
   );
 }
+
+/** LP MARGIN TIERS (iter98 — Howard approved): the cost×margin engine
+ *  ladder. Percentages editable ONLY here; per-tier company counts;
+ *  per-quote tier picker for LP estimates (admin boundary absolute —
+ *  tier names/percentages never render on contractor surfaces). */
+function LpMarginTiersPanel({ token }) {
+  const [cfg, setCfg] = useState(null);
+  const [pcts, setPcts] = useState({});
+  const [counts, setCounts] = useState({});
+  const [ests, setEsts] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const headers = { "X-Admin-Token": token };
+
+  const load = async () => {
+    const [tiers, companies, lps] = await Promise.all([
+      axios.get(`${API}/admin/lp-margin-tiers`, { headers }),
+      axios.get(`${API}/admin/companies`, { headers }),
+      axios.get(`${API}/admin/lp-estimates`, { headers }),
+    ]);
+    setCfg(tiers.data);
+    setPcts({ ...tiers.data.tiers });
+    const c = {};
+    (companies.data.companies || companies.data || []).forEach((co) => {
+      if (co.tier_name) c[co.tier_name] = (c[co.tier_name] || 0) + 1;
+    });
+    setCounts(c);
+    setEsts(lps.data.estimates || []);
+  };
+  useEffect(() => { load().catch(() => {}); /* eslint-disable-next-line */ }, [token]);
+
+  if (!cfg) return null;
+  const tierNames = Object.keys(cfg.tiers || {});
+  const dirty = tierNames.some((n) => Number(pcts[n]) !== Number(cfg.tiers[n]));
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const { data } = await axios.put(
+        `${API}/admin/lp-margin-tiers`,
+        { tiers: Object.fromEntries(tierNames.map((n) => [n, Number(pcts[n])])) },
+        { headers }
+      );
+      setCfg(data);
+      setPcts({ ...data.tiers });
+      toast.success("LP margin ladder saved — reprices future quotes only");
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const setTier = async (estId, tier) => {
+    try {
+      await axios.put(`${API}/admin/estimates/${estId}/lp-pricing-tier`,
+        { tier }, { headers });
+      setEsts((xs) => xs.map((e) => (e.id === estId ? { ...e, lp_pricing_tier: tier } : e)));
+      toast.success(`Quote tier → ${tier}`);
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Tier change failed");
+    }
+  };
+
+  return (
+    <div className="card p-6" data-testid="lp-margin-tiers-card">
+      <div className="section-tag mb-1">LP Margin Tiers (cost × margin engine)</div>
+      <p className="text-sm text-[var(--ink-2)] mb-4">
+        True margin: sell = dealer cost ÷ (1 − tier%). Editing a % reprices FUTURE
+        quotes only — issued quotes keep their prices. Confidential: tiers and costs
+        never render on contractor surfaces.
+      </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {tierNames.map((n) => (
+          <div key={n} className="border border-[var(--border)] rounded-sm p-3" data-testid={`lp-tier-${n}`}>
+            <div className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)] mb-1">
+              {n}{n === cfg.default_tier ? " · default" : ""}
+            </div>
+            <div className="flex items-baseline gap-1">
+              <input
+                className="input num w-16"
+                type="number" min="0" max="99" step="0.5"
+                value={pcts[n] ?? ""}
+                onChange={(e) => setPcts((p) => ({ ...p, [n]: e.target.value }))}
+                data-testid={`lp-tier-input-${n}`}
+              />
+              <span className="text-sm">%</span>
+            </div>
+            <div className="text-[11px] text-[var(--muted)] mt-1 font-mono-num">
+              {counts[n] || 0} compan{(counts[n] || 0) === 1 ? "y" : "ies"}
+            </div>
+          </div>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={busy || !dirty}
+        className="px-5 py-2 rounded-sm text-sm font-bold uppercase tracking-wider bg-[var(--bar-bg)] text-white disabled:opacity-40"
+        onClick={save}
+        data-testid="lp-tiers-save"
+      >
+        Save ladder
+      </button>
+
+      <div className="mt-6">
+        <div className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)] mb-2">
+          Per-quote tier (recent LP estimates)
+        </div>
+        {ests.length === 0 ? (
+          <div className="text-sm text-[var(--muted)]">No LP estimates yet.</div>
+        ) : (
+          <div className="max-h-64 overflow-y-auto border border-[var(--border)] rounded-sm">
+            <table className="w-full text-sm">
+              <tbody>
+                {ests.map((e) => (
+                  <tr key={e.id} className="border-b border-[var(--border)] last:border-0" data-testid={`lp-est-row-${e.id}`}>
+                    <td className="px-3 py-2 font-mono-num">{e.estimate_number || e.id.slice(0, 8)}</td>
+                    <td className="px-3 py-2">{e.customer_name || "—"}</td>
+                    <td className="px-3 py-2 text-[var(--muted)]">{e.company_name || ""}</td>
+                    <td className="px-3 py-2 text-right">
+                      <select
+                        className="input text-sm py-1"
+                        value={e.lp_pricing_tier}
+                        onChange={(ev) => setTier(e.id, ev.target.value)}
+                        data-testid={`lp-est-tier-picker-${e.id}`}
+                      >
+                        {tierNames.map((n) => (
+                          <option key={n} value={n}>{n} ({cfg.tiers[n]}%)</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 function PricingTiersPanel({ token }) {
   const [tiers, setTiers] = useState([]);

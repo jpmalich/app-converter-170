@@ -140,6 +140,25 @@ async def put_estimate_pricing_tier(est_id: str, payload: dict, request: Request
     return {"id": est_id, "lp_pricing_tier": tier}
 
 
+@router.get("/admin/lp-estimates")
+async def admin_list_lp_estimates(request: Request):
+    """Admin-side per-quote tier picker data: recent LP estimates with
+    their current pricing tier. Tier names NEVER render on contractor
+    surfaces — this list is token-gated."""
+    check_admin_token(request)
+    companies = {c["id"]: c.get("name") async for c in db.companies.find({}, {"id": 1, "name": 1})}
+    out = []
+    async for e in db.estimates.find(
+        {"$or": [{"kind": "lp_smart"}, {"lp_pricing_tier": {"$exists": True}}]},
+        {"_id": 0, "id": 1, "estimate_number": 1, "customer_name": 1,
+         "company_id": 1, "lp_pricing_tier": 1, "created_at": 1},
+    ).sort("created_at", -1).limit(50):
+        e["company_name"] = companies.get(e.get("company_id"))
+        e["lp_pricing_tier"] = e.get("lp_pricing_tier") or DEFAULT_TIER
+        out.append(e)
+    return {"estimates": out, "tier_names": list(TIER_NAMES), "default_tier": DEFAULT_TIER}
+
+
 @router.get("/admin/lp-native-mode")
 async def get_lp_native_mode(request: Request):
     check_admin_token(request)

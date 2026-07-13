@@ -26,6 +26,7 @@ import EstimatorTabs from "@/components/estimate/EstimatorTabs";
 import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, SIDING_KIND_TAB_IDS } from "@/lib/tabsConfig";
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
+import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
 
 export default function EstimateEditor() {
   const { id } = useParams();
@@ -356,18 +357,27 @@ export default function EstimateEditor() {
             ))}
           </>
         ) : visibleSections.length === 0 ? (
-          <div
-            className="card p-8 text-center"
-            data-testid={`empty-tab-${activeTab}`}
-          >
-            <div className="section-tag mb-3">LP Smart Siding</div>
-            <p className="text-sm text-[var(--ink-2)] max-w-md mx-auto">
-              The LP SmartSide catalog hasn&apos;t been loaded yet. Send Howard your
-              LP Smart Siding price sheet (Excel/CSV) and it&apos;ll populate here.
-            </p>
-          </div>
+          <>
+            {isLpKind && activeTab === "lp_smart" && (
+              <LpMaterialListPanel est={est} update={update} />
+            )}
+            <div
+              className="card p-8 text-center"
+              data-testid={`empty-tab-${activeTab}`}
+            >
+              <div className="section-tag mb-3">LP Smart Siding</div>
+              <p className="text-sm text-[var(--ink-2)] max-w-md mx-auto">
+                The LP SmartSide catalog hasn&apos;t been loaded yet. Send Howard your
+                LP Smart Siding price sheet (Excel/CSV) and it&apos;ll populate here.
+              </p>
+            </div>
+          </>
         ) : (
-          visibleSections.map((s) => (
+          <>
+            {isLpKind && activeTab === "lp_smart" && (
+              <LpMaterialListPanel est={est} update={update} />
+            )}
+            {visibleSections.map((s) => (
             <SectionAccordion
               key={s.title}
               section={s}
@@ -383,7 +393,8 @@ export default function EstimateEditor() {
               update={update}
               activeTab={activeTab}
             />
-          ))
+            ))}
+          </>
         )}
 
         <TotalsSummary

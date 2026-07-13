@@ -16,17 +16,31 @@ router = APIRouter()
 
 
 async def _load_run(est_id: str, company_id=None, run_id=None):
-    """company_id=None is the supplier-admin path (token-checked upstream)."""
+    """company_id=None is the supplier-admin path (token-checked upstream).
+    Falls back to the PAIRED estimate's runs — a paired LP estimate's AI
+    Measure run lives on its siding source (pair-lp flow)."""
     q_est: dict = {"id": est_id}
     if company_id is not None:
         q_est["company_id"] = company_id
-    est = await db.estimates.find_one(q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1})
+    est = await db.estimates.find_one(
+        q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1,
+                "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
     q: dict = {"estimate_id": est_id, "status": "done"}
     if run_id:
         q["run_id"] = run_id
     run = await db.ai_measure_runs.find_one(q, sort=[("created_at", -1)])
+    paired_id = est.get("paired_lp_estimate_id") or est.get("paired_estimate_id")
+    if run is None and paired_id and not run_id:
+        paired_q: dict = {"id": paired_id}
+        if company_id is not None:
+            paired_q["company_id"] = company_id
+        paired = await db.estimates.find_one(paired_q, {"_id": 0, "id": 1})
+        if paired:
+            run = await db.ai_measure_runs.find_one(
+                {"estimate_id": paired["id"], "status": "done"},
+                sort=[("created_at", -1)])
     if run is None:
         raise HTTPException(status_code=404, detail="No completed AI Measure run for this estimate")
     return est, run
@@ -47,6 +61,21 @@ def _extract(run: dict):
         if lbl and h > 0:
             wall_heights[lbl] = h
     return measurements, corner_locations, wall_heights
+
+
+@router.get("/lp-package/colors")
+async def lp_package_colors(user: dict = Depends(get_current_user)):
+    """ExpertFinish palette + component groups for the Material List
+    color selector. Names are the backend source of truth; swatch hexes
+    are frontend visualization approximations."""
+    from lp_colors import (ALL_COLORS, COMPONENT_GROUPS, EXPERTFINISH_CORE_16,
+                           NATURALS_COLLECTION, PRIMED)
+    return {
+        "groups": list(COMPONENT_GROUPS),
+        "colors": ALL_COLORS,
+        "collections": {"core": EXPERTFINISH_CORE_16,
+                        "naturals": NATURALS_COLLECTION, "primed": PRIMED},
+    }
 
 
 @router.post("/estimates/{est_id}/lp-package/preview")

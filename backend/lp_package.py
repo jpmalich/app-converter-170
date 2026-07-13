@@ -346,6 +346,22 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     group_colors, color_errors = apply_colors(lines, colors)
     lines = consolidate_lines(lines)
 
+    # ── SUBSTITUTION OPTIONS (Phase 2 UI): table-limited per line —
+    # exposes what each derived line MAY become; never free-text SKUs
+    sub_table = _lp_product_table()
+    for l in lines:
+        k = (l.get("_derivation") or {}).get("kind")
+        if k in ("osc", "osc_lf"):
+            opts = [n for n in sub_table["osc"] if n != l["name"]]
+        elif k in ("isc", "fascia_rake"):
+            opts = [n for n in sub_table["trim"] if n != l["name"]]
+        elif k == "starter" and not l.get("substituted_from"):
+            opts = ["dedicated-rip"]
+        else:
+            opts = []
+        if opts:
+            l["substitutable_with"] = opts
+
     return {
         "lines": lines,
         "summary": {
