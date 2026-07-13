@@ -30,13 +30,13 @@ ALL_COLORS = EXPERTFINISH_CORE_16 + NATURALS_COLLECTION + [PRIMED]
 
 COMPONENT_GROUPS = ("siding", "soffit_fascia", "opening_trim", "osc", "isc")
 
-# Availability now ingested from LP's PUBLISHED matrix (2026-07-13) —
-# see lp_expertfinish_matrix.py. Dealer/BlueLinx verification pending;
-# combos flag per status: unsupported (published-absent) / gap (published
-# ambiguity). Never silently substituted.
-AVAILABILITY_VERIFIED = "published-ingested"
-AVAILABILITY_FLAG = ("color availability per published ExpertFinish matrix — "
-                     "dealer verification pending; flagged, never silently substituted")
+# Availability ingested from LP's PUBLISHED matrix (2026-07-13) and
+# DEALER-VERIFIED by Howard (see lp_expertfinish_matrix.py) — matrix is
+# dealer-true; 'available' = orderable. Remaining caveats flag with one
+# amber vocabulary. Never silently substituted.
+AVAILABILITY_VERIFIED = "dealer-verified"
+AVAILABILITY_FLAG = ("color availability per dealer-verified ExpertFinish matrix — "
+                     "flagged combos stay selectable; never silently substituted")
 
 
 def group_for_line(line: dict):

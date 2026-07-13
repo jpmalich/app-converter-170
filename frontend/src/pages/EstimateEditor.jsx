@@ -124,6 +124,9 @@ export default function EstimateEditor() {
     for (const l of est?.lines || []) {
       if ((l.qty || 0) > 0) s.add(l.tab || "vinyl");
     }
+    // Openings itemize on the quote now — count them as tab data too.
+    if ((est?.vero_openings || []).some((op) => (Number(op.qty) || 0) > 0)) s.add("windows");
+    if ((est?.mezzo_openings || []).some((op) => (Number(op.qty) || 0) > 0)) s.add("mezzo");
     return Array.from(s);
   }, [est]);
 
@@ -184,6 +187,10 @@ export default function EstimateEditor() {
       misc_material: (est.misc_material || []).filter((m) =>
         tabFilter.includes(m.tab || "vinyl")
       ),
+      // Ruled (d/b): openings itemize on the quote — scope them with the
+      // picker exactly like calcTotals does (vero→windows, mezzo→mezzo).
+      vero_openings: tabFilter.includes("windows") ? est.vero_openings || [] : [],
+      mezzo_openings: tabFilter.includes("mezzo") ? est.mezzo_openings || [] : [],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [est, tabFilter, isLpKind, lpPkg]);

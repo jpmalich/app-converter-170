@@ -398,22 +398,74 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                       {tSection(section, sendLang)}
                     </div>
                     {items.map((l) => (
-                      <div key={l.name} className="flex justify-between py-1 text-sm">
-                        <span className="text-[#09090B]">{tItem(l.name, sendLang)}</span>
-                        <span className="text-[#52525B] font-mono-num text-right">
-                          {l.qty} {tUnit(l.unit, sendLang)}
-                          {l.pricing_pending && (
-                            <span className="block text-[10px] uppercase tracking-wider font-bold text-[#B45309]" data-testid={`quote-line-pending-${l.name}`}>
-                              {sendLang === "es" ? "precio por confirmar" : "pricing to be confirmed"}
-                            </span>
-                          )}
-                        </span>
-                      </div>
+                      <React.Fragment key={l.name}>
+                        <div className="flex justify-between py-1 text-sm">
+                          <span className="text-[#09090B]">{tItem(l.name, sendLang)}</span>
+                          <span className="text-[#52525B] font-mono-num text-right">
+                            {l.qty} {tUnit(l.unit, sendLang)}
+                            {l.pricing_pending && (
+                              <span className="block text-[10px] uppercase tracking-wider font-bold text-[#B45309]" data-testid={`quote-line-pending-${l.name}`}>
+                                {sendLang === "es" ? "precio por confirmar" : "pricing to be confirmed"}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                        {(l.adders || [])
+                          .filter((a) => (Number(a.qty) || 0) > 0)
+                          .map((a) => (
+                            <div key={a.name} className="flex justify-between py-0.5 pl-4 text-xs text-[#52525B]" data-testid={`quote-adder-${l.name}-${a.name}`}>
+                              <span>+ {tItem(a.name, sendLang)}</span>
+                              <span className="text-[#71717A] font-mono-num">× {a.qty}</span>
+                            </div>
+                          ))}
+                      </React.Fragment>
                     ))}
                   </div>
                 ))}
               </div>
             ))}
+            {/* Ruled (d/b): window openings itemize on the customer quote —
+                mirrors the windowsBlock in buildEmailHtml. Qty only, no
+                unit prices; adders as indented sub-lines. */}
+            {(() => {
+              const ops = [
+                ...(estimate.vero_openings || []),
+                ...(estimate.mezzo_openings || []),
+              ].filter((op) => (Number(op.qty) || 0) > 0);
+              if (ops.length === 0) return null;
+              const dispName = (op) => {
+                const dims =
+                  (Number(op.width) || 0) > 0 && (Number(op.height) || 0) > 0
+                    ? `${op.width}\u2033 × ${op.height}\u2033`
+                    : op.model || "";
+                return [op.product_type, op.label && `\u201C${op.label}\u201D`, dims]
+                  .filter(Boolean)
+                  .join(" — ");
+              };
+              return (
+                <div className="mb-6" data-testid="quote-windows-openings">
+                  <div className="text-xs uppercase tracking-[0.18em] font-bold text-[#C2410C] border-b border-[#09090B] pb-1 mb-2">
+                    {sendLang === "es" ? "Ventanas" : "Windows"}
+                  </div>
+                  {ops.map((op) => (
+                    <React.Fragment key={op.id || dispName(op)}>
+                      <div className="flex justify-between py-1 text-sm">
+                        <span className="text-[#09090B]">{dispName(op)}</span>
+                        <span className="text-[#52525B] font-mono-num">{op.qty} {tUnit("Each", sendLang)}</span>
+                      </div>
+                      {(op.adders || [])
+                        .filter((a) => (Number(a.qty) || 0) > 0)
+                        .map((a) => (
+                          <div key={a.name} className="flex justify-between py-0.5 pl-4 text-xs text-[#52525B]" data-testid={`quote-opening-adder-${a.name}`}>
+                            <span>+ {tItem(a.name, sendLang)}</span>
+                            <span className="text-[#71717A] font-mono-num">× {a.qty}</span>
+                          </div>
+                        ))}
+                    </React.Fragment>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Iter 79j.74 — mirrors the model3dBlock in buildEmailHtml so

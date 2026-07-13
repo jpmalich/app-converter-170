@@ -161,12 +161,71 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
             </tr>
           </table>
         </td>
-      </tr>`
+      </tr>${adderRows(l.adders)}`
       )
       .join("")}
     ${SIDING_SECTIONS.has(section) ? renderExcludedNote() : ""}
     ${SOFFIT_SECTIONS.has(section) ? renderPorchCeilingNote() : ""}
   `;
+
+  // Ruled (d/b): selected upgrades render as indented sub-lines under
+  // their parent — name + qty ONLY, no unit prices (standing doctrine;
+  // the total stays the contractor's composed number). The defect fixed:
+  // upgrades the homeowner is paying for were invisible on the quote.
+  function adderRows(adders) {
+    return (adders || [])
+      .filter((a) => (Number(a.qty) || 0) > 0)
+      .map(
+        (a) => `
+      <tr>
+        <td style="padding:2px 0 2px 16px;font-family:${FONT};font-size:12px;color:${C.muted};border-bottom:1px solid ${C.line};">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="padding:0;font-family:${FONT};font-size:12px;color:${C.muted};">+ ${esc(tItem(a.name, lang))}</td>
+              <td align="right" style="padding:0;font-family:${FONT};font-size:12px;color:${C.faint};white-space:nowrap;">× ${esc(a.qty)}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>`
+      )
+      .join("");
+  }
+
+  // Ruled (d/b): window openings (Vero/Mezzo) itemize on the customer
+  // quote instead of dissolving into the total — each opening a line,
+  // its glass-package/upgrade adders as indented sub-lines, qty only.
+  const windowOpenings = [
+    ...(estimate.vero_openings || []),
+    ...(estimate.mezzo_openings || []),
+  ].filter((op) => (Number(op.qty) || 0) > 0);
+  const openingDisplayName = (op) => {
+    const dims =
+      (Number(op.width) || 0) > 0 && (Number(op.height) || 0) > 0
+        ? `${op.width}\u2033 × ${op.height}\u2033`
+        : op.model || "";
+    return [op.product_type, op.label && `“${op.label}”`, dims]
+      .filter(Boolean)
+      .join(" — ");
+  };
+  const windowsBlock = windowOpenings.length
+    ? `
+    <tr><td style="padding:18px 0 6px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.accentText};border-bottom:1px solid ${C.ink};">${esc(t("email.windowsOpenings"))}</td></tr>
+    ${windowOpenings
+      .map(
+        (op) => `
+      <tr>
+        <td style="padding:6px 0;font-family:${FONT};font-size:14px;color:${C.ink};border-bottom:1px solid ${C.line};">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="padding:0;font-family:${FONT};font-size:14px;color:${C.ink};">${esc(openingDisplayName(op))}</td>
+              <td align="right" style="padding:0;font-family:${FONT};font-size:13px;color:${C.muted};white-space:nowrap;">${esc(op.qty)} ${esc(tUnit("Each", lang))}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>${adderRows(op.adders)}`
+      )
+      .join("")}`
+    : "";
 
   // Iter 79j.74 — 3D model snapshot from AI photo measurements. Rendered
   // above the job photos: the parametric house built from the same
@@ -342,6 +401,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
         <tr><td style="padding:0 32px 20px 32px;border-top:1px solid ${C.line};">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             ${Object.entries(linesByCat).map(sectionBlock).join("")}
+            ${windowsBlock}
             ${model3dBlock}
             ${photoGrid}
           </table>

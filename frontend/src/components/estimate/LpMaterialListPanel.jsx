@@ -37,7 +37,7 @@ function Swatch({ name }) {
 
 function ColorSelect({ value, onChange, colors, disabled, testId, matrix }) {
   // Approved constraint: badged combos remain SELECTABLE — the matrix
-  // informs, never forbids (dealer verification pending).
+  // informs, never forbids (dealer-verified: available = orderable).
   const badge = (c) => {
     const m = matrix?.[c];
     if (!m || m.status === "available") return "";
@@ -63,7 +63,7 @@ function ColorSelect({ value, onChange, colors, disabled, testId, matrix }) {
           className={`text-[10px] font-semibold max-w-[190px] ${sel.status === "unsupported" ? "text-red-700" : "text-[#B45309]"}`}
           data-testid={`${testId}-warning`}
         >
-          {sel.status === "unsupported" ? "⛔" : "⚑"} not in LP's published matrix — verify with dealer
+          {sel.status === "unsupported" ? "⛔ not available in this color (dealer-verified)" : "⚑ availability caveat — verify with dealer"}
           {sel.flagged_items > 0 && sel.item_count > 1 ? ` (${sel.flagged_items}/${sel.item_count} items)` : ""}
         </span>
       )}

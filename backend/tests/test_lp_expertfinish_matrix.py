@@ -1,14 +1,20 @@
-"""ExpertFinish availability matrix pins — PUBLISHED-INGESTED 2026-07-13
-(lpcorp.com; dealer/BlueLinx verification by Howard pending). Standing
-ruling: unsupported combos FLAG, never silently substitute; ambiguity is
-a GAP, not an assumption."""
+"""ExpertFinish availability matrix pins — DEALER-VERIFIED (Howard,
+incl. BlueLinx cross-check): matrix is dealer-true, 'available' =
+orderable. Standing ruling: unsupported combos FLAG, never silently
+substitute; ambiguity is a GAP, not an assumption."""
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from lp_colors import EXPERTFINISH_CORE_16, PRIMED, apply_colors
-from lp_expertfinish_matrix import check_combo, family_for_item
+from lp_colors import EXPERTFINISH_CORE_16, NATURALS_COLLECTION, PRIMED, apply_colors
+from lp_expertfinish_matrix import (
+    MATRIX_STATUS,
+    NATURALS_CATALOG_PENDING,
+    NATURALS_PROFILES,
+    check_combo,
+    family_for_item,
+)
 
 
 def test_family_classification():
@@ -21,46 +27,79 @@ def test_family_classification():
     assert family_for_item("38 Series Vertical Panel") == "vertical"
 
 
+def test_matrix_is_dealer_verified():
+    assert "dealer-verified" in MATRIX_STATUS
+    assert "pending" not in MATRIX_STATUS.lower()
+
+
 def test_lap_and_trim_full_core_palette():
     for c in EXPERTFINISH_CORE_16:
         assert check_combo('38 Series Lap 3/8" x 8" x 16\'', c)["status"] == "available"
         assert check_combo('540 Series Trim 5/4" x 4" x 16\'', c)["status"] == "available"
 
 
+def test_shakes_and_vertical_regional_flags_cleared():
+    # Ruling 3: all ExpertFinish colors, all regions — no gaps left
+    for c in EXPERTFINISH_CORE_16:
+        assert check_combo("Shake", c)["status"] == "available"
+        assert check_combo("38 Series Vertical Panel", c)["status"] == "available"
+
+
 def test_soffit_16_snowscape_only():
-    # published: 12"/16" soffit = Snowscape White ONLY
+    # published: 12"/16" soffit = Snowscape White ONLY (unchanged by rulings)
     assert check_combo("38 Series Soffit 16 x 16 Vented", "Snowscape White")["status"] == "available"
     r = check_combo("38 Series Soffit 16 x 16 Vented", "Abyss Black")
     assert r["status"] == "unsupported" and "never silently substituted" in r["note"]
 
 
-def test_panel_published_vs_ambiguous():
+def test_panel_garden_sage_resolved_available():
+    # Ruling 1: Garden Sage is real and available on panels
     assert check_combo("38 Series 4' x 8' Panel", "Snowscape White")["status"] == "available"
-    assert check_combo("38 Series 4' x 8' Panel", "Garden Sage")["status"] == "gap"
+    assert check_combo("38 Series 4' x 8' Panel", "Garden Sage")["status"] == "available"
     assert check_combo("38 Series 4' x 8' Panel", "Redwood Red")["status"] == "unsupported"
 
 
-def test_naturals_are_gaps_everywhere():
-    # Naturals per-product availability not published → gap, never assumed
-    assert check_combo('38 Series Lap 3/8" x 8" x 16\'', "Weathered Walnut")["status"] == "gap"
+def test_naturals_exact_profile_list():
+    # Ruling 2: Naturals run in EXACTLY the authoritative profile list
+    assert len(NATURALS_PROFILES) == 11
+    for prof in ('38 Series Lap 3/8" x 8" x 16\'', "Nickel Gap",
+                 '540 Series Trim 5/4" x 12" x 16\'', "38 Series Vertical Panel"):
+        assert check_combo(prof, "Weathered Walnut")["status"] == "available"
+    # starter follows the lap stock it is ripped from
+    assert check_combo("LP Starter — field-ripped from siding stock",
+                       "Weathered Walnut")["status"] == "available"
+    # outside the list → unsupported (not gap)
+    for prof in ("Shake", "38 Series 4' x 8' Panel",
+                 "38 Series Soffit 16 x 16 Vented",
+                 '440 Series Trim 4/4" x 8" x 16\''):
+        r = check_combo(prof, "Weathered Walnut")
+        assert r["status"] == "unsupported", prof
+        assert "never silently substituted" in r["note"]
+
+
+def test_naturals_catalog_pending_never_silently_missing():
+    # 16x16 Closed runs Naturals but was dropped from the supplier sheet
+    assert NATURALS_CATALOG_PENDING == frozenset({"38 Series Soffit 16 x 16 Closed"})
+    r = check_combo("38 Series Soffit 16 x 16 Closed", "Bonsai Black")
+    assert r["status"] == "gap"
+    assert "catalog: pending" in r["note"]
+
+
+def test_naturals_profiles_quotable_or_flagged():
+    """Ruled catalog cross-check: every Naturals-scoped profile is either
+    in the LP catalog (quotable) or in NATURALS_CATALOG_PENDING."""
+    import catalog_seed
+    names = set()
+    for sec in catalog_seed.DEFAULT_SECTIONS:
+        for it in sec.get("items", []):
+            names.add(it["name"] if isinstance(it, dict) else it)
+    for prof in NATURALS_PROFILES:
+        assert prof in names or prof in NATURALS_CATALOG_PENDING, (
+            f"'{prof}' is Naturals-scoped but neither quotable nor flagged pending")
 
 
 def test_primed_always_available():
     assert check_combo("38 Series Soffit 16 x 16 Vented", PRIMED)["status"] == "available"
-
-
-def test_matrix_is_open_until_dealer_verification_lands():
-    """State correction pin: the matrix is NOT closed — Howard's
-    dealer-reality verification is pending; entries stay unverified."""
-    from lp_expertfinish_matrix import MATRIX_STATUS, VERIFICATION_PENDING
-    assert "OPEN" in MATRIX_STATUS and "pending" in MATRIX_STATUS
-    joined = " ".join(VERIFICATION_PENDING).lower()
-    for item in ("garden sage", "naturals", "shakes/vertical",
-                 "trim sizes-per-color", "bluelinx", "stocked-vs-published"):
-        assert item in joined
-    # trim shows available but carries the pending qualifier in its note
-    assert "pending" in check_combo('440 Series Trim 4/4" x 8" x 16\'',
-                                    "Snowscape White")["note"]
 
 
 def test_apply_colors_flags_unsupported_never_substitutes():
@@ -78,3 +117,9 @@ def test_apply_colors_flags_unsupported_never_substitutes():
     # lap in the same color is clean
     assert lap["color_status"] == "available"
     assert "color_flags" not in lap
+
+
+def test_all_naturals_colors_share_the_profile_scoping():
+    for c in NATURALS_COLLECTION:
+        assert check_combo("Nickel Gap", c)["status"] == "available"
+        assert check_combo("Shake", c)["status"] == "unsupported"
