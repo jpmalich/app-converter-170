@@ -63,6 +63,18 @@ async def list_estimates(
     return estimates
 
 
+async def _company_lp_tier(company_id: str) -> str:
+    """Iter 100 — TIER COHERENCE (ruled): company tier is the SEED
+    default for new estimates only; identity-mapped to the margin ladder."""
+    from lp_costs import DEFAULT_TIER, MARGIN_TIER_SEED
+    company = await db.companies.find_one({"id": company_id}, {"price_tier_id": 1})
+    if company and company.get("price_tier_id"):
+        tier = await db.price_tiers.find_one({"id": company["price_tier_id"]}, {"name": 1})
+        if tier and tier.get("name") in MARGIN_TIER_SEED:
+            return tier["name"]
+    return DEFAULT_TIER
+
+
 @router.post("/estimates")
 async def create_estimate(body: EstimateIn, user: dict = Depends(get_current_user)):
     est_id = str(uuid.uuid4())
@@ -104,6 +116,10 @@ async def create_estimate(body: EstimateIn, user: dict = Depends(get_current_use
         "created_at": now,
         "updated_at": now,
     })
+    if doc.get("kind") == "lp_smart" and not doc.get("lp_pricing_tier"):
+        # one estimate, one tier, one truth — seeded once from the company,
+        # governed by the estimate itself from then on (ruled)
+        doc["lp_pricing_tier"] = await _company_lp_tier(user["company_id"])
     await db.estimates.insert_one(doc)
     doc.pop("_id", None)
     return doc
@@ -345,6 +361,8 @@ async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
         "created_by_name": user.get("name"),
         "created_at": now,
         "updated_at": now,
+        # one estimate, one tier, one truth — seeded from the company (ruled)
+        "lp_pricing_tier": await _company_lp_tier(user["company_id"]),
         "estimate_number": new_num,
         "estimate_date": src.get("estimate_date") or now[:10],
         # One-time copy of job info.

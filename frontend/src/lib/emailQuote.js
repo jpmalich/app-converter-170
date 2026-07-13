@@ -157,7 +157,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr>
               <td style="padding:0;font-family:${FONT};font-size:14px;color:${C.ink};">${esc(tItem(l.name, lang))}</td>
-              <td align="right" style="padding:0;font-family:${FONT};font-size:13px;color:${C.muted};white-space:nowrap;">${esc(l.qty)} ${esc(tUnit(l.unit, lang))}</td>
+              <td align="right" style="padding:0;font-family:${FONT};font-size:13px;color:${C.muted};white-space:nowrap;">${esc(l.qty)} ${esc(tUnit(l.unit, lang))}${l.pricing_pending ? `<br><span style="font-size:10px;font-weight:bold;letter-spacing:0.06em;text-transform:uppercase;color:#B45309;">${esc(t("email.pricePending"))}</span>` : ""}</td>
             </tr>
           </table>
         </td>
@@ -353,6 +353,9 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
             <td style="font-family:${FONT};font-size:22px;font-weight:800;color:${C.ink};letter-spacing:0.3px;">${esc(t("email.total"))}</td>
             <td align="right" style="font-family:${FONT};font-size:34px;font-weight:900;color:${C.ink};letter-spacing:-0.5px;">${$(totals.sell)}</td>
           </tr></table>
+          ${(estimate.lines || []).some((l) => (l.qty || 0) > 0 && l.pricing_pending)
+            ? `<div style="margin-top:10px;font-family:${FONT};font-size:12px;color:#B45309;line-height:1.5;">${esc(t("email.pendingNote"))}</div>`
+            : ""}
           <div style="margin-top:10px;font-family:${FONT};font-size:12px;color:${C.muted};line-height:1.5;">
             ${expiryStr
               ? t("email.validityWithDate", { date: esc(expiryStr) })

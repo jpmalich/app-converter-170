@@ -12,6 +12,7 @@ import useRecalcSoffitOnOverhang from "@/lib/useRecalcSoffitOnOverhang";
 import { calcTotals } from "@/lib/calc";
 import { buildMaterialListHtml, materialListFilename } from "@/lib/materialList";
 import { buildLpMaterialListHtml } from "@/lib/lpMaterialList";
+import QRCode from "qrcode";
 import StickyBar from "@/components/estimate/StickyBar";
 import JobInfoPanel from "@/components/estimate/JobInfoPanel";
 import MezzoPanel from "@/components/estimate/MezzoPanel";
@@ -28,6 +29,7 @@ import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, S
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
 import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
+import { LP_SECTION_TITLES } from "@/lib/lpColors";
 
 export default function EstimateEditor() {
   const { id } = useParams();
@@ -67,6 +69,7 @@ export default function EstimateEditor() {
   // Iter 99 — live derived package shared up from LpMaterialListPanel
   // (one-surface rule: exports compose from this, never legacy lines)
   const [lpPkg, setLpPkg] = useState(null);
+  const [lpMeta, setLpMeta] = useState(null);
   const [activeTab, setActiveTab] = useState("vinyl");
 
   // Iter 37: For windows-kind, snap to "windows" (Vero) on first load
@@ -129,10 +132,37 @@ export default function EstimateEditor() {
   // stays null and we pass the full estimate through.
   const quoteEstimate = useMemo(() => {
     if (!est) return est;
-    if (!tabFilter) return est;
+    // CUSTOMER QUOTE COMPOSITION (ruled iter100): derived material
+    // package (quote tier, colors, session substitutions) governs the
+    // LP material sections; contractor service lines stay theirs from
+    // est.lines; pending lines carry a flag — never hidden, never $0.
+    let base = est;
+    if (isLpKind && lpPkg) {
+      const pkgLines = (lpPkg.lines || [])
+        .filter((l) => LP_SECTION_TITLES.has(l.section) && (l.qty || 0) > 0)
+        .map((l) => ({
+          section: l.section,
+          name: l.color ? `${l.name} — ${l.color}` : l.name,
+          unit: l.unit,
+          qty: l.qty,
+          mat: l.pricing_status === "priced" ? l.unit_sell || 0 : 0,
+          lab: 0,
+          tab: "lp_smart",
+          adders: [],
+          pricing_pending: l.pricing_status !== "priced",
+        }));
+      const serviceLines = (est.lines || []).filter(
+        (l) =>
+          (l.tab || "vinyl") === "lp_smart" &&
+          !LP_SECTION_TITLES.has(l.section) &&
+          (l.qty || 0) > 0
+      );
+      base = { ...est, lines: [...pkgLines, ...serviceLines] };
+    }
+    if (!tabFilter) return base;
     return {
-      ...est,
-      lines: (est.lines || []).filter((l) =>
+      ...base,
+      lines: (base.lines || []).filter((l) =>
         tabFilter.includes(l.tab || "vinyl")
       ),
       misc_labor: (est.misc_labor || []).filter((m) =>
@@ -142,7 +172,8 @@ export default function EstimateEditor() {
         tabFilter.includes(m.tab || "vinyl")
       ),
     };
-  }, [est, tabFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [est, tabFilter, isLpKind, lpPkg]);
 
   // Totals for the customer quote — scoped to the picked tabs so the
   // customer-facing PDF shows only the work-in-scope dollars.
@@ -222,8 +253,28 @@ export default function EstimateEditor() {
     // Iter 99 — ONE-SURFACE RULE (ruled): when the derived LP package
     // exists, it is the ONLY material-list composition. The legacy
     // stored-lines composer never renders for LP estimates with a run.
+    // Iter 100 — QR doctrine (ruled): every printed LP list freezes a
+    // server-side snapshot and carries a QR to THAT exact version.
+    let share = null;
+    if (isLpKind && lpPkg) {
+      try {
+        const subs = {};
+        (lpPkg.lines || []).forEach((l) => {
+          if (l.substituted_from) subs[l.substituted_from] = l.name;
+        });
+        const { data } = await api.post(`/estimates/${id}/lp-material-list/freeze`, {
+          colors: est.lp_colors && Object.keys(est.lp_colors).length ? est.lp_colors : undefined,
+          substitutions: Object.keys(subs).length ? subs : undefined,
+        });
+        const shareUrl = `${window.location.origin}/m/${data.token}`;
+        const qrDataUrl = await QRCode.toDataURL(shareUrl, { width: 240, margin: 1 });
+        share = { shareUrl, qrDataUrl, printedAt: new Date().toISOString() };
+      } catch {
+        // QR is best-effort — the list still prints without it
+      }
+    }
     const html = isLpKind && lpPkg
-      ? buildLpMaterialListHtml({ pkg: lpPkg, estimate: est, company, branding, lang })
+      ? buildLpMaterialListHtml({ pkg: lpPkg, estimate: est, company, branding, lang, share })
       : buildMaterialListHtml({
           estimate: tabsToInclude
             ? { ...est, lines: (est.lines || []).filter((l) => tabsToInclude.includes(l.tab || "vinyl")) }

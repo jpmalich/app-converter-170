@@ -36,3 +36,12 @@ export const LP_GROUP_LABELS = {
   osc: "Outside Corners",
   isc: "Inside Corners",
 };
+
+// LP material sections (mirror of backend LP_SECTION_TITLES) — the
+// derived package governs these; service sections stay contractor-owned.
+export const LP_SECTION_TITLES = new Set([
+  "LP Smart Siding",
+  "LP SmartSide Trim",
+  "LP Siding Accessories",
+  "LP SmartSide Soffit",
+]);

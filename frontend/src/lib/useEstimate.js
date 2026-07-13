@@ -68,7 +68,9 @@ export default function useEstimate(id) {
       try {
         const [e, c, em] = await Promise.all([
           api.get(`/estimates/${id}`),
-          api.get(`/catalog`),
+          // TIER COHERENCE (ruled iter100): the catalog is priced in this
+          // estimate's context — its tier governs every surface
+          api.get(`/catalog?estimate_id=${id}`),
           api.get(`/email/status`),
         ]);
         if (cancelled) return;

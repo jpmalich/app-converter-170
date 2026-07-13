@@ -17,7 +17,7 @@ const esc = (s) =>
 const money = (n) =>
   `$${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang = "en" }) {
+export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang = "en", share = null }) {
   const es = lang === "es";
   const bySection = {};
   (pkg.lines || []).forEach((l) => {
@@ -92,5 +92,16 @@ export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang
         : ""}
       <div style="font-size:12px;font-weight:800;">${es ? "Total de materiales" : "Materials total"}: ${money(pricing.total_sell)}</div>
     </div>
+    ${share ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;padding-top:10px;border-top:1px solid ${C.line};">
+      <div style="font-size:8.5px;color:${C.faint};">
+        <div style="font-weight:700;color:${C.muted};text-transform:uppercase;letter-spacing:0.08em;font-size:8px;">${es ? "Copia digital de ESTA lista impresa" : "Digital copy of THIS printed list"}</div>
+        <div style="margin-top:2px;max-width:420px;">${es
+          ? "El código QR abre exactamente la versión congelada aquí impresa — si el estimado cambia después, la página avisará que existe una lista más reciente."
+          : "The QR opens the exact frozen version printed here — if the estimate changes later, the page will flag that a newer list exists."}</div>
+        <div style="margin-top:2px;">${esc(share.shareUrl)} · ${es ? "impreso" : "printed"} ${esc(new Date(share.printedAt).toLocaleDateString(es ? "es" : "en-US"))}</div>
+      </div>
+      <img src="${share.qrDataUrl}" width="76" height="76" style="width:76px;height:76px;flex:none;" />
+    </div>` : ""}
   </body></html>`;
 }

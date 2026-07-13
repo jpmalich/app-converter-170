@@ -400,8 +400,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                     {items.map((l) => (
                       <div key={l.name} className="flex justify-between py-1 text-sm">
                         <span className="text-[#09090B]">{tItem(l.name, sendLang)}</span>
-                        <span className="text-[#52525B] font-mono-num">
+                        <span className="text-[#52525B] font-mono-num text-right">
                           {l.qty} {tUnit(l.unit, sendLang)}
+                          {l.pricing_pending && (
+                            <span className="block text-[10px] uppercase tracking-wider font-bold text-[#B45309]" data-testid={`quote-line-pending-${l.name}`}>
+                              {sendLang === "es" ? "precio por confirmar" : "pricing to be confirmed"}
+                            </span>
+                          )}
                         </span>
                       </div>
                     ))}
@@ -454,6 +459,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                 {fmt(totals.sell)}
               </div>
             </div>
+            {linesWithQty.some((l) => l.pricing_pending) && (
+              <div className="text-xs text-[#B45309] mt-2" data-testid="quote-pending-note">
+                {sendLang === "es"
+                  ? 'Los artículos marcados "precio por confirmar" están pendientes de confirmación del proveedor y no se incluyen en el total. Se cotizarán antes de comenzar el trabajo.'
+                  : 'Items marked "pricing to be confirmed" are awaiting supplier price confirmation and are not included in the total. They will be quoted before work begins.'}
+              </div>
+            )}
             <div className="text-xs text-[#52525B] mt-2">
               Valid for 30 days from the date above. Final price may vary based on site conditions discovered after work begins.
             </div>

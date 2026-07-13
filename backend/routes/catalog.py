@@ -22,7 +22,7 @@ def _key(section: str, name: str) -> str:
     return f"{section}::{name}"
 
 
-async def _resolve_catalog_for_company(company: dict) -> dict:
+async def _resolve_catalog_for_company(company: dict, lp_tier_override: str | None = None) -> dict:
     """Merge the company's assigned tier (material baseline) with their per-company
     overrides (custom mat / lab). Returns shape: {sections, tier_id, tier_name}."""
     tier_id = company.get("price_tier_id")
@@ -43,8 +43,12 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
     # keep their vinyl-domain price, flagged.
     margin_cfg = await load_margin_cfg()
     _tiers_map = margin_cfg.get("tiers") or {}
+    # TIER COHERENCE (ruled iter100): in an estimate's context the
+    # ESTIMATE's tier wins on every surface; company tier is only the
+    # company-level default outside any estimate.
+    _tier_name = lp_tier_override if lp_tier_override in _tiers_map else tier["name"]
     lp_margin_pct = float(_tiers_map.get(
-        tier["name"], _tiers_map.get(margin_cfg.get("default_tier") or DEFAULT_TIER, 30.0)))
+        _tier_name, _tiers_map.get(margin_cfg.get("default_tier") or DEFAULT_TIER, 30.0)))
 
     sections = []
     for s in tier["sections"]:
@@ -116,9 +120,19 @@ async def _resolve_catalog_for_company(company: dict) -> dict:
 
 
 @router.get("/catalog")
-async def get_catalog(user: dict = Depends(get_current_user)):
+async def get_catalog(estimate_id: str | None = None,
+                      user: dict = Depends(get_current_user)):
     company = await get_company_for(user)
-    return await _resolve_catalog_for_company(company)
+    lp_tier = None
+    if estimate_id:
+        # TIER COHERENCE (ruled): catalog-in-context prices LP at the
+        # estimate's own tier — no two surfaces of one estimate may
+        # render different tier bases
+        est = await db.estimates.find_one(
+            {"id": estimate_id, "company_id": company["id"]},
+            {"_id": 0, "lp_pricing_tier": 1})
+        lp_tier = (est or {}).get("lp_pricing_tier")
+    return await _resolve_catalog_for_company(company, lp_tier_override=lp_tier)
 
 
 @router.put("/catalog")

@@ -79,6 +79,32 @@ async def load_lp_native_mode() -> bool:
     return bool(doc and doc.get("enabled"))
 
 
+def reprice_lp_engine_lines(lines: list, margin_pct: float) -> tuple[list, int]:
+    """TIER COHERENCE helper: reprice stored engine-priced LP lines to a
+    tier's margin. Classification mirrors the catalog cut rule (LP section
+    + not a cross-domain exception) — never a stored flag, which client
+    saves can strip. Non-engine lines (contractor services, exceptions)
+    are untouched. Missing cost → pending flag, never a stale price."""
+    from lp_costs import (CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS,
+                          LP_SECTION_TITLES, lp_engine_mat)
+    repriced = 0
+    for l in lines:
+        if l.get("section") not in LP_SECTION_TITLES:
+            continue
+        if l.get("name") in CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS:
+            continue
+        mat = lp_engine_mat(l.get("name"), margin_pct)
+        if mat is None:
+            l["mat"] = 0
+            l["pricing_pending"] = True
+        else:
+            l["mat"] = mat
+            l.pop("pricing_pending", None)
+        l["pricing_source"] = "lp_cost_engine"
+        repriced += 1
+    return lines, repriced
+
+
 def _validate_pcts(d: dict, label: str):
     for k, v in d.items():
         try:
@@ -127,17 +153,24 @@ async def put_lp_margin_tiers(payload: dict, request: Request):
 @router.put("/admin/estimates/{est_id}/lp-pricing-tier")
 async def put_estimate_pricing_tier(est_id: str, payload: dict, request: Request):
     """Per-quote tier PICKER (admin-side only, ruled): the quote's
-    pricing changes by changing its tier — never by typing a margin."""
+    pricing changes by changing its tier — never by typing a margin.
+    TIER COHERENCE (iter100, ruled): the change reprices the estimate's
+    stored engine-priced LP lines too — no two surfaces of one estimate
+    may render different tier bases."""
     check_admin_token(request)
     want = str(payload.get("tier") or "").strip().lower()
     tier = next((t for t in TIER_NAMES if t.lower() == want), None)
     if tier is None:
         raise HTTPException(status_code=400,
                             detail=f"tier must be one of {sorted(TIER_NAMES)} — no free-type margin (ruled)")
-    res = await db.estimates.update_one({"id": est_id}, {"$set": {"lp_pricing_tier": tier}})
-    if res.matched_count == 0:
+    est = await db.estimates.find_one({"id": est_id}, {"_id": 0, "lines": 1})
+    if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
-    return {"id": est_id, "lp_pricing_tier": tier}
+    cfg = await load_margin_cfg()
+    lines, repriced = reprice_lp_engine_lines(est.get("lines") or [], float(cfg["tiers"][tier]))
+    await db.estimates.update_one(
+        {"id": est_id}, {"$set": {"lp_pricing_tier": tier, "lines": lines}})
+    return {"id": est_id, "lp_pricing_tier": tier, "repriced_lines": repriced}
 
 
 @router.get("/admin/lp-estimates")

@@ -119,6 +119,111 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
     return pkg
 
 
+def _pkg_content_hash(pkg: dict) -> str:
+    """Canonical content hash for version comparison (frozen vs current)."""
+    import hashlib
+    import json as _json
+    canon = {
+        "lines": [[l.get("name"), l.get("qty"), l.get("unit"), l.get("color"),
+                   l.get("unit_sell"), l.get("line_sell"), l.get("pricing_status")]
+                  for l in pkg.get("lines") or []],
+        "total_sell": (pkg.get("summary") or {}).get("pricing", {}).get("total_sell"),
+    }
+    return hashlib.sha256(_json.dumps(canon, sort_keys=True).encode()).hexdigest()
+
+
+async def _derive_current(est_id: str, company_id=None):
+    est, run = await _load_run(est_id, company_id)
+    measurements, corner_locations, wall_heights = _extract(run)
+    full_est = await db.estimates.find_one(
+        {"id": est_id}, {"_id": 0, "lp_colors": 1, "lp_pricing_tier": 1,
+                         "estimate_number": 1, "customer_name": 1,
+                         "address": 1, "estimate_date": 1})
+    pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
+                              colors=(full_est or {}).get("lp_colors"))
+    cfg = await load_margin_cfg()
+    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    pkg = redact_external(pkg)
+    pkg["run_id"] = run.get("run_id")
+    return pkg, (full_est or {})
+
+
+@router.post("/estimates/{est_id}/lp-material-list/freeze")
+async def lp_material_list_freeze(
+    est_id: str, payload: dict | None = None, user: dict = Depends(get_current_user),
+):
+    """Iter 100 — QR share (ruled, document doctrine): freeze the EXACT
+    printed composition (colors + session substitutions) server-side and
+    mint a tokenized, contractor-redacted, expiring read-only link. The
+    link always resolves to THIS frozen version; the public view banners
+    when a newer derivation exists — never a silent live view."""
+    import secrets
+    from datetime import datetime, timedelta, timezone
+
+    est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
+    measurements, corner_locations, wall_heights = _extract(run)
+    pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
+                              substitutions=(payload or {}).get("substitutions"),
+                              colors=(payload or {}).get("colors"))
+    cfg = await load_margin_cfg()
+    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    pkg = redact_external(pkg)  # frozen snapshot is ALWAYS the redacted view
+    pkg["run_id"] = run.get("run_id")
+    meta = await db.estimates.find_one(
+        {"id": est_id}, {"_id": 0, "estimate_number": 1, "customer_name": 1,
+                         "address": 1, "estimate_date": 1})
+    now = datetime.now(timezone.utc)
+    token = secrets.token_urlsafe(24)
+    await db.lp_material_list_snapshots.insert_one({
+        "token": token, "estimate_id": est_id, "company_id": user["company_id"],
+        "snapshot": pkg, "meta": meta or {},
+        "content_hash": _pkg_content_hash(pkg),
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(days=90)).isoformat(),
+        "revoked": False,
+    })
+    return {"token": token, "share_path": f"/m/{token}",
+            "expires_at": (now + timedelta(days=90)).isoformat()}
+
+
+@router.get("/public/lp-material-list/{token}")
+async def lp_material_list_public(token: str):
+    """Public, read-only, redacted. Frozen version + newer-available flag."""
+    from datetime import datetime, timezone
+
+    snap = await db.lp_material_list_snapshots.find_one({"token": token}, {"_id": 0})
+    if not snap or snap.get("revoked"):
+        raise HTTPException(status_code=404, detail="Link not found or revoked")
+    if snap.get("expires_at") and snap["expires_at"] < datetime.now(timezone.utc).isoformat():
+        raise HTTPException(status_code=410, detail="Link expired")
+    newer_available = False
+    current = None
+    try:
+        current, _meta = await _derive_current(snap["estimate_id"])
+        newer_available = _pkg_content_hash(current) != snap.get("content_hash")
+    except HTTPException:
+        current = None
+    return {
+        "frozen": snap["snapshot"], "meta": snap.get("meta") or {},
+        "printed_at": snap.get("created_at"),
+        "newer_available": newer_available,
+        "current": current if newer_available else None,
+    }
+
+
+@router.post("/estimates/{est_id}/lp-material-list/revoke")
+async def lp_material_list_revoke(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    token = str(payload.get("token") or "")
+    res = await db.lp_material_list_snapshots.update_one(
+        {"token": token, "estimate_id": est_id, "company_id": user["company_id"]},
+        {"$set": {"revoked": True}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Link not found")
+    return {"revoked": True}
+
+
 @router.post("/estimates/{est_id}/lp-package/truck-reconcile")
 async def lp_truck_reconcile_endpoint(
     est_id: str, payload: dict | None = None, user: dict = Depends(get_current_user),
