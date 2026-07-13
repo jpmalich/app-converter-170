@@ -4,7 +4,7 @@ import api, { fmt, formatApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useBranding } from "@/lib/branding";
 import { toast } from "sonner";
-import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb } from "lucide-react";
+import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb, Loader2, RefreshCw } from "lucide-react";
 import EmailPipeline from "@/components/EmailPipeline";
 import { calcTotals as calcTabTotals } from "@/lib/calc";
 
@@ -36,6 +36,7 @@ export default function Dashboard({ kind = "siding" }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [demoResetting, setDemoResetting] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const t = useT();
   const nav = useNavigate();
@@ -186,6 +187,32 @@ export default function Dashboard({ kind = "siding" }) {
           </h1>
         </div>
         <div className="flex gap-3">
+          {isLp && (
+            <button
+              className="btn-secondary"
+              disabled={demoResetting}
+              onClick={async () => {
+                setDemoResetting(true);
+                try {
+                  const { data } = await api.post(`/demo/reset`);
+                  toast.success(
+                    `Demo staged: ${data.estimate_number} — ${data.package_lines} lines, ` +
+                    `${data.ambers_unratified.length} amber(s), ` +
+                    `${data.openings_review.items} openings to review, QR links minted`
+                  );
+                  nav(`/estimate/${data.estimate_id}`);
+                } catch (e) {
+                  toast.error(formatApiError(e.response?.data?.detail) || "Demo reset failed");
+                } finally {
+                  setDemoResetting(false);
+                }
+              }}
+              title="Idempotent: wipes and restages ONLY the dedicated DEMO-LETRICK estimate — scored tape check, LP composition, colors, unratified ambers, openings review, frozen QR links"
+              data-testid="demo-reset-btn"
+            >
+              {demoResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Reset demo
+            </button>
+          )}
           <button
             className="btn-secondary"
             onClick={async () => {
