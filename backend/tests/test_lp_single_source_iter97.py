@@ -119,3 +119,28 @@ def test_company_tier_identity_mapping():
     assert set(MARGIN_TIER_SEED) == {"whole-sale", "Contractor", "Builder-Dealer", "one-opp"}
     assert MARGIN_TIER_SEED["whole-sale"] == 35.0
     assert DEFAULT_TIER == "Contractor"
+
+
+# ── ONE-SURFACE RULE (iter99): LP exports compose from the derived
+# package — pending lines export flagged, never a silent $0 ──
+def test_lp_csv_rows_compose_from_package_never_silent_zero():
+    from lp_costs import price_package, redact_external
+    from routes.estimates import _lp_csv_rows
+    cfg = {"tiers": dict(MARGIN_TIER_SEED), "default_tier": DEFAULT_TIER,
+           "category_overrides": {}, "line_overrides": {}}
+    pkg = assemble_lp_package(dict(MEAS), colors={"all": "Quarry Gray"})
+    price_package(pkg, cfg, None)
+    rows = _lp_csv_rows(redact_external(pkg))
+    assert rows
+    pending = [r for r in rows if r[4] == "PRICING PENDING"]
+    priced = [r for r in rows if isinstance(r[4], float) and r[4] > 0]
+    assert pending and priced
+    for r in rows:
+        assert r[4] not in (0, 0.0, "0", "0.0")  # never a silent $0
+    # substitution provenance carries into the export
+    pkg2 = assemble_lp_package(
+        dict(MEAS),
+        substitutions={"540 Series OSC 5/4\" x 6\" x 16'": "540 Series OSC 5/4\" x 4\" x 16'"})
+    price_package(pkg2, cfg, None)
+    rows2 = _lp_csv_rows(redact_external(pkg2))
+    assert any("substituted from" in str(r[1]) for r in rows2)

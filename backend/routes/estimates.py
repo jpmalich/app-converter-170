@@ -284,6 +284,14 @@ async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
     # HOVER apply takes after a real import.
     seeded_lines: list[dict] = []
     measurements = src.get("hover_measurements") or None
+    if not measurements:
+        # Iter 99 — $0-lines class fix: AI-measured estimates keep their
+        # measurements on the RUN, not the estimate doc. Seed from the
+        # latest completed run so the paired LP estimate opens populated.
+        latest_run = await db.ai_measure_runs.find_one(
+            {"estimate_id": est_id, "status": "done"}, sort=[("created_at", -1)])
+        if latest_run:
+            measurements = ((latest_run.get("result") or {}).get("measurements")) or None
     if measurements:
         company = await db.companies.find_one(
             {"id": user["company_id"]}, {"_id": 0}
@@ -405,6 +413,47 @@ async def export_estimates_csv(user: dict = Depends(get_current_user)):
     )
 
 
+def _lp_csv_rows(pkg: dict) -> list[list]:
+    """Iter 99 — ONE-SURFACE RULE: LP exports compose from the derived
+    package (same source as the Material List tab), never from stored
+    legacy lines. Pending lines export as 'PRICING PENDING', never $0."""
+    rows: list[list] = []
+    for ln in pkg.get("lines") or []:
+        qty = ln.get("qty", 0) or 0
+        if qty <= 0:
+            continue
+        priced = ln.get("pricing_status") == "priced"
+        mat = ln.get("unit_sell") if priced else "PRICING PENDING"
+        total = f"{(ln.get('line_sell') or 0):.2f}" if priced else ""
+        name = ln["name"]
+        if ln.get("substituted_from"):
+            name += f" (substituted from {ln['substituted_from']} — re-derived)"
+        if ln.get("color"):
+            name += f" — {ln['color']}"
+        rows.append([ln.get("section", ""), name, ln.get("unit", ""), qty, mat, 0, total])
+    return rows
+
+
+async def _derive_lp_pkg_for_export(est: dict, company_id: str):
+    """Best-effort derived package for LP-kind exports; None when no run."""
+    from lp_costs import price_package, redact_external
+    from lp_package import assemble_lp_package
+    from routes.lp_admin import load_margin_cfg
+    from routes.lp_package_routes import _extract, _load_run
+    try:
+        _e, run = await _load_run(est["id"], company_id)
+    except HTTPException:
+        return None
+    meas, corners, heights = _extract(run)
+    pkg = assemble_lp_package(meas, corners, heights, colors=est.get("lp_colors"))
+    cfg = await load_margin_cfg()
+    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    pkg = redact_external(pkg)
+    pkg["run_id"] = run.get("run_id")
+    return pkg
+
+
+
 @router.get("/exports/estimates/{est_id}.csv")
 async def export_estimate_csv(est_id: str, user: dict = Depends(get_current_user)):
     est = await db.estimates.find_one({"id": est_id, "company_id": user["company_id"]}, {"_id": 0})
@@ -440,7 +489,17 @@ async def export_estimate_csv(est_id: str, user: dict = Depends(get_current_user
         writer.writerow([k, v])
     writer.writerow([])
     writer.writerow(["Section", "Item", "Unit", "Qty", "Material $", "Labor $", "Line Total"])
+    lp_pkg = None
+    if est.get("kind") == "lp_smart":
+        lp_pkg = await _derive_lp_pkg_for_export(est, user["company_id"])
+    if lp_pkg:
+        writer.writerow([f"LP MATERIAL LIST — derived from AI measurements "
+                         f"(run {str(lp_pkg.get('run_id') or '')[:8]}) — single source", "", "", "", "", "", ""])
+        for row in _lp_csv_rows(lp_pkg):
+            writer.writerow(row)
     for ln in est.get("lines", []) or []:
+        if lp_pkg and (ln.get("tab") or "vinyl") == "lp_smart":
+            continue  # ONE-SURFACE RULE: stored legacy LP rows never export alongside the derived package
         if (ln.get("qty", 0) or 0) > 0:
             qty = ln["qty"] or 0
             line_total = qty * ((ln.get("mat", 0) or 0) + (ln.get("lab", 0) or 0))

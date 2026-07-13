@@ -50,7 +50,7 @@ function ColorSelect({ value, onChange, colors, disabled, testId }) {
   );
 }
 
-export default function LpMaterialListPanel({ est, update }) {
+export default function LpMaterialListPanel({ est, update, onPackage }) {
   const t = useT();
   const estId = est?.id;
   const [pkg, setPkg] = useState(null);
@@ -63,6 +63,11 @@ export default function LpMaterialListPanel({ est, update }) {
   const [subs, setSubs] = useState({});
   const [colors, setColors] = useState(() => est?.lp_colors || {});
   const [noRun, setNoRun] = useState(false);
+
+  // Iter 99 one-surface rule: expose the live package upstream so the
+  // MATERIAL LIST button prints the exact same composition (colors +
+  // session substitutions) — never the legacy stored-lines view.
+  useEffect(() => { onPackage?.(pkg); /* eslint-disable-next-line */ }, [pkg]);
 
   const fetchPackage = useCallback(async (nextColors, nextSubs) => {
     setRefreshing(true);

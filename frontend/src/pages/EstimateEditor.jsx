@@ -11,6 +11,7 @@ import useReconcileWindowSnapshots from "@/lib/useReconcileWindowSnapshots";
 import useRecalcSoffitOnOverhang from "@/lib/useRecalcSoffitOnOverhang";
 import { calcTotals } from "@/lib/calc";
 import { buildMaterialListHtml, materialListFilename } from "@/lib/materialList";
+import { buildLpMaterialListHtml } from "@/lib/lpMaterialList";
 import StickyBar from "@/components/estimate/StickyBar";
 import JobInfoPanel from "@/components/estimate/JobInfoPanel";
 import MezzoPanel from "@/components/estimate/MezzoPanel";
@@ -63,6 +64,9 @@ export default function EstimateEditor() {
   // LP-kind start on lp_smart; siding estimates start on Vinyl.
   const isWindowKind = est?.kind === "windows";
   const isLpKind = est?.kind === "lp_smart";
+  // Iter 99 — live derived package shared up from LpMaterialListPanel
+  // (one-surface rule: exports compose from this, never legacy lines)
+  const [lpPkg, setLpPkg] = useState(null);
   const [activeTab, setActiveTab] = useState("vinyl");
 
   // Iter 37: For windows-kind, snap to "windows" (Vero) on first load
@@ -215,18 +219,17 @@ export default function EstimateEditor() {
   const handlePrintMaterials = async (tabsToInclude = null) => {
     // Save first so the server has the latest qty/color before we render the PDF.
     await handleSave();
-    // Build the material-list HTML on the client. If the contractor picked
-    // a subset of tabs, filter the estimate's lines first so the PDF only
-    // contains those product lines.
-    const printEst = tabsToInclude
-      ? {
-          ...est,
-          lines: (est.lines || []).filter((l) =>
-            tabsToInclude.includes(l.tab || "vinyl")
-          ),
-        }
-      : est;
-    const html = buildMaterialListHtml({ estimate: printEst, company, branding, lang });
+    // Iter 99 — ONE-SURFACE RULE (ruled): when the derived LP package
+    // exists, it is the ONLY material-list composition. The legacy
+    // stored-lines composer never renders for LP estimates with a run.
+    const html = isLpKind && lpPkg
+      ? buildLpMaterialListHtml({ pkg: lpPkg, estimate: est, company, branding, lang })
+      : buildMaterialListHtml({
+          estimate: tabsToInclude
+            ? { ...est, lines: (est.lines || []).filter((l) => tabsToInclude.includes(l.tab || "vinyl")) }
+            : est,
+          company, branding, lang,
+        });
     try {
       const res = await fetch(
         `${process.env.REACT_APP_BACKEND_URL}/api/estimates/${id}/pdf`,
@@ -277,7 +280,11 @@ export default function EstimateEditor() {
   };
 
   const handleOpenMaterials = async () => {
-    if (tabsWithData.length > 1) {
+    if (isLpKind && lpPkg) {
+      // one-surface rule: derived package is the only LP composition —
+      // no tab picker, no legacy stored-lines render
+      await handlePrintMaterials(null);
+    } else if (tabsWithData.length > 1) {
       setPickerMode("materials");
     } else {
       await handlePrintMaterials(null);
@@ -359,7 +366,7 @@ export default function EstimateEditor() {
         ) : visibleSections.length === 0 ? (
           <>
             {isLpKind && activeTab === "lp_smart" && (
-              <LpMaterialListPanel est={est} update={update} />
+              <LpMaterialListPanel est={est} update={update} onPackage={setLpPkg} />
             )}
             <div
               className="card p-8 text-center"
@@ -375,7 +382,7 @@ export default function EstimateEditor() {
         ) : (
           <>
             {isLpKind && activeTab === "lp_smart" && (
-              <LpMaterialListPanel est={est} update={update} />
+              <LpMaterialListPanel est={est} update={update} onPackage={setLpPkg} />
             )}
             {visibleSections.map((s) => (
             <SectionAccordion
