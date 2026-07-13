@@ -13,6 +13,20 @@ export default function MaterialListShare() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reqState, setReqState] = useState("idle"); // idle | sending | sent | failed
+
+  const requestUpdate = async () => {
+    setReqState("sending");
+    try {
+      const res = await fetch(
+        `${process.env.REACT_APP_BACKEND_URL}/api/public/lp-material-list/${token}/request-update`,
+        { method: "POST" }
+      );
+      setReqState(res.ok ? "sent" : "failed");
+    } catch {
+      setReqState("failed");
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -77,6 +91,28 @@ export default function MaterialListShare() {
               <span className="font-bold">Updated list available.</span>{" "}
               This page shows the exact version printed on {printedAt}. The estimate has
               changed since — ask your contractor for the latest printout.
+              <div className="mt-2">
+                {reqState === "sent" ? (
+                  <span className="text-xs font-bold text-emerald-700" data-testid="request-update-sent">
+                    Request sent — your contractor has been notified.
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={requestUpdate}
+                    disabled={reqState === "sending"}
+                    className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider bg-amber-700 text-white disabled:opacity-60"
+                    data-testid="request-update-btn"
+                  >
+                    {reqState === "sending" ? "Sending…" : "Request updated list"}
+                  </button>
+                )}
+                {reqState === "failed" && (
+                  <span className="ml-2 text-xs text-red-700" data-testid="request-update-failed">
+                    Could not send — try again shortly.
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}

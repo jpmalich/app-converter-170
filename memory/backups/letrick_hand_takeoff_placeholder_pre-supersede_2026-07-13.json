@@ -1,0 +1,10 @@
+{
+  "superseded_at": "2026-07-13",
+  "superseded_by": "Howard's sealed Letrick LP hand-takeoff answer key (composed blind, 2026-07-13)",
+  "placeholder_state_before_supersede": {
+    "file": "/app/backend/lp_conventions.py",
+    "key": "letrick_hand_takeoff",
+    "value": "Howard's Letrick hand-takeoff pending — gates the ±3% Phase 3 acceptance test.",
+    "note": "PENDING_CONFIRMATIONS entry NOT yet flipped — flag-flip is Phase 4, gated on Howard's ruling on the Phase 3 report."
+  }
+}

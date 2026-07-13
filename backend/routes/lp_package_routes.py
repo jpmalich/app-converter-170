@@ -211,6 +211,75 @@ async def lp_material_list_public(token: str):
     }
 
 
+@router.post("/public/lp-material-list/{token}/request-update")
+async def lp_material_list_request_update(token: str, request: Request):
+    """Ruled scope: notifies the estimate's OWNER (the contractor) only,
+    with version context attached — no other recipients, no marketing."""
+    import asyncio
+    from datetime import datetime, timezone
+
+    from config import RESEND_API_KEY, SENDER_EMAIL
+
+    snap = await db.lp_material_list_snapshots.find_one({"token": token}, {"_id": 0})
+    if not snap or snap.get("revoked"):
+        raise HTTPException(status_code=404, detail="Link not found or revoked")
+    now = datetime.now(timezone.utc)
+    last = snap.get("last_update_request_at")
+    if last and (now - datetime.fromisoformat(last)).total_seconds() < 900:
+        return {"ok": True, "throttled": True}
+    if not RESEND_API_KEY:
+        raise HTTPException(status_code=503, detail="Email is not configured")
+
+    owner = await db.users.find_one(
+        {"company_id": snap["company_id"], "role": "owner"},
+        {"_id": 0, "email": 1, "name": 1})
+    if not owner or not owner.get("email"):
+        raise HTTPException(status_code=404, detail="Contractor contact not found")
+
+    newer_available = False
+    try:
+        current, _m = await _derive_current(snap["estimate_id"])
+        newer_available = _pkg_content_hash(current) != snap.get("content_hash")
+    except HTTPException:
+        pass
+
+    meta = snap.get("meta") or {}
+    est_num = meta.get("estimate_number") or "(no number)"
+    printed = str(snap.get("created_at") or "")[:10]
+    version_line = (
+        "The estimate HAS CHANGED since this list was printed — the frozen printout is outdated."
+        if newer_available else
+        "The frozen printout still matches the current derivation — no drift detected."
+    )
+    origin = f"{request.url.scheme}://{request.url.netloc}"
+    html = f"""<!doctype html>
+<html><body style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#09090B;background:#F4F4F5;margin:0;padding:24px;">
+  <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid #09090B;padding:32px;">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#F97316;margin-bottom:8px;">Material List — Update Requested</div>
+    <h1 style="font-size:22px;margin:0 0 16px 0;color:#09090B;">Updated list requested for {est_num}</h1>
+    <p style="font-size:15px;color:#52525B;line-height:1.6;">
+      Someone viewing the printed material list (QR link) asked for the latest version.<br><br>
+      <b style="color:#09090B;">Estimate:</b> {est_num} — {meta.get('customer_name') or ''}<br>
+      <b style="color:#09090B;">Printed version:</b> {printed}<br>
+      <b style="color:#09090B;">Version status:</b> {version_line}
+    </p>
+    <p style="font-size:14px;color:#52525B;">Open the estimate and print a fresh material list to issue a new frozen link:<br>
+      <a href="{origin}/estimate/{snap['estimate_id']}" style="color:#C2410C;">{origin}/estimate/{snap['estimate_id']}</a></p>
+  </div>
+</body></html>"""
+    import resend
+    resend.api_key = RESEND_API_KEY
+    await asyncio.to_thread(resend.Emails.send, {
+        "from": SENDER_EMAIL,
+        "to": [owner["email"]],
+        "subject": f"Updated material list requested — {est_num}",
+        "html": html,
+    })
+    await db.lp_material_list_snapshots.update_one(
+        {"token": token}, {"$set": {"last_update_request_at": now.isoformat()}})
+    return {"ok": True, "newer_available": newer_available}
+
+
 @router.post("/estimates/{est_id}/lp-material-list/revoke")
 async def lp_material_list_revoke(
     est_id: str, payload: dict, user: dict = Depends(get_current_user),
