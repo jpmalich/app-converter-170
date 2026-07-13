@@ -65,37 +65,60 @@ def _corner_height_ft(loc: dict, wall_heights: dict, avg_h) -> float:
         return 0.0
 
 
+APPENDAGE_MARKERS = ("chase", "chimney", "bump", "cantilever", "appendage")
+
+
+def _corner_features(locs):
+    """C4 (ruled 2026-07-13): stick-pooling scope is the physical FEATURE.
+    Standalone house corners are singleton features; the edges of one
+    appendage (chimney chase, bump-out) pool together. Per-location
+    stick-starts within a feature are rejected doctrine."""
+    groups: dict = {}
+    for i, loc in enumerate(locs):
+        text = f"{loc.get('locator') or ''} {' '.join(str(w) for w in loc.get('walls') or [])}".lower()
+        marker = next((m for m in APPENDAGE_MARKERS if m in text), None)
+        key = f"appendage:{marker}" if marker else f"corner:{i}"
+        groups.setdefault(key, []).append(loc)
+    return list(groups.values())
+
+
 def corner_sticks_for_length(heights: list, stick_len_ft: float) -> int:
-    """RULED (six-ruling block): whole stick per location for runs ≤ stick
-    length; runs OVER stick length SPLICE-AND-ROUND-UP TOTAL STICKS —
-    full sticks per run + over-length tails POOLED into shared sticks
-    (uniform with fascia/rake). Stick-length changes recompute counts."""
+    """Sticks for ONE FEATURE (C4 ruling 2026-07-13, supersedes the
+    per-location whole-stick pin): full sticks per edge over stick
+    length; ALL remainders — including whole sub-stick edges — pool →
+    ceil(pool ÷ stick). Chimney (2×18.91' + 2×~8.6') = 4 sticks.
+    Stick-length changes recompute counts."""
     sticks = 0
-    tails = 0.0
+    pool = 0.0
     for h in heights:
         h = float(h or 0)
         if h <= 0:
-            sticks += 1
+            pool += stick_len_ft  # unknown height holds a full stick in the pool
             continue
-        if h <= stick_len_ft + 1e-9:
-            sticks += 1
-        else:
-            sticks += int(h // stick_len_ft)
-            rem = h % stick_len_ft
-            if rem > 1e-9:
-                tails += rem
-    if tails > 0:
-        sticks += int(math.ceil(tails / stick_len_ft - 1e-9))
+        full = int(h // stick_len_ft)
+        if abs(h - full * stick_len_ft) < 1e-9 and full > 0:
+            sticks += full
+            continue
+        sticks += full
+        pool += h - full * stick_len_ft
+    if pool > 1e-9:
+        sticks += int(math.ceil(pool / stick_len_ft - 1e-9))
     return sticks
 
 
 def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
-    heights = [_corner_height_ft(l, wall_heights, avg_height_ft) for l in locs]
+    features = _corner_features(locs)
+    feature_heights = [
+        [_corner_height_ft(l, wall_heights, avg_height_ft) for l in f] for f in features
+    ]
+    heights = [h for fh in feature_heights for h in fh]
     amber = sum(1 for l in locs if l.get("tier") != "confirmed")
     elevated = sum(1 for l in locs if l.get("elevated"))
     return {
         "heights": [round(h, 2) for h in heights],
-        "sticks": corner_sticks_for_length(heights, stick_len),
+        "feature_heights": [[round(h, 2) for h in fh] for fh in feature_heights],
+        "feature_count": len(features),
+        "sticks": sum(corner_sticks_for_length(fh, stick_len) for fh in feature_heights),
         "total_lf": round(sum(heights), 1),
         "amber": amber,
         "elevated": elevated,
@@ -110,7 +133,8 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
         return None
     t = _corner_takeoff(oscs, wall_heights, avg_height_ft, stick_len)
     note_bits = [
-        f"C3: {len(oscs)} OSC locations, whole sticks per location = {t['sticks']} "
+        f"C3/C4: {len(oscs)} OSC locations in {t['feature_count']} feature(s), "
+        f"feature-pooled sticks = {t['sticks']} "
         f"({t['total_lf']} LF; 16' (192\") stick length CONFIRMED)"
     ]
     flags = []
@@ -123,7 +147,8 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
             f"{t['elevated']} elevated post(s) priced at full wall height — trim to post height in field")
     return {"qty": t["sticks"], "note": "; ".join(note_bits), "osc_count": len(oscs),
             "amber": t["amber"], "elevated": t["elevated"], "total_lf": t["total_lf"],
-            "heights": t["heights"], "flags": flags}
+            "heights": t["heights"], "feature_heights": t["feature_heights"],
+            "flags": flags}
 
 
 def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft,
@@ -132,14 +157,15 @@ def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     if not iscs:
         return None
     t = _corner_takeoff(iscs, wall_heights, avg_height_ft, stick_len)
-    note_bits = [f"C3: {len(iscs)} ISC locations, whole sticks per location = {t['sticks']} ({t['total_lf']} LF)"]
+    note_bits = [f"C3/C4: {len(iscs)} ISC locations in {t['feature_count']} feature(s), feature-pooled sticks = {t['sticks']} ({t['total_lf']} LF)"]
     flags = []
     if t["over_stick"]:
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     return {"qty": t["sticks"], "note": "; ".join(note_bits), "isc_count": len(iscs),
-            "amber": t["amber"], "total_lf": t["total_lf"], "heights": t["heights"], "flags": flags}
+            "amber": t["amber"], "total_lf": t["total_lf"], "heights": t["heights"],
+            "feature_heights": t["feature_heights"], "flags": flags}
 
 
 def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=None,
@@ -211,7 +237,8 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     osc = osc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
     if osc:
         _set_line(OSC_ITEM, "LP Siding Accessories", osc["qty"], osc["note"],
-                  _derivation={"kind": "osc", "heights": osc["heights"]})
+                  _derivation={"kind": "osc", "heights": osc["heights"],
+                               "feature_heights": osc["feature_heights"]})
         if osc["amber"]:
             flags.append(f"{osc['amber']} amber corner location(s) included per presence guarantee — field verify before ordering")
         if osc["elevated"]:
@@ -231,7 +258,8 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     isc = isc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
     if isc:
         _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", isc["qty"], isc["note"],
-                  _derivation={"kind": "isc", "heights": isc["heights"]})
+                  _derivation={"kind": "isc", "heights": isc["heights"],
+                               "feature_heights": isc["feature_heights"]})
         if isc["amber"]:
             flags.append(f"{isc['amber']} amber inside-corner location(s) included — field verify")
 
@@ -243,8 +271,9 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         _set_line(
             FASCIA_RAKE_ITEM, "LP SmartSide Trim", fr["ordered_pcs"],
             f"Fascia (eaves {eaves_lf:g} LF) + rake slope ({rakes_lf:g} LF) = {fr['total_lf']} LF "
-            f"× 1.10 ÷ 16' sticks = {fr['ordered_pcs']} — one product both run types; "
-            "splice-and-round-up total sticks (ruled); always present on LP-native (ruled)",
+            f"÷ 16' sticks = {fr['ordered_pcs']} — one product both run types; "
+            "splice-and-round-up total sticks (ruled, C4: whole-stick rounding is the "
+            "entire allowance on stick-count lines — no % waste); always present on LP-native (ruled)",
             _derivation={"kind": "fascia_rake", "total_lf": fr["total_lf"]})
 
     # ── 540 wrap: DOOR TRIM 3-SIDE RULED (head + legs; windows 4-side).
@@ -275,9 +304,25 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         starter_lf = float(measurements.get("starter_lf") or 0)
     except (TypeError, ValueError):
         starter_lf = 0.0
+    # C4 (ruled 2026-07-13): starter deducts ENTRY-class door widths;
+    # sliders (patio doors) sit on starter — no deduction.
+    entry_ded_lf = 0.0
+    if starter_lf > 0:
+        for o in measurements.get("_ai_openings_schedule") or []:
+            if str(o.get("type") or "").lower() == "entry_door":
+                w_ft = float(o.get("width_in") or 0) / 12.0 or 3.0
+                entry_ded_lf += w_ft * int(o.get("count") or 1)
+        if entry_ded_lf == 0:
+            entry_ded_lf = 3.0 * int(measurements.get("entry_door_count") or 0)
+        entry_ded_lf = min(entry_ded_lf, starter_lf)
+    raw_starter_lf = starter_lf
+    starter_lf = max(starter_lf - entry_ded_lf, 0.0)
     if starter_lf > 0:
         rip_pcs = int(math.ceil(starter_lf / 48.0 - 1e-9))
-        note = (f"start-course {starter_lf:g} LF — starter stock ripped from "
+        ded_txt = (f" − {entry_ded_lf:g}' entry-door width(s) (sliders sit on starter — ruled)"
+                   if entry_ded_lf > 0 else "")
+        note = (f"start-course {raw_starter_lf:g} LF{ded_txt} = {starter_lf:g} LF — "
+                f"starter stock ripped from "
                 f"38 Series 8\" lap (3 strips per 16' board = 48 LF/board): "
                 f"pieces = ceil({starter_lf:g} ÷ 48) = {rip_pcs}")
         thin_margin = bool(lap_math and (lap_math["ordered_pcs"] - lap_math["waste_qty"]) < 0.5)
@@ -324,14 +369,15 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                 continue
             stick = _stick_len_ft(new_name)
             if d["kind"] in ("osc", "isc"):
-                qty = corner_sticks_for_length(d["heights"], stick)
-                how = f"whole sticks per location at {stick:g}' = {qty}"
+                fhs = d.get("feature_heights") or [d["heights"]]
+                qty = sum(corner_sticks_for_length(fh, stick) for fh in fhs)
+                how = f"feature-pooled sticks at {stick:g}' = {qty}"
             elif d["kind"] == "osc_lf":
                 qty = max(1, int(math.ceil(d["lf"] / stick - 1e-9)))
                 how = f"{d['lf']:g} LF ÷ {stick:g}' = {qty}"
-            else:  # fascia_rake
-                qty = int(math.ceil(d["total_lf"] * 1.10 / stick - 1e-9))
-                how = f"{d['total_lf']:g} LF × 1.10 ÷ {stick:g}' = {qty}"
+            else:  # fascia_rake — C4: no % waste on stick-count lines
+                qty = int(math.ceil(d["total_lf"] / stick - 1e-9))
+                how = f"{d['total_lf']:g} LF ÷ {stick:g}' = {qty}"
             target["substituted_from"] = target["name"]
             target["name"] = new_name
             target["qty"] = qty

@@ -1899,11 +1899,27 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # contractor manually overrides on the line item later.
         gable_h = float(w.get("gable_triangle_height_ft") or 0)
         if gable_h > 0 and width_ft > 0:
-            gable_sqft += 0.5 * width_ft * gable_h
+            # C4 (ruled 2026-07-13): gable area = 0.7 × width × triangle
+            # height — the ruled estimating convention (angle-cut
+            # coverage), NOT the true triangle ÷2.
+            gable_sqft += 0.7 * width_ft * gable_h
         # Dormers — already in ft², no width math needed.
         dormer_sqft += float(w.get("dormer_face_sqft") or 0)
-    # Add gable + dormer extras on top of the masonry-adjusted siding.
-    siding_sqft += gable_sqft + dormer_sqft
+    # C4 (ruled 2026-07-13): perceived APPENDAGE faces (chimney chase
+    # outer + sides) are ATTRIBUTED to siding area — perception without
+    # attribution is the C3 disease at the composition layer.
+    appendage_sqft = 0.0
+    appendage_faces = []
+    for w in walls:
+        for ap in w.get("accent_profiles") or []:
+            loc_txt = str(ap.get("location") or "").lower()
+            if any(k in loc_txt for k in ("chase", "chimney", "bump", "cantilever")):
+                a = float(ap.get("approx_sqft") or 0)
+                if a > 0:
+                    appendage_sqft += a
+                    appendage_faces.append(f"{ap.get('location')} ({a:g} ft²)")
+    # Add gable + dormer + appendage extras on top of the masonry-adjusted siding.
+    siding_sqft += gable_sqft + dormer_sqft + appendage_sqft
     # The HOVER importer also surfaces siding_with_openings_sqft (gross
     # ft² incl. door/window openings). For AI walls we already counted
     # gross wall area, so use the same value.
@@ -1985,6 +2001,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # and the contractor can sanity-check the geometry before applying.
         "_ai_gable_sqft": round(gable_sqft, 1),
         "_ai_dormer_sqft": round(dormer_sqft, 1),
+        "_ai_appendage_sqft": round(appendage_sqft, 1),
+        "_ai_appendage_faces": appendage_faces,
         # Iter 57: HOVER-like extras — per-wall confidence chips, an
         # openings schedule grouped by elevation/size, double-count
         # check note, missing-elevations flag, and per-photo elevation

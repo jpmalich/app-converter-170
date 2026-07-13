@@ -24,16 +24,18 @@ def _loc(walls, tier="confirmed", elevated=False, ctype="outside"):
 
 
 def _letrick_locations():
+    # locators mirror real run payloads — C4 feature grouping keys off
+    # the appendage marker ("chase"/"chimney") in the locator text
     return [
         _loc(["front", "left"]),
         _loc(["front", "right"]),
         _loc(["back", "left"]),
         _loc(["back", "right"]),
-        _loc(["back"]),                              # chase front-left
-        _loc(["back"]),                              # chase front-right
-        _loc(["back"], tier="unconfirmed"),          # p3 drift residual
-        _loc(["back"], ctype="inside"),              # chase left junction
-        _loc(["back"], ctype="inside", tier="unconfirmed"),  # chase right junction
+        {**_loc(["back"]), "locator": "chimney chase front-left edge"},
+        {**_loc(["back"]), "locator": "chimney chase front-right edge"},
+        {**_loc(["back"], tier="unconfirmed"), "locator": "chimney chase drift residual"},
+        {**_loc(["back"], ctype="inside"), "locator": "chase left junction"},
+        {**_loc(["back"], ctype="inside", tier="unconfirmed"), "locator": "chase right junction"},
     ]
 
 
@@ -43,25 +45,36 @@ MEAS = {"siding_sqft": 1832.7, "outside_corner_lf": 37.6, "inside_corner_lf": 40
         "opening_perimeter_lf": 219.3, "starter_lf": 168.0}
 
 
-def test_osc_whole_sticks_per_location():
-    # RULED: whole sticks PER LOCATION, never pooled LF — 7 locations,
-    # all heights <= 16' → 7 sticks (pooled 64.5/16 would give 5)
+def test_osc_feature_pooled_sticks():
+    # C4 RULED (2026-07-13, supersedes whole-stick-per-location): house
+    # corners are singleton features (1 stick each ≤16'); the chase's 3
+    # edges pool as ONE feature: 3 × 10.3 = 30.9 → ceil(30.9/16) = 2.
+    # 4 + 2 = 6 (per-location stick-starts rejected doctrine).
     osc = osc_from_corner_locations(
         [l for l in _letrick_locations() if l["type"] == "outside"], LETRICK_HEIGHTS, 8.9)
     assert osc["osc_count"] == 7
-    assert osc["qty"] == 7
+    assert osc["qty"] == 6
     assert osc["amber"] == 1
     assert "CONFIRMED" in osc["note"]  # 16' (192") stick length ruled
     assert "field verify" in osc["note"]
 
 
 def test_osc_over_stick_splice_and_round_up_pooled():
-    # RULED: >16' runs splice-and-round-up, tails POOLED (uniform with
-    # fascia/rake): two 18.5' chase corners = 2 full sticks + ceil(5/16)
+    # RULED (uniform splice, reaffirmed by C4): two 18.5' chase corners
+    # = one feature = 2 full sticks + ceil(5/16) = 3, not 4
     osc = osc_from_corner_locations(
-        [_loc(["back"]), _loc(["back"])], {"back": 18.5}, 8.9)
+        [{**_loc(["back"]), "locator": "chase edge A"},
+         {**_loc(["back"]), "locator": "chase edge B"}], {"back": 18.5}, 8.9)
     assert osc["qty"] == 3  # not 4 (full-stick-per-segment rejected)
     assert "splice-and-round-up" in osc["note"]
+
+
+def test_osc_chimney_key_fixture_c4():
+    # Sealed-key chimney (C4 acceptance): 2 full-height 18.91' edges +
+    # 2 above-roofline ~8.59' edges pool as one appendage feature:
+    # 1+1 full + ceil((2.91+2.91+8.59+8.59)/16) = 2+2 = 4 sticks.
+    from lp_package import corner_sticks_for_length
+    assert corner_sticks_for_length([18.91, 18.91, 8.59, 8.59], 16.0) == 4
 
 
 def test_isc_sticks_per_location():
@@ -86,13 +99,14 @@ def test_osc_elevated_flagged_full_wall_height():
 def test_assemble_ruled_trim_system():
     pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
     by = {l["name"]: l for l in pkg["lines"]}
-    assert by[OSC_ITEM]["qty"] == 7
+    assert by[OSC_ITEM]["qty"] == 6  # C4 feature pooling (4 house + chase 2)
     # 440 4/4"×4" is ISC-only now (horizontal runs superseded by 4/4"×8")
     assert by[ISC_TRIM_ITEM]["qty"] == 2
     assert "ISC locations" in by[ISC_TRIM_ITEM]["note"]
-    # 440 4/4"×8" fascia + rake: (108 + 73.4) × 1.10 ÷ 16 = 12.47 → 13
-    assert by[FASCIA_RAKE_ITEM]["qty"] == 13
-    assert "splice-and-round-up total sticks (ruled)" in by[FASCIA_RAKE_ITEM]["note"]
+    # 440 4/4"×8" fascia + rake (C4 waste-scope: no % waste on stick-count
+    # lines): (108 + 73.4) = 181.4 ÷ 16 = 11.34 → 12
+    assert by[FASCIA_RAKE_ITEM]["qty"] == 12
+    assert "splice-and-round-up total sticks (ruled" in by[FASCIA_RAKE_ITEM]["note"]
     assert pkg["summary"]["osc_source"] == "c3_corner_locations"
 
 
@@ -167,8 +181,10 @@ def test_default_osc_is_howards_six_inch():
 def test_starter_line_always_present_non_sku():
     pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
     st = next(l for l in pkg["lines"] if l["name"] == STARTER_LINE_NAME)
-    assert st["unit"] == "LF" and st["qty"] == 168
-    # rip yield RULED FINAL: 3 strips/board = 48 LF/board → ceil(168/48) = 4
+    # C4 (ruled): starter deducts ENTRY-class door widths (2 doors ×
+    # 3' fallback = 6'); sliders sit on starter. 168 − 6 = 162.
+    assert st["unit"] == "LF" and st["qty"] == 162
+    # rip yield RULED FINAL: 3 strips/board = 48 LF/board → ceil(162/48) = 4
     assert st["pieces_added"] == 4 and st["non_sku"] is True
     assert "ripped from" in st["note"] and "48 LF/board" in st["note"]
     # Letrick lap cushion = 220 − 219.84 = 0.16 pc → thin-margin annotation fires
@@ -188,7 +204,7 @@ def test_substitution_rederives_with_provenance():
                               substitutions={OSC_ITEM: other_osc})
     line = next(l for l in pkg["lines"] if l["name"] == other_osc)
     assert line["substituted_from"] == OSC_ITEM
-    assert line["qty"] == 7  # same 16' stick → same count, but RE-DERIVED
+    assert line["qty"] == 6  # same 16' stick → same count (C4 feature-pooled), RE-DERIVED
     assert "RE-DERIVED from stored geometry" in line["note"]
     assert pkg["summary"]["substitution_errors"] == []
 
@@ -204,5 +220,5 @@ def test_starter_dedicated_rip_substitution():
     pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS,
                               substitutions={STARTER_LINE_NAME: "dedicated-rip"})
     st = next(l for l in pkg["lines"] if l["name"] == STARTER_LINE_NAME)
-    assert st["pieces_added"] == 11  # ceil(168 ÷ 16') — re-derived, not hand-typed
+    assert st["pieces_added"] == 11  # ceil(162 ÷ 16') — re-derived, not hand-typed
     assert "dedicated-rip" in st["note"]

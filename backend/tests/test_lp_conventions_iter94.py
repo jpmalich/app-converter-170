@@ -117,9 +117,11 @@ def test_rake_slope_never_plan_view():
 # ── LP fascia/rake + composition guard ──
 
 def test_fascia_rake_takeoff():
+    # C4 (ruled 2026-07-13): stick-count lines carry NO percentage waste —
+    # whole-stick rounding is the entire allowance. 181.4 ÷ 16 → 12.
     fr = fascia_rake_takeoff(108.0, 73.4)
     assert fr["total_lf"] == 181.4
-    assert fr["ordered_pcs"] == 13  # × 1.10 = 199.5 ÷ 16 → 13 sticks
+    assert fr["ordered_pcs"] == 12
     assert fr["flags"] == []  # splice-and-round-up + always-present RULED
 
 

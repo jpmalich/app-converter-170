@@ -16,12 +16,16 @@ KEY_MEASUREMENTS = {
     "siding_with_openings_sqft": 2098.5,
     "eaves_lf": 108.0,
     "rakes_lf": 69.6,           # 4 × 17.4
-    "starter_lf": 165.0,        # 168 − 3' entry (key's deduction)
+    "starter_lf": 168.0,        # RAW start-course; C4 deducts entry widths in composition
     "window_count": 10,
     "entry_door_count": 1,
     "patio_door_count": 1,
     "garage_door_count": 0,
     "opening_count": 12,
+    "_ai_openings_schedule": [
+        {"type": "entry_door", "width_in": 36, "count": 1},
+        {"type": "patio_door", "width_in": 72, "count": 1},
+    ],
     "_ai_avg_wall_height_ft": 9.0,
 }
 

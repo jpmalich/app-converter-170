@@ -207,19 +207,18 @@ def soffit_run_area_sqft(eaves_lf: float, rakes_lf: float, overhang_in: float,
     return round(runs * float(overhang_in or 0) / 12.0, 1)
 
 
-def fascia_rake_takeoff(eaves_lf: float, rakes_lf: float, waste: float = DEFAULT_WASTE) -> dict:
+def fascia_rake_takeoff(eaves_lf: float, rakes_lf: float) -> dict:
     """LP fascia + rake boards: 440 Series Trim 4/4"×8"×16' — one product
     across both run types (RULED, amendment 2026-07-11). LF = eave runs +
-    rake SLOPE lengths (never plan-view). Splice-and-round-up TOTAL
-    sticks (ruled); always present on LP-native (ruled)."""
+    rake SLOPE lengths (never plan-view). C4 (ruled 2026-07-13): stick-
+    count lines get whole-stick rounding as their ENTIRE allowance — no
+    percentage waste. Splice-and-round-up TOTAL sticks."""
     total_lf = float(eaves_lf or 0) + float(rakes_lf or 0)
     if total_lf <= 0:
         return {"total_lf": 0.0, "ordered_pcs": 0, "flags": []}
-    adj = total_lf * (1.0 + float(waste))
     return {
         "total_lf": round(total_lf, 1),
-        "waste_lf": round(adj, 1),
-        "ordered_pcs": int(math.ceil(adj / TRIM_STICK_LEN_FT - 1e-9)),
+        "ordered_pcs": int(math.ceil(total_lf / TRIM_STICK_LEN_FT - 1e-9)),
         "flags": [],
     }
 
