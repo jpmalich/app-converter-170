@@ -308,7 +308,7 @@ export default function LpMaterialListPanel({ est, update }) {
                             <option key={o} value={o}>{o}</option>
                           ))}
                           {l.substituted_from && (
-                            <option value={l.substituted_from}>↩ revert to {l.substituted_from}</option>
+                            <option value={l.substituted_from}>{`↩ revert to ${l.substituted_from}`}</option>
                           )}
                         </select>
                       )}

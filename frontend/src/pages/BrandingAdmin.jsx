@@ -502,7 +502,7 @@ function LpMarginTiersPanel({ token }) {
                         data-testid={`lp-est-tier-picker-${e.id}`}
                       >
                         {tierNames.map((n) => (
-                          <option key={n} value={n}>{n} ({cfg.tiers[n]}%)</option>
+                          <option key={n} value={n}>{`${n} (${cfg.tiers[n]}%)`}</option>
                         ))}
                       </select>
                     </td>
