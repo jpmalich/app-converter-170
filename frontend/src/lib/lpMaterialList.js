@@ -17,7 +17,7 @@ const esc = (s) =>
 const money = (n) =>
   `$${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang = "en", share = null }) {
+export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang = "en", share = null, trail = null }) {
   const es = lang === "es";
   const bySection = {};
   (pkg.lines || []).forEach((l) => {
@@ -92,6 +92,22 @@ export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang
         : ""}
       <div style="font-size:12px;font-weight:800;">${es ? "Total de materiales" : "Materials total"}: ${money(pricing.total_sell)}</div>
     </div>
+    ${trail ? `
+    <div style="margin-top:10px;padding:6px 8px;border:1px solid ${C.line};font-size:8.5px;color:${C.muted};">
+      <span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;">${es ? "Rastro de verificación" : "Verification trail"}</span>
+      · ${trail.amber.total === 0
+        ? (es ? "sin ubicaciones ámbar en esta corrida" : "no amber locations flagged on this run")
+        : `${es ? "ámbar" : "amber"}: ${trail.amber.verified}/${trail.amber.total} ${es ? "verificadas en campo" : "field-verified"}${
+            trail.amber.verified > 0 && trail.amber.verifiers.length
+              ? ` (${esc(trail.amber.verifiers.join(", "))})` : ""}${
+            trail.amber.unverified.length
+              ? ` — <b style="color:#B45309;">${es ? "SIN VERIFICAR" : "UNVERIFIED"}: ${esc(trail.amber.unverified.join("; "))}</b>` : ""}`}
+      ${trail.openings
+        ? ` · ${es ? "aberturas" : "openings"}: ${trail.openings.confirmed + trail.openings.corrected}/${trail.openings.total} ${es ? "revisadas" : "reviewed"}${
+            trail.openings.corrected ? ` (${trail.openings.corrected} ${es ? "corregidas" : "corrected"})` : ""}${
+            trail.openings.unconfirmed ? ` — <b style="color:#B45309;">${trail.openings.unconfirmed} ${es ? "SIN CONFIRMAR" : "UNCONFIRMED"}</b>` : ""}`
+        : ""}
+    </div>` : ""}
     ${share ? `
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;padding-top:10px;border-top:1px solid ${C.line};">
       <div style="font-size:8.5px;color:${C.faint};">

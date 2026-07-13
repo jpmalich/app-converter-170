@@ -20,6 +20,7 @@ import api, { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { lpHex, LP_GROUP_LABELS } from "@/lib/lpColors";
 import HouseModel3D from "@/components/estimate/HouseModel3D";
+import { OpeningsReviewCard } from "@/components/estimate/OpeningsReviewCard";
 
 function Swatch({ name }) {
   const hex = lpHex(name);
@@ -267,6 +268,14 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           </div>
         )}
       </div>
+
+      {/* confirm openings — pre-derivation ratification (skippable) */}
+      <OpeningsReviewCard
+        review={pkg.openings_review}
+        estId={estId}
+        onChanged={() => fetchPackage(colors, subs)}
+        t={t}
+      />
 
       {/* read-only hint */}
       {!editMode && (

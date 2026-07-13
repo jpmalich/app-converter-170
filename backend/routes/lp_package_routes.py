@@ -24,6 +24,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         q_est["company_id"] = company_id
     est = await db.estimates.find_one(
         q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
+                "lp_openings_review": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -88,6 +89,72 @@ def _amber_items(corner_locations, verify_state):
     return items
 
 
+# ───────────── Confirm-openings review (approved post-C4) ─────────────
+# One-tap ratification of detected openings BEFORE package derivation.
+# user_confirmed promotes to verified standing; user_corrected shifts the
+# derived counts with provenance; skippable — unconfirmed flags persist.
+_OPENING_COUNT_FIELD = {
+    "window": "window_count", "entry_door": "entry_door_count",
+    "patio_door": "patio_door_count", "garage_door": "garage_door_count",
+}
+_OPENING_TYPES = ("window", "entry_door", "patio_door", "garage_door", "vent")
+
+
+def _openings_items(run, review_state):
+    res = run.get("result") or {}
+    sched = (res.get("measurements") or {}).get("_ai_openings_schedule") or []
+    paths = [p for p in str(run.get("photo_paths") or "").split(",") if p]
+    rid = str(run.get("run_id") or "")[:8]
+    items = []
+    for i, s in enumerate(sched):
+        key = f"open:{rid}:{i}"  # run-scoped — a fresh extraction resets review
+        locs = s.get("locations") or []
+        pi = locs[0].get("photo_idx") if locs else None
+        photo_url = None
+        if isinstance(pi, int) and 0 <= pi < len(paths):
+            photo_url = f"/api/uploads/{paths[pi]}"
+        st = (review_state or {}).get(key) or {}
+        items.append({
+            "key": key, "index": i,
+            "elevation": s.get("elevation"), "type": s.get("type"),
+            "style": s.get("style") or "", "size_label": s.get("size_label") or "",
+            "count": int(s.get("count") or 1),
+            "photo_url": photo_url,
+            "bbox": (locs[0].get("bbox") if locs else None),
+            "status": st.get("status") or "unconfirmed",
+            "corrected_type": st.get("corrected_type"),
+            "at": st.get("at"), "by": st.get("by"),
+        })
+    return items
+
+
+def _apply_openings_review(measurements, items):
+    """user_corrected type changes shift derived counts (provenance-
+    carried). Ratification never changes quantities; corrections do."""
+    adj = dict(measurements)
+    corrections = []
+    for it in items:
+        new_t = it.get("corrected_type")
+        if it["status"] == "user_corrected" and new_t and new_t != it["type"]:
+            n = it["count"]
+            f_old = _OPENING_COUNT_FIELD.get(it["type"])
+            f_new = _OPENING_COUNT_FIELD.get(new_t)
+            if f_old:
+                adj[f_old] = max(int(adj.get(f_old) or 0) - n, 0)
+            if f_new:
+                adj[f_new] = int(adj.get(f_new) or 0) + n
+            corrections.append(
+                f"{it['elevation']} {it['type']} → {new_t} ×{n} (user_corrected)")
+    summary = {
+        "total": len(items),
+        "confirmed": sum(1 for i in items if i["status"] == "user_confirmed"),
+        "corrected": sum(1 for i in items if i["status"] == "user_corrected"),
+        "unconfirmed": sum(1 for i in items if i["status"] == "unconfirmed"),
+        "corrections": corrections,
+    }
+    return adj, summary
+
+
 @router.get("/lp-package/colors")
 async def lp_package_colors(user: dict = Depends(get_current_user)):
     """ExpertFinish palette + component groups for the Material List
@@ -118,6 +185,8 @@ async def lp_package_preview(
     cost / margin / tier never leave the server on this surface."""
     est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
+    op_items = _openings_items(run, est.get("lp_openings_review"))
+    measurements, op_summary = _apply_openings_review(measurements, op_items)
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -125,7 +194,41 @@ async def lp_package_preview(
     price_package(pkg, cfg, est.get("lp_pricing_tier"))
     pkg["run_id"] = run.get("run_id")
     pkg["amber_items"] = _amber_items(corner_locations, est.get("lp_field_verify"))
+    pkg["openings_review"] = {**op_summary, "items": op_items}
     return redact_external(pkg)
+
+
+@router.post("/estimates/{est_id}/openings-review")
+async def lp_openings_review_act(est_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    """Per-opening provenance: confirm (user_confirmed — promotes to
+    verified standing), correct (user_corrected — corrected_type shifts
+    derived counts), or reset. Skippable; unconfirmed flags persist."""
+    key = str((payload or {}).get("key") or "").strip()
+    action = (payload or {}).get("action")
+    corrected_type = (payload or {}).get("corrected_type")
+    if not key or "." in key or action not in ("confirm", "correct", "reset"):
+        raise HTTPException(status_code=400, detail="key and action (confirm|correct|reset) required")
+    if action == "correct" and corrected_type not in _OPENING_TYPES:
+        raise HTTPException(status_code=400, detail=f"corrected_type must be one of {_OPENING_TYPES}")
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "id": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    from datetime import datetime, timezone
+    if action == "reset":
+        await db.estimates.update_one(
+            {"id": est_id}, {"$unset": {f"lp_openings_review.{key}": ""}})
+        return {"ok": True, "key": key, "status": "unconfirmed"}
+    entry = {
+        "status": "user_confirmed" if action == "confirm" else "user_corrected",
+        "at": datetime.now(timezone.utc).isoformat(),
+        "by": user.get("email") or user.get("id"),
+    }
+    if action == "correct":
+        entry["corrected_type"] = corrected_type
+    await db.estimates.update_one(
+        {"id": est_id}, {"$set": {f"lp_openings_review.{key}": entry}})
+    return {"ok": True, "key": key, **entry}
 
 
 @router.post("/estimates/{est_id}/lp-field-verify")
@@ -161,6 +264,8 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
     check_admin_token(request)
     est, run = await _load_run(est_id, None, (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
+    measurements, _ = _apply_openings_review(
+        measurements, _openings_items(run, est.get("lp_openings_review")))
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -186,6 +291,10 @@ def _pkg_content_hash(pkg: dict) -> str:
 async def _derive_current(est_id: str, company_id=None):
     est, run = await _load_run(est_id, company_id)
     measurements, corner_locations, wall_heights = _extract(run)
+    # openings corrections apply on EVERY derivation surface (coherence);
+    # the review payload itself is contractor-only and never attaches here.
+    measurements, _ = _apply_openings_review(
+        measurements, _openings_items(run, est.get("lp_openings_review")))
     full_est = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "lp_colors": 1, "lp_pricing_tier": 1,
                          "estimate_number": 1, "customer_name": 1,

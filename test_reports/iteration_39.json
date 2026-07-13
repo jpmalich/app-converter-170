@@ -1,0 +1,33 @@
+{
+  "summary": "Full frontend verification of the two new LP SmartSide Material-List features on fixture EST-910869-L: (1) Confirm-Openings review card + (2) Verification-trail line on printed material list PDF + contractor-only constraint. ALL PASS end-to-end. Fixture restored to clean state (all 20 openings unconfirmed, all 4 amber locations unverified, tier Contractor).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_39.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "OpeningsReviewCard.jsx swallows all API errors silently (catch {}) — a failed POST to /openings-review leaves the UI in a partial state (busy cleared, but no user feedback). Consider a toast on failure, mirroring how QuoteModal handles freeze errors.",
+    "handlePrintMaterials in EstimateEditor.jsx (lines 290-304) freezes on every print attempt — that's ruled behavior, but the freeze POST body sends colors/substitutions but NOT the current openings-review state; the frozen /m/{token} view uses whatever the server already has. That's actually correct (freeze is server-side) but worth documenting; a stale client with pending openings actions in-flight could freeze mid-derivation. Not seen in this run.",
+    "The 'gable-area consistency FAILED' console errors for walls front/back/left fire on every LP estimate open — these are noisy dev-only assertions that spam the console. Consider gating with a debug flag."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only per request)", "frontend": "100% — 8/8 flows PASS"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (contractor tier retained)",
+  "seed_data_creation": "One material-list share token minted (YX9l7xp5xy1RcEKH6lrbET3--PJx0iWU) via the MATERIAL LIST print flow — expected behavior per QR doctrine. NOT revoked (harmless, frozen snapshot).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Fixture EST-910869-L is confirmed clean: 0/20 openings reviewed, 0/4 amber verified, Cap window=18, Cap patio door=2, tier=Contractor. All new-feature testids stable: lp-openings-review-card, lp-or-summary, lp-or-toggle, lp-or-item-{key}, lp-or-confirm-{key}, lp-or-wrong-{key}, lp-or-correct-select-{key}, lp-or-done-{key}, lp-or-corrected-{key}. Verification-trail HTML is produced by /app/frontend/src/lib/lpMaterialList.js lines 95-110 and rendered honestly (partial states as partial, never suppressed).",
+  "test_results_detail": {
+    "1_openings_card_render": "PASS — 20 items rendered with photo thumbnail + elevation tag + type/size + Confirm + Wrong-type buttons. Summary read '0/20 reviewed · 20 unconfirmed' initially.",
+    "2_confirm_and_reset": "PASS — Confirm on open:8ddb8932:0 → summary flipped to '1/20 reviewed · 19 unconfirmed', green lp-or-done button appeared; clicking it reset back to '0/20 · 20 unconfirmed'.",
+    "3_wrong_type_correction_count_shift": "PASS — Wrong type on open:8ddb8932:1 → chose Patio slider → 'Corrected: Window → Patio slider' label appeared; Cap window dropped 18→17 and Cap patio door rose 2→3 (matches ruled behavior exactly). Reset restored 18/2. Fixture left clean.",
+    "4_collapse_toggle": "PASS — lp-or-toggle collapsed the list to 0 items; expanded back to 20.",
+    "5_verification_trail_in_pdf_html": "PASS — Intercepted POST /api/estimates/{id}/pdf body contains 'Verification trail' block. Amber line: 'amber: 0/4 field-verified — UNVERIFIED: left dormer left post; right edge of set-back upper-story wall rising above the lower roof (WALL REF wa; clerestory pop-up left corner post; clerestory pop-up right corner post'. Openings line: 'openings: 0/20 reviewed — 20 UNCONFIRMED'. Both counts/statuses reported honestly (partial as partial, never suppressed).",
+    "6_public_page_purity": "PASS — /m/YX9l7xp5xy1RcEKH6lrbET3--PJx0iWU contains NO Verification trail, NO UNVERIFIED/UNCONFIRMED, NO 'Confirm openings', NO 'FIELD VERIFY', NO 'amber' text. Only contractor-tier line data + 'PRICING PENDING' badges. Public JSON /api/public/lp-material-list/{token} top-level keys: [frozen, meta, printed_at, newer_available, current]. Keys 'openings_review', 'amber_items', 'verification_trail', 'unit_cost', 'dealer_cost' ALL absent.",
+    "7_regression_amber_field_verify": "PASS — lp-field-verify-card renders 4 unverified locations. Verified 'corner:osc:left-dormer-left-post' → green lp-fv-verified appeared → clicked to revert → back to unverified. All 4 restored.",
+    "8_regression_material_table_pricing": "PASS — Contractor-tier 38 Series Lap unit $30.99, line $6,136.02 (matches iter38 baseline). 12 pending lines display 'PRICING PENDING' (never $0). Materials total $12,074.21."
+  }
+}

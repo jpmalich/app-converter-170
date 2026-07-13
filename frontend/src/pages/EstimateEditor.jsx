@@ -269,7 +269,24 @@ export default function EstimateEditor() {
     // Iter 100 — QR doctrine (ruled): every printed LP list freezes a
     // server-side snapshot and carries a QR to THAT exact version.
     let share = null;
+    let trail = null;
     if (isLpKind && lpPkg) {
+      // Verification trail (approved): honest count/status — partial
+      // states shown as partial, never suppressed. Contractor surface
+      // only (the printed crew list; never the public /m/ page).
+      const amber = lpPkg.amber_items || [];
+      const orv = lpPkg.openings_review || null;
+      trail = {
+        amber: {
+          total: amber.length,
+          verified: amber.filter((a) => a.status === "verified").length,
+          unverified: amber.filter((a) => a.status !== "verified").map((a) => a.locator),
+          verifiers: [...new Set(amber.filter((a) => a.verified_by).map((a) => a.verified_by))],
+        },
+        openings: orv && orv.total
+          ? { total: orv.total, confirmed: orv.confirmed, corrected: orv.corrected, unconfirmed: orv.unconfirmed }
+          : null,
+      };
       try {
         const subs = {};
         (lpPkg.lines || []).forEach((l) => {
@@ -287,7 +304,7 @@ export default function EstimateEditor() {
       }
     }
     const html = isLpKind && lpPkg
-      ? buildLpMaterialListHtml({ pkg: lpPkg, estimate: est, company, branding, lang, share })
+      ? buildLpMaterialListHtml({ pkg: lpPkg, estimate: est, company, branding, lang, share, trail })
       : buildMaterialListHtml({
           estimate: tabsToInclude
             ? { ...est, lines: (est.lines || []).filter((l) => tabsToInclude.includes(l.tab || "vinyl")) }
