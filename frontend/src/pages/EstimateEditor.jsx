@@ -138,8 +138,11 @@ export default function EstimateEditor() {
     // est.lines; pending lines carry a flag — never hidden, never $0.
     let base = est;
     if (isLpKind && lpPkg) {
+      // The package governs EVERY line it derives — any section (LP
+      // materials, gutters, caps). Pending lines carry the flag with
+      // mat 0 so they render blank + qualifier and never hit the total.
       const pkgLines = (lpPkg.lines || [])
-        .filter((l) => LP_SECTION_TITLES.has(l.section) && (l.qty || 0) > 0)
+        .filter((l) => (l.qty || 0) > 0)
         .map((l) => ({
           section: l.section,
           name: l.color ? `${l.name} — ${l.color}` : l.name,
@@ -151,9 +154,19 @@ export default function EstimateEditor() {
           adders: [],
           pricing_pending: l.pricing_status !== "priced",
         }));
+      // Contractor service lines: stored lp_smart lines the package does
+      // NOT track (their labor/services keep contractor pricing). Lines
+      // the package derives are deduped by name so a stale stored price
+      // can never shadow the derived/pending truth.
+      const pkgNames = new Set();
+      (lpPkg.lines || []).forEach((l) => {
+        pkgNames.add(l.name);
+        if (l.substituted_from) pkgNames.add(l.substituted_from);
+      });
       const serviceLines = (est.lines || []).filter(
         (l) =>
           (l.tab || "vinyl") === "lp_smart" &&
+          !pkgNames.has(l.name) &&
           !LP_SECTION_TITLES.has(l.section) &&
           (l.qty || 0) > 0
       );
