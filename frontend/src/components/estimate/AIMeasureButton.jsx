@@ -111,11 +111,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Iter 79j.74 — 3D snapshot → Customer Quote PDF. Tracks a save done
   // this session so the auto-capture doesn't refire after the first one.
   const [modelSnapshotSaved, setModelSnapshotSaved] = useState(false);
-  const saveModelSnapshot = async (blob) => {
+  const saveModelSnapshot = async (blob, meta) => {
     const fd = new FormData();
     fd.append("file", blob, "model3d.png");
     const { data } = await api.post("/uploads", fd);
-    await api.put(`/estimates/${estimateId}/model3d-snapshot`, { url: data.url });
+    await api.put(`/estimates/${estimateId}/model3d-snapshot`, {
+      url: data.url,
+      unverified: !!meta?.unverified,
+    });
     setModelSnapshotSaved(true);
     toast.success("3D model snapshot saved — it will appear on the Customer Quote PDF");
   };

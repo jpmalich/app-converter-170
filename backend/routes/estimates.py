@@ -670,6 +670,12 @@ async def restore_estimate(est_id: str, user: dict = Depends(get_current_user)):
 # in the quote HTML which WeasyPrint renders into the PDF.
 class Model3DSnapshotIn(BaseModel):
     url: str
+    # Ruled 2026-07-14 (audience wording split): true when the captured
+    # frame contains unratified geometry (e.g. an amber chimney chase).
+    # Customer surfaces render a homeowner-appropriate footnote ("some
+    # details subject to on-site verification") — internal flag
+    # vocabulary (amber/unconfirmed/field-verify) NEVER reaches them.
+    unverified: bool = False
 
 
 @router.put("/estimates/{est_id}/model3d-snapshot")
@@ -683,12 +689,13 @@ async def save_model3d_snapshot(
         {"id": est_id, "company_id": user["company_id"]},
         {"$set": {
             "model3d_png_url": url,
+            "model3d_unverified": bool(body.unverified),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }},
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
-    return {"ok": True, "model3d_png_url": url}
+    return {"ok": True, "model3d_png_url": url, "model3d_unverified": bool(body.unverified)}
 
 
 

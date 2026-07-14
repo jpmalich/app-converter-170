@@ -483,6 +483,11 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               <div className="text-[10px] text-[#71717A] mt-1">
                 Built from AI photo measurements of your home — the same measurements this quote is priced from.
               </div>
+              {estimate.model3d_unverified && (
+                <div className="text-[10px] text-[#71717A] mt-0.5" data-testid="quote-3d-verify-note">
+                  Some details are subject to on-site verification.
+                </div>
+              )}
             </div>
           )}
 

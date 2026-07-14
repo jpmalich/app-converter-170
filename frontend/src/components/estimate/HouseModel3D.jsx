@@ -1295,7 +1295,12 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
           "image/png",
         );
       });
-      await onSnapshot(blob);
+      // Audience wording split (ruled 2026-07-14): the frame includes the
+      // chase in its TRUE state; flag when any appendage is unratified so
+      // customer surfaces can footnote it in homeowner language.
+      await onSnapshot(blob, {
+        unverified: (house.appendages || []).some((a) => !a.confirmed),
+      });
       setSnapState("saved");
     } catch (e) {
       console.error("3D snapshot failed:", e);
