@@ -285,6 +285,14 @@ async def lp_package_preview(
     cfg = await load_margin_cfg()
     price_package(pkg, cfg, est.get("lp_pricing_tier"))
     pkg["run_id"] = run.get("run_id")
+    # Source chip (Howard-approved 2026-07-14): presenters answer "where
+    # did these numbers come from?" in one glance.
+    if run.get("page_paths"):
+        pkg["source_kind"] = "blueprint"
+        pkg["source_label"] = f"Blueprint — {run.get('page_count') or '?'} sheet(s)"
+    else:
+        pkg["source_kind"] = "photo"
+        pkg["source_label"] = "AI Photo Measure"
     pkg["amber_items"] = _amber_items(corner_locations, est.get("lp_field_verify"))
     pkg["openings_review"] = {**op_summary, "items": op_items}
     pkg["color_matrix"] = _color_matrix(pkg.get("lines") or [])

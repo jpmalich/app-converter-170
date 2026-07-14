@@ -315,6 +315,82 @@ H. NEVER FABRICATE. If you can't find a window schedule and the floor
 Return ONLY the JSON object. No explanation, no code fences."""
 
 
+def _resolve_blueprint_key() -> tuple[str, str]:
+    """Transport cutover (2026-07-14, Howard's ruling): blueprint extraction
+    rides the SAME direct-Anthropic transport as the photo pipeline —
+    single-source doctrine. The Emergent proxy is a fallback only when no
+    direct key is configured (logged loudly, stamped on the run doc)."""
+    direct = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+    if direct:
+        return direct, "anthropic_direct"
+    proxy = (os.environ.get("EMERGENT_LLM_KEY") or "").strip()
+    if proxy:
+        logger.warning("[ai-blueprint] ANTHROPIC_API_KEY absent — falling back to Emergent proxy transport")
+        return proxy, "emergent_proxy"
+    raise HTTPException(status_code=500, detail="No AI key configured (ANTHROPIC_API_KEY / EMERGENT_LLM_KEY)")
+
+
+def _media_type(img_bytes: bytes) -> str:
+    return "image/png" if img_bytes.startswith(b"\x89PNG\r\n\x1a\n") else "image/jpeg"
+
+
+async def _claude_direct_blueprint(
+    *,
+    api_key: str,
+    model_name: str,
+    image_payloads: list[bytes],
+    user_text: str,
+    timeout_s: int = 240,
+) -> tuple[str, dict | None, str | None]:
+    """One multi-image messages.create against api.anthropic.com. Mirrors
+    the photo pipeline's direct transport (SDK max_retries=0, explicit
+    httpx timeouts, outer asyncio cap). Returns (reply_text, usage, stop_reason).
+    Claude 4.5+ interleaves thinking blocks on the direct API — only
+    visible text blocks are concatenated (same parsing as ai_measure)."""
+    from anthropic import AsyncAnthropic
+    import httpx as _httpx
+    client = AsyncAnthropic(
+        api_key=api_key,
+        max_retries=0,
+        timeout=_httpx.Timeout(timeout_s, connect=10.0, read=timeout_s - 15, write=45.0),
+    )
+    content: list[dict] = [
+        {"type": "image", "source": {
+            "type": "base64",
+            "media_type": _media_type(p),
+            "data": base64.b64encode(p).decode("ascii"),
+        }}
+        for p in image_payloads
+    ]
+    content.append({"type": "text", "text": user_text})
+    response = await asyncio.wait_for(
+        client.messages.create(
+            model=model_name,
+            max_tokens=16000,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": content}],
+        ),
+        timeout=timeout_s,
+    )
+    parts: list[str] = []
+    for block in getattr(response, "content", []) or []:
+        btype = getattr(block, "type", None) or (block.get("type") if isinstance(block, dict) else None)
+        if btype == "text":
+            parts.append(getattr(block, "text", None) or (block.get("text") if isinstance(block, dict) else "") or "")
+    reply_text = "".join(parts)
+    stop_reason = getattr(response, "stop_reason", None)
+    if stop_reason == "max_tokens":
+        raise RuntimeError("direct reply truncated at max_tokens — JSON incomplete")
+    usage = getattr(response, "usage", None)
+    usage_stamp = None
+    if usage is not None:
+        usage_stamp = {
+            "input_tokens": int(getattr(usage, "input_tokens", 0) or 0),
+            "output_tokens": int(getattr(usage, "output_tokens", 0) or 0),
+        }
+    return reply_text, usage_stamp, stop_reason
+
+
 def _json_from_reply(text: str) -> dict:
     """Pull the first {...} JSON object out of Claude's reply."""
     text = (text or "").strip()
@@ -876,9 +952,7 @@ async def ai_blueprint(
         # Already capped on the PDF side, but guard against image overflow too.
         image_payloads = image_payloads[:MAX_PAGES_HARD]
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+    api_key, transport = _resolve_blueprint_key()
 
     user_id = user["id"]
     run_id = uuid.uuid4().hex
@@ -902,6 +976,7 @@ async def ai_blueprint(
         # photos[*].index in Claude's output).
         "page_paths": ",".join(p for p in page_paths if p),
         "address": address,
+        "transport": transport,
         "created_at": now,
         "updated_at": now,
         "completed_at": None,
@@ -916,6 +991,7 @@ async def ai_blueprint(
         address=address,
         overhang_in=overhang_in,
         estimate_id=estimate_id,
+        transport=transport,
     ))
     return {
         "run_id": run_id,
@@ -937,6 +1013,7 @@ async def ai_blueprint(
 @router.post("/ai-blueprint/rerun/{prev_run_id}")
 async def ai_blueprint_rerun(
     prev_run_id: str,
+    body: dict | None = None,
     user: dict = Depends(get_current_user),
 ):
     prev = await db.ai_blueprint_runs.find_one({"run_id": prev_run_id})
@@ -968,12 +1045,20 @@ async def ai_blueprint_rerun(
             detail="Cached blueprint pages are no longer on disk — re-upload",
         )
 
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+    api_key, transport = _resolve_blueprint_key()
 
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
+    # Controlled-comparison override (Howard-approved 2026-07-14):
+    # INTERNAL-ONLY, owner role, allowlisted candidates — never a
+    # user-facing dropdown (model-dropdown policy ruling stands).
+    _COMPARISON_MODELS = {"claude-opus-4-5-20251101", "claude-fable-5"}
+    model_name = MODEL_NAME
+    requested = str((body or {}).get("model_key") or "").strip()
+    if requested:
+        if user.get("role") != "owner" or requested not in _COMPARISON_MODELS:
+            raise HTTPException(status_code=403, detail="Model override not permitted")
+        model_name = requested
     address = prev.get("address")
     estimate_id = prev.get("estimate_id")
     # Default overhang we surfaced on the previous worker call. Stored on
@@ -996,6 +1081,8 @@ async def ai_blueprint_rerun(
         "page_paths":  ",".join(new_page_paths),
         "address":     address,
         "rerun_of":    prev_run_id,
+        "model_requested": model_name,
+        "transport":   transport,
         "created_at":  now,
         "updated_at":  now,
         "completed_at": None,
@@ -1010,6 +1097,8 @@ async def ai_blueprint_rerun(
         address=address,
         overhang_in=prev_overhang,
         estimate_id=estimate_id,
+        model_name=model_name,
+        transport=transport,
     ))
     return {
         "run_id":       run_id,
@@ -1105,6 +1194,8 @@ async def _execute_ai_blueprint_worker(
     address: Optional[str],
     overhang_in: float,
     estimate_id: Optional[str] = None,
+    model_name: str = MODEL_NAME,
+    transport: str = "emergent_proxy",
 ):
     """Background worker — runs the Claude blueprint read, aggregates,
     maps to lines + Vero/Mezzo openings, and writes the final result
@@ -1133,13 +1224,8 @@ async def _execute_ai_blueprint_worker(
         image_contents = [
             ImageContent(image_base64=base64.b64encode(p).decode("ascii"))
             for p in image_payloads
-        ]
+        ] if transport != "anthropic_direct" else []
         session_id = f"ai-blueprint-{user_id}-{uuid.uuid4().hex[:8]}"
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=session_id,
-            system_message=SYSTEM_PROMPT,
-        ).with_model("anthropic", MODEL_NAME)
 
         prompt_parts: list[str] = [
             f"You are receiving {len(image_payloads)} plan sheet(s) as images.",
@@ -1157,12 +1243,27 @@ async def _execute_ai_blueprint_worker(
         # Iter 79e — same 4-min Claude wall-clock cap as the HOVER + AI
         # Measure workers. Stops the run doc from getting stuck at
         # `status: "running"` if Claude stalls on a big plan-sheet set.
-        reply_text = await asyncio.wait_for(
-            chat.send_message(
-                UserMessage(text=user_text, file_contents=image_contents),
-            ),
-            timeout=240,
-        )
+        token_usage: dict | None = None
+        if transport == "anthropic_direct":
+            reply_text, token_usage, _stop = await _claude_direct_blueprint(
+                api_key=api_key,
+                model_name=model_name,
+                image_payloads=image_payloads,
+                user_text=user_text,
+                timeout_s=240,
+            )
+        else:
+            chat = LlmChat(
+                api_key=api_key,
+                session_id=session_id,
+                system_message=SYSTEM_PROMPT,
+            ).with_model("anthropic", model_name)
+            reply_text = await asyncio.wait_for(
+                chat.send_message(
+                    UserMessage(text=user_text, file_contents=image_contents),
+                ),
+                timeout=240,
+            )
 
         await _set_stage("aggregating")
         raw = _json_from_reply(reply_text or "")
@@ -1187,17 +1288,38 @@ async def _execute_ai_blueprint_worker(
         except Exception:
             vero_openings, mezzo_openings = [], []
 
+        cost_usd = None
+        if token_usage:
+            try:
+                from routes.ai_measure import _price_for_model_id
+                price = _price_for_model_id(model_name)
+                if price:
+                    cost_usd = round(
+                        (token_usage["input_tokens"] / 1_000_000) * price["input"]
+                        + (token_usage["output_tokens"] / 1_000_000) * price["output"],
+                        4,
+                    )
+            except Exception:
+                cost_usd = None
+
         result = {
             "measurements": measurements,
             "lines": lines,
             "vero_openings": vero_openings,
             "mezzo_openings": mezzo_openings,
             "raw_ai": raw,
-            "model": MODEL_NAME,
+            "model": model_name,
+            "transport": transport,
+            "token_usage": token_usage,
+            "cost_usd": cost_usd,
             "model_config": {
-                "model": MODEL_NAME,
-                "validation_status": MODEL_VALIDATION_STATUS,
+                "model": model_name,
+                "validation_status": (
+                    MODEL_VALIDATION_STATUS if model_name == MODEL_NAME
+                    else "controlled-comparison override (pre-registered 2026-07-14)"
+                ),
                 "prompt_hash": _blueprint_prompt_hash(),
+                "transport": transport,
             },
             "session_id": session_id,
             "pages_processed": len(image_payloads),

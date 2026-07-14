@@ -233,6 +233,15 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           <div className="section-tag">{t("lp.mat.title")}</div>
           <div className="text-[11px] text-[var(--muted)] font-mono-num">
             run {String(pkg.run_id || "").slice(0, 8)} · {pkg.summary?.line_count} lines
+            {pkg.source_label && (
+              <span
+                className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+                data-testid="lp-source-chip"
+                title={`Composition derived from: ${pkg.source_label}`}
+              >
+                derived from: {pkg.source_label}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
