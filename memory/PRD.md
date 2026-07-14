@@ -3022,3 +3022,9 @@ Appendage objects (chimney chases / bump-outs) now render on the 3D house model,
 ## Iter 117b — STANDBY RULING (2026-07-14)
 Events instrumentation ACCEPTED. **Warm-leads digest BACKLOGGED into a single post-September design pass: "CONTRACTOR INTELLIGENCE LAYER"** — bundles (1) timeline surface, (2) warm-leads digest, (3) notification preferences. All three draw the same tracking[] events record and share the same open rulings: granularity (counts vs timestamps), tone, opt-in. Design once, rule once. Events are already flowing — nothing is lost by waiting.
 **SCRIPT-STANDBY IS NOW GENUINE:** no further build items until demo-script support requests emerge.
+
+## Iter 118 — PRE-SCRIPT REPRIORITIZATION (2026-07-14, Howard)
+Two items ahead of standby, both Howard-collects-first:
+1. **Blueprint Measure shakedown (P1 on findings):** Howard uploads Letrick prints fresh, scores vs validated key (footprint, plate height, 7/12 pitch, gable scaled-8.5 vs computed-8.75 flag, window/door schedule, 6+2 corners incl. chase). CONNECTED: blueprint pipeline still runs inherited `claude-opus-4-5-20251101` tagged `inherited-default — validated-model decision pending` (ai_blueprint.py:73-74, recorded on every run doc) — shakedown problems may UN-DEFER the validated-model ruling. Preflight done: no runs in flight, endpoint healthy. NOTE: ai_blueprint_runs TTL is 24h — if any shakedown run should be pinned for the model ruling, archive to fixture_runs on request.
+2. **Demo-path UI clarity pass:** Howard walks demo path as presenter, delivers screenshots + one-line confusions. SCOPE PIN: clarity polish only — visual hierarchy, labels, grouping, removing competing signals. NO workflow changes, NO new features, NOTHING touching pinned behavior. Fixes batched, verified against his screenshots.
+**Agent standing order during shakedown:** no restarts, no backend file edits while Howard's runs are in flight (Class-5 rule — hot reload kills workers).
