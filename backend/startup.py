@@ -119,6 +119,12 @@ async def run_startup():
         keys="created_at", expire_after_seconds=AI_BLUEPRINT_TTL_SECONDS,
     )
 
+    # Iter 112 — soft-deleted estimates: 30-day retention then reaped
+    await _ensure_ttl(
+        db, "estimates_trash", "deleted_at_1",
+        keys="deleted_at", expire_after_seconds=30 * 24 * 60 * 60,
+    )
+
     # Seed the 4 price tiers
     await ensure_tiers_seeded()
 

@@ -57,7 +57,15 @@ async def demo_status(user: dict = Depends(get_current_user)):
 
 @router.post("/demo/reset")
 async def demo_reset(user: dict = Depends(get_current_user)):
-    src_run = await db.ai_measure_runs.find_one({"run_id": SOURCE_RUN_ID}, {"_id": 0})
+    # The frozen source run must OUTLIVE the ai_measure_runs 30-day TTL
+    # (demo day is past that horizon): archive it into fixture_runs
+    # (no TTL) on first touch and prefer the archived copy thereafter.
+    src_run = await db.fixture_runs.find_one({"run_id": SOURCE_RUN_ID}, {"_id": 0})
+    if not src_run:
+        src_run = await db.ai_measure_runs.find_one({"run_id": SOURCE_RUN_ID}, {"_id": 0})
+        if src_run:
+            await db.fixture_runs.update_one(
+                {"run_id": SOURCE_RUN_ID}, {"$set": src_run}, upsert=True)
     if not src_run:
         raise HTTPException(status_code=404, detail="Letrick source run not found")
     # hard isolation: only the fixture-owner's company can stage the demo

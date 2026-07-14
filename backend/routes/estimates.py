@@ -595,12 +595,73 @@ async def patch_estimate(est_id: str, body: dict, user: dict = Depends(get_curre
     return await db.estimates.find_one({"id": est_id}, {"_id": 0})
 
 
+@router.get("/estimates/{est_id}/delete-preflight")
+async def estimate_delete_preflight(est_id: str, user: dict = Depends(get_current_user)):
+    """Delete guard (ruled 2026-06 after the accidental EST-191890 /
+    EST-657226 deletions): name what the estimate is linked to BEFORE the
+    delete — same doctrine as the QR-revocation warning."""
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "demo_key": 1, "estimate_number": 1, "tape_check.history": 1})
+    if not est:
+        raise HTTPException(status_code=404, detail="Not found")
+    runs = await db.ai_measure_runs.count_documents({"estimate_id": est_id})
+    bp_runs = await db.ai_blueprint_runs.count_documents({"estimate_id": est_id})
+    tape_entries = len((est.get("tape_check") or {}).get("history") or [])
+    ml_links = await db.lp_material_list_snapshots.count_documents(
+        {"estimate_id": est_id, "revoked": {"$ne": True}})
+    acc_links = await db.accuracy_report_snapshots.count_documents(
+        {"estimate_id": est_id, "revoked": {"$ne": True}})
+    warnings = []
+    if est.get("demo_key"):
+        warnings.append("dedicated demo fixture — pinned tests and the demo "
+                        "reset reference it")
+    if runs:
+        warnings.append(f"referenced by {runs} frozen AI measure run(s) "
+                        "(extraction provenance)")
+    if bp_runs:
+        warnings.append(f"referenced by {bp_runs} blueprint run(s)")
+    if tape_entries:
+        warnings.append(f"carries {tape_entries} scored tape-check "
+                        "entr" + ("y" if tape_entries == 1 else "ies") +
+                        " (accuracy history)")
+    if ml_links + acc_links:
+        warnings.append(f"{ml_links + acc_links} live share/QR link(s) "
+                        "will dead-end")
+    return {"estimate_number": est.get("estimate_number"),
+            "linked": bool(warnings), "warnings": warnings,
+            "retention_days": 30}
+
+
 @router.delete("/estimates/{est_id}")
 async def delete_estimate(est_id: str, user: dict = Depends(get_current_user)):
-    res = await db.estimates.delete_one({"id": est_id, "company_id": user["company_id"]})
-    if res.deleted_count == 0:
+    """SOFT delete (ruled 2026-06): the doc moves to estimates_trash with
+    a 30-day TTL retention window — a one-click accident is undoable."""
+    est = await db.estimates.find_one({"id": est_id, "company_id": user["company_id"]})
+    if not est:
         raise HTTPException(status_code=404, detail="Not found")
-    return {"ok": True}
+    est.pop("_id", None)
+    est["deleted_at"] = datetime.now(timezone.utc)  # Date type — TTL scanner
+    est["deleted_by"] = user["id"]
+    await db.estimates_trash.update_one(
+        {"id": est_id}, {"$set": est}, upsert=True)
+    await db.estimates.delete_one({"id": est_id, "company_id": user["company_id"]})
+    return {"ok": True, "soft_deleted": True, "retention_days": 30}
+
+
+@router.post("/estimates/trash/{est_id}/restore")
+async def restore_estimate(est_id: str, user: dict = Depends(get_current_user)):
+    doc = await db.estimates_trash.find_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Not in trash (retention window is 30 days)")
+    if await db.estimates.find_one({"id": est_id}, {"_id": 1}):
+        raise HTTPException(status_code=409, detail="Estimate already exists")
+    doc.pop("deleted_at", None)
+    doc.pop("deleted_by", None)
+    await db.estimates.insert_one(doc)
+    await db.estimates_trash.delete_one({"id": est_id})
+    return {"ok": True, "restored": True}
 
 
 # Iter 79j.74 — 3D model snapshot for the Customer Quote PDF. The

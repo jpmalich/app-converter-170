@@ -119,11 +119,44 @@ export default function Dashboard({ kind = "siding" }) {
     }
   };
 
-  const del = async (id) => {
-    if (!window.confirm(t("dash.confirmDelete"))) return;
+  const [delConfirm, setDelConfirm] = useState({ open: false, id: null, number: "", warnings: [] });
+
+  const doDelete = async (id) => {
+    setDelConfirm({ open: false, id: null, number: "", warnings: [] });
     await api.delete(`/estimates/${id}`);
     setItems((x) => x.filter((e) => e.id !== id));
-    toast.success(t("dash.deleted"));
+    toast.success(`${t("dash.deleted")} — recoverable for 30 days`, {
+      action: {
+        label: "Undo",
+        onClick: async () => {
+          try {
+            await api.post(`/estimates/trash/${id}/restore`);
+            toast.success("Estimate restored");
+            load();
+          } catch (e) {
+            toast.error(formatApiError(e.response?.data?.detail) || "Restore failed");
+          }
+        },
+      },
+      duration: 10000,
+    });
+  };
+
+  const del = async (id) => {
+    // Delete guard (ruled): name what the estimate is linked to BEFORE
+    // deleting — same doctrine as the QR-revocation warning.
+    let pre = null;
+    try {
+      pre = (await api.get(`/estimates/${id}/delete-preflight`)).data;
+    } catch {
+      pre = null;
+    }
+    if (pre?.linked) {
+      setDelConfirm({ open: true, id, number: pre.estimate_number || "", warnings: pre.warnings || [] });
+      return;
+    }
+    if (!window.confirm(t("dash.confirmDelete"))) return;
+    await doDelete(id);
   };
 
   const duplicate = async (id) => {
@@ -545,6 +578,36 @@ export default function Dashboard({ kind = "siding" }) {
             <AlertDialogCancel data-testid="demo-reset-cancel">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={runDemoReset} data-testid="demo-reset-confirm-btn">
               Reset demo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={delConfirm.open} onOpenChange={(o) => !o && setDelConfirm({ open: false, id: null, number: "", warnings: [] })}>
+        <AlertDialogContent data-testid="delete-guard-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {delConfirm.number || "this estimate"}? It's linked.
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <ul className="space-y-1 text-amber-700 bg-amber-50 border border-amber-300 px-3 py-2 text-sm font-medium" data-testid="delete-guard-warnings">
+                  {delConfirm.warnings.map((w) => (
+                    <li key={w} className="flex items-start gap-2">
+                      <span aria-hidden>⚠</span>
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm">
+                  Deleting moves it to trash — recoverable for 30 days via Undo.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="delete-guard-cancel">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => doDelete(delConfirm.id)} data-testid="delete-guard-confirm">
+              Delete anyway
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
