@@ -130,6 +130,104 @@ function hexForPaletteName(name) {
   return ALSIDE_COLOR_HEX[name.trim().toLowerCase()] || null;
 }
 
+// ── Chimney-chase / appendage mapping (approved 2026-06) ─────────────
+// Pure MAPPING from the run's existing payloads — C4 attributed faces
+// (walls[].accent_profiles) give the wall + attributed ft²; C3 corner
+// locations (raw_ai.corner_locations) give position_frac along the wall.
+// NO detection logic here (keywords mirror the backend C4 rule verbatim)
+// and NEVER from fixture constants.
+// HARD PIN: defaulted dimensions (depth, above-roofline height, fallback
+// width) are RENDER-ONLY — they position the 3D box and nothing else.
+// They never enter area math, material lines, or pricing. The takeoff's
+// appendage contribution is the AI-ATTRIBUTED approx_sqft, computed
+// server-side, untouched by anything in this file.
+const APPENDAGE_KEYWORDS = ["chase", "chimney", "bump", "cantilever"];
+const hasAppendageKeyword = (s) => {
+  const t = String(s || "").toLowerCase();
+  return APPENDAGE_KEYWORDS.some((k) => t.includes(k));
+};
+// Mirrors backend _amber_items key derivation (lp_package_routes.py) so
+// the render can read lp_field_verify ratification state per corner.
+const verifyKeyForCorner = (c) => {
+  const locator = String(c?.locator || "").trim() || "corner";
+  const kind = String(c?.type || "") === "inside" ? "isc" : "osc";
+  const slug = locator.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  return `corner:${kind}:${slug}`;
+};
+
+function deriveAppendages(walls, cornerLocations, fieldVerify) {
+  const cornersByWall = {};
+  (cornerLocations || []).forEach((c) => {
+    if (!c || !hasAppendageKeyword(c.locator)) return;
+    (c.walls || []).forEach((w) => {
+      const k = String(w).toLowerCase();
+      (cornersByWall[k] = cornersByWall[k] || []).push(c);
+    });
+  });
+  const out = [];
+  (walls || []).forEach((w) => {
+    const wallId = String(w?.label || "").toLowerCase();
+    (w?.accent_profiles || []).forEach((ap) => {
+      if (!hasAppendageKeyword(ap?.location)) return;
+      // Chase corners on this wall attach to the FIRST appendage entry.
+      const corners = out.some((a) => a.wall === wallId) ? [] : (cornersByWall[wallId] || []);
+      const fracs = corners
+        .map((c) => Number(c.position_frac))
+        .filter((v) => Number.isFinite(v));
+      const wallLen = Number(w?.width_ft || 0);
+      let widthFt = 3.0;
+      let widthSource = "default";
+      let positionFrac = 0.5;
+      let positionSource = "default";
+      if (fracs.length >= 1) {
+        positionFrac = fracs.reduce((a, b) => a + b, 0) / fracs.length;
+        positionSource = "corners";
+      }
+      if (fracs.length >= 2 && wallLen > 0) {
+        const lo = Math.min(...fracs);
+        const hi = Math.max(...fracs);
+        const span = (hi - lo) * wallLen;
+        if (span >= 1) {
+          widthFt = span;
+          widthSource = "corners";
+          positionFrac = (lo + hi) / 2;
+        }
+      }
+      const cornerVerified = (c) => {
+        if (String(c.tier || "confirmed") === "confirmed") return true;
+        const st = (fieldVerify || {})[verifyKeyForCorner(c)];
+        return !!st && st.status === "verified";
+      };
+      const locTxt = String(ap.location || "").toLowerCase();
+      out.push({
+        wall: wallId,
+        label: String(ap.location || "appendage"),
+        approxSqft: Number(ap.approx_sqft || 0),
+        positionFrac: Math.min(1, Math.max(0, positionFrac)),
+        positionSource,
+        widthFt,
+        widthSource,
+        depthFt: 2.0,
+        depthSource: "default",
+        // Chimney chases typically break the roofline — default TRUE
+        // (render-only) unless the AI note said so explicitly.
+        extendsAboveRoofline: true,
+        extendsSource: locTxt.includes("above") ? "ai-text" : "default",
+        mentionsRidge: locTxt.includes("ridge"),
+        heightSource: "default",
+        confirmed: corners.length > 0 && corners.every(cornerVerified),
+        corners: corners.map((c) => ({
+          locator: c.locator,
+          type: c.type,
+          tier: c.tier,
+          verified: cornerVerified(c),
+        })),
+      });
+    });
+  });
+  return out;
+}
+
 // Build a house-JSON shape from the AI preview + user overrides.
 function buildHouseJson(preview, overrides, estimate) {
   if (!preview) return null;
@@ -515,6 +613,12 @@ function buildHouseJson(preview, overrides, estimate) {
       mkFacade("back", "Rear elevation", widthBack, back, eaves.back),
       mkFacade("left", "Left gable end", widthLeft, left, eaves.left),
     ],
+    // Chimney chases / bump-outs mapped from the run's C3+C4 payloads.
+    appendages: deriveAppendages(
+      walls,
+      preview.raw_ai?.corner_locations || [],
+      estimate?.lp_field_verify || {},
+    ),
   };
 }
 
@@ -996,6 +1100,57 @@ function buildScene(scene, house) {
     }
   }
 
+  // ── Chimney chase / appendage boxes (render-only) ──────────────────
+  // Each appendage renders as a box protruding from its attributed wall.
+  // Honesty treatment: AMBER translucent + amber outline while any of
+  // its chase corners is unconfirmed & un-ratified; snaps to solid
+  // siding once every corner is confirmed or field-verified. Added as
+  // TOP-LEVEL groups (not wall children) so the envelope check — which
+  // only walks scene-level meshes — never false-positives on a chase
+  // that legitimately breaks the roofline.
+  (house.appendages || []).forEach((ap) => {
+    const f = house.facades.find((x) => x.id === ap.wall);
+    if (!f) return;
+    const grp = new THREE.Group();
+    grp.userData.isAppendage = true;
+    // Same placement frame as the wall mesh (local +z = outward).
+    switch (ap.wall) {
+      case "front": grp.position.set(0, 0, halfD); break;
+      case "back":  grp.position.set(0, 0, -halfD); grp.rotation.y = Math.PI; break;
+      case "right": grp.position.set(halfW, 0, 0); grp.rotation.y = Math.PI / 2; break;
+      case "left":  grp.position.set(-halfW, 0, 0); grp.rotation.y = -Math.PI / 2; break;
+      default: return;
+    }
+    // Local roofline at the chase's position: gable-end walls rise to
+    // the ridge at center; eave walls sit at the eave.
+    const isGablePeakWall = f.gableEnd && roof.type !== "hip";
+    const rooflineY = isGablePeakWall
+      ? f.eaveHeight + roofRise * (1 - Math.abs(2 * ap.positionFrac - 1))
+      : f.eaveHeight;
+    // Above-roofline height is a RENDER-ONLY default; "extends above
+    // ridge" in the AI note draws it past the ridge.
+    const topY = ap.extendsAboveRoofline
+      ? (ap.mentionsRidge ? ridgeY + 2 : rooflineY + 2.5)
+      : f.eaveHeight;
+    const localX = -f.width / 2 + ap.positionFrac * f.width;
+    const geom = new THREE.BoxGeometry(ap.widthFt, topY, ap.depthFt);
+    const mat = ap.confirmed
+      ? wallMat.clone()
+      : new THREE.MeshLambertMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.4 });
+    const box = new THREE.Mesh(geom, mat);
+    box.position.set(localX, topY / 2, ap.depthFt / 2 + 0.05);
+    box.userData.isAppendage = true;
+    box.userData.facadeId = ap.wall;
+    grp.add(box);
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(geom),
+      new THREE.LineBasicMaterial({ color: ap.confirmed ? 0x333842 : 0xf59e0b }),
+    );
+    edges.position.copy(box.position);
+    grp.add(edges);
+    scene.add(grp);
+  });
+
   // Iter 79j.25 + .26 + .33 — Geometry sanity checks. Warnings surface
   // in the UI via the amber banner in the side panel; console.error is
   // kept for dev debugging. `warnings` is returned to the React layer.
@@ -1275,6 +1430,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
     (r) => (r.label || "").toLowerCase() === selectedFacade
   ) || {};
   const totalSqft = (peb.wall_body_sqft || 0) + (peb.gable_sqft || 0) + (peb.dormer_sqft || 0);
+  const facadeAppendages = (house.appendages || []).filter((a) => a.wall === facade.id);
   // Iter 79j.32 — Ridge/gable consistency check surfaced in the UI.
   // Walk every facade and flag any wall where Claude reported a gable
   // triangle but the current ridgeAxis doesn't render it as a gable-
@@ -1743,6 +1899,63 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
           <Row k="Openings" v={facade.openings.length} />
         </div>
+        {/* Chimney chase / appendage provenance — names which dimensions
+            are AI-measured vs render-only assumptions. Pin: assumed
+            dimensions NEVER reach a material quantity. */}
+        {facadeAppendages.length > 0 && (
+          <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-2" data-testid="ai-measure-3d-appendages">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">Appendages — this wall</div>
+            {facadeAppendages.map((ap, i) => (
+              <div key={i} className="space-y-1" data-testid={`ai-measure-3d-appendage-${i}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-[11px] font-bold text-[var(--ink)] leading-tight">{ap.label}</span>
+                  {ap.confirmed ? (
+                    <span
+                      className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)] flex-shrink-0"
+                      title="Every chase corner is confirmed (2+ photos) or field-verified — the 3D box position is ratified."
+                      data-testid={`ai-measure-3d-appendage-status-${i}`}
+                    >
+                      <Check className="w-2.5 h-2.5" /> Verified
+                    </span>
+                  ) : (
+                    <span
+                      className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B] flex-shrink-0"
+                      title="One or more chase corners are unconfirmed — ratify them on the field-verify checklist and the 3D box snaps to solid siding."
+                      data-testid={`ai-measure-3d-appendage-status-${i}`}
+                    >
+                      <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Unconfirmed
+                    </span>
+                  )}
+                </div>
+                <Row
+                  k="Width"
+                  v={ap.widthSource === "corners"
+                    ? `${ap.widthFt.toFixed(1)} ft — from chase corners`
+                    : `~${ap.widthFt.toFixed(0)} ft — assumed, not measured`}
+                />
+                <Row
+                  k="Position"
+                  v={ap.positionSource === "corners"
+                    ? `${Math.round(ap.positionFrac * 100)}% along wall — from chase corners`
+                    : "wall center — assumed, not measured"}
+                />
+                <Row k="Depth" v={`~${ap.depthFt.toFixed(0)} ft — assumed, not measured`} />
+                <Row
+                  k="Height"
+                  v={ap.extendsSource === "ai-text"
+                    ? `above ${ap.mentionsRidge ? "ridge" : "roofline"} (AI photo note) — drawn height assumed`
+                    : "above roofline — assumed, not measured"}
+                />
+                {ap.approxSqft > 0 && (
+                  <Row k="Face area" v={`${ap.approxSqft.toFixed(0)} ft² — AI-attributed (in takeoff)`} bold />
+                )}
+              </div>
+            ))}
+            <div className="text-[9px] italic text-[var(--muted)] leading-tight pt-1 border-t border-[var(--border)]" data-testid="ai-measure-3d-appendage-pin-note">
+              Assumed dimensions position the 3D box only — they never enter area math or material quantities. The takeoff uses the AI-attributed face area.
+            </div>
+          </div>
+        )}
         <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-1 flex-1 min-h-0 overflow-y-auto">
           <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold sticky top-0 bg-[var(--surface)] pb-1" data-testid="ai-measure-3d-materials-heading">
             Whole-house materials <span className="text-[9px] italic text-[var(--muted)] font-normal">· from estimator</span>
