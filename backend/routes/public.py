@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from config import RESEND_API_KEY, SENDER_EMAIL
 from db import db, logger
+from estimate_events import log_estimate_event
 from models import CustomerAcceptIn
 
 router = APIRouter()
@@ -43,6 +44,9 @@ async def public_get_accept(token: str):
     totals = calc_totals(est)
     summary = _public_estimate_summary(est, company)
     summary["total"] = round(totals["sell"], 2)
+    # Split ruling 2026-07-14 — customer opened the quote link. Logged
+    # server-side only; the response never reveals tracking exists.
+    await log_estimate_event(est.get("id"), "quote.viewed", {"surface": "accept_page"})
     return summary
 
 
@@ -76,6 +80,8 @@ async def public_post_accept(token: str, body: CustomerAcceptIn, request: Reques
             "status_label": "accepted",
         }},
     )
+    # Split ruling 2026-07-14 — customer-journey event record
+    await log_estimate_event(est.get("id"), "quote.accepted")
 
     company = await db.companies.find_one(
         {"id": est["company_id"]}, {"_id": 0, "name": 1}

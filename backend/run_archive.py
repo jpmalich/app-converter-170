@@ -47,6 +47,13 @@ async def archive_run_for_artifact(estimate_id=None, run_id=None, reason=""):
         return None
 
 
+async def find_archived_run(query):
+    """Read side of the artifact pin — serve archived runs after the live
+    ai_measure_runs doc reaps. fixture_runs access is owned by THIS module
+    (fork-boundary: LP routers must not touch untagged collections)."""
+    return await db.fixture_runs.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
+
+
 async def backfill_artifact_referenced_runs():
     """Ruled backfill: archive runs already referenced by sent quotes or
     live QR freezes — November callbacks must not depend on when this

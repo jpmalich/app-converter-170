@@ -1229,7 +1229,14 @@ async def accuracy_report_public(token: str):
     snap = await db.accuracy_report_snapshots.find_one({"token": token}, {"_id": 0})
     if not snap or snap.get("revoked"):
         raise HTTPException(status_code=404, detail="Link not found or revoked")
-    if snap.get("expires_at") and snap["expires_at"] < datetime.now(timezone.utc).isoformat():
+    # Split ruling 2026-07-14 — QR scan logged (expired scans included:
+    # callback intel). Response never reveals tracking exists.
+    from estimate_events import log_estimate_event
+    expired = bool(snap.get("expires_at") and snap["expires_at"] < datetime.now(timezone.utc).isoformat())
+    await log_estimate_event(
+        snap.get("estimate_id"), "qr.scanned",
+        {"surface": "accuracy_report", "token": token[:8], **({"expired": True} if expired else {})})
+    if expired:
         raise HTTPException(status_code=410, detail="Link expired")
     newer_available = False
     try:

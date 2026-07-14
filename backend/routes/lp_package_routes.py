@@ -7,11 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from db import db
 from deps import check_admin_token, get_current_user
+from estimate_events import log_estimate_event
 from lp_costs import price_package, redact_external
 from lp_package import assemble_lp_package
 from lp_truck_reconcile import reconcile_letrick_truck
 from routes.lp_admin import load_margin_cfg
-from run_archive import archive_run_for_artifact
+from run_archive import archive_run_for_artifact, find_archived_run
 
 router = APIRouter()
 
@@ -39,7 +40,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
             # Ruled 2026-07-14 — artifact-referenced runs outlive the
             # 30-day TTL in fixture_runs; serve them so a November
             # callback still gets its Material List panel + 3D.
-            r = await db.fixture_runs.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
+            r = await find_archived_run(query)
         return r
 
     run = await _find_run(q)
@@ -402,7 +403,13 @@ async def lp_material_list_public(token: str):
     snap = await db.lp_material_list_snapshots.find_one({"token": token}, {"_id": 0})
     if not snap or snap.get("revoked"):
         raise HTTPException(status_code=404, detail="Link not found or revoked")
-    if snap.get("expires_at") and snap["expires_at"] < datetime.now(timezone.utc).isoformat():
+    # Split ruling 2026-07-14 — QR scan logged (expired scans included:
+    # callback intel). Response never reveals tracking exists.
+    expired = bool(snap.get("expires_at") and snap["expires_at"] < datetime.now(timezone.utc).isoformat())
+    await log_estimate_event(
+        snap.get("estimate_id"), "qr.scanned",
+        {"surface": "material_list", "token": token[:8], **({"expired": True} if expired else {})})
+    if expired:
         raise HTTPException(status_code=410, detail="Link expired")
     newer_available = False
     current = None

@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from config import RESEND_API_KEY, SENDER_EMAIL
 from db import db, logger
 from deps import get_current_user
+from estimate_events import log_estimate_event
 from models import EmailQuoteIn
 from pdf import render_pdf, safe_filename
 from run_archive import archive_run_for_artifact
@@ -83,6 +84,8 @@ async def email_quote(est_id: str, body: EmailQuoteIn, user: dict = Depends(get_
         # Ruled 2026-07-14 — the sent quote embeds run-derived lines +
         # the 3D snapshot: archive the backing run beyond the 30-day TTL.
         await archive_run_for_artifact(estimate_id=est_id, reason="quote-send")
+        # Split ruling 2026-07-14 — customer-journey event record
+        await log_estimate_event(est_id, "quote.sent", {"to": body.recipient_email})
         return {
             "status": "sent",
             "id": result.get("id"),

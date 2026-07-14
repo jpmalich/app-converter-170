@@ -31,6 +31,23 @@ ADMIN_PASSWORD = "Admin123!"
 SOURCE_RUN_ID = "4a009e93eb5348c08cc26bfb935675ce"  # frozen Letrick archive
 
 
+def _run_fresh(module, fn_name, *args, **kwargs):
+    """Run an async helper on a FRESH loop + FRESH motor client — the
+    process-global db client may be bound to another test module's closed
+    loop (order-independence)."""
+    from motor.motor_asyncio import AsyncIOMotorClient
+    client = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    old_db = module.db
+    module.db = client[os.environ["DB_NAME"]]
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(getattr(module, fn_name)(*args, **kwargs))
+    finally:
+        module.db = old_db
+        loop.close()
+        client.close()
+
+
 @pytest.fixture(scope="module")
 def admin_session():
     s = requests.Session()
@@ -38,15 +55,6 @@ def admin_session():
     assert r.status_code == 200, r.text
     s._user_id = s.get(f"{API}/auth/me", timeout=10).json()["id"]
     yield s
-
-
-@pytest.fixture(scope="module")
-def loop():
-    """One shared loop for all in-process motor calls — motor binds to the
-    first loop it performs I/O on; per-call asyncio.run would close it."""
-    l = asyncio.new_event_loop()
-    yield l
-    l.close()
 
 
 @pytest.fixture(scope="module")
@@ -124,7 +132,7 @@ def test_quote_send_trigger_wired_source_pin():
         "quote-send must archive the backing run between send and return")
 
 
-def test_backfill_archives_referenced_and_skips_unreferenced(admin_session, mongo_db, loop):
+def test_backfill_archives_referenced_and_skips_unreferenced(admin_session, mongo_db):
     s = admin_session
     est_sent = s.post(f"{API}/estimates", json={"customer_name": "Backfill Sent"}, timeout=15).json()["id"]
     est_plain = s.post(f"{API}/estimates", json={"customer_name": "Backfill Plain"}, timeout=15).json()["id"]
@@ -132,8 +140,8 @@ def test_backfill_archives_referenced_and_skips_unreferenced(admin_session, mong
     run_plain = _clone_letrick_run(mongo_db, est_plain, s._user_id)
     mongo_db.estimates.update_one({"id": est_sent}, {"$set": {"status_label": "sent"}})
     try:
-        from run_archive import backfill_artifact_referenced_runs
-        archived = loop.run_until_complete(backfill_artifact_referenced_runs())
+        import run_archive
+        archived = _run_fresh(run_archive, "backfill_artifact_referenced_runs")
         assert run_sent in archived
         assert mongo_db.fixture_runs.find_one({"run_id": run_sent})
         # unreferenced runs keep the 30-day TTL — never blanket-archived
@@ -144,15 +152,15 @@ def test_backfill_archives_referenced_and_skips_unreferenced(admin_session, mong
         _cleanup(mongo_db, s, est_plain, [run_plain])
 
 
-def test_archive_helper_idempotent(admin_session, mongo_db, loop):
+def test_archive_helper_idempotent(admin_session, mongo_db):
     s = admin_session
     est_id = s.post(f"{API}/estimates", json={"customer_name": "Archive Idem"}, timeout=15).json()["id"]
     run_id = _clone_letrick_run(mongo_db, est_id, s._user_id)
     try:
-        from run_archive import archive_run_for_artifact
+        import run_archive
         for reason in ("quote-send", "quote-send", "m-freeze"):
-            got = loop.run_until_complete(
-                archive_run_for_artifact(estimate_id=est_id, run_id=run_id, reason=reason))
+            got = _run_fresh(run_archive, "archive_run_for_artifact",
+                             estimate_id=est_id, run_id=run_id, reason=reason)
             assert got == run_id
         assert mongo_db.fixture_runs.count_documents({"run_id": run_id}) == 1
         arch = mongo_db.fixture_runs.find_one({"run_id": run_id})
