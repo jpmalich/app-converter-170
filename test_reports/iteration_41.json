@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend-only presenter click-through verified on lp_smart estimate 1687b568 (BP UI CLICKTHROUGH). Restore banner surfaces the recoverable done run test-bpui-9fd546c6 (~2 min old), Restore opens the Blueprint Takeoff Preview modal WITHOUT any PDF upload. In Preview: legacy TakeoffReconCard is NOT rendered (locator count 0) and the engine note with data-testid='blueprint-lp-engine-note' renders with copy 'LP composition derives through the LP engine. Apply saves these measurements; the Material List panel composes the package via the C4 conventions engine — one composition source (no legacy vinyl formulas, no stacked waste, whole-stick rounding).' Apply Takeoff succeeds: modal closes (setResult(null) fires only after toast.success), backend stamps lp_source_run_id=test-bpui-9fd546c6 on the estimate, and est.lines remains EMPTY (0 lines merged — no J-Channel/Finish Trim/Coil/lp_smart material rows). POST /estimates/{id}/lp-package/preview returns 23 items with integer qty (235/168/108/60/58/…) and 0 forbidden names. LpMaterialListPanel renders in-UI showing 'run test-bpu · 23 lines' with items like '38 Series Lap 3/8\" x 8\" x 16'', '540 Series OSC 5/4\" x 6\" x 16'', 'LP Starter — field-ripped from siding stock', 'Gutter 6\"', 'Downspout 6\"', 'Mini Splits'; NO J-Channel/Finish Trim/Coil text present. 3D Model tab: ai-measure-3d-pitch-printed testid present with green PRINTED badge showing '7/12'; front wall shows 486 sf / 7 openings, side walls populated on click. Toast 'Restored previous blueprint read' captured on 2nd open.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "applyResult() for srcKind==='lp_smart' correctly short-circuits sourceLines to [] (BlueprintMeasureButton.jsx:354-360) so no composition rows are merged into est.lines — verified end-to-end.",
+    "The apply toast for lp_smart says 'Material List derives via the LP engine' (line 520) — the toast is fleeting (~4s Sonner default) so automated capture may miss it; consider extending duration to 6-8s for user visibility on the presenter path, or add a persistent inline confirmation banner near the LP Material List panel."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request — 913 pytest green)", "frontend": "100%"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (owner)",
+  "seed_data_creation": "No new seed data — used pre-existing estimate 1687b568-ba33-4266-851b-82d042f1bb8b and run test-bpui-9fd546c6 as instructed. DEMO estimate db82ec7a was NOT touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The blueprint-applied flow stamps lp_source_run_id and archives the run (24h TTL); after Apply, the Restore banner remains and can re-open the Preview modal for read-only inspection. LP Material List panel data-testid='lp-material-list-panel' fetches via POST /estimates/{id}/lp-package/preview (POST-only; GET returns 405 Method Not Allowed — that is by design, not a bug). Pitch badge testids ai-measure-3d-pitch-printed / -derived live on wall-detail panels inside the 3D Model tab of the Blueprint Preview modal.",
+  "rca of the issue": "N/A — P1 composition cut is behaving exactly as designed on the presenter path."
+}
