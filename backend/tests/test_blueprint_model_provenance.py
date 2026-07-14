@@ -18,10 +18,14 @@ import routes.ai_blueprint as bp  # noqa: E402
 SRC = Path("/app/backend/routes/ai_blueprint.py").read_text()
 
 
-def test_pin_flagged_as_unvalidated_inherited():
+def test_pin_stamped_validated_after_ruling():
+    # Ruling 2026-07-15: 6-run pre-registered comparison, incumbent held →
+    # VALIDATED. The June inherited-default debt is CLOSED; this pin now
+    # guards against the stamp silently regressing to unvalidated.
     assert bp.MODEL_VALIDATION_STATUS == (
-        "inherited-default — validated-model decision pending")
-    assert "PROVENANCE FLAG" in SRC
+        "validated — 6-run controlled comparison 2026-07-15 "
+        "(incumbent held per pre-registered decision rule)")
+    assert "PROVENANCE" in SRC
 
 
 def test_runs_stamp_model_config_with_prompt_hash():

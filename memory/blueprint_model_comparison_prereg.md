@@ -1,6 +1,8 @@
 # PRE-REGISTRATION — Blueprint validated-model controlled comparison
-**Status: DRAFT — win criteria await Howard's approval. NO comparison runs
-fired until approved. Filed 2026-07-14.**
+**Status: EXECUTED & RULED 2026-07-15 — all 6 runs fired per protocol,
+incumbent Opus 4.5 HELD and stamped VALIDATED. See
+`/app/memory/blueprint_model_comparison_results.md` for scored results,
+Howard's ruling, and the window-regression evidence memo. Filed 2026-07-14.**
 
 ## Candidates
 - **Incumbent:** `claude-opus-4-5-20251101` (inherited default, tagged

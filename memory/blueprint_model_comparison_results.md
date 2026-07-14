@@ -75,3 +75,77 @@ handling and edit-and-rerun as the human path.
    clamped after ruling" — awaiting the ruling to clamp.
 
 Raw per-run JSON: /app/memory/bp_comparison_runs/run{1..6}_*.json
+
+---
+
+# RULING (Howard, 2026-07-15) — ACCEPTED PER PRE-REGISTRATION
+- **Opus 4.5 stays on blueprints, stamped VALIDATED** (scored basis: this
+  comparison). `MODEL_VALIDATION_STATUS` updated in ai_blueprint.py; the
+  deferred blueprint-model ruling is CLOSED.
+- **Complementary failure modes logged as blueprint extraction stochasticity**
+  (per pre-reg rule 4, amber handling): Fable misses the 72" slider 3/3;
+  Opus hallucinates doors 2/3. Task-specificity finding on file: the photo
+  pipeline needs the frontier model, the blueprint pipeline doesn't.
+  Cost asymmetry recorded (6.3×, 2.6× input tokens same pages).
+- **Override KEPT, admin-gated permanently** (owner role + allowlist, never
+  user-facing) — the harness stays one config away for future rounds.
+
+# WINDOW-REGRESSION EVIDENCE MEMO (mechanism before disposition)
+
+## Where the 11th window enters: the duplicated "B" row — NOT the egress
+Per-run window rows (all from persisted structured output; runs do not
+persist chain-of-thought, so evidence is rows + notes fields):
+
+| Run | Window rows | Total |
+|---|---|---|
+| Prior proxy 367b7397 (Opus) | A×1 left, B×4 front, C×1, D×3, F×1 | **10** |
+| Opus direct #1 | A×1 left, **B×4 front + B×1 right**, C×1, D×3, F×1 | 11 |
+| Opus direct #3 | A×1 left, **B×4 front + B×1 right**, C×1, D×3, F×1 | 11 |
+| Opus direct #5 | A×1 left, **B×4 front + B×1 back**, C×1, D×3, F×1 | 11 |
+| Fable direct #2/4/6 | A×1 left, B×4 back, C×1, D×3, F×1 | 10 |
+
+- Mark A (48×48 Bowman Kemp 4040 basement egress, left foundation wall)
+  appears in ALL 9 runs on record INCLUDING the prior proxy run that read
+  10 = key. The sealed key's 10 therefore includes A. **The egress is not
+  the delta** → no scope rule is owed on this evidence. (Fable's notes
+  independently flag A as "verify whether it belongs in siding/window
+  scope" — exactly the question the ratification card now surfaces to the
+  human.)
+- The 11th window is a **schedule-qty cross-attribution duplicate**: Opus
+  keeps the schedule's B×4 on one elevation AND adds a spotted B on a
+  second elevation as +1, instead of splitting 4 → 3+1 as the prompt's
+  spanning rule requires (dedupe-by-mark, rule B). The duplicated row's
+  elevation wanders (right, right, back) — placement is stochastic even
+  though the over-count is 3/3.
+
+## What the migration changed (prompt assembly / page rendering)
+- **Page rendering: nothing.** All comparison runs reran the SAME cached
+  JPEG bytes from disk (bp_*.jpg from upload e4afda3a) — byte-identical to
+  what the proxy run saw.
+- **Prompt strings: nothing.** Same SYSTEM_PROMPT (same hash), same
+  user-text builder.
+- **Message assembly: materially different.**
+  - Proxy (emergentintegrations LlmChat → LiteLLM): TEXT FIRST as its own
+    user message, then EACH image appended as a SEPARATE user message
+    (11 user messages total), images as OpenAI-style `image_url` data-URLs
+    translated by LiteLLM.
+  - Direct (AsyncAnthropic): ONE user message, native base64 image blocks
+    FIRST then text LAST; max_tokens pinned 16000 (proxy used library
+    default); proxy hop removed.
+- **Caveat:** the proxy baseline is n=1. Opus-direct reads 11 in 3/3,
+  which suggests a systematic component under the direct message layout,
+  but a single proxy draw cannot separate transport effect from
+  stochastic luck.
+
+## Disposition applied (mechanism = schedule misread → stochasticity path)
+Blueprint-sourced openings now flow through the SAME confirm-openings
+ratification card the photo path uses:
+- `_aggregate_to_hover_shape` emits `_ai_openings_schedule` (one row per
+  schedule mark row, mark shown in the size label) with `photo_idx`
+  pointing at the schedule sheet (fallback: floor-plan sheet).
+- `_openings_items` resolves blueprint `page_paths` where photo runs have
+  `photo_paths` — the card links the governing SHEET image in place of a
+  photo crop. Confirm / wrong-type corrections shift derived counts with
+  provenance, exactly as on the photo path.
+- Applies to runs created after 2026-07-15 (extraction artifacts are
+  immutable; older runs simply show no card).

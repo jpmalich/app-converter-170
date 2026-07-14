@@ -240,3 +240,58 @@ def test_derived_pitch_never_wears_print_badge():
     # blueprint appendages come from the structured payload, photo shape never
     assert "deriveBlueprintAppendages" in src
     assert "openingPlacementDefaulted" in src
+
+
+# ── Confirm-openings ratification for blueprint (ruling 2026-07-15) ──
+# Window-regression disposition: mechanism was a schedule-qty
+# cross-attribution misread (B×4 + phantom B×1) = stochasticity → the
+# human-ratify layer serves both front doors. Blueprint runs emit
+# _ai_openings_schedule with sheet refs in place of photo crops.
+
+def test_openings_schedule_emitted_with_sheet_refs():
+    raw = _base_raw(
+        windows=[
+            {"id": "B", "width_in": 36, "height_in": 60, "qty": 4, "type_hint": "double_hung", "elevation": "front"},
+            {"id": "A", "width_in": 48, "height_in": 48, "qty": 1, "type_hint": "casement", "elevation": "left"},
+        ],
+        doors=[{"id": "E1", "width_in": 36, "height_in": 80, "qty": 1, "type_hint": "entry", "elevation": "front"}],
+        sheets_identified=[
+            {"page": 5, "sheet_title": "FOUNDATION PLAN", "useful_for": "floor_plan"},
+            {"page": 7, "sheet_title": "FIRST FLOOR PLAN", "useful_for": "schedule"},
+        ],
+    )
+    m = _agg(raw)
+    sched = m["_ai_openings_schedule"]
+    assert len(sched) == 3
+    win_rows = [r for r in sched if r["type"] == "window"]
+    assert sum(r["count"] for r in win_rows) == 5
+    # schedule sheet page 7 → 0-based idx 6 on every row
+    assert all(r["locations"] and r["locations"][0]["photo_idx"] == 6 for r in sched)
+    door = next(r for r in sched if r["type"] == "entry_door")
+    assert door["mark"] == "E1" and "E1" in door["size_label"]
+
+
+def test_openings_schedule_falls_back_to_floor_plan_sheet():
+    raw = _base_raw(
+        windows=[{"id": "B", "width_in": 36, "height_in": 60, "qty": 2, "type_hint": "double_hung", "elevation": "back"}],
+        sheets_identified=[{"page": 3, "sheet_title": "FLOOR PLAN", "useful_for": "floor_plan"}],
+    )
+    sched = _agg(raw)["_ai_openings_schedule"]
+    assert sched[0]["locations"][0]["photo_idx"] == 2
+
+
+def test_openings_items_resolve_blueprint_page_paths():
+    from routes.lp_package_routes import _openings_items
+    run = {
+        "run_id": "bp-test-ruling-1234",
+        "page_paths": "bp_a.jpg,bp_b.jpg",
+        "result": {"measurements": {"_ai_openings_schedule": [
+            {"elevation": "front", "type": "window", "style": "", "width_in": 36,
+             "height_in": 60, "count": 4, "size_label": "B · 36×60 in",
+             "locations": [{"photo_idx": 1, "bbox": None}]},
+        ]}},
+    }
+    items = _openings_items(run, None)
+    assert len(items) == 1
+    assert items[0]["photo_url"] == "/api/uploads/bp_b.jpg"
+    assert items[0]["status"] == "unconfirmed"

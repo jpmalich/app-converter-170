@@ -167,7 +167,10 @@ _OPENING_TYPES = ("window", "entry_door", "patio_door", "garage_door", "vent")
 def _openings_items(run, review_state):
     res = run.get("result") or {}
     sched = (res.get("measurements") or {}).get("_ai_openings_schedule") or []
-    paths = [p for p in str(run.get("photo_paths") or "").split(",") if p]
+    # Blueprint runs carry `page_paths` (plan sheets) instead of
+    # `photo_paths` — the review card links the governing sheet image
+    # in place of a photo crop (ruling 2026-07-15).
+    paths = [p for p in str(run.get("photo_paths") or run.get("page_paths") or "").split(",") if p]
     rid = str(run.get("run_id") or "")[:8]
     items = []
     for i, s in enumerate(sched):

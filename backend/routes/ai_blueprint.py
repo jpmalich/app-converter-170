@@ -64,14 +64,20 @@ MAX_PAGES_HARD = 20
 DEFAULT_MAX_PAGES = 12
 MAX_BYTES_PER_FILE = 16 * 1024 * 1024  # blueprints scan larger than photos
 PDF_RENDER_SCALE = 2.0  # pypdfium2 scale factor — ~144 DPI for an 8.5×11
-# ⚑ PROVENANCE FLAG (Iter 112, Howard's audit): this Opus 4.5 pin was
-# INHERITED from AI-measure's then-default at feature birth (2026-06-18),
-# not consciously chosen — no bake-off, no ruling, no sealed validation.
-# It is NOT a validated configuration; a future validated-model decision
-# is OWED before the pin can be called deliberate. Runs now stamp
-# model_config + prompt hash so that validation has provenance to score.
+# ⚑ PROVENANCE (Iter 121): VALIDATED 2026-07-15 by the pre-registered
+# 6-run controlled comparison (3× Opus 4.5 vs 3× Fable 5, both arms on
+# direct transport, sealed Letrick key, Amendment 1 median-vs-span +
+# Amendment 2 anchor-integrity rules). Challenger improved 1/4 residual
+# lines (needed ≥2) and worsened siding beyond noise → incumbent held.
+# The June inherited-default debt is CLOSED. Task-specificity finding on
+# file: the photo pipeline needs the frontier model; the blueprint
+# pipeline doesn't (6.3× cost, no residual win). Ruling + evidence:
+# /app/memory/blueprint_model_comparison_results.md
 MODEL_NAME = "claude-opus-4-5-20251101"
-MODEL_VALIDATION_STATUS = "inherited-default — validated-model decision pending"
+MODEL_VALIDATION_STATUS = (
+    "validated — 6-run controlled comparison 2026-07-15 "
+    "(incumbent held per pre-registered decision rule)"
+)
 
 
 def _blueprint_prompt_hash() -> str:
@@ -809,6 +815,64 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     raw["openings"] = derived_openings
     measurements["_opening_placement_defaulted"] = _placement_defaulted
 
+    # Ruling (2026-07-15, window-regression disposition): blueprint-sourced
+    # openings ride the SAME confirm-openings ratification card the photo
+    # path uses — sheet references stand in for photo crops. One row per
+    # schedule mark row; `photo_idx` points at the schedule (or floor-plan)
+    # sheet so the card links the governing sheet image.
+    _sheets = raw.get("sheets_identified") or []
+
+    def _first_page_idx(kind, skip_foundation=False):
+        for s in _sheets:
+            try:
+                pg = int(s.get("page"))
+            except (TypeError, ValueError):
+                continue
+            if str(s.get("useful_for") or "") != kind or pg < 1:
+                continue
+            if skip_foundation and "foundation" in str(s.get("sheet_title") or "").lower():
+                continue
+            return pg - 1  # pages are 1-based; page_paths are 0-based
+        return None
+
+    _sheet_idx = _first_page_idx("schedule")
+    if _sheet_idx is None:
+        # The first-floor plan carries the window/door schedules on
+        # residential sets — the foundation plan does not.
+        _sheet_idx = _first_page_idx("floor_plan", skip_foundation=True)
+    if _sheet_idx is None:
+        _sheet_idx = _first_page_idx("floor_plan")
+
+    def _sched_row(row, rtype, style):
+        try:
+            qty = max(1, int(row.get("qty") or 1))
+        except (TypeError, ValueError):
+            qty = 1
+        w_in = float(row.get("width_in") or 0)
+        h_in = float(row.get("height_in") or 0)
+        mark = str(row.get("id") or "").strip()
+        elev = str(row.get("elevation") or "").strip().lower()
+        return {
+            "elevation": elev if elev in _valid_walls else "unknown",
+            "type": rtype,
+            "style": style,
+            "width_in": w_in,
+            "height_in": h_in,
+            "count": qty,
+            "size_label": (f"{mark} · " if mark else "") + f"{w_in:g}×{h_in:g} in",
+            "locations": ([{"photo_idx": _sheet_idx, "bbox": None}] if _sheet_idx is not None else []),
+            "mark": mark,
+            "source": "blueprint_schedule",
+        }
+
+    measurements["_ai_openings_schedule"] = [
+        _sched_row(win, "window", _hint_to_style.get((win.get("type_hint") or "").lower(), ""))
+        for win in windows
+    ] + [
+        _sched_row(d, _hint_to_door_type.get((d.get("type_hint") or "").lower(), "entry_door"), "")
+        for d in doors
+    ]
+
     # Iter 79j.34 — Sanity reconciliation. The 3D viewer computes its
     # per-wall siding sqft from raw.walls[] using the SAME formula the
     # aggregator uses for `siding_sqft`. If they ever diverge >2%,
@@ -1049,9 +1113,11 @@ async def ai_blueprint_rerun(
 
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    # Controlled-comparison override (Howard-approved 2026-07-14):
-    # INTERNAL-ONLY, owner role, allowlisted candidates — never a
-    # user-facing dropdown (model-dropdown policy ruling stands).
+    # Comparison harness (Howard's ruling 2026-07-15: KEEP, admin-gated
+    # permanently — future comparison rounds are inevitable and the
+    # harness stays one config away from firing). INTERNAL-ONLY, owner
+    # role, allowlisted candidates — never a user-facing dropdown
+    # (model-dropdown policy ruling stands).
     _COMPARISON_MODELS = {"claude-opus-4-5-20251101", "claude-fable-5"}
     model_name = MODEL_NAME
     requested = str((body or {}).get("model_key") or "").strip()
