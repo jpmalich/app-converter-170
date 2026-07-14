@@ -27,6 +27,22 @@ DEMO_COLORS = {
 DEMO_TIER = "Contractor"
 
 
+@router.get("/demo/status")
+async def demo_status(user: dict = Depends(get_current_user)):
+    """Preflight for the reset confirmation — surfaces how many printed
+    QR links a reset would revoke (the print-then-reset footgun)."""
+    est = await db.estimates.find_one(
+        {"company_id": user["company_id"], "demo_key": DEMO_KEY},
+        {"_id": 0, "id": 1})
+    if not est:
+        return {"exists": False, "qr_tokens": 0}
+    ml = await db.lp_material_list_snapshots.count_documents(
+        {"estimate_id": est["id"], "revoked": {"$ne": True}})
+    acc = await db.accuracy_report_snapshots.count_documents(
+        {"estimate_id": est["id"], "revoked": {"$ne": True}})
+    return {"exists": True, "estimate_id": est["id"], "qr_tokens": ml + acc}
+
+
 @router.post("/demo/reset")
 async def demo_reset(user: dict = Depends(get_current_user)):
     src_run = await db.ai_measure_runs.find_one({"run_id": SOURCE_RUN_ID}, {"_id": 0})

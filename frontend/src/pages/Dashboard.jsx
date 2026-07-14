@@ -6,6 +6,16 @@ import { useBranding } from "@/lib/branding";
 import { toast } from "sonner";
 import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb, Loader2, RefreshCw } from "lucide-react";
 import EmailPipeline from "@/components/EmailPipeline";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { calcTotals as calcTabTotals } from "@/lib/calc";
 
 // Iter 78z++++ — per-kind tab definitions. Mirrors what the in-estimate
@@ -37,6 +47,25 @@ export default function Dashboard({ kind = "siding" }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [demoResetting, setDemoResetting] = useState(false);
+  const [demoConfirm, setDemoConfirm] = useState({ open: false, qrTokens: 0 });
+
+  const runDemoReset = async () => {
+    setDemoConfirm({ open: false, qrTokens: 0 });
+    setDemoResetting(true);
+    try {
+      const { data } = await api.post(`/demo/reset`);
+      toast.success(
+        `Demo staged: ${data.estimate_number} — ${data.package_lines} lines, ` +
+        `${data.ambers_unratified.length} amber(s), ` +
+        `${data.openings_review.items} openings to review, QR links minted`
+      );
+      nav(`/estimate/${data.estimate_id}`);
+    } catch (e) {
+      toast.error(formatApiError(e.response?.data?.detail) || "Demo reset failed");
+    } finally {
+      setDemoResetting(false);
+    }
+  };
   const [statusFilter, setStatusFilter] = useState("all");
   const t = useT();
   const nav = useNavigate();
@@ -192,19 +221,11 @@ export default function Dashboard({ kind = "siding" }) {
               className="btn-secondary"
               disabled={demoResetting}
               onClick={async () => {
-                setDemoResetting(true);
                 try {
-                  const { data } = await api.post(`/demo/reset`);
-                  toast.success(
-                    `Demo staged: ${data.estimate_number} — ${data.package_lines} lines, ` +
-                    `${data.ambers_unratified.length} amber(s), ` +
-                    `${data.openings_review.items} openings to review, QR links minted`
-                  );
-                  nav(`/estimate/${data.estimate_id}`);
-                } catch (e) {
-                  toast.error(formatApiError(e.response?.data?.detail) || "Demo reset failed");
-                } finally {
-                  setDemoResetting(false);
+                  const { data } = await api.get(`/demo/status`);
+                  setDemoConfirm({ open: true, qrTokens: data.qr_tokens || 0 });
+                } catch {
+                  setDemoConfirm({ open: true, qrTokens: 0 });
                 }
               }}
               title="Idempotent: wipes and restages ONLY the dedicated DEMO-LETRICK estimate — scored tape check, LP composition, colors, unratified ambers, openings review, frozen QR links"
@@ -497,6 +518,37 @@ export default function Dashboard({ kind = "siding" }) {
           })
         )}
       </div>
+      <AlertDialog open={demoConfirm.open} onOpenChange={(o) => !o && setDemoConfirm({ open: false, qrTokens: 0 })}>
+        <AlertDialogContent data-testid="demo-reset-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset the demo estimate?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>
+                  Wipes and restages ONLY the dedicated DEMO-LETRICK estimate —
+                  scored tape check, LP composition, colors, unratified ambers,
+                  openings review, fresh frozen QR links. Real estimates are never touched.
+                </p>
+                {demoConfirm.qrTokens > 0 && (
+                  <p className="flex items-start gap-2 text-amber-700 bg-amber-50 border border-amber-300 px-3 py-2 text-sm font-medium" data-testid="demo-reset-qr-warning">
+                    <span aria-hidden>⚠</span>
+                    <span>
+                      Resetting revokes {demoConfirm.qrTokens} previously printed QR
+                      link{demoConfirm.qrTokens === 1 ? "" : "s"} — reprint after reset.
+                    </span>
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="demo-reset-cancel">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={runDemoReset} data-testid="demo-reset-confirm-btn">
+              Reset demo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
