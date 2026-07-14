@@ -59,6 +59,9 @@ LP_LINE_TAB = "lp_smart"              # line/tab tagging
 # Shared collections LP routers may touch (tagged at the field level):
 SHARED_COLLECTIONS_ALLOWED = [
     "estimates", "settings", "users", "companies", "ai_measure_runs",
+    # THE CUT (2026-07-14): blueprint runs are a composition source for
+    # LP estimates — same shared-infra class as ai_measure_runs.
+    "ai_blueprint_runs",
 ]
 
 ENV_FLAGS = ["LP_AI_FORMULAS_V1"]

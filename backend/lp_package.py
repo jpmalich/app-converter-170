@@ -243,7 +243,39 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             lf = float(measurements.get("outside_corner_lf") or 0)
         except (TypeError, ValueError):
             lf = 0.0
-        if lf > 0:
+        # Blueprint fallback (no C3 locators, shakedown-ruled 2026-07-14):
+        # per-LOCATION whole-stick for house corners + per-FEATURE pooling
+        # for appendage edge groups — global LF-pooling under-orders
+        # (38 LF ÷ 16 = 3 sticks vs 4 × 9.5' locations = 4 sticks).
+        cnt = int(measurements.get("outside_corner_count") or 0)
+        feats = measurements.get("_ai_osc_features") or []
+        if cnt > 0 or feats:
+            bits = []
+            q = 0
+            if cnt > 0:
+                per_h = (lf / cnt) if lf > 0 else float(measurements.get("avg_wall_height_ft") or 9.5)
+                house_q = cnt * max(1, math.ceil(per_h / 16.0 - 1e-9))
+                q += house_q
+                bits.append(f"house {cnt} location(s) × whole-stick ({per_h:g}' each) = {house_q}")
+            elif lf > 0:
+                house_q = max(1, math.ceil(lf / 16.0 - 1e-9))
+                q += house_q
+                bits.append(f"house {lf:g} LF ÷ 16' = {house_q}")
+            for f in feats:
+                try:
+                    flf = float(f.get("lf") or 0)
+                except (TypeError, ValueError):
+                    flf = 0.0
+                if flf > 0:
+                    fq = max(1, math.ceil(flf / 16.0 - 1e-9))
+                    q += fq
+                    bits.append(f"{f.get('label', 'feature')} pooled {flf:g} LF → {fq}")
+            if q > 0:
+                _set_line(OSC_ITEM, "LP Siding Accessories", q,
+                          "no C3 locators — corner-walk basis: " + "; ".join(bits),
+                          _derivation={"kind": "osc_corner_walk", "count": cnt, "lf": lf,
+                                       "features": feats})
+        elif lf > 0:
             q = max(1, math.ceil(lf / 16.0 - 1e-9))
             _set_line(OSC_ITEM, "LP Siding Accessories", q,
                       f"LP 16' outside-corner pieces — whole-piece: {lf:g} LF ÷ 16' = {q}",
@@ -257,6 +289,22 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                                "feature_heights": isc["feature_heights"]})
         if isc["amber"]:
             flags.append(f"{isc['amber']} amber inside-corner location(s) included — field verify")
+    else:
+        # Blueprint fallback (no C3 locators, shakedown-ruled 2026-07-14):
+        # per-location whole-stick from the corner-walk counts — without
+        # this, blueprint-sourced packages NEVER composed ISC at all.
+        ic = int(measurements.get("inside_corner_count") or 0)
+        if ic > 0:
+            try:
+                ilf = float(measurements.get("inside_corner_lf") or 0)
+            except (TypeError, ValueError):
+                ilf = 0.0
+            per_h = (ilf / ic) if ilf > 0 else (avg_h or 9.5)
+            qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
+            _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
+                      f"{ic} inside-corner location(s) × whole-stick ({per_h:g}' each) — "
+                      "corner-walk basis (no C3 locators)",
+                      _derivation={"kind": "isc_corner_walk", "count": ic, "lf": ilf})
 
     # ── 440 4/4"×8": fascia + rake boards
     eaves_lf = float(measurements.get("eaves_lf") or 0)

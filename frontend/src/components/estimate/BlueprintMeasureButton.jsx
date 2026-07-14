@@ -351,7 +351,13 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
     const sidingLines  = allLines.filter((l) => SIDING_TABS_FOR_KIND.has(l.tab || "vinyl"));
     const windowsLines = allLines.filter((l) => WINDOWS_TABS.has(l.tab || "vinyl"));
 
-    const sourceLines  = srcKind === "windows" ? windowsLines : sidingLines;
+    const sourceLines  = srcKind === "lp_smart"
+      // THE CUT (ruled 2026-07-14): lp_smart-kind estimates compose
+      // through the LP engine (C4) — importers merge NO composition
+      // lines. The Material List panel derives from this blueprint run
+      // via /lp-package/preview; est.lines keeps service lines only.
+      ? []
+      : (srcKind === "windows" ? windowsLines : sidingLines);
     const pairedLines  = srcKind === "windows" ? sidingLines  : windowsLines;
     const allVero  = result.vero_openings  || [];
     const allMezzo = result.mezzo_openings || [];
@@ -501,9 +507,23 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
       }
 
       const winNote = sourceVero.length ? ` + ${sourceVero.length} windows` : "";
-      toast.success(
-        `Read ${result.pages_processed || "blueprint"} page(s): ${added} new + ${updated} updated${winNote}${pairedMsg}`
-      );
+      if (srcKind === "lp_smart") {
+        // Archive the blueprint run (24h TTL) — the LP panel now derives
+        // from it; a persistent takeoff must not reference a reapable run.
+        try {
+          await api.post(`/estimates/${est.id}/lp-package/blueprint-applied`, {
+            run_id: result?.run_id || currentRunId || null,
+          });
+        } catch { /* non-fatal — startup backfill also covers it */ }
+        toast.success(
+          `Read ${result.pages_processed || "blueprint"} page(s) — measurements applied. ` +
+          `Material List derives via the LP engine${winNote}${pairedMsg}`
+        );
+      } else {
+        toast.success(
+          `Read ${result.pages_processed || "blueprint"} page(s): ${added} new + ${updated} updated${winNote}${pairedMsg}`
+        );
+      }
       setResult(null);
     } catch (err) {
       toast.error(err?.response?.data?.detail || err?.message || "Apply failed");
@@ -983,14 +1003,29 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                 </div>
               </section>
 
-              {/* Iter 78 — Takeoff Reconciliation: AI raw → formula → ordered */}
-              <TakeoffReconCard
-                measurements={measurements || {}}
-                lines={result.lines || []}
-                wastePct={est?.waste_pct || 0}
-                kind={est?.kind || "siding"}
-                lpSoffitType={est?.lp_soffit_type || "mix"}
-              />
+              {/* Iter 78 — Takeoff Reconciliation: AI raw → formula → ordered.
+                  THE CUT (2026-07-14): lp_smart-kind composes through the LP
+                  engine — the legacy recon table (vinyl formulas, stacked
+                  waste) never renders on an LP estimate. */}
+              {est?.kind === "lp_smart" ? (
+                <div
+                  className="p-3 border border-[var(--border)] bg-[var(--surface)] text-[11px] text-[var(--muted)] leading-relaxed"
+                  data-testid="blueprint-lp-engine-note"
+                >
+                  <b className="text-[var(--ink)]">LP composition derives through the LP engine.</b>{" "}
+                  Apply saves these measurements; the Material List panel composes the
+                  package via the C4 conventions engine — one composition source
+                  (no legacy vinyl formulas, no stacked waste, whole-stick rounding).
+                </div>
+              ) : (
+                <TakeoffReconCard
+                  measurements={measurements || {}}
+                  lines={result.lines || []}
+                  wastePct={est?.waste_pct || 0}
+                  kind={est?.kind || "siding"}
+                  lpSoffitType={est?.lp_soffit_type || "mix"}
+                />
+              )}
 
               {/* Iter 78z (P1.3) — Per-Elevation Breakdown + "+ Add Accent" */}
               <PerElevationBreakdownCard

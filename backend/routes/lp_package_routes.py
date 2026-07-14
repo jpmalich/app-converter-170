@@ -26,7 +26,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         q_est["company_id"] = company_id
     est = await db.estimates.find_one(
         q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
-                "lp_openings_review": 1,
+                "lp_openings_review": 1, "lp_source_run_id": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -35,11 +35,31 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         q["run_id"] = run_id
 
     async def _find_run(query):
+        # THE CUT (ruled 2026-07-14): blueprint-applied LP takeoffs derive
+        # through the SAME engine. Source governance: an APPLIED source
+        # stamp (lp_source_run_id) outranks everything; otherwise the
+        # latest done PHOTO run governs, blueprint runs only when no
+        # photo run exists — a merely-PREVIEWED blueprint shakedown must
+        # never silently switch a demo estimate's composition source.
+        if not run_id:
+            stamped = str(est.get("lp_source_run_id") or "").strip()
+            if stamped:
+                sq = dict(query)
+                sq["run_id"] = stamped
+                for coll in (db.ai_measure_runs, db.ai_blueprint_runs):
+                    r = await coll.find_one(sq, {"_id": 0})
+                    if r:
+                        return r
+                r = await find_archived_run(sq)
+                if r:
+                    return r
         r = await db.ai_measure_runs.find_one(query, sort=[("created_at", -1)])
         if r is None:
-            # Ruled 2026-07-14 — artifact-referenced runs outlive the
-            # 30-day TTL in fixture_runs; serve them so a November
-            # callback still gets its Material List panel + 3D.
+            r = await db.ai_blueprint_runs.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
+        if r is None:
+            # Ruled 2026-07-14 — artifact-referenced runs outlive their
+            # TTL in fixture_runs; serve them so a November callback
+            # still gets its Material List panel + 3D.
             r = await find_archived_run(query)
         return r
 
@@ -197,6 +217,34 @@ def _apply_openings_review(measurements, items):
         "corrections": corrections,
     }
     return adj, summary
+
+
+@router.post("/estimates/{est_id}/lp-package/blueprint-applied")
+async def lp_blueprint_applied(est_id: str, body: dict | None = None,
+                               user: dict = Depends(get_current_user)):
+    """THE CUT (ruled 2026-07-14): applying a blueprint takeoff to an
+    LP estimate makes the estimate a persistent artifact of that run —
+    archive it (blueprint runs carry a 24h TTL that would otherwise
+    reap the Material List panel's source by morning)."""
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "id": 1})
+    if not est:
+        raise HTTPException(status_code=404, detail="Not found")
+    rid = str((body or {}).get("run_id") or "").strip() or None
+    if not rid:
+        latest = await db.ai_blueprint_runs.find_one(
+            {"estimate_id": est_id, "status": "done"},
+            {"_id": 0, "run_id": 1}, sort=[("created_at", -1)])
+        rid = (latest or {}).get("run_id")
+    archived = await archive_run_for_artifact(run_id=rid, reason="blueprint-apply") if rid else None
+    if archived:
+        # Source-governance stamp: the APPLIED run governs the panel —
+        # previewed-but-unapplied runs never switch the composition source.
+        # (lp_-prefixed only: fork-boundary field tagging.)
+        await db.estimates.update_one(
+            {"id": est_id, "company_id": user["company_id"]},
+            {"$set": {"lp_source_run_id": archived}})
+    return {"ok": True, "archived_run_id": archived}
 
 
 @router.get("/lp-package/colors")

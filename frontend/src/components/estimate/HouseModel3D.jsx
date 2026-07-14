@@ -28,7 +28,10 @@ import { AlertTriangle, Check, Camera, Loader2 } from "lucide-react";
 // Iter 79j.65 — Tape Check: persistent per-wall ground truth + accuracy history.
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
 
-const ROOF_PITCHES = [4, 6, 8, 10, 12];
+// Shakedown addendum fix (6), 2026-07-14: INTEGER pitch ladder (C2
+// parity). The old even-only ladder [4,6,8,10,12] snapped a derived 6.8
+// to 6/12 and badged it confidently — 7/12 prints must express as 7/12.
+const ROOF_PITCHES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 const ROOF_TYPES = [
   { id: "gable", label: "Gable" },
   { id: "hip", label: "Hip" },
@@ -155,6 +158,46 @@ const verifyKeyForCorner = (c) => {
   return `corner:${kind}:${slug}`;
 };
 
+// Shakedown addendum fix (8), 2026-07-14: blueprint runs carry a
+// STRUCTURED appendages payload (raw_ai.appendages — printed dims from
+// the plans), NOT the photo path's C3/C4 corner+face shape. Feeding
+// photo-shaped derivation with blueprint payloads produced a malformed
+// box. Rule: structured payload → render with printed provenance;
+// payload absent/unusable → render NOTHING (honest absence), never a
+// malformed box.
+function deriveBlueprintAppendages(list) {
+  const out = [];
+  (list || []).forEach((ap) => {
+    const wall = String(ap?.wall || "").toLowerCase();
+    if (!["front", "back", "left", "right"].includes(wall)) return;
+    const widthOk = Number(ap.width_ft) > 0;
+    const depthOk = Number(ap.depth_ft) > 0;
+    const heightOk = Number(ap.height_ft) > 0;
+    const pf = Number(ap.position_frac);
+    const hasPos = Number.isFinite(pf) && pf >= 0 && pf <= 1;
+    out.push({
+      wall,
+      label: `${String(ap.kind || "appendage").replace(/_/g, " ")} — blueprint`,
+      approxSqft: Number(ap.faces_sqft) || 0,
+      positionFrac: hasPos ? pf : 0.5,
+      positionSource: hasPos ? "printed" : "default",
+      widthFt: widthOk ? Number(ap.width_ft) : 3.0,
+      widthSource: widthOk ? "printed" : "default",
+      depthFt: depthOk ? Number(ap.depth_ft) : 2.0,
+      depthSource: depthOk ? "printed" : "default",
+      extendsAboveRoofline: ap.extends_above_roofline !== false,
+      extendsSource: ap.extends_above_roofline != null ? "printed" : "default",
+      mentionsRidge: false,
+      heightFt: heightOk ? Number(ap.height_ft) : null,
+      heightSource: heightOk ? "printed" : "default",
+      // printed placement renders solid; defaulted position stays amber
+      confirmed: hasPos,
+      corners: [],
+    });
+  });
+  return out;
+}
+
 function deriveAppendages(walls, cornerLocations, fieldVerify) {
   const cornersByWall = {};
   (cornerLocations || []).forEach((c) => {
@@ -241,11 +284,20 @@ function buildHouseJson(preview, overrides, estimate) {
   const openings = preview.raw_ai?.openings || [];
   const avgAiEave = preview.measurements?._ai_avg_wall_height_ft;
   // Iter 79j.23 — try to derive pitch from Claude's gable heights before
-  // falling back to the 6/12 default.
+  // falling back to the 6/12 default. Shakedown addendum fix (6): a
+  // PRINTED pitch callout (blueprint extraction) outranks derivation —
+  // and a derived value never wears a print-confident badge.
+  const printedPitchM = /^(\d+(?:\.\d+)?)\s*[/:]\s*12$/.exec(
+    String(preview.raw_ai?.roof_pitch || "").trim());
+  const printedPitchRaw = printedPitchM ? Math.round(parseFloat(printedPitchM[1])) : null;
+  const printedPitch = printedPitchRaw != null && printedPitchRaw >= 3 && printedPitchRaw <= 14
+    ? printedPitchRaw : null;
   const aiPitch = deriveRoofPitchFromWalls(walls);
-  const pitch = overrides.pitch ?? aiPitch?.pitch ?? DEFAULT_PITCH;
+  const pitch = overrides.pitch ?? printedPitch ?? aiPitch?.pitch ?? DEFAULT_PITCH;
   const pitchSource = overrides.pitch != null
     ? "user"
+    : printedPitch != null
+    ? "printed"
     : aiPitch
     ? "ai"
     : "default";
@@ -613,12 +665,17 @@ function buildHouseJson(preview, overrides, estimate) {
       mkFacade("back", "Rear elevation", widthBack, back, eaves.back),
       mkFacade("left", "Left gable end", widthLeft, left, eaves.left),
     ],
-    // Chimney chases / bump-outs mapped from the run's C3+C4 payloads.
-    appendages: deriveAppendages(
-      walls,
-      preview.raw_ai?.corner_locations || [],
-      estimate?.lp_field_verify || {},
-    ),
+    // Chimney chases / bump-outs. Photo runs map from C3+C4 payloads;
+    // blueprint runs use their structured appendages schema (fix 8).
+    appendages: sourceKind === "blueprint"
+      ? deriveBlueprintAppendages(preview.raw_ai?.appendages)
+      : deriveAppendages(
+          walls,
+          preview.raw_ai?.corner_locations || [],
+          estimate?.lp_field_verify || {},
+        ),
+    // Shakedown addendum fix (7): flagged, never silent.
+    openingPlacementDefaulted: Number(preview.measurements?._opening_placement_defaulted || 0),
   };
 }
 
@@ -1127,9 +1184,12 @@ function buildScene(scene, house) {
     const rooflineY = isGablePeakWall
       ? f.eaveHeight + roofRise * (1 - Math.abs(2 * ap.positionFrac - 1))
       : f.eaveHeight;
-    // Above-roofline height is a RENDER-ONLY default; "extends above
-    // ridge" in the AI note draws it past the ridge.
-    const topY = ap.extendsAboveRoofline
+    // Above-roofline height is a RENDER-ONLY default; a printed height
+    // (blueprint) is authoritative; "extends above ridge" in the AI
+    // photo note draws it past the ridge.
+    const topY = Number(ap.heightFt) > 0
+      ? ap.heightFt
+      : ap.extendsAboveRoofline
       ? (ap.mentionsRidge ? ridgeY + 2 : rooflineY + 2.5)
       : f.eaveHeight;
     const localX = -f.width / 2 + ap.positionFrac * f.width;
@@ -1647,15 +1707,31 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
               ))}
             </select>
             {house.roof.pitchSource === "default" && <Amber />}
-            {house.roof.pitchSource === "ai" && (
+            {house.roof.pitchSource === "printed" && (
               <span
                 className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)]"
-                title={house.sourceKind === "blueprint"
-                  ? `Read from the elevation's gable height (${house.roof.pitchAiRaw}/12, snapped to ${house.roof.pitch}/12)`
-                  : `Derived from Claude's gable height (raw ${house.roof.pitchAiRaw}/12 across ${house.roof.pitchAiSamples} gable-end wall${house.roof.pitchAiSamples > 1 ? "s" : ""}, snapped to ${house.roof.pitch}/12)`}
+                title={`Printed pitch callout ${house.roof.pitch}/12 read directly from the prints`}
+                data-testid="ai-measure-3d-pitch-printed"
+              >
+                <Check className="w-2.5 h-2.5" /> Printed
+              </span>
+            )}
+            {house.roof.pitchSource === "ai" && house.sourceKind === "blueprint" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)] border border-[#F59E0B]"
+                title={`No printed pitch callout was read — derived from the elevation's gable height (raw ${house.roof.pitchAiRaw}/12, snapped to ${house.roof.pitch}/12). Verify against the prints.`}
                 data-testid="ai-measure-3d-pitch-derived"
               >
-                <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI-derived"}
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> Derived — verify
+              </span>
+            )}
+            {house.roof.pitchSource === "ai" && house.sourceKind !== "blueprint" && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)]"
+                title={`Derived from Claude's gable height (raw ${house.roof.pitchAiRaw}/12 across ${house.roof.pitchAiSamples} gable-end wall${house.roof.pitchAiSamples > 1 ? "s" : ""}, snapped to ${house.roof.pitch}/12)`}
+                data-testid="ai-measure-3d-pitch-derived"
+              >
+                <Check className="w-2.5 h-2.5" /> AI-derived
               </span>
             )}
             {house.roof.pitchSource === "user" && (
@@ -1903,6 +1979,13 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
           {(peb.stone_sqft || 0) > 0 && <Row k="Stone / masked" v={`${peb.stone_sqft.toFixed(0)} sf`} />}
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
           <Row k="Openings" v={facade.openings.length} />
+          {house.openingPlacementDefaulted > 0 && (
+            <div className="text-[9px] italic text-[var(--warning-text)] leading-tight" data-testid="ai-measure-3d-opening-placement-note">
+              <AlertTriangle className="w-2.5 h-2.5 inline mr-0.5" style={{ color: AMBER }} />
+              {house.openingPlacementDefaulted} opening{house.openingPlacementDefaulted > 1 ? "s" : ""} had no
+              elevation attribution — drawn on the front wall by default. Render-only; counts and sizes are unaffected.
+            </div>
+          )}
         </div>
         {/* Chimney chase / appendage provenance — names which dimensions
             are AI-measured vs render-only assumptions. Pin: assumed
@@ -1917,7 +2000,9 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                   {ap.confirmed ? (
                     <span
                       className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] border border-[var(--success)] flex-shrink-0"
-                      title="Every chase corner is confirmed (2+ photos) or field-verified — the 3D box position is ratified."
+                      title={ap.positionSource === "printed"
+                        ? "Placement and dimensions read from the plans."
+                        : "Every chase corner is confirmed (2+ photos) or field-verified — the 3D box position is ratified."}
                       data-testid={`ai-measure-3d-appendage-status-${i}`}
                     >
                       <Check className="w-2.5 h-2.5" /> Verified
@@ -1936,18 +2021,29 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                   k="Width"
                   v={ap.widthSource === "corners"
                     ? `${ap.widthFt.toFixed(1)} ft — from chase corners`
+                    : ap.widthSource === "printed"
+                    ? `${ap.widthFt.toFixed(1)} ft — printed on plans`
                     : `~${ap.widthFt.toFixed(0)} ft — assumed, not measured`}
                 />
                 <Row
                   k="Position"
                   v={ap.positionSource === "corners"
                     ? `${Math.round(ap.positionFrac * 100)}% along wall — from chase corners`
+                    : ap.positionSource === "printed"
+                    ? `${Math.round(ap.positionFrac * 100)}% along wall — from elevation`
                     : "wall center — assumed, not measured"}
                 />
-                <Row k="Depth" v={`~${ap.depthFt.toFixed(0)} ft — assumed, not measured`} />
+                <Row
+                  k="Depth"
+                  v={ap.depthSource === "printed"
+                    ? `${ap.depthFt.toFixed(1)} ft — printed on plans`
+                    : `~${ap.depthFt.toFixed(0)} ft — assumed, not measured`}
+                />
                 <Row
                   k="Height"
-                  v={ap.extendsSource === "ai-text"
+                  v={ap.heightSource === "printed"
+                    ? `${ap.heightFt.toFixed(1)} ft — printed on plans`
+                    : ap.extendsSource === "ai-text"
                     ? `above ${ap.mentionsRidge ? "ridge" : "roofline"} (AI photo note) — drawn height assumed`
                     : "above roofline — assumed, not measured"}
                 />

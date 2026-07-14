@@ -282,6 +282,24 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               // Non-cut-prone lines (gutter, downspouts, labor, etc.)
               // are untouched.
               const wastePct = Number(est?.waste_pct ?? 0);
+              const srcKind = est.kind || "siding";
+              // THE CUT (ruled 2026-07-14): lp_smart-kind estimates compose
+              // through the LP engine — importers merge NO composition
+              // lines (raw _build_lines output bypasses the composition
+              // guard / per-system table / whole-piece rounding, and
+              // waste_pct would stack on formulas already carrying ×1.10).
+              if (srcKind === "lp_smart") {
+                const patch = {};
+                if (measurements?._photo_zones_summary) {
+                  patch.photo_zones_summary = measurements._photo_zones_summary;
+                  patch.photo_zones_deducted_sqft = measurements._photo_zones_deducted_sqft || 0;
+                }
+                if (Object.keys(patch).length) {
+                  update(patch);
+                  if (save) await save({ ...est, ...patch });
+                }
+                return;
+              }
               const bakedLines = bakeWasteIntoLines(aiLines || [], wastePct);
               const existing = est.lines || [];
               const keyOf = (l) => `${l.tab || "vinyl"}::${l.section}::${l.name}`;
@@ -289,11 +307,8 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               const next = [...existing];
               // Iter 78z++++ — LP Smart has its own workspace; drop LP rows
               // from AI imports onto siding-kind estimates. lp_smart-kind
-              // estimates still accept LP rows (they're the primary tab).
-              const srcKind = est.kind || "siding";
-              const SIDING_TABS = new Set(srcKind === "siding"
-                ? ["vinyl", "ascend"]
-                : ["vinyl", "ascend", "lp_smart"]);
+              // estimates never reach here (engine-owned, above).
+              const SIDING_TABS = new Set(["vinyl", "ascend"]);
               const WINDOWS_TABS = new Set(["windows"]);
               for (const ln of bakedLines) {
                 const isSiding = SIDING_TABS.has(ln.tab || "vinyl");

@@ -23,6 +23,10 @@ async def archive_run_for_artifact(estimate_id=None, run_id=None, reason=""):
         run = None
         if run_id:
             run = await db.ai_measure_runs.find_one({"run_id": run_id}, {"_id": 0})
+            if run is None:
+                # Blueprint runs are artifact sources too (THE CUT,
+                # 2026-07-14) — and their 24h TTL makes archival urgent.
+                run = await db.ai_blueprint_runs.find_one({"run_id": run_id}, {"_id": 0})
             if run is None and await db.fixture_runs.find_one({"run_id": run_id}, {"_id": 1}):
                 if reason:
                     await db.fixture_runs.update_one(

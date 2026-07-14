@@ -128,7 +128,7 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
     {"label": "front" | "back" | "left" | "right",
      "width_ft": number,                  // read from floor plan or elevation
      "height_ft": number,                 // EAVE height (not roof peak)
-     "gable_triangle_height_ft": number,  // 0 unless this wall is a gable end
+     "gable_triangle_height_ft": number,  // 0 unless this wall is a gable end. If a roof PITCH callout is printed (e.g. "7/12"), COMPUTE this as (width_ft ÷ 2) × (pitch_rise ÷ 12) — the printed pitch is the authority; scaling the drawing under-reads the rise.
      "dormer_face_sqft": number,          // 0 unless dormer shown on this elevation
      "siding_pct_this_wall": 100,         // INTEGER percent; default 100 unless plan notes brick/stone
      // Iter 78z — Profile callouts read from the elevation drawing itself.
@@ -163,7 +163,8 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      "width_in": number,                  // parse 3-6 → 42, 3050 → 36, etc.
      "height_in": number,
      "qty": 1,                            // increment if schedule shows multiple
-     "type_hint": "double_hung|casement|slider|picture|fixed|awning|unknown"
+     "type_hint": "double_hung|casement|slider|picture|fixed|awning|unknown",
+     "elevation": "front|back|left|right|unknown"  // WHICH elevation sheet shows this opening — match the schedule mark (W1, A…) to the elevation drawings. When qty > 1 spans multiple elevations, split into separate rows per elevation. "unknown" ONLY if the mark appears on no elevation.
     }
   ],
   "doors": [
@@ -173,12 +174,27 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      "width_in": number,
      "height_in": number,
      "qty": 1,
-     "type_hint": "entry|patio_slider|patio_french|garage|unknown"
+     "type_hint": "entry|patio_slider|patio_french|garage|unknown",
+     "elevation": "front|back|left|right|unknown"  // which elevation sheet shows this door
     }
   ],
   "eaves_lf": number,          // sum of widths of EAVE walls only (i.e. walls where gable_triangle_height_ft == 0). For a typical gable-roof house with gables on front + back, this = left wall width + right wall width — NOT the full perimeter. Only equals the full perimeter when the roof is a hip (every wall has gable_triangle_height_ft = 0).
   "rakes_lf": number,          // sum of sloped roof edges = 2 × √((wall_width/2)² + gable_triangle_height_ft²) summed over each gable wall
-  "starter_lf": number,        // ≈ eaves_lf for basic 1-story; differs on walk-outs
+  "starter_lf": number,        // full floor-plan PERIMETER in LF — report the RAW perimeter; the app deducts entry-door widths downstream per convention (sliders/patio doors sit on the starter). NOT eaves-only.
+  "roof_pitch": "<printed roof pitch callout, e.g. '7/12' or '8/12'; empty string if no pitch is printed anywhere>",
+  "appendages": [
+    // Siding-wrapped attached structures: chimney chases, bump-outs,
+    // cantilevered boxes. Read from floor plan + elevations. These are
+    // SEPARATE from walls[] — do NOT fold their area into any wall.
+    {"wall": "front" | "back" | "left" | "right",
+     "kind": "chimney_chase" | "bump_out" | "cantilever",
+     "width_ft": number,
+     "depth_ft": number,
+     "height_ft": number,             // total vertical extent of the siding wrap (chimney chases often run past the eave — read the elevation)
+     "extends_above_roofline": true | false,
+     "position_frac": number,           // 0..1 — the appendage's CENTER along its wall, measured from the wall's LEFT edge as drawn on that elevation; null if not resolvable
+     "faces_sqft": number}            // TOTAL siding-wrapped face area: outer face + both side returns
+  ],
   "outside_corner_count": number, // INTEGER. Number of OUTSIDE corner locations on the floor plan. See "CORNER COUNTING" rule below.
   "outside_corner_lf": number, // = outside_corner_count × avg_wall_height_ft. Each corner trim runs the full eave height.
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
@@ -220,6 +236,14 @@ DO NOT default inside_corner_count to 0 unless you have walked the
 perimeter and confirmed the footprint is a pure rectangle. Bump-outs,
 breakfast nooks, mudroom additions, garage bumpouts, and L-wings ALL
 create inside corners.
+
+CHASE / APPENDAGE EDGES: a siding-wrapped chimney chase or bump-out adds
+its own corner-trim edges. Report the chase itself via appendages[]
+(width/depth/height/extends_above_roofline — the app pools its edges as
+a separate corner feature downstream). Keep outside_corner_count /
+outside_corner_lf to the HOUSE footprint walk only — do NOT fold chase
+edges into them (double-count). DO include the 2 INSIDE corners where a
+chase's sides return to the wall in inside_corner_count.
 
 CRITICAL RULES:
 
@@ -383,6 +407,18 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     windows = raw.get("windows") or []
     doors = raw.get("doors") or []
 
+    # Shakedown fix (2026-07-14) — pitch-computed gable rise. Printed
+    # pitch is the authority; drawing-scaled reads under-state the rise
+    # (June finding: 8.5' scaled vs 8.75' at 7/12 on a 30' end).
+    _pitch_m = re.match(r"^(\d+(?:\.\d+)?)\s*[/:]\s*12$", str(raw.get("roof_pitch") or "").strip())
+    pitch_rise = float(_pitch_m.group(1)) if _pitch_m else None
+
+    def _gable_rise(width_ft, printed_gh):
+        if pitch_rise and printed_gh > 0 and width_ft > 0:
+            return (width_ft / 2.0) * (pitch_rise / 12.0)
+        return printed_gh
+
+    gable_pitch_provenance = []
     siding_sqft = 0.0
     gable_sqft = 0.0
     dormer_sqft = 0.0
@@ -399,10 +435,34 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         pct = min(pct, 100.0)
         siding_sqft += gross * (pct / 100.0)
         gh = float(w.get("gable_triangle_height_ft") or 0)
-        if gh > 0 and width_ft > 0:
-            gable_sqft += 0.5 * width_ft * gh
+        gh_eff = _gable_rise(width_ft, gh)
+        if gh_eff != gh:
+            gable_pitch_provenance.append({
+                "wall": (w.get("label") or "?"),
+                "scaled_ft": round(gh, 2),
+                "computed_ft": round(gh_eff, 2),
+                "pitch": str(raw.get("roof_pitch") or ""),
+            })
+        if gh_eff > 0 and width_ft > 0:
+            gable_sqft += 0.5 * width_ft * gh_eff
         dormer_sqft += float(w.get("dormer_face_sqft") or 0)
     siding_sqft += gable_sqft + dormer_sqft
+
+    # Shakedown fix (2026-07-14) — chase/appendage faces belong in the
+    # siding area (C4-fix analogue of the photo path's attributed faces).
+    # walls[] excludes them by schema; appendages[] is the sole carrier.
+    appendage_sqft = 0.0
+    appendage_faces = []
+    for ap in (raw.get("appendages") or []):
+        try:
+            fs = float(ap.get("faces_sqft") or 0)
+        except (TypeError, ValueError):
+            fs = 0.0
+        if fs > 0:
+            appendage_sqft += fs
+            appendage_faces.append(
+                f"{(ap.get('wall') or '?')} {(ap.get('kind') or 'appendage').replace('_', ' ')} ({fs:.0f} ft²)")
+    siding_sqft += appendage_sqft
 
     # Door type → opening-count bucket
     counts = {"window": 0, "entry_door": 0, "patio_door": 0, "garage_door": 0}
@@ -471,13 +531,46 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         if corrected_eaves > 0:
             raw["eaves_lf"] = corrected_eaves
 
+    # Shakedown fix (2026-07-14) — START-COURSE CONTRACT: the aggregator
+    # reports the RAW floor-plan perimeter; the ENGINE owns the entry-door
+    # deduction (single-source convention — pre-deducting here would
+    # double-deduct downstream in lp_package.assemble_lp_package).
+    _perimeter_lf = sum(float(w.get("width_ft") or 0) for w in walls)
+    _printed_starter = float(raw.get("starter_lf") or raw.get("eaves_lf") or 0)
+    if _perimeter_lf > 0:
+        _starter_lf = _perimeter_lf
+        _starter_basis = (
+            f"perimeter {_perimeter_lf:.0f} LF — engine deducts entry-door widths "
+            f"per convention (printed read {_printed_starter:.0f})")
+    else:
+        _starter_lf = _printed_starter
+        _starter_basis = "printed read (no wall widths extracted)"
+
+    # Feature-pooled OSC basis for the engine's no-C3 fallback: chase
+    # edges pool per feature (2 full-height + 2 above-roofline edges),
+    # separate from the house-corner walk.
+    _osc_features = []
+    _avg_eave = float(raw.get("avg_wall_height_ft") or 0) or 9.5
+    for ap in (raw.get("appendages") or []):
+        try:
+            _h = float(ap.get("height_ft") or 0)
+        except (TypeError, ValueError):
+            _h = 0.0
+        if _h <= 0:
+            continue
+        _above = max(0.0, _h - _avg_eave) if ap.get("extends_above_roofline") else 0.0
+        _osc_features.append({
+            "label": f"{(ap.get('wall') or '?')} {(ap.get('kind') or 'appendage').replace('_', ' ')}",
+            "lf": round(2 * _h + 2 * _above, 1),
+        })
+
     measurements = {
         "siding_sqft": round(siding_sqft, 1),
         "siding_with_openings_sqft": round(siding_sqft, 1),
         "opening_sqft": round(opening_sqft, 1),
         "eaves_lf": round(float(raw.get("eaves_lf") or 0), 1),
         "rakes_lf": round(float(raw.get("rakes_lf") or 0), 1),
-        "starter_lf": round(float(raw.get("starter_lf") or raw.get("eaves_lf") or 0), 1),
+        "starter_lf": round(_starter_lf, 1),
         "outside_corner_lf": round(float(
             raw.get("outside_corner_lf")
             or 4 * float(raw.get("avg_wall_height_ft") or 0)
@@ -507,6 +600,27 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # "AI-derived" (amber). See HouseModel3D.buildHouseJson.
         "_source_kind": "blueprint",
     }
+    # Shakedown provenance fields (2026-07-14)
+    measurements["_starter_basis"] = _starter_basis
+    measurements["_perimeter_lf"] = round(_perimeter_lf, 1)
+    measurements["outside_corner_count"] = int(raw.get("outside_corner_count") or 0)
+    measurements["inside_corner_count"] = int(raw.get("inside_corner_count") or 0)
+    measurements["inside_corner_lf"] = round(float(raw.get("inside_corner_lf") or 0), 1)
+    if _osc_features:
+        measurements["_ai_osc_features"] = _osc_features
+    if gable_pitch_provenance:
+        measurements["_gable_pitch_provenance"] = gable_pitch_provenance
+    if appendage_faces:
+        measurements["_ai_appendage_faces"] = appendage_faces
+    # Known door-class residual (Phase 3 §4 analogue): 2+ entries and no
+    # patio door usually means a slider was read as an entry.
+    if counts["entry_door"] >= 2 and counts["patio_door"] == 0:
+        measurements["_door_class_residual"] = True
+        measurements["_ai_notes"] = (
+            (str(raw.get("notes") or "") + " ").strip() + " "
+            + "[class residual] 2+ entry doors and no patio door read — "
+            "verify slider classification against the door schedule."
+        ).strip()
 
     # Iter 79j.34 — Roof type + dormer payload for the 3D viewer.
     # A wall with printed gable_triangle_height_ft > 0 → gable end.
@@ -565,20 +679,33 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "garage":         "garage_door",
     }
     derived_openings = []
+    _valid_walls = {"front", "back", "left", "right"}
+    _placement_defaulted = 0
+
+    def _opening_wall(row):
+        # Shakedown addendum fix (7): per-elevation placement from the
+        # elevation sheets; defaulting to front is FLAGGED, never silent.
+        elev = str(row.get("elevation") or "").strip().lower()
+        return (elev, True) if elev in _valid_walls else ("front", False)
+
     for win in windows:
         try:
             qty = max(1, int(win.get("qty") or 1))
         except (TypeError, ValueError):
             qty = 1
         style = _hint_to_style.get((win.get("type_hint") or "").lower(), "")
+        _wall, _placed = _opening_wall(win)
         for _ in range(qty):
+            if not _placed:
+                _placement_defaulted += 1
             derived_openings.append({
                 "type": "window",
                 "style": style,
                 "style_confidence": 100 if style else 0,
                 "width_in": float(win.get("width_in") or 0),
                 "height_in": float(win.get("height_in") or 0),
-                "wall": "front",
+                "wall": _wall,
+                "placement_source": "elevation" if _placed else "default",
                 "on_dormer": False,
             })
     for d in doors:
@@ -587,19 +714,24 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         except (TypeError, ValueError):
             qty = 1
         door_type = _hint_to_door_type.get((d.get("type_hint") or "").lower(), "entry_door")
+        _wall, _placed = _opening_wall(d)
         for _ in range(qty):
+            if not _placed:
+                _placement_defaulted += 1
             derived_openings.append({
                 "type": door_type,
                 "style": "",
                 "style_confidence": 0,
                 "width_in": float(d.get("width_in") or 0),
                 "height_in": float(d.get("height_in") or 0),
-                "wall": "front",
+                "wall": _wall,
+                "placement_source": "elevation" if _placed else "default",
                 "on_dormer": False,
             })
     # Mutate `raw` in place so the caller emits `raw_ai.openings` to
     # the frontend without a second code path.
     raw["openings"] = derived_openings
+    measurements["_opening_placement_defaulted"] = _placement_defaulted
 
     # Iter 79j.34 — Sanity reconciliation. The 3D viewer computes its
     # per-wall siding sqft from raw.walls[] using the SAME formula the
@@ -615,10 +747,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             _pct *= 100.0
         _pct = min(max(_pct, 0.0), 100.0)
         threed_sqft += _wft * _eh * (_pct / 100.0)
-        _gh = float(w.get("gable_triangle_height_ft") or 0)
+        _gh = _gable_rise(_wft, float(w.get("gable_triangle_height_ft") or 0))
         if _gh > 0 and _wft > 0:
             threed_sqft += 0.5 * _wft * _gh
         threed_sqft += float(w.get("dormer_face_sqft") or 0)
+    threed_sqft += appendage_sqft
     if siding_sqft > 0:
         _delta_pct = 100.0 * abs(threed_sqft - siding_sqft) / siding_sqft
         if _delta_pct > 2.0:
@@ -1040,7 +1173,13 @@ async def _execute_ai_blueprint_worker(
 
         await _set_stage("mapping")
         try:
-            lines = _build_lines(measurements)
+            # THE CUT (ruled 2026-07-14, shakedown findings): lp_smart-tab
+            # rows are ENGINE-OWNED — raw _build_lines output bypasses the
+            # composition guard / per-system table / whole-piece rounding.
+            # Blueprint results carry NO lp_smart lines; LP estimates
+            # derive through assemble_lp_package via /lp-package/preview.
+            lines = [l for l in _build_lines(measurements)
+                     if (l.get("tab") or "vinyl") != "lp_smart"]
         except Exception:
             lines = []
         try:
