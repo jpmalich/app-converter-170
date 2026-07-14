@@ -517,7 +517,8 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         } catch { /* non-fatal — startup backfill also covers it */ }
         toast.success(
           `Read ${result.pages_processed || "blueprint"} page(s) — measurements applied. ` +
-          `Material List derives via the LP engine${winNote}${pairedMsg}`
+          `Material List derives via the LP engine${winNote}${pairedMsg}`,
+          { duration: 8000 }
         );
       } else {
         toast.success(
