@@ -15,6 +15,7 @@ import { useState } from "react";
 import { Upload, FileText, Sparkles, Layers, ChevronDown, ChevronUp, MoreHorizontal, Lightbulb } from "lucide-react";
 import ElevationCompareModal, { countSources } from "@/components/estimate/ElevationCompareModal";
 import { isValidEmail, isValidPhone, isValidZip, formatPhoneUS } from "@/lib/validate";
+import { NO_AUTOFILL } from "@/lib/noAutofill";
 
 // Iter 79j.47 — US-state select options for the structured address grid.
 // Includes DC per USPS. Kept as [code] pairs — labels use the same
@@ -376,7 +377,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             className="input"
             value={est.customer_name || ""}
             onChange={(e) => update({ customer_name: e.target.value })}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="cust-name"
           />
         </div>
@@ -387,7 +388,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             className="input"
             value={est.customer_company || ""}
             onChange={(e) => update({ customer_company: e.target.value })}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="cust-company"
           />
         </div>
@@ -398,7 +399,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             className="input"
             value={est.customer_contact_title || ""}
             onChange={(e) => update({ customer_contact_title: e.target.value })}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="cust-contact-title"
           />
         </div>
@@ -421,7 +422,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             placeholder={`${t("est.exampleLead")} (412) 555-0100`}
             aria-invalid={touched.customer_phone && !isValidPhone(est.customer_phone)}
             aria-describedby={touched.customer_phone && !isValidPhone(est.customer_phone) ? "cust-phone-warn" : undefined}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="cust-phone"
           />
           {touched.customer_phone && !isValidPhone(est.customer_phone) && (
@@ -444,7 +445,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             placeholder={`${t("est.exampleLead")} (412) 555-0100`}
             aria-invalid={touched.customer_phone_alt && !isValidPhone(est.customer_phone_alt)}
             aria-describedby={touched.customer_phone_alt && !isValidPhone(est.customer_phone_alt) ? "cust-phone-alt-warn" : undefined}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="cust-phone-alt"
           />
           {touched.customer_phone_alt && !isValidPhone(est.customer_phone_alt) && (
@@ -467,7 +468,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             placeholder={`${t("est.exampleLead")} (412) 555-0100`}
             aria-invalid={touched.customer_fax && !isValidPhone(est.customer_fax)}
             aria-describedby={touched.customer_fax && !isValidPhone(est.customer_fax) ? "cust-fax-warn" : undefined}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="cust-fax"
           />
           {touched.customer_fax && !isValidPhone(est.customer_fax) && (
@@ -486,7 +487,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             placeholder={`${t("est.exampleLead")} name@example.com`}
             aria-invalid={touched.customer_email && !isValidEmail(est.customer_email)}
             aria-describedby={touched.customer_email && !isValidEmail(est.customer_email) ? "cust-email-warn" : undefined}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="cust-email"
           />
           {touched.customer_email && !isValidEmail(est.customer_email) && (
@@ -537,7 +538,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               placeholder={t("est.leadSourceDetail")}
               value={est.lead_source_detail || ""}
               onChange={(e) => update({ lead_source_detail: e.target.value })}
-              autoComplete="off"
+              {...NO_AUTOFILL}
               data-testid="lead-source-detail"
             />
           )}
@@ -579,7 +580,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   className="input"
                   value={disp.street || ""}
                   onChange={(e) => writeAddress({ street: e.target.value })}
-                  autoComplete="off"
+                  {...NO_AUTOFILL}
                   data-testid="cust-street"
                 />
               </div>
@@ -590,7 +591,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   className="input"
                   value={disp.city || ""}
                   onChange={(e) => writeAddress({ city: e.target.value })}
-                  autoComplete="off"
+                  {...NO_AUTOFILL}
                   data-testid="cust-city"
                 />
               </div>
@@ -622,7 +623,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   placeholder={`${t("est.exampleLead")} 15222`}
                   aria-invalid={touched.address_zip && !isValidZip(disp.zip)}
                   aria-describedby={touched.address_zip && !isValidZip(disp.zip) ? "cust-zip-warn" : undefined}
-                  autoComplete="off"
+                  {...NO_AUTOFILL}
                   data-testid="cust-zip"
                 />
                 {touched.address_zip && !isValidZip(disp.zip) && (
@@ -697,7 +698,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   className="input"
                   value={est.billing_street || ""}
                   onChange={(e) => writeBilling({ street: e.target.value })}
-                  autoComplete="off"
+                  {...NO_AUTOFILL}
                   data-testid="billing-street"
                 />
               </div>
@@ -708,7 +709,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   className="input"
                   value={est.billing_city || ""}
                   onChange={(e) => writeBilling({ city: e.target.value })}
-                  autoComplete="off"
+                  {...NO_AUTOFILL}
                   data-testid="billing-city"
                 />
               </div>
@@ -740,7 +741,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                   placeholder={`${t("est.exampleLead")} 15222`}
                   aria-invalid={touched.billing_zip && !isValidZip(est.billing_zip)}
                   aria-describedby={touched.billing_zip && !isValidZip(est.billing_zip) ? "billing-zip-warn" : undefined}
-                  autoComplete="off"
+                  {...NO_AUTOFILL}
                   data-testid="billing-zip"
                 />
                 {touched.billing_zip && !isValidZip(est.billing_zip) && (
@@ -781,7 +782,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
             className="input"
             value={est.estimator || ""}
             onChange={(e) => update({ estimator: e.target.value })}
-            autoComplete="off"
+            {...NO_AUTOFILL}
             data-testid="estimator-name"
           />
         </div>

@@ -1153,6 +1153,10 @@ async def _freeze_accuracy_snapshot(est_id: str, company_id: str, html: str,
         "expires_at": expires,
         "revoked": False,
     })
+    # Ruled 2026-07-14 — the frozen /r/ artifact references the estimate's
+    # scored run data: archive the backing run beyond the 30-day TTL.
+    from run_archive import archive_run_for_artifact
+    await archive_run_for_artifact(estimate_id=est_id, reason="r-freeze")
     return token, expires
 
 

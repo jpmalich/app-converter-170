@@ -11,6 +11,7 @@ from lp_costs import price_package, redact_external
 from lp_package import assemble_lp_package
 from lp_truck_reconcile import reconcile_letrick_truck
 from routes.lp_admin import load_margin_cfg
+from run_archive import archive_run_for_artifact
 
 router = APIRouter()
 
@@ -31,7 +32,17 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
     q: dict = {"estimate_id": est_id, "status": "done"}
     if run_id:
         q["run_id"] = run_id
-    run = await db.ai_measure_runs.find_one(q, sort=[("created_at", -1)])
+
+    async def _find_run(query):
+        r = await db.ai_measure_runs.find_one(query, sort=[("created_at", -1)])
+        if r is None:
+            # Ruled 2026-07-14 — artifact-referenced runs outlive the
+            # 30-day TTL in fixture_runs; serve them so a November
+            # callback still gets its Material List panel + 3D.
+            r = await db.fixture_runs.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
+        return r
+
+    run = await _find_run(q)
     paired_id = est.get("paired_lp_estimate_id") or est.get("paired_estimate_id")
     if run is None and paired_id and not run_id:
         paired_q: dict = {"id": paired_id}
@@ -39,9 +50,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
             paired_q["company_id"] = company_id
         paired = await db.estimates.find_one(paired_q, {"_id": 0, "id": 1})
         if paired:
-            run = await db.ai_measure_runs.find_one(
-                {"estimate_id": paired["id"], "status": "done"},
-                sort=[("created_at", -1)])
+            run = await _find_run({"estimate_id": paired["id"], "status": "done"})
     if run is None:
         raise HTTPException(status_code=404, detail="No completed AI Measure run for this estimate")
     return est, run
@@ -377,6 +386,10 @@ async def lp_material_list_freeze(
         "expires_at": (now + timedelta(days=90)).isoformat(),
         "revoked": False,
     })
+    # Ruled 2026-07-14 — the frozen /m/ artifact embeds THIS run's package:
+    # archive the exact run beyond the 30-day TTL.
+    await archive_run_for_artifact(
+        estimate_id=est_id, run_id=run.get("run_id"), reason="m-freeze")
     return {"token": token, "share_path": f"/m/{token}",
             "expires_at": (now + timedelta(days=90)).isoformat()}
 

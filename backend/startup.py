@@ -134,6 +134,12 @@ async def run_startup():
     from routes.ai_measure import sweep_orphaned_runs
     await sweep_orphaned_runs()
 
+    # Ruled 2026-07-14 — no persistent artifact may reference a reapable
+    # run: backfill-archive runs referenced by sent quotes / live QR
+    # freezes into fixture_runs (idempotent, every boot).
+    from run_archive import backfill_artifact_referenced_runs
+    await backfill_artifact_referenced_runs()
+
     # Seed Mezzo prices (idempotent) — fills in any missing (tier, product) docs
     # from the bundled JSON snapshot. Admin edits in Mongo are preserved.
     await db.mezzo_prices.create_index([("tier", 1), ("product_type", 1)], unique=True)

@@ -35,6 +35,7 @@ import ISSHoverImportButton from "@/components/estimate/ISSHoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
 import { Printer, Download, ClipboardList } from "lucide-react";
+import { NO_AUTOFILL } from "@/lib/noAutofill";
 
 const fmt = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 
@@ -464,7 +465,7 @@ export default function ISSEstimateEditor() {
                 className="input h-9 text-sm w-full"
                 value={est.customer_name || ""}
                 onChange={(e) => updateField("customer_name", e.target.value)}
-                autoComplete="off"
+                {...NO_AUTOFILL}
                 data-testid="iss-customer-name"
               />
             </div>
@@ -474,7 +475,7 @@ export default function ISSEstimateEditor() {
                 className="input h-9 text-sm w-full"
                 value={est.address || ""}
                 onChange={(e) => updateField("address", e.target.value)}
-                autoComplete="off"
+                {...NO_AUTOFILL}
                 data-testid="iss-address"
               />
             </div>
@@ -502,7 +503,7 @@ export default function ISSEstimateEditor() {
                 placeholder={`${t("est.exampleLead")} name@example.com`}
                 aria-invalid={touched.customer_email && !isValidEmail(est.customer_email)}
                 aria-describedby={touched.customer_email && !isValidEmail(est.customer_email) ? "iss-customer-email-warn" : undefined}
-                autoComplete="off"
+                {...NO_AUTOFILL}
                 data-testid="iss-customer-email"
               />
               {touched.customer_email && !isValidEmail(est.customer_email) && (
@@ -531,7 +532,7 @@ export default function ISSEstimateEditor() {
                 placeholder={`${t("est.exampleLead")} (412) 555-0100`}
                 aria-invalid={touched.customer_phone && !isValidPhone(est.customer_phone)}
                 aria-describedby={touched.customer_phone && !isValidPhone(est.customer_phone) ? "iss-customer-phone-warn" : undefined}
-                autoComplete="off"
+                {...NO_AUTOFILL}
                 data-testid="iss-customer-phone"
               />
               {touched.customer_phone && !isValidPhone(est.customer_phone) && (

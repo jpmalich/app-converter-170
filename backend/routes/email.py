@@ -11,6 +11,7 @@ from db import db, logger
 from deps import get_current_user
 from models import EmailQuoteIn
 from pdf import render_pdf, safe_filename
+from run_archive import archive_run_for_artifact
 
 router = APIRouter()
 
@@ -79,6 +80,9 @@ async def email_quote(est_id: str, body: EmailQuoteIn, user: dict = Depends(get_
             ],
         }
         result = await asyncio.to_thread(resend.Emails.send, params)
+        # Ruled 2026-07-14 — the sent quote embeds run-derived lines +
+        # the 3D snapshot: archive the backing run beyond the 30-day TTL.
+        await archive_run_for_artifact(estimate_id=est_id, reason="quote-send")
         return {
             "status": "sent",
             "id": result.get("id"),
