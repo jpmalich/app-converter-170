@@ -3018,3 +3018,7 @@ Appendage objects (chimney chases / bump-outs) now render on the 3D house model,
 **Fork-boundary fix:** _load_run's fixture fallback moved behind `run_archive.find_archived_run` — LP routers must not touch untagged collections directly (test_fork_boundary caught the direct db.fixture_runs reference; ownership now lives in run_archive.py, which is the right home anyway).
 **Test-infra fix:** new in-process async tests use `_run_fresh` (fresh loop + fresh motor client, module-db monkeypatch) — the process-global motor client gets bound to whichever module's loop runs first and cascades "Event loop is closed" failures across the suite in full runs (my earlier `loop` fixture broke test_mezzo downstream). FULL SUITE: 902 green.
 **NEXT:** genuine script-standby. Backlog additions: timeline surface (post-Sept, design ruling attached).
+
+## Iter 117b — STANDBY RULING (2026-07-14)
+Events instrumentation ACCEPTED. **Warm-leads digest BACKLOGGED into a single post-September design pass: "CONTRACTOR INTELLIGENCE LAYER"** — bundles (1) timeline surface, (2) warm-leads digest, (3) notification preferences. All three draw the same tracking[] events record and share the same open rulings: granularity (counts vs timestamps), tone, opt-in. Design once, rule once. Events are already flowing — nothing is lost by waiting.
+**SCRIPT-STANDBY IS NOW GENUINE:** no further build items until demo-script support requests emerge.
