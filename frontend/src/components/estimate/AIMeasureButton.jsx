@@ -31,6 +31,24 @@ import { buildElevationsFromAIMeasure } from "@/lib/elevationBuilder";
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 import RunReadinessChecklist from "@/components/estimate/RunReadinessChecklist";
 import { printTakeoff } from "@/lib/printTakeoff";
+import { useAuth } from "@/lib/auth";
+
+// Iter 111 — anchor integrity: the validated production configuration.
+// Non-admin runs are clamped to this set server-side; the picker below
+// mirrors the same policy so the UI never promises what the backend
+// will refuse.
+const VALIDATED_MODEL_KEY = "claude-fable-5";
+const MODEL_PICKER_LABELS = {
+  "claude-opus-4-5": "Claude Opus 4.5",
+  "claude-opus-4-8": "Claude Opus 4.8",
+  "claude-sonnet-4-6": "Claude Sonnet 4.6",
+  "claude-fable-5": "Claude Fable 5",
+  "gemini-3.5-flash": "Gemini 3.5 Flash",
+  "gemini-3.1-pro": "Gemini 3.1 Pro",
+  "gpt-5.5": "GPT-5.5",
+  "gpt-5.4": "GPT-5.4",
+};
+const ADMIN_ROLES = new Set(["owner", "supplier_admin", "admin"]);
 // Iter 79j.22 — 3D House Model view (parametric Three.js render from raw_ai)
 import HouseModel3D from "@/components/estimate/HouseModel3D";
 // Iter 79j.36 — Debug view: per-photo raw observations + reconciled
@@ -132,11 +150,19 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // backend `_MODEL_CHOICES` registry.
   const [modelChoice, setModelChoice] = useState(() => {
     try {
-      return localStorage.getItem("aiMeasureModelChoice") || "claude-opus-4-5";
+      return localStorage.getItem("aiMeasureModelChoice") || VALIDATED_MODEL_KEY;
     } catch {
-      return "claude-opus-4-5";
+      return VALIDATED_MODEL_KEY;
     }
   });
+  const { user: authUser } = useAuth();
+  const isModelAdmin = ADMIN_ROLES.has((authUser?.role || "").toLowerCase());
+  useEffect(() => {
+    // non-admins are clamped server-side anyway; keep the UI honest
+    if (authUser && !isModelAdmin && modelChoice !== VALIDATED_MODEL_KEY) {
+      setModelChoice(VALIDATED_MODEL_KEY);
+    }
+  }, [authUser, isModelAdmin, modelChoice]);
   useEffect(() => {
     try { localStorage.setItem("aiMeasureModelChoice", modelChoice); } catch { /* ignore */ }
   }, [modelChoice]);
@@ -1694,9 +1720,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (elevTagList.length) {
         fd.append("elevation_tags", elevTagList.join(","));
       }
-      // Iter 79j.15 — A/B model choice. Contractor-selectable via the
-      // dropdown next to the Run AI Measure button. Blank/unknown =
-      // backend default (Opus 4.5).
+      // Iter 79j.15 — A/B model choice (admin bake-offs). Non-admin
+      // requests clamp server-side to the validated configuration.
       if (modelChoice) {
         fd.append("model_choice", modelChoice);
       }
@@ -2540,7 +2565,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 <div>
                   <div className="font-heading text-lg">AI Photo Measure</div>
                   <div className="text-xs opacity-90 mt-0.5">
-                    Upload 2-8 phone photos · + free aerial · Claude Opus 4.5
+                    Upload 2-8 phone photos · + free aerial · {MODEL_PICKER_LABELS[modelChoice] || MODEL_PICKER_LABELS[VALIDATED_MODEL_KEY]}
                   </div>
                 </div>
               </div>
@@ -4343,22 +4368,29 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                 {/* Iter 79j.15 — A/B model picker. Compact select so
                     contractors can flip models per-run without leaving
                     the modal. Persisted in localStorage. */}
-                <select
-                  value={modelChoice}
-                  onChange={(e) => setModelChoice(e.target.value)}
-                  className="text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] border border-[var(--border)] px-1 py-0.5 focus:outline-none focus:border-[var(--ai)]"
-                  data-testid="ai-measure-model-select"
-                  title="Which vision model runs the measurement pass. Opus 4.5 is the current default; try Gemini 3.5 Flash or GPT-5.5 to A/B accuracy vs cost."
-                >
-                  <option value="claude-opus-4-5">Claude Opus 4.5</option>
-                  <option value="claude-opus-4-8">Claude Opus 4.8</option>
-                  <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
-                  <option value="claude-fable-5">Claude Fable 5</option>
-                  <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
-                  <option value="gemini-3.1-pro">Gemini 3.1 Pro</option>
-                  <option value="gpt-5.5">GPT-5.5</option>
-                  <option value="gpt-5.4">GPT-5.4</option>
-                </select>
+                {isModelAdmin ? (
+                  <select
+                    value={modelChoice}
+                    onChange={(e) => setModelChoice(e.target.value)}
+                    className="text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] border border-[var(--border)] px-1 py-0.5 focus:outline-none focus:border-[var(--ai)]"
+                    data-testid="ai-measure-model-select"
+                    title="ADMIN bake-off picker. The validated production configuration is Claude Fable 5 — non-admin runs are clamped to it server-side (anchor integrity)."
+                  >
+                    {Object.entries(MODEL_PICKER_LABELS).map(([k, label]) => (
+                      <option key={k} value={k}>
+                        {label}{k === VALIDATED_MODEL_KEY ? " ✓ validated" : ""}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]"
+                    data-testid="ai-measure-model-locked"
+                    title="Runs use the validated production configuration (anchor integrity). Model selection is admin-only."
+                  >
+                    {MODEL_PICKER_LABELS[VALIDATED_MODEL_KEY]}
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => setCalibOpen((v) => !v)}

@@ -122,6 +122,12 @@ async def run_startup():
     # Seed the 4 price tiers
     await ensure_tiers_seeded()
 
+    # Iter 111 — failure class 5 (worker lifecycle): sweep runs orphaned
+    # by the previous process's death; resume from persisted Phase A
+    # when possible. Import here to avoid a startup-time route import cycle.
+    from routes.ai_measure import sweep_orphaned_runs
+    await sweep_orphaned_runs()
+
     # Seed Mezzo prices (idempotent) — fills in any missing (tier, product) docs
     # from the bundled JSON snapshot. Admin edits in Mongo are preserved.
     await db.mezzo_prices.create_index([("tier", 1), ("product_type", 1)], unique=True)

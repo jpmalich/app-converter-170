@@ -16,7 +16,6 @@ BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASSWORD = "Admin123!"
-SOURCE_EST_ID = "c864939b-b8d4-49c2-b41e-dceb7fedebd1"  # Letrick fixture
 
 
 @pytest.fixture(scope="module")
@@ -36,8 +35,13 @@ def mongo_db():
 
 def test_demo_reset_specified_state_and_isolation(admin_session, mongo_db):
     s = admin_session
-    src_before = mongo_db.estimates.find_one({"id": SOURCE_EST_ID}, {"_id": 0})
-    assert src_before, "Letrick source fixture missing"
+    # isolation baseline: every non-demo estimate must be byte-identical
+    # after reset (the original Letrick source estimate was deleted from
+    # the dashboard — the reset is now self-contained on the frozen run)
+    others_before = {
+        e["id"]: e for e in mongo_db.estimates.find(
+            {"demo_key": {"$ne": "letrick_demo"}}, {"_id": 0})
+    }
 
     r = s.post(f"{API}/demo/reset", timeout=120)
     assert r.status_code == 200, r.text
@@ -66,12 +70,17 @@ def test_demo_reset_specified_state_and_isolation(admin_session, mongo_db):
     assert d["openings_review"]["items"] >= 1
     assert d["openings_review"]["unconfirmed"] == d["openings_review"]["items"]
 
-    # (4) LP-native mode ON
-    assert d["lp_native_mode"] is True
+    # (4) built to run with LP-native mode ON: the demo is pure lp_smart;
+    # the GLOBAL mode switch is never mutated by reset (isolation) —
+    # readout reports the current state
+    assert isinstance(d["lp_native_mode"], bool)
 
-    # (3) hard isolation: the Letrick source is byte-identical after reset
-    src_after = mongo_db.estimates.find_one({"id": SOURCE_EST_ID}, {"_id": 0})
-    assert src_after == src_before
+    # (3) hard isolation: every non-demo estimate byte-identical after reset
+    others_after = {
+        e["id"]: e for e in mongo_db.estimates.find(
+            {"demo_key": {"$ne": "letrick_demo"}}, {"_id": 0})
+    }
+    assert others_after == others_before
 
     # (5) idempotent: second click → same staged content, ONE demo estimate
     d2 = s.post(f"{API}/demo/reset", timeout=120).json()
@@ -84,3 +93,29 @@ def test_demo_reset_specified_state_and_isolation(admin_session, mongo_db):
     assert mongo_db.ai_measure_runs.count_documents({"estimate_id": d["estimate_id"]}) == 0
     assert mongo_db.accuracy_report_snapshots.count_documents({"estimate_id": d["estimate_id"]}) == 0
     assert mongo_db.lp_material_list_snapshots.count_documents({"estimate_id": d["estimate_id"]}) == 0
+
+
+def test_demo_reset_mutates_zero_global_state(admin_session, mongo_db):
+    """Pin (ruled 2026-06, after the lp_native_mode violation): a demo
+    reset touches NOTHING outside the flagged demo estimate's documents —
+    no settings, no company docs, no tier definitions."""
+    def snapshot():
+        return {
+            "settings": sorted(
+                mongo_db.settings.find({}, {"_id": 0}),
+                key=lambda x: str(x.get("id"))),
+            "companies": sorted(
+                mongo_db.companies.find({}, {"_id": 0}),
+                key=lambda x: str(x.get("id"))),
+            "price_tiers": sorted(
+                mongo_db.price_tiers.find({}, {"_id": 0}),
+                key=lambda x: str(x.get("id"))),
+        }
+
+    before = snapshot()
+    r = admin_session.post(f"{API}/demo/reset", timeout=120)
+    assert r.status_code == 200, r.text
+    after = snapshot()
+    assert after["settings"] == before["settings"]
+    assert after["companies"] == before["companies"]
+    assert after["price_tiers"] == before["price_tiers"]

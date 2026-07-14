@@ -220,28 +220,52 @@ def test_estimated_tier_excluded_from_course_delta(admin_session, mongo_db):
 def test_accuracy_pdf_carries_corner_cross_check_table(admin_session, mongo_db):
     """1c ruling item 3 — the accuracy report PDF renders the persisted
     _count_corner_audit as a same-corner cross-check methodology table.
-    Uses the Letrick fixture (has 1c runs with audits)."""
+    Self-provisioned (Iter 112): clones the frozen Letrick run (which
+    carries a 1c audit) onto a scratch estimate — the original EST-191890
+    fixture was deleted from the dashboard, and pins must not depend on
+    deletable production data."""
     s = admin_session
-    est_id = "c864939b-b8d4-49c2-b41e-dceb7fedebd1"
-    r = s.get(f"{API}/estimates/{est_id}/tape-check/report-pdf", timeout=60)
-    assert r.status_code == 200, r.text
-    assert r.headers["content-type"].startswith("application/pdf")
-    import io
-    from pypdf import PdfReader
-    text = "".join(p.extract_text() for p in PdfReader(io.BytesIO(r.content)).pages)
-    low = text.lower()
-    assert "same-corner count cross-check" in low
-    assert "correlated-error residual" in low
-    assert "enumerated" in low and "estimated" in low
-    # Iter 79j.88 — anchor-integrity standing rule always present; the
-    # current-validated-baseline line appears only once a valid run has
-    # been scored under the CURRENT contract hash (hash bumps empty it).
-    assert "anchor-integrity dependency" in low
-    from routes.ai_measure import _prompt_version_hash
-    h = _prompt_version_hash()
-    est = mongo_db.estimates.find_one({"id": est_id}, {"tape_check.history": 1})
-    hist = (est.get("tape_check") or {}).get("history") or []
-    if any(e.get("prompt_hash") == h for e in hist):
-        assert "current validated baseline" in low
-    else:
-        assert "current validated baseline" not in low
+    src = mongo_db.ai_measure_runs.find_one(
+        {"run_id": "4a009e93eb5348c08cc26bfb935675ce"}, {"_id": 0})
+    assert src, "frozen Letrick source run missing"
+    est_id = s.post(f"{API}/estimates", json={"customer_name": "1c PDF Pin"},
+                    timeout=15).json()["id"]
+    run_id = "test-1cpdf-" + uuid.uuid4().hex[:10]
+    me = s.get(f"{API}/auth/me", timeout=10).json()
+    clone = dict(src)
+    clone.update({"run_id": run_id, "estimate_id": est_id, "user_id": me["id"]})
+    mongo_db.ai_measure_runs.insert_one(clone)
+    try:
+        s.put(f"{API}/estimates/{est_id}/tape-check", json={"walls": {
+            "front": {"segments": [{"height_ft": 8.96, "courses": 25}], "start_ref": "siding_start"},
+            "back": {"segments": [{"height_ft": 9.92, "courses": 28}], "start_ref": "siding_start"},
+        }, "dormers": []}, timeout=15)
+        sc = s.post(f"{API}/estimates/{est_id}/tape-check/score",
+                    json={"run_id": run_id}, timeout=15)
+        assert sc.status_code == 200, sc.text
+        r = s.get(f"{API}/estimates/{est_id}/tape-check/report-pdf", timeout=60)
+        assert r.status_code == 200, r.text
+        assert r.headers["content-type"].startswith("application/pdf")
+        import io
+        from pypdf import PdfReader
+        text = "".join(p.extract_text() for p in PdfReader(io.BytesIO(r.content)).pages)
+        low = text.lower()
+        assert "same-corner count cross-check" in low
+        assert "correlated-error residual" in low
+        assert "enumerated" in low and "estimated" in low
+        # Iter 79j.88 — anchor-integrity standing rule always present; the
+        # current-validated-baseline line appears only once a valid run has
+        # been scored under the CURRENT contract hash (hash bumps empty it).
+        assert "anchor-integrity dependency" in low
+        from routes.ai_measure import _prompt_version_hash
+        h = _prompt_version_hash()
+        est = mongo_db.estimates.find_one({"id": est_id}, {"tape_check.history": 1})
+        hist = (est.get("tape_check") or {}).get("history") or []
+        if any(e.get("prompt_hash") == h for e in hist):
+            assert "current validated baseline" in low
+        else:
+            assert "current validated baseline" not in low
+    finally:
+        mongo_db.ai_measure_runs.delete_one({"run_id": run_id})
+        mongo_db.accuracy_report_snapshots.delete_many({"estimate_id": est_id})
+        s.delete(f"{API}/estimates/{est_id}", timeout=15)

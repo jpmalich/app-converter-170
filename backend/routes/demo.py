@@ -26,6 +26,18 @@ DEMO_COLORS = {
 }
 DEMO_TIER = "Contractor"
 
+# Letrick taped ground truth — FROZEN into code (Iter 112) after the
+# original EST-191890 source estimate was deleted from the dashboard;
+# the demo depends only on the cloned run + these truths now.
+LETRICK_TAPE_WALLS = {
+    "front": {"segments": [{"height_ft": 8.96, "courses": 25}], "start_ref": "siding_start"},
+    "back": {"segments": [{"height_ft": 9.92, "courses": 28}], "start_ref": "siding_start"},
+    "left": {"segments": [{"height_ft": 8.96, "courses": 25},
+                          {"height_ft": 9.92, "courses": 28}], "start_ref": "siding_start"},
+    "right": {"segments": [{"height_ft": 8.96, "courses": 25},
+                           {"height_ft": 9.92, "courses": 28}], "start_ref": "siding_start"},
+}
+
 
 @router.get("/demo/status")
 async def demo_status(user: dict = Depends(get_current_user)):
@@ -48,11 +60,12 @@ async def demo_reset(user: dict = Depends(get_current_user)):
     src_run = await db.ai_measure_runs.find_one({"run_id": SOURCE_RUN_ID}, {"_id": 0})
     if not src_run:
         raise HTTPException(status_code=404, detail="Letrick source run not found")
-    src_est = await db.estimates.find_one(
-        {"id": src_run["estimate_id"]},
-        {"_id": 0, "company_id": 1, "tape_check": 1})
-    # hard isolation: only the fixture owner's company can stage the demo
-    if not src_est or src_est.get("company_id") != user["company_id"]:
+    # hard isolation: only the fixture-owner's company can stage the demo
+    # (gated via the frozen run's owner — the original source estimate no
+    # longer exists)
+    run_owner = await db.users.find_one(
+        {"id": src_run.get("user_id")}, {"_id": 0, "company_id": 1})
+    if not run_owner or run_owner.get("company_id") != user["company_id"]:
         raise HTTPException(status_code=403,
                             detail="Demo reset is restricted to the fixture owner's company")
 
@@ -68,7 +81,6 @@ async def demo_reset(user: dict = Depends(get_current_user)):
     # ── REBUILD (deterministic staged state)
     now = datetime.now(timezone.utc).isoformat()
     est_id = str(uuid.uuid4())
-    tc_src = src_est.get("tape_check") or {}
     await db.estimates.insert_one({
         "id": est_id, "company_id": user["company_id"], "demo_key": DEMO_KEY,
         "kind": "lp_smart",
@@ -82,10 +94,10 @@ async def demo_reset(user: dict = Depends(get_current_user)):
         "lines": [], "misc_labor": [], "misc_material": [],
         "lp_pricing_tier": DEMO_TIER,
         "lp_colors": dict(DEMO_COLORS),
-        # taped ground truth copied from the Letrick fixture; the single
-        # history entry is re-scored below (never copied)
-        "tape_check": {"walls": tc_src.get("walls") or {},
-                       "dormers": tc_src.get("dormers") or [],
+        # frozen Letrick taped truths; the single history entry is
+        # re-scored below (never copied)
+        "tape_check": {"walls": LETRICK_TAPE_WALLS,
+                       "dormers": [],
                        "held_out": False, "updated_at": now, "history": []},
     })
 
@@ -132,10 +144,13 @@ async def demo_reset(user: dict = Depends(get_current_user)):
     from routes.estimates import accuracy_report_freeze, score_tape_check
     scored = await score_tape_check(est_id, {"run_id": DEMO_RUN_ID}, user)
 
-    # LP-native mode ON (ruled: the demo runs with it ON)
-    await db.settings.update_one(
-        {"id": "lp_native_mode"},
-        {"$set": {"id": "lp_native_mode", "enabled": True}}, upsert=True)
+    # LP-native mode is a GLOBAL presentation filter — flipping it here
+    # would strip non-LP catalogs for every contractor (isolation rule
+    # forbids that). The demo estimate is BUILT to run with the mode ON
+    # (kind lp_smart, LP-only lines); flip the switch itself from the LP
+    # admin panel for demo day. We report the current state.
+    from routes.lp_admin import load_lp_native_mode
+    native_on = await load_lp_native_mode()
 
     # frozen QR links minted (material list + accuracy report)
     from routes.lp_package_routes import lp_material_list_freeze, lp_package_preview
@@ -154,7 +169,7 @@ async def demo_reset(user: dict = Depends(get_current_user)):
         "estimate_id": est_id,
         "estimate_number": "DEMO-LETRICK",
         "run_id": DEMO_RUN_ID,
-        "lp_native_mode": True,
+        "lp_native_mode": native_on,
         "pricing_tier": DEMO_TIER,
         "colors": dict(DEMO_COLORS),
         "tape_check_scored": {

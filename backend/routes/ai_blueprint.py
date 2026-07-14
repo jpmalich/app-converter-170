@@ -64,7 +64,19 @@ MAX_PAGES_HARD = 20
 DEFAULT_MAX_PAGES = 12
 MAX_BYTES_PER_FILE = 16 * 1024 * 1024  # blueprints scan larger than photos
 PDF_RENDER_SCALE = 2.0  # pypdfium2 scale factor — ~144 DPI for an 8.5×11
+# ⚑ PROVENANCE FLAG (Iter 112, Howard's audit): this Opus 4.5 pin was
+# INHERITED from AI-measure's then-default at feature birth (2026-06-18),
+# not consciously chosen — no bake-off, no ruling, no sealed validation.
+# It is NOT a validated configuration; a future validated-model decision
+# is OWED before the pin can be called deliberate. Runs now stamp
+# model_config + prompt hash so that validation has provenance to score.
 MODEL_NAME = "claude-opus-4-5-20251101"
+MODEL_VALIDATION_STATUS = "inherited-default — validated-model decision pending"
+
+
+def _blueprint_prompt_hash() -> str:
+    import hashlib
+    return hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest()[:16]
 
 
 SYSTEM_PROMPT = """\
@@ -1043,6 +1055,11 @@ async def _execute_ai_blueprint_worker(
             "mezzo_openings": mezzo_openings,
             "raw_ai": raw,
             "model": MODEL_NAME,
+            "model_config": {
+                "model": MODEL_NAME,
+                "validation_status": MODEL_VALIDATION_STATUS,
+                "prompt_hash": _blueprint_prompt_hash(),
+            },
             "session_id": session_id,
             "pages_processed": len(image_payloads),
         }

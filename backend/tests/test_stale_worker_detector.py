@@ -113,13 +113,14 @@ def test_stale_running_run_flips_to_error(db, session, admin_user_id):
             f"stale run should be flipped to error, got {s['status']}: {s}"
         )
         assert s["error_kind"] == "WorkerDied"
-        assert "died silently" in (s["error"] or "").lower()
+        assert "failure class 5" in (s["error"] or "").lower()
         assert "retry run" in (s["error"] or "").lower()
         assert s["stage"] == "worker_died"
         # DB doc must be persistent so a subsequent poll returns the same state
         db_doc = db.ai_measure_runs.find_one({"run_id": run_id})
         assert db_doc["status"] == "error"
         assert db_doc["error_kind"] == "WorkerDied"
+        assert db_doc["failure_class"] == 5
     finally:
         db.ai_measure_runs.delete_one({"run_id": run_id})
 

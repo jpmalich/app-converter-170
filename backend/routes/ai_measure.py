@@ -86,7 +86,29 @@ _MODEL_CHOICES: dict[str, tuple[str, str]] = {
     "gpt-5.5":                 ("openai",    "gpt-5.5"),
     "gpt-5.4":                 ("openai",    "gpt-5.4"),
 }
-_DEFAULT_MODEL_KEY = "claude-opus-4-5"
+_DEFAULT_MODEL_KEY = "claude-fable-5"
+
+# Iter 111 — ANCHOR INTEGRITY (Howard's ruling): the production pipeline
+# is validated on ONE configuration (Fable 5 — Phase 3 sealed-key +
+# C4 conformance + every scored accuracy run). A user-reachable model
+# picker conflicts with that anchor, so non-admin runs CLAMP to the
+# validated set (recorded on the run doc, never silent); admins keep
+# the full A/B registry for bake-offs.
+_VALIDATED_MODEL_KEYS = frozenset({"claude-fable-5"})
+
+
+def _clamp_model_choice(choice: str | None, user: dict) -> tuple[str, str | None]:
+    """Returns (effective_choice, clamped_from). Admins pass through;
+    non-admin choices outside the validated set clamp to the default."""
+    key = (choice or _DEFAULT_MODEL_KEY).strip()
+    if (user.get("role") or "").lower() in _ADMIN_ROLES:
+        return key, None
+    if key not in _VALIDATED_MODEL_KEYS:
+        logger.warning(
+            "[ai-measure] model_choice %r clamped to %s (anchor integrity; "
+            "user role=%r)", key, _DEFAULT_MODEL_KEY, user.get("role"))
+        return _DEFAULT_MODEL_KEY, key
+    return key, None
 
 
 def _resolve_model(choice: str | None) -> tuple[str, str, str]:
@@ -2240,6 +2262,8 @@ async def ai_measure(
     user_id = user["id"]
     # Iter 79j.15 — resolve the A/B model choice up front so the run doc
     # persists it for reporting + the worker can hand it to LlmChat.
+    # Iter 111 — non-admin choices clamp to the validated set (anchor).
+    model_choice, model_clamped_from = _clamp_model_choice(model_choice, user)
     model_key, model_provider, model_name = _resolve_model(model_choice)
     # Iter 79j.42 — Backend-only Anthropic direct route. If the
     # provider is anthropic AND ANTHROPIC_API_KEY is set, use it and
@@ -2279,6 +2303,7 @@ async def ai_measure(
         "address": address,
         # Iter 79j.15 — A/B model tracking
         "model_choice": model_key,
+        "model_choice_clamped_from": model_clamped_from,
         "model_provider": model_provider,
         "model_name": model_name,
         # Iter 79j.67(a) — persist contractor calibration on the run doc.
@@ -2412,6 +2437,7 @@ async def ai_measure_rerun(
         if isinstance(_mc, str) and _mc.strip():
             model_choice_override = _mc.strip()
     model_choice = model_choice_override or prev.get("model_choice") or _DEFAULT_MODEL_KEY
+    model_choice, model_clamped_from = _clamp_model_choice(model_choice, user)
     model_key, model_provider, model_name = _resolve_model(model_choice)
 
     # Iter 79j.86 — bake-off per-phase model overrides + usage-probe flag.
@@ -2419,8 +2445,10 @@ async def ai_measure_rerun(
     # either is present they define the run condition (model_choice is
     # superseded). `usage_probe: true` marks a telemetry-only run:
     # scores are refused, accuracy history untouched.
+    # Iter 111 — per-phase overrides are ADMIN-ONLY (anchor integrity).
     model_name_phase_b: Optional[str] = None
-    if isinstance(payload, dict) and (payload.get("model_phase_a") or payload.get("model_phase_b")):
+    _is_admin = (user.get("role") or "").lower() in _ADMIN_ROLES
+    if _is_admin and isinstance(payload, dict) and (payload.get("model_phase_a") or payload.get("model_phase_b")):
         _ka, _pa, _na = _resolve_model(payload.get("model_phase_a") or model_key)
         _kb, _pb, _nb = _resolve_model(payload.get("model_phase_b") or payload.get("model_phase_a") or model_key)
         model_key, model_provider, model_name = _ka, _pa, _na
@@ -2483,6 +2511,7 @@ async def ai_measure_rerun(
         "kind":            kind,
         "address":         address,
         "model_choice":    model_key,
+        "model_choice_clamped_from": model_clamped_from,
         "model_config":    {"phase_a": model_name, "phase_b": model_name_phase_b or model_name},
         "usage_probe":     usage_probe,
         "rerun_of":        prev_run_id,
@@ -2564,7 +2593,7 @@ async def ai_measure_reconcile_only(
     api_key, _source = _pick_llm_api_key("anthropic")
     if not api_key:
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
-    model_key = run.get("model_choice") or "claude-opus-4-5"
+    model_key = run.get("model_choice") or _DEFAULT_MODEL_KEY
     _key, model_provider, model_name = _resolve_model(model_key)
 
     now = datetime.now(timezone.utc)
@@ -2729,6 +2758,169 @@ async def _execute_reconcile_only_worker(
 
 
 
+# ─────────────────────────────────────────────────────────────────────
+# FAILURE CLASS 5 — WORKER LIFECYCLE (Iter 111, Howard's standing rule)
+#
+# Distinct from the four empty-extraction classes (null-response, JSON
+# parse break, truncation, refusal): here the MODEL did nothing wrong —
+# the asyncio worker was killed (hot-reload, redeploy, platform restart,
+# idle recycling). Confirmed live on the EST-657226 vinyl run: 8/8
+# photos finished Phase A, then a hot-reload killed reconcile mid-flight.
+#
+# Defenses, in order:
+#   1. RESUMABLE RECONCILE — Phase A persists `raw_per_photo` before
+#      Phase B, so a dead worker with saved Phase A auto-resumes
+#      reconcile-only (pennies) instead of stranding the run. Capped at
+#      ONE auto-resume per run to prevent restart loops.
+#   2. STARTUP SWEEP — every boot sweeps status="running" runs (a task
+#      never survives its process), so recovery does not depend on
+#      someone polling.
+#   3. OPERATOR PREFLIGHT — GET /ai-measure/in-flight; standing rule:
+#      production runs and build sessions never overlap; check this
+#      before any restart/hot-reload — warn, never silently kill.
+# ─────────────────────────────────────────────────────────────────────
+FAILURE_CLASS_WORKER_LIFECYCLE = 5
+_AUTO_RESUME_CAP = 1
+
+
+async def _handle_dead_worker(doc: dict, *, idle_s: int, source: str) -> str:
+    """Handle a run whose worker is confirmed dead. Returns one of
+    'resumed' (reconcile-only auto-resume dispatched), 'failed'
+    (flipped to error, failure_class 5), 'raced' (another poller/boot
+    already handled it)."""
+    run_id = doc["run_id"]
+    raw_per_photo = doc.get("raw_per_photo") or []
+    attempts = int(doc.get("lifecycle_resume_attempts") or 0)
+    now_utc = datetime.now(timezone.utc)
+    pa_prog = doc.get("phase_a_progress") or {}
+    stage_at_death = doc.get("stage") or (
+        pa_prog.get("phase") if isinstance(pa_prog, dict) else None) or "unknown"
+    photos_done = int(pa_prog.get("done") or 0) if isinstance(pa_prog, dict) else 0
+    photos_total = int(pa_prog.get("total") or 0) if isinstance(pa_prog, dict) else 0
+    death_event = {
+        "at": now_utc.isoformat(),
+        "source": source,
+        "idle_s": idle_s,
+        "stage_at_death": stage_at_death,
+        "photos_done": photos_done,
+        "photos_total": photos_total,
+    }
+
+    can_resume = (isinstance(raw_per_photo, list) and len(raw_per_photo) > 0
+                  and attempts < _AUTO_RESUME_CAP)
+    api_key = None
+    if can_resume:
+        api_key, _src = _pick_llm_api_key("anthropic")
+        can_resume = bool(api_key)
+    if can_resume:
+        # atomic claim — only one poller/boot wins the resume
+        res = await db.ai_measure_runs.update_one(
+            {"run_id": run_id, "status": "running",
+             "lifecycle_resume_attempts": {"$not": {"$gte": _AUTO_RESUME_CAP}}},
+            {"$set": {
+                "stage": "reconciling",
+                "updated_at": now_utc,
+                "failure_class": FAILURE_CLASS_WORKER_LIFECYCLE,
+                "lifecycle_last_death": death_event,
+                "lifecycle_auto_resume_at": now_utc,
+            },
+             "$inc": {"lifecycle_resume_attempts": 1}},
+        )
+        if res.modified_count != 1:
+            return "raced"
+        model_key = doc.get("model_choice") or "claude-opus-4-5"
+        _k, model_provider, model_name = _resolve_model(model_key)
+        asyncio.create_task(_execute_reconcile_only_worker(
+            run_id=run_id,
+            api_key=api_key,
+            user_id=doc.get("user_id"),
+            extractions=raw_per_photo,
+            model_provider=model_provider,
+            model_name=model_name,
+            address=doc.get("address"),
+            reference_dim=doc.get("reference_dim"),
+            annotation_hint=doc.get("annotation_hint") or "",
+        ))
+        logger.warning(
+            "[ai-measure class-5] AUTO-RESUME reconcile-only run=%s "
+            "(source=%s, %d Phase A extractions persisted, attempt %d/%d)",
+            run_id, source, len(raw_per_photo), attempts + 1, _AUTO_RESUME_CAP,
+        )
+        return "resumed"
+
+    if raw_per_photo:
+        recovery = ("Phase A extractions are saved — use Retry "
+                    "reconciliation to resume Phase B for pennies "
+                    "(auto-resume already attempted).")
+    else:
+        recovery = ("Click Retry Run to fire a fresh worker — no partial "
+                    "extractions were saved and no additional charges were "
+                    "incurred beyond photos that already completed.")
+    err_msg = (
+        f"Worker task died (failure class 5 — worker lifecycle; "
+        f"detected via {source}"
+        + (f", no progress for {idle_s}s" if idle_s >= 0 else ", found at process start")
+        + "). Most likely cause: a backend restart, redeploy or hot-reload "
+        f"cancelled the asyncio task. Last known stage: '{stage_at_death}'"
+        + (f", {photos_done}/{photos_total} photos done. " if photos_total else ". ")
+        + recovery
+    )
+    res = await db.ai_measure_runs.update_one(
+        {"run_id": run_id, "status": "running"},
+        {"$set": {
+            "status": "error",
+            "stage": "worker_died",
+            "error": err_msg,
+            "error_kind": "WorkerDied",
+            "failure_class": FAILURE_CLASS_WORKER_LIFECYCLE,
+            "lifecycle_last_death": death_event,
+            "completed_at": now_utc,
+            "updated_at": now_utc,
+        }},
+    )
+    return "failed" if res.modified_count else "raced"
+
+
+async def sweep_orphaned_runs() -> dict:
+    """Boot-time class-5 sweep. Any run still status='running' when this
+    process starts is dead by definition (asyncio tasks never survive
+    their process): resume from persisted Phase A when possible, else
+    flip to a class-5 error so the UI offers retry instead of polling
+    grey dots forever."""
+    out = {"resumed": 0, "failed": 0, "raced": 0}
+    async for doc in db.ai_measure_runs.find({"status": "running"}):
+        outcome = await _handle_dead_worker(doc, idle_s=-1, source="startup_sweep")
+        out[outcome] = out.get(outcome, 0) + 1
+    if any(out.values()):
+        logger.warning("[ai-measure class-5] startup sweep: %s", out)
+    return out
+
+
+@router.get("/ai-measure/in-flight")
+async def ai_measure_in_flight(user: dict = Depends(get_current_user)):
+    """Operator preflight (standing rule: production runs and build
+    sessions never overlap). Check before ANY restart/hot-reload — a
+    restart kills in-flight workers (failure class 5). Admins see all
+    running runs; other users see their own."""
+    q: dict = {"status": "running"}
+    if (user.get("role") or "").lower() not in _ADMIN_ROLES:
+        q["user_id"] = user["id"]
+    now = datetime.now(timezone.utc)
+    runs = []
+    async for d in db.ai_measure_runs.find(
+            q, {"_id": 0, "run_id": 1, "estimate_id": 1, "stage": 1,
+                "phase_a_progress": 1, "updated_at": 1, "created_at": 1}):
+        upd = _as_aware_utc(d.get("updated_at") or d.get("created_at"))
+        runs.append({
+            "run_id": d["run_id"],
+            "estimate_id": d.get("estimate_id"),
+            "stage": d.get("stage"),
+            "phase_a_progress": d.get("phase_a_progress"),
+            "idle_s": int((now - upd).total_seconds()) if upd else None,
+        })
+    return {"count": len(runs), "runs": runs, "restart_safe": len(runs) == 0}
+
+
 def _as_aware_utc(dt):
     """Coerce a datetime to a timezone-aware UTC datetime. MongoDB may
     return naive datetimes depending on the driver/codec settings, which
@@ -2790,38 +2982,17 @@ async def ai_measure_status(
         if updated_at is not None:
             idle_s = (datetime.now(timezone.utc) - updated_at).total_seconds()
             if idle_s > stale_threshold_s:
-                stage_at_death = doc.get("stage") or (pa_prog.get("phase") if isinstance(pa_prog, dict) else None) or "unknown"
-                photos_done = int(pa_prog.get("done") or 0) if isinstance(pa_prog, dict) else 0
-                photos_total = int(pa_prog.get("total") or 0) if isinstance(pa_prog, dict) else 0
-                err_msg = (
-                    f"Worker task died silently (no progress for {int(idle_s)}s, "
-                    f"threshold {stale_threshold_s}s). Most likely cause: a backend "
-                    f"restart or hot-reload cancelled the asyncio task. "
-                    f"Last known stage: '{stage_at_death}'"
-                    + (f", {photos_done}/{photos_total} photos done." if photos_total else ".")
-                    + " Click Retry Run to fire a fresh worker — no partial "
-                    "extractions were saved and no additional Anthropic charges "
-                    "were incurred beyond photos that already completed."
-                )
-                now_utc = datetime.now(timezone.utc)
-                await db.ai_measure_runs.update_one(
-                    {"run_id": run_id, "status": "running"},
-                    {"$set": {
-                        "status": "error",
-                        "stage": "worker_died",
-                        "error": err_msg,
-                        "error_kind": "WorkerDied",
-                        "completed_at": now_utc,
-                        "updated_at": now_utc,
-                    }},
-                )
+                # Iter 111 — class-5 handler: auto-resume reconcile-only
+                # from persisted Phase A when possible, else flip to a
+                # class-5 error with retry guidance.
+                outcome = await _handle_dead_worker(
+                    doc, idle_s=int(idle_s), source="status_poll")
                 logger.warning(
-                    "[ai-measure] stale-worker detector: flipped run %s to error "
-                    "(idle %ds > threshold %ds, stage=%s, %d/%d photos)",
-                    run_id, int(idle_s), stale_threshold_s,
-                    stage_at_death, photos_done, photos_total,
+                    "[ai-measure] stale-worker detector: %s run %s "
+                    "(idle %ds > threshold %ds)",
+                    outcome, run_id, int(idle_s), stale_threshold_s,
                 )
-                # Refresh the doc so the response below reflects the flip
+                # Refresh the doc so the response below reflects the outcome
                 doc = await db.ai_measure_runs.find_one({"run_id": run_id}) or doc
 
     created = _as_aware_utc(doc.get("created_at"))
