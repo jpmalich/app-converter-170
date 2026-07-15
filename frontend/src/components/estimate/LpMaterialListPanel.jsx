@@ -15,7 +15,7 @@
 //     meshes pending — flagged, not faked).
 //   • Lines without a cost basis render "pricing pending", never $0.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Lock, MapPin, Pencil, RefreshCcw, ShieldCheck } from "lucide-react";
+import { Loader2, Lock, MapPin, Pencil, RefreshCcw, Ruler, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import api, { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -85,6 +85,9 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   const [colors, setColors] = useState(() => est?.lp_colors || {});
   const [noRun, setNoRun] = useState(false);
   const [relocating, setRelocating] = useState(null); // amber key picking a wall
+  // "Tape the chase" nudge (approved 2026-07-15): offer-only quick entry
+  const [tapeVals, setTapeVals] = useState({});
+  const [dimsKey, setDimsKey] = useState(0);
 
   const toggleVerify = async (item, status, extra) => {
     try {
@@ -194,6 +197,62 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
     () => (run ? { ...run.result, run_id: run.run_id } : null),
     [run]
   );
+
+  // "Tape the chase" nudge groups (approved 2026-07-15): one per amber
+  // appendage whose dims are still assumed. Offer only, never a gate —
+  // fully-measured appendages show no prompt. Save key mirrors the 3D
+  // panel (accent-profile wall); backend derivation is group-scoped.
+  const APPENDAGE_MARKERS = ["chase", "chimney", "bump", "cantilever", "appendage"];
+  const tapeNudges = useMemo(() => {
+    const dims = pkg?.appendage_dims || {};
+    const accentWalls = [];
+    (run?.result?.raw_ai?.walls || []).forEach((w) => {
+      (w.accent_profiles || []).forEach((ap) => {
+        const loc = String(ap.location || "").toLowerCase();
+        if (APPENDAGE_MARKERS.some((m) => loc.includes(m))) accentWalls.push(String(w.label || "").toLowerCase());
+      });
+    });
+    const groups = {};
+    (pkg?.amber_items || []).forEach((it) => {
+      if (it.status === "user_removed") return;
+      const text = String(it.locator || "").toLowerCase();
+      const marker = APPENDAGE_MARKERS.find((m) => text.includes(m));
+      if (!marker) return;
+      groups[marker] = groups[marker] || { marker, walls: [] };
+      (it.walls || []).forEach((w) => {
+        const k = String(w).toLowerCase();
+        if (!groups[marker].walls.includes(k)) groups[marker].walls.push(k);
+      });
+    });
+    return Object.values(groups).map((g) => {
+      const walls = [...new Set([...accentWalls, ...g.walls])];
+      const measured = (field) => walls.some((w) => {
+        const e = (dims[`appendage:${w}`] || {})[field];
+        return e && (e.status === "user_measured" || e.status === "user_confirmed_from_blueprint");
+      });
+      const fields = ["height_ft", "depth_ft"].filter((f) => !measured(f));
+      const saveWall = accentWalls[0] || g.walls[0];
+      return fields.length && saveWall ? { marker: g.marker, key: `appendage:${saveWall}`, fields } : null;
+    }).filter(Boolean);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pkg, run]);
+
+  const saveTape = async (nudge) => {
+    const entries = nudge.fields
+      .map((f) => [f, parseFloat(tapeVals[`${nudge.key}.${f}`])])
+      .filter(([, v]) => Number.isFinite(v) && v >= 0.5 && v <= 100);
+    if (!entries.length) return;
+    try {
+      for (const [f, v] of entries) {
+        await api.post(`/estimates/${estId}/lp-appendage-dims`, { key: nudge.key, field: f, value: v });
+      }
+      setTapeVals({});
+      setDimsKey((k) => k + 1); // 3D panel refetches dims + redraws
+      fetchPackage(colors, subs);
+    } catch {
+      toast.error("Could not save the measurements — try again.");
+    }
+  };
 
   const bySection = useMemo(() => {
     const acc = {};
@@ -539,6 +598,39 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               </div>
             ))}
           </div>
+          {/* "Tape the chase" quick entry — offer only, never a gate */}
+          {tapeNudges.map((n) => (
+            <div key={n.key} className="mt-3 pt-2 border-t border-[#FDE68A]" data-testid={`lp-tape-nudge-${n.marker}`}>
+              <div className="text-[11px] font-bold text-[#92400E] flex items-center gap-1.5">
+                <Ruler className="w-3 h-3" /> {t("lp.fv.tape.title")} — {n.marker}
+              </div>
+              <div className="text-[10px] text-[#92400E] mt-0.5 mb-1.5">{t("lp.fv.tape.note")}</div>
+              <div className="flex flex-wrap items-center gap-3">
+                {n.fields.map((f) => (
+                  <label key={f} className="flex items-center gap-1.5 text-[11px] text-[var(--ink)]">
+                    {t(f === "height_ft" ? "lp.fv.tape.height" : "lp.fv.tape.depth")}
+                    <input
+                      type="number" step="0.1" min="0.5" max="100"
+                      className="input w-20 text-xs py-0.5 px-1.5"
+                      value={tapeVals[`${n.key}.${f}`] || ""}
+                      onChange={(e) => setTapeVals((v) => ({ ...v, [`${n.key}.${f}`]: e.target.value }))}
+                      data-testid={`lp-tape-${f === "height_ft" ? "height" : "depth"}-${n.marker}`}
+                    />
+                    {t("lp.fv.tape.ft")}
+                  </label>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => saveTape(n)}
+                  disabled={!n.fields.some((f) => parseFloat(tapeVals[`${n.key}.${f}`]) >= 0.5)}
+                  className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-sky-700 text-white disabled:opacity-40"
+                  data-testid={`lp-tape-save-${n.marker}`}
+                >
+                  {t("lp.fv.tape.save")}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -554,6 +646,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
             runId={run.run_id}
             lpGroupColors={lpGroupColors}
             onDimsSaved={() => fetchPackage(colors, subs)}
+            dimsRefreshKey={dimsKey}
           />
         </div>
       )}

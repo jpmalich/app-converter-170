@@ -1379,7 +1379,7 @@ function buildScene(scene, house) {
   return { wallMeshes, warnings };
 }
 
-export default function HouseModel3D({ preview, estimate, runId, onSnapshot, hasSnapshot, lpGroupColors, onDimsSaved }) {
+export default function HouseModel3D({ preview, estimate, runId, onSnapshot, hasSnapshot, lpGroupColors, onDimsSaved, dimsRefreshKey }) {
   const mountRef = useRef(null);
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
@@ -1402,7 +1402,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
     api.get(`/estimates/${estimate.id}/lp-appendage-dims`)
       .then(({ data }) => { setApDims(data.dims || {}); setDimOffers(data.offers || []); })
       .catch(() => {});
-  }, [estimate?.id]);
+  }, [estimate?.id, dimsRefreshKey]);
   const saveDim = async (key, field, value, source) => {
     try {
       const { data } = await api.post(`/estimates/${estimate.id}/lp-appendage-dims`,
