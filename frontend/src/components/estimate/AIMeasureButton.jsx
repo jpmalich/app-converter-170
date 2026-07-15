@@ -3421,7 +3421,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           </table>
                         </div>
                         <div className="px-3 py-1.5 border-t border-[#E9D5FF] bg-[var(--surface)] text-[9px] text-[var(--muted)] italic">
-                          Cost is an approximation using published list prices · Compare Conf + counts vs your ground-truth field measurement.
+                          Compare Conf + counts vs your ground-truth field measurement.
                         </div>
                       </div>
                     );
