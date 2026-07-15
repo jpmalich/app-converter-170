@@ -29,7 +29,11 @@ BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASSWORD = "Admin123!"
-SHAKEDOWN_RUN_ID = "e4afda3a64a54439b02b5c609dda0b69"  # Howard's upload
+# Howard's original shakedown upload (e4afda3a64a54439b02b5c609dda0b69)
+# was lost to the 24h ai_blueprint_runs TTL before archival (2026-07-16).
+# Repointed to comparison run1_opus — same blueprint, validated Opus 4.5,
+# restored into fixture_runs (no TTL) from /app/memory/bp_comparison_runs.
+SHAKEDOWN_RUN_ID = "2a2e8a1227d145a588b71387903e1320"
 
 CROSS_DOMAIN = ("j-channel", "j channel", "finish trim", "coil")
 

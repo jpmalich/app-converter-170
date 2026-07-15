@@ -202,6 +202,11 @@ async def _blueprint_dim_offers(est_id):
         {"_id": 0, "run_id": 1, "result.raw_ai.appendages": 1},
         sort=[("created_at", -1)])
     if not doc:
+        # Artifact pin read-side: archived blueprint runs (24h TTL defusal)
+        doc = await find_archived_run(
+            {"estimate_id": est_id, "status": "done",
+             "result.raw_ai.appendages": {"$exists": True}})
+    if not doc:
         return []
     offers = []
     for ap in ((doc.get("result") or {}).get("raw_ai") or {}).get("appendages") or []:

@@ -137,8 +137,12 @@ def test_items_carry_delete_guard_info():
 
 @pytest.fixture(scope="module")
 def phantom_fixture(mongo_db):
-    src = mongo_db.ai_blueprint_runs.find_one({"run_id": SOURCE_RUN}, {"_id": 0})
+    # fixture_runs fallback: comparison runs outlive the 24h TTL there
+    # (restored 2026-07-16 after TTL loss — artifact pin).
+    src = mongo_db.ai_blueprint_runs.find_one({"run_id": SOURCE_RUN}, {"_id": 0}) \
+        or mongo_db.fixture_runs.find_one({"run_id": SOURCE_RUN}, {"_id": 0})
     assert src, "comparison run1_opus missing"
+    src.pop("artifact_reasons", None)
     from routes.ai_blueprint import _aggregate_to_hover_shape
     meas = _aggregate_to_hover_shape(dict(src["result"]["raw_ai"]))
     src["result"]["measurements"] = {**src["result"]["measurements"],
@@ -262,8 +266,10 @@ def test_history_and_debug_runs_redact_cost(session):
 
 
 def test_db_telemetry_untouched_by_redaction(mongo_db):
-    # Redaction is response-side only — the admin spend line reads the DB.
-    doc = mongo_db.ai_blueprint_runs.find_one({"run_id": SOURCE_RUN})
+    # Redaction is response-side only — the admin spend line reads the DB
+    # (fixture_runs archive after the 24h live-collection TTL).
+    doc = mongo_db.ai_blueprint_runs.find_one({"run_id": SOURCE_RUN}) \
+        or mongo_db.fixture_runs.find_one({"run_id": SOURCE_RUN})
     assert (doc["result"].get("cost_usd") or 0) > 0
     assert doc["result"].get("token_usage")
 

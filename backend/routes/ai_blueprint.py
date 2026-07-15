@@ -1185,6 +1185,11 @@ async def ai_blueprint_status(
     `/measure/ai-measure/status/{run_id}` shape."""
     doc = await db.ai_blueprint_runs.find_one({"run_id": run_id})
     if not doc:
+        # Artifact pin read-side: archived blueprint runs outlive the
+        # 24h TTL — serve them here too (fixture_runs, no TTL).
+        from run_archive import find_archived_run
+        doc = await find_archived_run({"run_id": run_id})
+    if not doc:
         raise HTTPException(status_code=404, detail="Run not found")
     if doc.get("user_id") != user["id"]:
         raise HTTPException(status_code=403, detail="Not your run")
