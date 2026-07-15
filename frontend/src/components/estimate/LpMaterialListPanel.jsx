@@ -432,6 +432,18 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         </div>
       </div>
 
+      {/* dimension cross-check flags — disagreement flagged, never averaged */}
+      {(pkg.appendage_dim_flags || []).length > 0 && (
+        <div className="border-t border-[var(--border)] px-4 py-3 bg-[#FFFBEB]" data-testid="lp-dim-flags-card">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#92400E] mb-1 flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5" /> Dimension cross-check
+          </div>
+          {pkg.appendage_dim_flags.map((f, i) => (
+            <div key={i} className="text-[11px] text-[#92400E]" data-testid={`lp-dim-flag-${i}`}>{f}</div>
+          ))}
+        </div>
+      )}
+
       {/* amber field-verify checklist — presence-guarantee ratification */}
       {(pkg.amber_items || []).length > 0 && (
         <div className="border-t border-[var(--border)] px-4 py-3 bg-[#FFFBEB]" data-testid="lp-field-verify-card">
@@ -536,7 +548,13 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-2 flex items-center gap-2">
             <RefreshCcw className="w-3 h-3" /> 3D — colors repaint live (siding + opening trim mesh groups; corner/fascia meshes pending)
           </div>
-          <HouseModel3D preview={preview3d} estimate={est} runId={run.run_id} lpGroupColors={lpGroupColors} />
+          <HouseModel3D
+            preview={preview3d}
+            estimate={est}
+            runId={run.run_id}
+            lpGroupColors={lpGroupColors}
+            onDimsSaved={() => fetchPackage(colors, subs)}
+          />
         </div>
       )}
     </div>

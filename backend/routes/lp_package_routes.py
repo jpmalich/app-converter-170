@@ -26,7 +26,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         q_est["company_id"] = company_id
     est = await db.estimates.find_one(
         q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
-                "lp_openings_review": 1, "lp_source_run_id": 1,
+                "lp_openings_review": 1, "lp_appendage_dims": 1, "lp_source_run_id": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -103,6 +103,120 @@ def _corner_key(c, i=0):
 
 
 _WALLS = ("front", "back", "left", "right")
+
+
+_APPENDAGE_KEYWORDS = ("chase", "chimney", "bump", "cantilever")
+
+_DIM_FIELDS = ("height_ft", "depth_ft")
+
+_DIM_STATUSES = ("user_measured", "user_confirmed_from_blueprint")
+
+
+def _has_appendage_keyword(s):
+    t = str(s or "").lower()
+    return any(k in t for k in _APPENDAGE_KEYWORDS)
+
+
+def _apply_appendage_dims(corner_locations, dims_state):
+    """Dimension-editing ruling (2026-07-15): the render-only rule's
+    second half. A user_measured (or blueprint-confirmed) appendage
+    height becomes a legitimate derivation input — set as
+    height_override_ft on that wall's appendage-keyword OSC corners so
+    540 OSC stick LF re-derives. Assumed dims never set the override
+    (pin unchanged). Keys: appendage:{original wall}."""
+    if not dims_state:
+        return corner_locations
+    heights = {}
+    for key, fields in dims_state.items():
+        if not str(key).startswith("appendage:"):
+            continue
+        wall = str(key).split(":", 1)[1]
+        h = (fields or {}).get("height_ft") or {}
+        if h.get("status") in _DIM_STATUSES and (h.get("value") or 0) > 0:
+            heights[wall] = float(h["value"])
+    if not heights:
+        return corner_locations
+    # Feature-scoped application (C4 doctrine): entering THE CHASE height
+    # raises ALL of that chase's OSC edges — including the edge that sits
+    # on the adjacent wall (e.g. letrick's "chase right outer edge" lives
+    # on the back wall while the box keys to the right wall).
+    from lp_package import APPENDAGE_MARKERS
+    out = list(corner_locations or [])
+    groups = {}
+    for idx, c in enumerate(out):
+        if str(c.get("type")) != "outside":
+            continue
+        text = f"{c.get('locator') or ''} {' '.join(str(w) for w in c.get('walls') or [])}".lower()
+        marker = next((m for m in APPENDAGE_MARKERS if m in text), None)
+        if marker:
+            groups.setdefault(marker, []).append(idx)
+    for idxs in groups.values():
+        hit = None
+        for i2 in idxs:
+            walls = [str(w).lower() for w in (out[i2].get("walls") or [])]
+            hit = next((heights[w] for w in walls if w in heights), None)
+            if hit:
+                break
+        if hit:
+            for i2 in idxs:
+                out[i2] = {**out[i2], "height_override_ft": hit, "height_source": "user_measured"}
+    return out
+
+
+def _appendage_dim_flags(measurements, dims_state):
+    """Cross-check doctrine (ruled 2026-07-15): a user-measured chase
+    height is checked against the AI-attributed face area — disagreement
+    is FLAGGED, never averaged."""
+    flags = []
+    try:
+        area = float(measurements.get("_ai_appendage_sqft") or 0)
+    except (TypeError, ValueError):
+        area = 0
+    if area <= 0:
+        return flags
+    for key, fields in (dims_state or {}).items():
+        h_entry = (fields or {}).get("height_ft") or {}
+        if h_entry.get("status") not in _DIM_STATUSES:
+            continue
+        h = float(h_entry.get("value") or 0)
+        if h <= 0:
+            continue
+        d_entry = (fields or {}).get("depth_ft") or {}
+        d = float(d_entry.get("value") or 0) if d_entry.get("status") in _DIM_STATUSES else 2.0
+        implied_girth = area / h
+        floor_girth = 2 * d + 1.0  # two return faces + 1' minimum front face
+        if implied_girth < floor_girth:
+            flags.append(
+                f"{key}: entered height {h:g}' disagrees with the AI-attributed face area "
+                f"({area:.0f} ft² implies {implied_girth:.1f}' girth < {floor_girth:.1f}' floor) "
+                "— flagged, not averaged")
+    return flags
+
+
+async def _blueprint_dim_offers(est_id):
+    """Offer-and-confirm only (ruled 2026-07-15): where a blueprint run
+    exists on the estimate, the panel may OFFER the print-derived
+    dimension. Never auto-applied."""
+    doc = await db.ai_blueprint_runs.find_one(
+        {"estimate_id": est_id, "status": "done"},
+        {"_id": 0, "run_id": 1, "result.raw_ai.appendages": 1},
+        sort=[("created_at", -1)])
+    if not doc:
+        return []
+    offers = []
+    for ap in ((doc.get("result") or {}).get("raw_ai") or {}).get("appendages") or []:
+        wall = str(ap.get("wall") or "").lower()
+        if wall not in _WALLS:
+            continue
+        offers.append({
+            "key": f"appendage:{wall}",
+            "kind": ap.get("kind"),
+            "height_ft": ap.get("height_ft"),
+            "depth_ft": ap.get("depth_ft"),
+            "width_ft": ap.get("width_ft"),
+            "run_id": doc.get("run_id"),
+        })
+    return offers
 
 
 def _amber_items(corner_locations, verify_state):
@@ -353,6 +467,7 @@ async def lp_package_preview(
     op_items = _openings_items(run, est.get("lp_openings_review"))
     measurements, op_summary = _apply_openings_review(measurements, op_items)
     corners_eff = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
+    corners_eff = _apply_appendage_dims(corners_eff, est.get("lp_appendage_dims"))
     pkg = assemble_lp_package(measurements, corners_eff, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -368,6 +483,9 @@ async def lp_package_preview(
         pkg["source_kind"] = "photo"
         pkg["source_label"] = "AI Photo Measure"
     pkg["amber_items"] = _amber_items(corner_locations, est.get("lp_field_verify"))
+    pkg["appendage_dims"] = est.get("lp_appendage_dims") or {}
+    pkg["appendage_dim_flags"] = _appendage_dim_flags(measurements, est.get("lp_appendage_dims"))
+    pkg["appendage_dim_offers"] = await _blueprint_dim_offers(est_id)
     pkg["openings_review"] = {**op_summary, "items": op_items}
     pkg["color_matrix"] = _color_matrix(pkg.get("lines") or [])
     return redact_external(pkg)
@@ -423,6 +541,68 @@ async def lp_openings_review_act(est_id: str, payload: dict, user: dict = Depend
         meta=ev_meta,
     )
     return {"ok": True, "key": key, **entry}
+
+
+@router.get("/estimates/{est_id}/lp-appendage-dims")
+async def lp_appendage_dims_get(est_id: str, user: dict = Depends(get_current_user)):
+    """Current dimension entries + blueprint offers for the 3D appendage
+    panel (offer-and-confirm only — never auto-applied)."""
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "id": 1, "lp_appendage_dims": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {
+        "dims": est.get("lp_appendage_dims") or {},
+        "offers": await _blueprint_dim_offers(est_id),
+    }
+
+
+@router.post("/estimates/{est_id}/lp-appendage-dims")
+async def lp_appendage_dims_set(est_id: str, payload: dict, user: dict = Depends(get_current_user)):
+    """Appendage dimension editing (ruled 2026-07-15) — the render-only
+    rule's second half. A user-entered value re-tags assumed →
+    user_measured (by/at, revertible, journey-logged); a print-derived
+    offer accepted by the user tags user_confirmed_from_blueprint.
+    Assumed dims never enter math; tagged dims re-derive all surfaces."""
+    key = str((payload or {}).get("key") or "").strip()
+    field = (payload or {}).get("field")
+    action = (payload or {}).get("action") or "set"
+    if (not key.startswith("appendage:") or key.split(":", 1)[1] not in _WALLS
+            or field not in _DIM_FIELDS or action not in ("set", "revert")):
+        raise HTTPException(status_code=400, detail="key (appendage:<wall>), field (height_ft|depth_ft), action (set|revert) required")
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "id": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    from datetime import datetime, timezone
+    from estimate_events import log_estimate_event
+    by = user.get("email") or user.get("id")
+    if action == "revert":
+        await db.estimates.update_one(
+            {"id": est_id}, {"$unset": {f"lp_appendage_dims.{key}.{field}": ""}})
+        await log_estimate_event(est_id, "appendage.reset", meta={"key": key, "field": field, "by": by})
+        return {"ok": True, "key": key, "field": field, "status": "assumed"}
+    try:
+        value = float((payload or {}).get("value"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="value must be a number")
+    if not (0.5 <= value <= 100.0):
+        raise HTTPException(status_code=400, detail="value must be within 0.5..100 ft")
+    source = (payload or {}).get("source") or "user"
+    if source not in ("user", "blueprint"):
+        raise HTTPException(status_code=400, detail="source must be user|blueprint")
+    entry = {
+        "value": value,
+        "status": "user_confirmed_from_blueprint" if source == "blueprint" else "user_measured",
+        "at": datetime.now(timezone.utc).isoformat(),
+        "by": by,
+    }
+    await db.estimates.update_one(
+        {"id": est_id}, {"$set": {f"lp_appendage_dims.{key}.{field}": entry}})
+    await log_estimate_event(est_id, "appendage.measured", meta={
+        "key": key, "field": field, "value": value, "by": by, "source": source})
+    return {"ok": True, "key": key, "field": field, **entry}
 
 
 @router.post("/estimates/{est_id}/lp-field-verify")
@@ -499,6 +679,7 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
     measurements, _ = _apply_openings_review(
         measurements, _openings_items(run, est.get("lp_openings_review")))
     corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
+    corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -529,6 +710,8 @@ async def _derive_current(est_id: str, company_id=None):
     measurements, _ = _apply_openings_review(
         measurements, _openings_items(run, est.get("lp_openings_review")))
     corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
+    corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
+    corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     full_est = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "lp_colors": 1, "lp_pricing_tier": 1,
                          "estimate_number": 1, "customer_name": 1,
@@ -561,6 +744,7 @@ async def lp_material_list_freeze(
     measurements, _ = _apply_openings_review(
         measurements, _openings_items(run, est.get("lp_openings_review")))
     corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
+    corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))

@@ -25,6 +25,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { AlertTriangle, Check, Camera, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import api from "@/lib/api";
 // Iter 79j.65 — Tape Check: persistent per-wall ground truth + accuracy history.
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
 
@@ -198,8 +200,9 @@ function deriveBlueprintAppendages(list) {
   return out;
 }
 
-function deriveAppendages(walls, cornerLocations, fieldVerify) {
+function deriveAppendages(walls, cornerLocations, fieldVerify, appendageDims) {
   const fv = fieldVerify || {};
+  const dims = appendageDims || {};
   const stateFor = (c) => fv[verifyKeyForCorner(c)] || null;
   const cornersByWall = {};
   (cornerLocations || []).forEach((c) => {
@@ -275,6 +278,25 @@ function deriveAppendages(walls, cornerLocations, fieldVerify) {
       });
     });
   });
+  // Dimension-editing ruling (2026-07-15): user_measured / blueprint-
+  // confirmed entries redraw the box to the entered dims — the chase
+  // extends above the roofline when its true height is entered. Keys use
+  // the ORIGINAL wall (stable across relocation).
+  out.forEach((a) => {
+    a.originalWall = a.wall; // stable dim key — survives relocation below
+    const entry = dims[`appendage:${a.wall}`];
+    if (!entry) return;
+    const h = entry.height_ft;
+    if (h && (h.status === "user_measured" || h.status === "user_confirmed_from_blueprint") && Number(h.value) > 0) {
+      a.heightFt = Number(h.value);
+      a.heightSource = h.status === "user_measured" ? "user_measured" : "blueprint_confirmed";
+    }
+    const d = entry.depth_ft;
+    if (d && (d.status === "user_measured" || d.status === "user_confirmed_from_blueprint") && Number(d.value) > 0) {
+      a.depthFt = Number(d.value);
+      a.depthSource = d.status === "user_measured" ? "user_measured" : "blueprint_confirmed";
+    }
+  });
   // Relocation verb (ruled 2026-07-15): a user_relocated chase corner
   // moves the WHOLE appendage box to the corrected wall. Detected
   // features move — geometry is never invented: corner-derived width and
@@ -318,7 +340,7 @@ function deriveAppendages(walls, cornerLocations, fieldVerify) {
 }
 
 // Build a house-JSON shape from the AI preview + user overrides.
-function buildHouseJson(preview, overrides, estimate) {
+function buildHouseJson(preview, overrides, estimate, apDims) {
   if (!preview) return null;
   // Iter 79j.34 — Which producer generated this preview? Set on the
   // measurements dict by the aggregator ("blueprint" from
@@ -719,6 +741,7 @@ function buildHouseJson(preview, overrides, estimate) {
           walls,
           preview.raw_ai?.corner_locations || [],
           estimate?.lp_field_verify || {},
+          apDims || estimate?.lp_appendage_dims || {},
         ),
     // Shakedown addendum fix (7): flagged, never silent.
     openingPlacementDefaulted: Number(preview.measurements?._opening_placement_defaulted || 0),
@@ -1356,7 +1379,7 @@ function buildScene(scene, house) {
   return { wallMeshes, warnings };
 }
 
-export default function HouseModel3D({ preview, estimate, runId, onSnapshot, hasSnapshot, lpGroupColors }) {
+export default function HouseModel3D({ preview, estimate, runId, onSnapshot, hasSnapshot, lpGroupColors, onDimsSaved }) {
   const mountRef = useRef(null);
   const sceneRef = useRef({});
   const [selectedFacade, setSelectedFacade] = useState("front");
@@ -1369,8 +1392,34 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
   // Iter 79j.74 — Quote PDF snapshot state. "idle" → "saving" → "saved".
   const [snapState, setSnapState] = useState("idle");
   const autoSnapDone = useRef(false);
+  // Dimension editing (ruled 2026-07-15): dims + blueprint offers live
+  // here so the 3D redraws immediately after a save (server remains the
+  // source of truth; GET refreshes on mount).
+  const [apDims, setApDims] = useState(() => estimate?.lp_appendage_dims || {});
+  const [dimOffers, setDimOffers] = useState([]);
+  useEffect(() => {
+    if (!estimate?.id) return;
+    api.get(`/estimates/${estimate.id}/lp-appendage-dims`)
+      .then(({ data }) => { setApDims(data.dims || {}); setDimOffers(data.offers || []); })
+      .catch(() => {});
+  }, [estimate?.id]);
+  const saveDim = async (key, field, value, source) => {
+    try {
+      const { data } = await api.post(`/estimates/${estimate.id}/lp-appendage-dims`,
+        value == null ? { key, field, action: "revert" } : { key, field, value, source: source || "user" });
+      setApDims((prev) => {
+        const next = { ...prev, [key]: { ...(prev[key] || {}) } };
+        if (value == null) delete next[key][field];
+        else next[key][field] = { value: data.value, status: data.status, at: data.at, by: data.by };
+        return next;
+      });
+      onDimsSaved?.();
+    } catch {
+      toast.error("Could not save the dimension — try again.");
+    }
+  };
   const house = useMemo(() => {
-    const h = buildHouseJson(preview, overrides, estimate);
+    const h = buildHouseJson(preview, overrides, estimate, apDims);
     // Iter 98 — LP Material List mesh-group flat repaints: component-group
     // colors outrank estimate/AI-sampled colors. siding → wall meshes,
     // opening_trim → frame/trim meshes. (Corner/fascia meshes pending —
@@ -1383,7 +1432,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
       };
     }
     return h;
-  }, [preview, overrides, estimate, lpGroupColors]);
+  }, [preview, overrides, estimate, lpGroupColors, apDims]);
 
   // Iter 79j.74 — capture the current WebGL frame as a PNG and hand it
   // to the parent (upload + persist). Renders synchronously right
@@ -2085,19 +2134,33 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                     ? `${Math.round(ap.positionFrac * 100)}% along wall — from elevation`
                     : "wall center — assumed, not measured"}
                 />
-                <Row
-                  k="Depth"
-                  v={ap.depthSource === "printed"
+                <DimEditRow
+                  label="Depth"
+                  field="depth_ft"
+                  apKey={`appendage:${ap.originalWall || ap.wall}`}
+                  entry={(apDims[`appendage:${ap.originalWall || ap.wall}`] || {}).depth_ft}
+                  valueFt={ap.depthFt}
+                  fallbackText={ap.depthSource === "printed"
                     ? `${ap.depthFt.toFixed(1)} ft — printed on plans`
                     : `~${ap.depthFt.toFixed(0)} ft — assumed, not measured`}
+                  offer={(dimOffers.find((o) => o.key === `appendage:${ap.originalWall || ap.wall}`) || {}).depth_ft}
+                  onSave={saveDim}
+                  testid={`ai-measure-3d-appendage-depth-${i}`}
                 />
-                <Row
-                  k="Height"
-                  v={ap.heightSource === "printed"
+                <DimEditRow
+                  label="Height"
+                  field="height_ft"
+                  apKey={`appendage:${ap.originalWall || ap.wall}`}
+                  entry={(apDims[`appendage:${ap.originalWall || ap.wall}`] || {}).height_ft}
+                  valueFt={ap.heightFt}
+                  fallbackText={ap.heightSource === "printed"
                     ? `${ap.heightFt.toFixed(1)} ft — printed on plans`
                     : ap.extendsSource === "ai-text"
                     ? `above ${ap.mentionsRidge ? "ridge" : "roofline"} (AI photo note) — drawn height assumed`
                     : "above roofline — assumed, not measured"}
+                  offer={(dimOffers.find((o) => o.key === `appendage:${ap.originalWall || ap.wall}`) || {}).height_ft}
+                  onSave={saveDim}
+                  testid={`ai-measure-3d-appendage-height-${i}`}
                 />
                 {ap.approxSqft > 0 && (
                   <Row k="Face area" v={`${ap.approxSqft.toFixed(0)} ft² — AI-attributed (in takeoff)`} bold />
@@ -2105,7 +2168,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
               </div>
             ))}
             <div className="text-[9px] italic text-[var(--muted)] leading-tight pt-1 border-t border-[var(--border)]" data-testid="ai-measure-3d-appendage-pin-note">
-              Assumed dimensions position the 3D box only — they never enter area math or material quantities. The takeoff uses the AI-attributed face area.
+              Assumed dimensions position the 3D box only — they never enter area math or material quantities. User-measured dimensions are real inputs: they re-derive corner stick math, cross-checked against the AI-attributed face area (disagreements flagged, never averaged).
             </div>
           </div>
         )}
@@ -2148,3 +2211,83 @@ const Amber = () => (
     <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> estimated
   </span>
 );
+
+// Dimension-editing ruling (2026-07-15): measure / accept-from-prints /
+// revert on appendage Height + Depth. Entered values tag user_measured
+// (or user_confirmed_from_blueprint) and become derivation inputs;
+// assumed stays render-only.
+const DimEditRow = ({ label, field, apKey, entry, valueFt, fallbackText, offer, onSave, testid }) => {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState("");
+  const tagged = entry && (entry.status === "user_measured" || entry.status === "user_confirmed_from_blueprint");
+  return (
+    <div className="flex items-start justify-between gap-2 text-[10px] py-0.5" data-testid={testid}>
+      <span className="text-[var(--muted)] flex-shrink-0">{label}</span>
+      <span className="text-right text-[var(--ink)]">
+        {editing ? (
+          <span className="inline-flex items-center gap-1">
+            <input
+              type="number" step="0.1" min="0.5" max="100" value={val}
+              onChange={(e) => setVal(e.target.value)}
+              className="input w-16 text-[10px] py-0 px-1"
+              data-testid={`${testid}-input`}
+            />
+            <span className="text-[var(--muted)]">ft</span>
+            <button
+              type="button"
+              className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-sky-700 text-white"
+              onClick={() => {
+                const v = parseFloat(val);
+                if (v >= 0.5 && v <= 100) { onSave(apKey, field, v, "user"); setEditing(false); }
+              }}
+              data-testid={`${testid}-save`}
+            >
+              Save
+            </button>
+            <button type="button" className="text-[var(--muted)]" onClick={() => setEditing(false)} data-testid={`${testid}-cancel`}>✕</button>
+          </span>
+        ) : tagged ? (
+          <span>
+            <span className="font-bold">{Number(entry.value).toFixed(1)} ft</span>
+            {" — "}
+            <span className={entry.status === "user_measured" ? "text-sky-700 font-bold" : "text-emerald-700 font-bold"} data-testid={`${testid}-tag`}>
+              {entry.status === "user_measured" ? "user-measured" : "confirmed from prints"}
+            </span>
+            <button
+              type="button"
+              className="ml-1.5 underline text-[9px] text-[var(--muted)]"
+              title={`${entry.by || ""} ${entry.at ? new Date(entry.at).toLocaleDateString() : ""} — revert to assumed (strips the dimension from math)`}
+              onClick={() => onSave(apKey, field, null)}
+              data-testid={`${testid}-revert`}
+            >
+              revert
+            </button>
+          </span>
+        ) : (
+          <span>
+            {fallbackText}
+            <button
+              type="button"
+              className="ml-1.5 underline text-[9px] text-sky-800 font-bold"
+              onClick={() => { setVal(valueFt > 0 ? String(Math.round(valueFt * 10) / 10) : ""); setEditing(true); }}
+              data-testid={`${testid}-edit`}
+            >
+              measure
+            </button>
+            {offer != null && Number(offer) > 0 && (
+              <button
+                type="button"
+                className="ml-1.5 underline text-[9px] text-emerald-800 font-bold"
+                title="Offer-and-confirm: value read from the blueprint run on this estimate — accepted values tag user_confirmed_from_blueprint"
+                onClick={() => onSave(apKey, field, Number(offer), "blueprint")}
+                data-testid={`${testid}-accept-print`}
+              >
+                prints show {Number(offer).toFixed(1)}′ — accept?
+              </button>
+            )}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+};

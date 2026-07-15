@@ -3085,3 +3085,9 @@ Two items ahead of standby, both Howard-collects-first:
 - Tests: test_corner_relocation.py (7 — unit overlay, validation 400s, E2E on ruled letrick fixture relocate→revert, OSC note recount, admin events + token gate). Suite 936 GREEN. Testing agent iteration_44: 5/5 PASS (iteration_43 caught my broken JSX edit — fixed).
 - Estimate left AS FOUND (all test verbs reverted). Howard can now apply the right→back chase relocation himself in the UI.
 - Cosmetic backlog note: appendage DETAIL block title lacks '(was right)' suffix (main label + badges have it).
+
+## Iter 126 — APPENDAGE DIMENSION EDITING E2E CLOSED (2026-07-15)
+- **UI "bug" root cause**: rows were rendering all along — the chase panel is per-wall ("Appendages — this wall") and letrick's chase lives on the BACK wall; the prior session's locator test never clicked the back facade tab. No render-condition bug existed.
+- **Real fixes shipped (FE only)**: (1) `house` useMemo in HouseModel3D was missing `apDims` dep — 3D never redrew after a dim save; (2) saveDim now calls new `onDimsSaved` prop → LpMaterialListPanel refetches the package so OSC sticks re-derive live in the table; (3) `appendage_dim_flags` (computed backend-side since Iter 125b) now renders as an amber "Dimension cross-check" card (data-testid lp-dim-flags-card / lp-dim-flag-{i}) above the field-verify checklist.
+- **Full ruled loop verified E2E on letrick 7-14-26 7pm via real UI**: back tab → Height "measure" → 18.9 → Save → tag flips to "user-measured" + revert link (by/at in tooltip) → OSC line re-derives 7→8 PCS live (matches the sealed key's 8) → no false disagreement flag → 3D chase box redraws rising above the ridge (amber, unconfirmed) → revert restores 7 → journey-logged (appendage.measured / appendage.reset in tracking[]).
+- Estimate left AS FOUND (dims reverted). Suite: test_appendage_dims + openings_remove + corner_relocation = 30 GREEN; full suite untouched backend-side (zero backend changes this iter).

@@ -44,6 +44,16 @@ def _lp_product_table() -> dict:
 
 
 def _corner_height_ft(loc: dict, wall_heights: dict, avg_h) -> float:
+    # Dimension-editing ruling (2026-07-15): a user-measured/blueprint-
+    # confirmed appendage height overrides the wall-height default. The
+    # override field is ONLY ever set by the tag-gated overlay — assumed
+    # dims never reach here (render-only pin unchanged).
+    try:
+        ov = float(loc.get("height_override_ft") or 0)
+    except (TypeError, ValueError):
+        ov = 0
+    if ov > 0:
+        return ov
     hs = []
     for w in loc.get("walls") or []:
         try:
@@ -109,6 +119,7 @@ def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
     heights = [h for fh in feature_heights for h in fh]
     amber = sum(1 for l in locs if l.get("tier") != "confirmed")
     elevated = sum(1 for l in locs if l.get("elevated"))
+    user_measured = sum(1 for l in locs if l.get("height_override_ft"))
     return {
         "heights": [round(h, 2) for h in heights],
         "feature_heights": [[round(h, 2) for h in fh] for fh in feature_heights],
@@ -117,6 +128,7 @@ def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
         "total_lf": round(sum(heights), 1),
         "amber": amber,
         "elevated": elevated,
+        "user_measured": user_measured,
         "over_stick": any(h > stick_len for h in heights),
     }
 
@@ -137,6 +149,8 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
+    if t["user_measured"]:
+        note_bits.append(f"{t['user_measured']} location(s) at user-measured height")
     if t["elevated"]:
         note_bits.append(
             f"{t['elevated']} elevated post(s) priced at full wall height — trim to post height in field")
