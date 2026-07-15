@@ -58,6 +58,12 @@ async def find_archived_run(query):
     return await db.fixture_runs.find_one(query, {"_id": 0}, sort=[("created_at", -1)])
 
 
+async def list_archived_runs(query, projection):
+    """Bulk read side (extraction-spend telemetry, 2026-07-15) — same
+    fork-boundary ownership rule as find_archived_run."""
+    return await db.fixture_runs.find(query, projection).to_list(length=None)
+
+
 async def backfill_artifact_referenced_runs():
     """Ruled backfill: archive runs already referenced by sent quotes or
     live QR freezes — November callbacks must not depend on when this

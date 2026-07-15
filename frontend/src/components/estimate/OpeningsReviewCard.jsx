@@ -16,6 +16,7 @@ const BACKEND = process.env.REACT_APP_BACKEND_URL;
 export function OpeningsReviewCard({ review, estId, onChanged, t }) {
   const [busyKey, setBusyKey] = useState(null);
   const [correcting, setCorrecting] = useState(null); // key being corrected
+  const [removing, setRemoving] = useState(null); // key pending delete-guard confirm
   const [collapsed, setCollapsed] = useState(false);
   if (!review || !review.total) return null;
   const items = review.items || [];
@@ -27,7 +28,8 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
         key: item.key, action, corrected_type: correctedType,
       });
       setCorrecting(null);
-      onChanged?.(); // corrections can shift derived counts — refetch
+      setRemoving(null);
+      onChanged?.(); // corrections/removals shift derived counts — refetch
     } catch {
       toast.error("Could not save the openings review — try again.");
     } finally {
@@ -47,7 +49,8 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
           <DoorOpen className="w-3.5 h-3.5" /> {t("lp.or.title")}
         </span>
         <span className="text-[10px] font-bold text-[#92400E]" data-testid="lp-or-summary">
-          {review.confirmed + review.corrected}/{review.total} {t("lp.or.reviewed")}
+          {review.confirmed + review.corrected + (review.removed || 0)}/{review.total} {t("lp.or.reviewed")}
+          {(review.removed || 0) > 0 && ` · ${review.removed} ${t("lp.or.removedShort")}`}
           {review.unconfirmed > 0 && ` · ${review.unconfirmed} ${t("lp.or.unconfirmed")}`}
         </span>
       </button>
@@ -73,7 +76,7 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
                   )}
                   <div className="flex-1 min-w-[180px]">
                     <span className="font-mono text-[10px] uppercase text-[#B45309] mr-1.5">{it.elevation}</span>
-                    <span className="text-[var(--ink)]">
+                    <span className={`text-[var(--ink)]${it.status === "user_removed" ? " line-through opacity-60" : ""}`}>
                       {TYPE_LABELS[effType] || effType}
                       {it.count > 1 ? ` ×${it.count}` : ""} · {it.size_label}
                       {it.style ? ` · ${it.style}` : ""}
@@ -97,6 +100,29 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
                           .filter(([k]) => k !== it.type)
                           .map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                       </select>
+                    ) : removing === it.key ? (
+                      <span className="flex flex-wrap items-center gap-1.5" data-testid={`lp-or-remove-warn-${it.key}`}>
+                        <span className="text-[10px] text-red-800 max-w-[260px]">
+                          {t("lp.or.removeWarn")} {(it.carries || []).join("; ")}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={busyKey === it.key}
+                          onClick={() => act(it, "remove")}
+                          className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-red-700 text-white disabled:opacity-60"
+                          data-testid={`lp-or-remove-anyway-${it.key}`}
+                        >
+                          {t("lp.or.removeAnyway")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRemoving(null)}
+                          className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-[var(--border)] text-[var(--ink-2)]"
+                          data-testid={`lp-or-remove-cancel-${it.key}`}
+                        >
+                          {t("lp.or.cancel")}
+                        </button>
+                      </span>
                     ) : (
                       <span className="flex gap-1.5">
                         <button
@@ -116,6 +142,15 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
                         >
                           {t("lp.or.wrongType")}
                         </button>
+                        <button
+                          type="button"
+                          disabled={busyKey === it.key}
+                          onClick={() => (it.carries && it.carries.length ? setRemoving(it.key) : act(it, "remove"))}
+                          className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-red-700 text-red-700"
+                          data-testid={`lp-or-remove-${it.key}`}
+                        >
+                          {t("lp.or.notPresent")}
+                        </button>
                       </span>
                     )
                   ) : (
@@ -123,11 +158,13 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
                       type="button"
                       disabled={busyKey === it.key}
                       onClick={() => act(it, "reset")}
-                      className="text-[10px] font-bold uppercase tracking-wider text-emerald-700"
+                      className={`text-[10px] font-bold uppercase tracking-wider ${it.status === "user_removed" ? "text-red-700" : "text-emerald-700"}`}
                       title={`${it.by || ""} ${it.at ? new Date(it.at).toLocaleDateString() : ""}`}
                       data-testid={`lp-or-done-${it.key}`}
                     >
-                      ✓ {it.status === "user_confirmed" ? t("lp.or.confirmed") : t("lp.or.correctedShort")}
+                      {it.status === "user_removed"
+                        ? `✕ ${t("lp.or.removed")}`
+                        : `✓ ${it.status === "user_confirmed" ? t("lp.or.confirmed") : t("lp.or.correctedShort")}`}
                     </button>
                   )}
                 </div>

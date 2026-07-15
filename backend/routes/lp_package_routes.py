@@ -163,6 +163,15 @@ _OPENING_COUNT_FIELD = {
 }
 _OPENING_TYPES = ("window", "entry_door", "patio_door", "garage_door", "vent")
 
+# Delete-guard doctrine (ruled 2026-07-15): what each opening type feeds
+# downstream — surfaced on the item so the card can warn before removal.
+_REMOVE_CARRIES = {
+    "window":      "540 wrap trim (windows 4-side, 14 LF each)",
+    "entry_door":  "540 wrap trim (18 LF head+legs) + starter-course entry-width deduction",
+    "patio_door":  "540 wrap trim (19 LF head+legs)",
+    "garage_door": "540 wrap trim (32 LF)",
+}
+
 
 def _openings_items(run, review_state):
     res = run.get("result") or {}
@@ -181,6 +190,8 @@ def _openings_items(run, review_state):
         if isinstance(pi, int) and 0 <= pi < len(paths):
             photo_url = f"/api/uploads/{paths[pi]}"
         st = (review_state or {}).get(key) or {}
+        eff_type = st.get("corrected_type") or s.get("type")
+        carries = [_REMOVE_CARRIES[eff_type]] if eff_type in _REMOVE_CARRIES else []
         items.append({
             "key": key, "index": i,
             "elevation": s.get("elevation"), "type": s.get("type"),
@@ -188,6 +199,7 @@ def _openings_items(run, review_state):
             "count": int(s.get("count") or 1),
             "photo_url": photo_url,
             "bbox": (locs[0].get("bbox") if locs else None),
+            "carries": carries,
             "status": st.get("status") or "unconfirmed",
             "corrected_type": st.get("corrected_type"),
             "at": st.get("at"), "by": st.get("by"),
@@ -197,12 +209,26 @@ def _openings_items(run, review_state):
 
 def _apply_openings_review(measurements, items):
     """user_corrected type changes shift derived counts (provenance-
-    carried). Ratification never changes quantities; corrections do."""
+    carried). user_removed rows leave counts AND the schedule (the
+    schedule feeds trim math directly — starter entry-width deduction).
+    Pin (ruled 2026-07-15): a removed opening appears nowhere in counts,
+    trim math, or quote surfaces; revertible via reset."""
     adj = dict(measurements)
     corrections = []
+    removals = []
+    removed_idx = set()
+    retyped = {}
     for it in items:
         new_t = it.get("corrected_type")
-        if it["status"] == "user_corrected" and new_t and new_t != it["type"]:
+        if it["status"] == "user_removed":
+            n = it["count"]
+            f_old = _OPENING_COUNT_FIELD.get(it["type"])
+            if f_old:
+                adj[f_old] = max(int(adj.get(f_old) or 0) - n, 0)
+            removed_idx.add(it["index"])
+            removals.append(
+                f"{it['elevation']} {it['type']} ×{n} removed — not present (user_removed)")
+        elif it["status"] == "user_corrected" and new_t and new_t != it["type"]:
             n = it["count"]
             f_old = _OPENING_COUNT_FIELD.get(it["type"])
             f_new = _OPENING_COUNT_FIELD.get(new_t)
@@ -210,14 +236,27 @@ def _apply_openings_review(measurements, items):
                 adj[f_old] = max(int(adj.get(f_old) or 0) - n, 0)
             if f_new:
                 adj[f_new] = int(adj.get(f_new) or 0) + n
+            retyped[it["index"]] = new_t
             corrections.append(
                 f"{it['elevation']} {it['type']} → {new_t} ×{n} (user_corrected)")
+    # Schedule coherence: removed rows drop out, corrected rows carry
+    # their new type — downstream consumers (starter deduction) iterate
+    # the schedule directly.
+    sched = adj.get("_ai_openings_schedule")
+    if sched and (removed_idx or retyped):
+        adj["_ai_openings_schedule"] = [
+            ({**row, "type": retyped[i]} if i in retyped else row)
+            for i, row in enumerate(sched)
+            if i not in removed_idx
+        ]
     summary = {
         "total": len(items),
         "confirmed": sum(1 for i in items if i["status"] == "user_confirmed"),
         "corrected": sum(1 for i in items if i["status"] == "user_corrected"),
+        "removed": sum(1 for i in items if i["status"] == "user_removed"),
         "unconfirmed": sum(1 for i in items if i["status"] == "unconfirmed"),
         "corrections": corrections,
+        "removals": removals,
     }
     return adj, summary
 
@@ -306,12 +345,14 @@ async def lp_package_preview(
 async def lp_openings_review_act(est_id: str, payload: dict, user: dict = Depends(get_current_user)):
     """Per-opening provenance: confirm (user_confirmed — promotes to
     verified standing), correct (user_corrected — corrected_type shifts
-    derived counts), or reset. Skippable; unconfirmed flags persist."""
+    derived counts), remove (user_removed — "not present": leaves counts,
+    trim math, and quote surfaces; revertible), or reset. Skippable;
+    unconfirmed flags persist."""
     key = str((payload or {}).get("key") or "").strip()
     action = (payload or {}).get("action")
     corrected_type = (payload or {}).get("corrected_type")
-    if not key or "." in key or action not in ("confirm", "correct", "reset"):
-        raise HTTPException(status_code=400, detail="key and action (confirm|correct|reset) required")
+    if not key or "." in key or action not in ("confirm", "correct", "remove", "reset"):
+        raise HTTPException(status_code=400, detail="key and action (confirm|correct|remove|reset) required")
     if action == "correct" and corrected_type not in _OPENING_TYPES:
         raise HTTPException(status_code=400, detail=f"corrected_type must be one of {_OPENING_TYPES}")
     est = await db.estimates.find_one(
@@ -324,7 +365,8 @@ async def lp_openings_review_act(est_id: str, payload: dict, user: dict = Depend
             {"id": est_id}, {"$unset": {f"lp_openings_review.{key}": ""}})
         return {"ok": True, "key": key, "status": "unconfirmed"}
     entry = {
-        "status": "user_confirmed" if action == "confirm" else "user_corrected",
+        "status": {"confirm": "user_confirmed", "correct": "user_corrected",
+                   "remove": "user_removed"}[action],
         "at": datetime.now(timezone.utc).isoformat(),
         "by": user.get("email") or user.get("id"),
     }

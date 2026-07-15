@@ -480,8 +480,11 @@ function LpMarginTiersPanel({ token }) {
       </button>
 
       <div className="mt-6">
-        <div className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)] mb-2">
-          Per-quote tier (recent LP estimates)
+        <div className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)] mb-1">
+          Per-quote tier · AI extraction spend (recent LP estimates)
+        </div>
+        <div className="text-[11px] text-[var(--muted)] mb-2">
+          Spend is live per-run telemetry (photo + blueprint extractions) — admin-only; never shown on contractor or customer surfaces.
         </div>
         {ests.length === 0 ? (
           <div className="text-sm text-[var(--muted)]">No LP estimates yet.</div>
@@ -494,6 +497,11 @@ function LpMarginTiersPanel({ token }) {
                     <td className="px-3 py-2 font-mono-num">{e.estimate_number || e.id.slice(0, 8)}</td>
                     <td className="px-3 py-2">{e.customer_name || "—"}</td>
                     <td className="px-3 py-2 text-[var(--muted)]">{e.company_name || ""}</td>
+                    <td className="px-3 py-2 text-right font-mono-num text-xs text-[var(--muted)]" data-testid={`lp-est-spend-${e.id}`}>
+                      {e.extraction_runs
+                        ? `$${Number(e.extraction_spend_usd || 0).toFixed(2)} · ${e.extraction_runs} run${e.extraction_runs === 1 ? "" : "s"}${e.extraction_untracked_runs ? ` (${e.extraction_untracked_runs} untracked)` : ""}`
+                        : "—"}
+                    </td>
                     <td className="px-3 py-2 text-right">
                       <select
                         className="input text-sm py-1"

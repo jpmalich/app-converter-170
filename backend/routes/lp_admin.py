@@ -189,6 +189,46 @@ async def admin_list_lp_estimates(request: Request):
         e["company_name"] = companies.get(e.get("company_id"))
         e["lp_pricing_tier"] = e.get("lp_pricing_tier") or DEFAULT_TIER
         out.append(e)
+    # Extraction-spend line (Howard-approved 2026-07-15): per-estimate AI
+    # extraction spend from live run telemetry. ADMIN BOUNDARY ONLY —
+    # leak-scan doctrine: cost data never renders on contractor/customer
+    # surfaces. fixture_runs are archives of live runs → dedupe by run_id.
+    from routes.ai_measure import _cost_from_usage
+    from run_archive import list_archived_runs
+    est_ids = [e["id"] for e in out]
+    spend = {eid: {"usd": 0.0, "runs": 0, "untracked": 0} for eid in est_ids}
+    seen_runs: set = set()
+    _q = {"estimate_id": {"$in": est_ids}, "status": "done",
+          "usage_probe": {"$ne": True}}
+    _proj = {"_id": 0, "run_id": 1, "estimate_id": 1, "model_config": 1,
+             "token_usage": 1, "result.cost_usd": 1}
+    run_docs = []
+    for coll in (db.ai_measure_runs, db.ai_blueprint_runs):
+        run_docs.extend(await coll.find(_q, _proj).to_list(length=None))
+    # fixture_runs are archives of live runs (access owned by run_archive —
+    # fork boundary); dedupe by run_id below.
+    run_docs.extend(await list_archived_runs(_q, _proj))
+    for r in run_docs:
+        rid = r.get("run_id")
+        if not rid or rid in seen_runs:
+            continue
+        seen_runs.add(rid)
+        s = spend.get(r.get("estimate_id"))
+        if s is None:
+            continue
+        c = (r.get("result") or {}).get("cost_usd")
+        if c is None:
+            c = (_cost_from_usage(r.get("model_config"), r.get("token_usage")) or {}).get("total")
+        s["runs"] += 1
+        if c:
+            s["usd"] += float(c)
+        else:
+            s["untracked"] += 1
+    for e in out:
+        s = spend.get(e["id"]) or {}
+        e["extraction_spend_usd"] = round(s.get("usd") or 0.0, 2)
+        e["extraction_runs"] = s.get("runs") or 0
+        e["extraction_untracked_runs"] = s.get("untracked") or 0
     return {"estimates": out, "tier_names": list(TIER_NAMES), "default_tier": DEFAULT_TIER}
 
 
