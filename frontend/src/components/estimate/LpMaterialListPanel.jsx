@@ -445,7 +445,12 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                 <div className="flex items-center gap-1.5 text-[var(--ink)]">
                   <MapPin className="w-3 h-3 text-[#B45309]" />
                   <span className="font-mono text-[10px] uppercase text-[#B45309]">{it.kind}</span>
-                  <span>{it.locator}</span>
+                  <span className={it.status === "user_removed" ? "line-through opacity-60" : ""}>{it.locator}</span>
+                  {it.status === "user_relocated" && it.relocated_to && (
+                    <span className="text-[10px] font-bold text-sky-700" data-testid={`lp-fv-reloc-badge-${it.key}`}>
+                      → {it.relocated_to} {t("lp.fv.wall")}
+                    </span>
+                  )}
                 </div>
                 {it.status === "verified" ? (
                   <button
@@ -457,35 +462,21 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                   >
                     ✓ {t("lp.fv.verified")}
                   </button>
-                ) : (
+                ) : it.status === "user_relocated" ? (
                   <button
                     type="button"
-                    onClick={() => toggleVerify(it, "verified")}
-                    className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#B45309] text-white"
-                    data-testid={`lp-fv-verify-${it.key}`}
+                    onClick={() => toggleVerify(it, "unverified")}
+                    className="text-[10px] font-bold uppercase tracking-wider text-sky-700"
+                    data-testid={`lp-fv-relocated-${it.key}`}
+                    title={`${it.verified_by || ""} ${it.verified_at ? new Date(it.verified_at).toLocaleDateString() : ""}`}
                   >
-                    {t("lp.fv.verify")}
+                    ⇄ {t("lp.fv.relocated")}
                   </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 3D — mesh-group flat repaints */}
-      {preview3d && (
-        <div className="border-t border-[var(--border)] p-3" data-testid="lp-material-3d">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-2 flex items-center gap-2">
-            <RefreshCcw className="w-3 h-3" /> 3D — colors repaint live (siding + opening trim mesh groups; corner/fascia meshes pending)
-          </div>
-          <HouseModel3D preview={preview3d} estimate={est} runId={run.run_id} lpGroupColors={lpGroupColors} />
-        </div>
-      )}
-    </div>
-  );
-}
-king-wider text-red-700"
+                ) : it.status === "user_removed" ? (
+                  <button
+                    type="button"
+                    onClick={() => toggleVerify(it, "unverified")}
+                    className="text-[10px] font-bold uppercase tracking-wider text-red-700"
                     data-testid={`lp-fv-removed-${it.key}`}
                     title={`${it.verified_by || ""} ${it.verified_at ? new Date(it.verified_at).toLocaleDateString() : ""}`}
                   >
@@ -551,3 +542,4 @@ king-wider text-red-700"
     </div>
   );
 }
+

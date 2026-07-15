@@ -1,0 +1,26 @@
+{
+  "summary": "RETEST PASS. LpMaterialListPanel.jsx compiles cleanly (only ESLint deps warnings). Executed full 5-step Field Verify playbook on estimate 8f95c9c2-add9-416a-92f3-786a4ea2ce83 as hhunt6677@yahoo.com. All three verbs render on every amber row (5 rows). Relocate → wall picker excludes 'right' → select back → row shows '⇄ Relocated' + '→ back wall' badge; after reload, 3D lp-material-3d panel is present and the chimney-chase appendage shows on BACK wall tab with a visible 'RELOCATED' indicator. Revert works (row returns to three-verb state). Not present on OSC row → red '✕ Removed' badge; revert works. Audit Timeline in /branding-admin: Events button expands data-testid='audit-timeline' with 19 events newest-first including corner.relocated (from right → back), corner.reset, corner.removed all 'by hhunt6677@yahoo.com'; second click collapses. All applied verbs were reverted before finishing (confirmed via corner.reset audit entries).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Field Verify card / 3D", "issues": ["Appendage label on relocated chimney chase reads 'chimney chase (full height, lap-clad)' — the task hint mentioned wording like 'relocated (was right)'. The RELOCATED status IS surfaced (bright 'RELOCATED' label + row badge), but the appendage detail block doesn't include an inline '(was right)' descriptor. Cosmetic — not a functional failure."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL: consider adding '(was <origWall>)' inline suffix on the appendage-detail 'chimney chase ...' title when a relocation is active, so the 3D panel matches the wording used in the playbook prompt. Not blocking."
+  ],
+  "critical_code_review_comments": [
+    "ESLint warns LpMaterialListPanel.jsx line 106 useEffect missing 'onPackage' dep; HouseModel3D line 1494 missing 'house'; BrandingAdmin line 408 missing 'load'. All benign but could mask stale-closure bugs — wrap or add to deps.",
+    "Add a compile-check gate (yarn build or CRA start-check) to CI so a repeat of iteration_43's syntax break can't ship again."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100% (5/5 playbook steps pass; cosmetic-only observation)"},
+  "seed_data_creation": "None. Every verb applied during the test was reverted before finishing (relocation → revert, not-present → revert). Audit timeline confirms corner.reset for both actions.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Estimate 8f95c9c2-add9-416a-92f3-786a4ea2ce83 was left in clean/unmodified state (all verbs reverted). Field Verify amber card fully working with all three verbs. Wall picker is a native <select> with ~300ms open latency; card refetches ~1-2s after each verb. Do NOT start AI runs on this owner estimate.",
+  "rca of the issue": "N/A — iteration_43 compile failure resolved by E1's edit. LpMaterialListPanel.jsx now has a single amber-map body (three verbs) and closes cleanly; no orphaned duplicate JSX."
+}
