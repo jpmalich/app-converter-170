@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import LangToggle from "@/components/LangToggle";
 import AcceptHouse3D from "@/components/AcceptHouse3D";
+import QRCode from "qrcode";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -119,6 +120,7 @@ export default function AcceptPage() {
           <p style={{ fontSize: 14, color: "#71717A", marginTop: 16 }}>
             {t("accept.success.next")}
           </p>
+          <ShareBlock t={t} />
         </div>
       </Wrap>
     );
@@ -201,6 +203,8 @@ export default function AcceptPage() {
           </div>
         ) : null}
 
+        <ShareBlock t={t} />
+
         <div style={{ marginTop: 28 }}>
           <label
             style={{
@@ -273,6 +277,77 @@ export default function AcceptPage() {
         </p>
       </div>
     </Wrap>
+  );
+}
+
+// Share ruling (2026-07-15): document access only. Same frozen token —
+// a share is a pointer, not a new mint; revocation/expiry govern all
+// copies. Shared views log as ordinary quote.viewed server-side. No
+// urgency/conversion mechanics; homeowner wording throughout.
+function ShareBlock({ t }) {
+  const [qr, setQr] = useState("");
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}${window.location.pathname}`;
+  useEffect(() => {
+    QRCode.toDataURL(url, { width: 192, margin: 1 }).then(setQr).catch(() => {});
+  }, [url]);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+  return (
+    <div
+      style={{
+        marginTop: 28, padding: 16, border: "1px solid #E4E4E7",
+        background: "#FAFAFA", display: "flex", gap: 16, alignItems: "center",
+      }}
+      data-testid="accept-share-block"
+    >
+      {qr ? (
+        <img
+          src={qr}
+          alt=""
+          style={{ width: 96, height: 96, border: "1px solid #E4E4E7", background: "#FFFFFF", flexShrink: 0 }}
+          data-testid="accept-share-qr"
+        />
+      ) : null}
+      <div style={{ flex: 1 }}>
+        <div
+          style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 2,
+            textTransform: "uppercase", color: "#71717A", marginBottom: 4,
+          }}
+        >
+          {t("accept.share.title")}
+        </div>
+        <p style={{ fontSize: 12, color: "#52525B", margin: "0 0 10px 0", lineHeight: 1.5 }}>
+          {t("accept.share.note")}
+        </p>
+        <button
+          type="button"
+          onClick={copy}
+          style={{
+            padding: "8px 14px", fontFamily: FONT_STACK, fontSize: 11,
+            fontWeight: 700, letterSpacing: 1, textTransform: "uppercase",
+            color: copied ? "#166534" : "#09090B", background: "#FFFFFF",
+            border: `1px solid ${copied ? "#16A34A" : "#09090B"}`, cursor: "pointer",
+          }}
+          data-testid="accept-share-copy"
+        >
+          {copied ? t("accept.share.copied") : t("accept.share.copy")}
+        </button>
+      </div>
+    </div>
   );
 }
 
