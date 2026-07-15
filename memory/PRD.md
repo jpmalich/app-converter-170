@@ -3076,3 +3076,12 @@ Two items ahead of standby, both Howard-collects-first:
   • Header $0.00 → confirmed unapplied-takeoff state; StickyBar LP block now shows amber "Derived — not yet applied" (EN/ES) instead of $0.00 when derived total > 0 and nothing applied.
   • Remaining deltas (lap 227v255, OSC 7v8, trim/fascia 11v12, windows 9v10, patio-as-entry) logged in register Entry 2 as documented stochasticity — no engine action per ruling.
 - Suite 929 GREEN; testing agent iteration_42 frontend 5/5 PASS.
+
+## Iter 125 — CHASE-RELOCATION VERB + AUDIT TIMELINE (2026-07-15)
+- **Amber corner full verb set shipped (ruled)**: `POST /lp-field-verify` accepts verified | relocated (to_wall + optional position_frac 0..1 + from_walls) | removed | unverified(revert). Provenance entries (user_relocated: from→to/by/at; user_removed). `_apply_corner_review` overlay applies on EVERY derivation surface — preview, freeze (also fixed pre-existing gap: freeze didn't apply openings review!), admin cost-preview, export (`_derive_lp_pkg_for_export`). Removed corners leave stick counts (OSC note 2→1 amber re-derives); relocated corners carry corrected wall. Scope fence honored: detected features move, dims stay run-measured. All verbs journey-logged (corner.verified/relocated/removed/reset).
+- **3D**: deriveAppendages moves the chase box to the corrected wall (label ' — relocated (was X)', solid render = ratified), drops user_removed boxes, treats user_relocated as verified.
+- **FE Field Verify card**: three verbs per amber row (Verify / Wrong wall→wall picker / Not present), status badges (⇄ Relocated + →wall, ✕ Removed strikethrough), full-package refetch per verb. EN/ES strings.
+- **Audit timeline shipped (approved)**: GET /admin/estimates/{id}/events (X-Admin-Token, read-only, newest-first, journey + ratify verbs with by/at); BrandingAdmin per-row "Events" expander (AuditTimeline component).
+- Tests: test_corner_relocation.py (7 — unit overlay, validation 400s, E2E on ruled letrick fixture relocate→revert, OSC note recount, admin events + token gate). Suite 936 GREEN. Testing agent iteration_44: 5/5 PASS (iteration_43 caught my broken JSX edit — fixed).
+- Estimate left AS FOUND (all test verbs reverted). Howard can now apply the right→back chase relocation himself in the UI.
+- Cosmetic backlog note: appendage DETAIL block title lacks '(was right)' suffix (main label + badges have it).
