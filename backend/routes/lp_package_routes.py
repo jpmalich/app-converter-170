@@ -360,9 +360,16 @@ async def lp_openings_review_act(est_id: str, payload: dict, user: dict = Depend
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
     from datetime import datetime, timezone
+    from estimate_events import log_estimate_event
+    # Journey-log ratify events (approved 2026-07-15): provenance already
+    # logged per-opening, surfaced into the estimate's single event stream
+    # alongside the customer-journey entries. Customer-invisibility pins
+    # apply unchanged (tracking[] never renders on customer surfaces).
     if action == "reset":
         await db.estimates.update_one(
             {"id": est_id}, {"$unset": {f"lp_openings_review.{key}": ""}})
+        await log_estimate_event(est_id, "opening.reset", meta={
+            "key": key, "by": user.get("email") or user.get("id")})
         return {"ok": True, "key": key, "status": "unconfirmed"}
     entry = {
         "status": {"confirm": "user_confirmed", "correct": "user_corrected",
@@ -374,6 +381,15 @@ async def lp_openings_review_act(est_id: str, payload: dict, user: dict = Depend
         entry["corrected_type"] = corrected_type
     await db.estimates.update_one(
         {"id": est_id}, {"$set": {f"lp_openings_review.{key}": entry}})
+    ev_meta = {"key": key, "by": entry["by"]}
+    if action == "correct":
+        ev_meta["corrected_type"] = corrected_type
+    await log_estimate_event(
+        est_id,
+        {"confirm": "opening.confirmed", "correct": "opening.corrected",
+         "remove": "opening.removed"}[action],
+        meta=ev_meta,
+    )
     return {"ok": True, "key": key, **entry}
 
 

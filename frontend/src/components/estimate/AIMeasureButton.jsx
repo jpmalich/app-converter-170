@@ -3374,8 +3374,6 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       "gpt-5.5":             "GPT-5.5",
                       "gpt-5.4":             "GPT-5.4",
                     };
-                    const fmtCost = (c) => (c == null ? "—" : `$${c.toFixed(3)}`);
-                    const totalCost = modelHistory.reduce((sum, r) => sum + (r.cost_estimate_usd || 0), 0);
                     const fmtElapsed = (ms) => {
                       if (!ms) return "—";
                       if (ms < 60000) return `${(ms / 1000).toFixed(0)}s`;
@@ -3386,9 +3384,6 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         <div className="px-3 py-1.5 border-b border-[var(--ai)] bg-[var(--ai)] text-white text-[10px] uppercase tracking-wider font-bold flex items-center justify-between gap-2 flex-wrap">
                           <span>Model Comparison · last {modelHistory.length} runs on this estimate</span>
                           <span className="text-[10px] font-normal flex items-center gap-2">
-                            <span className="bg-white/20 px-2 py-0.5 rounded-sm" title="Approximate USD spent A/B testing on this house across all listed runs">
-                              A/B spend: <span className="font-bold font-mono-num tabular-nums">${totalCost.toFixed(3)}</span>
-                            </span>
                             <span className="opacity-80">Higher = winner</span>
                           </span>
                         </div>
@@ -3404,7 +3399,6 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                 <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Siding ft²</th>
                                 <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Eaves LF</th>
                                 <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Time</th>
-                                <th className="text-right px-2 py-1.5 font-bold text-[var(--muted)] uppercase tracking-wider text-[9px]">Cost</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -3421,7 +3415,6 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{Math.round(r.siding_sqft || 0).toLocaleString()}</td>
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums">{Math.round(r.eaves_lf || 0)}</td>
                                   <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[var(--muted)]">{fmtElapsed(r.elapsed_ms)}</td>
-                                  <td className="px-2 py-1.5 text-right font-mono-num tabular-nums text-[var(--muted)]">{fmtCost(r.cost_estimate_usd)}</td>
                                 </tr>
                               ))}
                             </tbody>

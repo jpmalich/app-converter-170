@@ -1188,6 +1188,7 @@ async def ai_blueprint_status(
         raise HTTPException(status_code=404, detail="Run not found")
     if doc.get("user_id") != user["id"]:
         raise HTTPException(status_code=403, detail="Not your run")
+    from routes.ai_measure import strip_cost_keys
     created = doc.get("created_at")
     completed = doc.get("completed_at") or doc.get("updated_at")
     elapsed_ms = None
@@ -1198,7 +1199,7 @@ async def ai_blueprint_status(
         "run_id": run_id,
         "status": doc.get("status"),
         "stage": doc.get("stage"),
-        "result": doc.get("result"),
+        "result": strip_cost_keys(doc.get("result")),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
     }
@@ -1227,6 +1228,7 @@ async def ai_blueprint_latest_for_estimate(
         return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
     created = _as_aware_utc(doc.get("created_at"))
     completed = _as_aware_utc(doc.get("completed_at") or doc.get("updated_at"))
+    from routes.ai_measure import strip_cost_keys
     now = datetime.now(timezone.utc)
     elapsed_ms = None
     age_seconds = None
@@ -1243,7 +1245,7 @@ async def ai_blueprint_latest_for_estimate(
             # Iter 78z+ — persisted page filenames so the frontend can
             # render them in the ProfileAnnotator on a resume.
             "page_paths": doc.get("page_paths") or "",
-            "result": doc.get("result"),
+            "result": strip_cost_keys(doc.get("result")),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,

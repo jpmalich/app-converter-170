@@ -20,7 +20,7 @@ import { VISIBLE_TAB_DEFS } from "@/lib/tabsConfig";
  */
 const TAB_DEFS = VISIBLE_TAB_DEFS;
 
-export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }) {
+export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS, lpDerivedTotal = 0 }) {
   const t = useT();
   // Build a lookup so we render in the canonical Vinyl → Ascend → LP order
   // regardless of what order the parent passed.
@@ -52,6 +52,10 @@ export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }
             const tt = byId[td.id];
             if (!tt) return null;
             const isActive = td.id === activeTab;
+            // Clarity ruling (2026-07-15): never $0.00 above a priced
+            // derived list — the unapplied-takeoff state says so instead.
+            const derivedUnapplied =
+              td.id === "lp_smart" && lpDerivedTotal > 0 && !(tt.totals.sell > 0);
             return (
               <TabBlock
                 key={td.id}
@@ -61,6 +65,8 @@ export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }
                 sell={tt.totals.sell}
                 profit={tt.totals.profit}
                 active={isActive}
+                derivedUnapplied={derivedUnapplied}
+                derivedLabel={t("est.bar.derivedUnapplied")}
                 testid={`bar-tab-${td.id}`}
               />
             );
@@ -71,7 +77,7 @@ export default function StickyBar({ est, tabTotals, activeTab, tabs = TAB_DEFS }
   );
 }
 
-function TabBlock({ label, baseLabel, base, sell, profit, active, testid }) {
+function TabBlock({ label, baseLabel, base, sell, profit, active, derivedUnapplied, derivedLabel, testid }) {
   // Active tab gets an orange underline + brighter sell color. Inactive
   // tabs render at lower opacity so the eye lands on the one being edited.
   return (
@@ -88,26 +94,37 @@ function TabBlock({ label, baseLabel, base, sell, profit, active, testid }) {
       >
         {label}
       </div>
-      <div
-        className={`font-mono-num text-base sm:text-xl font-bold ${
-          active ? "text-[var(--brand)]" : "text-white"
-        }`}
-        data-testid={`${testid}-sell`}
-      >
-        {fmt(sell)}
-      </div>
-      <div className="flex items-baseline gap-2 mt-0.5">
-        <span className="text-[10px] text-white/50 font-mono-num" data-testid={`${testid}-base`}>
-          {baseLabel} {fmt(base)}
-        </span>
-        <span
-          className="text-[10px] font-mono-num"
-          style={{ color: profit >= 0 ? "#10B981" : "#F87171" }}
-          data-testid={`${testid}-profit`}
+      {derivedUnapplied ? (
+        <div
+          className="font-mono-num text-[11px] sm:text-xs font-bold text-amber-300 max-w-[140px] leading-tight py-1"
+          data-testid={`${testid}-derived-unapplied`}
         >
-          + {fmt(profit)}
-        </span>
-      </div>
+          {derivedLabel}
+        </div>
+      ) : (
+        <>
+          <div
+            className={`font-mono-num text-base sm:text-xl font-bold ${
+              active ? "text-[var(--brand)]" : "text-white"
+            }`}
+            data-testid={`${testid}-sell`}
+          >
+            {fmt(sell)}
+          </div>
+          <div className="flex items-baseline gap-2 mt-0.5">
+            <span className="text-[10px] text-white/50 font-mono-num" data-testid={`${testid}-base`}>
+              {baseLabel} {fmt(base)}
+            </span>
+            <span
+              className="text-[10px] font-mono-num"
+              style={{ color: profit >= 0 ? "#10B981" : "#F87171" }}
+              data-testid={`${testid}-profit`}
+            >
+              + {fmt(profit)}
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1531,7 +1531,13 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
   // Whole-house material lines from the estimator (SSOT). Filter to
   // siding-adjacent categories so the "Materials" section shows the
   // squares / j-channel / starter / corner post the estimate will use.
+  const isLpEstimate = estimate?.kind === "lp_smart";
   const sidingLines = (preview.lines || []).filter((l) => {
+    // LP-native pin (ruled 2026-07-15): vinyl catalog lines never render
+    // on an LP estimate's whole-house materials panel. The run artifact
+    // legitimately carries both catalogs (dual-option coexistence); the
+    // LP Material List panel is the only composition surface for LP.
+    if (isLpEstimate && (l.tab || "vinyl") === "vinyl") return false;
     const s = (l.section || "").toLowerCase();
     return ["siding", "trim", "corners", "j-channel", "starter"].some((k) => s.includes(k));
   }).slice(0, 10);
@@ -2062,7 +2068,11 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
             Whole-house materials <span className="text-[9px] italic text-[var(--muted)] font-normal">· from estimator</span>
           </div>
           {sidingLines.length === 0 ? (
-            <div className="text-[11px] italic text-[var(--muted)]">No siding lines in this preview.</div>
+            <div className="text-[11px] italic text-[var(--muted)]" data-testid="ai-measure-3d-materials-empty">
+              {isLpEstimate
+                ? "LP-native estimate — materials derive in the LP Material List panel."
+                : "No siding lines in this preview."}
+            </div>
           ) : (
             sidingLines.map((ln, i) => (
               <Row key={i} k={ln.name} v={`${ln.qty} ${ln.unit || ""}`} />

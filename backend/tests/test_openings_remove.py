@@ -220,3 +220,81 @@ def test_leak_scan_no_cost_data_on_contractor_preview(session, phantom_fixture):
     text = r.text
     for needle in ("extraction_spend", "token_usage", "dealer_cost", "margin_pct", "cost_usd"):
         assert needle not in text, f"leak-scan: {needle} on contractor surface"
+
+
+# ── Cost redaction ruling (2026-07-15): run payloads carry no cost keys ──
+
+COST_NEEDLES = ('"cost_usd"', '"cost_estimate_usd"', '"token_usage"',
+                '"_usage"', '"_reconciliation_usage"')
+LETRICK_EST = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
+
+
+def _assert_no_cost(text, surface):
+    for needle in COST_NEEDLES:
+        assert needle not in text, f"leak-scan: {needle} on {surface}"
+
+
+def test_blueprint_status_redacts_cost(session):
+    r = session.get(f"{API}/measure/ai-blueprint/status/{SOURCE_RUN}", timeout=30)
+    assert r.status_code == 200
+    assert (r.json().get("result") or {}).get("measurements")  # results intact
+    _assert_no_cost(r.text, "blueprint status")
+
+
+def test_photo_status_and_latest_redact_cost(session):
+    r = session.get(f"{API}/measure/ai-measure/latest-for-estimate/{LETRICK_EST}", timeout=30)
+    assert r.status_code == 200
+    _assert_no_cost(r.text, "photo latest-for-estimate")
+    run_id = (r.json().get("run") or {}).get("run_id")
+    if run_id:
+        r2 = session.get(f"{API}/measure/ai-measure/status/{run_id}", timeout=30)
+        assert r2.status_code == 200
+        _assert_no_cost(r2.text, "photo status")
+
+
+def test_history_and_debug_runs_redact_cost(session):
+    r = session.get(f"{API}/measure/ai-measure/history/{LETRICK_EST}", timeout=30)
+    assert r.status_code == 200 and "runs" in r.json()
+    _assert_no_cost(r.text, "model-comparison history")
+    r2 = session.get(f"{API}/measure/ai-measure/debug-runs/{LETRICK_EST}", timeout=30)
+    assert r2.status_code == 200
+    _assert_no_cost(r2.text, "debug run picker")
+
+
+def test_db_telemetry_untouched_by_redaction(mongo_db):
+    # Redaction is response-side only — the admin spend line reads the DB.
+    doc = mongo_db.ai_blueprint_runs.find_one({"run_id": SOURCE_RUN})
+    assert (doc["result"].get("cost_usd") or 0) > 0
+    assert doc["result"].get("token_usage")
+
+
+# ── Journey-log ratify events (approved 2026-07-15) ──────────────────
+
+def test_ratify_events_append_to_tracking(session, phantom_fixture, mongo_db):
+    pkg = _preview(session)
+    item = next(it for it in pkg["openings_review"]["items"] if it["type"] == "window")
+    for action, ev in (("remove", "opening.removed"), ("reset", "opening.reset")):
+        r = session.post(f"{API}/estimates/{EST_ID}/openings-review",
+                         json={"key": item["key"], "action": action}, timeout=15)
+        assert r.status_code == 200
+        est = mongo_db.estimates.find_one({"id": EST_ID}, {"tracking": 1})
+        evs = [t for t in (est.get("tracking") or []) if t.get("type") == ev]
+        assert evs and evs[-1]["meta"]["key"] == item["key"] and evs[-1]["meta"]["by"]
+
+
+# ── Whole-board starter pin (traced 2026-07-15 — not a violation; pinned) ──
+
+def test_starter_prices_whole_boards_only(session):
+    import math
+    r = session.post(f"{API}/estimates/{LETRICK_EST}/lp-package/preview", json={}, timeout=30)
+    assert r.status_code == 200
+    ripped = [l for l in r.json()["lines"]
+              if l.get("priced_unit") == "per ripped source board" and l.get("pricing_status") == "priced"]
+    assert ripped, "no rip-priced lines on the letrick preview"
+    for l in ripped:
+        pcs = l["pieces_added"]
+        assert isinstance(pcs, int) and pcs >= 1
+        assert abs(l["line_sell"] - round(l["unit_sell"] * pcs, 2)) < 0.005, l["name"]
+        d = (l.get("_derivation") or {})
+        if d.get("kind") == "starter" and d.get("starter_lf"):
+            assert pcs == math.ceil(d["starter_lf"] / 48.0)

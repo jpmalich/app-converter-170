@@ -392,7 +392,13 @@ export default function EstimateEditor() {
 
   return (
     <>
-      <StickyBar est={est} tabTotals={tabTotals} activeTab={activeTab} tabs={visibleTabDefs} />
+      <StickyBar
+        est={est}
+        tabTotals={tabTotals}
+        activeTab={activeTab}
+        tabs={visibleTabDefs}
+        lpDerivedTotal={isLpKind && lpPkg ? (lpPkg.summary?.pricing?.total_sell || 0) : 0}
+      />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24" data-testid="estimate-editor">
         <CatalogSyncBanner est={est} update={update} />
         <JobInfoPanel

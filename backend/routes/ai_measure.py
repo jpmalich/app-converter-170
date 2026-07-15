@@ -3005,7 +3005,7 @@ async def ai_measure_status(
         "run_id": run_id,
         "status": doc.get("status"),
         "stage": doc.get("stage"),
-        "result": doc.get("result"),
+        "result": strip_cost_keys(doc.get("result")),
         "error": doc.get("error"),
         # Iter 79j.44 — Surface `error_kind` (exception class name) so
         # the frontend banner can render a "Kind: TimeoutError" hint
@@ -3017,7 +3017,7 @@ async def ai_measure_status(
         # Surfaces to the frontend Debug view so it can display what
         # each individual Claude call ACTUALLY saw, not Claude's after-
         # the-fact recollection embedded in the reconciled JSON.
-        "raw_per_photo": doc.get("raw_per_photo") or None,
+        "raw_per_photo": strip_cost_keys(doc.get("raw_per_photo") or None),
         "pipeline": ((doc.get("result") or {}).get("raw_ai") or {}).get("_pipeline")
                     or ("two_phase" if doc.get("raw_per_photo") else "single_call"),
         # Iter 79j.59 — Per-wave Phase A progress. Updated live as each
@@ -3284,14 +3284,14 @@ async def ai_measure_latest_for_estimate(
             "photo_count": doc.get("photo_count"),
             "photo_paths": doc.get("photo_paths"),
             "deep_dormer_scan": doc.get("deep_dormer_scan"),
-            "result": doc.get("result"),
+            "result": strip_cost_keys(doc.get("result")),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,
             # Iter 79j.37 — carry per-photo extractions on the resume
             # payload too, so the Debug view still works after a page
             # reload without re-running.
-            "raw_per_photo": doc.get("raw_per_photo") or None,
+            "raw_per_photo": strip_cost_keys(doc.get("raw_per_photo") or None),
             "pipeline": ((doc.get("result") or {}).get("raw_ai") or {}).get("_pipeline")
                         or ("two_phase" if doc.get("raw_per_photo") else "single_call"),
         },
@@ -3349,6 +3349,24 @@ def _cost_from_usage(model_config: dict | None, token_usage: dict | None) -> dic
     return out
 
 
+_CONTRACTOR_COST_KEYS = frozenset({
+    "cost_usd", "cost_estimate_usd", "token_usage",
+    "_usage", "_reconciliation_usage",
+})
+
+
+def strip_cost_keys(obj):
+    """Leak-scan ruling (2026-07-15): extraction cost is SUPPLIER-side
+    data. Contractor-facing run payloads carry progress + results, never
+    what the API call cost. Deep-strip on the RESPONSE only — DB telemetry
+    is untouched (the admin extraction-spend line reads it)."""
+    if isinstance(obj, dict):
+        return {k: strip_cost_keys(v) for k, v in obj.items() if k not in _CONTRACTOR_COST_KEYS}
+    if isinstance(obj, list):
+        return [strip_cost_keys(v) for v in obj]
+    return obj
+
+
 def _aggregate_token_usage(final: dict, extractions: list[dict]) -> dict | None:
     """Iter 79j.86 — sum per-call ACTUAL token usage into a per-phase
     record for the run doc. Phase A from per-extraction `_usage` stamps
@@ -3366,30 +3384,6 @@ def _aggregate_token_usage(final: dict, extractions: list[dict]) -> dict | None:
     return {"phase_a": pa if pa["calls"] else None, "phase_b": pb or None}
 
 
-def _estimate_run_cost_usd(model_choice: str | None, photo_count: int, deep_dormer: bool) -> float | None:
-    """Approximate USD cost for one AI Measure run. Returns None if the
-    model isn't in the pricing table (e.g. an old run against a
-    now-deprecated model). Fine-grained enough to sort A/B runs, not a
-    billing document."""
-    if not model_choice:
-        return None
-    price = _MODEL_PRICING_PER_M.get(model_choice.strip().lower())
-    if not price:
-        return None
-    photos = max(1, int(photo_count or 1))
-    # Input: system+user prompt (~4K) + per-photo (~2K)
-    input_tokens = 4000 + (2000 * photos)
-    # Deep Dormer adds a parallel per-photo pass at ~1500 tok each.
-    if deep_dormer:
-        input_tokens += 1500 * photos
-    output_tokens = 2500
-    return round(
-        (input_tokens / 1_000_000) * price["input"]
-        + (output_tokens / 1_000_000) * price["output"],
-        4,
-    )
-
-
 @router.get("/ai-measure/history/{estimate_id}")
 async def ai_measure_history(
     estimate_id: str,
@@ -3398,10 +3392,11 @@ async def ai_measure_history(
 ):
     """Iter 79j.16 — Model comparison history. Returns the last N
     completed runs for this estimate with just the fields needed to
-    A/B compare models side-by-side (model + confidence + counts +
-    approximate cost). Used by the Model Comparison panel on the AI
-    Measure preview. Only runs with `status == 'done'` are returned so
-    the panel never shows in-flight or failed runs."""
+    A/B compare models side-by-side (model + confidence + counts).
+    Cost columns REDACTED per the 2026-07-15 leak-scan ruling —
+    extraction cost is supplier-side data. Only runs with
+    `status == 'done'` are returned so the panel never shows in-flight
+    or failed runs."""
     user_id = user.get("id") or "anon"
     limit = max(1, min(int(limit or 5), 20))
     cursor = db.ai_measure_runs.find(
@@ -3432,11 +3427,6 @@ async def ai_measure_history(
             for o in openings
             if (o.get("type") or "").lower() in {"entry_door", "patio_door", "garage_door"}
         )
-        cost_usd = _estimate_run_cost_usd(
-            doc.get("model_choice"),
-            int(doc.get("photo_count") or 0),
-            bool(doc.get("deep_dormer_scan")),
-        )
         completed = _as_aware_utc(doc.get("completed_at"))
         created = _as_aware_utc(doc.get("created_at"))
         elapsed_ms = None
@@ -3457,7 +3447,6 @@ async def ai_measure_history(
             "door_count": door_count,
             "siding_sqft": measurements.get("siding_sqft") or 0,
             "eaves_lf": measurements.get("eaves_lf") or 0,
-            "cost_estimate_usd": cost_usd,
         })
     return {"runs": runs}
 
@@ -3556,9 +3545,6 @@ async def ai_measure_debug_runs(
             "elapsed_ms": elapsed_ms,
             "model_choice": doc.get("model_choice"),
             "model_config": doc.get("model_config"),
-            # Iter 79j.87 — ACTUAL cost/run from live token telemetry
-            # (None for pre-telemetry or proxy-transport runs).
-            "cost_usd": ((_cost_from_usage(doc.get("model_config"), doc.get("token_usage")) or {}).get("total")),
             "usage_probe": bool(doc.get("usage_probe")),
             "photo_count": doc.get("photo_count") or 0,
             "deep_dormer_scan": bool(doc.get("deep_dormer_scan")),

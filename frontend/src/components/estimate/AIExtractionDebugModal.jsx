@@ -531,11 +531,6 @@ export default function AIExtractionDebugModal({ preview, photoUrls, estimateId,
                             </span>
                           )}
                           {" · "}{Math.round(r.siding_sqft || 0)}sf
-                          {r.cost_usd != null && (
-                            <span data-testid={`debug-run-cost-${r.run_id}`} title="Actual run cost from live token telemetry (input + output tokens × current rates, both phases)">
-                              {" · $"}{r.cost_usd.toFixed(2)}
-                            </span>
-                          )}
                         </span>
                         {isSwitching && <Loader2 className="w-3 h-3 animate-spin" />}
                         {isActive && !isSwitching && (

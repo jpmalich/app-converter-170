@@ -396,7 +396,16 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                       )}
                     </td>
                     <td className="px-2 py-2 text-right font-mono-num">
-                      {l.pricing_status === "priced" ? fmt(l.unit_sell) : (
+                      {l.pricing_status === "priced" ? (
+                        l.priced_unit && l.pieces_added ? (
+                          <span className="inline-flex flex-col items-end leading-tight" data-testid={`lp-line-board-pricing-${l.name}`}>
+                            <span>{fmt(l.unit_sell)}<span className="text-[9px] text-[var(--muted)]"> /board</span></span>
+                            <span className="text-[9px] text-[var(--muted)]">× {l.pieces_added} whole board{l.pieces_added === 1 ? "" : "s"}</span>
+                          </span>
+                        ) : (
+                          fmt(l.unit_sell)
+                        )
+                      ) : (
                         <span className="text-[10px] uppercase tracking-wider text-[#B45309] font-bold" data-testid={`lp-line-pending-${l.name}`}>
                           {t("lp.mat.pending")}
                         </span>
