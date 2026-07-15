@@ -84,19 +84,17 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   const [subs, setSubs] = useState({});
   const [colors, setColors] = useState(() => est?.lp_colors || {});
   const [noRun, setNoRun] = useState(false);
+  const [relocating, setRelocating] = useState(null); // amber key picking a wall
 
-  const toggleVerify = async (item, status) => {
+  const toggleVerify = async (item, status, extra) => {
     try {
-      const { data } = await api.post(`/estimates/${estId}/lp-field-verify`, {
-        key: item.key, status,
+      await api.post(`/estimates/${estId}/lp-field-verify`, {
+        key: item.key, status, ...(extra || {}),
       });
-      setPkg((p) => (p ? {
-        ...p,
-        amber_items: (p.amber_items || []).map((a) =>
-          a.key === item.key
-            ? { ...a, status, verified_at: data.at || null, verified_by: data.by || null }
-            : a),
-      } : p));
+      setRelocating(null);
+      // relocations/removals re-derive stick counts + notes server-side —
+      // refetch the whole package instead of patching locally.
+      fetchPackage(colors, subs);
     } catch {
       toast.error("Could not save field verification — try again.");
     }
@@ -468,6 +466,72 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                   >
                     {t("lp.fv.verify")}
                   </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3D — mesh-group flat repaints */}
+      {preview3d && (
+        <div className="border-t border-[var(--border)] p-3" data-testid="lp-material-3d">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-2 flex items-center gap-2">
+            <RefreshCcw className="w-3 h-3" /> 3D — colors repaint live (siding + opening trim mesh groups; corner/fascia meshes pending)
+          </div>
+          <HouseModel3D preview={preview3d} estimate={est} runId={run.run_id} lpGroupColors={lpGroupColors} />
+        </div>
+      )}
+    </div>
+  );
+}
+king-wider text-red-700"
+                    data-testid={`lp-fv-removed-${it.key}`}
+                    title={`${it.verified_by || ""} ${it.verified_at ? new Date(it.verified_at).toLocaleDateString() : ""}`}
+                  >
+                    ✕ {t("lp.fv.removed")}
+                  </button>
+                ) : relocating === it.key ? (
+                  <select
+                    className="input text-[10px] py-0.5"
+                    defaultValue=""
+                    onChange={(e) => e.target.value
+                      ? toggleVerify(it, "relocated", { to_wall: e.target.value, from_walls: it.walls })
+                      : setRelocating(null)}
+                    data-testid={`lp-fv-wall-select-${it.key}`}
+                  >
+                    <option value="">{t("lp.fv.pickWall")}</option>
+                    {["front", "back", "left", "right"]
+                      .filter((w) => !(it.walls || []).includes(w))
+                      .map((w) => <option key={w} value={w}>{w}</option>)}
+                  </select>
+                ) : (
+                  <span className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleVerify(it, "verified")}
+                      className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#B45309] text-white"
+                      data-testid={`lp-fv-verify-${it.key}`}
+                    >
+                      {t("lp.fv.verify")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRelocating(it.key)}
+                      className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-sky-700 text-sky-800"
+                      data-testid={`lp-fv-relocate-${it.key}`}
+                    >
+                      {t("lp.fv.wrongWall")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleVerify(it, "removed")}
+                      className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-red-700 text-red-700"
+                      data-testid={`lp-fv-remove-${it.key}`}
+                    >
+                      {t("lp.fv.notPresent")}
+                    </button>
+                  </span>
                 )}
               </div>
             ))}

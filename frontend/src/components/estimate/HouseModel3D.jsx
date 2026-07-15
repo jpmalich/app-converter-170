@@ -199,9 +199,14 @@ function deriveBlueprintAppendages(list) {
 }
 
 function deriveAppendages(walls, cornerLocations, fieldVerify) {
+  const fv = fieldVerify || {};
+  const stateFor = (c) => fv[verifyKeyForCorner(c)] || null;
   const cornersByWall = {};
   (cornerLocations || []).forEach((c) => {
     if (!c || !hasAppendageKeyword(c.locator)) return;
+    // "Not present" verb (ruled 2026-07-15): user_removed corners leave
+    // the render inputs entirely.
+    if (stateFor(c)?.status === "user_removed") return;
     (c.walls || []).forEach((w) => {
       const k = String(w).toLowerCase();
       (cornersByWall[k] = cornersByWall[k] || []).push(c);
@@ -239,7 +244,9 @@ function deriveAppendages(walls, cornerLocations, fieldVerify) {
       const cornerVerified = (c) => {
         if (String(c.tier || "confirmed") === "confirmed") return true;
         const st = (fieldVerify || {})[verifyKeyForCorner(c)];
-        return !!st && st.status === "verified";
+        // user_relocated counts as ratified — the user asserted the true
+        // wall (relocation verb, ruled 2026-07-15).
+        return !!st && (st.status === "verified" || st.status === "user_relocated");
       };
       const locTxt = String(ap.location || "").toLowerCase();
       out.push({
@@ -268,7 +275,46 @@ function deriveAppendages(walls, cornerLocations, fieldVerify) {
       });
     });
   });
-  return out;
+  // Relocation verb (ruled 2026-07-15): a user_relocated chase corner
+  // moves the WHOLE appendage box to the corrected wall. Detected
+  // features move — geometry is never invented: corner-derived width and
+  // run-measured dims travel with the box; only wall + position change.
+  const reloc = {};
+  (cornerLocations || []).forEach((c) => {
+    if (!c || !hasAppendageKeyword(c.locator)) return;
+    const st = stateFor(c);
+    if (st?.status === "user_relocated" && st.to) {
+      (c.walls || []).forEach((w) => {
+        reloc[String(w).toLowerCase()] = {
+          to: String(st.to).toLowerCase(),
+          frac: Number(st.position_frac),
+        };
+      });
+    }
+  });
+  out.forEach((a) => {
+    const r = reloc[a.wall];
+    if (r && r.to !== a.wall) {
+      a.label = `${a.label} — relocated (was ${a.wall})`;
+      a.wall = r.to;
+      if (Number.isFinite(r.frac) && r.frac >= 0 && r.frac <= 1) a.positionFrac = r.frac;
+      a.positionSource = "relocated";
+      a.confirmed = true;
+    }
+  });
+  // "Not present": if every appendage corner on a wall was user_removed,
+  // the box render on that wall goes with them (honest absence).
+  const removedWalls = new Set();
+  (cornerLocations || []).forEach((c) => {
+    if (!c || !hasAppendageKeyword(c.locator)) return;
+    (c.walls || []).forEach((w) => {
+      const k = String(w).toLowerCase();
+      if (stateFor(c)?.status === "user_removed") {
+        if (!(cornersByWall[k] || []).length) removedWalls.add(k);
+      }
+    });
+  });
+  return out.filter((a) => !removedWalls.has(a.wall));
 }
 
 // Build a house-JSON shape from the AI preview + user overrides.

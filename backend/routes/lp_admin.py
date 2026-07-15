@@ -232,6 +232,28 @@ async def admin_list_lp_estimates(request: Request):
     return {"estimates": out, "tier_names": list(TIER_NAMES), "default_tier": DEFAULT_TIER}
 
 
+@router.get("/admin/estimates/{est_id}/events")
+async def admin_estimate_events(est_id: str, request: Request):
+    """Audit timeline (approved 2026-07-15): one page, per-estimate,
+    ADMIN BOUNDARY, read-only. The full event stream — customer-journey
+    entries (quote.sent/viewed/accepted, qr.scanned, email.*) and ratify
+    verbs (opening.*, corner.*) — with by/at. Customer-invisibility pins
+    unchanged: this surface is token-gated and never proxied."""
+    check_admin_token(request)
+    est = await db.estimates.find_one(
+        {"id": est_id},
+        {"_id": 0, "id": 1, "customer_name": 1, "estimate_number": 1,
+         "address": 1, "tracking": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    events = list(reversed(est.get("tracking") or []))
+    return {
+        "estimate": {k: est.get(k) for k in ("id", "customer_name", "estimate_number", "address")},
+        "events": events,
+        "total": len(events),
+    }
+
+
 @router.get("/admin/lp-native-mode")
 async def get_lp_native_mode(request: Request):
     check_admin_token(request)

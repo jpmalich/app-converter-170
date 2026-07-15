@@ -94,29 +94,60 @@ def _extract(run: dict):
     return measurements, corner_locations, wall_heights
 
 
+def _corner_key(c, i=0):
+    import re
+    locator = str(c.get("locator") or "").strip() or f"corner {i + 1}"
+    kind = "isc" if str(c.get("type") or "") == "inside" else "osc"
+    slug = re.sub(r"[^a-z0-9]+", "-", locator.lower()).strip("-")[:60]
+    return f"corner:{kind}:{slug}", locator, kind.upper()
+
+
+_WALLS = ("front", "back", "left", "right")
+
+
 def _amber_items(corner_locations, verify_state):
     """Amber field-verify checklist (approved post-C4): the presence-
     guarantee doctrine surfaced to the user. Unconfirmed (amber) corner
-    locations are INCLUDED in stick counts and flagged; a contractor
-    ratifies each in the field. Verification is ratification only —
-    counts never change here."""
-    import re
+    locations are INCLUDED in stick counts and flagged. Full verb set
+    (ruled 2026-07-15): verify (ratification) / relocate (wrong wall →
+    correct wall) / not-present — provenance-carried, revertible."""
     items = []
     for i, c in enumerate(corner_locations):
         if str(c.get("tier") or "confirmed") == "confirmed":
             continue
-        locator = str(c.get("locator") or "").strip() or f"corner {i + 1}"
-        kind = "ISC" if str(c.get("type") or "") == "inside" else "OSC"
-        slug = re.sub(r"[^a-z0-9]+", "-", locator.lower()).strip("-")[:60]
-        key = f"corner:{kind.lower()}:{slug}"
+        key, locator, kind = _corner_key(c, i)
         st = (verify_state or {}).get(key) or {}
         items.append({
             "key": key, "kind": kind, "locator": locator,
             "walls": c.get("walls") or [],
             "status": st.get("status") or "unverified",
+            "relocated_to": st.get("to"),
+            "position_frac": st.get("position_frac"),
             "verified_at": st.get("at"), "verified_by": st.get("by"),
         })
     return items
+
+
+def _apply_corner_review(corner_locations, verify_state):
+    """Relocation ruling (2026-07-15): user_removed corners leave the
+    assembly inputs (stick counts re-derive); user_relocated corners
+    carry their corrected wall downstream (3D placement, stick
+    anchoring). Detected features MOVE — geometry is never invented;
+    dimensions remain run-measured. Keys derive from the ORIGINAL
+    locator so state stays stable."""
+    out = []
+    for i, c in enumerate(corner_locations or []):
+        key, _, _ = _corner_key(c, i)
+        st = (verify_state or {}).get(key) or {}
+        s = st.get("status")
+        if s == "user_removed":
+            continue
+        if s == "user_relocated" and st.get("to") in _WALLS:
+            c = {**c, "walls": [st["to"]], "relocated_to": st["to"]}
+            if isinstance(st.get("position_frac"), (int, float)):
+                c = {**c, "position_frac": float(st["position_frac"])}
+        out.append(c)
+    return out
 
 
 def _color_matrix(lines):
@@ -321,7 +352,8 @@ async def lp_package_preview(
     measurements, corner_locations, wall_heights = _extract(run)
     op_items = _openings_items(run, est.get("lp_openings_review"))
     measurements, op_summary = _apply_openings_review(measurements, op_items)
-    pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
+    corners_eff = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
+    pkg = assemble_lp_package(measurements, corners_eff, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
     cfg = await load_margin_cfg()
@@ -395,27 +427,65 @@ async def lp_openings_review_act(est_id: str, payload: dict, user: dict = Depend
 
 @router.post("/estimates/{est_id}/lp-field-verify")
 async def lp_field_verify(est_id: str, payload: dict, user: dict = Depends(get_current_user)):
-    """Mark an amber item field-verified (or revert). Ratification only —
-    stick counts already include ambers (presence guarantee)."""
+    """Amber corner verb set (ruled 2026-07-15): verified (ratification),
+    relocated (wrong wall → correct wall, optional rough position),
+    removed ("not present"), unverified (revert any). Relocation moves
+    DETECTED features only — never invents geometry; dimensions remain
+    run-measured. All verbs journey-logged with by/at provenance."""
     key = str((payload or {}).get("key") or "").strip()
     status = (payload or {}).get("status")
-    if not key or "." in key or status not in ("verified", "unverified"):
-        raise HTTPException(status_code=400, detail="key and status (verified|unverified) required")
+    if not key or "." in key or status not in ("verified", "unverified", "relocated", "removed"):
+        raise HTTPException(status_code=400, detail="key and status (verified|unverified|relocated|removed) required")
+    to_wall = str((payload or {}).get("to_wall") or "").strip().lower()
+    if status == "relocated" and to_wall not in _WALLS:
+        raise HTTPException(status_code=400, detail=f"to_wall must be one of {_WALLS}")
+    position_frac = (payload or {}).get("position_frac")
+    if position_frac is not None:
+        try:
+            position_frac = float(position_frac)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="position_frac must be a number")
+        if not (0.0 <= position_frac <= 1.0):
+            raise HTTPException(status_code=400, detail="position_frac must be within 0..1")
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
     from datetime import datetime, timezone
-    if status == "verified":
-        entry = {"status": "verified",
-                 "at": datetime.now(timezone.utc).isoformat(),
-                 "by": user.get("email") or user.get("id")}
+    from estimate_events import log_estimate_event
+    by = user.get("email") or user.get("id")
+    if status == "unverified":
         await db.estimates.update_one(
-            {"id": est_id}, {"$set": {f"lp_field_verify.{key}": entry}})
-        return {"ok": True, "key": key, **entry}
+            {"id": est_id}, {"$unset": {f"lp_field_verify.{key}": ""}})
+        await log_estimate_event(est_id, "corner.reset", meta={"key": key, "by": by})
+        return {"ok": True, "key": key, "status": "unverified"}
+    entry = {
+        "status": {"verified": "verified", "relocated": "user_relocated",
+                   "removed": "user_removed"}[status],
+        "at": datetime.now(timezone.utc).isoformat(),
+        "by": by,
+    }
+    if status == "relocated":
+        entry["to"] = to_wall
+        from_walls = (payload or {}).get("from_walls")
+        if isinstance(from_walls, list):
+            entry["from"] = [str(w).lower() for w in from_walls if str(w).lower() in _WALLS]
+        if position_frac is not None:
+            entry["position_frac"] = position_frac
     await db.estimates.update_one(
-        {"id": est_id}, {"$unset": {f"lp_field_verify.{key}": ""}})
-    return {"ok": True, "key": key, "status": "unverified"}
+        {"id": est_id}, {"$set": {f"lp_field_verify.{key}": entry}})
+    ev_meta = {"key": key, "by": by}
+    if entry.get("from"):
+        ev_meta["from"] = entry["from"]
+    if entry.get("to"):
+        ev_meta["to"] = entry["to"]
+    await log_estimate_event(
+        est_id,
+        {"verified": "corner.verified", "relocated": "corner.relocated",
+         "removed": "corner.removed"}[status],
+        meta=ev_meta,
+    )
+    return {"ok": True, "key": key, **entry}
 
 
 @router.post("/admin/estimates/{est_id}/lp-package/cost-preview")
@@ -428,6 +498,7 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
     measurements, corner_locations, wall_heights = _extract(run)
     measurements, _ = _apply_openings_review(
         measurements, _openings_items(run, est.get("lp_openings_review")))
+    corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -457,6 +528,7 @@ async def _derive_current(est_id: str, company_id=None):
     # the review payload itself is contractor-only and never attaches here.
     measurements, _ = _apply_openings_review(
         measurements, _openings_items(run, est.get("lp_openings_review")))
+    corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     full_est = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "lp_colors": 1, "lp_pricing_tier": 1,
                          "estimate_number": 1, "customer_name": 1,
@@ -484,6 +556,11 @@ async def lp_material_list_freeze(
 
     est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
+    # openings + corner reviews apply on EVERY derivation surface
+    # (coherence) — the frozen snapshot must match what the panel showed.
+    measurements, _ = _apply_openings_review(
+        measurements, _openings_items(run, est.get("lp_openings_review")))
+    corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))

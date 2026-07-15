@@ -463,6 +463,9 @@ async def _derive_lp_pkg_for_export(est: dict, company_id: str):
     except HTTPException:
         return None
     meas, corners, heights = _extract(run)
+    from routes.lp_package_routes import _apply_openings_review, _openings_items, _apply_corner_review
+    meas, _ = _apply_openings_review(meas, _openings_items(run, _e.get("lp_openings_review")))
+    corners = _apply_corner_review(corners, _e.get("lp_field_verify"))
     pkg = assemble_lp_package(meas, corners, heights, colors=est.get("lp_colors"))
     cfg = await load_margin_cfg()
     price_package(pkg, cfg, est.get("lp_pricing_tier"))

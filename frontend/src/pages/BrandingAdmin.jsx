@@ -386,6 +386,7 @@ function LpMarginTiersPanel({ token }) {
   const [pcts, setPcts] = useState({});
   const [counts, setCounts] = useState({});
   const [ests, setEsts] = useState([]);
+  const [eventsFor, setEventsFor] = useState(null); // audit timeline (admin-only)
   const [busy, setBusy] = useState(false);
   const headers = { "X-Admin-Token": token };
 
@@ -514,12 +515,23 @@ function LpMarginTiersPanel({ token }) {
                         ))}
                       </select>
                     </td>
+                    <td className="px-2 py-2 text-right">
+                      <button
+                        type="button"
+                        className={`text-[10px] font-bold uppercase tracking-wider ${eventsFor === e.id ? "text-[var(--brand)]" : "text-[var(--ink-2)]"} underline`}
+                        onClick={() => setEventsFor(eventsFor === e.id ? null : e.id)}
+                        data-testid={`lp-est-events-${e.id}`}
+                      >
+                        Events
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+        {eventsFor && <AuditTimeline token={token} estId={eventsFor} />}
       </div>
     </div>
   );
@@ -1048,6 +1060,49 @@ function CompaniesPanel({ token }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Audit timeline (approved 2026-07-15): one-page, per-estimate,
+// admin-boundary, READ-ONLY — the full event stream (customer journey +
+// ratify verbs) with by/at. Never proxied to contractor surfaces.
+function AuditTimeline({ token, estId }) {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState(null);
+  useEffect(() => {
+    setData(null);
+    setErr(null);
+    axios.get(`${API}/admin/estimates/${estId}/events`, { headers: { "X-Admin-Token": token } })
+      .then((r) => setData(r.data))
+      .catch((e) => setErr(e.response?.data?.detail || e.message));
+  }, [estId, token]);
+  if (err) return <div className="mt-2 text-xs text-red-700" data-testid="audit-timeline-error">{err}</div>;
+  if (!data) return <div className="mt-2 text-xs text-[var(--muted)]">Loading events…</div>;
+  return (
+    <div className="mt-2 border border-[var(--border)] rounded-sm bg-[var(--surface)]" data-testid="audit-timeline">
+      <div className="px-3 py-1.5 border-b border-[var(--border)] text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)] flex justify-between">
+        <span>Audit timeline — {data.estimate?.customer_name || data.estimate?.estimate_number || estId.slice(0, 8)}</span>
+        <span className="font-mono-num">{data.total} event{data.total === 1 ? "" : "s"}</span>
+      </div>
+      {data.total === 0 ? (
+        <div className="px-3 py-2 text-xs text-[var(--muted)]" data-testid="audit-timeline-empty">No events recorded yet.</div>
+      ) : (
+        <div className="max-h-56 overflow-y-auto">
+          {data.events.map((ev, i) => (
+            <div key={i} className="px-3 py-1.5 border-b border-[var(--border)] last:border-0 flex flex-wrap items-baseline gap-x-3 text-xs" data-testid={`audit-event-${i}`}>
+              <span className="font-mono text-[10px] text-[var(--muted)] whitespace-nowrap">
+                {ev.at ? new Date(ev.at).toLocaleString() : "—"}
+              </span>
+              <span className="font-bold text-[var(--ink)]">{ev.type}</span>
+              {ev.meta?.by && <span className="text-[var(--muted)]">by {ev.meta.by}</span>}
+              {ev.meta?.from && <span className="text-[var(--muted)]">from {Array.isArray(ev.meta.from) ? ev.meta.from.join("/") : ev.meta.from}</span>}
+              {ev.meta?.to && <span className="text-[var(--muted)]">→ {ev.meta.to}</span>}
+              {ev.meta?.key && <span className="font-mono text-[10px] text-[var(--muted)] truncate max-w-[280px]">{ev.meta.key}</span>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
