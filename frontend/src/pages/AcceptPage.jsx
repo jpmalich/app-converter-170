@@ -5,6 +5,7 @@ import DOMPurify from "dompurify";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
 import LangToggle from "@/components/LangToggle";
+import AcceptHouse3D from "@/components/AcceptHouse3D";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -164,6 +165,39 @@ export default function AcceptPage() {
           <div style={{ marginTop: 16, fontSize: 13, color: "#52525B" }}>
             <strong style={{ color: "#09090B" }}>{t("accept.preparedFor")}</strong> {d.customer_name}
             {d.address ? ` · ${d.address}` : ""}
+          </div>
+        ) : null}
+
+        {d.house3d ? (
+          <div style={{ marginTop: 28 }} data-testid="accept-3d-section">
+            <div
+              style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: 2,
+                textTransform: "uppercase", color: "#71717A", marginBottom: 6,
+              }}
+            >
+              {t("accept.model3d.title")}
+            </div>
+            <p style={{ fontSize: 12, color: "#71717A", margin: "0 0 8px 0", lineHeight: 1.5 }}>
+              {t("accept.model3d.note")} {t("accept.model3d.hint")}
+            </p>
+            <div style={{ border: "1px solid #E4E4E7", background: "#F7F8FB" }}>
+              <AcceptHouse3D house3d={d.house3d} />
+            </div>
+            {d.attestation?.count > 0 ? (
+              <p style={{ fontSize: 12, color: "#09090B", margin: "8px 0 0 0", fontWeight: 600 }} data-testid="accept-attestation">
+                {t("accept.model3d.attestation", {
+                  count: d.attestation.count,
+                  initials: d.attestation.initials,
+                  date: d.attestation.date,
+                })}
+              </p>
+            ) : null}
+            {d.on_site_note ? (
+              <p style={{ fontSize: 11, color: "#71717A", margin: "6px 0 0 0" }} data-testid="accept-3d-footnote">
+                {t("email.model3dVerifyNote")}
+              </p>
+            ) : null}
           </div>
         ) : null}
 

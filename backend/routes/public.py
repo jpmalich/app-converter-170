@@ -31,6 +31,111 @@ def _public_estimate_summary(est: dict, company: dict | None) -> dict:
     }
 
 
+# Accept-page 3D ruling (2026-07-15): the house renders in its RATIFIED
+# state — review overlays pre-applied server-side, then every
+# verification/tier/provenance field is stripped so no per-feature chip
+# or internal state label can reach a customer surface.
+_SAFE_CORNER_FIELDS = ("locator", "type", "walls", "position_frac")
+_SAFE_WALL_FIELDS = (
+    "label", "width_ft", "width_ft_source", "height_ft", "height_ft_source",
+    "height_scale_flag", "gable_triangle_height_ft", "dormer_face_sqft",
+    "siding_pct_this_wall",
+)
+_SAFE_OPENING_FIELDS = (
+    "type", "style", "width_in", "height_in", "wall", "on_dormer",
+    "along_wall_ft", "opening_id",
+)
+
+
+async def _customer_house3d(est: dict):
+    """Sanitized 3D payload + whether any amber location remains
+    unratified (drives the softened homeowner footnote)."""
+    est_ids = [est.get("id")]
+    for k in ("paired_lp_estimate_id", "paired_estimate_id"):
+        if est.get(k):
+            est_ids.append(est[k])
+    run = None
+    for coll in (db.ai_measure_runs, db.ai_blueprint_runs):
+        run = await coll.find_one(
+            {"estimate_id": {"$in": est_ids}, "status": "done"},
+            {"_id": 0, "result": 1}, sort=[("created_at", -1)])
+        if run and (run.get("result") or {}).get("raw_ai"):
+            break
+        run = None
+    if not run:
+        return None, False
+    result = run["result"]
+    raw = result.get("raw_ai") or {}
+    from routes.ai_measure import strip_cost_keys
+    from routes.lp_package_routes import _apply_corner_review, _corner_key, _DIM_STATUSES
+    fv = est.get("lp_field_verify") or {}
+    corners_raw = raw.get("corner_locations") or []
+    unratified = False
+    for i, c in enumerate(corners_raw):
+        if str(c.get("tier") or "confirmed") == "confirmed":
+            continue
+        key, _, _ = _corner_key(c, i)
+        if (fv.get(key) or {}).get("status") not in ("verified", "user_relocated", "user_removed"):
+            unratified = True
+            break
+    corners = [
+        {k: c.get(k) for k in _SAFE_CORNER_FIELDS if c.get(k) is not None}
+        for c in _apply_corner_review(corners_raw, fv)
+    ]
+    dims = {}
+    for key, fields in (est.get("lp_appendage_dims") or {}).items():
+        wall = str(key).split(":", 1)[-1]
+        for f in ("height_ft", "depth_ft"):
+            e = (fields or {}).get(f) or {}
+            if e.get("status") in _DIM_STATUSES and (e.get("value") or 0) > 0:
+                dims.setdefault(wall, {})[f] = float(e["value"])
+    measurements = strip_cost_keys(dict(result.get("measurements") or {}))
+    measurements = {
+        k: v for k, v in measurements.items()
+        if "reconciliation" not in k and "transport" not in k and k != "_per_elevation_breakdown"
+    }
+    house3d = {
+        "measurements": measurements,
+        "raw_ai": {
+            "roof_pitch": raw.get("roof_pitch"),
+            "walls": [
+                {**{k: w.get(k) for k in _SAFE_WALL_FIELDS if w.get(k) is not None},
+                 "accent_profiles": [
+                     {"location": a.get("location"), "approx_sqft": a.get("approx_sqft")}
+                     for a in (w.get("accent_profiles") or [])
+                 ]}
+                for w in (raw.get("walls") or [])
+            ],
+            "openings": [
+                {k: o.get(k) for k in _SAFE_OPENING_FIELDS if o.get(k) is not None}
+                for o in (raw.get("openings") or [])
+            ],
+            "corner_locations": corners,
+            "appendages": raw.get("appendages") or [],
+        },
+        "dims": dims,
+    }
+    return house3d, unratified
+
+
+async def _attestation(est: dict):
+    """Aggregate attestation (ruled 2026-07-15): trust is carried ONCE —
+    'N locations field-confirmed, initials, date' — never per-feature."""
+    fv = est.get("lp_field_verify") or {}
+    conf = [v for v in fv.values() if (v or {}).get("status") in ("verified", "user_relocated")]
+    if not conf:
+        return None
+    conf.sort(key=lambda v: v.get("at") or "", reverse=True)
+    by = next((v.get("by") for v in conf if v.get("by")), None)
+    initials = ""
+    if by:
+        u = await db.users.find_one({"email": by}, {"_id": 0, "name": 1})
+        base = (u or {}).get("name") or str(by).split("@")[0]
+        parts = [p for p in base.replace(".", " ").split() if p]
+        initials = "".join(p[0] for p in parts[:2]).upper()
+    return {"count": len(conf), "initials": initials, "date": (conf[0].get("at") or "")[:10]}
+
+
 @router.get("/public/accept/{token}")
 async def public_get_accept(token: str):
     est = await db.estimates.find_one({"accept_token": token}, {"_id": 0})
@@ -44,6 +149,13 @@ async def public_get_accept(token: str):
     totals = calc_totals(est)
     summary = _public_estimate_summary(est, company)
     summary["total"] = round(totals["sell"], 2)
+    # Interactive 3D (ruled 2026-07-15): ratified state, no per-feature
+    # chips; softened footnote when details remain to confirm on site.
+    house3d, unratified = await _customer_house3d(est)
+    if house3d:
+        summary["house3d"] = house3d
+        summary["on_site_note"] = bool(unratified or est.get("model3d_unverified"))
+    summary["attestation"] = await _attestation(est)
     # Split ruling 2026-07-14 — customer opened the quote link. Logged
     # server-side only; the response never reveals tracking exists.
     await log_estimate_event(est.get("id"), "quote.viewed", {"surface": "accept_page"})
