@@ -174,3 +174,13 @@ Inspected read‑only in an unauthenticated browser context, at 1920×900, 1366�
 - Populate "Customer name" field on the estimate; stop falling back to the estimate title for greetings and attestation copy.
 - Fix the category rollup `$0.00` to sum its priced children — this alone will unbreak the audience’s trust in the LP panel.
 - Move the appendage / chase editable rows into the 3D BACK tab where the panel title implies they live.
+
+---
+
+## Main-agent verification annotations (post-audit, no fixes applied)
+
+- **Findings 5/17 (appendage rows "missing from 3D panel") — PARTIALLY INCORRECT.** Verified 2026-07-15 with direct screenshots: the Depth/Height "measure" edit rows DO render inside the 3D panel sidebar under "APPENDAGES — THIS WALL" when the BACK facade tab is selected (testids ai-measure-3d-appendage-height-0-edit etc.). The auditor likely didn't scroll the 3D sidebar. The residual mechanical point stands in weakened form: the rows are per-wall and nothing on the other three tabs hints they exist (discoverability, MED not HIGH).
+- **Findings 31/34/39 ("estimate title used as customer name") — root cause is FIXTURE DATA, not code.** The estimate's customer_name field literally contains "letrick 7-14-26 7pm". Display code reads the real field. Mechanical exposure stands only as: no guard distinguishes a title-like customer_name (LOW), and the demo fixture should get a real name before September.
+- **Cluster A (four totals: $11,055.71 / $0.00 / $24,005.01 / $0.00) — COLLIDES WITH PINNED BEHAVIOR.** "Derived — not yet applied" is the ruled LP state machine (tier coherence, iter ~100): the LP package is priced but intentionally not rolled into estimate lines until applied; editor Summary, Accept total, and attestation read applied lines (hence $0.00). The Customer Quote preview derives its own full package total. The mechanical finding (numbers visibly disagree with no reconciliation line) is real, but any fix touches the pinned apply-gate — HELD, needs Howard's ruling on presentation (e.g. labeling), not on the state machine.
+- **Finding 42 (share block invites forwarding a $0.00-attesting page)** — the share mechanics are per the 2026-07-15 share ruling (document access, same token); the trust concern is downstream of Cluster A's $0.00, not of the share block itself.
+- All other findings pass mechanical review as reported. NO fixes applied anywhere — full catalog held for Howard.
