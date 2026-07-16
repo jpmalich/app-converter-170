@@ -638,11 +638,11 @@ HOVER_MAPPING_SPEC = [
             else "Window/entry/patio/garage perimeter wrap ÷ 16"
         ),
     },
-    # Iter 78ab — 190 Series Trim 19/32" x 3" x 16' is LP's batten strip
-    # SKU. Only fires when the AI/Blueprint pipeline returned a
-    # board_batten breakdown AND the flag is on. PDF formula:
-    #   batten_LF = wall_sqft × (LF_per_100sqft ÷ 100), default 16" o.c.
-    #   pcs = ceil(batten_LF × 1.10 / 16)
+    # RULED (2026-07-16, LPZB0884): batten LF = wall_area ÷ spacing(ft)
+    # + 1 run × wall height per wall; pcs = ceil(LF ÷ 16), no waste on
+    # battens; spacing must divide 48 (12/16/24 o.c.). Ingest path lacks
+    # per-wall heights so the +height term is 0 here. Batten SKU and
+    # default spacing are HELD pending Howard (BB_HELD_PENDING_HOWARD).
     {
         "tabs": ["lp_smart"],
         "section": "LP SmartSide Trim",
@@ -656,7 +656,7 @@ HOVER_MAPPING_SPEC = [
             if lp_formulas.is_enabled()
             else 0
         ),
-        "note": "190 Series batten strips — wall_sqft × 0.75 LF/sqft ÷ 16 (PDF default 16\" o.c.)",
+        "note": "Batten strips — wall area ÷ spacing ft, 16' stock, no waste (16\" o.c. provisional; SKU + default spacing pending ruling)",
     },
     # .019 Coil LP AUTO-ADD RETIRED (iter97 composition ruling, 2026-07-12):
     # an auto-add is DERIVED composition — coil on an LP-native derived

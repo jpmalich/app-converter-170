@@ -1438,11 +1438,24 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
   // to the parent (upload + persist). Renders synchronously right
   // before toBlob so the buffer is fresh (no preserveDrawingBuffer
   // needed).
+  // Snapshot framing (clarity ruling 2026-07-16): fit the camera to the
+  // whole house for the captured frame, then restore the user's orbit —
+  // customer PDFs never get a roof-clipped render.
   const captureSnapshot = async () => {
     const s = sceneRef.current;
     if (!s?.renderer || !onSnapshot || snapState === "saving") return;
     try {
       setSnapState("saving");
+      const cam = s.camera;
+      const prevPos = cam.position.clone();
+      const prevQuat = cam.quaternion.clone();
+      try {
+        const sphere = new THREE.Box3().setFromObject(s.scene).getBoundingSphere(new THREE.Sphere());
+        const dist = (sphere.radius / Math.tan(((cam.fov || 45) * Math.PI / 180) / 2)) * 1.15;
+        const dir = new THREE.Vector3(1, 0.55, 1).normalize();
+        cam.position.copy(sphere.center.clone().add(dir.multiplyScalar(dist)));
+        cam.lookAt(sphere.center);
+      } catch { /* fall back to current framing */ }
       s.renderer.render(s.scene, s.camera);
       const blob = await new Promise((resolve, reject) => {
         s.renderer.domElement.toBlob(
@@ -1450,6 +1463,8 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
           "image/png",
         );
       });
+      cam.position.copy(prevPos);
+      cam.quaternion.copy(prevQuat);
       // Audience wording split (ruled 2026-07-14): the frame includes the
       // chase in its TRUE state; flag when any appendage is unratified so
       // customer surfaces can footnote it in homeowner language.
@@ -1710,7 +1725,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                   : "Read straight from Claude's per-wall height_ft for this elevation"}
                 data-testid={`ai-measure-3d-eave-derived-${facade.id}`}
               >
-                <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI per-wall"}
+                <Check className="w-2.5 h-2.5" /> AI-read
               </span>
             )}
             {facade.eaveHeightSource === "ai-avg" && (
@@ -1719,7 +1734,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                 title="Claude didn't return a per-wall height for this elevation — using the whole-house average. Verify in the field."
                 data-testid={`ai-measure-3d-eave-avg-${facade.id}`}
               >
-                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> AI avg
+                <AlertTriangle className="w-2.5 h-2.5" style={{ color: AMBER }} /> AI-read (avg)
               </span>
             )}
             {/* Iter 79j.38 — Direct-reading disagreement. Two-phase
@@ -1832,7 +1847,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                 title={`Derived from Claude's gable height (raw ${house.roof.pitchAiRaw}/12 across ${house.roof.pitchAiSamples} gable-end wall${house.roof.pitchAiSamples > 1 ? "s" : ""}, snapped to ${house.roof.pitch}/12)`}
                 data-testid="ai-measure-3d-pitch-derived"
               >
-                <Check className="w-2.5 h-2.5" /> AI-derived
+                <Check className="w-2.5 h-2.5" /> AI-read
               </span>
             )}
             {house.roof.pitchSource === "user" && (
@@ -1876,7 +1891,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                   : `Classified by Claude with ${Math.round((house.roof.typeAiConfidence || 0) * 100)}% confidence. ${house.roof.typeAiReasoning || ""}`}
                 data-testid="ai-measure-3d-roof-type-ai"
               >
-                <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI-classified"}
+                <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "AI-read" : "AI-read"}
               </span>
             )}
             {house.roof.typeSource === "user" && (
@@ -1937,7 +1952,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
                     : `Derived from Claude's gable-end walls (${house.ridgeAxisAiRaw === "x" ? "left/right gables → side-gable" : "front/back gables → front-gable"})`}
                   data-testid="ai-measure-3d-ridge-derived"
                 >
-                  <Check className="w-2.5 h-2.5" /> {house.sourceKind === "blueprint" ? "Blueprint" : "AI-derived"}
+                  <Check className="w-2.5 h-2.5" /> AI-read
                 </span>
               )}
               {house.ridgeAxisSource === "user" && (
@@ -2079,7 +2094,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
           {(peb.dormer_sqft || 0) > 0 && <Row k="Dormer face" v={`${peb.dormer_sqft.toFixed(0)} sf`} />}
           {(peb.stone_sqft || 0) > 0 && <Row k="Stone / masked" v={`${peb.stone_sqft.toFixed(0)} sf`} />}
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
-          <Row k="Openings" v={facade.openings.length} />
+          <Row k="Openings" v={`${facade.openings.length} — this wall`} />
           {house.openingPlacementDefaulted > 0 && (
             <div className="text-[9px] italic text-[var(--warning-text)] leading-tight" data-testid="ai-measure-3d-opening-placement-note">
               <AlertTriangle className="w-2.5 h-2.5 inline mr-0.5" style={{ color: AMBER }} />
@@ -2251,7 +2266,7 @@ const DimEditRow = ({ label, field, apKey, entry, valueFt, fallbackText, offer, 
             <span className="font-bold">{Number(entry.value).toFixed(1)} ft</span>
             {" — "}
             <span className={entry.status === "user_measured" ? "text-sky-700 font-bold" : "text-emerald-700 font-bold"} data-testid={`${testid}-tag`}>
-              {entry.status === "user_measured" ? "user-measured" : "confirmed from prints"}
+              {entry.status === "user_measured" ? "Confirmed — taped" : "Confirmed — from prints"}
             </span>
             <button
               type="button"
@@ -2293,3 +2308,4 @@ const DimEditRow = ({ label, field, apKey, entry, valueFt, fallbackText, offer, 
 };
 
 export { buildHouseJson, buildScene };
+};

@@ -143,19 +143,31 @@ SOFFIT_PROFILES: dict[str, dict] = {
 }
 
 # ────────────────────── Board & Batten (4×10 panels + batten strips) ──────────────────────
+# RULED (Howard 2026-07-16, source LPZB0884 sheet):
+#   field   = 4'×10' panels @ 40 sq ft nominal; wall_area ÷ 40 × (1+waste) → whole panels
+#   battens = separate line, 16' stock;
+#             LF per wall = wall_area ÷ spacing(ft) + 1 run × wall height
+#             seam battens mandatory at every 48" panel joint — spacing MUST
+#             divide 48 (12/16/24 o.c. valid) so every seam lands on a
+#             scheduled batten; pieces = ceil(LF ÷ 16), NO waste term on battens.
 BB_PANEL_COVERAGE_SQFT = 40.0  # 4ft × 10ft nominal
+VALID_BATTEN_SPACINGS_IN = (12, 16, 24)  # every 48" seam must land on a batten
+DEFAULT_BATTEN_SPACING_IN = 16  # sheet's "standard look" — default NOT ratified (see BB_HELD)
 
-# PDF data table: batten LF per 100 sq ft of wall area, by O.C. spacing.
-BATTEN_LF_PER_100SQFT: dict[str, float] = {
-    "12\" o.c.": 100.0,
-    "16\" o.c.": 75.0,
-    "24\" o.c.": 50.0,
-}
-DEFAULT_BATTEN_SPACING = "16\" o.c."  # PDF's "standard" look
-
-# 190 Series Trim is the LP batten strip (catalog SKU).
+# 190 Series Trim is the EXISTING catalog mapping for the batten strip —
+# product/width + SKU not ratified (see BB_HELD).
 BATTEN_CATALOG_SKU = '190 Series Trim 19/32" x 3" x 16\''
 BATTEN_STOCK_LENGTH_FT = 16.0
+
+# Items HELD pending Howard's ruling — derivations must FLAG lines that
+# depend on these, never silently assume:
+BB_HELD_PENDING_HOWARD = {
+    "batten_sku": "batten product/width + SKU — 190 Series 3\"×16' is the existing mapping, NOT ratified",
+    "default_spacing": "default o.c. spacing — 16\" is the sheet's 'standard look', NOT ratified",
+    "starter_treatment": "B&B starter treatment — unruled",
+    "gable_factor": "panel gable factor — lap's ×0.7 does NOT auto-carry to panels, B&B gable rule unruled",
+    "panel_waste_pct": "panel waste % — unruled; derivations compute at 0% and flag",
+}
 
 
 # ────────────────────── Shake → 540 Series bump (Q2 = A) ──────────────────────
@@ -221,24 +233,41 @@ def soffit_pieces(soffit_area_sqft: float, panel_name: str | None = None,
 
 def board_batten_panel_pieces(wall_area_sqft: float,
                               waste: float = DEFAULT_WASTE) -> int:
+    """RULED: wall_area ÷ 40 × (1+waste) → whole panels. NOTE: the waste
+    VALUE for panels is held pending Howard (BB_HELD panel_waste_pct)."""
     return pieces_needed(wall_area_sqft, BB_PANEL_COVERAGE_SQFT, waste)
+
+
+def bb_batten_lf(wall_area_sqft: float, spacing_in: int = DEFAULT_BATTEN_SPACING_IN,
+                 wall_height_ft: float = 0.0) -> float:
+    """RULED batten linear feet for ONE wall:
+    LF = wall_area ÷ spacing(ft) + 1 run × wall_height.
+    Spacing must divide 48 so every 48" panel seam lands on a scheduled
+    batten (12/16/24 o.c. valid)."""
+    spacing_in = int(spacing_in)
+    if spacing_in not in VALID_BATTEN_SPACINGS_IN or 48 % spacing_in != 0:
+        raise ValueError(
+            f"batten spacing {spacing_in}\" o.c. invalid — must divide 48 "
+            f"(valid: {VALID_BATTEN_SPACINGS_IN}) so seam battens land on schedule")
+    if wall_area_sqft <= 0:
+        return 0.0
+    return float(wall_area_sqft) / (spacing_in / 12.0) + float(wall_height_ft or 0.0)
+
+
+def bb_batten_pieces(total_lf: float) -> int:
+    """RULED: pieces = ceil(LF ÷ 16). NO waste term on battens."""
+    if total_lf <= 0:
+        return 0
+    return int(math.ceil(float(total_lf) / BATTEN_STOCK_LENGTH_FT))
 
 
 def board_batten_batten_pieces(
     wall_area_sqft: float,
-    spacing: str = DEFAULT_BATTEN_SPACING,
-    waste: float = DEFAULT_WASTE,
+    spacing_in: int = DEFAULT_BATTEN_SPACING_IN,
+    wall_height_ft: float = 0.0,
 ) -> int:
-    """Returns # of 190 Series 16' batten strips needed.
-
-    From PDF: batten LF = wall_area × (LF_per_100sqft ÷ 100).
-    Pieces = ceil(LF × (1 + waste) / 16).
-    """
-    if wall_area_sqft <= 0:
-        return 0
-    lf_per_100 = BATTEN_LF_PER_100SQFT.get(spacing, BATTEN_LF_PER_100SQFT[DEFAULT_BATTEN_SPACING])
-    total_lf = float(wall_area_sqft) * lf_per_100 / 100.0
-    return int(math.ceil(total_lf * (1.0 + float(waste)) / BATTEN_STOCK_LENGTH_FT))
+    """Aggregate helper (hover ingest path): ruled LF → 16' pieces."""
+    return bb_batten_pieces(bb_batten_lf(wall_area_sqft, spacing_in, wall_height_ft))
 
 
 def shake_540_series_bump(shake_sqft: float) -> int:

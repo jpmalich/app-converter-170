@@ -114,24 +114,21 @@ def test_bb_panel_pieces_uses_40_sqft():
 
 
 def test_batten_pieces_default_16_inch_oc():
-    """100 sqft @ 16" o.c.: batten_LF = 100 × 0.75 = 75. With 10% waste
-    and 16' stock: ceil(75 × 1.10 / 16) = ceil(5.16) = 6 pieces."""
-    assert lp.board_batten_batten_pieces(100) == 6
+    """RULED 2026-07-16: 100 sqft @ 16" o.c.: LF = 100 ÷ (4/3) = 75.
+    NO waste on battens: ceil(75 / 16) = 5 pieces."""
+    assert lp.board_batten_batten_pieces(100) == 5
 
 
 def test_batten_pieces_24_inch_oc_uses_50_lf():
-    """24" o.c. yields 50 LF per 100 sqft: ceil(50 × 1.10 / 16) = 4."""
-    assert lp.board_batten_batten_pieces(100, "24\" o.c.") == 4
+    """RULED: 24" o.c. → LF = 100 ÷ 2 = 50: ceil(50 / 16) = 4."""
+    assert lp.board_batten_batten_pieces(100, 24) == 4
 
 
 def test_batten_pieces_12_inch_oc_doubles_lf():
-    """12" o.c. doubles LF vs 24". Use a large enough wall to ride above
-    ceil-rounding noise — 1000 sqft makes the ratio exact."""
-    pcs_12 = lp.board_batten_batten_pieces(1000, "12\" o.c.")
-    pcs_24 = lp.board_batten_batten_pieces(1000, "24\" o.c.")
-    # 12" o.c.: 1000 LF × 1.10 / 16 = 68.75 → 69
-    # 24" o.c.: 500 LF × 1.10 / 16 = 34.375 → 35
-    # Ratio ~2× modulo rounding.
+    """RULED: 12" o.c. doubles LF vs 24" (area ÷ 1 ft vs area ÷ 2 ft).
+    12": 1000 LF / 16 = 62.5 → 63 · 24": 500 LF / 16 = 31.25 → 32."""
+    pcs_12 = lp.board_batten_batten_pieces(1000, 12)
+    pcs_24 = lp.board_batten_batten_pieces(1000, 24)
     assert 1.9 <= pcs_12 / pcs_24 <= 2.1
 
 
@@ -230,8 +227,10 @@ def test_190_series_battens_only_emitted_when_bb_present_and_flag_on(flag_on):
     lines = _build_lines(m)
     batten = _find(_lp_lines(lines), '190 Series Trim 19/32" x 3" x 16\'')
     assert batten is not None
-    # 400 sqft @ 16" o.c.: LF = 400 * 0.75 = 300; pcs = ceil(300*1.10/16) = 21
-    assert batten["qty"] == 21
+    # RULED 2026-07-16: 400 sqft @ 16" o.c.: LF = 400 ÷ (4/3) = 300;
+    # pcs = ceil(300 / 16) = 19 (no waste on battens; +height term is 0
+    # on the ingest path — no per-wall heights there)
+    assert batten["qty"] == 19
 
 
 def test_190_series_battens_skipped_when_flag_off(flag_off):
