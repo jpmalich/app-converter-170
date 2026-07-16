@@ -16,7 +16,10 @@ import math
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import lp_smartside_formulas as lp  # noqa: E402
 

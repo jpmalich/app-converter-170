@@ -3133,3 +3133,8 @@ Two items ahead of standby, both Howard-collects-first:
 - Letrick copy c9203d58 re-fired FINAL: panels 49 @ $137.94 sell, battens 85 pcs @16" ($19.66 sell; 12"/24" = 113/58 in note), Contractor tier 30% true margin, mill finish, ZERO pending lines; corner/trim/soffit/fascia carried unchanged. Side-by-side: /app/memory/bb_derivation_letrick.md.
 - Pins: test_bb_rules.py now 9 (ruled-final registry, no-starter-on-BB, BlueLinx cost basis) — 40 green with formula suite.
 - STILL PENDING from Iter 131: clarity-audit fix batch partially applied (Cluster A surfaces, dictionaries, QuoteModal gate, AcceptPage items, fixture rename, vocab tests).
+
+## Iter 133b — PANEL BASIS CHECK ANSWERED + COPY RE-DERIVED ON SEALED KEY (2026-07-16)
+- Source of first derivation = photo run d66794488ef8 (LOW read: per_profile lap 1,780.5, −15.2% vs key; its siding_sqft 1,889.1 — internal 108.6 split FLAGGED not reconciled). No opening deductions anywhere (convention honored).
+- RE-DERIVED on sealed key 2,098.5 (walls 1,585.5 + gables@0.7 367.5 + chase 145.5): panels 49→**58** @ $137.94; battens 16" 1,630.0 LF → **102 pcs** @ $19.66 (12"/24": 135/70); +height term = key wall heights 8.9/9.9/9.21/9.21 + chase 18.9. Copy + doc updated; both profiles now stand on the same measured house.
+- Compare-profiles toggle APPROVED (contractor-side, one engine one geometry two compositions, never cached, tier-identical, customer exposure deferred) — QUEUED AFTER clarity-audit batch.

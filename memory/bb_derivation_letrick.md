@@ -26,3 +26,18 @@
 | Pricing | engine | engine (cost ÷ (1−30%)) — zero pending lines |
 
 Per-wall battens @16″: front 331.1 · back 331.1 · left 350.1 · right 341.5 LF (engine per-wall areas incl. 0.7×w×t gables).
+
+---
+
+## PANEL BASIS CHECK (Howard, 2026-07-16) — answered + RE-DERIVED
+
+**(1) Geometry source of the first derivation**: photo extraction run `d66794488ef848509446431b355db8e5` (2026-07-14 23:32), NOT the sealed key. That run read `_per_profile_sqft.lap = 1,780.5` (its own `siding_sqft` = 1,889.1) — a LOW read: −15.2% vs the key's 2,098.5. Known extraction stochasticity: sibling runs read 2,147.6 (+2.3%, C4 report) and 1,954.5 (−6.9%, shakedown scoring).
+**(2) Opening deductions**: NONE anywhere on the B&B path — panels from field straight, battens from gross wall areas; ruled convention honored. FLAG (not reconciled): that run's per-profile lap (1,780.5) sits 108.6 sqft below its own siding_sqft (1,889.1) — unexplained internal split within the extraction.
+**(3) Field arithmetic, itemized against the sealed key**: walls **1,585.5** + gables@0.7 **367.5** + chase faces **145.5** = **2,098.5** → ÷ 40 × 1.10 = 57.71 → **58 panels** (first derivation's 49 back-solved to the low read, as Howard computed).
+
+## RE-DERIVED — copy now stands on the sealed key
+| | LAP (key) | B&B (key basis, FINAL) |
+|---|---|---|
+| Field | 255 PCS (ceil(2098.5÷9.17×1.10)) | **58 panels** @ $137.94 sell |
+| Battens 16″ OC | — | **1,630.0 LF → 102 pcs** @ $19.66 (key field ÷ 1.333′ + heights 8.9+9.9+9.21+9.21 + chase 18.9) · 12″: 135 · 24″: 70 |
+| Basis | sealed key 2,098.5 | sealed key 2,098.5 — **same measured house** |
