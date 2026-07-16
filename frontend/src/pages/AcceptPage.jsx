@@ -401,7 +401,13 @@ function Wrap({ children, company, t }) {
         ) : null}
         {children}
       </div>
-      <p style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "#71717A" }}>
+      <p style={{ textAlign: "center", marginTop: 18, fontSize: 11, color: "#71717A" }} data-testid="accept-footer">
+        {company?.supplier_name ? (
+          <span data-testid="accept-supplier-line">
+            {t("accept.suppliedBy", { supplier: company.supplier_name })}
+            {" · "}
+          </span>
+        ) : null}
         {t ? t("accept.secureLink") : "Secure customer-acceptance link."}
       </p>
     </div>

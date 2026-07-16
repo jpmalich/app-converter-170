@@ -1,0 +1,43 @@
+{
+  "summary": "Frontend-only verification of Clarity Audit Fix Batch on the letrick LP SmartSide estimate (id 8f95c9c2-add9-416a-92f3-786a4ea2ce83) and the public Accept page. 6 of 7 spec bullets fully pass. One residual banned-vocabulary hit: the LP Material List panel title still resolves to 'MATERIAL LIST (AI-DERIVED)' because dictionaries.js key 'lp.mat.title' is still 'Material List (AI-derived)' and CSS uppercases it.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "LpMaterialListPanel (via lib/dictionaries.js key 'lp.mat.title')",
+        "issue": "Panel title renders 'MATERIAL LIST (AI-DERIVED)' on the LP SmartSide tab of the letrick estimate. Spec says 'AI-DERIVED' must NOT appear anywhere on the estimate editor page. Root cause: /app/frontend/src/lib/dictionaries.js:260 -> \"lp.mat.title\": \"Material List (AI-derived)\" (CSS text-transform:uppercase produces the banned token).",
+        "selector": "text=MATERIAL LIST (AI-DERIVED)",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_pass": [
+    "Sticky bar shows label 'Derived — not yet applied' with data-testid 'bar-tab-lp_smart-derived-unapplied' (no bare $0.00 in that slot).",
+    "Summary banner data-testid='summary-derived-unapplied' reads: 'LP takeoff derived ($11,055.71) — not yet applied to line items. Totals below reflect applied lines only.' with Review & apply takeoff link.",
+    "All 7 collapsed LP section accordions expose data-testid='section-derived-unapplied' with text 'Derived — not applied' (LP Smart Siding, LP SmartSide Trim, LP Siding Accessories, LP SmartSide Soffit, Tear-off / Clean Up, Seamless Gutter, Misc. Labor and Material).",
+    "Quote modal opens via data-testid='open-quote-btn'. Amber pill data-testid='quote-not-ready' present with 'Not ready — takeoff derived but not applied; this quote renders applied lines only'.",
+    "Clicking data-testid='send-email-btn' with email filled does NOT send — instead reveals data-testid='quote-send-gate' containing 'CONFIRM SEND' (quote-send-gate-confirm) and 'CANCEL' (quote-send-gate-cancel). Clicking CANCEL removes the gate. Confirm button was NOT clicked, no email sent.",
+    "Fixture rename: quote preview 'Prepared For' shows 'Mark Letrick' + address '1428 Sharps Hill Rd, Pittsburgh, PA 15215'. Personal-note textarea (data-testid='email-message') starts with 'Hi Mark,' (not 'Hi letrick 7-14-26 7pm'). Old strings 'letrick 7-14-26 7pm' and '1, Pittsburgh, PA 15215' are absent.",
+    "3-state taxonomy present: 'AI-read', 'Confirmed', 'assumed' all appear. Banned vocabulary 'AI PER-WALL', 'AI-CLASSIFIED', 'UNCONFIRMED', 'VERIFIED IN FIELD' are all absent from the estimate editor page.",
+    "Public /accept/a86b62c1-2ab4-489e-80ce-b513b11cf702 loads (already-accepted success screen) with footer data-testid='accept-supplier-line' reading 'Materials supplied by Alside Supply ·'. Nothing submitted.",
+    "Regression smoke: estimate editor loads without console errors (only preflight 401s from /auth/me before login, which are expected). 3D panel canvas renders (1 <canvas> element present). No JS errors from HouseModel3D."
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "Update /app/frontend/src/lib/dictionaries.js line ~260: change key 'lp.mat.title' from 'Material List (AI-derived)' to a value that does not uppercase into 'AI-DERIVED' — e.g. 'Material list — AI-read' or 'Material list (AI-read)'. Also verify the Spanish counterpart (line ~261 area) doesn't leak the banned token."
+  ],
+  "critical_code_review_comments": [
+    "The banned-vocabulary rule needs a lint/test guard: it would be trivial for future dictionary edits to reintroduce 'AI-DERIVED' / 'UNCONFIRMED' etc. Consider a small unit test that walks dictionaries.js and fails on the banned set.",
+    "The send-gate flow is well implemented but data-testid='quote-send-gate' would benefit from role='alertdialog' + focused Confirm button for a11y."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "~93% (6/7 clarity bullets fully pass; one string leak)"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (contractor owner)",
+  "seed_data_creation": "None. Read-only inspection only. Send-gate armed then cancelled — no email dispatched. No dimensions saved, no openings confirmed, no takeoff applied.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "After the dictionaries.js fix, re-check the letrick LP SmartSide tab: (1) grep body innerText for 'AI-DERIVED' → should be 0; (2) confirm the material list panel header still renders and is still labelled clearly (e.g. 'MATERIAL LIST (AI-READ)' or similar). All other testids already verified in this iteration; no need to re-exercise the send-gate. The estimate must remain 'derived-unapplied' — if $0.00 → real totals switch happens, someone applied the takeoff (unexpected mutation).",
+  "rca_of_the_issue": "The LP Material List panel title comes from i18n dictionary key 'lp.mat.title' in /app/frontend/src/lib/dictionaries.js (line 260) with value 'Material List (AI-derived)'. The rendering element has CSS text-transform:uppercase, which converts it to 'MATERIAL LIST (AI-DERIVED)'. The Clarity Audit removed 'AI-DERIVED' from JSX literals but missed this dictionary entry. Fix: change the value to use the new 3-state taxonomy ('AI-read'). Reproduction: login as contractor -> /estimate/8f95c9c2-add9-416a-92f3-786a4ea2ce83 -> scroll down; header 'MATERIAL LIST (AI-DERIVED) · run <hash> · 22 lines' is visible."
+}

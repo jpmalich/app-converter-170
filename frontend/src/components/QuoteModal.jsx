@@ -38,6 +38,9 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
     defaultEmailGreeting({ estimate, company, lang: uiLang })
   );
   const [sending, setSending] = useState(false);
+  // Clarity ruling (Cluster A): sending a quote while the LP takeoff is
+  // derived-but-unapplied requires an explicit second confirmation.
+  const [confirmArmed, setConfirmArmed] = useState(false);
   const printRef = useRef();
   const showSupplierFooter = company?.quote_footer_enabled !== false;
 
@@ -95,6 +98,10 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
   const handleEmail = async () => {
     if (!email) return;
+    if (derivedUnapplied && !confirmArmed) {
+      setConfirmArmed(true);
+      return;
+    }
     setSending(true);
     // Build an email-safe HTML (inline styles, table layout) instead of dumping the on-screen DOM.
     const html = buildEmailHtml({
@@ -564,18 +571,6 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           {showSupplierFooter && (
             <div
               className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#71717A] text-center"
-              data-testid="supplier-footer"
-            >
-              Materials supplied by {branding.supplier_name} · Powered by Pro-Quote Estimating Tool
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-percase tracking-[0.2em] text-[#71717A] text-center"
               data-testid="supplier-footer"
             >
               Materials supplied by {branding.supplier_name} · Powered by Pro-Quote Estimating Tool
