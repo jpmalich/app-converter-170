@@ -77,11 +77,30 @@ def test_nickel_gap_locked_7in():
             assert "nickel_gap_reveal" not in src and "nickelgapreveal" not in src, f
 
 
-def test_held_items_registry():
-    assert set(lp.BB_HELD_PENDING_HOWARD.keys()) == {
-        "batten_sku", "default_spacing", "starter_treatment",
-        "gable_factor", "panel_waste_pct",
-    }
-    # gable factor: lap's ×0.7 must not silently apply to panels — the
-    # module carries no gable factor constant for B&B
-    assert not hasattr(lp, "BB_GABLE_FACTOR")
+def test_ruled_final_registry():
+    # All five items RULED FINAL 2026-07-16 — no held registry remains
+    assert not hasattr(lp, "BB_HELD_PENDING_HOWARD")
+    r = lp.BB_RULED_FINAL
+    assert r["batten_sku"] == '190 Series Trim 19/32" x 3" x 16\''
+    assert r["default_spacing_in"] == 16
+    assert r["starter_on_bb"] is False
+    assert r["panel_waste_default"] == 0.10
+    assert "0.7" in r["gable_factor"]
+
+
+def test_no_starter_on_bb_composition():
+    """RULED + PINNED: panels start on the ledge — a starter line on B&B
+    composition is a bug. The lp_smart tab has no starter row and the
+    vinyl/ascend starter rows are tab-scoped away from lp_smart."""
+    from routes.hover import HOVER_MAPPING_SPEC
+    for d in HOVER_MAPPING_SPEC:
+        if "starter" in str(d.get("item", "")).lower():
+            assert "lp_smart" not in (d.get("tabs") or []), d["item"]
+
+
+def test_batten_sku_has_bluelinx_cost_basis():
+    """Catalog check per ruling: 190 Series 3" SKU carries a BlueLinx
+    cost — line prices from the engine, never pending, never guessed."""
+    import lp_costs
+    assert lp_costs.cost_for('190 Series Trim 19/32" x 3" x 16\'', "mill") == 13.76
+    assert lp_costs.cost_for("38 Series 4' x 10' Panel", "mill") == 96.56

@@ -1,29 +1,28 @@
-# Letrick B&B Derivation — Side-by-Side vs Lap List (RULED 2026-07-16)
+# Letrick B&B Derivation — FINAL (all five rulings closed 2026-07-16)
 
-**Source of authority**: B&B rules ruled by Howard 2026-07-16 (LPZB0884 sheet). The 3-page PDF is **NOT on disk** — the verified extraction lives in `/app/backend/lp_smartside_formulas.py` ("Coverage data verified against LP coverage chart LPZB0884", ingested from Howard's LP_SmartSide_Reference.pdf 2026-02-28).
+**Source PDF archived**: `/app/memory/LP_SmartSide_Reference_LPZB0884.pdf` (the sheet behind `lp_smartside_formulas.py`).
+**Copy estimate**: `c9203d58-8386-41bb-b030-790c88fd7a7b` — "Dana Letrick — B&B derivation (COPY)" (#-BB). Original untouched.
 
-**Derivation basis**: letrick 7-14-26 7pm photo run — lap field 1,780.5 sq ft (same field, profile substituted). Walls: front/back 50′×8.6′ (eave), left 30′×9.0′ + 8.8′ gable rise, right 30′×8.3′ + 9.3′ gable rise.
-**Copy estimate**: `c9203d58-8386-41bb-b030-790c88fd7a7b` — "Dana Letrick — B&B derivation (COPY)" (est # suffix -BB). B&B lines carried at $0 with PENDING notes; original untouched.
+## Rulings applied (module `BB_RULED_FINAL`, pinned in test_bb_rules.py — 9 tests)
+- Field: 38 Series 4′×10′ Panel, area ÷ 40 × (1+waste) → whole panels
+- Battens: 190 Series Trim 19/32″×3″×16′, LF = area ÷ spacing_ft + height/wall, pcs = ceil(LF÷16), no waste; seams covered by divides-48 schedule
+- Default spacing 16″ OC, job-editable, 12/16/24 validated
+- **NO starter on B&B** — pinned: no starter row is lp_smart-scoped in HOVER_MAPPING_SPEC
+- Gable ×0.7 same as lap — carried upstream by the engine's C4 gable-area convention (already inside the 1,780.5 field figure)
+- Waste default 10% incl. panels — contractor dial overrides per estimate, provenance-visible
 
-## Side-by-side
+## Catalog check (ruled): BlueLinx cost basis CONFIRMED — nothing pending
+- 190 Series Trim 3″×16′: mill $13.76 (EF $20.64) → engine-priced
+- 38 Series 4′×10′ Panel: mill $96.56 → engine-priced
 
-| | LAP (current list) | B&B (ruled derivation) |
+## Side-by-side (validated geometry, Contractor tier 30% true margin, mill finish)
+| | LAP (current list) | B&B (ruled, FINAL) |
 |---|---|---|
-| Field | 38 Series Lap 8″ — **227 PCS** @ 9.17 sqft/pc, 10% waste | 38 Series 4′×10′ Panel — **45 PCS** @ 40 sqft nominal, **0% waste (⚑ waste % PENDING)** — at lap's 10% it would be 49 |
-| Gables | lap carries its ×0.7 gable convention | **⚑ PENDING** — ×0.7 does NOT auto-carry; left/right gable share derived un-factored |
-| Battens | n/a | 190 Series 16′ stock (⚑ SKU/width PENDING): **12″ OC 1,685 LF → 106 pcs · 16″ OC 1,272.4 LF → 80 pcs · 24″ OC 859.8 LF → 54 pcs** (⚑ default spacing PENDING; 16″ provisional on copy) |
-| Batten waste | — | NONE per ruling (pieces = ceil(LF ÷ 16)) |
-| Seams | — | every 48″ joint covered by scheduled batten — spacing validated ∈ {12,16,24} (divides 48), others raise |
-| Starter | lap starter per existing convention | **⚑ PENDING** — B&B starter treatment unruled |
-| Nickel Gap | — | reveal **LOCKED 7″** (9.33 sqft/pc), no input field — pinned in test_bb_rules.py |
+| Field | 38 Series Lap 8″ — 227 PCS @ 9.17, 10% waste | 4′×10′ Panel — **49 PCS** (1780.5÷40×1.10) @ **$137.94**/pc sell |
+| Battens | — | 190 Series 16′ — **16″ OC: 1,353.8 LF → 85 pcs** @ **$19.66**/pc sell (12″: 113 · 24″: 58, job-editable) |
+| Gables | ×0.7 engine convention | same ×0.7, carried upstream — identical field basis |
+| Starter | lap starter per convention | **NONE — panels start on the ledge (pinned)** |
+| Corners/trim/soffit/fascia | 540/440/soffit rules | **carried unchanged** — profile-independent |
+| Pricing | engine | engine (cost ÷ (1−30%)) — zero pending lines |
 
-Batten math per wall (16″ OC example): LF = area ÷ 1.333′ + height → front 331.1 · back 331.1 · left 310.5 (⚑ gable) · right 299.7 (⚑ gable).
-
-## Cross-check findings (flagged, NOT reconciled)
-1. **Module batten formula superseded**: old code omitted the "+1 run × wall height" term and applied 10% waste to battens — both corrected to the ruled formula. Old pins updated with RULED comments. Ingest path (hover) computes the +height term as 0 (no per-wall heights there) — noted in line note.
-2. **Spacing was a free string with silent fallback** — now validated (must divide 48) and raises on 10/18/32 etc.
-3. **`.env` carries LP_AI_FORMULAS_V1 twice** (lines 17 and 24, both truthy) — duplicate key, flagged not touched.
-4. Lap 8″ @ 9.17 sqft/pc and soffit conventions in the module match the LPZB0884 extraction; production flag ON so PDF-accurate rates are live (legacy 9.09 only when flag off).
-
-## HELD pending Howard (registry: `BB_HELD_PENDING_HOWARD`)
-batten product/width + SKU · default spacing · B&B starter treatment · panel gable factor · panel waste %
+Per-wall battens @16″: front 331.1 · back 331.1 · left 350.1 · right 341.5 LF (engine per-wall areas incl. 0.7×w×t gables).

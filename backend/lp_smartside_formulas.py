@@ -159,14 +159,22 @@ DEFAULT_BATTEN_SPACING_IN = 16  # sheet's "standard look" — default NOT ratifi
 BATTEN_CATALOG_SKU = '190 Series Trim 19/32" x 3" x 16\''
 BATTEN_STOCK_LENGTH_FT = 16.0
 
-# Items HELD pending Howard's ruling — derivations must FLAG lines that
-# depend on these, never silently assume:
-BB_HELD_PENDING_HOWARD = {
-    "batten_sku": "batten product/width + SKU — 190 Series 3\"×16' is the existing mapping, NOT ratified",
-    "default_spacing": "default o.c. spacing — 16\" is the sheet's 'standard look', NOT ratified",
-    "starter_treatment": "B&B starter treatment — unruled",
-    "gable_factor": "panel gable factor — lap's ×0.7 does NOT auto-carry to panels, B&B gable rule unruled",
-    "panel_waste_pct": "panel waste % — unruled; derivations compute at 0% and flag",
+# All five previously-held items RULED 2026-07-16 (final):
+#   batten SKU     → 190 Series Trim 19/32"×3"×16' (BlueLinx cost basis verified)
+#   default spacing→ 16" o.c., JOB-EDITABLE, divides-48 validation
+#   starter        → NO starter on B&B — panels start on the ledge; a
+#                    starter line on B&B composition is a BUG (pinned)
+#   gable factor   → ×0.7, same as lap (carried by the measurement
+#                    engine's C4 gable-area convention upstream)
+#   panel waste    → default 10% incl. B&B panels; contractor's dial
+#                    overrides per estimate (their judgment,
+#                    provenance-visible); no global default changes
+BB_RULED_FINAL = {
+    "batten_sku": '190 Series Trim 19/32" x 3" x 16\'',
+    "default_spacing_in": 16,
+    "starter_on_bb": False,
+    "gable_factor": "0.7 — same as lap, applied upstream (C4)",
+    "panel_waste_default": 0.10,
 }
 
 

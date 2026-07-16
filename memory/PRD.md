@@ -3127,3 +3127,9 @@ Two items ahead of standby, both Howard-collects-first:
 - **Letrick B&B copy**: estimate c9203d58-8386-41bb-b030-790c88fd7a7b ("Dana Letrick — B&B derivation (COPY)", #-BB) — panels 45 @0% waste (flagged), battens 106/80/54 pcs @12/16/24" OC (16" provisional, flagged), lines at $0 with PENDING notes. Side-by-side + cross-check findings (batten formula superseded, spacing validation, .env dup key LP_AI_FORMULAS_V1) in /app/memory/bb_derivation_letrick.md.
 - Tests: test_bb_rules.py (6 pins) + updated formula pins — 144 green across lp/hover/package/appendage selections.
 - NOTE: Iter-131 clarity-audit fix batch is PARTIALLY APPLIED (HouseModel3D taxonomy pills + snapshot framing done; Cluster A surfaces, dictionaries, QuoteModal gate, AcceptPage, fixture rename, vocab tests still pending) — interrupted by the B&B state check; resume next.
+
+## Iter 133 — B&B RULINGS FINAL, ALL FIVE CLOSED (2026-07-16)
+- PDF archived: /app/memory/LP_SmartSide_Reference_LPZB0884.pdf. Module BB_HELD_PENDING_HOWARD → BB_RULED_FINAL: batten = 190 Series 3"×16' (BlueLinx cost $13.76 mill CONFIRMED, engine-priced); default spacing 16" OC job-editable (divides-48 validated); NO starter on B&B (pinned — no starter row lp_smart-scoped); gable ×0.7 same as lap (upstream C4 convention); waste default 10% incl. panels, contractor dial per-estimate.
+- Letrick copy c9203d58 re-fired FINAL: panels 49 @ $137.94 sell, battens 85 pcs @16" ($19.66 sell; 12"/24" = 113/58 in note), Contractor tier 30% true margin, mill finish, ZERO pending lines; corner/trim/soffit/fascia carried unchanged. Side-by-side: /app/memory/bb_derivation_letrick.md.
+- Pins: test_bb_rules.py now 9 (ruled-final registry, no-starter-on-BB, BlueLinx cost basis) — 40 green with formula suite.
+- STILL PENDING from Iter 131: clarity-audit fix batch partially applied (Cluster A surfaces, dictionaries, QuoteModal gate, AcceptPage items, fixture rename, vocab tests).
