@@ -148,6 +148,10 @@ async def public_get_accept(token: str):
     from services import calc_totals
     totals = calc_totals(est)
     summary = _public_estimate_summary(est, company)
+    # Supplier co-brand (clarity ruling 2026-07-16 S6)
+    from routes.branding import SUPPLIER_NAME, get_branding
+    b = await get_branding()
+    summary["supplier_name"] = b.get("supplier_name") or SUPPLIER_NAME
     summary["total"] = round(totals["sell"], 2)
     # Interactive 3D (ruled 2026-07-15): ratified state, no per-feature
     # chips; softened footnote when details remain to confirm on site.

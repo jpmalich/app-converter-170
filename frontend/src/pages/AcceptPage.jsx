@@ -185,6 +185,11 @@ export default function AcceptPage() {
             </p>
             <div style={{ border: "1px solid #E4E4E7", background: "#F7F8FB" }}>
               <AcceptHouse3D house3d={d.house3d} />
+              {d.on_site_note ? (
+                <p style={{ fontSize: 11, color: "#71717A", margin: 0, padding: "8px 12px", borderTop: "1px solid #E4E4E7", background: "#FFFFFF" }} data-testid="accept-3d-footnote">
+                  {t("email.model3dVerifyNote")}
+                </p>
+              ) : null}
             </div>
             {d.attestation?.count > 0 ? (
               <p style={{ fontSize: 12, color: "#09090B", margin: "8px 0 0 0", fontWeight: 600 }} data-testid="accept-attestation">
@@ -193,11 +198,6 @@ export default function AcceptPage() {
                   initials: d.attestation.initials,
                   date: d.attestation.date,
                 })}
-              </p>
-            ) : null}
-            {d.on_site_note ? (
-              <p style={{ fontSize: 11, color: "#71717A", margin: "6px 0 0 0" }} data-testid="accept-3d-footnote">
-                {t("email.model3dVerifyNote")}
               </p>
             ) : null}
           </div>
@@ -272,6 +272,11 @@ export default function AcceptPage() {
         >
           {submitting ? t("accept.submitting") : t("accept.submit")}
         </button>
+        {!checked && !submitting ? (
+          <p style={{ marginTop: 8, fontSize: 11, color: "#71717A", textAlign: "center" }} data-testid="accept-confirm-hint">
+            {t("accept.confirmHint")}
+          </p>
+        ) : null}
         <p style={{ marginTop: 14, fontSize: 11, color: "#71717A", textAlign: "center" }}>
           {t("accept.disclaimer", { company: d.company_name || "" })}
         </p>

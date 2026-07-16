@@ -107,6 +107,15 @@ export default function EstimateEditor() {
     [visibleTabIds]
   );
   const totals = useMemo(() => (est ? calcTotals(est, { tab: activeTab }) : null), [est, activeTab]);
+
+  // Cluster A (ruled 2026-07-16): applied-lines surfaces never show bare
+  // $0.00 while a derived-unapplied package exists.
+  const lpDerivedTotal = isLpKind && lpPkg ? (lpPkg.summary?.pricing?.total_sell || 0) : 0;
+  const lpAppliedSell = useMemo(
+    () => (isLpKind && est ? calcTotals(est, { tab: "lp_smart" }).sell : 0),
+    [est, isLpKind],
+  );
+  const lpDerivedUnapplied = lpDerivedTotal > 0 && !(lpAppliedSell > 0);
   // Per-tab totals for the sticky bar. Only compute for visible tabs so
   // hidden product lines don't ghost into the header.
   const tabTotals = useMemo(() => {
@@ -135,12 +144,12 @@ export default function EstimateEditor() {
   // stays null and we pass the full estimate through.
   const quoteEstimate = useMemo(() => {
     if (!est) return est;
-    // CUSTOMER QUOTE COMPOSITION (ruled iter100): derived material
-    // package (quote tier, colors, session substitutions) governs the
-    // LP material sections; contractor service lines stay theirs from
-    // est.lines; pending lines carry a flag — never hidden, never $0.
+    // CUSTOMER QUOTE COMPOSITION (ruled iter100, amended by the clarity
+    // ruling 2026-07-16): the derived package governs LP material
+    // sections ONLY once applied — an unapplied takeoff never composes
+    // the quote (it renders "not ready" + warn-with-confirm instead).
     let base = est;
-    if (isLpKind && lpPkg) {
+    if (isLpKind && lpPkg && !lpDerivedUnapplied) {
       // The package governs EVERY line it derives — any section (LP
       // materials, gutters, caps). Pending lines carry the flag with
       // mat 0 so they render blank + qualifier and never hit the total.
@@ -432,6 +441,7 @@ export default function EstimateEditor() {
                 est={est}
                 update={update}
                 activeTab={activeTab}
+                derivedUnapplied={activeTab === "lp_smart" && lpDerivedUnapplied}
               />
             ))}
           </>
@@ -454,6 +464,7 @@ export default function EstimateEditor() {
                 est={est}
                 update={update}
                 activeTab={activeTab}
+                derivedUnapplied={activeTab === "lp_smart" && lpDerivedUnapplied}
               />
             ))}
           </>
@@ -493,6 +504,7 @@ export default function EstimateEditor() {
               est={est}
               update={update}
               activeTab={activeTab}
+              derivedUnapplied={activeTab === "lp_smart" && lpDerivedUnapplied}
             />
             ))}
           </>
@@ -508,6 +520,8 @@ export default function EstimateEditor() {
           onPrint={() => window.print()}
           onExportCsv={handleExportCsv}
           onPrintMaterials={handleOpenMaterials}
+          lpDerivedUnapplied={lpDerivedUnapplied}
+          lpDerivedTotal={lpDerivedTotal}
         />
       </main>
 
@@ -523,6 +537,7 @@ export default function EstimateEditor() {
         <QuoteModal
           estimate={quoteEstimate}
           totals={quoteTotals}
+          derivedUnapplied={lpDerivedUnapplied}
           onClose={() => setShowQuote(false)}
           emailConfigured={emailStatus.configured}
           onEmail={async ({ recipient_email, html, subject, accept_token }) => {

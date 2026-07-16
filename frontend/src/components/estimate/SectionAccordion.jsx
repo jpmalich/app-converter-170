@@ -44,6 +44,7 @@ export default function SectionAccordion({
   onQty,
   onField,
   onResetLine,
+  derivedUnapplied,
   onToggleAdder,
   onUpdateAdderQty,
   est,
@@ -456,7 +457,13 @@ export default function SectionAccordion({
             </span>
           )}
         </div>
-        <div className="font-mono-num text-sm text-[var(--ink-2)]">{fmt(sectionSell)}</div>
+        {derivedUnapplied && sectionSell === 0 ? (
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[#92400E]" data-testid="section-derived-unapplied">
+            Derived — not applied
+          </div>
+        ) : (
+          <div className="font-mono-num text-sm text-[var(--ink-2)]">{fmt(sectionSell)}</div>
+        )}
       </button>
       {isOpen && (
         <div className="border-t border-[var(--border)]">

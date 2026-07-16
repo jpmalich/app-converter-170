@@ -443,7 +443,7 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
 
         ${showSupplierFooter
           ? `<tr><td style="padding:10px 32px;font-family:${FONT};font-size:10px;letter-spacing:2px;text-transform:uppercase;color:${C.faint};text-align:center;border-top:1px solid ${C.line};">
-              ${esc(t("email.materialsBy", { supplier: supplierName }))}
+              ${esc(t("email.materialsBy", { supplier: supplierName }))} · ${esc(t("email.poweredBy"))}
             </td></tr>`
           : ""}
       </table>

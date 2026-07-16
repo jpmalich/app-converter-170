@@ -3138,3 +3138,8 @@ Two items ahead of standby, both Howard-collects-first:
 - Source of first derivation = photo run d66794488ef8 (LOW read: per_profile lap 1,780.5, −15.2% vs key; its siding_sqft 1,889.1 — internal 108.6 split FLAGGED not reconciled). No opening deductions anywhere (convention honored).
 - RE-DERIVED on sealed key 2,098.5 (walls 1,585.5 + gables@0.7 367.5 + chase 145.5): panels 49→**58** @ $137.94; battens 16" 1,630.0 LF → **102 pcs** @ $19.66 (12"/24": 135/70); +height term = key wall heights 8.9/9.9/9.21/9.21 + chase 18.9. Copy + doc updated; both profiles now stand on the same measured house.
 - Compare-profiles toggle APPROVED (contractor-side, one engine one geometry two compositions, never cached, tier-identical, customer exposure deferred) — QUEUED AFTER clarity-audit batch.
+
+## Iter 133c — INTERNAL-SPLIT TRACED + GEOMETRY-SOURCE STANDING RULE (2026-07-16)
+- Run d667 split NAMED: gable-basis divergence — siding_sqft gables @0.7 (C4 material math) vs _per_profile_sqft gables @0.5 true triangle (profile_callouts.breakdown_walls_by_profile never received C4). Δ=108.6 exact. Registered as new defect class "intra-run self-disagreement" in anchor_integrity_register.md. NO FIX (held for Howard's reconciliation ruling: which convention governs per-profile splits).
+- STANDING RULE logged: geometry-source naming on every derivation/copy/comparison surface; tape-validated key = default, extraction = labeled fallback; PIN no silent latest-run binding. Compare-profiles ships under it.
+- NEXT: resume clarity-audit fix batch (priority), then compare-profiles toggle.

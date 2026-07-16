@@ -10,7 +10,7 @@ import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/e
 import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
 import { isValidEmail } from "@/lib/validate";
 
-export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail }) {
+export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail, derivedUnapplied }) {
   const { company } = useCompany();
   const branding = useBranding();
   const { user } = useAuth();
@@ -180,6 +180,19 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                 <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
               </button>
             </div>
+            {confirmArmed && (
+              <div className="flex flex-wrap items-center gap-2 bg-[#FFFBEB] border border-[#F59E0B] px-3 py-2" data-testid="quote-send-gate">
+                <span className="text-[11px] font-bold text-[#92400E]">
+                  This estimate carries a derived takeoff that has not been applied — the quote and Accept page render applied lines only ({fmt(totals.sell)}). Send anyway?
+                </span>
+                <button type="button" onClick={handleEmail} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#92400E] text-white" data-testid="quote-send-gate-confirm">
+                  Confirm send
+                </button>
+                <button type="button" onClick={() => setConfirmArmed(false)} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-[#92400E] text-[#92400E]" data-testid="quote-send-gate-cancel">
+                  Cancel
+                </button>
+              </div>
+            )}
             {emailInvalid && (
               <div
                 id="quote-email-warn"
@@ -282,6 +295,11 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                 <div className="text-xs uppercase tracking-[0.25em] text-[#52525B]">
                   Estimate · Quote
                 </div>
+                {derivedUnapplied && (
+                  <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#92400E] bg-[#FFFBEB] border border-[#F59E0B] px-2 py-0.5 inline-block" data-testid="quote-not-ready">
+                    Not ready — takeoff derived but not applied; this quote renders applied lines only
+                  </div>
+                )}
               </div>
             </div>
             <div className="text-right">
@@ -548,7 +566,19 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#71717A] text-center"
               data-testid="supplier-footer"
             >
-              Materials supplied by {branding.supplier_name}
+              Materials supplied by {branding.supplier_name} · Powered by Pro-Quote Estimating Tool
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+percase tracking-[0.2em] text-[#71717A] text-center"
+              data-testid="supplier-footer"
+            >
+              Materials supplied by {branding.supplier_name} · Powered by Pro-Quote Estimating Tool
             </div>
           )}
         </div>
