@@ -25,7 +25,7 @@
     "/app/frontend/src/components/estimate/HoverImportButton.jsx (one-line filter change: added `typeof v !== 'object'` to skip array/object measurement values that would crash React render)"
   ],
   "success_rate": {"backend": "N/A (frontend-only request)", "frontend": "100% after FE filter fix (3/3 acceptance tests pass)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]",
   "seed_data_creation": "Created one TEST window estimate via 'New Estimate' button (auto-generated EST-032671). It was used for the HOVER import flow and contains 51 catalog lines + 28 vero_openings. Not cleaned up — main agent may want to delete it from Windows dashboard after review.",
   "retest_needed": true,
   "main_agent_can_self_test": true,

@@ -25,7 +25,7 @@ ORDER = [
 ]
 
 s = requests.Session()
-r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": "Admin123!"}, timeout=30)
+r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": os.environ.get("ADMIN_PASSWORD") or __import__("dotenv").dotenv_values("/app/backend/.env").get("ADMIN_PASSWORD")}, timeout=30)
 r.raise_for_status()
 tok = r.json().get("token") or r.json().get("access_token")
 s.headers["Authorization"] = f"Bearer {tok}"

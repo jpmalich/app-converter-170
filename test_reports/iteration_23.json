@@ -24,7 +24,7 @@
     "/app/backend/tests/test_profile_annotations_http.py (new — 9 tests covering endpoints, auth, and worker integration)"
   ],
   "success_rate": {"backend": "100% (125/125)", "frontend": "smoke OK"},
-  "test_credentials": "Admin hhunt6677@yahoo.com / Admin123! — login verified via /api/auth/login (200).",
+  "test_credentials": "Admin hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] — login verified via /api/auth/login (200).",
   "seed_data_creation": "None. Tests use any existing estimate from GET /api/estimates and clean up the annotations blob after the roundtrip test.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

@@ -17,7 +17,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (frontend-only per request)", "frontend": "100% — all 9 verification points from the review-request pass on both Mask (step 4) and Profile (step 5)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (verified working)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (verified working)",
   "seed_data_creation": "Created a fresh empty Vinyl+Ascend estimate via 'New Estimate' button on /dashboard/siding. Uploaded /tmp/dummy.png (600x400 lightgray PNG, 1.5 KB) as the Step-1/Front photo to trigger PhotoAnnotateModal in guided-flow mode.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

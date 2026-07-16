@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Blueprint shakedown P1 — composition cut + extraction conformance pins
 (ruled 2026-07-14, trace: /app/memory/blueprint_composition_trace.md).
 
@@ -28,7 +29,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 # Howard's original shakedown upload (e4afda3a64a54439b02b5c609dda0b69)
 # was lost to the 24h ai_blueprint_runs TTL before archival (2026-07-16).
 # Repointed to comparison run1_opus — same blueprint, validated Opus 4.5,

@@ -89,7 +89,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "n/a (frontend-only audit)", "frontend": "audit complete - 46 findings"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (from /app/memory/test_credentials.md) - login works via curl and Playwright (initial 401s on /api/auth/me before login are expected).",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (from /app/memory/test_credentials.md) - login works via curl and Playwright (initial 401s on /api/auth/me before login are expected).",
   "seed_data_creation": "None. Estimate left as found; no data mutated.",
   "retest_needed": false,
   "main_agent_can_self_test": false,

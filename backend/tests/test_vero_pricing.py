@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Backend tests for Vero pricing — admin matrix, contractor catalog,
 seeding idempotency. Mirrors the live-API pattern used by the other test
 files in /app/backend/tests.
@@ -25,7 +26,7 @@ ADMIN_HEADERS = {"X-Admin-Token": ADMIN_TOKEN}
 def _login_howard() -> str:
     r = requests.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "hhunt6677@yahoo.com", "password": "Admin123!"},
+        json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD},
         timeout=10,
     )
     r.raise_for_status()

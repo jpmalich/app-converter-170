@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79d — Tests for the async HOVER import launcher refactor.
 
 Verifies:
@@ -17,7 +18,7 @@ from reportlab.pdfgen import canvas
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-converter-170.preview.emergentagent.com").rstrip("/")
 LOGIN_EMAIL = "hhunt6677@yahoo.com"
-LOGIN_PASSWORD = "Admin123!"
+LOGIN_PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

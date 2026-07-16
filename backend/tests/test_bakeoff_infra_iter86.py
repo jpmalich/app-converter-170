@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.86 — Model bake-off infrastructure pins (pre-run, Howard's GO).
 Zero prompt changes; per-phase model plumbing; actual token telemetry;
 usage-probe exclusion from accuracy scoring."""
@@ -22,7 +23,7 @@ from routes.ai_measure import (  # noqa: E402
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 def test_prompt_contract_untouched_by_infra():

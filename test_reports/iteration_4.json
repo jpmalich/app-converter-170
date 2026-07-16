@@ -31,7 +31,7 @@
     "backend": "not retested this iteration (iteration_3 covered 21/21)",
     "frontend": "~95% — every requested user-visible behavior verified in-browser; only the automated Playwright accordion-toggle click is flaky, app itself works"
   },
-  "test_credentials": "admin@wolfandson.com / Admin123! — works.",
+  "test_credentials": "admin@wolfandson.com / [REDACTED — backend/.env ADMIN_PASSWORD] — works.",
   "seed_data_creation": "Used existing admin's estimate (cca4b701-f7fc-4c4b-9e6e-e10c14a5351c). Added one misc_labor row 'Custom debris removal' $50 which now persists in MongoDB. Recommend cleanup if running regression — delete via admin UI or remove via the misc-remove button.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.84 — Candidate 1c pin tests (pre-registered, Howard-approved).
 Deterministic two-tier course counts: same-corner cross-check gates the
 enumerated tier; pixel-citation-as-support demotes; consensus never
@@ -22,7 +23,7 @@ from routes.ai_measure import _apply_count_tiering, _PIXEL_SUPPORT_RE  # noqa: E
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 def _ex(idx, count, corner, reasoning="counted from starter at block line to frieze"):

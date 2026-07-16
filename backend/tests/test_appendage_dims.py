@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Appendage dimension editing (ruled 2026-07-15) — render-only rule's
 second half.
 
@@ -30,7 +31,7 @@ KEY = "appendage:right"
 @pytest.fixture(scope="module")
 def session():
     s = requests.Session()
-    r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": "Admin123!"}, timeout=15)
+    r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD}, timeout=15)
     assert r.status_code == 200, r.text
     yield s
     for f in ("height_ft", "depth_ft"):  # leave estimate as found

@@ -25,7 +25,7 @@
     "/app/backend/tests/test_iteration6_tiers.py (new)"
   ],
   "success_rate": {"backend": "100% (23/23)", "frontend": "100% on tested flows (Catalog locked material + tier badge, BrandingAdmin tier list + company assign)"},
-  "test_credentials": "admin@wolfandson.com / Admin123! ; SUPPLIER_ADMIN_TOKEN=OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE ; SIGNUP_CODE=ALSIDE-JR47Q8",
+  "test_credentials": "admin@wolfandson.com / [REDACTED — backend/.env ADMIN_PASSWORD] ; SUPPLIER_ADMIN_TOKEN=OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE ; SIGNUP_CODE=ALSIDE-JR47Q8",
   "seed_data_creation": "Test created TEST_-prefixed contractor companies (TEST_CoA_*, TEST_CoB_*) and TEST_-prefixed users for isolation testing. Admin's company tier was switched via UI test (whole-sale -> Builder-Dealer). Not auto-cleaned — main agent may want to delete TEST_ users/companies and restore admin tier if desired (low priority since tests are idempotent).",
   "retest_needed": false,
   "main_agent_can_self_test": true,

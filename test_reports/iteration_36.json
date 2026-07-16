@@ -22,7 +22,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "n/a (skipped)", "frontend": "~93% (7 of ~8 checks pass; 1 confidentiality leak)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! ; Admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] ; Admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
   "seed_data_creation": "None",
   "retest_needed": true,
   "main_agent_can_self_test": true,

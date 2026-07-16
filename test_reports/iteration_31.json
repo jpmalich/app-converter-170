@@ -37,7 +37,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "n/a (frontend-only requested)", "frontend": "~95%"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (worked)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (worked)",
   "seed_data_creation": "None (used existing fixture estimate EST-675749).",
   "retest_needed": false,
   "should_main_agent_self_test": true,

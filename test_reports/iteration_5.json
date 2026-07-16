@@ -38,7 +38,7 @@
     "/app/backend/tests/test_estimator_api.py (updated _register to send SIGNUP_CODE; updated default-mat assertion from 92.19 -> 75.71 to match the new Alside seed)"
   ],
   "success_rate": {"backend": "100% (45/45)", "frontend": "not tested per scope (backend only)"},
-  "test_credentials": "admin@wolfandson.com / Admin123! (works). SIGNUP_CODE=ALSIDE-JR47Q8 (verified). SUPPLIER_ADMIN_TOKEN=OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE (verified via both X-Admin-Token header and ?token= query).",
+  "test_credentials": "admin@wolfandson.com / [REDACTED — backend/.env ADMIN_PASSWORD] (works). SIGNUP_CODE=ALSIDE-JR47Q8 (verified). SUPPLIER_ADMIN_TOKEN=OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE (verified via both X-Admin-Token header and ?token= query).",
   "seed_data_creation": "Each test class registers fresh TEST_ prefixed users + companies (TEST_Alside_xxxx, TEST_CompanyA_*, TEST_CompanyB_*) and cleans up its own estimates. Logo upload test creates one supplier-logo-xxxxxxxx.png under /app/backend/uploads/ and clears the branding.supplier_logo_url after. Branding tagline test snapshot/restore is used so the public /api/branding remains unchanged after the run. No leftover test data should affect future runs.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

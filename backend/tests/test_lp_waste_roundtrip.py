@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 78a regression — LP SmartSide raw_qty round-trip.
 
 Verifies the backend correctly persists & returns the `raw_qty` field on
@@ -10,7 +11,7 @@ import pytest
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-converter-170.preview.emergentagent.com").rstrip("/")
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASS = "Admin123!"
+ADMIN_PASS = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

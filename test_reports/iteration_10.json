@@ -17,7 +17,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "skipped", "frontend": "100% (6/6 scenarios PASS)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]",
   "seed_data_creation": "none — used existing estimate EST-405137 (id 2fc4e383-1ef9-423d-b756-df4fc4dfdb47). Charter Oak Standard color Dutch Lap 4.5\" .046 qty was reset to 0 at end of run.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

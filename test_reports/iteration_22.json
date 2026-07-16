@@ -27,7 +27,7 @@
     "backend": "100% (115/115 tests pass — 11 diff helper + 8 HTTP validation + 96 prior Iter 78z regression)",
     "frontend": "N/A (backend-only requested; sanity-loaded login page — clean)"
   },
-  "test_credentials": "Admin hhunt6677@yahoo.com / Admin123! — login works, /auth/me returns user.id",
+  "test_credentials": "Admin hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] — login works, /auth/me returns user.id",
   "seed_data_creation": "Each HTTP test inserts a temporary ai_measure_runs doc into Mongo and deletes it in the finally block. No persistent test data left behind.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

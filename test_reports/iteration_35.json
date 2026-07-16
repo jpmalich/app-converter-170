@@ -68,7 +68,7 @@
   ],
   "updated_files": [],
   "success_rate": { "backend": "N/A (frontend-only per request)", "frontend": "100% (6/6 features verified)" },
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (from /app/memory/test_credentials.md)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (from /app/memory/test_credentials.md)",
   "seed_data_creation": "None. Only localStorage.aiMeasureOnboardingSeen was toggled; no server-side data was mutated. 'Yes, replace' on the Re-run confirm dialog was NOT clicked (per review directive).",
   "retest_needed": false,
   "should_main_agent_self_test": false,

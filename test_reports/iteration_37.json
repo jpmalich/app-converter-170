@@ -22,7 +22,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% of requested test items validated"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (owner cookie auth); Admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE for /branding-admin",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (owner cookie auth); Admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE for /branding-admin",
   "seed_data_creation": "None -- used existing LP estimate e452a988-83b8-4e6e-9537-1223d0ecbf6f. Reverted the tier picker change after verifying toast.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

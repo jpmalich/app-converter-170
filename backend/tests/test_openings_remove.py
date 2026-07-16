@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """'Not present' removal verb + extraction-spend admin line (ruled 2026-07-15).
 
 Pins:
@@ -24,7 +25,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 SOURCE_RUN = "2a2e8a1227d145a588b71387903e1320"  # comparison run1_opus (11 windows)
 FIXTURE_RUN_ID = "test-bp-remove-fixture"
 EST_ID = "db82ec7a-3177-406d-a602-927255e9e10e"

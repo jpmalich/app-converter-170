@@ -32,7 +32,7 @@
     "(installed) reportlab via pip — required by the new HTTP test to synthesize a tiny PDF"
   ],
   "success_rate": {"backend": "100% (133/133)", "frontend": "not tested (backend-only request)"},
-  "test_credentials": "Admin hhunt6677@yahoo.com / Admin123! — login verified via POST /api/auth/login (200).",
+  "test_credentials": "Admin hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] — login verified via POST /api/auth/login (200).",
   "seed_data_creation": "If the admin has zero estimates, the new HTTP test auto-creates a throwaway estimate named TEST_iter78z_blueprint. In this run an existing estimate was reused, so no new data was seeded.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

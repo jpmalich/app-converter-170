@@ -27,7 +27,7 @@
   ],
   "updated_files": ["/app/frontend/src/pages/EstimateEditor.jsx (added missing `import { LP_SECTION_TITLES } from '@/lib/lpColors'` at line 32)"],
   "success_rate": {"backend": "N/A (skipped per request)", "frontend": "Tier Coherence PASS, Material List Freeze+QR PASS, /m/{token} page PASS, drift banner PASS, revoke PASS, redaction PASS, Quote PDF download PASS (200 application/pdf), Customer Quote pending qualifiers FAIL"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!; Admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]; Admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
   "seed_data_creation": "None. Tier was flipped and restored to Contractor. Share token minted in the freeze test was subsequently revoked (revoke test).",
   "retest_needed": true,
   "should_main_agent_self_test": true,

@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.67 — (a) Re-run calibration carryover + (b)/(c) prompt candidate.
 
 (a) BUG: the Re-run path hardcoded `siding_exposure_in=None`,
@@ -36,7 +37,7 @@ BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") + "/api"
 MONGO = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
 
 EMAIL = "hhunt6677@yahoo.com"
-PASSWORD = "Admin123!"
+PASSWORD = TEST_PASSWORD
 
 
 # ---------------------------------------------------------------------------

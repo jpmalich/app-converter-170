@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Compare-profiles toggle (approved 2026-07-16) — ships under the
 geometry-source standing rule.
 
@@ -30,7 +31,7 @@ LAP = '38 Series Lap 3/8" x 8" x 16\''
 @pytest.fixture(scope="module")
 def session():
     s = requests.Session()
-    r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": "Admin123!"}, timeout=15)
+    r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD}, timeout=15)
     assert r.status_code == 200, r.text
     yield s
 

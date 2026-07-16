@@ -22,7 +22,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "skipped", "frontend": "100%"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (from /app/memory/test_credentials.md)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (from /app/memory/test_credentials.md)",
   "seed_data_creation": "none — used existing draft estimate EST-405137 (id 2fc4e383-1ef9-423d-b756-df4fc4dfdb47)",
   "retest_needed": false,
   "main_agent_can_self_test": true,

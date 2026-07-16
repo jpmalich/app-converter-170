@@ -27,7 +27,7 @@
     "backend": "100%",
     "frontend": "n/a (skipped per request)"
   },
-  "test_credentials": "Admin: hhunt6677@yahoo.com / Admin123! ; Supplier Admin Token: OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
+  "test_credentials": "Admin: hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] ; Supplier Admin Token: OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
   "seed_data_creation": "Estimate round-trip test creates a TEST_Iter34_<uuid> estimate then deletes it. No persistent test data left in DB.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

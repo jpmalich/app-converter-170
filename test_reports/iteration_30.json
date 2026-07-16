@@ -17,7 +17,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (frontend only per request)", "frontend": "100% — snap-close on Mask ✓, snap-close on Profile ✓, banner text on both ✓, Rectangle regression on both ✓, guided nav ✓, visual cue (enlarged first vertex + ring) rendered ✓"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (verified working)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (verified working)",
   "seed_data_creation": "Fresh empty Vinyl+Ascend estimate created via 'New Estimate' on /dashboard/siding. Uploaded /tmp/dummy.png (600x400 PNG). One committed masked zone (Brick 'NO SIDING' polygon) and one committed profile box (SHAKE polygon, 50 ft² sentinel) were created during snap-close verification and remain saved on the fresh estimate.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

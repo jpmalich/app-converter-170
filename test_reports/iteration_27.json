@@ -17,7 +17,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (frontend-only test per request)", "frontend": "100% — all 5 step banners, progress dots, skip labels, Save&Continue label, and outer-wizard auto-advance verified"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (verified working via /api/auth/login)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (verified working via /api/auth/login)",
   "seed_data_creation": "Created new estimate EST-780795 in Vinyl+Ascend workspace (empty previous list). Used /tmp/dummy.png (600x400 lightgray PNG) as the Front elevation photo.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

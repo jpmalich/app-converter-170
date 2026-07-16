@@ -26,7 +26,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "skipped", "frontend": "75% (3 of 4 autosave scenarios PASS; pagehide-flush FAILS)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (from /app/memory/test_credentials.md)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (from /app/memory/test_credentials.md)",
   "seed_data_creation": "none — used existing estimate EST-405137 (id 2fc4e383-1ef9-423d-b756-df4fc4dfdb47). NOTE: this test mutated the Charter Oak Dutch Lap .046 qty to 7. Reset to 0 if a clean state is needed.",
   "retest_needed": true,
   "main_agent_can_self_test": true,

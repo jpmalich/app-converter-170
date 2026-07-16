@@ -25,7 +25,7 @@
   ],
   "updated_files": ["/app/backend/tests/test_estimator_api.py"],
   "success_rate": {"backend": "100%", "frontend": "n/a (not requested)"},
-  "test_credentials": "admin@wolfandson.com / Admin123! (verified working, role=admin)",
+  "test_credentials": "admin@wolfandson.com / [REDACTED — backend/.env ADMIN_PASSWORD] (verified working, role=admin)",
   "seed_data_creation": "Test users created with TEST_ / random uuid prefixes; estimates with TEST_ customer names are deleted in flows.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

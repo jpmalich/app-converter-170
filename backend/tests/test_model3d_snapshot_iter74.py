@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.74 — /estimates/{id}/model3d-snapshot endpoint tests."""
 import os
 import uuid
@@ -10,7 +11,7 @@ _FE_ENV = dotenv_values("/app/frontend/.env")
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = _ENV.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
-ADMIN_PASSWORD = _ENV.get("ADMIN_PASSWORD", "Admin123!")
+ADMIN_PASSWORD = _ENV.get("ADMIN_PASSWORD", TEST_PASSWORD)
 
 
 def _session():

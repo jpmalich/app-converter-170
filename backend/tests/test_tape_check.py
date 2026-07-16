@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.65 — Tape Check endpoints: persistent per-wall ground truth
 + accuracy history scored against AI Measure runs.
 
@@ -24,7 +25,7 @@ BASE = os.environ["REACT_APP_BACKEND_URL"].rstrip("/") + "/api"
 MONGO = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
 
 EMAIL = "hhunt6677@yahoo.com"
-PASSWORD = "Admin123!"
+PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

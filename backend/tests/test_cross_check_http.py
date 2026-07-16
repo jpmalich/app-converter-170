@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 78z (Cross-Check) HTTP endpoint validation tests.
 
 Hits the live FastAPI server through the public preview URL. These tests
@@ -28,7 +29,7 @@ BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 MONGO_URL = os.environ.get("MONGO_URL")
 DB_NAME = os.environ.get("DB_NAME")

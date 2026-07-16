@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """
 Iter 34 backend regression — Siding Catalog Restructure verification.
 
@@ -33,7 +34,7 @@ _FE_ENV = dotenv_values("/app/frontend/.env")
 BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin123!")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", TEST_PASSWORD)
 SUPPLIER_ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 
 

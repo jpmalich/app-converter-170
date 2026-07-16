@@ -22,7 +22,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "100% (29/29 pytest)", "frontend": "100% (all wasteLogic.test.mjs assertions + 5/5 UI acceptance criteria)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]",
   "seed_data_creation": "None. Used existing EST-094265 LP estimate (id d2f8d994-62f5-4b21-948d-92dbaa6657c9, 65 lines, waste=20). LP Lap qty was 245 PCS at the start of testing and 294 PCS after recompute — left in the recomputed state. If Howard wants the original 245 back, set waste %=0 then back to 20 with raw_qty null lines (or re-import blueprint).",
   "retest_needed": false,
   "main_agent_can_self_test": true,

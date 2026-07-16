@@ -14,7 +14,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (skipped per request — 913 pytest green)", "frontend": "100%"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (owner)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (owner)",
   "seed_data_creation": "No new seed data — used pre-existing estimate 1687b568-ba33-4266-851b-82d042f1bb8b and run test-bpui-9fd546c6 as instructed. DEMO estimate db82ec7a was NOT touched.",
   "retest_needed": false,
   "should_main_agent_self_test": false,

@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.45 — Live HTTP tests for the new /api/measure/ai-measure/health
 preflight endpoint. Focus:
   - Auth requirement (401/403 without cookie)
@@ -13,7 +14,7 @@ import pytest
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 if not BASE_URL:
     # Fallback to frontend .env

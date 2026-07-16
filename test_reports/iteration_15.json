@@ -22,7 +22,7 @@
     "/app/backend/tests/test_estimate_pairing.py (new)"
   ],
   "success_rate": {"backend": "100% (6/6)", "frontend": "100% (6/6 acceptance criteria)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]",
   "seed_data_creation": "All test estimates (EST-PAIR1*, EST-PAIR2*, EST-PAIR3*, Pair Smoke, plus residual EST-018125/EST-018125-W from earlier playground run) were cleaned up via DELETE /api/estimates/{id}. DB is clean.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

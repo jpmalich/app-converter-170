@@ -23,7 +23,7 @@
     "/app/backend/tests/test_lp_waste_roundtrip.py (new — 4 LP round-trip pytests)"
   ],
   "success_rate": {"backend": "100% (4/4 new + 25/25 regression)", "frontend": "100% (all 5 UI acceptance checks)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]",
   "seed_data_creation": "Created 1 LP estimate via API ('TEST_LP_RawQty') — deleted in fixture teardown. The pre-existing LP estimate EST-078678 was left as found (qty restored to 194, waste restored to 20).",
   "retest_needed": false,
   "main_agent_can_self_test": true,

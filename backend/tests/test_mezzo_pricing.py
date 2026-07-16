@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Phase 3 — Mezzo Pricing Matrix admin + catalog tests."""
 import os
 import pytest
@@ -11,7 +12,7 @@ BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL") or _FE_ENV.get("REACT_APP_BA
 ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN") or _ENV.get("SUPPLIER_ADMIN_TOKEN", "")
 ADMIN_HEADERS = {"X-Admin-Token": ADMIN_TOKEN}
 LOGIN_EMAIL = "hhunt6677@yahoo.com"
-LOGIN_PASSWORD = "Admin123!"
+LOGIN_PASSWORD = TEST_PASSWORD
 
 TIERS = ["whole-sale", "Contractor", "Builder-Dealer", "one-opp"]
 PRODUCTS = ["Mezzo Double Hung", "Mezzo 2-Lite Slider", "Mezzo 3-Lite Slider", "Mezzo Picture"]

@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.79 — Tape Check accuracy report PDF: honest framing pinned.
 Development-fixture runs render under the methodology exhibit; held-out
 section renders (empty) with the zero-prompt-change criteria; no blended
@@ -18,7 +19,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

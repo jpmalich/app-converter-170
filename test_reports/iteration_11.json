@@ -20,7 +20,7 @@
     "/app/backend/tests/test_mezzo_pricing.py (new)"
   ],
   "success_rate": {"backend": "100% (8/8)", "frontend": "100% (11/11 UI assertions)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!  |  Admin token: OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]  |  Admin token: OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
   "seed_data_creation": "None. Test edited whole-sale Mezzo Double Hung cell [1][0] to 888.88 then restored to 281.208 (original). All other data unchanged.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 78z+ — Claude annotation hints + OCR auto-scale endpoint.
 
 Validates the hint formatter math + the OCR endpoint's validation
@@ -20,7 +21,7 @@ from routes.ai_measure import _build_annotation_hint
 BASE = os.environ.get("REACT_APP_BACKEND_URL") or "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PW = "Admin123!"
+ADMIN_PW = TEST_PASSWORD
 
 
 # ---------------------- Annotation hint formatter ----------------------

@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.78 — reconciler honesty: imputed wall heights
 (`height_ft_source: estimated_no_direct_view`) are EXCLUDED from Tape
 Check scoring and surfaced as `imputed: true`, never as a pass."""
@@ -17,7 +18,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

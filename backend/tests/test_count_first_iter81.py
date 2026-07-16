@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.82 — candidate 1b REVERTED per pre-registration FAIL.
 Pins: (a) the reversion itself (prompt hash == the 1a-era capture hash,
 1b markers absent), (b) the KEPT infrastructure — per-wall signed
@@ -22,7 +23,7 @@ from routes.ai_measure import (  # noqa: E402
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 # Iter 79j.87 — Candidate 2 contract: 1c base + pitch ladder expanded to
 # all integer pitches 3/12–14/12 (measured pitch at integer resolution).

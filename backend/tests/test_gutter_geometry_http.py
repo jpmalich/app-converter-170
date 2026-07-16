@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 78z (P1.4) — End-to-end HTTP tests for new gutter/downspout geometry
 auto-fills surfaced via POST /api/measure/map.
 
@@ -22,7 +23,7 @@ load_dotenv(Path(__file__).resolve().parent.parent.parent / "frontend" / ".env")
 
 BASE_URL = os.environ["REACT_APP_BACKEND_URL"].rstrip("/")
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

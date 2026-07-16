@@ -19,7 +19,7 @@
   ],
   "updated_files": ["/app/backend/tests/test_lp_admin_preview_http.py (new — 12 HTTP integration tests)"],
   "success_rate": {"backend": "100% (12/12 new + 57/57 regression)", "frontend": "100% on LP preview UI; Vero base-includes popover visually verified; Vero 8-adder dropdown and Mezzo Aluminum 1/2 Screen popover NOT programmatically asserted (DOM probes returned empty — popover content renders correctly per screenshot but my selectors via [role=tooltip]/[role=dialog] missed the actual portal). Main agent should re-verify with the correct popover wrapper class if a strict programmatic assertion is required."},
-  "test_credentials": "Admin hhunt6677@yahoo.com / Admin123! (POST /api/auth/login → 200). Supplier admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE accepted by /api/admin/lp-formula-preview.",
+  "test_credentials": "Admin hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (POST /api/auth/login → 200). Supplier admin token OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE accepted by /api/admin/lp-formula-preview.",
   "seed_data_creation": "None — used existing EST-658882-W and the 4 built-in presets (campbell/shake_heavy/bb_heavy/lap_only).",
   "retest_needed": false,
   "main_agent_can_self_test": true,

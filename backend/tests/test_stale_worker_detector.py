@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 79j.62 — Stale-worker detector on GET /ai-measure/status/{run_id}.
 
 `asyncio.create_task` workers do not survive uvicorn hot-reload. Before
@@ -32,7 +33,7 @@ BASE = os.environ["REACT_APP_BACKEND_URL"]
 MONGO_URL = os.environ["MONGO_URL"]
 DB_NAME = os.environ["DB_NAME"]
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Admin123!")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", TEST_PASSWORD)
 
 
 @pytest.fixture(scope="module")

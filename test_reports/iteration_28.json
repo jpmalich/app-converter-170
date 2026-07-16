@@ -15,7 +15,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (frontend-only per request)", "frontend": "100% — all 5 guided-step titles + banners + skip labels + Next/Save-&-Continue label + progress-dot counts (1P/4g → 4G/1P) + 'Step X of 5' counter verified"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (verified working)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (verified working)",
   "seed_data_creation": "Created a new empty Vinyl+Ascend estimate. Used /tmp/dummy.png (600x400 lightgray PNG) as Front elevation photo.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

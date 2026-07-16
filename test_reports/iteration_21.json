@@ -38,7 +38,7 @@
     "/app/backend/tests/test_gutter_geometry_http.py (new — 10 HTTP integration cases against live /api/measure/map)"
   ],
   "success_rate": {"backend": "100% (106/106 tests pass)", "frontend": "n/a (compile-only check per request — passes)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (session-cookie auth, worked first try)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (session-cookie auth, worked first try)",
   "seed_data_creation": "None — /api/measure/map is a pure deterministic mapper, no DB writes, no LLM cost.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

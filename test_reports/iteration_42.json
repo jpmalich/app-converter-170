@@ -10,7 +10,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100% (5/5 tasks pass)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (owner)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (owner)",
   "seed_data_creation": "None — only resumed existing done run d6679448 (no new AI/photo/blueprint runs started, no data modified). OpeningsReviewCard delete-guard was tested with Cancel only — no openings removed.",
   "retest_needed": false,
   "should_main_agent_self_test": false,

@@ -19,7 +19,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "100%", "frontend": "95%"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (as in /app/memory/test_credentials.md)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (as in /app/memory/test_credentials.md)",
   "seed_data_creation": "Created TEST_Share Accuracy estimate (f110708c-...) with 1 inserted ai_measure_runs doc, PUT tape-check walls, scored, froze → token; used to verify /r/{token} page; deleted at end (est + runs + snapshot cleaned).",
   "retest_needed": false,
   "should_main_agent_self_test": false,

@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 78z — HTTP/auth tests for the ProfileAnnotator endpoints and the
 `_aggregate_to_hover_shape` worker integration."""
 from __future__ import annotations
@@ -25,7 +26,7 @@ if FRONTEND_ENV.exists():
             break
 
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASS = "Admin123!"
+ADMIN_PASS = TEST_PASSWORD
 
 
 # ---------------------------------------------------------------------------

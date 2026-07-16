@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Accuracy Report share link — /m/ doctrine reused for /r/: frozen
 verbatim HTML (honest-framing pins carry), tokenized + expiring, public
 read-only, newer-runs banner flag, revocable. 400 with no scored runs."""
@@ -17,7 +18,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

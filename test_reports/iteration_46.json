@@ -34,7 +34,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "n/a", "frontend": "~93% (6/7 clarity bullets fully pass; one string leak)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (contractor owner)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (contractor owner)",
   "seed_data_creation": "None. Read-only inspection only. Send-gate armed then cancelled — no email dispatched. No dimensions saved, no openings confirmed, no takeoff applied.",
   "retest_needed": true,
   "main_agent_can_self_test": true,

@@ -17,7 +17,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "100% (29/29 pytest + 3-restart persistence + vinyl/ascend regression)", "frontend": "N/A (iteration_18 fully covered UI; not re-tested per main agent guidance)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]",
   "seed_data_creation": "Set lab=4.25 / qty=14 on '440 Series Trim 4/4\" x 4\" x 16'' line of EST-723351 (id f27a3c6f-00c6-4401-94a0-33f22eb6212e) — in addition to iteration_18's existing 9.99/255 on the 38 Series Lap line. Both LP labor values now sitting on the same estimate for visual verification if Howard opens it.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

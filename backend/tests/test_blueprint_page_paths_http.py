@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 78z+ — HTTP integration tests for blueprint page_paths plumbing.
 
 Hits the public REACT_APP_BACKEND_URL:
@@ -30,7 +31,7 @@ BASE_URL = (
 ).rstrip("/")
 
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

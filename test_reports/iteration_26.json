@@ -20,7 +20,7 @@
   ],
   "updated_files": ["/app/backend/tests/test_hover_import_async.py (new — 7 pytest tests for the async hover import contract)"],
   "success_rate": {"backend": "100% (7/7 tests pass)", "frontend": "100% — full upload flow + stage caption + waste-reset all verified"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! — works against POST /api/auth/login (200, access_token httpOnly cookie set).",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] — works against POST /api/auth/login (200, access_token httpOnly cookie set).",
   "seed_data_creation": "Generated /tmp/test_hover.pdf (1.4KB reportlab PDF) for upload test. Used existing draft estimate EST-603252 in the Vinyl+Ascend workspace.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

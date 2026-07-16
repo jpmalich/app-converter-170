@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Failure class 5 — WORKER LIFECYCLE pins (Iter 111, standing rule).
 
 Live failure (EST-657226): a hot-reload killed the reconcile task after
@@ -31,7 +32,7 @@ import routes.ai_measure as am  # noqa: E402
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 SRC = Path("/app/backend/routes/ai_measure.py").read_text()
 

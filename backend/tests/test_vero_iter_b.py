@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Phase 4 Iter B backend tests for Vero — products_meta surface, catalog
 sizing per product, casement sister colors, and Estimate round-trip with
 the new vero_openings list. Complements test_vero_pricing.py (Iter A).
@@ -18,7 +19,7 @@ ADMIN_HEADERS = {"X-Admin-Token": ADMIN_TOKEN}
 def _login_howard_cookies() -> dict:
     r = requests.post(
         f"{BASE_URL}/api/auth/login",
-        json={"email": "hhunt6677@yahoo.com", "password": "Admin123!"},
+        json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD},
         timeout=10,
     )
     r.raise_for_status()

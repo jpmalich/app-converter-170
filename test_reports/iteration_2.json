@@ -13,7 +13,7 @@
     "/app/test_reports/pytest/pytest_results.xml"
   ],
   "action_items": [
-    "(Optional) Remove the hard-coded 'DEFAULT ADMIN · admin@wolfandson.com / Admin123!' hint shown on the Login page before production.",
+    "(Optional) Remove the hard-coded 'DEFAULT ADMIN · admin@wolfandson.com / [REDACTED — backend/.env ADMIN_PASSWORD]' hint shown on the Login page before production.",
     "(Optional, carried over from iteration_1) Tighten CORS_ORIGINS to explicit frontend origin instead of '*' since the frontend relies on credentialed cookie auth.",
     "(Optional) Apply same samesite='none', secure=True, path='/' to response.delete_cookie in /api/auth/logout so browser-side cookie clearing is reliable."
   ],
@@ -26,7 +26,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "100% (carried from iteration_1, 17/17)", "frontend": "100% (16/16 scenarios)"},
-  "test_credentials": "admin@wolfandson.com / Admin123! — verified working",
+  "test_credentials": "admin@wolfandson.com / [REDACTED — backend/.env ADMIN_PASSWORD] — verified working",
   "seed_data_creation": "Created an estimate with customer_name 'TEST_Acme Customer' and an uploaded test JPG photo (1x1) under the admin account. The photo was removed during the test; the TEST_ estimate remains in the admin account list.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

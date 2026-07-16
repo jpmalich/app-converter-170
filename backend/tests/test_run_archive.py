@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Ruled 2026-07-14 — no persistent artifact may reference a reapable run.
 
 Pins:
@@ -27,7 +28,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 SOURCE_RUN_ID = "4a009e93eb5348c08cc26bfb935675ce"  # frozen Letrick archive
 
 

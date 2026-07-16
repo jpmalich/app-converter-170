@@ -24,7 +24,7 @@
     "backend": "100% (11/11 pytest)",
     "frontend": "~90% (8/9 key UI assertions verified directly via Playwright; 2 assertions (Tan/Tan=$662.20, +Glass=$739.20, +Tempered=$1178.20, 6068=$2513, DH premium count) blocked by Playwright select_option timing race — NOT product bugs, the underlying selects render correctly and the catalog API returns correct values matching the expected math)"
   },
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!  |  Admin token: OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]  |  Admin token: OXSp1EXqp1rPLsQfeEoZyDbFCLZ3D6B2D55HyO1LFoE",
   "seed_data_creation": "test_vero_iter_b.py creates 'TEST_VeroOpening' estimate, exercises PUT round-trip, then deletes it. No persistent DB changes.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

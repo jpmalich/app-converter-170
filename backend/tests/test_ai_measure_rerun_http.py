@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Iter 78z+ — AI Measure rerun endpoint.
 
 Mirrors the blueprint rerun tests. Verifies the validation surface
@@ -21,7 +22,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE = os.environ.get("REACT_APP_BACKEND_URL") or "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PW = "Admin123!"
+ADMIN_PW = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

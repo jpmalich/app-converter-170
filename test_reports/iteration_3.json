@@ -31,7 +31,7 @@
     "backend": "100% (21/21)",
     "frontend": "not tested this iteration (backend-only request)"
   },
-  "test_credentials": "admin@wolfandson.com / Admin123! — works; role now 'owner' with a company_id as required.",
+  "test_credentials": "admin@wolfandson.com / [REDACTED — backend/.env ADMIN_PASSWORD] — works; role now 'owner' with a company_id as required.",
   "seed_data_creation": "Each test run creates ephemeral test companies (TEST_CompanyA_*, TEST_CompanyB_*, TEST_NewCo_*) and one TEST_MiscLines estimate; the estimate is deleted at the end of the run by TestCleanup. The throwaway test users and companies remain in MongoDB but are namespaced with TEST_ prefixes and random suffixes.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

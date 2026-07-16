@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Demo reset pins — Letrick showcase staging (ruled 2026-06):
 specified state, hard isolation, idempotency."""
 import os
@@ -15,7 +16,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 BASE_URL = "https://app-converter-170.preview.emergentagent.com"
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = TEST_PASSWORD
 
 
 @pytest.fixture(scope="module")

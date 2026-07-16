@@ -21,7 +21,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "100% (29/29 pytest)", "frontend": "100% (all acceptance criteria verified end-to-end)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123!",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD]",
   "seed_data_creation": "None new. Used existing LP estimate EST-723351 (id f27a3c6f-00c6-4401-94a0-33f22eb6212e). Left '38 Series Lap 3/8\" x 8\" x 16'' with qty=255 / lab=$9.99 (was qty=0 / lab=$0 originally before testing).",
   "retest_needed": false,
   "main_agent_can_self_test": true,

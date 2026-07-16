@@ -35,7 +35,7 @@
     "/app/backend/tests/test_measure_map_per_profile_http.py (new — 6 HTTP integration cases via live /api/measure/map)"
   ],
   "success_rate": {"backend": "100%", "frontend": "n/a (skipped per request)"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (worked first try, session cookie auth)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (worked first try, session cookie auth)",
   "seed_data_creation": "None — /api/measure/map is a pure deterministic mapper, no DB writes.",
   "retest_needed": false,
   "main_agent_can_self_test": true,

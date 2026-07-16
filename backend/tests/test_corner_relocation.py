@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """Chase-relocation verb + audit timeline (ruled 2026-07-15).
 
 Fixture per ruling: the mislocated chase on letrick 7-14-26 7pm (photo run
@@ -25,7 +26,7 @@ CHASE_KEY = "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall"
 @pytest.fixture(scope="module")
 def session():
     s = requests.Session()
-    r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": "Admin123!"}, timeout=15)
+    r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD}, timeout=15)
     assert r.status_code == 200, r.text
     yield s
     # leave the estimate as found

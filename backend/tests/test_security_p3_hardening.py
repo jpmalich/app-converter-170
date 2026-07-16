@@ -1,3 +1,4 @@
+from creds_for_tests import TEST_PASSWORD
 """SEC-004 / SEC-005 / SEC-006 / SEC-007 — Iter 78z++++.
 
 P3 security hardening regression tests:
@@ -27,7 +28,7 @@ BASE_URL = (
 ).rstrip("/")
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
-ADMIN_PW = os.environ.get("ADMIN_PASSWORD", "Admin123!")
+ADMIN_PW = os.environ.get("ADMIN_PASSWORD", TEST_PASSWORD)
 ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
 MONGO_URL = os.environ.get("MONGO_URL")
 DB_NAME = os.environ.get("DB_NAME")

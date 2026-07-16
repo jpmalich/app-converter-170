@@ -15,7 +15,7 @@
   ],
   "updated_files": [],
   "success_rate": {"backend": "N/A (frontend-only per request)", "frontend": "100% — 8/8 flows PASS"},
-  "test_credentials": "hhunt6677@yahoo.com / Admin123! (contractor tier retained)",
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD] (contractor tier retained)",
   "seed_data_creation": "One material-list share token minted (YX9l7xp5xy1RcEKH6lrbET3--PJx0iWU) via the MATERIAL LIST print flow — expected behavior per QR doctrine. NOT revoked (harmless, frozen snapshot).",
   "retest_needed": false,
   "should_main_agent_self_test": false,
