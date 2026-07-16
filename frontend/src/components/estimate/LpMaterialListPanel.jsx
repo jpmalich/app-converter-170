@@ -88,6 +88,25 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   // "Tape the chase" nudge (approved 2026-07-15): offer-only quick entry
   const [tapeVals, setTapeVals] = useState({});
   const [dimsKey, setDimsKey] = useState(0);
+  // Compare-profiles (approved 2026-07-16, geometry-source rule): derived
+  // per request, never cached — toggling off discards the comparison.
+  const [compare, setCompare] = useState(null);
+  const [comparing, setComparing] = useState(false);
+
+  const toggleCompare = async () => {
+    if (compare) { setCompare(null); return; }
+    setComparing(true);
+    try {
+      const { data } = await api.post(`/estimates/${estId}/lp-package/compare`, {
+        alt_profile: "board_batten",
+      });
+      setCompare(data);
+    } catch {
+      toast.error("Could not derive the comparison — try again.");
+    } finally {
+      setComparing(false);
+    }
+  };
 
   const toggleVerify = async (item, status, extra) => {
     try {
@@ -294,15 +313,37 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               <span
                 className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
                 data-testid="lp-source-chip"
-                title={`Composition derived from: ${pkg.source_label}`}
+                title={`Composition source: ${pkg.source_label}`}
               >
-                derived from: {pkg.source_label}
+                source: {pkg.source_label}
               </span>
             )}
           </div>
+          {pkg.geometry_basis?.label && (
+            <div
+              className={`text-[10px] mt-0.5 font-mono-num ${pkg.geometry_basis.pinned ? "text-[var(--muted)]" : "text-[#92400E]"}`}
+              data-testid="lp-geometry-basis"
+              title="Geometry-source naming: every derivation states the geometry it stands on"
+            >
+              geometry: {pkg.geometry_basis.label}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {refreshing && <Loader2 className="w-4 h-4 animate-spin text-[var(--muted)]" />}
+          <button
+            type="button"
+            className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider inline-flex items-center gap-1 border ${
+              compare
+                ? "bg-[var(--bar-bg)] text-white border-transparent"
+                : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)]"
+            }`}
+            onClick={toggleCompare}
+            disabled={comparing}
+            data-testid="lp-compare-toggle"
+          >
+            {comparing ? "…" : compare ? "Hide compare" : "Compare Lap vs B&B"}
+          </button>
           <button
             type="button"
             className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider inline-flex items-center gap-1 border ${
@@ -318,6 +359,8 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           </button>
         </div>
       </div>
+
+      {compare && <CompareProfilesCard compare={compare} />}
 
       {/* color selector */}
       <div className="px-4 py-3 border-b border-[var(--border)]">
@@ -637,9 +680,14 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
       {/* 3D — mesh-group flat repaints */}
       {preview3d && (
         <div className="border-t border-[var(--border)] p-3" data-testid="lp-material-3d">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-2 flex items-center gap-2">
-            <RefreshCcw className="w-3 h-3" /> 3D — colors repaint live (siding + opening trim mesh groups; corner/fascia meshes pending)
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-1 flex items-center gap-2">
+            <RefreshCcw className="w-3 h-3" /> 3D Model — colors repaint live
           </div>
+          {pkg.geometry_basis?.label && (
+            <div className="text-[10px] mb-2 font-mono-num text-[var(--muted)]" data-testid="lp-3d-geometry-basis">
+              geometry: {pkg.geometry_basis.label}
+            </div>
+          )}
           <HouseModel3D
             preview={preview3d}
             estimate={est}
@@ -650,6 +698,88 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+
+// Compare-profiles card (approved 2026-07-16): Lap vs Board & Batten
+// side-by-side — SAME named geometry, same engine, derived per request.
+function CompareProfilesCard({ compare }) {
+  const cur = compare.current || {};
+  const alt = compare.alternative || {};
+  const altLabel = compare.alt_profile === "board_batten" ? "Board & Batten" : "Lap";
+  const total = (p) => p?.summary?.pricing?.total_sell || 0;
+  const byName = (p) =>
+    Object.fromEntries((p.lines || []).filter((l) => (l.qty || 0) > 0).map((l) => [l.name, l]));
+  const curMap = byName(cur);
+  const altMap = byName(alt);
+  const names = Array.from(new Set([...Object.keys(curMap), ...Object.keys(altMap)]));
+  const changed = names.filter((n) => {
+    const a = curMap[n];
+    const b = altMap[n];
+    return (a?.qty || 0) !== (b?.qty || 0) || (a?.line_sell || 0) !== (b?.line_sell || 0);
+  });
+  const sameCount = names.length - changed.length;
+  const cell = (l) =>
+    l ? (
+      <>
+        <span className="font-mono-num">{l.qty} {l.unit}</span>
+        <span className="font-mono-num text-[var(--muted)] ml-2">
+          {l.pricing_status === "priced" ? fmt(l.line_sell) : "pending"}
+        </span>
+      </>
+    ) : (
+      <span className="text-[var(--muted)]">—</span>
+    );
+  return (
+    <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-muted)]" data-testid="lp-compare-card">
+      <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
+        Compare profiles — same geometry, same engine
+      </div>
+      {compare.geometry_basis?.label && (
+        <div className="text-[10px] font-mono-num text-[var(--muted)] mt-0.5" data-testid="lp-compare-basis">
+          geometry: {compare.geometry_basis.label}
+        </div>
+      )}
+      <table className="w-full text-xs mt-2">
+        <thead>
+          <tr className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
+            <th className="text-left py-1 w-[44%]">Line</th>
+            <th className="text-left py-1">Current — Lap</th>
+            <th className="text-left py-1">{altLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {changed.map((n) => (
+            <tr key={n} className="border-t border-[var(--border)]" data-testid={`lp-compare-line-${n}`}>
+              <td className="py-1.5 pr-2 text-[var(--ink)]">{n}</td>
+              <td className="py-1.5">{cell(curMap[n])}</td>
+              <td className="py-1.5">{cell(altMap[n])}</td>
+            </tr>
+          ))}
+          <tr className="border-t-2 border-[var(--ink)]">
+            <td className="py-1.5 font-bold text-[var(--ink)]">
+              Materials total
+              {sameCount > 0 && (
+                <span className="font-normal text-[10px] text-[var(--muted)] ml-2">
+                  ({sameCount} shared line{sameCount === 1 ? "" : "s"} identical in both)
+                </span>
+              )}
+            </td>
+            <td className="py-1.5 font-mono-num font-bold" data-testid="lp-compare-current-total">{fmt(total(cur))}</td>
+            <td className="py-1.5 font-mono-num font-bold" data-testid="lp-compare-alt-total">
+              {fmt(total(alt))}
+              <span className={`ml-2 text-[10px] font-bold ${total(alt) - total(cur) >= 0 ? "text-[#92400E]" : "text-emerald-700"}`}>
+                {total(alt) - total(cur) >= 0 ? "+" : "−"}{fmt(Math.abs(total(alt) - total(cur)))}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div className="text-[10px] text-[var(--muted)] mt-1.5">
+        Comparison view only — nothing is saved or applied. Pending lines are excluded from both totals.
+      </div>
     </div>
   );
 }

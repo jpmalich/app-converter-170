@@ -420,7 +420,7 @@ export default function EstimateEditor() {
         <SettingsRow est={est} update={update} />
         <PhotosPanel est={est} update={update} />
 
-        <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} />
+        <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} derivedUnappliedTab={lpDerivedUnapplied ? "lp_smart" : null} />
 
         {activeTab === "mezzo" ? (
           <>

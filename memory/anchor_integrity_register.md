@@ -55,3 +55,4 @@ Opened 2026-07-15 (Howard's order, letrick 7-14-26 7pm findings).
 - Every derivation, copy, and comparison surface states its geometry basis VISIBLY: "tape-validated key" vs "extraction run + run_id".
 - Where a tape-validated basis exists it is the DEFAULT source; extraction runs are the labeled fallback.
 - PIN: no derivation silently binds to latest-run. Compare-profiles toggle ships under this rule — "one geometry" = one NAMED geometry.
+- SHIPPED (2026-07-16, Iter 134): binding tracked in _load_run (explicit-run/applied-stamp/latest-run/paired-latest); geometry_basis attached on every package derivation surface (preview, cost-preview, freeze, derive-current, truck-reconcile, export); visible on panel header, 3D header, share footer, compare card (amber when unpinned). Pinned in tests/test_geometry_basis.py + test_compare_profiles.py.

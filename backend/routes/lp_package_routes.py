@@ -64,6 +64,16 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         return r
 
     run = await _find_run(q)
+    # STANDING RULE (Howard, 2026-07-16): geometry-source naming. Track HOW
+    # the run was bound so every derivation surface can state its basis
+    # visibly — no derivation silently binds to a latest-run.
+    stamped = str(est.get("lp_source_run_id") or "").strip()
+    if run_id:
+        binding = "explicit-run"
+    elif run is not None and stamped and str(run.get("run_id") or "") == stamped:
+        binding = "applied-stamp"
+    else:
+        binding = "latest-run"
     paired_id = est.get("paired_lp_estimate_id") or est.get("paired_estimate_id")
     if run is None and paired_id and not run_id:
         paired_q: dict = {"id": paired_id}
@@ -72,9 +82,55 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         paired = await db.estimates.find_one(paired_q, {"_id": 0, "id": 1})
         if paired:
             run = await _find_run({"estimate_id": paired["id"], "status": "done"})
+            if run is not None:
+                binding = "paired-latest"
     if run is None:
         raise HTTPException(status_code=404, detail="No completed AI Measure run for this estimate")
-    return est, run
+    return est, run, binding
+
+
+_BINDING_LABEL = {
+    "applied-stamp": "pinned (applied)",
+    "explicit-run": "explicit run",
+    "latest-run": "latest run — unpinned",
+    "paired-latest": "paired estimate, latest run — unpinned",
+}
+
+
+def _geometry_basis(est: dict, run: dict, binding: str) -> dict:
+    """Geometry-source naming (standing rule 2026-07-16): a structured,
+    contractor-visible statement of the geometry basis behind a derivation
+    — extraction run + run_id + binding mode + tape/field overlays."""
+    rid8 = str(run.get("run_id") or "")[:8]
+    kind = "blueprint" if run.get("page_paths") else "photo"
+    taped = 0
+    for fields in (est.get("lp_appendage_dims") or {}).values():
+        for f in ("height_ft", "depth_ft"):
+            e = (fields or {}).get(f) or {}
+            if e.get("status") in _DIM_STATUSES and (e.get("value") or 0) > 0:
+                taped += 1
+    confirmed = sum(
+        1 for v in (est.get("lp_field_verify") or {}).values()
+        if (v or {}).get("status") in ("verified", "user_relocated")
+    )
+    label = f"{kind} extraction run {rid8} — {_BINDING_LABEL.get(binding, binding)}"
+    overlays = []
+    if taped:
+        overlays.append(f"{taped} taped dim{'s' if taped != 1 else ''}")
+    if confirmed:
+        overlays.append(f"{confirmed} field-confirmed")
+    if overlays:
+        label += " · " + " · ".join(overlays)
+    return {
+        "source": "extraction",
+        "kind": kind,
+        "run_id": run.get("run_id"),
+        "binding": binding,
+        "pinned": binding == "applied-stamp",
+        "taped_dims": taped,
+        "confirmed_locations": confirmed,
+        "label": label,
+    }
 
 
 def _extract(run: dict):
@@ -467,7 +523,7 @@ async def lp_package_preview(
     Tier B/25%) — the payload can NEVER set a tier or margin here; the
     tier picker is admin-side only. Response is ALWAYS redacted:
     cost / margin / tier never leave the server on this surface."""
-    est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
+    est, run, binding = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
     op_items = _openings_items(run, est.get("lp_openings_review"))
     measurements, op_summary = _apply_openings_review(measurements, op_items)
@@ -479,6 +535,7 @@ async def lp_package_preview(
     cfg = await load_margin_cfg()
     price_package(pkg, cfg, est.get("lp_pricing_tier"))
     pkg["run_id"] = run.get("run_id")
+    pkg["geometry_basis"] = _geometry_basis(est, run, binding)
     # Source chip (Howard-approved 2026-07-14): presenters answer "where
     # did these numbers come from?" in one glance.
     if run.get("page_paths"):
@@ -494,6 +551,64 @@ async def lp_package_preview(
     pkg["openings_review"] = {**op_summary, "items": op_items}
     pkg["color_matrix"] = _color_matrix(pkg.get("lines") or [])
     return redact_external(pkg)
+
+
+_COMPARE_FAMILIES = ("lap", "board_batten")
+
+
+def _force_profile_measurements(measurements: dict, family: str) -> dict:
+    """Compare-profiles: re-express the WHOLE siding field as one profile
+    family on the SAME geometry (headline siding_sqft, C4 gable basis).
+    B&B panels start on the ledge — starter is ruled OFF for that family."""
+    m = dict(measurements)
+    try:
+        sqft = float(m.get("siding_sqft") or 0)
+    except (TypeError, ValueError):
+        sqft = 0.0
+    m["_per_profile_sqft"] = {family: sqft}
+    m["_force_profile_lines"] = True
+    m.pop("_per_profile_composition", None)
+    m.pop("_profile_composition_conflicts", None)
+    if family in ("board_batten", "vertical"):
+        m["starter_lf"] = 0  # RULED + PINNED: no starter on B&B composition
+    return m
+
+
+@router.post("/estimates/{est_id}/lp-package/compare")
+async def lp_package_compare(
+    est_id: str, payload: dict | None = None, user: dict = Depends(get_current_user),
+):
+    """Compare-profiles toggle (approved 2026-07-16, ships under the
+    geometry-source standing rule): derive the current composition AND a
+    forced-profile alternative from ONE named geometry — same run, same
+    engine, derived per request, never cached or persisted."""
+    alt = str((payload or {}).get("alt_profile") or "board_batten")
+    if alt not in _COMPARE_FAMILIES:
+        raise HTTPException(status_code=422, detail=f"alt_profile must be one of {_COMPARE_FAMILIES}")
+    est, run, binding = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
+    measurements, corner_locations, wall_heights = _extract(run)
+    measurements, _ = _apply_openings_review(
+        measurements, _openings_items(run, est.get("lp_openings_review")))
+    corners_eff = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
+    corners_eff = _apply_appendage_dims(corners_eff, est.get("lp_appendage_dims"))
+    cfg = await load_margin_cfg()
+    basis = _geometry_basis(est, run, binding)
+
+    def _derive(m):
+        pkg = assemble_lp_package(m, corners_eff, wall_heights,
+                                  colors=(payload or {}).get("colors"))
+        price_package(pkg, cfg, est.get("lp_pricing_tier"))
+        pkg = redact_external(pkg)
+        pkg["run_id"] = run.get("run_id")
+        pkg["geometry_basis"] = basis
+        return pkg
+
+    return {
+        "geometry_basis": basis,
+        "alt_profile": alt,
+        "current": _derive(measurements),
+        "alternative": _derive(_force_profile_measurements(measurements, alt)),
+    }
 
 
 @router.post("/estimates/{est_id}/openings-review")
@@ -679,7 +794,7 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
     the confidential cost layer — dealer cost, margin, tier resolution.
     This payload must never be proxied to a contractor surface."""
     check_admin_token(request)
-    est, run = await _load_run(est_id, None, (payload or {}).get("run_id"))
+    est, run, binding = await _load_run(est_id, None, (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
     measurements, _ = _apply_openings_review(
         measurements, _openings_items(run, est.get("lp_openings_review")))
@@ -691,6 +806,7 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
     cfg = await load_margin_cfg()
     price_package(pkg, cfg, (payload or {}).get("tier") or est.get("lp_pricing_tier"))
     pkg["run_id"] = run.get("run_id")
+    pkg["geometry_basis"] = _geometry_basis(est, run, binding)
     return pkg
 
 
@@ -708,7 +824,7 @@ def _pkg_content_hash(pkg: dict) -> str:
 
 
 async def _derive_current(est_id: str, company_id=None):
-    est, run = await _load_run(est_id, company_id)
+    est, run, binding = await _load_run(est_id, company_id)
     measurements, corner_locations, wall_heights = _extract(run)
     # openings corrections apply on EVERY derivation surface (coherence);
     # the review payload itself is contractor-only and never attaches here.
@@ -727,6 +843,7 @@ async def _derive_current(est_id: str, company_id=None):
     price_package(pkg, cfg, est.get("lp_pricing_tier"))
     pkg = redact_external(pkg)
     pkg["run_id"] = run.get("run_id")
+    pkg["geometry_basis"] = _geometry_basis(est, run, binding)
     return pkg, (full_est or {})
 
 
@@ -742,7 +859,7 @@ async def lp_material_list_freeze(
     import secrets
     from datetime import datetime, timedelta, timezone
 
-    est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
+    est, run, binding = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
     measurements, corner_locations, wall_heights = _extract(run)
     # openings + corner reviews apply on EVERY derivation surface
     # (coherence) — the frozen snapshot must match what the panel showed.
@@ -757,6 +874,7 @@ async def lp_material_list_freeze(
     price_package(pkg, cfg, est.get("lp_pricing_tier"))
     pkg = redact_external(pkg)  # frozen snapshot is ALWAYS the redacted view
     pkg["run_id"] = run.get("run_id")
+    pkg["geometry_basis"] = _geometry_basis(est, run, binding)
     meta = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "estimate_number": 1, "customer_name": 1,
                          "address": 1, "estimate_date": 1})
@@ -898,7 +1016,7 @@ async def lp_truck_reconcile_endpoint(
     """Letrick truck-list acceptance harness — derives each delivered
     line from the conventions layer + validated geometry, deviations
     itemized per line with cause. Runs BEFORE the ±3% acceptance test."""
-    _est, run = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
+    _est, run, binding = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
     measurements, corner_locations, _ = _extract(run)
     raw_ai = (run.get("result") or {}).get("raw_ai") or {}
     window_widths = [float(o.get("width_in") or 0) / 12.0
@@ -906,4 +1024,5 @@ async def lp_truck_reconcile_endpoint(
                      if str(o.get("type")) == "window" and o.get("width_in")]
     out = reconcile_letrick_truck(measurements, corner_locations, window_widths)
     out["run_id"] = run.get("run_id")
+    out["geometry_basis"] = _geometry_basis(_est, run, binding)
     return out

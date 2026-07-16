@@ -39,7 +39,7 @@ function filledCountForTab(est, tabId) {
   ).length;
 }
 
-export default function EstimatorTabs({ est, activeTab, onChange, tabs = TABS }) {
+export default function EstimatorTabs({ est, activeTab, onChange, tabs = TABS, derivedUnappliedTab = null }) {
   return (
     <div
       className="card mb-4 p-2 flex flex-wrap gap-1"
@@ -80,14 +80,23 @@ export default function EstimatorTabs({ est, activeTab, onChange, tabs = TABS })
                 </span>
               )}
             </div>
-            <div
-              className={[
-                "mt-1 font-mono-num text-sm",
-                isActive ? "text-[var(--ink)] font-bold" : "text-[var(--muted)]",
-              ].join(" ")}
-            >
-              {fmt(subtotal)}
-            </div>
+            {derivedUnappliedTab === tab.id && subtotal === 0 ? (
+              <div
+                className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#92400E]"
+                data-testid={`estimator-tab-${tab.id}-derived-unapplied`}
+              >
+                Derived — not applied
+              </div>
+            ) : (
+              <div
+                className={[
+                  "mt-1 font-mono-num text-sm",
+                  isActive ? "text-[var(--ink)] font-bold" : "text-[var(--muted)]",
+                ].join(" ")}
+              >
+                {fmt(subtotal)}
+              </div>
+            )}
           </button>
         );
       })}

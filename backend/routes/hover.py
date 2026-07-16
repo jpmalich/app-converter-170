@@ -1660,7 +1660,10 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
     if not isinstance(per_profile, dict):
         return []
     positive = {f: s for f, s in per_profile.items() if isinstance(s, (int, float)) and s > 0}
-    if len(positive) <= 1:
+    # Compare-profiles (ruled 2026-07-16): a forced single-family derivation
+    # sets `_force_profile_lines` so the per-profile path emits even for one
+    # family (the default-mapping shortcut would otherwise win).
+    if len(positive) <= 1 and not measurements.get("_force_profile_lines"):
         return []
     # Iter 79j.71 — composition tripwire. Families flagged with a
     # composition conflict get an amber line (qty 0 + warning note)

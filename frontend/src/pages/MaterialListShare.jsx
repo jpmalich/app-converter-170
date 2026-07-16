@@ -196,8 +196,10 @@ export default function MaterialListShare() {
             Materials total: {fmt(pricing.total_sell || 0)}
           </div>
         </div>
-        <div className="px-5 py-2 text-[10px] text-zinc-400 border-t border-zinc-200">
-          Derived from confirmed AI measurements — run {String(pkg.run_id || "").slice(0, 8)} · single source
+        <div className="px-5 py-2 text-[10px] text-zinc-400 border-t border-zinc-200" data-testid="material-share-geometry-basis">
+          {pkg.geometry_basis?.label
+            ? `Geometry: ${pkg.geometry_basis.label} · single source`
+            : `Derived from confirmed AI measurements — run ${String(pkg.run_id || "").slice(0, 8)} · single source`}
         </div>
       </div>
     </div>

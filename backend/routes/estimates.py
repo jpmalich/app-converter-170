@@ -457,9 +457,9 @@ async def _derive_lp_pkg_for_export(est: dict, company_id: str):
     from lp_costs import price_package, redact_external
     from lp_package import assemble_lp_package
     from routes.lp_admin import load_margin_cfg
-    from routes.lp_package_routes import _extract, _load_run
+    from routes.lp_package_routes import _extract, _geometry_basis, _load_run
     try:
-        _e, run = await _load_run(est["id"], company_id)
+        _e, run, binding = await _load_run(est["id"], company_id)
     except HTTPException:
         return None
     meas, corners, heights = _extract(run)
@@ -472,6 +472,7 @@ async def _derive_lp_pkg_for_export(est: dict, company_id: str):
     price_package(pkg, cfg, est.get("lp_pricing_tier"))
     pkg = redact_external(pkg)
     pkg["run_id"] = run.get("run_id")
+    pkg["geometry_basis"] = _geometry_basis(_e, run, binding)
     return pkg
 
 
