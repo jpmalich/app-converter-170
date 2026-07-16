@@ -8,7 +8,6 @@ import PricingUpdatePanel from "@/components/admin/PricingUpdatePanel";
 import MezzoPricingPanel from "@/components/admin/MezzoPricingPanel";
 import VeroPricingPanel from "@/components/admin/VeroPricingPanel";
 import ISSPricingPanel from "@/components/admin/ISSPricingPanel";
-import WindowLaborPanel from "@/components/admin/WindowLaborPanel";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -366,9 +365,6 @@ export default function BrandingAdmin() {
 
         {/* Vero Window Pricing Matrix (4 tiers × 6 product types, multi-grid) */}
         <VeroPricingPanel token={token} />
-
-        {/* Contractor Window Labor divergence — gated preview (values held) */}
-        <WindowLaborPanel token={token} />
 
         {/* ISS Siding Pricing — single-tier, CSV/Excel upload only */}
         <ISSPricingPanel token={token} />
