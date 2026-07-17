@@ -3255,3 +3255,11 @@ caveat noted). Full forensics: /app/memory/incident_2026-07-17_vanished_run.md
   586.50 vs Hover 574.33 = +2.1% in band; doors (232.00 LF) were the gap.
   STANDING CONVENTION: cross-compare opening perimeter windows-only unless the
   Hover PDF line is verified to include doors.
+
+## Reference correction (2026-07-17, Howard) — Hover pricing, documentation only
+Hover current pricing is **$130–290 per report** (legacy ~$50 figures are obsolete —
+do not reuse). Canonical cost-comparison line: **photo-path extraction ≈ $3.61/run
+actual (probe 1ec3f42a) vs $130–290/scan**. Positioning is COMPLEMENTARY, not
+substitutive: photos for every lead at near-zero cost; Hover (when purchased)
+imports into the same engine via the banked Hover path. Pitch language SSOT:
+/app/memory/pitch_reference.md
