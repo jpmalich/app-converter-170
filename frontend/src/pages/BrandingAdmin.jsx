@@ -1096,6 +1096,12 @@ function AuditTimeline({ token, estId }) {
               </span>
               <span className="font-bold text-[var(--ink)]">{ev.type}</span>
               {ev.meta?.by && <span className="text-[var(--muted)]">by {ev.meta.by}</span>}
+              {ev.meta?.code && <span className="text-[var(--muted)]">flag: {ev.meta.code}</span>}
+              {ev.meta?.values?.wall_heights_ft && (
+                <span className="font-mono text-[10px] text-[var(--muted)]">
+                  heights: {ev.meta.values.wall_heights_ft.join(", ")} ft
+                </span>
+              )}
               {ev.meta?.from && <span className="text-[var(--muted)]">from {Array.isArray(ev.meta.from) ? ev.meta.from.join("/") : ev.meta.from}</span>}
               {ev.meta?.to && <span className="text-[var(--muted)]">→ {ev.meta.to}</span>}
               {ev.meta?.key && <span className="font-mono text-[10px] text-[var(--muted)] truncate max-w-[280px]">{ev.meta.key}</span>}
