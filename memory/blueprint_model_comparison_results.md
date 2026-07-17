@@ -149,3 +149,18 @@ ratification card the photo path uses:
   provenance, exactly as on the photo path.
 - Applies to runs created after 2026-07-15 (extraction artifacts are
   immutable; older runs simply show no card).
+
+
+## Ledger reconciliation (2026-07-17, Howard) — both open items CLOSED
+1. **Opus window over-read (11 vs 10)** — STALE LEDGER. Already RULED 2026-07-16:
+   mechanism traced (duplicate B-row), disposition shipped — blueprint openings
+   ride the SAME confirm-openings ratification card as the photo path
+   (ai_blueprint.py ~line 819); "not present" verb kills the phantom in one tap.
+   Ruling stands: accept under confirm-card handling, no follow-up probe. CLOSED.
+2. **Rerun endpoint model-override clamp** — STALE LEDGER (already implemented,
+   was unpinned). The dropdown ruling's clamp covers it: server-side validated
+   set (_COMPARISON_MODELS allowlist), owner-gated (non-owner or off-list →
+   403 "Model override not permitted" — stricter than a silent clamp, so no
+   clamped_from write occurs by design), model_requested recorded on the run
+   doc, default stays the incumbent. Pinned 2026-07-17:
+   tests/test_blueprint_rerun_http.py::test_rerun_model_override_clamped_source_pin. CLOSED.

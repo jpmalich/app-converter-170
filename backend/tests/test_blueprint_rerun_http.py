@@ -108,3 +108,15 @@ def test_rerun_unauthenticated():
     r = requests.post(f"{API}/measure/ai-blueprint/rerun/anything", timeout=10)
     # 401 or 403 depending on auth middleware
     assert r.status_code in (401, 403)
+
+
+def test_rerun_model_override_clamped_source_pin():
+    """Ledger reconciliation pin (2026-07-17): the dropdown ruling's
+    validated-set clamp COVERS the rerun endpoint — server-side
+    allowlist, owner-gated override (403 otherwise, stricter than a
+    silent clamp), requested model recorded on the run doc."""
+    src = (Path(__file__).resolve().parents[1] / "routes" / "ai_blueprint.py").read_text()
+    assert '_COMPARISON_MODELS = {"claude-opus-4-5-20251101", "claude-fable-5"}' in src
+    assert 'if user.get("role") != "owner" or requested not in _COMPARISON_MODELS' in src
+    assert 'raise HTTPException(status_code=403, detail="Model override not permitted")' in src
+    assert '"model_requested": model_name' in src
