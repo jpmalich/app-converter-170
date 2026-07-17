@@ -3187,3 +3187,26 @@ Two items ahead of standby, both Howard-collects-first:
 - ARTIFACTS: round-two estimate d78cd3b4 ("261 Haugh Dr — round two (post-fix)"), before-artifact 02beb855 untouched. Memo /app/memory/haugh_round_two_derivation.md (Letrick-style itemized arithmetic). Pins tests/test_haugh_round_two.py (9 green); regression suites 65 green.
 - SCORE vs CHECK FIGURES: lap 248✅ 540 33✅ coil gone✅ OSC 9✅ 440 21✅ closed 13✅ vented 12⚠️(check ~10 = no-waste round; waste-on-soffit adjudication Howard's) gutter unchanged✅.
 - OPEN (awaiting ruling): ISC asymmetry (corner-walk 6 vs measured LF 3); soffit-vented waste; import-dialog facade picker needs extraction facade_breakdown schema (pending, blueprint protocol).
+
+## Round-Two Follow-Ups — EXECUTED + TESTED (2026-07-18, iteration_47 all green)
+Three ruled follow-ups from the 261 Haugh round-two approval, shipped as one batch:
+1. **Waste display sync (pinned):** every surface stating a waste figure mirrors the APPLIED value.
+   `summary.waste_pct_applied` on lp-package preview (0.10 default / `_waste_pct` override);
+   `lp-waste-applied-chip` on the LP Material List header; import-dialog recon card shows the
+   engine-applied % with "(applied inside the engine formulas)" and never re-multiplies
+   (`wasteInFormula` prop); LP apply toast states the applied % and why the estimate knob stays 0.
+2. **ISC measured-LF pooling (pinned):** Hover-path ISC `qty = ceil(inside_corner_lf ÷ 16)`
+   (cut-stock yield, Haugh 36.92 LF → 3 sticks vs 6). VALIDITY CAVEAT in code + memo: holds only
+   while individual corner heights ≤ 16'; taller corners revert to splice-and-round-up per corner
+   (`_derivation.kind = isc_hover_splice`).
+3. **Facade-breakdown picker (pinned schema):** Hover parse emits `facade_breakdown`
+   (siding/stucco/brick/stone/metal/other, per-material, never summed). `_hover_mapping_contract`
+   enforces WRAP-DEFAULT even without a picker choice (siding composes; others named + excluded via
+   `facade_scope` mapping flag — never silently summed). Import dialog renders the explicit-choice
+   picker (`hover-facade-scope-picker`, siding locked-in, others opt-in) on LP-kind; explicit
+   inclusion passes `facade_scope` to hover-lp-run and overrides the default.
+Pins: `tests/test_haugh_round_two.py` (16/16) + testing-agent `tests/test_iteration_47_haugh.py` (3/3).
+Memo updated: `/app/memory/haugh_round_two_derivation.md` (follow-ups section).
+Note from testing agent: to exercise the restore-modal facade picker in-browser end-to-end, a
+LP_smart estimate with cached NEW-SCHEMA hover measurements is needed (next real Hover import
+will carry `facade_breakdown`).
