@@ -6530,6 +6530,37 @@ async def _execute_ai_measure_worker(
         # Iter 79j.86 — ACTUAL per-phase token usage for the bake-off
         # cost column (None on proxy transport / single-call runs).
         token_usage = _aggregate_token_usage(raw, raw_per_photo)
+        # STATUS PARITY (ruled 2026-07-17): a run with an unresolved
+        # reconciliation error is NOT done — "done-with-error" was a
+        # hollow-done. ONE canonical awaiting-retry representation,
+        # identical to the reconcile-only worker's failure shape:
+        # status=error + error_kind=ReconciliationRetryError. Result is
+        # still stored (evidence/debug preview); Phase A stays banked
+        # for the retry. Pinned: done can never coexist with an
+        # unresolved reconciliation error.
+        recon_err = raw.get("_reconciliation_error") or raw.get("_parse_error")
+        if recon_err:
+            friendly = raw.get("_reconciliation_error") or (
+                f"reconciler reply was not parseable JSON ({raw.get('_parse_error')})")
+            logger.warning(
+                "[ai-measure] reconcile failed — status-parity flip to awaiting-retry: %s",
+                str(friendly)[:200],
+            )
+            await db.ai_measure_runs.update_one(
+                {"run_id": run_id},
+                {"$set": {
+                    "status": "error",
+                    "stage": "error",
+                    "result": result,
+                    "token_usage": token_usage,
+                    "error": (f"Reconciliation failed: {friendly} — Phase A "
+                              "extractions are saved; use Retry reconciliation."),
+                    "error_kind": "ReconciliationRetryError",
+                    "completed_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc),
+                }},
+            )
+            return
         await db.ai_measure_runs.update_one(
             {"run_id": run_id},
             {"$set": {

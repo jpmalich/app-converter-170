@@ -345,6 +345,40 @@ def test_lf_panel_never_renders_zeros_for_pending():
     assert "Number(preview.measurements[key] || 0)" not in jsx
 
 
+# ── status parity (ruled 2026-07-17) ─────────────────────────────────
+def test_done_never_coexists_with_unresolved_reconcile_error():
+    """ONE canonical awaiting-retry state. DB invariant: no run doc may
+    be status=done while its stored result carries an unresolved
+    _reconciliation_error / _parse_error (hollow-done). Guarded at both
+    workers; existing docs migrated 2026-07-17."""
+    client = MongoClient(os.environ["MONGO_URL"])
+    try:
+        db = client[os.environ["DB_NAME"]]
+        offenders = list(db.ai_measure_runs.find(
+            {"status": "done",
+             "$or": [
+                 {"result.raw_ai._reconciliation_error": {"$nin": [None, ""]}},
+                 {"result.raw_ai._parse_error": {"$nin": [None, ""]}},
+             ]},
+            {"run_id": 1}))
+        assert not offenders, f"hollow-done docs present: {[d['run_id'] for d in offenders]}"
+    finally:
+        client.close()
+
+
+def test_status_parity_guard_in_both_workers():
+    assert SRC.count('"error_kind": "ReconciliationRetryError"') >= 2
+    assert "STATUS PARITY (ruled 2026-07-17)" in SRC
+
+
+def test_client_retry_poll_budget_matches_ceiling():
+    """Ceiling policy applies to EVERY consumer — the old 240s client
+    poll expired before 327s+ reconciles finished."""
+    jsx = (Path(__file__).resolve().parents[2] / "frontend" / "src" /
+           "components" / "estimate" / "AIMeasureButton.jsx").read_text()
+    assert "i < 320" in jsx and "i < 80;" not in jsx
+
+
 # ── proxy retirement (ruled 2026-07-17) ──────────────────────────────
 def test_proxy_emergency_default_off():
     assert am._PROXY_EMERGENCY is False

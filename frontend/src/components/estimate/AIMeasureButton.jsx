@@ -718,8 +718,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (!launch?.data?.run_id) throw new Error("Backend didn't accept the reconcile-only retry");
       let result = null;
       let finalStatus = null;
-      // Phase B alone should finish in ~3 min; give it 4 min budget.
-      for (let i = 0; i < 80; i++) {
+      // Ceiling policy alignment (ruled 2026-07-17): the server's Phase B
+      // ceiling is 900s (AI_MEASURE_RECONCILE_CEILING) — the canonical
+      // complex-house reconcile took 327s and 48k-token runs go longer.
+      // The old 240s client budget expired before the server finished.
+      for (let i = 0; i < 320; i++) {
         await new Promise((r) => setTimeout(r, 3000));
         let statusResp;
         try {

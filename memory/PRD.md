@@ -3286,3 +3286,25 @@ DISCLOSED, not changed: main-path runs store done-with-_reconciliation_error as
 the established awaiting-retry surface (status endpoint renders the retry
 banner); the reconcile-only worker flips to status=error. Status-parity
 alignment available on ruling if wanted.
+
+## Status parity (RULED + SHIPPED 2026-07-17) & ceiling live-proof status
+- PARITY: canonical awaiting-retry = status=error + error_kind=ReconciliationRetryError
+  (reconcile-only worker's existing shape adopted; lowest migration cost — all
+  consumers already read it: status endpoint error banner, in-flight preflight
+  counts it, sweep ignores non-running, retry endpoint is status-agnostic).
+  Main worker now flips instead of writing done-with-_reconciliation_error;
+  result still stored as evidence. Client retry-poll budget raised 240s→960s
+  to match the 900s ceiling. MIGRATION: 4 hollow-done docs found — 55e5e24f
+  (est a2329f30) + ddff780b migrated to awaiting-retry; 1170d3f5 + 3921e482
+  deleted as exploratory duplicates (register keeps their numbers). DB
+  invariant now zero offenders. Pins: test_done_never_coexists_with_unresolved_reconcile_error
+  (live DB invariant), test_status_parity_guard_in_both_workers,
+  test_client_retry_poll_budget_matches_ceiling. 23/23 green.
+- LIVE-PROOF (900s ceiling, end-to-end): BLOCKED EXTERNALLY — the direct
+  Anthropic key hit its MONTHLY usage limit ("regain access 2026-08-01 00:00
+  UTC", Anthropic 400 invalid_request_error). The retry dispatch itself proved
+  the parity machinery live: failure flipped to canonical awaiting-retry, no
+  hollow-done, preflight shows both awaiting-retry runs (restart_safe=false,
+  honest). PROOF PENDING: fire reconcile-only on ddff780b once the key limit
+  is raised (Anthropic console → Settings → Limits) or resets Aug 1.
+  PRODUCTION RE-RUNS: blocked by the same key limit, not by code.
