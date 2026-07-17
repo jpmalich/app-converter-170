@@ -183,9 +183,11 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
       - Wall body ft² = width × eave_height × (siding_pct / 100). Stone /
         masonry watertable is captured in stone_sqft separately so the
         contractor sees how much area is NOT siding.
-      - Gable triangle ft² = 0.5 × width × gable_triangle_height_ft. Only
-        when gable_triangle_height_ft > 0. Profile inherits from body
-        when gable_profile_callout is empty.
+      - Gable triangle ft² = 0.7 × width × gable_triangle_height_ft (C4
+        ruled convention — angle-cut coverage, NOT the true triangle ÷2;
+        conforms to apply_roof_type_material_math, d667 reconciliation
+        2026-07-16). Only when gable_triangle_height_ft > 0. Profile
+        inherits from body when gable_profile_callout is empty.
       - Dormer ft² = wall's dormer_face_sqft verbatim (single owner: the
         reconciler/geometry math already composed face + cheeks −
         openings — see apply_roof_type_material_math). Profile inherits
@@ -242,7 +244,13 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
         gable_sqft = 0.0
         gable_family = ""
         if gable_h > 0 and width > 0:
-            gable_sqft = 0.5 * width * gable_h
+            # C4 (ruled 2026-07-13; d667 reconciliation 2026-07-16): gable
+            # area = 0.7 × width × triangle height — the ruled estimating
+            # convention (angle-cut coverage), matching
+            # apply_roof_type_material_math. The legacy 0.5 true-triangle
+            # path is removed; per-profile splits no longer self-disagree
+            # with the headline siding_sqft.
+            gable_sqft = 0.7 * width * gable_h
             gable_family = classify_profile(w.get("gable_profile_callout")) or body_family
             _add(gable_family, gable_sqft)
 

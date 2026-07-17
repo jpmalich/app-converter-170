@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 78z (P1.4) — End-to-end HTTP tests for new gutter/downspout geometry
 auto-fills surfaced via POST /api/measure/map.
 
@@ -11,6 +10,7 @@ Verifies (against the live FastAPI route — no LLM cost):
   * No regression: per-profile siding split + new gutter lines coexist
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 from pathlib import Path

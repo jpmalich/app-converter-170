@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 78z+ — Blueprint rerun endpoint (cached-bytes re-fire).
 
 Verifies the auth + validation paths for POST
@@ -8,6 +7,7 @@ ownership, surfaces 404 / 400 properly, and that the new run doc
 inherits estimate_id + rerun_of from the previous one.
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import sys

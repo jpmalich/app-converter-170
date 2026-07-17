@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Failure class 5 — WORKER LIFECYCLE pins (Iter 111, standing rule).
 
 Live failure (EST-657226): a hot-reload killed the reconcile task after
@@ -11,6 +10,7 @@ Live failure (EST-657226): a hot-reload killed the reconcile task after
   • anchor integrity: non-admin model choices clamp to the validated set
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import asyncio
 import os

@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 78z (Cross-Check) HTTP endpoint validation tests.
 
 Hits the live FastAPI server through the public preview URL. These tests
@@ -10,6 +9,7 @@ Also covers the /api/measure/map regression — that an `_ai_profile_recheck`
 key on a measurements dict does not break the catalog mapper.
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import sys

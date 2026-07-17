@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 79j.62 — Stale-worker detector on GET /ai-measure/status/{run_id}.
 
 `asyncio.create_task` workers do not survive uvicorn hot-reload. Before
@@ -15,6 +14,7 @@ against a seeded run doc in Mongo, so we cover the full pymongo +
 FastAPI dependency stack instead of unit-mocking the endpoint.
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import uuid

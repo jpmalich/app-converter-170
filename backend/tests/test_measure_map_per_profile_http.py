@@ -1,10 +1,10 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 78z (P1.2) — End-to-end HTTP tests against POST /api/measure/map.
 
 Verifies the per-elevation profile-split feature wired through the actual
 FastAPI route (no LLM cost — /map is a pure deterministic mapper).
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 from pathlib import Path

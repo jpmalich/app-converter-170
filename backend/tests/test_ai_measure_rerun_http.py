@@ -1,10 +1,10 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 78z+ — AI Measure rerun endpoint.
 
 Mirrors the blueprint rerun tests. Verifies the validation surface
 (404 / 403 / 400 / 401) without paying for a real Claude call.
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import sys

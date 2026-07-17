@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 79j.63 — Session data-loss regression guard.
 
 On Jul 7 2026, contractor clicked "Refine on Photo" on EST-910869 /
@@ -30,6 +29,7 @@ can't regress the invariants that let the recovery work:
   can't accidentally erase or corrupt state.
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import uuid

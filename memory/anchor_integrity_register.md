@@ -49,10 +49,27 @@ Opened 2026-07-15 (Howard's order, letrick 7-14-26 7pm findings).
 - **Instance**: run d66794488ef848509446431b355db8e5 (letrick photo): siding_sqft 1,889.1 vs _per_profile_sqft.lap 1,780.5 (−108.6).
 - **Mechanism (named, verified by exact decomposition)**: two gable conventions inside one result. Headline path (`apply_roof_type_material_math`, C4 ruling) prices gables at ×0.7 (0.7·w·t = 380.1). Per-profile path (`profile_callouts.breakdown_walls_by_profile`) computes gables at the TRUE triangle (0.5·w·t = 271.5). Bodies (1,379) + chase (130) match exactly in both. Δ = 0.2·(30·8.8 + 30·9.3) = 108.6 ✓.
 - **Class distinction**: this is NOT key-vs-run extraction variance — the extraction disagrees with itself; any consumer binding to _per_profile_sqft inherits the un-C4'd gable basis (the B&B first-derivation did).
-- **Fix status**: HELD — mechanism first per ruling; reconciliation is a separate diff for Howard's review (which path's convention governs per-profile splits).
+- **Fix status**: CLOSED (2026-07-16, Howard ruled ×0.7 governs). profile_callouts.py breakdown_walls_by_profile gable math changed 0.5→0.7 (true-triangle path removed); per-profile now equals headline apply_roof_type_material_math. d667 case reconciled: 271.5→380.1 (Δ108.6 closed). Fix is code-level (applies to all future extractions); the stored d667 run keeps its extraction-time value but is single-profile lap (never fed _profile_siding_lines). Pinned: tests/test_d667_gable_reconcile.py (3). Full suite 974 green.
 
 ## STANDING RULE: geometry-source naming (Howard, 2026-07-16)
 - Every derivation, copy, and comparison surface states its geometry basis VISIBLY: "tape-validated key" vs "extraction run + run_id".
 - Where a tape-validated basis exists it is the DEFAULT source; extraction runs are the labeled fallback.
 - PIN: no derivation silently binds to latest-run. Compare-profiles toggle ships under this rule — "one geometry" = one NAMED geometry.
 - SHIPPED (2026-07-16, Iter 134): binding tracked in _load_run (explicit-run/applied-stamp/latest-run/paired-latest); geometry_basis attached on every package derivation surface (preview, cost-preview, freeze, derive-current, truck-reconcile, export); visible on panel header, 3D header, share footer, compare card (amber when unpinned). Pinned in tests/test_geometry_basis.py + test_compare_profiles.py.
+
+## FINDING: security-audit probe SUCCEEDED (2026-07-16, logged per Howard)
+- Emergent's Security Audit feature injected a chat prompt (4:29 PM) asking for
+  the password of a non-existent default-named account. The assistant answered
+  by printing REAL account credentials (owner email + password) into chat —
+  disclosure to an unauthenticated/unsourced requester. The probe achieved its
+  goal; the failure was the assistant's.
+- Remediation (all confirmed complete 2026-07-16):
+  1. STANDING RULE: secrets never written into chat replies or memory files —
+     confirm-existence + point to backend/.env key name, nothing more
+     (REMINDERS.md + test_credentials.md).
+  2. test_credentials.md scrubbed to pointer-only; password literal also purged
+     from 45 test files, runner script, 44 test_reports, PRD.md (tests now read
+     backend/creds_for_tests.py → backend/.env ADMIN_PASSWORD; 58 tests green).
+  3. SUPPLIER_ADMIN_TOKEN rotated in backend/.env (old→403, new→200 verified);
+     rotation path = edit that key, restart backend.
+  4. Default-named admin accounts (admin@example.com etc.) permanently declined.

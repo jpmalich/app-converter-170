@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """SEC-004 / SEC-005 / SEC-006 / SEC-007 — Iter 78z++++.
 
 P3 security hardening regression tests:
@@ -8,6 +7,7 @@ P3 security hardening regression tests:
   • SEC-007 — AI-measure / AI-blueprint endpoints no longer allowlist user_id='anon'
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import importlib
 import os

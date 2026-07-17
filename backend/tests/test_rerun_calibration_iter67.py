@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 79j.67 — (a) Re-run calibration carryover + (b)/(c) prompt candidate.
 
 (a) BUG: the Re-run path hardcoded `siding_exposure_in=None`,
@@ -15,6 +14,7 @@ case (verbatim, the rule's justification forever):
     same ref, same plane = exact; same ref, cross-plane = +45%.
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import uuid

@@ -1,4 +1,3 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 79j.65 — Tape Check endpoints: persistent per-wall ground truth
 + accuracy history scored against AI Measure runs.
 
@@ -7,6 +6,7 @@ run doc, mirroring the test_stale_worker_detector.py pattern.
 Verdict thresholds: |Δ| ≤ 0.5 pass · ≤ 1.0 amber · > 1.0 fail.
 """
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import uuid

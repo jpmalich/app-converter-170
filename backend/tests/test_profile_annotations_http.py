@@ -1,7 +1,7 @@
-from creds_for_tests import TEST_PASSWORD
 """Iter 78z — HTTP/auth tests for the ProfileAnnotator endpoints and the
 `_aggregate_to_hover_shape` worker integration."""
 from __future__ import annotations
+from creds_for_tests import TEST_PASSWORD
 
 import os
 import sys
