@@ -3308,3 +3308,18 @@ alignment available on ruling if wanted.
   honest). PROOF PENDING: fire reconcile-only on ddff780b once the key limit
   is raised (Anthropic console → Settings → Limits) or resets Aug 1.
   PRODUCTION RE-RUNS: blocked by the same key limit, not by code.
+
+## LIVE-PROOF CLOSED — PRODUCTION RE-RUNS UNLOCKED (2026-07-17 23:49 UTC)
+Run 4bd3fb35 (interactive re-run, est 48231310): reconcile 403.3s on
+anthropic_direct streamed — past both dead ceilings, clean under the 900s
+policy; 38,029 output tokens proved the 48k raise necessary (32k would have
+clipped). Register variants 1–4 each now carry a pin + a completed live run.
+ddff780b retry SKIPPED (redundant spend) and doc deleted as cleanup per
+accepted discretion — register keeps its numbers. Canonical b7a26956 +
+banked comparison confirmed untouched/authoritative; est 48231310 remains a
+test artifact (0 lines, nothing applied, est untouched since 17:35 UTC).
+Variance appendix #2 + honest-flag exhibits #2/#3 appended to
+haugh_cross_validation memo — comparison NOT reopened. NOTE: 4 older
+awaiting-retry runs exist on other estimates (55e5e24f/04c9539b on a2329f30,
+8f36abaa on ef8f34c2, 52ef42f1 on ffb7fac6) — pre-existing, not this
+incident's; visible to preflight by design.

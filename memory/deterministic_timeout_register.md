@@ -41,3 +41,13 @@ health ping 5s — are Phase A / health scaffolding, not reconcile ceilings.)
 Empty/pending measurement states render EMPTY, never 0 LF
 (`ai-measure-lf-pending` panel state; `?? ""` not `|| 0`). Zeros presented as
 readings on a failed run is hollow-done adjacent.
+
+## LIVE-PROOF: CLOSED (2026-07-17 23:49 UTC)
+Run `4bd3fb35bb4a4c7e9ef32fe64d2617f2` (interactive re-run, est 48231310):
+reconcile **403,346 ms (403.3s)** on `anthropic_direct` streamed — past BOTH
+dead ceilings (300s silent-read, 360s outer) — completed clean under the 900s
+policy. Bonus validation: output was **38,029 tokens** — the OLD 32k output
+ceiling would have truncated it; the 48k raise was empirically necessary, not
+precautionary. No truncation flags, no parse repair. Every variant (1–4) now
+has both a pin AND a completed live run on the other side of its kill zone.
+Production re-runs UNLOCKED per ruling.

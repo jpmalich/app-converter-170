@@ -81,3 +81,28 @@ accepted on the two verified matches with the united-inches caveat logged,
 not papered over. Standing convention approved: windows-only opening-perimeter
 comparisons; per-class perimeter always carried photo-side. Verdict:
 honesty-under-difficulty PASS. Nothing further owed; board on standby.
+
+## VARIANCE APPENDIX #2 (run 4bd3fb35, 2026-07-17 23:37 UTC) — comparison NOT reopened
+Second interactive re-run, same photo set, canonical remains b7a26956. Run-to-run
+variance exhibit (doc-exact values, canonical → this run):
+- siding_sqft 1,991.2 → **1,733.3**
+- masked masonry 221.11 → **376.31** (front 405.9×40%=162.36 + left 293.0×8%=23.44
+  + back 994.25×10%=99.43 + right 303.6×30%=91.08) — SCOPE-DECISION CONSISTENCY:
+  both runs independently masked non-siding material; magnitude varies, the
+  masking decision itself repeats.
+- windows 34 → **39** · patio doors 4 → **5** · entry 3 → 3 · garage 1 → 1
+- rakes 110.0 → **31.0** (on the self-flagged roof/ridge ambiguity — gable set
+  this run: left 5.5' only vs canonical's left 5.2' + back 3.0')
+- eaves 100.0 → 122.0 · starter 140.0 → 152.0 · opening perimeter 818.5 → 881.2
+- ref state: per-photo WALL REF spans 273"/351"/360"/351" + WIN REF bars,
+  scale_confidence MEDIUM (same tier as canonical)
+
+## Honest-flag exhibits #2 and #3 (logged alongside the ridge-mismatch exhibit)
+- **Pre-siding / no course counts**: the run doc carries
+  `brick_course_in: null` + `siding_exposure_in: null` across photos — the
+  mechanical form of the UI's "pre-siding, no course counts exist"
+  self-observation. The model declined to invent course-count corroboration
+  on a house that has no siding courses yet. Honest null, not a guess.
+- **Ridge warning repeat**: the 3D ridge-orientation banner fired again on
+  this run's gable set — same stepped-roof ambiguity, same suggested remedy
+  (flip ridge orientation). Deliverable behavior, consistent across runs.
