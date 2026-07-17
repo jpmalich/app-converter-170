@@ -4200,7 +4200,22 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       {preview.measurements._ai_double_count_check}
                     </div>
                   )}
-                  {preview.measurements && (
+                  {preview.measurements && (preview.raw_ai?._reconciliation_error || preview.raw_ai?._parse_error) ? (
+                    /* Register pin (ruled 2026-07-17): a failed/incomplete
+                       reconcile NEVER renders zeros as editable readings —
+                       empty/pending states render as empty, never 0 LF. */
+                    <div
+                      className="text-[11px] border-l-2 border-[#F59E0B] pl-3 mb-3 text-[var(--warning-text)]"
+                      data-testid="ai-measure-lf-pending"
+                    >
+                      <span className="font-bold uppercase tracking-wider text-[10px]">Linear measurements pending</span>
+                      <div className="mt-0.5 text-[var(--ink-2)]">
+                        Reconciliation did not complete — no readings exist yet, so nothing
+                        is shown as 0. Use Retry reconciliation; the fields unlock on a
+                        successful run.
+                      </div>
+                    </div>
+                  ) : preview.measurements && (
                     <details className="text-xs mb-3" open data-testid="ai-measure-lf-table">
                       <summary className="cursor-pointer text-[var(--ai)] font-bold uppercase tracking-wider">
                         Linear measurements — tap to edit
@@ -4228,7 +4243,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                               type="number"
                               step={key.endsWith("_count") ? "1" : "0.5"}
                               min="0"
-                              value={Number(preview.measurements[key] || 0)}
+                              value={preview.measurements[key] ?? ""}
+                              placeholder="—"
                               onChange={(e) => setMeasurementField(key, e.target.value)}
                               className="px-2 py-1 border border-[var(--border)] font-mono-num text-sm text-[var(--ink)] normal-case"
                               data-testid={`ai-measure-lf-${key}`}

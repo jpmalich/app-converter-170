@@ -4313,6 +4313,18 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+# DETERMINISTIC-TIMEOUT REGISTER #3 (ruled 2026-07-17, see
+# /app/memory/deterministic_timeout_register.md): ONE Phase B ceiling,
+# every reconcile path (initial run, interactive re-run, auto-resume,
+# retry button — all funnel through _reconcile_extractions). Sized from
+# empirical evidence: the canonical complex-house reconcile took 327s at
+# the OLD 32k output ceiling; the current 48k ceiling runs longer. A
+# ceiling below the observed duration is deterministic-fatal, never a
+# safety net. Pinned: no reconcile path may carry a ceiling below the
+# empirically observed complex-house duration.
+PHASE_B_CEILING_S = _env_int("AI_MEASURE_RECONCILE_CEILING", 900)
+
+
 
 def _prompt_version_hash() -> str:
     """Iter 79j.80 — sha256 over the extraction contract (Phase A +
@@ -4957,7 +4969,7 @@ async def _reconcile_extractions_via_proxy(
     lines.append("Return the reconciled house JSON now. No prose.")
     try:
         reply = await _send_message_nonblocking(
-            chat, UserMessage(text="\n".join(lines)), timeout=180)
+            chat, UserMessage(text="\n".join(lines)), timeout=PHASE_B_CEILING_S)
     except Exception as e:
         logger.exception("[ai-measure phase-B] reconciliation failed: %s", e)
         return {
@@ -4997,9 +5009,9 @@ async def _reconcile_extractions_direct(
         - SDK default retry-on-timeout is TWO retries (see
           `memory/prompts.md` — Anthropic support-thread issue #9).
           To avoid stacking with our app-level policy we set the SDK
-          `max_retries=0` and enforce a hard 180s ceiling via
-          `asyncio.wait_for`. That matches the proxy path's timeout
-          and lets the direct route be a drop-in swap.
+          `max_retries=0` and enforce the single Phase B ceiling
+          (PHASE_B_CEILING_S) via `asyncio.wait_for` — the same policy
+          constant every reconcile path uses.
         - `RateLimitError` and `APIError` are returned as
           `_reconciliation_error` sentinels so the caller can log +
           fall back rather than raise. Rate-limit headers are
@@ -5032,7 +5044,10 @@ async def _reconcile_extractions_direct(
     # tunable per-deployment so we can raise it in the field without
     # a code push (Howard 2026-07-07 Q1).
     read_timeout_s = _env_int("AI_MEASURE_RECONCILE_DIRECT_READ_TIMEOUT", 300)
-    total_timeout_s = read_timeout_s + 60
+    # Register #3: the outer ceiling is the unified policy constant —
+    # NOT read+60 (that formula produced a 360s ceiling that killed
+    # three 48k-token re-runs deterministically while labeled "180s").
+    total_timeout_s = PHASE_B_CEILING_S
     import httpx as _httpx
     client = AsyncAnthropic(
         api_key=api_key,
@@ -5136,9 +5151,14 @@ async def _reconcile_extractions_direct(
             "_transport": "anthropic_direct",
         }
     except asyncio.TimeoutError:
-        logger.warning("[ai-measure phase-B direct] local asyncio.wait_for ceiling hit")
+        logger.warning(
+            "[ai-measure phase-B direct] Phase B ceiling hit at %ds (AI_MEASURE_RECONCILE_CEILING)",
+            total_timeout_s,
+        )
         return {
-            "_reconciliation_error": "Anthropic direct: local 180s wait_for ceiling hit",
+            "_reconciliation_error": (
+                f"Anthropic direct: Phase B ceiling hit at {total_timeout_s}s "
+                f"(AI_MEASURE_RECONCILE_CEILING — raise it for slower reconciles)"),
             "_reconciliation_latency_ms": int((time.time() - t0) * 1000),
             "_transport": "anthropic_direct",
         }

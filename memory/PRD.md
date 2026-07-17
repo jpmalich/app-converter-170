@@ -3263,3 +3263,26 @@ actual (probe 1ec3f42a) vs $130–290/scan**. Positioning is COMPLEMENTARY, not
 substitutive: photos for every lead at near-zero cost; Hover (when purchased)
 imports into the same engine via the banked Hover path. Pitch language SSOT:
 /app/memory/pitch_reference.md
+
+## Re-run failure findings (2026-07-17 evening) — FIXED + PINNED before any production re-run
+1. Deterministic-timeout VARIANT 3 (named register created:
+   /app/memory/deterministic_timeout_register.md): direct Phase B outer wait_for
+   was read+60 = 360s (error text falsely said "180s") — killed 3/3 re-runs at
+   exactly 360,023 ms once the 48k output ceiling made complex reconciles run
+   longer than 360s. UNIFIED: single constant PHASE_B_CEILING_S
+   (AI_MEASURE_RECONCILE_CEILING, default 900s ≥ 2× the empirical 327s) governs
+   the direct outer ceiling, the httpx total, and the emergency-proxy call; all
+   four invocation paths (initial, interactive re-run, auto-resume, retry
+   button) funnel through _reconcile_extractions — full inventory in the
+   register. Pins: test_phase_b_single_ceiling_policy (ceiling ≥ 2× empirical,
+   stale "180s" literal banned, read+60 formula banned).
+2. Linear-measurements panel: failed/incomplete reconciles rendered all-zeros
+   as editable readings (REFERENCE: NONE). Now renders an explicit pending
+   state (ai-measure-lf-pending) and inputs use ?? "" (empty, never 0). Pin:
+   test_lf_panel_never_renders_zeros_for_pending.
+3. Canonical b7a26956 + banked comparison CONFIRMED untouched (re-runs mint new
+   run docs; canonical updated_at still 17:31:15, anthropic_direct, 327,693 ms).
+DISCLOSED, not changed: main-path runs store done-with-_reconciliation_error as
+the established awaiting-retry surface (status endpoint renders the retry
+banner); the reconcile-only worker flips to status=error. Status-parity
+alignment available on ruling if wanted.

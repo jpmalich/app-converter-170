@@ -315,6 +315,36 @@ def test_direct_phase_b_streams():
     assert "get_final_message" in SRC
 
 
+# ── deterministic-timeout register #3 (ruled 2026-07-17) ─────────────
+_EMPIRICAL_COMPLEX_RECONCILE_S = 327  # canonical b7a26956, 32k ceiling
+
+
+def test_phase_b_single_ceiling_policy():
+    """ONE ceiling constant, every reconcile path through it, sized above
+    the empirically observed complex-house duration (327s at 32k output;
+    the 48k ceiling runs longer). Variant 3 killed three re-runs at a
+    360s ceiling mislabeled '180s'."""
+    assert am.PHASE_B_CEILING_S >= 2 * _EMPIRICAL_COMPLEX_RECONCILE_S
+    # the constant governs BOTH transports (direct outer wait_for via
+    # total_timeout_s + emergency proxy call)
+    assert "total_timeout_s = PHASE_B_CEILING_S" in SRC
+    assert "timeout=PHASE_B_CEILING_S" in SRC
+    # no resurrected read+60 formula, no stale mislabeled error text
+    assert "read_timeout_s + 60" not in SRC
+    assert "local 180s wait_for ceiling hit" not in SRC
+
+
+def test_lf_panel_never_renders_zeros_for_pending():
+    """2026-07-17 pin: a failed/incomplete reconcile must render the
+    linear-measurements panel as EMPTY/pending — never editable 0 LF."""
+    jsx = (Path(__file__).resolve().parents[2] / "frontend" / "src" /
+           "components" / "estimate" / "AIMeasureButton.jsx").read_text()
+    assert 'data-testid="ai-measure-lf-pending"' in jsx
+    assert "_reconciliation_error" in jsx
+    assert 'value={preview.measurements[key] ?? ""}' in jsx
+    assert "Number(preview.measurements[key] || 0)" not in jsx
+
+
 # ── proxy retirement (ruled 2026-07-17) ──────────────────────────────
 def test_proxy_emergency_default_off():
     assert am._PROXY_EMERGENCY is False
