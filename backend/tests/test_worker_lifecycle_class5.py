@@ -313,3 +313,71 @@ def test_direct_phase_b_streams():
     Direct Phase B must stream so bytes flow through the quiet phase."""
     assert "client.messages.stream(" in SRC
     assert "get_final_message" in SRC
+
+
+# ── proxy retirement (ruled 2026-07-17) ──────────────────────────────
+def test_proxy_emergency_default_off():
+    assert am._PROXY_EMERGENCY is False
+    assert 'os.environ.get("AI_MEASURE_PROXY_EMERGENCY", "0")' in SRC
+
+
+def test_no_production_run_touches_litellm(monkeypatch):
+    """RULED 2026-07-17: proxy fallback removed from production photo/
+    blueprint paths. Direct errors surface honestly; the emergency
+    switch is the ONLY road to litellm and stamps proxy_degraded."""
+    async def fake_direct(**kw):
+        return {"_reconciliation_error": "boom", "_transport": "anthropic_direct"}
+    calls = {"proxy": 0}
+    async def counting_proxy(**kw):
+        calls["proxy"] += 1
+        return {"walls": [], "_transport": "emergent_proxy"}
+    monkeypatch.setattr(am, "_reconcile_extractions_direct", fake_direct)
+    monkeypatch.setattr(am, "_reconcile_extractions_via_proxy", counting_proxy)
+    monkeypatch.setattr(am, "_pick_llm_api_key", lambda p, phase=None: ("k", "anthropic_direct"))
+    kw = dict(api_key="pk", user_id="t", model_provider="anthropic",
+              model_name="claude-fable-5", extractions=[], address=None,
+              reference_dim=None, annotation_hint="")
+
+    monkeypatch.setattr(am, "_PROXY_EMERGENCY", False)
+    out = asyncio.run(am._reconcile_extractions(**kw))
+    assert out["_reconciliation_error"] == "boom"
+    assert calls["proxy"] == 0, "production run touched litellm"
+
+    monkeypatch.setattr(am, "_PROXY_EMERGENCY", True)
+    out = asyncio.run(am._reconcile_extractions(**kw))
+    assert calls["proxy"] == 1
+    assert out["_transport"] == "proxy_degraded" and out["_proxy_degraded"] is True
+
+
+def test_anthropic_without_direct_key_errors_instead_of_proxy(monkeypatch):
+    calls = {"proxy": 0}
+    async def counting_proxy(**kw):
+        calls["proxy"] += 1
+        return {}
+    monkeypatch.setattr(am, "_reconcile_extractions_via_proxy", counting_proxy)
+    monkeypatch.setattr(am, "_pick_llm_api_key", lambda p, phase=None: ("k", "emergent_proxy"))
+    monkeypatch.setattr(am, "_PROXY_EMERGENCY", False)
+    out = asyncio.run(am._reconcile_extractions(
+        api_key="pk", user_id="t", model_provider="anthropic",
+        model_name="claude-fable-5", extractions=[], address=None,
+        reference_dim=None, annotation_hint=""))
+    assert "RETIRED" in out["_reconciliation_error"]
+    assert calls["proxy"] == 0
+
+
+# ── shared-DB test isolation (pattern pin, ruled 2026-07-17) ─────────
+_GLOBAL_MUTATORS = ("sweep_orphaned_runs",)
+
+
+def test_global_mutators_only_run_against_isolated_dbs():
+    """Pattern pin: any test invoking a GLOBAL DB mutator must run it
+    against an isolated throwaway database (a pytest sweep once
+    collateral-killed a live mid-retry run on the shared DB)."""
+    import glob as _glob
+    for path in _glob.glob(os.path.join(os.path.dirname(__file__), "test_*.py")):
+        src = open(path).read()
+        for fn in _GLOBAL_MUTATORS:
+            if f".{fn}(" in src:
+                assert "drop_database" in src, (
+                    f"{os.path.basename(path)} calls global mutator {fn} "
+                    "without an isolated throwaway DB")

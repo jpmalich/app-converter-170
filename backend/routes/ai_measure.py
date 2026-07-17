@@ -211,6 +211,13 @@ _LLM_ROUTING_SUMMARY = (
 )
 logger.info("[AI_MEASURE key-routing] %s", _LLM_ROUTING_SUMMARY)
 
+# PROXY RETIRED (ruled 2026-07-17): production photo/blueprint runs never
+# touch litellm. Record: one hollow "done" (0 walls), one 15-minute
+# event-loop freeze, telemetry contamination, zero rescues. Emergency
+# switch only — OFF by default; any fire stamps transport=proxy_degraded
+# on the run doc and is loudly logged. Never silent.
+_PROXY_EMERGENCY = os.environ.get("AI_MEASURE_PROXY_EMERGENCY", "0").strip() == "1"
+
 
 async def _send_message_nonblocking(chat, user_message, timeout: float | None = None):
     """Iter 79j.95 (2026-07-17 event-loop freeze incident): the proxy
@@ -2718,6 +2725,8 @@ async def _execute_reconcile_only_worker(
                 "result": result,
                 "error": None,
                 "error_kind": None,
+                # Emergency-proxy fires flag the run doc — never silent.
+                **({"transport_degraded": True} if final.get("_proxy_degraded") else {}),
                 "completed_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),
             }},
@@ -4704,19 +4713,39 @@ async def _extract_one_photo(
         if result.get("_extraction_error") and result.get("_extraction_error_kind") in (
             "timeout", "api_error", "exception", "import_failed", "rate_limit",
         ):
-            logger.info(
-                "[ai-measure phase-A] photo %d direct FAILED (%s) — falling back to proxy",
+            # PROXY RETIRED (ruled 2026-07-17): the per-photo proxy
+            # fallback fires only on the emergency switch — and stamps
+            # transport=proxy_degraded so it can never pass silently.
+            if not _PROXY_EMERGENCY:
+                logger.warning(
+                    "[ai-measure phase-A] photo %d direct FAILED (%s) — proxy fallback RETIRED, surfacing the direct error",
+                    photo_idx, result.get("_extraction_error_kind"),
+                )
+                return result
+            logger.warning(
+                "[ai-measure phase-A] photo %d direct FAILED (%s) — EMERGENCY proxy switch ON, degrading to litellm",
                 photo_idx, result.get("_extraction_error_kind"),
             )
             proxy_result = await _one_call_proxy(retry_note=retry_note)
             proxy_result["_direct_fallback_reason"] = result.get("_extraction_error")
             proxy_result["_direct_fallback_kind"] = result.get("_extraction_error_kind")
+            proxy_result["_transport"] = "proxy_degraded"
+            proxy_result["_proxy_degraded"] = True
             return proxy_result
         return result
 
     async def _one_call(retry_note: str = "") -> dict:
         if use_direct and direct_key:
             return await _one_call_direct_with_retry(retry_note=retry_note)
+        if model_provider == "anthropic" and not _PROXY_EMERGENCY:
+            return {
+                "index": photo_idx,
+                "_extraction_error": (
+                    "anthropic direct key unavailable and the proxy fallback "
+                    "is RETIRED (ruled 2026-07-17)"),
+                "_extraction_error_kind": "direct_unavailable",
+                "_transport": "direct_unavailable",
+            }
         return await _one_call_proxy(retry_note=retry_note)
 
     parsed = await _one_call()
@@ -4815,14 +4844,42 @@ async def _reconcile_extractions(
         if not direct_result.get("_reconciliation_error"):
             direct_result.setdefault("_transport", "anthropic_direct")
             return direct_result
-        # Direct route errored — log and fall through to the proxy path
-        # using the original `api_key` (Emergent proxy key). Preserves
-        # the "proxy as fallback" contract without silently swallowing
-        # signal.
+        # PROXY RETIRED (ruled 2026-07-17) — direct errors surface
+        # honestly; the run flips to awaiting-retry with Phase A intact.
+        # AI_MEASURE_PROXY_EMERGENCY=1 is the only path to litellm, and
+        # it stamps transport=proxy_degraded. Never silent.
+        if not _PROXY_EMERGENCY:
+            logger.warning(
+                "[ai-measure phase-B] direct-route failed and the proxy fallback is RETIRED — surfacing the direct error: %s",
+                (direct_result.get("_reconciliation_error") or "")[:200],
+            )
+            return direct_result
         logger.warning(
-            "[ai-measure phase-B] direct-route failed, falling back to proxy: %s",
+            "[ai-measure phase-B] direct-route failed — EMERGENCY proxy switch ON, degrading to litellm: %s",
             (direct_result.get("_reconciliation_error") or "")[:200],
         )
+        proxy_result = await _reconcile_extractions_via_proxy(
+            api_key=api_key,
+            user_id=user_id,
+            model_provider=model_provider,
+            model_name=model_name,
+            extractions=extractions,
+            address=address,
+            reference_dim=reference_dim,
+            annotation_hint=annotation_hint,
+        )
+        proxy_result["_transport"] = "proxy_degraded"
+        proxy_result["_proxy_degraded"] = True
+        return proxy_result
+    if model_provider == "anthropic" and not _PROXY_EMERGENCY:
+        return {
+            "_reconciliation_error": (
+                "anthropic direct key unavailable and the proxy fallback is "
+                "RETIRED (ruled 2026-07-17) — configure ANTHROPIC_API_KEY "
+                "or set AI_MEASURE_PROXY_EMERGENCY=1"),
+            "_reconciliation_latency_ms": 0,
+            "_transport": "direct_unavailable",
+        }
     return await _reconcile_extractions_via_proxy(
         api_key=api_key,
         user_id=user_id,

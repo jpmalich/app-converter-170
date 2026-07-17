@@ -3221,3 +3221,23 @@ counts awaiting-retry runs (restart_safe honest), (5) class-5 resume/retry use p
 key routing, (6) global-sweep test isolated to throwaway DB after it collateral-killed
 a live retry. Haugh run reconciled DONE on anthropic_direct (max_tokens truncation
 caveat noted). Full forensics: /app/memory/incident_2026-07-17_vanished_run.md
+
+## Rulings batch 2026-07-17 (post-incident) — EXECUTED, 29/29 pinned suite green
+1. PROXY RETIRED from production photo/blueprint paths (Phase A + Phase B):
+   direct errors surface honestly; AI_MEASURE_PROXY_EMERGENCY=1 (OFF by default)
+   is the only road to litellm and stamps transport=proxy_degraded + run-doc flag.
+   Pins: test_no_production_run_touches_litellm, test_proxy_emergency_default_off,
+   test_anthropic_without_direct_key_errors_instead_of_proxy.
+2. max_tokens: b7a26956 flags reported (_extraction_partial=true, _json_repaired=
+   "truncation", output=32,000 ceiling); AI_MEASURE_RECONCILE_DIRECT_MAX_TOKENS=48000
+   set in backend/.env. No re-run — comparison ran on what parsed.
+3. Shared-DB test sweep: all other DB-mutating tests are fixture-scoped (own
+   est_id/run_id deletes); only global mutator was sweep_orphaned_runs (isolated).
+   Pattern pinned: test_global_mutators_only_run_against_isolated_dbs.
+4. Cross-validation delivered: canonical run confirmed = b7a26956 attempt 3
+   (anthropic_direct streamed; the "refined run" is the same doc overwritten in
+   place — no second run_id exists). Full per-line report:
+   /app/memory/haugh_cross_validation_2026-07-17.md · run log:
+   /app/memory/haugh_photo_run_log.md. Headline: photo masked 221.11 ft² masonry
+   vs Hover brick 234 (−5.5%) — unprompted scope concurrence; wrap-scope siding
+   1,991.2 vs 2,064 (−3.5%).
