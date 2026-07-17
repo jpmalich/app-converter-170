@@ -194,15 +194,21 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     # rake-driven Closed soffit row is a cross-system line on LP-native
     # (rakes carry 440 4/4"×8" rake boards instead)
     system_enforced = []
+    # RULING REFINED 2026-07-17 (261 Haugh shakedown): the eaves-only rule
+    # was scoped to gable ranches without rake overhangs. When a report
+    # supplies MEASURED per-surface soffit (_soffit_closed_sqft), the
+    # measured basis governs — rakes + ceilings compose as Closed
+    # (ceilings via the porch-ceiling mechanism, no venting).
     rake_soffit = next((l for l in lines if l["name"] == "38 Series Soffit 16 x 16 Closed"), None)
-    if rake_soffit is not None:
+    if rake_soffit is not None and not (measurements.get("_soffit_closed_sqft") or 0) > 0:
         lines.remove(rake_soffit)
         system_enforced.append(
             "38 Series Soffit 16 x 16 Closed removed — LP soffit panels eaves only "
             "(no rake soffit wrap); rakes carry 440 4/4\"×8\" rake boards")
-    for l in lines:
-        if l["name"] == "38 Series Soffit 16 x 16 Vented":
-            l["note"] = f"{l.get('note') or ''} — LP soffit panels eaves only (per-system rule)".strip(" —")
+    if not (measurements.get("_soffit_closed_sqft") or 0) > 0:
+        for l in lines:
+            if l["name"] == "38 Series Soffit 16 x 16 Vented":
+                l["note"] = f"{l.get('note') or ''} — LP soffit panels eaves only (per-system rule)".strip(" —")
 
     # whole-piece rounding at the SKU level, everywhere
     for l in lines:
@@ -257,13 +263,17 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             lf = float(measurements.get("outside_corner_lf") or 0)
         except (TypeError, ValueError):
             lf = 0.0
-        # Blueprint fallback (no C3 locators, shakedown-ruled 2026-07-14):
-        # per-LOCATION whole-stick for house corners + per-FEATURE pooling
-        # for appendage edge groups — global LF-pooling under-orders
-        # (38 LF ÷ 16 = 3 sticks vs 4 × 9.5' locations = 4 sticks).
         cnt = int(measurements.get("outside_corner_count") or 0)
         feats = measurements.get("_ai_osc_features") or []
-        if cnt > 0 or feats:
+        if measurements.get("_hover_source") and lf > 0:
+            # RULED 2026-07-17 (261 Haugh shakedown): Hover supplies MEASURED
+            # corner LF — measured basis governs, whole-piece round-up once.
+            q = max(1, math.ceil(lf / 16.0 - 1e-9))
+            _set_line(OSC_ITEM, "LP Siding Accessories", q,
+                      f"Hover measured corner LF basis: {lf:g} LF ÷ 16' = {q} "
+                      f"({cnt} corner locations — field verify)",
+                      _derivation={"kind": "osc_hover_lf", "lf": lf, "count": cnt})
+        elif cnt > 0 or feats:
             bits = []
             q = 0
             if cnt > 0:
@@ -341,17 +351,39 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     ec = int(measurements.get("entry_door_count") or 0)
     pc = int(measurements.get("patio_door_count") or 0)
     gc = int(measurements.get("garage_door_count") or 0)
-    if wc + ec + pc + gc > 0:
+    try:
+        opening_perim = float(measurements.get("opening_perimeter_lf") or 0)
+    except (TypeError, ValueError):
+        opening_perim = 0.0
+    # Per-source convention (ruled 2026-07-17): measured-perimeter basis is
+    # the HOVER-path convention; photo/blueprint keep the Iter 57ee ruled
+    # per-opening constants.
+    if not measurements.get("_hover_source"):
+        opening_perim = 0.0
+    if wc + ec + pc + gc > 0 or opening_perim > 0:
         from lp_smartside_formulas import shake_540_series_bump
-        wrap_lf = wc * 14 + ec * 18 + pc * 19 + gc * 32
         bump = shake_540_series_bump(
             float((measurements.get("_per_profile_sqft") or {}).get("shake") or 0))
-        wrap_qty = max(1, math.ceil(wrap_lf / 16.0)) + bump
-        note = (f"windows 4-side ({wc}×14') + doors 3-SIDE head+legs (ruled): entry {ec}×18' "
-                f"(21−3 sill), patio {pc}×19' (25−6 sill) = {wrap_lf} LF ÷ 16"
-                + (f" + {bump} shake belly-band pcs" if bump else ""))
-        if gc:
-            note += f"; garage {gc}×32' held (16+2×8 already reads 3-side — confirm)"
+        if opening_perim > 0:
+            # RULED 2026-07-17 (261 Haugh shakedown): MEASURED opening
+            # perimeter governs when the report supplies it — doors trim
+            # 3 sides, so deduct door bottoms (garage 16', entry 3',
+            # SGD 8' each). Per-opening constants remain the fallback.
+            bottoms = 16.0 * gc + 3.0 * ec + 8.0 * pc
+            wrap_lf = max(0.0, opening_perim - bottoms)
+            wrap_qty = max(1, math.ceil(wrap_lf / 16.0 - 1e-9)) + bump
+            note = (f"MEASURED opening perimeter {opening_perim:g} LF − door bottoms "
+                    f"(garage {gc}×16' + entry {ec}×3' + SGD {pc}×8' = {bottoms:g} LF) "
+                    f"= {wrap_lf:g} LF ÷ 16 — doors 3-side"
+                    + (f" + {bump} shake belly-band pcs" if bump else ""))
+        else:
+            wrap_lf = wc * 14 + ec * 18 + pc * 19 + gc * 32
+            wrap_qty = max(1, math.ceil(wrap_lf / 16.0)) + bump
+            note = (f"windows 4-side ({wc}×14') + doors 3-SIDE head+legs (ruled): entry {ec}×18' "
+                    f"(21−3 sill), patio {pc}×19' (25−6 sill) = {wrap_lf} LF ÷ 16"
+                    + (f" + {bump} shake belly-band pcs" if bump else ""))
+            if gc:
+                note += f"; garage {gc}×32' held (16+2×8 already reads 3-side — confirm)"
         _set_line(WRAP_TRIM_ITEM, "LP SmartSide Trim", wrap_qty, note)
 
     # ── LP STARTER (rip yield RULED FINAL): 3 strips per 16' board =

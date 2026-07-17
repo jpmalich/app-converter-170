@@ -133,6 +133,13 @@ def _geometry_basis(est: dict, run: dict, binding: str) -> dict:
     if kind == "hover":
         report = run.get("hover_report_id") or rid8
         label = f"Hover import — report {report} — {_BINDING_LABEL.get(binding, binding)}"
+        ms = ((run.get("result") or {}).get("measurements")) or {}
+        fs = ms.get("_facade_scope")
+        if fs:
+            excl = ", ".join(f"{k} {v:g}" for k, v in (fs.get("excluded") or {}).items())
+            label += (f" · wrap-only scope {fs['wrap_sqft']:g} of {fs['measured_total']:g} ft²"
+                      + (f" ({excl} excluded)" if excl else ""))
+        label += " · openings: Hover net"
     else:
         label = f"{kind} extraction run {rid8} — {_BINDING_LABEL.get(binding, binding)}"
     profile = est.get("default_siding_profile")
@@ -628,13 +635,27 @@ def _apply_default_profile(measurements: dict, est: dict) -> dict:
     return _force_profile_measurements(measurements, profile)
 
 
-def _hover_mapping_contract(hover_meas: dict, profile: str) -> tuple[dict, list]:
-    """Explicit Hover→engine mapping contract (ruled 2026-07-16).
+def _hover_mapping_contract(hover_meas: dict, profile: str,
+                            facade_scope: dict | None = None,
+                            soffit_breakdown: dict | None = None,
+                            waste_pct: float | None = None) -> tuple[dict, list]:
+    """Explicit Hover→engine mapping contract (ruled 2026-07-16; scope
+    rulings 2026-07-17).
 
     Hover's report quantities map DELIBERATELY into the engine's expected
     measurement basis; fields the engine needs that Hover cannot supply are
-    FLAGGED pending, never approximated. Returns (engine_measurements,
-    pending_flags)."""
+    FLAGGED pending, never approximated.
+
+    Round-two rulings folded in:
+      • facade_scope — WRAP-ONLY default: never silently sum all facade
+        types; stucco/brick excluded unless explicitly included
+      • openings — Hover facades are net-of-openings and compose AS-IS
+        (per-source convention, named on the basis line)
+      • soffit_breakdown — measured per-surface soffit governs when the
+        report supplies it; ceilings type as closed (porch-ceiling
+        mechanism); eaves vented / rakes+ceilings closed
+      • waste — ruled 10% default / explicit override, never silently 0%
+    """
     passthrough = (
         "siding_sqft", "siding_with_openings_sqft",
         "outside_corner_count", "outside_corner_lf",
@@ -645,10 +666,30 @@ def _hover_mapping_contract(hover_meas: dict, profile: str) -> tuple[dict, list]
         "stories", "overhang_in",
     )
     m = {k: hover_meas[k] for k in passthrough if k in hover_meas}
+    m["_hover_source"] = True
+    m["_waste_pct"] = 0.10 if waste_pct is None else float(waste_pct)
+    if facade_scope and (facade_scope.get("wrap_sqft") or 0) > 0:
+        measured_total = float(hover_meas.get("siding_sqft") or 0)
+        wrap = float(facade_scope["wrap_sqft"])
+        m["siding_sqft"] = wrap
+        m["_facade_scope"] = {
+            "mode": facade_scope.get("mode") or "wrap_only",
+            "wrap_sqft": wrap,
+            "measured_total": measured_total,
+            "excluded": facade_scope.get("excluded") or {},
+        }
+    if soffit_breakdown:
+        eaves = float(soffit_breakdown.get("eaves_sqft") or 0)
+        rakes = float(soffit_breakdown.get("rakes_sqft") or 0)
+        ceilings = float(soffit_breakdown.get("ceilings_sqft") or 0)
+        if eaves + rakes + ceilings > 0:
+            m["_soffit_vented_sqft"] = eaves
+            m["_soffit_closed_sqft"] = rakes + ceilings
+            m["_soffit_ceiling_sqft"] = ceilings
     m = _force_profile_measurements(m, profile)
     flags = [{
         "code": "corner_locators",
-        "label": "corner sticks on corner-walk basis (Hover has counts/LF, no per-corner locators)",
+        "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
         "verify": "Walk the corners on site — confirm OSC/ISC counts match the report",
     }]
     if profile in ("board_batten", "vertical"):

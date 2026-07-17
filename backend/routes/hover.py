@@ -567,6 +567,8 @@ HOVER_MAPPING_SPEC = [
             # don't shift while we're staging.
             lp_formulas.lap_pieces(
                 (m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0),
+                waste=(float(m["_waste_pct"]) if m.get("_waste_pct") is not None
+                       else lp_formulas.DEFAULT_WASTE),
             )
             if lp_formulas.is_enabled()
             else max(
@@ -614,14 +616,27 @@ HOVER_MAPPING_SPEC = [
         "section": "LP SmartSide Trim",
         "item": '540 Series Trim 5/4" x 4" x 16\'',
         "unit": "PCS",
+        # RULED 2026-07-17 (261 Haugh shakedown): measured opening
+        # perimeter governs when the report supplies it — doors trim
+        # 3 sides (deduct bottoms: garage 16', entry 3', SGD 8' each).
+        # Per-opening constants remain the fallback (no schedule).
         "extract": lambda m: max(
             1,
-            math.ceil((
-                (m.get("window_count") or 0) * 14
-                + (m.get("entry_door_count") or 0) * 21
-                + (m.get("patio_door_count") or 0) * 25
-                + (m.get("garage_door_count") or 0) * 32
-            ) / 16) + (
+            (
+                math.ceil(max(0.0,
+                    float(m.get("opening_perimeter_lf") or 0)
+                    - 16.0 * (m.get("garage_door_count") or 0)
+                    - 3.0 * (m.get("entry_door_count") or 0)
+                    - 8.0 * (m.get("patio_door_count") or 0)
+                ) / 16)
+                if (m.get("opening_perimeter_lf") or 0) > 0
+                else math.ceil((
+                    (m.get("window_count") or 0) * 14
+                    + (m.get("entry_door_count") or 0) * 21
+                    + (m.get("patio_door_count") or 0) * 25
+                    + (m.get("garage_door_count") or 0) * 32
+                ) / 16)
+            ) + (
                 lp_formulas.shake_540_series_bump(
                     float((m.get("_per_profile_sqft") or {}).get("shake") or 0)
                 )
@@ -630,12 +645,20 @@ HOVER_MAPPING_SPEC = [
             ),
         ),
         "note": lambda m: (
-            "Window/entry/patio/garage perimeter wrap ÷ 16 + "
-            f"{lp_formulas.shake_540_series_bump(float((m.get('_per_profile_sqft') or {}).get('shake') or 0))} "
-            "shake belly-band pcs (LP PDF)"
-            if lp_formulas.is_enabled()
-               and float((m.get("_per_profile_sqft") or {}).get("shake") or 0) > 0
-            else "Window/entry/patio/garage perimeter wrap ÷ 16"
+            (
+                f"Measured opening perimeter {float(m.get('opening_perimeter_lf') or 0):g} LF "
+                f"− door bottoms (garage {(m.get('garage_door_count') or 0)}×16' + entry {(m.get('entry_door_count') or 0)}×3' "
+                f"+ SGD {(m.get('patio_door_count') or 0)}×8') ÷ 16 — doors trim 3 sides"
+            )
+            if (m.get("opening_perimeter_lf") or 0) > 0
+            else (
+                "Window/entry/patio/garage perimeter wrap ÷ 16 + "
+                f"{lp_formulas.shake_540_series_bump(float((m.get('_per_profile_sqft') or {}).get('shake') or 0))} "
+                "shake belly-band pcs (LP PDF)"
+                if lp_formulas.is_enabled()
+                   and float((m.get("_per_profile_sqft") or {}).get("shake") or 0) > 0
+                else "Window/entry/patio/garage perimeter wrap ÷ 16"
+            )
         ),
     },
     # RULED (2026-07-16, LPZB0884): batten LF = wall_area ÷ spacing(ft)
@@ -1032,24 +1055,35 @@ HOVER_MAPPING_SPEC = [
         "section": "LP SmartSide Soffit",
         "item": "38 Series Soffit 16 x 16 Vented",
         "unit": "PCS",
+        # RULED 2026-07-17: measured per-surface soffit governs when the
+        # report supplies it (_soffit_vented_sqft) — eaves vent; rakes +
+        # ceilings close. Overhang-depth estimate is the fallback only.
         "extract": lambda m: (
-            lp_formulas.soffit_pieces(
-                (float(m.get("overhang_in") or 12) / 12.0) * (m.get("eaves_lf") or 0)
-                + (m.get("porch_ceiling_sqft") or 0)
-            )
-            if lp_formulas.is_enabled()
-            else max(
-                1,
-                math.ceil(((m.get("eaves_lf") or 0) + (m.get("porch_ceiling_sqft") or 0) / max(float(m.get("overhang_in") or 12) / 12.0, 0.1)) / 16),
+            lp_formulas.soffit_pieces(float(m.get("_soffit_vented_sqft") or 0))
+            if (m.get("_soffit_vented_sqft") or 0) > 0
+            else (
+                lp_formulas.soffit_pieces(
+                    (float(m.get("overhang_in") or 12) / 12.0) * (m.get("eaves_lf") or 0)
+                    + (m.get("porch_ceiling_sqft") or 0)
+                )
+                if lp_formulas.is_enabled()
+                else max(
+                    1,
+                    math.ceil(((m.get("eaves_lf") or 0) + (m.get("porch_ceiling_sqft") or 0) / max(float(m.get("overhang_in") or 12) / 12.0, 0.1)) / 16),
+                )
             )
         ),
         "note": lambda m: (
-            (
-                f"Vented (eaves + porches) — ceil( ((overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × eaves_LF "
-                f"+ porch_ceiling {float(m.get('porch_ceiling_sqft') or 0):g} sqft) ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+            f"Vented — MEASURED eave soffit {float(m.get('_soffit_vented_sqft') or 0):g} sqft ÷ 21.3 × 1.10 (report per-surface basis)"
+            if (m.get("_soffit_vented_sqft") or 0) > 0
+            else (
+                (
+                    f"Vented (eaves + porches) — ceil( ((overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × eaves_LF "
+                    f"+ porch_ceiling {float(m.get('porch_ceiling_sqft') or 0):g} sqft) ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+                )
+                if lp_formulas.is_enabled()
+                else "Vented goes on eaves (attic vent path) — eaves LF ÷ 16"
             )
-            if lp_formulas.is_enabled()
-            else "Vented goes on eaves (attic vent path) — eaves LF ÷ 16"
         ),
     },
     {
@@ -1058,20 +1092,31 @@ HOVER_MAPPING_SPEC = [
         "item": "38 Series Soffit 16 x 16 Closed",
         "unit": "PCS",
         "extract": lambda m: (
-            lp_formulas.soffit_pieces(
-                (float(m.get("overhang_in") or 12) / 12.0) * (m.get("rakes_lf") or 0)
-            )
-            if lp_formulas.is_enabled()
+            lp_formulas.soffit_pieces(float(m.get("_soffit_closed_sqft") or 0))
+            if (m.get("_soffit_closed_sqft") or 0) > 0
             else (
-                max(1, math.ceil((m.get("rakes_lf") or 0) / 16))
-                if (m.get("rakes_lf") or 0) > 0
-                else 0
+                lp_formulas.soffit_pieces(
+                    (float(m.get("overhang_in") or 12) / 12.0) * (m.get("rakes_lf") or 0)
+                )
+                if lp_formulas.is_enabled()
+                else (
+                    max(1, math.ceil((m.get("rakes_lf") or 0) / 16))
+                    if (m.get("rakes_lf") or 0) > 0
+                    else 0
+                )
             )
         ),
         "note": lambda m: (
-            f"Closed (rakes) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × rakes_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
-            if lp_formulas.is_enabled()
-            else "Closed goes on rakes (gable ends, no venting) — rakes LF ÷ 16"
+            (
+                f"Closed — MEASURED rake + ceiling soffit {float(m.get('_soffit_closed_sqft') or 0):g} sqft "
+                f"(incl. ceiling {float(m.get('_soffit_ceiling_sqft') or 0):g} sqft — porch-ceiling mechanism, no venting) ÷ 21.3 × 1.10"
+            )
+            if (m.get("_soffit_closed_sqft") or 0) > 0
+            else (
+                f"Closed (rakes) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × rakes_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+                if lp_formulas.is_enabled()
+                else "Closed goes on rakes (gable ends, no venting) — rakes LF ÷ 16"
+            )
         ),
     },
     # =====================================================================
@@ -2081,7 +2126,12 @@ async def hover_lp_run(
     if hrun.get("user_id") != user["id"]:
         raise HTTPException(status_code=403, detail="Not your run")
     hover_meas = ((hrun.get("result") or {}).get("measurements")) or {}
-    engine_meas, mapping_flags = _hover_mapping_contract(hover_meas, profile)
+    engine_meas, mapping_flags = _hover_mapping_contract(
+        hover_meas, profile,
+        facade_scope=(payload or {}).get("facade_scope"),
+        soffit_breakdown=(payload or {}).get("soffit_breakdown"),
+        waste_pct=(payload or {}).get("waste_pct"),
+    )
     lp_run_id = f"hover-{hover_run_id[:12]}-{profile}"
     now = datetime.now(timezone.utc)
     await db.ai_measure_runs.update_one(
