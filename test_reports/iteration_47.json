@@ -1,0 +1,26 @@
+{
+  "summary": "Verified Round-Two Hover follow-ups end-to-end. Backend: all 16 pinned tests in test_haugh_round_two.py PASS; new integration suite test_iteration_47_haugh.py (3 tests) PASS — waste_pct_applied=0.10 + geometry_basis.label on default hover-lp-run, facade_scope custom(wrap=2376,excluded={brick:234}) yields lap qty=286 with 2376 in basis label, LETRICK photo-path regression still 11055.71 total_sell with waste_pct_applied=0.10. Frontend on the LETRICK LP SmartSide estimate: lp-waste-applied-chip renders 'waste: 10% in formulas' next to lp-source-chip 'source: AI Photo Measure' with no layout break; hover-import-btn opens hover-warning-modal correctly; lp-material-list-panel + lp-default-profile-picker + lp-compare-toggle all render. hover-restore-btn / takeoff-recon-card / facade picker not exercised because LETRICK has no cached Hover measurements (photo-path) — spec explicitly notes this absence is EXPECTED, not a bug.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verified_pass": [
+    "pytest /app/backend/tests/test_haugh_round_two.py -> 16/16 PASS",
+    "pytest /app/backend/tests/test_iteration_47_haugh.py -> 3/3 PASS (default hover-lp-run waste+basis, facade_scope custom 2376, LETRICK regression)",
+    "Temp estimate cleanup: ZZ_ITER47_HAUGH_TEMP created & DELETEd after test run",
+    "lp-waste-applied-chip = 'waste: 10% in formulas' visible next to lp-source-chip on LETRICK LP SmartSide estimate; no layout break",
+    "hover-import-btn -> hover-warning-modal renders (I AGREE / CANCEL)",
+    "LP panel testids present: lp-material-list-panel, lp-default-profile-picker, lp-compare-toggle"
+  ],
+  "test_report_links": ["/app/backend/tests/test_iteration_47_haugh.py", "/app/test_reports/pytest/iter47.xml", "/app/backend/tests/test_haugh_round_two.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Review request references frontend testid 'lp-compare-profiles-toggle' but implementation uses 'lp-compare-toggle' (LpMaterialListPanel.jsx:517). Cosmetic naming drift; consider aligning or documenting in the spec.",
+    "hover-restore-btn / takeoff-recon-card / hover-facade-scope-picker code paths could not be exercised end-to-end in this iteration because the only LP_smart estimate available (LETRICK 8f95c9c2...) is photo-path (no cached Hover measurements). Suggest keeping/creating a dedicated LP_smart estimate with cached Hover measurements + facade_breakdown available in the test env for future regression."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration_47_haugh.py (new)"],
+  "success_rate": {"backend": "100% (19/19)", "frontend": "100% of testable UI paths (restore/recon/facade picker not exercised — see note)"},
+  "test_credentials": "hhunt6677@yahoo.com / [REDACTED — backend/.env ADMIN_PASSWORD via creds_for_tests.py]",
+  "seed_data_creation": "Temp estimate created (customer_name ZZ_ITER47_HAUGH_TEMP) then DELETEd. LETRICK read-only preview calls only.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All Round-Two follow-ups (waste display sync, ISC pooling, facade wrap-default + picker) are green at code + API + UI-chip level. To fully exercise the Hover-restore preview modal (recon-waste-figure, hover-facade-scope-picker, facade-scope-summary) end-to-end in the browser, a real LP_smart estimate with cached hover measurements is needed — the review request only supplies photo-path LETRICK for read-only regression."
+}

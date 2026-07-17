@@ -385,6 +385,15 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                 source: {pkg.source_label}
               </span>
             )}
+            {pkg.summary?.waste_pct_applied != null && (
+              <span
+                className="ml-1 inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+                data-testid="lp-waste-applied-chip"
+                title="Waste the engine actually applied in its formulas — the display always mirrors the application (ruled 2026-07-18)"
+              >
+                waste: {Math.round(pkg.summary.waste_pct_applied * 100)}% in formulas
+              </span>
+            )}
           </div>
           {pkg.geometry_basis?.label && (
             <div

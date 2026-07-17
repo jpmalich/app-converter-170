@@ -238,7 +238,7 @@ function CoverageBar({ label, segments, totalLf, pcs, unit, formula }) {
   );
 }
 
-export default function TakeoffReconCard({ measurements, lines, wastePct = 0, kind = "siding", lpSoffitType = "mix" }) {
+export default function TakeoffReconCard({ measurements, lines, wastePct = 0, kind = "siding", lpSoffitType = "mix", wasteInFormula = false }) {
   if (!measurements || !lines || !lines.length) return null;
   const pct = Math.max(0, Number(wastePct) || 0);
   // Iter 78 — apply the LP soffit steering for the preview so Howard
@@ -282,7 +282,9 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
       orderQty = qty;
     } else if (isCutProneItem(ln)) {
       formulaQty = qty;
-      orderQty = roundUpHalf(qty * (1 + pct / 100));
+      // Waste display sync (ruled 2026-07-18): LP engine formulas already
+      // bake the waste — never re-multiply, the display states the applied %.
+      orderQty = wasteInFormula ? qty : roundUpHalf(qty * (1 + pct / 100));
     } else {
       formulaQty = qty;
       orderQty = qty;
@@ -359,7 +361,7 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
               <th className="text-right px-3 py-2 w-32">AI raw</th>
               <th className="text-right px-3 py-2 w-32">Formula yields</th>
               <th className="text-right px-3 py-2 w-36">
-                Order @ {pct}% waste
+                Order @ {pct}% waste{wasteInFormula ? " (in formula)" : ""}
               </th>
             </tr>
           </thead>

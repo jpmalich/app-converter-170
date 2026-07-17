@@ -110,3 +110,70 @@ class TestRoundTwoPins:
         assert d["summary"]["pricing"]["total_sell"] == 11055.71
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
+
+
+class TestRoundTwoFollowUps:
+    """Follow-up rulings (2026-07-18): waste display sync, ISC measured-LF
+    pooling with the ≤16' validity caveat, facade-breakdown picker schema."""
+
+    def test_prompt_schema_pins_facade_breakdown(self):
+        from routes.hover import PROMPT_TEMPLATE
+        assert '"facade_breakdown"' in PROMPT_TEMPLATE
+        for k in ("stucco_sqft", "brick_sqft", "stone_sqft", "metal_sqft"):
+            assert k in PROMPT_TEMPLATE
+        assert "never sum different materials" in PROMPT_TEMPLATE.lower()
+
+    def test_contract_wrap_default_from_breakdown_never_silent_sum(self):
+        from routes.lp_package_routes import _hover_mapping_contract
+        m, flags = _hover_mapping_contract(
+            {"siding_sqft": 2610,
+             "facade_breakdown": {"siding_sqft": 2064, "stucco_sqft": 312,
+                                  "brick_sqft": 234}},
+            "lap")
+        assert m["siding_sqft"] == 2064  # wrap default, NOT the 2610 sum
+        assert m["_facade_scope"]["mode"] == "wrap_only"
+        assert m["_facade_scope"]["excluded"] == {"stucco": 312, "brick": 234}
+        assert any(f.get("code") == "facade_scope" for f in flags)
+
+    def test_contract_explicit_picker_choice_overrides_default(self):
+        from routes.lp_package_routes import _hover_mapping_contract
+        m, _ = _hover_mapping_contract(
+            {"siding_sqft": 2610,
+             "facade_breakdown": {"siding_sqft": 2064, "stucco_sqft": 312,
+                                  "brick_sqft": 234}},
+            "lap",
+            facade_scope={"mode": "custom", "wrap_sqft": 2376,
+                          "excluded": {"brick": 234}})
+        assert m["siding_sqft"] == 2376  # stucco explicitly included
+        assert m["_facade_scope"]["excluded"] == {"brick": 234}
+
+    def test_isc_measured_lf_pooling_cut_stock_yield(self):
+        from lp_package import assemble_lp_package
+        pkg = assemble_lp_package({"_hover_source": True,
+                                   "inside_corner_count": 6,
+                                   "inside_corner_lf": 36})
+        l = _line(pkg, '440 Series Trim 4/4" x 4"')
+        assert l["qty"] == 3  # pooled ceil(36 ÷ 16) — NOT 6 per-corner sticks
+        assert "cut-stock yield" in l["note"]
+
+    def test_isc_tall_corners_revert_to_splice_round_up(self):
+        from lp_package import assemble_lp_package
+        pkg = assemble_lp_package({"_hover_source": True,
+                                   "inside_corner_count": 2,
+                                   "inside_corner_lf": 36})  # 18' each > 16'
+        l = _line(pkg, '440 Series Trim 4/4" x 4"')
+        assert l["qty"] == 4  # 2 × ceil(18 ÷ 16) — validity caveat holds
+        assert "splice-and-round-up" in l["note"]
+        assert "cut-stock" not in l["note"]
+
+    def test_waste_display_matches_application(self):
+        from lp_package import assemble_lp_package
+        from lp_smartside_formulas import DEFAULT_WASTE
+        d = assemble_lp_package({"_hover_source": True, "siding_sqft": 1000})
+        assert d["summary"]["waste_pct_applied"] == DEFAULT_WASTE  # 0.10, never silently 0
+        z = assemble_lp_package({"_hover_source": True, "siding_sqft": 1000,
+                                 "_waste_pct": 0.0})
+        assert z["summary"]["waste_pct_applied"] == 0.0  # explicit override mirrors too
+
+    def test_preview_endpoint_surfaces_waste_applied(self, pkg):
+        assert pkg["summary"]["waste_pct_applied"] == 0.10

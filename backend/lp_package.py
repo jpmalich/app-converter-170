@@ -19,7 +19,7 @@ from lp_conventions import (
     FASCIA_RAKE_ITEM, ISC_TRIM_ITEM, PENDING_CONFIRMATIONS, TRIM_STICK_LEN_FT,
     WRAP_TRIM_ITEM, fascia_rake_takeoff, line_math, lp_composition_bugs,
 )
-from lp_smartside_formulas import lap_coverage_sqft_per_pc, override_flag
+from lp_smartside_formulas import DEFAULT_WASTE, lap_coverage_sqft_per_pc, override_flag
 
 OSC_ITEM = "540 Series OSC 5/4\" x 6\" x 16'"   # Howard's default width
 LAP8_ITEM = "38 Series Lap 3/8\" x 8\" x 16'"
@@ -314,9 +314,6 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         if isc["amber"]:
             flags.append(f"{isc['amber']} amber inside-corner location(s) included — field verify")
     else:
-        # Blueprint fallback (no C3 locators, shakedown-ruled 2026-07-14):
-        # per-location whole-stick from the corner-walk counts — without
-        # this, blueprint-sourced packages NEVER composed ISC at all.
         ic = int(measurements.get("inside_corner_count") or 0)
         if ic > 0:
             try:
@@ -324,10 +321,30 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             except (TypeError, ValueError):
                 ilf = 0.0
             per_h = (ilf / ic) if ilf > 0 else (avg_h or 9.5)
-            qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
-            _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
-                      f"{ic} inside-corner location(s) × whole-stick ({per_h:g}' each) — "
-                      "corner-walk basis (no C3 locators)",
+            if measurements.get("_hover_source") and ilf > 0:
+                # RULED 2026-07-17 (261 Haugh round-two score): ISC on the
+                # Hover path = measured-LF pooling — cut-stock yield (two
+                # ~6' corners per 16' stick). VALIDITY CAVEAT (ruled): the
+                # pooling holds only while individual corner heights ≤ 16'
+                # (stick length); taller corners revert to splice-and-
+                # round-up per corner.
+                if per_h <= TRIM_STICK_LEN_FT:
+                    qty = max(1, math.ceil(ilf / TRIM_STICK_LEN_FT - 1e-9))
+                    _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
+                              f"Hover measured ISC LF pooling: {ilf:g} LF ÷ 16' = {qty} — "
+                              f"cut-stock yield ({ic} corners, {per_h:g}' avg ≤ 16')",
+                              _derivation={"kind": "isc_hover_lf", "lf": ilf, "count": ic})
+                else:
+                    qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
+                    _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
+                              f"Hover ISC {ic} corner(s) × splice-and-round-up "
+                              f"({per_h:g}' each > 16' stick — LF pooling invalid above stick length, ruled)",
+                              _derivation={"kind": "isc_hover_splice", "lf": ilf, "count": ic})
+            else:
+                qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
+                _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
+                          f"{ic} inside-corner location(s) × whole-stick ({per_h:g}' each) — "
+                          "corner-walk basis (no C3 locators)",
                       _derivation={"kind": "isc_corner_walk", "count": ic, "lf": ilf})
 
     # ── 440 4/4"×8": fascia + rake boards
@@ -501,6 +518,11 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         "lines": lines,
         "summary": {
             "line_count": len(lines),
+            # Waste display sync (ruled 2026-07-18): the value the engine
+            # ACTUALLY applied — every surface stating waste mirrors this.
+            "waste_pct_applied": (float(measurements.get("_waste_pct"))
+                                  if measurements.get("_waste_pct") is not None
+                                  else DEFAULT_WASTE),
             "total_pieces": sum(l["qty"] for l in lines if l.get("unit") == "PCS"),
             "osc_source": "c3_corner_locations" if osc else "outside_corner_lf",
             **({"osc_detail": osc} if osc else {}),

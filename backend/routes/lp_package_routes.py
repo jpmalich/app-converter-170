@@ -668,6 +668,19 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
     m = {k: hover_meas[k] for k in passthrough if k in hover_meas}
     m["_hover_source"] = True
     m["_waste_pct"] = 0.10 if waste_pct is None else float(waste_pct)
+    # WRAP-DEFAULT enforcement (ruled 2026-07-18): when the report carries
+    # a facade_breakdown and no explicit scope was chosen, only the Siding
+    # row composes — other materials are named + excluded, never silently
+    # summed. Explicit facade_scope (the picker) always overrides.
+    fb = hover_meas.get("facade_breakdown") or {}
+    if not facade_scope and isinstance(fb, dict):
+        sid = float(fb.get("siding_sqft") or 0)
+        others = {k[:-5]: float(v) for k, v in fb.items()
+                  if k != "siding_sqft" and k.endswith("_sqft")
+                  and isinstance(v, (int, float)) and v > 0}
+        if sid > 0 and others:
+            facade_scope = {"mode": "wrap_only", "wrap_sqft": sid,
+                            "excluded": others}
     if facade_scope and (facade_scope.get("wrap_sqft") or 0) > 0:
         measured_total = float(hover_meas.get("siding_sqft") or 0)
         wrap = float(facade_scope["wrap_sqft"])
@@ -692,6 +705,15 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
         "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
         "verify": "Walk the corners on site — confirm OSC/ISC counts match the report",
     }]
+    fs = m.get("_facade_scope")
+    if fs and fs.get("excluded"):
+        excl = ", ".join(f"{k} {v:g} ft²" for k, v in fs["excluded"].items())
+        flags.append({
+            "code": "facade_scope",
+            "label": (f"facade scope {fs['mode']}: {fs['wrap_sqft']:g} ft² composes; "
+                      f"excluded: {excl} (never silently summed)"),
+            "verify": "Confirm the excluded facade materials stay out of the siding scope — re-import with them included if the job wraps them",
+        })
     if profile in ("board_batten", "vertical"):
         flags.append({
             "code": "batten_wall_heights",

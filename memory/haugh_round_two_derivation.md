@@ -52,3 +52,33 @@
 - **Soffit vented waste** (above).
 - **Import-dialog facade picker:** the standing selectable-scope rule is live at the contract/API level; the one-tap facade picker in the import dialog needs the Hover extraction to emit `facade_breakdown` (schema upgrade) — flagged pending until a future import verifies, blueprint protocol.
 - Mapping-contract flags on this estimate: corner_locators OPEN, opening_schedule OPEN (field-verify checklist live on the panel).
+
+## Round-two follow-ups — EXECUTED (2026-07-18 ruling batch)
+1. **ISC measured-LF pooling (RULED, closed):** Hover-path ISC now pools
+   measured LF — cut-stock yield (two ~6' corners per 16' stick):
+   `qty = ceil(inside_corner_lf ÷ 16)` → Haugh 36.92 LF = **3 sticks vs 6**.
+   **VALIDITY CAVEAT (in code + here):** the pooling holds only while
+   individual corner heights ≤ 16' (stick length); taller corners revert
+   to splice-and-round-up per corner (`ic × ceil(height ÷ 16)`), note
+   names the reversion. Pinned: `test_isc_measured_lf_pooling_cut_stock_yield`,
+   `test_isc_tall_corners_revert_to_splice_round_up`.
+2. **Waste display sync (RULED, closed):** every surface stating a waste
+   figure mirrors the APPLIED value — never 0% while the engine bakes 10%.
+   - Engine: `summary.waste_pct_applied` on every lp-package preview
+     (`_waste_pct` override or DEFAULT_WASTE 0.10).
+   - Panel: `waste: 10% in formulas` chip on the LP Material List header.
+   - Dialog: import-preview recon card shows the engine-applied % with
+     "(applied inside the engine formulas)" and does NOT re-multiply.
+   - Toast on LP apply states the applied % and why the estimate knob is 0.
+   Pinned: `test_waste_display_matches_application`,
+   `test_preview_endpoint_surfaces_waste_applied`.
+3. **Facade-breakdown picker (RULED, closed):** Hover-parse schema pinned —
+   extraction now emits `facade_breakdown` (siding/stucco/brick/stone/
+   metal/other, per-material, never summed). Mapping contract enforces the
+   WRAP DEFAULT even without a picker choice (siding row composes; other
+   materials named + excluded via a `facade_scope` mapping flag — never
+   silently summed). Import dialog renders the explicit-choice picker on
+   LP-kind when non-siding materials appear; explicit inclusion overrides.
+   Pinned: `test_prompt_schema_pins_facade_breakdown`,
+   `test_contract_wrap_default_from_breakdown_never_silent_sum`,
+   `test_contract_explicit_picker_choice_overrides_default`.

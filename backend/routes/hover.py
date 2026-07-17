@@ -1495,6 +1495,14 @@ PROMPT_TEMPLATE = """Extract from this HOVER report:
     "right": <Right elevation siding sqft, or null>
   }},
   "roof_area_sqft": <Total Roof Area, ft². If not present, null.>,
+  "facade_breakdown": {{
+    "siding_sqft": <Facades table — Siding row area only, ft². If not present, null.>,
+    "stucco_sqft": <Facades table — Stucco row area, ft². If not present, null.>,
+    "brick_sqft": <Facades table — Brick / Masonry row area, ft². If not present, null.>,
+    "stone_sqft": <Facades table — Stone row area, ft². If not present, null.>,
+    "metal_sqft": <Facades table — Metal row area, ft². If not present, null.>,
+    "other_sqft": <sum of any other facade material rows, ft². If not present, null.>
+  }},
   "windows": [
     {{ "id": "W-101", "width_in": 29.0, "height_in": 51.0 }},
     ... one object per individual window opening listed in the Doors & Windows table ...
@@ -1518,6 +1526,10 @@ Door classification rules (apply in this order):
   4. All other doors (single front doors at 36in wide, double doors at 72in wide × 80in tall, etc.) → entry_door_count
 
 The three counts (entry + patio + garage) must sum to door_count.
+
+Facade-breakdown rule (PINNED 2026-07-18): emit each facade material row
+SEPARATELY in facade_breakdown — NEVER sum different materials together.
+siding_sqft (top-level) stays the Siding row only.
 
 Convert all `7' 5"` style values to decimal feet. Example: `7' 5"` → 7.42.
 
@@ -2200,6 +2212,11 @@ async def _execute_hover_import_worker(
             {"windows": windows_payload}
         )
         measurements["overhang_in"] = overhang_in
+        # Waste display sync (ruled 2026-07-18): the LP lap/soffit formulas
+        # bake DEFAULT_WASTE into qty — surface the applied value so every
+        # UI stating a waste figure matches the application, never 0%.
+        measurements["_lp_waste_pct_applied"] = (
+            lp_formulas.DEFAULT_WASTE if lp_formulas.is_enabled() else 0.0)
 
         # Stage 2 — Map measurements to catalog lines (cheap, in-process).
         await _set_stage("building-lines")

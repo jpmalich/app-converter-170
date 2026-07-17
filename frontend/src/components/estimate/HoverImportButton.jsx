@@ -164,6 +164,23 @@ export default function HoverImportButton({ est, update, save }) {
   // elevations can be verified independently. Value shape:
   //   "loading" | { ok, label, scale_bar_found, measured_*, delta_vs_*, ... }
   const [deepVerify, setDeepVerify] = useState({});
+  // Facade-breakdown picker (ruled 2026-07-18): wrap-default + never-
+  // silently-sum. Non-siding materials start EXCLUDED; the contractor
+  // explicitly opts each one in. Keyed by material name → bool.
+  const [facadeInclude, setFacadeInclude] = useState({});
+
+  const facadeBreakdown =
+    (est?.kind === "lp_smart" && result?.measurements?.facade_breakdown) || {};
+  const facadeMaterials = Object.entries(facadeBreakdown)
+    .filter(([k, v]) => k.endsWith("_sqft") && Number(v) > 0)
+    .map(([k, v]) => ({ key: k.replace(/_sqft$/, ""), sqft: Number(v) }));
+  const hasFacadePicker =
+    facadeMaterials.length > 0 && facadeMaterials.some((m) => m.key !== "siding");
+  // Waste display sync (ruled 2026-07-18): the % shown MUST be the %
+  // the LP engine applies in its formulas (10% default), never 0.
+  const lpWastePctApplied = Math.round(
+    (result?.measurements?._lp_waste_pct_applied ?? 0.10) * 100
+  );
 
   const runDeepVerify = async (warning) => {
     // Extract elevation label from the warning code, e.g.
@@ -214,6 +231,7 @@ export default function HoverImportButton({ est, update, save }) {
     setBusy(true);
     setResult(null);
     setOpenings([]);
+    setFacadeInclude({});
     setStage("");
     try {
       const fd = new FormData();
@@ -284,6 +302,7 @@ export default function HoverImportButton({ est, update, save }) {
     setBusy(true);
     setResult(null);
     setOpenings([]);
+    setFacadeInclude({});
     try {
       const { data } = await api.post("/measure/map", {
         measurements: est.hover_measurements,
@@ -506,9 +525,24 @@ export default function HoverImportButton({ est, update, save }) {
       // unmappable fields flag pending). LP-kind fresh imports only.
       if (srcKind === "lp_smart" && hoverRunId && profile) {
         try {
+          // Facade scope from the picker — explicit choice, wrap default.
+          let facadeScope = null;
+          if (facadeMaterials.length) {
+            const excluded = {};
+            let wrap = 0;
+            for (const m of facadeMaterials) {
+              if (m.key === "siding" || facadeInclude[m.key]) wrap += m.sqft;
+              else excluded[m.key] = m.sqft;
+            }
+            const mode = Object.keys(excluded).length === 0
+              ? "all_included"
+              : (Object.keys(facadeInclude).filter((k) => facadeInclude[k]).length ? "custom" : "wrap_only");
+            facadeScope = { mode, wrap_sqft: wrap, excluded };
+          }
           const { data: lpRun } = await api.post(`/estimates/${est.id}/hover-lp-run`, {
             hover_run_id: hoverRunId,
             profile,
+            ...(facadeScope ? { facade_scope: facadeScope } : {}),
           });
           toast.info(
             `LP list now derives from this Hover report (${profile === "board_batten" ? "Board & Batten" : profile}). ${lpRun.mapping_flags?.length || 0} mapping note(s) — see the Material List panel.`,
@@ -519,12 +553,19 @@ export default function HoverImportButton({ est, update, save }) {
           toast.error(e?.response?.data?.detail || "Hover→LP run failed — LP list unchanged");
         }
       }
-      // Iter 79c — friendly reminder that HOVER waste-baked sqft means the
-      // estimate's Waste % was reset to 0. Contractors can still bump it
-      // manually in Job Info → Waste Factor if they want extra cut waste.
-      toast.info("Waste % reset to 0 — HOVER's sqft already includes waste. Bump it manually if you need extra.", {
-        duration: 6000,
-      });
+      // Waste display sync (ruled 2026-07-18): the message states the value
+      // actually applied. LP: engine formulas carry the ruled 10% default —
+      // the estimate knob stays 0 so it can't double-count.
+      if (srcKind === "lp_smart") {
+        toast.info(
+          `LP waste: ${lpWastePctApplied}% applied inside the engine formulas (ruled default — never silently 0). The estimate Waste % knob stays 0 to avoid double-counting.`,
+          { duration: 8000 }
+        );
+      } else {
+        toast.info("Waste % reset to 0 — HOVER's sqft already includes waste. Bump it manually if you need extra.", {
+          duration: 6000,
+        });
+      }
     } catch (e) {
       toast.error(e?.response?.data?.detail || e?.message || "Saved locally but failed to persist — click Save");
     } finally {
@@ -873,10 +914,64 @@ export default function HoverImportButton({ est, update, save }) {
               <TakeoffReconCard
                 measurements={result.measurements || {}}
                 lines={result.lines || []}
-                wastePct={est?.waste_pct || 0}
+                wastePct={est?.kind === "lp_smart" ? lpWastePctApplied : (est?.waste_pct || 0)}
+                wasteInFormula={est?.kind === "lp_smart"}
                 kind={est?.kind || "siding"}
                 lpSoffitType={est?.lp_soffit_type || "mix"}
               />
+
+              {/* Facade-breakdown picker (ruled 2026-07-18): explicit scope
+                  choice at import — wrap default, never silently summed. */}
+              {hasFacadePicker && (
+                <div className="p-5 border-b border-[#FCD34D] bg-[#FFFBEB]" data-testid="hover-facade-scope-picker">
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--warning-text)] mb-1">
+                    Facade Scope — wrap default
+                  </div>
+                  <p className="text-[11px] text-[#78350F] leading-snug mb-3">
+                    This report breaks the facades into materials. Only <strong>Siding</strong> composes
+                    by default — other materials are <strong>never silently summed</strong> into the LP
+                    derivation. Tick a material to explicitly include its area.
+                  </p>
+                  <div className="space-y-1.5">
+                    {facadeMaterials.map((m) => {
+                      const included = m.key === "siding" || !!facadeInclude[m.key];
+                      return (
+                        <label
+                          key={m.key}
+                          className={`flex items-center gap-2 text-xs ${m.key === "siding" ? "opacity-80" : "cursor-pointer"}`}
+                          data-testid={`facade-scope-row-${m.key}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={included}
+                            disabled={m.key === "siding"}
+                            onChange={(e) =>
+                              setFacadeInclude((prev) => ({ ...prev, [m.key]: e.target.checked }))
+                            }
+                            data-testid={`facade-scope-check-${m.key}`}
+                          />
+                          <span className="font-bold capitalize text-[var(--ink)]">{m.key}</span>
+                          <span className="font-mono-num text-[var(--ink-2)]">{m.sqft.toLocaleString()} ft²</span>
+                          <span className="text-[10px] text-[var(--muted)]">
+                            {m.key === "siding" ? "always composes (wrap default)" : included ? "explicitly included" : "excluded"}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="text-[11px] font-mono-num text-[#78350F] mt-2" data-testid="facade-scope-summary">
+                    LP derivation scope:{" "}
+                    <strong>
+                      {facadeMaterials
+                        .filter((m) => m.key === "siding" || facadeInclude[m.key])
+                        .reduce((s, m) => s + m.sqft, 0)
+                        .toLocaleString()}{" "}
+                      ft²
+                    </strong>{" "}
+                    of {facadeMaterials.reduce((s, m) => s + m.sqft, 0).toLocaleString()} ft² measured
+                  </div>
+                </div>
+              )}
 
               {/* Vero Windows block — one row per HOVER opening with the
                   AI-guessed product type editable in a dropdown. Apply
