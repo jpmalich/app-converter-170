@@ -72,3 +72,12 @@ reports carry per-class perimeter so the matching basket is always available.
   taller inside corners; Hover counts 6 shorter ones. Same steel, different cut.
 - Hover extras with no photo counterpart: united inches 2,748 · level frieze
   215.67 · sloped frieze 129.83 · drip edge 320.75 · window bottom width 100.25.
+
+## FINAL TALLY (Howard, board record — cross-validation CLOSED)
+With the basis retag: **7 agree · 7 disagree-flagged-with-one-named-cause ·
+2 couldn't-see** — on the hardest house available (stepped modern,
+shed/clerestory roof), at uncalibrated-to-medium confidence. Basis retag
+accepted on the two verified matches with the united-inches caveat logged,
+not papered over. Standing convention approved: windows-only opening-perimeter
+comparisons; per-class perimeter always carried photo-side. Verdict:
+honesty-under-difficulty PASS. Nothing further owed; board on standby.
