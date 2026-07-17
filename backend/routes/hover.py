@@ -652,11 +652,12 @@ HOVER_MAPPING_SPEC = [
             lp_formulas.board_batten_batten_pieces(
                 float((m.get("_per_profile_sqft") or {}).get("board_batten") or 0)
                 + float((m.get("_per_profile_sqft") or {}).get("vertical") or 0),
+                wall_height_ft=float(m.get("_bb_wall_height_ft") or 0),
             )
             if lp_formulas.is_enabled()
             else 0
         ),
-        "note": "Batten strips — wall area ÷ spacing ft, 16' stock, no waste (16\" o.c. provisional; SKU + default spacing pending ruling)",
+        "note": "Batten strips — wall area ÷ spacing ft (+1 run × wall height when field-verified), 16' stock, no waste (16\" o.c. provisional; SKU + default spacing pending ruling)",
     },
     # .019 Coil LP AUTO-ADD RETIRED (iter97 composition ruling, 2026-07-12):
     # an auto-add is DERIVED composition — coil on an LP-native derived

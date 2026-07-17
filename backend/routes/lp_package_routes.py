@@ -5,6 +5,8 @@ preview is ALWAYS redacted (sell only); the unredacted cost view exists only
 behind the supplier-admin token."""
 from fastapi import APIRouter, Depends, HTTPException, Request
 
+from datetime import datetime, timezone
+
 from db import db
 from deps import check_admin_token, get_current_user
 from estimate_events import log_estimate_event
@@ -27,7 +29,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
     est = await db.estimates.find_one(
         q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
                 "lp_openings_review": 1, "lp_appendage_dims": 1, "lp_source_run_id": 1,
-                "default_siding_profile": 1,
+                "default_siding_profile": 1, "lp_flag_checklist": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -553,6 +555,7 @@ async def lp_package_preview(
     corners_eff = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corners_eff = _apply_appendage_dims(corners_eff, est.get("lp_appendage_dims"))
     measurements = _apply_default_profile(measurements, est)
+    measurements = _apply_flag_checklist(measurements, est, run)
     pkg = assemble_lp_package(measurements, corners_eff, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -565,7 +568,7 @@ async def lp_package_preview(
     if run.get("source") == "hover":
         pkg["source_kind"] = "hover"
         pkg["source_label"] = "Hover import"
-        pkg["hover_mapping_flags"] = run.get("hover_mapping_flags") or []
+        pkg["hover_mapping_flags"] = _checklist_flags(run, est)
     elif run.get("page_paths"):
         pkg["source_kind"] = "blueprint"
         pkg["source_label"] = f"Blueprint — {run.get('page_count') or '?'} sheet(s)"
@@ -643,18 +646,22 @@ def _hover_mapping_contract(hover_meas: dict, profile: str) -> tuple[dict, list]
     )
     m = {k: hover_meas[k] for k in passthrough if k in hover_meas}
     m = _force_profile_measurements(m, profile)
-    flags = []
-    # Corner locators (C3): Hover has counts/LF, no per-corner positions →
-    # engine uses the corner-walk whole-stick fallback (a legit reduced
-    # basis, flagged so the shakedown scores it honestly).
-    flags.append("corner sticks on corner-walk basis (Hover has counts/LF, no per-corner locators)")
-    # Per-wall gable heights absent → the batten +1-run-per-wall height
-    # term is 0 on the Hover path (documented reduced basis).
+    flags = [{
+        "code": "corner_locators",
+        "label": "corner sticks on corner-walk basis (Hover has counts/LF, no per-corner locators)",
+        "verify": "Walk the corners on site — confirm OSC/ISC counts match the report",
+    }]
     if profile in ("board_batten", "vertical"):
-        flags.append("batten +height term = 0 (Hover carries no per-wall heights) — PENDING field verify")
-    # Per-opening width schedule absent → starter entry-door deduction and
-    # 540 wrap 3-side classification use count×constant fallbacks.
-    flags.append("opening schedule not itemized (Hover counts only) — starter deduction + wrap use per-count constants")
+        flags.append({
+            "code": "batten_wall_heights",
+            "label": "batten +height term = 0 (Hover carries no per-wall heights) — PENDING field verify",
+            "verify": "Tape each wall height — closing re-derives batten LF live (+1 run × height per wall)",
+        })
+    flags.append({
+        "code": "opening_schedule",
+        "label": "opening schedule not itemized (Hover counts only) — starter deduction + wrap use per-count constants",
+        "verify": "Confirm opening count + entry-door widths on site",
+    })
     return m, flags
 
 
@@ -676,13 +683,95 @@ async def set_default_profile(
     if est.get("kind") != "lp_smart":
         raise HTTPException(status_code=400, detail="Default profile is LP SmartSide only (slice 1)")
     prev = est.get("default_siding_profile")
+    now = datetime.now(timezone.utc).isoformat()
+    change = {"from": prev, "to": profile, "by": user.get("email"), "at": now}
     await db.estimates.update_one(
-        {"id": est_id}, {"$set": {"default_siding_profile": profile}})
+        {"id": est_id}, {"$set": {"default_siding_profile": profile,
+                                  "default_siding_profile_change": change}})
     await log_estimate_event(est_id, "lp.default_profile.set", {
         "from": prev, "to": profile, "by": user.get("email"),
     })
-    return {"ok": True, "from": prev, "to": profile,
+    return {"ok": True, "from": prev, "to": profile, "change": change,
             "label": _PROFILE_LABEL.get(profile) if profile else None}
+
+
+# Field-verify-from-flags (approved 2026-07-17): the checklist is generated
+# from OPEN mapping-contract flags; entries ride the user-measured machinery
+# (by/at, revertible, journey-logged); per-item retirement as flags close;
+# an OFFER, never a gate. Closing batten wall-heights re-derives batten LF
+# live (+1 run × wall height per wall).
+_FLAG_CODES = ("corner_locators", "batten_wall_heights", "opening_schedule")
+
+
+def _apply_flag_checklist(measurements: dict, est: dict, run: dict) -> dict:
+    """Fold CLOSED checklist values into the derivation basis (live)."""
+    if run.get("source") != "hover":
+        return measurements
+    bb = (est.get("lp_flag_checklist") or {}).get("batten_wall_heights") or {}
+    if bb.get("status") == "closed":
+        heights = (bb.get("values") or {}).get("wall_heights_ft") or []
+        try:
+            total = float(sum(float(h) for h in heights))
+        except (TypeError, ValueError):
+            total = 0.0
+        if total > 0:
+            m = dict(measurements)
+            m["_bb_wall_height_ft"] = total
+            return m
+    return measurements
+
+
+def _checklist_flags(run: dict, est: dict) -> list:
+    """Mapping-contract flags merged with checklist state — closed items
+    retire from the amber list but stay visible (struck, by/at named)."""
+    checklist = est.get("lp_flag_checklist") or {}
+    out = []
+    for f in run.get("hover_mapping_flags") or []:
+        item = dict(f) if isinstance(f, dict) else {"code": "", "label": str(f)}
+        entry = checklist.get(item.get("code")) or {}
+        item["status"] = "closed" if entry.get("status") == "closed" else "open"
+        if item["status"] == "closed":
+            item["closed_by"] = entry.get("by")
+            item["closed_at"] = entry.get("at")
+            item["values"] = entry.get("values")
+        out.append(item)
+    return out
+
+
+@router.post("/estimates/{est_id}/flag-checklist")
+async def flag_checklist_act(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    """Close/reopen a mapping-contract flag with field-verified values."""
+    code = (payload or {}).get("code")
+    action = (payload or {}).get("action")
+    values = (payload or {}).get("values") or {}
+    if code not in _FLAG_CODES:
+        raise HTTPException(status_code=422, detail=f"code must be one of {_FLAG_CODES}")
+    if action not in ("close", "reopen"):
+        raise HTTPException(status_code=422, detail="action must be close or reopen")
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "lp_flag_checklist": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    if action == "close" and code == "batten_wall_heights":
+        heights = values.get("wall_heights_ft")
+        if (not isinstance(heights, list) or not heights
+                or any(not isinstance(h, (int, float)) or h <= 0 for h in heights)):
+            raise HTTPException(status_code=422,
+                                detail="wall_heights_ft must be a non-empty list of positive numbers (taped per wall)")
+    prev = (est.get("lp_flag_checklist") or {}).get(code)
+    now = datetime.now(timezone.utc).isoformat()
+    entry = ({"status": "closed", "values": values, "by": user.get("email"), "at": now, "prev": prev}
+             if action == "close"
+             else {"status": "open", "by": user.get("email"), "at": now, "prev": prev})
+    await db.estimates.update_one(
+        {"id": est_id}, {"$set": {f"lp_flag_checklist.{code}": entry}})
+    await log_estimate_event(est_id, f"lp.flag_checklist.{action}", {
+        "code": code, "values": values if action == "close" else None, "by": user.get("email"),
+    })
+    return {"ok": True, "code": code, "entry": entry}
 
 
 @router.post("/estimates/{est_id}/lp-package/compare")
@@ -946,6 +1035,7 @@ async def _derive_current(est_id: str, company_id=None):
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     measurements = _apply_default_profile(measurements, est)
+    measurements = _apply_flag_checklist(measurements, est, run)
     full_est = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "lp_colors": 1, "lp_pricing_tier": 1,
                          "estimate_number": 1, "customer_name": 1,
@@ -981,6 +1071,7 @@ async def lp_material_list_freeze(
     corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     measurements = _apply_default_profile(measurements, est)
+    measurements = _apply_flag_checklist(measurements, est, run)
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))

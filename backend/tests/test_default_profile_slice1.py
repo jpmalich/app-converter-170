@@ -82,14 +82,14 @@ class TestHoverMappingContractUnit:
         assert "roof_sqft" not in m, "unmapped fields must not leak through"
         assert m["_per_profile_sqft"] == {"board_batten": 2000.0}
         assert m["starter_lf"] == 0
-        assert any("corner" in f for f in flags)
-        assert any("batten +height" in f for f in flags)
-        assert any("opening schedule" in f for f in flags)
+        codes = [f["code"] for f in flags]
+        assert codes == ["corner_locators", "batten_wall_heights", "opening_schedule"]
+        assert all(f["label"] and f["verify"] for f in flags)
 
     def test_lap_has_no_batten_flag(self):
         from routes.lp_package_routes import _hover_mapping_contract
         _, flags = _hover_mapping_contract({"siding_sqft": 1500, "starter_lf": 100}, "lap")
-        assert not any("batten" in f for f in flags)
+        assert "batten_wall_heights" not in [f["code"] for f in flags]
 
 
 class TestDefaultProfileHttp:
@@ -149,7 +149,9 @@ class TestHoverLpRunHttp:
             assert gb["binding"] == "applied-stamp" and gb["pinned"] is True
             assert gb["label"].startswith("Hover import — report ")
             assert pkg["source_label"] == "Hover import"
-            assert pkg["hover_mapping_flags"] == body["mapping_flags"]
+            pkg_flags = pkg["hover_mapping_flags"]
+            assert [f["code"] for f in pkg_flags] == [f["code"] for f in body["mapping_flags"]]
+            assert all(f["status"] == "open" for f in pkg_flags)
             names = _named(pkg)
             assert PANEL in names and LAP not in names
         finally:

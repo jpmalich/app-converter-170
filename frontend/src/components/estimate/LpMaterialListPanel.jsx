@@ -114,21 +114,64 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   // provenance is event-logged backend-side; applied lines still only
   // change through the normal apply gate.
   const [defaultProfile, setDefaultProfile] = useState(est?.default_siding_profile || null);
+  const [profileChange, setProfileChange] = useState(est?.default_siding_profile_change || null);
   const [savingProfile, setSavingProfile] = useState(false);
-  const changeDefaultProfile = async (val) => {
-    const next = val === defaultProfile ? null : val;
+
+  // Slice 2 — colors re-validated against the availability matrix for the
+  // new profile (matrix INFORMS, never forbids — degraded combos warned,
+  // never cleared or blocked).
+  const revalidateColors = (matrix, profileLabel) => {
+    if (!matrix) return;
+    const degraded = [];
+    for (const [group, color] of Object.entries(colors || {})) {
+      if (!color) continue;
+      const cell = matrix[group]?.[color];
+      if (cell && cell.status !== "available") {
+        degraded.push(`${group}: ${color} → ${cell.status.toUpperCase()}${cell.note ? ` (${cell.note})` : ""}`);
+      }
+    }
+    if (degraded.length) {
+      toast.warning(
+        `Colors re-validated for ${profileLabel}: ${degraded.join(" · ")} — matrix informs, never forbids.`,
+        { duration: 9000 }
+      );
+    }
+  };
+
+  const applyProfile = async (next) => {
     setSavingProfile(true);
     try {
       const { data } = await api.post(`/estimates/${estId}/default-profile`, { profile: next });
       setDefaultProfile(data.to);
+      setProfileChange(data.change || null);
       toast.success(data.to
         ? `Default profile → ${data.label} — list re-derived on the same geometry`
         : "Default profile cleared — composition follows the extraction");
-      await fetchPackage(colors, subs);
+      const { data: fresh } = await api.post(`/estimates/${estId}/lp-package/preview`, {
+        colors: colors && Object.keys(colors).length ? colors : undefined,
+        substitutions: subs && Object.keys(subs).length ? subs : undefined,
+      });
+      setPkg(fresh);
+      revalidateColors(fresh.color_matrix, data.label || "extraction default");
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Could not set default profile");
     } finally {
       setSavingProfile(false);
+    }
+  };
+  const changeDefaultProfile = (val) => applyProfile(val === defaultProfile ? null : val);
+
+  // Field-verify-from-flags (approved 2026-07-17): close/reopen mapping-
+  // contract flags; closing batten wall-heights re-derives batten LF live.
+  const [flagInput, setFlagInput] = useState({});
+  const actFlag = async (code, action, values) => {
+    try {
+      await api.post(`/estimates/${estId}/flag-checklist`, { code, action, values });
+      toast.success(action === "close" ? "Flag closed — basis updated" : "Flag reopened");
+      setFlagInput((p) => ({ ...p, [code]: undefined }));
+      await fetchPackage(colors, subs);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Checklist update failed");
     }
   };
 
@@ -374,13 +417,80 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               </button>
             ))}
           </div>
+          {profileChange && profileChange.to !== profileChange.from && (
+            <div className="text-[9px] text-[var(--muted)] mt-1 font-mono-num" data-testid="lp-profile-provenance">
+              {(profileChange.from || "extraction default")} → {(profileChange.to || "extraction default")}
+              {" · "}{profileChange.by}{" · "}{String(profileChange.at || "").slice(0, 16).replace("T", " ")}
+              <button
+                type="button"
+                className="ml-2 underline text-[#92400E] font-bold uppercase tracking-wider"
+                onClick={() => applyProfile(profileChange.from || null)}
+                disabled={savingProfile}
+                data-testid="lp-profile-revert"
+              >
+                Revert
+              </button>
+            </div>
+          )}
           {(pkg.hover_mapping_flags || []).length > 0 && (
-            <div className="mt-1.5 space-y-0.5" data-testid="lp-hover-mapping-flags">
-              {pkg.hover_mapping_flags.map((f, i) => (
-                <div key={i} className="text-[9px] text-[#92400E] leading-snug">
-                  ⚑ {f}
-                </div>
-              ))}
+            <div className="mt-1.5 space-y-1" data-testid="lp-hover-mapping-flags">
+              {pkg.hover_mapping_flags.map((f, i) => {
+                const code = f.code || `flag-${i}`;
+                const label = f.label || String(f);
+                const closed = f.status === "closed";
+                return (
+                  <div key={code} className="text-[9px] leading-snug" data-testid={`lp-flag-${code}`}>
+                    {closed ? (
+                      <span className="text-[var(--muted)] line-through">⚑ {label}</span>
+                    ) : (
+                      <span className="text-[#92400E]">⚑ {label}</span>
+                    )}
+                    {closed ? (
+                      <span className="ml-1 text-[var(--muted)] no-underline">
+                        closed · {f.closed_by} ·
+                        <button type="button" className="ml-1 underline" onClick={() => actFlag(code, "reopen")} data-testid={`lp-flag-${code}-reopen`}>
+                          reopen
+                        </button>
+                      </span>
+                    ) : code === "batten_wall_heights" ? (
+                      flagInput[code] !== undefined ? (
+                        <span className="ml-1 inline-flex items-center gap-1">
+                          <input
+                            className="border border-[var(--border)] px-1 py-0.5 w-40 text-[9px] font-mono-num"
+                            placeholder="wall heights ft, e.g. 9, 9, 18.5, 9"
+                            value={flagInput[code]}
+                            onChange={(e) => setFlagInput((p) => ({ ...p, [code]: e.target.value }))}
+                            data-testid={`lp-flag-${code}-input`}
+                          />
+                          <button
+                            type="button"
+                            className="underline font-bold uppercase"
+                            onClick={() => {
+                              const hs = String(flagInput[code] || "").split(/[,\s]+/).map(Number).filter((n) => n > 0);
+                              if (!hs.length) { toast.error("Enter taped wall heights in feet"); return; }
+                              actFlag(code, "close", { wall_heights_ft: hs });
+                            }}
+                            data-testid={`lp-flag-${code}-save`}
+                          >
+                            Save
+                          </button>
+                        </span>
+                      ) : (
+                        <button type="button" className="ml-1 underline font-bold uppercase" onClick={() => setFlagInput((p) => ({ ...p, [code]: "" }))} data-testid={`lp-flag-${code}-verify`}>
+                          Field-verify
+                        </button>
+                      )
+                    ) : (
+                      <button type="button" className="ml-1 underline font-bold uppercase" onClick={() => actFlag(code, "close", { confirmed: true })} data-testid={`lp-flag-${code}-verify`}>
+                        Mark verified
+                      </button>
+                    )}
+                    {!closed && f.verify && (
+                      <div className="text-[8px] text-[var(--muted)] ml-3">{f.verify}</div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
