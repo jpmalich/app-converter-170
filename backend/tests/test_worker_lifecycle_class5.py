@@ -149,6 +149,10 @@ def test_auto_resume_capped_at_one(monkeypatch):
 
 # ── startup sweep ────────────────────────────────────────────────────
 def test_startup_sweep_recovers_orphans(monkeypatch):
+    """ISOLATED-DB pin (2026-07-17 collateral-kill incident): this test
+    runs the GLOBAL sweep — executed against the shared DB it flips any
+    LIVE status='running' run to class-5 (it killed a real mid-retry
+    reconcile once). It must run against a throwaway database."""
     calls = []
 
     async def fake_worker(**kw):
@@ -156,21 +160,25 @@ def test_startup_sweep_recovers_orphans(monkeypatch):
 
     monkeypatch.setattr(am, "_execute_reconcile_only_worker", fake_worker)
 
-    async def scenario(db):
+    async def wrapper():
+        from motor.motor_asyncio import AsyncIOMotorClient
+        client = AsyncIOMotorClient(os.environ["MONGO_URL"])
+        isolated = client[os.environ["DB_NAME"] + "_c5_sweep_test"]
+        monkeypatch.setattr(am, "db", isolated)
         with_pa = _fresh_run_doc()
         without_pa = _fresh_run_doc(raw_per_photo=[])
-        await db.ai_measure_runs.insert_many([dict(with_pa), dict(without_pa)])
+        await isolated.ai_measure_runs.insert_many([dict(with_pa), dict(without_pa)])
         try:
             out = await am.sweep_orphaned_runs()
             await asyncio.sleep(0)
-            a = await db.ai_measure_runs.find_one({"run_id": with_pa["run_id"]})
-            b = await db.ai_measure_runs.find_one({"run_id": without_pa["run_id"]})
+            a = await isolated.ai_measure_runs.find_one({"run_id": with_pa["run_id"]})
+            b = await isolated.ai_measure_runs.find_one({"run_id": without_pa["run_id"]})
             return out, a, b
         finally:
-            await db.ai_measure_runs.delete_many(
-                {"run_id": {"$in": [with_pa["run_id"], without_pa["run_id"]]}})
+            await client.drop_database(os.environ["DB_NAME"] + "_c5_sweep_test")
+            client.close()
 
-    out, a, b = _run_scenario(monkeypatch, scenario)
+    out, a, b = asyncio.run(wrapper())
     assert out["resumed"] >= 1 and out["failed"] >= 1
     assert a["status"] == "running" and a["lifecycle_resume_attempts"] == 1
     assert b["status"] == "error" and b["failure_class"] == 5
@@ -211,3 +219,97 @@ def test_validated_default_and_clamp():
     for role in ("owner", "supplier_admin", "admin"):
         key, clamped_from = am._clamp_model_choice("gpt-5.5", {"role": role})
         assert key == "gpt-5.5" and clamped_from is None
+
+
+# ── class-5 pins (2026-07-17 vanished-run incident) ──────────────────
+def test_in_flight_counts_awaiting_retry_runs():
+    """A failed-reconcile run with persisted Phase A + a live retry path
+    is IN-FLIGHT for restart purposes — preflight must surface it."""
+    s = requests.Session()
+    r = s.post(f"{API}/auth/login",
+               json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}, timeout=15)
+    assert r.status_code == 200, r.text
+    client = MongoClient(os.environ["MONGO_URL"])
+    db = client[os.environ["DB_NAME"]]
+    doc = _fresh_run_doc(
+        status="error", stage="worker_died", error_kind="WorkerDied",
+        updated_at=datetime.now(timezone.utc))
+    db.ai_measure_runs.insert_one(dict(doc))
+    try:
+        body = s.get(f"{API}/measure/ai-measure/in-flight", timeout=15).json()
+        assert body["restart_safe"] is False
+        mine = next(x for x in body["runs"] if x["run_id"] == doc["run_id"])
+        assert mine["kind"] == "awaiting_retry"
+    finally:
+        db.ai_measure_runs.delete_one({"run_id": doc["run_id"]})
+        client.close()
+
+
+def test_in_flight_ignores_stale_error_runs():
+    """Error runs older than 24 h don't flag restart_safe forever."""
+    s = requests.Session()
+    s.post(f"{API}/auth/login",
+           json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}, timeout=15)
+    client = MongoClient(os.environ["MONGO_URL"])
+    db = client[os.environ["DB_NAME"]]
+    doc = _fresh_run_doc(
+        status="error", stage="worker_died", error_kind="WorkerDied",
+        updated_at=datetime.now(timezone.utc) - timedelta(hours=48))
+    db.ai_measure_runs.insert_one(dict(doc))
+    try:
+        body = s.get(f"{API}/measure/ai-measure/in-flight", timeout=15).json()
+        assert all(x["run_id"] != doc["run_id"] for x in body["runs"])
+    finally:
+        db.ai_measure_runs.delete_one({"run_id": doc["run_id"]})
+        client.close()
+
+
+def test_class5_resume_and_retry_use_phase_b_key_routing():
+    assert 'api_key, _src = _pick_llm_api_key("anthropic", phase="B")' in SRC
+    assert 'api_key, _source = _pick_llm_api_key("anthropic", phase="B")' in SRC
+
+
+def test_proxy_llm_calls_are_nonblocking():
+    """Iter 79j.95 freeze pin: LlmChat.send_message bottoms out in a SYNC
+    litellm.completion() — every proxy call must route through the
+    worker-thread wrapper so a proxy hang can never freeze the loop."""
+    assert "def _send_message_nonblocking" in SRC
+    # the ONLY chat.send_message reference left is inside the wrapper
+    assert SRC.count("chat.send_message") == 1
+
+
+def test_reconcile_only_hollow_result_never_passes_as_done(monkeypatch):
+    """2026-07-17 pin: the proxy returned prose ('no JSON object found')
+    and the reconcile-only worker marked the run DONE with 0 walls /
+    0 sqft. A parse-broken reconcile must flip to error, Phase A intact."""
+    async def fake_reconcile(**kw):
+        return {"_parse_error": "no JSON object found", "_transport": "emergent_proxy"}
+    monkeypatch.setattr(am, "_reconcile_extractions", fake_reconcile)
+
+    async def scenario(db):
+        doc = _fresh_run_doc()
+        await db.ai_measure_runs.insert_one(dict(doc))
+        try:
+            await am._execute_reconcile_only_worker(
+                run_id=doc["run_id"], api_key="k", user_id="test-user",
+                extractions=doc["raw_per_photo"], model_provider="anthropic",
+                model_name="claude-fable-5", address=None,
+                reference_dim=None, annotation_hint="")
+            return await db.ai_measure_runs.find_one({"run_id": doc["run_id"]})
+        finally:
+            await db.ai_measure_runs.delete_one({"run_id": doc["run_id"]})
+
+    after = _run_scenario(monkeypatch, scenario)
+    assert after["status"] == "error"
+    assert after["error_kind"] == "ReconciliationRetryError"
+    assert "honesty guard" in after["error"]
+    assert after["raw_per_photo"], "Phase A must survive the flip"
+
+
+def test_direct_phase_b_streams():
+    """2026-07-17 pin: non-streaming messages.create + extended thinking
+    sat SILENT past the 300s httpx read timeout (two APITimeoutError
+    deaths on the 261 Haugh retry; the successful direct run took 327s).
+    Direct Phase B must stream so bytes flow through the quiet phase."""
+    assert "client.messages.stream(" in SRC
+    assert "get_final_message" in SRC

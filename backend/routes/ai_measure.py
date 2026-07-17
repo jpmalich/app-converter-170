@@ -34,7 +34,7 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from emergentintegrations.llm.chat import (
@@ -210,6 +210,25 @@ _LLM_ROUTING_SUMMARY = (
     f"legacy={_legacy or 'unset'}, key={'present' if _direct_key_present else 'absent'}]"
 )
 logger.info("[AI_MEASURE key-routing] %s", _LLM_ROUTING_SUMMARY)
+
+
+async def _send_message_nonblocking(chat, user_message, timeout: float | None = None):
+    """Iter 79j.95 (2026-07-17 event-loop freeze incident): the proxy
+    library's LlmChat.send_message bottoms out in a SYNC
+    litellm.completion() — awaiting it blocks the ENTIRE event loop for
+    the life of the HTTP call, and asyncio.wait_for timeouts can't
+    preempt a blocked loop (a hung Phase B proxy call froze every API
+    route in the process). Run the call on a worker thread with its own
+    loop so the app stays responsive and timeouts actually fire. On
+    timeout the thread is abandoned (the sync socket read can't be
+    cancelled) — it dies with the connection; the loop stays free."""
+    def _runner():
+        return asyncio.run(chat.send_message(user_message))
+    if timeout is None:
+        return await asyncio.to_thread(_runner)
+    return await asyncio.wait_for(asyncio.to_thread(_runner), timeout=timeout)
+
+
 
 
 def _compress_for_claude(img_bytes: bytes, max_raw_bytes: int = 5_500_000) -> bytes:
@@ -2590,9 +2609,9 @@ async def ai_measure_reconcile_only(
                 "requires a Phase A output. Use rerun instead."
             ),
         )
-    api_key, _source = _pick_llm_api_key("anthropic")
+    api_key, _source = _pick_llm_api_key("anthropic", phase="B")
     if not api_key:
-        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+        raise HTTPException(status_code=500, detail="No LLM key configured (ANTHROPIC_API_KEY / EMERGENT_LLM_KEY)")
     model_key = run.get("model_choice") or _DEFAULT_MODEL_KEY
     _key, model_provider, model_name = _resolve_model(model_key)
 
@@ -2659,8 +2678,11 @@ async def _execute_reconcile_only_worker(
             reference_dim=reference_dim,
             annotation_hint=annotation_hint,
         )
-        if final.get("_reconciliation_error"):
-            friendly = final.get("_reconciliation_error") or "unknown"
+        parse_err = None if final.get("_reconciliation_error") else final.get("_parse_error")
+        if final.get("_reconciliation_error") or parse_err:
+            friendly = final.get("_reconciliation_error") or (
+                f"reconciler reply was not parseable JSON ({parse_err}) — "
+                "honesty guard: a hollow result never passes as done")
             logger.warning("[ai-measure phase-B] reconcile-only retry FAILED: %s", friendly)
             await db.ai_measure_runs.update_one(
                 {"run_id": run_id},
@@ -2810,7 +2832,7 @@ async def _handle_dead_worker(doc: dict, *, idle_s: int, source: str) -> str:
                   and attempts < _AUTO_RESUME_CAP)
     api_key = None
     if can_resume:
-        api_key, _src = _pick_llm_api_key("anthropic")
+        api_key, _src = _pick_llm_api_key("anthropic", phase="B")
         can_resume = bool(api_key)
     if can_resume:
         # atomic claim — only one poller/boot wins the resume
@@ -2915,6 +2937,33 @@ async def ai_measure_in_flight(user: dict = Depends(get_current_user)):
             "run_id": d["run_id"],
             "estimate_id": d.get("estimate_id"),
             "stage": d.get("stage"),
+            "kind": "running",
+            "phase_a_progress": d.get("phase_a_progress"),
+            "idle_s": int((now - upd).total_seconds()) if upd else None,
+        })
+    # PINNED (2026-07-17 vanished-run incident): a failed-reconcile run
+    # with persisted Phase A and a live retry path counts as IN-FLIGHT
+    # for restart purposes — the preflight must surface it before any
+    # restart, not only status='running' workers. 24 h window keeps
+    # ancient error runs from flagging restart_safe forever.
+    q_err: dict = {
+        "status": "error",
+        "raw_per_photo.0": {"$exists": True},
+        "updated_at": {"$gte": now - timedelta(hours=24)},
+    }
+    if (user.get("role") or "").lower() not in _ADMIN_ROLES:
+        q_err["user_id"] = user["id"]
+    async for d in db.ai_measure_runs.find(
+            q_err, {"_id": 0, "run_id": 1, "estimate_id": 1, "stage": 1,
+                    "error_kind": 1, "phase_a_progress": 1,
+                    "updated_at": 1, "created_at": 1}):
+        upd = _as_aware_utc(d.get("updated_at") or d.get("created_at"))
+        runs.append({
+            "run_id": d["run_id"],
+            "estimate_id": d.get("estimate_id"),
+            "stage": d.get("stage"),
+            "kind": "awaiting_retry",
+            "error_kind": d.get("error_kind"),
             "phase_a_progress": d.get("phase_a_progress"),
             "idle_s": int((now - upd).total_seconds()) if upd else None,
         })
@@ -3178,10 +3227,7 @@ async def ai_measure_health(user: dict = Depends(get_current_user)):
             .with_model("anthropic", MODEL_NAME)
             .with_params(max_tokens=1)
         )
-        await asyncio.wait_for(
-            chat.send_message(UserMessage(text=".")),
-            timeout=5,
-        )
+        await _send_message_nonblocking(chat, UserMessage(text="."), timeout=5)
     except asyncio.TimeoutError:
         ping_error = "timeout after 5s"
     except Exception as e:
@@ -4584,7 +4630,7 @@ async def _extract_one_photo(
             file_contents=[ImageContent(image_base64=base64.b64encode(raw_bytes).decode("ascii"))],
         )
         try:
-            reply = await asyncio.wait_for(chat.send_message(user_msg), timeout=per_call_timeout)
+            reply = await _send_message_nonblocking(chat, user_msg, timeout=per_call_timeout)
         except asyncio.TimeoutError:
             elapsed = int((time.time() - call_t0) * 1000)
             logger.warning("[ai-measure phase-A] photo %d proxy call timed out after %ds", photo_idx, per_call_timeout)
@@ -4853,10 +4899,8 @@ async def _reconcile_extractions_via_proxy(
     lines.append("")
     lines.append("Return the reconciled house JSON now. No prose.")
     try:
-        reply = await asyncio.wait_for(
-            chat.send_message(UserMessage(text="\n".join(lines))),
-            timeout=180,
-        )
+        reply = await _send_message_nonblocking(
+            chat, UserMessage(text="\n".join(lines)), timeout=180)
     except Exception as e:
         logger.exception("[ai-measure phase-B] reconciliation failed: %s", e)
         return {
@@ -4981,27 +5025,17 @@ async def _reconcile_extractions_direct(
     user_text = "\n".join(lines)
 
     try:
-        response = await asyncio.wait_for(
-            client.messages.create(
+        # Iter 79j.95 — STREAMING. Non-streaming messages.create with a
+        # 32k max_tokens + extended-thinking model sits SILENT for the
+        # whole thinking phase; httpx's read timeout (300s) fires before
+        # the first byte arrives and the request dies as APITimeoutError
+        # (observed twice on the 261 Haugh reconcile retry, 16:48 +
+        # 17:16 UTC — proxy fallback then served junk). Streaming keeps
+        # bytes flowing (thinking deltas count), so the read timeout is
+        # per-chunk and long reconciles survive the quiet phase.
+        async def _stream_final():
+            async with client.messages.stream(
                 model=model_name,
-                # Iter 79j.57 — `claude-fable-5` (and other Claude 4.5+
-                # models) run "extended thinking" by default on the
-                # direct API — the model spends 1000-2000+ output
-                # tokens on internal reasoning BEFORE emitting the
-                # actual response text. At `max_tokens=4000` the
-                # JSON output got truncated mid-object (real-world
-                # observation: 18:11 UTC run returned empty text /
-                # 18:28 UTC run truncated at ~4200 chars).
-                #
-                # Iter 79j.61 — Bumped to 32000. Once scale-refs are
-                # plumbed into Phase A prompts, Claude does MORE
-                # thinking during Phase B to align the anchor
-                # geometry across photos. Empirical: 8-photo Red-
-                # House with scale refs burned 13,768 thinking
-                # tokens + 5,136 text tokens → hit the 16k ceiling
-                # and truncated. 32k gives ~2× headroom and stays
-                # well under the 64k model limit. Tunable per-
-                # deployment via env for future prompt changes.
                 max_tokens=_env_int("AI_MEASURE_RECONCILE_DIRECT_MAX_TOKENS", 32000),
                 system=RECONCILE_PROMPT,
                 messages=[
@@ -5010,9 +5044,10 @@ async def _reconcile_extractions_direct(
                         "content": [{"type": "text", "text": user_text}],
                     }
                 ],
-            ),
-            timeout=total_timeout_s,
-        )
+            ) as stream:
+                return await stream.get_final_message()
+
+        response = await asyncio.wait_for(_stream_final(), timeout=total_timeout_s)
     except APITimeoutError as e:
         logger.exception("[ai-measure phase-B direct] APITimeoutError: %s", e)
         return {
@@ -6365,10 +6400,9 @@ async def _execute_ai_measure_worker(
             # the run doc to `status: "error"` instead of leaving it orphaned
             # at `status: "running"` indefinitely. Frontend polls a 5-min cap
             # so this aligns to a clean client-side error message.
-            reply_text = await asyncio.wait_for(
-                chat.send_message(
-                    UserMessage(text=user_text, file_contents=image_contents),
-                ),
+            reply_text = await _send_message_nonblocking(
+                chat,
+                UserMessage(text=user_text, file_contents=image_contents),
                 timeout=240,
             )
             raw = _json_from_reply(reply_text or "")
@@ -6769,9 +6803,8 @@ async def ai_cross_check(
         + "\n\nNow re-examine the photos and return your verification JSON."
     )
     try:
-        reply_text = await chat.send_message(
-            UserMessage(text=user_text, file_contents=image_contents),
-        )
+        reply_text = await _send_message_nonblocking(
+            chat, UserMessage(text=user_text, file_contents=image_contents))
         verified = _json_from_reply(reply_text or "")
     except HTTPException:
         raise
@@ -6903,7 +6936,8 @@ async def ocr_scale(
         ImageContent(image_base64=base64.b64encode(img_bytes).decode("ascii")),
     ]
     try:
-        reply_text = await chat.send_message(
+        reply_text = await _send_message_nonblocking(
+            chat,
             UserMessage(
                 text="Find the calibration dimension on this image and return your JSON.",
                 file_contents=image_contents,

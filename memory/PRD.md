@@ -3210,3 +3210,14 @@ Memo updated: `/app/memory/haugh_round_two_derivation.md` (follow-ups section).
 Note from testing agent: to exercise the restore-modal facade picker in-browser end-to-end, a
 LP_smart estimate with cached NEW-SCHEMA hover measurements is needed (next real Hover import
 will carry `facade_breakdown`).
+
+## Incident: vanished Haugh photo run (2026-07-17) — RESOLVED, 5 fixes pinned
+Run b7a26956 (est 48231310) never left the DB — a pod restart + a SYNC litellm call
+freezing the whole event loop made the app unpollable. Fixed & pinned (25/25 class-5
+suite green): (1) all proxy LLM calls threaded via `_send_message_nonblocking` (loop
+can never freeze), (2) direct Phase B now STREAMS (327s success vs 300s silent-read
+deaths), (3) hollow parse-error reconciles never pass as done, (4) `/ai-measure/in-flight`
+counts awaiting-retry runs (restart_safe honest), (5) class-5 resume/retry use phase-B
+key routing, (6) global-sweep test isolated to throwaway DB after it collateral-killed
+a live retry. Haugh run reconciled DONE on anthropic_direct (max_tokens truncation
+caveat noted). Full forensics: /app/memory/incident_2026-07-17_vanished_run.md
