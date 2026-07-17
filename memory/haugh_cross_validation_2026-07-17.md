@@ -18,7 +18,7 @@
 | Patio doors | 3 | 4 | +1 (+33.3%) | disagree-flagged |
 | Garage doors | 1 | 1 | 0 | agree (exact) |
 | Openings total | 39 | 42 | +3 (+7.7%) | agree-within-band |
-| Opening perimeter LF | 574.33 | 818.50 | +244.17 (+42.5%) | disagree-flagged |
+| Opening perimeter LF | 574.33 | 818.50 (all 42 openings) | — | **basis-mismatch** (retagged 2026-07-17, see below) |
 | Eaves LF | 184.17 | 100.00 | −84.17 (−45.7%) | disagree-flagged |
 | Rakes LF | 136.58 | 110.00 | −26.58 (−19.5%) | disagree-flagged |
 | Starter LF | 304.67 | 140.00 | −164.67 (−54.1%) | disagree-flagged |
@@ -47,6 +47,22 @@ wall (photo 2, 4/12) and rear one-story wing (photo 3, 4/12), plus a raised
 front clerestory box reported as a dormer (photo 7)."). The banner + ridge
 toggle is exactly the honest behavior for a stepped modern roof; it also
 explains the eaves/rakes disagreement rows above.
+
+## Opening-perimeter BASIS CHECK (2026-07-17, retag: basis-mismatch)
+Photo schedule per-class perimeter (2×(w+h)×count, exact):
+windows 34 → **586.50** · entry 3 → 60.67 · patio 4 → 123.33 · garage 1 → 48.00
+· doors subtotal **232.00** · total **818.50** (reproduces the stored figure to the cent).
+- Windows-only vs Hover 574.33 → **+12.17 (+2.1%) — agree-within-band.**
+- Doors account for 244.17 of the raw gap; photo doors perimeter = 232.00 (95% of it).
+→ Hover's 574.33 behaves as a windows-table perimeter (doors excluded); the raw
++42.5% was two different baskets, not a measurement miss.
+CAVEAT (honest): Hover united_inches 2,748 implies a windows perimeter of
+2×2748/12 = 458.0 LF, which does NOT reconcile with 574.33 — the exact
+composition of Hover's printed line is unverified against the PDF (united_inches
+is itself a parsed/derived field). The retag stands on the two matches above.
+CONVENTION (standing, for future cross-comparisons): compare opening perimeter
+WINDOWS-ONLY unless the Hover PDF line is verified to include doors; photo-side
+reports carry per-class perimeter so the matching basket is always available.
 
 ## Notes for the workbook
 - Photo wall set: front 45.0×9.0 (70% siding, conf 70) · left 29.3×9.3 +5.2'

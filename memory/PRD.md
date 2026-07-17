@@ -3241,3 +3241,17 @@ caveat noted). Full forensics: /app/memory/incident_2026-07-17_vanished_run.md
    /app/memory/haugh_photo_run_log.md. Headline: photo masked 221.11 ft² masonry
    vs Hover brick 234 (−5.5%) — unprompted scope concurrence; wrap-scope siding
    1,991.2 vs 2,064 (−3.5%).
+
+## Cross-validation exhibits (261 Haugh, logged 2026-07-17 — board on standby)
+- EXHIBIT 1 (masonry scope concurrence): photo path independently masked
+  221.11 ft² of masonry (per-wall pcts 70/95/85) vs Hover brick 234 ft² —
+  Δ −5.5%, unprompted agreement between independent sources on existence AND
+  magnitude of non-siding scope. Wrap-scope siding corroborates: 1,991.2 vs
+  2,064 (−3.5%).
+- EXHIBIT 2 (ISC steel-equivalence): ISC count halves (photo 3 vs Hover 6)
+  while LF agrees (36.00 vs 36.92, −2.5%) — photo sees fewer, taller inside
+  corners; identical stick order either way (measured-LF pooling ruling).
+- Opening perimeter retag: basis-mismatch, not disagreement — photo windows-only
+  586.50 vs Hover 574.33 = +2.1% in band; doors (232.00 LF) were the gap.
+  STANDING CONVENTION: cross-compare opening perimeter windows-only unless the
+  Hover PDF line is verified to include doors.
