@@ -44,7 +44,7 @@ class TestGeometryBasisNamed:
         pkg = _preview(session)
         gb = pkg.get("geometry_basis")
         assert gb, "geometry_basis missing — derivation bound silently"
-        assert gb["source"] == "extraction"
+        assert gb["source"] in ("photo", "blueprint", "hover")
         assert gb["run_id"] == pkg["run_id"]
         assert gb["binding"] in BINDINGS
         assert gb["kind"] in ("photo", "blueprint")

@@ -108,6 +108,30 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
     }
   };
 
+  // Slice 1 — estimate-level default siding profile (LP only). Every wall
+  // composes at the default unless a per-region annotation overrides it.
+  // Changing it re-derives through the engine on the same named geometry;
+  // provenance is event-logged backend-side; applied lines still only
+  // change through the normal apply gate.
+  const [defaultProfile, setDefaultProfile] = useState(est?.default_siding_profile || null);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const changeDefaultProfile = async (val) => {
+    const next = val === defaultProfile ? null : val;
+    setSavingProfile(true);
+    try {
+      const { data } = await api.post(`/estimates/${estId}/default-profile`, { profile: next });
+      setDefaultProfile(data.to);
+      toast.success(data.to
+        ? `Default profile → ${data.label} — list re-derived on the same geometry`
+        : "Default profile cleared — composition follows the extraction");
+      await fetchPackage(colors, subs);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not set default profile");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const toggleVerify = async (item, status, extra) => {
     try {
       await api.post(`/estimates/${estId}/lp-field-verify`, {
@@ -326,6 +350,37 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               title="Geometry-source naming: every derivation states the geometry it stands on"
             >
               geometry: {pkg.geometry_basis.label}
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 mt-1.5" data-testid="lp-default-profile-picker">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--muted)]">
+              Default profile:
+            </span>
+            {[["lap", "Lap"], ["board_batten", "B&B"], ["shake", "Shake"], ["nickel_gap", "Nickel Gap"]].map(([val, lbl]) => (
+              <button
+                key={val}
+                type="button"
+                disabled={savingProfile}
+                className={`px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border disabled:opacity-50 ${
+                  defaultProfile === val
+                    ? "bg-[var(--bar-bg)] text-white border-transparent"
+                    : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)]"
+                }`}
+                onClick={() => changeDefaultProfile(val)}
+                data-testid={`lp-default-profile-${val}`}
+                title={defaultProfile === val ? "Click again to clear — composition follows the extraction" : `Compose every unannotated wall as ${lbl}`}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+          {(pkg.hover_mapping_flags || []).length > 0 && (
+            <div className="mt-1.5 space-y-0.5" data-testid="lp-hover-mapping-flags">
+              {pkg.hover_mapping_flags.map((f, i) => (
+                <div key={i} className="text-[9px] text-[#92400E] leading-snug">
+                  ⚑ {f}
+                </div>
+              ))}
             </div>
           )}
         </div>

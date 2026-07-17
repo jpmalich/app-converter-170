@@ -2051,6 +2051,68 @@ async def hover_import_status(
     }
 
 
+@router.post("/estimates/{est_id}/hover-lp-run")
+async def hover_lp_run(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    """Slice 1 — Hover→LP engine bridge. Materializes a Hover import as an
+    LP-native derivation run so the LP Material List panel, Compare toggle,
+    freeze/QR, and geometry-basis machinery all work UNCHANGED off Hover
+    measurements. The Hover→engine mapping contract governs the translation
+    (unmappable fields flag pending, never approximate). Geometry basis is
+    named "Hover import — report <run_id>". LP SmartSide only."""
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+    hover_run_id = (payload or {}).get("hover_run_id")
+    profile = (payload or {}).get("profile")
+    from routes.lp_package_routes import _DEFAULT_PROFILES, _hover_mapping_contract
+    if profile not in _DEFAULT_PROFILES:
+        raise HTTPException(status_code=422, detail=f"profile must be one of {_DEFAULT_PROFILES}")
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "kind": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Estimate not found")
+    if est.get("kind") != "lp_smart":
+        raise HTTPException(status_code=400, detail="Hover→LP run is LP SmartSide only (slice 1)")
+    hrun = await db.hover_import_runs.find_one({"run_id": hover_run_id})
+    if not hrun or hrun.get("status") != "done":
+        raise HTTPException(status_code=404, detail="Completed Hover import run not found")
+    if hrun.get("user_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Not your run")
+    hover_meas = ((hrun.get("result") or {}).get("measurements")) or {}
+    engine_meas, mapping_flags = _hover_mapping_contract(hover_meas, profile)
+    lp_run_id = f"hover-{hover_run_id[:12]}-{profile}"
+    now = datetime.now(timezone.utc)
+    await db.ai_measure_runs.update_one(
+        {"run_id": lp_run_id},
+        {"$set": {
+            "run_id": lp_run_id,
+            "estimate_id": est_id,
+            "status": "done",
+            "source": "hover",
+            "hover_report_id": hover_run_id[:8],
+            "hover_mapping_flags": mapping_flags,
+            "page_paths": None,
+            "result": {"measurements": engine_meas, "raw_ai": {}},
+            "created_at": now,
+            "updated_at": now,
+        }},
+        upsert=True,
+    )
+    # Pin the LP composition source to this Hover run + record the profile.
+    await db.estimates.update_one(
+        {"id": est_id},
+        {"$set": {"lp_source_run_id": lp_run_id, "default_siding_profile": profile}})
+    from estimate_events import log_estimate_event
+    await log_estimate_event(est_id, "lp.hover_run.materialized", {
+        "hover_run_id": hover_run_id, "lp_run_id": lp_run_id,
+        "profile": profile, "mapping_flags": mapping_flags, "by": user.get("email"),
+    })
+    return {"ok": True, "lp_run_id": lp_run_id, "profile": profile,
+            "mapping_flags": mapping_flags}
+
+
+
 async def _execute_hover_import_worker(
     *,
     run_id: str,

@@ -27,6 +27,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
     est = await db.estimates.find_one(
         q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
                 "lp_openings_review": 1, "lp_appendage_dims": 1, "lp_source_run_id": 1,
+                "default_siding_profile": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -96,13 +97,27 @@ _BINDING_LABEL = {
     "paired-latest": "paired estimate, latest run — unpinned",
 }
 
+# Profiles with a ruled LP composition (LP SmartSide only, slice 1).
+_DEFAULT_PROFILES = ("lap", "board_batten", "shake", "nickel_gap")
+_PROFILE_LABEL = {
+    "lap": "Lap",
+    "board_batten": "Board & Batten",
+    "shake": "Shake",
+    "nickel_gap": "Nickel Gap",
+}
+
 
 def _geometry_basis(est: dict, run: dict, binding: str) -> dict:
     """Geometry-source naming (standing rule 2026-07-16): a structured,
     contractor-visible statement of the geometry basis behind a derivation
     — extraction run + run_id + binding mode + tape/field overlays."""
     rid8 = str(run.get("run_id") or "")[:8]
-    kind = "blueprint" if run.get("page_paths") else "photo"
+    if run.get("source") == "hover":
+        kind = "hover"
+    elif run.get("page_paths"):
+        kind = "blueprint"
+    else:
+        kind = "photo"
     taped = 0
     for fields in (est.get("lp_appendage_dims") or {}).values():
         for f in ("height_ft", "depth_ft"):
@@ -113,7 +128,14 @@ def _geometry_basis(est: dict, run: dict, binding: str) -> dict:
         1 for v in (est.get("lp_field_verify") or {}).values()
         if (v or {}).get("status") in ("verified", "user_relocated")
     )
-    label = f"{kind} extraction run {rid8} — {_BINDING_LABEL.get(binding, binding)}"
+    if kind == "hover":
+        report = run.get("hover_report_id") or rid8
+        label = f"Hover import — report {report} — {_BINDING_LABEL.get(binding, binding)}"
+    else:
+        label = f"{kind} extraction run {rid8} — {_BINDING_LABEL.get(binding, binding)}"
+    profile = est.get("default_siding_profile")
+    if profile:
+        label += f" · profile: {_PROFILE_LABEL.get(profile, profile)}"
     overlays = []
     if taped:
         overlays.append(f"{taped} taped dim{'s' if taped != 1 else ''}")
@@ -122,11 +144,12 @@ def _geometry_basis(est: dict, run: dict, binding: str) -> dict:
     if overlays:
         label += " · " + " · ".join(overlays)
     return {
-        "source": "extraction",
+        "source": kind,
         "kind": kind,
         "run_id": run.get("run_id"),
         "binding": binding,
         "pinned": binding == "applied-stamp",
+        "profile": profile,
         "taped_dims": taped,
         "confirmed_locations": confirmed,
         "label": label,
@@ -529,6 +552,7 @@ async def lp_package_preview(
     measurements, op_summary = _apply_openings_review(measurements, op_items)
     corners_eff = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corners_eff = _apply_appendage_dims(corners_eff, est.get("lp_appendage_dims"))
+    measurements = _apply_default_profile(measurements, est)
     pkg = assemble_lp_package(measurements, corners_eff, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -538,7 +562,11 @@ async def lp_package_preview(
     pkg["geometry_basis"] = _geometry_basis(est, run, binding)
     # Source chip (Howard-approved 2026-07-14): presenters answer "where
     # did these numbers come from?" in one glance.
-    if run.get("page_paths"):
+    if run.get("source") == "hover":
+        pkg["source_kind"] = "hover"
+        pkg["source_label"] = "Hover import"
+        pkg["hover_mapping_flags"] = run.get("hover_mapping_flags") or []
+    elif run.get("page_paths"):
         pkg["source_kind"] = "blueprint"
         pkg["source_label"] = f"Blueprint — {run.get('page_count') or '?'} sheet(s)"
     else:
@@ -557,9 +585,10 @@ _COMPARE_FAMILIES = ("lap", "board_batten")
 
 
 def _force_profile_measurements(measurements: dict, family: str) -> dict:
-    """Compare-profiles: re-express the WHOLE siding field as one profile
-    family on the SAME geometry (headline siding_sqft, C4 gable basis).
-    B&B panels start on the ledge — starter is ruled OFF for that family."""
+    """Re-express the WHOLE siding field as one profile family on the SAME
+    geometry (headline siding_sqft, C4 gable basis). B&B panels start on
+    the ledge — starter is ruled OFF for that family. Used by compare AND
+    by the estimate default-profile inheritance."""
     m = dict(measurements)
     try:
         sqft = float(m.get("siding_sqft") or 0)
@@ -572,6 +601,88 @@ def _force_profile_measurements(measurements: dict, family: str) -> dict:
     if family in ("board_batten", "vertical"):
         m["starter_lf"] = 0  # RULED + PINNED: no starter on B&B composition
     return m
+
+
+def _apply_default_profile(measurements: dict, est: dict) -> dict:
+    """Estimate default-profile inheritance (slice 1, LP-only).
+
+    Every wall/region composes at the estimate's `default_siding_profile`
+    unless the extraction already carries an explicit multi-profile split
+    (per-region annotations, accents, mixed jobs) — annotations are the
+    exception layer and WIN where present. A single-profile house needs
+    zero annotations. Lap is the engine's own default, so we only force
+    when a non-lap default is set on an otherwise single-profile job.
+    """
+    profile = est.get("default_siding_profile")
+    if profile not in _DEFAULT_PROFILES:
+        return measurements
+    per_profile = measurements.get("_per_profile_sqft") or {}
+    positive = {f: s for f, s in per_profile.items()
+                if isinstance(s, (int, float)) and s > 0}
+    # Annotated / mixed job: keep the extraction's per-region split intact.
+    if len(positive) > 1:
+        return measurements
+    return _force_profile_measurements(measurements, profile)
+
+
+def _hover_mapping_contract(hover_meas: dict, profile: str) -> tuple[dict, list]:
+    """Explicit Hover→engine mapping contract (ruled 2026-07-16).
+
+    Hover's report quantities map DELIBERATELY into the engine's expected
+    measurement basis; fields the engine needs that Hover cannot supply are
+    FLAGGED pending, never approximated. Returns (engine_measurements,
+    pending_flags)."""
+    passthrough = (
+        "siding_sqft", "siding_with_openings_sqft",
+        "outside_corner_count", "outside_corner_lf",
+        "inside_corner_count", "inside_corner_lf",
+        "eaves_lf", "rakes_lf", "starter_lf",
+        "window_count", "entry_door_count", "patio_door_count",
+        "garage_door_count", "door_count", "opening_perimeter_lf",
+        "stories", "overhang_in",
+    )
+    m = {k: hover_meas[k] for k in passthrough if k in hover_meas}
+    m = _force_profile_measurements(m, profile)
+    flags = []
+    # Corner locators (C3): Hover has counts/LF, no per-corner positions →
+    # engine uses the corner-walk whole-stick fallback (a legit reduced
+    # basis, flagged so the shakedown scores it honestly).
+    flags.append("corner sticks on corner-walk basis (Hover has counts/LF, no per-corner locators)")
+    # Per-wall gable heights absent → the batten +1-run-per-wall height
+    # term is 0 on the Hover path (documented reduced basis).
+    if profile in ("board_batten", "vertical"):
+        flags.append("batten +height term = 0 (Hover carries no per-wall heights) — PENDING field verify")
+    # Per-opening width schedule absent → starter entry-door deduction and
+    # 540 wrap 3-side classification use count×constant fallbacks.
+    flags.append("opening schedule not itemized (Hover counts only) — starter deduction + wrap use per-count constants")
+    return m, flags
+
+
+@router.post("/estimates/{est_id}/default-profile")
+async def set_default_profile(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    """Set (or clear) the estimate-level default siding profile. Slice 1:
+    records the choice + provenance (from→to, by/at); the full re-derive /
+    color re-validation runs through the normal preview + apply gate."""
+    profile = (payload or {}).get("profile")
+    if profile is not None and profile not in _DEFAULT_PROFILES:
+        raise HTTPException(status_code=422, detail=f"profile must be one of {_DEFAULT_PROFILES} or null")
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "kind": 1, "default_siding_profile": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Not found")
+    if est.get("kind") != "lp_smart":
+        raise HTTPException(status_code=400, detail="Default profile is LP SmartSide only (slice 1)")
+    prev = est.get("default_siding_profile")
+    await db.estimates.update_one(
+        {"id": est_id}, {"$set": {"default_siding_profile": profile}})
+    await log_estimate_event(est_id, "lp.default_profile.set", {
+        "from": prev, "to": profile, "by": user.get("email"),
+    })
+    return {"ok": True, "from": prev, "to": profile,
+            "label": _PROFILE_LABEL.get(profile) if profile else None}
 
 
 @router.post("/estimates/{est_id}/lp-package/compare")
@@ -591,6 +702,7 @@ async def lp_package_compare(
         measurements, _openings_items(run, est.get("lp_openings_review")))
     corners_eff = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corners_eff = _apply_appendage_dims(corners_eff, est.get("lp_appendage_dims"))
+    measurements = _apply_default_profile(measurements, est)
     cfg = await load_margin_cfg()
     basis = _geometry_basis(est, run, binding)
 
@@ -833,6 +945,7 @@ async def _derive_current(est_id: str, company_id=None):
     corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
+    measurements = _apply_default_profile(measurements, est)
     full_est = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "lp_colors": 1, "lp_pricing_tier": 1,
                          "estimate_number": 1, "customer_name": 1,
@@ -867,6 +980,7 @@ async def lp_material_list_freeze(
         measurements, _openings_items(run, est.get("lp_openings_review")))
     corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
+    measurements = _apply_default_profile(measurements, est)
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))

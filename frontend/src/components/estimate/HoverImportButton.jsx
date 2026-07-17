@@ -135,6 +135,11 @@ export default function HoverImportButton({ est, update, save }) {
   const [result, setResult] = useState(null);
   const [openings, setOpenings] = useState([]);
   const [applying, setApplying] = useState(false);
+  // Slice 1 (ruled 2026-07-16): Hover import stops assuming lap. LP-kind
+  // imports ASK for the siding profile when the estimate has no default —
+  // silent lap on a B&B job is a wrong quote wearing a default.
+  const [hoverRunId, setHoverRunId] = useState(null);
+  const [profile, setProfile] = useState(est?.default_siding_profile || null);
   const [showWarning, setShowWarning] = useState(false);
   // Iter 78n — when set, the preview modal was opened by "Restore HOVER
   // lines" (re-running the mapper against cached measurements) instead of
@@ -496,6 +501,24 @@ export default function HoverImportButton({ est, update, save }) {
       toast.success(
         `Imported HOVER: ${added} new + ${updated} updated${winNote} · saved${pairedMsg}`
       );
+      // Slice 1 — Hover→LP engine bridge: materialize the import as an
+      // LP-native run at the chosen profile (mapping contract governs;
+      // unmappable fields flag pending). LP-kind fresh imports only.
+      if (srcKind === "lp_smart" && hoverRunId && profile) {
+        try {
+          const { data: lpRun } = await api.post(`/estimates/${est.id}/hover-lp-run`, {
+            hover_run_id: hoverRunId,
+            profile,
+          });
+          toast.info(
+            `LP list now derives from this Hover report (${profile === "board_batten" ? "Board & Batten" : profile}). ${lpRun.mapping_flags?.length || 0} mapping note(s) — see the Material List panel.`,
+            { duration: 8000 }
+          );
+          setTimeout(() => window.location.reload(), 1200);
+        } catch (e) {
+          toast.error(e?.response?.data?.detail || "Hover→LP run failed — LP list unchanged");
+        }
+      }
       // Iter 79c — friendly reminder that HOVER waste-baked sqft means the
       // estimate's Waste % was reset to 0. Contractors can still bump it
       // manually in Job Info → Waste Factor if they want extra cut waste.
@@ -999,6 +1022,28 @@ export default function HoverImportButton({ est, update, save }) {
                 Existing lines with matching names will have their qty updated. Windows are appended as new openings.
               </div>
               <div className="flex gap-2">
+                {est?.kind === "lp_smart" && (
+                  <div className="flex items-center gap-1.5 mr-2" data-testid="hover-profile-picker">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
+                      Siding profile:
+                    </span>
+                    {[["lap", "Lap"], ["board_batten", "B&B"], ["shake", "Shake"], ["nickel_gap", "Nickel Gap"]].map(([val, lbl]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border ${
+                          profile === val
+                            ? "bg-[var(--brand)] text-[var(--on-brand)] border-[var(--brand)]"
+                            : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)]"
+                        }`}
+                        onClick={() => setProfile(val)}
+                        data-testid={`hover-profile-${val}`}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <button
                   type="button"
                   className="px-4 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5"
@@ -1029,7 +1074,8 @@ export default function HoverImportButton({ est, update, save }) {
                   type="button"
                   className="px-4 py-2 bg-[var(--brand)] text-[var(--on-brand)] border border-[var(--brand)] hover:bg-[var(--brand-hover)] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   onClick={apply}
-                  disabled={(!result.lines?.length && !openings.length) || applying}
+                  disabled={(!result.lines?.length && !openings.length) || applying || (est?.kind === "lp_smart" && !profile)}
+                  title={est?.kind === "lp_smart" && !profile ? "Pick the siding profile first — no silent default" : undefined}
                   data-testid="hover-apply-btn"
                 >
                   {applying ? (
