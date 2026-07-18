@@ -150,6 +150,7 @@ def phantom_fixture(mongo_db):
                                      "_ai_openings_schedule": meas["_ai_openings_schedule"]}
     src["run_id"] = FIXTURE_RUN_ID
     mongo_db.ai_blueprint_runs.delete_many({"run_id": FIXTURE_RUN_ID})
+    src["test_artifact"] = True
     mongo_db.ai_blueprint_runs.insert_one(src)
     yield meas["_ai_openings_schedule"]
     mongo_db.ai_blueprint_runs.delete_many({"run_id": FIXTURE_RUN_ID})

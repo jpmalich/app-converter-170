@@ -71,7 +71,7 @@ def _clone_letrick_run(mongo_db, est_id, user_id):
     src = mongo_db.fixture_runs.find_one({"run_id": SOURCE_RUN_ID}, {"_id": 0})
     assert src, "frozen Letrick archive missing from fixture_runs"
     run_id = "test-archive-" + uuid.uuid4().hex[:10]
-    mongo_db.ai_measure_runs.insert_one({
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, 
         **src, "run_id": run_id, "estimate_id": est_id, "user_id": user_id,
         "created_at": src.get("created_at"),
     })

@@ -42,7 +42,7 @@ def scored_estimate(admin_session, mongo_db):
     s = admin_session
     est_id = s.post(f"{API}/estimates", json={"customer_name": "Share Accuracy"}, timeout=15).json()["id"]
     run_id = uuid.uuid4().hex
-    mongo_db.ai_measure_runs.insert_one({
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": s._user_id, "estimate_id": est_id,
         "status": "done", "photo_paths": "", "model_choice": "claude-fable-5",
         "result": {"measurements": {}, "raw_ai": {"walls": [
@@ -97,7 +97,7 @@ def test_public_view_flags_newer_runs_never_silent_swap(admin_session, mongo_db,
     token = s.post(f"{API}/estimates/{est_id}/accuracy-report/freeze", timeout=60).json()["token"]
 
     run_id = uuid.uuid4().hex
-    mongo_db.ai_measure_runs.insert_one({
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": s._user_id, "estimate_id": est_id,
         "status": "done", "photo_paths": "", "model_choice": "claude-fable-5",
         "result": {"measurements": {}, "raw_ai": {"walls": [

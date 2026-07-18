@@ -1,0 +1,465 @@
+[
+ {
+  "_id": "6a2fe331ed7df79203ac88e9",
+  "section": "Install Vinyl Siding",
+  "name": "Conquest",
+  "unit": "sq",
+  "price": 451.81,
+  "section_order": 0,
+  "item_order": 0,
+  "updated_at": "2026-06-15T11:34:26.813894+00:00"
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88ea",
+  "section": "Install Vinyl Siding",
+  "name": "Vertical board and batten",
+  "unit": "sq",
+  "price": 548.38,
+  "section_order": 0,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88eb",
+  "section": "Install Vinyl Siding",
+  "name": "Odyssey (standard colors)",
+  "unit": "sq",
+  "price": 478.83,
+  "section_order": 0,
+  "item_order": 2
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88ec",
+  "section": "Install Vinyl Siding",
+  "name": "Charter Oak (standard colors)",
+  "unit": "sq",
+  "price": 504.24,
+  "section_order": 0,
+  "item_order": 3,
+  "updated_at": "2026-06-15T11:34:26.813894+00:00"
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88ed",
+  "section": "Install Vinyl Siding",
+  "name": "Ascend Composite",
+  "unit": "sq",
+  "price": 662.06,
+  "section_order": 0,
+  "item_order": 4
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88ee",
+  "section": "Install Vinyl Siding",
+  "name": "Prodigy (standard colors)",
+  "unit": "sq",
+  "price": 671.43,
+  "section_order": 0,
+  "item_order": 5
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88ef",
+  "section": "Install Vinyl Siding",
+  "name": "Architectural color upcharge",
+  "unit": "sq",
+  "price": 49.89,
+  "section_order": 0,
+  "item_order": 6
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f0",
+  "section": "Install Vinyl Siding",
+  "name": "Tear-off",
+  "unit": "sq",
+  "price": 26.75,
+  "section_order": 0,
+  "item_order": 7
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f1",
+  "section": "Install Vinyl Siding",
+  "name": "Wood shake tear off (requires a dumpster)",
+  "unit": "sq",
+  "price": 100.31,
+  "section_order": 0,
+  "item_order": 8
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f2",
+  "section": "Install Vinyl Siding",
+  "name": "Clean up / haul away job debris",
+  "unit": "job",
+  "price": 334.38,
+  "section_order": 0,
+  "item_order": 9
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f3",
+  "section": "Install Vinyl Siding",
+  "name": "Dumpster",
+  "unit": "ea",
+  "price": 588.5,
+  "section_order": 0,
+  "item_order": 10
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f4",
+  "section": "Vinyl Soffit with Siding",
+  "name": "Soffit & fascia up to 13\" wide",
+  "unit": "lf",
+  "price": 14.44,
+  "section_order": 1,
+  "item_order": 0
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f5",
+  "section": "Vinyl Soffit with Siding",
+  "name": "Soffit & fascia 13\"-30\" wide",
+  "unit": "lf",
+  "price": 17.0,
+  "section_order": 1,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f6",
+  "section": "Vinyl Soffit with Siding",
+  "name": "Fascia/rake or frieze up to 8\" coverage",
+  "unit": "lf",
+  "price": 6.13,
+  "section_order": 1,
+  "item_order": 2
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f7",
+  "section": "Vinyl Soffit with Siding",
+  "name": "Fascia/rake or frieze only over 8\" coverage",
+  "unit": "lf",
+  "price": 7.75,
+  "section_order": 1,
+  "item_order": 3
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f8",
+  "section": "Vinyl Soffit without Siding",
+  "name": "Soffit & fascia up to 13\" wide",
+  "unit": "lf",
+  "price": 17.88,
+  "section_order": 2,
+  "item_order": 0
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88f9",
+  "section": "Vinyl Soffit without Siding",
+  "name": "Soffit & fascia 13\"-30\" wide",
+  "unit": "lf",
+  "price": 20.06,
+  "section_order": 2,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88fa",
+  "section": "Vinyl Soffit without Siding",
+  "name": "Fascia/rake only up to 8\" coverage",
+  "unit": "lf",
+  "price": 7.88,
+  "section_order": 2,
+  "item_order": 2
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88fb",
+  "section": "Vinyl Soffit without Siding",
+  "name": "Fascia/rake only over 8\" coverage",
+  "unit": "lf",
+  "price": 9.56,
+  "section_order": 2,
+  "item_order": 3
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88fc",
+  "section": "Porch Ceiling",
+  "name": "With or without siding",
+  "unit": "sq ft",
+  "price": 7.45,
+  "section_order": 3,
+  "item_order": 0
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88fd",
+  "section": "Porch Ceiling",
+  "name": "Wrap porch beam",
+  "unit": "lf",
+  "price": 12.45,
+  "section_order": 3,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88fe",
+  "section": "Seamless Gutter with Siding",
+  "name": "Gutter",
+  "unit": "lf",
+  "price": 12.8,
+  "section_order": 4,
+  "item_order": 0,
+  "updated_at": "2026-06-15T11:34:26.813894+00:00"
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac88ff",
+  "section": "Seamless Gutter with Siding",
+  "name": "Downspout",
+  "unit": "lf",
+  "price": 6.18,
+  "section_order": 4,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8900",
+  "section": "Seamless Gutter with Siding",
+  "name": "Miters",
+  "unit": "ea",
+  "price": 25.0,
+  "section_order": 4,
+  "item_order": 2
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8901",
+  "section": "Seamless Gutter with Siding",
+  "name": "Gutter guard (USA Shurflo)",
+  "unit": "lf",
+  "price": 6.52,
+  "section_order": 4,
+  "item_order": 3
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8902",
+  "section": "Seamless Gutter without Siding",
+  "name": "Gutter",
+  "unit": "lf",
+  "price": 15.3,
+  "section_order": 5,
+  "item_order": 0
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8903",
+  "section": "Seamless Gutter without Siding",
+  "name": "Downspout",
+  "unit": "lf",
+  "price": 7.2,
+  "section_order": 5,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8904",
+  "section": "Seamless Gutter without Siding",
+  "name": "Miters",
+  "unit": "ea",
+  "price": 25.0,
+  "section_order": 5,
+  "item_order": 2
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8905",
+  "section": "Seamless Gutter without Siding",
+  "name": "Gutter guard (USA Shurflo)",
+  "unit": "lf",
+  "price": 6.52,
+  "section_order": 5,
+  "item_order": 3
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8906",
+  "section": "Misc. Labor and Material",
+  "name": "R&R gutter",
+  "unit": "lf",
+  "price": 4.28,
+  "section_order": 6,
+  "item_order": 0
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8907",
+  "section": "Misc. Labor and Material",
+  "name": "R&R downspout",
+  "unit": "lf",
+  "price": 2.15,
+  "section_order": 6,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8908",
+  "section": "Misc. Labor and Material",
+  "name": "Shakes and scallops",
+  "unit": "sq",
+  "price": 889.44,
+  "section_order": 7,
+  "item_order": 0
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8909",
+  "section": "Misc. Labor and Material",
+  "name": "Cap windows",
+  "unit": "ea",
+  "price": 98.44,
+  "section_order": 7,
+  "item_order": 1,
+  "updated_at": "2026-06-15T11:34:26.813894+00:00"
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac890a",
+  "section": "Misc. Labor and Material",
+  "name": "Capping general",
+  "unit": "lf",
+  "price": 3.98,
+  "section_order": 7,
+  "item_order": 2
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac890b",
+  "section": "Misc. Labor and Material",
+  "name": "Cap window headers only",
+  "unit": "ea",
+  "price": 25.76,
+  "section_order": 7,
+  "item_order": 3
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac890c",
+  "section": "Misc. Labor and Material",
+  "name": "Cap entry door",
+  "unit": "ea",
+  "price": 107.25,
+  "section_order": 7,
+  "item_order": 4
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac890d",
+  "section": "Misc. Labor and Material",
+  "name": "Cap patio door",
+  "unit": "ea",
+  "price": 99.24,
+  "section_order": 7,
+  "item_order": 5
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac890e",
+  "section": "Misc. Labor and Material",
+  "name": "Cap single garage door",
+  "unit": "ea",
+  "price": 138.0,
+  "section_order": 7,
+  "item_order": 6
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac890f",
+  "section": "Misc. Labor and Material",
+  "name": "Build out for windows w/furring (includes capping)",
+  "unit": "ea",
+  "price": 127.63,
+  "section_order": 7,
+  "item_order": 7
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8910",
+  "section": "Misc. Labor and Material",
+  "name": "J-blocks, dryer vents",
+  "unit": "ea",
+  "price": 48.09,
+  "section_order": 7,
+  "item_order": 8
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8911",
+  "section": "Misc. Labor and Material",
+  "name": "Amowrap weather barrier",
+  "unit": "sq",
+  "price": 35.99,
+  "section_order": 7,
+  "item_order": 9
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8912",
+  "section": "Misc. Labor and Material",
+  "name": "Shutters (louvered, raised panel) standard sizes",
+  "unit": "pr",
+  "price": 142.78,
+  "section_order": 7,
+  "item_order": 10
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8913",
+  "section": "Misc. Labor and Material",
+  "name": "Gable vents (square, rectangle)",
+  "unit": "ea",
+  "price": 102.53,
+  "section_order": 7,
+  "item_order": 11
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8914",
+  "section": "Misc. Labor and Material",
+  "name": "Gable vents (round, octagon)",
+  "unit": "ea",
+  "price": 115.36,
+  "section_order": 7,
+  "item_order": 12
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8915",
+  "section": "Misc. Labor and Material",
+  "name": "Fascia return",
+  "unit": "ea",
+  "price": 17.5,
+  "section_order": 7,
+  "item_order": 13
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8916",
+  "section": "Misc. Labor and Material",
+  "name": "Bird box",
+  "unit": "ea",
+  "price": 28.75,
+  "section_order": 7,
+  "item_order": 14
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8917",
+  "section": "Misc. Labor and Material",
+  "name": "Flashing",
+  "unit": "lf",
+  "price": 3.98,
+  "section_order": 7,
+  "item_order": 15
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8918",
+  "section": "Misc. Labor and Material",
+  "name": "Fullback in place of 1/4\" insulation",
+  "unit": "sq",
+  "price": 93.63,
+  "section_order": 8,
+  "item_order": 0
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac8919",
+  "section": "Misc. Labor and Material",
+  "name": "Replace 1x4 lumber",
+  "unit": "lf",
+  "price": 7.15,
+  "section_order": 8,
+  "item_order": 1
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac891a",
+  "section": "Misc. Labor and Material",
+  "name": "Replace 1x6 lumber",
+  "unit": "lf",
+  "price": 8.63,
+  "section_order": 8,
+  "item_order": 2
+ },
+ {
+  "_id": "6a2fe331ed7df79203ac891b",
+  "section": "Misc. Labor and Material",
+  "name": "Replace 1x8 lumber",
+  "unit": "lf",
+  "price": 10.04,
+  "section_order": 8,
+  "item_order": 3
+ }
+]

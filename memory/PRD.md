@@ -3662,3 +3662,26 @@ substrate (or rule the suites archived).
    still fails on any NEW untagged field.
 TESTS: full suite 1050 passed / 1 skipped (documented-obsolete) — handback green stamped
 2026-07-18 12:33 UTC (efae4db).
+
+## SESSION 2026-07-18 (PM, part 2) — CATALOG RULINGS 1/3/4/5 EXECUTED; RULING 2 HELD
+1. **ISS section-split ADOPTED** — sheet organization canonical (reverses Iter 78z++++ merge):
+   Misc. Labor Only (R&R gutter/downspout) + Misc. (Fullback, 1x4/1x6/1x8) restored, sheet
+   ordering renumbered, idempotent migration in iss_catalog.py (also re-homes iss estimate
+   lines; 0 existed). All three misc sections keep the Mat $ override (feature parity).
+   Backup: memory/backups/20260718_132744_iss_catalog_section_split_adopt.json.
+2. **Vero Patio Door — HELD, conflict flagged**: ruling says 718.19/780.29/877.16 = WS/Contr/BD
+   tiers, but the sheet labels them as three SIZES (4792PD 5068/6068/8068) in ONE price column,
+   and tier order would invert the tab's own divisor ladder. Awaiting Howard's clarification —
+   NOTHING applied (never guess pricing).
+3. **Vero one-opp LEAVE ABSENT** — absent (tier, product) doc now yields available:false from
+   /api/vero/catalog ("not offered at tier"); VeroPanel renders an unavailable card
+   (data-testid vero-unavailable-*). Never auto-derives.
+4. **Tab 4 ISS Window diff (report-only)** — 31/31 matched vs price_tiers window sections,
+   ZERO drift on all four tiers (master_catalog_diff_tabs_3-6_2026-07-18.md).
+5. **Test-artifact tagging shipped** — every direct test insert into run substrates/fixture_runs
+   stamps test_artifact:true AT CREATION (19 test files swept); run_archive owns list/purge;
+   admin endpoints GET/DELETE /api/admin/fixture-runs/test-artifacts (X-Admin-Token, 403 bare);
+   BrandingAdmin "Test Artifacts" card (list+purge). Pins: tests/test_test_artifact_tagging.py
+   (production code can NEVER set the tag; purge deletes ONLY tagged; harness inserts must be
+   tagged). Pre-existing untagged debris stays (never inferred retroactively — ruled).
+TESTS: full suite 1054 passed / 1 skipped — handback green 2026-07-18 13:39 UTC (0ce999c).

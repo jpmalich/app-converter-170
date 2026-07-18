@@ -82,6 +82,24 @@ async def list_archived_runs(query, projection):
     return await db.fixture_runs.find(query, projection).to_list(length=None)
 
 
+async def list_test_artifact_runs():
+    """Admin purge view (ruled 2026-07-18): test-harness-created runs carry
+    test_artifact=True stamped AT CREATION by the seeding test (never
+    inferred retroactively). Production run-creation paths can never set
+    the tag (pinned in tests/test_test_artifact_tagging.py)."""
+    return await db.fixture_runs.find(
+        {"test_artifact": True},
+        {"_id": 0, "run_id": 1, "substrate": 1, "artifact_reasons": 1, "created_at": 1},
+    ).sort("created_at", -1).to_list(length=None)
+
+
+async def purge_test_artifact_runs():
+    """Delete ONLY tagged docs — untagged (production) archives are
+    untouchable from this path."""
+    res = await db.fixture_runs.delete_many({"test_artifact": True})
+    return res.deleted_count
+
+
 async def backfill_artifact_referenced_runs():
     """Ruled backfill: archive runs already referenced by sent quotes or
     live QR freezes — November callbacks must not depend on when this

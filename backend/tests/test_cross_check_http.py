@@ -72,6 +72,7 @@ def _insert_run(db, **overrides):
         "result": overrides.pop("result", {"measurements": {}}),
         **overrides,
     }
+    doc["test_artifact"] = True
     db.ai_measure_runs.insert_one(doc)
     return run_id
 

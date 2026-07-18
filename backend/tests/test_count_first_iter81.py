@@ -73,7 +73,7 @@ def test_score_emits_signed_course_delta(admin_session, mongo_db):
     s = admin_session
     est_id = s.post(f"{API}/estimates", json={"customer_name": "Course Delta"}, timeout=15).json()["id"]
     run_id = uuid.uuid4().hex
-    mongo_db.ai_measure_runs.insert_one({
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": s._user_id, "estimate_id": est_id,
         "status": "done", "photo_paths": "", "model_choice": "claude-fable-5",
         "result": {"measurements": {}, "raw_ai": {"walls": [

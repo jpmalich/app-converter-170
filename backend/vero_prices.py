@@ -62,7 +62,13 @@ async def get_prices(tier: str, product_type: str) -> dict:
     )
     if doc:
         return doc
-    return get_empty_shell(product_type)
+    # Ruled 2026-07-18: an absent (tier, product) doc means NOT OFFERED
+    # at that tier (e.g. Vero on one-opp). Never derive a price Howard
+    # didn't set — surface `_absent` so the catalog can mark it
+    # unavailable instead of rendering a $0 grid.
+    shell = get_empty_shell(product_type)
+    shell["_absent"] = True
+    return shell
 
 
 async def save_prices(

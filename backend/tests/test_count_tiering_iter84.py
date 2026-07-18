@@ -186,7 +186,7 @@ def test_estimated_tier_excluded_from_course_delta(admin_session, mongo_db):
     s = admin_session
     est_id = s.post(f"{API}/estimates", json={"customer_name": "Tier Exclusion"}, timeout=15).json()["id"]
     run_id = uuid.uuid4().hex
-    mongo_db.ai_measure_runs.insert_one({
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": s._user_id, "estimate_id": est_id,
         "status": "done", "photo_paths": "", "model_choice": "claude-fable-5",
         "result": {"measurements": {}, "raw_ai": {"walls": [
@@ -235,6 +235,7 @@ def test_accuracy_pdf_carries_corner_cross_check_table(admin_session, mongo_db):
     me = s.get(f"{API}/auth/me", timeout=10).json()
     clone = dict(src)
     clone.update({"run_id": run_id, "estimate_id": est_id, "user_id": me["id"]})
+    clone["test_artifact"] = True
     mongo_db.ai_measure_runs.insert_one(clone)
     try:
         s.put(f"{API}/estimates/{est_id}/tape-check", json={"walls": {

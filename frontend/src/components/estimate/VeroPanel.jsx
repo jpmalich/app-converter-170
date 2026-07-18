@@ -361,6 +361,28 @@ export default function VeroPanel({ est, update }) {
       {catalog.product_types
         .filter((pt) => !FROZEN_PRODUCT_TYPES.has(pt.name))
         .map((pt) => {
+        if (pt.available === false) {
+          // Ruled 2026-07-18: absent (tier, product) pricing = not offered
+          // at this tier — never auto-compute a price the supplier never set.
+          return (
+            <section
+              key={pt.name}
+              className="card mb-4 opacity-75"
+              data-testid={`vero-unavailable-${pt.name}`}
+            >
+              <header className="px-4 py-3 border-b border-[var(--border)]">
+                <div className="section-tag">{pt.name}</div>
+              </header>
+              <p
+                className="text-sm text-[var(--ink-2)] px-4 py-3"
+                data-testid={`vero-unavailable-note-${pt.name}`}
+              >
+                Not offered at your price tier — contact your supplier to
+                enable this product line.
+              </p>
+            </section>
+          );
+        }
         const packageQuoteActive =
           !!est?.vero_package_quote?.enabled &&
           Number(est?.vero_package_quote?.total) > 0;

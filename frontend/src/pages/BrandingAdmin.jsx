@@ -11,6 +11,92 @@ import ISSPricingPanel from "@/components/admin/ISSPricingPanel";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+const fmtDate = (v) => {
+  try {
+    return v ? new Date(v).toLocaleString() : "—";
+  } catch {
+    return String(v || "—");
+  }
+};
+
+// Ruled 2026-07-18: fixture_runs is a no-TTL archive — test-harness runs
+// carry test_artifact=true stamped at creation (never inferred). This card
+// lists + purges ONLY tagged debris; production archives are untouchable.
+function TestArtifactCard({ token }) {
+  const [runs, setRuns] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const load = async () => {
+    setBusy(true);
+    try {
+      const { data } = await axios.get(`${API}/admin/fixture-runs/test-artifacts`, {
+        headers: { "X-Admin-Token": token },
+      });
+      setRuns(data.runs || []);
+      setMsg("");
+    } catch {
+      setMsg("Failed to load test artifacts");
+    } finally {
+      setBusy(false);
+    }
+  };
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const purge = async () => {
+    setBusy(true);
+    try {
+      const { data } = await axios.delete(`${API}/admin/fixture-runs/test-artifacts`, {
+        headers: { "X-Admin-Token": token },
+      });
+      setMsg(`Purged ${data.deleted} tagged run(s)`);
+      await load();
+    } catch {
+      setMsg("Purge failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="card p-6" data-testid="test-artifact-card">
+      <div className="section-tag mb-3">Test Artifacts (fixture archive)</div>
+      <p className="text-sm text-[var(--ink-2)] mb-4">
+        Runs archived by the test harness carry <code>test_artifact</code> —
+        purging removes ONLY tagged debris. Production archives are never
+        touched from here.
+      </p>
+      {msg && <p className="text-sm mb-2" data-testid="test-artifact-msg">{msg}</p>}
+      <div className="flex items-center gap-3 mb-3">
+        <span className="font-mono-num text-sm" data-testid="test-artifact-count">
+          {runs === null ? "…" : `${runs.length} tagged run(s)`}
+        </span>
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={busy || !runs || runs.length === 0}
+          onClick={purge}
+          data-testid="test-artifact-purge-btn"
+        >
+          Purge tagged
+        </button>
+      </div>
+      {runs && runs.length > 0 && (
+        <div className="max-h-48 overflow-y-auto text-xs font-mono-num divide-y divide-[var(--border)]" data-testid="test-artifact-list">
+          {runs.map((r) => (
+            <div key={r.run_id} className="py-1 flex justify-between gap-2">
+              <span className="truncate">{r.run_id}</span>
+              <span className="text-[var(--ink-2)] shrink-0">
+                {r.substrate || "—"} · {fmtDate(r.created_at)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BrandingAdmin() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
@@ -294,6 +380,9 @@ export default function BrandingAdmin() {
             {lpNativeMode ? "ON — LP domain only" : "OFF — all domains visible"}
           </button>
         </div>
+
+        {/* Test-artifact purge (ruled 2026-07-18) */}
+        <TestArtifactCard token={token} />
 
         {/* Supplier logo */}
         <div className="card p-6">

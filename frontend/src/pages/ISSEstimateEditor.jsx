@@ -39,6 +39,15 @@ import { NO_AUTOFILL } from "@/lib/noAutofill";
 
 const fmt = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 
+// Master-catalog ADOPT (2026-07-18): the sheet's section split restored
+// "Misc. Labor Only" + "Misc." — all three misc sections keep the per-row
+// Mat $ override they carried while merged (feature parity, no regression).
+const MISC_OVERRIDE_SECTIONS = new Set([
+  "Misc. Labor and Material",
+  "Misc. Labor Only",
+  "Misc.",
+]);
+
 // Iter 78z++++ — Local copy of the JobInfoPanel ToolTile so ISS quotes
 // render the same 3-column measurement-tools row as siding/windows
 // estimates without dragging the heavy JobInfoPanel (and its
@@ -844,7 +853,10 @@ export default function ISSEstimateEditor() {
           const isOpen = !!openSections[sec.title];
           // Iter 78z++++ — Header subtotal honors per-row Mat $
           // overrides on the merged "Misc. Labor and Material" section.
-          const sectionIsMiscMat = sec.title === "Misc. Labor and Material";
+          // Master-catalog ADOPT (2026-07-18): the misc split restored
+          // "Misc. Labor Only" + "Misc." — all three misc sections keep
+          // the per-row Mat $ override they had while merged.
+          const sectionIsMiscMat = MISC_OVERRIDE_SECTIONS.has(sec.title);
           const sectionTotal = sec.items.reduce((s, it) => {
             const ln = lineByKey.get(`${sec.title}::${it.name}`);
             const qty = Number(ln?.qty) || 0;
@@ -907,7 +919,7 @@ export default function ISSEstimateEditor() {
                     // override. Stored on the line as `mat` (ISS lines
                     // already use `mat` to carry the unit price with
                     // `lab` always 0).
-                    const isMiscMat = sec.title === "Misc. Labor and Material";
+                    const isMiscMat = MISC_OVERRIDE_SECTIONS.has(sec.title);
                     const effectivePrice = isMiscMat && ln && ln.mat != null
                       ? Number(ln.mat)
                       : Number(it.price || 0);

@@ -57,7 +57,7 @@ def test_preflight_names_linkages(admin_session, mongo_db):
     s = admin_session
     eid = s.post(f"{API}/estimates", json={"customer_name": "Guard Linked"}, timeout=15).json()["id"]
     run_id = "test-guard-" + uuid.uuid4().hex[:10]
-    mongo_db.ai_measure_runs.insert_one({
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": s._user_id, "estimate_id": eid,
         "status": "done", "photo_paths": "", "model_choice": "claude-fable-5",
         "result": {"measurements": {}, "raw_ai": {"walls": [

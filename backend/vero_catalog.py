@@ -153,7 +153,11 @@ async def catalog_for_tier_async(tier_name: str, prices_module) -> dict:
     product_types: list[dict] = []
     for pt_name, meta in VERO_PRODUCT_TYPES.items():
         prices = await prices_module.get_prices(tier_name, pt_name)
-        product_types.append(_assemble_product(pt_name, meta, prices))
+        prod = _assemble_product(pt_name, meta, prices)
+        # Ruled 2026-07-18: absent (tier, product) doc = not offered at
+        # tier — render unavailable, never auto-compute a price.
+        prod["available"] = not prices.get("_absent", False)
+        product_types.append(prod)
     return {"tier": tier_name, "product_types": product_types}
 
 

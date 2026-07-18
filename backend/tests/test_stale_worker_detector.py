@@ -65,7 +65,7 @@ def admin_user_id(session):
 def _seed_run(db, admin_user_id, *, status, updated_ago_s, per_wave_budget_s=250, phase="starting"):
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    db.ai_measure_runs.insert_one({
+    db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id,
         "estimate_id": "test-fixture-" + run_id[:8],
         "user_id": admin_user_id,
@@ -130,7 +130,7 @@ def test_60s_floor_when_per_wave_budget_missing(db, session, admin_user_id):
     """Legacy docs without per_wave_budget_s still get a 60s floor."""
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    db.ai_measure_runs.insert_one({
+    db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id,
         "estimate_id": "test-fixture-nolegacy",
         "user_id": admin_user_id,
@@ -153,7 +153,7 @@ def test_already_errored_run_untouched(db, session, admin_user_id):
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
     original_err = "original error from the worker"
-    db.ai_measure_runs.insert_one({
+    db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id,
         "estimate_id": "test-fixture-errored",
         "user_id": admin_user_id,
@@ -178,7 +178,7 @@ def test_done_run_untouched(db, session, admin_user_id):
     """Runs in `done` state — even ancient ones — never flip."""
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    db.ai_measure_runs.insert_one({
+    db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id,
         "estimate_id": "test-fixture-done",
         "user_id": admin_user_id,

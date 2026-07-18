@@ -40,7 +40,7 @@ def mongo_db():
 
 def _seed_run(db, est_id, user_id, walls):
     run_id = uuid.uuid4().hex
-    db.ai_measure_runs.insert_one({
+    db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": user_id, "estimate_id": est_id,
         "status": "done", "photo_paths": "", "model_choice": "claude-fable-5",
         "result": {"measurements": {}, "raw_ai": {"walls": walls, "photos": []}},

@@ -36,6 +36,26 @@ async def public_branding():
     }
 
 
+@router.get("/admin/fixture-runs/test-artifacts")
+async def admin_list_test_artifacts(request: Request):
+    """Admin purge view (ruled 2026-07-18) — tagged test debris in the
+    no-TTL fixture_runs archive. fixture_runs access stays owned by
+    run_archive (fork-boundary discipline)."""
+    check_admin_token(request)
+    from run_archive import list_test_artifact_runs
+    runs = await list_test_artifact_runs()
+    return {"count": len(runs), "runs": runs}
+
+
+@router.delete("/admin/fixture-runs/test-artifacts")
+async def admin_purge_test_artifacts(request: Request):
+    check_admin_token(request)
+    from run_archive import purge_test_artifact_runs
+    deleted = await purge_test_artifact_runs()
+    logger.info("admin purge: %d test-artifact fixture run(s) deleted", deleted)
+    return {"deleted": deleted}
+
+
 @router.put("/admin/branding")
 async def admin_update_branding(body: BrandingUpdate, request: Request):
     check_admin_token(request)

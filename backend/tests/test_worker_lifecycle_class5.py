@@ -89,7 +89,7 @@ def test_auto_resume_with_persisted_phase_a(monkeypatch):
 
     async def scenario(db):
         doc = _fresh_run_doc()
-        await db.ai_measure_runs.insert_one(dict(doc))
+        await db.ai_measure_runs.insert_one(dict(doc, test_artifact=True))
         try:
             out = await am._handle_dead_worker(doc, idle_s=999, source="test")
             after = await db.ai_measure_runs.find_one({"run_id": doc["run_id"]})
@@ -113,7 +113,7 @@ def test_auto_resume_with_persisted_phase_a(monkeypatch):
 def test_flip_to_class5_error_without_phase_a(monkeypatch):
     async def scenario(db):
         doc = _fresh_run_doc(raw_per_photo=[])
-        await db.ai_measure_runs.insert_one(dict(doc))
+        await db.ai_measure_runs.insert_one(dict(doc, test_artifact=True))
         try:
             out = await am._handle_dead_worker(doc, idle_s=700, source="status_poll")
             return out, await db.ai_measure_runs.find_one({"run_id": doc["run_id"]})
@@ -132,7 +132,7 @@ def test_flip_to_class5_error_without_phase_a(monkeypatch):
 def test_auto_resume_capped_at_one(monkeypatch):
     async def scenario(db):
         doc = _fresh_run_doc(lifecycle_resume_attempts=1)
-        await db.ai_measure_runs.insert_one(dict(doc))
+        await db.ai_measure_runs.insert_one(dict(doc, test_artifact=True))
         try:
             out = await am._handle_dead_worker(doc, idle_s=999, source="test")
             return out, await db.ai_measure_runs.find_one({"run_id": doc["run_id"]})
@@ -167,7 +167,7 @@ def test_startup_sweep_recovers_orphans(monkeypatch):
         monkeypatch.setattr(am, "db", isolated)
         with_pa = _fresh_run_doc()
         without_pa = _fresh_run_doc(raw_per_photo=[])
-        await isolated.ai_measure_runs.insert_many([dict(with_pa), dict(without_pa)])
+        await isolated.ai_measure_runs.insert_many([dict(with_pa, test_artifact=True), dict(without_pa, test_artifact=True)])
         try:
             out = await am.sweep_orphaned_runs()
             await asyncio.sleep(0)
@@ -194,7 +194,7 @@ def test_in_flight_preflight_endpoint():
     client = MongoClient(os.environ["MONGO_URL"]) 
     db = client[os.environ["DB_NAME"]]
     doc = _fresh_run_doc(updated_at=datetime.now(timezone.utc))
-    db.ai_measure_runs.insert_one(dict(doc))
+    db.ai_measure_runs.insert_one(dict(doc, test_artifact=True))
     try:
         body = s.get(f"{API}/measure/ai-measure/in-flight", timeout=15).json()
         assert body["restart_safe"] is False
@@ -234,7 +234,7 @@ def test_in_flight_counts_awaiting_retry_runs():
     doc = _fresh_run_doc(
         status="error", stage="worker_died", error_kind="WorkerDied",
         updated_at=datetime.now(timezone.utc))
-    db.ai_measure_runs.insert_one(dict(doc))
+    db.ai_measure_runs.insert_one(dict(doc, test_artifact=True))
     try:
         body = s.get(f"{API}/measure/ai-measure/in-flight", timeout=15).json()
         assert body["restart_safe"] is False
@@ -255,7 +255,7 @@ def test_in_flight_ignores_stale_error_runs():
     doc = _fresh_run_doc(
         status="error", stage="worker_died", error_kind="WorkerDied",
         updated_at=datetime.now(timezone.utc) - timedelta(hours=48))
-    db.ai_measure_runs.insert_one(dict(doc))
+    db.ai_measure_runs.insert_one(dict(doc, test_artifact=True))
     try:
         body = s.get(f"{API}/measure/ai-measure/in-flight", timeout=15).json()
         assert all(x["run_id"] != doc["run_id"] for x in body["runs"])
@@ -288,7 +288,7 @@ def test_reconcile_only_hollow_result_never_passes_as_done(monkeypatch):
 
     async def scenario(db):
         doc = _fresh_run_doc()
-        await db.ai_measure_runs.insert_one(dict(doc))
+        await db.ai_measure_runs.insert_one(dict(doc, test_artifact=True))
         try:
             await am._execute_reconcile_only_worker(
                 run_id=doc["run_id"], api_key="k", user_id="test-user",

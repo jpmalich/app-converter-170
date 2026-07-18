@@ -53,12 +53,14 @@ ISS_SECTIONS = [
         ("Miters",                                          "ea",    25.00),
         ("Gutter guard (USA Shurflo)",                      "lf",     6.52),
     ]),
-    ("Misc. Labor and Material", [
-        # Iter 78z++++ — Howard merged the legacy "Misc. Labor Only"
-        # section into this one. R&R gutter + R&R downspout live here
-        # alongside the existing labor+material lines.
+    ("Misc. Labor Only", [
+        # Master-catalog ADOPT (Howard's ruling 2026-07-18): the sheet's
+        # section organization is canonical — this REVERSES the Iter
+        # 78z++++ merge. R&R lines are labor-only per the sheet.
         ("R&R gutter",                                      "lf",     4.28),
         ("R&R downspout",                                   "lf",     2.15),
+    ]),
+    ("Misc. Labor and Material", [
         ("Shakes and scallops",                             "sq",   889.44),
         ("Cap windows",                                     "ea",    98.44),
         ("Capping general",                                 "lf",     3.98),
@@ -75,7 +77,10 @@ ISS_SECTIONS = [
         ("Fascia return",                                   "ea",    17.50),
         ("Bird box",                                        "ea",    28.75),
         ("Flashing",                                        "lf",     3.98),
-        # Iter 78z++++ (follow-up) — "Misc." section merged here too.
+    ]),
+    ("Misc.", [
+        # Master-catalog ADOPT (2026-07-18) — sheet keeps these in their
+        # own trailing "MISC." section.
         ("Fullback in place of 1/4\" insulation",           "sq",    93.63),
         ("Replace 1x4 lumber",                              "lf",     7.15),
         ("Replace 1x6 lumber",                              "lf",     8.63),
@@ -133,18 +138,38 @@ async def ensure_iss_catalog_seeded(db) -> None:
     """Seed the `iss_catalog` collection from the hardcoded ISS_SECTIONS
     if (and only if) the collection is empty. Called on first read and
     by the admin export endpoint."""
-    # Iter 78z++++ — In-place merge of legacy "Misc. Labor Only" and
-    # "Misc." section docs into the "Misc. Labor and Material" section
-    # so the single merged section surfaces R&R + caps + flashing +
-    # the small "Misc." adders (Fullback, lumber R&R) in one place.
-    # Idempotent; runs even if the collection is already seeded.
-    legacy_sections = ["Misc. Labor Only", "Misc."]
-    legacy_count = await db.iss_catalog.count_documents({"section": {"$in": legacy_sections}})
-    if legacy_count:
+    # Master-catalog ADOPT (Howard's ruling 2026-07-18): the sheet's
+    # section organization is canonical — REVERSES the Iter 78z++++
+    # merge. Re-home the six moved items and renumber orders from the
+    # seed. Idempotent; runs even if the collection is already seeded.
+    # Pre-heal backups: memory/backups/20260718_132744_iss_catalog_… /
+    # …_estimates_iss_lines_… .
+    _SPLIT_HOMES = {
+        "R&R gutter": "Misc. Labor Only",
+        "R&R downspout": "Misc. Labor Only",
+        "Fullback in place of 1/4\" insulation": "Misc.",
+        "Replace 1x4 lumber": "Misc.",
+        "Replace 1x6 lumber": "Misc.",
+        "Replace 1x8 lumber": "Misc.",
+    }
+    for name, home in _SPLIT_HOMES.items():
         await db.iss_catalog.update_many(
-            {"section": {"$in": legacy_sections}},
-            {"$set": {"section": "Misc. Labor and Material"}},
-        )
+            {"name": name, "section": {"$ne": home}}, {"$set": {"section": home}})
+        await db.estimates.update_many(
+            {"lines": {"$elemMatch": {"tab": "iss", "name": name, "section": {"$ne": home}}}},
+            {"$set": {"lines.$[l].section": home}},
+            array_filters=[{"l.tab": "iss", "l.name": name}])
+    order = {}
+    for sec_idx, (title, rows) in enumerate(ISS_SECTIONS):
+        for item_idx, (name, _u, _p) in enumerate(rows):
+            order[(title, name)] = (sec_idx, item_idx)
+    async for d in db.iss_catalog.find(
+            {}, {"_id": 1, "section": 1, "name": 1, "section_order": 1, "item_order": 1}):
+        so_io = order.get((d.get("section"), d.get("name")))
+        if so_io and (d.get("section_order"), d.get("item_order")) != so_io:
+            await db.iss_catalog.update_one(
+                {"_id": d["_id"]},
+                {"$set": {"section_order": so_io[0], "item_order": so_io[1]}})
     existing = await db.iss_catalog.count_documents({})
     if existing:
         return
@@ -196,3 +221,4 @@ async def load_iss_catalog(db) -> dict:
             ],
         })
     return {"sections": sections}
+

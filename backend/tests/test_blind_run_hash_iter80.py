@@ -75,6 +75,7 @@ def _seed_and_score(s, mongo_db, prompt_hash):
     }
     if prompt_hash is not None:
         doc["prompt_hash"] = prompt_hash
+    doc["test_artifact"] = True
     mongo_db.ai_measure_runs.insert_one(doc)
     try:
         s.put(f"{API}/estimates/{est_id}/tape-check",

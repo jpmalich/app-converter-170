@@ -91,7 +91,7 @@ def test_usage_probe_run_refused_by_scoring(admin_session, mongo_db):
     s = admin_session
     est_id = s.post(f"{API}/estimates", json={"customer_name": "Probe Exclusion"}, timeout=15).json()["id"]
     run_id = uuid.uuid4().hex
-    mongo_db.ai_measure_runs.insert_one({
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": s._user_id, "estimate_id": est_id,
         "status": "done", "photo_paths": "", "model_choice": "claude-fable-5",
         "usage_probe": True,

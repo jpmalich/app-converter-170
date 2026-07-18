@@ -57,7 +57,14 @@ HD Screen) track the SAME ratio on every tier — **zero drift**.
    confirm which layer they are before any ingest.
 
 ## AWAITING HOWARD'S GO (per-item)
-- [ ] ISS: adopt sheet section split (cosmetic) — or keep DB sections?
+- [x] ISS section-split — **ADOPTED 2026-07-18 PM** (sheet organization canonical;
+      reverses the Iter 78z++++ merge; backup 20260718_132744_iss_catalog_….json)
+- [ ] Vero Patio Door: **HELD — sheet-vs-ruling conflict flagged back to Howard**
+      (sheet's three prices are labeled as three SIZES 5068/6068/8068, not tiers)
+- [x] Vero one-opp tier: **LEAVE ABSENT, ruled 2026-07-18 PM** — absent doc now renders
+      "not offered at your tier" (never auto-computed)
+- [x] Tab 4 ISS Window diff — **DONE 2026-07-18 PM**: zero drift (see above)
+ sections?
 - [ ] Vero Patio Door: confirm price layer, then ingest?
 - [ ] Vero one-opp tier: derive or leave absent?
 - [ ] Tab 4 ISS Window Replacement: diff on your go.

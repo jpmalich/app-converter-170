@@ -64,7 +64,7 @@ def test_rerun_400_when_run_has_no_cached_photos(session):
     async def seed():
         client = AsyncIOMotorClient(mongo_url)
         db = client[db_name]
-        await db.ai_measure_runs.insert_one({
+        await db.ai_measure_runs.insert_one({"test_artifact": True, 
             "run_id": run_id,
             "user_id": admin_user_id,
             "estimate_id": None,

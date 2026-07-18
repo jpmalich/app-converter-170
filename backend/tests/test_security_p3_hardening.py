@@ -184,7 +184,7 @@ def test_sec007_ai_measure_rerun_anon_run_returns_403():
     async def seed():
         client = AsyncIOMotorClient(MONGO_URL)
         db = client[DB_NAME]
-        await db.ai_measure_runs.insert_one({
+        await db.ai_measure_runs.insert_one({"test_artifact": True, 
             "run_id": run_id,
             "user_id": "anon",
             "estimate_id": None,
@@ -242,7 +242,7 @@ def test_sec007_ai_blueprint_rerun_anon_run_returns_403():
     async def seed():
         client = AsyncIOMotorClient(MONGO_URL)
         db = client[DB_NAME]
-        await db.ai_blueprint_runs.insert_one({
+        await db.ai_blueprint_runs.insert_one({"test_artifact": True, 
             "run_id": run_id,
             "user_id": "anon",
             "estimate_id": None,

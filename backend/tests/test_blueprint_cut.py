@@ -152,7 +152,7 @@ def test_blueprint_run_derives_through_engine(admin_session, mongo_db):
     assert src, "shakedown blueprint run missing"
     est_id = s.post(f"{API}/estimates", json={"customer_name": "BP Cut", "kind": "lp_smart"}, timeout=15).json()["id"]
     run_id = "test-bpcut-" + uuid.uuid4().hex[:10]
-    mongo_db.ai_blueprint_runs.insert_one({**src, "run_id": run_id, "estimate_id": est_id})
+    mongo_db.ai_blueprint_runs.insert_one({"test_artifact": True, **src, "run_id": run_id, "estimate_id": est_id})
     try:
         r = s.post(f"{API}/estimates/{est_id}/lp-package/preview", json={}, timeout=30)
         assert r.status_code == 200, r.text[:300]
@@ -180,7 +180,7 @@ def test_blueprint_applied_archives_run(admin_session, mongo_db):
     assert src
     est_id = s.post(f"{API}/estimates", json={"customer_name": "BP Applied", "kind": "lp_smart"}, timeout=15).json()["id"]
     run_id = "test-bpapp-" + uuid.uuid4().hex[:10]
-    mongo_db.ai_blueprint_runs.insert_one({**src, "run_id": run_id, "estimate_id": est_id})
+    mongo_db.ai_blueprint_runs.insert_one({"test_artifact": True, **src, "run_id": run_id, "estimate_id": est_id})
     try:
         r = s.post(f"{API}/estimates/{est_id}/lp-package/blueprint-applied", json={"run_id": run_id}, timeout=15)
         assert r.status_code == 200, r.text
@@ -208,8 +208,8 @@ def test_source_governance_photo_outranks_unapplied_blueprint(admin_session, mon
     est_id = s.post(f"{API}/estimates", json={"customer_name": "BP Gov", "kind": "lp_smart"}, timeout=15).json()["id"]
     p_id = "test-bpgov-p-" + uuid.uuid4().hex[:8]
     b_id = "test-bpgov-b-" + uuid.uuid4().hex[:8]
-    mongo_db.ai_measure_runs.insert_one({**photo_src, "run_id": p_id, "estimate_id": est_id})
-    mongo_db.ai_blueprint_runs.insert_one({**bp_src, "run_id": b_id, "estimate_id": est_id})
+    mongo_db.ai_measure_runs.insert_one({"test_artifact": True, **photo_src, "run_id": p_id, "estimate_id": est_id})
+    mongo_db.ai_blueprint_runs.insert_one({"test_artifact": True, **bp_src, "run_id": b_id, "estimate_id": est_id})
     try:
         r = s.post(f"{API}/estimates/{est_id}/lp-package/preview", json={}, timeout=30)
         assert r.status_code == 200 and r.json()["run_id"] == p_id, \

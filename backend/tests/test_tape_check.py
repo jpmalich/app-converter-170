@@ -48,7 +48,7 @@ def fixture_ids(session):
         "created_at": datetime.now(timezone.utc),
     })
     run_id = uuid.uuid4().hex
-    MONGO.ai_measure_runs.insert_one({
+    MONGO.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "estimate_id": est_id, "user_id": user["id"],
         "status": "done", "model_name": "claude-test",
         "created_at": datetime.now(timezone.utc),
@@ -163,7 +163,7 @@ def test_legacy_run_without_trace_fields_scores_as_pixel(session, fixture_ids):
     default to 'pixel', never crash."""
     user = MONGO.users.find_one({"email": EMAIL})
     run_id = uuid.uuid4().hex
-    MONGO.ai_measure_runs.insert_one({
+    MONGO.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "estimate_id": fixture_ids["est_id"],
         "user_id": user["id"], "status": "done",
         "created_at": datetime.now(timezone.utc),

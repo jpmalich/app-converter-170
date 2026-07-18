@@ -61,7 +61,7 @@ def prev_run(session):
     photo_name = f"tape-cal-{uuid.uuid4().hex[:8]}.jpg"
     from config import UPLOAD_DIR
     (UPLOAD_DIR / photo_name).write_bytes(b"not-a-real-image")
-    MONGO.ai_measure_runs.insert_one({
+    MONGO.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": user["id"],
         "estimate_id": None, "status": "done",
         "photo_paths": photo_name, "kind": "siding",
@@ -116,7 +116,7 @@ def test_rerun_of_legacy_run_without_calibration_is_null_not_crash(session):
     photo_name = f"tape-legacy-{uuid.uuid4().hex[:8]}.jpg"
     from config import UPLOAD_DIR
     (UPLOAD_DIR / photo_name).write_bytes(b"junk")
-    MONGO.ai_measure_runs.insert_one({
+    MONGO.ai_measure_runs.insert_one({"test_artifact": True, 
         "run_id": run_id, "user_id": user["id"], "estimate_id": None,
         "status": "done", "photo_paths": photo_name, "kind": "siding",
         "created_at": datetime.now(timezone.utc),
