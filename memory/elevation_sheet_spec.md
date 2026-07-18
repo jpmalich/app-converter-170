@@ -163,3 +163,20 @@ September scope change.
   long-dash 10-4, 2.75px — pending palette approval with the rest), listed
   in the schedule with the CONTRACTOR-SPEC chip. Deviation machinery does
   NOT apply (nothing to deviate from).
+
+## 9. AMENDMENT (2026-07-18, print-vs-sheet review) — "SIDING HEIGHT", not "Eave height"
+- Rename the "Eave height" field to **"SIDING HEIGHT (starter → soffit)"** on
+  ALL elevation sheets (dimension label + wall-data block). Apply at build
+  time — no mock v4 required.
+- Where blueprint data exists, the wall-data block gains one clarifying line:
+  *"structural plate height per print: X'-X" — siding coverage differs by
+  design."*
+- RATIONALE (pinned): the two measurements are DIFFERENT TRUTHS — structural
+  stack (foundation→plate, print) vs tape-counted siding coverage
+  (starter→soffit). The sheet must never invite a print-reader to score one
+  against the other; they are not comparable and neither is a deviation.
+- Ground-truth note for the record: the 2026-07-18 morning 54'-width and
+  eave-height challenges BOTH resolved in favor of the sealed key — print
+  confirms 54'-0"; 8'-11½" = 25 truck-reconciled courses = COVERAGE, while
+  the print's 10'-0⅝" = foundation-to-plate STRUCTURAL. Key unchanged; NO
+  incident.

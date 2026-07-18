@@ -3567,3 +3567,14 @@ path (per-wall family widths), Hover path lacks it (convention needed in cut).
 CUT GATED: the (3+4) ruling text is NOT in the record — fork handoff dropped
 the batch items (3) and (4); no PRD/register entry exists. HANDOFF-STATE-LOSS
 noted. Howard re-pastes (3)+(4) verbatim → then the cut.
+
+## ELEVATION SHEET AMENDMENT (2026-07-18) — SIDING HEIGHT rename, logged
+"Eave height" → "SIDING HEIGHT (starter → soffit)" on all sheets; wall-data
+block adds, where blueprint exists: "structural plate height per print:
+X'-X" — siding coverage differs by design." Different truths (structural
+stack vs tape-counted coverage) — the sheet never invites scoring one
+against the other. Apply at build time (no mock v4). Ground truth: morning
+54'/eave challenges resolved FOR the sealed key (print confirms 54'-0";
+8'-11½" = 25 truck-reconciled courses = coverage; print 10'-0⅝" =
+foundation-to-plate structural). Key unchanged; no incident. Spec §9.
+VINYL BATCH STATUS: (3)+(4) re-paste still owed by Howard — cut remains gated.
