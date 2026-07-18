@@ -3323,3 +3323,11 @@ haugh_cross_validation memo — comparison NOT reopened. NOTE: 4 older
 awaiting-retry runs exist on other estimates (55e5e24f/04c9539b on a2329f30,
 8f36abaa on ef8f34c2, 52ef42f1 on ffb7fac6) — pre-existing, not this
 incident's; visible to preflight by design.
+
+## Housekeeping sweep (2026-07-18) — awaiting-retry resolved to ZERO
+All 4 pre-existing awaiting-retry runs triaged: ALL ORPHANS (parent estimates
+deleted). 55e5e24f (superseded + budget error), 04c9539b (abandoned env-flag
+experiment), 8f36abaa + 52ef42f1 (class-5 deaths on deleted test estimates) —
+all deleted, numbers preserved in the timeout register's housekeeping section.
+Preflight: restart_safe TRUE, zero awaiting-retry — amber is now always
+actionable, never legacy noise. Production re-runs UNLOCKED stands.

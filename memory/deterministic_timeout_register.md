@@ -51,3 +51,15 @@ ceiling would have truncated it; the 48k raise was empirically necessary, not
 precautionary. No truncation flags, no parse repair. Every variant (1–4) now
 has both a pin AND a completed live run on the other side of its kill zone.
 Production re-runs UNLOCKED per ruling.
+
+## Housekeeping sweep (2026-07-18 ruling: preflight carries no permanent amber)
+Triaged the 4 pre-existing awaiting-retry runs. ALL FOUR were ORPHANS — parent
+estimates deleted, nothing to apply to, no surface would ever show them:
+| Run | Est | Created | Death | Disposition |
+|---|---|---|---|---|
+| 55e5e24f | a2329f30 (deleted) | Jul 07 | proxy budget error; superseded by done run 07b784ba same est | deleted — stale + superseded |
+| 04c9539b | a2329f30 (deleted) | Jul 07 | "worker restarted mid-Phase-B for env-flag update; will be re-fired manually" — never re-fired | deleted — abandoned experiment |
+| 8f36abaa | ef8f34c2 (deleted) | Jul 09 | class-5 worker death | deleted — orphaned artifact |
+| 52ef42f1 | ffb7fac6 (deleted) | Jul 13 | class-5 worker death | deleted — orphaned artifact |
+Awaiting-retry count now ZERO — preflight amber is henceforth always
+actionable, never legacy noise.
