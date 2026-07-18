@@ -3710,3 +3710,27 @@ Jan-2025 filed) — it had gone stale. Howard's this-week actions acknowledged i
 with the agent protocol for the Anthropic key handover: swap env → restart → verify a REAL
 AI run completes on the new key → scrub stale references → report. Logo upload: Howard,
 from Branding Admin, before demo prep. HOLDING STATE: nothing agent-side until inputs land.
+
+## SESSION 2026-07-18 (PM, part 6) — 2D ELEVATION SHEET PHASE 1 SHIPPED (FENCE MOVED BY HOWARD)
+Letrick FRONT sheet (EL-1) live-rendered, fully DATA-BOUND (zero hand-typed constants):
+- Backend: routes/elevation_sheets.py (new, READ-ONLY pinned) — sealed key EST-191890 binding
+  (width 54 TAPED from eaves 2×54; height 25 × 4.25" ÷ 12 = 8.854' = 8'-10¼" TAPED-DERIVED —
+  the CORRECTED key, never 8.96), AI run d6679448 openings with AI-READ ✓ tags,
+  door-anchored bbox sills (ESTIMATED tag), deviation box (AI 50' × 8'-7¼", 22/23/24 courses,
+  tape governs), verb machinery bound (lp_openings_review: user_removed rows don't render,
+  corrected types render corrected; group-dims matched ±2.5").
+- Frontend: pages/ElevationSheet.jsx (new SVG renderer, mock-v3 anatomy + true 25-course hatch),
+  route /estimate/:id/elevation-sheet/front, entry link in LP panel geometry line
+  (lp-elevation-sheets-link) — the ONLY LP-panel change; NO demo surface touched.
+- KNOWN RENDER GOTCHA (logged): dev-build visual-editor instrumentation wraps inline JSX
+  templates/mixed text children in <span>, which does NOT paint inside SVG <text>. Rule:
+  precompute display strings; each SVG text/tspan gets ONE identifier/member expression child.
+- Manifest: elevation_sheets.py added as SEAM S5 (read-only sealed-key import).
+- Sills are data-bound (door-anchored bbox ≈ 2'-10"), NOT the mock's hand-built 1'-10" —
+  the live sheet is the truth-teller; flag for Howard's field-compare.
+- Deliverables: live URL /estimate/8f95c9c2-add9-416a-92f3-786a4ea2ce83/elevation-sheet/front,
+  PNGs /mock/letrick_front_elevation_sheet_LIVE.png + /mock/letrick_front_compare_mock_vs_live.png.
+- Pins: tests/test_elevation_sheet_front.py (10) — corrected key values, deviation, openings,
+  read-only static+behavioral, TTL pin (run archived elevation-sheet-pin), verb e2e remove/reset.
+TESTS: full suite 1064 passed / 1 skipped — handback green 16:27 UTC (6987ffa).
+GATE: Howard field-compares front vs mock v3; LEFT/BACK/RIGHT generalization only after pass.

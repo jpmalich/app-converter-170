@@ -12,6 +12,7 @@ import IssPicker from "@/pages/IssPicker";
 import ContractorPicker from "@/pages/ContractorPicker";
 import Dashboard from "@/pages/Dashboard";
 import EstimateRouter from "@/pages/EstimateRouter";
+import ElevationSheet from "@/pages/ElevationSheet";
 import Catalog from "@/pages/Catalog";
 import Team from "@/pages/Team";
 import BrandingAdmin from "@/pages/BrandingAdmin";
@@ -71,6 +72,7 @@ function App() {
                     {/* Back-compat: old bookmarks pointing to /dashboard hit
                         the siding workspace (legacy default). */}
                     <Route path="/dashboard" element={<Navigate to="/dashboard/siding" replace />} />
+                    <Route path="/estimate/:id/elevation-sheet/front" element={<ElevationSheet />} />
                     <Route path="/estimate/:id" element={<EstimateRouter />} />
                     <Route path="/catalog" element={<Catalog />} />
                     <Route path="/team" element={<Team />} />

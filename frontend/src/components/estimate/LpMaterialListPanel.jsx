@@ -402,6 +402,15 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               title="Geometry-source naming: every derivation states the geometry it stands on"
             >
               geometry: {pkg.geometry_basis.label}
+              {/* Elevation Sheets entry point (Howard-approved placement, 2026-07-18) */}
+              <a
+                href={`/estimate/${est.id}/elevation-sheet/front`}
+                className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] underline"
+                data-testid="lp-elevation-sheets-link"
+                title="Dimensioned 2D elevation sheet — source-tagged verification (front, EL-1)"
+              >
+                Elevation Sheets →
+              </a>
             </div>
           )}
           <div className="flex items-center gap-1.5 mt-1.5" data-testid="lp-default-profile-picker">

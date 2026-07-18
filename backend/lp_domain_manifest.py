@@ -31,6 +31,7 @@ SEAMS = [
     "routes/estimates.py",      # S2: tier seed, CSV one-surface derive, shares
     "routes/pricing_admin.py",  # S3: LP section guard
     "routes/hover.py",          # S4: _build_lines LP branches (carve to lp_ingest.py at fork time)
+    "routes/elevation_sheets.py",  # S5: 2D sheet binder — READ-ONLY sealed-key + tape-walls constants (build 2026-07-18)
 ]
 
 # Estimate-level fields on the SHARED estimates collection written by LP
