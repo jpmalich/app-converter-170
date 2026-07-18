@@ -17,9 +17,7 @@ Scope of this go: ISS Remodeling / Mezzo / VERO. Tab 4 (ISS Window Replacement,
 | Replace 1x6 lumber | 8.63 | Misc. Labor and Material | MISC. |
 | Replace 1x8 lumber | 10.04 | Misc. Labor and Material | MISC. |
 ### Adds: **NONE** · Removals: **NONE**
-RULING NEEDED (cosmetic only): adopt the sheet's section split (MISC. LABOR ONLY /
-MISC.) in `iss_catalog`, or keep the current merged "Misc. Labor and Material"?
-Prices are unaffected either way.
+RULING (2026-07-18 PM): ADOPTED — sheet organization canonical; DB re-homed + reordered.
 
 ## TAB 5 — Mezzo Price sheet — DIFF vs `mezzo_prices` (16 DB docs, 4 tiers × 4 products)
 Sheet layout: 3000-series **LIST** prices (Base/Option Discount cells = 0). DB tiers
@@ -70,7 +68,3 @@ HD Screen) track the SAME ratio on every tier — **zero drift**.
 - [x] Vero one-opp tier: **LEAVE ABSENT, ruled 2026-07-18 PM** — absent doc now renders
       "not offered at your tier" (never auto-computed)
 - [x] Tab 4 ISS Window diff — **DONE 2026-07-18 PM**: zero drift (see above)
- sections?
-- [ ] Vero Patio Door: confirm price layer, then ingest?
-- [ ] Vero one-opp tier: derive or leave absent?
-- [ ] Tab 4 ISS Window Replacement: diff on your go.

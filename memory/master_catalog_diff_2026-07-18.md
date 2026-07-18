@@ -87,6 +87,8 @@ separate sheet is still awaited.
       `/app/memory/backups/20260718_120200_price_tiers_master_catalog_apply.json`.
 - [x] Pelican Bay Shakes 9" AMI 655050 vs 655052 — **655050 stands (sheet governs), APPLIED
       2026-07-18** with provenance in catalog_seed.py + DB migration (same backup file).
-- [ ] LP tab: confirm keep-current (Jan-2025 tab older than Feb-2026 layer)
-- [ ] Per-tab go for ISS Window detailed diff. ISS Remodeling / Mezzo / VERO diffs DONE
-      (report-only) → see master_catalog_diff_tabs_3-6_2026-07-18.md
+- [ ] LP tab: confirm keep-current (Jan-2025 tab older than Feb-2026 layer) — AWAITING
+      HOWARD (only open item on this workbook)
+- [x] Per-tab detailed diffs — ALL DONE (ISS Remodeling / Mezzo / VERO 2026-07-18 AM go;
+      ISS Window 2026-07-18 PM go) → master_catalog_diff_tabs_3-6_2026-07-18.md.
+      Every tab: zero drift.

@@ -181,3 +181,16 @@ September scope change.
   confirms 54'-0"; 8'-11½" = 25 truck-reconciled courses = COVERAGE, while
   the print's 10'-0⅝" = foundation-to-plate STRUCTURAL. Key unchanged; NO
   incident.
+
+## IMPLEMENTATION PLAN — APPROVED 2026-07-18, PARKED POST-SEPTEMBER (standing ruling)
+Build sequence (Howard-approved as THE build plan):
+1. **Letrick front elevation first** — live-rendered sheet from real run data, built
+   against this spec + approved mock v3 (color-coded components).
+2. **Field-compare gate** — Howard compares the live render against mock v3 in the
+   field. No generalization until he accepts.
+3. **Generalize to all facades** (remaining Letrick elevations, then any-run).
+
+HARD CONSTRAINTS:
+- START DATE: post-September demo. NO renderer code before the demo — ruled.
+- Until then the surface's ONLY permissible motion is PAPER: spec refinements if
+  Howard's screenshot reviews surface any. Nothing else.
