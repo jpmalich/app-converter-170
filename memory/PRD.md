@@ -3578,3 +3578,58 @@ against the other. Apply at build time (no mock v4). Ground truth: morning
 8'-11½" = 25 truck-reconciled courses = coverage; print 10'-0⅝" =
 foundation-to-plate structural). Key unchanged; no incident. Spec §9.
 VINYL BATCH STATUS: (3)+(4) re-paste still owed by Howard — cut remains gated.
+
+## MASTER PRICE CATALOG UPLOAD — DIFF REPORTED, NOTHING APPLIED (2026-07-18)
+Full report: /app/memory/master_catalog_diff_2026-07-18.md. Vinyl-Ascend tab:
+ZERO price changes (all 4 tiers identical to DB, AMI-pair verified — the
+combined AMI ranges cover Clap+Dutch Lap DB row pairs); ONE add = Pelican Bay
+Shake Starter #65516000 13.99 FLAT×4 (intentional flat, confirmed — diff must
+not tier it); ZERO removals. Flags: Shakes 9" AMI 655050(sheet) vs 655052(DB).
+LP SmartSiding-1 tab = JAN-2025 sheet, OLDER than current Feb-2026 cost layer
+→ recommendation keep current; deltas tabled in report; confidential/cost-
+layer-only honored. ISS Remodeling/ISS Window/Mezzo/VERO: inventoried,
+detailed diffs await per-tab go. ISS New Construction: still a separate
+awaited sheet (gate open). AWAITING HOWARD: apply-add go, AMI ruling, LP
+keep-current confirm, per-tab gos. Shake starter price stays PENDING (mat 0)
+until the diff-apply go.
+
+## VINYL-CONVENTIONS CUT — SHIPPED (2026-07-18), 3+4 re-pasted by Howard
+Rulings logged verbatim in code header (routes/hover.py) + here: (3) J-channel
+separate lines per application context (window/door · rake/gable · soffit) and
+per product region where accents exist, carrying region product color; same
+split for finish trim; naming states context+region. (4) starter profile-
+specific: clap 12'6"; shake → Pelican Bay Shake Starter #65516000 own line;
+B&B → NO starter, base = J context line in B&B region color. PINS SHIPPED:
+no pooled J on multi-region; no starter on B&B ever; shake starter never
+prices as clap; clap ÷12.5 (stale ÷10 comment synced).
+IMPLEMENTATION: profile_callouts emits per_profile_base_lf +
+per_profile_gable_break_lf (body family owns base; gable-break LF for shake);
+ai_measure persists _per_profile_base_lf/_per_profile_gable_break_lf; hover
+_region_split_active suppresses pooled Starter/J/FT rows and
+_region_context_lines emits split lines with base_item for price inheritance;
+frontend merges (JobInfoPanel + HoverImportButton ×2) inherit mat/lab from
+base SKU row; catalog seeds Pelican Bay Shake Starter (PCS, AMI 65516000,
+mat 0 pending diff-apply); missing-base-LF runs NEVER pool silently (⚠ qty-0
+verify-by-hand lines + whole-house clap fallback noted).
+FIXTURE REPORT (mixed lap+shake+B&B, live /measure/map): OLD pooled Starter 14
+/ J 50 / FT 20 → NEW Starter—lap body 11 (130LF−0 ded) · Pelican Bay Shake
+Starter—shake region 4 (38LF gable break) · J—B&B base 2 (22LF) · J—window/
+door 45 · J—rake/gable 6 (borders shake gable color) · FT—eave run 9 ·
+FT—window perimeter 12. (+1 ceil drift on J and FT from splitting — inherent.)
+TESTS: tests/test_vinyl_region_split.py 10 pins + 26 green across related
+suites. Single-profile jobs keep pooled behavior (regression pinned).
+
+## ELEVATION SURFACE IMPLEMENTATION PLAN — DELIVERED (plan only)
+/app/memory/elevation_surface_implementation_plan.md — Phases 0-4 (selectors →
+SVG component → modal Sheets tab + PDF → band board as first O&U entry →
+i18n/pins). Mock v3 PASS + palette approved logged. Surface sleeps until
+post-September.
+
+## HAUGH PIN SUBSTRATE TTL-EXPIRED (2026-07-18, environmental — not a regression)
+hover_import_runs carries a documented 24h TTL (ttl_audit_report.md); the
+261 Haugh hover run (4ffc35f4…) expired between this morning's green run
+(00:45) and the afternoon suite. No archived copy exists — NOT fabricated.
+test_haugh_round_two + test_iteration_47_haugh now SKIP with an explicit
+reason instead of erroring; the pins stand and re-arm when Howard re-uploads
+the 261 Haugh Hover PDF. ACTION FOR HOWARD: re-upload to restore the pin
+substrate (or rule the suites archived).

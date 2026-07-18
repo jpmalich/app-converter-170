@@ -385,6 +385,10 @@ export default function HoverImportButton({ est, update, save }) {
       const key = keyOf(ln);
       const idx = byKey.get(key);
       if (idx == null) {
+        // Vinyl-conventions split lines inherit tier pricing from their
+        // base SKU row via base_item (ruled 2026-07-18).
+        const baseIdx = ln.base_item != null ? byKey.get(`${ln.tab || "vinyl"}::${ln.section}::${ln.base_item}`) : null;
+        const baseRow = baseIdx != null ? existing[baseIdx] : null;
         nextLines.push({
           tab: ln.tab || "vinyl",
           section: ln.section,
@@ -392,7 +396,8 @@ export default function HoverImportButton({ est, update, save }) {
           unit: ln.unit,
           qty: ln.qty,
           raw_qty: ln.raw_qty ?? null,
-          mat: 0, lab: 0,
+          mat: baseRow ? (baseRow.mat ?? 0) : 0,
+          lab: baseRow ? (baseRow.lab ?? 0) : 0,
         });
         added += 1;
       } else {
@@ -481,6 +486,8 @@ export default function HoverImportButton({ est, update, save }) {
         for (const ln of wastedPaired) {
           const idx = pByKey.get(keyOf(ln));
           if (idx == null) {
+            const baseIdx = ln.base_item != null ? pByKey.get(`${ln.tab || "vinyl"}::${ln.section}::${ln.base_item}`) : null;
+            const baseRow = baseIdx != null ? pExisting[baseIdx] : null;
             pNext.push({
               tab: ln.tab || "vinyl",
               section: ln.section,
@@ -488,7 +495,8 @@ export default function HoverImportButton({ est, update, save }) {
               unit: ln.unit,
               qty: ln.qty,
               raw_qty: ln.raw_qty ?? null,
-              mat: 0, lab: 0,
+              mat: baseRow ? (baseRow.mat ?? 0) : 0,
+              lab: baseRow ? (baseRow.lab ?? 0) : 0,
             });
           } else {
             pNext[idx] = {

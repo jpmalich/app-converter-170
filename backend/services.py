@@ -511,6 +511,14 @@ async def ensure_tiers_seeded():
                 if it["name"] not in existing:
                     items.append(it)
                     dirty = True
+            # Vinyl-conventions batch (5), ruled 2026-07-18: Pelican Bay
+            # Shake Starter #65516000 — own row; PRICING PENDING Howard's
+            # master-catalog diff approval (mat 0 until then; NEVER seeded
+            # from clap Starter).
+            if "Pelican Bay Shake Starter" not in existing:
+                items.append({"name": "Pelican Bay Shake Starter", "unit": "PCS",
+                              "mat": 0.0, "lab": 0.0, "ami_part": "65516000"})
+                dirty = True
             sec["items"] = items
         if dirty:
             await db.price_tiers.update_one({"_id": doc["_id"]}, {"$set": {"sections": sections}})

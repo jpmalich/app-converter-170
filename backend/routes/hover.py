@@ -434,7 +434,112 @@ def _j_channel_breakdown(m: dict) -> str:
     return br
 
 
-def _j_channel_compute(m: dict) -> tuple[int, str]:
+# =========================================================================
+# VINYL-CONVENTIONS BATCH (3+4+5), RULED 2026-07-18 — region/context split.
+# (3) J-channel derives as separate lines per application context
+#     (window/door · rake/gable · soffit) and per product region where
+#     accents exist, each carrying its region's product color; same split
+#     for finish trim where context differs. Line naming states context +
+#     region for the puller. PIN: no pooled J on multi-region jobs.
+# (4) Starter is profile-specific: clap keeps 12'6"; shake regions derive
+#     Pelican Bay Shake Starter #65516000 (own product + price line);
+#     B&B/vertical gets NO starter — base treatment is J-channel, its own
+#     context line in the B&B region's color. PINS: no starter on B&B
+#     ever; shake starter never prices as clap.
+# Split lines keep `base_item` = the catalog SKU so the estimate merge
+# can inherit tier pricing for the new context-named rows.
+# =========================================================================
+_SHAKE_STARTER_SKU = "Pelican Bay Shake Starter"
+_J_SKU = "3/4\" J-Channel Standard color (2 per Sq of siding)"
+_FT_SKU = "Finish Trim Standard color"
+_NO_STARTER_FAMILIES = {"shake", "board_batten"}
+
+
+def _region_split_active(m: dict) -> bool:
+    per = m.get("_per_profile_sqft") or {}
+    fams = {f for f, s in per.items() if isinstance(s, (int, float)) and s > 0}
+    return len(fams) >= 2
+
+
+def _region_context_lines(m: dict) -> list[dict]:
+    per = {f: s for f, s in (m.get("_per_profile_sqft") or {}).items()
+           if isinstance(s, (int, float)) and s > 0}
+    base_lf = {f: float(v) for f, v in (m.get("_per_profile_base_lf") or {}).items()
+               if isinstance(v, (int, float)) and v > 0}
+    gable_lf = {f: float(v) for f, v in (m.get("_per_profile_gable_break_lf") or {}).items()
+                if isinstance(v, (int, float)) and v > 0}
+    out: list[dict] = []
+
+    def line(name, base_item, qty, note):
+        out.append({"tab": "vinyl", "section": "Siding Accessories",
+                    "name": name, "base_item": base_item,
+                    "unit": "PCS", "qty": qty, "note": note})
+
+    clap_fams = sorted(f for f in per if f not in _NO_STARTER_FAMILIES)
+    clap_label = "/".join(clap_fams) if clap_fams else "lap"
+    total_base = sum(base_lf.values())
+    starter_lf = float(m.get("starter_lf") or 0)
+    door_ded = max(0.0, total_base - starter_lf) if total_base > 0 else 0.0
+
+    # ---- STARTER (profile-specific) ----
+    if clap_fams:
+        clap_base = sum(base_lf.get(f, 0.0) for f in clap_fams)
+        if base_lf:
+            net = max(0.0, clap_base - door_ded)
+            qty = max(0, math.ceil(net / 12.5)) if net > 0 else 0
+            line(f"Starter — {clap_label} body", "Starter", qty,
+                 f"clap starter 12'6\" (ruled): {clap_base:.0f} LF {clap_label} base − {door_ded:.0f} door deduction = {net:.0f} ÷ 12.5 = {qty} (door deduction assigned to the clap body)")
+        else:
+            qty = max(0, math.ceil(starter_lf / 12.5))
+            line(f"Starter — {clap_label} body", "Starter", qty,
+                 f"older run without per-region base LF — clap starter from whole-house {starter_lf:.0f} LF; re-run measurement for the region split")
+    if "shake" in per:
+        s_lf = base_lf.get("shake", 0.0) + gable_lf.get("shake", 0.0)
+        if s_lf > 0:
+            qty = math.ceil(s_lf / 12.5)
+            line("Pelican Bay Shake Starter — shake region", _SHAKE_STARTER_SKU, qty,
+                 f"#65516000, own product (never priced as clap starter): {s_lf:.0f} LF shake base/gable-break ÷ 12.5 = {qty} (12'6\" stick assumed — flag for ruling)")
+        else:
+            line("Pelican Bay Shake Starter — shake region", _SHAKE_STARTER_SKU, 0,
+                 "⚠ shake region base LF unavailable on this run — verify by hand (#65516000; never priced as clap starter)")
+    if "board_batten" in per:
+        bb_lf = base_lf.get("board_batten", 0.0)
+        if bb_lf > 0:
+            qty = math.ceil(bb_lf / 12.5)
+            line("3/4\" J-Channel Standard color — B&B base", _J_SKU, qty,
+                 f"B&B base treatment = J-channel, NO starter (ruled): {bb_lf:.0f} LF B&B base ÷ 12.5 = {qty} — carries the B&B region's product color")
+        else:
+            line("3/4\" J-Channel Standard color — B&B base", _J_SKU, 0,
+                 "⚠ B&B base treatment = J-channel, NO starter (ruled) — B&B base LF unavailable on this run, verify by hand; carries the B&B region's product color")
+
+    # ---- J-CHANNEL context split (no pooled J on multi-region — pinned) ----
+    pcs_open, br_open = _j_channel_compute(m, include_rakes=False)
+    if pcs_open > 0:
+        line("3/4\" J-Channel Standard color — window/door", _J_SKU, pcs_open,
+             f"{br_open} — {clap_label} body region color")
+    rakes = float(m.get("rakes_lf") or 0)
+    if rakes > 0:
+        qty = math.ceil(rakes / 12.5)
+        gable_note = (f" — borders {'/'.join(sorted(gable_lf))} gable region color"
+                      if gable_lf else f" — {clap_label} body region color")
+        line("3/4\" J-Channel Standard color — rake/gable", _J_SKU, qty,
+             f"{rakes:.0f} LF rakes ÷ 12.5 = {qty}{gable_note}")
+
+    # ---- FINISH TRIM context split ----
+    eaves = float(m.get("eaves_lf") or 0)
+    if eaves > 0:
+        qty = math.ceil(eaves / 12.5)
+        line("Finish Trim Standard color — eave run", _FT_SKU, qty,
+             f"{eaves:.0f} LF eaves ÷ 12.5 = {qty}")
+    win_perim = _window_perim_total_lf(m)
+    if win_perim > 0:
+        qty = math.ceil(win_perim / 12.5)
+        line("Finish Trim Standard color — window perimeter", _FT_SKU, qty,
+             f"{win_perim:.0f} LF window perimeter ÷ 12.5 = {qty}")
+    return out
+
+
+def _j_channel_compute(m: dict, include_rakes: bool = True) -> tuple[int, str]:
     """Howard's J-channel formula (Iter 78 — eaves moved to Finish Trim):
 
         pcs = ceil( (window + patio + garage perimeter + rakes) / 12.5 )
@@ -465,7 +570,7 @@ def _j_channel_compute(m: dict) -> tuple[int, str]:
     win_count = float(m.get("window_count") or 0)
     opening_perim = float(m.get("opening_perimeter_lf") or 0)
     windows = m.get("windows") or []
-    rakes = float(m.get("rakes_lf") or 0)
+    rakes = (float(m.get("rakes_lf") or 0)) if include_rakes else 0.0
 
     parts: list[str] = []  # human-readable breakdown segments
     if windows:
@@ -786,14 +891,17 @@ HOVER_MAPPING_SPEC = [
     },
     # =====================================================================
     # STARTER — both vinyl and Ascend now per-PCS in the catalog. HOVER
-    # qty = LF ÷ 10 (per Howard). LP has no dedicated starter.
+    # qty = LF ÷ 12.5 (RULED 2026-07-18, vinyl-conventions batch: "clap
+    # keeps 12'6\"" — closes the old ÷10-vs-÷12.5 question). LP has no
+    # dedicated starter. On multi-region jobs the pooled row is SUPPRESSED
+    # and replaced by profile-specific region lines (_region_context_lines).
     # =====================================================================
     {
         "tabs": ["vinyl"],
         "section": "Siding Accessories",
         "item": "Starter",
         "unit": "PCS",
-        "extract": lambda m: max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
+        "extract": lambda m: 0 if _region_split_active(m) else max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
         "note": "Vinyl Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
     {
@@ -816,7 +924,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Finish Trim Standard color",
         "unit": "PCS",
-        "extract": lambda m: _finish_trim_pcs(m),
+        "extract": lambda m: 0 if _region_split_active(m) else _finish_trim_pcs(m),
         "note": lambda m: _finish_trim_note(m),
     },
     {
@@ -840,7 +948,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "3/4\" J-Channel Standard color (2 per Sq of siding)",
         "unit": "PCS",
-        "extract": lambda m: _j_channel_pcs(m),
+        "extract": lambda m: 0 if _region_split_active(m) else _j_channel_pcs(m),
         "note": lambda m: _j_channel_breakdown(m),
     },
     {
@@ -1815,6 +1923,11 @@ def _build_lines(measurements: dict) -> list[dict]:
     skip_default_siding = len(profile_lines) > 0
     if profile_lines:
         out.extend(profile_lines)
+    # Vinyl-conventions batch (3+4+5), ruled 2026-07-18: multi-region jobs
+    # get context/region-split starter, J-channel and finish-trim lines
+    # (pooled vinyl rows suppress themselves via _region_split_active).
+    if _region_split_active(measurements):
+        out.extend(_region_context_lines(measurements))
     for spec in HOVER_MAPPING_SPEC:
         if skip_default_siding and spec.get("_is_default_siding"):
             continue

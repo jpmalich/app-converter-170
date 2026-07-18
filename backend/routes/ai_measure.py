@@ -2147,6 +2147,10 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         breakdown = apply_annotations_to_breakdown(breakdown, annotations)
         measurements["_per_elevation_breakdown"] = breakdown["per_elevation"]
         measurements["_per_profile_sqft"] = breakdown["per_profile_sqft"]
+        # Vinyl-conventions batch (3+4+5), ruled 2026-07-18 — per-region
+        # base/gable-break LF for the starter / base-J / context-J split.
+        measurements["_per_profile_base_lf"] = breakdown.get("per_profile_base_lf") or {}
+        measurements["_per_profile_gable_break_lf"] = breakdown.get("per_profile_gable_break_lf") or {}
         # Iter 79j.71 — composition trace + tripwires. The catalog mapper
         # amber-flags any family listed in conflicts instead of printing
         # a quantity.

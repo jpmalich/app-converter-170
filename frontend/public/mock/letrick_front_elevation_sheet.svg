@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1056 816" font-family="Helvetica, Arial, sans-serif">
   <!-- Dimensioned 2D Elevation Sheet — REVIEW MOCK v3 (component color-coding)
        Mark Letrick · FRONT wall
-       WALLS: sealed hand-takeoff key EST-191890 (TAPE): 54'-0" x 8'-11 1/2" (25 courses)
+       WALLS: sealed hand-takeoff key EST-191890 (TAPE): 54'-0" x 8'-10 1/4" (25 courses x taped 4.25")
        OPENINGS: AI run d66794488ef848509446431b355db8e5 (along_wall_ft, reconciler-verified)
        CHANNELS: linework color = COMPONENT CLASS · chips/boxes = SOURCE/STATUS
        Scale 15.2 px/ft. -->
@@ -22,14 +22,14 @@
   <line x1="60" y1="104" x2="996" y2="104" stroke="#1a2332" stroke-width="1"/>
 
   <!-- Fascia / rake band (component: sky) with 1'-0" overhang stubs -->
-  <rect x="74.8" y="361.8" width="851.2" height="22" fill="none" stroke="#0EA5E9" stroke-width="3"/>
+  <rect x="74.8" y="363.4" width="851.2" height="22" fill="none" stroke="#0EA5E9" stroke-width="3"/>
   <text x="500" y="356" font-size="9" text-anchor="middle" fill="#0284c7" letter-spacing="1" font-weight="bold">FASCIA / RAKE · 1'-0" OVERHANG</text>
   <!-- Soffit (component: coffee brown, dotted) — eaves only per LP ruling -->
-  <line x1="76" y1="381" x2="924.6" y2="381" stroke="#6B4423" stroke-width="2.5" stroke-dasharray="1 4"/>
+  <line x1="76" y1="382.8" x2="924.6" y2="382.8" stroke="#6B4423" stroke-width="2.5" stroke-dasharray="1 4"/>
   <text x="76" y="356" font-size="8.5" fill="#6B4423" font-weight="bold">SOFFIT (EAVES ONLY) ↴</text>
 
   <!-- Siding field (component: slate) — wall outline + course hatch -->
-  <rect x="90" y="383.8" width="820.8" height="136.2" fill="#fbfcfe" stroke="#475569" stroke-width="1.75"/>
+  <rect x="90" y="385.4" width="820.8" height="134.6" fill="#fbfcfe" stroke="#475569" stroke-width="1.75"/>
   <g stroke="#cbd5e1" stroke-width="0.75">
     <line x1="91.5" y1="404" x2="909.3" y2="404"/><line x1="91.5" y1="424" x2="909.3" y2="424"/>
     <line x1="91.5" y1="444" x2="909.3" y2="444"/><line x1="91.5" y1="464" x2="909.3" y2="464"/>
@@ -38,8 +38,8 @@
   <!-- Starter (component: charcoal, dash-dot) along wall bottom -->
   <line x1="90" y1="516.5" x2="910.8" y2="516.5" stroke="#1F2937" stroke-width="2.5" stroke-dasharray="8 3 2 3"/>
   <!-- Outside corners (component: teal, heaviest) at both wall ends -->
-  <line x1="91.5" y1="383.8" x2="91.5" y2="520" stroke="#0D9488" stroke-width="3.5"/>
-  <line x1="909.3" y1="383.8" x2="909.3" y2="520" stroke="#0D9488" stroke-width="3.5"/>
+  <line x1="91.5" y1="385.4" x2="91.5" y2="520" stroke="#0D9488" stroke-width="3.5"/>
+  <line x1="909.3" y1="385.4" x2="909.3" y2="520" stroke="#0D9488" stroke-width="3.5"/>
   <!-- Grade line -->
   <line x1="60" y1="520" x2="960" y2="520" stroke="#1a2332" stroke-width="2"/>
   <path d="M 66 520 l 8 10 M 82 520 l 8 10 M 98 520 l 8 10 M 918 520 l 8 10 M 934 520 l 8 10 M 950 520 l 8 10" stroke="#1a2332" stroke-width="1"/>
@@ -103,19 +103,21 @@
 
   <!-- Eave height dimension (right, TAPED — 25 courses) -->
   <g stroke="#1a2332" stroke-width="1">
-    <line x1="912.8" y1="383.8" x2="952" y2="383.8"/><line x1="912.8" y1="520" x2="952" y2="520"/>
-    <line x1="946" y1="383.8" x2="946" y2="520" marker-start="url(#tick)" marker-end="url(#tick)"/>
+    <line x1="912.8" y1="385.4" x2="952" y2="385.4"/><line x1="912.8" y1="520" x2="952" y2="520"/>
+    <line x1="946" y1="385.4" x2="946" y2="520" marker-start="url(#tick)" marker-end="url(#tick)"/>
   </g>
-  <text x="954" y="440" font-size="13" font-weight="bold" fill="#1a2332">8'-11½"</text>
-  <rect x="954" y="448" width="52" height="16" rx="8" fill="#0d7a3f"/>
-  <text x="980" y="459.5" font-size="8.5" text-anchor="middle" fill="#fff" font-weight="bold">TAPED</text>
-  <text x="954" y="478" font-size="8.5" fill="#5a6472">25 courses</text>
+  <text x="954" y="424" font-size="7.5" font-weight="bold" fill="#5a6472">SIDING HEIGHT</text>
+  <text x="954" y="433" font-size="6.5" fill="#5a6472">(starter → soffit)</text>
+  <text x="954" y="450" font-size="13" font-weight="bold" fill="#1a2332">8'-10¼"</text>
+  <rect x="950" y="456" width="74" height="16" rx="8" fill="#0d7a3f" stroke="#fff" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="987" y="467.5" font-size="7" text-anchor="middle" fill="#fff" font-weight="bold">TAPED-DERIVED</text>
+  <text x="950" y="486" font-size="8" fill="#5a6472">25 × 4¼" taped</text>
 
   <!-- Tape/AI deviation box (STATUS channel — spec-level element) -->
   <rect x="90" y="150" width="404" height="46" fill="#fef7ec" stroke="#b45309" stroke-width="1.2"/>
   <text x="100" y="166" font-size="9.5" font-weight="bold" fill="#b45309">DEVIATION — AI PHOTO RUN DISAGREES WITH TAPE (TAPE GOVERNS)</text>
   <text x="100" y="180" font-size="9" fill="#7a4a12">AI run d6679448 read this wall 50'-0" × 8'-7" (23–24 courses, ref-anchored)</text>
-  <text x="100" y="192" font-size="9" fill="#7a4a12">vs taped 54'-0" × 8'-11½" (25 courses): −4'-0" width, −4½" height.</text>
+  <text x="100" y="192" font-size="9" fill="#7a4a12">vs key 54'-0" × 8'-10¼" (25 × 4¼"): −4'-0" width, −3¼" height.</text>
 
   <!-- Bottom strip -->
   <line x1="60" y1="628" x2="996" y2="628" stroke="#1a2332" stroke-width="1"/>
@@ -124,8 +126,8 @@
   <g font-size="10" fill="#1a2332">
     <text x="60" y="646" font-weight="bold" letter-spacing="1.5" font-size="10.5">WALL DATA — FRONT</text>
     <text x="60" y="664">Width <tspan font-weight="bold">54'-0"</tspan> — TAPED (sealed key EST-191890, eaves 2×54)</text>
-    <text x="60" y="680">Eave height <tspan font-weight="bold">8'-11½"</tspan> — TAPED (483.8 ft² ÷ 54', 25 courses)</text>
-    <text x="60" y="696">Wall area <tspan font-weight="bold">483.8 ft²</tspan> — TAPED · Gable triangle <tspan font-weight="bold">none</tspan> · Stories 1</text>
+    <text x="60" y="680">Siding height (starter → soffit) <tspan font-weight="bold">8'-10¼"</tspan> — TAPED-DERIVED (25 × 4¼" taped)</text>
+    <text x="60" y="696">Wall area <tspan font-weight="bold">478.1 ft²</tspan> — DERIVED (54 × 8.854) · Gable triangle <tspan font-weight="bold">none</tspan> · Stories 1</text>
     <text x="60" y="712">Siding <tspan font-weight="bold">100%</tspan> · Profile callout <tspan font-weight="bold">LAP</tspan> (38S 8" per key)</text>
     <text x="60" y="728">Openings <tspan font-weight="bold">4</tspan> (3 windows · 1 entry door) — positions AI-READ ✓</text>
     <text x="60" y="744">AI wall read: 50'-0" × 8'-7" — flagged deviation above; tape governs</text>
@@ -176,13 +178,14 @@
       <line x1="838" y1="738" x2="852" y2="738" stroke="#86198F" stroke-width="2.75" stroke-dasharray="10 4"/><text x="855" y="741">BAND BD (C-SPEC)</text>
     </g>
     <g font-size="6" font-weight="bold">
-      <rect x="738" y="748" width="34" height="12" rx="6" fill="#0d7a3f"/><text x="755" y="756.5" text-anchor="middle" fill="#fff">TAPED</text>
-      <rect x="776" y="748" width="30" height="12" rx="6" fill="#fff" stroke="#0d7a3f"/><text x="791" y="756.5" text-anchor="middle" fill="#0d7a3f">AI ✓</text>
-      <rect x="810" y="748" width="30" height="12" rx="6" fill="#b45309"/><text x="825" y="756.5" text-anchor="middle" fill="#fff">AI ⚠</text>
-      <rect x="844" y="748" width="28" height="12" rx="6" fill="#fff" stroke="#b45309" stroke-dasharray="3 2"/><text x="858" y="756.5" text-anchor="middle" fill="#b45309">EST</text>
-      <rect x="876" y="748" width="32" height="12" rx="6" fill="#1d4ed8"/><text x="892" y="756.5" text-anchor="middle" fill="#fff">PRINT</text>
-      <rect x="912" y="748" width="28" height="12" rx="6" fill="#7c3aed"/><text x="926" y="756.5" text-anchor="middle" fill="#fff">USER</text>
-      <rect x="944" y="748" width="42" height="12" rx="6" fill="#111827"/><text x="965" y="756.5" text-anchor="middle" fill="#fff">C-SPEC</text>
+      <rect x="736" y="748" width="32" height="12" rx="6" fill="#0d7a3f"/><text x="752" y="756.5" text-anchor="middle" fill="#fff">TAPED</text>
+      <rect x="771" y="748" width="32" height="12" rx="6" fill="#0d7a3f" stroke="#fff" stroke-width="0.8" stroke-dasharray="2.5 1.5"/><text x="787" y="756.5" text-anchor="middle" fill="#fff">T-DER</text>
+      <rect x="806" y="748" width="26" height="12" rx="6" fill="#fff" stroke="#0d7a3f"/><text x="819" y="756.5" text-anchor="middle" fill="#0d7a3f">AI ✓</text>
+      <rect x="835" y="748" width="26" height="12" rx="6" fill="#b45309"/><text x="848" y="756.5" text-anchor="middle" fill="#fff">AI ⚠</text>
+      <rect x="864" y="748" width="24" height="12" rx="6" fill="#fff" stroke="#b45309" stroke-dasharray="3 2"/><text x="876" y="756.5" text-anchor="middle" fill="#b45309">EST</text>
+      <rect x="891" y="748" width="30" height="12" rx="6" fill="#1d4ed8"/><text x="906" y="756.5" text-anchor="middle" fill="#fff">PRINT</text>
+      <rect x="924" y="748" width="26" height="12" rx="6" fill="#7c3aed"/><text x="937" y="756.5" text-anchor="middle" fill="#fff">USER</text>
+      <rect x="953" y="748" width="38" height="12" rx="6" fill="#111827"/><text x="972" y="756.5" text-anchor="middle" fill="#fff">C-SPEC</text>
     </g>
   </g>
 </svg>

@@ -206,6 +206,8 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
     """
     per_elevation = []
     per_profile = {}
+    base_lf: dict[str, float] = {}
+    gable_break_lf: dict[str, float] = {}
     conflicts: list[dict] = []
     skipped_echo = 0
     malformed = 0
@@ -235,6 +237,11 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
         if not body_family or body_family == "unknown":
             body_family = default_body_profile
         _add(body_family, wall_body_sqft)
+        # Vinyl-conventions batch (3+4+5), ruled 2026-07-18: the body
+        # family owns the base course — per-region base LF drives the
+        # starter / base-J split downstream (gables never have base).
+        if width > 0 and wall_body_sqft > 0:
+            base_lf[body_family] = base_lf.get(body_family, 0.0) + width
 
         # Stone area = gross × (1 - pct/100). Surfaced for traceability;
         # NEVER counted as siding.
@@ -253,6 +260,9 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
             gable_sqft = 0.7 * width * gable_h
             gable_family = classify_profile(w.get("gable_profile_callout")) or body_family
             _add(gable_family, gable_sqft)
+            # Vinyl-conventions batch: gable-break LF per gable family
+            # (shake gables start their course run at the break).
+            gable_break_lf[gable_family] = gable_break_lf.get(gable_family, 0.0) + width
 
         # Dormer face
         dormer_sqft = _safe_float(w.get("dormer_face_sqft"))

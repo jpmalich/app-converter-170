@@ -88,6 +88,7 @@ the sealed tape key says 54'-0") — register-worthy source-naming defect.
 | Tag | Fields that produce it | Color |
 |---|---|---|
 | TAPED | contractor tape: Tape Check values, user_measured, sealed hand-takeoff key | green solid |
+| TAPED-DERIVED | formula from taped inputs (formula stated) — key-hygiene rule 2026-07-18; never the bare TAPED badge | green solid + dashed white border |
 | AI-READ ✓ | direct_ref (ref-anchored) / direct_consensus / direct_single_reading | green outline |
 | AI-READ ⚠ | direct_disagreement / cross_plane / below_typical_range | amber |
 | ESTIMATED | estimated_no_direct_view / defaulted / bbox-fallback position | amber dashed |

@@ -317,6 +317,11 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 const key = keyOf(ln);
                 const idx = byKey.get(key);
                 if (idx == null) {
+                  // Vinyl-conventions split lines (ruled 2026-07-18):
+                  // context-named rows inherit tier pricing from their
+                  // base SKU row via base_item.
+                  const baseIdx = ln.base_item != null ? byKey.get(`${ln.tab || "vinyl"}::${ln.section}::${ln.base_item}`) : null;
+                  const baseRow = baseIdx != null ? existing[baseIdx] : null;
                   next.push({
                     tab: ln.tab || "vinyl",
                     section: ln.section,
@@ -324,8 +329,8 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                     unit: ln.unit,
                     qty: ln.qty,
                     raw_qty: ln.raw_qty,   // preserve raw so future waste-% changes recompute correctly
-                    mat: 0,
-                    lab: 0,
+                    mat: baseRow ? (baseRow.mat ?? 0) : 0,
+                    lab: baseRow ? (baseRow.lab ?? 0) : 0,
                   });
                 } else {
                   next[idx] = {

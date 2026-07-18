@@ -4,14 +4,27 @@ Composed BLIND (no reference to the app's LP takeoff — confirmed by Howard,
 /app/memory/backups/letrick_hand_takeoff_placeholder_pre-supersede_2026-07-13.json).
 Acceptance: per-line ±3%; composition absences are part of the key —
 any J-channel / finish trim / coil line = composition FAIL regardless of totals.
-Report protocol: against the key only; no reconciling either direction."""
+Report protocol: against the key only; no reconciling either direction.
+
+CLASS-1 GROUND-TRUTH CORRECTION (Howard, 2026-07-18 — backup at
+/app/memory/backups/letrick_hand_takeoff_key_pre_exposure_correction_2026-07-18.py):
+front eave height was DERIVED from 25 courses at a WRONG exposure (~4.30"),
+not taped. Corrected to 25 × taped 4.25" = 8.854' (8'-10 1/4"). Basis:
+internal consistency — back wall (28 × 4.25 = 9.92') already reconciled with
+the taped exposure; ONE exposure now governs all walls. Dependents re-derived:
+front area 478.1 (was 483.8), raw 2,092.8 (was 2,098.5), lap 254 (was 255).
+Caught by Howard's as-built arithmetic (25 × 4.25). KEY-HYGIENE RULE applies
+from this correction forward: every value carries basis TAPED or DERIVED
+(formula stated) — see "bases"."""
 
 LETRICK_HAND_TAKEOFF_KEY = {
     "estimate_number": "EST-191890",
     "composed": "2026-07-13",
+    "corrected": "2026-07-18",
     "inputs": {
-        "raw_sqft": 2098.5,          # 21.0 squares raw
-        "walls_gables_sqft": 1953.0, # front 483.8 + back 535.7 + stepped sides ~566.4 + gables ×0.7 = 367.5
+        "exposure_in": 4.25,         # TAPED — one exposure governs all walls
+        "raw_sqft": 2092.8,          # 20.9 squares raw (was 2,098.5 pre-correction)
+        "walls_gables_sqft": 1947.3, # front 478.1 + back 535.7 + stepped sides ~566.4 + gables ×0.7 = 367.5
         "chase_outer_sqft": 47.97,
         "chase_sides_sqft": 97.56,   # 2.58' × 18.91' × 2
         "eaves_lf": 108.0,           # 2 × 54
@@ -22,9 +35,24 @@ LETRICK_HAND_TAKEOFF_KEY = {
         "window_deductions": "none, per convention",
         "waste": 0.10,               # siding only; OSC/fascia = splice-and-round-up, no cushion
     },
+    "bases": {
+        # KEY-HYGIENE RULE (Howard 2026-07-18): TAPED = direct reading;
+        # DERIVED = formula from taped inputs, formula stated.
+        "exposure_in": {"basis": "TAPED", "note": "field tape, reconciles back wall 28 courses"},
+        "front_height_ft": {"basis": "DERIVED", "formula": "25 courses × 4.25\" ÷ 12 = 8.854' (8'-10 1/4\")"},
+        "back_height_ft": {"basis": "DERIVED", "formula": "28 courses × 4.25\" ÷ 12 = 9.917' (~9.92')"},
+        "front_sqft": {"basis": "DERIVED", "formula": "54 × 8.854 = 478.1"},
+        "back_sqft": {"basis": "DERIVED", "formula": "54 × 9.917 = 535.5 (key states 535.7 — rounding flag, key-hygiene audit)"},
+        "raw_sqft": {"basis": "DERIVED", "formula": "walls_gables 1947.3 + chase_outer 47.97 + chase_sides 97.56 ≈ 2092.8"},
+        "eaves_lf": {"basis": "DERIVED", "formula": "2 × 54 (54 TAPED, print-confirmed)"},
+        "rakes_lf": {"basis": "DERIVED", "formula": "4 × 17.4 (17.4 TAPED)"},
+        "fascia_rake_lf": {"basis": "DERIVED", "formula": "108 + 69.6 = 177.6"},
+        "perimeter_lf": {"basis": "TAPED"},
+        "starter_lf": {"basis": "DERIVED", "formula": "168 − 3 (entry; slider sits on starter)"},
+    },
     "lines": [
-        {"item": "38 Series Lap 8\" x 16'", "qty": 255, "unit": "PCS",
-         "derivation": "2,098.5 sqft raw = 21.0 sq +10% = 23.1 sq × 11 pcs/sq (6-7/8\" reveal) = 254.1 → 255 (mill basis pending finish selection)"},
+        {"item": "38 Series Lap 8\" x 16'", "qty": 254, "unit": "PCS",
+         "derivation": "2,092.8 sqft raw = 20.93 sq +10% = 23.02 sq × 11 pcs/sq (6-7/8\" reveal) = 253.2 → 254 (mill basis pending finish selection; was 255 pre-correction)"},
         {"item": "540 Series OSC 5/4\" x 6\" x 16'", "qty": 8, "unit": "PCS",
          "derivation": "4 house corners @ 1 stick + chimney 4 sticks (2 full-height edges ~18.9' + 2 above-roofline edges, ~55 LF total, splice-and-round-up). No cushion."},
         {"item": "440 Series 4/4\" x 4\" ISC", "qty": 2, "unit": "PCS",

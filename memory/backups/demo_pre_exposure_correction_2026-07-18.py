@@ -30,14 +30,11 @@ DEMO_TIER = "Contractor"
 # original EST-191890 source estimate was deleted from the dashboard;
 # the demo depends only on the cloned run + these truths now.
 LETRICK_TAPE_WALLS = {
-    # Class-1 correction 2026-07-18: 8.96 (25 × wrong ~4.30" exposure) →
-    # 8.854 (25 × taped 4.25"); one exposure governs all walls (back
-    # 28 × 4.25 = 9.92 already reconciled).
-    "front": {"segments": [{"height_ft": 8.854, "courses": 25}], "start_ref": "siding_start"},
+    "front": {"segments": [{"height_ft": 8.96, "courses": 25}], "start_ref": "siding_start"},
     "back": {"segments": [{"height_ft": 9.92, "courses": 28}], "start_ref": "siding_start"},
-    "left": {"segments": [{"height_ft": 8.854, "courses": 25},
+    "left": {"segments": [{"height_ft": 8.96, "courses": 25},
                           {"height_ft": 9.92, "courses": 28}], "start_ref": "siding_start"},
-    "right": {"segments": [{"height_ft": 8.854, "courses": 25},
+    "right": {"segments": [{"height_ft": 8.96, "courses": 25},
                            {"height_ft": 9.92, "courses": 28}], "start_ref": "siding_start"},
 }
 

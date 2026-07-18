@@ -156,7 +156,7 @@ SECTION_LAYOUT = [
         '1/2" J-Channel (2 per Sq of siding)',
         "Finish Trim Standard color",
         "Finish Trim Architectural color",
-        "Starter", "House Wrap", "RainDrop", '3/8" Fan Fold',
+        "Starter", "Pelican Bay Shake Starter", "House Wrap", "RainDrop", '3/8" Fan Fold',
         '2" Nails 30 lbs (1 per 15 Sq)', "Caulking (per color)",
         "J-blocks - Split Blocks (82A009)",
         "J-blocks - Light Blocks (82A010)",
@@ -401,6 +401,11 @@ ITEM_META = {
     "Finish Trim Standard color": ("PCS", 0),
     "Finish Trim Architectural color": ("PCS", 0),
     "Starter": ("PCS", 0),
+    # Vinyl-conventions batch (5), ruled 2026-07-18: profile-specific
+    # shake starter #65516000 — own product row. PRICING PENDING Howard's
+    # master-catalog diff approval (13.99 flat ×4 on the sheet); seeded at
+    # 0, NEVER from clap Starter.
+    "Pelican Bay Shake Starter": ("PCS", 0),
     "House Wrap": ("SQ", 0), "RainDrop": ("SQ", 0), '3/8" Fan Fold': ("SQ", 0),
     '2" Nails 30 lbs (1 per 15 Sq)': ("JOB", 0), "Caulking (per color)": ("Each", 0),
     "J-blocks - Split Blocks (82A009)": ("Each", 0),
@@ -1054,6 +1059,7 @@ ITEM_AMI = {
     "Finish Trim Standard color": "105200",
     "Finish Trim Architectural color": "105200",
     "Starter": "107361",
+    "Pelican Bay Shake Starter": "65516000",
     "House Wrap": "646662A0",
     "RainDrop": "646686",
     '3/8" Fan Fold': "668363",
