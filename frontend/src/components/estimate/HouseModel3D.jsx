@@ -53,6 +53,13 @@ const DEFAULT_PITCH = 6;
 const DEFAULT_EAVE_HEIGHT = 10;
 const AMBER = "#F59E0B";
 const ROOF_TYPE_CONFIDENCE_THRESHOLD = 0.8;
+// RULED 2026-07-18 (smashed-walls, widened): two opening rects whose
+// intersection exceeds this fraction of the smaller rect's area — OR
+// penetrates deeper than OPENING_OVERLAP_DEPTH_FT in BOTH axes (the
+// eye catches depth, not area %) — cannot both be placed on the
+// flattened wall plane; the loser is omitted.
+const OPENING_OVERLAP_FRAC = 0.3;
+const OPENING_OVERLAP_DEPTH_FT = 0.5;
 
 function pitchRise(widthFt, pitchOver12) {
   // rise across HALF the roof span, e.g. 6/12 on a 40 ft span = 20 × 6/12 = 10 ft.
@@ -463,9 +470,9 @@ function buildHouseJson(preview, overrides, estimate, apDims) {
   const hasBbox = (b) => !!b && Number.isFinite(b.x) && Number.isFinite(b.y)
     && Number.isFinite(b.w) && Number.isFinite(b.h) && b.w > 0 && b.h > 0;
   const autoSpace = (list, wallWidth, wallHeight) => {
-    if (!list?.length) return [];
+    if (!list?.length) return { placed: [], omitted: 0 };
     const n = list.length;
-    return list.map((o, i) => {
+    const rects = list.map((o, i) => {
       const w = (o.width_in || 36) / 12;
       const h = (o.height_in || 48) / 12;
       // Iter 79j.28 — true Y positioning from bbox. Photo Y origin is
@@ -496,8 +503,32 @@ function buildHouseJson(preview, overrides, estimate, apDims) {
         w,
         h,
         confidence: o.style_confidence ?? o.confidence ?? null,
+        verified: alongFt != null,
       };
     });
+    // RULED 2026-07-18 (smashed-walls, widened): "unplaceable" is what
+    // the EYE catches, not just exact-coincident coordinates. When the
+    // flattened single-plane wall can't hold two openings without their
+    // rects interpenetrating (photo duplicates of a multi-mass wall
+    // pooled onto one plane), the lower-priority one is OMITTED and
+    // counted — honest absence, never stacked garbage. Priority:
+    // reconciler-verified (along_wall_ft) beats bbox-only; within the
+    // same class the larger feature anchors.
+    const prio = [...rects].sort((a, b) =>
+      a.verified === b.verified ? (b.w * b.h) - (a.w * a.h) : (a.verified ? -1 : 1));
+    const placed = [];
+    let omitted = 0;
+    prio.forEach((r) => {
+      const collides = placed.some((k) => {
+        const ox = Math.max(0, Math.min(r.x + r.w, k.x + k.w) - Math.max(r.x, k.x));
+        const oy = Math.max(0, Math.min(r.y + r.h, k.y + k.h) - Math.max(r.y, k.y));
+        return ox * oy > OPENING_OVERLAP_FRAC * Math.min(r.w * r.h, k.w * k.h)
+          || Math.min(ox, oy) > OPENING_OVERLAP_DEPTH_FT;
+      });
+      if (collides) omitted += 1;
+      else placed.push(r);
+    });
+    return { placed, omitted };
   };
 
   // Iter 79j.26 — Roof type cascade: user > AI (≥0.8 confidence) >
@@ -674,18 +705,22 @@ function buildHouseJson(preview, overrides, estimate, apDims) {
   // dormer eligibility) reads facade.gableEnd instead of hard-coding
   // by label.
   const gableEndIds = ridgeAxis === "x" ? new Set(["left", "right"]) : new Set(["front", "back"]);
-  const mkFacade = (id, label, widthOverride, wallData, eave) => ({
-    id,
-    label,
-    width: widthOverride,
-    eaveHeight: eave.h,
-    eaveHeightSource: eave.source,
-    gableEnd: gableEndIds.has(id),
-    confidence: wallData?.confidence ?? null,
-    estimated: !wallData,
-    aiGableTriangleHeightFt: Number(wallData?.gable_triangle_height_ft || 0),
-    openings: autoSpace(openingsByWall[id] || [], widthOverride, eave.h),
-  });
+  const mkFacade = (id, label, widthOverride, wallData, eave) => {
+    const sp = autoSpace(openingsByWall[id] || [], widthOverride, eave.h);
+    return {
+      id,
+      label,
+      width: widthOverride,
+      eaveHeight: eave.h,
+      eaveHeightSource: eave.source,
+      gableEnd: gableEndIds.has(id),
+      confidence: wallData?.confidence ?? null,
+      estimated: !wallData,
+      aiGableTriangleHeightFt: Number(wallData?.gable_triangle_height_ft || 0),
+      openings: sp.placed,
+      omittedOpenings: sp.omitted,
+    };
+  };
   return {
     footprint: { width: footprintW, depth: footprintD, estimated: !front || !left },
     avgEaveHeight: avgEave,
@@ -1111,6 +1146,12 @@ function parseHex(input) {
 // (so the click handler can highlight the tapped facade).
 function buildScene(scene, house) {
   const wallMeshes = {};
+  // RULED 2026-07-18 (smashed-walls): geometry the vocabulary cannot
+  // place is NEVER rendered at default/overlapping coordinates — honest
+  // absence replaces garbage placement. Omissions are counted and
+  // surfaced in the schematic label via the warnings banner (which also
+  // rides the geometry-fit gate to customer surfaces).
+  const unplaced = { count: 0 };
   // Iter 79j.28 — per-material colors. Priority chain:
   //   house.colors.<field>  (user/estimate override — highest)
   //   → house.colors.<field>_ai (AI-sampled from photos)
@@ -1180,7 +1221,10 @@ function buildScene(scene, house) {
       case "back":  mesh.position.set(0, 0, -halfD); mesh.rotation.y = Math.PI; break;
       case "right": mesh.position.set(halfW, 0, 0); mesh.rotation.y = Math.PI / 2; break;
       case "left":  mesh.position.set(-halfW, 0, 0); mesh.rotation.y = -Math.PI / 2; break;
-      default: break;
+      default:
+        // Unplaceable wall — omitted + counted, never at origin.
+        unplaced.count += 1;
+        return;
     }
     mesh.userData.facadeId = f.id;
     wallMeshes[f.id] = mesh;
@@ -1245,7 +1289,10 @@ function buildScene(scene, house) {
       case "back":  grp.position.set(0, 0, -halfD); grp.rotation.y = Math.PI; break;
       case "right": grp.position.set(halfW, 0, 0); grp.rotation.y = Math.PI / 2; break;
       case "left":  grp.position.set(-halfW, 0, 0); grp.rotation.y = -Math.PI / 2; break;
-      default: return;
+      default:
+        // Unplaceable appendage wall — omitted + counted, never at origin.
+        unplaced.count += 1;
+        return;
     }
     // Local roofline at the chase's position: gable-end walls rise to
     // the ridge at center; eave walls sit at the eave.
@@ -1280,10 +1327,54 @@ function buildScene(scene, house) {
     scene.add(grp);
   });
 
+  // RULED 2026-07-18 pin: no two walls render at coincident coordinates.
+  // Post-build sweep — any wall/appendage landing on an already-occupied
+  // frame is removed and counted as unplaceable (overlap IS garbage
+  // placement, the visual form of fabrication).
+  const seenFrames = new Map();
+  const coincidentCandidates = [
+    ...Object.values(wallMeshes),
+    ...scene.children.filter((c) => c.userData && c.userData.isAppendage),
+  ];
+  coincidentCandidates.forEach((m) => {
+    let p = m.position;
+    if (m.userData?.isAppendage && m.children?.[0]?.getWorldPosition) {
+      m.updateMatrixWorld(true);
+      const wp = new THREE.Vector3();
+      m.children[0].getWorldPosition(wp);
+      p = wp;
+    }
+    const k = [p.x.toFixed(2), p.y.toFixed(2), p.z.toFixed(2), ((m.rotation && m.rotation.y) || 0).toFixed(3), m.userData?.isAppendage ? "ap" : "wall"].join("|");
+    if (seenFrames.has(k)) {
+      scene.remove(m);
+      if (m.userData?.facadeId && wallMeshes[m.userData.facadeId] === m) {
+        delete wallMeshes[m.userData.facadeId];
+      }
+      unplaced.count += 1;
+    } else {
+      seenFrames.set(k, m);
+    }
+  });
+
   // Iter 79j.25 + .26 + .33 — Geometry sanity checks. Warnings surface
   // in the UI via the amber banner in the side panel; console.error is
   // kept for dev debugging. `warnings` is returned to the React layer.
   const warnings = [];
+  if (unplaced.count > 0) {
+    warnings.push(
+      `${unplaced.count} wall segment(s) not drawn — house exceeds model vocabulary.`,
+    );
+  }
+  // RULED 2026-07-18 (smashed-walls, widened): omitted-opening counts
+  // per facade ride the same warnings banner (→ bannerMessages →
+  // fit_low on customer surfaces).
+  house.facades.forEach((f) => {
+    if ((f.omittedOpenings || 0) > 0) {
+      warnings.push(
+        `${f.omittedOpenings} opening(s) on the ${f.id} wall not drawn — overlapping placements exceed the model vocabulary.`,
+      );
+    }
+  });
   const maxEave = Math.max(...house.facades.map((f) => f.eaveHeight));
   if (ridgeY <= maxEave) {
     console.error(
@@ -2100,7 +2191,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
           {(peb.dormer_sqft || 0) > 0 && <Row k="Dormer face" v={`${peb.dormer_sqft.toFixed(0)} sf`} />}
           {(peb.stone_sqft || 0) > 0 && <Row k="Stone / masked" v={`${peb.stone_sqft.toFixed(0)} sf`} />}
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
-          <Row k="Openings" v={`${facade.openings.length} — this wall`} />
+          <Row k="Openings" v={`${facade.openings.length} drawn${facade.omittedOpenings ? ` · ${facade.omittedOpenings} omitted (overlap)` : ""} — this wall`} />
           {house.openingPlacementDefaulted > 0 && (
             <div className="text-[9px] italic text-[var(--warning-text)] leading-tight" data-testid="ai-measure-3d-opening-placement-note">
               <AlertTriangle className="w-2.5 h-2.5 inline mr-0.5" style={{ color: AMBER }} />

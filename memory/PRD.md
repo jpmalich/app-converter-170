@@ -3348,3 +3348,54 @@ BACKLOG (NOT commissioned, per ruling): true multi-mass renderer — logged
 post-September, merged with the interactive-3D and blueprint→3D packages
 where it naturally belongs. Parametric envelope + honest gate is the
 September answer.
+
+## POSITIONING RULING (2026-07-18, Howard) — 3D is a CONTRACTOR VERIFICATION instrument
+ProQuotes' 3D exists for contractor verification (diagnostic banners, corner
+ratification, field-verify), NOT homeowner selling. Homeowner visualization
+belongs to LP's ExpertFinish visualizer per the September partnership framing.
+Existing customer surfaces (Accept 3D, quote snapshot) remain ONLY as
+ratified-state trust artifacts under the geometry-fit gate. STANDING: no
+future render work is justified by "selling the homeowner."
+
+## SMASHED-WALLS DEFECT (2026-07-18) — traced + fixed + pinned
+Trace findings (261 Haugh, doc-verified): NOT excess wall segments (exactly 4),
+NOT appendage collapse (zero appendages derived — no accent_profiles in either
+run). Two real mechanisms: (a) LITERAL garbage-placement bug — the wall-
+placement switch's `default: break` still scene.add()'d unknown-id facades at
+origin (0,0,0), stacking them into the back wall; (b) offset-mass exposure —
+the 48.5×20.5' two-story rear slab rises ~10' through roof planes set on ~10'
+gable eaves (vocabulary misfit the fit gate already labels). FIX: unplaceable
+geometry (unknown wall ids, unknown appendage walls, coincident-frame
+duplicates via post-build sweep) is OMITTED + COUNTED — warning "N wall
+segment(s) not drawn — house exceeds model vocabulary" feeds the banner and
+therefore rides fit_low to customer surfaces. Honest absence replaces garbage
+placement. Pins: test_unplaceable_geometry_omitted_with_count_never_at_origin,
+test_no_two_walls_render_at_coincident_coordinates.
+
+## SMASHED-WALLS ROUND 2 (2026-07-18) — Howard rejected round 1; TRUE mechanism found + fixed
+Howard's verification: render UNCHANGED after round-1 fix (no omit label, no
+visual change). Re-trace on the live modal surface (screenshots front+back)
+found: round-1 rules could NEVER fire on this run — 4 distinct facades, zero
+appendages (no accent_profiles), and the `default: break` in the main wall
+switch was still present at HEAD (its pin test was failing). TRUE mechanism:
+OPENING-RECT INTERPENETRATION — 19 back-wall + 16 front-wall openings, pooled
+from photos of different sub-masses (two-story main, one-story wing, glass
+bump-out), flattened onto single wall planes with overlapping x/y rects
+(e.g. 6 windows placed INSIDE the 16-ft garage door slab). The stacked
+garbage the eye caught was interpenetrating opening meshes, not wall meshes.
+FIX (widened per Howard's ruling — "what the EYE catches, not what equality
+tests catch"): collision sweep in autoSpace — openings sorted by priority
+(reconciler-verified along_wall_ft first, then larger area), an opening whose
+rect intersects an already-placed one beyond OPENING_OVERLAP_FRAC (30% of the
+smaller rect) OR deeper than OPENING_OVERLAP_DEPTH_FT (0.5 ft in both axes)
+is OMITTED + counted per facade. Warning "N opening(s) on the X wall not
+drawn — overlapping placements exceed the model vocabulary" rides the banner
+→ fit_low → customer surfaces. Wall-info panel shows "N drawn · M omitted
+(overlap)". Main-wall switch default now omits+counts (origin path dead for
+real). RENDER-ONLY: measurements/lines/openings schedule untouched.
+261 Haugh result: front 4 drawn/13 omitted (garage door swallowed dupes),
+back 5/14, left 5/2, right 5/1 — verified visually on the AI Measure modal,
+front AND back views, stacking gone, labels rendering.
+Pins: test_interpenetrating_opening_rects_are_omitted_and_counted,
+test_opening_omission_is_render_only_never_touches_takeoff (12 pass in
+test_geometry_fit_gate.py; 46 pass across 3D suites).
