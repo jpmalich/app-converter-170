@@ -3515,3 +3515,29 @@ ref-anchored AI read still missed the tape by 4'.) Deviation box promoted to
 SPEC-LEVEL in elevation_sheet_spec.md ("tape governs" wherever tape and AI
 disagree on a sheet).
 (4) Reachability rule standing (already logged).
+
+## BAND BOARD RULING (2026-07-18, Howard) — conventions logged, builds WITH 2D sheets
+Composition: horizontal trim at story/gable break; LF = sum of wrapped wall
+widths anchored at the break height the geometry already carries; whole
+sticks splice-and-round-up; profile contractor-selected from 440/540 trim
+stock (540 5/4×8, 5/4×12 typical); per-component color; priced through the
+engine as a trim line. TAXONOMY ADDITION RULED: CONTRACTOR-SPEC source tag —
+design-decision features, provenance-logged (by/at, revertible), NEVER in
+accuracy comparisons. Sheet rendering: draws at anchored break height in its
+component color, schedule row wears CONTRACTOR-SPEC chip, no deviation
+machinery. SCOPE: first entry of the Options & Upgrades cluster; ships with
+the 2D elevation surface post-September; no September scope change. Full
+conventions in elevation_sheet_spec.md §8.
+
+## COMPONENT COLOR-CODING (2026-07-18) — spec added, mock v3 delivered
+Channel separation PINNED: linework color = component class; chips/boxes =
+source/status — neither borrows the other's channel. Proposed palette (in
+elevation_sheet_spec.md §2b, PENDING Howard approval): siding slate #475569
+solid+hatch · opening trim red #DC2626 · OSC teal #0D9488 heaviest (shifted
+from Howard's "e.g., green" to keep daylight from status green — flagged for
+approve/override) · ISC magenta dashed · fascia/rake sky #0EA5E9 · soffit
+coffee dotted · starter charcoal dash-dot · band board plum long-dash
+(C-SPEC). Merged legend (component samples + source chips incl. new
+CONTRACTOR-SPEC ink chip) title-block-adjacent; schedule rows carry class
+swatches (Hover measurement-key pattern). Mock v3 live + 200-verified:
+https://app-converter-170.preview.emergentagent.com/mock/letrick_front_elevation_sheet.svg (+.png).

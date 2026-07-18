@@ -33,6 +33,35 @@ secondary (tap-wall takeoff, appendage ratification, simple houses).
      and AI disagree on a sheet, an amber deviation box renders stating both
      values, the delta, and "tape governs" — not a one-off of the Letrick
      mock; a standing sheet element.
+## 2b. Component color-coding (APPROVED DIRECTION 2026-07-18 — palette pending Howard)
+Classes mirror the existing ExpertFinish component groups. **CHANNEL
+SEPARATION (PINNED):** component identity = LINEWORK color; measurement
+status = chips/boxes/tags only — neither system ever borrows the other's
+channel. Grayscale print legibility: every class also differs by line
+weight/pattern, never hue alone.
+
+PROPOSED PALETTE (for Howard's approval; constrained away from status colors
+— amber deviation #B45309, TAPED/AI-READ✓ green #0D7A3F, PRINTED blue
+#1D4ED8, USER purple #7C3AED):
+| Class | Hue | Hex | Grayscale channel |
+|---|---|---|---|
+| Siding field | slate | #475569 | thin solid 1.75px + pale course hatch |
+| Opening trim | red | #DC2626 | solid 2.25px |
+| Outside corners | teal | #0D9488 | solid 3.5px (heaviest) |
+| Inside corners | magenta | #DB2777 | dashed 6-3, 2.25px |
+| Fascia / rake | sky | #0EA5E9 | solid 3px |
+| Soffit | coffee brown | #6B4423 | dotted, 2.5px |
+| Starter | charcoal | #1F2937 | dash-dot, 2.5px |
+| Band board (contractor-spec) | plum | #86198F | long-dash 10-4, 2.75px |
+NOTE for Howard: your "e.g., green" for outside corners is shifted to TEAL to
+keep daylight from the TAPED/AI-READ✓ status green — approve or override.
+Red for opening trim kept as suggested (no status conflict).
+
+- **Merged legend block**: ONE key, title-block-adjacent — component linework
+  samples + source-tag chips, labeled "linework = component · chips = source".
+- **Schedule cross-reference** (Hover measurement-key pattern): every schedule
+  row carries a color swatch matching its drawn element's class.
+
 3. **Dimension lines** (extension lines + ticks, architectural format X'-Y"):
    - Overall wall width (below, outermost chain).
    - Opening-center chain (below, inner chain): left corner → each opening
@@ -64,6 +93,7 @@ the sealed tape key says 54'-0") — register-worthy source-naming defect.
 | ESTIMATED | estimated_no_direct_view / defaulted / bbox-fallback position | amber dashed |
 | PRINTED | blueprint runs: printed dimension callouts | blue |
 | USER | user overrides entered without tape claim | purple |
+| CONTRACTOR-SPEC | design-decision features (e.g., band board) — added, not measured; provenance-logged, revertible; excluded from all accuracy comparisons | ink solid |
 All chips grayscale-safe (shape + fill pattern differ, not color alone).
 **GEOMETRY-BASIS LINE (required from first mock):** the title block names the
 source of the sheet's geometry per element class (walls vs openings), e.g.
@@ -113,3 +143,23 @@ DISAGREEING wall read (50'-0" / 8'-7" / 23-24 courses) as an explicit
 deviation note — tape governs. Geometry-basis line rendered on the title
 block. v1 mock (rejected): AI direct_ref values wearing TAPED REF.
 
+
+## 8. BAND BOARD (feature ruling 2026-07-18 — conventions now, ships WITH the 2D sheets)
+First entry of the Options & Upgrades cluster (not a separate build). No
+September scope change.
+- **Composition rule:** band board = horizontal trim at a wall's story/gable
+  break. LF = sum of widths of the walls it wraps, anchored at the
+  gable-break/eave height the geometry already carries. Pieces = whole
+  sticks, splice-and-round-up per standing rule. Profile = contractor-
+  selected from the 440/540 trim stock (540 5/4×8 and 5/4×12 typical).
+  Color per-component per existing architecture. Priced through the engine
+  like any trim line.
+- **CONTRACTOR-SPEC source tag (RULED NOW, taxonomy addition):** for features
+  a human adds by DESIGN DECISION rather than measures or ratifies.
+  Provenance-logged (by/at, revertible) like every other verb. NEVER enters
+  any accuracy comparison — it isn't a measurement. Chip: ink #111827 solid.
+- **Sheet rendering:** contractor-added band board draws on the elevation at
+  the anchored break height, in its component color (proposed: plum #86198F,
+  long-dash 10-4, 2.75px — pending palette approval with the rest), listed
+  in the schedule with the CONTRACTOR-SPEC chip. Deviation machinery does
+  NOT apply (nothing to deviate from).

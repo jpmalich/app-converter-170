@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1056 816" font-family="Helvetica, Arial, sans-serif">
-  <!-- Dimensioned 2D Elevation Sheet — REVIEW MOCK v2 (source-naming corrected)
+  <!-- Dimensioned 2D Elevation Sheet — REVIEW MOCK v3 (component color-coding)
        Mark Letrick · FRONT wall
-       WALL GEOMETRY: sealed hand-takeoff key EST-191890 (TAPE): 54'-0" x 8'-11 1/2" (25 courses)
+       WALLS: sealed hand-takeoff key EST-191890 (TAPE): 54'-0" x 8'-11 1/2" (25 courses)
        OPENINGS: AI run d66794488ef848509446431b355db8e5 (along_wall_ft, reconciler-verified)
+       CHANNELS: linework color = COMPONENT CLASS · chips/boxes = SOURCE/STATUS
        Scale 15.2 px/ft. -->
   <defs>
     <marker id="tick" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
@@ -17,36 +18,50 @@
   <text x="60" y="72" font-size="26" font-weight="bold" letter-spacing="3" fill="#1a2332">FRONT ELEVATION</text>
   <text x="60" y="92" font-size="11" fill="#5a6472" letter-spacing="1">MARK LETRICK RESIDENCE · SHEET EL-1 OF 4</text>
   <text x="996" y="72" font-size="11" text-anchor="end" fill="#b45309" font-weight="bold" letter-spacing="1">NOT A SURVEY — SOURCE-TAGGED VERIFICATION SHEET</text>
-  <text x="996" y="90" font-size="10" text-anchor="end" fill="#5a6472">EVERY DIMENSION CARRIES ITS SOURCE TAG</text>
+  <text x="996" y="90" font-size="10" text-anchor="end" fill="#5a6472">LINEWORK = COMPONENT · CHIPS = SOURCE</text>
   <line x1="60" y1="104" x2="996" y2="104" stroke="#1a2332" stroke-width="1"/>
 
-  <!-- Roof fascia band (context, dashed) with 1'-0" overhang stubs -->
-  <rect x="74.8" y="361.8" width="851.2" height="22" fill="none" stroke="#8a93a2" stroke-width="1.2" stroke-dasharray="6 4"/>
-  <text x="500" y="356" font-size="9" text-anchor="middle" fill="#8a93a2" letter-spacing="1">ROOF FASCIA · 1'-0" OVERHANG (RENDER CONTEXT)</text>
+  <!-- Fascia / rake band (component: sky) with 1'-0" overhang stubs -->
+  <rect x="74.8" y="361.8" width="851.2" height="22" fill="none" stroke="#0EA5E9" stroke-width="3"/>
+  <text x="500" y="356" font-size="9" text-anchor="middle" fill="#0284c7" letter-spacing="1" font-weight="bold">FASCIA / RAKE · 1'-0" OVERHANG</text>
+  <!-- Soffit (component: coffee brown, dotted) — eaves only per LP ruling -->
+  <line x1="76" y1="381" x2="924.6" y2="381" stroke="#6B4423" stroke-width="2.5" stroke-dasharray="1 4"/>
+  <text x="76" y="356" font-size="8.5" fill="#6B4423" font-weight="bold">SOFFIT (EAVES ONLY) ↴</text>
 
-  <!-- Wall outline: 54.0 ft x 8.96 ft (TAPED — sealed key) -->
-  <rect x="90" y="383.8" width="820.8" height="136.2" fill="#fbfcfe" stroke="#1a2332" stroke-width="2.5"/>
+  <!-- Siding field (component: slate) — wall outline + course hatch -->
+  <rect x="90" y="383.8" width="820.8" height="136.2" fill="#fbfcfe" stroke="#475569" stroke-width="1.75"/>
+  <g stroke="#cbd5e1" stroke-width="0.75">
+    <line x1="91.5" y1="404" x2="909.3" y2="404"/><line x1="91.5" y1="424" x2="909.3" y2="424"/>
+    <line x1="91.5" y1="444" x2="909.3" y2="444"/><line x1="91.5" y1="464" x2="909.3" y2="464"/>
+    <line x1="91.5" y1="484" x2="909.3" y2="484"/><line x1="91.5" y1="504" x2="909.3" y2="504"/>
+  </g>
+  <!-- Starter (component: charcoal, dash-dot) along wall bottom -->
+  <line x1="90" y1="516.5" x2="910.8" y2="516.5" stroke="#1F2937" stroke-width="2.5" stroke-dasharray="8 3 2 3"/>
+  <!-- Outside corners (component: teal, heaviest) at both wall ends -->
+  <line x1="91.5" y1="383.8" x2="91.5" y2="520" stroke="#0D9488" stroke-width="3.5"/>
+  <line x1="909.3" y1="383.8" x2="909.3" y2="520" stroke="#0D9488" stroke-width="3.5"/>
   <!-- Grade line -->
   <line x1="60" y1="520" x2="960" y2="520" stroke="#1a2332" stroke-width="2"/>
   <path d="M 66 520 l 8 10 M 82 520 l 8 10 M 98 520 l 8 10 M 918 520 l 8 10 M 934 520 l 8 10 M 950 520 l 8 10" stroke="#1a2332" stroke-width="1"/>
   <text x="62" y="536" font-size="9" fill="#5a6472">GRADE</text>
 
-  <!-- W1: Twin Double Hung 68x61 in, center @ 5'-6" (AI-read position) -->
-  <rect x="130.5" y="414.6" width="86.2" height="77.3" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
-  <line x1="173.6" y1="414.6" x2="173.6" y2="491.9" stroke="#1a2332" stroke-width="1.2"/>
+  <!-- Openings (component: opening trim = red) -->
+  <!-- W1: Twin Double Hung 68x61 in, center @ 5'-6" -->
+  <rect x="130.5" y="414.6" width="86.2" height="77.3" fill="#eef3f9" stroke="#DC2626" stroke-width="2.25"/>
+  <line x1="173.6" y1="414.6" x2="173.6" y2="491.9" stroke="#8a93a2" stroke-width="1.2"/>
   <line x1="130.5" y1="453.3" x2="216.7" y2="453.3" stroke="#8a93a2" stroke-width="1"/>
   <!-- W2: Twin Double Hung 69x61 in, center @ 24'-0" -->
-  <rect x="411.1" y="414.9" width="87.4" height="77.3" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
-  <line x1="454.8" y1="414.9" x2="454.8" y2="492.2" stroke="#1a2332" stroke-width="1.2"/>
+  <rect x="411.1" y="414.9" width="87.4" height="77.3" fill="#eef3f9" stroke="#DC2626" stroke-width="2.25"/>
+  <line x1="454.8" y1="414.9" x2="454.8" y2="492.2" stroke="#8a93a2" stroke-width="1.2"/>
   <line x1="411.1" y1="453.6" x2="498.5" y2="453.6" stroke="#8a93a2" stroke-width="1"/>
   <!-- D1: Entry door 38x82 in, center @ 34'-0" -->
-  <rect x="582.7" y="416.2" width="48.2" height="103.8" fill="#e7e2d8" stroke="#1a2332" stroke-width="1.8"/>
+  <rect x="582.7" y="416.2" width="48.2" height="103.8" fill="#e7e2d8" stroke="#DC2626" stroke-width="2.25"/>
   <rect x="590.7" y="426" width="32" height="40" fill="none" stroke="#8a93a2" stroke-width="1"/>
   <rect x="590.7" y="474" width="32" height="38" fill="none" stroke="#8a93a2" stroke-width="1"/>
   <circle cx="622" cy="470" r="2.2" fill="#1a2332"/>
   <!-- W3: Twin Double Hung 72x60 in, center @ 44'-0" -->
-  <rect x="713.2" y="415.7" width="91.2" height="76" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
-  <line x1="758.8" y1="415.7" x2="758.8" y2="491.7" stroke="#1a2332" stroke-width="1.2"/>
+  <rect x="713.2" y="415.7" width="91.2" height="76" fill="#eef3f9" stroke="#DC2626" stroke-width="2.25"/>
+  <line x1="758.8" y1="415.7" x2="758.8" y2="491.7" stroke="#8a93a2" stroke-width="1.2"/>
   <line x1="713.2" y1="453.7" x2="804.4" y2="453.7" stroke="#8a93a2" stroke-width="1"/>
 
   <!-- Schedule tag bubbles + leaders -->
@@ -96,7 +111,7 @@
   <text x="980" y="459.5" font-size="8.5" text-anchor="middle" fill="#fff" font-weight="bold">TAPED</text>
   <text x="954" y="478" font-size="8.5" fill="#5a6472">25 courses</text>
 
-  <!-- AI deviation note (tape governs) -->
+  <!-- Tape/AI deviation box (STATUS channel — spec-level element) -->
   <rect x="90" y="150" width="404" height="46" fill="#fef7ec" stroke="#b45309" stroke-width="1.2"/>
   <text x="100" y="166" font-size="9.5" font-weight="bold" fill="#b45309">DEVIATION — AI PHOTO RUN DISAGREES WITH TAPE (TAPE GOVERNS)</text>
   <text x="100" y="180" font-size="9" fill="#7a4a12">AI run d6679448 read this wall 50'-0" × 8'-7" (23–24 courses, ref-anchored)</text>
@@ -117,41 +132,57 @@
     <text x="60" y="760" fill="#5a6472">AI source photos: 0, 1, 7 · AI confidence 90 (superseded by tape)</text>
   </g>
 
-  <!-- Opening schedule -->
+  <!-- Opening schedule with component swatches (Hover measurement-key pattern) -->
   <g font-size="9.5" fill="#1a2332">
-    <text x="420" y="646" font-weight="bold" letter-spacing="1.5" font-size="10.5">OPENING SCHEDULE — FRONT</text>
+    <text x="404" y="646" font-weight="bold" letter-spacing="1.5" font-size="10.5">OPENING SCHEDULE — FRONT</text>
     <g font-weight="bold" fill="#5a6472">
-      <text x="420" y="664">TAG</text><text x="452" y="664">TYPE / STYLE</text><text x="576" y="664">SIZE (W×H)</text><text x="640" y="664">CTR @</text><text x="686" y="664">SILL</text>
+      <text x="420" y="664">TAG</text><text x="452" y="664">TYPE / STYLE</text><text x="566" y="664">SIZE (W×H)</text><text x="630" y="664">CTR @</text><text x="676" y="664">SILL</text>
     </g>
-    <line x1="420" y1="669" x2="716" y2="669" stroke="#8a93a2" stroke-width="0.8"/>
-    <text x="420" y="684">W1</text><text x="452" y="684">Window · Twin DH</text><text x="576" y="684">68×61 in</text><text x="640" y="684">5'-6"</text><text x="686" y="684">1'-10"</text>
-    <text x="420" y="700">W2</text><text x="452" y="700">Window · Twin DH</text><text x="576" y="700">69×61 in</text><text x="640" y="700">24'-0"</text><text x="686" y="700">1'-10"</text>
-    <text x="420" y="716">D1</text><text x="452" y="716">Entry door</text><text x="576" y="716">38×82 in</text><text x="640" y="716">34'-0"</text><text x="686" y="716">0'-0"</text>
-    <text x="420" y="732">W3</text><text x="452" y="732">Window · Twin DH</text><text x="576" y="732">72×60 in</text><text x="640" y="732">44'-0"</text><text x="686" y="732">1'-10"</text>
-    <text x="420" y="750" fill="#5a6472" font-size="8.5">Sizes + positions: AI run (along_wall_ft, reconciler-verified). Sills from photo bbox.</text>
-    <text x="420" y="762" fill="#5a6472" font-size="8.5">Key cross-check: 10 windows 4-side + entry 3-side + patio 3-side (whole house).</text>
+    <line x1="404" y1="669" x2="712" y2="669" stroke="#8a93a2" stroke-width="0.8"/>
+    <rect x="404" y="677" width="9" height="9" fill="#fff" stroke="#DC2626" stroke-width="2"/>
+    <text x="420" y="684">W1</text><text x="452" y="684">Window · Twin DH</text><text x="566" y="684">68×61 in</text><text x="630" y="684">5'-6"</text><text x="676" y="684">1'-10"</text>
+    <rect x="404" y="693" width="9" height="9" fill="#fff" stroke="#DC2626" stroke-width="2"/>
+    <text x="420" y="700">W2</text><text x="452" y="700">Window · Twin DH</text><text x="566" y="700">69×61 in</text><text x="630" y="700">24'-0"</text><text x="676" y="700">1'-10"</text>
+    <rect x="404" y="709" width="9" height="9" fill="#fff" stroke="#DC2626" stroke-width="2"/>
+    <text x="420" y="716">D1</text><text x="452" y="716">Entry door</text><text x="566" y="716">38×82 in</text><text x="630" y="716">34'-0"</text><text x="676" y="716">0'-0"</text>
+    <rect x="404" y="725" width="9" height="9" fill="#fff" stroke="#DC2626" stroke-width="2"/>
+    <text x="420" y="732">W3</text><text x="452" y="732">Window · Twin DH</text><text x="566" y="732">72×60 in</text><text x="630" y="732">44'-0"</text><text x="676" y="732">1'-10"</text>
+    <text x="404" y="750" fill="#5a6472" font-size="8.5">Swatch = drawn element's component class (opening trim).</text>
+    <text x="404" y="762" fill="#5a6472" font-size="8.5">Sizes + positions: AI run (along_wall_ft). Sills from photo bbox.</text>
   </g>
 
-  <!-- Title block -->
+  <!-- Title block + MERGED LEGEND -->
   <g>
     <rect x="732" y="638" width="264" height="132" fill="none" stroke="#1a2332" stroke-width="1.5"/>
-    <line x1="732" y1="660" x2="996" y2="660" stroke="#1a2332" stroke-width="0.8"/>
-    <line x1="732" y1="694" x2="996" y2="694" stroke="#1a2332" stroke-width="0.8"/>
-    <line x1="732" y1="714" x2="996" y2="714" stroke="#1a2332" stroke-width="0.8"/>
-    <g font-size="9" fill="#1a2332">
-      <text x="740" y="652" font-weight="bold">MARK LETRICK</text><text x="988" y="652" text-anchor="end">SHEET EL-1 · FRONT</text>
-      <text x="740" y="674" font-weight="bold" font-size="8">GEOMETRY BASIS: sealed key EST-191890 (tape, 2026-07-13) — walls</text>
-      <text x="740" y="686" font-size="8">openings: AI run d6679448…b5 (Claude two-phase, 2026-07-14)</text>
-      <text x="740" y="706">Scale ≈ 5/32" = 1'-0" (auto-fit)</text><text x="988" y="706" text-anchor="end">Pro-Quote · 2026-07-18</text>
+    <line x1="732" y1="658" x2="996" y2="658" stroke="#1a2332" stroke-width="0.8"/>
+    <line x1="732" y1="688" x2="996" y2="688" stroke="#1a2332" stroke-width="0.8"/>
+    <line x1="732" y1="704" x2="996" y2="704" stroke="#1a2332" stroke-width="0.8"/>
+    <g font-size="8.5" fill="#1a2332">
+      <text x="738" y="651" font-weight="bold" font-size="9">MARK LETRICK</text><text x="990" y="651" text-anchor="end">SHEET EL-1 · FRONT</text>
+      <text x="738" y="670" font-weight="bold" font-size="7.5">GEOMETRY BASIS: sealed key EST-191890 (tape, 2026-07-13) — walls</text>
+      <text x="738" y="681" font-size="7.5">openings: AI run d6679448…b5 (Claude two-phase, 2026-07-14)</text>
+      <text x="738" y="699" font-size="7.5">Scale ≈ 5/32" = 1'-0" (auto-fit)</text><text x="990" y="699" text-anchor="end" font-size="7.5">Pro-Quote · 2026-07-18</text>
     </g>
-    <g font-size="7.5" font-weight="bold">
-      <text x="740" y="728" fill="#5a6472" letter-spacing="1">SOURCE LEGEND</text>
-      <rect x="740" y="734" width="42" height="13" rx="6.5" fill="#0d7a3f"/><text x="761" y="743.5" text-anchor="middle" fill="#fff">TAPED</text>
-      <rect x="788" y="734" width="52" height="13" rx="6.5" fill="#fff" stroke="#0d7a3f"/><text x="814" y="743.5" text-anchor="middle" fill="#0d7a3f">AI-READ ✓</text>
-      <rect x="846" y="734" width="52" height="13" rx="6.5" fill="#b45309"/><text x="872" y="743.5" text-anchor="middle" fill="#fff">AI-READ ⚠</text>
-      <rect x="904" y="734" width="56" height="13" rx="6.5" fill="#fff" stroke="#b45309" stroke-dasharray="3 2"/><text x="932" y="743.5" text-anchor="middle" fill="#b45309">ESTIMATED</text>
-      <rect x="740" y="752" width="48" height="13" rx="6.5" fill="#1d4ed8"/><text x="764" y="761.5" text-anchor="middle" fill="#fff">PRINTED</text>
-      <rect x="794" y="752" width="40" height="13" rx="6.5" fill="#7c3aed"/><text x="814" y="761.5" text-anchor="middle" fill="#fff">USER</text>
+    <!-- Merged key: component linework + source chips -->
+    <text x="738" y="715" font-size="7" font-weight="bold" fill="#5a6472" letter-spacing="1">KEY — LINEWORK = COMPONENT · CHIPS = SOURCE</text>
+    <g font-size="6.5" font-weight="bold" fill="#1a2332">
+      <line x1="738" y1="724" x2="752" y2="724" stroke="#475569" stroke-width="1.75"/><text x="755" y="727">SIDING</text>
+      <line x1="784" y1="724" x2="798" y2="724" stroke="#DC2626" stroke-width="2.25"/><text x="801" y="727">TRIM</text>
+      <line x1="822" y1="724" x2="836" y2="724" stroke="#0D9488" stroke-width="3.5"/><text x="839" y="727">OSC</text>
+      <line x1="857" y1="724" x2="871" y2="724" stroke="#DB2777" stroke-width="2.25" stroke-dasharray="6 3"/><text x="874" y="727">ISC</text>
+      <line x1="891" y1="724" x2="905" y2="724" stroke="#0EA5E9" stroke-width="3"/><text x="908" y="727">FASCIA/RAKE</text>
+      <line x1="738" y1="738" x2="752" y2="738" stroke="#6B4423" stroke-width="2.5" stroke-dasharray="1 4"/><text x="755" y="741">SOFFIT</text>
+      <line x1="786" y1="738" x2="800" y2="738" stroke="#1F2937" stroke-width="2.5" stroke-dasharray="8 3 2 3"/><text x="803" y="741">STARTER</text>
+      <line x1="838" y1="738" x2="852" y2="738" stroke="#86198F" stroke-width="2.75" stroke-dasharray="10 4"/><text x="855" y="741">BAND BD (C-SPEC)</text>
+    </g>
+    <g font-size="6" font-weight="bold">
+      <rect x="738" y="748" width="34" height="12" rx="6" fill="#0d7a3f"/><text x="755" y="756.5" text-anchor="middle" fill="#fff">TAPED</text>
+      <rect x="776" y="748" width="30" height="12" rx="6" fill="#fff" stroke="#0d7a3f"/><text x="791" y="756.5" text-anchor="middle" fill="#0d7a3f">AI ✓</text>
+      <rect x="810" y="748" width="30" height="12" rx="6" fill="#b45309"/><text x="825" y="756.5" text-anchor="middle" fill="#fff">AI ⚠</text>
+      <rect x="844" y="748" width="28" height="12" rx="6" fill="#fff" stroke="#b45309" stroke-dasharray="3 2"/><text x="858" y="756.5" text-anchor="middle" fill="#b45309">EST</text>
+      <rect x="876" y="748" width="32" height="12" rx="6" fill="#1d4ed8"/><text x="892" y="756.5" text-anchor="middle" fill="#fff">PRINT</text>
+      <rect x="912" y="748" width="28" height="12" rx="6" fill="#7c3aed"/><text x="926" y="756.5" text-anchor="middle" fill="#fff">USER</text>
+      <rect x="944" y="748" width="42" height="12" rx="6" fill="#111827"/><text x="965" y="756.5" text-anchor="middle" fill="#fff">C-SPEC</text>
     </g>
   </g>
 </svg>
