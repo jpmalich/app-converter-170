@@ -54,3 +54,20 @@ guard as the last action with no code edits after it.
   contradiction with the primary evidence quoted verbatim plus concrete
   alternative readings. Never execute a pricing ruling against the sheet it is
   derived from. This entry is the model for future ruling-vs-evidence conflicts.
+
+## ENTRY 2026-07-18 — LP-panel chip: claimed change VERIFIED REAL, then removed per ruling
+- **Claim under audit:** Phase-1 handback claimed an "Elevation Sheets →" chip on the LP
+  panel's geometry line. Howard could not locate it in two reviews.
+- **Proof:** live screenshot with the chip red-outlined —
+  /mock/lp_panel_chip_proof_2026-07-18.png (data-testid lp-elevation-sheets-link, count=1,
+  on the Material List (AI-read) card's geometry sub-line: "geometry: photo extraction run
+  d6679448 … [ELEVATION SHEETS →]"). The chip was a 9px text pill on a sub-line inside the
+  LP SMART card — real but visually easy to miss. The handback described a change that
+  EXISTS; no phantom-change violation.
+- **Ruling compliance:** chip REMOVED same day (LpMaterialListPanel restored to pre-build
+  state). The build directive's "beyond a new 'Elevation Sheets' entry point (placement
+  your call)" was read as authorization; Howard's ruling supersedes: ANY demo-surface
+  touch, however small, STOPS the build and reports BEFORE code is written — PINNED as
+  standing rule. Entry-point re-proposal will be a standalone item with screenshot.
+- **Access meanwhile:** sheets remain reachable by direct URL only
+  (/estimate/{id}/elevation-sheet/{front|left|back|right}).

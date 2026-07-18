@@ -52,19 +52,33 @@ def fmt_inches(inches: float) -> str:
     return f"{sign}{whole}{_FRAC[q / 4.0]}\""
 
 
-def _sealed_tape_basis(est: dict) -> dict | None:
-    """Sealed hand-takeoff key binding (Phase 1: Letrick front only).
-    Values BIND from the key artifact + the Class-1-corrected structured
-    tape walls — never retyped here."""
+def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
+    """Sealed hand-takeoff key binding (Letrick). Values BIND from the key
+    artifact + the Class-1-corrected structured tape walls — never retyped.
+    Sides carry NO taped width (key eaves formula covers front/back only):
+    width falls back to the extraction run, labeled."""
     if est.get("estimate_number") != "EST-373526":
         return None
     from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
     from routes.demo import LETRICK_TAPE_WALLS  # constant import only
-    seg = LETRICK_TAPE_WALLS["front"]["segments"][0]
+    tw = LETRICK_TAPE_WALLS.get(wall_label)
+    if not tw:
+        return None
     exposure_in = float(KEY["inputs"]["exposure_in"])   # TAPED
-    courses = int(seg["courses"])                        # tape count
-    height_ft = round(courses * exposure_in / 12.0, 3)   # DERIVED, formula below
-    width_ft = float(KEY["inputs"]["eaves_lf"]) / 2.0    # eaves 2×54; 54 TAPED
+    segments = []
+    for seg in tw["segments"]:
+        courses = int(seg["courses"])
+        height_ft = round(courses * exposure_in / 12.0, 3)
+        segments.append({
+            "courses": courses,
+            "height_ft": height_ft,
+            "height_label": fmt_ftin(height_ft),
+            "height_tag": "TAPED-DERIVED",
+            "height_formula": f"{courses} × {exposure_in:g}\" ÷ 12 = {height_ft:g}'",
+        })
+    width_ft = None
+    if wall_label in ("front", "back"):
+        width_ft = float(KEY["inputs"]["eaves_lf"]) / 2.0  # eaves 2×54; 54 TAPED
     # soffit overhang from the key's own soffit line (e.g. '12" overhang')
     overhang_in = 12.0
     for ln in KEY.get("lines", []):
@@ -75,16 +89,13 @@ def _sealed_tape_basis(est: dict) -> dict | None:
     return {
         "key_number": KEY["estimate_number"],
         "key_corrected": KEY.get("corrected"),
-        "width_ft": width_ft,
-        "width_label": fmt_ftin(width_ft),
-        "width_tag": "TAPED",
-        "width_source": f"sealed key {KEY['estimate_number']} · {width_ft:g} print-confirmed",
-        "height_ft": height_ft,
-        "height_label": fmt_ftin(height_ft),
-        "height_tag": "TAPED-DERIVED",
-        "height_formula": f"{courses} × {exposure_in:g}\" ÷ 12 = {height_ft:g}'",
+        "segments": segments,
         "exposure_in": exposure_in,
-        "courses": courses,
+        "width_ft": width_ft,
+        "width_label": fmt_ftin(width_ft) if width_ft is not None else None,
+        "width_tag": "TAPED" if width_ft is not None else None,
+        "width_source": (f"sealed key {KEY['estimate_number']} · {width_ft:g} print-confirmed"
+                         if width_ft is not None else None),
         "profile_key_item": str((KEY.get("lines") or [{}])[0].get("item", "")),
         "overhang_in": overhang_in,
     }
@@ -157,6 +168,8 @@ def _bind_openings(raw, wall_label, removed, corrected):
         if is_door:
             dn += 1
             tag = f"D{dn}"
+        elif "vent" in eff_type:
+            tag = f"V{sum(1 for x in out if x['tag'].startswith('V')) + 1}"
         else:
             wn += 1
             tag = f"W{wn}"
@@ -202,8 +215,13 @@ def _bind_openings(raw, wall_label, removed, corrected):
     return out
 
 
-@router.get("/estimates/{est_id}/elevation-sheet/front")
-async def elevation_sheet_front(est_id: str, user: dict = Depends(get_current_user)):
+_SHEET_CODES = {"front": "EL-1", "left": "EL-2", "back": "EL-3", "right": "EL-4"}
+
+
+@router.get("/estimates/{est_id}/elevation-sheet/{which}")
+async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_current_user)):
+    if which not in _SHEET_CODES:
+        raise HTTPException(status_code=404, detail="Unknown elevation")
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "id": 1, "estimate_number": 1, "customer_name": 1, "address": 1,
@@ -220,26 +238,41 @@ async def elevation_sheet_front(est_id: str, user: dict = Depends(get_current_us
         raise HTTPException(status_code=404, detail="No completed AI measure run for this estimate")
     raw = (run.get("result") or {}).get("raw_ai") or {}
     wall = next((w for w in (raw.get("walls") or [])
-                 if str(w.get("label", "")).lower() == "front"), None)
+                 if str(w.get("label", "")).lower() == which), None)
     if not wall:
-        raise HTTPException(status_code=404, detail="Run has no front wall")
+        raise HTTPException(status_code=404, detail=f"Run has no {which} wall")
 
-    tape = _sealed_tape_basis(est)
+    tape = _sealed_tape_basis(est, which)
     ai_width = wall.get("width_ft")
     ai_height = wall.get("height_ft")
+    ai_width_tag = _AI_TAGS.get(str(wall.get("width_ft_source")), "ESTIMATED")
+    segments = None
     if tape:
-        width_ft, height_ft = tape["width_ft"], tape["height_ft"]
+        segments = tape["segments"]
+        # tallest segment drives the drawing frame; each keeps its basis line
+        height_ft = max(s["height_ft"] for s in segments)
+        if tape["width_ft"] is not None:
+            width_ft = tape["width_ft"]
+            width_tag, width_source = tape["width_tag"], tape["width_source"]
+        else:
+            # sides: width untaped — extraction-run fallback, LABELED
+            width_ft = ai_width
+            width_tag = ai_width_tag
+            width_source = f"AI run {run['run_id'][:8]} ({wall.get('width_ft_source')}) — width untaped"
+        first = segments[0]
         basis = {
-            "width_tag": tape["width_tag"], "width_source": tape["width_source"],
-            "height_tag": tape["height_tag"], "height_formula": tape["height_formula"],
-            "exposure_in": tape["exposure_in"], "courses": tape["courses"],
+            "width_tag": width_tag, "width_source": width_source,
+            "height_tag": first["height_tag"], "height_formula": first["height_formula"],
+            "exposure_in": tape["exposure_in"], "courses": first["courses"],
         }
         walls_basis_line = (f"sealed key {tape['key_number']} "
-                            f"(tape, corrected {tape['key_corrected']}) — walls")
+                            f"(tape, corrected {tape['key_corrected']}) — heights"
+                            + ("" if tape["width_ft"] is not None
+                               else f" · width AI run {run['run_id'][:8]}"))
     else:
         width_ft, height_ft = ai_width, ai_height
         basis = {
-            "width_tag": _AI_TAGS.get(str(wall.get("width_ft_source")), "ESTIMATED"),
+            "width_tag": ai_width_tag,
             "width_source": f"AI run ({wall.get('width_ft_source')})",
             "height_tag": _AI_TAGS.get(str(wall.get("height_ft_source")), "ESTIMATED"),
             "height_formula": f"AI run ({wall.get('height_ft_source')})",
@@ -250,25 +283,42 @@ async def elevation_sheet_front(est_id: str, user: dict = Depends(get_current_us
     # Tape/AI deviation (spec §2, standing sheet element): render whenever
     # tape governs and the run disagrees on either axis.
     deviation = None
-    if tape and ai_width is not None and ai_height is not None and (
-            abs(ai_width - width_ft) > 0.05 or abs(ai_height - height_ft) > 0.05):
-        counts = sorted({int(m) for r in (wall.get("_per_photo_readings") or [])
-                         for m in re.findall(r"(\d+)\s+courses counted", str(r.get("notes", "")))})
-        deviation = {
-            "ai_width_ft": ai_width, "ai_width_label": fmt_ftin(ai_width),
-            "ai_height_ft": ai_height, "ai_height_label": fmt_ftin(ai_height),
-            "ai_counts": counts,
-            "ai_basis": str(wall.get("width_ft_source") or ""),
-            "delta_width_label": fmt_ftin(ai_width - width_ft),
-            "delta_height_label": fmt_inches((ai_height - height_ft) * 12.0),
-            "governs": "tape",
-            "run_short": run["run_id"][:8],
-        }
+    if tape and ai_height is not None:
+        seg_heights = [s["height_ft"] for s in segments]
+        height_off = all(abs(ai_height - h) > 0.05 for h in seg_heights)
+        width_off = (tape["width_ft"] is not None and ai_width is not None
+                     and abs(ai_width - tape["width_ft"]) > 0.05)
+        if height_off or width_off:
+            counts = sorted({int(m) for r in (wall.get("_per_photo_readings") or [])
+                             for m in re.findall(r"(\d+)\s+courses counted", str(r.get("notes", "")))})
+            deviation = {
+                "ai_width_ft": ai_width, "ai_width_label": fmt_ftin(ai_width) if ai_width is not None else "—",
+                "ai_height_ft": ai_height, "ai_height_label": fmt_ftin(ai_height),
+                "ai_counts": counts,
+                "ai_basis": str(wall.get("height_ft_source") or wall.get("width_ft_source") or ""),
+                "tape_heights_label": " / ".join(s["height_label"] for s in segments),
+                "delta_width_label": (fmt_ftin(ai_width - tape["width_ft"]) if width_off else None),
+                "delta_height_label": fmt_inches((ai_height - seg_heights[0]) * 12.0),
+                "width_disputed": bool(width_off),
+                "governs": "tape",
+                "run_short": run["run_id"][:8],
+            }
+
+    # chimney chase (back wall) — AI accent read; footprint is UNTAPED, so
+    # the sheet must annotate, never scale-render silently.
+    chase = None
+    for acc in (wall.get("accent_profiles") or []):
+        loc = str(acc.get("location") or "")
+        if "chase" in loc.lower():
+            chase = {"note": loc,
+                     "profile": acc.get("profile_callout") or acc.get("profile") or "",
+                     "tag": "AI-READ ✓", "footprint": "untaped — NOT TO SCALE"}
+            break
 
     removed_rows, corrected_rows = _removed_and_corrected(run, est.get("lp_openings_review"))
-    openings = _bind_openings(raw, "front", removed_rows, corrected_rows)
+    openings = _bind_openings(raw, which, removed_rows, corrected_rows)
     windows = [o for o in openings if o["type"] == "Window"]
-    doors = [o for o in openings if o["type"] != "Window"]
+    doors = [o for o in openings if "door" in o["type"].lower()]
 
     completed = run.get("completed_at")
     completed_str = str(completed)[:10] if completed else ""
@@ -276,18 +326,22 @@ async def elevation_sheet_front(est_id: str, user: dict = Depends(get_current_us
     area = round(width_ft * height_ft, 1) if (width_ft and height_ft) else None
 
     return {
-        "sheet": "front",
-        "sheet_code": "EL-1",
+        "sheet": which,
+        "sheet_code": _SHEET_CODES[which],
         "customer_name": est.get("customer_name"),
         "address": est.get("address"),
         "estimate_number": est.get("estimate_number"),
         "generated_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "wall": {
-            "width_ft": width_ft, "width_label": fmt_ftin(width_ft),
+            "width_ft": width_ft, "width_label": fmt_ftin(width_ft) if width_ft is not None else "—",
             "height_ft": height_ft, "height_label": fmt_ftin(height_ft),
             **basis,
+            "segments": segments,
+            "step_note": ("stepped wall — step location NOT TAPED (indicative only)"
+                          if segments and len(segments) > 1 else None),
             "area_sqft": area,
             "gable_triangle_ft": wall.get("gable_triangle_height_ft") or 0,
+            "gable_tag": _AI_TAGS.get(str(wall.get("height_ft_source")), "ESTIMATED"),
             "siding_pct": wall.get("siding_pct_this_wall"),
             "profile_callout": wall.get("wall_body_profile_callout") or "",
             "profile_key_item": (tape or {}).get("profile_key_item", ""),
@@ -297,10 +351,13 @@ async def elevation_sheet_front(est_id: str, user: dict = Depends(get_current_us
             "ai_reasoning": wall.get("confidence_reasoning") or "",
             "source_photos": wall.get("_source_photo_indices") or [],
         },
+        "chase": chase,
         "deviation": deviation,
         "openings": openings,
-        "opening_counts": {"windows": len(windows), "doors": len(doors)},
-        "schedule_note": "Sizes + positions: AI run (along_wall_ft). Sills: photo bbox, door-anchored (doors at grade).",
+        "opening_counts": {"windows": len(windows), "doors": len(doors),
+                           "other": len(openings) - len(windows) - len(doors)},
+        "schedule_note": "Sizes + positions: AI run (along_wall_ft). Sills: photo bbox, door-anchored (doors at grade)."
+                         + ("" if doors else " No door on this wall — sills not derivable (—)."),
         "geometry_basis": {
             "walls": walls_basis_line,
             "openings": f"openings: AI run {run['run_id'][:8]}…{run['run_id'][-2:]} ({model_name}, {completed_str})",
