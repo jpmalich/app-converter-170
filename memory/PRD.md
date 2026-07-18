@@ -3548,3 +3548,22 @@ https://app-converter-170.preview.emergentagent.com/mock/letrick_front_elevation
   illustrative; status-green stays reserved). Spec §2b updated to APPROVED.
 - Mock v3 verdict: PENDING Howard's screenshot review.
 - ISS New Construction Siding catalog: next in queue, GATED ON HOWARD'S EXCEL.
+
+## VINYL-CONVENTIONS BATCH — (5) RULED (2026-07-18, Howard); TRACE DELIVERED; CUT GATED
+(5) CLOSES: B&B/vertical base treatment = J-CHANNEL (no starter line; base J
+derives as its own context line per the (3+4) split, carrying the B&B
+region's product color). SHAKE STARTER = part #65516000 "Pelican Bay Shake
+Starter" — add to vinyl catalog as its OWN product + price line (four-tier
+structure; NO price on tier sheets today → PRICING PENDING, never priced as
+clap starter). PIN SET (standing): no starter on B&B compositions EVER;
+shake regions derive shake starter by part number; clap keeps 12'6" (closes
+the old ÷10-vs-÷12.5 discrepancy → ÷12.5 canonical, stale hover.py comment
+syncs in the cut).
+TRACE (ruled trace-first) DELIVERED: /app/memory/vinyl_starter_base_trace.md —
+starter today is PROFILE-BLIND (shake priced as clap starter; vinyl B&B gets
+starter with no guard — lp_smart pin doesn't cover vinyl); #65516000 absent
+from catalog (gap confirmed); per-region base-LF geometry exists on the photo
+path (per-wall family widths), Hover path lacks it (convention needed in cut).
+CUT GATED: the (3+4) ruling text is NOT in the record — fork handoff dropped
+the batch items (3) and (4); no PRD/register entry exists. HANDOFF-STATE-LOSS
+noted. Howard re-pastes (3)+(4) verbatim → then the cut.
