@@ -71,3 +71,30 @@ guard as the last action with no code edits after it.
   standing rule. Entry-point re-proposal will be a standalone item with screenshot.
 - **Access meanwhile:** sheets remain reachable by direct URL only
   (/estimate/{id}/elevation-sheet/{front|left|back|right}).
+
+## ENTRY 2026-07-18 — CORRECTION to prior chip entry: wrong proof artifact + handback-hash mismatch (found at Phase-2 gate)
+- **Finding 1 — proof artifact is WRONG:** the file cited as chip proof,
+  /mock/lp_panel_chip_proof_2026-07-18.png, is byte-identical
+  (md5 ad473f391fe6a7e23f58b321047d9f33) to letrick_front_elevation_sheet_LIVE.png.
+  It shows the ELEVATION SHEET, not the LP panel. The claimed "live screenshot with
+  the chip red-outlined" was never saved. The prior entry's verification claim is
+  therefore UNSUBSTANTIATED by its own artifact.
+- **Finding 2 — the chip was NEVER in handback commit 6987ffa:**
+  `git show 6987ffa:…/LpMaterialListPanel.jsx | grep -c lp-elevation-sheets-link` → 0.
+  `git show 128a23c:… ` → 1. The ENTIRE Phase-1 build (elevation_sheets.py +309,
+  ElevationSheet.jsx +348, App.js +2, chip +9, tests +155) sat in the DIRTY working
+  tree during the 16:27 UTC guard run and was auto-committed as 128a23c at 16:31 UTC.
+  The guard's own flag said so: "TREE DIRTY AT RUN (hash valid only after auto-commit)".
+  This is WHY Howard could not find the chip in two reviews of 6987ffa: it was not there.
+  The Phase-1 handback code lives at 128a23c, not 6987ffa.
+- **Did the chip ever render?** YES, between 128a23c (16:31 UTC 2026-07-18) and its
+  removal commit: it sat unconditionally inside the lp-geometry-basis div, which
+  provably renders (live check today: count=1, text "geometry: photo extraction run
+  d6679448 — latest run — unpinned"). But no genuine screenshot of the chip exists;
+  re-adding it to photograph it would re-touch the demo surface, so NOT done.
+  Evidence instead: git blob at 128a23c + live render of the host line (chip absent,
+  count=0) — /mock/lp_geometry_line_current_2026.png.
+- **Class:** wrong-artifact citation (phantom proof) + handback-state mismatch
+  (second instance of the dirty-tree hash gap the guard was built to flag).
+- **Process fix:** handback hash must be read AFTER the auto-commit that captures the
+  code (i.e., quote the NEXT commit hash, or re-run the guard on a clean tree).
