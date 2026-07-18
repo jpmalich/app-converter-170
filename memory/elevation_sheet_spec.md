@@ -33,16 +33,16 @@ secondary (tap-wall takeoff, appendage ratification, simple houses).
      and AI disagree on a sheet, an amber deviation box renders stating both
      values, the delta, and "tape governs" — not a one-off of the Letrick
      mock; a standing sheet element.
-## 2b. Component color-coding (APPROVED DIRECTION 2026-07-18 — palette pending Howard)
+## 2b. Component color-coding (PALETTE APPROVED 2026-07-18, incl. teal OSC shift)
 Classes mirror the existing ExpertFinish component groups. **CHANNEL
 SEPARATION (PINNED):** component identity = LINEWORK color; measurement
 status = chips/boxes/tags only — neither system ever borrows the other's
 channel. Grayscale print legibility: every class also differs by line
 weight/pattern, never hue alone.
 
-PROPOSED PALETTE (for Howard's approval; constrained away from status colors
-— amber deviation #B45309, TAPED/AI-READ✓ green #0D7A3F, PRINTED blue
-#1D4ED8, USER purple #7C3AED):
+APPROVED PALETTE (Howard 2026-07-18; status colors stay reserved — amber
+deviation #B45309, TAPED/AI-READ✓ green #0D7A3F, PRINTED blue #1D4ED8,
+USER purple #7C3AED, C-SPEC ink #111827):
 | Class | Hue | Hex | Grayscale channel |
 |---|---|---|---|
 | Siding field | slate | #475569 | thin solid 1.75px + pale course hatch |
@@ -53,9 +53,9 @@ PROPOSED PALETTE (for Howard's approval; constrained away from status colors
 | Soffit | coffee brown | #6B4423 | dotted, 2.5px |
 | Starter | charcoal | #1F2937 | dash-dot, 2.5px |
 | Band board (contractor-spec) | plum | #86198F | long-dash 10-4, 2.75px |
-NOTE for Howard: your "e.g., green" for outside corners is shifted to TEAL to
-keep daylight from the TAPED/AI-READ✓ status green — approve or override.
-Red for opening trim kept as suggested (no status conflict).
+APPROVED 2026-07-18: outside corners = TEAL (Howard's "e.g., green" was
+illustrative; status-green stays reserved — channel-separation pin applied
+correctly). Red opening trim confirmed.
 
 - **Merged legend block**: ONE key, title-block-adjacent — component linework
   samples + source-tag chips, labeled "linework = component · chips = source".

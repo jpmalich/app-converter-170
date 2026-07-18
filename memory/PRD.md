@@ -3541,3 +3541,10 @@ coffee dotted · starter charcoal dash-dot · band board plum long-dash
 CONTRACTOR-SPEC ink chip) title-block-adjacent; schedule rows carry class
 swatches (Hover measurement-key pattern). Mock v3 live + 200-verified:
 https://app-converter-170.preview.emergentagent.com/mock/letrick_front_elevation_sheet.svg (+.png).
+
+## ACCEPTANCES (2026-07-18, Howard)
+- Band board ruling: ACCEPTED as logged.
+- Component palette: APPROVED including the teal OSC shift ("green" was
+  illustrative; status-green stays reserved). Spec §2b updated to APPROVED.
+- Mock v3 verdict: PENDING Howard's screenshot review.
+- ISS New Construction Siding catalog: next in queue, GATED ON HOWARD'S EXCEL.
