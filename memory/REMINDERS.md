@@ -11,8 +11,11 @@
 
 ## Pending follow-ups
 1. **Upload Alside Supply logo** — `/branding-admin?token=...` → Upload Logo (placeholder "A" still showing on Login)
-2. **Rotate `SIGNUP_CODE`** in `backend/.env` once you've handed it out
-3. **Rotate the Anthropic Claude key** you pasted earlier at https://console.anthropic.com/settings/keys (was exposed in chat)
+2. **Rotate `SIGNUP_CODE`** in `backend/.env` once you've handed it out — Howard: doing this week (confirmed 2026-07-18)
+3. **Rotate the Anthropic Claude key** at https://console.anthropic.com/settings/keys (was exposed in chat) — Howard: doing this week (confirmed 2026-07-18).
+   AGENT PROTOCOL when Howard confirms the new key: swap `ANTHROPIC_API_KEY` in backend/.env →
+   restart backend → verify a real AI run COMPLETES on the new key (not just boot) → scrub any
+   stale key references anywhere in the repo/memory → report.
 4. **Real PWA app icons** designed (currently programmatic placeholder)
 5. **Server-side PDF rendering** for pixel-perfect quotes across browsers
 6. **Product-conversion dashboard at /branding-admin** — show $ of each SKU quoted vs ordered across all contractors (huge sales lever for Alside)

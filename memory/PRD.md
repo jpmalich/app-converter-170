@@ -3703,3 +3703,10 @@ Excel · LP-tab keep-current confirm · REMINDERS user actions (logo upload, SIG
 Anthropic key rotation). Post-September parks: 2D Elevation Sheets · band board + Options &
 Upgrades · contractor window-quote labor. REMINDERS backlog items remain dormant suggestions
 (surface when relevant, never self-activate). Stale checkboxes cleaned from both diff reports.
+
+### 2026-07-18 (PM, part 5) — LP-TAB BOX CLOSED, KEY-ROTATION PROTOCOL LOGGED
+LP-tab checkbox closed against the existing ruling record (KEEP-CURRENT; Feb-2026 governs,
+Jan-2025 filed) — it had gone stale. Howard's this-week actions acknowledged in REMINDERS.md
+with the agent protocol for the Anthropic key handover: swap env → restart → verify a REAL
+AI run completes on the new key → scrub stale references → report. Logo upload: Howard,
+from Branding Admin, before demo prep. HOLDING STATE: nothing agent-side until inputs land.
