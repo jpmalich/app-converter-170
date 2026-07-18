@@ -498,16 +498,22 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           {estimate.model3d_png_url && (
             <div className="px-8 sm:px-12 py-4 border-t border-[#E4E4E7]" data-testid="quote-3d-model-block">
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
-                Your Home — 3D Model
+                {estimate.model3d_fit_low ? "Simplified 3D Sketch" : "Your Home — 3D Model"}
               </div>
               <img
                 src={`${process.env.REACT_APP_BACKEND_URL}${estimate.model3d_png_url}`}
-                alt="3D model of your home"
+                alt={estimate.model3d_fit_low ? "Simplified 3D sketch" : "3D model of your home"}
                 className="w-full max-w-[520px] border border-[#E4E4E7] bg-[#F7F8FB]"
               />
-              <div className="text-[10px] text-[#71717A] mt-1">
-                Built from AI photo measurements of your home — the same measurements this quote is priced from.
-              </div>
+              {estimate.model3d_fit_low ? (
+                <div className="text-[10px] font-bold text-[#B45309] mt-1" data-testid="quote-3d-fit-note">
+                  Simplified representation — not to scale/shape.
+                </div>
+              ) : (
+                <div className="text-[10px] text-[#71717A] mt-1">
+                  Built from AI photo measurements of your home — the same measurements this quote is priced from.
+                </div>
+              )}
               {estimate.model3d_unverified && (
                 <div className="text-[10px] text-[#71717A] mt-0.5" data-testid="quote-3d-verify-note">
                   Some details are subject to on-site verification.

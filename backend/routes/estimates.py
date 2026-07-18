@@ -681,6 +681,9 @@ class Model3DSnapshotIn(BaseModel):
     # details subject to on-site verification") — internal flag
     # vocabulary (amber/unconfirmed/field-verify) NEVER reaches them.
     unverified: bool = False
+    # Geometry-fit gate (ruled 2026-07-18): true when the renderer's own
+    # self-checks flagged a low geometry fit at capture time.
+    fit_low: bool = False
 
 
 @router.put("/estimates/{est_id}/model3d-snapshot")
@@ -695,6 +698,7 @@ async def save_model3d_snapshot(
         {"$set": {
             "model3d_png_url": url,
             "model3d_unverified": bool(body.unverified),
+            "model3d_fit_low": bool(body.fit_low),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }},
     )

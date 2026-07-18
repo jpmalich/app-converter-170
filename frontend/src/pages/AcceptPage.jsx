@@ -178,12 +178,20 @@ export default function AcceptPage() {
                 textTransform: "uppercase", color: "#71717A", marginBottom: 6,
               }}
             >
-              {t("accept.model3d.title")}
+              {d.house3d.fit_low ? t("accept.model3d.simplifiedTitle") : t("accept.model3d.title")}
             </div>
             <p style={{ fontSize: 12, color: "#71717A", margin: "0 0 8px 0", lineHeight: 1.5 }}>
               {t("accept.model3d.note")} {t("accept.model3d.hint")}
             </p>
             <div style={{ border: "1px solid #E4E4E7", background: "#F7F8FB" }}>
+              {d.house3d.fit_low ? (
+                <p
+                  style={{ fontSize: 11, fontWeight: 700, color: "#B45309", margin: 0, padding: "8px 12px", borderBottom: "1px solid #E4E4E7", background: "#FFFBEB" }}
+                  data-testid="accept-3d-fit-label"
+                >
+                  {t("accept.model3d.fitNote")}
+                </p>
+              ) : null}
               <AcceptHouse3D house3d={d.house3d} />
               {d.on_site_note ? (
                 <p style={{ fontSize: 11, color: "#71717A", margin: 0, padding: "8px 12px", borderTop: "1px solid #E4E4E7", background: "#FFFFFF" }} data-testid="accept-3d-footnote">

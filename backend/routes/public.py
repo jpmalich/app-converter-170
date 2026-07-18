@@ -47,6 +47,31 @@ _SAFE_OPENING_FIELDS = (
 )
 
 
+def _house3d_fit_low(raw: dict) -> bool:
+    """GEOMETRY-FIT GATE (ruled 2026-07-18). The parametric renderer's
+    vocabulary (rect walls / single ridge / gables / appendages /
+    dormers) fits the gable-ranch class and is structurally unable to
+    represent multi-mass/shed/split-level houses. Fit confidence derives
+    from the renderer's own self-check triggers: gable triangles on
+    ADJACENT walls (e.g. left+back — 261 Haugh) cannot be served by any
+    single ridge axis, so the ridge-mismatch banner fires on every
+    orientation; roof-type confidence < 0.5 marks the same class.
+    Standing rule: no low-fit render reaches a customer surface
+    unlabeled."""
+    gables = {str(w.get("label") or "").lower()
+              for w in (raw.get("walls") or [])
+              if (w.get("gable_triangle_height_ft") or 0) > 0}
+    if gables and not (gables <= {"front", "back"} or gables <= {"left", "right"}):
+        return True
+    conf = raw.get("roof_type_confidence")
+    try:
+        if conf is not None and float(conf) < 0.5:
+            return True
+    except (TypeError, ValueError):
+        pass
+    return False
+
+
 async def _customer_house3d(est: dict):
     """Sanitized 3D payload + whether any amber location remains
     unratified (drives the softened homeowner footnote)."""
@@ -114,6 +139,9 @@ async def _customer_house3d(est: dict):
             "appendages": raw.get("appendages") or [],
         },
         "dims": dims,
+        # Geometry-fit gate (ruled 2026-07-18): customer surfaces render
+        # low-fit geometry ONLY as a labeled simplified representation.
+        "fit_low": _house3d_fit_low(raw),
     }
     return house3d, unratified
 

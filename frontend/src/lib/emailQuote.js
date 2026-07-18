@@ -232,10 +232,12 @@ export function buildEmailHtml({ estimate, totals, company, branding, message, a
   // measurements the quote prices — transparency no competitor prints.
   const model3dBlock = estimate.model3d_png_url
     ? `
-      <tr><td style="padding:24px 0 4px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.faint};">${esc(t("email.model3d"))}</td></tr>
+      <tr><td style="padding:24px 0 4px 0;font-family:${FONT};font-size:11px;font-weight:bold;letter-spacing:1.8px;text-transform:uppercase;color:${C.faint};">${esc(estimate.model3d_fit_low ? t("email.model3dSimplifiedTitle") : t("email.model3d"))}</td></tr>
       <tr><td style="padding:0;">
-        <img src="${absUrl(estimate.model3d_png_url)}" alt="${esc(t("email.model3d"))}" width="520" style="display:block;width:100%;max-width:520px;height:auto;border:1px solid ${C.line};border-radius:2px;background:#F7F8FB;">
-        <div style="font-family:${FONT};font-size:10px;color:${C.muted};padding-top:4px;">${esc(t("email.model3dNote"))}</div>
+        <img src="${absUrl(estimate.model3d_png_url)}" alt="${esc(estimate.model3d_fit_low ? t("email.model3dFitNote") : t("email.model3d"))}" width="520" style="display:block;width:100%;max-width:520px;height:auto;border:1px solid ${C.line};border-radius:2px;background:#F7F8FB;">
+        ${estimate.model3d_fit_low
+          ? `<div style="font-family:${FONT};font-size:10px;font-weight:bold;color:#B45309;padding-top:4px;">${esc(t("email.model3dFitNote"))}</div>`
+          : `<div style="font-family:${FONT};font-size:10px;color:${C.muted};padding-top:4px;">${esc(t("email.model3dNote"))}</div>`}
         ${estimate.model3d_unverified ? `<div style="font-family:${FONT};font-size:10px;color:${C.muted};padding-top:2px;">${esc(t("email.model3dVerifyNote"))}</div>` : ""}
       </td></tr>`
     : "";

@@ -3331,3 +3331,20 @@ experiment), 8f36abaa + 52ef42f1 (class-5 deaths on deleted test estimates) —
 all deleted, numbers preserved in the timeout register's housekeeping section.
 Preflight: restart_safe TRUE, zero awaiting-retry — amber is now always
 actionable, never legacy noise. Production re-runs UNLOCKED stands.
+
+## GEOMETRY-FIT GATE on customer-facing 3D (RULED + SHIPPED 2026-07-18)
+Fit confidence derives from the renderer's own self-checks: server-side
+(_house3d_fit_low in public.py — adjacent-wall gables no single ridge can
+serve, or roof_type_confidence < 0.5) + capture-side (snapshot carries
+fit_low = banner triggers: ridge mismatch + envelope/geometry warnings).
+LOW fit on customer surfaces = labeled simplified state, never presented as
+the house: Accept page (accept-3d-fit-label over the interactive render),
+quote email (bold amber "Simplified representation — not to scale/shape",
+title swaps to "Simplified 3D Sketch"), QuoteModal mirror (quote-3d-fit-note).
+EN + ES wording in dictionaries. Contractor surfaces keep render + banner
+(diagnostic). Pins: tests/test_geometry_fit_gate.py — asserted-wording
+pattern, "no low-fit render reaches a customer surface unlabeled" (8 tests).
+BACKLOG (NOT commissioned, per ruling): true multi-mass renderer — logged
+post-September, merged with the interactive-3D and blueprint→3D packages
+where it naturally belongs. Parametric envelope + honest gate is the
+September answer.

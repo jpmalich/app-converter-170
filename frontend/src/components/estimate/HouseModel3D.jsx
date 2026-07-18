@@ -1470,6 +1470,12 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
       // customer surfaces can footnote it in homeowner language.
       await onSnapshot(blob, {
         unverified: (house.appendages || []).some((a) => !a.confirmed),
+        // Geometry-fit gate (ruled 2026-07-18): the banner's own triggers
+        // (ridge mismatch + envelope warnings) ARE the fit confidence —
+        // low fit rides with the snapshot so customer surfaces label it.
+        // (Safe closure: bannerMessages is initialized by the time any
+        // capture runs — captures fire post-render.)
+        fit_low: bannerMessages.length > 0,
       });
       setSnapState("saved");
     } catch (e) {

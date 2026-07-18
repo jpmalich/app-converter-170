@@ -118,6 +118,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     await api.put(`/estimates/${estimateId}/model3d-snapshot`, {
       url: data.url,
       unverified: !!meta?.unverified,
+      fit_low: !!meta?.fit_low,
     });
     setModelSnapshotSaved(true);
     toast.success("3D model snapshot saved — it will appear on the Customer Quote PDF");
