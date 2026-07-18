@@ -24,10 +24,11 @@ secondary (tap-wall takeoff, appendage ratification, simple houses).
      `along_wall_ft` (center, wall-local ft from left corner) — bbox X-fraction
      fallback — even-spacing last resort (same cascade as 3D autoSpace); width/
      height from `width_in`/`height_in`; sill from bbox Y (doors sit at grade).
-   - **Collisions do NOT omit here**: overlapping opening rects render with a
-     dashed red outline + "POSITION UNVERIFIED" chip instead. The 2D sheet can
-     show conflict honestly where 3D cannot (this is why it's the primary
-     verification surface).
+   - **Collisions do NOT omit here** (APPROVED 2026-07-18, chase-render
+     precedent): overlapping opening rects render dashed-red with a
+     "POSITION UNVERIFIED" chip — presence guaranteed, position labeled,
+     render-only, print-surviving, linked to its schedule tag, and
+     SOLIDIFIED when the confirm-card ratifies the position.
 3. **Dimension lines** (extension lines + ticks, architectural format X'-Y"):
    - Overall wall width (below, outermost chain).
    - Opening-center chain (below, inner chain): left corner → each opening
@@ -46,15 +47,25 @@ secondary (tap-wall takeoff, appendage ratification, simple houses).
    run_id, model badge, date, scale ratio, source-tag legend.
 
 ## 3. Source-tag taxonomy (chip on EVERY dimension)
+CORRECTED 2026-07-18 after the rejected first mock: **TAPED is reserved for
+contractor tape** — an AI field claiming a taped reference was in frame
+(`width_ft_source=direct_ref`) is still an AI READ and never wears the tape's
+label. The first mock violated this (AI direct_ref 50'-0" wore TAPED REF while
+the sealed tape key says 54'-0") — register-worthy source-naming defect.
 | Tag | Fields that produce it | Color |
 |---|---|---|
-| TAPED REF | width_ft_source=direct_ref, WALL_REF-anchored | green solid |
-| AI-READ ✓ | direct_consensus / direct_single_reading | green outline |
+| TAPED | contractor tape: Tape Check values, user_measured, sealed hand-takeoff key | green solid |
+| AI-READ ✓ | direct_ref (ref-anchored) / direct_consensus / direct_single_reading | green outline |
 | AI-READ ⚠ | direct_disagreement / cross_plane / below_typical_range | amber |
 | ESTIMATED | estimated_no_direct_view / defaulted / bbox-fallback position | amber dashed |
 | PRINTED | blueprint runs: printed dimension callouts | blue |
-| USER | user_measured / user override / user_confirmed_from_blueprint | purple |
+| USER | user overrides entered without tape claim | purple |
 All chips grayscale-safe (shape + fill pattern differ, not color alone).
+**GEOMETRY-BASIS LINE (required from first mock):** the title block names the
+source of the sheet's geometry per element class (walls vs openings), e.g.
+"GEOMETRY BASIS: sealed hand-takeoff key EST-191890 (tape) · openings: AI run
+d6679448". The source-naming rule applies to elevation sheets from their
+first mock, not their first ship.
 
 ## 4. Data mapping (existing fields only)
 - `raw_ai.walls[label]` → width_ft(+source), height_ft(+source, +_height_flag,
@@ -88,9 +99,13 @@ All chips grayscale-safe (shape + fill pattern differ, not color alone).
 - No editing on the sheet (verification reads; edits stay in the 3D panel /
   Tape Check flows).
 
-## 7. Review mock
+## 7. Review mock (v2 — re-delivered after source-naming rejection)
 `/app/frontend/public/mock/letrick_front_elevation_sheet.svg` — Mark Letrick
-front wall, run d66794488ef848509446431b355db8e5 (real values): 50'-0" TAPED
-REF width, 8'-7" AI-READ✓ eave (23/24-course consensus), lap 4" callout,
-100% siding, openings W1 68×61 @5'-6", W2 69×61 @24'-0", D1 38×82 @34'-0",
-W3 72×60 @44'-0" — all reconciler-verified positions.
+front wall. WALL GEOMETRY from the tape-validated sealed key EST-191890:
+54'-0" width (eaves 2×54), 8'-11½" eave (483.8 sqft ÷ 54', 25 courses) —
+tagged TAPED. OPENING positions from AI run d66794488ef8 (along_wall_ft,
+reconciler-verified) — tagged AI-READ ✓. The sheet carries the AI run's
+DISAGREEING wall read (50'-0" / 8'-7" / 23-24 courses) as an explicit
+deviation note — tape governs. Geometry-basis line rendered on the title
+block. v1 mock (rejected): AI direct_ref values wearing TAPED REF.
+

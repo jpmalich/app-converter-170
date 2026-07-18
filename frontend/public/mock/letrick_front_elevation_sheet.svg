@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1056 816" font-family="Helvetica, Arial, sans-serif">
-  <!-- Dimensioned 2D Elevation Sheet — REVIEW MOCK
-       Mark Letrick · FRONT wall · run d66794488ef848509446431b355db8e5
-       All values REAL extraction data. Scale 16.4 px/ft. -->
+  <!-- Dimensioned 2D Elevation Sheet — REVIEW MOCK v2 (source-naming corrected)
+       Mark Letrick · FRONT wall
+       WALL GEOMETRY: sealed hand-takeoff key EST-191890 (TAPE): 54'-0" x 8'-11 1/2" (25 courses)
+       OPENINGS: AI run d66794488ef848509446431b355db8e5 (along_wall_ft, reconciler-verified)
+       Scale 15.2 px/ft. -->
   <defs>
     <marker id="tick" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
       <line x1="2" y1="8" x2="8" y2="2" stroke="#1a2332" stroke-width="1.4"/>
@@ -14,83 +16,91 @@
   <!-- Header -->
   <text x="60" y="72" font-size="26" font-weight="bold" letter-spacing="3" fill="#1a2332">FRONT ELEVATION</text>
   <text x="60" y="92" font-size="11" fill="#5a6472" letter-spacing="1">MARK LETRICK RESIDENCE · SHEET EL-1 OF 4</text>
-  <text x="996" y="72" font-size="11" text-anchor="end" fill="#b45309" font-weight="bold" letter-spacing="1">NOT A SURVEY — AI-MEASURED ESTIMATE</text>
+  <text x="996" y="72" font-size="11" text-anchor="end" fill="#b45309" font-weight="bold" letter-spacing="1">NOT A SURVEY — SOURCE-TAGGED VERIFICATION SHEET</text>
   <text x="996" y="90" font-size="10" text-anchor="end" fill="#5a6472">EVERY DIMENSION CARRIES ITS SOURCE TAG</text>
   <line x1="60" y1="104" x2="996" y2="104" stroke="#1a2332" stroke-width="1"/>
 
   <!-- Roof fascia band (context, dashed) with 1'-0" overhang stubs -->
-  <rect x="73.6" y="357" width="852.8" height="22" fill="none" stroke="#8a93a2" stroke-width="1.2" stroke-dasharray="6 4"/>
-  <text x="500" y="352" font-size="9" text-anchor="middle" fill="#8a93a2" letter-spacing="1">ROOF FASCIA · 1'-0" OVERHANG (RENDER CONTEXT)</text>
+  <rect x="74.8" y="361.8" width="851.2" height="22" fill="none" stroke="#8a93a2" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="500" y="356" font-size="9" text-anchor="middle" fill="#8a93a2" letter-spacing="1">ROOF FASCIA · 1'-0" OVERHANG (RENDER CONTEXT)</text>
 
-  <!-- Wall outline: 50.0 ft x 8.6 ft -->
-  <rect x="90" y="379" width="820" height="141" fill="#fbfcfe" stroke="#1a2332" stroke-width="2.5"/>
+  <!-- Wall outline: 54.0 ft x 8.96 ft (TAPED — sealed key) -->
+  <rect x="90" y="383.8" width="820.8" height="136.2" fill="#fbfcfe" stroke="#1a2332" stroke-width="2.5"/>
   <!-- Grade line -->
   <line x1="60" y1="520" x2="960" y2="520" stroke="#1a2332" stroke-width="2"/>
   <path d="M 66 520 l 8 10 M 82 520 l 8 10 M 98 520 l 8 10 M 918 520 l 8 10 M 934 520 l 8 10 M 950 520 l 8 10" stroke="#1a2332" stroke-width="1"/>
   <text x="62" y="536" font-size="9" fill="#5a6472">GRADE</text>
 
-  <!-- W1: Twin Double Hung 68x61 in, center @ 5'-6" -->
-  <rect x="133.7" y="406.3" width="93" height="83.4" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
-  <line x1="180.2" y1="406.3" x2="180.2" y2="489.7" stroke="#1a2332" stroke-width="1.2"/>
-  <line x1="133.7" y1="448" x2="226.7" y2="448" stroke="#8a93a2" stroke-width="1"/>
+  <!-- W1: Twin Double Hung 68x61 in, center @ 5'-6" (AI-read position) -->
+  <rect x="130.5" y="414.6" width="86.2" height="77.3" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
+  <line x1="173.6" y1="414.6" x2="173.6" y2="491.9" stroke="#1a2332" stroke-width="1.2"/>
+  <line x1="130.5" y1="453.3" x2="216.7" y2="453.3" stroke="#8a93a2" stroke-width="1"/>
   <!-- W2: Twin Double Hung 69x61 in, center @ 24'-0" -->
-  <rect x="436.4" y="406.6" width="94.3" height="83.4" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
-  <line x1="483.6" y1="406.6" x2="483.6" y2="490" stroke="#1a2332" stroke-width="1.2"/>
-  <line x1="436.4" y1="448.3" x2="530.7" y2="448.3" stroke="#8a93a2" stroke-width="1"/>
+  <rect x="411.1" y="414.9" width="87.4" height="77.3" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
+  <line x1="454.8" y1="414.9" x2="454.8" y2="492.2" stroke="#1a2332" stroke-width="1.2"/>
+  <line x1="411.1" y1="453.6" x2="498.5" y2="453.6" stroke="#8a93a2" stroke-width="1"/>
   <!-- D1: Entry door 38x82 in, center @ 34'-0" -->
-  <rect x="621.6" y="408" width="52" height="112" fill="#e7e2d8" stroke="#1a2332" stroke-width="1.8"/>
-  <rect x="629.6" y="418" width="36" height="44" fill="none" stroke="#8a93a2" stroke-width="1"/>
-  <rect x="629.6" y="470" width="36" height="40" fill="none" stroke="#8a93a2" stroke-width="1"/>
-  <circle cx="663" cy="466" r="2.2" fill="#1a2332"/>
+  <rect x="582.7" y="416.2" width="48.2" height="103.8" fill="#e7e2d8" stroke="#1a2332" stroke-width="1.8"/>
+  <rect x="590.7" y="426" width="32" height="40" fill="none" stroke="#8a93a2" stroke-width="1"/>
+  <rect x="590.7" y="474" width="32" height="38" fill="none" stroke="#8a93a2" stroke-width="1"/>
+  <circle cx="622" cy="470" r="2.2" fill="#1a2332"/>
   <!-- W3: Twin Double Hung 72x60 in, center @ 44'-0" -->
-  <rect x="762.4" y="407.5" width="98.4" height="82" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
-  <line x1="811.6" y1="407.5" x2="811.6" y2="489.5" stroke="#1a2332" stroke-width="1.2"/>
-  <line x1="762.4" y1="448.5" x2="860.8" y2="448.5" stroke="#8a93a2" stroke-width="1"/>
+  <rect x="713.2" y="415.7" width="91.2" height="76" fill="#eef3f9" stroke="#1a2332" stroke-width="1.8"/>
+  <line x1="758.8" y1="415.7" x2="758.8" y2="491.7" stroke="#1a2332" stroke-width="1.2"/>
+  <line x1="713.2" y1="453.7" x2="804.4" y2="453.7" stroke="#8a93a2" stroke-width="1"/>
 
   <!-- Schedule tag bubbles + leaders -->
   <g font-size="11" font-weight="bold" text-anchor="middle" fill="#1a2332">
-    <line x1="180.2" y1="340" x2="180.2" y2="404" stroke="#5a6472" stroke-width="0.9"/>
-    <circle cx="180.2" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="180.2" y="334">W1</text>
-    <line x1="483.6" y1="340" x2="483.6" y2="404" stroke="#5a6472" stroke-width="0.9"/>
-    <circle cx="483.6" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="483.6" y="334">W2</text>
-    <line x1="647.6" y1="340" x2="647.6" y2="406" stroke="#5a6472" stroke-width="0.9"/>
-    <circle cx="647.6" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="647.6" y="334">D1</text>
-    <line x1="811.6" y1="340" x2="811.6" y2="405" stroke="#5a6472" stroke-width="0.9"/>
-    <circle cx="811.6" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="811.6" y="334">W3</text>
+    <line x1="173.6" y1="340" x2="173.6" y2="412" stroke="#5a6472" stroke-width="0.9"/>
+    <circle cx="173.6" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="173.6" y="334">W1</text>
+    <line x1="454.8" y1="340" x2="454.8" y2="412" stroke="#5a6472" stroke-width="0.9"/>
+    <circle cx="454.8" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="454.8" y="334">W2</text>
+    <line x1="606.8" y1="340" x2="606.8" y2="414" stroke="#5a6472" stroke-width="0.9"/>
+    <circle cx="606.8" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="606.8" y="334">D1</text>
+    <line x1="758.8" y1="340" x2="758.8" y2="413" stroke="#5a6472" stroke-width="0.9"/>
+    <circle cx="758.8" cy="330" r="12" fill="#fff" stroke="#1a2332" stroke-width="1.5"/><text x="758.8" y="334">W3</text>
   </g>
 
-  <!-- Opening-center dimension chain (inner) -->
+  <!-- Opening-center dimension chain (inner, AI-read positions) -->
   <g stroke="#1a2332" stroke-width="1">
-    <line x1="90" y1="522" x2="90" y2="566"/><line x1="180.2" y1="492" x2="180.2" y2="566"/>
-    <line x1="483.6" y1="492" x2="483.6" y2="566"/><line x1="647.6" y1="522" x2="647.6" y2="566"/>
-    <line x1="811.6" y1="492" x2="811.6" y2="566"/><line x1="910" y1="522" x2="910" y2="566"/>
-    <line x1="90" y1="560" x2="910" y2="560" marker-start="url(#tick)" marker-mid="url(#tick)" marker-end="url(#tick)"/>
-    <path d="M 176 564 l 8.4 -8 M 479.4 564 l 8.4 -8 M 643.4 564 l 8.4 -8 M 807.4 564 l 8.4 -8" stroke-width="1.4"/>
+    <line x1="90" y1="522" x2="90" y2="566"/><line x1="173.6" y1="494" x2="173.6" y2="566"/>
+    <line x1="454.8" y1="494" x2="454.8" y2="566"/><line x1="606.8" y1="522" x2="606.8" y2="566"/>
+    <line x1="758.8" y1="494" x2="758.8" y2="566"/><line x1="910.8" y1="522" x2="910.8" y2="566"/>
+    <line x1="90" y1="560" x2="910.8" y2="560" marker-start="url(#tick)" marker-mid="url(#tick)" marker-end="url(#tick)"/>
+    <path d="M 169.4 564 l 8.4 -8 M 450.6 564 l 8.4 -8 M 602.6 564 l 8.4 -8 M 754.6 564 l 8.4 -8" stroke-width="1.4"/>
   </g>
   <g font-size="10.5" text-anchor="middle" fill="#1a2332">
-    <text x="135" y="554">5'-6"</text><text x="332" y="554">18'-6"</text>
-    <text x="565.6" y="554">10'-0"</text><text x="729.6" y="554">10'-0"</text><text x="860.8" y="554">6'-0"</text>
+    <text x="131.8" y="554">5'-6"</text><text x="314.2" y="554">18'-6"</text>
+    <text x="530.8" y="554">10'-0"</text><text x="682.8" y="554">10'-0"</text><text x="834.8" y="554">10'-0"</text>
   </g>
-  <text x="930" y="563" font-size="8.5" fill="#0d7a3f" font-weight="bold">CTRS · AI-READ ✓</text>
+  <rect x="920" y="551" width="98" height="14" rx="7" fill="#fff" stroke="#0d7a3f" stroke-width="1.2"/>
+  <text x="969" y="561.5" font-size="8.5" text-anchor="middle" fill="#0d7a3f" font-weight="bold">CTRS · AI-READ ✓</text>
 
-  <!-- Overall width dimension (outer) -->
+  <!-- Overall width dimension (outer, TAPED — sealed key) -->
   <g stroke="#1a2332" stroke-width="1">
-    <line x1="90" y1="568" x2="90" y2="606"/><line x1="910" y1="568" x2="910" y2="606"/>
-    <line x1="90" y1="600" x2="910" y2="600" marker-start="url(#tick)" marker-end="url(#tick)"/>
+    <line x1="90" y1="568" x2="90" y2="606"/><line x1="910.8" y1="568" x2="910.8" y2="606"/>
+    <line x1="90" y1="600" x2="910.8" y2="600" marker-start="url(#tick)" marker-end="url(#tick)"/>
   </g>
   <rect x="448" y="588" width="104" height="20" fill="#fff"/>
-  <text x="500" y="602" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a2332">50'-0"</text>
-  <rect x="556" y="590" width="72" height="16" rx="8" fill="#0d7a3f"/>
-  <text x="592" y="601.5" font-size="8.5" text-anchor="middle" fill="#fff" font-weight="bold">TAPED REF</text>
+  <text x="500" y="602" font-size="13" font-weight="bold" text-anchor="middle" fill="#1a2332">54'-0"</text>
+  <rect x="556" y="590" width="52" height="16" rx="8" fill="#0d7a3f"/>
+  <text x="582" y="601.5" font-size="8.5" text-anchor="middle" fill="#fff" font-weight="bold">TAPED</text>
 
-  <!-- Eave height dimension (right) -->
+  <!-- Eave height dimension (right, TAPED — 25 courses) -->
   <g stroke="#1a2332" stroke-width="1">
-    <line x1="912" y1="379" x2="952" y2="379"/><line x1="912" y1="520" x2="952" y2="520"/>
-    <line x1="946" y1="379" x2="946" y2="520" marker-start="url(#tick)" marker-end="url(#tick)"/>
+    <line x1="912.8" y1="383.8" x2="952" y2="383.8"/><line x1="912.8" y1="520" x2="952" y2="520"/>
+    <line x1="946" y1="383.8" x2="946" y2="520" marker-start="url(#tick)" marker-end="url(#tick)"/>
   </g>
-  <text x="960" y="442" font-size="13" font-weight="bold" fill="#1a2332">8'-7"</text>
-  <rect x="954" y="450" width="66" height="16" rx="8" fill="#fff" stroke="#0d7a3f" stroke-width="1.5"/>
-  <text x="987" y="461.5" font-size="8.5" text-anchor="middle" fill="#0d7a3f" font-weight="bold">AI-READ ✓</text>
+  <text x="954" y="440" font-size="13" font-weight="bold" fill="#1a2332">8'-11½"</text>
+  <rect x="954" y="448" width="52" height="16" rx="8" fill="#0d7a3f"/>
+  <text x="980" y="459.5" font-size="8.5" text-anchor="middle" fill="#fff" font-weight="bold">TAPED</text>
+  <text x="954" y="478" font-size="8.5" fill="#5a6472">25 courses</text>
+
+  <!-- AI deviation note (tape governs) -->
+  <rect x="90" y="150" width="404" height="46" fill="#fef7ec" stroke="#b45309" stroke-width="1.2"/>
+  <text x="100" y="166" font-size="9.5" font-weight="bold" fill="#b45309">DEVIATION — AI PHOTO RUN DISAGREES WITH TAPE (TAPE GOVERNS)</text>
+  <text x="100" y="180" font-size="9" fill="#7a4a12">AI run d6679448 read this wall 50'-0" × 8'-7" (23–24 courses, ref-anchored)</text>
+  <text x="100" y="192" font-size="9" fill="#7a4a12">vs taped 54'-0" × 8'-11½" (25 courses): −4'-0" width, −4½" height.</text>
 
   <!-- Bottom strip -->
   <line x1="60" y1="628" x2="996" y2="628" stroke="#1a2332" stroke-width="1"/>
@@ -98,13 +108,13 @@
   <!-- Per-wall data list -->
   <g font-size="10" fill="#1a2332">
     <text x="60" y="646" font-weight="bold" letter-spacing="1.5" font-size="10.5">WALL DATA — FRONT</text>
-    <text x="60" y="664">Width <tspan font-weight="bold">50'-0"</tspan> — TAPED REF (WALL_REF span, photo 0)</text>
-    <text x="60" y="680">Eave height <tspan font-weight="bold">8'-7"</tspan> — AI-READ ✓ consensus (23/24 courses, ±1)</text>
-    <text x="60" y="696">Gable triangle <tspan font-weight="bold">none</tspan> (eave-side wall) · Stories 1</text>
-    <text x="60" y="712">Siding <tspan font-weight="bold">100%</tspan> · Profile callout <tspan font-weight="bold">LAP 4"</tspan></text>
-    <text x="60" y="728">Openings <tspan font-weight="bold">4</tspan> (3 windows · 1 entry door) — all positions verified</text>
-    <text x="60" y="744">AI confidence <tspan font-weight="bold">90</tspan> — ref-anchored + 2 corroborating corner counts</text>
-    <text x="60" y="760" fill="#5a6472">Source photos: 0, 1, 7</text>
+    <text x="60" y="664">Width <tspan font-weight="bold">54'-0"</tspan> — TAPED (sealed key EST-191890, eaves 2×54)</text>
+    <text x="60" y="680">Eave height <tspan font-weight="bold">8'-11½"</tspan> — TAPED (483.8 ft² ÷ 54', 25 courses)</text>
+    <text x="60" y="696">Wall area <tspan font-weight="bold">483.8 ft²</tspan> — TAPED · Gable triangle <tspan font-weight="bold">none</tspan> · Stories 1</text>
+    <text x="60" y="712">Siding <tspan font-weight="bold">100%</tspan> · Profile callout <tspan font-weight="bold">LAP</tspan> (38S 8" per key)</text>
+    <text x="60" y="728">Openings <tspan font-weight="bold">4</tspan> (3 windows · 1 entry door) — positions AI-READ ✓</text>
+    <text x="60" y="744">AI wall read: 50'-0" × 8'-7" — flagged deviation above; tape governs</text>
+    <text x="60" y="760" fill="#5a6472">AI source photos: 0, 1, 7 · AI confidence 90 (superseded by tape)</text>
   </g>
 
   <!-- Opening schedule -->
@@ -118,28 +128,30 @@
     <text x="420" y="700">W2</text><text x="452" y="700">Window · Twin DH</text><text x="576" y="700">69×61 in</text><text x="640" y="700">24'-0"</text><text x="686" y="700">1'-10"</text>
     <text x="420" y="716">D1</text><text x="452" y="716">Entry door</text><text x="576" y="716">38×82 in</text><text x="640" y="716">34'-0"</text><text x="686" y="716">0'-0"</text>
     <text x="420" y="732">W3</text><text x="452" y="732">Window · Twin DH</text><text x="576" y="732">72×60 in</text><text x="640" y="732">44'-0"</text><text x="686" y="732">1'-10"</text>
-    <text x="420" y="756" fill="#5a6472" font-size="8.5">Positions from reconciler along_wall_ft (verified). Sills from photo bbox.</text>
+    <text x="420" y="750" fill="#5a6472" font-size="8.5">Sizes + positions: AI run (along_wall_ft, reconciler-verified). Sills from photo bbox.</text>
+    <text x="420" y="762" fill="#5a6472" font-size="8.5">Key cross-check: 10 windows 4-side + entry 3-side + patio 3-side (whole house).</text>
   </g>
 
   <!-- Title block -->
   <g>
     <rect x="732" y="638" width="264" height="132" fill="none" stroke="#1a2332" stroke-width="1.5"/>
-    <line x1="732" y1="662" x2="996" y2="662" stroke="#1a2332" stroke-width="0.8"/>
-    <line x1="732" y1="686" x2="996" y2="686" stroke="#1a2332" stroke-width="0.8"/>
-    <line x1="732" y1="710" x2="996" y2="710" stroke="#1a2332" stroke-width="0.8"/>
+    <line x1="732" y1="660" x2="996" y2="660" stroke="#1a2332" stroke-width="0.8"/>
+    <line x1="732" y1="694" x2="996" y2="694" stroke="#1a2332" stroke-width="0.8"/>
+    <line x1="732" y1="714" x2="996" y2="714" stroke="#1a2332" stroke-width="0.8"/>
     <g font-size="9" fill="#1a2332">
-      <text x="740" y="654" font-weight="bold">MARK LETRICK</text><text x="988" y="654" text-anchor="end">SHEET EL-1 · FRONT</text>
-      <text x="740" y="678">Run d6679448…b5 · Claude (two-phase)</text><text x="988" y="678" text-anchor="end">2026-07-14</text>
-      <text x="740" y="702">Scale ≈ 3/16" = 1'-0" (auto-fit)</text><text x="988" y="702" text-anchor="end">Pro-Quote</text>
+      <text x="740" y="652" font-weight="bold">MARK LETRICK</text><text x="988" y="652" text-anchor="end">SHEET EL-1 · FRONT</text>
+      <text x="740" y="674" font-weight="bold" font-size="8">GEOMETRY BASIS: sealed key EST-191890 (tape, 2026-07-13) — walls</text>
+      <text x="740" y="686" font-size="8">openings: AI run d6679448…b5 (Claude two-phase, 2026-07-14)</text>
+      <text x="740" y="706">Scale ≈ 5/32" = 1'-0" (auto-fit)</text><text x="988" y="706" text-anchor="end">Pro-Quote · 2026-07-18</text>
     </g>
     <g font-size="7.5" font-weight="bold">
-      <text x="740" y="726" fill="#5a6472" letter-spacing="1">SOURCE LEGEND</text>
-      <rect x="740" y="732" width="56" height="13" rx="6.5" fill="#0d7a3f"/><text x="768" y="741.5" text-anchor="middle" fill="#fff">TAPED REF</text>
-      <rect x="802" y="732" width="52" height="13" rx="6.5" fill="#fff" stroke="#0d7a3f"/><text x="828" y="741.5" text-anchor="middle" fill="#0d7a3f">AI-READ ✓</text>
-      <rect x="860" y="732" width="52" height="13" rx="6.5" fill="#b45309"/><text x="886" y="741.5" text-anchor="middle" fill="#fff">AI-READ ⚠</text>
-      <rect x="918" y="732" width="56" height="13" rx="6.5" fill="#fff" stroke="#b45309" stroke-dasharray="3 2"/><text x="946" y="741.5" text-anchor="middle" fill="#b45309">ESTIMATED</text>
-      <rect x="740" y="750" width="48" height="13" rx="6.5" fill="#1d4ed8"/><text x="764" y="759.5" text-anchor="middle" fill="#fff">PRINTED</text>
-      <rect x="794" y="750" width="40" height="13" rx="6.5" fill="#7c3aed"/><text x="814" y="759.5" text-anchor="middle" fill="#fff">USER</text>
+      <text x="740" y="728" fill="#5a6472" letter-spacing="1">SOURCE LEGEND</text>
+      <rect x="740" y="734" width="42" height="13" rx="6.5" fill="#0d7a3f"/><text x="761" y="743.5" text-anchor="middle" fill="#fff">TAPED</text>
+      <rect x="788" y="734" width="52" height="13" rx="6.5" fill="#fff" stroke="#0d7a3f"/><text x="814" y="743.5" text-anchor="middle" fill="#0d7a3f">AI-READ ✓</text>
+      <rect x="846" y="734" width="52" height="13" rx="6.5" fill="#b45309"/><text x="872" y="743.5" text-anchor="middle" fill="#fff">AI-READ ⚠</text>
+      <rect x="904" y="734" width="56" height="13" rx="6.5" fill="#fff" stroke="#b45309" stroke-dasharray="3 2"/><text x="932" y="743.5" text-anchor="middle" fill="#b45309">ESTIMATED</text>
+      <rect x="740" y="752" width="48" height="13" rx="6.5" fill="#1d4ed8"/><text x="764" y="761.5" text-anchor="middle" fill="#fff">PRINTED</text>
+      <rect x="794" y="752" width="40" height="13" rx="6.5" fill="#7c3aed"/><text x="814" y="761.5" text-anchor="middle" fill="#fff">USER</text>
     </g>
   </g>
 </svg>

@@ -3462,3 +3462,28 @@ round-1 file content). Conclusion: the reported round-1 greens did not
 include a final run of that pin as written; it first went green in round 2
 when this session removed the main-switch default. Lesson pinned: pins must
 be RUN after the last edit, and the run must be part of the committed state.
+
+## THREE RULINGS EXECUTED (2026-07-18, Howard)
+(1) CONTAINMENT ACCEPTED — all-or-none live, schedule carries openings,
+smashed-walls P0 CLOSED.
+(2) STANDING RULE — HANDBACK GREENS REAL BY CONSTRUCTION: every handback
+reporting test results states the commit hash the suite ran against; that
+commit must be HEAD at handback; phantom greens are verification-integrity
+defects. Register: /app/memory/verification_integrity_register.md (round-1
+phantom green logged as class-defining Entry 1). Mechanical guard:
+/app/scripts/handback_green.sh runs the suite, records HEAD hash + dirty-tree
+flag + result to /app/memory/handback_green_log.md. Self-reported greens
+without a hash don't count.
+(3) 2D SPEC: dashed-red POSITION UNVERIFIED APPROVED (chase-render precedent —
+presence guaranteed, position labeled, render-only, print-surviving, linked to
+schedule tag, solidifies on confirm-card ratification). MOCK v1 REJECTED —
+source-naming defect: AI run d6679448's direct_ref read (50'-0"/8'-7"/23-24
+courses) wore the TAPED REF chip while the sealed key says 54'-0"/8'-11½"/25
+courses. TRACE: chip mapping in spec taxonomy conflated "AI saw a taped
+reference in frame" (width_ft_source=direct_ref) with "contractor tape".
+CORRECTED: TAPED reserved for contractor tape (Tape Check, user_measured,
+sealed key); direct_ref = AI-READ ✓. Mock v2 re-delivered from tape-validated
+key values (54'-0" TAPED, 8'-11½" TAPED · 25 courses, wall area 483.8 ft²),
+openings kept AI-READ ✓ (only position source), explicit deviation box (AI
+read vs tape, "tape governs"), GEOMETRY BASIS line rendered on the title
+block. Source-naming rule applies to elevation sheets from their first mock.
