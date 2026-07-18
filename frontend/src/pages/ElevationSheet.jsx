@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "@/lib/api";
 
-/* Dimensioned 2D Elevation Sheet — LIVE RENDER (Phase 1: FRONT, EL-1).
+/* Dimensioned 2D Elevation Sheet — LIVE RENDER, EL-1..EL-4 (front/left/back/right).
    Replicates approved mock v3 anatomy; every value is DATA-BOUND from
-   GET /estimates/:id/elevation-sheet/front (no hand-typed constants).
+   GET /estimates/:id/elevation-sheet/:which (no hand-typed constants).
+   Stepped walls: EACH tape segment draws its own basis line — step location
+   is NOT TAPED (indicative). Chase: annotated, never scale-rendered.
    CHANNELS: linework color = COMPONENT CLASS · chips/boxes = SOURCE/STATUS. */
 
 const C = {
@@ -12,6 +14,8 @@ const C = {
   osc: "#0D9488", isc: "#DB2777", fascia: "#0EA5E9", soffit: "#6B4423",
   starter: "#1F2937", band: "#86198F", green: "#0d7a3f", amber: "#b45309",
 };
+
+const SHEETS = ["front", "left", "back", "right"];
 
 const Chip = ({ x, y, w, label, kind }) => {
   const styles = {
@@ -38,49 +42,82 @@ const tagKind = (tag) =>
     : tag === "AI-READ ✓" ? "ai-ok" : tag === "AI-READ ⚠" ? "ai-warn" : "est";
 
 export default function ElevationSheet() {
-  const { id } = useParams();
+  const { id, which = "front" } = useParams();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    api.get(`/estimates/${id}/elevation-sheet/front`)
+    setData(null);
+    setErr("");
+    if (!SHEETS.includes(which)) {
+      setErr("Unknown elevation");
+      return;
+    }
+    api.get(`/estimates/${id}/elevation-sheet/${which}`)
       .then(({ data }) => setData(data))
       .catch((e) => setErr(e?.response?.data?.detail || "Failed to load sheet"));
-  }, [id]);
+  }, [id, which]);
 
   if (err) return <div className="p-8 text-sm" data-testid="elevation-sheet-error">{err}</div>;
   if (!data) return <div className="p-8 text-sm" data-testid="elevation-sheet-loading">Rendering sheet…</div>;
 
   const W = data.wall;
-  // ── drawing math (auto-fit, spec §5) ─────────────────────────────
-  const wallX = 90, wallBottom = 520, drawable = 820.8;
-  const ppf = drawable / W.width_ft;
+  const segList = W.segments || null;
+  const stepped = !!(segList && segList.length > 1);
+  const gableFt = W.gable_triangle_ft || 0;
+  // ── drawing math (auto-fit BOTH axes, spec §5) ───────────────────
+  const wallBottom = 520, drawable = 820.8, maxDrawH = 300;
+  const ppf = Math.min(drawable / W.width_ft, maxDrawH / (W.height_ft + gableFt));
   const wallW = W.width_ft * ppf;
+  const wallX = 90 + (drawable - wallW) / 2;
   const wallRight = wallX + wallW;
   const wallTop = wallBottom - W.height_ft * ppf;
+  // stepped: seg[0] left half, seg[1] right half — step at midpoint is
+  // INDICATIVE ONLY (location untaped), annotated on-sheet
+  const stepX = stepped ? wallX + wallW / 2 : null;
+  const segTopY = stepped
+    ? segList.map((s) => wallBottom - s.height_ft * ppf)
+    : [wallTop];
+  const topRefY = Math.min(...segTopY);
+  const apexY = topRefY - gableFt * ppf;
   const ovFt = (W.overhang_in || 12) / 12;
   const scaleInPerFt = ppf / 96;
   const fracs = [[1 / 8, '1/8"'], [5 / 32, '5/32"'], [3 / 16, '3/16"'], [1 / 4, '1/4"'], [3 / 8, '3/8"']];
   const scaleLabel = fracs.reduce((a, b) =>
     Math.abs(b[0] - scaleInPerFt) < Math.abs(a[0] - scaleInPerFt) ? b : a)[1];
 
-  // course hatch (true courses — field-countable)
-  const courses = [];
-  if (W.courses && W.exposure_in) {
-    for (let i = 1; i < W.courses; i++) {
-      const y = wallBottom - i * (W.exposure_in / 12) * ppf;
-      if (y > wallTop + 2) courses.push(y);
+  // wall outline: rectangle, or stepped polygon (per-segment tops)
+  const outline = stepped
+    ? `M ${wallX} ${wallBottom} L ${wallX} ${segTopY[0]} L ${stepX} ${segTopY[0]} L ${stepX} ${segTopY[1]} L ${wallRight} ${segTopY[1]} L ${wallRight} ${wallBottom} Z`
+    : null;
+
+  // course hatch (true courses — field-countable), per segment on steps
+  const courseLines = [];
+  if (W.exposure_in) {
+    const halves = stepped
+      ? segList.map((s, i) => ({ courses: s.courses, top: segTopY[i],
+          x1: i === 0 ? wallX : stepX, x2: i === 0 ? stepX : wallRight }))
+      : (W.courses ? [{ courses: W.courses, top: wallTop, x1: wallX, x2: wallRight }] : []);
+    for (const h of halves) {
+      for (let i = 1; i < h.courses; i++) {
+        const y = wallBottom - i * (W.exposure_in / 12) * ppf;
+        if (y > h.top + 2) courseLines.push({ y, x1: h.x1 + 1.5, x2: h.x2 - 1.5 });
+      }
     }
   }
 
-  // openings geometry
+  // openings geometry (sill-less openings draw dashed at mid-band — the
+  // vertical position is NOT derivable without a door anchor)
   const ops = (data.openings || []).map((o) => {
     if (o.center_ft == null || !o.width_in || !o.height_in) return { ...o, drawable: false };
     const w = (o.width_in / 12) * ppf;
     const h = (o.height_in / 12) * ppf;
     const x = wallX + o.center_ft * ppf - w / 2;
-    const bottom = wallBottom - ((o.sill_in || 0) / 12) * ppf;
-    return { ...o, drawable: true, x, y: bottom - h, w, h, cx: wallX + o.center_ft * ppf };
+    const noSill = o.sill_in == null;
+    const bottom = noSill
+      ? (wallBottom + topRefY) / 2 + h / 2
+      : wallBottom - (o.sill_in / 12) * ppf;
+    return { ...o, drawable: true, noSill, x, y: bottom - h, w, h, cx: wallX + o.center_ft * ppf };
   });
 
   // opening-center dimension chain segments
@@ -92,37 +129,69 @@ export default function ElevationSheet() {
   }
 
   const dev = data.deviation;
+  const chase = data.chase;
   const anyCollision = ops.some((o) => o.collision);
+  const bubbleY = Math.max(topRefY - 55, 208);
+  const collisionBoxY = chase ? 202 : 150;
 
   // Precomputed display strings — single member-expression per SVG text
   // node (dev-instrumentation wraps inline templates in <span>, which
   // does not paint inside SVG <text>).
+  const sheetName = String(data.sheet || "").toUpperCase();
   const S = {};
+  S.title = `${sheetName} ELEVATION`;
   S.headerLine = `${String(data.customer_name || "").toUpperCase()} · ${String(data.address || "").toUpperCase()} · SHEET ${data.sheet_code} OF 4`;
   S.fasciaLabel = `FASCIA / RAKE · ${fmtFt(ovFt)} OVERHANG`;
   S.coursesNote = W.courses ? `${W.courses} × ${fmtInFrac(W.exposure_in)} taped` : "";
   if (dev) {
     S.dev1 = `AI run ${dev.run_short} read this wall ${dev.ai_width_label} × ${dev.ai_height_label}` +
       (dev.ai_counts?.length ? ` (${dev.ai_counts.join("/")} courses, ${dev.ai_basis})` : ` (${dev.ai_basis})`);
-    S.dev2 = `vs key ${W.width_label} × ${W.height_label}: ${dev.delta_width_label} width, ${dev.delta_height_label} height.`;
-    S.devSummary = `AI wall read: ${dev.ai_width_label} × ${dev.ai_height_label} — flagged deviation above; tape governs`;
+    S.dev2 = dev.width_disputed
+      ? `vs key ${W.width_label} × ${dev.tape_heights_label}: ${dev.delta_width_label} width, ${dev.delta_height_label} height.`
+      : `vs key heights ${dev.tape_heights_label}: ${dev.delta_height_label} vs first segment · width untaped — AI governs width.`;
+    S.devSummary = `AI wall read: ${dev.ai_width_label} × ${dev.ai_height_label} — flagged deviation above; tape governs heights`;
+  }
+  if (chase) {
+    S.chase1 = `${String(chase.note).toUpperCase()} — ${chase.tag}`;
+    S.chase2 = `profile ${chase.profile} · footprint ${chase.footprint}`;
   }
   S.widthTail = ` — ${W.width_tag} (${W.width_source})`;
-  S.heightTail = ` — ${W.height_tag} (${W.height_formula})`;
-  S.areaBold = `${W.area_sqft} ft²`;
-  S.areaTail = ` — DERIVED (${fmtNum(W.width_ft)} × ${fmtNum(W.height_ft)}) · Gable triangle `;
-  S.gable = W.gable_triangle_ft > 0 ? fmtFt(W.gable_triangle_ft) : "none";
+  if (stepped) {
+    S.heightsBold = segList.map((s) => s.height_label).join(" / ");
+    S.heightsTail = ` — ${segList[0].height_tag}`;
+    S.heightsSub = `${segList.map((s) => s.height_formula).join(" · ")} · step location NOT TAPED`;
+  } else {
+    S.heightTail = ` — ${W.height_tag} (${W.height_formula})`;
+  }
+  S.areaBold = W.area_sqft != null ? `${W.area_sqft} ft²` : "—";
+  S.areaTail = W.area_sqft != null
+    ? ` — DERIVED (${fmtNum(W.width_ft)} × ${fmtNum(W.height_ft)}) · Gable triangle `
+    : ` not derivable (step untaped) · Gable `;
+  S.gable = gableFt > 0 ? fmtFt(gableFt) : "none";
+  S.gableTag = gableFt > 0 ? ` [${W.gable_tag}]` : "";
   S.storiesTail = ` · Stories ${W.stories}`;
   S.sidingBold = `${W.siding_pct}%`;
   S.profileBold = String(W.profile_callout).toUpperCase();
   S.profileTail = W.profile_key_item ? ` (${W.profile_key_item} per key)` : "";
   S.openCount = String(data.openings.length);
-  S.openTail = ` (${data.opening_counts.windows} windows · ${data.opening_counts.doors} entry door${data.opening_counts.doors === 1 ? "" : "s"}) — positions AI-READ ✓`;
+  const oc = data.opening_counts;
+  S.openTail = data.openings.length
+    ? ` (${oc.windows} windows · ${oc.doors} entry door${oc.doors === 1 ? "" : "s"} · ${oc.vents} vent${oc.vents === 1 ? "" : "s"}) — positions AI-READ ✓`
+    : " — none read on this wall";
   S.photosLine = `AI source photos: ${(W.source_photos || []).join(", ")} · AI confidence ${W.ai_confidence}${dev ? " (superseded by tape)" : ""}`;
-  S.sheetLine = `SHEET ${data.sheet_code} · FRONT`;
+  S.sheetLine = `SHEET ${data.sheet_code} · ${sheetName}`;
+  S.wallDataHead = `WALL DATA — ${sheetName}`;
+  S.schedHead = `OPENING SCHEDULE — ${sheetName}`;
   S.basisWalls = `GEOMETRY BASIS: ${data.geometry_basis.walls}`;
   S.scaleLine = `Scale ≈ ${scaleLabel} = 1'-0" (auto-fit)`;
   S.dateLine = `Pro-Quote · ${data.generated_date}`;
+  S.gableCallout = gableFt > 0 ? `GABLE TRIANGLE ${fmtFt(gableFt)} RISE — INDICATIVE OUTLINE` : "";
+  if (stepped) {
+    S.seg0Formula = segList[0].height_formula;
+    S.seg1Formula = segList[1].height_formula;
+    S.seg0Label = segList[0].height_label;
+    S.seg1Label = segList[1].height_label;
+  }
   for (const o of data.openings) {
     o._style = `${o.type}${o.style ? ` · ${abbrevStyle(o.style)}` : ""}`;
     o._size = `${o.width_in}×${o.height_in} in`;
@@ -141,7 +210,7 @@ export default function ElevationSheet() {
         <rect x="30" y="30" width="996" height="756" fill="none" stroke={C.ink} strokeWidth="0.75" />
 
         {/* Header */}
-        <text x="60" y="72" fontSize="26" fontWeight="bold" letterSpacing="3" fill={C.ink}>FRONT ELEVATION</text>
+        <text x="60" y="72" fontSize="26" fontWeight="bold" letterSpacing="3" fill={C.ink} data-testid="elevation-sheet-title">{S.title}</text>
         <text x="60" y="92" fontSize="11" fill={C.muted} letterSpacing="1">{S.headerLine}</text>
         <text x="996" y="72" fontSize="11" textAnchor="end" fill={C.amber} fontWeight="bold" letterSpacing="1">NOT A SURVEY — SOURCE-TAGGED VERIFICATION SHEET</text>
         <text x="996" y="90" fontSize="10" textAnchor="end" fill={C.muted}>LINEWORK = COMPONENT · CHIPS = SOURCE</text>
@@ -156,38 +225,77 @@ export default function ElevationSheet() {
             <text x="100" y="192" fontSize="9" fill="#7a4a12">{S.dev2}</text>
           </g>
         )}
+        {/* Chase annotation — AI-read, footprint untaped: ANNOTATE, never scale-render */}
+        {chase && (
+          <g data-testid="elevation-chase-note">
+            <rect x="530" y="150" width="380" height="46" fill="#fffbeb" stroke={C.amber} strokeWidth="1.2" strokeDasharray="5 3" />
+            <text x="540" y="166" fontSize="9.5" fontWeight="bold" fill={C.amber}>{S.chase1}</text>
+            <text x="540" y="182" fontSize="9" fill="#7a4a12">{S.chase2}</text>
+          </g>
+        )}
         {anyCollision && (
           <g data-testid="elevation-collision-banner">
-            <rect x="530" y="150" width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" strokeDasharray="4 2" />
-            <text x="540" y="166" fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
+            <rect x="530" y={collisionBoxY} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" strokeDasharray="4 2" />
+            <text x="540" y={collisionBoxY + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
           </g>
         )}
 
-        {/* Fascia band + soffit */}
-        <rect x={wallX - ovFt * ppf} y={wallTop - 22} width={wallW + 2 * ovFt * ppf} height="22" fill="none" stroke={C.fascia} strokeWidth="3" />
-        <text x={(wallX + wallRight) / 2} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
-        <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" strokeDasharray="1 4" />
-        <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
+        {/* Gable-end walls: dashed indicative triangle + rake; eave walls: fascia band + soffit */}
+        {gableFt > 0 ? (
+          <g data-testid="elevation-gable">
+            <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]}`}
+              fill="none" stroke={C.fascia} strokeWidth="2" strokeDasharray="7 4" />
+            <text x={(wallX + wallRight) / 2} y={apexY - 8} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
+            <Chip x={(wallX + wallRight) / 2 + 4} y={apexY + 6}
+              w={W.gable_tag === "AI-READ ✓" ? 62 : 66} label={W.gable_tag} kind={tagKind(W.gable_tag)} />
+            <text x={wallX - 14} y={segTopY[0] - 8} fontSize="8.5" fill="#0284c7" fontWeight="bold">RAKE (GABLE END) ↗</text>
+          </g>
+        ) : (
+          <g>
+            <rect x={wallX - ovFt * ppf} y={wallTop - 22} width={wallW + 2 * ovFt * ppf} height="22" fill="none" stroke={C.fascia} strokeWidth="3" />
+            <text x={(wallX + wallRight) / 2} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
+            <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" strokeDasharray="1 4" />
+            <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
+          </g>
+        )}
 
-        {/* Wall + course hatch (true course count) */}
-        <rect x={wallX} y={wallTop} width={wallW} height={wallBottom - wallTop} fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" data-testid="elevation-wall-rect" />
+        {/* Wall + course hatch (true per-segment course counts) */}
+        {stepped ? (
+          <path d={outline} fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" data-testid="elevation-wall-rect" />
+        ) : (
+          <rect x={wallX} y={wallTop} width={wallW} height={wallBottom - wallTop} fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" data-testid="elevation-wall-rect" />
+        )}
         <g stroke="#e2e8f0" strokeWidth="0.6">
-          {courses.map((y, i) => <line key={i} x1={wallX + 1.5} y1={y} x2={wallRight - 1.5} y2={y} />)}
+          {courseLines.map((l, i) => <line key={i} x1={l.x1} y1={l.y} x2={l.x2} y2={l.y} />)}
         </g>
+        {stepped && (
+          <g data-testid="elevation-step-note">
+            <line x1={stepX} y1={segTopY[1] - 6} x2={stepX} y2={segTopY[0]} stroke={C.amber} strokeWidth="1" strokeDasharray="3 2" />
+            <text x={stepX} y={segTopY[1] - 12} fontSize="8" textAnchor="middle" fill={C.amber} fontWeight="bold">STEP — LOCATION NOT TAPED (INDICATIVE)</text>
+          </g>
+        )}
 
-        {/* Openings (component: opening trim) */}
+        {/* Openings (component: opening trim; sill-less = dashed, V-pos estimated) */}
         {ops.filter((o) => o.drawable).map((o) => (
           <g key={o.tag} data-testid={`elevation-opening-${o.tag}`}>
             <rect x={o.x} y={o.y} width={o.w} height={o.h}
-              fill={o.type === "Window" ? "#eef3f9" : "#e7e2d8"}
+              fill={o.type === "Window" ? "#eef3f9" : o.type === "Vent" ? "#f5f2e8" : "#e7e2d8"}
               stroke={C.trim} strokeWidth="2.25"
-              strokeDasharray={o.collision ? "5 3" : undefined} />
-            {o.type === "Window" ? (
+              strokeDasharray={o.collision || o.noSill ? "5 3" : undefined} />
+            {o.type === "Window" && (
               <g stroke="#8a93a2">
                 <line x1={o.cx} y1={o.y} x2={o.cx} y2={o.y + o.h} strokeWidth="1.2" />
                 <line x1={o.x} y1={o.y + o.h / 2} x2={o.x + o.w} y2={o.y + o.h / 2} strokeWidth="1" />
               </g>
-            ) : (
+            )}
+            {o.type === "Vent" && (
+              <g stroke="#8a93a2" strokeWidth="0.9">
+                <line x1={o.x + 2} y1={o.y + o.h * 0.3} x2={o.x + o.w - 2} y2={o.y + o.h * 0.3} />
+                <line x1={o.x + 2} y1={o.y + o.h * 0.55} x2={o.x + o.w - 2} y2={o.y + o.h * 0.55} />
+                <line x1={o.x + 2} y1={o.y + o.h * 0.8} x2={o.x + o.w - 2} y2={o.y + o.h * 0.8} />
+              </g>
+            )}
+            {o.type === "Entry door" && (
               <g>
                 <rect x={o.x + o.w * 0.17} y={o.y + o.h * 0.1} width={o.w * 0.66} height={o.h * 0.38} fill="none" stroke="#8a93a2" strokeWidth="1" />
                 <rect x={o.x + o.w * 0.17} y={o.y + o.h * 0.56} width={o.w * 0.66} height={o.h * 0.36} fill="none" stroke="#8a93a2" strokeWidth="1" />
@@ -197,31 +305,38 @@ export default function ElevationSheet() {
             {o.collision && (
               <text x={o.cx} y={o.y - 4} fontSize="7" textAnchor="middle" fill={C.trim} fontWeight="bold">POSITION UNVERIFIED</text>
             )}
+            {o.noSill && (
+              <text x={o.cx} y={o.y + o.h + 10} fontSize="7" textAnchor="middle" fill={C.amber} fontWeight="bold">V-POS ESTIMATED — NO DOOR ANCHOR</text>
+            )}
             {/* schedule tag bubble */}
-            <line x1={o.cx} y1={340} x2={o.cx} y2={o.y - 2} stroke={C.muted} strokeWidth="0.9" />
-            <circle cx={o.cx} cy={330} r="12" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
-            <text x={o.cx} y={334} fontSize="11" fontWeight="bold" textAnchor="middle" fill={C.ink}>{o.tag}</text>
+            <line x1={o.cx} y1={bubbleY + 10} x2={o.cx} y2={o.y - 2} stroke={C.muted} strokeWidth="0.9" />
+            <circle cx={o.cx} cy={bubbleY} r="12" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
+            <text x={o.cx} y={bubbleY + 4} fontSize="11" fontWeight="bold" textAnchor="middle" fill={C.ink}>{o.tag}</text>
           </g>
         ))}
 
         {/* Starter + outside corners + grade */}
         <line x1={wallX} y1={wallBottom - 3.5} x2={wallRight} y2={wallBottom - 3.5} stroke={C.starter} strokeWidth="2.5" strokeDasharray="8 3 2 3" />
-        <line x1={wallX + 1.5} y1={wallTop} x2={wallX + 1.5} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
-        <line x1={wallRight - 1.5} y1={wallTop} x2={wallRight - 1.5} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
+        <line x1={wallX + 1.5} y1={segTopY[0]} x2={wallX + 1.5} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
+        <line x1={wallRight - 1.5} y1={segTopY[stepped ? 1 : 0]} x2={wallRight - 1.5} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
         <line x1="60" y1={wallBottom} x2="960" y2={wallBottom} stroke={C.ink} strokeWidth="2" />
         <path d={`M 66 ${wallBottom} l 8 10 M 82 ${wallBottom} l 8 10 M 98 ${wallBottom} l 8 10 M 918 ${wallBottom} l 8 10 M 934 ${wallBottom} l 8 10 M 950 ${wallBottom} l 8 10`} stroke={C.ink} strokeWidth="1" />
         <text x="62" y={wallBottom + 16} fontSize="9" fill={C.muted}>GRADE</text>
 
-        {/* Opening-center chain */}
-        <g stroke={C.ink} strokeWidth="1">
-          {chain.map((x, i) => <line key={i} x1={x} y1={i === 0 || i === chain.length - 1 ? 522 : 494} x2={x} y2={566} />)}
-          <line x1={wallX} y1="560" x2={wallRight} y2="560" />
-          {chain.map((x, i) => <path key={`t${i}`} d={`M ${x - 4.2} 564 l 8.4 -8`} strokeWidth="1.4" />)}
-        </g>
-        <g fontSize="10.5" textAnchor="middle" fill={C.ink}>
-          {segs.map((s, i) => <text key={i} x={s.x} y="554">{s.label}</text>)}
-        </g>
-        <Chip x={920} y={551} w={98} label="CTRS · AI-READ ✓" kind="ai-ok" />
+        {/* Opening-center chain (only when openings exist on this wall) */}
+        {ops.some((o) => o.drawable) && (
+          <g>
+            <g stroke={C.ink} strokeWidth="1">
+              {chain.map((x, i) => <line key={i} x1={x} y1={i === 0 || i === chain.length - 1 ? 522 : 494} x2={x} y2={566} />)}
+              <line x1={wallX} y1="560" x2={wallRight} y2="560" />
+              {chain.map((x, i) => <path key={`t${i}`} d={`M ${x - 4.2} 564 l 8.4 -8`} strokeWidth="1.4" />)}
+            </g>
+            <g fontSize="10.5" textAnchor="middle" fill={C.ink}>
+              {segs.map((s, i) => <text key={i} x={s.x} y="554">{s.label}</text>)}
+            </g>
+            <Chip x={920} y={551} w={98} label="CTRS · AI-READ ✓" kind="ai-ok" />
+          </g>
+        )}
 
         {/* Overall width */}
         <g stroke={C.ink} strokeWidth="1">
@@ -233,42 +348,80 @@ export default function ElevationSheet() {
         <text x="500" y="602" fontSize="13" fontWeight="bold" textAnchor="middle" fill={C.ink} data-testid="elevation-width-value">{W.width_label}</text>
         <Chip x={556} y={590} w={W.width_tag === "TAPED" ? 52 : 74} label={W.width_tag} kind={tagKind(W.width_tag)} />
 
-        {/* Siding height (right) — §9 naming */}
-        <g stroke={C.ink} strokeWidth="1">
-          <line x1={wallRight + 2} y1={wallTop} x2="952" y2={wallTop} /><line x1={wallRight + 2} y1={wallBottom} x2="952" y2={wallBottom} />
-          <line x1="946" y1={wallTop} x2="946" y2={wallBottom} />
-          <path d={`M 941.8 ${wallTop + 4} l 8.4 -8 M 941.8 ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
-        </g>
-        <text x="954" y={wallTop + 38} fontSize="7.5" fontWeight="bold" fill={C.muted}>SIDING HEIGHT</text>
-        <text x="954" y={wallTop + 47} fontSize="6.5" fill={C.muted}>(starter → soffit)</text>
-        <text x="954" y={wallTop + 64} fontSize="13" fontWeight="bold" fill={C.ink} data-testid="elevation-height-value">{W.height_label}</text>
-        <Chip x={950} y={wallTop + 70} w={74} label={W.height_tag === "TAPED-DERIVED" ? "TAPED-DERIVED" : W.height_tag} kind={tagKind(W.height_tag)} />
-        {W.courses && (
-          <text x="950" y={wallTop + 100} fontSize="8" fill={C.muted}>{S.coursesNote}</text>
+        {/* Siding height basis lines — §9 naming; stepped: ONE PER SEGMENT */}
+        {stepped ? (
+          <g>
+            {/* seg[1] (right half) — right-side basis line */}
+            <g stroke={C.ink} strokeWidth="1" data-testid="elevation-seg-basis-1">
+              <line x1={wallRight + 2} y1={segTopY[1]} x2="952" y2={segTopY[1]} /><line x1={wallRight + 2} y1={wallBottom} x2="952" y2={wallBottom} />
+              <line x1="946" y1={segTopY[1]} x2="946" y2={wallBottom} />
+              <path d={`M 941.8 ${segTopY[1] + 4} l 8.4 -8 M 941.8 ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
+            </g>
+            <text x="954" y={segTopY[1] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted}>SEG 2 HEIGHT</text>
+            <text x="954" y={segTopY[1] + 40} fontSize="12" fontWeight="bold" fill={C.ink} data-testid="elevation-height-value">{S.seg1Label}</text>
+            <Chip x={950} y={segTopY[1] + 46} w={74} label="TAPED-DERIVED" kind="taped-derived" />
+            <text x="1022" y={segTopY[1] + 74} fontSize="7" fill={C.muted} textAnchor="end">{S.seg1Formula}</text>
+            {/* seg[0] (left half) — left-side basis line */}
+            <g stroke={C.ink} strokeWidth="1" data-testid="elevation-seg-basis-0">
+              <line x1={wallX - 2} y1={segTopY[0]} x2={wallX - 52} y2={segTopY[0]} /><line x1={wallX - 2} y1={wallBottom} x2={wallX - 52} y2={wallBottom} />
+              <line x1={wallX - 46} y1={segTopY[0]} x2={wallX - 46} y2={wallBottom} />
+              <path d={`M ${wallX - 50.2} ${segTopY[0] + 4} l 8.4 -8 M ${wallX - 50.2} ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
+            </g>
+            <text x={wallX - 56} y={segTopY[0] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted} textAnchor="end">SEG 1 HEIGHT</text>
+            <text x={wallX - 56} y={segTopY[0] + 40} fontSize="12" fontWeight="bold" fill={C.ink} textAnchor="end">{S.seg0Label}</text>
+            <Chip x={wallX - 130} y={segTopY[0] + 46} w={74} label="TAPED-DERIVED" kind="taped-derived" />
+            <text x={wallX - 56} y={segTopY[0] + 74} fontSize="7" fill={C.muted} textAnchor="end">{S.seg0Formula}</text>
+          </g>
+        ) : (
+          <g>
+            <g stroke={C.ink} strokeWidth="1">
+              <line x1={wallRight + 2} y1={wallTop} x2="952" y2={wallTop} /><line x1={wallRight + 2} y1={wallBottom} x2="952" y2={wallBottom} />
+              <line x1="946" y1={wallTop} x2="946" y2={wallBottom} />
+              <path d={`M 941.8 ${wallTop + 4} l 8.4 -8 M 941.8 ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
+            </g>
+            <text x="954" y={wallTop + 38} fontSize="7.5" fontWeight="bold" fill={C.muted}>SIDING HEIGHT</text>
+            <text x="954" y={wallTop + 47} fontSize="6.5" fill={C.muted}>(starter → soffit)</text>
+            <text x="954" y={wallTop + 64} fontSize="13" fontWeight="bold" fill={C.ink} data-testid="elevation-height-value">{W.height_label}</text>
+            <Chip x={950} y={wallTop + 70} w={74} label={W.height_tag === "TAPED-DERIVED" ? "TAPED-DERIVED" : W.height_tag} kind={tagKind(W.height_tag)} />
+            {W.courses && (
+              <text x="950" y={wallTop + 100} fontSize="8" fill={C.muted}>{S.coursesNote}</text>
+            )}
+          </g>
         )}
 
         {/* Bottom strip */}
         <line x1="60" y1="628" x2="996" y2="628" stroke={C.ink} strokeWidth="1" />
 
-        {/* Wall data */}
+        {/* Wall data (stepped: formulas get their own sub-line — column is 344px) */}
         <g fontSize="9" fill={C.ink} data-testid="elevation-wall-data">
-          <text x="60" y="646" fontWeight="bold" letterSpacing="1.5" fontSize="10.5">WALL DATA — FRONT</text>
+          <text x="60" y="646" fontWeight="bold" letterSpacing="1.5" fontSize="10.5">{S.wallDataHead}</text>
           <text x="60" y="664"><tspan>Width </tspan><tspan fontWeight="bold">{W.width_label}</tspan><tspan>{S.widthTail}</tspan></text>
-          <text x="60" y="680"><tspan>Siding height (starter → soffit) </tspan><tspan fontWeight="bold">{W.height_label}</tspan><tspan>{S.heightTail}</tspan></text>
-          <text x="60" y="696"><tspan>Wall area </tspan><tspan fontWeight="bold">{S.areaBold}</tspan><tspan>{S.areaTail}</tspan><tspan fontWeight="bold">{S.gable}</tspan><tspan>{S.storiesTail}</tspan></text>
-          <text x="60" y="712"><tspan>Siding </tspan><tspan fontWeight="bold">{S.sidingBold}</tspan><tspan> · Profile callout </tspan><tspan fontWeight="bold">{S.profileBold}</tspan><tspan>{S.profileTail}</tspan></text>
-          <text x="60" y="728"><tspan>Openings </tspan><tspan fontWeight="bold">{S.openCount}</tspan><tspan>{S.openTail}</tspan></text>
-          {dev && <text x="60" y="744">{S.devSummary}</text>}
+          {stepped ? (
+            <g>
+              <text x="60" y="680"><tspan>Siding heights (starter → soffit) </tspan><tspan fontWeight="bold">{S.heightsBold}</tspan><tspan>{S.heightsTail}</tspan></text>
+              <text x="60" y="691" fontSize="7.5" fill={C.muted}>{S.heightsSub}</text>
+            </g>
+          ) : (
+            <text x="60" y="680"><tspan>Siding height (starter → soffit) </tspan><tspan fontWeight="bold">{W.height_label}</tspan><tspan>{S.heightTail}</tspan></text>
+          )}
+          <text x="60" y={stepped ? 704 : 696}><tspan>Wall area </tspan><tspan fontWeight="bold">{S.areaBold}</tspan><tspan>{S.areaTail}</tspan><tspan fontWeight="bold">{S.gable}</tspan><tspan>{S.gableTag}</tspan><tspan>{S.storiesTail}</tspan></text>
+          <text x="60" y={stepped ? 718 : 712}><tspan>Siding </tspan><tspan fontWeight="bold">{S.sidingBold}</tspan><tspan> · Profile callout </tspan><tspan fontWeight="bold">{S.profileBold}</tspan><tspan>{S.profileTail}</tspan></text>
+          <text x="60" y={stepped ? 732 : 728}><tspan>Openings </tspan><tspan fontWeight="bold">{S.openCount}</tspan><tspan>{S.openTail}</tspan></text>
+          {dev && <text x="60" y={stepped ? 746 : 744}>{S.devSummary}</text>}
           <text x="60" y="760" fill={C.muted}>{S.photosLine}</text>
         </g>
 
         {/* Opening schedule */}
         <g fontSize="9.5" fill={C.ink} data-testid="elevation-schedule">
-          <text x="404" y="646" fontWeight="bold" letterSpacing="1.5" fontSize="10.5">OPENING SCHEDULE — FRONT</text>
-          <g fontWeight="bold" fill={C.muted}>
-            <text x="420" y="664">TAG</text><text x="452" y="664">TYPE / STYLE</text><text x="566" y="664">SIZE (W×H)</text><text x="630" y="664">CTR @</text><text x="676" y="664">SILL</text>
-          </g>
-          <line x1="404" y1="669" x2="712" y2="669" stroke="#8a93a2" strokeWidth="0.8" />
+          <text x="404" y="646" fontWeight="bold" letterSpacing="1.5" fontSize="10.5">{S.schedHead}</text>
+          {data.openings.length > 0 && (
+            <g>
+              <g fontWeight="bold" fill={C.muted}>
+                <text x="420" y="664">TAG</text><text x="452" y="664">TYPE / STYLE</text><text x="566" y="664">SIZE (W×H)</text><text x="630" y="664">CTR @</text><text x="676" y="664">SILL</text>
+              </g>
+              <line x1="404" y1="669" x2="712" y2="669" stroke="#8a93a2" strokeWidth="0.8" />
+            </g>
+          )}
           {data.openings.map((o, i) => (
             <g key={o.tag}>
               <rect x="404" y={677 + i * 16} width="9" height="9" fill="#fff" stroke={C.trim} strokeWidth="2" />
@@ -279,7 +432,9 @@ export default function ElevationSheet() {
               <text x="676" y={684 + i * 16}>{o.sill_label}</text>
             </g>
           ))}
-          <text x="404" y={677 + data.openings.length * 16 + 12} fill={C.muted} fontSize="8.5">Swatch = drawn element's component class (opening trim).</text>
+          {data.openings.length > 0 && (
+            <text x="404" y={677 + data.openings.length * 16 + 12} fill={C.muted} fontSize="8.5">Swatch = drawn element's component class (opening trim).</text>
+          )}
           <text x="404" y={677 + data.openings.length * 16 + 24} fill={C.muted} fontSize="8.5">{data.schedule_note}</text>
         </g>
 
@@ -292,7 +447,7 @@ export default function ElevationSheet() {
           <g fontSize="8.5" fill={C.ink}>
             <text x="738" y="651" fontWeight="bold" fontSize="9">{String(data.customer_name || "").toUpperCase()}</text>
             <text x="990" y="651" textAnchor="end">{S.sheetLine}</text>
-            <text x="738" y="670" fontWeight="bold" fontSize="7.5">{S.basisWalls}</text>
+            <text x="738" y="670" fontWeight="bold" fontSize={S.basisWalls.length > 68 ? 6.3 : 7.5}>{S.basisWalls}</text>
             <text x="738" y="681" fontSize="7.5">{data.geometry_basis.openings}</text>
             <text x="738" y="699" fontSize="7.5">{S.scaleLine}</text>
             <text x="990" y="699" textAnchor="end" fontSize="7.5">{S.dateLine}</text>

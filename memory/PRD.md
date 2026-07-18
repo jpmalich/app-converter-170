@@ -3734,3 +3734,36 @@ Letrick FRONT sheet (EL-1) live-rendered, fully DATA-BOUND (zero hand-typed cons
   read-only static+behavioral, TTL pin (run archived elevation-sheet-pin), verb e2e remove/reset.
 TESTS: full suite 1064 passed / 1 skipped — handback green 16:27 UTC (6987ffa).
 GATE: Howard field-compares front vs mock v3; LEFT/BACK/RIGHT generalization only after pass.
+
+## SESSION 2026-07-18 (PM, part 7) — PHASE-2 GATE FORENSICS + LEFT/BACK/RIGHT SHEETS BUILT
+GATE RECEIPTS (ruled): found+logged two integrity violations from Phase-1 handback —
+(1) phantom proof: chip-proof PNG was md5-identical to the elevation-sheet PNG (wrong artifact);
+(2) handback-hash mislabel: entire Phase-1 build sat in the DIRTY tree at the 6987ffa guard run,
+auto-committed 4 min later as 128a23c (why Howard's two reviews found no chip). Howard re-recorded
+the Phase-1 handback commit as 128a23c; field-compare PASS re-attached. Guard HARDENED: hard-fails
+on dirty tree, CLEAN stamped per line, verbatim quotes + fresh md5-listed artifacts mandatory.
+Ride-along mid-flight generalization code REVERTED (broke a pin); Phase-2 baseline stamped
+345aa68 · CLEAN · 1064/1. Register-model credit logged (HOLD pattern followed).
+PIN AMENDED by ruling: opening_counts is a CLOSED three-key contract {windows, doors, vents}
+on ALL sheets (LEFT wall's sealed vent surfaced the category; proposed before code, adopted (a)).
+Any future opening type needs a ruling BEFORE code emits it.
+PHASE 2 BUILT (re-implemented from approved plan, inheriting nothing from the dead ride-along):
+- backend routes/elevation_sheets.py: generic {which} front/left/back/right (404 otherwise);
+  stepped sides carry BOTH tape segments (25×4.25"=8.854' / 28×4.25"=9.92'), each with its own
+  basis formula — heights bind the reconciled tape constants, never re-derived; sides' width is
+  AI-run fallback LABELED untaped; BACK 54' TAPED + 9.92' basis (sealed key EST-191890); chase
+  annotated AI-READ, footprint untaped — NOT TO SCALE (never scale-rendered); per-wall deviation
+  boxes (stepped: AI height must miss EVERY segment); stepped area NOT derivable (step untaped);
+  nearest-row group matching (36×54 removal can no longer swallow 36×52 neighbors).
+- frontend ElevationSheet.jsx + route :which — stepped outline w/ per-segment course hatch +
+  per-segment basis lines + STEP NOT TAPED annotation; gable dashed indicative outline w/ tag
+  chip; vents drawn + V-tagged; sill-less openings dashed "V-POS ESTIMATED — NO DOOR ANCHOR";
+  no-openings walls skip the center chain; wall-data column overflow fixed.
+- tests/test_elevation_sheets_lbr.py (13 pins): all-four-200 + 404, back sealed-key + chase +
+  deviation, stepped segments, left vent three-key, sides deviation, basis-line completeness
+  (every dimension tagged, all four sheets), verb remove→reset LEFT vent + BACK window group +
+  cross-wall isolation, read-only behavioral. Front pin amended to three-key counts.
+- .gitignore: backend/uploads/, bp_comparison_runs logs, stray root yarn.lock (ruled hygiene).
+TESTS: full suite 1077 passed / 1 skipped (informal pre-stamp run). Guard CLEAN stamp + the
+consolidated handback follow the Phase-2 auto-commit.
+PNGs (fresh, md5-listed in handback): /mock/letrick_{front,left,back,right}_elevation_sheet_LIVE_p2.png

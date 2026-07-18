@@ -72,7 +72,7 @@ function App() {
                     {/* Back-compat: old bookmarks pointing to /dashboard hit
                         the siding workspace (legacy default). */}
                     <Route path="/dashboard" element={<Navigate to="/dashboard/siding" replace />} />
-                    <Route path="/estimate/:id/elevation-sheet/front" element={<ElevationSheet />} />
+                    <Route path="/estimate/:id/elevation-sheet/:which" element={<ElevationSheet />} />
                     <Route path="/estimate/:id" element={<EstimateRouter />} />
                     <Route path="/catalog" element={<Catalog />} />
                     <Route path="/team" element={<Team />} />
