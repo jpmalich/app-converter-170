@@ -3487,3 +3487,12 @@ key values (54'-0" TAPED, 8'-11½" TAPED · 25 courses, wall area 483.8 ft²),
 openings kept AI-READ ✓ (only position source), explicit deviation box (AI
 read vs tape, "tape governs"), GEOMETRY BASIS line rendered on the title
 block. Source-naming rule applies to elevation sheets from their first mock.
+
+## DELIVERABLE-REACHABILITY ADDENDUM (2026-07-18, Howard)
+STANDING: deliverables Howard can't open don't count as delivered — provide
+the FULL https address (no placeholders), verify it returns 200 before
+handback, and attach a rendered PNG alongside any SVG/route deliverable.
+Executed for mock v2: SVG + PNG both live and curl-verified 200 at
+https://app-converter-170.preview.emergentagent.com/mock/letrick_front_elevation_sheet.svg
+https://app-converter-170.preview.emergentagent.com/mock/letrick_front_elevation_sheet.png
+(PNG rendered headless-Chrome at 1.5x from the SVG source).
