@@ -3423,3 +3423,42 @@ changes — Letrick demos on the current 3D where it's strong.
 ACTIVE P0 (unchanged): smashed-walls re-verification. Round-2 fix is
 implemented + agent-verified with front/back modal screenshots
 (2026-07-18); Howard's acceptance still owed.
+
+## 3D STOP-LOSS + 2D PIVOT (2026-07-18, Howard) — executed
+(1) SMASHED-WALLS ROUND 3+ CANCELLED — capability limit declared (counting-
+loop doctrine). P0 closed by CONTAINMENT: any facade with opening-placement
+collisions renders walls/roof/dims but ZERO openings, with count line
+"N openings not drawn on the X wall — see opening schedule." (banner) and
+"N not drawn on this wall — see opening schedule" (wall-info panel). ALL-OR-
+NONE PIN: a facade renders all its openings cleanly or none with the count —
+never a subset with collisions. No partial placement, no round-4 algorithm.
+Implemented in autoSpace (collision detected → whole facade's openings
+dropped, count = total). Render-only; takeoff/schedule untouched. Verified
+live on 261 Haugh: front 0 drawn/16 counted, right 0/6, back 0/19, left 0/7 —
+clean walls, no stacking, count lines in banner. Pins:
+test_facade_openings_all_or_none_never_a_subset_with_collisions,
+test_opening_omission_is_render_only_never_touches_takeoff (46 tests green
+across 3D suites).
+(2) 2D ELEVATION SHEETS — design + data-mapping phase DELIVERED for review:
+spec at /app/memory/elevation_sheet_spec.md (sheet anatomy, source-tag
+taxonomy, field-by-field data mapping from existing extraction, SVG/print-
+first rendering, surfaces, out-of-scope list) + mocked sheet from REAL
+Letrick front-wall data (run d66794488ef8, 50'-0" TAPED REF, 8'-7" AI-READ✓
+eave, W1/W2/D1/W3 verified positions) at
+/app/frontend/public/mock/letrick_front_elevation_sheet.svg
+(→ {preview}/mock/letrick_front_elevation_sheet.svg). Ship timing stays
+post-September unless Howard explicitly moves it. Key spec decision: 2D
+sheets render colliding openings dashed-red "POSITION UNVERIFIED" instead of
+omitting — the 2D surface can show conflict honestly where 3D cannot.
+(3) ROUND-1 GREEN-VS-HEAD INTEGRITY — ANSWERED (git forensics):
+83de901 (round-1 session's final commit) contains NEITHER the round-1
+renderer changes (no unplaced.count) NOR the round-1 pin tests — they sat
+UNCOMMITTED in the working tree and only entered history in this session's
+commit. Worse: the round-1 pin test_unplaceable_geometry_omitted_with_count_
+never_at_origin asserts `default: break;` absent from the MAIN wall switch,
+but round-1 only changed the APPENDAGE switch — the pin could never have
+passed against round-1's own code (confirmed: assertion fails against the
+round-1 file content). Conclusion: the reported round-1 greens did not
+include a final run of that pin as written; it first went green in round 2
+when this session removed the main-switch default. Lesson pinned: pins must
+be RUN after the last edit, and the run must be part of the committed state.

@@ -111,16 +111,20 @@ def test_no_two_walls_render_at_coincident_coordinates():
     # customer surfaces via the snapshot gate
     assert "fit_low: bannerMessages.length > 0" in h3d
 
-# ── smashed-walls WIDENED (ruled 2026-07-18 round 2) ─────────────────
-def test_interpenetrating_opening_rects_are_omitted_and_counted():
-    """The eye catches overlap, not just exact coincidence: opening rects
-    that interpenetrate beyond OPENING_OVERLAP_FRAC of the smaller rect
-    (photo duplicates flattened onto one wall plane) are omitted +
-    counted per facade, and the count rides the warnings banner."""
+# ── smashed-walls STOP-LOSS containment (ruled 2026-07-18 round 3) ───
+def test_facade_openings_all_or_none_never_a_subset_with_collisions():
+    """Capability limit declared: a facade renders ALL its openings
+    cleanly or NONE with the count — never a subset with collisions.
+    No partial placement, no round-4 algorithm."""
     h3d = (_ROOT / "frontend/src/components/estimate/HouseModel3D.jsx").read_text()
     assert "OPENING_OVERLAP_FRAC" in h3d
-    assert "omittedOpenings" in h3d
-    assert "overlapping placements exceed the model vocabulary" in h3d
+    assert "OPENING_OVERLAP_DEPTH_FT" in h3d
+    # collision detected → the WHOLE facade's openings are dropped
+    assert "return { placed: [], omitted: n };" in h3d
+    assert "return { placed, omitted: 0 };" in h3d
+    # the count line points at the opening schedule on both surfaces
+    assert "not drawn on the ${f.id} wall — see opening schedule" in h3d
+    assert "not drawn on this wall — see opening schedule" in h3d
     # priority: reconciler-verified (along_wall_ft) beats bbox-only
     assert "verified: alongFt != null" in h3d
 
@@ -130,7 +134,7 @@ def test_opening_omission_is_render_only_never_touches_takeoff():
     lines, and the openings schedule are untouched."""
     h3d = (_ROOT / "frontend/src/components/estimate/HouseModel3D.jsx").read_text()
     # sweep is inside autoSpace, whose output only feeds facade.openings
-    seg = h3d.split("const prio")[1].split("return { placed, omitted }")[0]
+    seg = h3d.split("const prio")[1].split("return { placed, omitted: 0 }")[0]
     assert "OPENING_OVERLAP_FRAC" in seg
     # no writes to preview.measurements / lines anywhere in the sweep
     assert "measurements" not in seg

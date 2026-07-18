@@ -528,7 +528,14 @@ function buildHouseJson(preview, overrides, estimate, apDims) {
       if (collides) omitted += 1;
       else placed.push(r);
     });
-    return { placed, omitted };
+    if (omitted > 0) {
+      // STOP-LOSS CONTAINMENT (ruled 2026-07-18): a facade renders ALL
+      // its openings cleanly or NONE with the count — never a subset
+      // with collisions. Capability limit declared; no partial
+      // placement, no round-4 algorithm.
+      return { placed: [], omitted: n };
+    }
+    return { placed, omitted: 0 };
   };
 
   // Iter 79j.26 — Roof type cascade: user > AI (≥0.8 confidence) >
@@ -1365,13 +1372,13 @@ function buildScene(scene, house) {
       `${unplaced.count} wall segment(s) not drawn — house exceeds model vocabulary.`,
     );
   }
-  // RULED 2026-07-18 (smashed-walls, widened): omitted-opening counts
-  // per facade ride the same warnings banner (→ bannerMessages →
-  // fit_low on customer surfaces).
+  // STOP-LOSS CONTAINMENT (ruled 2026-07-18): facades with opening-
+  // placement collisions render walls/roof/dims but ZERO openings —
+  // the count line points at the opening schedule (SSOT).
   house.facades.forEach((f) => {
     if ((f.omittedOpenings || 0) > 0) {
       warnings.push(
-        `${f.omittedOpenings} opening(s) on the ${f.id} wall not drawn — overlapping placements exceed the model vocabulary.`,
+        `${f.omittedOpenings} openings not drawn on the ${f.id} wall — see opening schedule.`,
       );
     }
   });
@@ -2191,7 +2198,7 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
           {(peb.dormer_sqft || 0) > 0 && <Row k="Dormer face" v={`${peb.dormer_sqft.toFixed(0)} sf`} />}
           {(peb.stone_sqft || 0) > 0 && <Row k="Stone / masked" v={`${peb.stone_sqft.toFixed(0)} sf`} />}
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
-          <Row k="Openings" v={`${facade.openings.length} drawn${facade.omittedOpenings ? ` · ${facade.omittedOpenings} omitted (overlap)` : ""} — this wall`} />
+          <Row k="Openings" v={facade.omittedOpenings ? `${facade.omittedOpenings} not drawn on this wall — see opening schedule` : `${facade.openings.length} — this wall`} />
           {house.openingPlacementDefaulted > 0 && (
             <div className="text-[9px] italic text-[var(--warning-text)] leading-tight" data-testid="ai-measure-3d-opening-placement-note">
               <AlertTriangle className="w-2.5 h-2.5 inline mr-0.5" style={{ color: AMBER }} />
