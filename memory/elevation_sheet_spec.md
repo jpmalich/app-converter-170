@@ -29,6 +29,10 @@ secondary (tap-wall takeoff, appendage ratification, simple houses).
      "POSITION UNVERIFIED" chip — presence guaranteed, position labeled,
      render-only, print-surviving, linked to its schedule tag, and
      SOLIDIFIED when the confirm-card ratifies the position.
+   - **Tape/AI deviation box (SPEC-LEVEL, ruled 2026-07-18)**: wherever tape
+     and AI disagree on a sheet, an amber deviation box renders stating both
+     values, the delta, and "tape governs" — not a one-off of the Letrick
+     mock; a standing sheet element.
 3. **Dimension lines** (extension lines + ticks, architectural format X'-Y"):
    - Overall wall width (below, outermost chain).
    - Opening-center chain (below, inner chain): left corner → each opening

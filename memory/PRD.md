@@ -3496,3 +3496,22 @@ Executed for mock v2: SVG + PNG both live and curl-verified 200 at
 https://app-converter-170.preview.emergentagent.com/mock/letrick_front_elevation_sheet.svg
 https://app-converter-170.preview.emergentagent.com/mock/letrick_front_elevation_sheet.png
 (PNG rendered headless-Chrome at 1.5x from the SVG source).
+
+## CONSOLIDATED ACCEPTANCES + TAPED-CONFLATION AUDIT (2026-07-18)
+(2) Guard refinement RULED + logged: clean-pass criterion = recorded hash
+equals handback commit; dirty-flagged mid-session runs provisional; FINAL
+guarded run before handback at the handback hash (register updated).
+(3) AUDIT — direct_ref→TAPED conflation across surfaces. FINDING: the app
+never renders width_ft_source/direct_ref as "taped" anywhere (field not
+displayed in any UI). CORRECT usages confirmed: HouseModel3D "Confirmed —
+taped" (user_measured only), TapeCheckPanel (contractor-entered), accuracy
+report "Taped ground truth (entered in the field)" (field-entered), demo.py
+frozen Letrick taped truths (Howard's tape). TWO WORDING-LEVEL conflations
+found + FIXED in AIMeasureButton.jsx: onboarding "…for tape-grade accuracy"
+→ "…for the strongest ref-anchored accuracy (AI reads — not tape)"; marker
+coverage summary "All 4 elevations anchored · tape-grade" → "All 4 elevations
+ref-anchored (AI reads — not tape)". (Letrick front proves the point: a
+ref-anchored AI read still missed the tape by 4'.) Deviation box promoted to
+SPEC-LEVEL in elevation_sheet_spec.md ("tape governs" wherever tape and AI
+disagree on a sheet).
+(4) Reachability rule standing (already logged).

@@ -2300,7 +2300,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         </div>
                         Photos without reference markers can drift <b>25–90% on dormers
                         and upper features</b>. Add a <b>WALL REF</b> or <b>WIN REF</b> to
-                        each elevation for tape-grade accuracy.
+                        each elevation for the strongest ref-anchored accuracy
+                        (AI reads — not tape).
                       </div>
                     )}
                     <p className="text-[var(--ink-2)]">
@@ -2946,7 +2947,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           ? "Dormer pinned without a marker — widths will drift 25–90%"
                           : anyRedOrGrey
                           ? "Some elevations missing markers — accuracy risk on those"
-                          : "All 4 elevations anchored · tape-grade"}
+                          : "All 4 elevations ref-anchored (AI reads — not tape)"}
                       </span>
                     </div>
                     <div className="grid grid-cols-4 gap-1.5 p-2">

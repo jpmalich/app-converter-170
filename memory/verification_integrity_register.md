@@ -10,6 +10,13 @@ a dirty working tree note-free, runs the suite, and appends `hash · result ·
 targets · timestamp` to `/app/memory/handback_green_log.md`. Self-reported
 greens without a hash don't count.
 
+CLEAN-PASS CRITERION (refined 2026-07-18, for the auto-commit workflow):
+a handback green COUNTS only when the recorded hash equals the handback
+commit. Dirty-flagged mid-session runs are PROVISIONAL. The FINAL guarded
+run before any handback must be at the handback hash — under platform
+auto-commit that means: make all edits, let the step auto-commit, run the
+guard as the last action with no code edits after it.
+
 ---
 
 ## Entry 1 — 2026-07-18 · Smashed-walls round-1 phantom green (CLASS-DEFINING)
