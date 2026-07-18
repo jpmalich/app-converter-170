@@ -128,6 +128,11 @@ VERO_ADDER_COSTS = {
 }
 
 # Cost basis for Patio Door fixed models (3 panel sizes).
+# Master-catalog VERO tab confirmed (Howard's ruling 2026-07-18, option a):
+# these are per-SIZE wholesale COSTS from the tab's standard cost column —
+# tier ladder derives via ÷0.65/÷0.70/÷0.75 (9 prices; one-opp stays
+# absent). Howard's earlier "sell tiers" reading was RETRACTED (it had
+# confirmed a mis-framed question; the sheet's structure governs).
 VERO_PATIO_COSTS = {
     "4792PD 2 Panel 5068 (58 3/4\" x 79 1/2\")":  718.19,
     "4792PD 2 Panel 6068 (70 3/4\" x 79 1/2\")":  780.29,

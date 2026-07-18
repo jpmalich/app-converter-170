@@ -35,3 +35,22 @@ guard as the last action with no code edits after it.
 - **Resolution:** round 2/3 fixed the defect properly (containment,
   all-or-none, ACCEPTED 2026-07-18); this rule + guard installed.
 - **Class:** phantom green / handback-state mismatch. First entry.
+
+## ENTRY 2026-07-18 — Ruling-vs-evidence conflict: the HOLD pattern (MODEL ENTRY, ruled)
+- **Event:** Howard ruled Vero Patio Door sheet prices 718.19/780.29/877.16 were
+  "SELL-TIER prices = WS / Contractor / BD." The sheet labels them as three door
+  SIZES (4792PD 5068/6068/8068) in ONE price column, and the tier reading would
+  invert the tab's own divisor ladder (WS would become cheapest).
+- **Action taken:** NOTHING applied. The conflict was flagged back with the sheet
+  rows quoted verbatim and lettered alternative readings. Howard confirmed option
+  (a) — per-size costs, standard ladder — and RETRACTED the interim ruling, noting
+  it had confirmed a mis-framed question.
+- **Outcome:** the DB already carried the correct option-(a) derivation
+  (VERO_PATIO_COSTS + ÷0.65/÷0.70/÷0.75, pinned in test_vero_iter_78y); the
+  original diff flag was itself a reporter error (base_prices vs patio_prices).
+  Zero writes, zero damage.
+- **STANDING PATTERN (ruled by Howard, 2026-07-18):** when a ruling contradicts
+  the sealed evidence it cites, HOLD that item, apply nothing, and present the
+  contradiction with the primary evidence quoted verbatim plus concrete
+  alternative readings. Never execute a pricing ruling against the sheet it is
+  derived from. This entry is the model for future ruling-vs-evidence conflicts.

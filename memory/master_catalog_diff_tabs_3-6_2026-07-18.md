@@ -48,19 +48,25 @@ established margin divisors (÷0.65 / ÷0.70 / ÷0.75):
 All 8 adders (Quattro, Elite TG2, TG2 Triple, Head Expander, Grids, Sentry, Nail Fin,
 HD Screen) track the SAME ratio on every tier — **zero drift**.
 
-### Flags (report-only, awaiting ruling)
-1. **Vero one-opp tier**: no DB docs exist for Vero on the one-opp tier (WS/Contractor/BD
-   only). Intentional, or should one-opp be derived too?
-2. **Vero Patio Door — net-new sheet data.** DB docs exist but `base_prices` is None.
-   Sheet (4792PD 2 Panel, White int/ext): 5068 → 718.19 · 6068 → 780.29 · 8068 → 877.16.
-   These read as SELL-side figures (≈ cost ÷ margin already applied?) — need Howard to
-   confirm which layer they are before any ingest.
+### Flags — RESOLVED 2026-07-18 PM (Howard's rulings)
+1. **Vero one-opp tier**: LEAVE ABSENT (ruled) — absent docs render "not offered at your
+   tier" via `available:false`; never derived.
+2. **Vero Patio Door — flag RETRACTED, reporter error.** The original diff read
+   `base_prices` (None for fixed-model products); patio door prices live in
+   `patio_prices`. The DB ALREADY carries the ruled option-(a) derivation:
+   `VERO_PATIO_COSTS` = sheet per-size costs (718.19 / 780.29 / 877.16), tier ladder
+   ÷0.65/÷0.70/÷0.75 → 9 prices verified to the cent (5068: 1104.91/1025.99/957.59 ·
+   6068: 1200.45/1114.70/1040.39 · 8068: 1349.48/1253.09/1169.55). Pinned in
+   test_vero_iter_78y. Howard's interim "sell tiers" reading was retracted — it had
+   confirmed a mis-framed question; the sheet's structure governs. ZERO drift; nothing
+   applied because nothing needed applying.
 
 ## AWAITING HOWARD'S GO (per-item)
 - [x] ISS section-split — **ADOPTED 2026-07-18 PM** (sheet organization canonical;
       reverses the Iter 78z++++ merge; backup 20260718_132744_iss_catalog_….json)
-- [ ] Vero Patio Door: **HELD — sheet-vs-ruling conflict flagged back to Howard**
-      (sheet's three prices are labeled as three SIZES 5068/6068/8068, not tiers)
+- [x] Vero Patio Door: **RESOLVED 2026-07-18 PM** — flag was a reporter error
+      (read base_prices; fixed-model prices live in patio_prices). DB already carries
+      the ruled option-(a) ladder from sheet per-size costs. Zero drift.
 - [x] Vero one-opp tier: **LEAVE ABSENT, ruled 2026-07-18 PM** — absent doc now renders
       "not offered at your tier" (never auto-computed)
 - [x] Tab 4 ISS Window diff — **DONE 2026-07-18 PM**: zero drift (see above)

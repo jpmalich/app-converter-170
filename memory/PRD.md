@@ -3685,3 +3685,12 @@ TESTS: full suite 1050 passed / 1 skipped (documented-obsolete) — handback gre
    (production code can NEVER set the tag; purge deletes ONLY tagged; harness inserts must be
    tagged). Pre-existing untagged debris stays (never inferred retroactively — ruled).
 TESTS: full suite 1054 passed / 1 skipped — handback green 2026-07-18 13:39 UTC (0ce999c).
+
+### 2026-07-18 (PM, part 3) — RULING 2 RESOLVED, ZERO WRITES
+Howard confirmed option (a) (per-size costs, standard ladder) and RETRACTED the interim
+"sell tiers" reading. Finding: the DB ALREADY carried the exact option-(a) derivation
+(VERO_PATIO_COSTS = sheet costs; ÷0.65/÷0.70/÷0.75 → 9 prices, pinned in test_vero_iter_78y).
+The original diff flag was a reporter error (read base_prices; fixed-model prices live in
+patio_prices). Provenance comment added to vero_catalog.py; tabs 3-6 report corrected; the
+HOLD pattern logged in verification_integrity_register.md as the MODEL for future
+ruling-vs-evidence conflicts (ruled). Handback green 14:05 UTC (a34ee34), 1054 passed.
