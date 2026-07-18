@@ -3399,3 +3399,27 @@ front AND back views, stacking gone, labels rendering.
 Pins: test_interpenetrating_opening_rects_are_omitted_and_counted,
 test_opening_omission_is_render_only_never_touches_takeoff (12 pass in
 test_geometry_fit_gate.py; 46 pass across 3D suites).
+
+## VISUAL ARCHITECTURE RULING (2026-07-18, Howard) — PRODUCT DIRECTION
+(1) DIMENSIONED 2D ELEVATION SHEETS are the PRIMARY wall-verification
+surface: per-elevation orthographic drawings — wall outline + gable,
+dimension lines, openings drawn to scale with schedule labels, per-wall
+data list. Rendered from EXISTING extraction data (walls/openings/
+corner_locations — no new AI phase), source tags on every dimension
+(ai-read / printed / user-measured / estimated), print/PDF-friendly.
+(2) 3D DEMOTES TO SECONDARY — retained for tap-wall takeoff, appendage
+ratification, and simple-house visualization. Fit gate governs as shipped.
+NEVER the lead artifact.
+(3) COMPLEX-HOUSE ANSWER IS HOVER BY DESIGN — per the complementary
+positioning in pitch_reference.md. No photogrammetry, no multi-mass
+renderer, PERMANENTLY (closes/supersedes the post-September "true
+multi-mass renderer" backlog entry).
+SEQUENCING: the 2D elevation sheets are the FIRST post-September build —
+promoted to the top of that cluster, absorbing the previously backlogged
+elevation-sheet item (note: Iter 79j.12 removed the old auto-2D drawings
+for inaccuracy; the new sheets differ — dimensioned, source-tagged,
+to-scale, verification-grade). Nothing about the September demo surface
+changes — Letrick demos on the current 3D where it's strong.
+ACTIVE P0 (unchanged): smashed-walls re-verification. Round-2 fix is
+implemented + agent-verified with front/back modal screenshots
+(2026-07-18); Howard's acceptance still owed.
