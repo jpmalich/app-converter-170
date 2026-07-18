@@ -6,3 +6,4 @@
 - 2026-07-18 13:39 UTC · 0ce999c · TREE DIRTY AT RUN (hash valid only after auto-commit — re-run if code changed) · [tests] · 1054 passed, 1 skipped, 3 warnings in 142.81s (0:02:22)
 - 2026-07-18 14:05 UTC · a34ee34 · TREE DIRTY AT RUN (hash valid only after auto-commit — re-run if code changed) · [tests] · 1054 passed, 1 skipped, 3 warnings in 151.76s (0:02:31)
 - 2026-07-18 16:27 UTC · 6987ffa · TREE DIRTY AT RUN (hash valid only after auto-commit — re-run if code changed) · [tests] · 1064 passed, 1 skipped, 3 warnings in 164.58s (0:02:44)
+  ^ ANNOTATION (ruled 2026-07-18): commit mislabeled — tested code auto-committed as 128a23c; see integrity register. Phase-1 handback commit RE-RECORDED as 128a23c; human field-compare PASS re-attaches to 128a23c.

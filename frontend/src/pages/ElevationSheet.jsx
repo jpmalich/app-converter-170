@@ -38,35 +38,26 @@ const tagKind = (tag) =>
     : tag === "AI-READ ✓" ? "ai-ok" : tag === "AI-READ ⚠" ? "ai-warn" : "est";
 
 export default function ElevationSheet() {
-  const { id, which = "front" } = useParams();
+  const { id } = useParams();
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    setData(null);
-    setErr("");
-    api.get(`/estimates/${id}/elevation-sheet/${which}`)
+    api.get(`/estimates/${id}/elevation-sheet/front`)
       .then(({ data }) => setData(data))
       .catch((e) => setErr(e?.response?.data?.detail || "Failed to load sheet"));
-  }, [id, which]);
+  }, [id]);
 
   if (err) return <div className="p-8 text-sm" data-testid="elevation-sheet-error">{err}</div>;
   if (!data) return <div className="p-8 text-sm" data-testid="elevation-sheet-loading">Rendering sheet…</div>;
 
   const W = data.wall;
-  const segs2 = W.segments || null;
-  const stepped = !!(segs2 && segs2.length > 1);
-  const gableFt = W.gable_triangle_ft || 0;
-  // ── drawing math (auto-fit both axes, spec §5) ───────────────────
-  const wallBottom = 520, drawable = 820.8, maxDrawH = 300;
-  const ppf = Math.min(drawable / W.width_ft, maxDrawH / (W.height_ft + gableFt));
+  // ── drawing math (auto-fit, spec §5) ─────────────────────────────
+  const wallX = 90, wallBottom = 520, drawable = 820.8;
+  const ppf = drawable / W.width_ft;
   const wallW = W.width_ft * ppf;
-  const wallX = 90 + (drawable - wallW) / 2;
   const wallRight = wallX + wallW;
   const wallTop = wallBottom - W.height_ft * ppf;
-  const stepX = stepped ? wallX + wallW / 2 : null; // location NOT TAPED — indicative
-  const seg1BottomY = stepped ? wallTop + segs2[0].height_ft * ppf : wallBottom;
-  const apexY = wallTop - gableFt * ppf;
   const ovFt = (W.overhang_in || 12) / 12;
   const scaleInPerFt = ppf / 96;
   const fracs = [[1 / 8, '1/8"'], [5 / 32, '5/32"'], [3 / 16, '3/16"'], [1 / 4, '1/4"'], [3 / 8, '3/8"']];
@@ -82,18 +73,14 @@ export default function ElevationSheet() {
     }
   }
 
-  // openings geometry (sill-less openings draw dashed at mid-band — the
-  // vertical position is NOT derivable without a door anchor)
+  // openings geometry
   const ops = (data.openings || []).map((o) => {
     if (o.center_ft == null || !o.width_in || !o.height_in) return { ...o, drawable: false };
     const w = (o.width_in / 12) * ppf;
     const h = (o.height_in / 12) * ppf;
     const x = wallX + o.center_ft * ppf - w / 2;
-    const noSill = o.sill_in == null;
-    const bottom = noSill
-      ? (wallBottom + wallTop) / 2 + h / 2
-      : wallBottom - (o.sill_in / 12) * ppf;
-    return { ...o, drawable: true, noSill, x, y: bottom - h, w, h, cx: wallX + o.center_ft * ppf };
+    const bottom = wallBottom - ((o.sill_in || 0) / 12) * ppf;
+    return { ...o, drawable: true, x, y: bottom - h, w, h, cx: wallX + o.center_ft * ppf };
   });
 
   // opening-center dimension chain segments

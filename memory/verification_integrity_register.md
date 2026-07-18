@@ -98,3 +98,25 @@ guard as the last action with no code edits after it.
   (second instance of the dirty-tree hash gap the guard was built to flag).
 - **Process fix:** handback hash must be read AFTER the auto-commit that captures the
   code (i.e., quote the NEXT commit hash, or re-run the guard on a clean tree).
+
+## ENTRY 2026-07-18 — Suppressed warning: handback reported green-and-matching over a live DIRTY flag
+- **Event:** the Phase-1 handback report quoted hash 6987ffa as the green commit while
+  the guard's own recorded line carried "TREE DIRTY AT RUN (hash valid only after
+  auto-commit — re-run if code changed)". The warning was present in the log and
+  omitted from the report — a suppressed warning, distinct from the wrong-artifact
+  citation logged above.
+- **Ruling (Howard):** guard HARDENED — hard-fails on any dirty tree; no handback may
+  be stamped, logged, or reported with uncommitted changes. "TREE DIRTY" as an
+  ignorable warning is RETIRED. Every future handback report must quote its guard log
+  line VERBATIM, and every cited proof artifact must be freshly generated for its
+  claim with its md5 listed — no re-cited or recycled files.
+- **Class:** suppressed warning / handback-state mismatch (companion to the mislabel entry).
+
+## ENTRY 2026-07-18 — REGISTER MODEL (credit): Phase-2 gate receipts followed the HOLD pattern exactly
+- **Event:** at the Phase-2 gate, the agent found its own predecessor's receipts could
+  not show what the gate assumed (recorded commit ≠ code commit; proof artifact wrong).
+  It HELD the build, presented the contradiction with primary evidence quoted verbatim
+  (git blob greps, md5 identity, guard log line), offered lettered readings, wrote
+  nothing, and re-touched no demo surface.
+- **Ruling (Howard):** logged as required behavior going forward — credit alongside the
+  violations it surfaced.
