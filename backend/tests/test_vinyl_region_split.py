@@ -113,13 +113,20 @@ def test_missing_base_lf_never_pools_silently():
     assert "older run" in clap["note"]
 
 
-def test_catalog_shake_starter_pricing_pending_pin():
+def test_catalog_shake_starter_priced_flat_never_clap():
     assert "Pelican Bay Shake Starter" in catalog_seed.ITEM_AMI
     assert catalog_seed.ITEM_AMI["Pelican Bay Shake Starter"] == "65516000"
-    # pricing pending: NOT in any price dict (mat seeds 0); never clap's 7.64
+    # Master-catalog apply (Howard's go 2026-07-18): 13.99 FLAT ×4 tiers;
+    # never clap's 7.64.
+    assert catalog_seed.IDENTICAL_PRICES["Pelican Bay Shake Starter"] == 13.99
     src = Path(catalog_seed.__file__).read_text()
     assert "'Pelican Bay Shake Starter': 7.64" not in src
     assert '"Pelican Bay Shake Starter": 7.64' not in src
+
+
+def test_catalog_shakes_9_ami_corrected_655050():
+    # AMI correction (Howard's go 2026-07-18): sheet 655050 governs.
+    assert catalog_seed.ITEM_AMI['Pelican Bay Shakes 9"'] == "655050"
 
 
 def test_stale_div10_comment_synced():

@@ -58,3 +58,11 @@ Expired/revoked docs are never physically reaped (no TTL index) — history and 
 `tests/test_estimate_delete_guard.py` pins the 30-day trash TTL index and the fixture archive path;
 `test_demo_reset.py` pins reset idempotency + public link resolution. This audit adds no code
 changes — findings 3–5 are decisions/backlog, not defects.
+
+## ADDENDUM 2026-07-18 — TTL expiry SECOND instance + archival-bounds expansion
+The Haugh hover pin substrate (`hover_import_runs`, 24h TTL) reaped — that substrate was
+entirely OUTSIDE run_archive.py's bounds. Archival now covers ALL TTL'd run substrates
+(`ai_measure_runs`, `ai_blueprint_runs`, `hover_import_runs`), estimates' `lp_source_run_id`
+stamps are swept every boot, and `hover-lp-run` archives source+materialized runs at stamp
+mint. `hover_page_cache` ruled cache-exempt; `estimates_trash` exempt by design. Full
+substrate table + sweep findings: `incident_2026-07-18_ttl_expiry_second_instance.md`.

@@ -1,0 +1,8551 @@
+[
+ {
+  "_id": "6a18d87e6e0f283152e04702",
+  "id": "fd52da37-d0f0-4551-b1c6-724f3972b4d8",
+  "name": "one-opp",
+  "sections": [
+   {
+    "title": "Vinyl Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl"
+    ],
+    "items": [
+     {
+      "name": "Conquest Standard color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 75.71,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Standard color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 75.71,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Conquest Architectural color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 75.71,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Architectural color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 75.71,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Coventry Standard color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 81.17,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 81.17,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Architectural color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 88.1,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 88.1,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Standard color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 81.17,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 81.17,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Coventry Architectural color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 88.1,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 88.1,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Odyssey Standard color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 100.11,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 100.11,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 108.47,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 108.47,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Standard color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 100.11,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 100.11,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 108.47,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 108.47,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Charter Oak Standard color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 113.57,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Standard color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 113.57,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "Charter Oak Architectural color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 123.4,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Architectural color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 123.4,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "vertical board and batten Standard color 7\"",
+      "unit": "SQ",
+      "mat": 113.57,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "vertical board and batten Architectural color 7\"",
+      "unit": "SQ",
+      "mat": 123.4,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "Pelican Bay Shakes 9\"",
+      "unit": "SQ",
+      "mat": 419.94,
+      "lab": 0.0,
+      "ami_part": "655052"
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding/Accessories",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend 3.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 40.42,
+      "lab": 0.0,
+      "ami_part": "108032"
+     },
+     {
+      "name": "Ascend 5.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 59.36,
+      "lab": 0.0,
+      "ami_part": "108052"
+     },
+     {
+      "name": "Ascend - 5.5\" Trim  (16' length)",
+      "unit": "PCS",
+      "mat": 71.66,
+      "lab": 0.0,
+      "ami_part": "108042"
+     },
+     {
+      "name": "Ascend - J - Channel  (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 10.4,
+      "lab": 0.0,
+      "ami_part": "108062"
+     },
+     {
+      "name": "ASCEND Finish Trim",
+      "unit": "PCS",
+      "mat": 8.25,
+      "lab": 0.0,
+      "ami_part": "105210"
+     },
+     {
+      "name": "Ascend - Starter",
+      "unit": "PCS",
+      "mat": 8.83,
+      "lab": 0.0,
+      "ami_part": "107371"
+     }
+    ]
+   },
+   {
+    "title": "Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 133.23,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 149.74,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 145.89,
+      "lab": 0.0,
+      "ami_part": "103960"
+     },
+     {
+      "name": "Outside corners Standard color",
+      "unit": "PCS",
+      "mat": 19.69,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Outside corners Architectural color",
+      "unit": "PCS",
+      "mat": 21.58,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Inside Corners (Siding) Standard color",
+      "unit": "PCS",
+      "mat": 9.84,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "Inside Corners (Siding) Architectural color",
+      "unit": "PCS",
+      "mat": 10.97,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "3/4\" J-Channel Standard color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 4.55,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" J-Channel Architectural color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 4.55,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 4.55,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Finish Trim Standard color",
+      "unit": "PCS",
+      "mat": 0.45,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Finish Trim Architectural color",
+      "unit": "PCS",
+      "mat": 0.49,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Starter",
+      "unit": "PCS",
+      "mat": 7.64,
+      "lab": 0.0,
+      "ami_part": "107361"
+     },
+     {
+      "name": "House Wrap",
+      "unit": "SQ",
+      "mat": 11.55,
+      "lab": 0.0,
+      "ami_part": "646662A0"
+     },
+     {
+      "name": "RainDrop",
+      "unit": "SQ",
+      "mat": 30.73,
+      "lab": 0.0,
+      "ami_part": "646686"
+     },
+     {
+      "name": "3/8\" Fan Fold",
+      "unit": "SQ",
+      "mat": 11.06,
+      "lab": 0.0,
+      "ami_part": "668363"
+     },
+     {
+      "name": "2\" Nails 30 lbs (1 per 15 Sq)",
+      "unit": "JOB",
+      "mat": 81.63,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": "701170"
+     },
+     {
+      "name": "J-blocks - Split Blocks (82A009)",
+      "unit": "Each",
+      "mat": 13.49,
+      "lab": 0.0,
+      "ami_part": "82A009"
+     },
+     {
+      "name": "J-blocks - Light Blocks (82A010)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A010"
+     },
+     {
+      "name": "J-blocks - UL Blocks (82A017)",
+      "unit": "Each",
+      "mat": 21.51,
+      "lab": 0.0,
+      "ami_part": "82A017"
+     },
+     {
+      "name": "J-blocks - Jumbo Blocks (82A011)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A011"
+     },
+     {
+      "name": "Dryer Vents 4\" (82A014)",
+      "unit": "Each",
+      "mat": 23.81,
+      "lab": 0.0,
+      "ami_part": "82A014"
+     },
+     {
+      "name": "Shutters (louvered, raised panel) standard sizes",
+      "unit": "PR",
+      "mat": 114.2225,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gable vents (round,octagon)",
+      "unit": "Each",
+      "mat": 92.2875,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "1 1/4\" Trim Nails",
+      "unit": "Box",
+      "mat": 9.0,
+      "lab": 0.0,
+      "ami_part": "780052"
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     },
+     {
+      "name": "Pelican Bay Shake Starter",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": "65516000"
+     }
+    ]
+   },
+   {
+    "title": "Tear-Off / Clean Up",
+    "ascend": false,
+    "items": [
+     {
+      "name": "Tear-Off",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wood shake tear off (requires a dumpster)",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "clean up/ haul away job debris",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dumpster",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ]
+   },
+   {
+    "title": "Vinyl Soffit with Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Soffit & fascia Charter Oak Standard Color",
+      "unit": "PCS",
+      "mat": 14.0,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Charter Oak Architectural color",
+      "unit": "PCS",
+      "mat": 15.5,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Greenbriar",
+      "unit": "PCS",
+      "mat": 12.3,
+      "lab": 0.0,
+      "ami_part": "106022"
+     },
+     {
+      "name": "Soffit & fascia 2T",
+      "unit": "PCS",
+      "mat": 9.5,
+      "lab": 0.0,
+      "ami_part": "105007"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+      "unit": "PCS",
+      "mat": 4.55,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Architectural color",
+      "unit": "PCS",
+      "mat": 4.55,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding) White",
+      "unit": "PCS",
+      "mat": 4.55,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Fascia/rake or frieze up to 8\" coverage",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap porch band",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 133.23,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 149.74,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 145.89,
+      "lab": 0.0,
+      "ami_part": "103960"
+     }
+    ]
+   },
+   {
+    "title": "Porch Ceiling",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Charter Oak Soffit White",
+      "unit": "PCS",
+      "mat": 14.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wrap porch beam",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Seamless Gutter",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "Gutter 6\"",
+      "unit": "LF",
+      "mat": 3.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Downspout 6\"",
+      "unit": "LF",
+      "mat": 2.8,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "elbow",
+      "unit": "Each",
+      "mat": 2.69,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mitre",
+      "unit": "Each",
+      "mat": 13.75,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "End Cap",
+      "unit": "Each",
+      "mat": 2.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Guard (USA Shurflo)",
+      "unit": "LF",
+      "mat": 2.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Sealant",
+      "unit": "Each",
+      "mat": 9.31,
+      "lab": 0.0,
+      "ami_part": "71159900"
+     },
+     {
+      "name": "Hangars with Screws",
+      "unit": "Each",
+      "mat": 2.39,
+      "lab": 0.0,
+      "ami_part": "71160200"
+     },
+     {
+      "name": "Pipe Clips",
+      "unit": "Each",
+      "mat": 2.58,
+      "lab": 0.0,
+      "ami_part": "71161400"
+     }
+    ]
+   },
+   {
+    "title": "Misc. Labor and Material",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "R&R gutter",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R downspout",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap windows with wide crown",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Capping general",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window headers only",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap entry door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap patio door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap single garage door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Build out for windows w/furring (includes capping)",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Gable louvers",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Fascia Return",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Bird box",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flashing",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap tops of bird boxes",
+      "unit": "Each",
+      "mat": 60.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dormer upcharge",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Utilities",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cut out 4x4 section of wall and insulate",
+      "unit": "Each",
+      "mat": 100.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "LP Smart Siding",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Lap 3/8\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 27.11,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Nickel Gap",
+      "unit": "PCS",
+      "mat": 63.3,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Shake",
+      "unit": "PCS",
+      "mat": 20.77,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series 4' x 8' Panel",
+      "unit": "PCS",
+      "mat": 90.16,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series 4' x 10' Panel",
+      "unit": "PCS",
+      "mat": 120.7,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series Vertical Panel",
+      "unit": "PCS",
+      "mat": 64.31,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Trim",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "190 Series Trim 19/32\" x 3\" x 16'",
+      "unit": "PCS",
+      "mat": 17.2,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 24.67,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 37.02,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 49.38,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 64.34,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 77.17,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 30.01,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 45.01,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 60.01,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 78.59,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 94.26,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     }
+    ]
+   },
+   {
+    "title": "LP Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "540 Series OSC 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 158.47,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series OSC 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 237.72,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Touch up kits",
+      "unit": "PCS",
+      "mat": 53.34,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "OSI Quad Max Caulking",
+      "unit": "Tube",
+      "mat": 12.28,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "J blocks",
+      "unit": "Each",
+      "mat": 50.0,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Mini Splits",
+      "unit": "Each",
+      "mat": 70.0,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Trim Coil Aluminum 24\" x 50'",
+      "unit": "ROLL",
+      "mat": 195.31,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 133.23,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 149.74,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 145.89,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Soffit",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Soffit 16 x 16 Vented",
+      "unit": "PCS",
+      "mat": 75.1,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "38 Series Soffit 16 x 16 Closed",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch CTW soffit",
+      "unit": "PCS",
+      "mat": 109.32,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch VSSFT",
+      "unit": "PCS",
+      "mat": 117.44,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend Composite Lap Siding 7\"",
+      "unit": "SQ",
+      "mat": 309.64,
+      "lab": 0.0,
+      "ami_part": "018001"
+     },
+     {
+      "name": "Ascend Composite B&B 12\" (add 30% Waste)",
+      "unit": "SQ",
+      "mat": 366.96,
+      "lab": 0.0,
+      "ami_part": "018021"
+     }
+    ]
+   },
+   {
+    "title": "Window Installation",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Window DH/Slider - Pocket Install",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 170.0,
+      "ami_part": null
+     },
+     {
+      "name": "Window - Full Fin Replacement",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 252.45,
+      "ami_part": null
+     },
+     {
+      "name": "Large Window - adder for windows 30 sq-ft or larger",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 76.92,
+      "ami_part": null
+     },
+     {
+      "name": "Field Mull Assembly and/or Field Glaze (adder per each opening)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe Installation Practices For Window Installation",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe - Test Fee (all homes 1978 and older are tested)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window (Windows)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Standard Fee 4 days+",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 150.0,
+      "ami_part": null
+     },
+     {
+      "name": "Disposal Fee (Windows)",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 125.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mullion Removal & Cut-Out of Non-Structural Framing Members",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Sliding Glass Doors",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Sliding glass door 60\" x 80\"",
+      "unit": "each",
+      "mat": 1025.99,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 72\" x 80\"",
+      "unit": "each",
+      "mat": 1114.7,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 96\" x 80\"",
+      "unit": "each",
+      "mat": 1253.09,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door Custom Size",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Sliding Glass Door Install",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Vinyl Sliding Glass Door (5' & 6' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 669.63,
+      "ami_part": null
+     },
+     {
+      "name": "Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 832.55,
+      "ami_part": null
+     },
+     {
+      "name": "Oversize Vinyl Door - (greater than 8' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1099.42,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Exterior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Exterior Primed Stops or Snap Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 49.65,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Primed Wood Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 71.04,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Composite Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 99.26,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Interior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Interior Stops or Flat Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Casing",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 77.62,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Jamb Extension",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 89.13,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Sill - create or replace interior window sill - QUOTE ONLY",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 120.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Misc.",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Interior Blinds - Remove For Window Install & Reinstall",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 38.46,
+      "ami_part": null
+     },
+     {
+      "name": "Storm Window Removal",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     },
+     {
+      "name": "Second/Third/Clear Story Fee",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1846.15,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Rush Fee 3 days or less",
+      "unit": "ADD",
+      "mat": 0.0,
+      "lab": 80.77,
+      "ami_part": null
+     },
+     {
+      "name": "Add New Channel on ALL, Close up opening to match master Front opening",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1200.0,
+      "ami_part": null
+     },
+     {
+      "name": "Minimum Job Charge For Window Installs",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 769.23,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Double Hung Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Double Hung 0-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 2 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Slider 0-101 UI",
+      "unit": "each",
+      "mat": 294.55,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 3 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - 3 Lite Slider Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass per u.i. over 101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Casement Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Casement Min-43 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 44-53 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 54-63 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 64-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 93-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Picture Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Picture Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Window Material List",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Windows - .019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Windows Custom Quote",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero Window Quote",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   }
+  ],
+  "created_at": "2026-05-29T00:06:22.509048+00:00",
+  "updated_at": "2026-07-13T23:32:02.384682+00:00"
+ },
+ {
+  "_id": "6a18d87e6e0f283152e04703",
+  "id": "60c9db42-b216-4d83-93b2-392031083acb",
+  "name": "Builder-Dealer",
+  "sections": [
+   {
+    "title": "Vinyl Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl"
+    ],
+    "items": [
+     {
+      "name": "Conquest Standard color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 92.19,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Standard color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 92.19,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Conquest Architectural color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 102.84,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Architectural color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 102.84,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Coventry Standard color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 95.04,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 95.04,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Architectural color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 105.68,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 105.68,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Standard color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 95.04,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 95.04,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Coventry Architectural color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 105.68,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 105.68,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Odyssey Standard color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Standard color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Charter Oak Standard color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 125.46,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Standard color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 125.46,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "Charter Oak Architectural color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 141.21,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Architectural color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 141.21,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "vertical board and batten Standard color 7\"",
+      "unit": "SQ",
+      "mat": 136.56,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "vertical board and batten Architectural color 7\"",
+      "unit": "SQ",
+      "mat": 157.86,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "Pelican Bay Shakes 9\"",
+      "unit": "SQ",
+      "mat": 419.94,
+      "lab": 0.0,
+      "ami_part": "655052"
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding/Accessories",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend 3.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 40.42,
+      "lab": 0.0,
+      "ami_part": "108032"
+     },
+     {
+      "name": "Ascend 5.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 59.36,
+      "lab": 0.0,
+      "ami_part": "108052"
+     },
+     {
+      "name": "Ascend - 5.5\" Trim  (16' length)",
+      "unit": "PCS",
+      "mat": 71.66,
+      "lab": 0.0,
+      "ami_part": "108042"
+     },
+     {
+      "name": "Ascend - J - Channel  (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 10.4,
+      "lab": 0.0,
+      "ami_part": "108062"
+     },
+     {
+      "name": "ASCEND Finish Trim",
+      "unit": "PCS",
+      "mat": 8.25,
+      "lab": 0.0,
+      "ami_part": "105210"
+     },
+     {
+      "name": "Ascend - Starter",
+      "unit": "PCS",
+      "mat": 8.83,
+      "lab": 0.0,
+      "ami_part": "107371"
+     }
+    ]
+   },
+   {
+    "title": "Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": "103960"
+     },
+     {
+      "name": "Outside corners Standard color",
+      "unit": "PCS",
+      "mat": 23.66,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Outside corners Architectural color",
+      "unit": "PCS",
+      "mat": 25.94,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Inside Corners (Siding) Standard color",
+      "unit": "PCS",
+      "mat": 11.83,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "Inside Corners (Siding) Architectural color",
+      "unit": "PCS",
+      "mat": 13.2,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "3/4\" J-Channel Standard color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" J-Channel Architectural color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 6.03,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Finish Trim Standard color",
+      "unit": "PCS",
+      "mat": 5.95,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Finish Trim Architectural color",
+      "unit": "PCS",
+      "mat": 6.45,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Starter",
+      "unit": "PCS",
+      "mat": 7.64,
+      "lab": 0.0,
+      "ami_part": "107361"
+     },
+     {
+      "name": "House Wrap",
+      "unit": "SQ",
+      "mat": 11.55,
+      "lab": 0.0,
+      "ami_part": "646662A0"
+     },
+     {
+      "name": "RainDrop",
+      "unit": "SQ",
+      "mat": 30.73,
+      "lab": 0.0,
+      "ami_part": "646686"
+     },
+     {
+      "name": "3/8\" Fan Fold",
+      "unit": "SQ",
+      "mat": 11.06,
+      "lab": 0.0,
+      "ami_part": "668363"
+     },
+     {
+      "name": "2\" Nails 30 lbs (1 per 15 Sq)",
+      "unit": "JOB",
+      "mat": 81.63,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": "701170"
+     },
+     {
+      "name": "J-blocks - Split Blocks (82A009)",
+      "unit": "Each",
+      "mat": 13.49,
+      "lab": 0.0,
+      "ami_part": "82A009"
+     },
+     {
+      "name": "J-blocks - Light Blocks (82A010)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A010"
+     },
+     {
+      "name": "J-blocks - UL Blocks (82A017)",
+      "unit": "Each",
+      "mat": 21.51,
+      "lab": 0.0,
+      "ami_part": "82A017"
+     },
+     {
+      "name": "J-blocks - Jumbo Blocks (82A011)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A011"
+     },
+     {
+      "name": "Dryer Vents 4\" (82A014)",
+      "unit": "Each",
+      "mat": 23.81,
+      "lab": 0.0,
+      "ami_part": "82A014"
+     },
+     {
+      "name": "Shutters (louvered, raised panel) standard sizes",
+      "unit": "PR",
+      "mat": 114.2225,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gable vents (round,octagon)",
+      "unit": "Each",
+      "mat": 92.2875,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "1 1/4\" Trim Nails",
+      "unit": "Box",
+      "mat": 9.0,
+      "lab": 0.0,
+      "ami_part": "780052"
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     },
+     {
+      "name": "Pelican Bay Shake Starter",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": "65516000"
+     }
+    ]
+   },
+   {
+    "title": "Tear-Off / Clean Up",
+    "ascend": false,
+    "items": [
+     {
+      "name": "Tear-Off",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wood shake tear off (requires a dumpster)",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "clean up/ haul away job debris",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dumpster",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ]
+   },
+   {
+    "title": "Vinyl Soffit with Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Soffit & fascia Charter Oak Standard Color",
+      "unit": "PCS",
+      "mat": 18.2,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Charter Oak Architectural color",
+      "unit": "PCS",
+      "mat": 20.2,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Greenbriar",
+      "unit": "PCS",
+      "mat": 16.3,
+      "lab": 0.0,
+      "ami_part": "106022"
+     },
+     {
+      "name": "Soffit & fascia 2T",
+      "unit": "PCS",
+      "mat": 13.6,
+      "lab": 0.0,
+      "ami_part": "105007"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Architectural color",
+      "unit": "PCS",
+      "mat": 6.03,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding) White",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Fascia/rake or frieze up to 8\" coverage",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap porch band",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": "103960"
+     }
+    ]
+   },
+   {
+    "title": "Porch Ceiling",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Charter Oak Soffit White",
+      "unit": "PCS",
+      "mat": 18.2,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wrap porch beam",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Seamless Gutter",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "Gutter 6\"",
+      "unit": "LF",
+      "mat": 3.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Downspout 6\"",
+      "unit": "LF",
+      "mat": 2.8,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "elbow",
+      "unit": "Each",
+      "mat": 2.69,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mitre",
+      "unit": "Each",
+      "mat": 13.75,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "End Cap",
+      "unit": "Each",
+      "mat": 2.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Guard (USA Shurflo)",
+      "unit": "LF",
+      "mat": 2.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Sealant",
+      "unit": "Each",
+      "mat": 9.31,
+      "lab": 0.0,
+      "ami_part": "71159900"
+     },
+     {
+      "name": "Hangars with Screws",
+      "unit": "Each",
+      "mat": 2.39,
+      "lab": 0.0,
+      "ami_part": "71160200"
+     },
+     {
+      "name": "Pipe Clips",
+      "unit": "Each",
+      "mat": 2.58,
+      "lab": 0.0,
+      "ami_part": "71161400"
+     }
+    ]
+   },
+   {
+    "title": "Misc. Labor and Material",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "R&R gutter",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R downspout",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap windows with wide crown",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Capping general",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window headers only",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap entry door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap patio door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap single garage door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Build out for windows w/furring (includes capping)",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Gable louvers",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Fascia Return",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Bird box",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flashing",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap tops of bird boxes",
+      "unit": "Each",
+      "mat": 60.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dormer upcharge",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Utilities",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cut out 4x4 section of wall and insulate",
+      "unit": "Each",
+      "mat": 100.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "LP Smart Siding",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Lap 3/8\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 28.92,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Nickel Gap",
+      "unit": "PCS",
+      "mat": 67.52,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Shake",
+      "unit": "PCS",
+      "mat": 22.16,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series 4' x 8' Panel",
+      "unit": "PCS",
+      "mat": 96.17,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series 4' x 10' Panel",
+      "unit": "PCS",
+      "mat": 128.75,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series Vertical Panel",
+      "unit": "PCS",
+      "mat": 68.6,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Trim",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "190 Series Trim 19/32\" x 3\" x 16'",
+      "unit": "PCS",
+      "mat": 18.35,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 26.32,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 39.49,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 52.67,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 68.63,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 82.32,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 32.01,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 48.01,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 64.01,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 83.83,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 100.55,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     }
+    ]
+   },
+   {
+    "title": "LP Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "540 Series OSC 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 169.04,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series OSC 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 253.57,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Touch up kits",
+      "unit": "PCS",
+      "mat": 56.89,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "OSI Quad Max Caulking",
+      "unit": "Tube",
+      "mat": 13.09,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "J blocks",
+      "unit": "Each",
+      "mat": 53.33,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Mini Splits",
+      "unit": "Each",
+      "mat": 74.67,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Trim Coil Aluminum 24\" x 50'",
+      "unit": "ROLL",
+      "mat": 208.33,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Soffit",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Soffit 16 x 16 Vented",
+      "unit": "PCS",
+      "mat": 80.11,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "38 Series Soffit 16 x 16 Closed",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch CTW soffit",
+      "unit": "PCS",
+      "mat": 116.61,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch VSSFT",
+      "unit": "PCS",
+      "mat": 125.27,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend Composite Lap Siding 7\"",
+      "unit": "SQ",
+      "mat": 332.6,
+      "lab": 0.0,
+      "ami_part": "018001"
+     },
+     {
+      "name": "Ascend Composite B&B 12\" (add 30% Waste)",
+      "unit": "SQ",
+      "mat": 408.66,
+      "lab": 0.0,
+      "ami_part": "018021"
+     }
+    ]
+   },
+   {
+    "title": "Window Installation",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Window DH/Slider - Pocket Install",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 170.0,
+      "ami_part": null
+     },
+     {
+      "name": "Window - Full Fin Replacement",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 252.45,
+      "ami_part": null
+     },
+     {
+      "name": "Large Window - adder for windows 30 sq-ft or larger",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 76.92,
+      "ami_part": null
+     },
+     {
+      "name": "Field Mull Assembly and/or Field Glaze (adder per each opening)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe Installation Practices For Window Installation",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe - Test Fee (all homes 1978 and older are tested)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window (Windows)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Standard Fee 4 days+",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 150.0,
+      "ami_part": null
+     },
+     {
+      "name": "Disposal Fee (Windows)",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 125.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mullion Removal & Cut-Out of Non-Structural Framing Members",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Sliding Glass Doors",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Sliding glass door 60\" x 80\"",
+      "unit": "each",
+      "mat": 1025.99,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 72\" x 80\"",
+      "unit": "each",
+      "mat": 1114.7,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 96\" x 80\"",
+      "unit": "each",
+      "mat": 1253.09,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door Custom Size",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Sliding Glass Door Install",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Vinyl Sliding Glass Door (5' & 6' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 669.63,
+      "ami_part": null
+     },
+     {
+      "name": "Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 832.55,
+      "ami_part": null
+     },
+     {
+      "name": "Oversize Vinyl Door - (greater than 8' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1099.42,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Exterior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Exterior Primed Stops or Snap Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 49.65,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Primed Wood Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 71.04,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Composite Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 99.26,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Interior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Interior Stops or Flat Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Casing",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 77.62,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Jamb Extension",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 89.13,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Sill - create or replace interior window sill - QUOTE ONLY",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 120.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Misc.",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Interior Blinds - Remove For Window Install & Reinstall",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 38.46,
+      "ami_part": null
+     },
+     {
+      "name": "Storm Window Removal",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     },
+     {
+      "name": "Second/Third/Clear Story Fee",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1846.15,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Rush Fee 3 days or less",
+      "unit": "ADD",
+      "mat": 0.0,
+      "lab": 80.77,
+      "ami_part": null
+     },
+     {
+      "name": "Add New Channel on ALL, Close up opening to match master Front opening",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1200.0,
+      "ami_part": null
+     },
+     {
+      "name": "Minimum Job Charge For Window Installs",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 769.23,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Double Hung Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Double Hung 0-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 2 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Slider 0-101 UI",
+      "unit": "each",
+      "mat": 294.55,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 3 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - 3 Lite Slider Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass per u.i. over 101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Casement Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Casement Min-43 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 44-53 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 54-63 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 64-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 93-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Picture Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Picture Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Window Material List",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Windows - .019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Windows Custom Quote",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero Window Quote",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   }
+  ],
+  "created_at": "2026-05-29T00:06:22.509824+00:00",
+  "updated_at": "2026-07-13T23:32:02.388265+00:00"
+ },
+ {
+  "_id": "6a18d87e6e0f283152e04704",
+  "id": "b1f4191b-f6ae-4b29-9fa9-9d38656d1e7e",
+  "name": "Contractor",
+  "sections": [
+   {
+    "title": "Vinyl Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl"
+    ],
+    "items": [
+     {
+      "name": "Conquest Standard color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 97.04,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Standard color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 97.04,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Conquest Architectural color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 108.24,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Architectural color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 108.24,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Coventry Standard color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 100.03,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 100.03,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Architectural color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 111.24,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 111.24,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Standard color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 100.03,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 100.03,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Coventry Architectural color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 111.24,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 111.24,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Odyssey Standard color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Standard color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 116.22,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 127.44,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Charter Oak Standard color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 136.22,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Standard color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 136.22,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "Charter Oak Architectural color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 151.97,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Architectural color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 151.97,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "vertical board and batten Standard color 7\"",
+      "unit": "SQ",
+      "mat": 143.74,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "vertical board and batten Architectural color 7\"",
+      "unit": "SQ",
+      "mat": 166.16,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "Pelican Bay Shakes 9\"",
+      "unit": "SQ",
+      "mat": 419.94,
+      "lab": 0.0,
+      "ami_part": "655052"
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding/Accessories",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend 3.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 40.42,
+      "lab": 0.0,
+      "ami_part": "108032"
+     },
+     {
+      "name": "Ascend 5.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 59.36,
+      "lab": 0.0,
+      "ami_part": "108052"
+     },
+     {
+      "name": "Ascend - 5.5\" Trim  (16' length)",
+      "unit": "PCS",
+      "mat": 71.66,
+      "lab": 0.0,
+      "ami_part": "108042"
+     },
+     {
+      "name": "Ascend - J - Channel  (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 10.4,
+      "lab": 0.0,
+      "ami_part": "108062"
+     },
+     {
+      "name": "ASCEND Finish Trim",
+      "unit": "PCS",
+      "mat": 8.25,
+      "lab": 0.0,
+      "ami_part": "105210"
+     },
+     {
+      "name": "Ascend - Starter",
+      "unit": "PCS",
+      "mat": 8.83,
+      "lab": 0.0,
+      "ami_part": "107371"
+     }
+    ]
+   },
+   {
+    "title": "Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": "103960"
+     },
+     {
+      "name": "Outside corners Standard color",
+      "unit": "PCS",
+      "mat": 25.81,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Outside corners Architectural color",
+      "unit": "PCS",
+      "mat": 28.29,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Inside Corners (Siding) Standard color",
+      "unit": "PCS",
+      "mat": 12.9,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "Inside Corners (Siding) Architectural color",
+      "unit": "PCS",
+      "mat": 14.39,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "3/4\" J-Channel Standard color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" J-Channel Architectural color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 6.03,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Finish Trim Standard color",
+      "unit": "PCS",
+      "mat": 5.95,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Finish Trim Architectural color",
+      "unit": "PCS",
+      "mat": 6.45,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Starter",
+      "unit": "PCS",
+      "mat": 7.64,
+      "lab": 0.0,
+      "ami_part": "107361"
+     },
+     {
+      "name": "House Wrap",
+      "unit": "SQ",
+      "mat": 11.55,
+      "lab": 0.0,
+      "ami_part": "646662A0"
+     },
+     {
+      "name": "RainDrop",
+      "unit": "SQ",
+      "mat": 30.73,
+      "lab": 0.0,
+      "ami_part": "646686"
+     },
+     {
+      "name": "3/8\" Fan Fold",
+      "unit": "SQ",
+      "mat": 11.06,
+      "lab": 0.0,
+      "ami_part": "668363"
+     },
+     {
+      "name": "2\" Nails 30 lbs (1 per 15 Sq)",
+      "unit": "JOB",
+      "mat": 81.63,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": "701170"
+     },
+     {
+      "name": "J-blocks - Split Blocks (82A009)",
+      "unit": "Each",
+      "mat": 13.49,
+      "lab": 0.0,
+      "ami_part": "82A009"
+     },
+     {
+      "name": "J-blocks - Light Blocks (82A010)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A010"
+     },
+     {
+      "name": "J-blocks - UL Blocks (82A017)",
+      "unit": "Each",
+      "mat": 21.51,
+      "lab": 0.0,
+      "ami_part": "82A017"
+     },
+     {
+      "name": "J-blocks - Jumbo Blocks (82A011)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A011"
+     },
+     {
+      "name": "Dryer Vents 4\" (82A014)",
+      "unit": "Each",
+      "mat": 23.81,
+      "lab": 0.0,
+      "ami_part": "82A014"
+     },
+     {
+      "name": "Shutters (louvered, raised panel) standard sizes",
+      "unit": "PR",
+      "mat": 114.2225,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gable vents (round,octagon)",
+      "unit": "Each",
+      "mat": 92.2875,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "1 1/4\" Trim Nails",
+      "unit": "Box",
+      "mat": 9.0,
+      "lab": 0.0,
+      "ami_part": "780052"
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     },
+     {
+      "name": "Pelican Bay Shake Starter",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": "65516000"
+     }
+    ]
+   },
+   {
+    "title": "Tear-Off / Clean Up",
+    "ascend": false,
+    "items": [
+     {
+      "name": "Tear-Off",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wood shake tear off (requires a dumpster)",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "clean up/ haul away job debris",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dumpster",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ]
+   },
+   {
+    "title": "Vinyl Soffit with Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Soffit & fascia Charter Oak Standard Color",
+      "unit": "PCS",
+      "mat": 19.2,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Charter Oak Architectural color",
+      "unit": "PCS",
+      "mat": 21.2,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Greenbriar",
+      "unit": "PCS",
+      "mat": 17.1,
+      "lab": 0.0,
+      "ami_part": "106022"
+     },
+     {
+      "name": "Soffit & fascia 2T",
+      "unit": "PCS",
+      "mat": 13.6,
+      "lab": 0.0,
+      "ami_part": "105007"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Architectural color",
+      "unit": "PCS",
+      "mat": 6.03,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding) White",
+      "unit": "PCS",
+      "mat": 5.23,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Fascia/rake or frieze up to 8\" coverage",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap porch band",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": "103960"
+     }
+    ]
+   },
+   {
+    "title": "Porch Ceiling",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Charter Oak Soffit White",
+      "unit": "PCS",
+      "mat": 19.2,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wrap porch beam",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Seamless Gutter",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "Gutter 6\"",
+      "unit": "LF",
+      "mat": 3.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Downspout 6\"",
+      "unit": "LF",
+      "mat": 2.8,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "elbow",
+      "unit": "Each",
+      "mat": 2.69,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mitre",
+      "unit": "Each",
+      "mat": 13.75,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "End Cap",
+      "unit": "Each",
+      "mat": 2.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Guard (USA Shurflo)",
+      "unit": "LF",
+      "mat": 2.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Sealant",
+      "unit": "Each",
+      "mat": 9.31,
+      "lab": 0.0,
+      "ami_part": "71159900"
+     },
+     {
+      "name": "Hangars with Screws",
+      "unit": "Each",
+      "mat": 2.39,
+      "lab": 0.0,
+      "ami_part": "71160200"
+     },
+     {
+      "name": "Pipe Clips",
+      "unit": "Each",
+      "mat": 2.58,
+      "lab": 0.0,
+      "ami_part": "71161400"
+     }
+    ]
+   },
+   {
+    "title": "Misc. Labor and Material",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "R&R gutter",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R downspout",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap windows with wide crown",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Capping general",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window headers only",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap entry door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap patio door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap single garage door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Build out for windows w/furring (includes capping)",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Gable louvers",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Fascia Return",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Bird box",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flashing",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap tops of bird boxes",
+      "unit": "Each",
+      "mat": 60.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dormer upcharge",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Utilities",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cut out 4x4 section of wall and insulate",
+      "unit": "Each",
+      "mat": 100.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "LP Smart Siding",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Lap 3/8\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 30.99,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Nickel Gap",
+      "unit": "PCS",
+      "mat": 72.34,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Shake",
+      "unit": "PCS",
+      "mat": 23.74,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series 4' x 8' Panel",
+      "unit": "PCS",
+      "mat": 103.04,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series 4' x 10' Panel",
+      "unit": "PCS",
+      "mat": 137.94,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "38 Series Vertical Panel",
+      "unit": "PCS",
+      "mat": 73.5,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Trim",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "190 Series Trim 19/32\" x 3\" x 16'",
+      "unit": "PCS",
+      "mat": 19.66,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 28.2,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 42.31,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 56.43,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 73.53,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 88.2,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 34.3,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 51.44,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 68.59,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 89.81,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 107.73,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     }
+    ]
+   },
+   {
+    "title": "LP Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "540 Series OSC 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 181.11,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "540 Series OSC 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 271.69,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Touch up kits",
+      "unit": "PCS",
+      "mat": 60.96,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "OSI Quad Max Caulking",
+      "unit": "Tube",
+      "mat": 14.03,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "J blocks",
+      "unit": "Each",
+      "mat": 57.14,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Mini Splits",
+      "unit": "Each",
+      "mat": 80.0,
+      "lab": 0.0,
+      "ami_part": null,
+      "retired_to_engine": true
+     },
+     {
+      "name": "Trim Coil Aluminum 24\" x 50'",
+      "unit": "ROLL",
+      "mat": 223.21,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Soffit",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Soffit 16 x 16 Vented",
+      "unit": "PCS",
+      "mat": 85.83,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "38 Series Soffit 16 x 16 Closed",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch CTW soffit",
+      "unit": "PCS",
+      "mat": 124.94,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch VSSFT",
+      "unit": "PCS",
+      "mat": 134.21,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend Composite Lap Siding 7\"",
+      "unit": "SQ",
+      "mat": 332.6,
+      "lab": 0.0,
+      "ami_part": "018001"
+     },
+     {
+      "name": "Ascend Composite B&B 12\" (add 30% Waste)",
+      "unit": "SQ",
+      "mat": 408.66,
+      "lab": 0.0,
+      "ami_part": "018021"
+     }
+    ]
+   },
+   {
+    "title": "Window Installation",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Window DH/Slider - Pocket Install",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 170.0,
+      "ami_part": null
+     },
+     {
+      "name": "Window - Full Fin Replacement",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 252.45,
+      "ami_part": null
+     },
+     {
+      "name": "Large Window - adder for windows 30 sq-ft or larger",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 76.92,
+      "ami_part": null
+     },
+     {
+      "name": "Field Mull Assembly and/or Field Glaze (adder per each opening)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe Installation Practices For Window Installation",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe - Test Fee (all homes 1978 and older are tested)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window (Windows)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Standard Fee 4 days+",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 150.0,
+      "ami_part": null
+     },
+     {
+      "name": "Disposal Fee (Windows)",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 125.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mullion Removal & Cut-Out of Non-Structural Framing Members",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Sliding Glass Doors",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Sliding glass door 60\" x 80\"",
+      "unit": "each",
+      "mat": 1025.99,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 72\" x 80\"",
+      "unit": "each",
+      "mat": 1114.7,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 96\" x 80\"",
+      "unit": "each",
+      "mat": 1253.09,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door Custom Size",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Sliding Glass Door Install",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Vinyl Sliding Glass Door (5' & 6' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 669.63,
+      "ami_part": null
+     },
+     {
+      "name": "Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 832.55,
+      "ami_part": null
+     },
+     {
+      "name": "Oversize Vinyl Door - (greater than 8' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1099.42,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Exterior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Exterior Primed Stops or Snap Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 49.65,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Primed Wood Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 71.04,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Composite Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 99.26,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Interior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Interior Stops or Flat Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Casing",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 77.62,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Jamb Extension",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 89.13,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Sill - create or replace interior window sill - QUOTE ONLY",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 120.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Misc.",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Interior Blinds - Remove For Window Install & Reinstall",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 38.46,
+      "ami_part": null
+     },
+     {
+      "name": "Storm Window Removal",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     },
+     {
+      "name": "Second/Third/Clear Story Fee",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1846.15,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Rush Fee 3 days or less",
+      "unit": "ADD",
+      "mat": 0.0,
+      "lab": 80.77,
+      "ami_part": null
+     },
+     {
+      "name": "Add New Channel on ALL, Close up opening to match master Front opening",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1200.0,
+      "ami_part": null
+     },
+     {
+      "name": "Minimum Job Charge For Window Installs",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 769.23,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Double Hung Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Double Hung 0-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 2 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Slider 0-101 UI",
+      "unit": "each",
+      "mat": 294.55,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 3 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - 3 Lite Slider Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass per u.i. over 101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Casement Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Casement Min-43 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 44-53 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 54-63 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 64-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 93-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Picture Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Picture Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Window Material List",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Windows - .019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Windows Custom Quote",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero Window Quote",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   }
+  ],
+  "created_at": "2026-05-29T00:06:22.510480+00:00",
+  "updated_at": "2026-07-13T23:32:02.389310+00:00"
+ },
+ {
+  "_id": "6a18d87e6e0f283152e04705",
+  "id": "01982b89-8113-426b-bf74-c7e756bd93b9",
+  "name": "whole-sale",
+  "sections": [
+   {
+    "title": "Vinyl Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl"
+    ],
+    "items": [
+     {
+      "name": "Conquest Standard color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 102.15,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Standard color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 102.15,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Conquest Architectural color Clap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 113.94,
+      "lab": 0.0,
+      "ami_part": "015456"
+     },
+     {
+      "name": "Conquest Architectural color Dutch lap 4.5\" .040",
+      "unit": "SQ",
+      "mat": 113.94,
+      "lab": 0.0,
+      "ami_part": "015457"
+     },
+     {
+      "name": "Coventry Standard color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 105.3,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 105.3,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Architectural color Clap 4\" .042",
+      "unit": "SQ",
+      "mat": 117.09,
+      "lab": 0.0,
+      "ami_part": "016061"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 4\" .042",
+      "unit": "SQ",
+      "mat": 117.09,
+      "lab": 0.0,
+      "ami_part": "016062"
+     },
+     {
+      "name": "Coventry Standard color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 105.3,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Standard color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 105.3,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Coventry Architectural color Clap 5\" .042",
+      "unit": "SQ",
+      "mat": 117.09,
+      "lab": 0.0,
+      "ami_part": "016066"
+     },
+     {
+      "name": "Coventry Architectural color Dutch lap 5\" .042",
+      "unit": "SQ",
+      "mat": 117.09,
+      "lab": 0.0,
+      "ami_part": "016067"
+     },
+     {
+      "name": "Odyssey Standard color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 122.34,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 122.34,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 4\" .044",
+      "unit": "SQ",
+      "mat": 134.14,
+      "lab": 0.0,
+      "ami_part": "015406"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 4\" .044",
+      "unit": "SQ",
+      "mat": 134.14,
+      "lab": 0.0,
+      "ami_part": "015408"
+     },
+     {
+      "name": "Odyssey Standard color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 122.34,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Standard color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 122.34,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Odyssey Architectural color Clap 5\" .044",
+      "unit": "SQ",
+      "mat": 134.14,
+      "lab": 0.0,
+      "ami_part": "015506"
+     },
+     {
+      "name": "Odyssey Architectural color Dutch Lap 5\" .044",
+      "unit": "SQ",
+      "mat": 134.14,
+      "lab": 0.0,
+      "ami_part": "015508"
+     },
+     {
+      "name": "Charter Oak Standard color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 151.31,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Standard color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 151.31,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "Charter Oak Architectural color Clap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 174.9,
+      "lab": 0.0,
+      "ami_part": "015451"
+     },
+     {
+      "name": "Charter Oak Architectural color Dutch Lap 4.5\" .046",
+      "unit": "SQ",
+      "mat": 174.9,
+      "lab": 0.0,
+      "ami_part": "015452"
+     },
+     {
+      "name": "vertical board and batten Standard color 7\"",
+      "unit": "SQ",
+      "mat": 151.31,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "vertical board and batten Architectural color 7\"",
+      "unit": "SQ",
+      "mat": 174.9,
+      "lab": 0.0,
+      "ami_part": "016021"
+     },
+     {
+      "name": "Pelican Bay Shakes 9\"",
+      "unit": "SQ",
+      "mat": 419.94,
+      "lab": 0.0,
+      "ami_part": "655052"
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding/Accessories",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend 3.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 40.42,
+      "lab": 0.0,
+      "ami_part": "108032"
+     },
+     {
+      "name": "Ascend 5.5\" Outside Corner  - MATTE",
+      "unit": "PCS",
+      "mat": 59.36,
+      "lab": 0.0,
+      "ami_part": "108052"
+     },
+     {
+      "name": "Ascend - 5.5\" Trim  (16' length)",
+      "unit": "PCS",
+      "mat": 71.66,
+      "lab": 0.0,
+      "ami_part": "108042"
+     },
+     {
+      "name": "Ascend - J - Channel  (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 10.4,
+      "lab": 0.0,
+      "ami_part": "108062"
+     },
+     {
+      "name": "ASCEND Finish Trim",
+      "unit": "PCS",
+      "mat": 8.25,
+      "lab": 0.0,
+      "ami_part": "105210"
+     },
+     {
+      "name": "Ascend - Starter",
+      "unit": "PCS",
+      "mat": 8.83,
+      "lab": 0.0,
+      "ami_part": "107371"
+     }
+    ]
+   },
+   {
+    "title": "Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 5 Sq Siding)",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": "103960"
+     },
+     {
+      "name": "Outside corners Standard color",
+      "unit": "PCS",
+      "mat": 31.54,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Outside corners Architectural color",
+      "unit": "PCS",
+      "mat": 34.58,
+      "lab": 0.0,
+      "ami_part": "105644"
+     },
+     {
+      "name": "Inside Corners (Siding) Standard color",
+      "unit": "PCS",
+      "mat": 15.77,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "Inside Corners (Siding) Architectural color",
+      "unit": "PCS",
+      "mat": 17.59,
+      "lab": 0.0,
+      "ami_part": "105053"
+     },
+     {
+      "name": "3/4\" J-Channel Standard color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 7.28,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" J-Channel Architectural color (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 8.49,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding)",
+      "unit": "PCS",
+      "mat": 7.28,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Finish Trim Standard color",
+      "unit": "PCS",
+      "mat": 7.28,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Finish Trim Architectural color",
+      "unit": "PCS",
+      "mat": 7.88,
+      "lab": 0.0,
+      "ami_part": "105200"
+     },
+     {
+      "name": "Starter",
+      "unit": "PCS",
+      "mat": 7.64,
+      "lab": 0.0,
+      "ami_part": "107361"
+     },
+     {
+      "name": "House Wrap",
+      "unit": "SQ",
+      "mat": 11.55,
+      "lab": 0.0,
+      "ami_part": "646662A0"
+     },
+     {
+      "name": "RainDrop",
+      "unit": "SQ",
+      "mat": 30.73,
+      "lab": 0.0,
+      "ami_part": "646686"
+     },
+     {
+      "name": "3/8\" Fan Fold",
+      "unit": "SQ",
+      "mat": 11.06,
+      "lab": 0.0,
+      "ami_part": "668363"
+     },
+     {
+      "name": "2\" Nails 30 lbs (1 per 15 Sq)",
+      "unit": "JOB",
+      "mat": 81.63,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": "701170"
+     },
+     {
+      "name": "J-blocks - Split Blocks (82A009)",
+      "unit": "Each",
+      "mat": 13.49,
+      "lab": 0.0,
+      "ami_part": "82A009"
+     },
+     {
+      "name": "J-blocks - Light Blocks (82A010)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A010"
+     },
+     {
+      "name": "J-blocks - UL Blocks (82A017)",
+      "unit": "Each",
+      "mat": 21.51,
+      "lab": 0.0,
+      "ami_part": "82A017"
+     },
+     {
+      "name": "J-blocks - Jumbo Blocks (82A011)",
+      "unit": "Each",
+      "mat": 11.72,
+      "lab": 0.0,
+      "ami_part": "82A011"
+     },
+     {
+      "name": "Dryer Vents 4\" (82A014)",
+      "unit": "Each",
+      "mat": 23.81,
+      "lab": 0.0,
+      "ami_part": "82A014"
+     },
+     {
+      "name": "Shutters (louvered, raised panel) standard sizes",
+      "unit": "PR",
+      "mat": 114.2225,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gable vents (round,octagon)",
+      "unit": "Each",
+      "mat": 92.2875,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "1 1/4\" Trim Nails",
+      "unit": "Box",
+      "mat": 9.0,
+      "lab": 0.0,
+      "ami_part": "780052"
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     },
+     {
+      "name": "Pelican Bay Shake Starter",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": "65516000"
+     }
+    ]
+   },
+   {
+    "title": "Tear-Off / Clean Up",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "Tear-Off",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wood shake tear off (requires a dumpster)",
+      "unit": "SQ",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "clean up/ haul away job debris",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dumpster",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vinyl Soffit with Siding",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Soffit & fascia Charter Oak Standard Color",
+      "unit": "PCS",
+      "mat": 20.2,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Charter Oak Architectural color",
+      "unit": "PCS",
+      "mat": 22.39,
+      "lab": 0.0,
+      "ami_part": "105020"
+     },
+     {
+      "name": "Soffit & fascia Greenbriar",
+      "unit": "PCS",
+      "mat": 18.02,
+      "lab": 0.0,
+      "ami_part": "106022"
+     },
+     {
+      "name": "Soffit & fascia 2T",
+      "unit": "PCS",
+      "mat": 13.6,
+      "lab": 0.0,
+      "ami_part": "105007"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+      "unit": "PCS",
+      "mat": 7.28,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "3/4\" Soffit J-Channel (Charter Oak) Architectural color",
+      "unit": "PCS",
+      "mat": 8.49,
+      "lab": 0.0,
+      "ami_part": "105118"
+     },
+     {
+      "name": "1/2\" J-Channel (2 per Sq of siding) White",
+      "unit": "PCS",
+      "mat": 7.28,
+      "lab": 0.0,
+      "ami_part": "105114"
+     },
+     {
+      "name": "Fascia/rake or frieze up to 8\" coverage",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap porch band",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": "103956"
+     },
+     {
+      "name": "Performance G8 Trim Coil (1 per 50' fascia)",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": "103960"
+     }
+    ]
+   },
+   {
+    "title": "Porch Ceiling",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Charter Oak Soffit White",
+      "unit": "PCS",
+      "mat": 20.2,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Wrap porch beam",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Seamless Gutter",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "Gutter 6\"",
+      "unit": "LF",
+      "mat": 3.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Downspout 6\"",
+      "unit": "LF",
+      "mat": 2.8,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "elbow",
+      "unit": "Each",
+      "mat": 2.69,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mitre",
+      "unit": "Each",
+      "mat": 13.75,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "End Cap",
+      "unit": "Each",
+      "mat": 2.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Guard (USA Shurflo)",
+      "unit": "LF",
+      "mat": 2.25,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Gutter Sealant",
+      "unit": "Each",
+      "mat": 9.31,
+      "lab": 0.0,
+      "ami_part": "71159900"
+     },
+     {
+      "name": "Hangars with Screws",
+      "unit": "Each",
+      "mat": 2.39,
+      "lab": 0.0,
+      "ami_part": "71160200"
+     },
+     {
+      "name": "Pipe Clips",
+      "unit": "Each",
+      "mat": 2.58,
+      "lab": 0.0,
+      "ami_part": "71161400"
+     }
+    ]
+   },
+   {
+    "title": "Misc. Labor and Material",
+    "ascend": false,
+    "product_lines": [
+     "vinyl",
+     "ascend",
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "R&R gutter",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R downspout",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap windows with wide crown",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Capping general",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window headers only",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap entry door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap patio door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap single garage door",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Build out for windows w/furring (includes capping)",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Gable louvers",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Fascia Return",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Bird box",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flashing",
+      "unit": "LF",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap tops of bird boxes",
+      "unit": "Each",
+      "mat": 60.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Dormer upcharge",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "R&R Utilities",
+      "unit": "Each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cut out 4x4 section of wall and insulate",
+      "unit": "Each",
+      "mat": 100.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "LP Smart Siding",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Lap 3/8\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 33.37,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Nickel Gap",
+      "unit": "PCS",
+      "mat": 77.91,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Shake",
+      "unit": "PCS",
+      "mat": 25.57,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "38 Series 4' x 8' Panel",
+      "unit": "PCS",
+      "mat": 110.97,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "38 Series 4' x 10' Panel",
+      "unit": "PCS",
+      "mat": 148.55,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "38 Series Vertical Panel",
+      "unit": "PCS",
+      "mat": 79.15,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Trim",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "190 Series Trim 19/32\" x 3\" x 16'",
+      "unit": "PCS",
+      "mat": 21.17,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 30.37,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 45.57,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 60.77,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 79.18,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "440 Series Trim 4/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 94.98,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 36.94,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 55.4,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 8\" x 16'",
+      "unit": "PCS",
+      "mat": 73.86,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 10\" x 16'",
+      "unit": "PCS",
+      "mat": 96.72,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "540 Series Trim 5/4\" x 12\" x 16'",
+      "unit": "PCS",
+      "mat": 116.02,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "LP Siding Accessories",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "540 Series OSC 5/4\" x 4\" x 16'",
+      "unit": "PCS",
+      "mat": 195.05,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "540 Series OSC 5/4\" x 6\" x 16'",
+      "unit": "PCS",
+      "mat": 292.58,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Touch up kits",
+      "unit": "PCS",
+      "mat": 65.65,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "OSI Quad Max Caulking",
+      "unit": "Tube",
+      "mat": 15.11,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "J blocks",
+      "unit": "Each",
+      "mat": 61.54,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mini Splits",
+      "unit": "Each",
+      "mat": 86.15,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Trim Coil Aluminum 24\" x 50'",
+      "unit": "ROLL",
+      "mat": 240.38,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": ".019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": "103954"
+     },
+     {
+      "name": "PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Flash tape 3 3/4\" x 90'",
+      "unit": "Each",
+      "mat": 41.12,
+      "lab": 0.0,
+      "ami_part": "79092500"
+     }
+    ]
+   },
+   {
+    "title": "LP SmartSide Soffit",
+    "ascend": false,
+    "product_lines": [
+     "lp_smart"
+    ],
+    "items": [
+     {
+      "name": "38 Series Soffit 16 x 16 Vented",
+      "unit": "PCS",
+      "mat": 92.43,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "38 Series Soffit 16 x 16 Closed",
+      "unit": "PCS",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch CTW soffit",
+      "unit": "PCS",
+      "mat": 134.55,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "24 inch VSSFT",
+      "unit": "PCS",
+      "mat": 144.54,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Ascend Cladding",
+    "ascend": true,
+    "product_lines": [
+     "ascend"
+    ],
+    "items": [
+     {
+      "name": "Ascend Composite Lap Siding 7\"",
+      "unit": "SQ",
+      "mat": 332.6,
+      "lab": 0.0,
+      "ami_part": "018001"
+     },
+     {
+      "name": "Ascend Composite B&B 12\" (add 30% Waste)",
+      "unit": "SQ",
+      "mat": 408.66,
+      "lab": 0.0,
+      "ami_part": "018021"
+     }
+    ]
+   },
+   {
+    "title": "Window Installation",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Window DH/Slider - Pocket Install",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 170.0,
+      "ami_part": null
+     },
+     {
+      "name": "Window - Full Fin Replacement",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 252.45,
+      "ami_part": null
+     },
+     {
+      "name": "Large Window - adder for windows 30 sq-ft or larger",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 76.92,
+      "ami_part": null
+     },
+     {
+      "name": "Field Mull Assembly and/or Field Glaze (adder per each opening)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe Installation Practices For Window Installation",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Lead Safe - Test Fee (all homes 1978 and older are tested)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Cap window (Windows)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Standard Fee 4 days+",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 150.0,
+      "ami_part": null
+     },
+     {
+      "name": "Disposal Fee (Windows)",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 125.0,
+      "ami_part": null
+     },
+     {
+      "name": "Mullion Removal & Cut-Out of Non-Structural Framing Members",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Sliding Glass Doors",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Sliding glass door 60\" x 80\"",
+      "unit": "each",
+      "mat": 1025.99,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 72\" x 80\"",
+      "unit": "each",
+      "mat": 1114.7,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door 96\" x 80\"",
+      "unit": "each",
+      "mat": 1253.09,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Sliding glass door Custom Size",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Sliding Glass Door Install",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Vinyl Sliding Glass Door (5' & 6' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 669.63,
+      "ami_part": null
+     },
+     {
+      "name": "Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 832.55,
+      "ami_part": null
+     },
+     {
+      "name": "Oversize Vinyl Door - (greater than 8' width)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1099.42,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Exterior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Exterior Primed Stops or Snap Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 49.65,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Primed Wood Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 71.04,
+      "ami_part": null
+     },
+     {
+      "name": "New Exterior Composite Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 99.26,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Interior Trim Work",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "New Interior Stops or Flat Trim",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 20.0,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Casing",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 77.62,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Jamb Extension",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 89.13,
+      "ami_part": null
+     },
+     {
+      "name": "New Interior Sill - create or replace interior window sill - QUOTE ONLY",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 120.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Window Misc.",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Interior Blinds - Remove For Window Install & Reinstall",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 53.85,
+      "ami_part": null
+     },
+     {
+      "name": "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 38.46,
+      "ami_part": null
+     },
+     {
+      "name": "Storm Window Removal",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 23.08,
+      "ami_part": null
+     },
+     {
+      "name": "Second/Third/Clear Story Fee",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1846.15,
+      "ami_part": null
+     },
+     {
+      "name": "Job Measure Rush Fee 3 days or less",
+      "unit": "ADD",
+      "mat": 0.0,
+      "lab": 80.77,
+      "ami_part": null
+     },
+     {
+      "name": "Add New Channel on ALL, Close up opening to match master Front opening",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 1200.0,
+      "ami_part": null
+     },
+     {
+      "name": "Minimum Job Charge For Window Installs",
+      "unit": "JOB",
+      "mat": 0.0,
+      "lab": 769.23,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Double Hung Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Double Hung 0-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Double Hung 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 2 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Slider 0-101 UI",
+      "unit": "each",
+      "mat": 294.55,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Climatech TG2 Triple Pane .19 U Factor 2 coats LoE",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero 3 Lite Slider Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - 3 Lite Slider Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - 3 Lite Slider 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Tempered glass",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass per u.i. over 101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "White Interior/Laminate Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Woodgrain Interior/White Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Casement Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Casement Min-43 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 44-53 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 54-63 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 64-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 93-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Casement 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Tan Interior/Tan Exterior",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Vero Picture Windows",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero - Picture Min-73 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 74-83 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 84-93 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 94-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 102-110 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 111-120 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 121-130 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 131-140 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 141-150 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 151-160 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 161-170 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 171-180 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Vero - Picture 181-190 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ],
+    "adders": [
+     {
+      "name": "Obscure Glass Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Obscure Glass 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Grid Pattern 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Integral Nailing Fin 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Painted Exterior 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish Min-101 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     },
+     {
+      "name": "Interior Finish 102-108 UI",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0
+     }
+    ]
+   },
+   {
+    "title": "Window Material List",
+    "ascend": false,
+    "product_lines": [
+     "windows",
+     "mezzo"
+    ],
+    "items": [
+     {
+      "name": "Windows - .019 Coil",
+      "unit": "ROLL",
+      "mat": 161.33,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - PVC Trim Coil",
+      "unit": "ROLL",
+      "mat": 167.08,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Performance G8 Trim Coil",
+      "unit": "ROLL",
+      "mat": 170.53,
+      "lab": 0.0,
+      "ami_part": null
+     },
+     {
+      "name": "Windows - Caulking (per color)",
+      "unit": "Each",
+      "mat": 8.23,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   },
+   {
+    "title": "Vero Windows Custom Quote",
+    "ascend": false,
+    "product_lines": [
+     "windows"
+    ],
+    "items": [
+     {
+      "name": "Vero Window Quote",
+      "unit": "each",
+      "mat": 0.0,
+      "lab": 0.0,
+      "ami_part": null
+     }
+    ]
+   }
+  ],
+  "created_at": "2026-05-29T00:06:22.510999+00:00",
+  "updated_at": "2026-07-17T03:25:23.565806+00:00"
+ }
+]

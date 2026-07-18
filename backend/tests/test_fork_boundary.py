@@ -89,7 +89,10 @@ def test_lp_estimate_fields_prefixed():
                 root = field.split(".")[0]
                 # "lines" is the shared array — its LP members carry
                 # tab="lp_smart" (tagged at the LINE level; tier reprice).
-                assert root.startswith("lp_") or root == "lines", (
+                # LP_SHARED_ESTIMATE_FIELDS: enumerated pre-prefix-rule
+                # exceptions (manifest-owned; rename at fork time).
+                assert (root.startswith("lp_") or root == "lines"
+                        or root in M.LP_SHARED_ESTIMATE_FIELDS), (
                     f"{rel} writes untagged estimate field: {field}")
 
 

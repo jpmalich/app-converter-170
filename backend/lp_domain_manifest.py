@@ -33,6 +33,16 @@ SEAMS = [
     "routes/hover.py",          # S4: _build_lines LP branches (carve to lp_ingest.py at fork time)
 ]
 
+# Estimate-level fields on the SHARED estimates collection written by LP
+# routers WITHOUT the lp_ prefix — deliberate, enumerated exceptions
+# (pre-dating the prefix rule; the field is also written by the hover
+# seam). Carve/rename to lp_-prefixed at fork time. Any NEW untagged
+# field still fails test_fork_boundary::test_lp_estimate_fields_prefixed.
+LP_SHARED_ESTIMATE_FIELDS = [
+    "default_siding_profile",
+    "default_siding_profile_change",
+]
+
 # One-time scripts (not runtime dependencies, exempt from seam rules).
 MIGRATIONS = [
     "migrate_iter97_lp_cut.py",

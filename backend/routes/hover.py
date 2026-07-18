@@ -2246,6 +2246,11 @@ async def hover_lp_run(
     if est.get("kind") != "lp_smart":
         raise HTTPException(status_code=400, detail="Hover→LP run is LP SmartSide only (slice 1)")
     hrun = await db.hover_import_runs.find_one({"run_id": hover_run_id})
+    if not hrun:
+        # TTL pin, 2nd instance (2026-07-18): hover_import_runs carries a
+        # 24h TTL — artifact-referenced hover runs live on in fixture_runs.
+        from run_archive import find_archived_run
+        hrun = await find_archived_run({"run_id": hover_run_id})
     if not hrun or hrun.get("status") != "done":
         raise HTTPException(status_code=404, detail="Completed Hover import run not found")
     if hrun.get("user_id") != user["id"]:
@@ -2279,6 +2284,12 @@ async def hover_lp_run(
     await db.estimates.update_one(
         {"id": est_id},
         {"$set": {"lp_source_run_id": lp_run_id, "default_siding_profile": profile}})
+    # TTL pin, 2nd instance (2026-07-18): the stamp above is a persistent
+    # artifact — archive BOTH the materialized LP run and its SOURCE hover
+    # run the moment the reference is minted (un-expirable from birth).
+    from run_archive import archive_run_for_artifact
+    await archive_run_for_artifact(run_id=lp_run_id, reason="hover-lp-materialize")
+    await archive_run_for_artifact(run_id=hover_run_id, reason="hover-lp-materialize:source")
     from estimate_events import log_estimate_event
     await log_estimate_event(est_id, "lp.hover_run.materialized", {
         "hover_run_id": hover_run_id, "lp_run_id": lp_run_id,

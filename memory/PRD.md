@@ -3633,3 +3633,32 @@ test_haugh_round_two + test_iteration_47_haugh now SKIP with an explicit
 reason instead of erroring; the pins stand and re-arm when Howard re-uploads
 the 261 Haugh Hover PDF. ACTION FOR HOWARD: re-upload to restore the pin
 substrate (or rule the suites archived).
+
+## SESSION 2026-07-18 (PM) — TTL 2ND-INSTANCE FIX + MASTER-CATALOG APPLIES + TABS 3-6 DIFFS
+1. **TTL archival bounds expanded (P0, Howard's ruling)** — run_archive.py now covers ALL
+   TTL'd run substrates (`ai_measure_runs` 30d / `ai_blueprint_runs` 24h / `hover_import_runs`
+   24h, inventoried LIVE from index_information). New trigger: hover-lp-run archives BOTH the
+   materialized LP run AND its source hover run at stamp mint; read side falls back to
+   fixture_runs. Boot sweep now also walks every estimate `lp_source_run_id` stamp.
+   `hover_page_cache` ruled cache-exempt; `estimates_trash` exempt by design.
+   Incident log: incident_2026-07-18_ttl_expiry_second_instance.md (+ ttl_audit addendum).
+2. **Haugh re-armed** — PDF re-ingested AFTER the fix landed (ruled ordering): new run
+   `7c6194d46b91444990b6910a175b12ff`, archived from birth (verified in fixture_runs, both
+   docs). Stale pins updated in test_haugh_round_two / test_iteration_47_haugh /
+   test_default_profile_slice1 / test_flag_checklist (the last two pinned a SECOND reaped
+   hover run 45fa1943… — found by the sweep-class fix, not by luck).
+3. **Master-catalog applies (Howard's go)** — Pelican Bay Shake Starter #65516000 now 13.99
+   FLAT ×4 (IDENTICAL_PRICES + boot force-sync; clears vinyl-ruling-5 pricing-pending).
+   Pelican Bay Shakes 9" AMI corrected 655052 → 655050 (sheet governs) in catalog_seed +
+   DB migration. Pre-heal backup: memory/backups/20260718_120200_price_tiers_master_catalog_apply.json.
+4. **Tabs 3-6 diff reports (report-only)** — master_catalog_diff_tabs_3-6_2026-07-18.md:
+   ISS Remodeling = zero price deltas, 6 cosmetic section moves (ruling pending);
+   Mezzo = zero drift (list ×0.55/0.50/0.45/0.45 verified on every bucket);
+   VERO = zero drift (cost ÷0.65/0.70/0.75 verified incl. all 8 adders). Flags: Vero Patio
+   Door net-new sheet prices (DB base None), Vero one-opp tier absent, Tab 4 (ISS Window)
+   awaits its own go.
+5. **Fork-boundary manifest** — `LP_SHARED_ESTIMATE_FIELDS` enumerated exception added for
+   pre-existing `default_siding_profile(_change)` writes (rename at fork time); drift check
+   still fails on any NEW untagged field.
+TESTS: full suite 1050 passed / 1 skipped (documented-obsolete) — handback green stamped
+2026-07-18 12:33 UTC (efae4db).

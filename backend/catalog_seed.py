@@ -402,9 +402,9 @@ ITEM_META = {
     "Finish Trim Architectural color": ("PCS", 0),
     "Starter": ("PCS", 0),
     # Vinyl-conventions batch (5), ruled 2026-07-18: profile-specific
-    # shake starter #65516000 — own product row. PRICING PENDING Howard's
-    # master-catalog diff approval (13.99 flat ×4 on the sheet); seeded at
-    # 0, NEVER from clap Starter.
+    # shake starter #65516000 — own product row, NEVER from clap Starter.
+    # Priced 13.99 FLAT ×4 in IDENTICAL_PRICES (master-catalog apply,
+    # Howard's go 2026-07-18).
     "Pelican Bay Shake Starter": ("PCS", 0),
     "House Wrap": ("SQ", 0), "RainDrop": ("SQ", 0), '3/8" Fan Fold': ("SQ", 0),
     '2" Nails 30 lbs (1 per 15 Sq)': ("JOB", 0), "Caulking (per color)": ("Each", 0),
@@ -637,6 +637,10 @@ IDENTICAL_PRICES = {
     'J-blocks - Jumbo Blocks (82A011)': 11.72,
     'Dryer Vents 4" (82A014)': 23.81,
     'Mitre': 13.75,
+    # Master-catalog apply (Howard's go 2026-07-18): 13.99 FLAT across all
+    # four tiers — sheet-confirmed intentional (whole Pelican Bay section is
+    # flat). Never clap Starter's 7.64.
+    'Pelican Bay Shake Starter': 13.99,
     'Pelican Bay Shakes 9"': 419.94,
     'RainDrop': 30.73,
     'Shutters (louvered, raised panel) standard sizes': 114.2225,
@@ -1035,7 +1039,9 @@ ITEM_AMI = {
     'Charter Oak Architectural color Dutch Lap 4.5" .046': "015452",
     'vertical board and batten Standard color 7"': "016021",
     'vertical board and batten Architectural color 7"': "016021",
-    'Pelican Bay Shakes 9"': "655052",
+    # AMI correction (Howard's go 2026-07-18): master-catalog sheet reads
+    # 655050 — governs over the prior DB value 655052.
+    'Pelican Bay Shakes 9"': "655050",
     "ASCEND Finish Trim": "105210",
     "Ascend - Starter": "107371",
     "Ascend - 5.5\" Trim  (16' length)": "108042",

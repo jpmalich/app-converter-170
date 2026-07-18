@@ -130,7 +130,7 @@ class TestDefaultProfileHttp:
 
 
 class TestHoverLpRunHttp:
-    HOVER_RUN = "45fa194379014a8fae132534041b7ff9"
+    HOVER_RUN = "7c6194d46b91444990b6910a175b12ff"  # re-ingested 2026-07-18 (TTL 2nd-instance re-arm; archived from birth)
 
     def test_materialize_and_basis_named(self, session):
         r = session.post(f"{API}/estimates", json={"kind": "lp_smart", "customer_name": "ZZ hover-lp-run pin TEMP"}, timeout=15)

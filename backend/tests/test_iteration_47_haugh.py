@@ -19,7 +19,7 @@ _ENV = dotenv_values(Path("/app/backend/.env"))
 EMAIL = _ENV.get("ADMIN_EMAIL") or "hhunt6677@yahoo.com"
 PASSWORD = _ENV.get("ADMIN_PASSWORD")
 
-HOVER_RUN_ID = "4ffc35f4ded14b46bc6eb267469efbfd"
+HOVER_RUN_ID = "7c6194d46b91444990b6910a175b12ff"  # re-ingested 2026-07-18 (TTL 2nd-instance re-arm)
 LETRICK_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
 
 

@@ -82,7 +82,11 @@ Not in this workbook (per your rule 5) — backlog gate stays open; the
 separate sheet is still awaited.
 
 ## AWAITING HOWARD'S GO (per-item)
-- [ ] Apply Pelican Bay Shake Starter add (13.99 flat ×4, AMI 65516000)
-- [ ] Pelican Bay Shakes 9" AMI 655050 vs 655052 — which stands?
+- [x] Apply Pelican Bay Shake Starter add (13.99 flat ×4, AMI 65516000) — **APPLIED 2026-07-18**
+      (Howard's go). IDENTICAL_PRICES + boot force-sync; pre-heal backup
+      `/app/memory/backups/20260718_120200_price_tiers_master_catalog_apply.json`.
+- [x] Pelican Bay Shakes 9" AMI 655050 vs 655052 — **655050 stands (sheet governs), APPLIED
+      2026-07-18** with provenance in catalog_seed.py + DB migration (same backup file).
 - [ ] LP tab: confirm keep-current (Jan-2025 tab older than Feb-2026 layer)
-- [ ] Per-tab go for ISS Remodeling / ISS Window / Mezzo / VERO detailed diffs
+- [ ] Per-tab go for ISS Window detailed diff. ISS Remodeling / Mezzo / VERO diffs DONE
+      (report-only) → see master_catalog_diff_tabs_3-6_2026-07-18.md
