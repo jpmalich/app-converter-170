@@ -3970,3 +3970,24 @@ because HIS estimate field carries 10%; named, not absorbed.
   lp_smartside_formulas PDF pin → retired-reference + book pins; item3 file → key-bound 255.
 - NEW PINS: tests/test_lap_unification_ruling.py (5 — four seals + identity residual-zero).
 - TESTS: 1100 passed / 1 skipped. Elevation sheets untouched — no new PNGs (ruled).
+
+## SESSION 2026-07-19 (part 10) — cross-estimate receipts + freeze-doctrine check (report)
+ERROR LOGGED (handback misreport, part 9): the two 12,195.12 pins are BOTH Letrick regression
+guards living in other files (test_haugh_round_two.py::test_letrick_photo_path_untouched and
+test_iteration_47_haugh.py::test_C_letrick_photo_regression) — the handback wrongly attributed
+them as Haugh/iter-47 totals. Pins themselves correct; misreporting only.
+PER-ESTIMATE RECEIPTS (formula-touched, live previews evidenced):
+- Haugh round-two substrate (report 4ffc35f4): Hover wrap-only 2064 ft², waste 0.10 Hover ruled
+  explicit; lap 248→250 (+2 × 30.99 = +61.98); preview total 15497.93 → 15559.91. Banked memo
+  (lap 248, $15,582.53, 2026-07-17) STANDS AS-FROZEN — drift NAMED, memo not rewritten.
+- doug jones EST-510771: AI 1808.2 ft²; HIS field 20% now honored (old lap baked 10% and
+  ignored it) → lap 217→239 (+22 × 30.99 = +681.78); total 10445.92 → 11127.70.
+- 261 haugh PHOTO xval EST-067615: field 0 → lap 208→191 (−17, −526.83); 13846.52 → 13319.69.
+- DEMO-LETRICK: field unset→0 → lap 258→237 (−21, −650.79); 11772.94 → 11122.15.
+- iter-47 hover fixture: synthetic temp (2376 ft², hover 10%): 286→288; fixture-only.
+- EST-910869-L + 6 others: run substrate TTL-expired/no run → live derivation inert, untouched.
+FREEZE DOCTRINE: PASS. d78cd3b4 doc updated_at 2026-07-17 (no writes since); memo file last
+commit 2026-07-17 12:41 (git). e452a988's two active frozen links serve the snapshot AS-FROZEN
+(lap 198, printed 2026-07-13), newer_available False (expired substrate → no current to
+compare). Only snapshot write today = NEW DEMO-LETRICK version from the suite's freeze test
+(new version, not a rewrite). No frozen artifact mutated.
