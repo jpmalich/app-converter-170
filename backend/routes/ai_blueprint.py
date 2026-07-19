@@ -1222,6 +1222,17 @@ async def ai_blueprint_latest_for_estimate(
         {"user_id": user_id, "estimate_id": estimate_id},
         sort=[("created_at", -1)],
     )
+    # Artifact pin read-side (24h TTL defusal — ruled 2026-07-20, same
+    # pattern as _blueprint_dim_offers): when the live doc has reaped,
+    # serve the CUT-archived copy from fixture_runs (no TTL). READ path
+    # only — no writes, no new archival triggers.
+    archived = False
+    if not doc:
+        from run_archive import find_archived_run
+        doc = await find_archived_run(
+            {"user_id": user_id, "estimate_id": estimate_id,
+             "substrate": "ai_blueprint_runs"})
+        archived = doc is not None
     if not doc:
         return {"run": None}
     # Iter 57x — same offset-aware safety fix that ai_measure has.
@@ -1250,6 +1261,9 @@ async def ai_blueprint_latest_for_estimate(
             # Iter 78z+ — persisted page filenames so the frontend can
             # render them in the ProfileAnnotator on a resume.
             "page_paths": doc.get("page_paths") or "",
+            # Read-side provenance (ruled 2026-07-20): True when served
+            # from the CUT archive after the live doc's 24h TTL reaped.
+            "archived": archived,
             "result": strip_cost_keys(doc.get("result")),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,

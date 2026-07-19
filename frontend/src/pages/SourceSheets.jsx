@@ -104,10 +104,10 @@ export default function SourceSheets() {
         <div className="card p-6 text-sm text-[var(--ink-2)]" data-testid="source-sheets-no-run">
           <div className="font-bold mb-2">No blueprint run on record for this estimate.</div>
           <p className="leading-snug">
-            The estimate↔page index lives on the blueprint run document, which expires
-            24h after upload (TTL). Page bytes persist in the durable store, but without
-            the run this viewer has no index to them. A fresh blueprint upload or re-run
-            on this estimate restores the view.
+            The live run index expires 24h after upload (TTL). APPLIED takeoffs survive
+            it — the CUT archives them and this viewer serves the archived index
+            indefinitely. Neither a live nor an archived run exists for this estimate;
+            a fresh blueprint upload or re-run restores the view.
           </p>
         </div>
       ) : (
@@ -121,6 +121,7 @@ export default function SourceSheets() {
               blueprint extraction run {rid8} · {pages.length} sheet(s)
               {run.page_count && run.page_count !== pages.length ? ` of ${run.page_count} queued` : ""}
               {uploadedAt ? ` · uploaded ${uploadedAt.toLocaleString()}` : ""} · status {run.status}
+              {run.archived ? " · ARCHIVED INDEX (served past TTL via the CUT archive)" : ""}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {pages.map((name, i) => (
