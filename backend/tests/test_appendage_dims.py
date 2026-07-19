@@ -130,7 +130,12 @@ def test_chase_height_rederives_osc_sticks(session, ):
     assert r.status_code == 200 and r.json()["status"] == "assumed"
     after = _osc_line(_preview(session))
     assert after["qty"] == base_qty
-    assert "user-measured height" not in after["note"]
+    # PIN AMENDED (chase ratification ruling, 2026-07-19): the estimate now
+    # PERMANENTLY carries user-measured appendage:back chase dims (taped
+    # 19.552'), so the note legitimately keeps "user-measured height" after
+    # this test reverts its own appendage:right entry. The revert itself is
+    # still pinned via qty == base_qty and the entry's removal above.
+    assert "user-measured height" in after["note"]
 
 
 def test_absurd_height_flags_on_preview(session):

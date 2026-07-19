@@ -77,17 +77,75 @@ def test_back_binds_sealed_key(session):
     assert "EST-191890" in s["geometry_basis"]["walls"]
 
 
-def test_back_chase_annotated_not_scaled(session):
+def test_back_chase_taped_dims_and_indicative_position(session):
+    """Chase ratification (ruled 2026-07-19, supersedes 'footprint untaped'):
+    human ground truth — projects from back wall, lap-clad; dims TAPED via
+    sealed-key amendment. Position stays untaped → INDICATIVE."""
     s = _sheet(session, "back")
     ch = s["chase"]
     assert ch is not None
     assert "chase" in ch["note"].lower()
     assert ch["tag"] == "AI-READ ✓"
-    assert ch["footprint"] == "untaped — NOT TO SCALE"
-    # defect-2 fix pin: on-wall locator glyph position is DERIVED (largest
-    # opening-free span — between W1 span end 4.7' and W2 span start 13.7')
+    assert ch["width_in"] == 64 and ch["depth_in"] == 31 and ch["height_in"] == 234.625
+    assert ch["height_label"] == "19'-6⅝\""
+    assert ch["dims_tag"] == "TAPED"
+    assert "TAPED (2026-07-19)" in ch["footprint"]
+    assert "INDICATIVE" in ch["position"]
+    assert "ruled 2026-07-19" in ch["ratified"]
+    # on-wall locator position: still DERIVED (largest opening-free span)
     assert 4.7 < ch["indicative_center_ft"] < 13.7
     assert "untaped" in ch["placement_basis"] and "INDICATIVE" in ch["placement_basis"]
+
+
+def test_chase_profile_on_sides_and_cap_on_front(session):
+    """Ruled 2026-07-19 (supersedes the earlier chase=None-on-sides pin):
+    sides render the chase in PROFILE — 31\" TAPED depth to 19'-6⅝\",
+    position ANCHORED (abuts back wall) so no indicative label on position.
+    FRONT: taped cap 19'-6⅝\" clears the WORST-CASE AI ridge estimate →
+    legitimately visible → rendered, with the ridge band labeled AI-READ ⚠
+    and only the along-wall position INDICATIVE."""
+    for which in ("left", "right"):
+        s = _sheet(session, which)
+        assert s["chase"] is None, which  # the accent itself stays back-wall
+        p = s["chase_profile"]
+        assert p is not None, which
+        assert p["depth_in"] == 31 and p["height_in"] == 234.625
+        assert p["height_label"] == "19'-6⅝\"" and p["dims_tag"] == "TAPED"
+        assert "anchored" in p["anchor"] and p["corner"] == "back"
+        assert "INDICATIVE" not in str(p)  # anchored — nothing indicative here
+    f = _sheet(session, "front")
+    assert f["chase"] is None
+    cap = f["chase_cap"]
+    assert cap is not None
+    assert cap["cap_ft"] == 19.552 and cap["cap_label"] == "19'-6⅝\""
+    assert cap["cap_tag"] == "TAPED" and cap["width_in"] == 64
+    assert cap["visible"] is True
+    assert cap["ridge_max_ft"] < cap["cap_ft"]
+    assert 17.0 < cap["ridge_min_ft"] < cap["ridge_max_ft"] < 19.552
+    assert "AI-READ ⚠" in cap["ridge_basis"]
+    assert "INDICATIVE" in cap["position"]
+    # front-view x mirrors the back-view derived center (54' wall)
+    assert cap["indicative_center_ft"] == round(54 - _sheet(session, "back")["chase"]["indicative_center_ft"], 1)
+    # back sheet carries no profile/cap; sides carry no cap
+    assert _sheet(session, "back")["chase_profile"] is None
+    assert _sheet(session, "left")["chase_cap"] is None
+
+
+def test_chase_ratification_provenance(session):
+    """Ratification entered via the appendage machinery (journey-logged):
+    appendage:back height_ft 19.552 / depth_ft 2.583 user_measured. Width
+    rides the sealed-key amendment only — the dims machinery pin rejects
+    width_ft (400) and pins are amended by ruling, not silently."""
+    r = session.get(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims", timeout=20)
+    assert r.status_code == 200
+    back = (r.json()["dims"] or {}).get("appendage:back") or {}
+    assert back.get("height_ft", {}).get("value") == 19.552
+    assert back.get("height_ft", {}).get("status") == "user_measured"
+    assert back.get("depth_ft", {}).get("value") == 2.583
+    assert back.get("depth_ft", {}).get("status") == "user_measured"
+    rr = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
+                      json={"key": "appendage:back", "field": "width_ft", "value": 5.333}, timeout=20)
+    assert rr.status_code == 400  # standing pin: width_ft not a machinery field
 
 
 def test_view_convention_and_mirror_consistency(session):
@@ -108,12 +166,11 @@ def test_view_convention_and_mirror_consistency(session):
         assert "left corner as viewed from outside" in v["datum"]
 
 
-def test_chase_not_rendered_on_sides(session):
-    """On the record (ruled defect-2, part 2): the sealed run attributes
-    the chase accent ONLY to the back wall; no side-wall accent entries
-    and no projection/depth data exist anywhere in the run — rendering a
-    profile view on LEFT/RIGHT would be invention, so the sides carry no
-    chase."""
+def test_chase_not_rendered_as_accent_on_sides(session):
+    """AMENDED BY RULING 2026-07-19: the human ground truth ratified the
+    chase's projection, so sides now render a TAPED PROFILE (see
+    test_chase_profile_on_sides_and_cap_on_front). This pin narrows to:
+    the chase ACCENT (annotation box + on-wall glyph) remains back-only."""
     for which in ("left", "right", "front"):
         assert _sheet(session, which)["chase"] is None, which
 
@@ -230,6 +287,11 @@ def test_basis_line_completeness_all_sheets(session):
             assert o["sill_tag"] in ALLOWED_TAGS, (which, o["tag"])
         if s["chase"]:
             assert s["chase"]["tag"] in ALLOWED_TAGS, which
+            assert s["chase"]["dims_tag"] in ALLOWED_TAGS, which
+        if s.get("chase_profile"):
+            assert s["chase_profile"]["dims_tag"] in ALLOWED_TAGS, which
+        if s.get("chase_cap"):
+            assert s["chase_cap"]["cap_tag"] in ALLOWED_TAGS, which
         if s["deviation"]:
             assert s["deviation"]["governs"] == "tape", which
 

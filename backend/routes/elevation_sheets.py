@@ -28,7 +28,8 @@ from deps import get_current_user
 
 router = APIRouter()
 
-_FRAC = {0.0: "", 0.25: "¼", 0.5: "½", 0.75: "¾"}
+_FRAC = {0.0: "", 0.125: "⅛", 0.25: "¼", 0.375: "⅜", 0.5: "½",
+         0.625: "⅝", 0.75: "¾", 0.875: "⅞"}
 
 # Tag taxonomy (spec §3): AI field-source → chip.
 _AI_TAGS = {
@@ -46,19 +47,20 @@ _SHEET_CODES = {"front": "EL-1", "left": "EL-2", "back": "EL-3", "right": "EL-4"
 
 
 def fmt_ftin(ft: float) -> str:
-    """Architectural format X'-Y[¼½¾]\" — nearest quarter inch."""
+    """Architectural format X'-Y[⅛..⅞]\" — nearest eighth inch (eighths
+    ruled in with the taped chase height 234-5/8\")."""
     sign = "-" if ft < 0 else ""
-    total_q = round(abs(ft) * 12 * 4)
-    feet, rem = divmod(total_q, 12 * 4)
-    inches, q = divmod(rem, 4)
-    return f"{sign}{feet}'-{inches}{_FRAC[q / 4.0]}\""
+    total_e = round(abs(ft) * 12 * 8)
+    feet, rem = divmod(total_e, 12 * 8)
+    inches, e = divmod(rem, 8)
+    return f"{sign}{feet}'-{inches}{_FRAC[e / 8.0]}\""
 
 
 def fmt_inches(inches: float) -> str:
     sign = "-" if inches < 0 else ""
-    total_q = round(abs(inches) * 4)
-    whole, q = divmod(total_q, 4)
-    return f"{sign}{whole}{_FRAC[q / 4.0]}\""
+    total_e = round(abs(inches) * 8)
+    whole, e = divmod(total_e, 8)
+    return f"{sign}{whole}{_FRAC[e / 8.0]}\""
 
 
 def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
@@ -100,6 +102,17 @@ def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
         if m:
             overhang_in = float(m.group(1))
             break
+    # chase ratification amendment (TAPED 2026-07-19) — all three dims
+    chase_dims = None
+    if "chase_width_in" in KEY["inputs"]:
+        note = str((KEY["bases"].get("chase_width_in") or {}).get("note", ""))
+        m = re.search(r"\d{4}-\d{2}-\d{2}", note)
+        chase_dims = {
+            "width_in": float(KEY["inputs"]["chase_width_in"]),
+            "depth_in": float(KEY["inputs"]["chase_depth_in"]),
+            "height_in": float(KEY["inputs"]["chase_height_in"]),
+            "taped": m.group(0) if m else KEY.get("amended", ""),
+        }
     return {
         "key_number": KEY["estimate_number"],
         "key_corrected": KEY.get("corrected"),
@@ -112,6 +125,7 @@ def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
                          if width_ft is not None else None),
         "profile_key_item": str((KEY.get("lines") or [{}])[0].get("item", "")),
         "overhang_in": overhang_in,
+        "chase_dims": chase_dims,
     }
 
 
@@ -377,6 +391,77 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         chase["indicative_center_ft"] = round(best[1], 1)
         chase["placement_basis"] = ("largest opening-free span (derived from run openings)"
                                     " — position untaped, INDICATIVE")
+    # chase ratification (Howard, ruled 2026-07-19): human ground truth —
+    # projects from the back wall, lap-clad; dims TAPED via sealed-key
+    # amendment. Supersedes "footprint untaped". Position stays INDICATIVE.
+    cd = (tape or {}).get("chase_dims")
+    if chase and cd:
+        chase.update({
+            "width_in": cd["width_in"], "depth_in": cd["depth_in"],
+            "height_in": cd["height_in"],
+            "width_label": fmt_inches(cd["width_in"]),
+            "depth_label": fmt_inches(cd["depth_in"]),
+            "height_label": fmt_ftin(cd["height_in"] / 12.0),
+            "dims_tag": "TAPED",
+            "footprint": (f"{fmt_inches(cd['width_in'])} × {fmt_inches(cd['depth_in'])}"
+                          f" — TAPED ({cd['taped']})"),
+            "position": "along-wall position untaped — INDICATIVE",
+            "ratified": ("human ground truth (projects from back wall, lap-clad)"
+                         " — ruled 2026-07-19; sealed key amendment"),
+        })
+    # sides: chase in PROFILE — anchored (abuts the back wall), dims TAPED
+    chase_profile = None
+    if which in ("left", "right") and cd:
+        chase_profile = {
+            "depth_in": cd["depth_in"], "height_in": cd["height_in"],
+            "depth_label": fmt_inches(cd["depth_in"]),
+            "height_label": fmt_ftin(cd["height_in"] / 12.0),
+            "dims_tag": "TAPED",
+            "anchor": "abuts back wall — position anchored (back corner)",
+            "corner": "back",
+            "note": (f"chimney chase in profile — projects {fmt_inches(cd['depth_in'])}"
+                     f" proud of the back wall (TAPED {cd['taped']})"),
+        }
+    # front: cap-over-ridge visibility — taped cap vs AI ridge band
+    chase_cap = None
+    if which == "front" and cd:
+        cap_ft = cd["height_in"] / 12.0
+        side_basis = _sealed_tape_basis(est, "left")
+        eaves = [s["height_ft"] for s in side_basis["segments"]] if side_basis else []
+        rises = [w.get("gable_triangle_height_ft") for w in (raw.get("walls") or [])
+                 if str(w.get("label", "")).lower() in ("left", "right")
+                 and w.get("gable_triangle_height_ft")]
+        cands = [e + r for e in eaves for r in rises]
+        if cands:
+            back_openings = _bind_openings(raw, "back", matchers)
+            chase_cap = {
+                "cap_ft": round(cap_ft, 3), "cap_label": fmt_ftin(cap_ft),
+                "cap_tag": "TAPED",
+                "width_in": cd["width_in"],
+                "width_label": fmt_inches(cd["width_in"]),
+                "ridge_min_ft": round(min(cands), 3),
+                "ridge_max_ft": round(max(cands), 3),
+                "ridge_min_label": fmt_ftin(min(cands)),
+                "ridge_max_label": fmt_ftin(max(cands)),
+                "ridge_basis": "eave segments TAPED-DERIVED + gable rise AI-READ ⚠ — ESTIMATED band",
+                "visible": cap_ft > max(cands),
+                "clearance_worst_label": fmt_inches((cap_ft - max(cands)) * 12.0),
+                "position": "along-wall position untaped — INDICATIVE",
+            }
+            # front-view indicative x = wall width − back-view indicative
+            # center (exterior views mirror each other)
+            spans_b = sorted((o["center_ft"] - float(o["width_in"]) / 24.0,
+                              o["center_ft"] + float(o["width_in"]) / 24.0)
+                             for o in back_openings
+                             if o["center_ft"] is not None and o["width_in"])
+            cur, best_b = 0.0, (0.0, (width_ft or 0) / 2.0)
+            for lo, hi in spans_b:
+                if lo - cur > best_b[0]:
+                    best_b = (lo - cur, (lo + cur) / 2.0)
+                cur = max(cur, hi)
+            if width_ft and width_ft - cur > best_b[0]:
+                best_b = (width_ft - cur, (width_ft + cur) / 2.0)
+            chase_cap["indicative_center_ft"] = round((width_ft or 0) - best_b[1], 1)
     windows = [o for o in openings if o["type"] == "Window"]
     doors = [o for o in openings if o["type"] == "Entry door"]
     vents = [o for o in openings if o["type"] == "Vent"]
@@ -429,6 +514,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "source_photos": wall.get("_source_photo_indices") or [],
         },
         "chase": chase,
+        "chase_profile": chase_profile,
+        "chase_cap": chase_cap,
         "view": {
             "convention": "viewed from exterior",
             "datum": ("along-wall datum: left corner as viewed from outside "

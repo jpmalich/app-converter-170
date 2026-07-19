@@ -3794,3 +3794,34 @@ NOTE: parallel search-replace edits corrupted test_elevation_sheets_lbr.py + Ele
 once (duplicated tail / lost block) — caught by pytest collection + render check, repaired.
 TESTS: full suite 1079 passed / 1 skipped (informal). Guard CLEAN stamp + re-handback follow
 the auto-commit. Fresh PNGs: letrick_{front,left,back,right}_elevation_sheet_LIVE_p2b.png.
+
+## SESSION 2026-07-19 (part 2) — CHASE RATIFICATION (TAPED) + PROFILE/CAP RENDERING
+RULED: human ground truth ratified — chase projects from back wall (CONFIRMED), lap-clad
+(CONFIRMED), dims TAPED 2026-07-19: 64" W × 31" D × 234⅝" H (19'-6⅝" grade to cap).
+- Sealed key EST-191890 AMENDED (amended: 2026-07-19): chase_width_in/depth_in/height_in
+  with TAPED bases + date. AREA STORY NOT re-derived (chase_outer/chase_sides/raw_sqft keep
+  composed values) pending item-3 face-by-face ratification.
+- Ratify machinery: appendage:back height_ft 19.552 + depth_ft 2.583 entered (user_measured,
+  journey-logged). Width rides the key amendment only — width_ft is pin-rejected (400) in the
+  dims machinery; pins amended by ruling, not silently.
+- PINS AMENDED BY RULING (ratified height re-derives OSC 7→8 per the ruled 2026-07-15 dims
+  machinery — now MATCHES the sealed key's 8): letrick total_sell 11055.71 → 11327.40
+  (test_iteration_47_haugh, test_haugh_round_two); appendage revert-note pin narrowed (the
+  estimate now permanently carries user-measured back-chase dims).
+- RENDERING: BACK glyph now TAPED 64" wide + 19'-6⅝" tall to scale (position still INDICATIVE,
+  largest opening-free span); LEFT/RIGHT chase PROFILE at the back corner (31" TAPED deep,
+  anchored — no indicative label on position; seg basis lines step outward past the profile);
+  FRONT cap: taped 19'-6⅝" clears worst-case AI ridge (~4") → rendered with AI ridge band
+  (dashed, AI-READ ⚠) + cap glyph, position INDICATIVE (mirrored derived center).
+- fmt_ftin/fmt_inches upgraded quarters → EIGHTHS (needed for 6⅝"); frontend mirrored.
+- TESTS: 1081 passed / 1 skipped full suite. New/updated pins: taped chase dims + indicative
+  position, profile on sides (anchored), cap visibility arithmetic + mirrored center,
+  ratification provenance (incl. width_ft 400 standing pin), basis completeness extended to
+  chase dims/profile/cap tags.
+- ITEM-3 DERIVATION PROPOSED (not entered anywhere): outboard-above-roofline 51.37 ft²
+  (5.3333' × 9.6321'), sides 101.02 ft² (2.5833' × 19.5521' × 2), wall-abutting face carried
+  by the back wall's gross strip (photo-path gross convention, no deduction/no double count);
+  raw +6.86 → 2099.7 ft² → lap 254 → 255 PCS; OSC unchanged 8; ISC unchanged 2; cap flashing
+  15'-10" + step/kick-out named (roofer scope per key composition); starter question flagged
+  (chase base 10.5 LF not in key's 165). Awaits human ratification.
+PNGs: letrick_{front,left,back,right}_elevation_sheet_LIVE_p2c.png

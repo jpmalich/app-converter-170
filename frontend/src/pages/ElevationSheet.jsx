@@ -133,10 +133,34 @@ export default function ElevationSheet() {
   const anyCollision = ops.some((o) => o.collision);
   const bubbleY = Math.max(topRefY - 55, 208);
   const collisionBoxY = chase ? 214 : 150;
-  // chase locator glyph — geometry precomputed (presentation width only;
-  // footprint untaped, position from backend's derived opening-free span)
+  // chase locator glyph (BACK) — width/height TAPED → drawn to scale;
+  // along-wall position untaped → INDICATIVE
   const chaseG = chase && chase.indicative_center_ft != null
-    ? { cx: wallX + chase.indicative_center_ft * ppf, top: wallTop - 34 }
+    ? {
+        cx: wallX + chase.indicative_center_ft * ppf,
+        w: chase.width_in ? (chase.width_in / 12) * ppf : 26,
+        top: chase.height_in ? wallBottom - (chase.height_in / 12) * ppf : wallTop - 34,
+        taped: !!chase.width_in,
+      }
+    : null;
+  // chase PROFILE (sides) — dims TAPED, anchored at the back corner
+  const prof = data.chase_profile;
+  const profW = prof ? (prof.depth_in / 12) * ppf : 0;
+  const profTop = prof ? wallBottom - (prof.height_in / 12) * ppf : 0;
+  const profX = prof ? (data.sheet === "left" ? wallX - profW : wallRight) : 0;
+  // seg basis lines step outward past the profile when it occupies a side
+  const dimOffL = prof && data.sheet === "left" ? profW : 0;
+  const dimOffR = prof && data.sheet === "right" ? profW : 0;
+  // chase CAP over ridge (front) — render only when geometry supports it
+  const cap = data.chase_cap && data.chase_cap.visible ? data.chase_cap : null;
+  const capG = cap
+    ? {
+        cx: wallX + cap.indicative_center_ft * ppf,
+        w: cap.width_in ? (cap.width_in / 12) * ppf : 40,
+        capY: wallBottom - cap.cap_ft * ppf,
+        ridgeMaxY: wallBottom - cap.ridge_max_ft * ppf,
+        ridgeMinY: wallBottom - cap.ridge_min_ft * ppf,
+      }
     : null;
 
   // Precomputed display strings — single member-expression per SVG text
@@ -158,8 +182,24 @@ export default function ElevationSheet() {
   }
   if (chase) {
     S.chase1 = `${String(chase.note).toUpperCase()} — ${chase.tag}`;
-    S.chase2 = `profile ${chase.profile} · footprint ${chase.footprint}`;
-    S.chase3 = `on-wall glyph: ${chase.placement_basis}`;
+    S.chase2 = chase.dims_tag === "TAPED"
+      ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED · ${chase.position}`
+      : `profile ${chase.profile} · footprint ${chase.footprint}`;
+    S.chase3 = chase.dims_tag === "TAPED"
+      ? `ratified: ${chase.ratified}`
+      : `on-wall glyph: ${chase.placement_basis}`;
+    S.chaseGlyphTitle = chase.dims_tag === "TAPED"
+      ? `CHIMNEY CHASE — ${chase.width_label} × ${chase.height_label} TAPED`
+      : "CHIMNEY CHASE";
+    S.chaseGlyphSub = "POSITION INDICATIVE — ALONG-WALL UNTAPED";
+  }
+  if (prof) {
+    S.prof1 = `CHASE PROFILE — ${prof.depth_label} DEEP × ${prof.height_label} — TAPED`;
+    S.prof2 = String(prof.anchor).toUpperCase();
+  }
+  if (cap) {
+    S.cap1 = `CHASE CAP ${cap.cap_label} TAPED — VISIBLE OVER RIDGE (clears worst-case AI ridge by ~${cap.clearance_worst_label})`;
+    S.cap2 = `RIDGE BAND ${cap.ridge_min_label}–${cap.ridge_max_label} (${cap.ridge_basis}) · ${cap.position}`;
   }
   S.widthTail = ` — ${W.width_tag} (${W.width_source})`;
   if (stepped) {
@@ -246,13 +286,47 @@ export default function ElevationSheet() {
         )}
         {chaseG && (
           <g data-testid="elevation-chase-glyph">
-            <line x1="530" y1="208" x2={chaseG.cx + 16} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
-            <rect x={chaseG.cx - 13} y={chaseG.top} width="26" height={wallBottom - chaseG.top} fill="none" stroke={C.siding} strokeWidth="1.75" strokeDasharray="6 3" />
-            <line x1={chaseG.cx - 16} y1={chaseG.top} x2={chaseG.cx + 16} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
-            <line x1={chaseG.cx - 9} y1={chaseG.top + 10} x2={chaseG.cx + 9} y2={chaseG.top + 10} stroke="#8a93a2" strokeWidth="0.7" />
-            <line x1={chaseG.cx - 9} y1={chaseG.top + 18} x2={chaseG.cx + 9} y2={chaseG.top + 18} stroke="#8a93a2" strokeWidth="0.7" />
-            <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">CHIMNEY CHASE</text>
-            <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>POSITION INDICATIVE — NOT TO SCALE</text>
+            <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+            <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallBottom - chaseG.top}
+              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75"
+              strokeDasharray={chaseG.taped ? undefined : "6 3"} />
+            <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
+            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 10} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 10} stroke="#8a93a2" strokeWidth="0.7" />
+            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 18} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 18} stroke="#8a93a2" strokeWidth="0.7" />
+            <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.chaseGlyphTitle}</text>
+            <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.chaseGlyphSub}</text>
+          </g>
+        )}
+        {prof && (
+          <g data-testid="elevation-chase-profile">
+            <rect x={profX} y={profTop} width={profW} height={wallBottom - profTop}
+              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
+            <line x1={profX - 3} y1={profTop} x2={profX + profW + 3} y2={profTop} stroke={C.siding} strokeWidth="2" />
+            <line x1={profX + 3} y1={profTop + 10} x2={profX + profW - 3} y2={profTop + 10} stroke="#8a93a2" strokeWidth="0.7" />
+            {data.sheet === "left" ? (
+              <g>
+                <line x1={profX + profW / 2} y1={profTop - 4} x2="96" y2="224" stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+                <text x="64" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber}>{S.prof1}</text>
+                <text x="64" y="244" fontSize="6.5" fill={C.amber}>{S.prof2}</text>
+              </g>
+            ) : (
+              <g>
+                <line x1={profX + profW / 2} y1={profTop - 4} x2="960" y2="224" stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+                <text x="992" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.prof1}</text>
+                <text x="992" y="244" fontSize="6.5" fill={C.amber} textAnchor="end">{S.prof2}</text>
+              </g>
+            )}
+          </g>
+        )}
+        {capG && (
+          <g data-testid="elevation-chase-cap">
+            <line x1={wallX - 20} y1={capG.ridgeMaxY} x2={wallRight + 20} y2={capG.ridgeMaxY} stroke="#8a93a2" strokeWidth="0.9" strokeDasharray="8 4" />
+            <line x1={wallX - 20} y1={capG.ridgeMinY} x2={wallRight + 20} y2={capG.ridgeMinY} stroke="#8a93a2" strokeWidth="0.9" strokeDasharray="8 4" />
+            <rect x={capG.cx - capG.w / 2} y={capG.capY} width={capG.w} height={capG.ridgeMinY - capG.capY}
+              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.5" strokeDasharray="5 3" />
+            <line x1={capG.cx - capG.w / 2 - 3} y1={capG.capY} x2={capG.cx + capG.w / 2 + 3} y2={capG.capY} stroke={C.siding} strokeWidth="2" />
+            <text x={capG.cx} y={capG.capY - 14} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.cap1}</text>
+            <text x={capG.cx} y={capG.capY - 5} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.cap2}</text>
           </g>
         )}
         {anyCollision && (
@@ -375,7 +449,7 @@ export default function ElevationSheet() {
           <g>
             {/* seg[1] (right half) — right-side basis line */}
             <g stroke={C.ink} strokeWidth="1" data-testid="elevation-seg-basis-1">
-              <line x1={wallRight + 2} y1={segTopY[1]} x2="952" y2={segTopY[1]} /><line x1={wallRight + 2} y1={wallBottom} x2="952" y2={wallBottom} />
+              <line x1={wallRight + dimOffR + 2} y1={segTopY[1]} x2="952" y2={segTopY[1]} /><line x1={wallRight + dimOffR + 2} y1={wallBottom} x2="952" y2={wallBottom} />
               <line x1="946" y1={segTopY[1]} x2="946" y2={wallBottom} />
               <path d={`M 941.8 ${segTopY[1] + 4} l 8.4 -8 M 941.8 ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
             </g>
@@ -386,15 +460,15 @@ export default function ElevationSheet() {
             <text x="1022" y={segTopY[1] + 82} fontSize="7" fill={C.muted} textAnchor="end">{S.seg1Formula}</text>
             {/* seg[0] (left half) — left-side basis line */}
             <g stroke={C.ink} strokeWidth="1" data-testid="elevation-seg-basis-0">
-              <line x1={wallX - 2} y1={segTopY[0]} x2={wallX - 52} y2={segTopY[0]} /><line x1={wallX - 2} y1={wallBottom} x2={wallX - 52} y2={wallBottom} />
-              <line x1={wallX - 46} y1={segTopY[0]} x2={wallX - 46} y2={wallBottom} />
-              <path d={`M ${wallX - 50.2} ${segTopY[0] + 4} l 8.4 -8 M ${wallX - 50.2} ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
+              <line x1={wallX - dimOffL - 2} y1={segTopY[0]} x2={wallX - dimOffL - 52} y2={segTopY[0]} /><line x1={wallX - dimOffL - 2} y1={wallBottom} x2={wallX - dimOffL - 52} y2={wallBottom} />
+              <line x1={wallX - dimOffL - 46} y1={segTopY[0]} x2={wallX - dimOffL - 46} y2={wallBottom} />
+              <path d={`M ${wallX - dimOffL - 50.2} ${segTopY[0] + 4} l 8.4 -8 M ${wallX - dimOffL - 50.2} ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
             </g>
-            <text x={wallX - 56} y={segTopY[0] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted} textAnchor="end">SEG 1 HEIGHT</text>
-            <text x={wallX - 56} y={segTopY[0] + 33} fontSize="6.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.seg0Corner}</text>
-            <text x={wallX - 56} y={segTopY[0] + 48} fontSize="12" fontWeight="bold" fill={C.ink} textAnchor="end">{S.seg0Label}</text>
-            <Chip x={wallX - 130} y={segTopY[0] + 54} w={74} label="TAPED-DERIVED" kind="taped-derived" />
-            <text x={wallX - 56} y={segTopY[0] + 82} fontSize="7" fill={C.muted} textAnchor="end">{S.seg0Formula}</text>
+            <text x={wallX - dimOffL - 56} y={segTopY[0] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted} textAnchor="end">SEG 1 HEIGHT</text>
+            <text x={wallX - dimOffL - 56} y={segTopY[0] + 33} fontSize="6.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.seg0Corner}</text>
+            <text x={wallX - dimOffL - 56} y={segTopY[0] + 48} fontSize="12" fontWeight="bold" fill={C.ink} textAnchor="end">{S.seg0Label}</text>
+            <Chip x={wallX - dimOffL - 130} y={segTopY[0] + 54} w={74} label="TAPED-DERIVED" kind="taped-derived" />
+            <text x={wallX - dimOffL - 56} y={segTopY[0] + 82} fontSize="7" fill={C.muted} textAnchor="end">{S.seg0Formula}</text>
           </g>
         ) : (
           <g>
@@ -505,19 +579,19 @@ export default function ElevationSheet() {
 
 function fmtFt(ft) {
   const sign = ft < 0 ? "-" : "";
-  const totalQ = Math.round(Math.abs(ft) * 48);
-  const feet = Math.floor(totalQ / 48);
-  const rem = totalQ - feet * 48;
-  const inches = Math.floor(rem / 4);
-  const q = rem - inches * 4;
-  const FR = ["", "¼", "½", "¾"];
-  return `${sign}${feet}'-${inches}${FR[q]}"`;
+  const totalE = Math.round(Math.abs(ft) * 96);
+  const feet = Math.floor(totalE / 96);
+  const rem = totalE - feet * 96;
+  const inches = Math.floor(rem / 8);
+  const e = rem - inches * 8;
+  const FR = ["", "⅛", "¼", "⅜", "½", "⅝", "¾", "⅞"];
+  return `${sign}${feet}'-${inches}${FR[e]}"`;
 }
 function fmtInFrac(inches) {
   const whole = Math.floor(inches);
-  const q = Math.round((inches - whole) * 4);
-  const FR = ["", "¼", "½", "¾"];
-  return q === 4 ? `${whole + 1}"` : `${whole}${FR[q]}"`;
+  const e = Math.round((inches - whole) * 8);
+  const FR = ["", "⅛", "¼", "⅜", "½", "⅝", "¾", "⅞"];
+  return e === 8 ? `${whole + 1}"` : `${whole}${FR[e]}"`;
 }
 function fmtNum(n) {
   return Number(n).toFixed(3).replace(/\.?0+$/, "");

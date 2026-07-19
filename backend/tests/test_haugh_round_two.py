@@ -111,9 +111,13 @@ class TestRoundTwoPins:
         assert _line(pkg, '440 Series Trim 4/4" x 8"')["qty"] == 21
 
     def test_letrick_photo_path_untouched(self, session):
-        """Per-source convention: photo runs keep Iter 57ee constants."""
+        """Per-source convention: photo runs keep Iter 57ee constants.
+        PIN AMENDED (chase ratification ruling, 2026-07-19): taped chase
+        height 19.552' entered via the appendage machinery re-derives OSC
+        7→8 sticks (per the ruled 2026-07-15 dims machinery — matches the
+        sealed key's 8), moving total_sell 11055.71 → 11327.40."""
         d = session.post(f"{API}/estimates/{LETRICK}/lp-package/preview", json={}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 11055.71
+        assert d["summary"]["pricing"]["total_sell"] == 11327.4
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

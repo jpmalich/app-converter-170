@@ -15,18 +15,34 @@ the taped exposure; ONE exposure now governs all walls. Dependents re-derived:
 front area 478.1 (was 483.8), raw 2,092.8 (was 2,098.5), lap 254 (was 255).
 Caught by Howard's as-built arithmetic (25 × 4.25). KEY-HYGIENE RULE applies
 from this correction forward: every value carries basis TAPED or DERIVED
-(formula stated) — see "bases"."""
+(formula stated) — see "bases".
+
+CHASE RATIFICATION AMENDMENT (Howard, 2026-07-19 — human ground truth,
+ruled): the chimney chase PROJECTS from the back wall (CONFIRMED) and is
+lap-clad (CONFIRMED). Dimensions TAPED (contractor tape 2026-07-19):
+width 64" · depth 31" (proud of wall) · height 234-5/8" = 19'-6 5/8",
+grade to cap. Supersedes "footprint untaped" and the prior ~18.91' chase
+height. Entered via the appendage ratify machinery (appendage:back
+height_ft/depth_ft, journey-logged); width rides this amendment only —
+the dims machinery pin rejects width_ft (400) and pins are amended by
+ruling, not silently. AREA STORY NOT RE-DERIVED HERE: chase_outer_sqft /
+chase_sides_sqft / raw_sqft keep their composed values until the
+face-by-face derivation is ratified (ruling item 3, 2026-07-19)."""
 
 LETRICK_HAND_TAKEOFF_KEY = {
     "estimate_number": "EST-191890",
     "composed": "2026-07-13",
     "corrected": "2026-07-18",
+    "amended": "2026-07-19",  # chase ratification (see docstring)
     "inputs": {
         "exposure_in": 4.25,         # TAPED — one exposure governs all walls
         "raw_sqft": 2092.8,          # 20.9 squares raw (was 2,098.5 pre-correction)
         "walls_gables_sqft": 1947.3, # front 478.1 + back 535.7 + stepped sides ~566.4 + gables ×0.7 = 367.5
         "chase_outer_sqft": 47.97,
         "chase_sides_sqft": 97.56,   # 2.58' × 18.91' × 2
+        "chase_width_in": 64.0,      # TAPED 2026-07-19 (ratification amendment)
+        "chase_depth_in": 31.0,      # TAPED 2026-07-19 — proud of wall
+        "chase_height_in": 234.625,  # TAPED 2026-07-19 — 19'-6 5/8" grade to cap
         "eaves_lf": 108.0,           # 2 × 54
         "rakes_lf": 69.6,            # 4 × 17.4
         "fascia_rake_lf": 177.6,
@@ -49,6 +65,9 @@ LETRICK_HAND_TAKEOFF_KEY = {
         "fascia_rake_lf": {"basis": "DERIVED", "formula": "108 + 69.6 = 177.6"},
         "perimeter_lf": {"basis": "TAPED"},
         "starter_lf": {"basis": "DERIVED", "formula": "168 − 3 (entry; slider sits on starter)"},
+        "chase_width_in": {"basis": "TAPED", "note": "contractor tape 2026-07-19 — chase ratification amendment (Howard)"},
+        "chase_depth_in": {"basis": "TAPED", "note": "contractor tape 2026-07-19 — proud of back wall; matches composed sides basis 2.58'"},
+        "chase_height_in": {"basis": "TAPED", "note": "contractor tape 2026-07-19 — 234-5/8\" = 19'-6 5/8\" grade to cap; supersedes ~18.91'. Area dependents NOT re-derived pending item-3 ratification"},
     },
     "lines": [
         {"item": "38 Series Lap 8\" x 16'", "qty": 254, "unit": "PCS",
