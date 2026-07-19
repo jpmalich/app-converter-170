@@ -3825,3 +3825,21 @@ RULED: human ground truth ratified — chase projects from back wall (CONFIRMED)
   15'-10" + step/kick-out named (roofer scope per key composition); starter question flagged
   (chase base 10.5 LF not in key's 165). Awaits human ratification.
 PNGs: letrick_{front,left,back,right}_elevation_sheet_LIVE_p2c.png
+
+## SESSION 2026-07-19 (part 3) — CHASE POSITION BOUND (heuristic retired) + BACK full-height fix
+RULED: photographic ground truth — chase sits immediately left of D1, near wall center; the
+"largest opening-free span" heuristic RETIRED (placed it in the W1–W2 span; lost to the camera).
+- Evidence step (a): run d6679448 DOES carry chase position — raw_ai.corner_locations with
+  position_frac 0.35–0.46 on the back wall → center 21.9' of 54' (D1 left edge 24.3') —
+  matches the photo. BOUND, AI-READ ✓; position label INDICATIVE → AI-READ ✓ + photo-confirmed
+  note. No human-supplied offset needed. Span code purged from routes (grep = 0).
+- BACK glyph defect mechanism: z-order — the wall rect painted over the glyph's lower half.
+  Fixed: glyph renders AFTER the wall; solid box above roofline + dashed on-wall outline
+  grade→soffit, 64" TAPED width, full 19'-6⅝" height.
+- FRONT cap position: mirrored from the SAME bound corner reads (54 − 21.9 = 32.1') — front
+  changed too (retired heuristic could not stay live there); LEFT/RIGHT untouched.
+- $271.69 RECEIPT: 540 Series OSC 5/4"×6"×16' unit_sell $271.69 × (+1 stick, 7→8) = exact
+  total_sell delta 11055.71→11327.40. Lap qty 227 unchanged → chase-area gate HELD.
+- TESTS: 1081 passed / 1 skipped. Pins updated: bound center 21.9 + position_tag AI-READ ✓ +
+  nothing INDICATIVE on chase; cap mirror pin.
+PNGs: letrick_{front,back}_elevation_sheet_LIVE_p2d.png (left/right stand at _p2c).

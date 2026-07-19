@@ -358,10 +358,9 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 "run_short": run["run_id"][:8],
             }
 
-    # chimney chase (back wall) — AI accent read; footprint is UNTAPED, so
-    # the sheet must annotate, never scale-render silently. The on-wall
-    # glyph position is INDICATIVE: the largest opening-free span of the
-    # wall (derived from the run's own opening spans — not hand-placed).
+    # chimney chase (back wall) — AI accent read; dims TAPED per the
+    # 2026-07-19 ratification amendment; position bound from the run's
+    # chase corner-location reads (see below).
     chase = None
     for acc in (wall.get("accent_profiles") or []):
         loc = str(acc.get("location") or "")
@@ -373,27 +372,27 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
 
     matchers = _schedule_matchers(run, est.get("lp_openings_review"))
     openings = _bind_openings(raw, which, matchers)
+    # chase position: BOUND from the run's chase corner-location reads
+    # (position_frac, exterior-view datum). The span heuristic is RETIRED
+    # (ruled 2026-07-19 — it lost to the camera). Human photo ground truth
+    # corroborates: immediately left of entry door D1, near wall center.
+    def _chase_fracs(wall_label):
+        return [c["position_frac"] for c in (raw.get("corner_locations") or [])
+                if "chase" in str(c.get("locator", "")).lower()
+                and c.get("walls") == [wall_label]
+                and c.get("position_frac") is not None]
     if chase:
-        # indicative on-wall position: middle of the largest opening-free
-        # span — DERIVED from the bound openings + basis width, not placed
-        # by hand. Footprint stays untaped; the glyph is a locator only.
-        spans = sorted((o["center_ft"] - float(o["width_in"]) / 24.0,
-                        o["center_ft"] + float(o["width_in"]) / 24.0)
-                       for o in openings
-                       if o["center_ft"] is not None and o["width_in"])
-        cursor, best = 0.0, (0.0, (width_ft or 0) / 2.0)
-        for lo, hi in spans:
-            if lo - cursor > best[0]:
-                best = (lo - cursor, (lo + cursor) / 2.0)
-            cursor = max(cursor, hi)
-        if width_ft and width_ft - cursor > best[0]:
-            best = (width_ft - cursor, (width_ft + cursor) / 2.0)
-        chase["indicative_center_ft"] = round(best[1], 1)
-        chase["placement_basis"] = ("largest opening-free span (derived from run openings)"
-                                    " — position untaped, INDICATIVE")
+        fr = _chase_fracs(which)
+        if fr and width_ft:
+            chase["center_ft"] = round((min(fr) + max(fr)) / 2 * width_ft, 1)
+            chase["position_tag"] = "AI-READ ✓"
+            chase["position"] = (f"bound from run chase-corner reads "
+                                 f"({min(fr):g}–{max(fr):g} frac of wall) — AI-READ ✓")
+            chase["position_note"] = ("immediately left of D1 — human photo-confirmed"
+                                      " (ruled 2026-07-19)")
     # chase ratification (Howard, ruled 2026-07-19): human ground truth —
     # projects from the back wall, lap-clad; dims TAPED via sealed-key
-    # amendment. Supersedes "footprint untaped". Position stays INDICATIVE.
+    # amendment. Supersedes "footprint untaped".
     cd = (tape or {}).get("chase_dims")
     if chase and cd:
         chase.update({
@@ -405,7 +404,6 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "dims_tag": "TAPED",
             "footprint": (f"{fmt_inches(cd['width_in'])} × {fmt_inches(cd['depth_in'])}"
                           f" — TAPED ({cd['taped']})"),
-            "position": "along-wall position untaped — INDICATIVE",
             "ratified": ("human ground truth (projects from back wall, lap-clad)"
                          " — ruled 2026-07-19; sealed key amendment"),
         })
@@ -433,7 +431,6 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                  and w.get("gable_triangle_height_ft")]
         cands = [e + r for e in eaves for r in rises]
         if cands:
-            back_openings = _bind_openings(raw, "back", matchers)
             chase_cap = {
                 "cap_ft": round(cap_ft, 3), "cap_label": fmt_ftin(cap_ft),
                 "cap_tag": "TAPED",
@@ -446,22 +443,18 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 "ridge_basis": "eave segments TAPED-DERIVED + gable rise AI-READ ⚠ — ESTIMATED band",
                 "visible": cap_ft > max(cands),
                 "clearance_worst_label": fmt_inches((cap_ft - max(cands)) * 12.0),
-                "position": "along-wall position untaped — INDICATIVE",
             }
-            # front-view indicative x = wall width − back-view indicative
-            # center (exterior views mirror each other)
-            spans_b = sorted((o["center_ft"] - float(o["width_in"]) / 24.0,
-                              o["center_ft"] + float(o["width_in"]) / 24.0)
-                             for o in back_openings
-                             if o["center_ft"] is not None and o["width_in"])
-            cur, best_b = 0.0, (0.0, (width_ft or 0) / 2.0)
-            for lo, hi in spans_b:
-                if lo - cur > best_b[0]:
-                    best_b = (lo - cur, (lo + cur) / 2.0)
-                cur = max(cur, hi)
-            if width_ft and width_ft - cur > best_b[0]:
-                best_b = (width_ft - cur, (width_ft + cur) / 2.0)
-            chase_cap["indicative_center_ft"] = round((width_ft or 0) - best_b[1], 1)
+            # front-view position = mirror of the BACK chase-corner reads
+            # (exterior views mirror; span heuristic RETIRED 2026-07-19)
+            fr_b = _chase_fracs("back")
+            if fr_b and width_ft:
+                back_center = (min(fr_b) + max(fr_b)) / 2 * width_ft
+                chase_cap["center_ft"] = round(width_ft - back_center, 1)
+                chase_cap["position"] = ("mirrored from back chase-corner reads — AI-READ ✓"
+                                         " · human photo-confirmed (left of D1 on back)")
+                chase_cap["position_tag"] = "AI-READ ✓"
+            else:
+                chase_cap = None  # no bound position — nothing rendered
     windows = [o for o in openings if o["type"] == "Window"]
     doors = [o for o in openings if o["type"] == "Entry door"]
     vents = [o for o in openings if o["type"] == "Vent"]

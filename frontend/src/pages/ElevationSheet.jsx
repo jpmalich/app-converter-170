@@ -133,11 +133,11 @@ export default function ElevationSheet() {
   const anyCollision = ops.some((o) => o.collision);
   const bubbleY = Math.max(topRefY - 55, 208);
   const collisionBoxY = chase ? 214 : 150;
-  // chase locator glyph (BACK) — width/height TAPED → drawn to scale;
-  // along-wall position untaped → INDICATIVE
-  const chaseG = chase && chase.indicative_center_ft != null
+  // chase locator glyph (BACK) — dims TAPED to scale; position BOUND from
+  // run chase-corner reads (span heuristic retired 2026-07-19)
+  const chaseG = chase && chase.center_ft != null
     ? {
-        cx: wallX + chase.indicative_center_ft * ppf,
+        cx: wallX + chase.center_ft * ppf,
         w: chase.width_in ? (chase.width_in / 12) * ppf : 26,
         top: chase.height_in ? wallBottom - (chase.height_in / 12) * ppf : wallTop - 34,
         taped: !!chase.width_in,
@@ -155,7 +155,7 @@ export default function ElevationSheet() {
   const cap = data.chase_cap && data.chase_cap.visible ? data.chase_cap : null;
   const capG = cap
     ? {
-        cx: wallX + cap.indicative_center_ft * ppf,
+        cx: wallX + cap.center_ft * ppf,
         w: cap.width_in ? (cap.width_in / 12) * ppf : 40,
         capY: wallBottom - cap.cap_ft * ppf,
         ridgeMaxY: wallBottom - cap.ridge_max_ft * ppf,
@@ -183,15 +183,15 @@ export default function ElevationSheet() {
   if (chase) {
     S.chase1 = `${String(chase.note).toUpperCase()} — ${chase.tag}`;
     S.chase2 = chase.dims_tag === "TAPED"
-      ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED · ${chase.position}`
+      ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED · ${chase.position || ""}`
       : `profile ${chase.profile} · footprint ${chase.footprint}`;
     S.chase3 = chase.dims_tag === "TAPED"
-      ? `ratified: ${chase.ratified}`
-      : `on-wall glyph: ${chase.placement_basis}`;
+      ? `${chase.position_note || ""} · ratified: sealed key amendment 2026-07-19`
+      : "";
     S.chaseGlyphTitle = chase.dims_tag === "TAPED"
       ? `CHIMNEY CHASE — ${chase.width_label} × ${chase.height_label} TAPED`
       : "CHIMNEY CHASE";
-    S.chaseGlyphSub = "POSITION INDICATIVE — ALONG-WALL UNTAPED";
+    S.chaseGlyphSub = `POSITION ${chase.position_tag || "—"} · ${String(chase.position_note || "").split(" — ")[0].toUpperCase()}`;
   }
   if (prof) {
     S.prof1 = `CHASE PROFILE — ${prof.depth_label} DEEP × ${prof.height_label} — TAPED`;
@@ -284,19 +284,6 @@ export default function ElevationSheet() {
             <text x="540" y="193" fontSize="8" fill="#7a4a12">{S.chase3}</text>
           </g>
         )}
-        {chaseG && (
-          <g data-testid="elevation-chase-glyph">
-            <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
-            <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallBottom - chaseG.top}
-              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75"
-              strokeDasharray={chaseG.taped ? undefined : "6 3"} />
-            <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
-            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 10} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 10} stroke="#8a93a2" strokeWidth="0.7" />
-            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 18} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 18} stroke="#8a93a2" strokeWidth="0.7" />
-            <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.chaseGlyphTitle}</text>
-            <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.chaseGlyphSub}</text>
-          </g>
-        )}
         {prof && (
           <g data-testid="elevation-chase-profile">
             <rect x={profX} y={profTop} width={profW} height={wallBottom - profTop}
@@ -368,6 +355,23 @@ export default function ElevationSheet() {
           <g data-testid="elevation-step-note">
             <line x1={stepX} y1={segTopY[1] - 6} x2={stepX} y2={segTopY[0]} stroke={C.amber} strokeWidth="1" strokeDasharray="3 2" />
             <text x={stepX} y={segTopY[1] - 12} fontSize="8" textAnchor="middle" fill={C.amber} fontWeight="bold">STEP — LOCATION NOT TAPED (INDICATIVE)</text>
+          </g>
+        )}
+
+        {chaseG && (
+          <g data-testid="elevation-chase-glyph">
+            <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+            {/* above-roofline continuation: solid box (photo-confirmed, rises past roofline) */}
+            <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallTop - chaseG.top}
+              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
+            {/* on-wall portion grade→soffit: dashed outline over the wall face */}
+            <rect x={chaseG.cx - chaseG.w / 2} y={wallTop} width={chaseG.w} height={wallBottom - wallTop}
+              fill="none" stroke={C.siding} strokeWidth="1.75" strokeDasharray="6 3" />
+            <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
+            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 10} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 10} stroke="#8a93a2" strokeWidth="0.7" />
+            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 18} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 18} stroke="#8a93a2" strokeWidth="0.7" />
+            <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.chaseGlyphTitle}</text>
+            <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.chaseGlyphSub}</text>
           </g>
         )}
 

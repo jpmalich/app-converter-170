@@ -77,10 +77,12 @@ def test_back_binds_sealed_key(session):
     assert "EST-191890" in s["geometry_basis"]["walls"]
 
 
-def test_back_chase_taped_dims_and_indicative_position(session):
-    """Chase ratification (ruled 2026-07-19, supersedes 'footprint untaped'):
-    human ground truth — projects from back wall, lap-clad; dims TAPED via
-    sealed-key amendment. Position stays untaped → INDICATIVE."""
+def test_back_chase_taped_dims_and_bound_position(session):
+    """Chase ratification (ruled 2026-07-19): dims TAPED via sealed-key
+    amendment. POSITION (ruled 2026-07-19, span heuristic RETIRED): bound
+    from the run's chase corner-location reads (position_frac 0.35–0.46 →
+    center 21.9' of 54') — AI-READ ✓, corroborated by human photo ground
+    truth (immediately left of D1, whose left edge sits at 24.3')."""
     s = _sheet(session, "back")
     ch = s["chase"]
     assert ch is not None
@@ -90,11 +92,14 @@ def test_back_chase_taped_dims_and_indicative_position(session):
     assert ch["height_label"] == "19'-6⅝\""
     assert ch["dims_tag"] == "TAPED"
     assert "TAPED (2026-07-19)" in ch["footprint"]
-    assert "INDICATIVE" in ch["position"]
     assert "ruled 2026-07-19" in ch["ratified"]
-    # on-wall locator position: still DERIVED (largest opening-free span)
-    assert 4.7 < ch["indicative_center_ft"] < 13.7
-    assert "untaped" in ch["placement_basis"] and "INDICATIVE" in ch["placement_basis"]
+    # bound position: left of D1 (24.3' left edge), near wall center (27')
+    assert ch["center_ft"] == 21.9
+    assert ch["position_tag"] == "AI-READ ✓"
+    assert "chase-corner reads" in ch["position"]
+    assert "photo-confirmed" in ch["position_note"]
+    assert "INDICATIVE" not in str(ch)
+    assert "indicative_center_ft" not in ch and "placement_basis" not in ch
 
 
 def test_chase_profile_on_sides_and_cap_on_front(session):
@@ -123,9 +128,11 @@ def test_chase_profile_on_sides_and_cap_on_front(session):
     assert cap["ridge_max_ft"] < cap["cap_ft"]
     assert 17.0 < cap["ridge_min_ft"] < cap["ridge_max_ft"] < 19.552
     assert "AI-READ ⚠" in cap["ridge_basis"]
-    assert "INDICATIVE" in cap["position"]
-    # front-view x mirrors the back-view derived center (54' wall)
-    assert cap["indicative_center_ft"] == round(54 - _sheet(session, "back")["chase"]["indicative_center_ft"], 1)
+    # cap position: mirror of the bound back chase-corner center (54' wall);
+    # span heuristic RETIRED — nothing indicative remains on position
+    assert cap["position_tag"] == "AI-READ ✓"
+    assert "mirrored" in cap["position"] and "photo-confirmed" in cap["position"]
+    assert cap["center_ft"] == round(54 - _sheet(session, "back")["chase"]["center_ft"], 1)
     # back sheet carries no profile/cap; sides carry no cap
     assert _sheet(session, "back")["chase_profile"] is None
     assert _sheet(session, "left")["chase_cap"] is None
