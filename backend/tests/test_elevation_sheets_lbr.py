@@ -77,12 +77,17 @@ def test_back_binds_sealed_key(session):
     assert "EST-191890" in s["geometry_basis"]["walls"]
 
 
-def test_back_chase_taped_dims_and_bound_position(session):
+def test_back_chase_taped_dims_and_ratified_position(session):
     """Chase ratification (ruled 2026-07-19): dims TAPED via sealed-key
-    amendment. POSITION (ruled 2026-07-19, span heuristic RETIRED): bound
-    from the run's chase corner-location reads (position_frac 0.35–0.46 →
-    center 21.9' of 54') — AI-READ ✓, corroborated by human photo ground
-    truth (immediately left of D1, whose left edge sits at 24.3')."""
+    amendment. POSITION — PIN AMENDED BY RULING 2026-07-19 (collision
+    ruling, supersedes the AI corner-read binding of center 21.9'): the
+    chase sits LEFT of D1 with a siding strip between — relationship
+    CONFIRMED (human, photo); right edge 15" left of D1's trim edge —
+    offset ESTIMATED (photo-scaled, untaped), entered via the ratify
+    machinery (appendage:back door_offset_ft 1.25 photo_scaled). D1 stays
+    where the run put it (left edge 24.3'); the AI corner-read band
+    (0.35–0.46 → center 21.9') stays ON RECORD as the flagged comparison.
+    A later tape upgrades the offset by the normal amendment path."""
     s = _sheet(session, "back")
     ch = s["chase"]
     assert ch is not None
@@ -93,13 +98,26 @@ def test_back_chase_taped_dims_and_bound_position(session):
     assert ch["dims_tag"] == "TAPED"
     assert "TAPED (2026-07-19)" in ch["footprint"]
     assert "ruled 2026-07-19" in ch["ratified"]
-    # bound position: left of D1 (24.3' left edge), near wall center (27')
-    assert ch["center_ft"] == 21.9
-    assert ch["position_tag"] == "AI-READ ✓"
-    assert "chase-corner reads" in ch["position"]
-    assert "photo-confirmed" in ch["position_note"]
+    # ratified door-relative position: 24.3 − 1.25 − 64/24 = 20.383 → 20.4
+    assert ch["center_ft"] == 20.4
+    assert ch["position_tag"] == "CONFIRMED (human, photo)"
+    assert "left of D1, siding strip between" in ch["position"]
+    assert "CONFIRMED (human, photo)" in ch["position"]
+    assert "15\" left of D1 trim edge" in ch["position"]
+    assert "ESTIMATED (photo-scaled, untaped)" in ch["position"]
+    # AI corner-read band stays on record as the FLAGGED COMPARISON
+    band = ch["ai_band"]
+    assert band["center_ft"] == 21.9 and band["frac_lo"] == 0.35 and band["frac_hi"] == 0.46
+    assert "FLAGGED COMPARISON" in band["note"]
     assert "INDICATIVE" not in str(ch)
     assert "indicative_center_ft" not in ch and "placement_basis" not in ch
+    # geometry holds: chase right edge sits a siding strip LEFT of D1
+    d1 = next(o for o in s["openings"] if o["tag"] == "D1")
+    d1_left = d1["center_ft"] - d1["width_in"] / 24.0
+    assert ch["center_ft"] + 64 / 24.0 < d1_left
+    # collision guard: clean post-ratification — nothing suppressed
+    assert s["collisions"] == []
+    assert not ch.get("suppressed")
 
 
 def test_chase_profile_on_sides_and_cap_on_front(session):
@@ -128,10 +146,15 @@ def test_chase_profile_on_sides_and_cap_on_front(session):
     assert cap["ridge_max_ft"] < cap["cap_ft"]
     assert 17.0 < cap["ridge_min_ft"] < cap["ridge_max_ft"] < 19.552
     assert "AI-READ ⚠" in cap["ridge_basis"]
-    # cap position: mirror of the bound back chase-corner center (54' wall);
-    # span heuristic RETIRED — nothing indicative remains on position
-    assert cap["position_tag"] == "AI-READ ✓"
-    assert "mirrored" in cap["position"] and "photo-confirmed" in cap["position"]
+    # cap position — PIN AMENDED BY RULING 2026-07-19 (collision ruling):
+    # mirror of the RATIFIED door-relative back center (54 − 20.383 →
+    # 33.6); relationship CONFIRMED (human, photo), offset ESTIMATED
+    # (photo-scaled, untaped) — both bases named on the sheet
+    assert cap["position_tag"] == "CONFIRMED (human, photo)"
+    assert "mirrored" in cap["position"] and "door-relative" in cap["position"]
+    assert "CONFIRMED (human, photo)" in cap["position"]
+    assert "ESTIMATED (photo-scaled, untaped)" in cap["position"]
+    assert cap["center_ft"] == 33.6
     assert cap["center_ft"] == round(54 - _sheet(session, "back")["chase"]["center_ft"], 1)
     # back sheet carries no profile/cap; sides carry no cap
     assert _sheet(session, "back")["chase_profile"] is None
@@ -140,9 +163,13 @@ def test_chase_profile_on_sides_and_cap_on_front(session):
 
 def test_chase_ratification_provenance(session):
     """Ratification entered via the appendage machinery (journey-logged):
-    appendage:back height_ft 19.552 / depth_ft 2.583 user_measured. Width
-    rides the sealed-key amendment only — the dims machinery pin rejects
-    width_ft (400) and pins are amended by ruling, not silently."""
+    appendage:back height_ft 19.552 / depth_ft 2.583 user_measured. PIN
+    AMENDED BY RULING 2026-07-19 (collision ruling): door_offset_ft joins
+    the machinery — 1.25' (15") photo_scaled, the chase right-edge offset
+    left of D1's trim; a later tape upgrades it by the normal amendment
+    path (user_measured). Width STILL rides the sealed-key amendment only
+    — the dims machinery pin rejects width_ft (400) and pins are amended
+    by ruling, not silently."""
     r = session.get(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims", timeout=20)
     assert r.status_code == 200
     back = (r.json()["dims"] or {}).get("appendage:back") or {}
@@ -150,6 +177,8 @@ def test_chase_ratification_provenance(session):
     assert back.get("height_ft", {}).get("status") == "user_measured"
     assert back.get("depth_ft", {}).get("value") == 2.583
     assert back.get("depth_ft", {}).get("status") == "user_measured"
+    assert back.get("door_offset_ft", {}).get("value") == 1.25
+    assert back.get("door_offset_ft", {}).get("status") == "photo_scaled"
     rr = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
                       json={"key": "appendage:back", "field": "width_ft", "value": 5.333}, timeout=20)
     assert rr.status_code == 400  # standing pin: width_ft not a machinery field
@@ -345,6 +374,72 @@ def test_verb_remove_reset_back_window_group(session):
         assert rr.status_code == 200, rr.text
     s = _sheet(session, "back")
     assert s["opening_counts"] == {"windows": 5, "doors": 1, "vents": 0}
+
+
+def test_collision_guard_trips_on_prefix_letrick_back_data():
+    """COLLISION GUARD (ruled 2026-07-19) — the guard MUST trip on the
+    PRE-FIX Letrick BACK state: chase bound at center 21.9' (AI corner
+    reads) with TAPED 64\" width put its right edge at 24.57', overlapping
+    D1 (left edge 24.3') by ~3.2\". Openings take precedence (schedule-
+    bound, multi-source) → the CHASE drawing is suppressed; suppression
+    is never silent — the callout names BOTH elements and their bases."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from routes.elevation_sheets import detect_collisions
+    half_chase = 64 / 24.0
+    elements = [
+        {"name": "D1", "kind": "opening",
+         "base": "position AI-READ ✓ · center 25'-9⅝\"",
+         "lo_ft": 25.8 - 1.5, "hi_ft": 25.8 + 1.5},
+        {"name": "CHASE", "kind": "appendage",
+         "base": "position AI-READ ✓ (pre-ratification corner-read binding) · center 21'-10¾\"",
+         "lo_ft": 21.9 - half_chase, "hi_ft": 21.9 + half_chase},
+    ]
+    cols = detect_collisions(elements)
+    assert len(cols) == 1
+    c = cols[0]
+    assert set(c["elements"]) == {"D1", "CHASE"}
+    assert c["suppressed"] == "CHASE"          # opening governs
+    assert 3.0 < c["overlap_in"] < 3.5         # the reported ~3" overlap
+    assert len(c["bases"]) == 2 and all(c["bases"])
+    assert "opening governs" in c["resolution"]
+
+
+def test_collision_guard_opening_pair_and_order_independence():
+    """Guard semantics pinned: (a) opening × opening — no precedence,
+    nothing suppressed, both flagged unverified; (b) appendage listed
+    FIRST still loses to the opening (kind, not order, decides);
+    (c) exact abutment does NOT trip (tolerance guards float noise)."""
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from routes.elevation_sheets import detect_collisions
+    pair = detect_collisions([
+        {"name": "W1", "kind": "opening", "base": "b1", "lo_ft": 3.0, "hi_ft": 6.0},
+        {"name": "W2", "kind": "opening", "base": "b2", "lo_ft": 5.0, "hi_ft": 8.0}])
+    assert len(pair) == 1 and pair[0]["suppressed"] is None
+    assert "unverified" in pair[0]["resolution"]
+    swapped = detect_collisions([
+        {"name": "CHASE", "kind": "appendage", "base": "b1", "lo_ft": 20.0, "hi_ft": 25.0},
+        {"name": "D1", "kind": "opening", "base": "b2", "lo_ft": 24.3, "hi_ft": 27.3}])
+    assert swapped[0]["suppressed"] == "CHASE"
+    abut = detect_collisions([
+        {"name": "W1", "kind": "opening", "base": "b1", "lo_ft": 3.0, "hi_ft": 6.0},
+        {"name": "CHASE", "kind": "appendage", "base": "b2", "lo_ft": 6.0, "hi_ft": 9.0}])
+    assert abut == []
+
+
+def test_collision_guard_live_on_every_sheet(session):
+    """The guard runs on ALL sheets (payload key always present) and is
+    CLEAN post-ratification: no overlaps, nothing suppressed, no opening
+    collision flags anywhere."""
+    for which in ("front", "left", "back", "right"):
+        s = _sheet(session, which)
+        assert s["collisions"] == [], which
+        assert not any(o["collision"] for o in s["openings"]), which
+        if s["chase"]:
+            assert not s["chase"].get("suppressed"), which
 
 
 def test_read_only_behavioral_all_sheets(session):

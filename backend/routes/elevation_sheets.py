@@ -63,6 +63,67 @@ def fmt_inches(inches: float) -> str:
     return f"{sign}{whole}{_FRAC[e / 8.0]}\""
 
 
+def detect_collisions(elements, tol_in=0.1):
+    """GLOBAL COLLISION GUARD (ruled 2026-07-19): no two rendered wall
+    elements may overlap. Openings take precedence — schedule-bound,
+    multi-source; appendages carry lower positional confidence, so on an
+    opening × appendage conflict the APPENDAGE drawing is suppressed.
+    Suppression is NEVER silent: every trip emits a deviation-style
+    callout naming BOTH elements and their bases, and the suppressed
+    element stays in the wall-data block with a 'suppressed — collision'
+    note. elements: [{name, base, lo_ft, hi_ft, kind: opening|appendage}]."""
+    out = []
+    for i in range(len(elements)):
+        for j in range(i + 1, len(elements)):
+            a, b = elements[i], elements[j]
+            overlap_ft = min(a["hi_ft"], b["hi_ft"]) - max(a["lo_ft"], b["lo_ft"])
+            if overlap_ft * 12.0 <= tol_in:
+                continue
+            suppressed = None
+            if a["kind"] != b["kind"]:
+                suppressed = a["name"] if a["kind"] == "appendage" else b["name"]
+            out.append({
+                "elements": [a["name"], b["name"]],
+                "bases": [a["base"], b["base"]],
+                "overlap_in": round(overlap_ft * 12.0, 1),
+                "overlap_label": fmt_inches(overlap_ft * 12.0),
+                "suppressed": suppressed,
+                "resolution": (f"{suppressed} drawing suppressed — opening governs "
+                               "(schedule-bound, multi-source); appendage positional confidence lower"
+                               if suppressed else
+                               "both openings flagged — positions unverified"),
+            })
+    return out
+
+
+def _door_relative_chase_center(est, raw, chase_w_in):
+    """Ratified chase position (ruled 2026-07-19, supersedes the AI
+    corner-read binding): human photo ground truth — the chase sits LEFT
+    of D1 with a siding strip between (relationship CONFIRMED — human,
+    photo). The right-edge offset from D1's trim edge enters via the
+    appendage ratify machinery: ESTIMATED (photo-scaled, untaped) until a
+    tape upgrades it by the normal amendment path. D1 stays where the
+    run put it."""
+    off = ((est.get("lp_appendage_dims") or {}).get("appendage:back") or {}).get("door_offset_ft") or {}
+    if not off.get("value") or not chase_w_in:
+        return None
+    door = next((o for o in (raw.get("openings") or [])
+                 if str(o.get("wall", "")).lower() == "back"
+                 and "door" in str(o.get("type", ""))
+                 and o.get("along_wall_ft") is not None and o.get("width_in")), None)
+    if not door:
+        return None
+    d1_left = float(door["along_wall_ft"]) - float(door["width_in"]) / 24.0
+    right_edge = d1_left - float(off["value"])
+    return {
+        "center_ft": right_edge - float(chase_w_in) / 24.0,
+        "right_edge_ft": right_edge,
+        "d1_left_ft": d1_left,
+        "offset_ft": float(off["value"]),
+        "offset_taped": off.get("status") in ("user_measured", "user_confirmed_from_blueprint"),
+    }
+
+
 def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     """Sealed hand-takeoff key binding (Letrick). Values BIND from the key
     artifact + the Class-1-corrected structured tape walls — never retyped.
@@ -240,21 +301,8 @@ def _bind_openings(raw, wall_label, matchers):
             "sill_label": fmt_ftin(sill_in / 12.0) if sill_in is not None else "—",
             "sill_tag": sill_tag,
             "confirmed": True,   # verb machinery: no removal/ratify verbs pending
-            "collision": False,  # set below
+            "collision": False,  # set by the global collision guard (route level)
         })
-    # collision check (horizontal interval overlap on the same wall band)
-    spans = []
-    for o in out:
-        if o["center_ft"] is None or not o["width_in"]:
-            continue
-        half = float(o["width_in"]) / 24.0
-        spans.append((o, o["center_ft"] - half, o["center_ft"] + half))
-    for i in range(len(spans)):
-        for j in range(i + 1, len(spans)):
-            a, b = spans[i], spans[j]
-            if a[1] < b[2] and b[1] < a[2]:
-                a[0]["collision"] = True
-                b[0]["collision"] = True
     return out
 
 
@@ -265,7 +313,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "id": 1, "estimate_number": 1, "customer_name": 1, "address": 1,
-         "lp_openings_review": 1})
+         "lp_openings_review": 1, "lp_appendage_dims": 1})
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
     run = await db.ai_measure_runs.find_one(
@@ -372,10 +420,14 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
 
     matchers = _schedule_matchers(run, est.get("lp_openings_review"))
     openings = _bind_openings(raw, which, matchers)
-    # chase position: BOUND from the run's chase corner-location reads
-    # (position_frac, exterior-view datum). The span heuristic is RETIRED
-    # (ruled 2026-07-19 — it lost to the camera). Human photo ground truth
-    # corroborates: immediately left of entry door D1, near wall center.
+    cd = (tape or {}).get("chase_dims")
+    # chase position — RULED 2026-07-19 (supersedes the AI corner-read
+    # binding): ratified door-relative — chase sits LEFT of D1, siding
+    # strip between (relationship CONFIRMED — human, photo); offset via
+    # the ratify machinery, ESTIMATED (photo-scaled, untaped). D1 stays
+    # where the run put it; the AI corner-read band stays ON RECORD as
+    # the flagged comparison. Fallback (no ratified offset): bind from
+    # the run's chase corner-location reads (span heuristic RETIRED).
     def _chase_fracs(wall_label):
         return [c["position_frac"] for c in (raw.get("corner_locations") or [])
                 if "chase" in str(c.get("locator", "")).lower()
@@ -383,7 +435,26 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 and c.get("position_frac") is not None]
     if chase:
         fr = _chase_fracs(which)
-        if fr and width_ft:
+        dr = _door_relative_chase_center(est, raw, (cd or {}).get("width_in")) if which == "back" else None
+        if dr:
+            off_tag = "TAPED" if dr["offset_taped"] else "ESTIMATED (photo-scaled, untaped)"
+            chase["center_ft"] = round(dr["center_ft"], 1)
+            chase["position_tag"] = "CONFIRMED (human, photo)"
+            chase["position"] = (f"left of D1, siding strip between — relationship CONFIRMED (human, photo)"
+                                 f" · right edge {fmt_inches(dr['offset_ft'] * 12.0)} left of D1 trim edge"
+                                 f" — offset {off_tag}")
+            chase["position_note"] = ("immediately left of D1, siding strip between"
+                                      " — ruled 2026-07-19 (ratify machinery)")
+            if fr and width_ft:
+                ai_center = round((min(fr) + max(fr)) / 2 * width_ft, 1)
+                chase["ai_band"] = {
+                    "frac_lo": min(fr), "frac_hi": max(fr),
+                    "center_ft": ai_center,
+                    "delta_ft": round(ai_center - chase["center_ft"], 1),
+                    "note": (f"AI corner-read band {min(fr):g}–{max(fr):g} frac → center {ai_center:g}'"
+                             " — FLAGGED COMPARISON (superseded by ratified door-relative position)"),
+                }
+        elif fr and width_ft:
             chase["center_ft"] = round((min(fr) + max(fr)) / 2 * width_ft, 1)
             chase["position_tag"] = "AI-READ ✓"
             chase["position"] = (f"bound from run chase-corner reads "
@@ -393,7 +464,6 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     # chase ratification (Howard, ruled 2026-07-19): human ground truth —
     # projects from the back wall, lap-clad; dims TAPED via sealed-key
     # amendment. Supersedes "footprint untaped".
-    cd = (tape or {}).get("chase_dims")
     if chase and cd:
         chase.update({
             "width_in": cd["width_in"], "depth_in": cd["depth_in"],
@@ -444,10 +514,19 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 "visible": cap_ft > max(cands),
                 "clearance_worst_label": fmt_inches((cap_ft - max(cands)) * 12.0),
             }
-            # front-view position = mirror of the BACK chase-corner reads
-            # (exterior views mirror; span heuristic RETIRED 2026-07-19)
+            # front-view position = mirror of the BACK chase center —
+            # ratified door-relative when on record (ruled 2026-07-19),
+            # else the bound corner reads (exterior views mirror)
+            dr_b = _door_relative_chase_center(est, raw, cd["width_in"])
             fr_b = _chase_fracs("back")
-            if fr_b and width_ft:
+            if dr_b and width_ft:
+                cap_off_tag = "TAPED" if dr_b["offset_taped"] else "ESTIMATED (photo-scaled, untaped)"
+                chase_cap["center_ft"] = round(width_ft - dr_b["center_ft"], 1)
+                chase_cap["position"] = ("mirrored from ratified door-relative back position"
+                                         " — relationship CONFIRMED (human, photo)"
+                                         f" · offset {cap_off_tag}")
+                chase_cap["position_tag"] = "CONFIRMED (human, photo)"
+            elif fr_b and width_ft:
                 back_center = (min(fr_b) + max(fr_b)) / 2 * width_ft
                 chase_cap["center_ft"] = round(width_ft - back_center, 1)
                 chase_cap["position"] = ("mirrored from back chase-corner reads — AI-READ ✓"
@@ -458,6 +537,37 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     windows = [o for o in openings if o["type"] == "Window"]
     doors = [o for o in openings if o["type"] == "Entry door"]
     vents = [o for o in openings if o["type"] == "Vent"]
+
+    # GLOBAL COLLISION GUARD (ruled 2026-07-19) — every sheet, every
+    # rendered wall element: openings + chase glyph. Trips suppress the
+    # appendage drawing (openings govern) and surface a deviation-style
+    # callout naming both elements and their bases — never silent.
+    guard_elements = []
+    for o in openings:
+        if o["center_ft"] is None or not o["width_in"]:
+            continue
+        half = float(o["width_in"]) / 24.0
+        guard_elements.append({
+            "name": o["tag"], "kind": "opening",
+            "base": f"position {o['position_tag']} · center {o['center_label']}",
+            "lo_ft": o["center_ft"] - half, "hi_ft": o["center_ft"] + half})
+    if chase and chase.get("center_ft") is not None and chase.get("width_in"):
+        half = float(chase["width_in"]) / 24.0
+        guard_elements.append({
+            "name": "CHASE", "kind": "appendage",
+            "base": f"position {chase.get('position_tag', '—')} · center {fmt_ftin(chase['center_ft'])}",
+            "lo_ft": chase["center_ft"] - half, "hi_ft": chase["center_ft"] + half})
+    collisions = detect_collisions(guard_elements)
+    for c in collisions:
+        if not c["suppressed"]:
+            for o in openings:
+                if o["tag"] in c["elements"]:
+                    o["collision"] = True
+    if chase and any(c["suppressed"] == "CHASE" for c in collisions):
+        chase["suppressed"] = True
+        chase["suppressed_note"] = ("suppressed — collision with " + ", ".join(
+            e for c in collisions if c["suppressed"] == "CHASE"
+            for e in c["elements"] if e != "CHASE"))
 
     completed = run.get("completed_at")
     completed_str = str(completed)[:10] if completed else ""
@@ -516,6 +626,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "mirrored_segments": bool(which == "left" and stepped),
         },
         "deviation": deviation,
+        "collisions": collisions,
         "openings": openings,
         # CLOSED three-key contract (ruled 2026-07-18) — see module docstring
         "opening_counts": {"windows": len(windows), "doors": len(doors),

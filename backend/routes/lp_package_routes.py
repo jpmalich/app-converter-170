@@ -195,7 +195,7 @@ _WALLS = ("front", "back", "left", "right")
 
 _APPENDAGE_KEYWORDS = ("chase", "chimney", "bump", "cantilever")
 
-_DIM_FIELDS = ("height_ft", "depth_ft")
+_DIM_FIELDS = ("height_ft", "depth_ft", "door_offset_ft")
 
 _DIM_STATUSES = ("user_measured", "user_confirmed_from_blueprint")
 
@@ -954,7 +954,7 @@ async def lp_appendage_dims_set(est_id: str, payload: dict, user: dict = Depends
     action = (payload or {}).get("action") or "set"
     if (not key.startswith("appendage:") or key.split(":", 1)[1] not in _WALLS
             or field not in _DIM_FIELDS or action not in ("set", "revert")):
-        raise HTTPException(status_code=400, detail="key (appendage:<wall>), field (height_ft|depth_ft), action (set|revert) required")
+        raise HTTPException(status_code=400, detail="key (appendage:<wall>), field (height_ft|depth_ft|door_offset_ft), action (set|revert) required")
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "id": 1})
     if est is None:
@@ -974,11 +974,13 @@ async def lp_appendage_dims_set(est_id: str, payload: dict, user: dict = Depends
     if not (0.5 <= value <= 100.0):
         raise HTTPException(status_code=400, detail="value must be within 0.5..100 ft")
     source = (payload or {}).get("source") or "user"
-    if source not in ("user", "blueprint"):
-        raise HTTPException(status_code=400, detail="source must be user|blueprint")
+    if source not in ("user", "blueprint", "photo"):
+        raise HTTPException(status_code=400, detail="source must be user|blueprint|photo")
     entry = {
         "value": value,
-        "status": "user_confirmed_from_blueprint" if source == "blueprint" else "user_measured",
+        "status": ("photo_scaled" if source == "photo"
+                   else "user_confirmed_from_blueprint" if source == "blueprint"
+                   else "user_measured"),
         "at": datetime.now(timezone.utc).isoformat(),
         "by": by,
     }

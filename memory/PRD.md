@@ -3863,3 +3863,38 @@ wall hatch through — already marked; fascia/soffit/starter are non-siding comp
 Frontend-only; suite stands 1081/1. PNGs: letrick_{front,left,back,right}_..._LIVE_p2f.png.
 NOTE: one more parallel-edit corruption in ElevationSheet.jsx (duplicated tail) — caught by
 babel parse, truncated. Lesson reinforced: NEVER batch multiple search_replace on one file.
+
+## SESSION 2026-07-19 (part 6) — COLLISION GUARD + door-relative chase ratification (ruled)
+RULED (Howard): (1) chase sits LEFT of D1, siding strip between — relationship CONFIRMED
+(human, photo); right-edge offset from D1's trim edge ESTIMATED (photo-scaled, untaped) —
+photo-scaled from the BACK elevation photo (WALL REF 600" spans x166–1755px → 0.3776"/px;
+chase right corner x≈896, D1 trim-left x≈937.5 which lands exactly on the run's 24.3' edge;
+raw gap 15.7", ~1–2" parallax allowance → ≈15" = 1.25'). Entered via ratify machinery:
+appendage:back door_offset_ft 1.25 status photo_scaled (source "photo" + door_offset_ft added
+to _DIM_FIELDS; width_ft 400 standing pin HOLDS; a later tape upgrades via user_measured).
+D1 stays where the run put it (left edge 24.3'). AI corner-read band (0.35–0.46 → 21.9')
+stays ON RECORD as FLAGGED COMPARISON in chase.ai_band. New BACK center: 24.3 − 1.25 − 64/24
+= 20.383 → 20.4'. FRONT cap mirrors ratified center: 54 − 20.383 → 33.6' (was 32.1).
+(2) GLOBAL COLLISION GUARD — detect_collisions() in elevation_sheets.py, every sheet, all
+rendered wall elements (openings + chase glyph), 1D interval overlap. Openings take
+precedence (schedule-bound, multi-source); appendage drawing SUPPRESSED on conflict — NEVER
+silent: deviation-style callout names both elements + bases + overlap; suppressed element
+stays in wall-data block with "DRAWING SUPPRESSED — COLLISION" note. Opening×opening: no
+precedence, both flagged, nothing suppressed. Exact abutment does not trip (0.1" tol).
+Payload key `collisions` on every sheet. Pre-fix Letrick BACK data TRIPS it live (verified by
+temporary revert: D1 × CHASE overlap 3¼", CHASE suppressed — PNG captured).
+- PIN AMENDMENTS (3, by ruling): test_back_chase_taped_dims_and_bound_position →
+  ..._ratified_position (center 21.9→20.4, tag AI-READ ✓→CONFIRMED (human, photo), both bases
+  asserted, ai_band 21.9 flagged comparison, geometry strip check, guard clean);
+  cap mirror pin (position_tag CONFIRMED (human, photo), center 33.6, door-relative);
+  ratification provenance pin (door_offset_ft 1.25 photo_scaled joins machinery).
+- NEW PINS (3): guard trips on pre-fix BACK data (~3.2" overlap, CHASE suppressed, bases
+  named); opening-pair/order-independence/abutment semantics; guard live+clean on all sheets.
+- TESTS: 1084 passed / 1 skipped (was 1081/1; +3 new pins).
+- FRONTEND: suppressed chase draws NO geometry; red COLLISION GUARD callout block; chase box
+  now 466w with POSITION line (both bases) + AI-band comparison line; wall-data chase row.
+- $271.69 RECEIPT (cost→tier→sell): 540 Series OSC 5/4"×6"×16' BlueLinx mill cost $190.18 →
+  Contractor tier 30% TRUE MARGIN → 190.18 ÷ (1−0.30) = 271.6857 → $271.69.
+PNGs: letrick_{front,left,back,right}_elevation_sheet_LIVE_p2g.png +
+letrick_back_collision_guard_TRIPPED_prefix.png (in /tmp/sheets). LEFT/RIGHT md5s identical
+to pre-change captures (untouched by this fix).

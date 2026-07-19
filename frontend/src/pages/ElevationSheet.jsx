@@ -138,12 +138,16 @@ export default function ElevationSheet() {
 
   const dev = data.deviation;
   const chase = data.chase;
+  const collisions = data.collisions || [];
   const anyCollision = ops.some((o) => o.collision);
   const bubbleY = Math.max(topRefY - 55, 208);
-  const collisionBoxY = chase ? 214 : 150;
-  // chase locator glyph (BACK) — dims TAPED to scale; position BOUND from
-  // run chase-corner reads (span heuristic retired 2026-07-19)
-  const chaseG = chase && chase.center_ft != null
+  const chaseBoxH = chase && chase.ai_band ? 62 : 58;
+  const collisionBoxY = chase ? 150 + chaseBoxH + 6 : 150;
+  // chase locator glyph (BACK) — dims TAPED to scale; position ratified
+  // door-relative (ruled 2026-07-19) or bound from run chase-corner
+  // reads. COLLISION GUARD: a suppressed chase draws NO geometry — the
+  // deviation-style callout + wall-data note carry it instead.
+  const chaseG = chase && !chase.suppressed && chase.center_ft != null
     ? {
         cx: wallX + chase.center_ft * ppf,
         w: chase.width_in ? (chase.width_in / 12) * ppf : 26,
@@ -191,16 +195,23 @@ export default function ElevationSheet() {
   if (chase) {
     S.chase1 = `${String(chase.note).toUpperCase()} — ${chase.tag}`;
     S.chase2 = chase.dims_tag === "TAPED"
-      ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED · ${chase.position || ""}`
+      ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED · ratified: sealed key amendment 2026-07-19`
       : `profile ${chase.profile} · footprint ${chase.footprint}`;
-    S.chase3 = chase.dims_tag === "TAPED"
-      ? `${chase.position_note || ""} · ratified: sealed key amendment 2026-07-19`
-      : "";
+    S.chase3 = chase.dims_tag === "TAPED" ? `POSITION: ${chase.position || ""}` : "";
+    S.chase4 = chase.ai_band ? chase.ai_band.note : "";
     S.chaseGlyphTitle = chase.dims_tag === "TAPED"
       ? `CHIMNEY CHASE — ${chase.width_label} × ${chase.height_label} TAPED`
       : "CHIMNEY CHASE";
     S.chaseGlyphSub = `POSITION ${chase.position_tag || "—"} · ${String(chase.position_note || "").split(" — ")[0].toUpperCase()}`;
+    S.chaseData = chase.dims_tag === "TAPED"
+      ? `Chase ${chase.width_label} × ${chase.depth_label} × ${chase.height_label} — TAPED · position ${chase.position_tag || "—"}${chase.suppressed ? ` · DRAWING ${String(chase.suppressed_note || "suppressed — collision").toUpperCase()}` : ""}`
+      : "";
   }
+  const colLines = collisions.map((c) => ({
+    head: `COLLISION GUARD — ${c.elements.join(" × ")} OVERLAP ${c.overlap_label}${c.suppressed ? ` — ${String(c.suppressed).toUpperCase()} DRAWING SUPPRESSED (OPENING GOVERNS)` : " — POSITIONS UNVERIFIED"}`,
+    b1: `${c.elements[0]}: ${c.bases[0]}`,
+    b2: `${c.elements[1]}: ${c.bases[1]}`,
+  }));
   if (prof) {
     S.prof1 = `CHASE PROFILE — ${prof.depth_label} DEEP × ${prof.height_label} — TAPED`;
     S.prof2 = String(prof.anchor).toUpperCase();
@@ -286,10 +297,25 @@ export default function ElevationSheet() {
             INDICATIVE on-wall locator glyph (largest opening-free span) */}
         {chase && (
           <g data-testid="elevation-chase-note">
-            <rect x="530" y="150" width="380" height="58" fill="#fffbeb" stroke={C.amber} strokeWidth="1.2" strokeDasharray="5 3" />
+            <rect x="530" y="150" width="466" height={chaseBoxH} fill="#fffbeb" stroke={C.amber} strokeWidth="1.2" strokeDasharray="5 3" />
             <text x="540" y="166" fontSize="9.5" fontWeight="bold" fill={C.amber}>{S.chase1}</text>
             <text x="540" y="180" fontSize="9" fill="#7a4a12">{S.chase2}</text>
-            <text x="540" y="193" fontSize="8" fill="#7a4a12">{S.chase3}</text>
+            <text x="540" y="192" fontSize="6" fill="#7a4a12">{S.chase3}</text>
+            {chase.ai_band && (
+              <text x="540" y="204" fontSize="6" fill="#7a4a12" data-testid="elevation-chase-ai-band">{S.chase4}</text>
+            )}
+          </g>
+        )}
+        {colLines.length > 0 && (
+          <g data-testid="elevation-collision-guard">
+            {colLines.map((c, i) => (
+              <g key={i}>
+                <rect x="530" y={collisionBoxY + i * 48} width="466" height="44" fill="#fef2f2" stroke={C.trim} strokeWidth="1.4" />
+                <text x="540" y={collisionBoxY + i * 48 + 14} fontSize="8" fontWeight="bold" fill={C.trim}>{c.head}</text>
+                <text x="540" y={collisionBoxY + i * 48 + 26} fontSize="7" fill="#7f1d1d">{c.b1}</text>
+                <text x="540" y={collisionBoxY + i * 48 + 37} fontSize="7" fill="#7f1d1d">{c.b2}</text>
+              </g>
+            ))}
           </g>
         )}
         {prof && (
@@ -336,8 +362,8 @@ export default function ElevationSheet() {
         )}
         {anyCollision && (
           <g data-testid="elevation-collision-banner">
-            <rect x="530" y={collisionBoxY} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" strokeDasharray="4 2" />
-            <text x="540" y={collisionBoxY + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
+            <rect x="530" y={collisionBoxY + colLines.length * 48} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" strokeDasharray="4 2" />
+            <text x="540" y={collisionBoxY + colLines.length * 48 + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
           </g>
         )}
 
@@ -541,7 +567,10 @@ export default function ElevationSheet() {
           <text x="60" y={stepped ? 704 : 696}><tspan>Wall area </tspan><tspan fontWeight="bold">{S.areaBold}</tspan><tspan>{S.areaTail}</tspan><tspan fontWeight="bold">{S.gable}</tspan><tspan>{S.gableTag}</tspan><tspan>{S.storiesTail}</tspan></text>
           <text x="60" y={stepped ? 718 : 712}><tspan>Siding </tspan><tspan fontWeight="bold">{S.sidingBold}</tspan><tspan> · Profile callout </tspan><tspan fontWeight="bold">{S.profileBold}</tspan><tspan>{S.profileTail}</tspan></text>
           <text x="60" y={stepped ? 732 : 728}><tspan>Openings </tspan><tspan fontWeight="bold">{S.openCount}</tspan><tspan>{S.openTail}</tspan></text>
-          {dev && <text x="60" y={stepped ? 746 : 744}>{S.devSummary}</text>}
+          {dev && <text x="60" y={stepped ? 746 : S.chaseData ? 742 : 744}>{S.devSummary}</text>}
+          {S.chaseData && (
+            <text x="60" y="751" fontSize="6.8" data-testid="elevation-wall-data-chase">{S.chaseData}</text>
+          )}
           <text x="60" y="760" fill={C.muted}>{S.photosLine}</text>
         </g>
 
