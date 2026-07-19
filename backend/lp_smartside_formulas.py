@@ -95,7 +95,28 @@ DEFAULT_SHAKE_REVEAL_INCHES = 7.0
 
 # Standard PDF waste factor for every LP family. Contractor can still
 # bump it manually on the estimate.
+# RETIRED AS AUTO-APPLIED DEFAULT (Howard, ruled 2026-07-19): "waste is
+# the contractor's" — the estimate page's WASTE FACTOR field governs
+# (default 0, per-estimate); no formula silently includes waste. Constant
+# kept for provenance + the Hover-import ruled default (2026-07-16/18:
+# 10% default / explicit override, surfaced — never silent).
 DEFAULT_WASTE = 0.10  # 10%
+
+# ── LAP PIECE FORMULA — SEALED (Howard, ruled 2026-07-19) ──────────────
+# 38 Series lap = 11 pcs per square (squares = area ÷ 100) — the book's
+# counter convention (lp_conventions.LAP_PCS_PER_SQUARE_16FT['8" Lap']).
+# The 9.17 PDF divisor is RETIRED for 38 Series lap ordering; the PDF
+# coverage table below stays ON RECORD as reference pedigree only.
+# NO baked waste — the contractor's waste_pct field applies on top.
+LAP_PCS_PER_SQUARE = 11.0
+
+
+def lap_pieces_book(wall_area_sqft: float, waste: float = 0.0) -> int:
+    """Sealed book formula: ceil(area × (1+waste) ÷ 100 × 11)."""
+    if wall_area_sqft <= 0:
+        return 0
+    return int(math.ceil(
+        float(wall_area_sqft) * (1.0 + float(waste)) / 100.0 * LAP_PCS_PER_SQUARE - 1e-9))
 
 # ────────────────────── Lap Siding (38 Series, 16' boards) ──────────────────────
 # Per PDF: face width − 1" overlap = reveal. coverage = 16ft × reveal/12.

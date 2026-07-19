@@ -84,8 +84,12 @@ class TestRoundTwoPins:
         assert "stucco 312" in label and "brick 234" in label
         assert "openings: Hover net" in label
 
-    def test_lap_248_wrap_only_ceil_once(self, pkg):
-        assert _line(pkg, "38 Series Lap")["qty"] == 248
+    def test_lap_250_wrap_only_book_formula(self, pkg):
+        """PIN AMENDED (lap unification ruling, 2026-07-19): piece formula
+        sealed to the book — 11 pcs/sq. Wrap-only scope 2064 ft² × 1.10
+        (hover ruled waste, explicit) ÷ 100 × 11 = 249.74 → 250 (was 248
+        under the retired PDF 9.17 divisor). Ceil once."""
+        assert _line(pkg, "38 Series Lap")["qty"] == 250
 
     def test_540_measured_perimeter_doors_3_side(self, pkg):
         l = _line(pkg, '540 Series Trim 5/4" x 4"')
@@ -117,11 +121,16 @@ class TestRoundTwoPins:
         7→8 sticks (per the ruled 2026-07-15 dims machinery — matches the
         sealed key's 8), moving total_sell 11055.71 → 11327.40.
         PIN AMENDED AGAIN (item-3 chase-siding ratification, ruled
-        2026-07-19): TAPED chase faces 152.38 ft² supersede the AI's 130
-        ft² attribution (swap) → siding 1889.1 → 1911.5 → lap 227 → 230
-        (+3 pcs × $30.99 = +$92.97), total_sell 11327.40 → 11420.37."""
+        (item-3, ruled 2026-07-19): TAPED chase faces supersede the AI's
+        130 ft² attribution (swap) → lap 227 → 230, total 11420.37.
+        PIN AMENDED AGAIN (lap unification ruling, 2026-07-19): area
+        key-bound 2099.7 (geometry-source rule extends to materials),
+        book 11 pcs/sq sealed, waste to the contractor's field (Letrick
+        field = 10%) → lap 230 → 255 (+25 × $30.99 = +$774.75) —
+        total_sell 11420.37 → 12195.12. App line now equals the sealed
+        key's 255 EXACTLY — residual zero."""
         d = session.post(f"{API}/estimates/{LETRICK}/lp-package/preview", json={}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 11420.37
+        assert d["summary"]["pricing"]["total_sell"] == 12195.12
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 
@@ -181,10 +190,16 @@ class TestRoundTwoFollowUps:
         assert "cut-stock" not in l["note"]
 
     def test_waste_display_matches_application(self):
+        """Display-sync invariant (ruled 2026-07-18) holds under the
+        no-silent-waste seal (ruled 2026-07-19): assemble reports exactly
+        what it applied. Missing _waste_pct now applies AND reports 0
+        (DEFAULT_WASTE auto-default RETIRED — waste is the contractor's);
+        the Hover ruled 10% default is set EXPLICITLY at the hover
+        boundary (routes/hover.py) and still surfaces as 0.10 end-to-end
+        (see test_preview_endpoint_surfaces_waste_applied)."""
         from lp_package import assemble_lp_package
-        from lp_smartside_formulas import DEFAULT_WASTE
         d = assemble_lp_package({"_hover_source": True, "siding_sqft": 1000})
-        assert d["summary"]["waste_pct_applied"] == DEFAULT_WASTE  # 0.10, never silently 0
+        assert d["summary"]["waste_pct_applied"] == 0.0  # applied 0, reported 0 — in sync
         z = assemble_lp_package({"_hover_source": True, "siding_sqft": 1000,
                                  "_waste_pct": 0.0})
         assert z["summary"]["waste_pct_applied"] == 0.0  # explicit override mirrors too

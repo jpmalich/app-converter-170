@@ -51,33 +51,39 @@ def _line(pkg, frag):
 
 
 def test_chase_face_formula_named_and_pinned():
-    """FORMULA-LAYER FACTOR (prices every future chase): faces ride the
-    STANDING waste — CHASE_FACE_WASTE is DEFAULT_WASTE (10%), no special
-    chase tier. Face math: outboard = width × (chase h − wall h);
-    sides = 2 × depth × chase h; wall-abutting face carried by the
-    wall's gross strip."""
+    """Face math pinned: outboard = width × (chase h − wall h); sides =
+    2 × depth × chase h; wall-abutting face carried by the wall's gross
+    strip. WASTE NOTE AMENDED (lap unification ruling, 2026-07-19):
+    CHASE_FACE_WASTE is RETIRED with the DEFAULT_WASTE auto-default —
+    provenance constant only; chase faces carry NO own waste, the
+    contractor's field applies once at the lap line."""
     from lp_package import CHASE_FACE_WASTE, chase_face_sqft
     from lp_smartside_formulas import DEFAULT_WASTE
-    assert CHASE_FACE_WASTE == DEFAULT_WASTE == 0.10
+    assert CHASE_FACE_WASTE == DEFAULT_WASTE == 0.10  # provenance only
     faces = chase_face_sqft(64 / 12.0, 2.583, 19.552, 9.92)
     assert faces["outboard_sqft"] == 51.37
     assert faces["sides_sqft"] == 101.01
     assert faces["total_sqft"] == 152.38
 
 
-def test_app_ledger_lap_swap_227_to_230(pkg):
-    """APP ledger (pinned PDF formula): TAPED 152.38 ft² supersede AI
-    130 ft² → siding 1911.5 → ceil(1911.5 ÷ 9.17 × 1.10) = 230 pcs.
-    The +3 pcs price at the line's unit_sell — receipts on the line."""
+def test_app_ledger_key_bound_area_and_unified_lap(pkg):
+    """PIN AMENDED (lap unification ruling, 2026-07-19; was 227→230 swap
+    pin): APP line now KEY-BOUND + book formula + contractor waste —
+    area 2099.7 (sealed key raw), base 2099.7 ÷ 100 × 11 = 230.97 (NO
+    baked waste), contractor's field 10% → 254.06 → ceil = 255 = the
+    sealed key EXACTLY (residual zero). Receipts on the line note."""
     lap = _line(pkg, "38 Series Lap 3/8")
-    assert lap["qty"] == 230
-    assert lap["math"]["ordered_pcs"] == 230
+    assert lap["qty"] == 255
+    assert lap["math"]["base_qty"] == 230.97
+    assert lap["math"]["ordered_pcs"] == 255
+    assert lap["math"]["waste_pct"] == 10.0
+    assert "book 11 pcs/sq" in lap["math"]["formula"]
+    assert "AREA BASIS KEY-BOUND" in lap["note"]
     assert "CHASE FACES RATIFIED (item-3, 2026-07-19)" in lap["note"]
     assert "SUPERSEDE AI-attributed 130 ft² (swap, no double count)" in lap["note"]
-    assert "CHASE_FACE_WASTE = standing 10% (named, formula-layer)" in lap["note"]
     cfr = pkg["summary"]["chase_face_ratification"]
-    assert cfr["total_sqft"] == 152.38 and cfr["ai_sqft"] == 130.0
-    assert cfr["siding_sqft_effective"] == 1911.5
+    assert cfr["total_sqft"] == 152.39 and cfr["ai_sqft"] == 130.0
+    assert cfr["siding_sqft_effective"] == 2099.7
 
 
 def test_osc_unchanged_with_sealed_placement_rule(pkg):
@@ -95,8 +101,9 @@ def test_osc_unchanged_with_sealed_placement_rule(pkg):
 def test_key_ledger_item3_amendment():
     """SEALED KEY ledger (Howard's convention: +10% waste, 11 pcs/sq):
     chase_outer 47.97 → 51.37, chase_sides 97.56 → 101.02, raw 2092.8 →
-    2099.7, lap 254 → 255. Distinct from the app ledger BY DESIGN —
-    reconciliation is the Phase-3 fixture exercise, not silent mixing."""
+    2099.7, lap 254 → 255. LEDGERS UNIFIED (lap unification ruling,
+    2026-07-19): the app line binds the key area + book formula +
+    contractor waste and lands on the SAME 255 — residual zero."""
     from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
     assert KEY["inputs"]["chase_outer_sqft"] == 51.37
     assert KEY["inputs"]["chase_sides_sqft"] == 101.02
@@ -112,11 +119,12 @@ def test_key_ledger_item3_amendment():
 
 def test_gate_scoped_to_ratified_estimate_only():
     """Area gate opens for THIS ratification only — any other estimate
-    passes through _apply_chase_ratification untouched."""
-    from routes.lp_package_routes import _apply_chase_ratification
+    passes through _apply_key_bound_areas untouched (AI values stay the
+    NAMED FALLBACK where no sealed key exists — geometry-source rule)."""
+    from routes.lp_package_routes import _apply_key_bound_areas
     m = {"siding_sqft": 1000.0, "_ai_appendage_sqft": 50.0}
-    out = _apply_chase_ratification(m, {"estimate_number": "EST-999999"})
+    out = _apply_key_bound_areas(m, {"estimate_number": "EST-999999"})
     assert out == m
-    out2 = _apply_chase_ratification(m, {"estimate_number": "EST-373526",
-                                         "lp_appendage_dims": {}})
+    out2 = _apply_key_bound_areas(m, {"estimate_number": "EST-373526",
+                                      "lp_appendage_dims": {}})
     assert out2 == m  # no machinery dims → gate stays shut

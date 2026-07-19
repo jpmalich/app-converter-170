@@ -116,21 +116,22 @@ def test_B_facade_scope_custom_2376(sess, temp_est):
             break
     assert lap is not None, f"no lap line found. lines={[l.get('name') for l in lines][:15]}"
     qty = lap.get("qty") or lap.get("quantity")
-    expected = math.ceil(2376 / 9.17 * 1.10)  # = 286
-    assert qty == expected, f"lap qty={qty} expected {expected} (ceil(2376/9.17*1.10))"
+    # PIN AMENDED (lap unification ruling, 2026-07-19): book 11 pcs/sq
+    # sealed; PDF 9.17 retired. Hover ruled waste 10% explicit.
+    expected = math.ceil(2376 * 1.10 / 100 * 11)  # = 288 (was 286 under PDF divisor)
+    assert qty == expected, f"lap qty={qty} expected {expected} (ceil(2376×1.10÷100×11))"
     # geometry basis label names 'scope 2376' or similar 2376 mention
     txt = str(data)
     assert "2376" in txt, "geometry basis / label should mention 2376 scope"
 
 
 def test_C_letrick_photo_regression(sess):
-    """LETRICK photo-path estimate preview: total_sell 11420.37 and waste_pct_applied 0.10.
-    PIN AMENDED (chase ratification ruling, 2026-07-19): taped chase height
-    19.552' (appendage:back, user_measured) re-derives OSC 7→8 sticks per
-    the ruled 2026-07-15 dims machinery — total_sell 11055.71 → 11327.40.
-    PIN AMENDED AGAIN (item-3 chase-siding ratification, ruled 2026-07-19):
-    TAPED chase faces 152.38 ft² supersede the AI's 130 ft² (swap) → lap
-    227 → 230 (+3 × $30.99) — total_sell 11327.40 → 11420.37."""
+    """LETRICK photo-path estimate preview: total_sell 12195.12 and waste_pct_applied 0.10.
+    PIN AMENDED (chase ratification ruling, 2026-07-19): OSC 7→8 → 11327.40.
+    PIN AMENDED (item-3 ratification, 2026-07-19): chase faces swap → lap 230 → 11420.37.
+    PIN AMENDED (lap unification ruling, 2026-07-19): area key-bound 2099.7, book 11 pcs/sq,
+    waste = contractor's field (Letrick estimate waste_pct = 10 → applied 0.10, no longer a
+    baked default) → lap 255 = sealed key EXACTLY — total_sell 12195.12."""
     p = _preview(sess, LETRICK_ID)
     assert p.status_code == 200, f"letrick preview: {p.status_code} {p.text[:400]}"
     data = p.json()
@@ -138,7 +139,7 @@ def test_C_letrick_photo_regression(sess):
     pricing = summary.get("pricing") or {}
     total = pricing.get("total_sell") or summary.get("total_sell") or data.get("total_sell")
     assert total is not None, f"no total_sell; summary keys={list(summary.keys())} pricing={pricing}"
-    assert abs(float(total) - 11420.37) < 0.01, f"total_sell={total}, expected 11420.37"
+    assert abs(float(total) - 12195.12) < 0.01, f"total_sell={total}, expected 12195.12"
     wpa = summary.get("waste_pct_applied")
     assert wpa is not None, "summary.waste_pct_applied missing on letrick"
     assert abs(float(wpa) - 0.10) < 1e-6, f"waste_pct_applied={wpa}"

@@ -665,15 +665,15 @@ HOVER_MAPPING_SPEC = [
         "item": '38 Series Lap 3/8" x 8" x 16\'',
         "unit": "PCS",
         "extract": lambda m: (
-            # Iter 78ab — when LP_AI_FORMULAS_V1 is enabled, use the
-            # PDF-accurate 8" Lap coverage (9.17 sqft/PCS) + 10% waste
-            # + round-up. Otherwise keep the legacy `sqft × 0.11` math
-            # (≈ 9.09 sqft/PCS, no explicit waste) so existing quotes
-            # don't shift while we're staging.
-            lp_formulas.lap_pieces(
+            # SEALED (Howard, ruled 2026-07-19): book counter convention —
+            # 11 pcs/square. PDF 9.17 divisor RETIRED for 38 Series lap
+            # (kept as reference pedigree in LAP_PROFILES). NO baked
+            # waste: the waste applied is the surfaced _waste_pct only
+            # (contractor's estimate field, or the Hover ruled default) —
+            # no silent constant.
+            lp_formulas.lap_pieces_book(
                 (m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0),
-                waste=(float(m["_waste_pct"]) if m.get("_waste_pct") is not None
-                       else lp_formulas.DEFAULT_WASTE),
+                waste=(float(m["_waste_pct"]) if m.get("_waste_pct") is not None else 0.0),
             )
             if lp_formulas.is_enabled()
             else max(
@@ -682,7 +682,7 @@ HOVER_MAPPING_SPEC = [
             )
         ),
         "note": lambda m: (
-            "LP 8\" Lap: ceil(sqft ÷ 9.17 × 1.10) — PDF coverage (LPZB0884)"
+            "38 Lap: ceil(sqft ÷ 100 × 11 × (1+waste)) — book convention (sealed 2026-07-19); waste = contractor's %, not baked (PDF 9.17 retired to reference)"
             if lp_formulas.is_enabled()
             else "11 PCS per Sq (LP 8\" lap exposure); sqft × 0.11 rounded"
         ),
@@ -2336,11 +2336,14 @@ async def _execute_hover_import_worker(
             {"windows": windows_payload}
         )
         measurements["overhang_in"] = overhang_in
-        # Waste display sync (ruled 2026-07-18): the LP lap/soffit formulas
-        # bake DEFAULT_WASTE into qty — surface the applied value so every
-        # UI stating a waste figure matches the application, never 0%.
-        measurements["_lp_waste_pct_applied"] = (
+        # Waste display sync (ruled 2026-07-18) + no-silent-waste seal
+        # (ruled 2026-07-19): formulas no longer bake waste — the Hover
+        # ruled default (10%) is applied EXPLICITLY via _waste_pct and
+        # surfaced, so every UI stating a waste figure matches the
+        # application, never 0% and never silent.
+        measurements["_waste_pct"] = (
             lp_formulas.DEFAULT_WASTE if lp_formulas.is_enabled() else 0.0)
+        measurements["_lp_waste_pct_applied"] = measurements["_waste_pct"]
 
         # Stage 2 — Map measurements to catalog lines (cheap, in-process).
         await _set_stage("building-lines")

@@ -95,11 +95,24 @@ def test_nickel_gap_fixed_coverage():
 
 
 def test_lap_pieces_applies_10pct_waste_and_round_up():
-    """1000 sqft @ 8" Lap (9.17 sqft/pc): ceil(1000/9.17 * 1.10) =
-    ceil(119.96...) = 120 pieces."""
+    """REFERENCE ONLY — RETIRED FOR ORDERING (lap unification ruling,
+    2026-07-19): the PDF 9.17 divisor no longer orders 38 Series lap;
+    it stays on record as reference pedigree. Math pinned as-was:
+    ceil(1000/9.17 × 1.10) = 120; ceil(100/9.17 × 1.10) = 12."""
     assert lp.lap_pieces(1000, "8\" Lap") == 120
-    # 8" lap example: 100 sqft = ceil(100/9.17 * 1.10) = 12
     assert lp.lap_pieces(100) == 12
+
+
+def test_lap_pieces_book_sealed_no_baked_waste():
+    """SEALED (lap unification ruling, 2026-07-19): book counter
+    convention — 11 pcs/square, squares = area ÷ 100, NO baked waste
+    (contractor's waste_pct field applies on top): ceil(1000 ÷ 100 × 11)
+    = 110; at contractor 10% → ceil(121.0) = 121; 100 sqft → 11."""
+    assert lp.LAP_PCS_PER_SQUARE == 11.0
+    assert lp.lap_pieces_book(1000) == 110
+    assert lp.lap_pieces_book(1000, waste=0.10) == 121
+    assert lp.lap_pieces_book(100) == 11
+    assert lp.lap_pieces_book(0) == 0
 
 
 def test_shake_pieces_at_7in_reveal():
@@ -152,15 +165,19 @@ def test_legacy_lp_lap_when_flag_off(flag_off):
     assert lap["qty"] == 110
 
 
-def test_lp_lap_uses_pdf_formula_when_flag_on(flag_on):
-    """Flag ON: same 1000 sqft now lands at 120 pcs (PDF 8" Lap formula
-    with 10% waste). Slightly higher than the legacy 110 — that's the
-    intended correction."""
+def test_lp_lap_uses_book_formula_when_flag_on(flag_on):
+    """PIN AMENDED (lap unification ruling, 2026-07-19): flag ON now
+    orders by the SEALED book formula — 11 pcs/sq, NO baked waste:
+    1000 sqft → 110; the surfaced _waste_pct applies on top (10% → 121).
+    (Previous pin: PDF 9.17 + baked 10% → 120 — retired.)"""
     m = {"siding_with_openings_sqft": 1000}
     lines = _build_lines(m)
     lap = _find(_lp_lines(lines), '38 Series Lap 3/8" x 8" x 16\'')
     assert lap is not None
-    assert lap["qty"] == 120
+    assert lap["qty"] == 110
+    m2 = {"siding_with_openings_sqft": 1000, "_waste_pct": 0.10}
+    lap2 = _find(_lp_lines(_build_lines(m2)), '38 Series Lap 3/8" x 8" x 16\'')
+    assert lap2["qty"] == 121
 
 
 def test_per_profile_lp_shake_qty_with_flag_on(flag_on):

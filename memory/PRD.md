@@ -3945,3 +3945,28 @@ coverage 9.17 (PDF LPZB0884) vs 11 pcs/sq = 9.0909 (Howard's book, sealed key, T
 +2–3 pcs on any base. Both ledgers GROSS (openings not deducted — netting not a cause).
 Worked all four bases both ways (227/229, 252/254, 230/232, 252/255). NO code/key/convention
 change. Awaiting Howard's unification ruling with book in hand.
+
+## SESSION 2026-07-19 (part 9) — LAP UNIFICATION RULING (4 seals executed)
+1. GEOMETRY-SOURCE → MATERIALS: _apply_key_bound_areas (was _apply_chase_ratification,
+generalized): sealed-key estimates bind key raw_sqft (Letrick 2099.7); AI = named fallback;
+summary.area_basis itemizes every component with basis (TAPED-DERIVED/BOOK/TAPED);
+area_basis_ai_comparison keeps AI 1889.1 on record. Closes the +201.2 frame gap by construction.
+2. GABLE SEAL: GABLE_BOOK_FACTOR = 0.7 (lp_package.py); basis line flags AI 380.1 Δ −12.6.
+3. PIECE FORMULA SEAL: lap_pieces_book (11 pcs/sq, lp_smartside_formulas.py; cites
+lp_conventions.LAP_PCS_PER_SQUARE_16FT); PDF 9.17 RETIRED for ordering (reference pedigree
+kept in LAP_PROFILES + retired-reference pin). hover.py extract + note rewired.
+4. WASTE = CONTRACTOR'S: DEFAULT_WASTE auto-default RETIRED (provenance comment); assemble
+missing _waste_pct → applies+reports 0 (display-sync invariant preserved); hover ruled 10%
+default now set EXPLICITLY at the hover boundary (routes/hover.py sets _waste_pct);
+_apply_contractor_waste wires est.waste_pct (default 0) at all 5 LP package call sites;
+_load_run projection += waste_pct; wasteHint (EN/ES) names LP SmartSide Lap.
+RESULT (Letrick, field waste_pct = 10 — contractor's, already set): lap base 230.97 (0 waste)
+→ ×1.10 → 254.06 → 255 = SEALED KEY EXACTLY (residual ZERO). Lap 230 → 255 (+25 × 30.99 =
++774.75) → total_sell 11420.37 → 12195.12. All other lines unchanged (verified line-by-line).
+NOTE: at 0 waste the count is 231, not 255 — Howard's "~255-region at 0 waste" reconciles
+because HIS estimate field carries 10%; named, not absorbed.
+- PIN AMENDMENTS (cited): haugh_round_two lap 248→250 + total 12195.12 + waste-display pin
+  (missing → 0/0, hover default at boundary); iter47 hover lap 286→288 + total 12195.12;
+  lp_smartside_formulas PDF pin → retired-reference + book pins; item3 file → key-bound 255.
+- NEW PINS: tests/test_lap_unification_ruling.py (5 — four seals + identity residual-zero).
+- TESTS: 1100 passed / 1 skipped. Elevation sheets untouched — no new PNGs (ruled).

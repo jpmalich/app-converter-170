@@ -19,7 +19,9 @@ from lp_conventions import (
     FASCIA_RAKE_ITEM, ISC_TRIM_ITEM, PENDING_CONFIRMATIONS, TRIM_STICK_LEN_FT,
     WRAP_TRIM_ITEM, fascia_rake_takeoff, line_math, lp_composition_bugs,
 )
-from lp_smartside_formulas import DEFAULT_WASTE, lap_coverage_sqft_per_pc, override_flag
+from lp_smartside_formulas import (DEFAULT_WASTE, LAP_PCS_PER_SQUARE,
+                                   lap_coverage_sqft_per_pc, lap_pieces_book,
+                                   override_flag)
 
 OSC_ITEM = "540 Series OSC 5/4\" x 6\" x 16'"   # Howard's default width
 LAP8_ITEM = "38 Series Lap 3/8\" x 8\" x 16'"
@@ -38,16 +40,21 @@ SIDING_BOARD_LEN_FT = 16.0
 OSC_PLACEMENT_RULE = ("placement (sealed 2026-07-19): full sticks at corner "
                       "BOTTOMS; spliced remnants upper portion only, cut from shared sticks")
 
+# ── GABLE CONVENTION — SEALED (Howard, ruled 2026-07-19): book w × h ×
+# 0.7 governs for estimating area; the AI's true-triangle read stays ON
+# RECORD as the comparison, deviation-flagged where it differs (book-wins
+# governance, same as the AMI fix).
+GABLE_BOOK_FACTOR = 0.7
+
 # ── CHASE FACE AREA — ITEM-3 RATIFICATION (Howard, ruled 2026-07-19):
 # ratified TAPED chase faces SUPERSEDE the AI-attributed appendage area
 # in the formula layer (same physical surface, better basis — a SWAP,
-# never an add-on-top double count). NAMED FORMULA-LAYER FACTOR (pinned
-# — prices every future chase): chase faces ride the STANDING siding
-# waste (CHASE_FACE_WASTE = DEFAULT_WASTE 10%) and the profile's PDF
-# coverage — no special chase waste tier. Wall-abutting face stays
-# carried by the wall's gross strip (photo-path gross convention — no
-# deduction, no double count).
-CHASE_FACE_WASTE = DEFAULT_WASTE
+# never an add-on-top double count). Wall-abutting face stays carried by
+# the wall's gross strip (photo-path gross convention — no deduction, no
+# double count). WASTE NOTE (superseded by the lap-unification ruling,
+# 2026-07-19): chase faces carry NO own waste factor — waste is the
+# contractor's estimate field, applied once at the lap line.
+CHASE_FACE_WASTE = DEFAULT_WASTE  # RETIRED with DEFAULT_WASTE — provenance only
 
 
 def chase_face_sqft(width_ft: float, depth_ft: float, height_ft: float,
@@ -267,16 +274,31 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     if sqft > 0:
         for l in lines:
             if l["name"] == LAP8_ITEM:
-                lap_math = line_math(sqft, lap_coverage_sqft_per_pc())
+                # LAP PIECE FORMULA SEALED (Howard, ruled 2026-07-19):
+                # book 11 pcs/sq; NO baked waste — the contractor's
+                # surfaced _waste_pct is the only waste applied.
+                w = float(measurements.get("_waste_pct") or 0.0)
+                base = sqft / 100.0 * LAP_PCS_PER_SQUARE
+                lap_math = {
+                    "base_qty": round(base, 2),
+                    "waste_qty": round(base * (1.0 + w), 2),
+                    "ordered_pcs": lap_pieces_book(sqft, waste=w),
+                    "waste_pct": round(w * 100, 1),
+                    "formula": "book 11 pcs/sq — sealed 2026-07-19 (PDF 9.17 retired to reference); waste = contractor's field",
+                }
+                l["qty"] = lap_math["ordered_pcs"]
                 l["math"] = lap_math
+                ab = measurements.get("_area_basis")
+                if ab:
+                    l["note"] = ((l.get("note") or "") +
+                        "; AREA BASIS KEY-BOUND (geometry-source rule extended to materials, ruled 2026-07-19): " +
+                        "; ".join(f"{b['component']} {b['sqft']:g} ft² — {b['basis']}" for b in ab))
                 cf = measurements.get("_chase_face_ratification")
                 if cf:
                     l["note"] = ((l.get("note") or "") +
                         f"; CHASE FACES RATIFIED (item-3, 2026-07-19): TAPED outboard "
                         f"{cf['outboard_sqft']:g} + sides {cf['sides_sqft']:g} = {cf['total_sqft']:g} ft² "
-                        f"SUPERSEDE AI-attributed {cf['ai_sqft']:g} ft² (swap, no double count); "
-                        f"ft²→pcs: ceil({sqft:g} ÷ {lap_coverage_sqft_per_pc():g} × 1.10) — "
-                        f"CHASE_FACE_WASTE = standing 10% (named, formula-layer)")
+                        f"SUPERSEDE AI-attributed {cf['ai_sqft']:g} ft² (swap, no double count)")
 
     def _set_line(name: str, section: str, qty: int, note: str, **extra):
         for l in lines:
@@ -563,13 +585,19 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         "lines": lines,
         "summary": {
             "line_count": len(lines),
-            # Waste display sync (ruled 2026-07-18): the value the engine
-            # ACTUALLY applied — every surface stating waste mirrors this.
+            # Waste display sync (ruled 2026-07-18) + no-silent-waste seal
+            # (ruled 2026-07-19): the value the engine ACTUALLY applied —
+            # the contractor's field (or Hover ruled default), never a
+            # silent constant. Missing → 0, not DEFAULT_WASTE.
             "waste_pct_applied": (float(measurements.get("_waste_pct"))
                                   if measurements.get("_waste_pct") is not None
-                                  else DEFAULT_WASTE),
+                                  else 0.0),
             "total_pieces": sum(l["qty"] for l in lines if l.get("unit") == "PCS"),
             "osc_source": "c3_corner_locations" if osc else "outside_corner_lf",
+            **({"area_basis": measurements["_area_basis"]}
+               if measurements.get("_area_basis") else {}),
+            **({"area_basis_ai_comparison": measurements["_area_basis_ai_comparison"]}
+               if measurements.get("_area_basis_ai_comparison") else {}),
             **({"chase_face_ratification": measurements["_chase_face_ratification"]}
                if measurements.get("_chase_face_ratification") else {}),
             **({"osc_detail": osc} if osc else {}),
