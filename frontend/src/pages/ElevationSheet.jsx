@@ -106,6 +106,14 @@ export default function ElevationSheet() {
     }
   }
 
+  // clad-surface siding marker (ruled 2026-07-19): every clad shape carries
+  // the wall's course hatch. Outline = basis channel; fill = component.
+  const hatchYs = [];
+  if (W.exposure_in) {
+    const step = (W.exposure_in / 12) * ppf;
+    for (let y = wallBottom - step; y > 60; y -= step) hatchYs.push(y);
+  }
+
   // openings geometry (sill-less openings draw dashed at mid-band — the
   // vertical position is NOT derivable without a door anchor)
   const ops = (data.openings || []).map((o) => {
@@ -288,6 +296,11 @@ export default function ElevationSheet() {
           <g data-testid="elevation-chase-profile">
             <rect x={profX} y={profTop} width={profW} height={wallBottom - profTop}
               fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
+            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-profile-hatch">
+              {hatchYs.filter((y) => y > profTop + 2).map((y, i) => (
+                <line key={i} x1={profX + 1.5} y1={y} x2={profX + profW - 1.5} y2={y} />
+              ))}
+            </g>
             <line x1={profX - 3} y1={profTop} x2={profX + profW + 3} y2={profTop} stroke={C.siding} strokeWidth="2" />
             <line x1={profX + 3} y1={profTop + 10} x2={profX + profW - 3} y2={profTop + 10} stroke="#8a93a2" strokeWidth="0.7" />
             {data.sheet === "left" ? (
@@ -311,6 +324,11 @@ export default function ElevationSheet() {
             <line x1={wallX - 20} y1={capG.ridgeMinY} x2={wallRight + 20} y2={capG.ridgeMinY} stroke="#8a93a2" strokeWidth="0.9" strokeDasharray="8 4" />
             <rect x={capG.cx - capG.w / 2} y={capG.capY} width={capG.w} height={capG.ridgeMinY - capG.capY}
               fill="#fbfcfe" stroke={C.siding} strokeWidth="1.5" strokeDasharray="5 3" />
+            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-cap-hatch">
+              {hatchYs.filter((y) => y > capG.capY + 2 && y < capG.ridgeMinY - 1).map((y, i) => (
+                <line key={i} x1={capG.cx - capG.w / 2 + 1.5} y1={y} x2={capG.cx + capG.w / 2 - 1.5} y2={y} />
+              ))}
+            </g>
             <line x1={capG.cx - capG.w / 2 - 3} y1={capG.capY} x2={capG.cx + capG.w / 2 + 3} y2={capG.capY} stroke={C.siding} strokeWidth="2" />
             <text x={capG.cx} y={capG.capY - 14} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.cap1}</text>
             <text x={capG.cx} y={capG.capY - 5} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.cap2}</text>
@@ -326,6 +344,14 @@ export default function ElevationSheet() {
         {/* Gable-end walls: dashed indicative triangle + rake; eave walls: fascia band + soffit */}
         {gableFt > 0 ? (
           <g data-testid="elevation-gable">
+            <clipPath id="gable-clip">
+              <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]} Z`} />
+            </clipPath>
+            <g clipPath="url(#gable-clip)" stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-gable-hatch">
+              {hatchYs.filter((y) => y > apexY + 2 && y < Math.max(...segTopY)).map((y, i) => (
+                <line key={i} x1={wallX} y1={y} x2={wallRight} y2={y} />
+              ))}
+            </g>
             <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]}`}
               fill="none" stroke={C.fascia} strokeWidth="2" strokeDasharray="7 4" />
             <text x={(wallX + wallRight) / 2} y={apexY - 8} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
@@ -361,9 +387,14 @@ export default function ElevationSheet() {
         {chaseG && (
           <g data-testid="elevation-chase-glyph">
             <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
-            {/* above-roofline continuation: solid box (photo-confirmed, rises past roofline) */}
+            {/* above-roofline continuation: solid box, lap-clad to cap → siding hatch */}
             <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallTop - chaseG.top}
               fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
+            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-glyph-hatch">
+              {hatchYs.filter((y) => y > chaseG.top + 2 && y < wallTop - 1).map((y, i) => (
+                <line key={i} x1={chaseG.cx - chaseG.w / 2 + 1.5} y1={y} x2={chaseG.cx + chaseG.w / 2 - 1.5} y2={y} />
+              ))}
+            </g>
             {/* chase-to-wall junctions (vinyl conventions: ISC treatment, wall height) */}
             <line x1={chaseG.cx - chaseG.w / 2 - 4} y1={wallTop} x2={chaseG.cx - chaseG.w / 2 - 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
             <line x1={chaseG.cx + chaseG.w / 2 + 4} y1={wallTop} x2={chaseG.cx + chaseG.w / 2 + 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
@@ -371,8 +402,6 @@ export default function ElevationSheet() {
             <line x1={chaseG.cx - chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx - chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
             <line x1={chaseG.cx + chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
             <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
-            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 10} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 10} stroke="#8a93a2" strokeWidth="0.7" />
-            <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 18} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 18} stroke="#8a93a2" strokeWidth="0.7" />
             <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.chaseGlyphTitle}</text>
             <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.chaseGlyphSub}</text>
           </g>

@@ -3853,3 +3853,13 @@ chase pooled 2×19.552 + 2×9.632 = 58.37 LF → ceil(58.37/16) = 4 sticks (key 
 splice-and-round-up, pooled) → total 8 = key's 8 = app's re-derived 8; count does NOT push
 past 8 under the key's own pooling convention (per-edge no-pooling would give 10 — named).
 PNG: letrick_back_elevation_sheet_LIVE_p2e.png. Frontend-only change; suite stands at 1081/1.
+
+## SESSION 2026-07-19 (part 5) — clad-surface siding marker (ruled)
+Every clad surface now carries the wall's course hatch (fill = component channel; outline =
+basis channel, unchanged): gable triangles L/R (inside dashed AI-READ boundary, clipPath),
+chase profiles L/R, BACK above-roof chase portion, FRONT cap. Louver placeholder lines
+retired. Sweep result: no other unmarked clad elements (BACK on-wall chase face shows the
+wall hatch through — already marked; fascia/soffit/starter are non-siding components).
+Frontend-only; suite stands 1081/1. PNGs: letrick_{front,left,back,right}_..._LIVE_p2f.png.
+NOTE: one more parallel-edit corruption in ElevationSheet.jsx (duplicated tail) — caught by
+babel parse, truncated. Lesson reinforced: NEVER batch multiple search_replace on one file.
