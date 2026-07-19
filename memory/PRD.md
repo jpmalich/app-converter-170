@@ -3991,3 +3991,31 @@ commit 2026-07-17 12:41 (git). e452a988's two active frozen links serve the snap
 (lap 198, printed 2026-07-13), newer_available False (expired substrate → no current to
 compare). Only snapshot write today = NEW DEMO-LETRICK version from the suite's freeze test
 (new version, not a rewrite). No frozen artifact mutated.
+
+## SESSION 2026-07-20 (part 11) — hygiene renames + Hover waste unification + blueprint gap report
+HYGIENE ORDER EXECUTED: Letrick regression guards renamed to state the estimate they pin —
+test_lap_unification_ruling.py → test_letrick_lap_unification_ruling.py;
+test_item3_chase_ratification.py → test_letrick_item3_chase_ratification.py (git mv, docstrings
+annotated with the Letrick id 8f95c9c2). No pin content changed.
+HOVER WASTE UNIFICATION (ruled 2026-07-20, NEW imports only — no backfill):
+- hover-lp-run now WRITES waste_pct=10.0 onto the estimate document (explicit payload override
+  wins, ×100 to field units); logged on the estimate event (waste_pct_written).
+- _hover_mapping_contract injects NO _waste_pct when none passed — _apply_contractor_waste
+  reads the estimate's visible field (the ONLY waste carrier); explicit override still wins.
+- Import worker: _waste_pct=0.0 (BASE draft lines), surfaces _waste_field_prefill_pct=10.0;
+  the silent _lp_waste_pct_applied mechanism is RETIRED.
+- Frontend (HoverImportButton): LP apply bakes the prefill via the same raw_qty mechanism the
+  SettingsRow knob uses, writes waste_pct into update()+save(); toast states the field write;
+  TakeoffReconCard wasteInFormula=false; LpMaterialListPanel chip reads "— Waste % field".
+PINS: NEW test_hover_waste_field_unification.py (6 — contract silence, field write 10.0, run
+carries no _waste_pct, preview 0.10 from field w/ lap 1000ft²→110 base→121 @10%, worker source,
+frontend mechanism). AMENDED: test_haugh_round_two (contract pin → "_waste_pct" not in m +
+0.15 override pin; lap-250 docstring restated on field basis — value UNCHANGED at 250).
+HANDBACK: - 2026-07-19 20:42 UTC · 6dea906 · CLEAN · [tests] · 1106 passed, 1 skipped, 3 warnings in 156.03s (0:02:36)
+BLUEPRINT INTAKE GAP REPORT (report only, no build): pages ARE durably retained per run —
+rendered PNG/JPEG to UPLOAD_DIR + mirrored to Mongo upload_blobs (self-healing), filenames on
+ai_blueprint_runs.page_paths keyed by estimate_id, served at /api/uploads/{name},
+latest-for-estimate endpoint restores them. Existing surfaces: ProfileAnnotator ("Tag Profiles"
+modal, annotation-oriented) + per-opening sheet links in the LP review card. GAP: no dedicated
+read-only "source sheets" viewer beside the AI measure/material list. Minimal build ≈ one
+frontend panel (page strip + lightbox off latest-for-estimate) — zero backend work needed.
