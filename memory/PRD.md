@@ -3843,3 +3843,13 @@ RULED: photographic ground truth — chase sits immediately left of D1, near wal
 - TESTS: 1081 passed / 1 skipped. Pins updated: bound center 21.9 + position_tag AI-READ ✓ +
   nothing INDICATIVE on chase; cap mirror pin.
 PNGs: letrick_{front,back}_elevation_sheet_LIVE_p2d.png (left/right stand at _p2c).
+
+## SESSION 2026-07-19 (part 4) — chase linework = component classification (ruled)
+Dashed on-wall outline RETIRED (uncertainty styling from the untaped era). BACK chase now:
+2 outer vertical edges SOLID in OSC component color grade→cap; chase-to-wall junctions in ISC
+color (dashed, wall height) per vinyl conventions; above-roof portion solid boxed. Tags
+unchanged (classification only). Corner accounting answered in the gated item-3 proposal:
+chase pooled 2×19.552 + 2×9.632 = 58.37 LF → ceil(58.37/16) = 4 sticks (key convention,
+splice-and-round-up, pooled) → total 8 = key's 8 = app's re-derived 8; count does NOT push
+past 8 under the key's own pooling convention (per-edge no-pooling would give 10 — named).
+PNG: letrick_back_elevation_sheet_LIVE_p2e.png. Frontend-only change; suite stands at 1081/1.

@@ -364,9 +364,12 @@ export default function ElevationSheet() {
             {/* above-roofline continuation: solid box (photo-confirmed, rises past roofline) */}
             <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallTop - chaseG.top}
               fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
-            {/* on-wall portion grade→soffit: dashed outline over the wall face */}
-            <rect x={chaseG.cx - chaseG.w / 2} y={wallTop} width={chaseG.w} height={wallBottom - wallTop}
-              fill="none" stroke={C.siding} strokeWidth="1.75" strokeDasharray="6 3" />
+            {/* chase-to-wall junctions (vinyl conventions: ISC treatment, wall height) */}
+            <line x1={chaseG.cx - chaseG.w / 2 - 4} y1={wallTop} x2={chaseG.cx - chaseG.w / 2 - 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
+            <line x1={chaseG.cx + chaseG.w / 2 + 4} y1={wallTop} x2={chaseG.cx + chaseG.w / 2 + 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
+            {/* chase outer vertical edges = OUTSIDE CORNERS (contractor-spec): SOLID OSC component color, grade to cap */}
+            <line x1={chaseG.cx - chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx - chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
+            <line x1={chaseG.cx + chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
             <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
             <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 10} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 10} stroke="#8a93a2" strokeWidth="0.7" />
             <line x1={chaseG.cx - chaseG.w / 2 + 4} y1={chaseG.top + 18} x2={chaseG.cx + chaseG.w / 2 - 4} y2={chaseG.top + 18} stroke="#8a93a2" strokeWidth="0.7" />
