@@ -144,3 +144,19 @@ guard as the last action with no code edits after it.
   ai_blueprint_runs only.
 - **Class:** overstated verification claim (mechanism verified, instance + bind-path not
   checked). Correction logged before any Phase-2 ruling, per Howard's order. Nothing built.
+
+## ENTRY 2026-07-20 — Evidence-lifetime gap caught at receipt time (before the URL was handed)
+- **Event:** the archived-index evidence (fixture_runs doc for run 31b4c018) was reaped
+  BETWEEN the screenshot (22:34 UTC) and the receipt request: the 22:35 guard suite runs
+  test_purge_deletes_only_tagged_docs, which exercises the admin purge and deletes every
+  test_artifact:True fixture doc — the evidence archive was tagged (tag copied from its
+  synthetic source run by the CUT), so the purge took it. The handback's URL would have
+  shown the empty state on Howard's look.
+- **Caught:** at Howard's receipt order, by re-checking the endpoint live (run: None)
+  before pasting the URL. The PNG itself is genuine (served at 22:34, pre-purge).
+- **Fix:** substrate re-armed via the SAME conventions (tagged synthetic run re-inserted,
+  existing CUT trigger re-fired, live doc deleted) and live-verified archived=True before
+  handing. Boundary now NAMED in the receipt: any tagged evidence archive dies on the
+  next full-suite run — Howard's look must precede one, or the agent re-arms on request.
+- **Class:** evidence-lifetime blind spot (suite purge vs persistent evidence), caught
+  pre-handback. No misreport occurred.
