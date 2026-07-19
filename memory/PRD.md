@@ -3935,3 +3935,13 @@ contract).
 - NEW PIN FILES: test_item3_chase_ratification.py (5), test_elevation_occlusion_rule.py (5).
 PNGs: /tmp/sheets letrick_*_LIVE_p2i.png. LEFT/RIGHT md5-identical (untouched); FRONT
 unchanged by occlusion fix (cap already compliant) but changed earlier by cap 33.8 restate.
+
+## SESSION 2026-07-19 (part 8) — RECONCILIATION REPORT (report only, ruled)
+Items 1/2/4 CLOSED by ruling; item-3 ratification STANDS (gate re-closed after entry).
+Filed /app/memory/reconciliation_lap_ledgers_2026-07-19.md — lap ledger gap named:
+area frame dominates (tape 54'/taped heights vs AI 50'/8.6' avg: +201.2; gables ×0.7 vs AI
+triangles: −12.6; chase attribution: +15.5 pre / +0.01 post), formula difference is only
+coverage 9.17 (PDF LPZB0884) vs 11 pcs/sq = 9.0909 (Howard's book, sealed key, TAPED-era):
++2–3 pcs on any base. Both ledgers GROSS (openings not deducted — netting not a cause).
+Worked all four bases both ways (227/229, 252/254, 230/232, 252/255). NO code/key/convention
+change. Awaiting Howard's unification ruling with book in hand.
