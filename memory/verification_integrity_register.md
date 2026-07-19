@@ -120,3 +120,27 @@ guard as the last action with no code edits after it.
   nothing, and re-touched no demo surface.
 - **Ruling (Howard):** logged as required behavior going forward — credit alongside the
   violations it surfaced.
+
+## ENTRY 2026-07-20 — CORRECTION: blueprint gap report overstated per-estimate page durability
+- **Claim under audit:** the 2026-07-20 gap report stated blueprint pages are "durably
+  retained per estimate." The shipped Phase-1 viewer empties at the 24h run TTL — Howard
+  flagged the contradiction at acceptance.
+- **Evidence (live DB + code):** page BYTES are always durable (upload_blobs, 590 docs) but
+  filename-keyed ONLY — no estimate/run linkage on the blob doc. The per-estimate INDEX
+  (estimate↔filenames) lives on ai_blueprint_runs.page_paths (24h TTL). A durable index
+  copy DOES exist by mechanism: POST /lp-package/blueprint-applied ("THE CUT", ruled
+  2026-07-14) archives the FULL run doc incl. page_paths into fixture_runs (no TTL;
+  run_archive.py copies the whole doc; frontend fires it on every apply,
+  BlueprintMeasureButton.jsx:514; pinned by test_blueprint_cut.py). But live count TODAY:
+  fixture_runs holds ZERO ai_blueprint_runs docs (Counter: 51 ai_measure, 1 hover,
+  163 legacy-untagged) — the mechanism has never been exercised on a surviving estimate.
+- **Corrected statement:** bytes always durable but become UNINDEXED after run TTL unless
+  the run was APPLIED (CUT-archived). Preview-only uploads lose their estimate index at
+  24h, period. "Durably retained per estimate" holds only for applied runs, by mechanism
+  not yet by instance.
+- **Rebind feasibility:** pure-frontend rebinding is NOT possible — no existing GET returns
+  archived page_paths (all find_archived_run read-sides are server-internal:
+  _blueprint_dim_offers, preview composition, frozen views). latest-for-estimate queries
+  ai_blueprint_runs only.
+- **Class:** overstated verification claim (mechanism verified, instance + bind-path not
+  checked). Correction logged before any Phase-2 ruling, per Howard's order. Nothing built.
