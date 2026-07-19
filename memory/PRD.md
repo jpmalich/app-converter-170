@@ -4019,3 +4019,21 @@ latest-for-estimate endpoint restores them. Existing surfaces: ProfileAnnotator 
 modal, annotation-oriented) + per-opening sheet links in the LP review card. GAP: no dedicated
 read-only "source sheets" viewer beside the AI measure/material list. Minimal build ≈ one
 frontend panel (page strip + lightbox off latest-for-estimate) — zero backend work needed.
+
+## SESSION 2026-07-20 (part 12) — blueprint source-sheet viewer (Phase-1, AUTHORIZED build)
+BUILD (Phase-1 discipline, all constraints held):
+- NEW direct route /estimate/:id/source-sheets (SourceSheets.jsx) — read-only viewer, GETs only
+  (estimate + latest-for-estimate), zero backend changes, NO entry points anywhere (route referenced
+  only in App.js + the page itself — pinned by grep contract).
+- Per-sheet provenance: "Sheet i of n · {upload filename} · run {rid8}"; header names estimate +
+  run + upload time + status; AI-read summary column names the SAME run (same-basis field-compare);
+  lightbox zoom (esc/arrows). 24h ai_blueprint_runs TTL boundary NAMED on the empty state.
+- PINS: test_blueprint_source_view.py (7 — read-only, direct-route-only, existing-endpoints-only,
+  per-sheet provenance, same-run summary, TTL named, lightbox contract).
+EVIDENCE: estimate 2af7b38b-6017-4fd8-a099-e49d6d22e60f "ZZ SOURCE-VIEW EVIDENCE" + tagged run
+31b4c018 (2 drawn sheets, run TTLs out in 24h). 200-checked URL + both page URLs. Fresh artifact:
+/app/frontend/public/mock/source_sheets_viewer_proof_2026-07-20.png (md5 baf3f45c9b588a22c75a158350e888a7).
+HANDBACK: - 2026-07-19 21:26 UTC · ed6fb05 · CLEAN · [tests] · 1113 passed, 1 skipped, 3 warnings in 154.41s (0:02:34)
+PHASE-2 CANDIDATE (named, not built): archived-run fallback for latest-for-estimate so the viewer
+survives the 24h TTL (backend change — requires ruling).
+STANDING PARKS UNCHANGED: ISS Excel (on Howard), band board + O&U, Diverge labor.
