@@ -2281,9 +2281,19 @@ async def hover_lp_run(
         upsert=True,
     )
     # Pin the LP composition source to this Hover run + record the profile.
+    # Hover waste unification (ruled 2026-07-20): the ruled 10% default is
+    # written INTO the estimate's visible waste_pct field on import —
+    # contractor-editable; downstream math reads the field via
+    # _apply_contractor_waste (never a silent engine default). An explicit
+    # payload waste_pct (fraction) wins over the ruled default.
+    payload_waste = (payload or {}).get("waste_pct")
+    waste_field = (round(float(payload_waste) * 100, 1)
+                   if payload_waste is not None else DEFAULT_WASTE_PCT)
     await db.estimates.update_one(
         {"id": est_id},
-        {"$set": {"lp_source_run_id": lp_run_id, "default_siding_profile": profile}})
+        {"$set": {"lp_source_run_id": lp_run_id,
+                  "default_siding_profile": profile,
+                  "waste_pct": waste_field}})
     # TTL pin, 2nd instance (2026-07-18): the stamp above is a persistent
     # artifact — archive BOTH the materialized LP run and its SOURCE hover
     # run the moment the reference is minted (un-expirable from birth).
@@ -2294,6 +2304,7 @@ async def hover_lp_run(
     await log_estimate_event(est_id, "lp.hover_run.materialized", {
         "hover_run_id": hover_run_id, "lp_run_id": lp_run_id,
         "profile": profile, "mapping_flags": mapping_flags, "by": user.get("email"),
+        "waste_pct_written": waste_field,
     })
     return {"ok": True, "lp_run_id": lp_run_id, "profile": profile,
             "mapping_flags": mapping_flags}
@@ -2336,14 +2347,15 @@ async def _execute_hover_import_worker(
             {"windows": windows_payload}
         )
         measurements["overhang_in"] = overhang_in
-        # Waste display sync (ruled 2026-07-18) + no-silent-waste seal
-        # (ruled 2026-07-19): formulas no longer bake waste — the Hover
-        # ruled default (10%) is applied EXPLICITLY via _waste_pct and
-        # surfaced, so every UI stating a waste figure matches the
-        # application, never 0% and never silent.
-        measurements["_waste_pct"] = (
-            lp_formulas.DEFAULT_WASTE if lp_formulas.is_enabled() else 0.0)
-        measurements["_lp_waste_pct_applied"] = measurements["_waste_pct"]
+        # Hover waste unification (ruled 2026-07-20): the ruled 10%
+        # default is no longer applied inside formulas — it is WRITTEN
+        # into the estimate's visible waste_pct field at apply/
+        # materialize time (hover-lp-run + frontend apply), where the
+        # contractor sees and edits it. Draft lines carry BASE
+        # quantities; the field mechanism (raw_qty × 1+waste%) governs.
+        # NEW imports only — pre-existing estimates untouched.
+        measurements["_waste_pct"] = 0.0
+        measurements["_waste_field_prefill_pct"] = DEFAULT_WASTE_PCT
 
         # Stage 2 — Map measurements to catalog lines (cheap, in-process).
         await _set_stage("building-lines")

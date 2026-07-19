@@ -73,7 +73,14 @@ class TestRoundTwoPins:
         assert m["siding_sqft"] == 2064
         assert m["_facade_scope"]["measured_total"] == 2610
         assert m["_facade_scope"]["excluded"] == {"stucco": 312, "brick": 234}
-        assert m["_waste_pct"] == 0.10  # never silently 0
+        # PIN AMENDED (hover waste unification, ruled 2026-07-20): the
+        # contract no longer injects a silent 0.10 — hover-lp-run writes
+        # 10.0 into the estimate's visible waste_pct field and the field
+        # governs (_apply_contractor_waste). Explicit override still wins.
+        assert "_waste_pct" not in m
+        m_ovr, _ = _hover_mapping_contract(
+            {"siding_sqft": 2610}, "lap", waste_pct=0.15)
+        assert m_ovr["_waste_pct"] == 0.15
         assert m["_soffit_vented_sqft"] == 216
         assert m["_soffit_closed_sqft"] == 247
         assert m["_hover_source"] is True
@@ -85,10 +92,11 @@ class TestRoundTwoPins:
         assert "openings: Hover net" in label
 
     def test_lap_250_wrap_only_book_formula(self, pkg):
-        """PIN AMENDED (lap unification ruling, 2026-07-19): piece formula
-        sealed to the book — 11 pcs/sq. Wrap-only scope 2064 ft² × 1.10
-        (hover ruled waste, explicit) ÷ 100 × 11 = 249.74 → 250 (was 248
-        under the retired PDF 9.17 divisor). Ceil once."""
+        """PIN AMENDED (lap unification 2026-07-19; hover waste unification
+        2026-07-20): piece formula sealed to the book — 11 pcs/sq.
+        Wrap-only scope 2064 ft² × 1.10 (waste from the estimate's visible
+        field — hover-lp-run writes 10.0 there on import) ÷ 100 × 11 =
+        249.74 → 250. Ceil once."""
         assert _line(pkg, "38 Series Lap")["qty"] == 250
 
     def test_540_measured_perimeter_doors_3_side(self, pkg):

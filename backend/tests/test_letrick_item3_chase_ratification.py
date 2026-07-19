@@ -1,4 +1,9 @@
-"""ITEM-3 CHASE-SIDING RATIFICATION + SEALED CORNER CONVENTION (Howard,
+"""LETRICK REGRESSION GUARD — pins the Letrick estimate
+(8f95c9c2-add9-416a-92f3-786a4ea2ce83), item-3 chase ratification.
+Renamed from test_item3_chase_ratification.py (hygiene order, 2026-07-20):
+the filename now states the estimate this file pins.
+
+ITEM-3 CHASE-SIDING RATIFICATION + SEALED CORNER CONVENTION (Howard,
 ruled 2026-07-19 close-out). Pins:
 
 1. CHASE FACES enter Letrick materials — TAPED faces SUPERSEDE the AI's

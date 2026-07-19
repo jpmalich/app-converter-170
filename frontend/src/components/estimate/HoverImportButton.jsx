@@ -176,10 +176,11 @@ export default function HoverImportButton({ est, update, save }) {
     .map(([k, v]) => ({ key: k.replace(/_sqft$/, ""), sqft: Number(v) }));
   const hasFacadePicker =
     facadeMaterials.length > 0 && facadeMaterials.some((m) => m.key !== "siding");
-  // Waste display sync (ruled 2026-07-18): the % shown MUST be the %
-  // the LP engine applies in its formulas (10% default), never 0.
-  const lpWastePctApplied = Math.round(
-    (result?.measurements?._lp_waste_pct_applied ?? 0.10) * 100
+  // Hover waste unification (ruled 2026-07-20): the ruled 10% default is
+  // WRITTEN into the estimate's visible Waste % field on import — the
+  // field governs; nothing applies silently inside formulas.
+  const lpWasteFieldPrefill = Number(
+    result?.measurements?._waste_field_prefill_pct ?? 10
   );
 
   const runDeepVerify = async (warning) => {
@@ -365,16 +366,16 @@ export default function HoverImportButton({ est, update, save }) {
     const pairedMezzoOpenings = srcKind === "windows" ? [] : openings.map(veroToMezzo);
 
     // ─── Merge SOURCE-side lines into the current estimate ─────────────────
-    // Iter 79c (Feb 2026): Howard forced waste_pct = 0 on HOVER imports
-    // (above, at the top of upload()). Bake 0% here so the merged lines
-    // don't carry stale waste from the pre-import `est` closure. The
-    // contractor can bump waste % manually after import — `bakeWasteIntoLines`
-    // re-runs (via the SettingsRow recompute hook) and re-scales those
-    // same lines when the % changes.
-    const wastePct = 0;
+    // Hover waste unification (ruled 2026-07-20): LP imports write the
+    // ruled 10% into the estimate's visible Waste % field and bake it
+    // into line qtys via the same raw_qty mechanism the SettingsRow knob
+    // uses — the field governs; nothing applies silently inside formulas.
+    // Vinyl/Ascend keep Iter 79c's 0% (HOVER sqft already includes its
+    // own waste). Paired (windows) lines never carry siding waste.
+    const wastePct = srcKind === "lp_smart" ? lpWasteFieldPrefill : 0;
     const soffitType = est?.lp_soffit_type || "mix";
     const wastedSource = steerLpSoffit(bakeWasteIntoLines(sourceLines, wastePct), soffitType);
-    const wastedPaired = steerLpSoffit(bakeWasteIntoLines(pairedLines, wastePct), soffitType);
+    const wastedPaired = steerLpSoffit(bakeWasteIntoLines(pairedLines, 0), soffitType);
     const existing = est.lines || [];
     const keyOf = (l) => `${l.tab || "vinyl"}::${l.section}::${l.name}`;
     const byKey = new Map(existing.map((l, i) => [keyOf(l), i]));
@@ -460,7 +461,14 @@ export default function HoverImportButton({ est, update, save }) {
       /* non-fatal */
     }
 
-    update({ lines: nextLines, vero_openings: nextOpenings, mezzo_openings: nextMezzoOpenings, hover_measurements: hoverMeasurementsWithDrawings });
+    update({
+      lines: nextLines,
+      vero_openings: nextOpenings,
+      mezzo_openings: nextMezzoOpenings,
+      hover_measurements: hoverMeasurementsWithDrawings,
+      // Unification (ruled 2026-07-20): pre-fill the visible field on LP.
+      ...(srcKind === "lp_smart" ? { waste_pct: wastePct } : {}),
+    });
     setApplying(true);
     try {
       if (save) {
@@ -470,6 +478,7 @@ export default function HoverImportButton({ est, update, save }) {
           vero_openings: nextOpenings,
           mezzo_openings: nextMezzoOpenings,
           hover_measurements: hoverMeasurementsWithDrawings,
+          ...(srcKind === "lp_smart" ? { waste_pct: wastePct } : {}),
         });
       }
 
@@ -561,12 +570,12 @@ export default function HoverImportButton({ est, update, save }) {
           toast.error(e?.response?.data?.detail || "Hover→LP run failed — LP list unchanged");
         }
       }
-      // Waste display sync (ruled 2026-07-18): the message states the value
-      // actually applied. LP: engine formulas carry the ruled 10% default —
-      // the estimate knob stays 0 so it can't double-count.
+      // Hover waste unification (ruled 2026-07-20): the message states the
+      // value actually written to the visible field — never a silent
+      // engine default.
       if (srcKind === "lp_smart") {
         toast.info(
-          `LP waste: ${lpWastePctApplied}% applied inside the engine formulas (ruled default — never silently 0). The estimate Waste % knob stays 0 to avoid double-counting.`,
+          `LP waste: ${lpWasteFieldPrefill}% written into the Waste % field (ruled default — visible + editable). Line qtys derive from it; change the field to recompute.`,
           { duration: 8000 }
         );
       } else {
@@ -922,8 +931,8 @@ export default function HoverImportButton({ est, update, save }) {
               <TakeoffReconCard
                 measurements={result.measurements || {}}
                 lines={result.lines || []}
-                wastePct={est?.kind === "lp_smart" ? lpWastePctApplied : (est?.waste_pct || 0)}
-                wasteInFormula={est?.kind === "lp_smart"}
+                wastePct={est?.kind === "lp_smart" ? lpWasteFieldPrefill : (est?.waste_pct || 0)}
+                wasteInFormula={false}
                 kind={est?.kind || "siding"}
                 lpSoffitType={est?.lp_soffit_type || "mix"}
               />

@@ -306,8 +306,10 @@ def _apply_key_bound_areas(measurements, est):
 def _apply_contractor_waste(measurements, est):
     """WASTE IS THE CONTRACTOR'S (Howard, ruled 2026-07-19): the estimate
     page's WASTE FACTOR field is the only waste applied to LP lap —
-    default 0, per-estimate, surfaced. Hover paths keep their ruled,
-    explicit _waste_pct (2026-07-16/18) — already set upstream."""
+    default 0, per-estimate, surfaced. Hover unification (ruled
+    2026-07-20): new Hover imports write 10.0 into that field and no
+    longer carry a silent _waste_pct — this fallback reads the field for
+    Hover too. An explicit per-run _waste_pct override still wins."""
     if measurements.get("_waste_pct") is None:
         return {**measurements, "_waste_pct": float(est.get("waste_pct") or 0.0) / 100.0}
     return measurements
@@ -718,7 +720,10 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
       • soffit_breakdown — measured per-surface soffit governs when the
         report supplies it; ceilings type as closed (porch-ceiling
         mechanism); eaves vented / rakes+ceilings closed
-      • waste — ruled 10% default / explicit override, never silently 0%
+      • waste — unified into the estimate's visible waste_pct field
+        (ruled 2026-07-20): hover-lp-run writes 10.0 into the field on
+        import; _waste_pct is set here ONLY on explicit override —
+        otherwise the field governs via _apply_contractor_waste
     """
     passthrough = (
         "siding_sqft", "siding_with_openings_sqft",
@@ -731,7 +736,8 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
     )
     m = {k: hover_meas[k] for k in passthrough if k in hover_meas}
     m["_hover_source"] = True
-    m["_waste_pct"] = 0.10 if waste_pct is None else float(waste_pct)
+    if waste_pct is not None:
+        m["_waste_pct"] = float(waste_pct)
     # WRAP-DEFAULT enforcement (ruled 2026-07-18): when the report carries
     # a facade_breakdown and no explicit scope was chosen, only the Siding
     # row composes — other materials are named + excluded, never silently

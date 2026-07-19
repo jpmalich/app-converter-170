@@ -1,4 +1,9 @@
-"""LAP UNIFICATION RULING (Howard, 2026-07-19) — four seals, pinned:
+"""LETRICK REGRESSION GUARD — pins the Letrick estimate
+(8f95c9c2-add9-416a-92f3-786a4ea2ce83), banked hand-takeoff key ledger.
+Renamed from test_lap_unification_ruling.py (hygiene order, 2026-07-20):
+the filename now states the estimate this file pins.
+
+LAP UNIFICATION RULING (Howard, 2026-07-19) — four seals, pinned:
 
 1. GEOMETRY-SOURCE RULE EXTENDS TO MATERIALS: material-list areas bind
    the sealed key's taped/TAPED-DERIVED dims wherever they exist; AI-run
