@@ -4056,3 +4056,12 @@ viewer served archived index. Artifact: /app/frontend/public/mock/
 source_sheets_archived_index_proof_2026-07-20.png (md5 e5a448ae284355f6a0d750e45e575603).
 HANDBACK: - 2026-07-19 22:35 UTC · 88de11f · CLEAN · [tests] · 1117 passed, 1 skipped, 3 warnings in 116.46s (0:01:56)
 PARKED: compare-toggle (AI boxes over source pages) — logged, not authorized.
+
+## SESSION 2026-07-20 (part 14) — ITEM-1 ACCEPTANCE: PASS, viewer arc CLOSED
+Howard's acceptance: archived-index pages render with per-page provenance (blob + run),
+archived-state label, same-run AI measure alongside; empty-state verified separately.
+CLEANUP: evidence estimate 2af7b38b + archived doc + page blobs + disk copies removed
+(ZZ row gone from the LP dashboard). Database back to zero synthetic blueprint substrate.
+QUEUE IDLES pending Howard's inputs: ISS Excel (New Construction Siding catalog);
+script inputs. PARKED: compare-toggle (strong post-acceptance slice, not authorized);
+band board + Options & Upgrades; Diverge Contractor window-quote labor.
