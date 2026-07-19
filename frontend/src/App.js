@@ -13,6 +13,7 @@ import ContractorPicker from "@/pages/ContractorPicker";
 import Dashboard from "@/pages/Dashboard";
 import EstimateRouter from "@/pages/EstimateRouter";
 import ElevationSheet from "@/pages/ElevationSheet";
+import SourceSheets from "@/pages/SourceSheets";
 import Catalog from "@/pages/Catalog";
 import Team from "@/pages/Team";
 import BrandingAdmin from "@/pages/BrandingAdmin";
@@ -73,6 +74,9 @@ function App() {
                         the siding workspace (legacy default). */}
                     <Route path="/dashboard" element={<Navigate to="/dashboard/siding" replace />} />
                     <Route path="/estimate/:id/elevation-sheet/:which" element={<ElevationSheet />} />
+                    {/* Blueprint source-sheet viewer (ruled 2026-07-20, Phase-1):
+                        direct route ONLY — no entry points on any existing surface. */}
+                    <Route path="/estimate/:id/source-sheets" element={<SourceSheets />} />
                     <Route path="/estimate/:id" element={<EstimateRouter />} />
                     <Route path="/catalog" element={<Catalog />} />
                     <Route path="/team" element={<Team />} />
