@@ -9,3 +9,4 @@
   ^ ANNOTATION (ruled 2026-07-18): commit mislabeled — tested code auto-committed as 128a23c; see integrity register. Phase-1 handback commit RE-RECORDED as 128a23c; human field-compare PASS re-attaches to 128a23c.
 - 2026-07-18 19:27 UTC · 345aa68 · CLEAN · [tests] · 1064 passed, 1 skipped, 3 warnings in 134.40s (0:02:14)
   ^ PHASE-2 BASELINE (ruled 2026-07-18): 345aa68 = receipt edits over 128a23c; LEFT/BACK/RIGHT build starts from here.
+- 2026-07-19 11:05 UTC · 2475393 · CLEAN · [tests] · 1077 passed, 1 skipped, 3 warnings in 176.99s (0:02:56)
