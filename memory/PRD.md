@@ -4037,3 +4037,22 @@ HANDBACK: - 2026-07-19 21:26 UTC · ed6fb05 · CLEAN · [tests] · 1113 passed, 
 PHASE-2 CANDIDATE (named, not built): archived-run fallback for latest-for-estimate so the viewer
 survives the 24h TTL (backend change — requires ruling).
 STANDING PARKS UNCHANGED: ISS Excel (on Howard), band board + O&U, Diverge labor.
+
+## SESSION 2026-07-20 (part 13) — archived-run read-side (AUTHORIZED after reconciliation)
+BUILD (READ path only, per ruling): latest-for-estimate falls back to the CUT-archived
+fixture_runs copy (substrate ai_blueprint_runs) when the live doc has TTL-reaped; response
+carries archived=true; viewer provenance names "ARCHIVED INDEX (served past TTL via the CUT
+archive)"; empty state restated (survives for APPLIED takeoffs; empty only when genuinely
+absent). CUT-archive WRITE path untouched (git: read-side lines only; pinned no-writes).
+PINS: test_blueprint_source_view_archived_readside.py (4 — TTL defusal serves pages,
+fresh-run unchanged, empty only for absent substrate, read-path-only source pin).
+INVENTORY (which existing estimates become viewable once indexes archive): ZERO today —
+no surviving estimate carries applied blueprint measurements (hover_measurements._source
+== 'blueprint': 0) and fixture_runs held zero blueprint docs pre-slice. Going forward every
+APPLIED blueprint takeoff (blueprint-applied fires on apply) is viewable indefinitely.
+EVIDENCE: existing CUT trigger exercised on the evidence estimate (2af7b38b, run 31b4c018
+archived w/ page_paths + test_artifact preserved), live doc deleted (TTL simulation),
+viewer served archived index. Artifact: /app/frontend/public/mock/
+source_sheets_archived_index_proof_2026-07-20.png (md5 e5a448ae284355f6a0d750e45e575603).
+HANDBACK: - 2026-07-19 22:35 UTC · 88de11f · CLEAN · [tests] · 1117 passed, 1 skipped, 3 warnings in 116.46s (0:01:56)
+PARKED: compare-toggle (AI boxes over source pages) — logged, not authorized.
