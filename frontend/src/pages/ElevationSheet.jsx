@@ -155,6 +155,13 @@ export default function ElevationSheet() {
         taped: !!chase.width_in,
       }
     : null;
+  // annotation labels stay legible: fascia label re-centers on the wider
+  // clear span when the chase occludes the wall band (occlusion rule)
+  const fasciaLabelX = chaseG
+    ? ((wallRight - (chaseG.cx + chaseG.w / 2)) > ((chaseG.cx - chaseG.w / 2) - wallX)
+        ? (chaseG.cx + chaseG.w / 2 + wallRight) / 2
+        : (wallX + chaseG.cx - chaseG.w / 2) / 2)
+    : (wallX + wallRight) / 2;
   // chase PROFILE (sides) — dims TAPED, anchored at the back corner
   const prof = data.chase_profile;
   const profW = prof ? (prof.depth_in / 12) * ppf : 0;
@@ -388,7 +395,7 @@ export default function ElevationSheet() {
         ) : (
           <g>
             <rect x={wallX - ovFt * ppf} y={wallTop - 22} width={wallW + 2 * ovFt * ppf} height="22" fill="none" stroke={C.fascia} strokeWidth="3" />
-            <text x={(wallX + wallRight) / 2} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
+            <text x={fasciaLabelX} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
             <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" strokeDasharray="1 4" />
             <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
           </g>
@@ -407,29 +414,6 @@ export default function ElevationSheet() {
           <g data-testid="elevation-step-note">
             <line x1={stepX} y1={segTopY[1] - 6} x2={stepX} y2={segTopY[0]} stroke={C.amber} strokeWidth="1" strokeDasharray="3 2" />
             <text x={stepX} y={segTopY[1] - 12} fontSize="8" textAnchor="middle" fill={C.amber} fontWeight="bold">STEP — LOCATION NOT TAPED (INDICATIVE)</text>
-          </g>
-        )}
-
-        {chaseG && (
-          <g data-testid="elevation-chase-glyph">
-            <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
-            {/* above-roofline continuation: solid box, lap-clad to cap → siding hatch */}
-            <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallTop - chaseG.top}
-              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
-            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-glyph-hatch">
-              {hatchYs.filter((y) => y > chaseG.top + 2 && y < wallTop - 1).map((y, i) => (
-                <line key={i} x1={chaseG.cx - chaseG.w / 2 + 1.5} y1={y} x2={chaseG.cx + chaseG.w / 2 - 1.5} y2={y} />
-              ))}
-            </g>
-            {/* chase-to-wall junctions (vinyl conventions: ISC treatment, wall height) */}
-            <line x1={chaseG.cx - chaseG.w / 2 - 4} y1={wallTop} x2={chaseG.cx - chaseG.w / 2 - 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
-            <line x1={chaseG.cx + chaseG.w / 2 + 4} y1={wallTop} x2={chaseG.cx + chaseG.w / 2 + 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
-            {/* chase outer vertical edges = OUTSIDE CORNERS (contractor-spec): SOLID OSC component color, grade to cap */}
-            <line x1={chaseG.cx - chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx - chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
-            <line x1={chaseG.cx + chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
-            <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
-            <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.chaseGlyphTitle}</text>
-            <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.chaseGlyphSub}</text>
           </g>
         )}
 
@@ -480,6 +464,34 @@ export default function ElevationSheet() {
         <line x1="60" y1={wallBottom} x2="960" y2={wallBottom} stroke={C.ink} strokeWidth="2" />
         <path d={`M 66 ${wallBottom} l 8 10 M 82 ${wallBottom} l 8 10 M 98 ${wallBottom} l 8 10 M 918 ${wallBottom} l 8 10 M 934 ${wallBottom} l 8 10 M 950 ${wallBottom} l 8 10`} stroke={C.ink} strokeWidth="1" />
         <text x="62" y={wallBottom + 16} fontSize="9" fill={C.muted}>GRADE</text>
+
+        {/* Chase glyph — LAST wall-plane paint. OCCLUSION RULE (ruled
+            2026-07-19): the chase projects 31" proud of the wall — it
+            occludes ALL wall-plane linework inside its footprint (wall top
+            line, fascia/soffit, course hatch, starter, grade). Wall lines
+            break at its edges; the chase's own outline + lap fill govern
+            inside. Same mechanism family as the z-order fix. */}
+        {chaseG && (
+          <g data-testid="elevation-chase-glyph">
+            <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+            <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallBottom - chaseG.top}
+              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
+            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-glyph-hatch">
+              {hatchYs.filter((y) => y > chaseG.top + 2 && y < wallBottom - 1).map((y, i) => (
+                <line key={i} x1={chaseG.cx - chaseG.w / 2 + 1.5} y1={y} x2={chaseG.cx + chaseG.w / 2 - 1.5} y2={y} />
+              ))}
+            </g>
+            {/* chase-to-wall junctions (vinyl conventions: ISC treatment, wall height) */}
+            <line x1={chaseG.cx - chaseG.w / 2 - 4} y1={wallTop} x2={chaseG.cx - chaseG.w / 2 - 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
+            <line x1={chaseG.cx + chaseG.w / 2 + 4} y1={wallTop} x2={chaseG.cx + chaseG.w / 2 + 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
+            {/* chase outer vertical edges = OUTSIDE CORNERS (contractor-spec): SOLID OSC component color, grade to cap */}
+            <line x1={chaseG.cx - chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx - chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
+            <line x1={chaseG.cx + chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
+            <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
+            <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.chaseGlyphTitle}</text>
+            <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.chaseGlyphSub}</text>
+          </g>
+        )}
 
         {/* Opening-center chain (only when openings exist on this wall) */}
         {ops.some((o) => o.drawable) && (

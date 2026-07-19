@@ -3898,3 +3898,40 @@ temporary revert: D1 × CHASE overlap 3¼", CHASE suppressed — PNG captured).
 PNGs: letrick_{front,left,back,right}_elevation_sheet_LIVE_p2g.png +
 letrick_back_collision_guard_TRIPPED_prefix.png (in /tmp/sheets). LEFT/RIGHT md5s identical
 to pre-change captures (untouched by this fix).
+
+## SESSION 2026-07-19 (part 7) — close-out corrections + item-3 ratification + occlusion rule
+1. OFFSET FRAME CORRECTION (ruled): photo-scale restated on the TAPED 648" reference (600" was
+the AI's 50' read; tape governs derivations): 648/1589px = 0.4078"/px × 41.5px = 16.9" → ≈17"
+= 1.417' (was 15"/1.25' in the 600" frame). CONTRADICTION RESOLVED ON RECORD: the run's D1
+24.3' is a 50'-frame coordinate — pixel positions cross-confirm the run only in its own frame
+(internal consistency, not absolute); D1 stays where the run put it per standing convention.
+Machinery re-POST door_offset_ft 1.417 photo_scaled. BACK chase center 20.4 → 20.2; FRONT cap
+33.6 → 33.8. Offset stays ESTIMATED.
+2. CORNER CONVENTION SEALED (ruled): POOLED = standing CONTRACTOR-SPEC convention +
+PLACEMENT RULE recorded alongside (OSC_PLACEMENT_RULE in lp_package.py, rides OSC/ISC line
+notes on splice): full 16' sticks at corner BOTTOMS; spliced remnants upper portion only, cut
+from shared sticks. Per-edge no-pooling (Letrick 10) named and rejected.
+3. ITEM-3 CHASE SIDING RATIFIED (ruled) — area gate OPENED for this ratification only,
+journey-logged (lp.chase_faces.area_ratified). TWO LEDGERS kept distinct (Howard's "227 → 255
+(+28)" mixes them — same frame-mixing class as the 600/648 slip, resolved on record, not
+absorbed): APP ledger (pinned PDF formula): TAPED faces 152.38 ft² (outboard 51.37 = 5.3333 ×
+9.632; sides 101.01 = 2 × 2.583 × 19.552) SUPERSEDE AI 130 ft² (SWAP) → siding 1889.1 →
+1911.5 → lap 227 → 230 (+3 × $30.99 = +$92.97) → total_sell 11327.40 → 11420.37. KEY ledger
+(+10% waste, 11 pcs/sq): chase_outer 47.97 → 51.37, chase_sides 97.56 → 101.02, raw 2092.8 →
+2099.7, lap 254 → 255. NAMED FACTOR: CHASE_FACE_WASTE = DEFAULT_WASTE 10% (formula-layer,
+prices every future chase; chase_face_sqft() in lp_package.py). Gate scoped: _apply_chase_
+ratification only fires for EST-373526 + machinery dims. Key backup:
+/app/memory/backups/letrick_hand_takeoff_key_pre_item3_ratification_2026-07-19.py.
+_load_run projection now includes estimate_number.
+4. OCCLUSION RULE (ruled defect fix): no wall-plane line renders through an occluding
+appendage. Chase glyph = LAST wall-plane paint layer with FULL-HEIGHT opaque fill (cap →
+grade) + own lap hatch; wall top line, fascia/soffit, course hatch, starter, grade all break
+at chase edges. Fascia label re-centers on the wider clear span (fasciaLabelX). FRONT cap
+already occluded ridge refs (cap rect paints after them) — pinned. Suppressed chase paints
+nothing (occludes nothing). Pins: tests/test_elevation_occlusion_rule.py (5, JSX render-
+contract).
+- PIN AMENDMENTS: lbr center 20.4→20.2 / 15"→17" / 1.417 / cap 33.8; total_sell pins
+  11327.40 → 11420.37 (test_haugh_round_two.py, test_iteration_47_haugh.py) — cited.
+- NEW PIN FILES: test_item3_chase_ratification.py (5), test_elevation_occlusion_rule.py (5).
+PNGs: /tmp/sheets letrick_*_LIVE_p2i.png. LEFT/RIGHT md5-identical (untouched); FRONT
+unchanged by occlusion fix (cap already compliant) but changed earlier by cap 33.8 restate.

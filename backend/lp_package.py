@@ -26,6 +26,41 @@ LAP8_ITEM = "38 Series Lap 3/8\" x 8\" x 16'"
 STARTER_LINE_NAME = "LP Starter — field-ripped from siding stock"
 SIDING_BOARD_LEN_FT = 16.0
 
+# ── STANDING CONTRACTOR-SPEC CORNER CONVENTION (SEALED by ruling
+# 2026-07-19; formalizes the C4 pooled math of 2026-07-13): POOLED —
+# full sticks per edge, ALL remainders pool, splice-and-round-up
+# (corner_sticks_for_length). PLACEMENT RULE, recorded WITH the
+# convention so every future chase spec carries it: full 16' sticks
+# install at the BOTTOM of each corner; remnant/spliced sections land
+# ONLY in the upper portion; remnants cut from shared sticks per the
+# pooled math. (Per-edge no-pooling would give Letrick 10 — named and
+# rejected by the same ruling.)
+OSC_PLACEMENT_RULE = ("placement (sealed 2026-07-19): full sticks at corner "
+                      "BOTTOMS; spliced remnants upper portion only, cut from shared sticks")
+
+# ── CHASE FACE AREA — ITEM-3 RATIFICATION (Howard, ruled 2026-07-19):
+# ratified TAPED chase faces SUPERSEDE the AI-attributed appendage area
+# in the formula layer (same physical surface, better basis — a SWAP,
+# never an add-on-top double count). NAMED FORMULA-LAYER FACTOR (pinned
+# — prices every future chase): chase faces ride the STANDING siding
+# waste (CHASE_FACE_WASTE = DEFAULT_WASTE 10%) and the profile's PDF
+# coverage — no special chase waste tier. Wall-abutting face stays
+# carried by the wall's gross strip (photo-path gross convention — no
+# deduction, no double count).
+CHASE_FACE_WASTE = DEFAULT_WASTE
+
+
+def chase_face_sqft(width_ft: float, depth_ft: float, height_ft: float,
+                    wall_height_ft: float) -> dict:
+    """Face-by-face TAPED chase derivation (item-3, ratified 2026-07-19):
+    outboard-above-roofline = width × (chase height − wall height);
+    sides = 2 × depth × chase height. Wall-abutting face NOT summed here
+    (carried by the wall's gross strip)."""
+    outboard = round(width_ft * max(height_ft - wall_height_ft, 0.0), 2)
+    sides = round(2.0 * depth_ft * height_ft, 2)
+    return {"outboard_sqft": outboard, "sides_sqft": sides,
+            "total_sqft": round(outboard + sides, 2)}
+
 _STICK_LEN_RE = re.compile(r"x\s*(\d+)'")
 
 
@@ -147,6 +182,7 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     flags = []
     if t["over_stick"]:
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
+        note_bits.append(OSC_PLACEMENT_RULE)
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     if t["user_measured"]:
@@ -170,6 +206,7 @@ def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     flags = []
     if t["over_stick"]:
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
+        note_bits.append(OSC_PLACEMENT_RULE)
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     return {"qty": t["sticks"], "note": "; ".join(note_bits), "isc_count": len(iscs),
@@ -232,6 +269,14 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             if l["name"] == LAP8_ITEM:
                 lap_math = line_math(sqft, lap_coverage_sqft_per_pc())
                 l["math"] = lap_math
+                cf = measurements.get("_chase_face_ratification")
+                if cf:
+                    l["note"] = ((l.get("note") or "") +
+                        f"; CHASE FACES RATIFIED (item-3, 2026-07-19): TAPED outboard "
+                        f"{cf['outboard_sqft']:g} + sides {cf['sides_sqft']:g} = {cf['total_sqft']:g} ft² "
+                        f"SUPERSEDE AI-attributed {cf['ai_sqft']:g} ft² (swap, no double count); "
+                        f"ft²→pcs: ceil({sqft:g} ÷ {lap_coverage_sqft_per_pc():g} × 1.10) — "
+                        f"CHASE_FACE_WASTE = standing 10% (named, formula-layer)")
 
     def _set_line(name: str, section: str, qty: int, note: str, **extra):
         for l in lines:
@@ -525,6 +570,8 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                                   else DEFAULT_WASTE),
             "total_pieces": sum(l["qty"] for l in lines if l.get("unit") == "PCS"),
             "osc_source": "c3_corner_locations" if osc else "outside_corner_lf",
+            **({"chase_face_ratification": measurements["_chase_face_ratification"]}
+               if measurements.get("_chase_face_ratification") else {}),
             **({"osc_detail": osc} if osc else {}),
             **({"isc_detail": isc} if isc else {}),
             "fascia_rake": fr,

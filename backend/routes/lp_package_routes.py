@@ -27,7 +27,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
     if company_id is not None:
         q_est["company_id"] = company_id
     est = await db.estimates.find_one(
-        q_est, {"_id": 0, "id": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
+        q_est, {"_id": 0, "id": 1, "estimate_number": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
                 "lp_openings_review": 1, "lp_appendage_dims": 1, "lp_source_run_id": 1,
                 "default_siding_profile": 1, "lp_flag_checklist": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
@@ -249,6 +249,45 @@ def _apply_appendage_dims(corner_locations, dims_state):
             for i2 in idxs:
                 out[i2] = {**out[i2], "height_override_ft": hit, "height_source": "user_measured"}
     return out
+
+
+def _apply_chase_ratification(measurements, est):
+    """ITEM-3 RATIFIED (Howard, ruled 2026-07-19) — area gate OPEN for
+    this ratification only (journey-logged): the TAPED chase faces
+    supersede the AI-attributed appendage area in siding_sqft (a SWAP —
+    same physical surface, better basis, no double count). Gated to the
+    sealed-key estimate + machinery-entered dims; every other estimate's
+    area story is untouched until its own ratification lands."""
+    if est.get("estimate_number") != "EST-373526":
+        return measurements
+    dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
+    h = dims.get("height_ft") or {}
+    d = dims.get("depth_ft") or {}
+    if h.get("status") not in _DIM_STATUSES or d.get("status") not in _DIM_STATUSES:
+        return measurements
+    if not ((h.get("value") or 0) > 0 and (d.get("value") or 0) > 0):
+        return measurements
+    from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
+    from routes.demo import LETRICK_TAPE_WALLS  # constant import only
+    if "chase_width_in" not in KEY["inputs"]:
+        return measurements
+    from lp_package import chase_face_sqft
+    wall_h = float(LETRICK_TAPE_WALLS["back"]["segments"][0]["height_ft"])
+    faces = chase_face_sqft(float(KEY["inputs"]["chase_width_in"]) / 12.0,
+                            float(d["value"]), float(h["value"]), wall_h)
+    ai_sqft = float(measurements.get("_ai_appendage_sqft") or 0)
+    delta = faces["total_sqft"] - ai_sqft
+    new_sqft = round(float(measurements.get("siding_sqft") or 0) + delta, 1)
+    swo = measurements.get("siding_with_openings_sqft")
+    return {**measurements, "siding_sqft": new_sqft,
+            **({"siding_with_openings_sqft": round(float(swo) + delta, 1)}
+               if swo is not None else {}),
+            "_chase_face_ratification": {
+                "ai_sqft": ai_sqft, **faces,
+                "delta_sqft": round(delta, 2),
+                "siding_sqft_effective": new_sqft,
+                "ruled": ("item-3 ratified 2026-07-19 — TAPED faces supersede "
+                          "AI attribution (swap); gate open for this ratification only")}}
 
 
 def _appendage_dim_flags(measurements, dims_state):
@@ -563,6 +602,7 @@ async def lp_package_preview(
     corners_eff = _apply_appendage_dims(corners_eff, est.get("lp_appendage_dims"))
     measurements = _apply_default_profile(measurements, est)
     measurements = _apply_flag_checklist(measurements, est, run)
+    measurements = _apply_chase_ratification(measurements, est)
     pkg = assemble_lp_package(measurements, corners_eff, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -855,6 +895,7 @@ async def lp_package_compare(
     corners_eff = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corners_eff = _apply_appendage_dims(corners_eff, est.get("lp_appendage_dims"))
     measurements = _apply_default_profile(measurements, est)
+    measurements = _apply_chase_ratification(measurements, est)
     cfg = await load_margin_cfg()
     basis = _geometry_basis(est, run, binding)
 
@@ -1066,6 +1107,7 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
         measurements, _openings_items(run, est.get("lp_openings_review")))
     corner_locations = _apply_corner_review(corner_locations, est.get("lp_field_verify"))
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
+    measurements = _apply_chase_ratification(measurements, est)
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
@@ -1101,6 +1143,7 @@ async def _derive_current(est_id: str, company_id=None):
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     measurements = _apply_default_profile(measurements, est)
     measurements = _apply_flag_checklist(measurements, est, run)
+    measurements = _apply_chase_ratification(measurements, est)
     full_est = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "lp_colors": 1, "lp_pricing_tier": 1,
                          "estimate_number": 1, "customer_name": 1,
@@ -1137,6 +1180,7 @@ async def lp_material_list_freeze(
     corner_locations = _apply_appendage_dims(corner_locations, est.get("lp_appendage_dims"))
     measurements = _apply_default_profile(measurements, est)
     measurements = _apply_flag_checklist(measurements, est, run)
+    measurements = _apply_chase_ratification(measurements, est)
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))

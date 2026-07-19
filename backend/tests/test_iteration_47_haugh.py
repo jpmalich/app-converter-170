@@ -124,10 +124,13 @@ def test_B_facade_scope_custom_2376(sess, temp_est):
 
 
 def test_C_letrick_photo_regression(sess):
-    """LETRICK photo-path estimate preview: total_sell 11327.40 and waste_pct_applied 0.10.
+    """LETRICK photo-path estimate preview: total_sell 11420.37 and waste_pct_applied 0.10.
     PIN AMENDED (chase ratification ruling, 2026-07-19): taped chase height
     19.552' (appendage:back, user_measured) re-derives OSC 7→8 sticks per
-    the ruled 2026-07-15 dims machinery — total_sell 11055.71 → 11327.40."""
+    the ruled 2026-07-15 dims machinery — total_sell 11055.71 → 11327.40.
+    PIN AMENDED AGAIN (item-3 chase-siding ratification, ruled 2026-07-19):
+    TAPED chase faces 152.38 ft² supersede the AI's 130 ft² (swap) → lap
+    227 → 230 (+3 × $30.99) — total_sell 11327.40 → 11420.37."""
     p = _preview(sess, LETRICK_ID)
     assert p.status_code == 200, f"letrick preview: {p.status_code} {p.text[:400]}"
     data = p.json()
@@ -135,7 +138,7 @@ def test_C_letrick_photo_regression(sess):
     pricing = summary.get("pricing") or {}
     total = pricing.get("total_sell") or summary.get("total_sell") or data.get("total_sell")
     assert total is not None, f"no total_sell; summary keys={list(summary.keys())} pricing={pricing}"
-    assert abs(float(total) - 11327.40) < 0.01, f"total_sell={total}, expected 11327.40"
+    assert abs(float(total) - 11420.37) < 0.01, f"total_sell={total}, expected 11420.37"
     wpa = summary.get("waste_pct_applied")
     assert wpa is not None, "summary.waste_pct_applied missing on letrick"
     assert abs(float(wpa) - 0.10) < 1e-6, f"waste_pct_applied={wpa}"

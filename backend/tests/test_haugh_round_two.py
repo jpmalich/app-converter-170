@@ -115,9 +115,13 @@ class TestRoundTwoPins:
         PIN AMENDED (chase ratification ruling, 2026-07-19): taped chase
         height 19.552' entered via the appendage machinery re-derives OSC
         7→8 sticks (per the ruled 2026-07-15 dims machinery — matches the
-        sealed key's 8), moving total_sell 11055.71 → 11327.40."""
+        sealed key's 8), moving total_sell 11055.71 → 11327.40.
+        PIN AMENDED AGAIN (item-3 chase-siding ratification, ruled
+        2026-07-19): TAPED chase faces 152.38 ft² supersede the AI's 130
+        ft² attribution (swap) → siding 1889.1 → 1911.5 → lap 227 → 230
+        (+3 pcs × $30.99 = +$92.97), total_sell 11327.40 → 11420.37."""
         d = session.post(f"{API}/estimates/{LETRICK}/lp-package/preview", json={}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 11327.4
+        assert d["summary"]["pricing"]["total_sell"] == 11420.37
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

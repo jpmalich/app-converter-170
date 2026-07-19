@@ -25,19 +25,9 @@ grade to cap. Supersedes "footprint untaped" and the prior ~18.91' chase
 height. Entered via the appendage ratify machinery (appendage:back
 height_ft/depth_ft, journey-logged); width rides this amendment only —
 the dims machinery pin rejects width_ft (400) and pins are amended by
-ruling, not silently.
-
-ITEM-3 RATIFIED (Howard, ruled 2026-07-19 — area gate OPENED for this
-ratification only, journey-logged): face-by-face TAPED chase derivation
-enters the key's area story. chase_outer_sqft 47.97 → 51.37 (5.3333' ×
-9.6321' outboard-above-roofline), chase_sides_sqft 97.56 → 101.02
-(2.5833' × 19.5521' × 2); wall-abutting face carried by the back wall's
-gross strip (photo-path gross convention — no deduction, no double
-count). raw_sqft 2,092.8 → 2,099.7; lap 254 → 255 (key convention:
-+10% waste, 11 pcs/sq). OSC unchanged 8 (POOLED convention SEALED as
-standing contractor-spec, with placement rule: full sticks at corner
-BOTTOMS, spliced remnants upper portion only, cut from shared sticks);
-ISC unchanged 2."""
+ruling, not silently. AREA STORY NOT RE-DERIVED HERE: chase_outer_sqft /
+chase_sides_sqft / raw_sqft keep their composed values until the
+face-by-face derivation is ratified (ruling item 3, 2026-07-19)."""
 
 LETRICK_HAND_TAKEOFF_KEY = {
     "estimate_number": "EST-191890",
@@ -46,10 +36,10 @@ LETRICK_HAND_TAKEOFF_KEY = {
     "amended": "2026-07-19",  # chase ratification (see docstring)
     "inputs": {
         "exposure_in": 4.25,         # TAPED — one exposure governs all walls
-        "raw_sqft": 2099.7,          # 21.0 squares raw (item-3 ratified: 1947.3 + 51.37 + 101.02)
+        "raw_sqft": 2092.8,          # 20.9 squares raw (was 2,098.5 pre-correction)
         "walls_gables_sqft": 1947.3, # front 478.1 + back 535.7 + stepped sides ~566.4 + gables ×0.7 = 367.5
-        "chase_outer_sqft": 51.37,   # item-3 RATIFIED: 5.3333' × 9.6321' (was 47.97 composed)
-        "chase_sides_sqft": 101.02,  # item-3 RATIFIED: 2.5833' × 19.5521' × 2 (was 97.56 composed)
+        "chase_outer_sqft": 47.97,
+        "chase_sides_sqft": 97.56,   # 2.58' × 18.91' × 2
         "chase_width_in": 64.0,      # TAPED 2026-07-19 (ratification amendment)
         "chase_depth_in": 31.0,      # TAPED 2026-07-19 — proud of wall
         "chase_height_in": 234.625,  # TAPED 2026-07-19 — 19'-6 5/8" grade to cap
@@ -69,9 +59,7 @@ LETRICK_HAND_TAKEOFF_KEY = {
         "back_height_ft": {"basis": "DERIVED", "formula": "28 courses × 4.25\" ÷ 12 = 9.917' (~9.92')"},
         "front_sqft": {"basis": "DERIVED", "formula": "54 × 8.854 = 478.1"},
         "back_sqft": {"basis": "DERIVED", "formula": "54 × 9.917 = 535.5 (key states 535.7 — rounding flag, key-hygiene audit)"},
-        "raw_sqft": {"basis": "DERIVED", "formula": "walls_gables 1947.3 + chase_outer 51.37 + chase_sides 101.02 ≈ 2099.7 (item-3 ratified 2026-07-19)"},
-        "chase_outer_sqft": {"basis": "DERIVED", "formula": "chase width 5.3333' × above-roofline 9.6321' (19.5521 − 9.92) = 51.37 — item-3 ratified 2026-07-19"},
-        "chase_sides_sqft": {"basis": "DERIVED", "formula": "2 × depth 2.5833' × height 19.5521' = 101.02 — item-3 ratified 2026-07-19"},
+        "raw_sqft": {"basis": "DERIVED", "formula": "walls_gables 1947.3 + chase_outer 47.97 + chase_sides 97.56 ≈ 2092.8"},
         "eaves_lf": {"basis": "DERIVED", "formula": "2 × 54 (54 TAPED, print-confirmed)"},
         "rakes_lf": {"basis": "DERIVED", "formula": "4 × 17.4 (17.4 TAPED)"},
         "fascia_rake_lf": {"basis": "DERIVED", "formula": "108 + 69.6 = 177.6"},
@@ -79,13 +67,13 @@ LETRICK_HAND_TAKEOFF_KEY = {
         "starter_lf": {"basis": "DERIVED", "formula": "168 − 3 (entry; slider sits on starter)"},
         "chase_width_in": {"basis": "TAPED", "note": "contractor tape 2026-07-19 — chase ratification amendment (Howard)"},
         "chase_depth_in": {"basis": "TAPED", "note": "contractor tape 2026-07-19 — proud of back wall; matches composed sides basis 2.58'"},
-        "chase_height_in": {"basis": "TAPED", "note": "contractor tape 2026-07-19 — 234-5/8\" = 19'-6 5/8\" grade to cap; supersedes ~18.91'. Area dependents re-derived per item-3 ratification (2026-07-19)"},
+        "chase_height_in": {"basis": "TAPED", "note": "contractor tape 2026-07-19 — 234-5/8\" = 19'-6 5/8\" grade to cap; supersedes ~18.91'. Area dependents NOT re-derived pending item-3 ratification"},
     },
     "lines": [
-        {"item": "38 Series Lap 8\" x 16'", "qty": 255, "unit": "PCS",
-         "derivation": "2,099.7 sqft raw = 21.00 sq +10% = 23.10 sq × 11 pcs/sq (6-7/8\" reveal) = 254.06 → 255 (item-3 ratified 2026-07-19; was 254 pre-ratification)"},
+        {"item": "38 Series Lap 8\" x 16'", "qty": 254, "unit": "PCS",
+         "derivation": "2,092.8 sqft raw = 20.93 sq +10% = 23.02 sq × 11 pcs/sq (6-7/8\" reveal) = 253.2 → 254 (mill basis pending finish selection; was 255 pre-correction)"},
         {"item": "540 Series OSC 5/4\" x 6\" x 16'", "qty": 8, "unit": "PCS",
-         "derivation": "4 house corners @ 1 stick + chimney 4 sticks (2 full-height edges 19.5521' + 2 above-roofline edges 9.6321', pooled 58.37 LF → ceil(58.37/16) = 4 — POOLED convention SEALED 2026-07-19 with placement rule: full sticks at corner bottoms, spliced remnants upper portion only). No cushion."},
+         "derivation": "4 house corners @ 1 stick + chimney 4 sticks (2 full-height edges ~18.9' + 2 above-roofline edges, ~55 LF total, splice-and-round-up). No cushion."},
         {"item": "440 Series 4/4\" x 4\" ISC", "qty": 2, "unit": "PCS",
          "derivation": "2 locations (chase wall junctions), 1 stick each, wall height"},
         {"item": "540 Series Trim 5/4\" x 4\" x 16'", "qty": 12, "unit": "PCS",

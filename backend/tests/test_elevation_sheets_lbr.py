@@ -82,12 +82,19 @@ def test_back_chase_taped_dims_and_ratified_position(session):
     amendment. POSITION — PIN AMENDED BY RULING 2026-07-19 (collision
     ruling, supersedes the AI corner-read binding of center 21.9'): the
     chase sits LEFT of D1 with a siding strip between — relationship
-    CONFIRMED (human, photo); right edge 15" left of D1's trim edge —
+    CONFIRMED (human, photo); right edge ≈17" left of D1's trim edge —
     offset ESTIMATED (photo-scaled, untaped), entered via the ratify
-    machinery (appendage:back door_offset_ft 1.25 photo_scaled). D1 stays
-    where the run put it (left edge 24.3'); the AI corner-read band
-    (0.35–0.46 → center 21.9') stays ON RECORD as the flagged comparison.
-    A later tape upgrades the offset by the normal amendment path."""
+    machinery (appendage:back door_offset_ft 1.417 photo_scaled). FRAME
+    RESOLUTION (ruled close-out correction, 2026-07-19): the photo's
+    600" WALL REF is the AI's 50' read; tape governs derivations, so the
+    offset is stated on the TAPED 54' = 648" reference (648 ÷ 1589 px =
+    0.4078"/px × 41.5 px = 16.9" → ≈17"). The run's D1 24.3' is a
+    50'-frame coordinate — pixel positions cross-confirm the run only in
+    its own frame (internal consistency, not absolute); D1 stays where
+    the run put it per standing convention. D1 left edge 24.3'; the AI
+    corner-read band (0.35–0.46 → center 21.9') stays ON RECORD as the
+    flagged comparison. A later tape upgrades the offset by the normal
+    amendment path."""
     s = _sheet(session, "back")
     ch = s["chase"]
     assert ch is not None
@@ -98,12 +105,12 @@ def test_back_chase_taped_dims_and_ratified_position(session):
     assert ch["dims_tag"] == "TAPED"
     assert "TAPED (2026-07-19)" in ch["footprint"]
     assert "ruled 2026-07-19" in ch["ratified"]
-    # ratified door-relative position: 24.3 − 1.25 − 64/24 = 20.383 → 20.4
-    assert ch["center_ft"] == 20.4
+    # ratified door-relative position: 24.3 − 1.417 − 64/24 = 20.217 → 20.2
+    assert ch["center_ft"] == 20.2
     assert ch["position_tag"] == "CONFIRMED (human, photo)"
     assert "left of D1, siding strip between" in ch["position"]
     assert "CONFIRMED (human, photo)" in ch["position"]
-    assert "15\" left of D1 trim edge" in ch["position"]
+    assert "17\" left of D1 trim edge" in ch["position"]
     assert "ESTIMATED (photo-scaled, untaped)" in ch["position"]
     # AI corner-read band stays on record as the FLAGGED COMPARISON
     band = ch["ai_band"]
@@ -146,15 +153,16 @@ def test_chase_profile_on_sides_and_cap_on_front(session):
     assert cap["ridge_max_ft"] < cap["cap_ft"]
     assert 17.0 < cap["ridge_min_ft"] < cap["ridge_max_ft"] < 19.552
     assert "AI-READ ⚠" in cap["ridge_basis"]
-    # cap position — PIN AMENDED BY RULING 2026-07-19 (collision ruling):
-    # mirror of the RATIFIED door-relative back center (54 − 20.383 →
-    # 33.6); relationship CONFIRMED (human, photo), offset ESTIMATED
-    # (photo-scaled, untaped) — both bases named on the sheet
+    # cap position — PIN AMENDED BY RULING 2026-07-19 (collision ruling;
+    # offset restated on the TAPED 648" reference per close-out
+    # correction): mirror of the RATIFIED door-relative back center
+    # (54 − 20.217 → 33.8); relationship CONFIRMED (human, photo), offset
+    # ESTIMATED (photo-scaled, untaped) — both bases named on the sheet
     assert cap["position_tag"] == "CONFIRMED (human, photo)"
     assert "mirrored" in cap["position"] and "door-relative" in cap["position"]
     assert "CONFIRMED (human, photo)" in cap["position"]
     assert "ESTIMATED (photo-scaled, untaped)" in cap["position"]
-    assert cap["center_ft"] == 33.6
+    assert cap["center_ft"] == 33.8
     assert cap["center_ft"] == round(54 - _sheet(session, "back")["chase"]["center_ft"], 1)
     # back sheet carries no profile/cap; sides carry no cap
     assert _sheet(session, "back")["chase_profile"] is None
@@ -165,9 +173,10 @@ def test_chase_ratification_provenance(session):
     """Ratification entered via the appendage machinery (journey-logged):
     appendage:back height_ft 19.552 / depth_ft 2.583 user_measured. PIN
     AMENDED BY RULING 2026-07-19 (collision ruling): door_offset_ft joins
-    the machinery — 1.25' (15") photo_scaled, the chase right-edge offset
-    left of D1's trim; a later tape upgrades it by the normal amendment
-    path (user_measured). Width STILL rides the sealed-key amendment only
+    the machinery — 1.417' (≈17") photo_scaled, the chase right-edge
+    offset left of D1's trim RESTATED on the TAPED 648" reference
+    (close-out correction, 2026-07-19; was 1.25' in the AI's 600" frame);
+    a later tape upgrades it by the normal amendment path (user_measured). Width STILL rides the sealed-key amendment only
     — the dims machinery pin rejects width_ft (400) and pins are amended
     by ruling, not silently."""
     r = session.get(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims", timeout=20)
@@ -177,7 +186,7 @@ def test_chase_ratification_provenance(session):
     assert back.get("height_ft", {}).get("status") == "user_measured"
     assert back.get("depth_ft", {}).get("value") == 2.583
     assert back.get("depth_ft", {}).get("status") == "user_measured"
-    assert back.get("door_offset_ft", {}).get("value") == 1.25
+    assert back.get("door_offset_ft", {}).get("value") == 1.417
     assert back.get("door_offset_ft", {}).get("status") == "photo_scaled"
     rr = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
                       json={"key": "appendage:back", "field": "width_ft", "value": 5.333}, timeout=20)
