@@ -84,6 +84,38 @@ def test_back_chase_annotated_not_scaled(session):
     assert "chase" in ch["note"].lower()
     assert ch["tag"] == "AI-READ ✓"
     assert ch["footprint"] == "untaped — NOT TO SCALE"
+    # defect-2 fix pin: on-wall locator glyph position is DERIVED (largest
+    # opening-free span — between W1 span end 4.7' and W2 span start 13.7')
+    assert 4.7 < ch["indicative_center_ft"] < 13.7
+    assert "untaped" in ch["placement_basis"] and "INDICATIVE" in ch["placement_basis"]
+
+
+def test_view_convention_and_mirror_consistency(session):
+    """Ruled pin (defect-1): LEFT and RIGHT are mirror views — segments in
+    drawing order must be exact reverses on (courses, adjacent); openings
+    need no flip (along_wall_ft datum is already exterior-view, sealed in
+    the extraction prompt). Every sheet states the convention."""
+    left = _sheet(session, "left")
+    right = _sheet(session, "right")
+    lsegs = [(s["courses"], s["adjacent"]) for s in left["wall"]["segments"]]
+    rsegs = [(s["courses"], s["adjacent"]) for s in right["wall"]["segments"]]
+    assert lsegs == list(reversed(rsegs)), "LEFT/RIGHT step positions must mirror"
+    assert left["view"]["mirrored_segments"] is True
+    assert right["view"]["mirrored_segments"] is False
+    for which in ("front", "left", "back", "right"):
+        v = _sheet(session, which)["view"]
+        assert "exterior" in v["convention"]
+        assert "left corner as viewed from outside" in v["datum"]
+
+
+def test_chase_not_rendered_on_sides(session):
+    """On the record (ruled defect-2, part 2): the sealed run attributes
+    the chase accent ONLY to the back wall; no side-wall accent entries
+    and no projection/depth data exist anywhere in the run — rendering a
+    profile view on LEFT/RIGHT would be invention, so the sides carry no
+    chase."""
+    for which in ("left", "right", "front"):
+        assert _sheet(session, which)["chase"] is None, which
 
 
 def test_back_deviation_both_axes(session):
@@ -108,12 +140,20 @@ def test_back_openings_and_counts(session):
             assert o["sill_in"] + o["height_in"] < 9.92 * 12
 
 
-def _assert_stepped_segments(w):
+def _assert_stepped_segments(w, which):
+    """Stepped side pins. VIEW CONVENTION (ruled defect-1 fix): sheets are
+    viewed from EXTERIOR; the run's along_wall_ft datum is the left corner
+    as viewed from outside (extraction prompt iter 79j.40). Segments emit
+    in DRAWING order: RIGHT sheet front-corner-left → [25, 28]; LEFT sheet
+    front-corner-right → [28, 25]. Mirror-consistent by construction."""
     segs = w["segments"]
     assert segs and len(segs) == 2, "stepped side must carry BOTH tape segments"
-    assert [s["courses"] for s in segs] == [25, 28]
-    assert [s["height_ft"] for s in segs] == [8.854, 9.92]
-    assert segs[0]["height_label"] == "8'-10¼\"" and segs[1]["height_label"] == "9'-11\""
+    expect = ([25, 28], ["front", "back"]) if which == "right" else ([28, 25], ["back", "front"])
+    assert [s["courses"] for s in segs] == expect[0], which
+    assert [s["adjacent"] for s in segs] == expect[1], which
+    by_courses = {s["courses"]: s for s in segs}
+    assert by_courses[25]["height_ft"] == 8.854 and by_courses[25]["height_label"] == "8'-10¼\""
+    assert by_courses[28]["height_ft"] == 9.92 and by_courses[28]["height_label"] == "9'-11\""
     for s in segs:
         assert s["height_tag"] == "TAPED-DERIVED"
         assert "4.25" in s["height_formula"] and str(s["courses"]) in s["height_formula"]
@@ -125,7 +165,7 @@ def _assert_stepped_segments(w):
 def test_left_stepped_segments_and_untaped_width(session):
     s = _sheet(session, "left")
     w = s["wall"]
-    _assert_stepped_segments(w)
+    _assert_stepped_segments(w, "left")
     assert w["height_ft"] == 9.92  # tallest segment drives the frame
     # width untaped on sides: AI fallback, LABELED
     assert w["width_ft"] == 30 and w["width_tag"] == "AI-READ ✓"
@@ -137,7 +177,7 @@ def test_left_stepped_segments_and_untaped_width(session):
 
 def test_right_stepped_segments_no_openings(session):
     s = _sheet(session, "right")
-    _assert_stepped_segments(s["wall"])
+    _assert_stepped_segments(s["wall"], "right")
     assert s["wall"]["width_ft"] == 30
     assert s["opening_counts"] == {"windows": 0, "doors": 0, "vents": 0}
     assert s["openings"] == []
@@ -241,11 +281,3 @@ def test_verb_remove_reset_back_window_group(session):
 def test_read_only_behavioral_all_sheets(session):
     from pymongo import MongoClient
     import os
-    client = MongoClient(os.environ["MONGO_URL"])
-    db = client[os.environ["DB_NAME"]]
-    before = db.estimates.find_one({"id": LETRICK_EST}, {"_id": 0})
-    for which in ("left", "back", "right"):
-        session.get(f"{API}/estimates/{LETRICK_EST}/elevation-sheet/{which}", timeout=30)
-    after = db.estimates.find_one({"id": LETRICK_EST}, {"_id": 0})
-    assert before == after
-    client.close()

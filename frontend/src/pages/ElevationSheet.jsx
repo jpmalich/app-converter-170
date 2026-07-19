@@ -132,7 +132,12 @@ export default function ElevationSheet() {
   const chase = data.chase;
   const anyCollision = ops.some((o) => o.collision);
   const bubbleY = Math.max(topRefY - 55, 208);
-  const collisionBoxY = chase ? 202 : 150;
+  const collisionBoxY = chase ? 214 : 150;
+  // chase locator glyph — geometry precomputed (presentation width only;
+  // footprint untaped, position from backend's derived opening-free span)
+  const chaseG = chase && chase.indicative_center_ft != null
+    ? { cx: wallX + chase.indicative_center_ft * ppf, top: wallTop - 34 }
+    : null;
 
   // Precomputed display strings — single member-expression per SVG text
   // node (dev-instrumentation wraps inline templates in <span>, which
@@ -154,6 +159,7 @@ export default function ElevationSheet() {
   if (chase) {
     S.chase1 = `${String(chase.note).toUpperCase()} — ${chase.tag}`;
     S.chase2 = `profile ${chase.profile} · footprint ${chase.footprint}`;
+    S.chase3 = `on-wall glyph: ${chase.placement_basis}`;
   }
   S.widthTail = ` — ${W.width_tag} (${W.width_source})`;
   if (stepped) {
@@ -184,6 +190,7 @@ export default function ElevationSheet() {
   S.schedHead = `OPENING SCHEDULE — ${sheetName}`;
   S.basisWalls = `GEOMETRY BASIS: ${data.geometry_basis.walls}`;
   S.scaleLine = `Scale ≈ ${scaleLabel} = 1'-0" (auto-fit)`;
+  S.viewLine = `${data.view.convention} · ${data.view.datum}`;
   S.dateLine = `Pro-Quote · ${data.generated_date}`;
   S.gableCallout = gableFt > 0 ? `GABLE TRIANGLE ${fmtFt(gableFt)} RISE — INDICATIVE OUTLINE` : "";
   if (stepped) {
@@ -191,6 +198,8 @@ export default function ElevationSheet() {
     S.seg1Formula = segList[1].height_formula;
     S.seg0Label = segList[0].height_label;
     S.seg1Label = segList[1].height_label;
+    S.seg0Corner = `@ ${String(segList[0].adjacent || "").toUpperCase()} CORNER`;
+    S.seg1Corner = `@ ${String(segList[1].adjacent || "").toUpperCase()} CORNER`;
   }
   for (const o of data.openings) {
     o._style = `${o.type}${o.style ? ` · ${abbrevStyle(o.style)}` : ""}`;
@@ -225,12 +234,25 @@ export default function ElevationSheet() {
             <text x="100" y="192" fontSize="9" fill="#7a4a12">{S.dev2}</text>
           </g>
         )}
-        {/* Chase annotation — AI-read, footprint untaped: ANNOTATE, never scale-render */}
+        {/* Chase annotation — AI-read, footprint untaped: annotation box +
+            INDICATIVE on-wall locator glyph (largest opening-free span) */}
         {chase && (
           <g data-testid="elevation-chase-note">
-            <rect x="530" y="150" width="380" height="46" fill="#fffbeb" stroke={C.amber} strokeWidth="1.2" strokeDasharray="5 3" />
+            <rect x="530" y="150" width="380" height="58" fill="#fffbeb" stroke={C.amber} strokeWidth="1.2" strokeDasharray="5 3" />
             <text x="540" y="166" fontSize="9.5" fontWeight="bold" fill={C.amber}>{S.chase1}</text>
-            <text x="540" y="182" fontSize="9" fill="#7a4a12">{S.chase2}</text>
+            <text x="540" y="180" fontSize="9" fill="#7a4a12">{S.chase2}</text>
+            <text x="540" y="193" fontSize="8" fill="#7a4a12">{S.chase3}</text>
+          </g>
+        )}
+        {chaseG && (
+          <g data-testid="elevation-chase-glyph">
+            <line x1="530" y1="208" x2={chaseG.cx + 16} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+            <rect x={chaseG.cx - 13} y={chaseG.top} width="26" height={wallBottom - chaseG.top} fill="none" stroke={C.siding} strokeWidth="1.75" strokeDasharray="6 3" />
+            <line x1={chaseG.cx - 16} y1={chaseG.top} x2={chaseG.cx + 16} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
+            <line x1={chaseG.cx - 9} y1={chaseG.top + 10} x2={chaseG.cx + 9} y2={chaseG.top + 10} stroke="#8a93a2" strokeWidth="0.7" />
+            <line x1={chaseG.cx - 9} y1={chaseG.top + 18} x2={chaseG.cx + 9} y2={chaseG.top + 18} stroke="#8a93a2" strokeWidth="0.7" />
+            <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">CHIMNEY CHASE</text>
+            <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>POSITION INDICATIVE — NOT TO SCALE</text>
           </g>
         )}
         {anyCollision && (
@@ -358,9 +380,10 @@ export default function ElevationSheet() {
               <path d={`M 941.8 ${segTopY[1] + 4} l 8.4 -8 M 941.8 ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
             </g>
             <text x="954" y={segTopY[1] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted}>SEG 2 HEIGHT</text>
-            <text x="954" y={segTopY[1] + 40} fontSize="12" fontWeight="bold" fill={C.ink} data-testid="elevation-height-value">{S.seg1Label}</text>
-            <Chip x={950} y={segTopY[1] + 46} w={74} label="TAPED-DERIVED" kind="taped-derived" />
-            <text x="1022" y={segTopY[1] + 74} fontSize="7" fill={C.muted} textAnchor="end">{S.seg1Formula}</text>
+            <text x="954" y={segTopY[1] + 33} fontSize="6.5" fontWeight="bold" fill={C.amber}>{S.seg1Corner}</text>
+            <text x="954" y={segTopY[1] + 48} fontSize="12" fontWeight="bold" fill={C.ink} data-testid="elevation-height-value">{S.seg1Label}</text>
+            <Chip x={950} y={segTopY[1] + 54} w={74} label="TAPED-DERIVED" kind="taped-derived" />
+            <text x="1022" y={segTopY[1] + 82} fontSize="7" fill={C.muted} textAnchor="end">{S.seg1Formula}</text>
             {/* seg[0] (left half) — left-side basis line */}
             <g stroke={C.ink} strokeWidth="1" data-testid="elevation-seg-basis-0">
               <line x1={wallX - 2} y1={segTopY[0]} x2={wallX - 52} y2={segTopY[0]} /><line x1={wallX - 2} y1={wallBottom} x2={wallX - 52} y2={wallBottom} />
@@ -368,9 +391,10 @@ export default function ElevationSheet() {
               <path d={`M ${wallX - 50.2} ${segTopY[0] + 4} l 8.4 -8 M ${wallX - 50.2} ${wallBottom + 4} l 8.4 -8`} strokeWidth="1.4" />
             </g>
             <text x={wallX - 56} y={segTopY[0] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted} textAnchor="end">SEG 1 HEIGHT</text>
-            <text x={wallX - 56} y={segTopY[0] + 40} fontSize="12" fontWeight="bold" fill={C.ink} textAnchor="end">{S.seg0Label}</text>
-            <Chip x={wallX - 130} y={segTopY[0] + 46} w={74} label="TAPED-DERIVED" kind="taped-derived" />
-            <text x={wallX - 56} y={segTopY[0] + 74} fontSize="7" fill={C.muted} textAnchor="end">{S.seg0Formula}</text>
+            <text x={wallX - 56} y={segTopY[0] + 33} fontSize="6.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.seg0Corner}</text>
+            <text x={wallX - 56} y={segTopY[0] + 48} fontSize="12" fontWeight="bold" fill={C.ink} textAnchor="end">{S.seg0Label}</text>
+            <Chip x={wallX - 130} y={segTopY[0] + 54} w={74} label="TAPED-DERIVED" kind="taped-derived" />
+            <text x={wallX - 56} y={segTopY[0] + 82} fontSize="7" fill={C.muted} textAnchor="end">{S.seg0Formula}</text>
           </g>
         ) : (
           <g>

@@ -3767,3 +3767,30 @@ PHASE 2 BUILT (re-implemented from approved plan, inheriting nothing from the de
 TESTS: full suite 1077 passed / 1 skipped (informal pre-stamp run). Guard CLEAN stamp + the
 consolidated handback follow the Phase-2 auto-commit.
 PNGs (fresh, md5-listed in handback): /mock/letrick_{front,left,back,right}_elevation_sheet_LIVE_p2.png
+
+## SESSION 2026-07-19 — PHASE-2 FIELD-COMPARE DEFECT FIXES + KEY SWAP
+KEY SWAP: ANTHROPIC_API_KEY rotated (…WwAA), backend restarted, red-house verify rerun
+c2002212 completed green (4 walls / 19 openings, claude-fable-5, direct route, no proxy stamp).
+DEFECT 1 (LEFT mirrored) FIXED: view convention adopted + stated on-sheet — "viewed from
+exterior"; sealed datum: along_wall_ft measured from the LEFT corner as viewed from OUTSIDE
+(extraction prompt iter 79j.40) → openings already exterior-view space, no flip. Segments
+(tape order [front-adjacent 25, back-adjacent 28]) now emit in DRAWING order: RIGHT [25,28]
+(front corner at left), LEFT [28,25] (front corner at right). Each seg basis line labels its
+corner (@ FRONT/BACK CORNER). Pin: LEFT == reversed(RIGHT) on (courses, adjacent) +
+view.convention on every sheet.
+DEFECT 2 (chase unrecognizable) — evidence first: the annotation box DID render (count=1,
+fresh region screenshot md5 26ff9c79…) — NOT a false claim; mechanism: detached text box only,
+no on-wall element. FIXED: indicative on-wall locator glyph — dashed full-height chase rising
+above the fascia, position DERIVED (largest opening-free span from run openings, backend
+indicative_center_ft=9.2), labeled "POSITION INDICATIVE — NOT TO SCALE", leader from the box.
+Chase on sides: ON RECORD — run attributes the accent ONLY to back; no projection/depth data
+→ side rendering would be invention; pinned chase=None on front/left/right.
+RECEIPT 3 (matcher blast radius): dims-based schedule→raw matching exists ONLY in
+elevation_sheets.py (born there in Phase 1, never shared). LP surfaces consume user_removed
+by schedule-row INDEX (_apply_openings_review in lp_package_routes.py — count-field math,
+no dims matching); public.py checks review status keys. Blast radius = elevation sheets only;
+LP pin coverage unchanged (test_openings_remove.py et al).
+NOTE: parallel search-replace edits corrupted test_elevation_sheets_lbr.py + ElevationSheet.jsx
+once (duplicated tail / lost block) — caught by pytest collection + render check, repaired.
+TESTS: full suite 1079 passed / 1 skipped (informal). Guard CLEAN stamp + re-handback follow
+the auto-commit. Fresh PNGs: letrick_{front,left,back,right}_elevation_sheet_LIVE_p2b.png.

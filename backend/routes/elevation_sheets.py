@@ -75,11 +75,15 @@ def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     if not tw:
         return None
     exposure_in = float(KEY["inputs"]["exposure_in"])   # TAPED
+    # tape segment order (key structure): [front-adjacent, back-adjacent]
+    # — side counts mirror the front (25) / back (28) wall tape counts.
+    seg_adjacent = ["front", "back"] if len(tw["segments"]) > 1 else [None]
     segments = []
-    for seg in tw["segments"]:
+    for seg, adj in zip(tw["segments"], seg_adjacent):
         courses = int(seg["courses"])                    # tape count
         height_ft = float(seg["height_ft"])              # reconciled constant (courses × exposure)
         segments.append({
+            "adjacent": adj,
             "courses": courses,
             "height_ft": height_ft,
             "height_label": fmt_ftin(height_ft),
@@ -273,6 +277,15 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     if tape:
         segments = tape["segments"]
         stepped = len(segments) > 1
+        # VIEW CONVENTION (exterior): the run's along_wall_ft datum is the
+        # LEFT corner as viewed from OUTSIDE (extraction prompt iter
+        # 79j.40) — openings are already in exterior-view space. Segments
+        # arrive in tape order [front-adjacent, back-adjacent]; in the
+        # exterior view of the LEFT wall the FRONT corner sits at the
+        # drawing's RIGHT, so the LEFT sheet draws them REVERSED. LEFT
+        # and RIGHT step positions are mirror-consistent by construction.
+        if which == "left" and stepped:
+            segments = list(reversed(segments))
         # tallest segment drives the drawing frame; EACH keeps its basis line
         height_ft = max(s["height_ft"] for s in segments)
         if tape["width_ft"] is not None:
@@ -332,7 +345,9 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             }
 
     # chimney chase (back wall) — AI accent read; footprint is UNTAPED, so
-    # the sheet must annotate, never scale-render silently.
+    # the sheet must annotate, never scale-render silently. The on-wall
+    # glyph position is INDICATIVE: the largest opening-free span of the
+    # wall (derived from the run's own opening spans — not hand-placed).
     chase = None
     for acc in (wall.get("accent_profiles") or []):
         loc = str(acc.get("location") or "")
@@ -344,6 +359,24 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
 
     matchers = _schedule_matchers(run, est.get("lp_openings_review"))
     openings = _bind_openings(raw, which, matchers)
+    if chase:
+        # indicative on-wall position: middle of the largest opening-free
+        # span — DERIVED from the bound openings + basis width, not placed
+        # by hand. Footprint stays untaped; the glyph is a locator only.
+        spans = sorted((o["center_ft"] - float(o["width_in"]) / 24.0,
+                        o["center_ft"] + float(o["width_in"]) / 24.0)
+                       for o in openings
+                       if o["center_ft"] is not None and o["width_in"])
+        cursor, best = 0.0, (0.0, (width_ft or 0) / 2.0)
+        for lo, hi in spans:
+            if lo - cursor > best[0]:
+                best = (lo - cursor, (lo + cursor) / 2.0)
+            cursor = max(cursor, hi)
+        if width_ft and width_ft - cursor > best[0]:
+            best = (width_ft - cursor, (width_ft + cursor) / 2.0)
+        chase["indicative_center_ft"] = round(best[1], 1)
+        chase["placement_basis"] = ("largest opening-free span (derived from run openings)"
+                                    " — position untaped, INDICATIVE")
     windows = [o for o in openings if o["type"] == "Window"]
     doors = [o for o in openings if o["type"] == "Entry door"]
     vents = [o for o in openings if o["type"] == "Vent"]
@@ -396,6 +429,12 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "source_photos": wall.get("_source_photo_indices") or [],
         },
         "chase": chase,
+        "view": {
+            "convention": "viewed from exterior",
+            "datum": ("along-wall datum: left corner as viewed from outside "
+                      "(extraction prompt iter 79j.40)"),
+            "mirrored_segments": bool(which == "left" and stepped),
+        },
         "deviation": deviation,
         "openings": openings,
         # CLOSED three-key contract (ruled 2026-07-18) — see module docstring
