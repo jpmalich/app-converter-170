@@ -4149,3 +4149,23 @@ DEMO NAMING ANSWER: deliberate binding (frozen post-C4 Letrick PHOTO validation 
 read-only per demo.py design) with a MISMATCHED name ("Blueprint House") — becomes a visible
 contradiction under this ruling on a BDM screen. Recommended rename before September
 ("Letrick House — DEMO"); not touched, awaiting ruling.
+
+## SESSION 2026-07-20 (part 19) — SOURCE-VIEW GENERALIZED SHIPPED (approved 1,2,4)
+SHIPPED (suite 1131 green, CLEAN b38d5c7): unified /estimate/:id/source-view route (blueprint
+/source-sheets kept as alias, accepted behavior byte-identical); PHOTO mode (per-photo
+provenance "Photo i of n · kind · filename · run", consumption-order numbering note matching
+elevation-sheet citations, same-run AI summary, 30-day TTL named, archived label); HOVER
+reference mode ("No visual source retained" honesty note + imported measurements); photo
+endpoint ai-measure/latest-for-estimate gains archived-run read-side (read path only) +
+photo_kinds/source/archived response fields; FieldVerifyCard link ADAPTIVE (one link, label
+per door, precedence blueprint→photo→hover, no dead links).
+PINS: test_source_view_generalized.py (7 — photo TTL defusal HTTP, fresh unchanged, absent
+None, read-path-only, unified+alias routes, photo render contract, hover honesty, read-only);
+AMENDED: test_3d_dark pin5 (adaptive link), test_blueprint_source_view pin2 (alias).
+NOTE: first guard run recorded "6 errors" (transient — concurrent evidence traffic during the
+suite); NOT claimed; idle re-run fully green and re-stamped honestly.
+EVIDENCE: photo estimate bb7c1139 "ZZ PHOTO SOURCE-VIEW EVIDENCE" (tagged run 7e6fec60, 4 drawn
+labeled photos); PNGs: photo_source_view_live (3d8f617e…), adaptive_source_link_live
+(95b6d59b…). Older 42c90180 shows blueprint precedence.
+DEMO RENAME: BLOCKED — Howard's ruling had the name blank ("rename to ___"); awaiting the
+name; will ship as its own small handback w/ header screenshot.
