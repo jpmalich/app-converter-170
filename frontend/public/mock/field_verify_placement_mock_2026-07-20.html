@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>MOCK — Field Verify card (placement proposal)</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#F4F4F5;margin:0;padding:24px;color:#18181B}
+  .banner{background:#B45309;color:#fff;font-weight:bold;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;margin-bottom:16px}
+  .panel{background:#fff;border:1px solid #E4E4E7;max-width:1100px}
+  .panel-head{border-bottom:1px solid #E4E4E7;padding:10px 14px;font-size:11px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:#3F3F46}
+  .basis{font-family:monospace;font-size:10px;color:#71717A;padding:6px 14px 0}
+  .slot{border:3px dashed #DC2626;margin:10px;padding:12px;position:relative}
+  .slot-tag{position:absolute;top:-12px;left:12px;background:#DC2626;color:#fff;font-size:10px;font-weight:bold;letter-spacing:.1em;padding:2px 8px;text-transform:uppercase}
+  .cols{display:grid;grid-template-columns:1.2fr 1.2fr .9fr;gap:14px}
+  .card{border:1px solid #E4E4E7;background:#FAFAFA;padding:10px}
+  .card h4{margin:0 0 8px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#3F3F46}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#71717A;text-align:left;padding:4px 6px;border-bottom:1px solid #E4E4E7}
+  td{padding:5px 6px;border-bottom:1px solid #F1F1F3;font-family:monospace}
+  .chip{display:inline-block;font-family:Arial;font-size:9px;font-weight:bold;padding:1px 7px;border-radius:8px}
+  .taped{background:#0d7a3f;color:#fff}.ai{border:1px solid #0d7a3f;color:#0d7a3f;background:#fff}.warn{background:#b45309;color:#fff}
+  .field{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px}
+  .field input{width:64px;border:1px solid #D4D4D8;padding:3px 6px;font-family:monospace;font-size:12px}
+  .btn{display:inline-block;border:1px solid #7C3AED;color:#7C3AED;background:#fff;font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.1em;padding:6px 10px;margin-top:6px}
+  .btn.dark{border-color:#18181B;color:#18181B}
+  .note{font-size:10px;color:#71717A;margin-top:8px;line-height:1.5}
+</style></head><body>
+<div class="banner">MOCK — placement proposal only · nothing shipped · Field Verify card takes the exact slot the 3D panel occupies today (LP Material List panel · testid lp-material-3d · same spot inside AI Measure + Blueprint previews)</div>
+<div class="panel">
+  <div class="panel-head">Field Verify — per-wall takeoff · tape check · taped dims &nbsp;·&nbsp; (replaces "3D Model — colors repaint live")</div>
+  <div class="basis">geometry: photo extraction run d6679448 — latest run — unpinned</div>
+  <div class="slot"><div class="slot-tag">Re-mounted machinery — same components, new host</div>
+  <div class="cols">
+    <div class="card"><h4>Per-wall takeoff (was: tap-a-wall)</h4>
+      <table>
+        <tr><th>Wall</th><th>Siding ft²</th><th>Openings</th><th>Eave</th><th>Basis</th></tr>
+        <tr><td>FRONT</td><td>612.4</td><td>3 win · 1 door</td><td>9.0'</td><td><span class="chip taped">TAPED</span></td></tr>
+        <tr><td>LEFT</td><td>418.9</td><td>2 win</td><td>9.0'</td><td><span class="chip ai">AI-READ ✓</span></td></tr>
+        <tr><td>BACK</td><td>598.1</td><td>2 win · 1 patio</td><td>9.0'</td><td><span class="chip taped">TAPED</span></td></tr>
+        <tr><td>RIGHT</td><td>402.3</td><td>1 win</td><td>7.2'</td><td><span class="chip warn">AI-READ ⚠ verify</span></td></tr>
+      </table>
+      <div class="note">Values read from preview.lines / _per_elevation_breakdown — SSOT unchanged. Provenance chips carry over from the 3D badges.</div>
+    </div>
+    <div class="card"><h4>Tape Check — per-wall ground truth (TapeCheckPanel, re-mounted as-is)</h4>
+      <div class="field">FRONT width <input value="54.0"> ft <span class="chip taped">Confirmed — taped</span></div>
+      <div class="field">BACK width <input value="54.0"> ft <span class="chip taped">Confirmed — from prints</span></div>
+      <div class="field">LEFT width <input value=""> ft <span class="chip ai">unverified</span></div>
+      <button class="btn">Score run vs tape</button> <button class="btn dark">Freeze accuracy report</button>
+      <div class="note">Identical writes: PUT /tape-check · POST /tape-check/score · POST /accuracy-report/freeze. Workflow never gaps — this card ships BEFORE the 3D flag flips.</div>
+    </div>
+    <div class="card"><h4>Taped dims — appendages (dims editor, re-mounted as-is)</h4>
+      <div class="field">Chase height <input value="20.4"> ft</div>
+      <div class="field">Chase depth <input value="2.6"> ft</div>
+      <button class="btn">Save taped dims</button>
+      <div class="note">Identical write: POST /lp-appendage-dims → LP panel refresh (onDimsSaved). Elevation sheets keep rendering these dims unchanged.</div>
+    </div>
+  </div>
+  </div>
+</div>
+</body></html>
