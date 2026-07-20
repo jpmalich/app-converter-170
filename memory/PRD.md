@@ -4101,3 +4101,34 @@ PROPOSALS AWAITING HOWARD'S PLACEMENT APPROVAL:
 UPLOAD-ACCESS REPORT delivered (see chat): images only, uuid4-unguessable, knowable from
 in-app payloads + quote emails; plain auth-gating breaks in-app <img> (bearer tokens, no
 cookies) AND customer email images; split-class signed-URL path sized. Howard to rule.
+
+## SESSION 2026-07-20 (part 17) — VISIBILITY PACKAGE SHIPPED (approved build)
+=== TOP OF BACKLOG (Howard's order — carry at top until built) ===
+*** #1 POST-SEPTEMBER: UPLOAD ACCESS TIGHTENING — split-class signed URLs
+    (contractor assets short-lived signatures; customer-embedded assets stay
+    public/long-lived). uuid4 unguessability is the standing control until then. ***
+SHIPPED (one consolidated handback, suite 1124 green, CLEAN a85e5aa):
+1. FieldVerifyCard.jsx — tape-check entry (TapeCheckPanel re-mounted, identical writes),
+   taped appendage dims (DimEditRow re-mounted, identical lp-appendage-dims writes),
+   per-wall takeoff table (peb, SSOT) — mounted in all THREE former 3D slots (LP panel,
+   AI Measure tab, Blueprint tab), never behind the flag. Tape workflow never dark:
+   card + flag landed with card mounted in the SAME commit; at no commit was
+   TapeCheckPanel unreachable.
+2. "View Source Blueprints →" rides the card (prime top-right), blueprint-path only
+   (renders only when live/CUT-archived run exists). Old direct-route-only pin AMENDED.
+3. RENDER_3D_ENABLED=false (featureFlags.js) — HouseModel3D mounts guarded (LP/AI/BP),
+   AcceptHouse3D guarded, tab labels read "Field Verify" while dark; DEMO inherits;
+   code preserved for re-entry (exports intact).
+4. Quote pictureless: model3dBlock REMOVED from emailQuote.js (both templates) +
+   QuoteModal block removed; EN+ES verified from the real builder (esbuild-bundled,
+   fixture with model3d_png_url set → 0 img tags, 0 "3D" strings).
+PINS: test_3d_dark_all_audiences.py (7 asserted-absence pins); AMENDED:
+test_geometry_fit_gate (quote pins → absence), test_model3d_wording_split (2 → absence),
+test_blueprint_source_view pin2 (entry-point allowance).
+EVIDENCE (all in /mock/): field_verify_live_2026-07-20.png (7ced9426…),
+pictureless_quote_en (58fef69a…), pictureless_quote_es (8a2ef135…).
+Evidence estimate 42c90180 "ZZ VISIBILITY EVIDENCE" w/ tagged ai run 1b5c039c + bp run
+ce502de5 (live substrate survives suite purge — purge targets fixture_runs only).
+NOTE: esbuild added as frontend devDependency (evidence tooling).
+PARKED: compare-toggle; photo-path/elevation-sheet entry points; ISS Excel (on Howard);
+band board + O&U; Diverge labor.

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>MOCK — Photo source view (proposal)</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;background:#F4F4F5;margin:0;padding:20px;color:#18181B}
+  .banner{background:#B45309;color:#fff;font-weight:bold;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;margin-bottom:14px}
+  h1{font-size:20px;margin:0 8px 0 0;display:inline}
+  .sub{font-size:13px;color:#71717A}
+  .ro{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#71717A;margin:4px 0 14px}
+  .prov{font-family:monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#71717A;margin-bottom:8px}
+  .wrap{display:grid;grid-template-columns:2fr 1fr;gap:18px;max-width:1250px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  figure{background:#fff;border:1px solid #E4E4E7;padding:8px;margin:0}
+  .ph{height:170px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;letter-spacing:.05em}
+  figcaption{font-family:monospace;font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#71717A;margin-top:6px}
+  .card{background:#fff;border:1px solid #E4E4E7;padding:14px;position:sticky;top:10px}
+  .card h4{margin:0 0 2px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7C3AED}
+  .card .p{font-family:monospace;font-size:9px;text-transform:uppercase;color:#71717A;margin-bottom:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td{padding:6px 0;border-bottom:1px solid #F1F1F3}
+  td:last-child{text-align:right;font-family:monospace;font-weight:bold}
+</style></head><body>
+<div class="banner">MOCK — proposal only · photo-source view at /estimate/:id/source-photos (or unified /source-view) · same discipline as the accepted blueprint viewer: read-only, zero writes, per-item provenance, TTL boundary named</div>
+<h1>Source Photos</h1> <span class="sub">Estimate EST-373526 — Mark Letrick</span> <a href="#" style="font-size:11px;color:#71717A">← back to estimate</a>
+<div class="ro">READ-ONLY — the exact photos the AI analyzed, from the durable upload store. Nothing on this page writes.</div>
+<div class="wrap">
+  <div>
+    <div class="prov">photo extraction run 1b5c039c · 4 photo(s) · uploaded 7/20/2026, 1:48 AM · status done · 30-DAY run index — APPLIED runs serve past it via the CUT archive</div>
+    <div class="grid">
+      <figure><div class="ph" style="background:#4a6741">FRONT HOUSE PHOTO</div><figcaption>Photo 1 of 4 · front · ai_6b7113a5….jpg · run 1b5c039c</figcaption></figure>
+      <figure><div class="ph" style="background:#5b6d82">RIGHT HOUSE PHOTO</div><figcaption>Photo 2 of 4 · right · ai_8c23f140….jpg · run 1b5c039c</figcaption></figure>
+      <figure><div class="ph" style="background:#7a6a54">BACK HOUSE PHOTO</div><figcaption>Photo 3 of 4 · back · ai_2f91cc07….jpg · run 1b5c039c</figcaption></figure>
+      <figure><div class="ph" style="background:#6b5b73">LEFT HOUSE PHOTO</div><figcaption>Photo 4 of 4 · left · ai_d40aa112….jpg · run 1b5c039c</figcaption></figure>
+    </div>
+    <div style="font-size:10px;color:#71717A;margin-top:8px">Numbering = the photo order the run consumed — the SAME indices the elevation sheets cite (per-photo readings). Click any photo → lightbox zoom (Esc / ← →), identical to the blueprint viewer.</div>
+  </div>
+  <div class="card">
+    <h4>AI Measure — same run</h4>
+    <div class="p">AI-READ · photo extraction run 1b5c039c — compare against the photos at left</div>
+    <table>
+      <tr><td>Siding</td><td>1,668 ft²</td></tr>
+      <tr><td>Eaves</td><td>136 LF</td></tr>
+      <tr><td>Rakes</td><td>68 LF</td></tr>
+      <tr><td>Outside corners</td><td>72 LF</td></tr>
+      <tr><td>Windows</td><td>8</td></tr>
+      <tr><td>Entry doors</td><td>1</td></tr>
+      <tr><td>Stories</td><td>1</td></tr>
+    </table>
+  </div>
+</div>
+<div style="margin-top:16px;background:#fff;border:1px solid #E4E4E7;padding:12px;max-width:1250px">
+  <div style="font-size:10px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;color:#3F3F46;margin-bottom:6px">Empty state (photo door)</div>
+  <div style="font-size:12px;color:#52525B;line-height:1.5">No photo run on record for this estimate. The live run index expires <b>30 days</b> after upload (TTL). APPLIED takeoffs survive it — the CUT archives them and this viewer serves the archived index indefinitely. Neither a live nor an archived run exists; a fresh photo measure restores the view.</div>
+</div>
+</body></html>
