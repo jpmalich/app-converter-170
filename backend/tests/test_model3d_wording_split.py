@@ -64,10 +64,10 @@ def test_unverified_flag_persists_and_resets():
 
 def test_customer_email_builder_uses_homeowner_language_only():
     src = _read(f"{FE}/lib/emailQuote.js")
-    # wired to the flag + the homeowner note key
-    assert "model3d_unverified" in src
-    assert "email.model3dVerifyNote" in src
-    # the customer-facing quote builder carries ZERO internal flag vocabulary
+    # PIN AMENDED (quote visual NONE, ruled 2026-07-20): the 3D block is
+    # gone from the quote builder — the wording-split rule now asserts
+    # only that no internal vocabulary leaks anywhere in the builder.
+    assert "model3d_png_url" not in src
     low = src.lower()
     for term in INTERNAL_VOCAB:
         assert term not in low, f"internal vocab {term!r} leaked into customer email builder"
@@ -85,13 +85,13 @@ def test_dictionaries_homeowner_wording_en_es():
 
 
 def test_quote_modal_3d_block_homeowner_wording():
+    """PIN AMENDED (quote visual NONE, ruled 2026-07-20): the QuoteModal 3D
+    block was removed — the on-screen quote preview ships with no picture,
+    mirroring the email. Absence pinned; wording rule is moot for a block
+    that no longer exists."""
     src = _read(f"{FE}/components/QuoteModal.jsx")
-    start = src.index("quote-3d-model-block")
-    end = src.index("Job Photos", start)
-    block = src[start:end].lower()
-    assert "subject to on-site verification" in block
-    for term in INTERNAL_VOCAB:
-        assert term not in block, f"internal vocab {term!r} leaked into QuoteModal 3D block"
+    assert "quote-3d-model-block" not in src
+    assert "model3d_png_url" not in src
 
 
 def test_contractor_surface_keeps_internal_language():

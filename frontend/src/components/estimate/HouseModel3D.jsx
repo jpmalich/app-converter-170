@@ -2411,4 +2411,4 @@ const DimEditRow = ({ label, field, apKey, entry, valueFt, fallbackText, offer, 
   );
 };
 
-export { buildHouseJson, buildScene };
+export { buildHouseJson, buildScene, DimEditRow };

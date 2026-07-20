@@ -51,6 +51,8 @@ const MODEL_PICKER_LABELS = {
 const ADMIN_ROLES = new Set(["owner", "supplier_admin", "admin"]);
 // Iter 79j.22 — 3D House Model view (parametric Three.js render from raw_ai)
 import HouseModel3D from "@/components/estimate/HouseModel3D";
+import FieldVerifyCard from "@/components/estimate/FieldVerifyCard";
+import { RENDER_3D_ENABLED } from "@/lib/featureFlags";
 // Iter 79j.36 — Debug view: per-photo raw observations + reconciled
 // house JSON with provenance. Behind Advanced.
 import AIExtractionDebugModal from "@/components/estimate/AIExtractionDebugModal";
@@ -3484,8 +3486,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       }`}
                       data-testid="ai-measure-3d-tab"
                     >
-                      3D Model
-                      <span className="text-[9px] px-1.5 py-0.5 bg-[#F3F4F6] text-[var(--ai)] tracking-normal">BETA</span>
+                      {RENDER_3D_ENABLED ? "3D Model" : "Field Verify"}
+                      {RENDER_3D_ENABLED && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-[#F3F4F6] text-[var(--ai)] tracking-normal">BETA</span>
+                      )}
                     </button>
                   </div>
 
@@ -3591,6 +3595,14 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
 
                   {previewTab === "3d" && (
                     <div className="mb-4" data-testid="ai-measure-3d-panel">
+                      {/* Field Verify (approved 2026-07-20): tape check +
+                          taped dims + per-wall takeoff live here; the 3D
+                          render is dark behind RENDER_3D_ENABLED. */}
+                      <FieldVerifyCard
+                        preview={preview}
+                        estimate={estimate}
+                        runId={currentRunId}
+                      />
                       {(() => {
                         // Iter 79j.52 — Never draw a placeholder house
                         // when reconciliation failed or produced zero
@@ -3633,7 +3645,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             </div>
                           );
                         }
-                        return (
+                        return RENDER_3D_ENABLED ? (
                           <HouseModel3D
                             preview={preview}
                             estimate={estimate}
@@ -3641,7 +3653,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             onSnapshot={estimateId ? saveModelSnapshot : undefined}
                             hasSnapshot={modelSnapshotSaved || !!estimate?.model3d_png_url}
                           />
-                        );
+                        ) : null;
                       })()}
                     </div>
                   )}

@@ -32,14 +32,20 @@ def test_pin1_read_only_no_write_calls():
 
 
 def test_pin2_direct_route_only_no_entry_points():
+    """PIN AMENDED (entry point approved 2026-07-20): the ONE authorized
+    entry is the "View Source Blueprints" link riding the Field Verify
+    card (blueprint-path estimates only). No other surface references the
+    route."""
     assert '<Route path="/estimate/:id/source-sheets"' in APP
     hits = subprocess.run(
         ["grep", "-rl", "source-sheets", str(FRONTEND)],
         capture_output=True, text=True,
     ).stdout.split()
-    allowed = {str(FRONTEND / "App.js"), str(FRONTEND / "pages" / "SourceSheets.jsx")}
+    allowed = {str(FRONTEND / "App.js"),
+               str(FRONTEND / "pages" / "SourceSheets.jsx"),
+               str(FRONTEND / "components" / "estimate" / "FieldVerifyCard.jsx")}
     assert set(hits) == allowed, (
-        f"source-sheets referenced outside the direct route: {set(hits) - allowed}")
+        f"source-sheets referenced outside the authorized surfaces: {set(hits) ^ allowed}")
 
 
 def test_pin3_consumes_existing_endpoints_only():

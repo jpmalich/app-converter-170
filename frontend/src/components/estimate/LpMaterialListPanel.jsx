@@ -21,6 +21,8 @@ import api, { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { lpHex, LP_GROUP_LABELS } from "@/lib/lpColors";
 import HouseModel3D from "@/components/estimate/HouseModel3D";
+import FieldVerifyCard from "@/components/estimate/FieldVerifyCard";
+import { RENDER_3D_ENABLED } from "@/lib/featureFlags";
 import { OpeningsReviewCard } from "@/components/estimate/OpeningsReviewCard";
 
 function Swatch({ name }) {
@@ -851,25 +853,37 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         </div>
       )}
 
-      {/* 3D — mesh-group flat repaints */}
+      {/* Field Verify (approved 2026-07-20) — the 3D slot; the 3D render
+          itself is dark behind RENDER_3D_ENABLED (code preserved). */}
       {preview3d && (
         <div className="border-t border-[var(--border)] p-3" data-testid="lp-material-3d">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-1 flex items-center gap-2">
-            <RefreshCcw className="w-3 h-3" /> 3D Model — colors repaint live
-          </div>
           {pkg.geometry_basis?.label && (
             <div className="text-[10px] mb-2 font-mono-num text-[var(--muted)]" data-testid="lp-3d-geometry-basis">
               geometry: {pkg.geometry_basis.label}
             </div>
           )}
-          <HouseModel3D
+          <FieldVerifyCard
             preview={preview3d}
             estimate={est}
             runId={run.run_id}
-            lpGroupColors={lpGroupColors}
             onDimsSaved={() => fetchPackage(colors, subs)}
             dimsRefreshKey={dimsKey}
           />
+          {RENDER_3D_ENABLED && (
+            <div className="mt-3">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-1 flex items-center gap-2">
+                <RefreshCcw className="w-3 h-3" /> 3D Model — colors repaint live
+              </div>
+              <HouseModel3D
+                preview={preview3d}
+                estimate={est}
+                runId={run.run_id}
+                lpGroupColors={lpGroupColors}
+                onDimsSaved={() => fetchPackage(colors, subs)}
+                dimsRefreshKey={dimsKey}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

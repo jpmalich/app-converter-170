@@ -25,6 +25,8 @@ import ProfileAnnotator from "@/components/estimate/ProfileAnnotator";
 // (footprint, eaves, roof type, ridgeAxis, facades, openings, dormer)
 // so the 3D viewer + side panel + material math work without a fork.
 import HouseModel3D from "@/components/estimate/HouseModel3D";
+import FieldVerifyCard from "@/components/estimate/FieldVerifyCard";
+import { RENDER_3D_ENABLED } from "@/lib/featureFlags";
 import { printTakeoff } from "@/lib/printTakeoff";
 import {
   getSavedWasteDefault,
@@ -822,7 +824,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   }`}
                   data-testid="blueprint-3d-tab"
                 >
-                  3D Model
+                  {RENDER_3D_ENABLED ? "3D Model" : "Field Verify"}
                   <span className="text-[9px] px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] tracking-normal">VERIFIED</span>
                 </button>
               </div>
@@ -841,7 +843,10 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                       </div>
                     </div>
                   )}
-                  <HouseModel3D preview={result} estimate={est} />
+                  {/* Field Verify (approved 2026-07-20): tape check + taped
+                      dims + per-wall takeoff; 3D dark behind the flag. */}
+                  <FieldVerifyCard preview={result} estimate={est} />
+                  {RENDER_3D_ENABLED && <HouseModel3D preview={result} estimate={est} />}
                 </div>
               )}
 

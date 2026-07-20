@@ -53,12 +53,16 @@ def test_accept_page_labels_low_fit():
 
 
 def test_quote_email_and_modal_label_low_fit():
+    """PIN AMENDED (quote visual NONE, ruled 2026-07-20): the 3D snapshot
+    block was REMOVED from the customer quote (email builder + QuoteModal)
+    — the quote ships with no picture. The fit-low labeling machinery
+    survives on the accept page (flag-gated code, preserved)."""
     js = (_ROOT / "frontend/src/lib/emailQuote.js").read_text()
-    assert "estimate.model3d_fit_low" in js
-    assert 't("email.model3dFitNote")' in js
+    assert "model3d_png_url" not in js
+    assert "model3dBlock" not in js
     modal = (_ROOT / "frontend/src/components/QuoteModal.jsx").read_text()
-    assert 'data-testid="quote-3d-fit-note"' in modal
-    assert "Simplified representation — not to scale/shape." in modal
+    assert "model3d_png_url" not in modal
+    assert 'data-testid="quote-3d-model-block"' not in modal
 
 
 def test_asserted_wording_both_languages():

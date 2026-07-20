@@ -170,7 +170,8 @@ export default function AcceptPage() {
           </div>
         ) : null}
 
-        {d.house3d ? (
+        {/* 3D dark for all audiences (ruled 2026-07-20) — code preserved. */}
+        {RENDER_3D_ENABLED && d.house3d ? (
           <div style={{ marginTop: 28 }} data-testid="accept-3d-section">
             <div
               style={{
