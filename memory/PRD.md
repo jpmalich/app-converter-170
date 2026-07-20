@@ -4079,3 +4079,25 @@ hidden per audience: customers=nothing; demo=tape-check entry + dims entry + per
 need new hosts (candidates: direct-route panels / PerElevationBreakdownCard / elevation sheets
 — components are self-contained, re-mount not rebuild); contractors=not viable.
 NO CHANGES MADE. Queue still idles pending ISS Excel + script inputs.
+
+## SESSION 2026-07-20 (part 16) — 3D-off ruling: proposal package delivered (NOTHING SHIPPED)
+COST ANSWER: 3D has ZERO metered/AI cost per view — client-side Three.js off stored run data;
+only network calls are lp-appendage-dims GET/POST (Mongo); accept-page house3d is a pure
+server transform (public.py imports no LLM); snapshot = one PNG store. All AI cost sits in
+the extraction run, already spent.
+PROPOSALS AWAITING HOWARD'S PLACEMENT APPROVAL:
+- Field Verify card (rehomes tape-check entry + appendage-dims editor + per-wall takeoff,
+  re-mount not rebuild) in the EXACT slot the 3D panel occupies (lp-material-3d + AI/Blueprint
+  preview slots). Mock: /mock/field_verify_placement_mock_2026-07-20.png (md5 2f1d04c8…).
+  Sequencing: card ships FIRST, 3D flag (REACT_APP-level single flag) flips second — no gap.
+- Quote-visual replacement: promote the EXISTING inline-SVG 2D elevation drawings
+  (emailElevations) into the model3d block's slot — zero new machinery.
+- Source-sheets entry point: "View Source Sheets →" inside the Blueprints ToolTile
+  (JobInfoPanel measurement-tools-row), blueprint-path estimates only, renders only when a
+  live/archived run exists. Mock: /mock/source_sheets_entrypoint_mock_2026-07-20.png
+  (md5 f35eaa8d…). Photo-path + elevation-sheet entry points parked per ruling.
+- Post-flip pins promised: asserted-absence tests (no route/toggle/URL renders 3D for any
+  audience).
+UPLOAD-ACCESS REPORT delivered (see chat): images only, uuid4-unguessable, knowable from
+in-app payloads + quote emails; plain auth-gating breaks in-app <img> (bearer tokens, no
+cookies) AND customer email images; split-class signed-URL path sized. Howard to rule.
