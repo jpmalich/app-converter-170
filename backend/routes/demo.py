@@ -96,7 +96,9 @@ async def demo_reset(user: dict = Depends(get_current_user)):
         "id": est_id, "company_id": user["company_id"], "demo_key": DEMO_KEY,
         "kind": "lp_smart",
         "estimate_number": "DEMO-LETRICK",
-        "customer_name": "Letrick Blueprint House — DEMO",
+        # Renamed per Howard's ruling 2026-07-20: the demo binds the frozen
+        # Letrick PHOTO validation run — the name now matches the door.
+        "customer_name": "Letrick Ranch — LP Photo Demo",
         "address": "Letrick showcase fixture",
         "estimate_date": now[:10],
         "created_at": now, "updated_at": now,
