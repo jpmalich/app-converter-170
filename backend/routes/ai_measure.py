@@ -3324,6 +3324,17 @@ async def ai_measure_latest_for_estimate(
     ]
     docs = await db.ai_measure_runs.aggregate(pipeline).to_list(length=1)
     doc = docs[0] if docs else None
+    # Artifact pin read-side (30-day TTL defusal — ruled 2026-07-20, same
+    # pattern as the blueprint viewer): when the live doc has reaped,
+    # serve the CUT-archived copy from fixture_runs (no TTL). READ path
+    # only — no writes, no new archival triggers.
+    archived = False
+    if not doc:
+        from run_archive import find_archived_run
+        doc = await find_archived_run(
+            {"user_id": user_id, "estimate_id": estimate_id,
+             "substrate": "ai_measure_runs"})
+        archived = doc is not None
     if not doc:
         return {"run": None}
     created = _as_aware_utc(doc.get("created_at"))
@@ -3342,6 +3353,11 @@ async def ai_measure_latest_for_estimate(
             "stage": doc.get("stage"),
             "photo_count": doc.get("photo_count"),
             "photo_paths": doc.get("photo_paths"),
+            "photo_kinds": doc.get("photo_kinds"),
+            "source": doc.get("source"),
+            # Read-side provenance (ruled 2026-07-20): True when served
+            # from the CUT archive after the live doc's 30-day TTL reaped.
+            "archived": archived,
             "deep_dormer_scan": doc.get("deep_dormer_scan"),
             "result": strip_cost_keys(doc.get("result")),
             "error": doc.get("error"),

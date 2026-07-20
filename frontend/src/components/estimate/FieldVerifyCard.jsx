@@ -7,7 +7,7 @@
 // 3D flag flips so the tape workflow is never dark.
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Ruler, FileText } from "lucide-react";
+import { Ruler, FileText, Camera, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
@@ -17,6 +17,14 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
   const [apDims, setApDims] = useState(() => estimate?.lp_appendage_dims || {});
   const [dimOffers, setDimOffers] = useState([]);
   const [bpRun, setBpRun] = useState(null);
+  const [aiRun, setAiRun] = useState(null);
+
+  useEffect(() => {
+    if (!estimate?.id) return;
+    api.get(`/measure/ai-measure/latest-for-estimate/${estimate.id}`)
+      .then(({ data }) => setAiRun(data?.run || null))
+      .catch(() => {});
+  }, [estimate?.id]);
 
   useEffect(() => {
     if (!estimate?.id) return;
@@ -60,20 +68,35 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
   const peb = preview?.measurements?._per_elevation_breakdown || [];
   const appendages = house?.appendages || [];
 
+  // Adaptive source-view door (ruled 2026-07-20): ONE link riding this
+  // card on ALL estimates; label adapts to the bound intake door with
+  // precedence blueprint → photo → hover. No substrate on any door →
+  // no link at all (named empty state on the page, never a dead link).
+  const isHoverRun = aiRun && (aiRun.source === "hover" || String(aiRun.run_id || "").startsWith("hover-"));
+  const door = bpRun ? "blueprint"
+    : (aiRun && !isHoverRun && (aiRun.photo_paths || aiRun.result?.raw_ai) ? "photo"
+      : (isHoverRun ? "hover" : null));
+  const DOOR_LABEL = {
+    blueprint: "View Source Blueprints →",
+    photo: "View Source Photos →",
+    hover: "View Hover Report →",
+  };
+  const DoorIcon = door === "photo" ? Camera : door === "hover" ? FileSpreadsheet : FileText;
+
   return (
     <div className="space-y-3" data-testid="field-verify-card">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] flex items-center gap-2">
           <Ruler className="w-3 h-3" /> Field Verify — per-wall takeoff · tape check · taped dims
         </div>
-        {bpRun && (
+        {door && (
           <Link
-            to={`/estimate/${estimate.id}/source-sheets`}
+            to={`/estimate/${estimate.id}/source-view`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--ai)] text-[var(--ai)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--ai)] hover:text-white transition-colors"
-            data-testid="field-verify-source-blueprints-link"
-            title="Read-only viewer — the exact blueprint pages the AI analyzed, with per-page provenance"
+            data-testid="field-verify-source-link"
+            title="Read-only source view — the exact intake evidence the AI worked from, with per-item provenance"
           >
-            <FileText className="w-3 h-3" /> View Source Blueprints →
+            <DoorIcon className="w-3 h-3" /> {DOOR_LABEL[door]}
           </Link>
         )}
       </div>

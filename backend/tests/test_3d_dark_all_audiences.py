@@ -76,12 +76,19 @@ def test_pin4_tape_workflow_never_dark():
                 f"{name}: FieldVerifyCard must NOT sit behind the 3D flag")
 
 
-def test_pin5_source_blueprints_entry_rides_the_card():
-    assert 'data-testid="field-verify-source-blueprints-link"' in FVC
-    assert "/measure/ai-blueprint/latest-for-estimate/" in FVC  # bp-path only
-    assert "source-sheets" in FVC
+def test_pin5_source_view_entry_rides_the_card():
+    """PIN AMENDED (source-view generalized, ruled 2026-07-20): ONE adaptive
+    link on the card for ALL estimates — label per intake door, precedence
+    blueprint → photo → hover, no dead links (no substrate → no link)."""
+    assert 'data-testid="field-verify-source-link"' in FVC
+    assert "/measure/ai-blueprint/latest-for-estimate/" in FVC
+    assert "/measure/ai-measure/latest-for-estimate/" in FVC
+    assert "source-view" in FVC
+    for label in ("View Source Blueprints →", "View Source Photos →", "View Hover Report →"):
+        assert label in FVC, f"missing adaptive label {label!r}"
+    assert "{door && (" in FVC  # no substrate on any door → no link
     # the entry lives on the card, nowhere else on app surfaces
-    assert "source-sheets" not in (FE / "components" / "estimate" / "JobInfoPanel.jsx").read_text()
+    assert "source-view" not in (FE / "components" / "estimate" / "JobInfoPanel.jsx").read_text()
 
 
 def test_pin6_no_route_renders_3d():

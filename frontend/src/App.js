@@ -74,8 +74,11 @@ function App() {
                         the siding workspace (legacy default). */}
                     <Route path="/dashboard" element={<Navigate to="/dashboard/siding" replace />} />
                     <Route path="/estimate/:id/elevation-sheet/:which" element={<ElevationSheet />} />
-                    {/* Blueprint source-sheet viewer (ruled 2026-07-20, Phase-1):
-                        direct route ONLY — no entry points on any existing surface. */}
+                    {/* Source-view (generalized 2026-07-20): one surface for every
+                        intake door — photos / blueprints / hover reference. The
+                        original blueprint URL stays as an alias (accepted surface
+                        never moves). Direct route + the Field Verify card link. */}
+                    <Route path="/estimate/:id/source-view" element={<SourceSheets />} />
                     <Route path="/estimate/:id/source-sheets" element={<SourceSheets />} />
                     <Route path="/estimate/:id" element={<EstimateRouter />} />
                     <Route path="/catalog" element={<Catalog />} />
