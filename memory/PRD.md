@@ -4065,3 +4065,17 @@ CLEANUP: evidence estimate 2af7b38b + archived doc + page blobs + disk copies re
 QUEUE IDLES pending Howard's inputs: ISS Excel (New Construction Siding catalog);
 script inputs. PARKED: compare-toggle (strong post-acceptance slice, not authorized);
 band board + Options & Upgrades; Diverge Contractor window-quote labor.
+
+## SESSION 2026-07-20 (part 15) — surface-visibility inventory (report only)
+Delivered for Howard's entry-point/visibility ruling: 3D panel (HouseModel3D) mounts in 3
+contractor-authed hosts (LP panel :865, AIMeasure :3637, Blueprint :844) carrying tap-a-wall
+takeoff, per-wall overrides, TapeCheckPanel (writes: tape-check/score/freeze), appendage-dims
+entry (writes: lp-appendage-dims), snapshot camera. Customer surface = separate sanitized
+AcceptHouse3D (orbit-only, ruled 2026-07-15); quote email = static PNG; shares = none.
+DEMO mode sees the FULL write-capable contractor panel (no reduced variant). Elevation sheets
++ source-sheets: authed direct-URL only; potential audiences contractor+demo, never customers;
+/api/uploads/{name} bytes are unauthenticated (index endpoints authed). Rehoming ledger if 3D
+hidden per audience: customers=nothing; demo=tape-check entry + dims entry + per-wall takeoff
+need new hosts (candidates: direct-route panels / PerElevationBreakdownCard / elevation sheets
+— components are self-contained, re-mount not rebuild); contractors=not viable.
+NO CHANGES MADE. Queue still idles pending ISS Excel + script inputs.
