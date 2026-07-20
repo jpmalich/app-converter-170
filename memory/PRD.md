@@ -4132,3 +4132,20 @@ ce502de5 (live substrate survives suite purge — purge targets fixture_runs onl
 NOTE: esbuild added as frontend devDependency (evidence tooling).
 PARKED: compare-toggle; photo-path/elevation-sheet entry points; ISS Excel (on Howard);
 band board + O&U; Diverge labor.
+
+## SESSION 2026-07-20 (part 18) — source-view generalization: PROPOSAL delivered (nothing shipped)
+RETENTION REPORT: photo bytes durable (same store as blueprint pages); index ai_measure_runs.
+photo_paths, TTL 30 DAYS (not 24h); archived read-side extends cleanly (51 ai_measure docs in
+fixture_runs; photo endpoint lacks the fallback today). Hover: NO visual source ever retained
+(PDF in memory; metadata+measurements only; hover_page_cache empty); LP-materialized hover runs
+already CUT-archived → "View Hover Report" = reference sheet, honest no-visual note.
+MOCKS AWAITING APPROVAL: photo_source_view_mock_2026-07-20 (md5 ad0878a2…) — per-photo
+provenance (Photo i of n · kind · filename · run), same-run AI summary, 30-day TTL named on
+empty state; source_view_adaptive_link_mock (md5 d041912b…) — one card link, label per door,
+precedence blueprint→photo→hover, no dead links. Build shape: unified /source-view route
+(blueprint URL aliased), photo-endpoint archived fallback (read-only, ~5 lines), zero hover
+backend work.
+DEMO NAMING ANSWER: deliberate binding (frozen post-C4 Letrick PHOTO validation run, cloned
+read-only per demo.py design) with a MISMATCHED name ("Blueprint House") — becomes a visible
+contradiction under this ruling on a BDM screen. Recommended rename before September
+("Letrick House — DEMO"); not touched, awaiting ruling.
