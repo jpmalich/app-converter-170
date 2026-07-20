@@ -21,7 +21,7 @@ const CODES = { front: "EL-1", left: "EL-2", back: "EL-3", right: "EL-4" };
 // Pitch language — approved wording for the Accuracy Report PDF (PRD,
 // user-approved Jul 8 2026), reused verbatim pending Howard's sign-off
 // for this surface.
-const METHODOLOGY_LINE = "AI reads scored against contractor tape, per wall, per run.";
+const METHODOLOGY_LINE = "AI-measured, tape-verified: every read scored against physical field measurements.";
 
 export default function ElevationSheetsPrint() {
   const { id } = useParams();
