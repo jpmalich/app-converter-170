@@ -4216,3 +4216,17 @@ labeled photos); PNGs: photo_source_view_live (3d8f617e…), adaptive_source_lin
 (95b6d59b…). Older 42c90180 shows blueprint precedence.
 DEMO RENAME: BLOCKED — Howard's ruling had the name blank ("rename to ___"); awaiting the
 name; will ship as its own small handback w/ header screenshot.
+
+## SESSION 2026-07-20 (part 20) — PRINT PACKAGE COVER STRIP SHIPPED (wording approved: option c)
+SHIPPED (suite 1145 green, CLEAN cbaabac · 2026-07-20 21:01 UTC): Print Package page-1 cover
+strip finalized. Methodology line APPROVED BY HOWARD verbatim: "AI-measured, tape-verified:
+every read scored against physical field measurements." (ElevationSheetsPrint.jsx
+METHODOLOGY_LINE). Accuracy figure binds live to estimate tape_check.history latest entry
+(92.2% on Letrick demo); no record → "NOT YET FIELD-SCORED" badge. No hardcoded scores —
+guarded by test_provenance_hardcode_sweep.py + test_print_package_pins.py. Live-verified via
+authenticated screenshot on /estimate/69ec1ee3…/elevation-sheets/print.
+
+## QUEUE STATE (Howard's ruling 2026-07-20)
+HOLD — no further builds, no proposals. Next instruction will be a consolidated ruling against
+"Elevation Render Spec v2" (in progress on Howard's side). Chimney rendering questions are
+DELIBERATELY PARKED into that spec — do NOT fix piecemeal. Queue: cover strip handback closed → idle.
