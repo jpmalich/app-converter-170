@@ -459,8 +459,10 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             chase["position_tag"] = "AI-READ ✓"
             chase["position"] = (f"bound from run chase-corner reads "
                                  f"({min(fr):g}–{max(fr):g} frac of wall) — AI-READ ✓")
-            chase["position_note"] = ("immediately left of D1 — human photo-confirmed"
-                                      " (ruled 2026-07-19)")
+            # PROVENANCE RULE (ruled 2026-07-20): no confirmation/ratification
+            # text may be hardcoded — the ratified relationship note renders
+            # ONLY on the dr path above, where the ratify record exists.
+            chase["position_note"] = "position from run corner reads — untaped"
     # chase ratification (Howard, ruled 2026-07-19): human ground truth —
     # projects from the back wall, lap-clad; dims TAPED via sealed-key
     # amendment. Supersedes "footprint untaped".
@@ -472,6 +474,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "depth_label": fmt_inches(cd["depth_in"]),
             "height_label": fmt_ftin(cd["height_in"] / 12.0),
             "dims_tag": "TAPED",
+            "taped_stamp": cd["taped"],
             "footprint": (f"{fmt_inches(cd['width_in'])} × {fmt_inches(cd['depth_in'])}"
                           f" — TAPED ({cd['taped']})"),
             "ratified": ("human ground truth (projects from back wall, lap-clad)"
@@ -530,7 +533,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 back_center = (min(fr_b) + max(fr_b)) / 2 * width_ft
                 chase_cap["center_ft"] = round(width_ft - back_center, 1)
                 chase_cap["position"] = ("mirrored from back chase-corner reads — AI-READ ✓"
-                                         " · human photo-confirmed (left of D1 on back)")
+                                         " · position untaped")
                 chase_cap["position_tag"] = "AI-READ ✓"
             else:
                 chase_cap = None  # no bound position — nothing rendered

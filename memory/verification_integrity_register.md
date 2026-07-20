@@ -160,3 +160,37 @@ guard as the last action with no code edits after it.
   next full-suite run — Howard's look must precede one, or the agent re-arms on request.
 - **Class:** evidence-lifetime blind spot (suite purge vs persistent evidence), caught
   pre-handback. No misreport occurred.
+
+## ENTRY 2026-07-20 — FABRICATED PROVENANCE (hardcoded ratification text): a verification surface claimed a human confirmation that never occurred
+- **Defect:** the elevation-sheet binder's GENERIC chase corner-read fallback
+  (elevation_sheets.py, the `elif fr and width_ft` branch) hardcoded
+  `position_note = "immediately left of D1 — human photo-confirmed (ruled 2026-07-19)"`
+  — Letrick's 2026-07-19 chase ratification — onto ANY estimate whose run carried
+  chase corner reads. Found by the generality check (ruled item 2): doug jones'
+  (EST-510771) back sheet drew "POSITION AI-READ ✓ · IMMEDIATELY LEFT OF D1" on its
+  chase glyph, a human-confirmation claim with NO ratify record behind it. Second
+  instance same class: the front chase-cap mirror's corner-read branch appended
+  "· human photo-confirmed (left of D1 on back)". Evidence:
+  /mock/dougjones_back_sheet_LIVE_2026-07-20.png (pre-fix, false text visible,
+  md5 9aa6607ba5f1acd51a9ffb635bf1e09a).
+- **Fix (authorized + shipped 2026-07-20):** both branches now emit
+  "position from run corner reads — untaped" / "· position untaped"; the ratified
+  wording renders ONLY on the door-relative paths, which require the ratify record
+  (`_door_relative_chase_center` non-None). Frontend companion: ElevationSheet.jsx
+  dropped its hardcoded "ratified: sealed key amendment 2026-07-19" date — the TAPED
+  stamp now binds from the key record (`chase.taped_stamp` ← `cd["taped"]`).
+- **THE RULE (Howard, ruled 2026-07-20, pinned):** no provenance, confirmation, or
+  ratification text may ever be hardcoded — every such string derives from the
+  ratification/provenance record it describes, or it does not render.
+- **Sweep evidence (grep-level, post-fix):**
+  `grep -rn "human photo-confirmed" backend/ frontend/src/` → 0 hits outside tests.
+  `grep -n "CONFIRMED (human, photo)" backend/routes/elevation_sheets.py` → dr/dr_b
+  record-guarded branches only (each inside `if dr:` / `if dr_b ...:` where the
+  ratify-machinery record exists). Frontend chip/tag strings audited: remaining
+  TAPED/ratified wording renders only off backend-derived fields (`dims_tag`,
+  `taped_stamp`, `ratified`), none composed client-side from constants.
+- **Pins:** tests/test_provenance_hardcode_sweep.py (source + live-route assertions,
+  doug jones as the generic-path fixture).
+- **Class:** fabricated provenance / hardcoded ratification text. First entry —
+  defect class named per ruling.
+

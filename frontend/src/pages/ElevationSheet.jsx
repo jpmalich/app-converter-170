@@ -202,7 +202,7 @@ export default function ElevationSheet() {
   if (chase) {
     S.chase1 = `${String(chase.note).toUpperCase()} — ${chase.tag}`;
     S.chase2 = chase.dims_tag === "TAPED"
-      ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED · ratified: sealed key amendment 2026-07-19`
+      ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED (${chase.taped_stamp || ""})`
       : `profile ${chase.profile} · footprint ${chase.footprint}`;
     S.chase3 = chase.dims_tag === "TAPED" ? `POSITION: ${chase.position || ""}` : "";
     S.chase4 = chase.ai_band ? chase.ai_band.note : "";
@@ -214,11 +214,25 @@ export default function ElevationSheet() {
       ? `Chase ${chase.width_label} × ${chase.depth_label} × ${chase.height_label} — TAPED · position ${chase.position_tag || "—"}${chase.suppressed ? ` · DRAWING ${String(chase.suppressed_note || "suppressed — collision").toUpperCase()}` : ""}`
       : "";
   }
-  const colLines = collisions.map((c) => ({
+  // COLLAPSE RULE (ruled 2026-07-20): more than 3 flagged (non-suppressed)
+  // pairs stack into ONE summary block; suppression callouts ALWAYS render
+  // in full; each affected schedule row keeps its own flag; the full pair
+  // list stays in the sheet data. The collapse never hides a flag, only
+  // stacks it.
+  const suppressedCols = collisions.filter((c) => c.suppressed);
+  const flaggedCols = collisions.filter((c) => !c.suppressed);
+  const colCollapsed = flaggedCols.length > 3;
+  const colLines = (colCollapsed ? suppressedCols : collisions).map((c) => ({
     head: `COLLISION GUARD — ${c.elements.join(" × ")} OVERLAP ${c.overlap_label}${c.suppressed ? ` — ${String(c.suppressed).toUpperCase()} DRAWING SUPPRESSED (OPENING GOVERNS)` : " — POSITIONS UNVERIFIED"}`,
     b1: `${c.elements[0]}: ${c.bases[0]}`,
     b2: `${c.elements[1]}: ${c.bases[1]}`,
   }));
+  const colSummaryH = colCollapsed ? 40 : 0;
+  if (colCollapsed) {
+    const affectedTags = [...new Set(flaggedCols.flatMap((c) => c.elements))];
+    S.colSummary1 = `COLLISION GUARD — ${flaggedCols.length} OPENING-PAIR OVERLAPS — POSITIONS UNVERIFIED — SEE SCHEDULE`;
+    S.colSummary2 = `AFFECTED: ${affectedTags.join(" ")} · full pair detail retained in sheet data — nothing suppressed`;
+  }
   if (prof) {
     S.prof1 = `CHASE PROFILE — ${prof.depth_label} DEEP × ${prof.height_label} — TAPED`;
     S.prof2 = String(prof.anchor).toUpperCase();
@@ -325,6 +339,13 @@ export default function ElevationSheet() {
             ))}
           </g>
         )}
+        {colCollapsed && (
+          <g data-testid="elevation-collision-collapse">
+            <rect x="530" y={collisionBoxY + colLines.length * 48} width="466" height="34" fill="#fef2f2" stroke={C.trim} strokeWidth="1.4" />
+            <text x="540" y={collisionBoxY + colLines.length * 48 + 14} fontSize="8" fontWeight="bold" fill={C.trim}>{S.colSummary1}</text>
+            <text x="540" y={collisionBoxY + colLines.length * 48 + 26} fontSize="7" fill="#7f1d1d">{S.colSummary2}</text>
+          </g>
+        )}
         {prof && (
           <g data-testid="elevation-chase-profile">
             <rect x={profX} y={profTop} width={profW} height={wallBottom - profTop}
@@ -369,8 +390,8 @@ export default function ElevationSheet() {
         )}
         {anyCollision && (
           <g data-testid="elevation-collision-banner">
-            <rect x="530" y={collisionBoxY + colLines.length * 48} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" strokeDasharray="4 2" />
-            <text x="540" y={collisionBoxY + colLines.length * 48 + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
+            <rect x="530" y={collisionBoxY + colLines.length * 48 + colSummaryH} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" strokeDasharray="4 2" />
+            <text x="540" y={collisionBoxY + colLines.length * 48 + colSummaryH + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
           </g>
         )}
 
@@ -605,12 +626,18 @@ export default function ElevationSheet() {
               <text x="566" y={684 + i * 16}>{o._size}</text>
               <text x="630" y={684 + i * 16}>{o.center_label}</text>
               <text x="676" y={684 + i * 16}>{o.sill_label}</text>
+              {o.collision && (
+                <text x="714" y={684 + i * 16} fontSize="8" fontWeight="bold" fill={C.trim} data-testid={`elevation-schedule-collision-${o.tag}`}>⚠</text>
+              )}
             </g>
           ))}
           {data.openings.length > 0 && (
             <text x="404" y={677 + data.openings.length * 16 + 12} fill={C.muted} fontSize="8.5">Swatch = drawn element's component class (opening trim).</text>
           )}
           <text x="404" y={677 + data.openings.length * 16 + 24} fill={C.muted} fontSize="8.5">{data.schedule_note}</text>
+          {anyCollision && (
+            <text x="404" y={677 + data.openings.length * 16 + 36} fill={C.trim} fontSize="8.5" data-testid="elevation-schedule-collision-legend">⚠ = position unverified — overlap flagged by the collision guard</text>
+          )}
         </g>
 
         {/* Title block + merged legend */}

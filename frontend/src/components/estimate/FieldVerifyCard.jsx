@@ -7,7 +7,7 @@
 // 3D flag flips so the tape workflow is never dark.
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Ruler, FileText, Camera, FileSpreadsheet } from "lucide-react";
+import { Ruler, FileText, Camera, FileSpreadsheet, PencilRuler } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
@@ -83,22 +83,59 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
   };
   const DoorIcon = door === "photo" ? Camera : door === "hover" ? FileSpreadsheet : FileText;
 
+  // Elevation-sheet chooser (ruled 2026-07-20): photo estimates get the
+  // EL-1..EL-4 links beside the source-view door, same prominence — one
+  // link per wall the bound run actually carries (never a dead link);
+  // photo estimates whose substrate can't render sheets get a NAMED
+  // empty-state chip instead.
+  const SHEET_CODES = { front: "EL-1", left: "EL-2", back: "EL-3", right: "EL-4" };
+  const sheetWalls = door === "photo" && aiRun?.status === "done"
+    ? ["front", "left", "back", "right"].filter((w) =>
+        ((aiRun.result?.raw_ai?.walls) || []).some((x) => String(x.label || "").toLowerCase() === w))
+    : [];
+
   return (
     <div className="space-y-3" data-testid="field-verify-card">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] flex items-center gap-2">
           <Ruler className="w-3 h-3" /> Field Verify — per-wall takeoff · tape check · taped dims
         </div>
-        {door && (
-          <Link
-            to={`/estimate/${estimate.id}/source-view`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--ai)] text-[var(--ai)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--ai)] hover:text-white transition-colors"
-            data-testid="field-verify-source-link"
-            title="Read-only source view — the exact intake evidence the AI worked from, with per-item provenance"
-          >
-            <DoorIcon className="w-3 h-3" /> {DOOR_LABEL[door]}
-          </Link>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {door && (
+            <Link
+              to={`/estimate/${estimate.id}/source-view`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--ai)] text-[var(--ai)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--ai)] hover:text-white transition-colors"
+              data-testid="field-verify-source-link"
+              title="Read-only source view — the exact intake evidence the AI worked from, with per-item provenance"
+            >
+              <DoorIcon className="w-3 h-3" /> {DOOR_LABEL[door]}
+            </Link>
+          )}
+          {door === "photo" && (sheetWalls.length > 0 ? (
+            <span className="inline-flex items-center gap-1.5" data-testid="field-verify-elevation-sheets">
+              <PencilRuler className="w-3 h-3 text-[var(--ai)]" />
+              {sheetWalls.map((w) => (
+                <Link
+                  key={w}
+                  to={`/estimate/${estimate.id}/elevation-sheet/${w}`}
+                  className="inline-flex items-center px-2 py-1.5 border border-[var(--ai)] text-[var(--ai)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--ai)] hover:text-white transition-colors"
+                  data-testid={`field-verify-elevation-sheet-link-${w}`}
+                  title={`${SHEET_CODES[w]} — ${w} elevation sheet, drawn from the run this takeoff binds (live or CUT-archived)`}
+                >
+                  {SHEET_CODES[w]} {w}
+                </Link>
+              ))}
+            </span>
+          ) : (
+            <span
+              className="inline-flex items-center px-3 py-1.5 border border-dashed border-[var(--border)] text-[var(--muted)] text-[10px] font-bold uppercase tracking-wider"
+              data-testid="field-verify-elevation-sheets-empty"
+              title="Sheets bind to a completed AI measure run carrying walls — none exists for this estimate yet"
+            >
+              Elevation sheets — no completed run with walls
+            </span>
+          ))}
+        </div>
       </div>
 
       {peb.length > 0 && (
