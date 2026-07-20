@@ -134,6 +134,37 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Elevation-sheet ruling executed (SHIPPED 2026-07-20, commit dcd99f1):**
+  1. **Generality check: PASS** — all 8 sheets rendered live for doug jones
+     (EST-510771) + 261 Haugh photo (EST-067615) from run data alone:
+     run-basis labels, honest tag degradation without a sealed key, named
+     empty states (no-run 404 / unknown-wall 404), collision guard firing.
+  2. **FABRICATED-PROVENANCE leak fixed + RULE PINNED**: the generic chase
+     corner-read fallback hardcoded Letrick's "immediately left of D1 —
+     human photo-confirmed" onto ANY estimate (doug jones drew it). Both
+     branches (chase note + front cap mirror) now emit "position from run
+     corner reads — untaped"; frontend dropped its hardcoded "ratified:
+     sealed key amendment 2026-07-19" (binds `chase.taped_stamp` ←
+     `cd["taped"]`). **RULE (Howard, pinned): no provenance, confirmation,
+     or ratification text may ever be hardcoded — every such string derives
+     from the record it describes, or it does not render.** Register entry
+     logged (verification_integrity_register.md, defect class named).
+  3. **Entry point shipped**: EL-1..EL-4 chooser links on the Field Verify
+     card beside the source-view door (photo estimates only, one link per
+     wall the bound run carries — never a dead link; named empty-state chip
+     "Elevation sheets — no completed run with walls" otherwise). Testids:
+     `field-verify-elevation-sheet-link-{wall}`, `field-verify-elevation-sheets-empty`.
+  4. **Collision-callout collapse**: >3 flagged pairs → ONE summary block
+     ("N OPENING-PAIR OVERLAPS — SEE SCHEDULE" + affected tags); suppression
+     callouts always render in full; every affected schedule row carries its
+     own ⚠ flag + legend; API data stays FULL. **Pin: the collapse never
+     hides a flag, only stacks it.** Testids: `elevation-collision-collapse`,
+     `elevation-schedule-collision-{tag}`, `-legend`.
+  Pins: tests/test_provenance_hardcode_sweep.py (13 tests). Suite 1140 green
+  at dcd99f1. NOTE (agent hygiene): parallel search_replace edits to the SAME
+  file raced and corrupted FieldVerifyCard.jsx mid-build — recovered by full
+  clean rewrite; never batch multiple edits to one file in parallel.
+
 - **Iter 79j.69 — Count-outranks-pixel micro-candidate + SOP checklist line (SHIPPED Jul 8 2026):**
   Re-validation run `8586333a` scored **93.3% — new best** (dormers exact
   via the plane rule; left 9.7 count-diluted −0.61; right correctly
