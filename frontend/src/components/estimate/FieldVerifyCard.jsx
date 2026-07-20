@@ -7,7 +7,7 @@
 // 3D flag flips so the tape workflow is never dark.
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Ruler, FileText, Camera, FileSpreadsheet, PencilRuler } from "lucide-react";
+import { Ruler, FileText, Camera, FileSpreadsheet, PencilRuler, Printer } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
@@ -125,6 +125,14 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
                   {SHEET_CODES[w]} {w}
                 </Link>
               ))}
+              <Link
+                to={`/estimate/${estimate.id}/elevation-sheets/print`}
+                className="inline-flex items-center gap-1 px-2 py-1.5 border border-[var(--ai)] bg-[var(--ai)] text-white text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
+                data-testid="field-verify-elevation-sheets-print-all"
+                title="One print flow — every renderable elevation sheet, one per page (leave-behind package)"
+              >
+                <Printer className="w-3 h-3" /> Print all
+              </Link>
             </span>
           ) : (
             <span

@@ -61,6 +61,22 @@ export default function ElevationSheet() {
   if (err) return <div className="p-8 text-sm" data-testid="elevation-sheet-error">{err}</div>;
   if (!data) return <div className="p-8 text-sm" data-testid="elevation-sheet-loading">Rendering sheet…</div>;
 
+  return (
+    <div className="min-h-screen bg-[#e8eaee] py-6 flex flex-col items-center" data-testid="elevation-sheet-page">
+      <div className="mb-3 flex items-center gap-4 print:hidden">
+        <Link to={`/estimate/${id}`} className="text-xs underline" data-testid="elevation-sheet-back">← Back to estimate</Link>
+        <button type="button" className="text-xs underline" onClick={() => window.print()} data-testid="elevation-sheet-print">Print</button>
+        <Link to={`/estimate/${id}/elevation-sheets/print`} className="text-xs underline" data-testid="elevation-sheet-print-all">Print all 4 sheets</Link>
+      </div>
+      <SheetSvg data={data} />
+    </div>
+  );
+}
+
+// Reusable sheet renderer — ONE SVG per sheet payload. The print package
+// (`ElevationSheetsPrint`) reuses this verbatim, so printed sheets are
+// IDENTICAL to the on-screen sheets by construction.
+export function SheetSvg({ data }) {
   const W = data.wall;
   const segList = W.segments || null;
   const stepped = !!(segList && segList.length > 1);
@@ -287,13 +303,8 @@ export default function ElevationSheet() {
   }
 
   return (
-    <div className="min-h-screen bg-[#e8eaee] py-6 flex flex-col items-center" data-testid="elevation-sheet-page">
-      <div className="mb-3 flex items-center gap-4 print:hidden">
-        <Link to={`/estimate/${id}`} className="text-xs underline" data-testid="elevation-sheet-back">← Back to estimate</Link>
-        <button type="button" className="text-xs underline" onClick={() => window.print()} data-testid="elevation-sheet-print">Print</button>
-      </div>
-      <svg viewBox="0 0 1056 816" width="1056" height="816" style={{ background: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,.18)" }}
-        fontFamily="Helvetica, Arial, sans-serif" data-testid="elevation-sheet-svg">
+    <svg viewBox="0 0 1056 816" width="1056" height="816" style={{ background: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,.18)" }}
+      fontFamily="Helvetica, Arial, sans-serif" data-testid="elevation-sheet-svg">
         <rect width="1056" height="816" fill="#fff" />
         <rect x="24" y="24" width="1008" height="768" fill="none" stroke={C.ink} strokeWidth="2" />
         <rect x="30" y="30" width="996" height="756" fill="none" stroke={C.ink} strokeWidth="0.75" />
@@ -677,7 +688,6 @@ export default function ElevationSheet() {
           </g>
         </g>
       </svg>
-    </div>
   );
 }
 
