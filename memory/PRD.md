@@ -134,6 +134,22 @@ sign-off; no P1 or P2 backlog items ship until this gate closes. Refactor of
 `ai_measure.py` / `AIMeasureButton.jsx` remains FROZEN under this gate too.
 
 ## Implementation Timeline
+- **Print package — EL-1..EL-4 one-click print flow (SHIPPED 2026-07-20, commit c5fefa9):**
+  Authorized as the elevation-sheet arc's leave-behind artifact. Read-only:
+  `SheetSvg` extracted from ElevationSheet.jsx and reused VERBATIM by the new
+  `/estimate/:id/elevation-sheets/print` page (ElevationSheetsPrint.jsx) —
+  printed sheets identical to on-screen by construction. One sheet per
+  landscape-letter page (mount-scoped `<style>` with `@page` + page-breaks +
+  app-chrome hiding — other print flows untouched); auto-fires the print
+  dialog once all four fetches settle. Walls the run can't render get a NAMED
+  block in the package ("EL-x — not renderable: <detail>") — never silently
+  absent. Entry points: "PRINT ALL" chip on the Field Verify chooser row
+  (`field-verify-elevation-sheets-print-all`, inside the sheetWalls gate) +
+  "Print all 4 sheets" link on the single-sheet page
+  (`elevation-sheet-print-all`). Print-output verified via PDF emulation on
+  doug jones: exactly 4 pages, EL-1..EL-4. Pins:
+  tests/test_print_package_pins.py (5). Suite 1145 green at c5fefa9.
+
 - **Elevation-sheet ruling executed (SHIPPED 2026-07-20, commit dcd99f1):**
   1. **Generality check: PASS** — all 8 sheets rendered live for doug jones
      (EST-510771) + 261 Haugh photo (EST-067615) from run data alone:
