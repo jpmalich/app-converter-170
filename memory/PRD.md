@@ -4230,3 +4230,23 @@ authenticated screenshot on /estimate/69ec1ee3…/elevation-sheets/print.
 HOLD — no further builds, no proposals. Next instruction will be a consolidated ruling against
 "Elevation Render Spec v2" (in progress on Howard's side). Chimney rendering questions are
 DELIBERATELY PARKED into that spec — do NOT fix piecemeal. Queue: cover strip handback closed → idle.
+
+## SESSION 2026-07-21 (part 21) — SPEC v2 RULING RECORDED + P1 SHIPPED (five-key contract)
+RULING (Howard 2026-07-20/21): C-1 black massing outlines + siding-color hatch stays; C-2 ALL
+component dash signatures RETIRED (solid component colors; dashed = hidden edges only, no
+exceptions); C-3 ridge becomes drawn solid-black edge w/ basis tag (P3); C-4 chase docstring/pins
+amend — chases scale-render at best-known dims on every rung; C-5 dormers join sheets+schedules
+(pins amend w/ before→after); C-6/C-7 FIVE-key closed contract {windows, doors, patio_doors,
+vents, garage_doors}. Fixture restoration (red house 673707d5) ordered as own handback w/
+receipts — blocks P5. WAVE 1 = P1→P4, ONE HANDBACK PER P, field-compare gates each next P.
+P4 note: PROPOSE standard chase depth value (contractor-spec constant) BEFORE wiring.
+P1 SHIPPED (CLEAN ffba065, 1151 green): five-key contract in elevation_sheets.py (tags W/D/P/V/G,
+all door categories grade-silled, verb+collision+basis treatment per category); frontend patio/
+garage glyphs + nonzero-category wall-data line; DEFECT RETIRED: garage/patio door folded into
+"Entry door" (logged in integrity register); pins amended (front ×1, lbr ×8 + rename
+three_key→five_key); NEW tests/test_five_key_contract.py (7 pins incl. fold regression);
+evidence estimate zz-fivekey-evidence-0001 (seed_fivekey_evidence.py, idempotent) + PNGs
+fivekey_front_sheet / fivekey_letrick_front_regression (md5 78617efc… / 6c163d14…).
+QUEUE: P2 (black skeleton + solid/dashed restyle — 4 Letrick PNGs + 1 doug jones) awaits
+Howard's field-compare of P1. Then P3 rooflines (gable; hip = named on-sheet limitation),
+P4 generic chimney (propose ASSUMED standard depth first). Fixture restoration anytime before P5.
