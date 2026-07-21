@@ -276,9 +276,14 @@ export function SheetSvg({ data }) {
   S.profileBold = String(W.profile_callout).toUpperCase();
   S.profileTail = W.profile_key_item ? ` (${W.profile_key_item} per key)` : "";
   S.openCount = String(data.openings.length);
+  // FIVE-key contract (ruled 2026-07-20): nonzero categories named
   const oc = data.opening_counts;
+  const ocParts = [
+    [oc.windows, "window"], [oc.doors, "entry door"], [oc.patio_doors, "patio door"],
+    [oc.vents, "vent"], [oc.garage_doors, "garage door"],
+  ].filter(([n]) => n > 0).map(([n, s]) => `${n} ${s}${n === 1 ? "" : "s"}`);
   S.openTail = data.openings.length
-    ? ` (${oc.windows} windows · ${oc.doors} entry door${oc.doors === 1 ? "" : "s"} · ${oc.vents} vent${oc.vents === 1 ? "" : "s"}) — positions AI-READ ✓`
+    ? ` (${ocParts.join(" · ")}) — positions AI-READ ✓`
     : " — none read on this wall";
   S.photosLine = `AI source photos: ${(W.source_photos || []).join(", ")} · AI confidence ${W.ai_confidence}${dev ? " (superseded by tape)" : ""}`;
   S.sheetLine = `SHEET ${data.sheet_code} · ${sheetName}`;
@@ -453,7 +458,7 @@ export function SheetSvg({ data }) {
         {ops.filter((o) => o.drawable).map((o) => (
           <g key={o.tag} data-testid={`elevation-opening-${o.tag}`}>
             <rect x={o.x} y={o.y} width={o.w} height={o.h}
-              fill={o.type === "Window" ? "#eef3f9" : o.type === "Vent" ? "#f5f2e8" : "#e7e2d8"}
+              fill={{ Window: "#eef3f9", Vent: "#f5f2e8", "Patio door": "#eef3f9", "Garage door": "#efeae2" }[o.type] || "#e7e2d8"}
               stroke={C.trim} strokeWidth="2.25"
               strokeDasharray={o.collision || o.noSill ? "5 3" : undefined} />
             {o.type === "Window" && (
@@ -474,6 +479,20 @@ export function SheetSvg({ data }) {
                 <rect x={o.x + o.w * 0.17} y={o.y + o.h * 0.1} width={o.w * 0.66} height={o.h * 0.38} fill="none" stroke="#8a93a2" strokeWidth="1" />
                 <rect x={o.x + o.w * 0.17} y={o.y + o.h * 0.56} width={o.w * 0.66} height={o.h * 0.36} fill="none" stroke="#8a93a2" strokeWidth="1" />
                 <circle cx={o.x + o.w - 8} cy={o.y + o.h * 0.52} r="2.2" fill={C.ink} />
+              </g>
+            )}
+            {o.type === "Patio door" && (
+              <g stroke="#8a93a2">
+                <line x1={o.cx} y1={o.y + 2} x2={o.cx} y2={o.y + o.h - 2} strokeWidth="1.4" />
+                <rect x={o.x + 3} y={o.y + 3} width={o.w / 2 - 5} height={o.h - 6} fill="none" strokeWidth="0.9" />
+                <rect x={o.cx + 2} y={o.y + 3} width={o.w / 2 - 5} height={o.h - 6} fill="none" strokeWidth="0.9" />
+              </g>
+            )}
+            {o.type === "Garage door" && (
+              <g stroke="#8a93a2" strokeWidth="0.9">
+                <line x1={o.x + 2} y1={o.y + o.h * 0.25} x2={o.x + o.w - 2} y2={o.y + o.h * 0.25} />
+                <line x1={o.x + 2} y1={o.y + o.h * 0.5} x2={o.x + o.w - 2} y2={o.y + o.h * 0.5} />
+                <line x1={o.x + 2} y1={o.y + o.h * 0.75} x2={o.x + o.w - 2} y2={o.y + o.h * 0.75} />
               </g>
             )}
             {o.collision && (

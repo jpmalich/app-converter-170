@@ -8,8 +8,10 @@ Pass criteria pinned here:
   • BACK binds sealed key EST-191890: width 54 TAPED, 9.92' = 28 × 4.25"
   • chase (back) annotated AI-READ, footprint untaped — NOT TO SCALE
   • deviation box per elevation wherever tape ≠ AI
-  • CLOSED three-key opening contract {windows, doors, vents}; the left
-    wall's vent renders V-tagged with AI-READ position
+  • CLOSED five-key opening contract {windows, doors, patio_doors, vents,
+    garage_doors} (AMENDED by ruling 2026-07-20, Spec v2 C-6/C-7 — was
+    three-key per 2026-07-18); the left wall's vent renders V-tagged with
+    AI-READ position
   • verb machinery remove→reset pinned per sheet (LEFT, BACK) + cross-wall
     isolation (RIGHT untouched by BACK removals)
   • basis-line completeness: every rendered dimension names its basis —
@@ -231,7 +233,9 @@ def test_back_deviation_both_axes(session):
 
 def test_back_openings_and_counts(session):
     s = _sheet(session, "back")
-    assert s["opening_counts"] == {"windows": 5, "doors": 1, "vents": 0}
+    # pin AMENDED by ruling 2026-07-20 (five-key contract)
+    assert s["opening_counts"] == {"windows": 5, "doors": 1, "patio_doors": 0,
+                                   "vents": 0, "garage_doors": 0}
     tags = [o["tag"] for o in s["openings"]]
     assert tags == ["W1", "W2", "D1", "W3", "W4", "W5"]  # along-wall order
     d1 = next(o for o in s["openings"] if o["tag"] == "D1")
@@ -281,7 +285,8 @@ def test_right_stepped_segments_no_openings(session):
     s = _sheet(session, "right")
     _assert_stepped_segments(s["wall"], "right")
     assert s["wall"]["width_ft"] == 30
-    assert s["opening_counts"] == {"windows": 0, "doors": 0, "vents": 0}
+    assert s["opening_counts"] == {"windows": 0, "doors": 0, "patio_doors": 0,
+                                   "vents": 0, "garage_doors": 0}
     assert s["openings"] == []
     assert "No openings" in s["schedule_note"]
     assert s["wall"]["gable_triangle_ft"] == 9.3
@@ -298,9 +303,11 @@ def test_sides_height_deviation(session):
         assert "8'-10¼\"" in d["tape_heights_label"] and "9'-11\"" in d["tape_heights_label"]
 
 
-def test_left_vent_three_key_contract(session):
+def test_left_vent_five_key_contract(session):
+    # pin AMENDED by ruling 2026-07-20 (five-key contract)
     s = _sheet(session, "left")
-    assert s["opening_counts"] == {"windows": 1, "doors": 0, "vents": 1}
+    assert s["opening_counts"] == {"windows": 1, "doors": 0, "patio_doors": 0,
+                                   "vents": 1, "garage_doors": 0}
     tags = [o["tag"] for o in s["openings"]]
     assert tags == ["V1", "W1"]  # vent at 15.0' precedes window at 21.0'
     v1 = next(o for o in s["openings"] if o["tag"] == "V1")
@@ -351,13 +358,15 @@ def test_verb_remove_reset_left_vent(session):
     try:
         s = _sheet(session, "left")
         assert [o["tag"] for o in s["openings"]] == ["W1"]
-        assert s["opening_counts"] == {"windows": 1, "doors": 0, "vents": 0}
+        assert s["opening_counts"] == {"windows": 1, "doors": 0, "patio_doors": 0,
+                                       "vents": 0, "garage_doors": 0}
     finally:
         rr = session.post(url, json={"key": key, "action": "reset"}, timeout=20)
         assert rr.status_code == 200, rr.text
     s = _sheet(session, "left")
     assert [o["tag"] for o in s["openings"]] == ["V1", "W1"]
-    assert s["opening_counts"] == {"windows": 1, "doors": 0, "vents": 1}
+    assert s["opening_counts"] == {"windows": 1, "doors": 0, "patio_doors": 0,
+                                   "vents": 1, "garage_doors": 0}
 
 
 def test_verb_remove_reset_back_window_group(session):
@@ -371,18 +380,21 @@ def test_verb_remove_reset_back_window_group(session):
     try:
         s = _sheet(session, "back")
         assert not any(o["height_in"] == 54 for o in s["openings"])
-        assert s["opening_counts"] == {"windows": 3, "doors": 1, "vents": 0}
+        assert s["opening_counts"] == {"windows": 3, "doors": 1, "patio_doors": 0,
+                                       "vents": 0, "garage_doors": 0}
         assert [o["tag"] for o in s["openings"]] == ["D1", "W1", "W2", "W3"]
         # cross-wall isolation
         sr = _sheet(session, "right")
         assert sr["openings"] == []
         sl = _sheet(session, "left")
-        assert sl["opening_counts"] == {"windows": 1, "doors": 0, "vents": 1}
+        assert sl["opening_counts"] == {"windows": 1, "doors": 0, "patio_doors": 0,
+                                        "vents": 1, "garage_doors": 0}
     finally:
         rr = session.post(url, json={"key": key, "action": "reset"}, timeout=20)
         assert rr.status_code == 200, rr.text
     s = _sheet(session, "back")
-    assert s["opening_counts"] == {"windows": 5, "doors": 1, "vents": 0}
+    assert s["opening_counts"] == {"windows": 5, "doors": 1, "patio_doors": 0,
+                                   "vents": 0, "garage_doors": 0}
 
 
 def test_collision_guard_trips_on_prefix_letrick_back_data():

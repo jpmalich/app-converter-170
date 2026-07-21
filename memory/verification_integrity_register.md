@@ -194,3 +194,23 @@ guard as the last action with no code edits after it.
 - **Class:** fabricated provenance / hardcoded ratification text. First entry —
   defect class named per ruling.
 
+
+## 2026-07-20 — DORMANT MISCLASSIFICATION: garage/patio doors folded into "Entry door" (caught by audit, retired by P1)
+- **Defect:** `routes/elevation_sheets.py::_bind_openings` classified via
+  `is_door = "door" in eff_type` — a `garage_door` or `patio_door` opening would
+  render as an "Entry door" D# schedule row. Dormant only because no rendered
+  fixture wall carried one; it would have surfaced silently on the first garage.
+- **How found:** Spec v2 gap audit (2026-07-20), extraction-vs-binder comparison —
+  the extraction vocabulary {window, entry_door, patio_door, garage_door, vent,
+  other} was wider than the closed three-key render contract.
+- **Retired by:** five-key contract amendment (Howard's ruling 2026-07-20,
+  Spec v2 C-6/C-7): {windows, doors, patio_doors, vents, garage_doors}, tags
+  W/D/P/V/G, full provenance + ratify verbs + collision-guard + basis treatment
+  per category. Contract remains CLOSED beyond these five.
+- **Pins:** tests/test_five_key_contract.py — includes the explicit regression
+  `test_defect_regression_no_door_fold` (the fold can never be reintroduced
+  silently) + verb-machinery, grade-sill, collision-guard and live closed-contract
+  key-set assertions. Amended pins: test_elevation_sheet_front.py (1 count dict),
+  test_elevation_sheets_lbr.py (8 count dicts + header docstring + test rename
+  three_key→five_key).
+- **Class:** contract narrower than perception — silent type-fold at the binder.

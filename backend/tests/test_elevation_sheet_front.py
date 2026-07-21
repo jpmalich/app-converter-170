@@ -147,8 +147,10 @@ def test_removed_opening_does_not_render_then_reset(session):
         s = session.get(sheet_url, timeout=30).json()
         assert [o["tag"] for o in s["openings"]] == ["W1", "W2", "D1"]
         assert not any(o["width_in"] == 72 for o in s["openings"])
-        # three-key contract (pin AMENDED by ruling 2026-07-18: {windows, doors, vents})
-        assert s["opening_counts"] == {"windows": 2, "doors": 1, "vents": 0}
+        # five-key contract (pin AMENDED by ruling 2026-07-20, Spec v2 C-6/C-7:
+        # {windows, doors, patio_doors, vents, garage_doors})
+        assert s["opening_counts"] == {"windows": 2, "doors": 1, "patio_doors": 0,
+                                       "vents": 0, "garage_doors": 0}
     finally:
         rr = session.post(url, json={"key": key, "action": "reset"}, timeout=20)
         assert rr.status_code == 200, rr.text

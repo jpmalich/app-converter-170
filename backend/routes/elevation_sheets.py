@@ -12,8 +12,11 @@ Data-binding rules (Howard's build directives 2026-07-18):
   • openings come from the run's schedule with their AI-READ tags and
     ratify states; every value traces to its named source — NO hand-typed
     constants.
-  • opening categories are a CLOSED three-key contract (ruled 2026-07-18):
-    {windows, doors, vents}. Any future type needs a pin amendment ruling
+  • opening categories are a CLOSED five-key contract (ruled 2026-07-20,
+    Spec v2 C-6/C-7 — amends the 2026-07-18 three-key ruling):
+    {windows, doors, patio_doors, vents, garage_doors}. Every category
+    gets full provenance, ratify verbs, collision-guard registration,
+    and basis treatment. Any future type needs a pin amendment ruling
     BEFORE code emits it.
   • chimney chase (back): AI accent read, footprint untaped — the sheet
     annotates, never scale-renders silently.
@@ -239,11 +242,14 @@ def _nearest_matcher(o, matchers):
 
 
 def _bind_openings(raw, wall_label, matchers):
-    """Openings for this wall, position-ordered, tagged (W/D/V per the
-    closed three-key contract), door-anchored sills from photo bbox (doors
-    sit at grade — spec §2). Walls without a door have no sill anchor:
-    sills stay None ('—'), vertical position not derivable. Removed
-    openings don't render; corrected types render corrected."""
+    """Openings for this wall, position-ordered, tagged (W/D/P/V/G per the
+    closed FIVE-key contract, ruled 2026-07-20), door-anchored sills from
+    photo bbox (all door categories sit at grade — spec §2). Walls without
+    a door have no sill anchor: sills stay None ('—'), vertical position
+    not derivable. Removed openings don't render; corrected types render
+    corrected. DEFECT RETIRED by this amendment (audit 2026-07-20):
+    garage_door/patio_door previously folded into 'Entry door' via the
+    `"door" in type` check — dormant misclassification, caught by audit."""
     ops = [o for o in (raw.get("openings") or [])
            if str(o.get("wall", "")).lower() == wall_label
            and not o.get("on_dormer")]
@@ -263,34 +269,47 @@ def _bind_openings(raw, wall_label, matchers):
             anchor = {"grade_frac": bb["y"] + bb["h"],
                       "in_per_frac": float(o["height_in"]) / float(bb["h"])}
             break
-    out, wn, dn, vn = [], 0, 0, 0
+    out, wn, dn, pn, vn, gn = [], 0, 0, 0, 0, 0
     for o, m in kept:
         eff_type = str(o.get("type", ""))
         if m and m["corrected_type"]:
             eff_type = str(m["corrected_type"])
-        is_door = "door" in eff_type
+        is_garage = "garage" in eff_type
+        is_patio = "patio" in eff_type
+        is_door = "door" in eff_type and not is_garage and not is_patio
         is_vent = "vent" in eff_type
-        if is_door:
+        if is_garage:
+            gn += 1
+            tag = f"G{gn}"
+            typ = "Garage door"
+        elif is_patio:
+            pn += 1
+            tag = f"P{pn}"
+            typ = "Patio door"
+        elif is_door:
             dn += 1
             tag = f"D{dn}"
+            typ = "Entry door"
         elif is_vent:
             vn += 1
             tag = f"V{vn}"
+            typ = "Vent"
         else:
             wn += 1
             tag = f"W{wn}"
+            typ = "Window"
         center = o.get("along_wall_ft")
         pos_tag = "AI-READ ✓" if center is not None else "ESTIMATED"
         sill_in, sill_tag = None, "ESTIMATED"
-        if is_door:
-            sill_in, sill_tag = 0.0, "AI-READ ✓"  # doors sit at grade (anchor by construction)
+        if is_door or is_patio or is_garage:
+            sill_in, sill_tag = 0.0, "AI-READ ✓"  # all door categories sit at grade (anchor by construction)
         elif anchor and (o.get("bbox") or {}).get("h") is not None:
             bottom_frac = o["bbox"]["y"] + o["bbox"]["h"]
             sill_in = round((anchor["grade_frac"] - bottom_frac) * anchor["in_per_frac"], 1)
         out.append({
             "tag": tag,
             "opening_id": o.get("opening_id"),
-            "type": "Entry door" if is_door else ("Vent" if is_vent else "Window"),
+            "type": typ,
             "style": o.get("style") or "",
             "width_in": o.get("width_in"),
             "height_in": o.get("height_in"),
@@ -539,7 +558,9 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 chase_cap = None  # no bound position — nothing rendered
     windows = [o for o in openings if o["type"] == "Window"]
     doors = [o for o in openings if o["type"] == "Entry door"]
+    patio_doors = [o for o in openings if o["type"] == "Patio door"]
     vents = [o for o in openings if o["type"] == "Vent"]
+    garage_doors = [o for o in openings if o["type"] == "Garage door"]
 
     # GLOBAL COLLISION GUARD (ruled 2026-07-19) — every sheet, every
     # rendered wall element: openings + chase glyph. Trips suppress the
@@ -587,7 +608,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                      "Sills: photo bbox, door-anchored (doors at grade).")
     if not openings:
         schedule_note = "No openings read on this wall."
-    elif not doors:
+    elif not (doors or patio_doors or garage_doors):
         schedule_note += " No door on this wall — sills not derivable (—)."
 
     return {
@@ -631,9 +652,10 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         "deviation": deviation,
         "collisions": collisions,
         "openings": openings,
-        # CLOSED three-key contract (ruled 2026-07-18) — see module docstring
+        # CLOSED five-key contract (ruled 2026-07-20) — see module docstring
         "opening_counts": {"windows": len(windows), "doors": len(doors),
-                           "vents": len(vents)},
+                           "patio_doors": len(patio_doors), "vents": len(vents),
+                           "garage_doors": len(garage_doors)},
         "schedule_note": schedule_note,
         "geometry_basis": {
             "walls": walls_basis_line,
