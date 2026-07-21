@@ -44,14 +44,20 @@ def test_fascia_label_recenters_clear_of_chase():
     assert "x={fasciaLabelX} y={wallTop - 29.4}" in JSX
 
 
-def test_front_cap_occludes_ridge_reference_lines():
-    """FRONT sweep: the cap box (opaque fill) paints AFTER the ridge
-    reference lines — the dashed ridge band cannot render through it."""
-    cap = JSX[JSX.index('data-testid="elevation-chase-cap"'):]
-    cap = cap[:cap.index("</g>\n        )}")]
-    ridge_first = cap.index("capG.ridgeMaxY")
-    cap_rect = cap.index('fill="#fbfcfe"')
-    assert cap_rect > ridge_first
+def test_front_cap_occludes_drawn_ridge():
+    """FRONT sweep — PIN AMENDED BY RULING 2026-07-21 (P3, C-3): the
+    dashed ridge reference band is RETIRED; the ridge is a DRAWN edge
+    (elevation-roofline) and the cap box (opaque fill) paints AFTER it —
+    the ridge line cannot render through the cap. Same rule covers the
+    side profiles vs the new rake lines."""
+    roofline = JSX.index('data-testid="elevation-roofline"')
+    cap = JSX.index('data-testid="elevation-chase-cap"')
+    profile = JSX.index('data-testid="elevation-chase-profile"')
+    assert cap > roofline and profile > roofline
+    cap_body = JSX[cap:]
+    cap_body = cap_body[:cap_body.index("</g>\n        )}")]
+    assert "ridgeMaxY" not in cap_body and "strokeDasharray" not in cap_body
+    assert "capG.botY" in cap_body  # cap bottom anchors on the drawn ridge
 
 
 def test_suppressed_chase_paints_nothing():

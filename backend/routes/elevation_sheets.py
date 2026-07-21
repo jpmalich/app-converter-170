@@ -127,6 +127,54 @@ def _door_relative_chase_center(est, raw, chase_w_in):
     }
 
 
+def _bind_roofline(raw, which, height_ft, height_tag):
+    """P3 (ruled 2026-07-21): the roofline draws on EVERY elevation, gable
+    first. Eave views: ridge = this view's eave + gable rise (worst-case
+    read when the side reads disagree — flagged, never averaged). Gable
+    ends: true rakes + apex ridge. Hip: NAMED limitation, never a guess.
+    Ridge tag ESTIMATED (derived) per C-3; basis strings composed from
+    the reads — nothing hardcoded."""
+    if height_ft is None:
+        return None
+    roof_type = str(raw.get("roof_type") or "")
+    walls = raw.get("walls") or []
+    me = next((w for w in walls if str(w.get("label", "")).lower() == which), None)
+    own_rise = (me or {}).get("gable_triangle_height_ft") or 0
+    if roof_type == "hip":
+        return {"kind": "hip_unreconciled",
+                "note": "HIP ROOFLINE — PITCH NOT YET RECONCILED — NOT DRAWN"}
+    if own_rise > 0:
+        tag = _AI_TAGS.get(str((me or {}).get("height_ft_source")), "ESTIMATED")
+        ridge = height_ft + float(own_rise)
+        return {"kind": "gable_end", "rise_ft": float(own_rise),
+                "ridge_ft": round(ridge, 3), "ridge_label": fmt_ftin(ridge),
+                "tag": "ESTIMATED",
+                "basis": (f"ridge = eave {height_tag} + own gable rise "
+                          f"{fmt_ftin(own_rise)} ({tag}) — DERIVED")}
+    reads = [(str(w.get("label", "")).lower(), float(w.get("gable_triangle_height_ft")),
+              _AI_TAGS.get(str(w.get("height_ft_source")), "ESTIMATED"))
+             for w in walls
+             if w.get("gable_triangle_height_ft")
+             and str(w.get("label", "")).lower() != which]
+    if not reads:
+        return {"kind": "none_readable",
+                "note": "RIDGE NOT DRAWN — NO GABLE RISE READ ON RECORD"}
+    vals = [r[1] for r in reads]
+    rise = max(vals)
+    ridge = height_ft + rise
+    out = {"kind": "eave_ridge", "rise_ft": rise,
+           "ridge_ft": round(ridge, 3), "ridge_label": fmt_ftin(ridge),
+           "tag": "ESTIMATED",
+           "basis": (f"ridge = eave {height_tag} + gable rise {fmt_ftin(rise)} "
+                     f"({' · '.join(sorted(set(r[2] for r in reads)))}) — DERIVED")}
+    if max(vals) - min(vals) > 0.05:
+        out["note"] = ("gable rises "
+                       + " / ".join(f"{l} {fmt_ftin(v)}" for l, v, _ in reads)
+                       + f" disagree — drawn at {fmt_ftin(rise)} (worst case)"
+                       " — flagged, not averaged")
+    return out
+
+
 def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     """Sealed hand-takeoff key binding (Letrick). Values BIND from the key
     artifact + the Class-1-corrected structured tape walls — never retyped.
@@ -643,6 +691,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         "chase": chase,
         "chase_profile": chase_profile,
         "chase_cap": chase_cap,
+        # P3 (ruled 2026-07-21): roofline on every elevation
+        "roofline": _bind_roofline(raw, which, height_ft, basis["height_tag"]),
         "view": {
             "convention": "viewed from exterior",
             "datum": ("along-wall datum: left corner as viewed from outside "

@@ -84,9 +84,11 @@ export function SheetSvg({ data }) {
   const segList = W.segments || null;
   const stepped = !!(segList && segList.length > 1);
   const gableFt = W.gable_triangle_ft || 0;
-  // ── drawing math (auto-fit BOTH axes, spec §5) ───────────────────
+  const rl = data.roofline || null;
+  const roofRiseFt = rl && rl.kind === "eave_ridge" ? rl.rise_ft : 0;
+  // ── drawing math (auto-fit BOTH axes, spec §5; P3: roof height included) ──
   const wallBottom = 520, drawable = 820.8, maxDrawH = 300;
-  const ppf = Math.min(drawable / W.width_ft, maxDrawH / (W.height_ft + gableFt));
+  const ppf = Math.min(drawable / W.width_ft, maxDrawH / (W.height_ft + Math.max(gableFt, roofRiseFt)));
   const wallW = W.width_ft * ppf;
   const wallX = 90 + (drawable - wallW) / 2;
   const wallRight = wallX + wallW;
@@ -189,6 +191,26 @@ export function SheetSvg({ data }) {
   // seg basis lines step outward past the profile when it occupies a side
   const dimOffL = prof && data.sheet === "left" ? profW : 0;
   const dimOffR = prof && data.sheet === "right" ? profW : 0;
+  // P3 roofline geometry (ruled 2026-07-21): ridge drawn as a REAL edge
+  // (solid black, ESTIMATED chip) on eave views; true rakes overshoot the
+  // gable-end corners by the overhang. Dashed reference band RETIRED (C-3).
+  const ridgeG = rl && rl.kind === "eave_ridge"
+    ? { y: wallBottom - rl.ridge_ft * ppf,
+        x1: wallX - ovFt * ppf, x2: wallRight + ovFt * ppf }
+    : null;
+  let rakeExt = null;
+  if (rl && rl.kind === "gable_end" && gableFt > 0) {
+    const apex = { x: (wallX + wallRight) / 2, y: apexY };
+    const ext = (c) => {
+      const dx = c.x - apex.x, dy = c.y - apex.y, len = Math.hypot(dx, dy) || 1;
+      const k = (ovFt * ppf) / len;
+      return { x: c.x + dx * k, y: c.y + dy * k };
+    };
+    rakeExt = {
+      l: ext({ x: wallX, y: segTopY[0] }), apex,
+      r: ext({ x: wallRight, y: segTopY[stepped ? 1 : 0] }),
+    };
+  }
   // chase CAP over ridge (front) — render only when geometry supports it
   const cap = data.chase_cap && data.chase_cap.visible ? data.chase_cap : null;
   const capG = cap
@@ -196,8 +218,9 @@ export function SheetSvg({ data }) {
         cx: wallX + cap.center_ft * ppf,
         w: cap.width_in ? (cap.width_in / 12) * ppf : 40,
         capY: wallBottom - cap.cap_ft * ppf,
-        ridgeMaxY: wallBottom - cap.ridge_max_ft * ppf,
-        ridgeMinY: wallBottom - cap.ridge_min_ft * ppf,
+        // cap bottom anchors on the DRAWN ridge (P3); worst-case band
+        // values remain the cap's visibility basis in the text record
+        botY: ridgeG ? ridgeG.y : wallBottom - cap.ridge_min_ft * ppf,
       }
     : null;
 
@@ -297,6 +320,15 @@ export function SheetSvg({ data }) {
   S.viewLine = `${data.view.convention} · ${data.view.datum}`;
   S.dateLine = `Pro-Quote · ${data.generated_date}`;
   S.gableCallout = gableFt > 0 ? `GABLE TRIANGLE ${fmtFt(gableFt)} RISE` : "";
+  // P3 roofline strings — composed from the payload, nothing hand-typed
+  if (rl && (rl.kind === "eave_ridge" || rl.kind === "gable_end")) {
+    S.ridgeLabel = `RIDGE ${rl.ridge_label}`;
+    S.ridgeBasis = rl.basis;
+    S.ridgeNote = rl.note ? String(rl.note).toUpperCase() : "";
+  }
+  if (rl && (rl.kind === "hip_unreconciled" || rl.kind === "none_readable")) {
+    S.rooflineNote = rl.note;
+  }
   if (stepped) {
     S.seg0Formula = segList[0].height_formula;
     S.seg1Formula = segList[1].height_formula;
@@ -365,6 +397,71 @@ export function SheetSvg({ data }) {
             <text x="540" y={collisionBoxY + colLines.length * 48 + 26} fontSize="7" fill="#7f1d1d">{S.colSummary2}</text>
           </g>
         )}
+        {anyCollision && (
+          <g data-testid="elevation-collision-banner">
+            <rect x="530" y={collisionBoxY + colLines.length * 48 + colSummaryH} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" />
+            <text x="540" y={collisionBoxY + colLines.length * 48 + colSummaryH + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
+          </g>
+        )}
+
+        {/* Gable-end walls: siding gable + TRUE RAKES (P3, overhang overshoot);
+            eave walls: fascia band + soffit + DRAWN RIDGE (P3, C-3) */}
+        {gableFt > 0 ? (
+          <g data-testid="elevation-gable">
+            <clipPath id="gable-clip">
+              <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]} Z`} />
+            </clipPath>
+            <g clipPath="url(#gable-clip)" stroke={C.siding} strokeWidth="0.5" data-testid="elevation-gable-hatch">
+              {hatchYs.filter((y) => y > apexY + 2 && y < Math.max(...segTopY)).map((y, i) => (
+                <line key={i} x1={wallX} y1={y} x2={wallRight} y2={y} />
+              ))}
+            </g>
+            <path d={rakeExt
+                ? `M ${rakeExt.l.x} ${rakeExt.l.y} L ${rakeExt.apex.x} ${rakeExt.apex.y} L ${rakeExt.r.x} ${rakeExt.r.y}`
+                : `M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]}`}
+              fill="none" stroke={C.fascia} strokeWidth="2" data-testid="elevation-rake-lines" />
+            {rl && rl.kind === "gable_end" && (
+              <g data-testid="elevation-roofline">
+                <line x1={(wallX + wallRight) / 2 - 7} y1={apexY} x2={(wallX + wallRight) / 2 + 7} y2={apexY} stroke={C.ink} strokeWidth="2.5" />
+                <text x={(wallX + wallRight) / 2} y={apexY - 20} fontSize="8.5" textAnchor="middle" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
+                <Chip x={(wallX + wallRight) / 2 + 44} y={apexY - 28} w={30} label="EST" kind="est" />
+                <text x={(wallX + wallRight) / 2} y={apexY - 11} fontSize="6" textAnchor="middle" fill={C.muted}>{S.ridgeBasis}</text>
+              </g>
+            )}
+            <text x={(wallX + wallRight) / 2} y={apexY + 10} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
+            <Chip x={(wallX + wallRight) / 2 + 4} y={apexY + 16}
+              w={W.gable_tag === "AI-READ ✓" ? 62 : 66} label={W.gable_tag} kind={tagKind(W.gable_tag)} />
+            <text x={wallX - 14} y={segTopY[0] - 8} fontSize="8.5" fill="#0284c7" fontWeight="bold">RAKE (GABLE END) ↗</text>
+          </g>
+        ) : (
+          <g>
+            <rect x={wallX - ovFt * ppf} y={wallTop - 22} width={wallW + 2 * ovFt * ppf} height="22" fill="none" stroke={C.fascia} strokeWidth="3" />
+            <text x={fasciaLabelX} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
+            <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" />
+            <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
+            {ridgeG && (
+              <g data-testid="elevation-roofline">
+                <line x1={ridgeG.x1} y1={wallTop - 22} x2={ridgeG.x1} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-l" />
+                <line x1={ridgeG.x2} y1={wallTop - 22} x2={ridgeG.x2} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-r" />
+                <line x1={ridgeG.x1} y1={ridgeG.y} x2={ridgeG.x2} y2={ridgeG.y} stroke={C.ink} strokeWidth="2" data-testid="elevation-roofline-ridge" />
+                <text x={ridgeG.x1 + 6} y={ridgeG.y - 6} fontSize="8.5" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
+                <Chip x={ridgeG.x1 + 6 + S.ridgeLabel.length * 5.2} y={ridgeG.y - 14} w={30} label="EST" kind="est" />
+                <text x={ridgeG.x1 + 6} y={ridgeG.y + 10} fontSize="6" fill={C.muted}>{S.ridgeBasis}</text>
+                {rl.note && (
+                  <text x={ridgeG.x2 - 6} y={ridgeG.y - 6} fontSize="6.5" textAnchor="end" fill={C.amber} fontWeight="bold" data-testid="elevation-roofline-disagreement">{S.ridgeNote}</text>
+                )}
+              </g>
+            )}
+          </g>
+        )}
+
+        {S.rooflineNote && (
+          <text x={(wallX + wallRight) / 2} y={Math.min(topRefY, wallTop) - 44} fontSize="8.5" textAnchor="middle" fill={C.amber} fontWeight="bold" letterSpacing="1" data-testid="elevation-roofline-note">{S.rooflineNote}</text>
+        )}
+
+        {/* OCCLUSION RULE extended to roof edges (P3): the chase profile
+            (sides) and cap (front) project proud of the wall — they paint
+            AFTER the rooflines so rake/ridge lines cannot render through. */}
         {prof && (
           <g data-testid="elevation-chase-profile">
             <rect x={profX} y={profTop} width={profW} height={wallBottom - profTop}
@@ -393,51 +490,16 @@ export function SheetSvg({ data }) {
         )}
         {capG && (
           <g data-testid="elevation-chase-cap">
-            <line x1={wallX - 20} y1={capG.ridgeMaxY} x2={wallRight + 20} y2={capG.ridgeMaxY} stroke="#8a93a2" strokeWidth="0.9" strokeDasharray="8 4" />
-            <line x1={wallX - 20} y1={capG.ridgeMinY} x2={wallRight + 20} y2={capG.ridgeMinY} stroke="#8a93a2" strokeWidth="0.9" strokeDasharray="8 4" />
-            <rect x={capG.cx - capG.w / 2} y={capG.capY} width={capG.w} height={capG.ridgeMinY - capG.capY}
+            <rect x={capG.cx - capG.w / 2} y={capG.capY} width={capG.w} height={capG.botY - capG.capY}
               fill="#fbfcfe" stroke={C.ink} strokeWidth="1.5" />
             <g stroke={C.siding} strokeWidth="0.5" data-testid="elevation-chase-cap-hatch">
-              {hatchYs.filter((y) => y > capG.capY + 2 && y < capG.ridgeMinY - 1).map((y, i) => (
+              {hatchYs.filter((y) => y > capG.capY + 2 && y < capG.botY - 1).map((y, i) => (
                 <line key={i} x1={capG.cx - capG.w / 2 + 1.5} y1={y} x2={capG.cx + capG.w / 2 - 1.5} y2={y} />
               ))}
             </g>
             <line x1={capG.cx - capG.w / 2 - 3} y1={capG.capY} x2={capG.cx + capG.w / 2 + 3} y2={capG.capY} stroke={C.ink} strokeWidth="2" />
             <text x={capG.cx} y={capG.capY - 14} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.cap1}</text>
             <text x={capG.cx} y={capG.capY - 5} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.cap2}</text>
-          </g>
-        )}
-        {anyCollision && (
-          <g data-testid="elevation-collision-banner">
-            <rect x="530" y={collisionBoxY + colLines.length * 48 + colSummaryH} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" />
-            <text x="540" y={collisionBoxY + colLines.length * 48 + colSummaryH + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
-          </g>
-        )}
-
-        {/* Gable-end walls: dashed indicative triangle + rake; eave walls: fascia band + soffit */}
-        {gableFt > 0 ? (
-          <g data-testid="elevation-gable">
-            <clipPath id="gable-clip">
-              <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]} Z`} />
-            </clipPath>
-            <g clipPath="url(#gable-clip)" stroke={C.siding} strokeWidth="0.5" data-testid="elevation-gable-hatch">
-              {hatchYs.filter((y) => y > apexY + 2 && y < Math.max(...segTopY)).map((y, i) => (
-                <line key={i} x1={wallX} y1={y} x2={wallRight} y2={y} />
-              ))}
-            </g>
-            <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]}`}
-              fill="none" stroke={C.fascia} strokeWidth="2" />
-            <text x={(wallX + wallRight) / 2} y={apexY - 8} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
-            <Chip x={(wallX + wallRight) / 2 + 4} y={apexY + 6}
-              w={W.gable_tag === "AI-READ ✓" ? 62 : 66} label={W.gable_tag} kind={tagKind(W.gable_tag)} />
-            <text x={wallX - 14} y={segTopY[0] - 8} fontSize="8.5" fill="#0284c7" fontWeight="bold">RAKE (GABLE END) ↗</text>
-          </g>
-        ) : (
-          <g>
-            <rect x={wallX - ovFt * ppf} y={wallTop - 22} width={wallW + 2 * ovFt * ppf} height="22" fill="none" stroke={C.fascia} strokeWidth="3" />
-            <text x={fasciaLabelX} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
-            <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" />
-            <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
           </g>
         )}
 
