@@ -245,16 +245,22 @@ export function SheetSvg({ data }) {
     S.chase1 = `${String(chase.note).toUpperCase()} — ${chase.tag}`;
     S.chase2 = chase.dims_tag === "TAPED"
       ? `${chase.width_label} W × ${chase.depth_label} D × ${chase.height_label} H — TAPED (${chase.taped_stamp || ""})`
-      : `profile ${chase.profile} · footprint ${chase.footprint}`;
-    S.chase3 = chase.dims_tag === "TAPED" ? `POSITION: ${chase.position || ""}` : "";
+      : chase.dims_tag === "LADDER"
+        ? chase.footprint
+        : `profile ${chase.profile} · footprint ${chase.footprint}`;
+    S.chase3 = chase.position ? `POSITION: ${chase.position}` : "";
     S.chase4 = chase.ai_band ? chase.ai_band.note : "";
     S.chaseGlyphTitle = chase.dims_tag === "TAPED"
       ? `CHIMNEY CHASE — ${chase.width_label} × ${chase.height_label} TAPED`
-      : "CHIMNEY CHASE";
+      : chase.dims_tag === "LADDER" && chase.width_label && chase.height_label
+        ? `CHIMNEY CHASE — ${chase.width_label} ${String(chase.width_tag).split(" ")[0]} × ${chase.height_label} ${String(chase.height_tag).split(" ")[0]}`
+        : "CHIMNEY CHASE";
     S.chaseGlyphSub = `POSITION ${chase.position_tag || "—"} · ${String(chase.position_note || "").split(" — ")[0].toUpperCase()}`;
     S.chaseData = chase.dims_tag === "TAPED"
       ? `Chase ${chase.width_label} × ${chase.depth_label} × ${chase.height_label} — TAPED · position ${chase.position_tag || "—"}${chase.suppressed ? ` · DRAWING ${String(chase.suppressed_note || "suppressed — collision").toUpperCase()}` : ""}`
-      : "";
+      : chase.dims_tag === "LADDER"
+        ? `Chase ${chase.footprint} · position ${chase.position_tag || "—"}${chase.suppressed ? ` · DRAWING ${String(chase.suppressed_note || "suppressed — collision").toUpperCase()}` : ""}`
+        : "";
   }
   // COLLAPSE RULE (ruled 2026-07-20): more than 3 flagged (non-suppressed)
   // pairs stack into ONE summary block; suppression callouts ALWAYS render
@@ -276,7 +282,7 @@ export function SheetSvg({ data }) {
     S.colSummary2 = `AFFECTED: ${affectedTags.join(" ")} · full pair detail retained in sheet data — nothing suppressed`;
   }
   if (prof) {
-    S.prof1 = `CHASE PROFILE — ${prof.depth_label} DEEP × ${prof.height_label} — TAPED`;
+    S.prof1 = `CHASE PROFILE — ${prof.depth_label} DEEP × ${prof.height_label} — ${prof.dims_tag}`;
     S.prof2 = String(prof.anchor).toUpperCase();
   }
   if (cap) {

@@ -175,6 +175,48 @@ def _bind_roofline(raw, which, height_ft, height_tag):
     return out
 
 
+STANDARD_CHASE_DEPTH_IN = 30.0
+# CONTRACTOR-SPEC (Howard, ratified 2026-07-21): ASSUMED standard chase
+# depth = 30" — the bottom rung of TAPED > ESTIMATED > ASSUMED (spec C).
+# Upgradeable by tape (appendage dims user_measured) or a photo-derived read.
+
+CHASE_CODE_MIN_ABOVE_RIDGE_FT = 2.0
+# CONTRACTOR-SPEC (Howard, ratified 2026-07-21): no-height-read fallback =
+# grade to 2'-0" ABOVE THE DRAWN RIDGE at the chase position — ridge-relative,
+# never a fixed-feet guess. Tagged ASSUMED, upgradeable like every rung.
+
+
+def _chase_dims_ladder(est, fr, wall_width_ft, roofline_obj):
+    """P4 (ruled 2026-07-21): dims ladder for chases WITHOUT sealed-tape
+    dims — each dimension binds its best-known rung and carries that
+    rung's tag (chases scale-render at best-known dims on every rung, C-4):
+      width : ESTIMATED (photo-scaled) — corner-read span × wall best-known width
+      depth : TAPED (user-measured appendage dims) > ASSUMED (standard depth)
+      height: TAPED (user-measured appendage dims) > ASSUMED (ridge + 2'-0\")
+    """
+    out = {}
+    if fr and wall_width_ft and max(fr) > min(fr):
+        out["width_in"] = round((max(fr) - min(fr)) * float(wall_width_ft) * 12.0, 1)
+        out["width_tag"] = "ESTIMATED (photo-scaled)"
+    dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
+    d_entry = dims.get("depth_ft") or {}
+    if d_entry.get("status") == "user_measured" and d_entry.get("value"):
+        out["depth_in"] = round(float(d_entry["value"]) * 12.0, 1)
+        out["depth_tag"] = "TAPED (user-measured)"
+    else:
+        out["depth_in"] = STANDARD_CHASE_DEPTH_IN
+        out["depth_tag"] = f"ASSUMED (standard depth {fmt_inches(STANDARD_CHASE_DEPTH_IN)})"
+    h_entry = dims.get("height_ft") or {}
+    if h_entry.get("status") == "user_measured" and h_entry.get("value"):
+        out["height_in"] = round(float(h_entry["value"]) * 12.0, 1)
+        out["height_tag"] = "TAPED (user-measured)"
+    elif roofline_obj and roofline_obj.get("ridge_ft"):
+        out["height_in"] = round(
+            (roofline_obj["ridge_ft"] + CHASE_CODE_MIN_ABOVE_RIDGE_FT) * 12.0, 1)
+        out["height_tag"] = f"ASSUMED (ridge + {fmt_ftin(CHASE_CODE_MIN_ABOVE_RIDGE_FT)})"
+    return out
+
+
 def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     """Sealed hand-takeoff key binding (Letrick). Values BIND from the key
     artifact + the Class-1-corrected structured tape walls — never retyped.
@@ -476,6 +518,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     # chimney chase (back wall) — AI accent read; dims TAPED per the
     # 2026-07-19 ratification amendment; position bound from the run's
     # chase corner-location reads (see below).
+    roofline_obj = _bind_roofline(raw, which, height_ft, basis["height_tag"])
     chase = None
     for acc in (wall.get("accent_profiles") or []):
         loc = str(acc.get("location") or "")
@@ -500,6 +543,13 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 if "chase" in str(c.get("locator", "")).lower()
                 and c.get("walls") == [wall_label]
                 and c.get("position_frac") is not None]
+    # P4 (ruled 2026-07-21): chases also DETECT from run corner reads —
+    # an accent read is not required. DEFECT RETIRED: doug jones's chase
+    # had confirmed corner reads but no accent → nothing drew.
+    if not chase and _chase_fracs(which):
+        chase = {"note": "chimney chase (detected from run corner reads)",
+                 "tag": "AI-READ ✓", "profile": "",
+                 "footprint": "untaped"}
     if chase:
         fr = _chase_fracs(which)
         dr = _door_relative_chase_center(est, raw, (cd or {}).get("width_in")) if which == "back" else None
@@ -547,7 +597,26 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "ratified": ("human ground truth (projects from back wall, lap-clad)"
                          " — ruled 2026-07-19; sealed key amendment"),
         })
-    # sides: chase in PROFILE — anchored (abuts the back wall), dims TAPED
+    elif chase:
+        # P4 dims ladder (ruled 2026-07-21) — scale-render at best-known
+        # dims on every rung (C-4); each dim carries its rung's tag
+        lad = _chase_dims_ladder(est, _chase_fracs(which), width_ft, roofline_obj)
+        parts = []
+        for dim, mark in (("width", "W"), ("depth", "D"), ("height", "H")):
+            v = lad.get(f"{dim}_in")
+            if v is None:
+                continue
+            label = fmt_ftin(v / 12.0) if dim == "height" else fmt_inches(v)
+            chase[f"{dim}_in"] = v
+            chase[f"{dim}_label"] = label
+            chase[f"{dim}_tag"] = lad[f"{dim}_tag"]
+            parts.append(f"{label} {mark} {lad[f'{dim}_tag']}")
+        if parts:
+            chase["dims_tag"] = "LADDER"
+            chase["footprint"] = " × ".join(parts)
+    # sides: chase in PROFILE — ALWAYS drawn where the chase projects
+    # (spec C, ruled 2026-07-21) at the best-known depth rung, tagged
+    # with that rung. Letrick TAPED path first; generic ladder otherwise.
     chase_profile = None
     if which in ("left", "right") and cd:
         chase_profile = {
@@ -560,6 +629,38 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "note": (f"chimney chase in profile — projects {fmt_inches(cd['depth_in'])}"
                      f" proud of the back wall (TAPED {cd['taped']})"),
         }
+    elif which in ("left", "right"):
+        fr_b = _chase_fracs("back")
+        wall_b = next((w for w in (raw.get("walls") or [])
+                       if str(w.get("label", "")).lower() == "back"), None)
+        has_chase_b = bool(fr_b) or any(
+            "chase" in str(a.get("location", "")).lower()
+            for a in ((wall_b or {}).get("accent_profiles") or []))
+        if has_chase_b:
+            bt = _sealed_tape_basis(est, "back")
+            hb = (max(s["height_ft"] for s in bt["segments"]) if bt
+                  else (wall_b or {}).get("height_ft"))
+            rl_b = (_bind_roofline(raw, "back", hb,
+                                   "TAPED-DERIVED" if bt else _AI_TAGS.get(
+                                       str((wall_b or {}).get("height_ft_source")), "ESTIMATED"))
+                    if hb else None)
+            lad = _chase_dims_ladder(est, fr_b, (wall_b or {}).get("width_ft"), rl_b)
+            if lad.get("depth_in") and lad.get("height_in"):
+                rungs = " · ".join(sorted({str(lad["depth_tag"]).split(" ")[0],
+                                           str(lad["height_tag"]).split(" ")[0]}))
+                chase_profile = {
+                    "depth_in": lad["depth_in"], "height_in": lad["height_in"],
+                    "depth_label": fmt_inches(lad["depth_in"]),
+                    "height_label": fmt_ftin(lad["height_in"] / 12.0),
+                    "dims_tag": rungs,
+                    "depth_tag": lad["depth_tag"], "height_tag": lad["height_tag"],
+                    "anchor": (f"projects from the back wall — depth {lad['depth_tag']}"
+                               f" · height {lad['height_tag']}"),
+                    "corner": "back",
+                    "note": (f"chimney chase in profile — projects "
+                             f"{fmt_inches(lad['depth_in'])} proud of the back wall"
+                             f" ({lad['depth_tag']})"),
+                }
     # front: cap-over-ridge visibility — taped cap vs AI ridge band
     chase_cap = None
     if which == "front" and cd:
@@ -692,7 +793,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         "chase_profile": chase_profile,
         "chase_cap": chase_cap,
         # P3 (ruled 2026-07-21): roofline on every elevation
-        "roofline": _bind_roofline(raw, which, height_ft, basis["height_tag"]),
+        "roofline": roofline_obj,
         "view": {
             "convention": "viewed from exterior",
             "datum": ("along-wall datum: left corner as viewed from outside "
