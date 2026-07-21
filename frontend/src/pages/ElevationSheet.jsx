@@ -7,7 +7,10 @@ import api from "@/lib/api";
    GET /estimates/:id/elevation-sheet/:which (no hand-typed constants).
    Stepped walls: EACH tape segment draws its own basis line — step location
    is NOT TAPED (indicative). Chase: annotated, never scale-rendered.
-   CHANNELS: linework color = COMPONENT CLASS · chips/boxes = SOURCE/STATUS. */
+   CHANNELS (Spec v2, ruled 2026-07-20): BLACK = GEOMETRY/MASSING ·
+   COLOR = COMPONENT (product elements only, ALL SOLID — dash signatures
+   retired per C-2) · CHIPS = SOURCE. Dashed linework = HIDDEN EDGES ONLY.
+   Course hatch stays in the siding color as a component FILL (C-1). */
 
 const C = {
   ink: "#1a2332", muted: "#5a6472", siding: "#475569", trim: "#DC2626",
@@ -293,7 +296,7 @@ export function SheetSvg({ data }) {
   S.scaleLine = `Scale ≈ ${scaleLabel} = 1'-0" (auto-fit)`;
   S.viewLine = `${data.view.convention} · ${data.view.datum}`;
   S.dateLine = `Pro-Quote · ${data.generated_date}`;
-  S.gableCallout = gableFt > 0 ? `GABLE TRIANGLE ${fmtFt(gableFt)} RISE — INDICATIVE OUTLINE` : "";
+  S.gableCallout = gableFt > 0 ? `GABLE TRIANGLE ${fmtFt(gableFt)} RISE` : "";
   if (stepped) {
     S.seg0Formula = segList[0].height_formula;
     S.seg1Formula = segList[1].height_formula;
@@ -318,7 +321,7 @@ export function SheetSvg({ data }) {
         <text x="60" y="72" fontSize="26" fontWeight="bold" letterSpacing="3" fill={C.ink} data-testid="elevation-sheet-title">{S.title}</text>
         <text x="60" y="92" fontSize="11" fill={C.muted} letterSpacing="1">{S.headerLine}</text>
         <text x="996" y="72" fontSize="11" textAnchor="end" fill={C.amber} fontWeight="bold" letterSpacing="1">NOT A SURVEY — SOURCE-TAGGED VERIFICATION SHEET</text>
-        <text x="996" y="90" fontSize="10" textAnchor="end" fill={C.muted}>LINEWORK = COMPONENT · CHIPS = SOURCE</text>
+        <text x="996" y="90" fontSize="10" textAnchor="end" fill={C.muted}>BLACK = GEOMETRY · COLOR = COMPONENT · CHIPS = SOURCE</text>
         <line x1="60" y1="104" x2="996" y2="104" stroke={C.ink} strokeWidth="1" />
 
         {/* Deviation box (status channel) */}
@@ -334,7 +337,7 @@ export function SheetSvg({ data }) {
             INDICATIVE on-wall locator glyph (largest opening-free span) */}
         {chase && (
           <g data-testid="elevation-chase-note">
-            <rect x="530" y="150" width="466" height={chaseBoxH} fill="#fffbeb" stroke={C.amber} strokeWidth="1.2" strokeDasharray="5 3" />
+            <rect x="530" y="150" width="466" height={chaseBoxH} fill="#fffbeb" stroke={C.amber} strokeWidth="1.2" />
             <text x="540" y="166" fontSize="9.5" fontWeight="bold" fill={C.amber}>{S.chase1}</text>
             <text x="540" y="180" fontSize="9" fill="#7a4a12">{S.chase2}</text>
             <text x="540" y="192" fontSize="6" fill="#7a4a12">{S.chase3}</text>
@@ -365,23 +368,23 @@ export function SheetSvg({ data }) {
         {prof && (
           <g data-testid="elevation-chase-profile">
             <rect x={profX} y={profTop} width={profW} height={wallBottom - profTop}
-              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
-            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-profile-hatch">
+              fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" />
+            <g stroke={C.siding} strokeWidth="0.5" data-testid="elevation-chase-profile-hatch">
               {hatchYs.filter((y) => y > profTop + 2).map((y, i) => (
                 <line key={i} x1={profX + 1.5} y1={y} x2={profX + profW - 1.5} y2={y} />
               ))}
             </g>
-            <line x1={profX - 3} y1={profTop} x2={profX + profW + 3} y2={profTop} stroke={C.siding} strokeWidth="2" />
+            <line x1={profX - 3} y1={profTop} x2={profX + profW + 3} y2={profTop} stroke={C.ink} strokeWidth="2" />
             <line x1={profX + 3} y1={profTop + 10} x2={profX + profW - 3} y2={profTop + 10} stroke="#8a93a2" strokeWidth="0.7" />
             {data.sheet === "left" ? (
               <g>
-                <line x1={profX + profW / 2} y1={profTop - 4} x2="96" y2="224" stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+                <line x1={profX + profW / 2} y1={profTop - 4} x2="96" y2="224" stroke={C.amber} strokeWidth="0.9" />
                 <text x="64" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber}>{S.prof1}</text>
                 <text x="64" y="244" fontSize="6.5" fill={C.amber}>{S.prof2}</text>
               </g>
             ) : (
               <g>
-                <line x1={profX + profW / 2} y1={profTop - 4} x2="960" y2="224" stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+                <line x1={profX + profW / 2} y1={profTop - 4} x2="960" y2="224" stroke={C.amber} strokeWidth="0.9" />
                 <text x="992" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.prof1}</text>
                 <text x="992" y="244" fontSize="6.5" fill={C.amber} textAnchor="end">{S.prof2}</text>
               </g>
@@ -393,20 +396,20 @@ export function SheetSvg({ data }) {
             <line x1={wallX - 20} y1={capG.ridgeMaxY} x2={wallRight + 20} y2={capG.ridgeMaxY} stroke="#8a93a2" strokeWidth="0.9" strokeDasharray="8 4" />
             <line x1={wallX - 20} y1={capG.ridgeMinY} x2={wallRight + 20} y2={capG.ridgeMinY} stroke="#8a93a2" strokeWidth="0.9" strokeDasharray="8 4" />
             <rect x={capG.cx - capG.w / 2} y={capG.capY} width={capG.w} height={capG.ridgeMinY - capG.capY}
-              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.5" strokeDasharray="5 3" />
-            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-cap-hatch">
+              fill="#fbfcfe" stroke={C.ink} strokeWidth="1.5" />
+            <g stroke={C.siding} strokeWidth="0.5" data-testid="elevation-chase-cap-hatch">
               {hatchYs.filter((y) => y > capG.capY + 2 && y < capG.ridgeMinY - 1).map((y, i) => (
                 <line key={i} x1={capG.cx - capG.w / 2 + 1.5} y1={y} x2={capG.cx + capG.w / 2 - 1.5} y2={y} />
               ))}
             </g>
-            <line x1={capG.cx - capG.w / 2 - 3} y1={capG.capY} x2={capG.cx + capG.w / 2 + 3} y2={capG.capY} stroke={C.siding} strokeWidth="2" />
+            <line x1={capG.cx - capG.w / 2 - 3} y1={capG.capY} x2={capG.cx + capG.w / 2 + 3} y2={capG.capY} stroke={C.ink} strokeWidth="2" />
             <text x={capG.cx} y={capG.capY - 14} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.cap1}</text>
             <text x={capG.cx} y={capG.capY - 5} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.cap2}</text>
           </g>
         )}
         {anyCollision && (
           <g data-testid="elevation-collision-banner">
-            <rect x="530" y={collisionBoxY + colLines.length * 48 + colSummaryH} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" strokeDasharray="4 2" />
+            <rect x="530" y={collisionBoxY + colLines.length * 48 + colSummaryH} width="300" height="24" fill="#fef2f2" stroke={C.trim} strokeWidth="1.2" />
             <text x="540" y={collisionBoxY + colLines.length * 48 + colSummaryH + 16} fontSize="9" fontWeight="bold" fill={C.trim}>OPENING POSITIONS UNVERIFIED — OVERLAP DETECTED</text>
           </g>
         )}
@@ -417,13 +420,13 @@ export function SheetSvg({ data }) {
             <clipPath id="gable-clip">
               <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]} Z`} />
             </clipPath>
-            <g clipPath="url(#gable-clip)" stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-gable-hatch">
+            <g clipPath="url(#gable-clip)" stroke={C.siding} strokeWidth="0.5" data-testid="elevation-gable-hatch">
               {hatchYs.filter((y) => y > apexY + 2 && y < Math.max(...segTopY)).map((y, i) => (
                 <line key={i} x1={wallX} y1={y} x2={wallRight} y2={y} />
               ))}
             </g>
             <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]}`}
-              fill="none" stroke={C.fascia} strokeWidth="2" strokeDasharray="7 4" />
+              fill="none" stroke={C.fascia} strokeWidth="2" />
             <text x={(wallX + wallRight) / 2} y={apexY - 8} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
             <Chip x={(wallX + wallRight) / 2 + 4} y={apexY + 6}
               w={W.gable_tag === "AI-READ ✓" ? 62 : 66} label={W.gable_tag} kind={tagKind(W.gable_tag)} />
@@ -433,34 +436,33 @@ export function SheetSvg({ data }) {
           <g>
             <rect x={wallX - ovFt * ppf} y={wallTop - 22} width={wallW + 2 * ovFt * ppf} height="22" fill="none" stroke={C.fascia} strokeWidth="3" />
             <text x={fasciaLabelX} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
-            <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" strokeDasharray="1 4" />
+            <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" />
             <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
           </g>
         )}
 
         {/* Wall + course hatch (true per-segment course counts) */}
         {stepped ? (
-          <path d={outline} fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" data-testid="elevation-wall-rect" />
+          <path d={outline} fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" data-testid="elevation-wall-rect" />
         ) : (
-          <rect x={wallX} y={wallTop} width={wallW} height={wallBottom - wallTop} fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" data-testid="elevation-wall-rect" />
+          <rect x={wallX} y={wallTop} width={wallW} height={wallBottom - wallTop} fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" data-testid="elevation-wall-rect" />
         )}
-        <g stroke="#e2e8f0" strokeWidth="0.6">
+        <g stroke={C.siding} strokeWidth="0.5">
           {courseLines.map((l, i) => <line key={i} x1={l.x1} y1={l.y} x2={l.x2} y2={l.y} />)}
         </g>
         {stepped && (
           <g data-testid="elevation-step-note">
-            <line x1={stepX} y1={segTopY[1] - 6} x2={stepX} y2={segTopY[0]} stroke={C.amber} strokeWidth="1" strokeDasharray="3 2" />
+            <line x1={stepX} y1={segTopY[1] - 6} x2={stepX} y2={segTopY[0]} stroke={C.amber} strokeWidth="1" />
             <text x={stepX} y={segTopY[1] - 12} fontSize="8" textAnchor="middle" fill={C.amber} fontWeight="bold">STEP — LOCATION NOT TAPED (INDICATIVE)</text>
           </g>
         )}
 
-        {/* Openings (component: opening trim; sill-less = dashed, V-pos estimated) */}
+        {/* Openings (component: opening trim — SOLID per C-2; V-pos doubt lives in text flags/chips) */}
         {ops.filter((o) => o.drawable).map((o) => (
           <g key={o.tag} data-testid={`elevation-opening-${o.tag}`}>
             <rect x={o.x} y={o.y} width={o.w} height={o.h}
               fill={{ Window: "#eef3f9", Vent: "#f5f2e8", "Patio door": "#eef3f9", "Garage door": "#efeae2" }[o.type] || "#e7e2d8"}
-              stroke={C.trim} strokeWidth="2.25"
-              strokeDasharray={o.collision || o.noSill ? "5 3" : undefined} />
+              stroke={C.trim} strokeWidth="2.25" />
             {o.type === "Window" && (
               <g stroke="#8a93a2">
                 <line x1={o.cx} y1={o.y} x2={o.cx} y2={o.y + o.h} strokeWidth="1.2" />
@@ -509,7 +511,7 @@ export function SheetSvg({ data }) {
         ))}
 
         {/* Starter + outside corners + grade */}
-        <line x1={wallX} y1={wallBottom - 3.5} x2={wallRight} y2={wallBottom - 3.5} stroke={C.starter} strokeWidth="2.5" strokeDasharray="8 3 2 3" />
+        <line x1={wallX} y1={wallBottom - 3.5} x2={wallRight} y2={wallBottom - 3.5} stroke={C.starter} strokeWidth="2.5" />
         <line x1={wallX + 1.5} y1={segTopY[0]} x2={wallX + 1.5} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
         <line x1={wallRight - 1.5} y1={segTopY[stepped ? 1 : 0]} x2={wallRight - 1.5} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
         <line x1="60" y1={wallBottom} x2="960" y2={wallBottom} stroke={C.ink} strokeWidth="2" />
@@ -524,21 +526,21 @@ export function SheetSvg({ data }) {
             inside. Same mechanism family as the z-order fix. */}
         {chaseG && (
           <g data-testid="elevation-chase-glyph">
-            <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" strokeDasharray="3 2" />
+            <line x1="530" y1="208" x2={chaseG.cx + chaseG.w / 2} y2={chaseG.top - 30} stroke={C.amber} strokeWidth="0.9" />
             <rect x={chaseG.cx - chaseG.w / 2} y={chaseG.top} width={chaseG.w} height={wallBottom - chaseG.top}
-              fill="#fbfcfe" stroke={C.siding} strokeWidth="1.75" />
-            <g stroke="#e2e8f0" strokeWidth="0.6" data-testid="elevation-chase-glyph-hatch">
+              fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" />
+            <g stroke={C.siding} strokeWidth="0.5" data-testid="elevation-chase-glyph-hatch">
               {hatchYs.filter((y) => y > chaseG.top + 2 && y < wallBottom - 1).map((y, i) => (
                 <line key={i} x1={chaseG.cx - chaseG.w / 2 + 1.5} y1={y} x2={chaseG.cx + chaseG.w / 2 - 1.5} y2={y} />
               ))}
             </g>
-            {/* chase-to-wall junctions (vinyl conventions: ISC treatment, wall height) */}
-            <line x1={chaseG.cx - chaseG.w / 2 - 4} y1={wallTop} x2={chaseG.cx - chaseG.w / 2 - 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
-            <line x1={chaseG.cx + chaseG.w / 2 + 4} y1={wallTop} x2={chaseG.cx + chaseG.w / 2 + 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" />
+            {/* chase-to-wall junctions (vinyl conventions: ISC treatment, wall height) — SOLID per C-2 */}
+            <line x1={chaseG.cx - chaseG.w / 2 - 4} y1={wallTop} x2={chaseG.cx - chaseG.w / 2 - 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" />
+            <line x1={chaseG.cx + chaseG.w / 2 + 4} y1={wallTop} x2={chaseG.cx + chaseG.w / 2 + 4} y2={wallBottom} stroke={C.isc} strokeWidth="2.25" />
             {/* chase outer vertical edges = OUTSIDE CORNERS (contractor-spec): SOLID OSC component color, grade to cap */}
             <line x1={chaseG.cx - chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx - chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
             <line x1={chaseG.cx + chaseG.w / 2} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2} y2={wallBottom} stroke={C.osc} strokeWidth="3.5" />
-            <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.siding} strokeWidth="2" />
+            <line x1={chaseG.cx - chaseG.w / 2 - 3} y1={chaseG.top} x2={chaseG.cx + chaseG.w / 2 + 3} y2={chaseG.top} stroke={C.ink} strokeWidth="2" />
             <text x={chaseG.cx} y={chaseG.top - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold">{S.chaseGlyphTitle}</text>
             <text x={chaseG.cx} y={chaseG.top - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.chaseGlyphSub}</text>
           </g>
@@ -684,16 +686,16 @@ export function SheetSvg({ data }) {
             <text x="738" y="699" fontSize="7.5">{S.scaleLine}</text>
             <text x="990" y="699" textAnchor="end" fontSize="7.5">{S.dateLine}</text>
           </g>
-          <text x="738" y="715" fontSize="7" fontWeight="bold" fill={C.muted} letterSpacing="1">KEY — LINEWORK = COMPONENT · CHIPS = SOURCE</text>
+          <text x="738" y="715" fontSize="6.2" fontWeight="bold" fill={C.muted} letterSpacing="0.4">KEY — BLACK = GEOMETRY · COLOR = COMPONENT · CHIPS = SOURCE</text>
           <g fontSize="6.5" fontWeight="bold" fill={C.ink}>
-            <line x1="738" y1="724" x2="752" y2="724" stroke={C.siding} strokeWidth="1.75" /><text x="755" y="727">SIDING</text>
-            <line x1="784" y1="724" x2="798" y2="724" stroke={C.trim} strokeWidth="2.25" /><text x="801" y="727">TRIM</text>
-            <line x1="822" y1="724" x2="836" y2="724" stroke={C.osc} strokeWidth="3.5" /><text x="839" y="727">OSC</text>
-            <line x1="857" y1="724" x2="871" y2="724" stroke={C.isc} strokeWidth="2.25" strokeDasharray="6 3" /><text x="874" y="727">ISC</text>
-            <line x1="891" y1="724" x2="905" y2="724" stroke={C.fascia} strokeWidth="3" /><text x="908" y="727">FASCIA/RAKE</text>
-            <line x1="738" y1="738" x2="752" y2="738" stroke={C.soffit} strokeWidth="2.5" strokeDasharray="1 4" /><text x="755" y="741">SOFFIT</text>
-            <line x1="786" y1="738" x2="800" y2="738" stroke={C.starter} strokeWidth="2.5" strokeDasharray="8 3 2 3" /><text x="803" y="741">STARTER</text>
-            <line x1="838" y1="738" x2="852" y2="738" stroke={C.band} strokeWidth="2.75" strokeDasharray="10 4" /><text x="855" y="741">BAND BD (C-SPEC)</text>
+            <line x1="738" y1="724" x2="752" y2="724" stroke={C.siding} strokeWidth="1.75" /><text x="755" y="727">SIDING FILL</text>
+            <line x1="796" y1="724" x2="810" y2="724" stroke={C.trim} strokeWidth="2.25" /><text x="813" y="727">TRIM</text>
+            <line x1="834" y1="724" x2="848" y2="724" stroke={C.osc} strokeWidth="3.5" /><text x="851" y="727">OSC</text>
+            <line x1="869" y1="724" x2="883" y2="724" stroke={C.isc} strokeWidth="2.25" /><text x="886" y="727">ISC</text>
+            <line x1="903" y1="724" x2="917" y2="724" stroke={C.fascia} strokeWidth="3" /><text x="920" y="727">FASCIA/RAKE</text>
+            <line x1="738" y1="738" x2="752" y2="738" stroke={C.soffit} strokeWidth="2.5" /><text x="755" y="741">SOFFIT</text>
+            <line x1="786" y1="738" x2="800" y2="738" stroke={C.starter} strokeWidth="2.5" /><text x="803" y="741">STARTER</text>
+            <line x1="838" y1="738" x2="852" y2="738" stroke={C.band} strokeWidth="2.75" /><text x="855" y="741">BAND BD (C-SPEC)</text>
           </g>
           <g fontSize="6" fontWeight="bold">
             <rect x="736" y="748" width="32" height="12" rx="6" fill={C.green} /><text x="752" y="756.5" textAnchor="middle" fill="#fff">TAPED</text>
