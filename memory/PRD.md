@@ -4266,3 +4266,24 @@ fill-based, verified). PNGs: p2_letrick_{front,left,back,right} + p2_dougjones_f
 handback). LESSON: batched search_replace on this file appended stray tokens at EOF twice —
 verify with eslint after big JSX batches.
 QUEUE: Howard field-compare gates P3 (rooflines, gable first; hip = named on-sheet limitation).
+
+## SESSION 2026-07-21 (part 23) — P3 SHIPPED (rooflines on every elevation, gable first)
+CLEAN 42cd1da, 1157 green. Backend: _bind_roofline(raw, which, height_ft, height_tag) in
+elevation_sheets.py — eave views: kind=eave_ridge, ridge = THIS view's eave + gable rise,
+disagreeing side reads drawn at WORST CASE (max) + note "flagged, not averaged"; gable ends:
+kind=gable_end, apex ridge = own eave + own rise; hip: kind=hip_unreconciled NAMED limitation
+("HIP ROOFLINE — PITCH NOT YET RECONCILED — NOT DRAWN"); no reads: none_readable. Tag ESTIMATED
+(C-3), basis composed from reads. Frontend: drawn black ridge + rake-edge verticals w/ EST chip
++ basis + disagreement note; true rakes overshoot gable corners by overhang; apex ridge stack
+(ridge/basis above apex, gable callout+chip below — first pass collided, restacked); ppf fit
+includes roof rise; RIDGE BAND LINES RETIRED, cap bottom anchors on drawn ridge (band values
+remain the cap's textual visibility basis); prof+cap groups MOVED after roofline section —
+occlusion rule extended to roof edges (cap/profile occlude ridge/rakes). Pin amended:
+test_front_cap_occludes_ridge_reference_lines → test_front_cap_occludes_drawn_ridge. NEW
+tests/test_rooflines_p3.py (7 pins: hip named limitation, empty state, consensus, worst-case
+disagreement, gable-end own-rise, Letrick all-4-sheets acceptance w/ exact ridge_ft).
+Letrick rises: left 8.8 / right 9.3 (disagree → eave views drawn at 9.3). Acceptance PNGs:
+p3_letrick_{back,left,right,front} + p3_dougjones_front.
+QUEUE: Howard field-compare gates P4 (generic chimney — MUST propose ASSUMED standard depth
+value for ratification BEFORE wiring). Backlog added by Howard: per-sheet layer visibility
+toggles (component layers on/off, geometry always on) — post-wave, no build now.
