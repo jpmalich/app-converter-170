@@ -4250,3 +4250,19 @@ fivekey_front_sheet / fivekey_letrick_front_regression (md5 78617efc… / 6c163d
 QUEUE: P2 (black skeleton + solid/dashed restyle — 4 Letrick PNGs + 1 doug jones) awaits
 Howard's field-compare of P1. Then P3 rooflines (gable; hip = named on-sheet limitation),
 P4 generic chimney (propose ASSUMED standard depth first). Fixture restoration anytime before P5.
+
+## SESSION 2026-07-21 (part 22) — P2 SHIPPED (black skeleton + solid/dashed restyle, C-1/C-2)
+CLEAN a75228b, 1151 green. ElevationSheet.jsx only (print inherits via SheetSvg):
+massing outlines (wall/step polygon, chase glyph/profile/cap boxes + top lines) → BLACK (C.ink);
+course hatch → SIDING color (C.siding, 0.5 wt) as component FILL, all hatch groups (wall, gable,
+profile, cap, glyph); ALL component dash signatures RETIRED — ISC/soffit/starter/band-board +
+legend samples now SOLID; uncertainty left linework — gable rake solid (label "— INDICATIVE
+OUTLINE" dropped, chip carries basis), opening collision/no-sill dashes removed (text flags
+stay), step marker + annotation leaders/boxes solid; channel headers + KEY line → "BLACK =
+GEOMETRY · COLOR = COMPONENT · CHIPS = SOURCE"; legend "SIDING" → "SIDING FILL" (row respaced —
+first pass overflowed the title block, fixed). RIDGE BAND stays dashed by design — C-3 retires
+it at P3 when the ridge becomes a drawn edge. Occlusion/print/provenance pins unaffected (order/
+fill-based, verified). PNGs: p2_letrick_{front,left,back,right} + p2_dougjones_front (md5s in
+handback). LESSON: batched search_replace on this file appended stray tokens at EOF twice —
+verify with eslint after big JSX batches.
+QUEUE: Howard field-compare gates P3 (rooflines, gable first; hip = named on-sheet limitation).
