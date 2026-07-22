@@ -4287,3 +4287,24 @@ p3_letrick_{back,left,right,front} + p3_dougjones_front.
 QUEUE: Howard field-compare gates P4 (generic chimney — MUST propose ASSUMED standard depth
 value for ratification BEFORE wiring). Backlog added by Howard: per-sheet layer visibility
 toggles (component layers on/off, geometry always on) — post-wave, no build now.
+
+## SESSION 2026-07-22 (part 24) — P4 SHIPPED (generic chimney path + guard amendment)
+CLEAN 5436a82, 1165 green. RATIFIED CONSTANTS (contractor-spec, Howard 2026-07-21):
+STANDARD_CHASE_DEPTH_IN=30.0; CHASE_CODE_MIN_ABOVE_RIDGE_FT=2.0 (height fallback = grade →
+drawn ridge + 2', ridge-relative). _chase_dims_ladder(): width ESTIMATED (photo-scaled, corner-
+read span × wall width); depth TAPED (appendage user_measured) > ASSUMED 30"; height TAPED >
+ASSUMED (ridge+2). Corner-read chase DETECTION w/ FACE-WALL GUARD (no accents anywhere + ≥2
+reads + max-count wall — Letrick right carries 3 projection-edge reads that must not spawn a
+face glyph; first pass regressed 2 LBR pins, guard fixed it). Side profiles ALWAYS drawn where
+the chase projects, rung-tagged (doug left/right: 30" ASSUMED × ridge+2). COLLISION GUARD
+AMENDED (Howard ruling): flag-always suppress-never, both draw, callout adds "resolve via Field
+Verify location review" line; suppression retired from detect_collisions, route, and JSX paint
+gate. Doug back = acceptance sheet: chase 72" ESTIMATED × 30" ASSUMED × 20'-8⅜" ASSUMED drawn
+solid grade→cap, W2×CHASE 22¾" overlap flagged both. Pins amended ×3 (see register). NEW
+tests/test_chase_ladder_p4.py (9 pins: constants, ladder rungs, tape upgrade, assumed-never-
+overrides, doug live acceptance/collision/profiles/front-empty). Letrick TAPED path unchanged.
+WAVE 1 (P1–P4) COMPLETE pending Howard field-compare of P4.
+QUEUE after P4 field-compare: red house fixture restoration (own receipted handback) → P5
+dormers (needs restoration + C-5 pin amendments w/ before→after). Parked: P6 massing family
+(extraction proposals one at a time), layer-visibility toggles (post-wave), hip pitch
+reconciliation (P6-class), upload security tightening (pre-wave P0 from earlier list).

@@ -214,3 +214,19 @@ guard as the last action with no code edits after it.
   test_elevation_sheets_lbr.py (8 count dicts + header docstring + test rename
   three_key→five_key).
 - **Class:** contract narrower than perception — silent type-fold at the binder.
+
+## 2026-07-21 — RULE AMENDMENT (not reversal-by-drift): collision guard flag-always, suppress-never
+- **Ruled by Howard 2026-07-21 (P4).** The 2026-07-19 suppression rule (opening ×
+  appendage → chase drawing suppressed) predates C-4 chases as scale-rendered
+  first-class elements. Collisions between tagged AI positions are uncertainty,
+  not impossibility; spec B (chimneys always draw) + spec A (doubt lives in tags)
+  govern. "Never renders impossible geometry silently" is satisfied by LOUD
+  flagging — a missing chimney misleads a crew worse than a flagged overlap.
+- **AFTER:** both elements draw at best-known positions, both flag ("positions
+  unverified — overlap NN\""), callout names both elements + bases + fix
+  direction ("resolve via Field Verify location review"). Ratifying/taping the
+  chase position clears the flag by the normal machinery.
+- **Pins amended (before→after in the P4 handback):** lbr trips-on-prefix test
+  (suppressed=="CHASE" → None + Field Verify), lbr order-independence test
+  (kind never suppresses), occlusion test_suppressed_chase_paints_nothing →
+  test_chase_always_paints_flag_never_suppresses.
