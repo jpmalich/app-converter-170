@@ -67,14 +67,16 @@ def fmt_inches(inches: float) -> str:
 
 
 def detect_collisions(elements, tol_in=0.1):
-    """GLOBAL COLLISION GUARD (ruled 2026-07-19): no two rendered wall
-    elements may overlap. Openings take precedence — schedule-bound,
-    multi-source; appendages carry lower positional confidence, so on an
-    opening × appendage conflict the APPENDAGE drawing is suppressed.
-    Suppression is NEVER silent: every trip emits a deviation-style
-    callout naming BOTH elements and their bases, and the suppressed
-    element stays in the wall-data block with a 'suppressed — collision'
-    note. elements: [{name, base, lo_ft, hi_ft, kind: opening|appendage}]."""
+    """GLOBAL COLLISION GUARD — FLAG-ALWAYS, SUPPRESS-NEVER (rule AMENDED
+    by Howard's ruling 2026-07-21; original suppression rule 2026-07-19
+    predates C-4 chases as scale-rendered first-class elements). ALL
+    collisions — opening × opening AND opening × chase — draw BOTH
+    elements at their best-known positions, flag both, and emit a
+    deviation-style callout naming both elements and their bases, plus
+    the fix direction (Field Verify location review). Collisions between
+    tagged AI positions are uncertainty, not impossibility: a missing
+    chimney misleads a crew worse than a flagged overlap.
+    elements: [{name, base, lo_ft, hi_ft, kind: opening|appendage}]."""
     out = []
     for i in range(len(elements)):
         for j in range(i + 1, len(elements)):
@@ -82,19 +84,14 @@ def detect_collisions(elements, tol_in=0.1):
             overlap_ft = min(a["hi_ft"], b["hi_ft"]) - max(a["lo_ft"], b["lo_ft"])
             if overlap_ft * 12.0 <= tol_in:
                 continue
-            suppressed = None
-            if a["kind"] != b["kind"]:
-                suppressed = a["name"] if a["kind"] == "appendage" else b["name"]
             out.append({
                 "elements": [a["name"], b["name"]],
                 "bases": [a["base"], b["base"]],
                 "overlap_in": round(overlap_ft * 12.0, 1),
                 "overlap_label": fmt_inches(overlap_ft * 12.0),
-                "suppressed": suppressed,
-                "resolution": (f"{suppressed} drawing suppressed — opening governs "
-                               "(schedule-bound, multi-source); appendage positional confidence lower"
-                               if suppressed else
-                               "both openings flagged — positions unverified"),
+                "suppressed": None,
+                "resolution": ("both elements flagged — positions unverified"
+                               " · resolve via Field Verify location review"),
             })
     return out
 
@@ -544,12 +541,24 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 and c.get("walls") == [wall_label]
                 and c.get("position_frac") is not None]
     # P4 (ruled 2026-07-21): chases also DETECT from run corner reads —
-    # an accent read is not required. DEFECT RETIRED: doug jones's chase
-    # had confirmed corner reads but no accent → nothing drew.
-    if not chase and _chase_fracs(which):
-        chase = {"note": "chimney chase (detected from run corner reads)",
-                 "tag": "AI-READ ✓", "profile": "",
-                 "footprint": "untaped"}
+    # an accent read is not required. FACE-WALL GUARD: accents name the
+    # chase's FACE wall; projection edges also read on ADJACENT walls
+    # (Letrick right wall carries 3 chase reads) and must not spawn face
+    # glyphs — the fallback fires only when NO wall carries a chase
+    # accent, this wall has a read SPAN (≥2 reads), and no other wall
+    # carries more chase reads than this one.
+    if not chase:
+        any_chase_accent = any(
+            "chase" in str(a.get("location", "")).lower()
+            for w2 in (raw.get("walls") or [])
+            for a in (w2.get("accent_profiles") or []))
+        fr_here = _chase_fracs(which)
+        read_counts = [len(_chase_fracs(lbl)) for lbl in ("front", "back", "left", "right")]
+        if (not any_chase_accent and len(fr_here) >= 2
+                and len(fr_here) == max(read_counts)):
+            chase = {"note": "chimney chase (detected from run corner reads)",
+                     "tag": "AI-READ ✓", "profile": "",
+                     "footprint": "untaped"}
     if chase:
         fr = _chase_fracs(which)
         dr = _door_relative_chase_center(est, raw, (cd or {}).get("width_in")) if which == "back" else None
@@ -711,10 +720,10 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     vents = [o for o in openings if o["type"] == "Vent"]
     garage_doors = [o for o in openings if o["type"] == "Garage door"]
 
-    # GLOBAL COLLISION GUARD (ruled 2026-07-19) — every sheet, every
-    # rendered wall element: openings + chase glyph. Trips suppress the
-    # appendage drawing (openings govern) and surface a deviation-style
-    # callout naming both elements and their bases — never silent.
+    # GLOBAL COLLISION GUARD — every sheet, every rendered wall element:
+    # openings + chase glyph. FLAG-ALWAYS, SUPPRESS-NEVER (amended
+    # 2026-07-21): both elements draw, both flag, callout directs to
+    # Field Verify location review — never silent.
     guard_elements = []
     for o in openings:
         if o["center_ft"] is None or not o["width_in"]:
@@ -732,15 +741,11 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "lo_ft": chase["center_ft"] - half, "hi_ft": chase["center_ft"] + half})
     collisions = detect_collisions(guard_elements)
     for c in collisions:
-        if not c["suppressed"]:
-            for o in openings:
-                if o["tag"] in c["elements"]:
-                    o["collision"] = True
-    if chase and any(c["suppressed"] == "CHASE" for c in collisions):
-        chase["suppressed"] = True
-        chase["suppressed_note"] = ("suppressed — collision with " + ", ".join(
-            e for c in collisions if c["suppressed"] == "CHASE"
-            for e in c["elements"] if e != "CHASE"))
+        for o in openings:
+            if o["tag"] in c["elements"]:
+                o["collision"] = True
+        if chase and "CHASE" in c["elements"]:
+            chase["collision"] = True
 
     completed = run.get("completed_at")
     completed_str = str(completed)[:10] if completed else ""

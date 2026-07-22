@@ -398,12 +398,12 @@ def test_verb_remove_reset_back_window_group(session):
 
 
 def test_collision_guard_trips_on_prefix_letrick_back_data():
-    """COLLISION GUARD (ruled 2026-07-19) — the guard MUST trip on the
-    PRE-FIX Letrick BACK state: chase bound at center 21.9' (AI corner
-    reads) with TAPED 64\" width put its right edge at 24.57', overlapping
-    D1 (left edge 24.3') by ~3.2\". Openings take precedence (schedule-
-    bound, multi-source) → the CHASE drawing is suppressed; suppression
-    is never silent — the callout names BOTH elements and their bases."""
+    """COLLISION GUARD — PIN AMENDED BY RULING 2026-07-21 (flag-always,
+    suppress-never; original 2026-07-19 suppression predated C-4 scale-
+    rendered chases). BEFORE: opening × appendage → CHASE drawing
+    suppressed ('opening governs'). AFTER: the guard still TRIPS on the
+    pre-fix Letrick BACK state (~3.2\" overlap) but BOTH elements draw
+    and flag; the callout directs to Field Verify location review."""
     import sys
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -421,16 +421,18 @@ def test_collision_guard_trips_on_prefix_letrick_back_data():
     assert len(cols) == 1
     c = cols[0]
     assert set(c["elements"]) == {"D1", "CHASE"}
-    assert c["suppressed"] == "CHASE"          # opening governs
+    assert c["suppressed"] is None             # AMENDED: suppress-never
     assert 3.0 < c["overlap_in"] < 3.5         # the reported ~3" overlap
     assert len(c["bases"]) == 2 and all(c["bases"])
-    assert "opening governs" in c["resolution"]
+    assert "flagged" in c["resolution"] and "unverified" in c["resolution"]
+    assert "Field Verify" in c["resolution"]   # the flag is an instruction
 
 
 def test_collision_guard_opening_pair_and_order_independence():
-    """Guard semantics pinned: (a) opening × opening — no precedence,
-    nothing suppressed, both flagged unverified; (b) appendage listed
-    FIRST still loses to the opening (kind, not order, decides);
+    """Guard semantics — PIN AMENDED BY RULING 2026-07-21: (a) opening ×
+    opening — both flagged unverified (unchanged); (b) opening × appendage
+    now behaves IDENTICALLY (BEFORE: appendage suppressed regardless of
+    order; AFTER: suppressed is None, both flagged, Field Verify direction);
     (c) exact abutment does NOT trip (tolerance guards float noise)."""
     import sys
     from pathlib import Path
@@ -444,7 +446,8 @@ def test_collision_guard_opening_pair_and_order_independence():
     swapped = detect_collisions([
         {"name": "CHASE", "kind": "appendage", "base": "b1", "lo_ft": 20.0, "hi_ft": 25.0},
         {"name": "D1", "kind": "opening", "base": "b2", "lo_ft": 24.3, "hi_ft": 27.3}])
-    assert swapped[0]["suppressed"] == "CHASE"
+    assert swapped[0]["suppressed"] is None    # AMENDED: kind never suppresses
+    assert swapped[0]["resolution"] == pair[0]["resolution"]
     abut = detect_collisions([
         {"name": "W1", "kind": "opening", "base": "b1", "lo_ft": 3.0, "hi_ft": 6.0},
         {"name": "CHASE", "kind": "appendage", "base": "b2", "lo_ft": 6.0, "hi_ft": 9.0}])

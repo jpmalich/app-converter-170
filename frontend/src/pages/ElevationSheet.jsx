@@ -164,11 +164,11 @@ export function SheetSvg({ data }) {
   const bubbleY = Math.max(topRefY - 55, 208);
   const chaseBoxH = chase && chase.ai_band ? 62 : 58;
   const collisionBoxY = chase ? 150 + chaseBoxH + 6 : 150;
-  // chase locator glyph (BACK) — dims TAPED to scale; position ratified
-  // door-relative (ruled 2026-07-19) or bound from run chase-corner
-  // reads. COLLISION GUARD: a suppressed chase draws NO geometry — the
-  // deviation-style callout + wall-data note carry it instead.
-  const chaseG = chase && !chase.suppressed && chase.center_ft != null
+  // chase locator glyph — dims at the best-known rung, to scale; position
+  // ratified door-relative (ruled 2026-07-19) or bound from run chase-
+  // corner reads. COLLISION GUARD (amended 2026-07-21): FLAG-ALWAYS,
+  // SUPPRESS-NEVER — the chase ALWAYS draws; overlaps flag loudly.
+  const chaseG = chase && chase.center_ft != null
     ? {
         cx: wallX + chase.center_ft * ppf,
         w: chase.width_in ? (chase.width_in / 12) * ppf : 26,
@@ -257,9 +257,9 @@ export function SheetSvg({ data }) {
         : "CHIMNEY CHASE";
     S.chaseGlyphSub = `POSITION ${chase.position_tag || "—"} · ${String(chase.position_note || "").split(" — ")[0].toUpperCase()}`;
     S.chaseData = chase.dims_tag === "TAPED"
-      ? `Chase ${chase.width_label} × ${chase.depth_label} × ${chase.height_label} — TAPED · position ${chase.position_tag || "—"}${chase.suppressed ? ` · DRAWING ${String(chase.suppressed_note || "suppressed — collision").toUpperCase()}` : ""}`
+      ? `Chase ${chase.width_label} × ${chase.depth_label} × ${chase.height_label} — TAPED · position ${chase.position_tag || "—"}${chase.collision ? " · POSITION UNVERIFIED — OVERLAP FLAGGED" : ""}`
       : chase.dims_tag === "LADDER"
-        ? `Chase ${chase.footprint} · position ${chase.position_tag || "—"}${chase.suppressed ? ` · DRAWING ${String(chase.suppressed_note || "suppressed — collision").toUpperCase()}` : ""}`
+        ? `Chase ${chase.footprint} · position ${chase.position_tag || "—"}${chase.collision ? " · POSITION UNVERIFIED — OVERLAP FLAGGED" : ""}`
         : "";
   }
   // COLLAPSE RULE (ruled 2026-07-20): more than 3 flagged (non-suppressed)
@@ -271,15 +271,16 @@ export function SheetSvg({ data }) {
   const flaggedCols = collisions.filter((c) => !c.suppressed);
   const colCollapsed = flaggedCols.length > 3;
   const colLines = (colCollapsed ? suppressedCols : collisions).map((c) => ({
-    head: `COLLISION GUARD — ${c.elements.join(" × ")} OVERLAP ${c.overlap_label}${c.suppressed ? ` — ${String(c.suppressed).toUpperCase()} DRAWING SUPPRESSED (OPENING GOVERNS)` : " — POSITIONS UNVERIFIED"}`,
+    head: `COLLISION GUARD — ${c.elements.join(" × ")} OVERLAP ${c.overlap_label} — POSITIONS UNVERIFIED`,
     b1: `${c.elements[0]}: ${c.bases[0]}`,
     b2: `${c.elements[1]}: ${c.bases[1]}`,
+    fix: String(c.resolution || "").split(" · ").pop(),
   }));
   const colSummaryH = colCollapsed ? 40 : 0;
   if (colCollapsed) {
     const affectedTags = [...new Set(flaggedCols.flatMap((c) => c.elements))];
-    S.colSummary1 = `COLLISION GUARD — ${flaggedCols.length} OPENING-PAIR OVERLAPS — POSITIONS UNVERIFIED — SEE SCHEDULE`;
-    S.colSummary2 = `AFFECTED: ${affectedTags.join(" ")} · full pair detail retained in sheet data — nothing suppressed`;
+    S.colSummary1 = `COLLISION GUARD — ${flaggedCols.length} OVERLAPPING PAIRS — POSITIONS UNVERIFIED — SEE SCHEDULE`;
+    S.colSummary2 = `AFFECTED: ${affectedTags.join(" ")} · ${String(flaggedCols[0].resolution || "").split(" · ").pop()} · full pair detail retained in sheet data`;
   }
   if (prof) {
     S.prof1 = `CHASE PROFILE — ${prof.depth_label} DEEP × ${prof.height_label} — ${prof.dims_tag}`;
@@ -389,9 +390,10 @@ export function SheetSvg({ data }) {
             {colLines.map((c, i) => (
               <g key={i}>
                 <rect x="530" y={collisionBoxY + i * 48} width="466" height="44" fill="#fef2f2" stroke={C.trim} strokeWidth="1.4" />
-                <text x="540" y={collisionBoxY + i * 48 + 14} fontSize="8" fontWeight="bold" fill={C.trim}>{c.head}</text>
-                <text x="540" y={collisionBoxY + i * 48 + 26} fontSize="7" fill="#7f1d1d">{c.b1}</text>
-                <text x="540" y={collisionBoxY + i * 48 + 37} fontSize="7" fill="#7f1d1d">{c.b2}</text>
+                <text x="540" y={collisionBoxY + i * 48 + 13} fontSize="8" fontWeight="bold" fill={C.trim}>{c.head}</text>
+                <text x="540" y={collisionBoxY + i * 48 + 24} fontSize="7" fill="#7f1d1d">{c.b1}</text>
+                <text x="540" y={collisionBoxY + i * 48 + 33} fontSize="7" fill="#7f1d1d">{c.b2}</text>
+                <text x="540" y={collisionBoxY + i * 48 + 41} fontSize="6.5" fontWeight="bold" fill="#7f1d1d" data-testid="elevation-collision-fix-direction">↳ {c.fix}</text>
               </g>
             ))}
           </g>

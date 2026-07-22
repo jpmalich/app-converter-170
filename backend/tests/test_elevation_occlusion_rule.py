@@ -60,8 +60,11 @@ def test_front_cap_occludes_drawn_ridge():
     assert "capG.botY" in cap_body  # cap bottom anchors on the drawn ridge
 
 
-def test_suppressed_chase_paints_nothing():
-    """COLLISION GUARD interplay: a suppressed chase draws NO geometry —
-    so it occludes nothing (wall linework runs unbroken; only the
-    deviation callout + wall-data note carry the record)."""
-    assert "chase && !chase.suppressed && chase.center_ft != null" in JSX
+def test_chase_always_paints_flag_never_suppresses():
+    """PIN AMENDED BY RULING 2026-07-21 (flag-always, suppress-never).
+    BEFORE: `chase && !chase.suppressed && chase.center_ft != null` —
+    a suppressed chase painted nothing. AFTER: the suppression gate is
+    RETIRED from the paint path — the chase draws whenever it has a bound
+    center; collisions flag loudly instead of hiding geometry."""
+    assert "chase && chase.center_ft != null" in JSX
+    assert "!chase.suppressed" not in JSX
