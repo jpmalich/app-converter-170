@@ -802,7 +802,7 @@ export function SheetSvg({ data }) {
         <g fontSize="9.5" fill={C.ink} data-testid="elevation-schedule">
           <text x="404" y="646" fontWeight="bold" letterSpacing="1.5" fontSize="10.5">{S.schedHead}</text>
           {anyDormerOpening && (
-            <text x="712" y="646" textAnchor="end" fontSize="7" fill={C.muted} data-testid="elevation-schedule-dormer-legend">* = ON DORMER (roof plane) — sill not grade-anchored</text>
+            <text x="712" y="655" textAnchor="end" fontSize="7" fill={C.muted} data-testid="elevation-schedule-dormer-legend">* = ON DORMER (roof plane) — sill not grade-anchored</text>
           )}
           {data.openings.length > 0 && (
             <g>
