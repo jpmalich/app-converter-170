@@ -4308,3 +4308,24 @@ QUEUE after P4 field-compare: red house fixture restoration (own receipted handb
 dormers (needs restoration + C-5 pin amendments w/ before→after). Parked: P6 massing family
 (extraction proposals one at a time), layer-visibility toggles (post-wave), hip pitch
 reconciliation (P6-class), upload security tightening (pre-wave P0 from earlier list).
+
+## SESSION 2026-07-22 (part 25) — CONFIRMATION-WEIGHTED GEOMETRY SHIPPED (wave-1 closer)
+CLEAN 1bde208, 1172 green. RULE (Howard 2026-07-22, register founding example = doug back chase):
+CONFIRMED reads anchor drawn geometry; UNCONFIRMED single-sighting reads NEVER define drawn
+edges/positions/spans — flagged comparisons (ai_band) only. RATIFIED: STANDARD_CHASE_WIDTH_IN=48.
+_bind_chase_position(): two-edges (span ≥ 48" discriminator — edge-CLUSTER rule: doug's 0.40/0.42
+= one right-edge cluster, anchored at the OUTSIDE read) > single-edge anchor + extend toward
+unconfirmed side (direction: unconf side > locator handedness > interior fallback) by TAPED
+width_ft (NEW appendage machinery field) > ASSUMED 48" > zero-confirmed = named state, nothing
+drawn. Doug result: chase 17'–21', CLEAR of W2 (matches ground truth), unconfirmed 0.3 read
+renders as comparison band. PINS AMENDED ×5: chase_ladder_p4 doug acceptance (72" EST → 48"
+ASSUMED anchored) + no-artifact-collision; lbr ratification-provenance (width_ft 400 → 200 +
+girth_ft still 400); appendage_dims bad-input (width_ft joins machinery); provenance sweep
+(tier vocabulary set, "confirmed" = read tier never human). NEW
+tests/test_confirmation_weighted_geometry.py (7 pins). PNG p4b_dougjones_back_confweighted
+md5 9260918bc47553fae1f39dd8f84c0edc. NOTE: handback_green.sh stamps the tail line verbatim but
+does NOT hard-fail on test failures — caught a "CLEAN" stamp over 3 fails this session; ALWAYS
+read the RESULT line, only 100%-green counts.
+QUEUE: Howard's re-look on the doug BACK sheet closes WAVE 1. Then: red-house fixture
+restoration (own receipted handback) → P5 dormers. Parked: P6 massing, layer toggles, hip
+pitch, upload security tightening.
