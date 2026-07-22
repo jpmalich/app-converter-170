@@ -39,7 +39,15 @@ BINDER = (ROOT / "backend" / "routes" / "elevation_sheets.py").read_text()
 SHEET_JSX = (ROOT / "frontend" / "src" / "pages" / "ElevationSheet.jsx").read_text()
 FVC_JSX = (ROOT / "frontend" / "src" / "components" / "estimate" / "FieldVerifyCard.jsx").read_text()
 
-GENERIC_NOTE = "position from run corner reads — untaped"
+GENERIC_NOTES = {
+    # PIN AMENDED BY RULING 2026-07-22 (confirmation-weighted geometry):
+    # the fr-path vocabulary now names the READ TIER — "confirmed" refers
+    # to multi-sighting corner reads, never to human confirmation. The
+    # ratified human wording remains dr-path-only (record-guarded).
+    "position from confirmed run corner reads — untaped",
+    "position anchored on confirmed corner read — untaped",
+    "no confirmed corner read — glyph not drawn",
+}
 
 
 @pytest.fixture(scope="module")
@@ -59,7 +67,7 @@ def test_no_hardcoded_human_confirmation_in_binder():
     confirmation wording left ("CONFIRMED (human, photo)") sits on the
     dr / dr_b paths, which require the ratify record to exist."""
     assert "human photo-confirmed" not in BINDER
-    assert GENERIC_NOTE in BINDER
+    assert any(n in BINDER for n in GENERIC_NOTES)
 
 
 def test_dr_guard_still_carries_the_ratified_wording():
@@ -87,9 +95,10 @@ def test_doug_jones_back_chase_claims_no_human_confirmation(session):
     assert "human photo-confirmed" not in r.text
     ch = r.json()["chase"]
     if ch is not None and ch.get("position_tag") != "CONFIRMED (human, photo)":
-        # no ratify record on this estimate → the generic honest note
-        assert ch.get("position_note") == GENERIC_NOTE
+        # no ratify record on this estimate → an honest tier-vocabulary note
+        assert ch.get("position_note") in GENERIC_NOTES
         assert "D1" not in str(ch.get("position_note"))
+        assert "human" not in str(ch.get("position_note"))
 
 
 def test_doug_jones_sheets_are_run_basis_no_sealed_key(session):

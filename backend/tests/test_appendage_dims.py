@@ -151,12 +151,20 @@ def test_absurd_height_flags_on_preview(session):
 
 
 def test_validation_rejects_bad_input(session):
+    # PIN AMENDED BY RULING 2026-07-22: width_ft JOINS the machinery
+    # (tape-upgrade path for the ASSUMED standard chase width) — the
+    # closed-contract refusal now pins on a genuinely unknown field.
     for bad in ({"key": "appendage:roof", "field": "height_ft", "value": 10},
-                {"key": KEY, "field": "width_ft", "value": 10},
+                {"key": KEY, "field": "girth_ft", "value": 10},
                 {"key": KEY, "field": "height_ft", "value": 400},
                 {"key": KEY, "field": "height_ft", "value": "tall"}):
         r = session.post(f"{API}/estimates/{EST_ID}/lp-appendage-dims", json=bad, timeout=15)
         assert r.status_code == 400, bad
+    ok = session.post(f"{API}/estimates/{EST_ID}/lp-appendage-dims",
+                      json={"key": KEY, "field": "width_ft", "value": 10}, timeout=15)
+    assert ok.status_code == 200, ok.text  # ruled 2026-07-22
+    session.post(f"{API}/estimates/{EST_ID}/lp-appendage-dims",
+                 json={"key": KEY, "field": "width_ft", "action": "revert"}, timeout=15)
 
 
 # ── Blueprint offer-and-confirm ───────────────────────────────────────
