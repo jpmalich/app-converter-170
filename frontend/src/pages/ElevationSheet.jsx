@@ -145,7 +145,7 @@ export function SheetSvg({ data }) {
         cx: wallX + dormer.center_ft * ppf,
         w: dormer.width_ft * ppf,
         baseY: wallBottom - dormer.base_ft * ppf,
-        topY: wallBottom - (dormer.base_ft + dormer.knee_ft) * ppf,
+        topY: wallBottom - dormer.top_ft * ppf,
       }
     : null;
   const ops = (data.openings || []).map((o) => {
@@ -155,13 +155,13 @@ export function SheetSvg({ data }) {
     const x = wallX + o.center_ft * ppf - w / 2;
     const noSill = o.sill_in == null && !o.on_dormer;
     let bottom;
-    if (o.on_dormer && dormerG) {
-      // dormer windows center in the dormer face band (roof plane)
-      bottom = dormerG.baseY - Math.max((dormerG.baseY - dormerG.topY - h) / 2, 0);
-    } else if (o.sill_in == null) {
-      bottom = (wallBottom + topRefY) / 2 + h / 2;
-    } else {
+    if (o.sill_in != null) {
       bottom = wallBottom - (o.sill_in / 12) * ppf;
+    } else if (o.on_dormer && dormerG) {
+      // dormer window without a bound sill: center in the dormer band
+      bottom = dormerG.baseY - Math.max((dormerG.baseY - dormerG.topY - h) / 2, 0);
+    } else {
+      bottom = (wallBottom + topRefY) / 2 + h / 2;
     }
     return { ...o, drawable: true, noSill, x, y: bottom - h, w, h, cx: wallX + o.center_ft * ppf };
   });
@@ -241,19 +241,30 @@ export function SheetSvg({ data }) {
       }
     : null;
 
-  // P5: dormer cheek PROFILES on perpendicular (gable) views — no
-  // along-slope position read: anchored mid-rake, INDICATIVE
+  // P5 dormer PROFILES on perpendicular (gable) views — AMENDED per
+  // field-compare ruling 2026-07-22: the dormer renders as its ROOF EDGE
+  // (LEVEL line projecting off the main slope) with the vertical FACE
+  // EDGE below it (height = knee) and the CHEEK closing back to the roof
+  // plane. Anchored at the BOUND v-pos band (base_ft/top_ft), not
+  // mid-rake. Wide and low, per the site photo.
   const dProfGs = (gableFt > 0 ? data.dormer_profiles || [] : []).map((p) => {
     const apex = { x: (wallX + wallRight) / 2, y: apexY };
-    const corner = p.drawing_side === "left"
+    const cornerPt = p.drawing_side === "left"
       ? { x: wallX, y: segTopY[0] }
       : { x: wallRight, y: segTopY[stepped ? 1 : 0] };
-    const A = { x: (apex.x + corner.x) / 2, y: (apex.y + corner.y) / 2 };
-    const B = { x: A.x, y: A.y - p.knee_ft * ppf };
-    const C2 = { x: A.x + (apex.x - A.x) * 0.55, y: A.y + (apex.y - A.y) * 0.55 };
-    return { ...p, A, B, C2,
+    const apexH = (wallBottom - apex.y) / ppf;
+    const cornerH = (wallBottom - cornerPt.y) / ppf;
+    const out = { ...p,
       _label: `DORMER PROFILE (${String(p.face).toUpperCase()} SLOPE) — KNEE ${p.knee_label} — ${p.tag}`,
       _note: String(p.note).toUpperCase() };
+    if (p.base_ft == null || apexH <= cornerH) return { ...out, unresolved: true };
+    const xAt = (h) => apex.x + ((apexH - h) / (apexH - cornerH)) * (cornerPt.x - apex.x);
+    const baseH = Math.max(p.base_ft, cornerH + 0.05);
+    const topH = Math.min(p.top_ft, apexH - 0.05);
+    const A = { x: xAt(baseH), y: wallBottom - baseH * ppf };  // rake @ dormer base
+    const B = { x: A.x, y: wallBottom - topH * ppf };          // face edge (vertical, knee)
+    const C2 = { x: xAt(topH), y: wallBottom - topH * ppf };   // roof edge LEVEL back to rake
+    return { ...out, A, B, C2 };
   });
 
   // Precomputed display strings — single member-expression per SVG text
@@ -324,7 +335,7 @@ export function SheetSvg({ data }) {
   }
   if (dormer) {
     S.dormerTitle = `DORMER — ${dormer.width_label} W × ${dormer.knee_label} KNEE — ${dormer.width_tag}`;
-    S.dormerSub = String(dormer.base_note).toUpperCase();
+    S.dormerSub = `BAND ${dormer.base_label}–${dormer.top_label} ABOVE GRADE — V-POS ${String(dormer.vpos_tag).toUpperCase()}`;
     S.dormerTop = dormer.top_note ? String(dormer.top_note).toUpperCase() : "";
   }
   S.widthTail = ` — ${W.width_tag} (${W.width_source})`;
@@ -451,30 +462,6 @@ export function SheetSvg({ data }) {
           </g>
         )}
 
-        {/* P5 — DORMER CHEEK PROFILES on gable views: anchored mid-rake,
-            along-slope position NOT READ — INDICATIVE. Paint BEFORE the
-            gable/rake lines — the dormer sits BEHIND the gable plane, the
-            rake edge stays visible over the cheek. */}
-        {dProfGs.map((p) => (
-          <g key={p.face} data-testid={`elevation-dormer-profile-${p.face}`}>
-            <path d={`M ${p.A.x} ${p.A.y} L ${p.B.x} ${p.B.y} L ${p.C2.x} ${p.C2.y} Z`}
-              fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" />
-            {p.drawing_side === "left" ? (
-              <g>
-                <line x1={p.B.x} y1={p.B.y - 3} x2="96" y2="224" stroke={C.amber} strokeWidth="0.9" />
-                <text x="64" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber}>{p._label}</text>
-                <text x="64" y="244" fontSize="6.5" fill={C.amber}>{p._note}</text>
-              </g>
-            ) : (
-              <g>
-                <line x1={p.B.x} y1={p.B.y - 3} x2="960" y2="224" stroke={C.amber} strokeWidth="0.9" />
-                <text x="992" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{p._label}</text>
-                <text x="992" y="244" fontSize="6.5" fill={C.amber} textAnchor="end">{p._note}</text>
-              </g>
-            )}
-          </g>
-        ))}
-
         {/* Gable-end walls: siding gable + TRUE RAKES (P3, overhang overshoot);
             eave walls: fascia band + soffit + DRAWN RIDGE (P3, C-3) */}
         {gableFt > 0 ? (
@@ -546,15 +533,45 @@ export function SheetSvg({ data }) {
             <line x1={dormerG.cx - dormerG.w / 2} y1={dormerG.topY} x2={dormerG.cx - dormerG.w / 2} y2={dormerG.baseY} stroke={C.osc} strokeWidth="3.5" />
             <line x1={dormerG.cx + dormerG.w / 2} y1={dormerG.topY} x2={dormerG.cx + dormerG.w / 2} y2={dormerG.baseY} stroke={C.osc} strokeWidth="3.5" />
             <line x1={dormerG.cx - dormerG.w / 2 - 3} y1={dormerG.topY} x2={dormerG.cx + dormerG.w / 2 + 3} y2={dormerG.topY} stroke={C.ink} strokeWidth="2" />
-            <text x={dormerG.cx} y={dormerG.topY - 18} fontSize="7.5" textAnchor="middle" fill={C.amber} fontWeight="bold" data-testid="elevation-dormer-title">{S.dormerTitle}</text>
-            <text x={dormerG.cx} y={dormerG.topY - 9} fontSize="6.5" textAnchor="middle" fill={C.amber}>{S.dormerSub}</text>
+            {/* callout corner block (leader to the band's top-left) — keeps
+                the long v-pos provenance clear of bubbles and rooflines */}
+            <line x1={dormerG.cx - dormerG.w / 2} y1={dormerG.topY - 2} x2="96" y2="246" stroke={C.amber} strokeWidth="0.9" />
+            <text x="64" y="256" fontSize="7.5" fill={C.amber} fontWeight="bold" data-testid="elevation-dormer-title">{S.dormerTitle}</text>
+            <text x="64" y="266" fontSize="6.5" fill={C.amber}>{S.dormerSub}</text>
             {S.dormerTop && (
-              <text x={dormerG.cx} y={dormerG.topY - 27} fontSize="6.5" textAnchor="middle" fill={C.trim} fontWeight="bold" data-testid="elevation-dormer-top-note">{S.dormerTop}</text>
+              <text x="64" y="276" fontSize="6.5" fill={C.trim} fontWeight="bold" data-testid="elevation-dormer-top-note">{S.dormerTop}</text>
             )}
           </g>
         )}
-        {/* P5 — DORMER CHEEK PROFILES: painted earlier (before the rake
-            lines — the dormer sits behind the gable plane) */}
+        {/* P5 — DORMER CHEEK PROFILES (gable views), AMENDED per the
+            field-compare ruling: painted AFTER the gable — the drawn
+            region is the silhouette ABOVE the rake line (the dormer pops
+            over the roof plane); its lower edge lies along the rake. */}
+        {dProfGs.map((p) => (
+          <g key={p.face} data-testid={`elevation-dormer-profile-${p.face}`}>
+            {!p.unresolved && (
+              <g>
+                <path d={`M ${p.A.x} ${p.A.y} L ${p.B.x} ${p.B.y} L ${p.C2.x} ${p.C2.y} Z`}
+                  fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" />
+                {/* the ROOF EDGE — level dormer eave line, the defining edge */}
+                <line x1={p.B.x} y1={p.B.y} x2={p.C2.x} y2={p.C2.y} stroke={C.ink} strokeWidth="2.5" data-testid={`elevation-dormer-profile-roof-edge-${p.face}`} />
+              </g>
+            )}
+            {p.drawing_side === "left" ? (
+              <g>
+                {!p.unresolved && <line x1={p.B.x} y1={p.B.y - 3} x2="96" y2="224" stroke={C.amber} strokeWidth="0.9" />}
+                <text x="64" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber}>{p._label}</text>
+                <text x="64" y="244" fontSize="6.5" fill={C.amber}>{p._note}</text>
+              </g>
+            ) : (
+              <g>
+                {!p.unresolved && <line x1={p.B.x} y1={p.B.y - 3} x2="960" y2="224" stroke={C.amber} strokeWidth="0.9" />}
+                <text x="992" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{p._label}</text>
+                <text x="992" y="244" fontSize="6.5" fill={C.amber} textAnchor="end">{p._note}</text>
+              </g>
+            )}
+          </g>
+        ))}
 
         {/* OCCLUSION RULE extended to roof edges (P3): the chase profile
             (sides) and cap (front) project proud of the wall — they paint
@@ -662,10 +679,10 @@ export function SheetSvg({ data }) {
             {o.noSill && (
               <text x={o.cx} y={o.y + o.h + 10} fontSize="7" textAnchor="middle" fill={C.amber} fontWeight="bold">V-POS ESTIMATED — NO DOOR ANCHOR</text>
             )}
-            {/* schedule tag bubble (dormer windows: bubble above the dormer) */}
-            <line x1={o.cx} y1={(o.on_dormer && dormerG ? dormerG.topY - 48 : bubbleY) + 10} x2={o.cx} y2={o.y - 2} stroke={C.muted} strokeWidth="0.9" />
-            <circle cx={o.cx} cy={o.on_dormer && dormerG ? dormerG.topY - 48 : bubbleY} r="12" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
-            <text x={o.cx} y={(o.on_dormer && dormerG ? dormerG.topY - 48 : bubbleY) + 4} fontSize="11" fontWeight="bold" textAnchor="middle" fill={C.ink}>{o.tag}</text>
+            {/* schedule tag bubble (dormer windows: bubble just above the band) */}
+            <line x1={o.cx} y1={(o.on_dormer && dormerG ? dormerG.topY - 20 : bubbleY) + 10} x2={o.cx} y2={o.y - 2} stroke={C.muted} strokeWidth="0.9" />
+            <circle cx={o.cx} cy={o.on_dormer && dormerG ? dormerG.topY - 20 : bubbleY} r="12" fill="#fff" stroke={C.ink} strokeWidth="1.5" />
+            <text x={o.cx} y={(o.on_dormer && dormerG ? dormerG.topY - 20 : bubbleY) + 4} fontSize="11" fontWeight="bold" textAnchor="middle" fill={C.ink}>{o.tag}</text>
           </g>
         ))}
 

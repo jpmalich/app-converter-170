@@ -212,14 +212,86 @@ _PROFILE_SIDE = {("front", "left"): "left", ("front", "right"): "right",
                  ("right", "front"): "left", ("right", "back"): "right"}
 
 
-def _bind_dormers(raw, which, width_ft, height_ft, roofline_obj):
-    """P5 DORMERS (C-5 ruling): dormers draw on the roof plane in position
-    on their FACE-ON elevation; cheek PROFILES draw on the perpendicular
-    elevations. Confirmation-weighted: width/knee/center come from the
-    run's dormer read (tagged per width_source); the v-position on the
-    roof plane is NOT read — base drawn at the eave line, flagged
-    INDICATIVE. Profiles carry no along-slope position read — drawn
-    mid-slope, flagged INDICATIVE."""
+DORMER_WINDOW_HEAD_ANCHOR_IN = 80.0
+# PROPOSED ASSUMED (2026-07-22, PENDING RATIFICATION): standard residential
+# window/door header height 6'-8" above grade. It is the SOLE anchor that
+# closes the photo-scaled dormer v-pos chain — the same-photo bbox offsets
+# are fully evidence-bound; only the wall-window head height has no direct
+# read on doorless walls. Upgradeable by tape (lp_appendage_dims
+# dormer:{face} base_ft user_measured).
+
+
+def _dormer_photo_chain(raw, wall_label):
+    """Same-photo bbox chain (ruled 2026-07-22, P5 defect #2 — evidence
+    before hypothesis): wall-plane vertical scale = height_in / bbox.h
+    averaged over this wall's NON-dormer windows that share the dormer
+    bbox photo; head line = highest wall-window bbox top. Returns
+    (scale_in_per_frac, head_frac, dormer_openings) or None when no
+    same-photo chain exists."""
+    ops = [o for o in (raw.get("openings") or [])
+           if str(o.get("wall", "")).lower() == wall_label]
+    dorm = [o for o in ops if o.get("on_dormer") and (o.get("bbox") or {}).get("h")]
+    if not dorm:
+        return None
+    photos = {o.get("bbox_photo_idx", o.get("photo_idx")) for o in dorm}
+    wall_wins = [o for o in ops
+                 if not o.get("on_dormer") and "window" in str(o.get("type", ""))
+                 and (o.get("bbox") or {}).get("h") and o.get("height_in")
+                 and o.get("bbox_photo_idx", o.get("photo_idx")) in photos]
+    if not wall_wins:
+        return None
+    scale = sum(float(o["height_in"]) / float(o["bbox"]["h"]) for o in wall_wins) / len(wall_wins)
+    head_frac = min(float(o["bbox"]["y"]) for o in wall_wins)
+    return scale, head_frac, dorm
+
+
+def _dormer_vpos(raw, wall_label, knee_ft):
+    """Bound dormer v-pos band: dormer window band center (bbox, wall-plane
+    scale) above the wall-window head line, anchored at the PROPOSED
+    ASSUMED 6'-8" standard header; face band = center ± knee/2 (windows
+    centered in the face — construction norm, inverse of the draw rule)."""
+    chain = _dormer_photo_chain(raw, wall_label)
+    if not chain or not knee_ft:
+        return None
+    scale, head_frac, dorm = chain
+    band_top = min(float(o["bbox"]["y"]) for o in dorm)
+    band_bot = max(float(o["bbox"]["y"]) + float(o["bbox"]["h"]) for o in dorm)
+    center_above_head = (head_frac - (band_top + band_bot) / 2.0) * scale
+    center_in = DORMER_WINDOW_HEAD_ANCHOR_IN + center_above_head
+    return {
+        "base_ft": round((center_in - float(knee_ft) * 6.0) / 12.0, 2),
+        "top_ft": round((center_in + float(knee_ft) * 6.0) / 12.0, 2),
+        "tag": "ESTIMATED (photo-scaled · head-anchor ASSUMED 6'-8\")",
+        "basis": (f"same-photo bbox chain — wall-plane scale {scale:.0f} in/frac, "
+                  f"dormer window-band center {fmt_inches(center_above_head)} above the "
+                  f"wall-window head line, anchored at the ASSUMED 6'-8\" standard "
+                  f"header (PENDING RATIFICATION)"),
+    }
+
+
+def _dormer_tape(est, face):
+    """AUTHORIZED tape ladder (Howard, 2026-07-22): lp_appendage_dims
+    dormer:{face} — user_measured knee_ft/base_ft outrank every rung;
+    'assumed' status never overrides (standing appendage-dims rule)."""
+    d = ((est.get("lp_appendage_dims") or {}).get(f"dormer:{face}") or {})
+    out = {}
+    for k in ("knee_ft", "base_ft"):
+        e = d.get(k) or {}
+        if e.get("value") and e.get("status") == "user_measured":
+            out[k] = float(e["value"])
+    return out
+
+
+def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj):
+    """P5 DORMERS (C-5 ruling; v-pos + profile orientation AMENDED by
+    Howard's field-compare FAIL ruling 2026-07-22). Face-on: the dormer
+    band draws at its BOUND v-pos (TAPED > ESTIMATED photo-scaled bbox
+    chain > mid-slope UNRESOLVED flag — base-at-eave RETIRED as an
+    unratified assumption). Profiles (perpendicular gable views): the
+    dormer renders as its ROOF EDGE — a LEVEL line projecting off the
+    main slope — with the vertical face edge below it (height = knee by
+    construction) and the cheek closing back to the roof plane. Wide and
+    low, per the site-photo ground truth."""
     face_on, profiles = None, []
     for d in (raw.get("dormers") or []):
         if not d:
@@ -227,38 +299,64 @@ def _bind_dormers(raw, which, width_ft, height_ft, roofline_obj):
         face = _norm_face(d.get("face"))
         w, knee = d.get("width_ft"), d.get("knee_wall_height_ft")
         tag = _AI_TAGS.get(str(d.get("width_source")), "ESTIMATED")
-        if face == which and w and knee and width_ft and height_ft is not None:
+        if not knee:
+            continue
+        tape = _dormer_tape(est, face)
+        knee = tape.get("knee_ft", float(knee))
+        knee_tag = "TAPED (user-measured)" if "knee_ft" in tape else tag
+        vpos = _dormer_vpos(raw, face, knee)
+        if "base_ft" in tape:
+            base_ft, top_ft = tape["base_ft"], tape["base_ft"] + knee
+            v_tag, v_basis = "TAPED (user-measured)", "base taped via appendage dims"
+        elif vpos:
+            base_ft, top_ft = vpos["base_ft"], vpos["top_ft"]
+            v_tag, v_basis = vpos["tag"], vpos["basis"]
+        else:
+            base_ft, top_ft = None, None
+            v_tag = "UNRESOLVED"
+            v_basis = ("no same-photo window chain — v-pos not derivable; "
+                       "drawn mid-slope INDICATIVE · default PENDING RATIFICATION")
+        if face == which and w and width_ft and height_ft is not None:
+            ridge_ft = (roofline_obj or {}).get("ridge_ft")
+            if base_ft is None:
+                # mid-slope fallback — flagged, never silent
+                span_top = float(ridge_ft) if ridge_ft else float(height_ft) + knee
+                base_ft = round(float(height_ft) + max((span_top - float(height_ft) - knee) / 2.0, 0), 2)
+                top_ft = round(base_ft + knee, 2)
             off = float(d.get("offset_x_ft") or 0.0)
             center = width_ft / 2.0 + off
             top_note = None
-            ridge_ft = (roofline_obj or {}).get("ridge_ft")
-            if ridge_ft and float(height_ft) + float(knee) > float(ridge_ft) + 0.05:
+            if ridge_ft and top_ft > float(ridge_ft) + 0.05:
                 top_note = "dormer top exceeds the drawn ridge — reads disagree — flagged"
             face_on = {
                 "face": face,
                 "width_ft": float(w), "width_label": fmt_ftin(w), "width_tag": tag,
-                "knee_ft": float(knee), "knee_label": fmt_ftin(knee), "knee_tag": tag,
+                "knee_ft": knee, "knee_label": fmt_ftin(knee), "knee_tag": knee_tag,
                 "center_ft": round(center, 2), "center_label": fmt_ftin(center),
                 "offset_x_ft": off,
-                "base_ft": float(height_ft),
-                "base_note": ("base drawn at the eave line — v-position on the "
-                              "roof plane NOT READ — INDICATIVE"),
+                "base_ft": base_ft, "base_label": fmt_ftin(base_ft),
+                "top_ft": top_ft, "top_label": fmt_ftin(top_ft),
+                "vpos_tag": v_tag,
+                "base_note": f"base {fmt_ftin(base_ft)} · v-pos {v_tag} — {v_basis}",
                 "top_note": top_note,
                 "basis": (f"width {fmt_ftin(w)} · knee {fmt_ftin(knee)} — AI run "
                           f"dormer read ({tag}) · offset {off:g}' from wall center"),
                 "source_photos": d.get("_source_photo_indices") or [],
             }
-        elif face in ("front", "back", "left", "right") and face != which and knee:
+        elif face in ("front", "back", "left", "right") and face != which:
             side = _PROFILE_SIDE.get((which, face))
             if side:
                 profiles.append({
                     "face": face, "drawing_side": side,
-                    "knee_ft": float(knee), "knee_label": fmt_ftin(knee), "tag": tag,
+                    "knee_ft": knee, "knee_label": fmt_ftin(knee), "tag": knee_tag,
                     "width_ft": float(w) if w else None,
                     "width_label": fmt_ftin(w) if w else None,
-                    "note": ("cheek profile — position/depth along the slope "
-                             "NOT READ — drawn mid-slope, INDICATIVE"),
-                    "basis": f"knee {fmt_ftin(knee)} — AI run dormer read ({tag}) · {face} slope",
+                    "base_ft": base_ft, "top_ft": top_ft,
+                    "vpos_tag": v_tag,
+                    "note": ("roof edge drawn LEVEL — dormer roof pitch NOT READ · "
+                             f"v-pos {v_tag}"),
+                    "basis": (f"knee {fmt_ftin(knee)} — AI run dormer read ({tag}) · "
+                              f"{face} slope · {v_basis}"),
                 })
     return face_on, profiles
 
@@ -541,6 +639,9 @@ def _bind_openings(raw, wall_label, matchers):
                               if om[0].get("along_wall_ft") is not None else 1e9))
     # door anchor: grade fraction + inches-per-bbox-fraction scale
     anchor = None
+    # dormer-plane sill chain (v-pos amendment, ruled 2026-07-22)
+    dormer_chain = (_dormer_photo_chain(raw, wall_label)
+                    if any(o.get("on_dormer") for o, _ in kept) else None)
     for o, _ in kept:
         if "door" in str(o.get("type", "")) and (o.get("bbox") or {}).get("h") and o.get("height_in"):
             bb = o["bbox"]
@@ -581,6 +682,13 @@ def _bind_openings(raw, wall_label, matchers):
         sill_in, sill_tag = None, "ESTIMATED"
         if is_door or is_patio or is_garage:
             sill_in, sill_tag = 0.0, "AI-READ ✓"  # all door categories sit at grade (anchor by construction)
+        elif o.get("on_dormer") and dormer_chain and (o.get("bbox") or {}).get("h") is not None:
+            # v-pos amendment (ruled 2026-07-22): same-photo bbox chain,
+            # head-anchored (ASSUMED 6'-8" — pending ratification)
+            d_scale, d_head, _ = dormer_chain
+            bottom_frac = o["bbox"]["y"] + o["bbox"]["h"]
+            sill_in = round(DORMER_WINDOW_HEAD_ANCHOR_IN + (d_head - bottom_frac) * d_scale, 1)
+            sill_tag = "ESTIMATED"
         elif (anchor and not o.get("on_dormer")
               and (o.get("bbox") or {}).get("h") is not None):
             bottom_frac = o["bbox"]["y"] + o["bbox"]["h"]
@@ -711,7 +819,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     # chase corner-location reads (see below).
     roofline_obj = _bind_roofline(raw, which, height_ft, basis["height_tag"])
     # P5 (C-5 ruling): dormers face-on + cheek profiles on perpendiculars
-    dormer, dormer_profiles = _bind_dormers(raw, which, width_ft, height_ft, roofline_obj)
+    dormer, dormer_profiles = _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj)
     chase = None
     for acc in (wall.get("accent_profiles") or []):
         loc = str(acc.get("location") or "")
