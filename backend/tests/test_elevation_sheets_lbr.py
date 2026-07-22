@@ -190,9 +190,19 @@ def test_chase_ratification_provenance(session):
     assert back.get("depth_ft", {}).get("status") == "user_measured"
     assert back.get("door_offset_ft", {}).get("value") == 1.417
     assert back.get("door_offset_ft", {}).get("status") == "photo_scaled"
+    # PIN AMENDED BY RULING 2026-07-22 (confirmation-weighted geometry):
+    # width_ft JOINS the machinery — the tape-upgrade path for the ASSUMED
+    # standard chase width 48". BEFORE: 400 (not a machinery field).
     rr = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
                       json={"key": "appendage:back", "field": "width_ft", "value": 5.333}, timeout=20)
-    assert rr.status_code == 400  # standing pin: width_ft not a machinery field
+    assert rr.status_code == 200, rr.text
+    rv = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
+                      json={"key": "appendage:back", "field": "width_ft", "action": "revert"}, timeout=20)
+    assert rv.status_code == 200, rv.text
+    # unknown fields still refuse — the contract stays closed
+    bad = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
+                       json={"key": "appendage:back", "field": "girth_ft", "value": 1.0}, timeout=20)
+    assert bad.status_code == 400
 
 
 def test_view_convention_and_mirror_consistency(session):

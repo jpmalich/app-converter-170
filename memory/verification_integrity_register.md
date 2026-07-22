@@ -230,3 +230,25 @@ guard as the last action with no code edits after it.
   (suppressed=="CHASE" → None + Field Verify), lbr order-independence test
   (kind never suppresses), occlusion test_suppressed_chase_paints_nothing →
   test_chase_always_paints_flag_never_suppresses.
+
+## 2026-07-22 — CONFIRMATION-WEIGHTED GEOMETRY (Howard's ruling) — founding example: doug jones back chase
+- **The failure:** the drawn chase (72" wide, 15'–21') overlapped W2 by 22¾" —
+  an artifact of deriving the span from the min/max of ALL corner reads. Human
+  ground truth (source photos): the chase sits CLEAR of W2, window left of it.
+  The 0.3-frac left-edge read is tier UNCONFIRMED (1 sighting); the right edge
+  is CONFIRMED (0.42 outside + 0.40 inside return, 4 sightings each).
+- **THE RULE (all photo-scaled derivations):** CONFIRMED reads anchor drawn
+  geometry. UNCONFIRMED single-sighting reads NEVER define a drawn edge,
+  position, or span — they render as flagged comparisons (ai_band pattern),
+  awaiting sightings or human ratification. Mixed-tier: anchor the confirmed
+  edge, extend toward the unconfirmed side by TAPED width > ASSUMED standard
+  width 48" (CONTRACTOR-SPEC, ratified 2026-07-22). Edge-cluster rule: two
+  confirmed reads are distinct edges only when their span ≥ the ratified 48"
+  minimum; closer reads are one edge cluster anchored at the OUTSIDE read.
+  Zero confirmed reads: no drawn position — named state, comparison only.
+- **After (doug):** chase anchored at the confirmed 21'-0" right edge, drawn
+  17'–21' (48" ASSUMED), CLEAR of W2; unconfirmed read shown as the flagged
+  comparison band ("implies 72" width — awaiting sightings or ratification").
+- **Pins:** tests/test_confirmation_weighted_geometry.py (6) + amended doug
+  acceptance pins in test_chase_ladder_p4.py (before→after in handback).
+  Width tape-upgrade path added: appendage-dims width_ft field.

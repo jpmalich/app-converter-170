@@ -195,7 +195,7 @@ _WALLS = ("front", "back", "left", "right")
 
 _APPENDAGE_KEYWORDS = ("chase", "chimney", "bump", "cantilever")
 
-_DIM_FIELDS = ("height_ft", "depth_ft", "door_offset_ft")
+_DIM_FIELDS = ("height_ft", "depth_ft", "door_offset_ft", "width_ft")
 
 _DIM_STATUSES = ("user_measured", "user_confirmed_from_blueprint")
 

@@ -87,35 +87,41 @@ def _sheet(session, which):
 
 
 def test_doug_back_chase_draws_at_ladder_dims(session):
-    """ACCEPTANCE SHEET (Howard's eyes): doug back — chimney drawn at
-    photo-derived width, full height per the ASSUMED ridge+2' rung,
-    every dim tagged with its rung."""
+    """ACCEPTANCE SHEET — PIN AMENDED BY RULING 2026-07-22 (confirmation-
+    weighted geometry; doug is the FOUNDING EXAMPLE, see register).
+    BEFORE: width 72\" ESTIMATED from the min/max of ALL reads (the 0.3
+    left edge is UNCONFIRMED, 1 sighting) → artifact overlap with W2.
+    AFTER: the CONFIRMED right edge (0.42 → 21'-0\") anchors; the chase
+    extends left by the ratified ASSUMED standard width 48\" → 17'–21',
+    CLEAR of W2 per human ground truth; the unconfirmed read renders as
+    the flagged comparison band."""
     s = _sheet(session, "back")
     ch = s["chase"]
     assert ch is not None and ch["dims_tag"] == "LADDER"
-    assert ch["center_ft"] is not None  # bound from corner reads → it DRAWS
-    assert ch["width_in"] == 72.0 and ch["width_tag"] == "ESTIMATED (photo-scaled)"
+    assert ch["center_ft"] == 19.0  # 21' confirmed edge − 48"/2
+    assert ch["width_in"] == 48.0
+    assert ch["width_tag"].startswith("ASSUMED (standard width")
     assert ch["depth_in"] == 30.0 and ch["depth_tag"].startswith("ASSUMED (standard depth")
     ridge = s["roofline"]["ridge_ft"]
     assert ch["height_in"] == round((ridge + 2.0) * 12.0, 1)
     assert ch["height_tag"].startswith("ASSUMED (ridge +")
-    for part in ("ESTIMATED (photo-scaled)", "ASSUMED (standard depth", "ASSUMED (ridge +"):
-        assert part in ch["footprint"]
-    assert "corner reads" in ch["position"]
-    assert not ch.get("suppressed")  # AMENDED guard: suppress-never
+    assert "anchored on CONFIRMED right-edge read" in ch["position"]
+    assert "UNCONFIRMED" in ch["ai_band"]["note"]
+    assert "comparison only" in ch["ai_band"]["note"]
+    assert not ch.get("suppressed")
 
 
-def test_doug_back_collision_flags_both_never_suppresses(session):
-    """The chase genuinely overlaps W2 (~22¾\") — AMENDED guard live:
-    both flagged, nothing suppressed, callout directs to Field Verify."""
+def test_doug_back_no_artifact_collision(session):
+    """PIN AMENDED BY RULING 2026-07-22 — BEFORE: W2 × CHASE 22¾\" overlap
+    flagged (an artifact of the unconfirmed-read span). AFTER: the
+    confirmation-weighted chase (17'–21') sits CLEAR of W2 (13'-11"–16'-11")
+    — no collision, matching human ground truth. Flag-always/suppress-never
+    guard semantics remain pinned in the LBR unit tests."""
     s = _sheet(session, "back")
-    cols = [c for c in s["collisions"] if "CHASE" in c["elements"]]
-    assert len(cols) == 1 and set(cols[0]["elements"]) == {"W2", "CHASE"}
-    assert cols[0]["suppressed"] is None
-    assert "Field Verify" in cols[0]["resolution"]
+    assert [c for c in s["collisions"] if "CHASE" in c["elements"]] == []
     w2 = next(o for o in s["openings"] if o["tag"] == "W2")
-    assert w2["collision"] is True
-    assert s["chase"]["collision"] is True
+    assert not w2.get("collision")
+    assert not s["chase"].get("collision")
 
 
 def test_doug_side_profiles_present_with_rung_tags(session):

@@ -182,6 +182,99 @@ CHASE_CODE_MIN_ABOVE_RIDGE_FT = 2.0
 # grade to 2'-0" ABOVE THE DRAWN RIDGE at the chase position — ridge-relative,
 # never a fixed-feet guess. Tagged ASSUMED, upgradeable like every rung.
 
+STANDARD_CHASE_WIDTH_IN = 48.0
+# CONTRACTOR-SPEC (Howard, ratified 2026-07-22): ASSUMED standard chase
+# width = 48" — used ONLY when confirmation-weighted geometry leaves a
+# single confirmed edge (mixed-tier reads). Upgradeable by tape
+# (appendage width_ft user_measured) or a confirmed photo read.
+
+
+def _bind_chase_position(chase, reads, width_ft, est):
+    """CONFIRMATION-WEIGHTED GEOMETRY (Howard's ruling 2026-07-22 —
+    founding example: doug jones back chase, logged in the register).
+    CONFIRMED reads anchor drawn geometry. UNCONFIRMED single-sighting
+    reads NEVER define a drawn edge, position, or span — they render as
+    flagged comparisons (ai_band pattern), awaiting sightings or human
+    ratification. Mixed-tier: anchor the confirmed edge, extend toward
+    the unconfirmed side by TAPED width (user_measured) > ASSUMED
+    standard width 48". Zero confirmed reads: no drawn position — named
+    state, annotation + comparison only."""
+    conf = sorted({round(r["frac"], 4) for r in reads if r["tier"] == "confirmed"})
+    unconf = sorted({round(r["frac"], 4) for r in reads if r["tier"] != "confirmed"})
+    # EDGE-CLUSTER RULE: two confirmed reads are two DISTINCT edges only
+    # when their span ≥ the ratified minimum credible chase width (48");
+    # closer reads are one edge cluster (outside corner + inside return
+    # read the SAME edge — doug's exact 0.40/0.42 pattern). The
+    # discriminator derives from the ratified constant, not a magic number.
+    two_edges = (len(conf) >= 2
+                 and (max(conf) - min(conf)) * width_ft * 12.0 >= STANDARD_CHASE_WIDTH_IN)
+    if two_edges:
+        chase["center_ft"] = round((min(conf) + max(conf)) / 2 * width_ft, 1)
+        chase["position_tag"] = "AI-READ ✓"
+        chase["position"] = (f"bound from CONFIRMED chase-corner reads "
+                             f"({min(conf):g}–{max(conf):g} frac of wall) — AI-READ ✓")
+        chase["position_note"] = "position from confirmed run corner reads — untaped"
+        chase["_lad_fr"] = conf
+        return
+    if len(conf) >= 1:
+        # single confirmed edge (or one edge cluster): the OUTSIDE-corner
+        # read is the chase's true outer edge; fall back to the cluster mean
+        outside = [round(r["frac"], 4) for r in reads
+                   if r["tier"] == "confirmed" and str(r.get("type", "")).lower() == "outside"]
+        anchor = outside[0] if outside else round(sum(conf) / len(conf), 4)
+        dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
+        w_entry = dims.get("width_ft") or {}
+        if w_entry.get("status") == "user_measured" and w_entry.get("value"):
+            w_in, w_tag = round(float(w_entry["value"]) * 12.0, 1), "TAPED (user-measured)"
+        else:
+            w_in = STANDARD_CHASE_WIDTH_IN
+            w_tag = f"ASSUMED (standard width {fmt_inches(STANDARD_CHASE_WIDTH_IN)})"
+        toward_lower = None
+        if unconf:
+            toward_lower = sum(unconf) / len(unconf) < anchor
+        else:
+            # locator handedness: a read naming the chase's RIGHT edge means
+            # the chase extends LEFT of it (and vice versa) — data-derived
+            loc = " ".join(str(r.get("locator", "")).lower() for r in reads
+                           if r["tier"] == "confirmed")
+            if "right" in loc and "left" not in loc:
+                toward_lower = True
+            elif "left" in loc and "right" not in loc:
+                toward_lower = False
+        if toward_lower is None:
+            toward_lower = anchor > 0.5  # toward wall interior — last resort
+        direction = -1 if toward_lower else 1
+        chase["center_ft"] = round(anchor * width_ft + direction * (w_in / 12.0) / 2, 1)
+        chase["_width_override"] = (w_in, w_tag)
+        side = "left" if direction < 0 else "right"
+        edge = "right" if direction < 0 else "left"
+        chase["position_tag"] = "AI-READ ✓ (confirmed edge)"
+        chase["position"] = (f"anchored on CONFIRMED {edge}-edge read ({anchor:g} frac →"
+                             f" {fmt_ftin(anchor * width_ft)}) — extends {side} by {w_tag}")
+        chase["position_note"] = "position anchored on confirmed corner read — untaped"
+        if unconf:
+            far = min(unconf, key=lambda f: -abs(f - anchor))
+            sight = next((r.get("sightings") for r in reads
+                          if round(r["frac"], 4) == far and r["tier"] != "confirmed"), None)
+            implied = abs(anchor - far) * width_ft * 12.0
+            chase["ai_band"] = {
+                "frac_lo": min(unconf + [anchor]), "frac_hi": max(unconf + [anchor]),
+                "note": (f"UNCONFIRMED {side}-edge read {far:g} frac"
+                         f" ({sight or 1} sighting) implies {fmt_inches(implied)} width —"
+                         " flagged comparison only, awaiting sightings or ratification"),
+            }
+        return
+    # zero confirmed reads — nothing drawn, nothing guessed
+    chase["position_tag"] = "UNCONFIRMED"
+    chase["position"] = "position unconfirmed — not drawn (no confirmed corner read)"
+    chase["position_note"] = "no confirmed corner read — glyph not drawn"
+    if unconf:
+        chase["ai_band"] = {
+            "frac_lo": min(unconf), "frac_hi": max(unconf),
+            "note": (f"unconfirmed reads at {' / '.join(f'{f:g}' for f in unconf)} frac —"
+                     " comparison only, awaiting sightings or ratification"),
+        }
+
 
 def _chase_dims_ladder(est, fr, wall_width_ft, roofline_obj):
     """P4 (ruled 2026-07-21): dims ladder for chases WITHOUT sealed-tape
@@ -192,10 +285,14 @@ def _chase_dims_ladder(est, fr, wall_width_ft, roofline_obj):
       height: TAPED (user-measured appendage dims) > ASSUMED (ridge + 2'-0\")
     """
     out = {}
-    if fr and wall_width_ft and max(fr) > min(fr):
+    dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
+    w_entry = dims.get("width_ft") or {}
+    if w_entry.get("status") == "user_measured" and w_entry.get("value"):
+        out["width_in"] = round(float(w_entry["value"]) * 12.0, 1)
+        out["width_tag"] = "TAPED (user-measured)"
+    elif fr and wall_width_ft and max(fr) > min(fr):
         out["width_in"] = round((max(fr) - min(fr)) * float(wall_width_ft) * 12.0, 1)
         out["width_tag"] = "ESTIMATED (photo-scaled)"
-    dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
     d_entry = dims.get("depth_ft") or {}
     if d_entry.get("status") == "user_measured" and d_entry.get("value"):
         out["depth_in"] = round(float(d_entry["value"]) * 12.0, 1)
@@ -540,6 +637,17 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 if "chase" in str(c.get("locator", "")).lower()
                 and c.get("walls") == [wall_label]
                 and c.get("position_frac") is not None]
+
+    def _chase_reads(wall_label):
+        return [{"frac": c["position_frac"],
+                 "tier": str(c.get("tier") or "unconfirmed").lower(),
+                 "type": c.get("type"),
+                 "locator": c.get("locator"),
+                 "sightings": c.get("sightings")}
+                for c in (raw.get("corner_locations") or [])
+                if "chase" in str(c.get("locator", "")).lower()
+                and c.get("walls") == [wall_label]
+                and c.get("position_frac") is not None]
     # P4 (ruled 2026-07-21): chases also DETECT from run corner reads —
     # an accent read is not required. FACE-WALL GUARD: accents name the
     # chase's FACE wall; projection edges also read on ADJACENT walls
@@ -581,14 +689,11 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                              " — FLAGGED COMPARISON (superseded by ratified door-relative position)"),
                 }
         elif fr and width_ft:
-            chase["center_ft"] = round((min(fr) + max(fr)) / 2 * width_ft, 1)
-            chase["position_tag"] = "AI-READ ✓"
-            chase["position"] = (f"bound from run chase-corner reads "
-                                 f"({min(fr):g}–{max(fr):g} frac of wall) — AI-READ ✓")
-            # PROVENANCE RULE (ruled 2026-07-20): no confirmation/ratification
-            # text may be hardcoded — the ratified relationship note renders
-            # ONLY on the dr path above, where the ratify record exists.
-            chase["position_note"] = "position from run corner reads — untaped"
+            # CONFIRMATION-WEIGHTED GEOMETRY (ruled 2026-07-22): confirmed
+            # reads anchor; unconfirmed reads render as flagged comparison.
+            # PROVENANCE RULE (ruled 2026-07-20) still governs: the ratified
+            # relationship note renders ONLY on the dr path above.
+            _bind_chase_position(chase, _chase_reads(which), width_ft, est)
     # chase ratification (Howard, ruled 2026-07-19): human ground truth —
     # projects from the back wall, lap-clad; dims TAPED via sealed-key
     # amendment. Supersedes "footprint untaped".
@@ -609,7 +714,10 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     elif chase:
         # P4 dims ladder (ruled 2026-07-21) — scale-render at best-known
         # dims on every rung (C-4); each dim carries its rung's tag
-        lad = _chase_dims_ladder(est, _chase_fracs(which), width_ft, roofline_obj)
+        lad = _chase_dims_ladder(est, chase.pop("_lad_fr", None), width_ft, roofline_obj)
+        if chase.get("_width_override"):
+            v, t = chase.pop("_width_override")
+            lad["width_in"], lad["width_tag"] = v, t
         parts = []
         for dim, mark in (("width", "W"), ("depth", "D"), ("height", "H")):
             v = lad.get(f"{dim}_in")
@@ -646,6 +754,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "chase" in str(a.get("location", "")).lower()
             for a in ((wall_b or {}).get("accent_profiles") or []))
         if has_chase_b:
+            conf_b = sorted({r["frac"] for r in _chase_reads("back")
+                             if r["tier"] == "confirmed"})
             bt = _sealed_tape_basis(est, "back")
             hb = (max(s["height_ft"] for s in bt["segments"]) if bt
                   else (wall_b or {}).get("height_ft"))
@@ -653,7 +763,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                                    "TAPED-DERIVED" if bt else _AI_TAGS.get(
                                        str((wall_b or {}).get("height_ft_source")), "ESTIMATED"))
                     if hb else None)
-            lad = _chase_dims_ladder(est, fr_b, (wall_b or {}).get("width_ft"), rl_b)
+            lad = _chase_dims_ladder(est, conf_b if len(conf_b) >= 2 else None,
+                                     (wall_b or {}).get("width_ft"), rl_b)
             if lad.get("depth_in") and lad.get("height_in"):
                 rungs = " · ".join(sorted({str(lad["depth_tag"]).split(" ")[0],
                                            str(lad["height_tag"]).split(" ")[0]}))
