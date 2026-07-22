@@ -896,19 +896,3 @@ function fmtNum(n) {
 function abbrevStyle(s) {
   return String(s).replace("Double Hung", "DH");
 }
-hes * 8;
-  const FR = ["", "⅛", "¼", "⅜", "½", "⅝", "¾", "⅞"];
-  return `${sign}${feet}'-${inches}${FR[e]}"`;
-}
-function fmtInFrac(inches) {
-  const whole = Math.floor(inches);
-  const e = Math.round((inches - whole) * 8);
-  const FR = ["", "⅛", "¼", "⅜", "½", "⅝", "¾", "⅞"];
-  return e === 8 ? `${whole + 1}"` : `${whole}${FR[e]}"`;
-}
-function fmtNum(n) {
-  return Number(n).toFixed(3).replace(/\.?0+$/, "");
-}
-function abbrevStyle(s) {
-  return String(s).replace("Double Hung", "DH");
-}
