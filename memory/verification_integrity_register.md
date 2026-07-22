@@ -272,3 +272,29 @@ guard as the last action with no code edits after it.
   line) — a stamp is impossible over any non-green run, same absolutism as
   the dirty-tree rule.
 - **Class:** verification tool recorded evidence without evaluating it.
+
+## 2026-07-22 — RED-HOUSE FIXTURE RESTORATION (Howard's standing order — receipts)
+- **What existed:** 16 live ai_measure_runs (2026-07-07 → 07-19, incl. the 4
+  confirmation runs and newest c2002212), archived fixture run 8ddb8932
+  (backfill:m-freeze), ai_measure_session (company_id source), pair estimate
+  EST-910869-L (e452a988…, itself wiped+restored 2026-07-13, empty name/no
+  pair pointer). The estimate doc 673707d5… was MISSING; deletion cause
+  unknown (no DB audit trail).
+- **What was recreated:** ONE estimate doc — id 673707d5…, EST-910869
+  (number recovered from memory/prompts.md refine-loss log), customer_name
+  "red house" (name of record; original display fields unrecoverable),
+  company_id from the surviving session, kind siding, schema-complete via
+  field template. One-way paired_estimate_id → e452a988… (reverse pointer
+  NOT set — EST-910869-L untouched, awaiting ruling).
+- **NOT recreated:** tape_check.history — human records are never
+  synthesized (Howard, wave-1 close: inch-level truth enters only by tape
+  or ratification). The 4 scored-run truths remain on the PRD record for
+  re-entry via normal machinery.
+- **Nothing-else-touched proof:** per-doc checksum of all 31 pre-existing
+  estimates before/after — 0 changed, 1 added (script output in handback).
+  (Post-restoration: the doc's own address field shortened once for header
+  fit — still the restored doc only.)
+- **Binding:** sheet routes 200 on the restored id; live binding = newest
+  done run c2002212 (walls 27×10 front, gable_end + eave_ridge rooflines,
+  five-key counts incl. 2 garage doors); 8ddb8932 lineage intact in
+  fixture_runs via estimate_id.

@@ -56,8 +56,7 @@ async def main():
         "company_id": ses["company_id"],
         "estimate_number": "EST-910869",           # recovered: memory/prompts.md refine-loss log
         "customer_name": "red house",              # the fixture's name of record (PRD throughout)
-        "address": "FIXTURE — estimate doc restored 2026-07-22 per Howard's standing order"
-                   " (original address unrecoverable; see integrity register)",
+        "address": "fixture — doc restored 2026-07-22 (see integrity register)",
         "kind": "siding",
         "estimator": "Howard Hunt",
         "estimate_date": "2026-07-07",             # first run date on record
