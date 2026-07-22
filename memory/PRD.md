@@ -4343,3 +4343,17 @@ QUEUE NEXT: red-house fixture restoration (own receipted handback: what existed,
 run 8ddb8932 lineage binding, nothing-else-touched confirmation) → P5 dormers (C-5 pin
 amendments w/ before→after). Parks: P6 massing, layer toggles, hip pitch, upload tightening
 (top of post-Sept).
+
+## SESSION 2026-07-22 (part 27) — RED-HOUSE FIXTURE RESTORED (receipted handback)
+CLEAN 897bfbf, 1172 green. restore_redhouse_fixture.py (abort-if-exists, checksum receipts):
+estimate doc 673707d5 restored — EST-910869 / "red house" / company from surviving session /
+kind siding / one-way pair pointer → EST-910869-L (reverse NOT set, awaiting ruling).
+tape_check.history NOT synthesized (human records only by tape/ratification). Nothing-else-
+touched: 31 pre-existing docs checksum-identical, 1 added. Binding live: newest run c2002212,
+sheets 200, front = gable_end w/ G1/G2 garage doors under five-key + W1×G2 collision flagged
+(waves 1 machinery all working on the fixture). Full receipts in integrity register.
+PNG redhouse_restored_front md5 cae08db90ae17aaa5e976854998740a7.
+QUEUE: P5 DORMERS next (C-5 ruling: on_dormer openings join sheets+schedules, dormers draw on
+roof plane in position, cheeks face-on, profiles on side elevations; pin amendments w/
+before→after counts on dormered fixtures). Red house now testable. Parks: P6 massing, layer
+toggles, hip pitch, upload tightening.
