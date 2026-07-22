@@ -4391,3 +4391,31 @@ edae021d… / 3c45152c… / cdca292e… / 7799e9df….
 QUEUE: Howard's eyes on red house LEFT/RIGHT + front profiles (P5 acceptance) + reverse-pointer
 ruling. Parks: P6 massing, layer toggles, hip pitch, upload tightening, compare-toggle, ISS
 catalog (awaiting Excel).
+
+## SESSION 2026-07-22 (part 25) — P5 FIELD-COMPARE FIXES + POINTER RESTORED (fork)
+RULING RECEIVED: P5 FAIL (site-photo ground truth) — 2 defects; reverse pointer RESTORE ordered.
+MICRO-HANDBACK — REVERSE POINTER RESTORED: restore_reverse_pointer.py — single $set
+paired_estimate_id=673707d5… on e452a988… (EST-910869-L). Checksums: 32 estimate docs, exactly
+1 changed, exactly 1 field added. Frozen /m/ links (5 snapshots, 2 active) re-verified serving
+AS-FROZEN (snapshot checksums identical pre/post). Dashboard chain badge live (EST-910869 ·
+siding). NOTE: newer_available=True on active links — consequence of the earlier red-house DOC
+restoration making the paired run reachable, NOT of the pointer write (binding uses
+paired_lp_estimate_id which short-circuits first).
+FIX 1 — PROFILE ORIENTATION (front/back): dormer now renders as its LEVEL ROOF EDGE projecting
+off the main slope, vertical FACE EDGE below (height = knee by construction), CHEEK closing back
+to the roof plane — silhouette ABOVE the rake, painted after the gable. Mechanism: face edge at
+the rake offset where roof-plane height = base_ft, drawn base→top; roof edge LEVEL back to the
+rake (dormer roof pitch NOT READ — flagged); anchored at the bound v-pos band.
+FIX 2 — V-POS BOUND (left/right): base-at-eave RETIRED. Same-photo bbox chain: wall-plane scale
+= height_in/bbox.h over wall windows sharing the dormer photo (left 408 in/frac, right 428);
+dormer window-band center vs wall-window head line; anchor = PROPOSED ASSUMED 6'-8" (80")
+standard header (DORMER_WINDOW_HEAD_ANCHOR_IN, PENDING RATIFICATION). Ladder: TAPED
+(lp_appendage_dims dormer:{face} knee_ft/base_ft user_measured — AUTHORIZED) > ESTIMATED
+(photo-scaled) > mid-slope UNRESOLVED flag. PIN AMENDMENTS (before→after): LEFT band base
+9'-3⅝"(eave)→10'-6½", top 15'-6½" (eave 2'-1⅜" below ridge); RIGHT base 8'-1¼"→10'-1⅝", top
+15'-1⅝". Dormer window sills None("—")→BOUND ESTIMATED: LEFT W2* 139.5"/W4* 140.2", RIGHT W2*
+132.5". Counts unchanged (LEFT 5, RIGHT 6).
+STAMP (verbatim): - 2026-07-22 23:22 UTC · 21b5e0e · CLEAN · [tests] · 1191 passed, 1 skipped,
+3 warnings in 106.32s (0:01:46).
+QUEUE: Howard's eyes vs site photo (all four sheets) + RATIFICATION ASK: the 6'-8" head-anchor
+constant. Parks unchanged.
