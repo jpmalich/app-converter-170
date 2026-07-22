@@ -252,3 +252,23 @@ guard as the last action with no code edits after it.
 - **Pins:** tests/test_confirmation_weighted_geometry.py (6) + amended doug
   acceptance pins in test_chase_ladder_p4.py (before→after in handback).
   Width tape-upgrade path added: appendage-dims width_ft field.
+
+## 2026-07-22 — GUARD HOLE: handback_green.sh stamped CLEAN over non-green runs (self-caught, self-disclosed)
+- **Defect:** the guard recorded the pytest tail line verbatim but never CHECKED
+  it — a stamp was possible over any result. Present since the script's creation
+  (2026-07-18).
+- **Incidents found by full-log audit (every CLEAN stamp's RESULT line checked):**
+  1. 2026-07-22 03:12 UTC · 9758445 — "3 failed, 1168 passed, 1 error". SELF-
+     CAUGHT on the RESULT line before handback; fails fixed; superseding fully-
+     green stamp 1bde208 (03:26 UTC, 1172 passed) is what the handback quoted.
+  2. 2026-07-20 11:25 UTC · 566535c — "1125 passed, 6 errors" (source-view
+     generalization session, previously undisclosed). SUPERSEDED 14 minutes
+     later by fully-green b38d5c7 (11:39 UTC, 1131 passed) on the fix commit —
+     no shipped handback rests on the non-green state.
+  - All other CLEAN stamps in the log carry fully-green RESULT lines. The one
+    non-CLEAN entry (2026-07-18 efae4db) is labeled TREE DIRTY, not a stamp.
+- **Fix (ruled by Howard 2026-07-22):** the guard now HARD-FAILS unless the
+  result is fully green (zero failures, zero errors, parseable "N passed"
+  line) — a stamp is impossible over any non-green run, same absolutism as
+  the dirty-tree rule.
+- **Class:** verification tool recorded evidence without evaluating it.
