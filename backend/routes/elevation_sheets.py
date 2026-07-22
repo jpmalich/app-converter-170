@@ -76,19 +76,46 @@ def detect_collisions(elements, tol_in=0.1):
     the fix direction (Field Verify location review). Collisions between
     tagged AI positions are uncertainty, not impossibility: a missing
     chimney misleads a crew worse than a flagged overlap.
-    elements: [{name, base, lo_ft, hi_ft, kind: opening|appendage}]."""
+
+    2D AMENDMENT (Howard's ruling 2026-07-23): a collision requires
+    overlap in BOTH axes — the along-wall horizontal span AND the
+    vertical extent (sill/base → head). Elements clear in either axis
+    never flag (founding false positive: red house front W1, sill
+    11'-5⅛", × G2, grade → 73" head — 17⅝" horizontal overlap but 64"
+    of vertical clearance). Vertical bounds are OPTIONAL: an element
+    with no sill read (v_lo_ft/v_hi_ft absent/None) cannot PROVE
+    clearance, so horizontal overlap alone still flags — uncertainty
+    flags, it never silently clears.
+    elements: [{name, base, lo_ft, hi_ft, v_lo_ft?, v_hi_ft?,
+                kind: opening|appendage}]."""
     out = []
     for i in range(len(elements)):
         for j in range(i + 1, len(elements)):
             a, b = elements[i], elements[j]
+            # PLANE RULE (P5, ruled 2026-07-23): elements on different
+            # planes (wall vs dormer roof-plane) are separated by
+            # construction — the dormer sits above the eave, wall
+            # elements end at it. Never compared, never flagged.
+            if a.get("plane", "wall") != b.get("plane", "wall"):
+                continue
             overlap_ft = min(a["hi_ft"], b["hi_ft"]) - max(a["lo_ft"], b["lo_ft"])
             if overlap_ft * 12.0 <= tol_in:
                 continue
+            v_overlap_in = None
+            if all(e.get("v_lo_ft") is not None and e.get("v_hi_ft") is not None
+                   for e in (a, b)):
+                v_overlap_in = (min(a["v_hi_ft"], b["v_hi_ft"])
+                                - max(a["v_lo_ft"], b["v_lo_ft"])) * 12.0
+                if v_overlap_in <= tol_in:
+                    continue  # vertically clear — both-axes rule: no collision
             out.append({
                 "elements": [a["name"], b["name"]],
                 "bases": [a["base"], b["base"]],
                 "overlap_in": round(overlap_ft * 12.0, 1),
                 "overlap_label": fmt_inches(overlap_ft * 12.0),
+                "v_overlap_in": round(v_overlap_in, 1) if v_overlap_in is not None else None,
+                "v_overlap_label": (fmt_inches(v_overlap_in)
+                                    if v_overlap_in is not None else "unknown (no sill read)"),
                 "suppressed": None,
                 "resolution": ("both elements flagged — positions unverified"
                                " · resolve via Field Verify location review"),
@@ -170,6 +197,70 @@ def _bind_roofline(raw, which, height_ft, height_tag):
                        + f" disagree — drawn at {fmt_ftin(rise)} (worst case)"
                        " — flagged, not averaged")
     return out
+
+
+def _norm_face(f):
+    f = str(f or "").lower()
+    return {"rear": "back"}.get(f, f)
+
+
+# drawing side of a perpendicular dormer profile, per the exterior-view
+# convention (left elevation mirrors; back flips left/right)
+_PROFILE_SIDE = {("front", "left"): "left", ("front", "right"): "right",
+                 ("back", "left"): "right", ("back", "right"): "left",
+                 ("left", "front"): "right", ("left", "back"): "left",
+                 ("right", "front"): "left", ("right", "back"): "right"}
+
+
+def _bind_dormers(raw, which, width_ft, height_ft, roofline_obj):
+    """P5 DORMERS (C-5 ruling): dormers draw on the roof plane in position
+    on their FACE-ON elevation; cheek PROFILES draw on the perpendicular
+    elevations. Confirmation-weighted: width/knee/center come from the
+    run's dormer read (tagged per width_source); the v-position on the
+    roof plane is NOT read — base drawn at the eave line, flagged
+    INDICATIVE. Profiles carry no along-slope position read — drawn
+    mid-slope, flagged INDICATIVE."""
+    face_on, profiles = None, []
+    for d in (raw.get("dormers") or []):
+        if not d:
+            continue
+        face = _norm_face(d.get("face"))
+        w, knee = d.get("width_ft"), d.get("knee_wall_height_ft")
+        tag = _AI_TAGS.get(str(d.get("width_source")), "ESTIMATED")
+        if face == which and w and knee and width_ft and height_ft is not None:
+            off = float(d.get("offset_x_ft") or 0.0)
+            center = width_ft / 2.0 + off
+            top_note = None
+            ridge_ft = (roofline_obj or {}).get("ridge_ft")
+            if ridge_ft and float(height_ft) + float(knee) > float(ridge_ft) + 0.05:
+                top_note = "dormer top exceeds the drawn ridge — reads disagree — flagged"
+            face_on = {
+                "face": face,
+                "width_ft": float(w), "width_label": fmt_ftin(w), "width_tag": tag,
+                "knee_ft": float(knee), "knee_label": fmt_ftin(knee), "knee_tag": tag,
+                "center_ft": round(center, 2), "center_label": fmt_ftin(center),
+                "offset_x_ft": off,
+                "base_ft": float(height_ft),
+                "base_note": ("base drawn at the eave line — v-position on the "
+                              "roof plane NOT READ — INDICATIVE"),
+                "top_note": top_note,
+                "basis": (f"width {fmt_ftin(w)} · knee {fmt_ftin(knee)} — AI run "
+                          f"dormer read ({tag}) · offset {off:g}' from wall center"),
+                "source_photos": d.get("_source_photo_indices") or [],
+            }
+        elif face in ("front", "back", "left", "right") and face != which and knee:
+            side = _PROFILE_SIDE.get((which, face))
+            if side:
+                profiles.append({
+                    "face": face, "drawing_side": side,
+                    "knee_ft": float(knee), "knee_label": fmt_ftin(knee), "tag": tag,
+                    "width_ft": float(w) if w else None,
+                    "width_label": fmt_ftin(w) if w else None,
+                    "note": ("cheek profile — position/depth along the slope "
+                             "NOT READ — drawn mid-slope, INDICATIVE"),
+                    "basis": f"knee {fmt_ftin(knee)} — AI run dormer read ({tag}) · {face} slope",
+                })
+    return face_on, profiles
 
 
 STANDARD_CHASE_DEPTH_IN = 30.0
@@ -433,10 +524,13 @@ def _bind_openings(raw, wall_label, matchers):
     not derivable. Removed openings don't render; corrected types render
     corrected. DEFECT RETIRED by this amendment (audit 2026-07-20):
     garage_door/patio_door previously folded into 'Entry door' via the
-    `"door" in type` check — dormant misclassification, caught by audit."""
+    `"door" in type` check — dormant misclassification, caught by audit.
+    P5 (C-5 ruling, 2026-07-23): on_dormer openings JOIN the sheet and
+    schedule — tagged in along-wall order with the rest, flagged
+    on_dormer; their sills sit on the dormer plane, never grade-anchored
+    (sill stays None — the door anchor lives on the wall plane)."""
     ops = [o for o in (raw.get("openings") or [])
-           if str(o.get("wall", "")).lower() == wall_label
-           and not o.get("on_dormer")]
+           if str(o.get("wall", "")).lower() == wall_label]
     kept = []
     for o in ops:
         m = _nearest_matcher(o, matchers)
@@ -487,10 +581,13 @@ def _bind_openings(raw, wall_label, matchers):
         sill_in, sill_tag = None, "ESTIMATED"
         if is_door or is_patio or is_garage:
             sill_in, sill_tag = 0.0, "AI-READ ✓"  # all door categories sit at grade (anchor by construction)
-        elif anchor and (o.get("bbox") or {}).get("h") is not None:
+        elif (anchor and not o.get("on_dormer")
+              and (o.get("bbox") or {}).get("h") is not None):
             bottom_frac = o["bbox"]["y"] + o["bbox"]["h"]
             sill_in = round((anchor["grade_frac"] - bottom_frac) * anchor["in_per_frac"], 1)
         out.append({
+            "on_dormer": bool(o.get("on_dormer")),
+            "dormer_face": _norm_face(o.get("dormer_face")) if o.get("on_dormer") else None,
             "tag": tag,
             "opening_id": o.get("opening_id"),
             "type": typ,
@@ -613,6 +710,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     # 2026-07-19 ratification amendment; position bound from the run's
     # chase corner-location reads (see below).
     roofline_obj = _bind_roofline(raw, which, height_ft, basis["height_tag"])
+    # P5 (C-5 ruling): dormers face-on + cheek profiles on perpendiculars
+    dormer, dormer_profiles = _bind_dormers(raw, which, width_ft, height_ft, roofline_obj)
     chase = None
     for acc in (wall.get("accent_profiles") or []):
         loc = str(acc.get("location") or "")
@@ -840,16 +939,25 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         if o["center_ft"] is None or not o["width_in"]:
             continue
         half = float(o["width_in"]) / 24.0
+        v_lo = v_hi = None
+        if o["sill_in"] is not None and o["height_in"]:
+            v_lo = float(o["sill_in"]) / 12.0
+            v_hi = (float(o["sill_in"]) + float(o["height_in"])) / 12.0
         guard_elements.append({
             "name": o["tag"], "kind": "opening",
+            "plane": f"dormer:{o.get('dormer_face') or ''}" if o.get("on_dormer") else "wall",
             "base": f"position {o['position_tag']} · center {o['center_label']}",
-            "lo_ft": o["center_ft"] - half, "hi_ft": o["center_ft"] + half})
+            "lo_ft": o["center_ft"] - half, "hi_ft": o["center_ft"] + half,
+            "v_lo_ft": v_lo, "v_hi_ft": v_hi})
     if chase and chase.get("center_ft") is not None and chase.get("width_in"):
         half = float(chase["width_in"]) / 24.0
         guard_elements.append({
             "name": "CHASE", "kind": "appendage",
             "base": f"position {chase.get('position_tag', '—')} · center {fmt_ftin(chase['center_ft'])}",
-            "lo_ft": chase["center_ft"] - half, "hi_ft": chase["center_ft"] + half})
+            "lo_ft": chase["center_ft"] - half, "hi_ft": chase["center_ft"] + half,
+            # chase rises from grade to its ladder height (when known)
+            "v_lo_ft": 0.0 if chase.get("height_in") else None,
+            "v_hi_ft": float(chase["height_in"]) / 12.0 if chase.get("height_in") else None})
     collisions = detect_collisions(guard_elements)
     for c in collisions:
         for o in openings:
@@ -910,6 +1018,9 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         "chase_cap": chase_cap,
         # P3 (ruled 2026-07-21): roofline on every elevation
         "roofline": roofline_obj,
+        # P5 (C-5 ruling): face-on dormer + perpendicular cheek profiles
+        "dormer": dormer,
+        "dormer_profiles": dormer_profiles,
         "view": {
             "convention": "viewed from exterior",
             "datum": ("along-wall datum: left corner as viewed from outside "
