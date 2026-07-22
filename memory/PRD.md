@@ -4357,3 +4357,37 @@ QUEUE: P5 DORMERS next (C-5 ruling: on_dormer openings join sheets+schedules, do
 roof plane in position, cheeks face-on, profiles on side elevations; pin amendments w/
 before→after counts on dormered fixtures). Red house now testable. Parks: P6 massing, layer
 toggles, hip pitch, upload tightening.
+
+## SESSION 2026-07-22 (part 24) — 2D COLLISION GUARD + P5 DORMERS SHIPPED (fork)
+REVERSE-POINTER REPORT (EST-910869-L, ordered before any DB write — DELIVERED, awaiting ruling):
+`paired_estimate_id` is READ in 3 places: (1) estimates.py L51-62 dashboard list → chain-link
+badge per row (Dashboard.jsx L442-450 navigates via it); (2) estimates.py L193 pair-creation
+idempotency (reads the SOURCE side only — red house's forward pointer intact, idempotency holds);
+(3) lp_package_routes.py L80 run-binding fallback `paired_lp_estimate_id OR paired_estimate_id` —
+EST-910869-L HAS paired_lp_estimate_id, so the missing field is never reached there.
+NET FUNCTIONAL GAP: only the dashboard chain-link badge on the EST-910869-L row (no one-click
+nav back to EST-910869). Everything else works one-way. DB untouched — Howard to rule:
+leave one-way vs restore reverse pointer (single $set).
+SHIPPED 1 — COLLISION GUARD 2D AMENDMENT (ruled): collision now requires overlap in BOTH axes
+(along-wall span AND vertical extent sill/base→head). Unknown vertical extent still flags on
+horizontal overlap (uncertainty flags, never silently clears). Founding false positive RETIRED:
+red house front W1 (sill 11'-5⅛") × G2 (grade→73") — was 1 collision (17⅝"), now 0. Haugh
+flooding fixture 21 → 8 true collisions (>3 collapse pin holds). Payload adds v_overlap_in/
+v_overlap_label. NEW tests/test_collision_guard_2d.py (7 pins incl. live red house + haugh).
+SHIPPED 2 — P5 DORMERS (C-5): _bind_dormers in elevation_sheets.py — face-on dormer draws on
+the roof plane (base at eave line, v-pos NOT READ — INDICATIVE; width/knee/center tagged per
+width_source; top>ridge flags); cheek PROFILES on perpendicular gable views (mid-rake,
+INDICATIVE, back view mirrors left/right); on_dormer openings JOIN sheets+schedules (W tags in
+along-wall order, sill never grade-anchored, schedule marks W2* + legend). PLANE RULE: dormer-
+plane vs wall-plane elements never guard against each other (construction-level separation).
+COUNT PINS AMENDED (before→after): red house LEFT openings 3→5 (windows 3→5, W2*@14'-10⅞",
+W4*@20'-8⅜"), RIGHT 5→6 (W2*@20'-0"), FRONT/BACK unchanged (profiles only). NEW
+tests/test_dormers_p5.py (10 pins). Frontend: dormer glyph + OSC corners, dormer windows center
+in band, profiles painted UNDER rakes (dormer behind gable plane), corner callout blocks.
+STAMP (verbatim): - 2026-07-22 22:20 UTC · 4fc58ca · CLEAN · [tests] · 1188 passed, 1 skipped,
+3 warnings in 177.07s (0:02:57). (Earlier c6d2942 stamp superseded — frontend compile corruption
+self-caught; see integrity register.) PNGs: p5_redhouse_left/right/front/back_final md5
+edae021d… / 3c45152c… / cdca292e… / 7799e9df….
+QUEUE: Howard's eyes on red house LEFT/RIGHT + front profiles (P5 acceptance) + reverse-pointer
+ruling. Parks: P6 massing, layer toggles, hip pitch, upload tightening, compare-toggle, ISS
+catalog (awaiting Excel).

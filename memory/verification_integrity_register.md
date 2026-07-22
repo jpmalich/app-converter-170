@@ -298,3 +298,15 @@ guard as the last action with no code edits after it.
   done run c2002212 (walls 27×10 front, gable_end + eave_ridge rooflines,
   five-key counts incl. 2 garage doors); 8ddb8932 lineage intact in
   fixture_runs via estimate_id.
+
+## 2026-07-22 — 2D GUARD + P5 DORMERS handback (commit 4fc58ca)
+- STAMPS: two CLEAN stamps this handback. c6d2942 (22:12 UTC, 1188 passed)
+  was recorded while the frontend carried a CORRUPTED duplicate tail in
+  ElevationSheet.jsx (compile blocker — backend suite green, frontend
+  broken; corruption traced to concurrent-edit clobbering, self-caught by
+  screenshot smoke test). Superseded 8 min later by the true stamp
+  4fc58ca (22:20 UTC · CLEAN · 1188 passed, 1 skipped) on the compiling
+  final state. No shipped handback rests on the broken state.
+- LESSON (edit tooling): batched parallel writes to the same file can
+  silently drop/clobber sibling edits — after any parallel edit batch on
+  one file, re-grep every edit landed before stamping.
