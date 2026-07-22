@@ -4329,3 +4329,17 @@ read the RESULT line, only 100%-green counts.
 QUEUE: Howard's re-look on the doug BACK sheet closes WAVE 1. Then: red-house fixture
 restoration (own receipted handback) → P5 dormers. Parked: P6 massing, layer toggles, hip
 pitch, upload security tightening.
+
+## SESSION 2026-07-22 (part 26) — WAVE 1 CLOSED · GUARD RESULT-HARDENED
+Howard: wave-1 re-look PASS w/ tolerance noted (doug ~2' adjacency disagreement within AI-READ +
+ASSUMED tolerance; "inch-level truth enters only by tape or human ratification, by design" —
+doug = honest-limit example). GUARD RULED + SHIPPED (CLEAN 80299fb, 1172 green on the hardened
+guard itself): handback_green.sh HARD-FAILS on any non-green result (failed/error/unparseable —
+verified: fail path exits 1 logs nothing, green path stamps). Full-log audit: 2 non-green CLEAN
+stamps ever — 9758445 (3 fail, self-caught, superseded by 1bde208) and 566535c 2026-07-20
+(6 errors, previously undisclosed, superseded 14 min later by fully-green b38d5c7) — no shipped
+handback rests on a non-green state. Register entry logged (self-caught credit noted by Howard).
+QUEUE NEXT: red-house fixture restoration (own receipted handback: what existed, what recreated,
+run 8ddb8932 lineage binding, nothing-else-touched confirmation) → P5 dormers (C-5 pin
+amendments w/ before→after). Parks: P6 massing, layer toggles, hip pitch, upload tightening
+(top of post-Sept).
