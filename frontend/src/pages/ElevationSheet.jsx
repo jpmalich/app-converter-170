@@ -193,6 +193,10 @@ export function SheetSvg({ data }) {
         taped: !!chase.width_in,
       }
     : null;
+  // FASCIA BAND TRUE EXTENT (ruled 2026-07-23, dormer-intersection
+  // defect): the band glyph scales as a nominal 8" fascia/soffit
+  // assembly — never a fixed-pixel band taller than its real extent
+  const fasciaBandH = Math.max(8, (8 / 12) * ppf);
   // annotation labels stay legible: fascia label re-centers on the wider
   // clear span when the chase occludes the wall band (occlusion rule)
   const fasciaLabelX = chaseG
@@ -493,14 +497,14 @@ export function SheetSvg({ data }) {
           </g>
         ) : (
           <g>
-            <rect x={wallX - ovFt * ppf} y={wallTop - 22} width={wallW + 2 * ovFt * ppf} height="22" fill="none" stroke={C.fascia} strokeWidth="3" />
+            <rect x={wallX - ovFt * ppf} y={wallTop - fasciaBandH} width={wallW + 2 * ovFt * ppf} height={fasciaBandH} fill="none" stroke={C.fascia} strokeWidth="3" />
             <text x={fasciaLabelX} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
             <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" />
             <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
             {ridgeG && (
               <g data-testid="elevation-roofline">
-                <line x1={ridgeG.x1} y1={wallTop - 22} x2={ridgeG.x1} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-l" />
-                <line x1={ridgeG.x2} y1={wallTop - 22} x2={ridgeG.x2} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-r" />
+                <line x1={ridgeG.x1} y1={wallTop - fasciaBandH} x2={ridgeG.x1} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-l" />
+                <line x1={ridgeG.x2} y1={wallTop - fasciaBandH} x2={ridgeG.x2} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-r" />
                 <line x1={ridgeG.x1} y1={ridgeG.y} x2={ridgeG.x2} y2={ridgeG.y} stroke={C.ink} strokeWidth="2" data-testid="elevation-roofline-ridge" />
                 <text x={ridgeG.x1 + 6} y={ridgeG.y - 6} fontSize="8.5" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
                 <Chip x={ridgeG.x1 + 6 + S.ridgeLabel.length * 5.2} y={ridgeG.y - 14} w={30} label="EST" kind="est" />
@@ -532,7 +536,10 @@ export function SheetSvg({ data }) {
             {/* dormer face corners = OUTSIDE CORNERS (vinyl convention) */}
             <line x1={dormerG.cx - dormerG.w / 2} y1={dormerG.topY} x2={dormerG.cx - dormerG.w / 2} y2={dormerG.baseY} stroke={C.osc} strokeWidth="3.5" />
             <line x1={dormerG.cx + dormerG.w / 2} y1={dormerG.topY} x2={dormerG.cx + dormerG.w / 2} y2={dormerG.baseY} stroke={C.osc} strokeWidth="3.5" />
-            <line x1={dormerG.cx - dormerG.w / 2 - 3} y1={dormerG.topY} x2={dormerG.cx + dormerG.w / 2 + 3} y2={dormerG.topY} stroke={C.ink} strokeWidth="2" />
+            {/* COMPONENT CLASSIFICATION (ruled 2026-07-23): a dormer is a
+                small house — its eave edge renders in the FASCIA/RAKE
+                component color, over the black skeleton */}
+            <line x1={dormerG.cx - dormerG.w / 2 - 3} y1={dormerG.topY} x2={dormerG.cx + dormerG.w / 2 + 3} y2={dormerG.topY} stroke={C.fascia} strokeWidth="3" data-testid="elevation-dormer-eave-fascia" />
             {/* callout corner block (leader to the band's top-left) — keeps
                 the long v-pos provenance clear of bubbles and rooflines */}
             <line x1={dormerG.cx - dormerG.w / 2} y1={dormerG.topY - 2} x2="96" y2="246" stroke={C.amber} strokeWidth="0.9" />
@@ -553,8 +560,10 @@ export function SheetSvg({ data }) {
               <g>
                 <path d={`M ${p.A.x} ${p.A.y} L ${p.B.x} ${p.B.y} L ${p.C2.x} ${p.C2.y} Z`}
                   fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" />
-                {/* the ROOF EDGE — level dormer eave line, the defining edge */}
-                <line x1={p.B.x} y1={p.B.y} x2={p.C2.x} y2={p.C2.y} stroke={C.ink} strokeWidth="2.5" data-testid={`elevation-dormer-profile-roof-edge-${p.face}`} />
+                {/* the ROOF EDGE — the dormer's eave/rake seen end-on:
+                    FASCIA/RAKE component color (ruled 2026-07-23) over
+                    the black skeleton */}
+                <line x1={p.B.x} y1={p.B.y} x2={p.C2.x} y2={p.C2.y} stroke={C.fascia} strokeWidth="2.5" data-testid={`elevation-dormer-profile-roof-edge-${p.face}`} />
               </g>
             )}
             {p.drawing_side === "left" ? (

@@ -267,3 +267,24 @@ def test_sheet_jsx_dormer_wiring():
     assert "elevation-schedule-dormer-legend" in SHEET_JSX
     assert "_tagLabel" in SHEET_JSX
     assert "dormer.top_ft" in SHEET_JSX
+
+
+def test_sheet_jsx_fascia_true_extent_and_dormer_components():
+    """RULED 2026-07-23 (fascia×dormer defect + component rule):
+    1. MECHANISM (named with evidence): the eave fascia band was a FIXED
+       22px glyph — 15½" at the red house LEFT scale (17 px/ft) — while
+       the dormer clears the eave by 12½" (17.7px). The band, not the
+       dormer, disagreed with the sheet's own numbers. FIX: the band
+       scales as a nominal 8" fascia/soffit assembly (fasciaBandH).
+    2. COMPONENT RULE: a dormer is a small house — its eave edges render
+       in the FASCIA/RAKE component color on faces AND profiles, over
+       the black skeleton."""
+    assert "const fasciaBandH = Math.max(8, (8 / 12) * ppf)" in SHEET_JSX
+    assert "y={wallTop - fasciaBandH}" in SHEET_JSX and "height={fasciaBandH}" in SHEET_JSX
+    assert "wallTop - 22" not in SHEET_JSX  # fixed-pixel band retired
+    assert 'data-testid="elevation-dormer-eave-fascia"' in SHEET_JSX
+    # both dormer eave edges carry the fascia component color
+    eave = SHEET_JSX[SHEET_JSX.index("elevation-dormer-eave-fascia") - 220:]
+    assert "stroke={C.fascia}" in eave[:260]
+    roof_edge = SHEET_JSX[SHEET_JSX.index("elevation-dormer-profile-roof-edge-") - 220:]
+    assert "stroke={C.fascia}" in roof_edge[:260]
