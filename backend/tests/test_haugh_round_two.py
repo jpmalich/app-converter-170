@@ -136,9 +136,16 @@ class TestRoundTwoPins:
         book 11 pcs/sq sealed, waste to the contractor's field (Letrick
         field = 10%) → lap 230 → 255 (+25 × $30.99 = +$774.75) —
         total_sell 11420.37 → 12195.12. App line now equals the sealed
-        key's 255 EXACTLY — residual zero."""
+        key's 255 EXACTLY — residual zero.
+        PIN AMENDED AGAIN (master-sheet binding, ruled 2026-07-23, Casile
+        founding example): sheet-bound rows (gutter run) now price from
+        the company master sheet + overrides instead of pending — 8 rows
+        +852.40 (Gutter 6\" 100×4.25 + Downspout 46×3.80 + elbow/end cap/
+        hangars/mitre/pipe clips/sealant) → total_sell 13047.52. Cap
+        window / Cap entry door / cleanup stay pending ($0.00 on every
+        tier sheet — escalated by name, never placeholder)."""
         d = session.post(f"{API}/estimates/{LETRICK}/lp-package/preview", json={}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 12195.12
+        assert d["summary"]["pricing"]["total_sell"] == 13047.52
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

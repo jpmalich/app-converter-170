@@ -73,6 +73,10 @@ SHARED_COLLECTIONS_ALLOWED = [
     # THE CUT (2026-07-14): blueprint runs are a composition source for
     # LP estimates — same shared-infra class as ai_measure_runs.
     "ai_blueprint_runs",
+    # MASTER-SHEET BINDING (ruled 2026-07-23, Casile founding example):
+    # sheet-bound rows read the company's tier sheet + catalog overrides —
+    # the sheet the contractor actually sees. Read-only from LP routers.
+    "price_tiers", "catalogs",
 ]
 
 ENV_FLAGS = ["LP_AI_FORMULAS_V1"]

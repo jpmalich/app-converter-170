@@ -131,7 +131,10 @@ def test_C_letrick_photo_regression(sess):
     PIN AMENDED (item-3 ratification, 2026-07-19): chase faces swap → lap 230 → 11420.37.
     PIN AMENDED (lap unification ruling, 2026-07-19): area key-bound 2099.7, book 11 pcs/sq,
     waste = contractor's field (Letrick estimate waste_pct = 10 → applied 0.10, no longer a
-    baked default) → lap 255 = sealed key EXACTLY — total_sell 12195.12."""
+    baked default) → lap 255 = sealed key EXACTLY — total_sell 12195.12.
+    PIN AMENDED (master-sheet binding, ruled 2026-07-23, Casile founding example):
+    sheet-bound gutter rows price from the company master sheet + overrides (+852.40)
+    → total_sell 13047.52; cap/cleanup rows stay pending ($0.00 sheet, escalated by name)."""
     p = _preview(sess, LETRICK_ID)
     assert p.status_code == 200, f"letrick preview: {p.status_code} {p.text[:400]}"
     data = p.json()
@@ -139,7 +142,7 @@ def test_C_letrick_photo_regression(sess):
     pricing = summary.get("pricing") or {}
     total = pricing.get("total_sell") or summary.get("total_sell") or data.get("total_sell")
     assert total is not None, f"no total_sell; summary keys={list(summary.keys())} pricing={pricing}"
-    assert abs(float(total) - 12195.12) < 0.01, f"total_sell={total}, expected 12195.12"
+    assert abs(float(total) - 13047.52) < 0.01, f"total_sell={total}, expected 13047.52"
     wpa = summary.get("waste_pct_applied")
     assert wpa is not None, "summary.waste_pct_applied missing on letrick"
     assert abs(float(wpa) - 0.10) < 1e-6, f"waste_pct_applied={wpa}"
