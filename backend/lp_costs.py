@@ -139,6 +139,10 @@ def resolve_margin_pct(cfg: dict, tier_name: str, line_name=None, category=None)
     return float(tiers[tier_name])
 
 
+def sheet_norm(s) -> str:
+    return " ".join(str(s or "").lower().split())
+
+
 def _mark_pending(line: dict, reason: str):
     line["pricing_status"] = "pending"
     line["cost_pending_reason"] = reason
@@ -146,7 +150,7 @@ def _mark_pending(line: dict, reason: str):
     line["line_sell"] = None
 
 
-def price_package(pkg: dict, cfg: dict, tier_name=None) -> dict:
+def price_package(pkg: dict, cfg: dict, tier_name=None, tier_sheet=None) -> dict:
     """Attach the confidential cost layer + sell prices to an assembled
     LP package IN PLACE. Caller MUST pass the result through
     redact_external() before returning it on any contractor-facing
@@ -172,6 +176,31 @@ def price_package(pkg: dict, cfg: dict, tier_name=None) -> dict:
         l["cost_basis"] = basis
         unit_cost = cost_for(name, basis)
         if unit_cost is None:
+            sheet = (tier_sheet or {}).get(sheet_norm(name))
+            if sheet is not None and basis not in PREFINISHED_FINISHES:
+                # MASTER-SHEET BINDING (ruled 2026-07-23, Casile founding
+                # example): items with no dealer cost on the LP quote sheet
+                # (gutter, capping labor, cleanup…) bind to the company's
+                # master price sheet entry. Sheet numbers are SELL-side —
+                # the tier sheet IS the sell — so no LP margin re-applies.
+                unit_sell = round(float(sheet.get("mat") or 0) + float(sheet.get("lab") or 0), 2)
+                if unit_sell > 0:
+                    try:
+                        q = float(l.get("qty") or 0)
+                    except (TypeError, ValueError):
+                        q = 0.0
+                    l["unit_sell"] = unit_sell
+                    l["line_sell"] = round(unit_sell * q, 2)
+                    l["pricing_status"] = "priced"
+                    l["price_basis"] = ("master price sheet (sell-side — sheet "
+                                        "governs; no LP margin re-applied)")
+                    total_sell += l["line_sell"]
+                    priced += 1
+                    continue
+                _mark_pending(l, "master price sheet holds $0.00 for this item — "
+                                 "needs a sheet price (escalated by name, never a placeholder)")
+                pending += 1
+                continue
             if basis in PREFINISHED_FINISHES:
                 reason = (f"no dealer cost on {QUOTE_REF} for this product at ExpertFinish — "
                           "cost pending; NEVER falls back to mill for a prefinished selection (ruled)")

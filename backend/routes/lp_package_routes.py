@@ -633,7 +633,7 @@ async def lp_package_preview(
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
     cfg = await load_margin_cfg()
-    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    price_package(pkg, cfg, est.get("lp_pricing_tier"), tier_sheet=await _load_tier_sheet_for(est))
     pkg["run_id"] = run.get("run_id")
     pkg["geometry_basis"] = _geometry_basis(est, run, binding)
     # Source chip (Howard-approved 2026-07-14): presenters answer "where
@@ -658,6 +658,45 @@ async def lp_package_preview(
 
 
 _COMPARE_FAMILIES = ("lap", "board_batten")
+
+
+async def _load_tier_sheet_for(est: dict) -> dict:
+    """Master-price-sheet index for sheet-binding (ruled 2026-07-23):
+    the sheet the contractor ACTUALLY SEES — company tier baseline merged
+    with their per-company catalog overrides, name-normalized → {mat, lab}.
+    A dangling tier pointer (tier reseed churn — Casile item-3 root cause)
+    falls back to the default tier sheet, the SAME fallback the catalog
+    surface applies — an empty sheet unbinds every row and misreports
+    'no dealer cost' when the true cause is a broken pointer."""
+    from lp_costs import sheet_norm
+    cid = est.get("company_id")
+    if not cid and est.get("id"):
+        doc = await db.estimates.find_one({"id": est["id"]}, {"_id": 0, "company_id": 1})
+        cid = (doc or {}).get("company_id")
+    comp = await db.companies.find_one({"id": cid}, {"_id": 0, "price_tier_id": 1}) if cid else None
+    tier = (await db.price_tiers.find_one({"id": comp["price_tier_id"]}, {"_id": 0, "sections": 1})
+            if comp and comp.get("price_tier_id") else None)
+    if tier is None:
+        from catalog_seed import DEFAULT_TIER_NAME
+        tier = await db.price_tiers.find_one({"name": DEFAULT_TIER_NAME}, {"_id": 0, "sections": 1})
+    idx = {}
+    by_section_key = {}
+    for sec in (tier or {}).get("sections") or []:
+        for it in sec.get("items") or []:
+            if it.get("name"):
+                entry = {"mat": float(it.get("mat") or 0),
+                         "lab": float(it.get("lab") or 0)}
+                idx[sheet_norm(it["name"])] = entry
+                by_section_key[f"{sec.get('title')}::{it['name']}"] = entry
+    cat = (await db.catalogs.find_one({"company_id": cid}, {"_id": 0, "overrides": 1})
+           if cid else None)
+    for key, ov in ((cat or {}).get("overrides") or {}).items():
+        entry = by_section_key.get(key)
+        if entry is not None and isinstance(ov, dict):
+            for f in ("mat", "lab"):
+                if ov.get(f) is not None:
+                    entry[f] = float(ov[f])
+    return idx
 
 
 def _force_profile_measurements(measurements: dict, family: str) -> dict:
@@ -928,12 +967,13 @@ async def lp_package_compare(
     measurements = _apply_key_bound_areas(measurements, est)
     measurements = _apply_contractor_waste(measurements, est)
     cfg = await load_margin_cfg()
+    tier_sheet = await _load_tier_sheet_for(est)
     basis = _geometry_basis(est, run, binding)
 
     def _derive(m):
         pkg = assemble_lp_package(m, corners_eff, wall_heights,
                                   colors=(payload or {}).get("colors"))
-        price_package(pkg, cfg, est.get("lp_pricing_tier"))
+        price_package(pkg, cfg, est.get("lp_pricing_tier"), tier_sheet=tier_sheet)
         pkg = redact_external(pkg)
         pkg["run_id"] = run.get("run_id")
         pkg["geometry_basis"] = basis
@@ -1144,7 +1184,7 @@ async def lp_package_cost_preview(est_id: str, request: Request, payload: dict |
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
     cfg = await load_margin_cfg()
-    price_package(pkg, cfg, (payload or {}).get("tier") or est.get("lp_pricing_tier"))
+    price_package(pkg, cfg, (payload or {}).get("tier") or est.get("lp_pricing_tier"), tier_sheet=await _load_tier_sheet_for(est))
     pkg["run_id"] = run.get("run_id")
     pkg["geometry_basis"] = _geometry_basis(est, run, binding)
     return pkg
@@ -1184,7 +1224,7 @@ async def _derive_current(est_id: str, company_id=None):
     pkg = assemble_lp_package(measurements, corner_locations, wall_heights,
                               colors=(full_est or {}).get("lp_colors"))
     cfg = await load_margin_cfg()
-    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    price_package(pkg, cfg, est.get("lp_pricing_tier"), tier_sheet=await _load_tier_sheet_for(est))
     pkg = redact_external(pkg)
     pkg["run_id"] = run.get("run_id")
     pkg["geometry_basis"] = _geometry_basis(est, run, binding)
@@ -1219,7 +1259,7 @@ async def lp_material_list_freeze(
                               substitutions=(payload or {}).get("substitutions"),
                               colors=(payload or {}).get("colors"))
     cfg = await load_margin_cfg()
-    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    price_package(pkg, cfg, est.get("lp_pricing_tier"), tier_sheet=await _load_tier_sheet_for(est))
     pkg = redact_external(pkg)  # frozen snapshot is ALWAYS the redacted view
     pkg["run_id"] = run.get("run_id")
     pkg["geometry_basis"] = _geometry_basis(est, run, binding)

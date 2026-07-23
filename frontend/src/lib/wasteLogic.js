@@ -124,7 +124,7 @@ export function bakeWasteIntoLines(lines, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
   const factor = 1 + pct / 100;
   return (lines || []).map((l) => {
-    if (!isCutProneItem(l)) return l;
+    if (l._waste_included || !isCutProneItem(l)) return l;
     const raw = Number(l.qty) || 0;
     if (raw <= 0) return l;
     return {
@@ -169,7 +169,7 @@ export function recomputeAllWaste(lines, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
   const factor = 1 + pct / 100;
   return (lines || []).map((l) => {
-    if (!isCutProneItem(l)) return l;
+    if (l._waste_included || !isCutProneItem(l)) return l;
     const stored = Number(l.raw_qty);
     const hasRaw = isFinite(stored) && stored > 0;
     const rawQty = hasRaw ? stored : (Number(l.qty) || 0);

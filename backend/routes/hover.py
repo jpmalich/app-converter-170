@@ -1893,8 +1893,10 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
             # preserve existing quote behaviour.
             if tab == "lp_smart" and lp_formulas.is_enabled():
                 qty = lp_formulas.pieces_needed(sqft, sqft_per_unit)
+                waste_included = True
             else:
                 qty = round(sqft / sqft_per_unit, 1)
+                waste_included = False
             if qty <= 0:
                 continue
             out.append({
@@ -1903,6 +1905,7 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
                 "name": item,
                 "unit": unit,
                 "qty": qty,
+                "_waste_included": waste_included,
                 "note": _composition_note(family, sqft),
             })
     return out
@@ -2222,6 +2225,55 @@ async def hover_import_status(
     }
 
 
+_CUT_PRONE_ASCEND = {'Ascend Composite Lap Siding 7"',
+                     'Ascend Composite B&B 12" (add 30% Waste)'}
+
+
+def _cut_prone_line(line: dict) -> bool:
+    """Python mirror of frontend lib/wasteLogic.js isCutProneItem — the
+    materialize path re-derives tab lines server-side and must bake the
+    same contractor waste the import apply bakes. Keep in lockstep."""
+    section = str(line.get("section") or "").lower()
+    name = str(line.get("name") or "").lower()
+    if section == "vinyl siding":
+        return True
+    if (line.get("section") in ("Ascend Cladding", "Ascend Cladding/Accessories")
+            and line.get("name") in _CUT_PRONE_ASCEND):
+        return True
+    if section in ("lp smart siding", "lp smartside trim", "lp smartside soffit"):
+        return True
+    if section == "lp siding accessories" and ("osc" in name or "outside corner" in name):
+        return True
+    if section == "vinyl soffit with siding" and "charter oak soffit" in name:
+        return True
+    if "j-channel" in name or "j - channel" in name or "j channel" in name:
+        return True
+    if "finish trim" in name or "outside corner" in name or "inside corner" in name:
+        return True
+    if name == "starter" or name.startswith("starter "):
+        return True
+    if name in ("house wrap", "raindrop house wrap"):
+        return True
+    if name == '3/8" fan fold' or "fan fold" in name:
+        return True
+    return False
+
+
+def _bake_tab_waste(lines: list, waste_pct) -> list:
+    """bakeWasteIntoLines mirror: qty = ceil(raw × (1+w) × 2)/2 on
+    cut-prone rows, raw kept in raw_qty."""
+    factor = 1 + max(0.0, float(waste_pct or 0)) / 100.0
+    out = []
+    for l in lines:
+        l = dict(l)
+        raw = float(l.get("qty") or 0)
+        if raw > 0 and not l.get("_waste_included") and _cut_prone_line(l):
+            l["raw_qty"] = raw
+            l["qty"] = math.ceil(raw * factor * 2) / 2
+        out.append(l)
+    return out
+
+
 @router.post("/estimates/{est_id}/hover-lp-run")
 async def hover_lp_run(
     est_id: str, payload: dict, user: dict = Depends(get_current_user),
@@ -2289,11 +2341,66 @@ async def hover_lp_run(
     payload_waste = (payload or {}).get("waste_pct")
     waste_field = (round(float(payload_waste) * 100, 1)
                    if payload_waste is not None else DEFAULT_WASTE_PCT)
-    await db.estimates.update_one(
-        {"id": est_id},
-        {"$set": {"lp_source_run_id": lp_run_id,
-                  "default_siding_profile": profile,
-                  "waste_pct": waste_field}})
+    est_set = {"lp_source_run_id": lp_run_id,
+               "default_siding_profile": profile,
+               "waste_pct": waste_field}
+    # ONE FAMILY EVERYWHERE (Jon Casile founding example, ruled 2026-07-23):
+    # materialize also RE-DERIVES the classic tab lines at the chosen
+    # profile + facade scope — lap clears via re-derivation (never
+    # hand-zeroed), no surface on the estimate speaks a different family.
+    # mat/lab inherited by (tab, section, name); waste baked per the same
+    # contractor-waste rule the import apply bakes.
+    rebuilt_lines = None
+    if bool((payload or {}).get("rebuild_tab_lines", True)):
+        from routes.lp_package_routes import _force_profile_measurements
+        scoped = dict(hover_meas)
+        if engine_meas.get("siding_sqft") is not None:
+            scoped["siding_sqft"] = engine_meas["siding_sqft"]  # scope governs
+        tab_lines = _bake_tab_waste(
+            _build_lines(_force_profile_measurements(scoped, profile)), waste_field)
+        prev = await db.estimates.find_one(
+            {"id": est_id}, {"_id": 0, "lines": 1, "lp_pricing_tier": 1})
+        prev_idx = {(l.get("tab"), l.get("section"), l.get("name")): l
+                    for l in (prev or {}).get("lines") or []}
+        for l in tab_lines:
+            old = prev_idx.get((l.get("tab"), l.get("section"), l.get("name")))
+            if old:
+                for k in ("mat", "lab", "adders", "ami_part"):
+                    if old.get(k) is not None:
+                        l[k] = old[k]
+        # Rows with NO previous line to inherit from bind to the company's
+        # resolved catalog (tier + overrides + LP engine) — the same source
+        # the frontend import-apply merge reads. Never a silent None price.
+        if any(l.get("mat") is None for l in tab_lines):
+            from routes.catalog import _resolve_catalog_for_company
+            comp_doc = await db.companies.find_one({"id": user["company_id"]}, {"_id": 0})
+            cat = await _resolve_catalog_for_company(
+                comp_doc, (prev or {}).get("lp_pricing_tier"))
+            cat_idx = {(s["title"], it["name"]): it
+                       for s in cat.get("sections") or [] for it in s.get("items") or []}
+            for l in tab_lines:
+                if l.get("mat") is not None:
+                    continue
+                it = cat_idx.get((l.get("section"), l.get("name")))
+                if it and not it.get("pricing_pending"):
+                    l["mat"] = it["mat"]
+                    l["lab"] = it["lab"]
+                    if it.get("ami_part") is not None:
+                        l["ami_part"] = it["ami_part"]
+                else:
+                    # No catalog row either — the frontend import-apply
+                    # convention is an explicit $0.00, never a None hole.
+                    l["mat"] = 0.0
+                    l["lab"] = 0.0
+        rebuilt_lines = tab_lines
+        est_set["lines"] = tab_lines
+        # Porch-ceiling recompute basis (Casile set-back doorway item):
+        # the classic import apply persists est.hover_measurements; the
+        # server-side rebuild must too, or a Job-Info porch-ceiling entry
+        # recomputes soffit off an EMPTY basis (eaves/rakes = 0) and
+        # clobbers the import-derived qtys.
+        est_set["hover_measurements"] = scoped
+    await db.estimates.update_one({"id": est_id}, {"$set": est_set})
     # TTL pin, 2nd instance (2026-07-18): the stamp above is a persistent
     # artifact — archive BOTH the materialized LP run and its SOURCE hover
     # run the moment the reference is minted (un-expirable from birth).
@@ -2307,7 +2414,8 @@ async def hover_lp_run(
         "waste_pct_written": waste_field,
     })
     return {"ok": True, "lp_run_id": lp_run_id, "profile": profile,
-            "mapping_flags": mapping_flags}
+            "mapping_flags": mapping_flags,
+            "tab_lines": rebuilt_lines}
 
 
 

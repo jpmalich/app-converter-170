@@ -463,13 +463,13 @@ async def _derive_lp_pkg_for_export(est: dict, company_id: str):
     except HTTPException:
         return None
     meas, corners, heights = _extract(run)
-    from routes.lp_package_routes import _apply_openings_review, _openings_items, _apply_corner_review, _apply_appendage_dims
+    from routes.lp_package_routes import _apply_openings_review, _openings_items, _apply_corner_review, _apply_appendage_dims, _load_tier_sheet_for
     meas, _ = _apply_openings_review(meas, _openings_items(run, _e.get("lp_openings_review")))
     corners = _apply_corner_review(corners, _e.get("lp_field_verify"))
     corners = _apply_appendage_dims(corners, _e.get("lp_appendage_dims"))
     pkg = assemble_lp_package(meas, corners, heights, colors=est.get("lp_colors"))
     cfg = await load_margin_cfg()
-    price_package(pkg, cfg, est.get("lp_pricing_tier"))
+    price_package(pkg, cfg, est.get("lp_pricing_tier"), tier_sheet=await _load_tier_sheet_for(est))
     pkg = redact_external(pkg)
     pkg["run_id"] = run.get("run_id")
     pkg["geometry_basis"] = _geometry_basis(_e, run, binding)

@@ -86,9 +86,24 @@ def test_founding_example_bb_product_set(session):
 
 
 def test_founding_example_panel_math(session):
-    """2610 ft² × 1.10 waste ÷ 40 ft²/panel = 71.775 → 72 PCS."""
+    """HOUSE-WRAP SCOPE GOVERNS (Casile item-1, ruled): the facade-scope
+    picker composes 2064 ft² (stucco 312 + brick 234 excluded, never
+    silently summed). 2064 × 1.10 waste ÷ 40 ft²/panel = 56.76 → 57 PCS.
+    72 PCS would mean the whole-house 2610 leaked back in — the defect."""
     r = session.post(f"{API}/estimates/{CASILE_EST}/lp-package/preview",
                      json={}, timeout=90)
     panel = next(l for l in r.json()["lines"]
                  if "4' x 10' Panel" in str(l.get("item") or l.get("name")))
-    assert (panel.get("qty") or panel.get("quantity")) == 72
+    assert (panel.get("qty") or panel.get("quantity")) == 57
+
+
+def test_founding_example_facade_scope_pinned(session):
+    """The materialized run carries the explicit facade scope: 2064 ft²
+    composes; stucco 312 + brick 234 are NAMED excluded; the flag is on
+    the package so the contractor sees the scope in one glance."""
+    r = session.post(f"{API}/estimates/{CASILE_EST}/lp-package/preview",
+                     json={}, timeout=90)
+    d = r.json()
+    flags = " | ".join(str(f.get("label") or f) for f in d.get("hover_mapping_flags") or [])
+    assert "2064" in flags, flags
+    assert "stucco 312" in flags and "brick 234" in flags, flags
