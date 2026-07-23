@@ -4588,3 +4588,21 @@ STAMPS: purges+protection `- 2026-07-23 12:29 UTC · 5f0e30b · CLEAN · 1213 pa
 QUEUE: publish (deploy) → run seed_runner apply + POST /demo/reset on prod → verify gate GREEN
 on prod → pre-September prod walkthrough (Howard schedules). Backlog: P6 massing, layer toggles,
 hip pitch, upload tightening, compare-toggle, ISS catalog Excel.
+
+## SESSION 2026-07-23 (part 30) — DEPLOY + CASILE B&B DEFECT (founding example)
+DEPLOYED: https://app.pro-quotes.com (custom domain; platform https://app-converter-170.emergent.host).
+PROD SEQUENCE BLOCKED: SUPPLIER_ADMIN_TOKEN stale in prod Secrets (KMS-sealed, never overwritten
+by redeploy, unreadable by tooling) — Howard must update it in Deployment Panel → Secrets to the
+preview /app/backend/.env value. All other secrets carried (ADMIN_*, ANTHROPIC, EMERGENT_LLM_KEY).
+Then: seed-apply → demo/reset → gate quote → 423 sample (sequence receipted).
+DEFECT FIXED (Jon Casile / 261 Haugh EST-523061, e2ce35b8 — FOUNDING EXAMPLE):
+(a) Picker did NOT drive LP mapping — hoverRunId state declared but NEVER SET → apply()'s
+hover-lp-run materialize branch unreachable → profile-blind default (38 Series Lap) stood.
+(b) Ruled B&B set: 38 Series 4'×10' Panel (40 ft²/pc, ceil(sqft×1.10/40)), 190 Series Trim
+19/32"×3"×16' battens 16" o.c. (÷16' stock, NO waste on battens), NO STARTER (base gets J).
+(c) FIX: setHoverRunId(runId) in both result branches + honest-failure toast on missing run id;
+Casile estimate materialized via machinery (hover-lp-run run 8f6f9b5e board_batten, 2610 ft²):
+72 panels + 123 battens, no lap SKU, no starter, basis pinned. Pins: test_hover_bb_profile_mapping.py
+(5). CAVEAT flagged: classic tab lines on the estimate still carry the lap default from apply
+(LP Material List panel = the correct takeoff/freeze surface). Fix in prod after redeploy.
+STAMP: - 2026-07-23 19:57 UTC · 75a63cb · CLEAN · 1231 passed, 1 skipped, 3 warnings.
