@@ -4557,3 +4557,34 @@ QUEUE: Howard's P5 look → deletions handback (item 2) → seed census (item 3a
    prod). Findings: 102 orphaned /r/ snapshots (test artifacts), invitations 153 residue.
 QUEUE: Howard rules on seed scope (C) + orphan purge (D) → 3b export tool + seed runner +
 un-hardcode preview host in ~20 test files → publish + pre-September prod walkthrough gate.
+
+## SESSION 2026-07-23 (part 29) — CONSOLIDATED RULING EXECUTED (purges, protection, 3b seeds)
+1. SCOPE RULED = FULL PARITY. Test-company split designed + shipped: exports carry company_slot
+   (demo: red house/LP pair/Letrick · test: doug/haugh/round-two); on prod test-slot fixtures
+   seed under fixed test co (zzfix-test-co-0001, account fixtures@test.internal or
+   FIXTURE_TEST_EMAIL env). SUITE LOGIN DESIGN: creds_for_tests exposes FIXTURE_DEMO_* /
+   FIXTURE_TEST_* pairs (env-overridable, both default to ADMIN creds in preview — no split here).
+2. PURGES DONE (receipted, /app/memory/purge_protect_receipt_2026-07-23.md): 102 orphaned /r/
+   snapshots + 153 invitations. Survivor /r/ checksums unchanged; /m/ untouched.
+   CORRECTION on record: faa96702 test residue swept into protect set, un-protected + deleted
+   via machinery.
+3. PROVISIONING GATE SHIPPED: `python seed/seed_runner.py verify` — 57 checks, GREEN/RED report,
+   exit 1 on RED. Named line for demo-script checklist: "verify seeds applied on prod".
+4. FIXTURE PROTECTION SHIPPED: protected flag; DELETE refuses 423 (doc intact) regardless of
+   caller; PUT /estimates/{id}/protected = deliberate separate flip; preflight surfaces it;
+   Dashboard lock icon replaces delete ("protected fixture", data-testid protected-{id});
+   demo reset births protected; 7 fixtures flagged via machinery; exports carry the flag
+   (round-trip pinned). Screenshot of red house lock delivered. Pins: test_fixture_protection.py (5).
+5. 3b SHIPPED: seed/export_fixtures.py (FULL PARITY: 6 estimates + slots + protection, 34 runs
+   [24h-TTL collections excluded — transient by design], 4 sessions, 137 blobs 141.9MB in-repo
+   at backend/fixtures/, pricing ~260KB, accounts w/o password hashes) + seed/seed_runner.py
+   (apply: idempotent, estimates INSERT-ONLY w/ import stamp — human rungs transported never
+   overwritten, drift REPORTED; runs → fixture_runs archive + live coll; blobs → upload_blobs +
+   disk). price_tiers: presence-only verify (content oscillates boot-augmented vs PUT-normalized).
+   HOST UN-HARDCODED across 50 test files → tests/api_base.py (env-derived). Pins:
+   test_seed_fixtures.py (9) incl. human-rung transport (33+1cut rides in export) + gate-green.
+STAMPS: purges+protection `- 2026-07-23 12:29 UTC · 5f0e30b · CLEAN · 1213 passed`;
+3b `- 2026-07-23 13:03 UTC · bfefc6e · CLEAN · 1222 passed, 1 skipped, 3 warnings`.
+QUEUE: publish (deploy) → run seed_runner apply + POST /demo/reset on prod → verify gate GREEN
+on prod → pre-September prod walkthrough (Howard schedules). Backlog: P6 massing, layer toggles,
+hip pitch, upload tightening, compare-toggle, ISS catalog Excel.
