@@ -4446,3 +4446,23 @@ QUEUE: Howard's photo-compare gate; THEN Howard re-enters red house tape via Fie
 tapes dormer knee/base (lp_appendage_dims dormer:left/right knee_ft/base_ft) — P5 closes on
 TAPED rungs. Parks unchanged (P6 massing, layer toggles, hip pitch, upload tightening,
 compare-toggle, ISS catalog).
+
+## SESSION 2026-07-23 (part 27) — ROUND THREE: FASCIA×DORMER FIX + DORMER COMPONENT RULE (fork)
+VERDICT RECEIVED: profiles PASS (orientation defect closed).
+DEFECT (fascia band × dormer) — MECHANISM NAMED WITH EVIDENCE: the eave fascia band was a FIXED
+22px glyph = 15½" at red house LEFT scale (17 px/ft), while the dormer clears the eave by 12½"
+(17.7px). Band taller than its true extent — NOT dormer position, NOT occlusion order. FIX PER
+CAUSE: band scales as nominal 8" fascia/soffit assembly (fasciaBandH = max(8px, 8"·ppf); eave
+rake verticals re-seated on the scaled band top). Drawn gap now 4.4" ≈ numbers' 12.4"−8".
+NEW RULE PINNED — DORMER COMPONENT CLASSIFICATION: a dormer is a small house — eave edges render
+FASCIA/RAKE color on faces (elevation-dormer-eave-fascia) AND profiles (roof-edge line now
+C.fascia), over the black skeleton. Pinned in test_dormers_p5 (fascia true extent + colors).
+MATERIAL-LIST EXTRACTION REPORT (no wiring, as ordered): SUPPORTED — dormer eave fascia LF =
+width_ft per face (15' × 2, provenance per width_source); dormer face/cheek siding already rides
+_dormer_composition (L: face 80 ft², cheeks 25, deducted 25.19; R: 75/25/12). NOT SUPPORTED —
+dormer rake LF (roof pitch NOT READ), dormer soffit (overhang not extracted), cheek edge lengths
+(depth along slope NOT READ). No accessory_profiles callouts mention dormer fascia/soffit.
+STAMP (verbatim): - 2026-07-23 00:42 UTC · 0f6996a · CLEAN · [tests] · 1193 passed, 1 skipped,
+3 warnings in 123.26s (0:02:03).
+QUEUE: Howard photo-compare gate → tape pass (Field Verify + dormer:left/right knee_ft/base_ft)
+closes P5. Parks unchanged.
