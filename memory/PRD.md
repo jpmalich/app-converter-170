@@ -4643,3 +4643,27 @@ NOTED (not changed): classic-tab dial bakes 10% on cut-prone LP rows atop ruled 
 (battens 97→107 on tab; LP list = ruled surface, 97). Company tier assignment question
 escalated (dangling pointer left in place — fallback governs; Howard picks tier in admin).
 STAMP: - 2026-07-23 21:35 UTC · 878f681 · CLEAN · [tests] · 1236 passed, 1 skipped, 3 warnings in 140.57s (0:02:20)
+
+## SESSION 2026-07-23 (part 32) — P0: ONE MONEY SURFACE (permanent ruling)
+DEFECT (register entry logged): customer quote double-counted — quoteEstimate merged the AI
+Material List's margin-applied sells back through the estimate margin on top of group tabs.
+Caught by Howard pre-send.
+RULE IMPLEMENTED + PINNED:
+ (1) ALL pricing lives on group tabs/summary; quote, base cost, header total, frozen/QR,
+     CSV money rows derive from est.lines alone (pkgLines merge removed; JSX pin bans return).
+ (2) AI Material List UNPRICED everywhere: redact_external strips unit_sell/line_sell/
+     total_sell/price_basis; panel/print/QR-share/legacy-snapshots/CSV LP block show
+     items+qty+unit+derivations+provenance only; pending rows escalate by name (no dollars).
+     Supplier-admin cost-preview keeps full pricing (dollar pins moved there).
+ (3) Accept page totals from quote_tab_scope stored at send (calc_totals tabs param) —
+     never an all-tab sum.
+ (4) Register entry appended to verification_integrity_register.md.
+JON RE-DERIVED (single money surface, lp_smart scope): mat 17,657.51 + tax(7% on mat)
+1,236.03 + labor 280.00 = base 19,173.54 → 30% margin = $27,390.77 (was 27,689.41 defective).
+Deltas named: battens 107 (dial) vs list 97; +closed soffit 9×73.50; vented 11 vs 10;
+OSC tab 10×181.11 (5/4×4) vs list 9×271.69 (5/4×6); 440 trim tab 23.5×28.20 vs list
+21×56.43+3×28.20; 540 trim 36.5 vs 33; gutter labor split out of mat (untaxed −31.99 tax).
+NOTE flagged to Howard: tab vs list SKU divergence on OSC/440-trim awaits his ruling.
+Tests: test_one_money_surface.py (7 pins) + 9 amended pins across 7 files.
+STAMPS: - 2026-07-23 21:35 UTC · 878f681 · CLEAN (binding session)
+        - 2026-07-23 22:28 UTC · 7f1d16f · CLEAN · 1244 passed, 1 skipped
