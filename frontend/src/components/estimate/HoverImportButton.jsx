@@ -257,10 +257,16 @@ export default function HoverImportButton({ est, update, save }) {
       // the final result and skip polling.
       if (!runId || startResult || startStatus === "done") {
         const final = startResult || startResp.data;
+        // DEFECT FIX (Jon Casile founding example, 2026-07-23): the run id
+        // must reach apply() — without it the hover-lp-run materialize
+        // branch is unreachable and the LP list keeps the profile-blind
+        // default (Lap) regardless of the picker.
+        setHoverRunId(runId || null);
         setResult(final);
         setOpenings(final?.vero_openings || []);
       } else {
         const final = await pollHoverImportStatus(runId, setStage);
+        setHoverRunId(runId);
         setResult(final);
         setOpenings(final?.vero_openings || []);
       }
@@ -540,6 +546,10 @@ export default function HoverImportButton({ est, update, save }) {
       // Slice 1 — Hover→LP engine bridge: materialize the import as an
       // LP-native run at the chosen profile (mapping contract governs;
       // unmappable fields flag pending). LP-kind fresh imports only.
+      if (srcKind === "lp_smart" && profile && !hoverRunId) {
+        // Honest failure — never silently skip the profile mapping
+        toast.error("Hover run id missing — the LP list could NOT be derived at the chosen profile. Re-run the import.");
+      }
       if (srcKind === "lp_smart" && hoverRunId && profile) {
         try {
           // Facade scope from the picker — explicit choice, wrap default.
