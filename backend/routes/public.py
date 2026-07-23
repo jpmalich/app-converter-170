@@ -173,8 +173,10 @@ async def public_get_accept(token: str):
         {"id": est["company_id"]}, {"_id": 0, "name": 1, "logo_url": 1}
     )
     # Customer also needs to see the total — compute it server-side so the link is self-contained.
+    # ONE MONEY SURFACE (ruled 2026-07-23): scoped to the tabs the sent
+    # quote was composed from — never an all-tab sum.
     from services import calc_totals
-    totals = calc_totals(est)
+    totals = calc_totals(est, tabs=est.get("quote_tab_scope"))
     summary = _public_estimate_summary(est, company)
     # Supplier co-brand (clarity ruling 2026-07-16 S6)
     from routes.branding import SUPPLIER_NAME, get_branding
@@ -241,7 +243,7 @@ async def public_post_accept(token: str, body: CustomerAcceptIn, request: Reques
             )
             if owner and owner.get("email"):
                 from services import calc_totals
-                totals = calc_totals(est)
+                totals = calc_totals(est, tabs=est.get("quote_tab_scope"))
                 est_num = est.get("estimate_number") or "(no number)"
                 cust = est.get("customer_name") or "your customer"
                 total_str = f"${totals['sell']:,.2f}"

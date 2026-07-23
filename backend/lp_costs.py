@@ -96,12 +96,18 @@ CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS = frozenset({
 
 # Confidential keys — stripped from EVERY contractor/customer-facing
 # payload by redact_external(). Cost, margins, tier identity, and the
-# dealer-sheet provenance never render externally.
+# dealer-sheet provenance never render externally. ONE MONEY SURFACE
+# (Howard ruling, 2026-07-23, P0 double-count on a live customer quote):
+# ALL pricing lives exclusively on the group tabs/summary — the AI
+# Material List is the VERIFICATION surface (items, quantities, units,
+# derivations, provenance) and carries NO dollars: unit_sell, line_sell,
+# total_sell and price_basis are stripped alongside the cost layer.
 CONFIDENTIAL_KEYS = frozenset({
     "unit_cost", "line_cost", "total_cost", "cost_basis",
     "cost_pending_reason", "margin_pct", "tier", "tier_pct", "tiers",
     "default_tier", "category_overrides", "line_overrides",
     "quote_ref", "basis_doctrine",
+    "unit_sell", "line_sell", "total_sell", "price_basis",
 })
 
 
@@ -239,8 +245,9 @@ def price_package(pkg: dict, cfg: dict, tier_name=None, tier_sheet=None) -> dict
 
 def redact_external(obj):
     """Deep-strip every confidential key from a payload bound for any
-    contractor/customer-facing surface. The external view keeps
-    unit_sell / line_sell / pricing_status / total_sell only."""
+    contractor/customer-facing surface. ONE MONEY SURFACE (ruled
+    2026-07-23): the external view is UNPRICED — pricing_status survives
+    (verification info), every dollar key is stripped."""
     if isinstance(obj, dict):
         return {k: redact_external(v) for k, v in obj.items() if k not in CONFIDENTIAL_KEYS}
     if isinstance(obj, list):

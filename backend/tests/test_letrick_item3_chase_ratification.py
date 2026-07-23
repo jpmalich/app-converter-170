@@ -46,7 +46,13 @@ def session():
 
 @pytest.fixture(scope="module")
 def pkg(session):
-    r = session.post(f"{API}/estimates/{LETRICK}/lp-package/preview", json={}, timeout=60)
+    """ONE MONEY SURFACE (2026-07-23): the contractor preview is unpriced —
+    dollar pins in this file ride the supplier-admin cost-preview, which
+    keeps the full pricing layer (same engine, same derivation)."""
+    import os
+    tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+    r = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
+                     json={}, headers={"X-Admin-Token": tok}, timeout=60)
     assert r.status_code == 200
     return r.json()
 

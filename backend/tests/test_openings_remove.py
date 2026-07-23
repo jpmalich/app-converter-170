@@ -294,11 +294,16 @@ def test_ratify_events_append_to_tracking(session, phantom_fixture, mongo_db):
 
 def test_starter_prices_whole_boards_only(session):
     import math
-    r = session.post(f"{API}/estimates/{LETRICK_EST}/lp-package/preview", json={}, timeout=30)
+    import os
+    # ONE MONEY SURFACE (2026-07-23): dollar math pins ride the
+    # supplier-admin cost-preview — the contractor preview is unpriced.
+    tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+    r = session.post(f"{API}/admin/estimates/{LETRICK_EST}/lp-package/cost-preview",
+                     json={}, headers={"X-Admin-Token": tok}, timeout=30)
     assert r.status_code == 200
     ripped = [l for l in r.json()["lines"]
               if l.get("priced_unit") == "per ripped source board" and l.get("pricing_status") == "priced"]
-    assert ripped, "no rip-priced lines on the letrick preview"
+    assert ripped, "no rip-priced lines on the letrick cost-preview"
     for l in ripped:
         pcs = l["pieces_added"]
         assert isinstance(pcs, int) and pcs >= 1

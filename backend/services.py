@@ -1343,10 +1343,21 @@ def _brand_window_mat(est: dict, brand: str, openings: list, opening_mat_fn) -> 
     return sum(opening_mat_fn(op) for op in openings)
 
 
-def calc_totals(est: dict) -> dict:
+def calc_totals(est: dict, tabs=None) -> dict:
     lines = est.get("lines", []) or []
     misc_labor = est.get("misc_labor", []) or []
     misc_material = est.get("misc_material", []) or []
+    # ONE MONEY SURFACE (ruled 2026-07-23): optional tab scope — the
+    # accept page totals from the SAME tabs the sent quote was composed
+    # from (mirror of lib/calc.js inTab). None = all tabs (legacy).
+    if tabs:
+        def _in_scope(row):
+            return (row.get("tab") or "vinyl") in tabs
+        lines = [ln for ln in lines if _in_scope(ln)]
+        misc_labor = [m for m in misc_labor if _in_scope(m)]
+        misc_material = [m for m in misc_material if _in_scope(m)]
+    include_mezzo = not tabs or "mezzo" in tabs
+    include_vero = not tabs or "windows" in tabs
     # Iter 37: Mezzo openings are stored separately because their price
     # is W×H-derived (bucket-lookup at save time). Subtotal contribution
     # = opening.qty × base_mat + sum(adder.qty × adder.mat). Lives in
@@ -1388,8 +1399,8 @@ def calc_totals(est: dict) -> dict:
     sub_mat = (
         sum((ln.get("qty", 0) or 0) * (ln.get("mat", 0) or 0) + _adders_mat_total(ln) for ln in lines)
         + sum((m.get("mat", 0) or 0) for m in misc_material)
-        + _brand_window_mat(est, "mezzo", mezzo_openings, _opening_mat)
-        + _brand_window_mat(est, "vero", vero_openings, _vero_opening_mat)
+        + (_brand_window_mat(est, "mezzo", mezzo_openings, _opening_mat) if include_mezzo else 0.0)
+        + (_brand_window_mat(est, "vero", vero_openings, _vero_opening_mat) if include_vero else 0.0)
     )
     sub_lab = (
         sum((ln.get("qty", 0) or 0) * (ln.get("lab", 0) or 0) + _adders_lab_total(ln) for ln in lines)

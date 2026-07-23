@@ -134,8 +134,13 @@ def test_C_letrick_photo_regression(sess):
     baked default) → lap 255 = sealed key EXACTLY — total_sell 12195.12.
     PIN AMENDED (master-sheet binding, ruled 2026-07-23, Casile founding example):
     sheet-bound gutter rows price from the company master sheet + overrides (+852.40)
-    → total_sell 13047.52; cap/cleanup rows stay pending ($0.00 sheet, escalated by name)."""
-    p = _preview(sess, LETRICK_ID)
+    → total_sell 13047.52; cap/cleanup rows stay pending ($0.00 sheet, escalated by name).
+    ONE MONEY SURFACE (2026-07-23): the contractor preview is unpriced — this dollar
+    pin rides the supplier-admin cost-preview."""
+    import os
+    tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+    p = sess.post(f"{API}/admin/estimates/{LETRICK_ID}/lp-package/cost-preview",
+                  json={}, headers={"X-Admin-Token": tok}, timeout=60)
     assert p.status_code == 200, f"letrick preview: {p.status_code} {p.text[:400]}"
     data = p.json()
     summary = data.get("summary") or {}

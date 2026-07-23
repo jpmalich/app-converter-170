@@ -163,12 +163,15 @@ def _assert_no_confidential(obj, path="$"):
 
 
 def test_external_redaction_strips_all_confidential_keys():
+    """ONE MONEY SURFACE (ruled 2026-07-23): the external payload is
+    UNPRICED — every dollar key (cost AND sell) is stripped; the
+    verification layer (pricing_status, qty, derivations) survives."""
     ext = redact_external(_pkg(colors={"all": "Quarry Gray"}))
     _assert_no_confidential(ext)
     lap = next(l for l in ext["lines"] if l["name"] == LAP8_ITEM)
-    assert lap["unit_sell"] == round(32.54 / 0.70, 2)   # sell survives
+    assert "unit_sell" not in lap and "line_sell" not in lap
     assert lap["pricing_status"] == "priced"
-    assert "total_sell" in ext["summary"]["pricing"]
+    assert "total_sell" not in ext["summary"]["pricing"]
     assert "total_cost" not in ext["summary"]["pricing"]
     assert "tier" not in ext["summary"]["pricing"]
 

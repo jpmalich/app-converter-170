@@ -29,7 +29,6 @@ import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, S
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
 import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
-import { LP_SECTION_TITLES } from "@/lib/lpColors";
 
 export default function EstimateEditor() {
   const { id } = useParams();
@@ -144,46 +143,14 @@ export default function EstimateEditor() {
   // stays null and we pass the full estimate through.
   const quoteEstimate = useMemo(() => {
     if (!est) return est;
-    // CUSTOMER QUOTE COMPOSITION (ruled iter100, amended by the clarity
-    // ruling 2026-07-16): the derived package governs LP material
-    // sections ONLY once applied — an unapplied takeoff never composes
-    // the quote (it renders "not ready" + warn-with-confirm instead).
-    let base = est;
-    if (isLpKind && lpPkg && !lpDerivedUnapplied) {
-      // The package governs EVERY line it derives — any section (LP
-      // materials, gutters, caps). Pending lines carry the flag with
-      // mat 0 so they render blank + qualifier and never hit the total.
-      const pkgLines = (lpPkg.lines || [])
-        .filter((l) => (l.qty || 0) > 0)
-        .map((l) => ({
-          section: l.section,
-          name: l.color ? `${l.name} — ${l.color}` : l.name,
-          unit: l.unit,
-          qty: l.qty,
-          mat: l.pricing_status === "priced" ? l.unit_sell || 0 : 0,
-          lab: 0,
-          tab: "lp_smart",
-          adders: [],
-          pricing_pending: l.pricing_status !== "priced",
-        }));
-      // Contractor service lines: stored lp_smart lines the package does
-      // NOT track (their labor/services keep contractor pricing). Lines
-      // the package derives are deduped by name so a stale stored price
-      // can never shadow the derived/pending truth.
-      const pkgNames = new Set();
-      (lpPkg.lines || []).forEach((l) => {
-        pkgNames.add(l.name);
-        if (l.substituted_from) pkgNames.add(l.substituted_from);
-      });
-      const serviceLines = (est.lines || []).filter(
-        (l) =>
-          (l.tab || "vinyl") === "lp_smart" &&
-          !pkgNames.has(l.name) &&
-          !LP_SECTION_TITLES.has(l.section) &&
-          (l.qty || 0) > 0
-      );
-      base = { ...est, lines: [...pkgLines, ...serviceLines] };
-    }
+    // ONE MONEY SURFACE (Howard ruling 2026-07-23, P0 double-count on a
+    // live customer quote): the customer quote, base cost, header total
+    // and every frozen/QR output derive from the GROUP TABS alone
+    // (est.lines + misc + openings). The AI Material List is the
+    // verification surface and NEVER composes the quote — the retired
+    // package-lines merge fed margin-applied package sells back through
+    // the estimate margin (double count).
+    const base = est;
     if (!tabFilter) return base;
     return {
       ...base,
@@ -202,7 +169,7 @@ export default function EstimateEditor() {
       mezzo_openings: tabFilter.includes("mezzo") ? est.mezzo_openings || [] : [],
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [est, tabFilter, isLpKind, lpPkg]);
+  }, [est, tabFilter]);
 
   // Totals for the customer quote — scoped to the picked tabs so the
   // customer-facing PDF shows only the work-in-scope dollars.
@@ -547,6 +514,7 @@ export default function EstimateEditor() {
                 html_quote: html,
                 subject,
                 accept_token,
+                quote_tab_scope: tabFilter,
               });
               toast.success(t("quote.sentToast"));
               // Iter 79j.47 — Two-way sync. If the sent address differs

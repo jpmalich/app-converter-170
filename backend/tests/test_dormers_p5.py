@@ -343,6 +343,8 @@ def test_dormer_material_lines_flagged_non_priced(session):
     for l in (fas, osc):
         assert l["non_priced"] is True
         assert l["pricing_status"] == "pending"
-        assert l["unit_sell"] is None and l["line_sell"] is None
+        # ONE MONEY SURFACE (2026-07-23): dollar keys are stripped from
+        # the contractor preview entirely — absent, not null.
+        assert l.get("unit_sell") is None and l.get("line_sell") is None
         assert "pricing pending ruling" in l["note"]
     assert not any("Dormer rake" in n or "Dormer soffit" in n for n in lines)

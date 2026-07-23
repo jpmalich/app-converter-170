@@ -318,3 +318,24 @@ guard as the last action with no code edits after it.
   wired — the claim outran the render on profiles only.
 - CLOSED same pass (commit a7f02d9): profile face-to-cheek corner edge
   renders OSC (elevation-dormer-profile-osc-{face}), pinned.
+
+## 2026-07-23 — P0: DOUBLE-COUNT ON A LIVE CUSTOMER QUOTE (caught by human review pre-send)
+CLASS: money-surface integrity (not a test-green defect — logged here per Howard's
+register instruction: every defect that reached a customer-bound artifact gets a
+register entry).
+DEFECT: the customer quote composed the AI Material List's margin-applied package
+sells back through the estimate margin ON TOP of the group tabs (quoteEstimate
+pkgLines merge in EstimateEditor.jsx) — two money surfaces, one total.
+CAUGHT BY: Howard, human review of the quote before send. Never reached the customer.
+PERMANENT RULE (ruled 2026-07-23): ONE MONEY SURFACE —
+  (1) all pricing lives exclusively on the group tabs/summary; customer quote, base
+      cost, header total, frozen/QR outputs derive from that surface alone;
+  (2) the AI Material List is UNPRICED (items/qty/units/derivations/provenance only);
+      dollar keys stripped server-side (redact_external) so no second contributor
+      is possible;
+  (3) the accept page totals from the sent quote's tab scope (quote_tab_scope),
+      never an all-tab sum.
+PINNED: backend/tests/test_one_money_surface.py (7 pins: unpriced preview, unpriced
+frozen/QR read incl. legacy snapshots, admin cost-preview retains pricing, JSX
+no-package-contributor pin, unpriced-surface JSX pins, scoped accept total,
+calc_totals scope unit pin).

@@ -50,6 +50,9 @@ async def email_quote(est_id: str, body: EmailQuoteIn, user: dict = Depends(get_
         update_set = {
             "status_label": "sent",
             "last_sent_at": datetime.now(timezone.utc).isoformat(),
+            # ONE MONEY SURFACE (ruled 2026-07-23): the accept page totals
+            # from the SAME tab scope the sent quote was composed from.
+            "quote_tab_scope": body.quote_tab_scope,
         }
         if body.accept_token and not est.get("accept_token"):
             update_set["accept_token"] = body.accept_token

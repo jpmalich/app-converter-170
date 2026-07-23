@@ -76,8 +76,13 @@ def session():
 
 @pytest.fixture(scope="module")
 def pkg(session):
-    r = session.post(f"{API}/estimates/{CASILE_EST}/lp-package/preview",
-                     json={}, timeout=90)
+    """Supplier-admin cost-preview: ONE MONEY SURFACE (2026-07-23) strips
+    every dollar from the contractor preview — binding dollar pins ride
+    the admin surface (same engine, same sheet binding)."""
+    import os
+    tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+    r = session.post(f"{API}/admin/estimates/{CASILE_EST}/lp-package/cost-preview",
+                     json={}, headers={"X-Admin-Token": tok}, timeout=90)
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -142,3 +147,14 @@ def test_zero_dollar_rows_escalate_by_name_never_placeholder(pkg):
     for l in pkg["lines"]:
         if str(l.get("name") or "").lower() in ZERO_DOLLAR_SHEET_ROWS:
             assert l.get("unit_sell") is None, l
+
+
+def test_contractor_preview_same_pending_escalations(session):
+    """The (unpriced) contractor preview carries the SAME escalation set —
+    pricing_status is verification info and survives redaction."""
+    r = session.post(f"{API}/estimates/{CASILE_EST}/lp-package/preview",
+                     json={}, timeout=90)
+    assert r.status_code == 200, r.text
+    pending = {str(l.get("name") or "").lower()
+               for l in r.json()["lines"] if l.get("pricing_status") == "pending"}
+    assert pending == ZERO_DOLLAR_SHEET_ROWS, pending

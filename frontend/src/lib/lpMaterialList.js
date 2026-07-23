@@ -1,8 +1,10 @@
 // Iter 99 — ONE-SURFACE RULE (Howard ruling): for LP estimates the
 // printable Material List composes from the DERIVED PACKAGE — the exact
 // payload the Material List tab renders (colors + session substitutions
-// included) — never from stored legacy lines. Sell prices only; lines
-// without a cost basis print "PRICING PENDING", never $0.
+// included) — never from stored legacy lines.
+// ONE MONEY SURFACE (ruled 2026-07-23, P0 double-count on a live customer
+// quote): the printed list is UNPRICED — items, quantities, units,
+// derivations, provenance only. Pricing lives on the estimate tabs.
 const FONT = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 const C = {
   ink: "#09090B", muted: "#52525B", faint: "#71717A",
@@ -14,16 +16,12 @@ const esc = (s) =>
     .replace(/&/g, "&amp;").replace(/</g, "&lt;")
     .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-const money = (n) =>
-  `$${Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang = "en", share = null, trail = null }) {
   const es = lang === "es";
   const bySection = {};
   (pkg.lines || []).forEach((l) => {
     (bySection[l.section] = bySection[l.section] || []).push(l);
   });
-  const pricing = pkg.summary?.pricing || {};
   const groupColors = pkg.summary?.group_colors || {};
   const colorLine = Object.entries(groupColors)
     .filter(([, v]) => v)
@@ -31,12 +29,11 @@ export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang
     .join(" · ");
 
   const sectionBlock = ([section, lines]) => `
-    <tr><td colspan="6" style="padding:10px 8px 4px;font-size:10px;font-weight:700;
+    <tr><td colspan="4" style="padding:10px 8px 4px;font-size:10px;font-weight:700;
       letter-spacing:0.08em;text-transform:uppercase;color:${C.accentText};
       border-bottom:1px solid ${C.line};">${esc(section)}</td></tr>
     ${lines
       .map((l) => {
-        const priced = l.pricing_status === "priced";
         const sub = l.substituted_from
           ? `<div style="font-size:8.5px;color:${C.faint};">${es ? "sustituido de" : "substituted from"} ${esc(l.substituted_from)} — re-derived</div>`
           : "";
@@ -49,12 +46,6 @@ export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang
         <td style="padding:6px 8px;font-size:9.5px;color:${C.muted};">${esc(l.color || "—")}</td>
         <td style="padding:6px 8px;font-size:10px;text-align:right;">${esc(l.qty)}</td>
         <td style="padding:6px 8px;font-size:9.5px;color:${C.muted};">${esc(l.unit)}</td>
-        <td style="padding:6px 8px;font-size:10px;text-align:right;">${
-          priced ? money(l.unit_sell) : `<span style="color:${C.accentText};font-size:8.5px;font-weight:700;">${es ? "PRECIO PENDIENTE" : "PRICING PENDING"}</span>`
-        }</td>
-        <td style="padding:6px 8px;font-size:10px;text-align:right;font-weight:600;">${
-          priced ? money(l.line_sell) : "—"
-        }</td>
       </tr>`;
       })
       .join("")}`;
@@ -83,17 +74,16 @@ export function buildLpMaterialListHtml({ pkg, estimate, company, branding, lang
     </div>
     <table style="width:100%;border-collapse:collapse;">
       <thead><tr style="background:${C.bg};border-bottom:2px solid ${C.ink};">
-        ${[es ? "Artículo" : "Item", "Color", es ? "Cant." : "Qty", es ? "Unidad" : "Unit", "Unit $", es ? "Total $" : "Line $"]
-          .map((h, i) => `<th style="padding:6px 8px;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:${C.muted};text-align:${i >= 2 && i !== 3 ? "right" : "left"};">${h}</th>`)
+        ${[es ? "Artículo" : "Item", "Color", es ? "Cant." : "Qty", es ? "Unidad" : "Unit"]
+          .map((h, i) => `<th style="padding:6px 8px;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:${C.muted};text-align:${i === 2 ? "right" : "left"};">${h}</th>`)
           .join("")}
       </tr></thead>
       <tbody>${Object.entries(bySection).map(sectionBlock).join("")}</tbody>
     </table>
-    <div style="display:flex;justify-content:flex-end;gap:24px;margin-top:12px;padding-top:8px;border-top:2px solid ${C.ink};">
-      ${pricing.pending_lines > 0
-        ? `<div style="font-size:9px;color:${C.accentText};align-self:center;">${pricing.pending_lines} ${es ? "línea(s) con precio pendiente" : "line(s) pricing pending"}</div>`
-        : ""}
-      <div style="font-size:12px;font-weight:800;">${es ? "Total de materiales" : "Materials total"}: ${money(pricing.total_sell)}</div>
+    <div style="display:flex;justify-content:space-between;gap:24px;margin-top:12px;padding-top:8px;border-top:2px solid ${C.ink};">
+      <div style="font-size:8.5px;color:${C.faint};align-self:center;">${es
+        ? "Lista de materiales — cantidades y derivaciones. Los precios se proporcionan en el estimado."
+        : "Material list — quantities & derivations. Pricing is provided on the estimate itself."}</div>
     </div>
     ${trail ? `
     <div style="margin-top:10px;padding:6px 8px;border:1px solid ${C.line};font-size:8.5px;color:${C.muted};">

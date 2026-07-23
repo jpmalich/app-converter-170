@@ -372,6 +372,10 @@ class EmailQuoteIn(BaseModel):
     message: Optional[str] = None
     html_quote: str
     accept_token: Optional[str] = None  # client-generated UUID4 for the public accept link
+    # ONE MONEY SURFACE (ruled 2026-07-23): the tab scope the quote was
+    # composed from — the accept page derives its total from the SAME
+    # scope, never an all-tab sum. None = all tabs (single-line estimates).
+    quote_tab_scope: Optional[List[str]] = None
 
 
 class CustomerAcceptIn(BaseModel):

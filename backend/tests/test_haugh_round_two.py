@@ -143,8 +143,13 @@ class TestRoundTwoPins:
         +852.40 (Gutter 6\" 100×4.25 + Downspout 46×3.80 + elbow/end cap/
         hangars/mitre/pipe clips/sealant) → total_sell 13047.52. Cap
         window / Cap entry door / cleanup stay pending ($0.00 on every
-        tier sheet — escalated by name, never placeholder)."""
-        d = session.post(f"{API}/estimates/{LETRICK}/lp-package/preview", json={}, timeout=60).json()
+        tier sheet — escalated by name, never placeholder).
+        ONE MONEY SURFACE (2026-07-23): contractor preview is unpriced —
+        this dollar pin rides the supplier-admin cost-preview."""
+        import os
+        tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
+        d = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
+                         json={}, headers={"X-Admin-Token": tok}, timeout=60).json()
         assert d["summary"]["pricing"]["total_sell"] == 13047.52
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]

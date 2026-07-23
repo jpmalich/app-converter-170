@@ -17,7 +17,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Lock, MapPin, Pencil, RefreshCcw, Ruler, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import api, { fmt } from "@/lib/api";
+import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { lpHex, LP_GROUP_LABELS } from "@/lib/lpColors";
 import HouseModel3D from "@/components/estimate/HouseModel3D";
@@ -604,15 +604,13 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               <th className="text-left px-4 py-2">Item</th>
               <th className="text-right px-2 py-2">Qty</th>
               <th className="text-left px-2 py-2">Unit</th>
-              <th className="text-left px-2 py-2">Color</th>
-              <th className="text-right px-2 py-2">Unit $</th>
-              <th className="text-right px-4 py-2">Line $</th>
+              <th className="text-left px-4 py-2">Color</th>
             </tr>
           </thead>
           {Object.entries(bySection).map(([section, lines]) => (
             <tbody key={section}>
               <tr className="bg-[var(--surface-muted)]">
-                <td colSpan={6} className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
+                <td colSpan={4} className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
                   {section}
                 </td>
               </tr>
@@ -623,6 +621,16 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                   <tr key={key} className="border-b border-[var(--border)] last:border-0 align-top" data-testid={`lp-line-${l.name}`}>
                     <td className="px-4 py-2">
                       <div className="font-medium">{l.name}</div>
+                      {l.priced_unit && l.pieces_added ? (
+                        <div className="text-[9px] text-[var(--muted)]" data-testid={`lp-line-board-pricing-${l.name}`}>
+                          {l.pieces_added} whole board{l.pieces_added === 1 ? "" : "s"} — {l.priced_unit}
+                        </div>
+                      ) : null}
+                      {l.pricing_status === "pending" && (
+                        <div className="text-[10px] uppercase tracking-wider text-[#B45309] font-bold" data-testid={`lp-line-pending-${l.name}`}>
+                          ⚑ no sheet price — escalated by name
+                        </div>
+                      )}
                       {l.substituted_from && (
                         <div className="text-[10px] text-[#7C3AED]" data-testid={`lp-line-substituted-${l.name}`}>
                           {t("lp.mat.substituted")} {l.substituted_from} — re-derived
@@ -662,7 +670,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                     </td>
                     <td className="px-2 py-2 text-right font-mono-num">{l.qty}</td>
                     <td className="px-2 py-2">{l.unit}</td>
-                    <td className="px-2 py-2">
+                    <td className="px-4 py-2">
                       {l.color ? (
                         <span className="inline-flex items-center gap-1 text-xs">
                           <Swatch name={l.color} /> {l.color}
@@ -670,25 +678,6 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                       ) : (
                         <span className="text-[var(--muted)] text-xs">—</span>
                       )}
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono-num">
-                      {l.pricing_status === "priced" ? (
-                        l.priced_unit && l.pieces_added ? (
-                          <span className="inline-flex flex-col items-end leading-tight" data-testid={`lp-line-board-pricing-${l.name}`}>
-                            <span>{fmt(l.unit_sell)}<span className="text-[9px] text-[var(--muted)]"> /board</span></span>
-                            <span className="text-[9px] text-[var(--muted)]">× {l.pieces_added} whole board{l.pieces_added === 1 ? "" : "s"}</span>
-                          </span>
-                        ) : (
-                          fmt(l.unit_sell)
-                        )
-                      ) : (
-                        <span className="text-[10px] uppercase tracking-wider text-[#B45309] font-bold" data-testid={`lp-line-pending-${l.name}`}>
-                          {t("lp.mat.pending")}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-right font-mono-num">
-                      {l.pricing_status === "priced" ? fmt(l.line_sell) : "—"}
                     </td>
                   </tr>
                 );
@@ -698,15 +687,17 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         </table>
       </div>
 
-      {/* totals */}
+      {/* ONE MONEY SURFACE (ruled 2026-07-23): verification surface only —
+          quantities, units, derivations, provenance. Pricing lives
+          exclusively on the estimate group tabs / summary. */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-[var(--surface-muted)] border-t border-[var(--border)]">
+        <div className="text-[11px] text-[var(--muted)]" data-testid="lp-material-unpriced-note">
+          Verification surface — quantities &amp; derivations only. Pricing lives on the estimate tabs.
+        </div>
         <div className="text-[11px] text-[var(--muted)]">
           {pricing.pending_lines > 0 && (
-            <span data-testid="lp-pending-count">{pricing.pending_lines} line(s) {t("lp.mat.pending")}</span>
+            <span data-testid="lp-pending-count">{pricing.pending_lines} line(s) without a sheet price — escalated by name</span>
           )}
-        </div>
-        <div className="text-sm font-bold" data-testid="lp-material-total">
-          {t("lp.mat.total")}: <span className="font-mono-num">{fmt(pricing.total_sell || 0)}</span>
         </div>
       </div>
 
@@ -897,26 +888,16 @@ function CompareProfilesCard({ compare }) {
   const cur = compare.current || {};
   const alt = compare.alternative || {};
   const altLabel = compare.alt_profile === "board_batten" ? "Board & Batten" : "Lap";
-  const total = (p) => p?.summary?.pricing?.total_sell || 0;
   const byName = (p) =>
     Object.fromEntries((p.lines || []).filter((l) => (l.qty || 0) > 0).map((l) => [l.name, l]));
   const curMap = byName(cur);
   const altMap = byName(alt);
   const names = Array.from(new Set([...Object.keys(curMap), ...Object.keys(altMap)]));
-  const changed = names.filter((n) => {
-    const a = curMap[n];
-    const b = altMap[n];
-    return (a?.qty || 0) !== (b?.qty || 0) || (a?.line_sell || 0) !== (b?.line_sell || 0);
-  });
+  const changed = names.filter((n) => (curMap[n]?.qty || 0) !== (altMap[n]?.qty || 0));
   const sameCount = names.length - changed.length;
   const cell = (l) =>
     l ? (
-      <>
-        <span className="font-mono-num">{l.qty} {l.unit}</span>
-        <span className="font-mono-num text-[var(--muted)] ml-2">
-          {l.pricing_status === "priced" ? fmt(l.line_sell) : "pending"}
-        </span>
-      </>
+      <span className="font-mono-num">{l.qty} {l.unit}</span>
     ) : (
       <span className="text-[var(--muted)]">—</span>
     );
@@ -947,26 +928,19 @@ function CompareProfilesCard({ compare }) {
             </tr>
           ))}
           <tr className="border-t-2 border-[var(--ink)]">
-            <td className="py-1.5 font-bold text-[var(--ink)]">
-              Materials total
+            <td className="py-1.5 font-bold text-[var(--ink)]" colSpan={3}>
+              {changed.length} line{changed.length === 1 ? "" : "s"} differ by quantity
               {sameCount > 0 && (
                 <span className="font-normal text-[10px] text-[var(--muted)] ml-2">
                   ({sameCount} shared line{sameCount === 1 ? "" : "s"} identical in both)
                 </span>
               )}
             </td>
-            <td className="py-1.5 font-mono-num font-bold" data-testid="lp-compare-current-total">{fmt(total(cur))}</td>
-            <td className="py-1.5 font-mono-num font-bold" data-testid="lp-compare-alt-total">
-              {fmt(total(alt))}
-              <span className={`ml-2 text-[10px] font-bold ${total(alt) - total(cur) >= 0 ? "text-[#92400E]" : "text-emerald-700"}`}>
-                {total(alt) - total(cur) >= 0 ? "+" : "−"}{fmt(Math.abs(total(alt) - total(cur)))}
-              </span>
-            </td>
           </tr>
         </tbody>
       </table>
       <div className="text-[10px] text-[var(--muted)] mt-1.5">
-        Comparison view only — nothing is saved or applied. Pending lines are excluded from both totals.
+        Comparison view only — quantities &amp; derivations, nothing is saved or applied. Pricing lives on the estimate tabs.
       </div>
     </div>
   );

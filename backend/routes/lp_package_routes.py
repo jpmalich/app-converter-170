@@ -1308,7 +1308,9 @@ async def lp_material_list_public(token: str):
     except HTTPException:
         current = None
     return {
-        "frozen": snap["snapshot"], "meta": snap.get("meta") or {},
+        # Legacy snapshots were frozen WITH prices — ONE MONEY SURFACE
+        # (ruled 2026-07-23) de-prices them at read time.
+        "frozen": redact_external(snap["snapshot"]), "meta": snap.get("meta") or {},
         "printed_at": snap.get("created_at"),
         "newer_available": newer_available,
         "current": current if newer_available else None,
