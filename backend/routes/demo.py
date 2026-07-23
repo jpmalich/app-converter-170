@@ -94,6 +94,9 @@ async def demo_reset(user: dict = Depends(get_current_user)):
     est_id = str(uuid.uuid4())
     await db.estimates.insert_one({
         "id": est_id, "company_id": user["company_id"], "demo_key": DEMO_KEY,
+        # FIXTURE PROTECTION (ruled 2026-07-23): the demo estimate is born
+        # protected on every reset — delete route refuses it.
+        "protected": True,
         "kind": "lp_smart",
         "estimate_number": "DEMO-LETRICK",
         # Renamed per Howard's ruling 2026-07-20: the demo binds the frozen

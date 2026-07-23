@@ -4,7 +4,7 @@ import api, { fmt, formatApiError } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useBranding } from "@/lib/branding";
 import { toast } from "sonner";
-import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb, Loader2, RefreshCw } from "lucide-react";
+import { Plus, Trash2, FileText, Search, Download, Copy, Link2, Lightbulb, Loader2, RefreshCw, Lock } from "lucide-react";
 import EmailPipeline from "@/components/EmailPipeline";
 import {
   AlertDialog,
@@ -534,17 +534,28 @@ export default function Dashboard({ kind = "siding" }) {
                   >
                     <Copy className="w-4 h-4" />
                   </button>
-                  <button
-                    className="btn-danger"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      del(e.id);
-                    }}
-                    aria-label={t("dash.delete.aria")}
-                    data-testid={`delete-${e.id}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {e.protected ? (
+                    <span
+                      className="btn-ghost cursor-default"
+                      title="Protected fixture — deletion disabled (backend-enforced); un-protect is a separate deliberate action"
+                      aria-label="Protected fixture"
+                      data-testid={`protected-${e.id}`}
+                    >
+                      <Lock className="w-4 h-4 text-amber-600" />
+                    </span>
+                  ) : (
+                    <button
+                      className="btn-danger"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        del(e.id);
+                      }}
+                      aria-label={t("dash.delete.aria")}
+                      data-testid={`delete-${e.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             );

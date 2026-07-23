@@ -607,7 +607,7 @@ async def estimate_delete_preflight(est_id: str, user: dict = Depends(get_curren
     delete — same doctrine as the QR-revocation warning."""
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
-        {"_id": 0, "demo_key": 1, "estimate_number": 1, "tape_check.history": 1})
+        {"_id": 0, "demo_key": 1, "estimate_number": 1, "protected": 1, "tape_check.history": 1})
     if not est:
         raise HTTPException(status_code=404, detail="Not found")
     runs = await db.ai_measure_runs.count_documents({"estimate_id": est_id})
@@ -618,6 +618,9 @@ async def estimate_delete_preflight(est_id: str, user: dict = Depends(get_curren
     acc_links = await db.accuracy_report_snapshots.count_documents(
         {"estimate_id": est_id, "revoked": {"$ne": True}})
     warnings = []
+    if est.get("protected"):
+        warnings.append("PROTECTED FIXTURE — the delete route will refuse; "
+                        "un-protect first (separate action)")
     if est.get("demo_key"):
         warnings.append("dedicated demo fixture — pinned tests and the demo "
                         "reset reference it")
@@ -634,17 +637,43 @@ async def estimate_delete_preflight(est_id: str, user: dict = Depends(get_curren
         warnings.append(f"{ml_links + acc_links} live share/QR link(s) "
                         "will dead-end")
     return {"estimate_number": est.get("estimate_number"),
+            "protected": bool(est.get("protected")),
             "linked": bool(warnings), "warnings": warnings,
             "retention_days": 30}
+
+
+@router.put("/estimates/{est_id}/protected")
+async def set_estimate_protection(
+    est_id: str, payload: dict, user: dict = Depends(get_current_user),
+):
+    """FIXTURE PROTECTION flip (ruled 2026-07-23) — its own deliberate
+    action, separate from delete. Never callable as part of a delete."""
+    protected = bool((payload or {}).get("protected"))
+    res = await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"$set": {"protected": protected,
+                  "updated_at": datetime.now(timezone.utc)}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True, "protected": protected}
 
 
 @router.delete("/estimates/{est_id}")
 async def delete_estimate(est_id: str, user: dict = Depends(get_current_user)):
     """SOFT delete (ruled 2026-06): the doc moves to estimates_trash with
-    a 30-day TTL retention window — a one-click accident is undoable."""
+    a 30-day TTL retention window — a one-click accident is undoable.
+    FIXTURE PROTECTION (ruled 2026-07-23): a `protected` doc REFUSES
+    deletion regardless of caller — UI, script, or future admin surface.
+    Un-protecting is its own deliberate action (PUT /protected), never a
+    bypass on the delete path."""
     est = await db.estimates.find_one({"id": est_id, "company_id": user["company_id"]})
     if not est:
         raise HTTPException(status_code=404, detail="Not found")
+    if est.get("protected"):
+        raise HTTPException(
+            status_code=423,
+            detail="Protected fixture — deletion refused. Un-protect first "
+                   "(a separate, deliberate action), then delete.")
     est.pop("_id", None)
     est["deleted_at"] = datetime.now(timezone.utc)  # Date type — TTL scanner
     est["deleted_by"] = user["id"]
