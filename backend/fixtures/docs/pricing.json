@@ -42,7 +42,7 @@
    },
    "id": "85e89bc6-ad8d-4959-beac-7a416cedbd45",
    "sizing": "ui_bucket",
-   "updated_at": "2026-07-23T12:40:34.894934+00:00"
+   "updated_at": "2026-07-23T12:55:15.889179+00:00"
   },
   {
    "tier": "whole-sale",
@@ -86,7 +86,7 @@
    },
    "id": "80909991-53de-49e7-ba5c-3b81761483b9",
    "sizing": "ui_bucket",
-   "updated_at": "2026-07-23T12:40:34.895363+00:00"
+   "updated_at": "2026-07-23T12:55:15.889549+00:00"
   },
   {
    "tier": "whole-sale",
@@ -113,7 +113,7 @@
     }
    },
    "sizing": "fixed_model",
-   "updated_at": "2026-07-23T12:40:34.895832+00:00"
+   "updated_at": "2026-07-23T12:55:15.889846+00:00"
   },
   {
    "product_type": "Vero Double Hung",
@@ -157,7 +157,7 @@
    },
    "id": "8601a270-61e5-46d9-bf96-6057fc2315e3",
    "sizing": "ui_bucket",
-   "updated_at": "2026-07-23T12:40:34.896374+00:00"
+   "updated_at": "2026-07-23T12:55:15.890124+00:00"
   },
   {
    "tier": "Contractor",
@@ -201,7 +201,7 @@
    },
    "id": "7aa20ad2-d60c-4005-b8f0-88c238dde53b",
    "sizing": "ui_bucket",
-   "updated_at": "2026-07-23T12:40:34.896844+00:00"
+   "updated_at": "2026-07-23T12:55:15.890427+00:00"
   },
   {
    "product_type": "Vero Patio Door",
@@ -228,7 +228,7 @@
     }
    },
    "sizing": "fixed_model",
-   "updated_at": "2026-07-23T12:40:34.897324+00:00"
+   "updated_at": "2026-07-23T12:55:15.890695+00:00"
   },
   {
    "tier": "Builder-Dealer",
@@ -272,7 +272,7 @@
    },
    "id": "480a43f1-0345-4af8-b249-7b4566eecbc9",
    "sizing": "ui_bucket",
-   "updated_at": "2026-07-23T12:40:34.897793+00:00"
+   "updated_at": "2026-07-23T12:55:15.890957+00:00"
   },
   {
    "product_type": "Vero 2-Lite Slider",
@@ -316,7 +316,7 @@
    },
    "id": "d663ae6e-5242-415d-a238-7661b1d93b39",
    "sizing": "ui_bucket",
-   "updated_at": "2026-07-23T12:40:34.898210+00:00"
+   "updated_at": "2026-07-23T12:55:15.891225+00:00"
   },
   {
    "product_type": "Vero Patio Door",
@@ -343,7 +343,7 @@
     }
    },
    "sizing": "fixed_model",
-   "updated_at": "2026-07-23T12:40:34.898615+00:00"
+   "updated_at": "2026-07-23T12:55:15.891500+00:00"
   }
  ],
  "mezzo_prices": [
@@ -11642,7 +11642,7 @@
     }
    ],
    "created_at": "2026-05-29T00:06:22.510999+00:00",
-   "updated_at": "2026-07-23T12:40:05.657229+00:00"
+   "updated_at": "2026-07-23T12:55:15.868194+00:00"
   }
  ],
  "lp_legacy_price_archive": [
@@ -12211,7 +12211,7 @@
    "supplier_name": "Alside Supply",
    "supplier_tagline": "Howard Hunt \u00b7 Territory Sales Manager \u00b7 (724) 640-4333",
    "supplier_logo_url": null,
-   "updated_at": "2026-07-23T12:30:53.788676+00:00",
+   "updated_at": "2026-07-23T12:49:01.386170+00:00",
    "default_pricing_mode": "margin"
   },
   {

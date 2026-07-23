@@ -48,8 +48,10 @@ SLOTS = {
 }
 PRICING_COLLECTIONS = ["vero_prices", "mezzo_prices", "iss_catalog",
                        "price_tiers", "lp_legacy_price_archive", "settings"]
-RUN_COLLECTIONS = ["ai_measure_runs", "fixture_runs", "ai_blueprint_runs",
-                   "hover_import_runs"]
+# ai_blueprint_runs / hover_import_runs are EXCLUDED: 24h TTL = transient
+# by design (test churn lands there mid-suite); anything durable from them
+# already lives in fixture_runs via the archive machinery.
+RUN_COLLECTIONS = ["ai_measure_runs", "fixture_runs"]
 
 import re
 FN_RE = re.compile(r"\b((?:ai_|bp_)?[0-9a-f]{32}(?:_p\d+)?\.(?:jpg|jpeg|png|webp|pdf))\b")

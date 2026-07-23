@@ -123866,17 +123866,13 @@
  },
  {
   "run_id": "982cd66bd4a944ca82ab5aa36b28c602",
-  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "address": "TEST_blueprint_page_paths",
+  "completed_at": "2026-07-23 10:44:43.444000",
+  "created_at": "2026-07-23 10:44:23.203000",
+  "error": null,
   "estimate_id": "673707d5-9b7e-4d8f-8eaf-63c86820f611",
-  "status": "done",
-  "stage": "done",
   "page_count": 2,
   "page_paths": "bp_aa5464374048400e8b364e12f76ac4f6.jpg,bp_14e9282de792450192dedeca7ce1823d.jpg",
-  "address": "TEST_blueprint_page_paths",
-  "transport": "anthropic_direct",
-  "created_at": "2026-07-23 10:44:23.203000",
-  "updated_at": "2026-07-23 10:44:43.444000",
-  "completed_at": "2026-07-23 10:44:43.444000",
   "result": {
    "measurements": {
     "siding_sqft": 0.0,
@@ -124157,22 +124153,22 @@
    "session_id": "ai-blueprint-63577a8f-8c6c-4cdc-b84c-bf88b481ee7b-00fc4962",
    "pages_processed": 2
   },
-  "error": null,
-  "_source_collection": "ai_blueprint_runs"
+  "stage": "done",
+  "status": "done",
+  "transport": "anthropic_direct",
+  "updated_at": "2026-07-23 10:44:43.444000",
+  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "_source_collection": "fixture_runs"
  },
  {
   "run_id": "9ce9ce68af2441728be657f26fd8a9f6",
-  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "address": "TEST_blueprint_page_paths",
+  "completed_at": "2026-07-23 11:06:47.820000",
+  "created_at": "2026-07-23 11:06:35.378000",
+  "error": null,
   "estimate_id": "673707d5-9b7e-4d8f-8eaf-63c86820f611",
-  "status": "done",
-  "stage": "done",
   "page_count": 2,
   "page_paths": "bp_b6e6f41e665247df8ad90b5921d3000f.jpg,bp_06ec6b77a6bb4225b917ad48d8a9e3d0.jpg",
-  "address": "TEST_blueprint_page_paths",
-  "transport": "anthropic_direct",
-  "created_at": "2026-07-23 11:06:35.378000",
-  "updated_at": "2026-07-23 11:06:47.820000",
-  "completed_at": "2026-07-23 11:06:47.820000",
   "result": {
    "measurements": {
     "siding_sqft": 0.0,
@@ -124453,22 +124449,22 @@
    "session_id": "ai-blueprint-63577a8f-8c6c-4cdc-b84c-bf88b481ee7b-30bfa1ad",
    "pages_processed": 2
   },
-  "error": null,
-  "_source_collection": "ai_blueprint_runs"
+  "stage": "done",
+  "status": "done",
+  "transport": "anthropic_direct",
+  "updated_at": "2026-07-23 11:06:47.820000",
+  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "_source_collection": "fixture_runs"
  },
  {
   "run_id": "1751c687be904cf2a33358b2d334f410",
-  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "address": "TEST_blueprint_page_paths",
+  "completed_at": "2026-07-23 11:12:19.724000",
+  "created_at": "2026-07-23 11:12:09.152000",
+  "error": null,
   "estimate_id": "673707d5-9b7e-4d8f-8eaf-63c86820f611",
-  "status": "done",
-  "stage": "done",
   "page_count": 2,
   "page_paths": "bp_a3cf867d09384dba9cc3003c381fab55.jpg,bp_517112e3242c4f7391935b88a410f0d7.jpg",
-  "address": "TEST_blueprint_page_paths",
-  "transport": "anthropic_direct",
-  "created_at": "2026-07-23 11:12:09.152000",
-  "updated_at": "2026-07-23 11:12:19.724000",
-  "completed_at": "2026-07-23 11:12:19.724000",
   "result": {
    "measurements": {
     "siding_sqft": 0.0,
@@ -124749,22 +124745,22 @@
    "session_id": "ai-blueprint-63577a8f-8c6c-4cdc-b84c-bf88b481ee7b-eeeebdde",
    "pages_processed": 2
   },
-  "error": null,
-  "_source_collection": "ai_blueprint_runs"
+  "stage": "done",
+  "status": "done",
+  "transport": "anthropic_direct",
+  "updated_at": "2026-07-23 11:12:19.724000",
+  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "_source_collection": "fixture_runs"
  },
  {
   "run_id": "bc0e4e5a602e478bb57ff5325649be68",
-  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "address": "TEST_blueprint_page_paths",
+  "completed_at": "2026-07-23 11:20:20.478000",
+  "created_at": "2026-07-23 11:20:10.272000",
+  "error": null,
   "estimate_id": "673707d5-9b7e-4d8f-8eaf-63c86820f611",
-  "status": "done",
-  "stage": "done",
   "page_count": 2,
   "page_paths": "bp_c7c8abf9772f487b96e2376919f3e633.jpg,bp_8563e2203c7f40f49f3cc00b88e43875.jpg",
-  "address": "TEST_blueprint_page_paths",
-  "transport": "anthropic_direct",
-  "created_at": "2026-07-23 11:20:10.272000",
-  "updated_at": "2026-07-23 11:20:20.478000",
-  "completed_at": "2026-07-23 11:20:20.478000",
   "result": {
    "measurements": {
     "siding_sqft": 0.0,
@@ -125045,22 +125041,22 @@
    "session_id": "ai-blueprint-63577a8f-8c6c-4cdc-b84c-bf88b481ee7b-58682c67",
    "pages_processed": 2
   },
-  "error": null,
-  "_source_collection": "ai_blueprint_runs"
+  "stage": "done",
+  "status": "done",
+  "transport": "anthropic_direct",
+  "updated_at": "2026-07-23 11:20:20.478000",
+  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "_source_collection": "fixture_runs"
  },
  {
   "run_id": "79b79f68fd574daba1cc4f1ca5dee246",
-  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "address": "TEST_blueprint_page_paths",
+  "completed_at": "2026-07-23 11:24:46.754000",
+  "created_at": "2026-07-23 11:24:36.166000",
+  "error": null,
   "estimate_id": "673707d5-9b7e-4d8f-8eaf-63c86820f611",
-  "status": "done",
-  "stage": "done",
   "page_count": 2,
   "page_paths": "bp_fde91f57977341849878995a056d2f65.jpg,bp_184db1ceb4af4087868599622b82a1eb.jpg",
-  "address": "TEST_blueprint_page_paths",
-  "transport": "anthropic_direct",
-  "created_at": "2026-07-23 11:24:36.166000",
-  "updated_at": "2026-07-23 11:24:46.754000",
-  "completed_at": "2026-07-23 11:24:46.754000",
   "result": {
    "measurements": {
     "siding_sqft": 0.0,
@@ -125341,22 +125337,22 @@
    "session_id": "ai-blueprint-63577a8f-8c6c-4cdc-b84c-bf88b481ee7b-3729f8c2",
    "pages_processed": 2
   },
-  "error": null,
-  "_source_collection": "ai_blueprint_runs"
+  "stage": "done",
+  "status": "done",
+  "transport": "anthropic_direct",
+  "updated_at": "2026-07-23 11:24:46.754000",
+  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "_source_collection": "fixture_runs"
  },
  {
   "run_id": "dd3e8e14c0c44997955030f065d763d2",
-  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "address": "TEST_blueprint_page_paths",
+  "completed_at": "2026-07-23 11:28:33.267000",
+  "created_at": "2026-07-23 11:28:22.969000",
+  "error": null,
   "estimate_id": "673707d5-9b7e-4d8f-8eaf-63c86820f611",
-  "status": "done",
-  "stage": "done",
   "page_count": 2,
   "page_paths": "bp_f170024ac3e74bd794a2f86464d4773c.jpg,bp_cf0ae6b017db4155b60c9c4da3b54eaf.jpg",
-  "address": "TEST_blueprint_page_paths",
-  "transport": "anthropic_direct",
-  "created_at": "2026-07-23 11:28:22.969000",
-  "updated_at": "2026-07-23 11:28:33.267000",
-  "completed_at": "2026-07-23 11:28:33.267000",
   "result": {
    "measurements": {
     "siding_sqft": 0.0,
@@ -125637,7 +125633,11 @@
    "session_id": "ai-blueprint-63577a8f-8c6c-4cdc-b84c-bf88b481ee7b-e8ca1f98",
    "pages_processed": 2
   },
-  "error": null,
-  "_source_collection": "ai_blueprint_runs"
+  "stage": "done",
+  "status": "done",
+  "transport": "anthropic_direct",
+  "updated_at": "2026-07-23 11:28:33.267000",
+  "user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "_source_collection": "fixture_runs"
  }
 ]

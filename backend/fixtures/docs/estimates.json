@@ -69,7 +69,7 @@
   "created_by": "",
   "created_by_name": "",
   "created_at": "2026-07-22T11:13:46.358091+00:00",
-  "updated_at": "2026-07-23 12:31:56.691000",
+  "updated_at": "2026-07-23 12:50:34.114000",
   "lp_pricing_tier": "",
   "profile_annotations": {},
   "model3d_png_url": "",
@@ -624,336 +624,6 @@
   "model3d_unverified": true,
   "lp_field_verify": {},
   "tracking": [
-   {
-    "type": "opening.reset",
-    "at": "2026-07-22T23:23:02.974272+00:00",
-    "meta": {
-     "key": "open:d6679448:4",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.removed",
-    "at": "2026-07-22T23:23:03.077240+00:00",
-    "meta": {
-     "key": "open:d6679448:5",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.reset",
-    "at": "2026-07-22T23:23:03.280480+00:00",
-    "meta": {
-     "key": "open:d6679448:5",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:23:13.924135+00:00",
-    "meta": {
-     "from": null,
-     "to": "board_batten",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:23:13.981834+00:00",
-    "meta": {
-     "from": "board_batten",
-     "to": null,
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:23:14.978164+00:00",
-    "meta": {
-     "from": null,
-     "to": null,
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "quote.viewed",
-    "at": "2026-07-22T23:57:35.237842+00:00",
-    "meta": {
-     "surface": "accept_page"
-    }
-   },
-   {
-    "type": "quote.viewed",
-    "at": "2026-07-22T23:57:35.395395+00:00",
-    "meta": {
-     "surface": "accept_page"
-    }
-   },
-   {
-    "type": "quote.viewed",
-    "at": "2026-07-22T23:57:35.534820+00:00",
-    "meta": {
-     "surface": "accept_page"
-    }
-   },
-   {
-    "type": "quote.viewed",
-    "at": "2026-07-22T23:57:35.692412+00:00",
-    "meta": {
-     "surface": "accept_page"
-    }
-   },
-   {
-    "type": "quote.viewed",
-    "at": "2026-07-22T23:57:35.826031+00:00",
-    "meta": {
-     "surface": "accept_page"
-    }
-   },
-   {
-    "type": "appendage.measured",
-    "at": "2026-07-22T23:57:47.312726+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "height_ft",
-     "value": 18.9,
-     "by": "hhunt6677@yahoo.com",
-     "source": "user"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-22T23:57:47.437614+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "height_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "appendage.measured",
-    "at": "2026-07-22T23:57:47.555355+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "height_ft",
-     "value": 60.0,
-     "by": "hhunt6677@yahoo.com",
-     "source": "user"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-22T23:57:47.668414+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "height_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "appendage.measured",
-    "at": "2026-07-22T23:57:47.938202+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "width_ft",
-     "value": 10.0,
-     "by": "hhunt6677@yahoo.com",
-     "source": "user"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-22T23:57:47.987530+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "width_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-22T23:57:48.237505+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "height_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-22T23:57:48.295458+00:00",
-    "meta": {
-     "key": "appendage:right",
-     "field": "depth_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "corner.relocated",
-    "at": "2026-07-22T23:57:57.861733+00:00",
-    "meta": {
-     "key": "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall",
-     "by": "hhunt6677@yahoo.com",
-     "from": [
-      "right"
-     ],
-     "to": "back"
-    }
-   },
-   {
-    "type": "corner.reset",
-    "at": "2026-07-22T23:57:57.973161+00:00",
-    "meta": {
-     "key": "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "corner.removed",
-    "at": "2026-07-22T23:57:58.145918+00:00",
-    "meta": {
-     "key": "corner:osc:chimney-chase-near-side-outside-corner",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "corner.reset",
-    "at": "2026-07-22T23:57:58.253414+00:00",
-    "meta": {
-     "key": "corner:osc:chimney-chase-near-side-outside-corner",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "corner.reset",
-    "at": "2026-07-22T23:57:58.586411+00:00",
-    "meta": {
-     "key": "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:58:01.824489+00:00",
-    "meta": {
-     "from": null,
-     "to": "board_batten",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:58:01.932610+00:00",
-    "meta": {
-     "from": "board_batten",
-     "to": null,
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:58:02.602027+00:00",
-    "meta": {
-     "from": null,
-     "to": null,
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.removed",
-    "at": "2026-07-22T23:58:05.105944+00:00",
-    "meta": {
-     "key": "open:d6679448:1",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.reset",
-    "at": "2026-07-22T23:58:05.209351+00:00",
-    "meta": {
-     "key": "open:d6679448:1",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "appendage.measured",
-    "at": "2026-07-22T23:58:06.358321+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "width_ft",
-     "value": 5.333,
-     "by": "hhunt6677@yahoo.com",
-     "source": "user"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-22T23:58:06.409703+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "width_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.removed",
-    "at": "2026-07-22T23:58:07.606017+00:00",
-    "meta": {
-     "key": "open:d6679448:4",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.reset",
-    "at": "2026-07-22T23:58:07.701315+00:00",
-    "meta": {
-     "key": "open:d6679448:4",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.removed",
-    "at": "2026-07-22T23:58:07.802053+00:00",
-    "meta": {
-     "key": "open:d6679448:5",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "opening.reset",
-    "at": "2026-07-22T23:58:07.986345+00:00",
-    "meta": {
-     "key": "open:d6679448:5",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:58:18.400704+00:00",
-    "meta": {
-     "from": null,
-     "to": "board_batten",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:58:18.456435+00:00",
-    "meta": {
-     "from": "board_batten",
-     "to": null,
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "lp.default_profile.set",
-    "at": "2026-07-22T23:58:19.436868+00:00",
-    "meta": {
-     "from": null,
-     "to": null,
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
    {
     "type": "quote.viewed",
     "at": "2026-07-23T00:02:58.363896+00:00",
@@ -4979,6 +4649,337 @@
      "to": null,
      "by": "hhunt6677@yahoo.com"
     }
+   },
+   {
+    "type": "appendage.measured",
+    "at": "2026-07-23T12:46:40.273015+00:00",
+    "meta": {
+     "key": "appendage:back",
+     "field": "width_ft",
+     "value": 5.333,
+     "by": "hhunt6677@yahoo.com",
+     "source": "user"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:46:40.320636+00:00",
+    "meta": {
+     "key": "appendage:back",
+     "field": "width_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.removed",
+    "at": "2026-07-23T12:46:41.512787+00:00",
+    "meta": {
+     "key": "open:d6679448:4",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.reset",
+    "at": "2026-07-23T12:46:41.613876+00:00",
+    "meta": {
+     "key": "open:d6679448:4",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.removed",
+    "at": "2026-07-23T12:46:41.710485+00:00",
+    "meta": {
+     "key": "open:d6679448:5",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.reset",
+    "at": "2026-07-23T12:46:41.912986+00:00",
+    "meta": {
+     "key": "open:d6679448:5",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "quote.viewed",
+    "at": "2026-07-23T12:47:42.067706+00:00",
+    "meta": {
+     "surface": "accept_page"
+    }
+   },
+   {
+    "type": "quote.viewed",
+    "at": "2026-07-23T12:47:42.190431+00:00",
+    "meta": {
+     "surface": "accept_page"
+    }
+   },
+   {
+    "type": "quote.viewed",
+    "at": "2026-07-23T12:47:42.317078+00:00",
+    "meta": {
+     "surface": "accept_page"
+    }
+   },
+   {
+    "type": "quote.viewed",
+    "at": "2026-07-23T12:47:42.442693+00:00",
+    "meta": {
+     "surface": "accept_page"
+    }
+   },
+   {
+    "type": "quote.viewed",
+    "at": "2026-07-23T12:47:42.555421+00:00",
+    "meta": {
+     "surface": "accept_page"
+    }
+   },
+   {
+    "type": "appendage.measured",
+    "at": "2026-07-23T12:47:52.201711+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "height_ft",
+     "value": 18.9,
+     "by": "hhunt6677@yahoo.com",
+     "source": "user"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:47:52.376160+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "height_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "appendage.measured",
+    "at": "2026-07-23T12:47:52.473799+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "height_ft",
+     "value": 60.0,
+     "by": "hhunt6677@yahoo.com",
+     "source": "user"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:47:52.573701+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "height_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "appendage.measured",
+    "at": "2026-07-23T12:47:52.799712+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "width_ft",
+     "value": 10.0,
+     "by": "hhunt6677@yahoo.com",
+     "source": "user"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:47:52.847054+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "width_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:47:53.084777+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "height_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:47:53.136761+00:00",
+    "meta": {
+     "key": "appendage:right",
+     "field": "depth_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "corner.relocated",
+    "at": "2026-07-23T12:48:00.767930+00:00",
+    "meta": {
+     "key": "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall",
+     "by": "hhunt6677@yahoo.com",
+     "from": [
+      "right"
+     ],
+     "to": "back"
+    }
+   },
+   {
+    "type": "corner.reset",
+    "at": "2026-07-23T12:48:00.867648+00:00",
+    "meta": {
+     "key": "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "corner.removed",
+    "at": "2026-07-23T12:48:01.023388+00:00",
+    "meta": {
+     "key": "corner:osc:chimney-chase-near-side-outside-corner",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "corner.reset",
+    "at": "2026-07-23T12:48:01.121612+00:00",
+    "meta": {
+     "key": "corner:osc:chimney-chase-near-side-outside-corner",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "corner.reset",
+    "at": "2026-07-23T12:48:01.440102+00:00",
+    "meta": {
+     "key": "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "lp.default_profile.set",
+    "at": "2026-07-23T12:48:04.689337+00:00",
+    "meta": {
+     "from": null,
+     "to": "board_batten",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "lp.default_profile.set",
+    "at": "2026-07-23T12:48:04.788580+00:00",
+    "meta": {
+     "from": "board_batten",
+     "to": null,
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "lp.default_profile.set",
+    "at": "2026-07-23T12:48:05.448259+00:00",
+    "meta": {
+     "from": null,
+     "to": null,
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.removed",
+    "at": "2026-07-23T12:48:07.868936+00:00",
+    "meta": {
+     "key": "open:d6679448:1",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.reset",
+    "at": "2026-07-23T12:48:07.960276+00:00",
+    "meta": {
+     "key": "open:d6679448:1",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "appendage.measured",
+    "at": "2026-07-23T12:48:09.192519+00:00",
+    "meta": {
+     "key": "appendage:back",
+     "field": "width_ft",
+     "value": 5.333,
+     "by": "hhunt6677@yahoo.com",
+     "source": "user"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:48:09.243877+00:00",
+    "meta": {
+     "key": "appendage:back",
+     "field": "width_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.removed",
+    "at": "2026-07-23T12:48:10.461736+00:00",
+    "meta": {
+     "key": "open:d6679448:4",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.reset",
+    "at": "2026-07-23T12:48:10.582587+00:00",
+    "meta": {
+     "key": "open:d6679448:4",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.removed",
+    "at": "2026-07-23T12:48:10.689241+00:00",
+    "meta": {
+     "key": "open:d6679448:5",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.reset",
+    "at": "2026-07-23T12:48:10.938933+00:00",
+    "meta": {
+     "key": "open:d6679448:5",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "lp.default_profile.set",
+    "at": "2026-07-23T12:48:21.876313+00:00",
+    "meta": {
+     "from": null,
+     "to": "board_batten",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "lp.default_profile.set",
+    "at": "2026-07-23T12:48:21.924923+00:00",
+    "meta": {
+     "from": "board_batten",
+     "to": null,
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "lp.default_profile.set",
+    "at": "2026-07-23T12:48:22.774358+00:00",
+    "meta": {
+     "from": null,
+     "to": null,
+     "by": "hhunt6677@yahoo.com"
+    }
    }
   ],
   "lp_appendage_dims": {
@@ -5009,7 +5010,7 @@
    "from": null,
    "to": null,
    "by": "hhunt6677@yahoo.com",
-   "at": "2026-07-23T12:30:26.062792+00:00"
+   "at": "2026-07-23T12:48:22.773779+00:00"
   },
   "lp_openings_review": {},
   "protected": true,
@@ -5858,66 +5859,6 @@
   "model3d_png_url": "/api/uploads/a9dfd769177648c2bc6f38dd42b4f2da.png",
   "lp_field_verify": {},
   "tracking": [
-   {
-    "type": "appendage.measured",
-    "at": "2026-07-16T04:16:53.509957+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "height_ft",
-     "value": 22.0,
-     "by": "hhunt6677@yahoo.com",
-     "source": "blueprint"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-16T04:16:53.560929+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "height_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "appendage.measured",
-    "at": "2026-07-16T19:36:02.553702+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "height_ft",
-     "value": 22.0,
-     "by": "hhunt6677@yahoo.com",
-     "source": "blueprint"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-16T19:36:02.602617+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "height_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
-   {
-    "type": "appendage.measured",
-    "at": "2026-07-16T19:49:01.115437+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "height_ft",
-     "value": 22.0,
-     "by": "hhunt6677@yahoo.com",
-     "source": "blueprint"
-    }
-   },
-   {
-    "type": "appendage.reset",
-    "at": "2026-07-16T19:49:01.178397+00:00",
-    "meta": {
-     "key": "appendage:back",
-     "field": "height_ft",
-     "by": "hhunt6677@yahoo.com"
-    }
-   },
    {
     "type": "opening.removed",
     "at": "2026-07-16T19:51:21.410395+00:00",
@@ -10201,6 +10142,58 @@
    {
     "type": "opening.reset",
     "at": "2026-07-23T12:31:53.706178+00:00",
+    "meta": {
+     "key": "open:test-bp-:0",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "appendage.measured",
+    "at": "2026-07-23T12:47:52.985936+00:00",
+    "meta": {
+     "key": "appendage:back",
+     "field": "height_ft",
+     "value": 22.0,
+     "by": "hhunt6677@yahoo.com",
+     "source": "blueprint"
+    }
+   },
+   {
+    "type": "appendage.reset",
+    "at": "2026-07-23T12:47:53.032320+00:00",
+    "meta": {
+     "key": "appendage:back",
+     "field": "height_ft",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.removed",
+    "at": "2026-07-23T12:50:30.463885+00:00",
+    "meta": {
+     "key": "open:test-bp-:2",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.reset",
+    "at": "2026-07-23T12:50:30.568467+00:00",
+    "meta": {
+     "key": "open:test-bp-:2",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.removed",
+    "at": "2026-07-23T12:50:31.198609+00:00",
+    "meta": {
+     "key": "open:test-bp-:0",
+     "by": "hhunt6677@yahoo.com"
+    }
+   },
+   {
+    "type": "opening.reset",
+    "at": "2026-07-23T12:50:31.255017+00:00",
     "meta": {
      "key": "open:test-bp-:0",
      "by": "hhunt6677@yahoo.com"
