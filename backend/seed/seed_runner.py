@@ -248,7 +248,8 @@ async def verify(db):
     print("\n".join(green + red))
     print(f"\nPROVISIONING GATE: {'GREEN — seeds verified' if not red else f'RED — {len(red)} failure(s)'}"
           f" ({len(green)} green / {len(red)} red)")
-    return len(red)
+    return {"green": green, "red": red,
+            "status": "GREEN" if not red else "RED"}
 
 
 async def main():
@@ -257,8 +258,7 @@ async def main():
     db = c[os.environ["DB_NAME"]]
     if mode == "apply":
         await apply(db)
-        sys.exit(await verify(db) and 1 or 0)
-    sys.exit(await verify(db) and 1 or 0)
+    sys.exit(1 if (await verify(db))["red"] else 0)
 
 
 if __name__ == "__main__":
