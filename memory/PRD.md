@@ -4524,3 +4524,36 @@ PUBLISH-IMPACT REPORT delivered (report-only) + CONSOLIDATED RULING received:
    morning-of checklist gains "verify seeds on prod + QR leave-behinds minted on production domain,
    printed AFTER demo reset"; pre-September gate: full demo walkthrough ON PROD (Howard schedules).
 QUEUE: Howard's P5 look → deletions handback (item 2) → seed census (item 3a) → export tooling (3b).
+
+## SESSION 2026-07-23 (part 28) — HUMAN COURSE COUNT + DELETIONS + SEED CENSUS (all three landed)
+1. HUMAN COURSE COUNT (P5 postscript, ruled): tape check gained the COUNT affordance —
+   per-wall/per-segment "crs 33+1" input (TapeCheckPanel, tape-check-courses-{w} +
+   tape-check-courses2-{w}); segment schema gained cut_courses (0-4, validated). Human count
+   = ground-truth rung: sheet exposure re-derives from human total vs TAPED height
+   (127.99"/34 = 3.76" — confirms known 3.75"), basis 'human-counted'; AI's 29 prints as
+   amber flagged under-count on the sheet AND in the accuracy record (re-scored via
+   machinery: Δc −5, tape side "33 + 1 cut", 95.2% unchanged). Entered via machinery
+   (PUT tape-check + POST score) from Howard's on-record statement — no hand-edits.
+   Click path: Estimate → AI Photo Measure → FIELD VERIFY → TAPE CHECK → crs input → SAVE
+   TAPE → SCORE THIS RUN. Pins: +4 in test_tape_check_sheet_basis.py; dormers_p5 course-fill
+   pin amended again (29/4.41" counted → 34/3.76" human-counted, before→after recorded).
+   STAMPS: e90846c CLEAN 1208 passed (+ fresh LEFT PNG delivered w/ wrapped flag lines).
+2. DELETIONS HANDBACK (Howard's markup executed): 4,194 trash purged FIRST; 27 candidates
+   deleted (23 via delete-preflight+DELETE machinery, 4 cross-company via replicated
+   endpoint writes — recorded); today's deletes sit in trash 30d (soft-delete doctrine).
+   KEEPS: 7 (5 pinned + round-two d78cd3b4 banked + DEMO by demo_key — id rotates on reset).
+   Zero auto-KEEPs surfaced (no candidate carried active frozen links). Survivor checksums:
+   7/7 UNCHANGED. Frozen links: 3 /m/ + 103 /r/ non-revoked verified at storage layer +
+   1 HTTP sample per surface (full sweep would forge ~106 qr.scanned rows — stated).
+   Receipt: /app/memory/deletion_receipt_2026-07-23.md. STAMP: c3f7428 CLEAN 1208 passed
+   (one transient event-log race failed once, passed isolated + full re-run — reported).
+3. SEED CENSUS 3a (report, no tooling): /app/memory/seed_census_2026-07-23.md.
+   Headline: 137 unique fixture files ≈ 142 MB (red 62/35.3MB · Letrick 17/25.7 ·
+   doug 17/25.7 · haugh 33/45.4 · demo 8/9.8; LP-pair + round-two derivation-only, zero).
+   Prod provisioning: pricing/settings ~260KB (vero/mezzo/iss/price_tiers/lp archive/
+   branding/margins/lp_native_mode), accounts via registration machinery, demo via photos+
+   runs then POST /demo/reset. Human rungs = import-stamped transport (pinned). TWO SCOPES
+   for ruling: PROD-MINIMUM ~45MB (demo+red house) vs FULL PARITY ~147MB (suite green on
+   prod). Findings: 102 orphaned /r/ snapshots (test artifacts), invitations 153 residue.
+QUEUE: Howard rules on seed scope (C) + orphan purge (D) → 3b export tool + seed runner +
+un-hardcode preview host in ~20 test files → publish + pre-September prod walkthrough gate.
