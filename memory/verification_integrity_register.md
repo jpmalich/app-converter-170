@@ -310,3 +310,11 @@ guard as the last action with no code edits after it.
 - LESSON (edit tooling): batched parallel writes to the same file can
   silently drop/clobber sibling edits — after any parallel edit batch on
   one file, re-grep every edit landed before stamping.
+
+## 2026-07-23 — CLAIM-VS-RENDER (minor, logged per Howard's order)
+- CLAIM: round-three handback stated dormer "corners stay OSC."
+- RENDER: face-on OSC was wired AND rendering (DOM-verified live: two
+  #0D9488 3.5px verticals at the dormer face edges). PROFILES had no OSC
+  wired — the claim outran the render on profiles only.
+- CLOSED same pass (commit a7f02d9): profile face-to-cheek corner edge
+  renders OSC (elevation-dormer-profile-osc-{face}), pinned.

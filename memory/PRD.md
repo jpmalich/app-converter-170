@@ -4466,3 +4466,23 @@ STAMP (verbatim): - 2026-07-23 00:42 UTC · 0f6996a · CLEAN · [tests] · 1193 
 3 warnings in 123.26s (0:02:03).
 QUEUE: Howard photo-compare gate → tape pass (Field Verify + dormer:left/right knee_ft/base_ft)
 closes P5. Parks unchanged.
+
+## SESSION 2026-07-23 (part 28) — ROUND FOUR: OSC GAP + SIDING FILL + DORMER MATERIAL LINES (fork)
+VERDICT: fascia fix + blue rakes PASS. Items this pass:
+1. DORMER OSC EVIDENCE: face-on OSC wired AND rendering (DOM-verified: two #0D9488 3.5px
+verticals). Profiles never wired — CLAIM-VS-RENDER logged (integrity register, minor). CLOSED:
+profile face-to-cheek edge renders OSC (elevation-dormer-profile-osc-{face}), pinned.
+2. SIDING FILL CAUSE (one line): plain miss — hatch keyed on TAPED exposure only; the run's
+eave_courses_counted (29 ⇒ 3.85" lap on left) was never consulted. FIXED same pass (trivial):
+counted courses derive exposure, exposure_basis "counted" (wall data line says "counted", never
+"taped"). All untaped walls now carry the course fill.
+3. DORMER MATERIAL LINES WIRED (flagged, non-priced): "Dormer fascia (eave)" 30 LF (15'×2) +
+"Dormer outside corners (OSC)" 20 LF (2 posts × 5' knee × 2) — non_priced:true,
+pricing_status:"pending", note "pricing pending ruling". Rake/soffit stay off (pitch/overhang
+NOT READ). Live-verified on EST-910869-L preview; no color errors.
+4. DATUM ANSWER (standing question): base_ft datum = GRADE — heights above grade on the wall's
+vertical axis, same datum as sills/eaves (drawn wallBottom − base_ft·ppf). Tape entry for
+dormer:left/right base_ft = dormer face base above grade; knee_ft = face height base→dormer eave.
+STAMP (verbatim): - 2026-07-23 02:02 UTC · a7f02d9 · CLEAN · [tests] · 1196 passed, 1 skipped,
+3 warnings in 105.19s (0:01:45).
+QUEUE: Howard photo-compare → TAPE PASS closes P5. Parks unchanged.
