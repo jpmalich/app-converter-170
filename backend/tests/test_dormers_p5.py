@@ -311,15 +311,21 @@ def test_redhouse_wall_course_fill_counted(session):
     consulted. Fixed: counted courses derive the exposure, basis
     'counted' (never claims 'taped').
     PIN AMENDED (before → after, tape-check wiring 2026-07-23): 3.85"
-    → 4.41" — the counted courses now divide the TAPED wall height
-    (127.99"/29), not the AI's superseded 9.3' read. Basis stays
-    'counted' — the course count is still the run's, never taped."""
+    → 4.41" — the counted courses divide the TAPED wall height
+    (127.99"/29), not the AI's superseded 9.3' read.
+    PIN AMENDED AGAIN (human course count, ruled 2026-07-23): Howard's
+    on-site count — 33 full + 1 cut — is the ground-truth rung for
+    course counts. 29/4.41" 'counted' → 34/3.76" 'human-counted'
+    (127.99"/34 = 3.76", confirming the fixture's known 3.75"). The
+    AI's 29 stands as the flagged under-count, not truth."""
     s = _sheet(session, "left")
     w = s["wall"]
-    assert w["courses"] == 29
-    assert w["exposure_in"] == pytest.approx(4.41, abs=0.01)
-    assert w["exposure_basis"] == "counted"
-    assert 'W.exposure_basis === "taped" ? "taped" : "counted"' in SHEET_JSX
+    assert w["courses"] == 34
+    assert w["courses_label"] == "33 + 1 cut"
+    assert w["exposure_in"] == pytest.approx(3.76, abs=0.01)
+    assert w["exposure_basis"] == "human-counted"
+    assert w["ai_count_note"] == "AI counted 29 — flagged under-count vs human 33 + 1 cut"
+    assert 'W.exposure_basis === "taped" ? "taped" : W.exposure_basis === "human-counted" ? "human-counted" : "counted"' in SHEET_JSX
 
 
 def test_dormer_material_lines_flagged_non_priced(session):

@@ -665,6 +665,7 @@ def _tape_check_basis(est: dict, wall_label: str) -> dict | None:
         segments.append({
             "adjacent": None,
             "courses": int(s["courses"]) if s.get("courses") else None,
+            "cut_courses": int(s.get("cut_courses") or 0) or None,
             "height_ft": h,
             "height_label": fmt_ftin(h),
             "height_tag": "TAPED",
@@ -923,17 +924,36 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         first = segments[0]
         exposure_in, courses = tape["exposure_in"], first["courses"]
         exposure_basis = "taped" if exposure_in is not None else None
+        courses_label = ai_count_note = None
         if exposure_in is None:
-            # tape check carries heights (± courses), no taped exposure —
-            # derive from counted courses against the TAPED height, labeled
-            courses = courses or wall.get("eave_courses_counted")
+            ai_counted = wall.get("eave_courses_counted")
             if courses:
-                exposure_in = round(first["height_ft"] * 12.0 / int(courses), 2)
+                # HUMAN COURSE COUNT (ruled 2026-07-23): ground-truth rung
+                # for course counts — exposure derives from the human total
+                # (full + cut); the AI's count stays ON RECORD as the
+                # flagged comparison — same ladder as everything else
+                cut = first.get("cut_courses") or 0
+                total = courses + cut
+                exposure_in = round(first["height_ft"] * 12.0 / total, 2)
+                exposure_basis = "human-counted"
+                courses_label = f"{courses} + {cut} cut" if cut else str(courses)
+                courses = total
+                if ai_counted and int(ai_counted) != total:
+                    direction = "under" if int(ai_counted) < total else "over"
+                    ai_count_note = (f"AI counted {int(ai_counted)} — flagged "
+                                     f"{direction}-count vs human {courses_label}")
+            elif ai_counted:
+                # no human count — derive from the run's counted courses
+                # against the TAPED height, labeled (never claims taped)
+                courses = int(ai_counted)
+                exposure_in = round(first["height_ft"] * 12.0 / courses, 2)
                 exposure_basis = "counted"
         basis = {
             "width_tag": width_tag, "width_source": width_source,
             "height_tag": first["height_tag"], "height_formula": first["height_formula"],
             "exposure_in": exposure_in, "courses": int(courses) if courses else None,
+            "courses_label": courses_label,
+            "ai_count_note": ai_count_note,
             "exposure_basis": exposure_basis,
         }
     else:

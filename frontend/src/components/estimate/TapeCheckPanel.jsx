@@ -95,6 +95,11 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
   // readings. start line (grade / foundation top / brick ledge / siding
   // start) is recorded so counts with different references don't fight.
   const [tape2, setTape2] = useState({ front: "", back: "", left: "", right: "" });
+  // Human course count (ruled 2026-07-23): "33" or "33+1" (full + cut) —
+  // ground-truth rung for course counts; the AI's count stays as the
+  // flagged comparison. Per segment on stepped walls.
+  const [courses1, setCourses1] = useState({ front: "", back: "", left: "", right: "" });
+  const [courses2, setCourses2] = useState({ front: "", back: "", left: "", right: "" });
   const [steppedW, setSteppedW] = useState({ front: false, back: false, left: false, right: false });
   const [startRef, setStartRef] = useState("");
   const [heldOut, setHeldOut] = useState(false);
@@ -111,7 +116,9 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
         const { data } = await api.get(`/estimates/${estimateId}/tape-check`);
         if (cancelled) return;
         const w = data.walls || {};
-        const t1 = {}, t2 = {}, st = {};
+        const t1 = {}, t2 = {}, st = {}, c1 = {}, c2 = {};
+        const segCourses = (s) => (s?.courses != null
+          ? (s.cut_courses ? `${s.courses}+${s.cut_courses}` : String(s.courses)) : "");
         let sr = "";
         WALLS.forEach((k) => {
           const v = w[k];
@@ -119,15 +126,19 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
             const segs = v.segments || [];
             t1[k] = segs[0]?.height_ft ?? "";
             t2[k] = segs[1]?.height_ft ?? "";
+            c1[k] = segCourses(segs[0]);
+            c2[k] = segCourses(segs[1]);
             st[k] = segs.length > 1;
             if (v.start_ref) sr = v.start_ref;
           } else {
             t1[k] = v ?? "";
             t2[k] = "";
+            c1[k] = ""; c2[k] = "";
             st[k] = false;
           }
         });
         setTape(t1); setTape2(t2); setSteppedW(st);
+        setCourses1(c1); setCourses2(c2);
         if (sr) setStartRef(sr);
         const dd = {};
         (data.dormers || []).forEach((d) => { dd[d.face] = d.width_ft; });
@@ -151,17 +162,30 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
 
   const save = async () => {
     setBusy(true);
+    // "33" or "33+1" → {courses, cut_courses}; null on no/invalid entry
+    const parseCourses = (str) => {
+      const m = /^\s*(\d+)\s*(?:\+\s*(\d+)\s*(?:cut)?)?\s*$/i.exec(str || "");
+      if (!m) return null;
+      const out = { courses: Number(m[1]) };
+      if (m[2] && Number(m[2]) > 0) out.cut_courses = Number(m[2]);
+      return out;
+    };
     try {
       await api.put(`/estimates/${estimateId}/tape-check`, {
         walls: Object.fromEntries(WALLS.map((k) => {
           if (tape[k] === "") return [k, null];
-          const seg1 = { height_ft: Number(tape[k]) };
+          const seg1 = { height_ft: Number(tape[k]), ...(parseCourses(courses1[k]) || {}) };
           if (steppedW[k] && tape2[k] !== "") {
-            const obj = { segments: [seg1, { height_ft: Number(tape2[k]) }] };
+            const seg2 = { height_ft: Number(tape2[k]), ...(parseCourses(courses2[k]) || {}) };
+            const obj = { segments: [seg1, seg2] };
             if (startRef) obj.start_ref = startRef;
             return [k, obj];
           }
-          if (startRef) return [k, { segments: [seg1], start_ref: startRef }];
+          if (startRef || seg1.courses != null) {
+            const obj = { segments: [seg1] };
+            if (startRef) obj.start_ref = startRef;
+            return [k, obj];
+          }
           return [k, Number(tape[k])];
         })),
         dormers: Object.entries(tapeDormers)
@@ -290,6 +314,16 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                   style={{ width: "4.5rem" }}
                   data-testid={`tape-check-input-${w}`}
                 />
+                <input
+                  type="text"
+                  placeholder="crs 33+1"
+                  value={courses1[w] ?? ""}
+                  onChange={(e) => setCourses1((t) => ({ ...t, [w]: e.target.value }))}
+                  className="px-1.5 py-0.5 border border-[var(--border)] font-mono-num text-right text-[11px]"
+                  style={{ width: "4rem" }}
+                  title="Human course count — full courses + cut (e.g. 33+1). Ground-truth rung for course counts; the AI's count stays on record as the flagged comparison."
+                  data-testid={`tape-check-courses-${w}`}
+                />
                 <button
                   type="button"
                   onClick={() => setSteppedW((s) => ({ ...s, [w]: !s[w] }))}
@@ -300,15 +334,27 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                   ⇢
                 </button>
                 {steppedW[w] && (
-                  <input
-                    type="number" step="0.01" min="1" max="60"
-                    placeholder="seg 2"
-                    value={tape2[w]}
-                    onChange={(e) => setTape2((t) => ({ ...t, [w]: e.target.value }))}
-                    className="px-1.5 py-0.5 border border-[var(--border)] font-mono-num text-right text-[11px]"
-                    style={{ width: "4.5rem" }}
-                    data-testid={`tape-check-input2-${w}`}
-                  />
+                  <>
+                    <input
+                      type="number" step="0.01" min="1" max="60"
+                      placeholder="seg 2"
+                      value={tape2[w]}
+                      onChange={(e) => setTape2((t) => ({ ...t, [w]: e.target.value }))}
+                      className="px-1.5 py-0.5 border border-[var(--border)] font-mono-num text-right text-[11px]"
+                      style={{ width: "4.5rem" }}
+                      data-testid={`tape-check-input2-${w}`}
+                    />
+                    <input
+                      type="text"
+                      placeholder="crs"
+                      value={courses2[w] ?? ""}
+                      onChange={(e) => setCourses2((t) => ({ ...t, [w]: e.target.value }))}
+                      className="px-1.5 py-0.5 border border-[var(--border)] font-mono-num text-right text-[11px]"
+                      style={{ width: "3.2rem" }}
+                      title="Human course count for segment 2 (e.g. 26 or 26+1)"
+                      data-testid={`tape-check-courses2-${w}`}
+                    />
+                  </>
                 )}
                 <span data-testid={`tape-check-verdict-${w}`} className="inline-flex items-center gap-1">
                   {row?.imputed ? (
@@ -333,7 +379,7 @@ export default function TapeCheckPanel({ estimateId, runId, facades, dormers }) 
                             ? { background: "#FEF3C7", color: "#92400E", borderColor: "#FCD34D" }
                             : { background: "#FEE2E2", color: "#991B1B", borderColor: "#FCA5A5" }
                       }
-                      title={`AI counted ${row.ai_courses} courses vs your ${row.tape_courses} — signed course delta`}
+                      title={`AI counted ${row.ai_courses} courses vs your ${row.tape_courses_label || row.tape_courses} — signed course delta`}
                       data-testid={`tape-check-course-delta-${w}`}
                     >
                       Δc {row.course_delta > 0 ? "+" : ""}{row.course_delta}

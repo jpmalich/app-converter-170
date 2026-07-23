@@ -843,6 +843,16 @@ def _parse_tape_wall(label: str, v):
                 if not (1 <= cv <= 200):
                     raise HTTPException(status_code=400, detail=f"walls.{label} segment courses out of range")
                 seg["courses"] = cv
+            # human count affordance (ruled 2026-07-23): "33 full + 1 cut"
+            if s.get("cut_courses") not in (None, ""):
+                try:
+                    cc = int(s["cut_courses"])
+                except (TypeError, ValueError):
+                    raise HTTPException(status_code=400, detail=f"walls.{label} segment cut_courses must be an integer")
+                if not (0 <= cc <= 4):
+                    raise HTTPException(status_code=400, detail=f"walls.{label} segment cut_courses out of range (0-4)")
+                if cc:
+                    seg["cut_courses"] = cc
             segs.append(seg)
         out = {"segments": segs}
         sr = v.get("start_ref")
@@ -867,10 +877,21 @@ def _tape_wall_values(v):
 
 
 def _tape_wall_courses(v):
-    """Courses list aligned with _tape_wall_values heights (None gaps kept)."""
-    if isinstance(v, dict):
-        return [s.get("courses") for s in (v.get("segments") or []) if s.get("height_ft") is not None]
-    return []
+    """(total, label) list aligned with _tape_wall_values heights — total
+    includes cut courses (human count '33 + 1 cut' → 34); None gaps kept."""
+    if not isinstance(v, dict):
+        return []
+    out = []
+    for s in (v.get("segments") or []):
+        if s.get("height_ft") is None:
+            continue
+        c = s.get("courses")
+        if c is None:
+            out.append((None, None))
+            continue
+        cut = int(s.get("cut_courses") or 0)
+        out.append((int(c) + cut, f"{int(c)} + {cut} cut" if cut else str(int(c))))
+    return out
 
 
 def _tape_verdict(delta: float) -> str:
@@ -1454,11 +1475,14 @@ async def score_tape_check(
             ai_c = None
         count_tier = (ai_w.get("count_tier") or "").strip().lower()
         courses_list = _tape_wall_courses(tape_walls.get(label))
-        pairs = [(h, c) for h, c in zip(heights, courses_list) if c is not None]
-        tape_c = min(pairs, key=lambda p: abs(p[0] - ai_v))[1] if pairs else None
+        pairs = [(h, c) for h, c in zip(heights, courses_list) if c[0] is not None]
+        tape_c, tape_c_label = (min(pairs, key=lambda p: abs(p[0] - ai_v))[1]
+                                if pairs else (None, None))
         if ai_c is not None or tape_c is not None:
             row["ai_courses"] = ai_c
             row["tape_courses"] = tape_c
+            if tape_c_label and tape_c_label != str(tape_c):
+                row["tape_courses_label"] = tape_c_label
             if count_tier:
                 row["count_tier"] = count_tier
             if ai_w.get("possible_partial_top"):

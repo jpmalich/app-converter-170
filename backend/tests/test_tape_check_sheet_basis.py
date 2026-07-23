@@ -130,3 +130,63 @@ def test_sealed_key_outranks_tape_check(session):
     assert w["width_tag"] == "TAPED"
     assert "EST-191890" in s["geometry_basis"]["walls"]
     assert "tape check" not in s["geometry_basis"]["walls"]
+
+
+# ---------- human course count (ruled 2026-07-23) ----------
+
+def test_human_course_count_governs_exposure(session):
+    """HUMAN COURSE COUNT — ground truth entered on the record (Howard,
+    on-site): LEFT wall = 33 full + 1 cut. Exposure derives from the
+    human total against the TAPED height: 127.99"/34 = 3.76" — CONFIRMS
+    the fixture's known 3.75". Basis 'human-counted'; the AI's 29 is an
+    under-count and prints as the flagged comparison, not truth."""
+    w = _sheet(session, "left")["wall"]
+    assert w["courses"] == 34
+    assert w["courses_label"] == "33 + 1 cut"
+    assert w["exposure_in"] == pytest.approx(3.76, abs=0.01)
+    assert w["exposure_basis"] == "human-counted"
+    assert "flagged under-count" in w["ai_count_note"]
+    assert "29" in w["ai_count_note"] and "33 + 1 cut" in w["ai_count_note"]
+
+
+def test_human_count_undercount_on_accuracy_record(session):
+    """The under-count lands in the accuracy history via the scoring
+    machinery (no hand-edits): Δc = 29 − 34 = −5, tape side labeled
+    '33 + 1 cut', accuracy pct unchanged (95.2 — course delta is a
+    first-class metric alongside, not inside, the height score)."""
+    r = session.get(f"{API}/estimates/{REDHOUSE_EST}/tape-check", timeout=20)
+    assert r.status_code == 200
+    hist = r.json()["history"]
+    assert hist, "no scored runs on record"
+    left = hist[-1]["walls"]["left"]
+    assert left["ai_courses"] == 29
+    assert left["tape_courses"] == 34
+    assert left["tape_courses_label"] == "33 + 1 cut"
+    assert left["course_delta"] == -5
+    assert hist[-1]["accuracy_pct"] == 95.2
+
+
+def test_courses_entry_path_validation(session):
+    """The COUNT affordance validates: cut_courses 0-4, courses 1-200 —
+    junk rejected, the stored record never carries a synthesized shape."""
+    r = session.put(f"{API}/estimates/{REDHOUSE_EST}/tape-check", json={
+        "walls": {"left": {"segments": [{"height_ft": 10.0, "courses": 30, "cut_courses": 9}]}},
+    }, timeout=20)
+    assert r.status_code == 400 and "cut_courses" in r.text
+    r = session.put(f"{API}/estimates/{REDHOUSE_EST}/tape-check", json={
+        "walls": {"left": {"segments": [{"height_ft": 10.0, "cut_courses": "x"}]}},
+    }, timeout=20)
+    assert r.status_code == 400
+
+
+def test_tape_panel_jsx_courses_affordance():
+    """Click path pinned: the Tape Check panel carries a human course
+    count input per wall (and per segment on stepped walls), parsed as
+    '33' or '33+1' — the entry path Howard uses himself."""
+    jsx = Path("/app/frontend/src/components/estimate/TapeCheckPanel.jsx").read_text()
+    assert 'data-testid={`tape-check-courses-${w}`}' in jsx
+    assert 'data-testid={`tape-check-courses2-${w}`}' in jsx
+    assert "cut_courses" in jsx
+    sheet_jsx = Path("/app/frontend/src/pages/ElevationSheet.jsx").read_text()
+    assert 'data-testid="elevation-ai-count-flag"' in sheet_jsx
+    assert "human-counted" in sheet_jsx

@@ -279,7 +279,8 @@ export function SheetSvg({ data }) {
   S.title = `${sheetName} ELEVATION`;
   S.headerLine = `${String(data.customer_name || "").toUpperCase()} · ${String(data.address || "").toUpperCase()} · SHEET ${data.sheet_code} OF 4`;
   S.fasciaLabel = `FASCIA / RAKE · ${fmtFt(ovFt)} OVERHANG`;
-  S.coursesNote = W.courses ? `${W.courses} × ${fmtInFrac(W.exposure_in)} ${W.exposure_basis === "taped" ? "taped" : "counted"}` : "";
+  S.coursesNote = W.courses ? `${W.courses_label || W.courses} × ${fmtInFrac(W.exposure_in)} ${W.exposure_basis === "taped" ? "taped" : W.exposure_basis === "human-counted" ? "human-counted" : "counted"}` : "";
+  S.aiCountNote = W.ai_count_note ? String(W.ai_count_note).toUpperCase() : "";
   if (dev) {
     S.dev1 = `AI run ${dev.run_short} read this wall ${dev.ai_width_label} × ${dev.ai_height_label}` +
       (dev.ai_counts?.length ? ` (${dev.ai_counts.join("/")} courses, ${dev.ai_basis})` : ` (${dev.ai_basis})`);
@@ -798,6 +799,9 @@ export function SheetSvg({ data }) {
             <Chip x={950} y={wallTop + 70} w={74} label={W.height_tag === "TAPED-DERIVED" ? "TAPED-DERIVED" : W.height_tag} kind={tagKind(W.height_tag)} />
             {W.courses && (
               <text x="950" y={wallTop + 100} fontSize="8" fill={C.muted}>{S.coursesNote}</text>
+            )}
+            {W.ai_count_note && (
+              <text x="950" y={wallTop + 111} fontSize="7" fontWeight="bold" fill={C.amber} data-testid="elevation-ai-count-flag">{S.aiCountNote}</text>
             )}
           </g>
         )}
