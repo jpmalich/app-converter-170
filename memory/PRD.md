@@ -4606,3 +4606,40 @@ Casile estimate materialized via machinery (hover-lp-run run 8f6f9b5e board_batt
 (5). CAVEAT flagged: classic tab lines on the estimate still carry the lap default from apply
 (LP Material List panel = the correct takeoff/freeze surface). Fix in prod after redeploy.
 STAMP: - 2026-07-23 19:57 UTC · 75a63cb · CLEAN · 1231 passed, 1 skipped, 3 warnings.
+
+## SESSION 2026-07-23 (part 31) — CASILE "FOUR ITEMS BEFORE THE NUMBER IS REAL" + import-item statuses
+1. SCOPE (item 1) VERIFIED + PINNED: facade-scope picker (tick boxes) drives derivation — Hover
+   fb: siding null / stucco 312 / brick 234 / other(house-wrap) 2064; picker scope {custom,
+   wrap 2064, excluded stucco+brick} governs siding_sqft end-to-end. Panels 2064×1.10÷40 → 57
+   (72 was the whole-house 2610 leak). Pins: panel-math amended to scoped basis + facade-scope
+   flag pin (test_hover_bb_profile_mapping.py, now 6).
+2. CLASSIC TABS (item 2) REBUILT CLEAN: re-materialized via hover-lp-run — vinyl B&B 23 SQ /
+   Ascend B&B 23 SQ / LP 4×10 panel 57 — zero lap rows. Rebuild now also (a) stamps
+   est.hover_measurements (was EMPTY → a porch-ceiling entry would recompute soffit off
+   eaves=0 and clobber import qtys) and (b) catalog-binds rows with no previous line
+   (tier+overrides+LP engine; frontend-convention $0.00 when catalog lacks the row, never None).
+3. PRICING BINDING (item 3) ROOT-CAUSED + FIXED: Pro-Quote company price_tier_id DANGLED
+   (tier reseed churn; export carries it → prod likely dangling too) → _load_tier_sheet_for
+   returned an EMPTY sheet → 13 pendings misreported as "no dealer cost". Fix: default-tier
+   fallback (same as catalog surface) + company catalog overrides MERGED into the sheet index
+   (section::name). Casile package: 19 priced / 5 pending, total_sell 18,114.57. Gutter run
+   sheet-bound (Gutter 6" 4.25 = 3.25 mat + 1.00 override lab; Downspout 3.80; elbow/end cap/
+   hangars/mitre/pipe clips/sealant). ESCALATED BY NAME ($0.00 on EVERY tier sheet, never
+   placeholder): Cap window, Cap entry door, Cap patio door, Cap single garage door,
+   clean up/haul away job debris. Letrick pins amended per ruling (+852.40 sheet-bound gutters
+   → 13,047.52). Fork-boundary seam: price_tiers+catalogs read-only from LP routers.
+   Pins: test_lp_master_sheet_binding.py (4, fresh-client isolated).
+4. BATTEN HEIGHT TERM (item 4) ANSWERED: LP Material List → amber flag "batten +height term = 0"
+   → Field-verify → enter taped per-wall heights ft (e.g. "9, 9, 18.5, 9") → Save. Closing
+   re-derives batten LF live: LF = wall_area ÷ spacing(ft) + Σ(taped heights); pcs = ceil(LF÷16),
+   no waste. Machinery pre-existing + pinned (test_flag_checklist.py).
+IMPORT-ITEM STATUSES: (a) set-back doorway porch ceiling — NOT ENTERED (porch_ceilings []);
+entry point Job Info → Porch Ceilings card (L×W); basis now stamped so recompute is safe.
+(b) W-204/205 → Picture — NOT CORRECTED (both still 2-Lite Slider on paired EST-523061-S);
+Mezzo Picture EXISTS on master sheet; VERO PICTURE ABSENT (only DH/2-Lite/Patio) — escalated:
+needs Vero Picture price page or Howard's substitute ruling. (c) waste % — visible+editable
+field (data-testid waste-pct), 10.0 pre-fill on EST-523061, human sets final value.
+NOTED (not changed): classic-tab dial bakes 10% on cut-prone LP rows atop ruled formulas
+(battens 97→107 on tab; LP list = ruled surface, 97). Company tier assignment question
+escalated (dangling pointer left in place — fallback governs; Howard picks tier in admin).
+STAMP: - 2026-07-23 21:35 UTC · 878f681 · CLEAN · [tests] · 1236 passed, 1 skipped, 3 warnings in 140.57s (0:02:20)
