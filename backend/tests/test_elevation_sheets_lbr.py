@@ -323,10 +323,14 @@ def test_left_vent_five_key_contract(session):
     v1 = next(o for o in s["openings"] if o["tag"] == "V1")
     assert v1["type"] == "Vent" and v1["width_in"] == 12 and v1["height_in"] == 8
     assert v1["position_tag"] == "AI-READ ✓"
-    # no door on this wall: sills not derivable — stated, not invented
-    assert all(o["sill_in"] is None for o in s["openings"])
-    assert all(o["sill_label"] == "—" for o in s["openings"])
-    assert "No door" in s["schedule_note"]
+    # pin AMENDED by the SILL-BINDING EXTENSION (authorized 2026-07-22):
+    # BEFORE — no door → all sills None ("—"). AFTER — the wall WINDOW
+    # head-anchors at the ratified CONTRACTOR-SPEC 6'-8" header:
+    # W1 (54") sill 26" ESTIMATED. Vents stay out of the extension ("—").
+    assert v1["sill_in"] is None and v1["sill_label"] == "—"
+    w1 = next(o for o in s["openings"] if o["tag"] == "W1")
+    assert w1["sill_in"] == 26.0 and w1["sill_tag"] == "ESTIMATED"
+    assert "head-anchored" in s["schedule_note"] and "No door" in s["schedule_note"]
 
 
 def test_basis_line_completeness_all_sheets(session):

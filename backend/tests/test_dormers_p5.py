@@ -1,28 +1,26 @@
-"""P5 DORMERS pins (C-5 ruling, shipped 2026-07-23; AMENDED same day by
-Howard's field-compare FAIL ruling — two defects fixed, pins amended).
+"""P5 DORMERS pins — round three (C-5 ruling → field-compare FAIL fixes →
+paired reconciliation + offset evidence + ratified anchor, 2026-07-22/23).
 
-DEFECT #1 (profile orientation, FRONT/BACK): profiles were drawn rotated
-~90° (tall-narrow mid-rake triangle). AFTER: the dormer renders as its
-ROOF EDGE — a LEVEL line projecting off the main slope — with the
-vertical FACE EDGE below it (height = knee by construction) and the
-CHEEK closing back to the roof plane. Wide and low, per the site photo.
-
-DEFECT #2 (v-pos, LEFT/RIGHT): base-at-eave was an unratified assumption
-— RETIRED. AFTER: v-pos is BOUND from the run's same-photo bboxes
-(evidence): wall-plane scale = height_in/bbox.h over the wall windows
-sharing the dormer's photo; dormer window-band center converted to
-inches above the wall-window head line; absolute anchor = the PROPOSED
-ASSUMED 6'-8" (80") standard header height (PENDING RATIFICATION).
-Ladder: TAPED (appendage dims, AUTHORIZED) > ESTIMATED (photo-scaled) >
-mid-slope UNRESOLVED flag (default pending ratification).
-
-PIN AMENDMENTS (before → after, red house EST-910869, run c2002212):
-  • LEFT dormer band: base 9'-3⅝" (eave) → 10'-6½" (10.54'), top 15'-6½"
-    — dormer eave 2'-1⅜" below the 17'-7⅞" ridge (matches the site photo)
-  • RIGHT dormer band: base 8'-1¼" (eave) → 10'-1⅝" (10.14'), top 15'-1⅝"
-  • Dormer window sills: None ("—") → BOUND: LEFT W2* 139.5" / W4* 140.2",
-    RIGHT W2* 132.5" — ESTIMATED (photo-scaled, head-anchored)
-  • Count pins UNCHANGED: LEFT openings 5 (3→5 at P5 ship), RIGHT 6 (5→6)
+RULINGS PINNED HERE:
+1. PAIRED-FEATURE RECONCILIATION (founding example: red house): matching
+   dormers on OPPOSITE faces (width AND knee within 6") bind ONE
+   reconciled band, drawn LEVEL on both — independent per-wall scales
+   never produce asymmetric twins. PIN AMENDED (before → after):
+   LEFT band 10.54–15.54 / RIGHT 10.14–15.14 → BOTH 10.34–15.34.
+2. OFFSET EVIDENCE → CENTER LADDER: the binder bound wall-center +
+   offset_x_ft (18.5' both walls, reconciler-rounded "offset 0"). The
+   structured evidence (on-dormer window positions, bbox-consistent to
+   ⅝"/2") shows LEFT ≈17.8', RIGHT ≈19.8'. RULED a binder fix: the
+   windows-centered norm (already ratified for v-pos) + structured
+   bboxes outrank the rounded claim. PIN AMENDED: center 18.5 → LEFT
+   17.8', RIGHT 20.0' (tag: ESTIMATED windows-centered norm).
+3. HEAD-ANCHOR 6'-8" (80"): RATIFIED CONTRACTOR-SPEC — pinned,
+   re-ratification to change. A convention, not a promise.
+4. SILL-BINDING EXTENSION (AUTHORIZED): doorless walls bind wall-window
+   sills through the same head chain (LEFT W1/W3 29" · W5 30"; RIGHT W1
+   40.7" · W3 37.2"). Corner-shot guard: position-less windows (no
+   along_wall_ft) never carry or receive the chain (right W4–W6 stay "—",
+   retiring a −94.1" nonsense bind caught in development).
 """
 import sys
 from pathlib import Path
@@ -35,9 +33,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 from routes.elevation_sheets import (  # noqa: E402
-    DORMER_WINDOW_HEAD_ANCHOR_IN,
+    PAIRED_DORMER_TOL_FT,
+    WINDOW_HEAD_ANCHOR_IN,
     _bind_dormers,
     _dormer_vpos,
+    _paired_dormer,
     detect_collisions,
 )
 
@@ -47,108 +47,131 @@ LETRICK_EST = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
 SHEET_JSX = Path("/app/frontend/src/pages/ElevationSheet.jsx").read_text()
 
 
-# ---------- unit: v-pos binder (defect #2) ----------
-
-def test_head_anchor_constant_is_proposed_80in():
-    """PROPOSED ASSUMED (pending ratification): 6'-8" standard header —
-    changing it requires ratification, not a code edit."""
-    assert DORMER_WINDOW_HEAD_ANCHOR_IN == 80.0
-
-
-def _raw_redhouse_left_shape():
-    """Red house left, at the run's own bbox numbers."""
-    return {
-        "dormers": [{"face": "left", "width_ft": 15, "knee_wall_height_ft": 5.0,
-                     "offset_x_ft": 0, "width_source": "direct_single_reading"}],
-        "openings": [
-            {"wall": "left", "type": "window", "height_in": 51, "photo_idx": 2,
-             "bbox": {"x": 0.2375, "y": 0.5625, "w": 0.05625, "h": 0.125}},
-            {"wall": "left", "type": "window", "height_in": 51, "photo_idx": 2,
-             "bbox": {"x": 0.4375, "y": 0.5625, "w": 0.05625, "h": 0.125}},
-            {"wall": "left", "type": "window", "height_in": 50, "photo_idx": 2,
-             "bbox": {"x": 0.640625, "y": 0.5625, "w": 0.05625, "h": 0.1225}},
-            {"wall": "left", "type": "window", "height_in": 38, "photo_idx": 2,
-             "on_dormer": True, "dormer_face": "left",
-             "bbox": {"x": 0.365625, "y": 0.3375, "w": 0.078125, "h": 0.0791666667}},
-            {"wall": "left", "type": "window", "height_in": 36, "photo_idx": 2,
-             "on_dormer": True, "dormer_face": "left",
-             "bbox": {"x": 0.49375, "y": 0.3333333333, "w": 0.078125, "h": 0.0816666667}},
-        ],
-    }
+def test_head_anchor_constant_ratified_contractor_spec():
+    """RATIFIED (Howard 2026-07-22): 6'-8" (80") — CONTRACTOR-SPEC,
+    pinned; re-ratification to change."""
+    assert WINDOW_HEAD_ANCHOR_IN == 80.0
+    assert PAIRED_DORMER_TOL_FT == 0.5
 
 
-def test_vpos_same_photo_bbox_chain_exact():
-    """Mechanism pin: scale 408 in/frac (51/0.125 ×2, 50/0.1225), head
-    0.5625, window band 0.3333–0.4150, center 76.5" above head → band
-    center 156.5" above grade → base 10.54', top 15.54'."""
-    v = _dormer_vpos(_raw_redhouse_left_shape(), "left", 5.0)
-    assert v is not None
-    assert v["base_ft"] == pytest.approx(10.54, abs=0.02)
-    assert v["top_ft"] == pytest.approx(15.54, abs=0.02)
-    assert v["tag"].startswith("ESTIMATED (photo-scaled")
-    assert "PENDING RATIFICATION" in v["basis"]
+def _left_openings():
+    return [
+        {"wall": "left", "type": "window", "height_in": 51, "photo_idx": 2,
+         "along_wall_ft": 8.5, "bbox": {"x": 0.2375, "y": 0.5625, "w": 0.05625, "h": 0.125}},
+        {"wall": "left", "type": "window", "height_in": 51, "photo_idx": 2,
+         "along_wall_ft": 17.6, "bbox": {"x": 0.4375, "y": 0.5625, "w": 0.05625, "h": 0.125}},
+        {"wall": "left", "type": "window", "height_in": 50, "photo_idx": 2,
+         "along_wall_ft": 26.9, "bbox": {"x": 0.640625, "y": 0.5625, "w": 0.05625, "h": 0.1225}},
+        {"wall": "left", "type": "window", "height_in": 38, "photo_idx": 2,
+         "along_wall_ft": 14.9, "on_dormer": True, "dormer_face": "left",
+         "bbox": {"x": 0.365625, "y": 0.3375, "w": 0.078125, "h": 0.0791666667}},
+        {"wall": "left", "type": "window", "height_in": 36, "photo_idx": 2,
+         "along_wall_ft": 20.7, "on_dormer": True, "dormer_face": "left",
+         "bbox": {"x": 0.49375, "y": 0.3333333333, "w": 0.078125, "h": 0.0816666667}},
+    ]
 
 
-def test_vpos_none_without_same_photo_wall_windows():
-    raw = _raw_redhouse_left_shape()
-    raw["openings"] = [o for o in raw["openings"] if o.get("on_dormer")]
-    assert _dormer_vpos(raw, "left", 5.0) is None
+def _right_openings():
+    return [
+        {"wall": "right", "type": "window", "height_in": 40, "photo_idx": 7,
+         "along_wall_ft": 13, "bbox": {"x": 0.29875, "y": 0.5458333333, "w": 0.0925, "h": 0.0916666667}},
+        {"wall": "right", "type": "window", "height_in": 42, "photo_idx": 7,
+         "along_wall_ft": 27, "bbox": {"x": 0.584375, "y": 0.5458333333, "w": 0.10625, "h": 0.1}},
+        {"wall": "right", "type": "window", "height_in": 36, "photo_idx": 7,
+         "along_wall_ft": 20, "on_dormer": True, "dormer_face": "right",
+         "bbox": {"x": 0.439375, "y": 0.3333333333, "w": 0.096875, "h": 0.09}},
+    ]
+
+
+def _dormer(face):
+    return {"face": face, "width_ft": 15, "knee_wall_height_ft": 5.0,
+            "offset_x_ft": 0, "width_source": "direct_single_reading"}
+
+
+def _raw_two_faces():
+    return {"dormers": [_dormer("left"), _dormer("right")],
+            "openings": _left_openings() + _right_openings()}
+
+
+def test_vpos_per_wall_chains_exact():
+    """Per-wall chains, at the run's own numbers: LEFT scale 408, band
+    center 76.5" above head → 10.54–15.54; RIGHT scale 428, 71.7" →
+    10.14–15.14. The RATIFIED anchor closes both."""
+    raw = _raw_two_faces()
+    vl = _dormer_vpos(raw, "left", 5.0)
+    vr = _dormer_vpos(raw, "right", 5.0)
+    assert vl["base_ft"] == pytest.approx(10.54, abs=0.02)
+    assert vr["base_ft"] == pytest.approx(10.14, abs=0.02)
+    assert "CONTRACTOR-SPEC" in vl["tag"] and "RATIFIED" in vl["basis"]
+
+
+def test_paired_reconciliation_one_level_band_both_faces():
+    """FOUNDING PIN: opposite-face twins bind ONE band drawn LEVEL —
+    10.54/10.14 reconcile to 10.34; tops to 15.34. Both faces carry it."""
+    raw = _raw_two_faces()
+    assert _paired_dormer(raw, raw["dormers"][0]) is raw["dormers"][1]
+    dl, _ = _bind_dormers({}, raw, "left", 37.0, 9.3, {"ridge_ft": 17.65})
+    dr, _ = _bind_dormers({}, raw, "right", 37.0, 8.1, {"ridge_ft": 16.4})
+    assert dl["base_ft"] == dr["base_ft"] == pytest.approx(10.34, abs=0.01)
+    assert dl["top_ft"] == dr["top_ft"] == pytest.approx(15.34, abs=0.01)
+    assert "PAIRED-RECONCILED" in dl["vpos_tag"] and "PAIRED-RECONCILED" in dr["vpos_tag"]
+    assert "LEVEL" in dl["base_note"]
+
+
+def test_paired_reconciliation_tolerance_gate():
+    """Twins outside the 6" width/knee tolerance never reconcile —
+    each face keeps its own chain."""
+    raw = _raw_two_faces()
+    raw["dormers"][1]["width_ft"] = 16  # 1' apart — beyond tolerance
+    assert _paired_dormer(raw, raw["dormers"][0]) is None
+    dl, _ = _bind_dormers({}, raw, "left", 37.0, 9.3, {"ridge_ft": 17.65})
+    assert dl["base_ft"] == pytest.approx(10.54, abs=0.02)
+    assert "PAIRED-RECONCILED" not in dl["vpos_tag"]
+
+
+def test_paired_tape_closes_both_faces():
+    """Tape on EITHER twin closes both (they are LEVEL by reconciliation);
+    own-face tape still outranks the pair's."""
+    raw = _raw_two_faces()
+    est = {"lp_appendage_dims": {"dormer:right": {
+        "base_ft": {"value": 10.6, "status": "user_measured"}}}}
+    dl, _ = _bind_dormers(est, raw, "left", 37.0, 9.3, {"ridge_ft": 17.65})
+    assert dl["base_ft"] == 10.6 and dl["vpos_tag"] == "TAPED (user-measured · paired)"
+    dr, _ = _bind_dormers(est, raw, "right", 37.0, 8.1, {"ridge_ft": 16.4})
+    assert dr["base_ft"] == 10.6 and dr["vpos_tag"] == "TAPED (user-measured)"
+
+
+def test_center_ladder_windows_norm_outranks_rounded_offset():
+    """OFFSET EVIDENCE ruling: on-dormer window positions (structured,
+    bbox-consistent) outrank the reconciler's rounded offset_x_ft=0.
+    LEFT midpoint (14.9+20.7)/2 = 17.8'; RIGHT single window = 20.0'."""
+    raw = _raw_two_faces()
+    dl, _ = _bind_dormers({}, raw, "left", 37.0, 9.3, {"ridge_ft": 17.65})
+    dr, _ = _bind_dormers({}, raw, "right", 37.0, 8.1, {"ridge_ft": 16.4})
+    assert dl["center_ft"] == pytest.approx(17.8, abs=0.01)
+    assert dr["center_ft"] == pytest.approx(20.0, abs=0.01)
+    assert dl["center_tag"] == "ESTIMATED (windows-centered norm)"
+    # no on-dormer window positions → falls back to wall center + offset
+    raw2 = {"dormers": [_dormer("left")], "openings": []}
+    d2, _ = _bind_dormers({}, raw2, "left", 37.0, 9.3, {"ridge_ft": 17.65})
+    assert d2["center_ft"] == 18.5 and d2["center_tag"] != "ESTIMATED (windows-centered norm)"
 
 
 def test_binder_unresolved_falls_back_mid_slope_flagged():
-    """No bbox chain → NO silent base-at-eave (retired): mid-slope,
-    UNRESOLVED flag, default pending ratification."""
-    raw = {"dormers": [{"face": "left", "width_ft": 15, "knee_wall_height_ft": 5.0,
-                        "offset_x_ft": 0, "width_source": "direct_single_reading"}]}
+    raw = {"dormers": [_dormer("left")]}
     d, _ = _bind_dormers({}, raw, "left", 37.0, 9.3,
                          {"kind": "eave_ridge", "ridge_ft": 16.3})
     assert d["vpos_tag"] == "UNRESOLVED"
-    assert d["base_ft"] == pytest.approx(10.3, abs=0.01)  # 9.3 + (16.3-9.3-5)/2
-    assert "PENDING RATIFICATION" in d["base_note"]
-
-
-def test_binder_tape_ladder_authorized():
-    """AUTHORIZED (Howard 2026-07-22): user_measured knee_ft/base_ft via
-    lp_appendage_dims dormer:{face} outrank every rung — TAPED tags."""
-    est = {"lp_appendage_dims": {"dormer:left": {
-        "knee_ft": {"value": 5.2, "status": "user_measured"},
-        "base_ft": {"value": 10.8, "status": "user_measured"}}}}
-    raw = _raw_redhouse_left_shape()
-    d, _ = _bind_dormers(est, raw, "left", 37.0, 9.3,
-                         {"kind": "eave_ridge", "ridge_ft": 17.65})
-    assert d["knee_ft"] == 5.2 and d["knee_tag"] == "TAPED (user-measured)"
-    assert d["base_ft"] == 10.8 and d["top_ft"] == 16.0
-    assert d["vpos_tag"] == "TAPED (user-measured)"
-    # 'assumed' status never overrides (standing appendage-dims rule)
-    est2 = {"lp_appendage_dims": {"dormer:left": {
-        "base_ft": {"value": 12.0, "status": "assumed"}}}}
-    d2, _ = _bind_dormers(est2, raw, "left", 37.0, 9.3,
-                          {"kind": "eave_ridge", "ridge_ft": 17.65})
-    assert d2["base_ft"] == pytest.approx(10.54, abs=0.02)
-
-
-def test_binder_profiles_carry_vpos_and_mirror():
-    raw = _raw_redhouse_left_shape()
-    _, front = _bind_dormers({}, raw, "front", 24.0, 12.0, None)
-    assert [(p["face"], p["drawing_side"]) for p in front] == [("left", "left")]
-    p = front[0]
-    assert p["base_ft"] == pytest.approx(10.54, abs=0.02)
-    assert p["top_ft"] == pytest.approx(15.54, abs=0.02)
-    assert "roof edge drawn LEVEL" in p["note"]
-    _, back = _bind_dormers({}, raw, "back", 24.0, 12.0, None)
-    assert [(p["face"], p["drawing_side"]) for p in back] == [("left", "right")]
+    assert d["base_ft"] == pytest.approx(10.3, abs=0.01)
 
 
 def test_plane_rule_dormer_never_guards_against_wall():
-    """Dormer-plane vs wall-plane: separated by construction, NO flag;
-    same-plane pairs still flag."""
     dormer_w2 = {"name": "W2", "kind": "opening", "plane": "dormer:left",
                  "base": "b", "lo_ft": 12.82, "hi_ft": 16.98}
     wall_w3 = {"name": "W3", "kind": "opening", "plane": "wall",
                "base": "b", "lo_ft": 16.27, "hi_ft": 19.27}
     assert detect_collisions([dormer_w2, wall_w3]) == []
-    same_plane = dict(wall_w3, plane="dormer:left")
-    assert len(detect_collisions([dormer_w2, same_plane])) == 1
+    assert len(detect_collisions([dormer_w2, dict(wall_w3, plane="dormer:left")])) == 1
 
 
 # ---------- live: red house acceptance sheets ----------
@@ -169,61 +192,65 @@ def _sheet(session, which, est=REDHOUSE_EST):
     return r.json()
 
 
-def test_redhouse_left_dormer_openings_join_with_bound_sills(session):
-    """COUNT PIN (P5 ship): LEFT openings 3 → 5. SILL PIN AMENDED
-    (v-pos ruling): None ('—') → W2* 139.5" / W4* 140.2" ESTIMATED."""
+def test_redhouse_left_reconciled_band_center_and_sills(session):
+    """PINS AMENDED (before → after): band 10.54–15.54 → 10.34–15.34
+    (paired-reconciled); center 18.5 → 17.8 (windows-centered norm);
+    wall sills None → W1/W3 29" · W5 30" (sill-binding extension).
+    Counts unchanged: 5 openings (5 windows)."""
     s = _sheet(session, "left")
+    d = s["dormer"]
+    assert d["base_ft"] == pytest.approx(10.34, abs=0.01)
+    assert d["top_ft"] == pytest.approx(15.34, abs=0.01)
+    assert "PAIRED-RECONCILED" in d["vpos_tag"]
+    assert d["center_ft"] == pytest.approx(17.8, abs=0.01)
+    assert d["center_tag"] == "ESTIMATED (windows-centered norm)"
     assert [o["tag"] for o in s["openings"]] == ["W1", "W2", "W3", "W4", "W5"]
-    assert [o["tag"] for o in s["openings"] if o["on_dormer"]] == ["W2", "W4"]
-    assert s["opening_counts"] == {"windows": 5, "doors": 0, "patio_doors": 0,
-                                   "vents": 0, "garage_doors": 0}
-    w2 = next(o for o in s["openings"] if o["tag"] == "W2")
-    w4 = next(o for o in s["openings"] if o["tag"] == "W4")
-    assert w2["sill_in"] == pytest.approx(139.5, abs=0.3) and w2["sill_tag"] == "ESTIMATED"
-    assert w4["sill_in"] == pytest.approx(140.2, abs=0.3)
-    assert s["collisions"] == []  # plane rule live
+    sills = {o["tag"]: o["sill_in"] for o in s["openings"]}
+    assert sills["W1"] == pytest.approx(29.0, abs=0.3)   # wall, head chain
+    assert sills["W3"] == pytest.approx(29.0, abs=0.3)
+    assert sills["W5"] == pytest.approx(30.0, abs=0.3)
+    assert sills["W2"] == pytest.approx(139.5, abs=0.3)  # dormer plane
+    assert sills["W4"] == pytest.approx(140.2, abs=0.3)
+    assert s["opening_counts"]["windows"] == 5
+    assert s["collisions"] == []
 
 
-def test_redhouse_left_dormer_band_bound_not_eave(session):
-    """PIN AMENDED (v-pos ruling): base 9'-3⅝" (eave, RETIRED) →
-    10'-6½" bound; top 15'-6½" — dormer eave 2'-1⅜" below the ridge."""
-    s = _sheet(session, "left")
-    d = s["dormer"]
-    assert d["base_ft"] == pytest.approx(10.54, abs=0.02)
-    assert d["top_ft"] == pytest.approx(15.54, abs=0.02)
-    assert d["base_ft"] > s["wall"]["height_ft"]  # sits UP the slope, not at the eave
-    assert d["vpos_tag"].startswith("ESTIMATED (photo-scaled")
-    assert "PENDING RATIFICATION" in d["base_note"]
-    assert d["width_ft"] == 15.0 and d["knee_ft"] == 5.0
-    assert d["center_ft"] == 18.5
-    assert s["dormer_profiles"] == []
-
-
-def test_redhouse_right_dormer_band_and_sill(session):
-    """PIN AMENDED: RIGHT base 8'-1¼" (eave) → 10'-1⅝"; W2* sill 132.5"."""
+def test_redhouse_right_reconciled_band_center_and_corner_guard(session):
+    """PINS AMENDED: band 10.14–15.14 → 10.34–15.34 (LEVEL with left);
+    center 18.5 → 20.0; W1 40.7" / W3 37.2" bound; W4–W6 (corner-shot,
+    position-less) stay '—' — the −94.1" nonsense bind is retired."""
     s = _sheet(session, "right")
-    assert s["opening_counts"]["windows"] == 6
     d = s["dormer"]
-    assert d["base_ft"] == pytest.approx(10.14, abs=0.02)
-    assert d["top_ft"] == pytest.approx(15.14, abs=0.02)
-    dorm = [o for o in s["openings"] if o["on_dormer"]]
-    assert len(dorm) == 1 and dorm[0]["tag"] == "W2"
-    assert dorm[0]["sill_in"] == pytest.approx(132.5, abs=0.3)
+    assert d["base_ft"] == pytest.approx(10.34, abs=0.01)
+    assert d["top_ft"] == pytest.approx(15.34, abs=0.01)
+    assert d["center_ft"] == pytest.approx(20.0, abs=0.01)
+    sills = {o["tag"]: o["sill_in"] for o in s["openings"]}
+    assert sills["W1"] == pytest.approx(40.7, abs=0.3)
+    assert sills["W3"] == pytest.approx(37.2, abs=0.3)
+    assert sills["W4"] is None and sills["W5"] is None and sills["W6"] is None
+    assert sills["W2"] == pytest.approx(132.5, abs=0.3)
+    assert s["opening_counts"]["windows"] == 6
 
 
-def test_redhouse_front_back_profiles_carry_vpos(session):
-    """FRONT/BACK: two profiles each, mirrored on BACK; each carries the
-    bound band + the LEVEL roof-edge note. Opening rosters unchanged."""
+def test_redhouse_profiles_level_both_slopes(session):
+    """PHOTO PIN (Howard's ground truth): both dormer eaves LEVEL — all
+    four profiles (front + back) carry the SAME reconciled band."""
+    bands = set()
+    for view in ("front", "back"):
+        s = _sheet(session, view)
+        assert len(s["dormer_profiles"]) == 2
+        for p in s["dormer_profiles"]:
+            bands.add((p["base_ft"], p["top_ft"]))
+    assert bands == {(10.34, 15.34)}
+
+
+def test_redhouse_front_roster_unchanged(session):
     f = _sheet(session, "front")
     assert f["dormer"] is None
-    assert {(p["face"], p["drawing_side"]) for p in f["dormer_profiles"]} == {("left", "left"), ("right", "right")}
-    for p in f["dormer_profiles"]:
-        assert p["base_ft"] is not None and p["top_ft"] == pytest.approx(p["base_ft"] + p["knee_ft"], abs=0.02)
-        assert "roof edge drawn LEVEL" in p["note"]
     assert [o["tag"] for o in f["openings"]] == ["G1", "W1", "G2", "D1"]
-    b = _sheet(session, "back")
-    assert {(p["face"], p["drawing_side"]) for p in b["dormer_profiles"]} == {("left", "right"), ("right", "left")}
-    assert [o["tag"] for o in b["openings"]] == ["W1", "W2", "P1"]
+    # door-anchored walls keep the door anchor — extension never fires
+    w1 = next(o for o in f["openings"] if o["tag"] == "W1")
+    assert w1["sill_in"] == pytest.approx(137.1, abs=0.3)
 
 
 def test_undormered_fixture_unchanged(session):
@@ -236,10 +263,7 @@ def test_undormered_fixture_unchanged(session):
 def test_sheet_jsx_dormer_wiring():
     assert "elevation-dormer" in SHEET_JSX
     assert "elevation-dormer-profile-" in SHEET_JSX
-    # defect #1 fix: the LEVEL roof edge is the drawn, defining edge
     assert "elevation-dormer-profile-roof-edge-" in SHEET_JSX
-    assert "roof edge LEVEL" in SHEET_JSX or "C2" in SHEET_JSX
     assert "elevation-schedule-dormer-legend" in SHEET_JSX
     assert "_tagLabel" in SHEET_JSX
-    # face-on band drawn at the BOUND top, not base+knee-at-eave
     assert "dormer.top_ft" in SHEET_JSX
