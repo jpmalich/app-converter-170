@@ -636,6 +636,53 @@ def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     }
 
 
+def _tape_check_basis(est: dict, wall_label: str) -> dict | None:
+    """Tape-check binding (ruled 2026-07-23, P5 close-out): the standing
+    geometry-source rule — tape-validated values govern wherever they
+    exist, sealed key or not. On keyless estimates the contractor's Tape
+    Check entries (Field Verify · ground truth) BIND the sheet's wall
+    heights as TAPED source. Width stays untaped (the tape check records
+    heights only): extraction-run fallback, LABELED. Stepped entries
+    carry BOTH segments; segment adjacency is not captured by the tape
+    check (step location honestly NOT TAPED)."""
+    tc = est.get("tape_check") or {}
+    v = (tc.get("walls") or {}).get(wall_label)
+    if v in (None, ""):
+        return None
+    if isinstance(v, (int, float)):
+        segs_in, start_ref = [{"height_ft": float(v)}], None
+    elif isinstance(v, dict):
+        segs_in = [s for s in (v.get("segments") or []) if s.get("height_ft") is not None]
+        start_ref = v.get("start_ref")
+    else:
+        return None
+    if not segs_in:
+        return None
+    ref_label = str(start_ref).replace("_", " ") if start_ref else None
+    segments = []
+    for s in segs_in:
+        h = float(s["height_ft"])
+        segments.append({
+            "adjacent": None,
+            "courses": int(s["courses"]) if s.get("courses") else None,
+            "height_ft": h,
+            "height_label": fmt_ftin(h),
+            "height_tag": "TAPED",
+            "height_formula": (f"tape check {fmt_ftin(h)}"
+                               + (f" @ {ref_label} datum" if ref_label else "")),
+        })
+    return {
+        "kind": "tape_check",
+        "start_ref": start_ref,
+        "updated": str(tc.get("updated_at") or "")[:10],
+        "segments": segments,
+        "exposure_in": None,
+        "width_ft": None, "width_label": None, "width_tag": None,
+        "width_source": None,
+        "chase_dims": None,
+    }
+
+
 def _schedule_matchers(run, review_state):
     """Verb machinery (ruled 2026-07-15): lp_openings_review rows are
     run-scoped `open:{rid8}:{index}` over _ai_openings_schedule. Removed
@@ -819,7 +866,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "id": 1, "estimate_number": 1, "customer_name": 1, "address": 1,
-         "lp_openings_review": 1, "lp_appendage_dims": 1})
+         "lp_openings_review": 1, "lp_appendage_dims": 1, "tape_check": 1})
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
     run = await db.ai_measure_runs.find_one(
@@ -836,7 +883,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     if not wall:
         raise HTTPException(status_code=404, detail=f"Run has no {which} wall")
 
-    tape = _sealed_tape_basis(est, which)
+    # geometry-source ladder: sealed key > tape check > extraction run
+    tape = _sealed_tape_basis(est, which) or _tape_check_basis(est, which)
     ai_width = wall.get("width_ft")
     ai_height = wall.get("height_ft")
     ai_width_tag = _AI_TAGS.get(str(wall.get("width_ft_source")), "ESTIMATED")
@@ -856,25 +904,37 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             segments = list(reversed(segments))
         # tallest segment drives the drawing frame; EACH keeps its basis line
         height_ft = max(s["height_ft"] for s in segments)
+        if tape.get("kind") == "tape_check":
+            tape_src = f"tape check {tape['updated']} (field verify — ground truth)"
+        else:
+            tape_src = (f"sealed key {tape['key_number']} "
+                        f"(tape, corrected {tape['key_corrected']})")
         if tape["width_ft"] is not None:
             width_ft = tape["width_ft"]
             width_tag, width_source = tape["width_tag"], tape["width_source"]
-            walls_basis_line = (f"sealed key {tape['key_number']} "
-                                f"(tape, corrected {tape['key_corrected']}) — walls")
+            walls_basis_line = f"{tape_src} — walls"
         else:
-            # sides: width untaped — extraction-run fallback, LABELED
+            # width untaped — extraction-run fallback, LABELED
             width_ft = ai_width
             width_tag = ai_width_tag
             width_source = f"AI run {run['run_id'][:8]} ({wall.get('width_ft_source')}) — width untaped"
-            walls_basis_line = (f"sealed key {tape['key_number']} "
-                                f"(tape, corrected {tape['key_corrected']}) — heights"
+            walls_basis_line = (f"{tape_src} — heights"
                                 f" · width AI run {run['run_id'][:8]}")
         first = segments[0]
+        exposure_in, courses = tape["exposure_in"], first["courses"]
+        exposure_basis = "taped" if exposure_in is not None else None
+        if exposure_in is None:
+            # tape check carries heights (± courses), no taped exposure —
+            # derive from counted courses against the TAPED height, labeled
+            courses = courses or wall.get("eave_courses_counted")
+            if courses:
+                exposure_in = round(first["height_ft"] * 12.0 / int(courses), 2)
+                exposure_basis = "counted"
         basis = {
             "width_tag": width_tag, "width_source": width_source,
             "height_tag": first["height_tag"], "height_formula": first["height_formula"],
-            "exposure_in": tape["exposure_in"], "courses": first["courses"],
-            "exposure_basis": "taped",
+            "exposure_in": exposure_in, "courses": int(courses) if courses else None,
+            "exposure_basis": exposure_basis,
         }
     else:
         width_ft, height_ft = ai_width, ai_height
@@ -917,6 +977,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
                 "delta_height_label": fmt_inches((ai_height - seg_heights[0]) * 12.0),
                 "width_disputed": bool(width_off),
                 "governs": "tape",
+                "basis_word": "tape check" if tape.get("kind") == "tape_check" else "key",
                 "run_short": run["run_id"][:8],
             }
 
@@ -1069,11 +1130,11 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         if has_chase_b:
             conf_b = sorted({r["frac"] for r in _chase_reads("back")
                              if r["tier"] == "confirmed"})
-            bt = _sealed_tape_basis(est, "back")
-            hb = (max(s["height_ft"] for s in bt["segments"]) if bt
-                  else (wall_b or {}).get("height_ft"))
+            bt = _sealed_tape_basis(est, "back") or _tape_check_basis(est, "back")
+            hb_seg = max(bt["segments"], key=lambda s: s["height_ft"]) if bt else None
+            hb = hb_seg["height_ft"] if hb_seg else (wall_b or {}).get("height_ft")
             rl_b = (_bind_roofline(raw, "back", hb,
-                                   "TAPED-DERIVED" if bt else _AI_TAGS.get(
+                                   hb_seg["height_tag"] if hb_seg else _AI_TAGS.get(
                                        str((wall_b or {}).get("height_ft_source")), "ESTIMATED"))
                     if hb else None)
             lad = _chase_dims_ladder(est, conf_b if len(conf_b) >= 2 else None,

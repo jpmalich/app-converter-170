@@ -284,8 +284,8 @@ export function SheetSvg({ data }) {
     S.dev1 = `AI run ${dev.run_short} read this wall ${dev.ai_width_label} × ${dev.ai_height_label}` +
       (dev.ai_counts?.length ? ` (${dev.ai_counts.join("/")} courses, ${dev.ai_basis})` : ` (${dev.ai_basis})`);
     S.dev2 = dev.width_disputed
-      ? `vs key ${W.width_label} × ${dev.tape_heights_label}: ${dev.delta_width_label} width, ${dev.delta_height_label} height.`
-      : `vs key heights ${dev.tape_heights_label}: ${dev.delta_height_label} vs first segment · width untaped — AI governs width.`;
+      ? `vs ${dev.basis_word || "key"} ${W.width_label} × ${dev.tape_heights_label}: ${dev.delta_width_label} width, ${dev.delta_height_label} height.`
+      : `vs ${dev.basis_word || "key"} heights ${dev.tape_heights_label}: ${dev.delta_height_label} vs first segment · width untaped — AI governs width.`;
     S.devSummary = `AI wall read: ${dev.ai_width_label} × ${dev.ai_height_label} — flagged deviation above; tape governs heights`;
   }
   if (chase) {
@@ -393,8 +393,8 @@ export function SheetSvg({ data }) {
     S.seg1Formula = segList[1].height_formula;
     S.seg0Label = segList[0].height_label;
     S.seg1Label = segList[1].height_label;
-    S.seg0Corner = `@ ${String(segList[0].adjacent || "").toUpperCase()} CORNER`;
-    S.seg1Corner = `@ ${String(segList[1].adjacent || "").toUpperCase()} CORNER`;
+    S.seg0Corner = segList[0].adjacent ? `@ ${String(segList[0].adjacent).toUpperCase()} CORNER` : "";
+    S.seg1Corner = segList[1].adjacent ? `@ ${String(segList[1].adjacent).toUpperCase()} CORNER` : "";
   }
   for (const o of data.openings) {
     o._style = `${o.type}${o.style ? ` · ${abbrevStyle(o.style)}` : ""}`;
@@ -771,7 +771,7 @@ export function SheetSvg({ data }) {
             <text x="954" y={segTopY[1] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted}>SEG 2 HEIGHT</text>
             <text x="954" y={segTopY[1] + 33} fontSize="6.5" fontWeight="bold" fill={C.amber}>{S.seg1Corner}</text>
             <text x="954" y={segTopY[1] + 48} fontSize="12" fontWeight="bold" fill={C.ink} data-testid="elevation-height-value">{S.seg1Label}</text>
-            <Chip x={950} y={segTopY[1] + 54} w={74} label="TAPED-DERIVED" kind="taped-derived" />
+            <Chip x={950} y={segTopY[1] + 54} w={segList[1].height_tag === "TAPED" ? 52 : 74} label={segList[1].height_tag} kind={tagKind(segList[1].height_tag)} />
             <text x="1022" y={segTopY[1] + 82} fontSize="7" fill={C.muted} textAnchor="end">{S.seg1Formula}</text>
             {/* seg[0] (left half) — left-side basis line */}
             <g stroke={C.ink} strokeWidth="1" data-testid="elevation-seg-basis-0">
@@ -782,7 +782,7 @@ export function SheetSvg({ data }) {
             <text x={wallX - dimOffL - 56} y={segTopY[0] + 24} fontSize="7.5" fontWeight="bold" fill={C.muted} textAnchor="end">SEG 1 HEIGHT</text>
             <text x={wallX - dimOffL - 56} y={segTopY[0] + 33} fontSize="6.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.seg0Corner}</text>
             <text x={wallX - dimOffL - 56} y={segTopY[0] + 48} fontSize="12" fontWeight="bold" fill={C.ink} textAnchor="end">{S.seg0Label}</text>
-            <Chip x={wallX - dimOffL - 130} y={segTopY[0] + 54} w={74} label="TAPED-DERIVED" kind="taped-derived" />
+            <Chip x={wallX - dimOffL - 130} y={segTopY[0] + 54} w={segList[0].height_tag === "TAPED" ? 52 : 74} label={segList[0].height_tag} kind={tagKind(segList[0].height_tag)} />
             <text x={wallX - dimOffL - 56} y={segTopY[0] + 82} fontSize="7" fill={C.muted} textAnchor="end">{S.seg0Formula}</text>
           </g>
         ) : (

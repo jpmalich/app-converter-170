@@ -309,11 +309,15 @@ def test_redhouse_wall_course_fill_counted(session):
     the hatch keyed on TAPED exposure only; the run's counted courses
     (eave_courses_counted 29 ⇒ 111.6"/29 = 3.85" lap) were never
     consulted. Fixed: counted courses derive the exposure, basis
-    'counted' (never claims 'taped')."""
+    'counted' (never claims 'taped').
+    PIN AMENDED (before → after, tape-check wiring 2026-07-23): 3.85"
+    → 4.41" — the counted courses now divide the TAPED wall height
+    (127.99"/29), not the AI's superseded 9.3' read. Basis stays
+    'counted' — the course count is still the run's, never taped."""
     s = _sheet(session, "left")
     w = s["wall"]
     assert w["courses"] == 29
-    assert w["exposure_in"] == pytest.approx(3.85, abs=0.01)
+    assert w["exposure_in"] == pytest.approx(4.41, abs=0.01)
     assert w["exposure_basis"] == "counted"
     assert 'W.exposure_basis === "taped" ? "taped" : "counted"' in SHEET_JSX
 
