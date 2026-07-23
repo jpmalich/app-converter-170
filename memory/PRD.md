@@ -4486,3 +4486,41 @@ dormer:left/right base_ft = dormer face base above grade; knee_ft = face height 
 STAMP (verbatim): - 2026-07-23 02:02 UTC · a7f02d9 · CLEAN · [tests] · 1196 passed, 1 skipped,
 3 warnings in 105.19s (0:01:45).
 QUEUE: Howard photo-compare → TAPE PASS closes P5. Parks unchanged.
+
+## SESSION 2026-07-23 (part 27) — P5 CLOSED: TAPE-CHECK → SHEET BASIS WIRED (fork)
+TAPE PASS (human, on-site): 4 walls @ siding-start datum — FRONT/LEFT 10.666 · BACK 7.166→10.666
+· RIGHT 7.16→10.666 — saved, scored 95.2%. Dormer rows deliberately empty (roof-plane dims not
+safely tapeable from grade) — ESTIMATED · PAIRED-RECONCILED rung STANDS per ladder doctrine.
+GAP FOUND + WIRED: sheets only bound the SEALED KEY tape (Letrick); tape_check never reached the
+sheet basis — violation of the standing geometry-source rule (tape governs wherever it exists).
+SHIPPED: _tape_check_basis() in elevation_sheets.py — ladder now sealed key > tape check > AI run.
+Heights bind TAPED w/ "tape check X @ siding start datum" formula + geometry-basis line
+"tape check YYYY-MM-DD (field verify — ground truth)"; width stays untaped (AI fallback, LABELED);
+stepped entries carry both segments (adjacency honestly absent — corner labels suppressed);
+exposure derives counted courses ÷ TAPED height (basis 'counted', never claims taped);
+deviation carries basis_word ("tape check"/"key") — JSX renders it; stepped segment chips render
+their own height_tag (hardcoded TAPED-DERIVED retired). AI 9.3' read stays as flagged deviation.
+PIN AMENDED: test_dormers_p5 course-fill exposure 3.85"→4.41" (counted courses now divide the
+TAPED height, not the superseded AI read). NEW PINS (8): test_tape_check_sheet_basis.py — left
+TAPED bind, width untaped labeled, deviation governs tape, back/right stepped both-TAPED,
+front TAPED, dormer rung stands, sealed key outranks tape check.
+STAMP (verbatim): - 2026-07-23 10:43 UTC · b077329 · CLEAN · [tests] · 1204 passed, 1 skipped, 3 warnings in 189.09s (0:03:09)
+LEFT sheet PNG delivered: 10'-8" TAPED chip + deviation box + tape-check basis line. P5 CLOSED
+pending Howard's look.
+PUBLISH-IMPACT REPORT delivered (report-only) + CONSOLIDATED RULING received:
+1. P5 handback lands first (DONE this session) — Howard's look closes P5 before anything else.
+2. DELETIONS AUTHORIZED: delete unreferenced ~23 estimates + purge estimates_trash (4,041).
+   EXCEPTIONS: d78cd3b4 round-two KEEP (banked artifact — freeze doctrine); any doc with ACTIVE
+   frozen links auto-KEEP (never revoke live links). ZZ evidence docs: delete (seed-reconstructable).
+   Execute as ONE receipted handback: pre/post counts, deleted IDs, per-doc checksums on survivors,
+   frozen links re-verified serving as-frozen, full suite green, CLEAN stamp.
+3. SEED CONVERSION AUTHORIZED (September critical path): (a) photo-size census per fixture FIRST +
+   full prod-provisioning census (catalogs/pricing Vero/Mezzo/ISS, test user/company, demo estimate,
+   LP-native mode state) — report scope/sizes BEFORE export tooling; (b) export tool + seed runner
+   (versioned JSON fixtures, stable IDs, checksum-idempotent) + un-hardcode preview host in ~20 test
+   files; (c) human rungs PINNED: import-stamped transport for demo-grade fixtures, re-entry for
+   disputes, synthesis NEVER.
+4. DEMO PLATFORM = PUBLISHED APP (production). Prod fully provisioned via item 3 before demo;
+   morning-of checklist gains "verify seeds on prod + QR leave-behinds minted on production domain,
+   printed AFTER demo reset"; pre-September gate: full demo walkthrough ON PROD (Howard schedules).
+QUEUE: Howard's P5 look → deletions handback (item 2) → seed census (item 3a) → export tooling (3b).
