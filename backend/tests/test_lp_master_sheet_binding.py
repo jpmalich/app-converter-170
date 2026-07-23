@@ -43,11 +43,26 @@ ZERO_DOLLAR_SHEET_ROWS = {
 
 @pytest.fixture(scope="module")
 def loop():
-    """One loop for every direct-db call in this module — the motor client
-    binds to the first loop it awaits on; a second asyncio.run() breaks it."""
+    """One loop for every direct-db call in this module — with a FRESH
+    motor client patched in, so the app's shared client never binds to
+    (and outlives) this module's loop."""
     l = asyncio.new_event_loop()
     yield l
     l.close()
+
+
+@pytest.fixture(scope="module")
+def patched_db(loop):
+    import os
+    from motor.motor_asyncio import AsyncIOMotorClient
+    import routes.lp_package_routes as lpr
+    client = AsyncIOMotorClient(os.environ["MONGO_URL"])
+    fresh = client[os.environ["DB_NAME"]]
+    orig = lpr.db
+    lpr.db = fresh
+    yield fresh
+    lpr.db = orig
+    client.close()
 
 
 @pytest.fixture(scope="module")
@@ -72,27 +87,26 @@ def _load_sheet(loop, est: dict) -> dict:
     return loop.run_until_complete(_load_tier_sheet_for(est))
 
 
-def test_dangling_tier_pointer_falls_back_never_empty(loop):
+def test_dangling_tier_pointer_falls_back_never_empty(loop, patched_db):
     """A company whose price_tier_id resolves to NO tier doc still gets
     the default tier sheet — an empty sheet unbinds every row (the bug)."""
 
     async def run():
-        from db import db
         cid = f"zz-test-dangling-{uuid.uuid4().hex[:8]}"
-        await db.companies.insert_one({"id": cid, "name": "ZZ dangling-tier test co",
-                                       "price_tier_id": "does-not-exist-anymore"})
+        await patched_db.companies.insert_one({"id": cid, "name": "ZZ dangling-tier test co",
+                                               "price_tier_id": "does-not-exist-anymore"})
         try:
             from routes.lp_package_routes import _load_tier_sheet_for
             return await _load_tier_sheet_for({"company_id": cid})
         finally:
-            await db.companies.delete_one({"id": cid})
+            await patched_db.companies.delete_one({"id": cid})
 
     idx = loop.run_until_complete(run())
     assert len(idx) > 100, "fallback sheet must load — empty sheet is the pinned bug"
     assert 'gutter 6"' in idx
 
 
-def test_company_overrides_merge_into_sheet(loop):
+def test_company_overrides_merge_into_sheet(loop, patched_db):
     """The sheet the contractor SEES is tier + their overrides: Pro-Quote
     carries Gutter/Downspout 6\" labor $1.00/LF as catalog overrides —
     the binding index must speak the same numbers as the tabs."""
