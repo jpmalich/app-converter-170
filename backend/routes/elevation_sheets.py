@@ -409,6 +409,13 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj):
         elif face in ("front", "back", "left", "right") and face != which:
             side = _PROFILE_SIDE.get((which, face))
             if side:
+                # compact tag for the on-sheet note (full chain in basis)
+                if "PAIRED-RECONCILED" in v_tag:
+                    v_short = "ESTIMATED · PAIRED-RECONCILED"
+                elif v_tag.startswith("ESTIMATED"):
+                    v_short = "ESTIMATED (photo-scaled)"
+                else:
+                    v_short = v_tag
                 profiles.append({
                     "face": face, "drawing_side": side,
                     "knee_ft": knee, "knee_label": fmt_ftin(knee), "tag": knee_tag,
@@ -417,7 +424,7 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj):
                     "base_ft": base_ft, "top_ft": top_ft,
                     "vpos_tag": v_tag,
                     "note": ("roof edge drawn LEVEL — dormer roof pitch NOT READ · "
-                             f"v-pos {v_tag}"),
+                             f"v-pos {v_short}"),
                     "basis": (f"knee {fmt_ftin(knee)} — AI run dormer read ({tag}) · "
                               f"{face} slope · {v_basis}"),
                 })
@@ -1184,8 +1191,9 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         # SILL-BINDING EXTENSION (authorized 2026-07-22): doorless walls
         # head-anchor at the ratified CONTRACTOR-SPEC 6'-8" header
         if any(o["sill_in"] is not None and not o.get("on_dormer") for o in openings):
-            schedule_note += (" No door on this wall — window sills head-anchored"
-                              " at the CONTRACTOR-SPEC 6'-8\" header (ratified).")
+            schedule_note = ("Sizes + positions: AI run (along_wall_ft). No door — "
+                             "window sills head-anchored at the CONTRACTOR-SPEC "
+                             "6'-8\" header (ratified).")
         else:
             schedule_note += " No door on this wall — sills not derivable (—)."
 
