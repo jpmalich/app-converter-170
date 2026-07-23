@@ -279,8 +279,17 @@ export function SheetSvg({ data }) {
   S.title = `${sheetName} ELEVATION`;
   S.headerLine = `${String(data.customer_name || "").toUpperCase()} · ${String(data.address || "").toUpperCase()} · SHEET ${data.sheet_code} OF 4`;
   S.fasciaLabel = `FASCIA / RAKE · ${fmtFt(ovFt)} OVERHANG`;
-  S.coursesNote = W.courses ? `${W.courses_label || W.courses} × ${fmtInFrac(W.exposure_in)} ${W.exposure_basis === "taped" ? "taped" : W.exposure_basis === "human-counted" ? "human-counted" : "counted"}` : "";
-  S.aiCountNote = W.ai_count_note ? String(W.ai_count_note).toUpperCase() : "";
+  S.coursesNote = W.courses ? `${W.courses_label || W.courses} × ${fmtInFrac(W.exposure_in)}` : "";
+  S.coursesBasis = W.courses ? (W.exposure_basis === "taped" ? "taped" : W.exposure_basis === "human-counted" ? "human-counted" : "counted") : "";
+  if (W.ai_count_note) {
+    const words = String(W.ai_count_note).toUpperCase().split(" ");
+    const lines = [""];
+    for (const wd of words) {
+      if ((lines[lines.length - 1] + " " + wd).trim().length > 22) lines.push(wd);
+      else lines[lines.length - 1] = (lines[lines.length - 1] + " " + wd).trim();
+    }
+    S.aiCountLines = lines.slice(0, 4);
+  } else S.aiCountLines = null;
   if (dev) {
     S.dev1 = `AI run ${dev.run_short} read this wall ${dev.ai_width_label} × ${dev.ai_height_label}` +
       (dev.ai_counts?.length ? ` (${dev.ai_counts.join("/")} courses, ${dev.ai_basis})` : ` (${dev.ai_basis})`);
@@ -800,8 +809,15 @@ export function SheetSvg({ data }) {
             {W.courses && (
               <text x="950" y={wallTop + 100} fontSize="8" fill={C.muted}>{S.coursesNote}</text>
             )}
-            {W.ai_count_note && (
-              <text x="950" y={wallTop + 111} fontSize="7" fontWeight="bold" fill={C.amber} data-testid="elevation-ai-count-flag">{S.aiCountNote}</text>
+            {W.courses && (
+              <text x="950" y={wallTop + 109} fontSize="7" fill={C.muted}>{S.coursesBasis}</text>
+            )}
+            {S.aiCountLines && (
+              <g data-testid="elevation-ai-count-flag">
+                {S.aiCountLines.map((l, i) => (
+                  <text key={i} x="950" y={wallTop + 120 + i * 8.5} fontSize="6.5" fontWeight="bold" fill={C.amber}>{l}</text>
+                ))}
+              </g>
             )}
           </g>
         )}
