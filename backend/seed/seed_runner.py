@@ -114,6 +114,16 @@ async def apply(db):
         for row in rows:
             key = _key(coll, row)
             cur = await db[coll].find_one(key, {"_id": 0})
+            if coll == "price_tiers":
+                # tiers oscillate between boot-augmented and PUT-normalized
+                # forms (seed-on-boot vs admin PUT) — insert-only-if-missing;
+                # content ownership stays with seed-on-boot + supplier admin
+                if cur is None:
+                    await db[coll].insert_one(dict(row))
+                    report["applied"] += 1
+                else:
+                    report["skipped"] += 1
+                continue
             if cur and checksum(cur) == checksum(row):
                 report["skipped"] += 1
                 continue
@@ -209,9 +219,17 @@ async def verify(db):
                    else {"section": row["section"], "name": row["name"]}
                    if coll == "iss_catalog" else {"id": row["id"]})
             cur = await db[coll].find_one(key, {"_id": 0})
+            if coll == "price_tiers":
+                # presence-only: tier content oscillates between the
+                # boot-augmented and PUT-normalized forms by design
+                if cur is None or not cur.get("sections"):
+                    bad += 1
+                continue
             if cur is None or checksum(cur) != checksum(row):
                 bad += 1
-        check(bad == 0, f"pricing {coll}: {len(rows) - bad}/{len(rows)} checksum-exact")
+        label = ("present + sections non-empty" if coll == "price_tiers"
+                 else "checksum-exact")
+        check(bad == 0, f"pricing {coll}: {len(rows) - bad}/{len(rows)} {label}")
     bad = 0
     for name, meta in m["blobs"].items():
         b = await db.upload_blobs.find_one({"name": name})
