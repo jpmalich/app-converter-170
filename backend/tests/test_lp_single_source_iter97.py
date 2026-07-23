@@ -121,8 +121,10 @@ def test_company_tier_identity_mapping():
     assert DEFAULT_TIER == "Contractor"
 
 
-# ── ONE-SURFACE RULE (iter99): LP exports compose from the derived
-# package — pending lines export flagged, never a silent $0 ──
+# ── ONE-SURFACE RULE (iter99) amended by ONE MONEY SURFACE (2026-07-23):
+# the LP export block is the VERIFICATION section — quantities &
+# derivations only, money columns EMPTY; dollars live in the tab-line
+# rows (the single money surface). Pending rows escalate by name. ──
 def test_lp_csv_rows_compose_from_package_never_silent_zero():
     from lp_costs import price_package, redact_external
     from routes.estimates import _lp_csv_rows
@@ -132,11 +134,9 @@ def test_lp_csv_rows_compose_from_package_never_silent_zero():
     price_package(pkg, cfg, None)
     rows = _lp_csv_rows(redact_external(pkg))
     assert rows
-    pending = [r for r in rows if r[4] == "PRICING PENDING"]
-    priced = [r for r in rows if isinstance(r[4], float) and r[4] > 0]
-    assert pending and priced
     for r in rows:
-        assert r[4] not in (0, 0.0, "0", "0.0")  # never a silent $0
+        assert r[4] == "" and r[5] == "" and r[6] == "", r  # money columns empty
+        assert r[3] > 0  # quantities always present
     # substitution provenance carries into the export
     pkg2 = assemble_lp_package(
         dict(MEAS),

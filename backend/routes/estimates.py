@@ -434,21 +434,22 @@ async def export_estimates_csv(user: dict = Depends(get_current_user)):
 def _lp_csv_rows(pkg: dict) -> list[list]:
     """Iter 99 — ONE-SURFACE RULE: LP exports compose from the derived
     package (same source as the Material List tab), never from stored
-    legacy lines. Pending lines export as 'PRICING PENDING', never $0."""
+    legacy lines. ONE MONEY SURFACE (ruled 2026-07-23): this block is the
+    VERIFICATION section of the export — quantities & derivations only,
+    money columns stay empty (dollars live in the tab-line rows below)."""
     rows: list[list] = []
     for ln in pkg.get("lines") or []:
         qty = ln.get("qty", 0) or 0
         if qty <= 0:
             continue
-        priced = ln.get("pricing_status") == "priced"
-        mat = ln.get("unit_sell") if priced else "PRICING PENDING"
-        total = f"{(ln.get('line_sell') or 0):.2f}" if priced else ""
         name = ln["name"]
         if ln.get("substituted_from"):
             name += f" (substituted from {ln['substituted_from']} — re-derived)"
         if ln.get("color"):
             name += f" — {ln['color']}"
-        rows.append([ln.get("section", ""), name, ln.get("unit", ""), qty, mat, 0, total])
+        if ln.get("pricing_status") == "pending":
+            name += " [no sheet price — escalated by name]"
+        rows.append([ln.get("section", ""), name, ln.get("unit", ""), qty, "", "", ""])
     return rows
 
 
@@ -516,13 +517,14 @@ async def export_estimate_csv(est_id: str, user: dict = Depends(get_current_user
     if est.get("kind") == "lp_smart":
         lp_pkg = await _derive_lp_pkg_for_export(est, user["company_id"])
     if lp_pkg:
-        writer.writerow([f"LP MATERIAL LIST — derived from AI measurements "
+        writer.writerow([f"LP MATERIAL LIST (verification — quantities & derivations, unpriced) "
+                         f"— derived from AI measurements "
                          f"(run {str(lp_pkg.get('run_id') or '')[:8]}) — single source", "", "", "", "", "", ""])
         for row in _lp_csv_rows(lp_pkg):
             writer.writerow(row)
     for ln in est.get("lines", []) or []:
-        if lp_pkg and (ln.get("tab") or "vinyl") == "lp_smart":
-            continue  # ONE-SURFACE RULE: stored legacy LP rows never export alongside the derived package
+        # ONE MONEY SURFACE (ruled 2026-07-23): the group-tab lines are
+        # the ONLY money rows — LP tab lines export WITH their pricing.
         if (ln.get("qty", 0) or 0) > 0:
             qty = ln["qty"] or 0
             line_total = qty * ((ln.get("mat", 0) or 0) + (ln.get("lab", 0) or 0))
