@@ -4419,3 +4419,30 @@ STAMP (verbatim): - 2026-07-22 23:22 UTC · 21b5e0e · CLEAN · [tests] · 1191 
 3 warnings in 106.32s (0:01:46).
 QUEUE: Howard's eyes vs site photo (all four sheets) + RATIFICATION ASK: the 6'-8" head-anchor
 constant. Parks unchanged.
+
+## SESSION 2026-07-23 (part 26) — P5 ROUND TWO SHIPPED (fork)
+RULING: paired reconciliation + offset evidence; head-anchor RATIFIED; sill extension AUTHORIZED.
+1. PAIRED-FEATURE RECONCILIATION (founding: red house): opposite-face twins (width AND knee
+within 6" — PAIRED_DORMER_TOL_FT=0.5) bind ONE band drawn LEVEL: L 10.54–15.54 / R 10.14–15.14
+→ BOTH 10.34–15.34, tag "ESTIMATED (photo-scaled · PAIRED-RECONCILED · head-anchor
+CONTRACTOR-SPEC 6'-8\")". Tape on EITHER twin closes both ("TAPED (user-measured · paired)").
+All 4 profiles (front+back) carry the same band — dormer eaves LEVEL per photo.
+2. OFFSET EVIDENCE (reported, then ruled a binder fix): binder bound wall-center+offset_x_ft
+(18.5' both) — reconciler-rounded claim. Structured evidence: on-dormer window positions are
+bbox-consistent to ⅝"/2" (L chain 45.65 ft/frac via w1/w3; R 47.86 via w4/w5); windows-centered
+norm ⇒ L center 17.8', R 20.0'. CENTER LADDER shipped: window-midpoint (ESTIMATED
+windows-centered norm) > offset_x_ft. Note: L run posts (0.29/0.70 of 444" ref, note-text only)
+say center 18.32' — 6⅜" from the windows-norm bind; residual is read slop, tape-closable.
+3. HEAD-ANCHOR 6'-8" (80") RATIFIED CONTRACTOR-SPEC (renamed WINDOW_HEAD_ANCHOR_IN; pinned,
+re-ratification to change). SILL EXTENSION shipped: doorless walls bind WINDOW sills via
+per-photo head chain (windows only — vents excluded; corner-shot guard: position-less windows
+never carry/receive the chain — retired a −94.1" nonsense bind on red house right W5).
+PIN AMENDMENTS: red house L sills W1/W3 29"/W5 30"; R W1 40.7"/W3 37.2", W4–W6 stay "—";
+letrick LEFT W1 (54") sill 26" ESTIMATED, V1 vent "—" (test_elevation_sheets_lbr amended).
+Doorless-wall schedule note now states the head-anchor rung.
+STAMP (verbatim): - 2026-07-23 00:10 UTC · 7dc25e5 · CLEAN · [tests] · 1192 passed, 1 skipped,
+3 warnings in 154.60s (0:02:34).
+QUEUE: Howard's photo-compare gate; THEN Howard re-enters red house tape via Field Verify +
+tapes dormer knee/base (lp_appendage_dims dormer:left/right knee_ft/base_ft) — P5 closes on
+TAPED rungs. Parks unchanged (P6 massing, layer toggles, hip pitch, upload tightening,
+compare-toggle, ISS catalog).
