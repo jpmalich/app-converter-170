@@ -559,6 +559,30 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     pending = [PENDING_CONFIRMATIONS["expertfinish_availability_matrix"],
                PENDING_CONFIRMATIONS["bluelinx_sku_upload"]]
 
+    # ── DORMER COMPONENT LINES (ruled 2026-07-23): only what the
+    # extraction supports — dormer eave FASCIA LF (width per face) and
+    # dormer OSC LF (2 posts × knee per dormer). FLAGGED, NON-PRICED —
+    # the list states the footage; pricing pending Howard's ruling.
+    # (Dormer rake LF / soffit stay off the list — pitch/overhang NOT READ.)
+    dormers = measurements.get("_ai_dormers") or []
+    if dormers:
+        fascia_lf = round(sum(float(d.get("width_ft") or 0) for d in dormers), 1)
+        osc_lf = round(sum(2.0 * float(d.get("knee_wall_height_ft") or 0) for d in dormers), 1)
+        if fascia_lf > 0:
+            lines.append({
+                "tab": "lp_smart", "section": "Trim", "unit": "LF",
+                "name": "Dormer fascia (eave)", "qty": fascia_lf,
+                "non_priced": True,
+                "note": (f"{len(dormers)} dormer(s) — eave width per face "
+                         f"(AI run dormer read); NON-PRICED — pricing pending ruling")})
+        if osc_lf > 0:
+            lines.append({
+                "tab": "lp_smart", "section": "Trim", "unit": "LF",
+                "name": "Dormer outside corners (OSC)", "qty": osc_lf,
+                "non_priced": True,
+                "note": (f"{len(dormers)} dormer(s) × 2 posts × knee height "
+                         f"(AI run dormer read); NON-PRICED — pricing pending ruling")})
+
     # ── COLOR ARCHITECTURE (ruled): per-component line-level colors;
     # identity = (name, color); availability flagged while unverified
     from lp_colors import apply_colors, consolidate_lines

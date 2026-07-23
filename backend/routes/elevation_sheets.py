@@ -874,15 +874,23 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "width_tag": width_tag, "width_source": width_source,
             "height_tag": first["height_tag"], "height_formula": first["height_formula"],
             "exposure_in": tape["exposure_in"], "courses": first["courses"],
+            "exposure_basis": "taped",
         }
     else:
         width_ft, height_ft = ai_width, ai_height
+        # SIDING FILL on untaped walls (logged 2026-07-23 — plain miss):
+        # the run's counted courses derive the lap exposure; the course
+        # fill is evidence-bound, not taped
+        courses = wall.get("eave_courses_counted")
+        derived_exp = (round(float(height_ft) * 12.0 / int(courses), 2)
+                       if courses and height_ft else None)
         basis = {
             "width_tag": ai_width_tag,
             "width_source": f"AI run ({wall.get('width_ft_source')})",
             "height_tag": _AI_TAGS.get(str(wall.get("height_ft_source")), "ESTIMATED"),
             "height_formula": f"AI run ({wall.get('height_ft_source')})",
-            "exposure_in": None, "courses": None,
+            "exposure_in": derived_exp, "courses": int(courses) if courses else None,
+            "exposure_basis": "counted" if derived_exp else None,
         }
         walls_basis_line = f"AI run {run['run_id'][:8]}… — walls"
 

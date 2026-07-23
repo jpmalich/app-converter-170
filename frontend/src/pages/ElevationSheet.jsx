@@ -279,7 +279,7 @@ export function SheetSvg({ data }) {
   S.title = `${sheetName} ELEVATION`;
   S.headerLine = `${String(data.customer_name || "").toUpperCase()} · ${String(data.address || "").toUpperCase()} · SHEET ${data.sheet_code} OF 4`;
   S.fasciaLabel = `FASCIA / RAKE · ${fmtFt(ovFt)} OVERHANG`;
-  S.coursesNote = W.courses ? `${W.courses} × ${fmtInFrac(W.exposure_in)} taped` : "";
+  S.coursesNote = W.courses ? `${W.courses} × ${fmtInFrac(W.exposure_in)} ${W.exposure_basis === "taped" ? "taped" : "counted"}` : "";
   if (dev) {
     S.dev1 = `AI run ${dev.run_short} read this wall ${dev.ai_width_label} × ${dev.ai_height_label}` +
       (dev.ai_counts?.length ? ` (${dev.ai_counts.join("/")} courses, ${dev.ai_basis})` : ` (${dev.ai_basis})`);
@@ -564,6 +564,9 @@ export function SheetSvg({ data }) {
                     FASCIA/RAKE component color (ruled 2026-07-23) over
                     the black skeleton */}
                 <line x1={p.B.x} y1={p.B.y} x2={p.C2.x} y2={p.C2.y} stroke={C.fascia} strokeWidth="2.5" data-testid={`elevation-dormer-profile-roof-edge-${p.face}`} />
+                {/* face-to-cheek corner = OUTSIDE CORNER: OSC color on
+                    profiles too (claim-vs-render gap closed 2026-07-23) */}
+                <line x1={p.A.x} y1={p.A.y} x2={p.B.x} y2={p.B.y} stroke={C.osc} strokeWidth="3" data-testid={`elevation-dormer-profile-osc-${p.face}`} />
               </g>
             )}
             {p.drawing_side === "left" ? (

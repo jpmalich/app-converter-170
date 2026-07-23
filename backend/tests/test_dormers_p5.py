@@ -288,3 +288,51 @@ def test_sheet_jsx_fascia_true_extent_and_dormer_components():
     assert "stroke={C.fascia}" in eave[:260]
     roof_edge = SHEET_JSX[SHEET_JSX.index("elevation-dormer-profile-roof-edge-") - 220:]
     assert "stroke={C.fascia}" in roof_edge[:260]
+
+
+LP_EST = "e452a988-83b8-4e6e-9537-1223d0ecbf6f"  # EST-910869-L
+
+
+def test_sheet_jsx_profile_osc_gap_closed():
+    """CLAIM-VS-RENDER (logged 2026-07-23, minor): face-on OSC was wired
+    and rendering (DOM-verified: two #0D9488 3.5px verticals at the
+    dormer edges); PROFILES were never wired — the handback claim outran
+    the render there. Closed: face-to-cheek corner edge renders OSC on
+    profiles too."""
+    assert "elevation-dormer-profile-osc-" in SHEET_JSX
+    osc = SHEET_JSX[SHEET_JSX.index("elevation-dormer-profile-osc-") - 220:]
+    assert "stroke={C.osc}" in osc[:260]
+
+
+def test_redhouse_wall_course_fill_counted(session):
+    """SIDING FILL cause (one line, reported 2026-07-23): plain miss —
+    the hatch keyed on TAPED exposure only; the run's counted courses
+    (eave_courses_counted 29 ⇒ 111.6"/29 = 3.85" lap) were never
+    consulted. Fixed: counted courses derive the exposure, basis
+    'counted' (never claims 'taped')."""
+    s = _sheet(session, "left")
+    w = s["wall"]
+    assert w["courses"] == 29
+    assert w["exposure_in"] == pytest.approx(3.85, abs=0.01)
+    assert w["exposure_basis"] == "counted"
+    assert 'W.exposure_basis === "taped" ? "taped" : "counted"' in SHEET_JSX
+
+
+def test_dormer_material_lines_flagged_non_priced(session):
+    """RULED 2026-07-23: dormer fascia (eave widths: 15'×2 = 30 LF) and
+    dormer OSC (2 posts × 5' knee × 2 dormers = 20 LF) join the material
+    list FLAGGED and NON-PRICED — footage exists, list says so, pricing
+    pending Howard's ruling. Rake/soffit stay off (pitch/overhang NOT READ)."""
+    r = session.post(f"{API}/estimates/{LP_EST}/lp-package/preview", json={}, timeout=60)
+    assert r.status_code == 200, r.text
+    lines = {l["name"]: l for l in r.json()["lines"] if "Dormer" in l["name"]}
+    fas = lines["Dormer fascia (eave)"]
+    osc = lines["Dormer outside corners (OSC)"]
+    assert fas["qty"] == 30.0 and fas["unit"] == "LF"
+    assert osc["qty"] == 20.0 and osc["unit"] == "LF"
+    for l in (fas, osc):
+        assert l["non_priced"] is True
+        assert l["pricing_status"] == "pending"
+        assert l["unit_sell"] is None and l["line_sell"] is None
+        assert "pricing pending ruling" in l["note"]
+    assert not any("Dormer rake" in n or "Dormer soffit" in n for n in lines)
