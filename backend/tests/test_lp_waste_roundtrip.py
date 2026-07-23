@@ -9,7 +9,7 @@ import os
 import requests
 import pytest
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://app-converter-170.preview.emergentagent.com").rstrip("/")
+from api_base import BASE_URL  # env-derived (un-hardcoded 2026-07-23)
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASS = TEST_PASSWORD
 

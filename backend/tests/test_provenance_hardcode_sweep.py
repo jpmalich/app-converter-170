@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 DOUG_EST = "db82ec7a-3177-406d-a602-927255e9e10e"      # doug jones EST-510771
 HAUGH_EST = "48231310-3872-4d4e-b657-35ade10c1cb8"     # 261 haugh photo EST-067615
 

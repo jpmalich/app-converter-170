@@ -14,10 +14,7 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get(
-    "REACT_APP_BACKEND_URL",
-    "https://app-converter-170.preview.emergentagent.com",
-).rstrip("/")
+from api_base import BASE_URL  # env-derived (un-hardcoded 2026-07-23).rstrip("/")
 API = f"{BASE_URL}/api"
 
 ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")

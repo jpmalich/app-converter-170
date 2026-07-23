@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 BACKEND = Path(__file__).resolve().parent.parent
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
 
 # Production files ALLOWED to reference the tag: run_archive owns the

@@ -41,7 +41,7 @@ from routes.elevation_sheets import (  # noqa: E402
     detect_collisions,
 )
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 REDHOUSE_EST = "673707d5-9b7e-4d8f-8eaf-63c86820f611"  # EST-910869
 LETRICK_EST = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
 SHEET_JSX = Path("/app/frontend/src/pages/ElevationSheet.jsx").read_text()

@@ -27,7 +27,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 from routes.elevation_sheets import detect_collisions  # noqa: E402
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 REDHOUSE_EST = "673707d5-9b7e-4d8f-8eaf-63c86820f611"  # EST-910869
 HAUGH_EST = "48231310-3872-4d4e-b657-35ade10c1cb8"     # EST-067615
 

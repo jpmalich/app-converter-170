@@ -29,7 +29,7 @@ load_dotenv(Path("/app/backend/.env"))
 
 import routes.ai_measure as am  # noqa: E402
 
-BASE_URL = "https://app-converter-170.preview.emergentagent.com"
+from api_base import BASE_URL  # env-derived (un-hardcoded 2026-07-23)
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASSWORD = TEST_PASSWORD

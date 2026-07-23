@@ -12,7 +12,7 @@ import pytest
 from pathlib import Path
 from dotenv import dotenv_values
 
-BASE = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/") or "https://app-converter-170.preview.emergentagent.com"
+from api_base import BASE_URL as BASE  # env-derived (un-hardcoded 2026-07-23)
 API = f"{BASE}/api"
 
 _ENV = dotenv_values(Path("/app/backend/.env"))

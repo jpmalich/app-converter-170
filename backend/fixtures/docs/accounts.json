@@ -1,0 +1,155 @@
+{
+ "demo_companies": [
+  {
+   "id": "ecfe9396-0b00-4839-94c0-79cdba1cb8fc",
+   "name": "Pro-Quote Estimating Tool",
+   "owner_user_id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+   "invite_code": "3JDW3DWE",
+   "logo_url": null,
+   "quote_footer_enabled": true,
+   "price_tier_id": "bb176911-eb82-4ac3-9c7b-8b0340339c6b",
+   "created_at": "2026-05-28T00:16:39.433919+00:00"
+  }
+ ],
+ "demo_users": [
+  {
+   "id": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+   "email": "hhunt6677@yahoo.com",
+   "name": "Howard Hunt",
+   "role": "owner",
+   "company_id": "ecfe9396-0b00-4839-94c0-79cdba1cb8fc",
+   "created_at": "2026-05-28T00:16:40.039127+00:00"
+  }
+ ],
+ "demo_catalogs": [
+  {
+   "company_id": "ecfe9396-0b00-4839-94c0-79cdba1cb8fc",
+   "overrides": {
+    "Vinyl Siding::Conquest Standard color Clap 4.5\" .040": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Conquest Standard color Dutch lap 4.5\" .040": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Conquest Architectural color Clap 4.5\" .040": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Conquest Architectural color Dutch lap 4.5\" .040": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Standard color Clap 4\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Standard color Dutch lap 4\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Architectural color Clap 4\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Architectural color Dutch lap 4\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Standard color Clap 5\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Standard color Dutch lap 5\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Architectural color Clap 5\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Coventry Architectural color Dutch lap 5\" .042": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Standard color Clap 4\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Standard color Dutch Lap 4\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Architectural color Clap 4\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Architectural color Dutch Lap 4\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Standard color Clap 5\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Standard color Dutch Lap 5\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Architectural color Clap 5\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Odyssey Architectural color Dutch Lap 5\" .044": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Charter Oak Standard color Clap 4.5\" .046": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Charter Oak Standard color Dutch Lap 4.5\" .046": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Charter Oak Architectural color Clap 4.5\" .046": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Charter Oak Architectural color Dutch Lap 4.5\" .046": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::vertical board and batten Standard color 7\"": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::vertical board and batten Architectural color 7\"": {
+     "lab": 250.0
+    },
+    "Vinyl Siding::Pelican Bay Shakes 9\"": {
+     "lab": 250.0
+    },
+    "Tear-Off / Clean Up::Tear-Off": {
+     "lab": 25.0
+    },
+    "Tear-Off / Clean Up::Wood shake tear off (requires a dumpster)": {
+     "lab": 150.0
+    },
+    "Tear-Off / Clean Up::Dumpster": {
+     "lab": 500.0
+    },
+    "Vinyl Soffit with Siding::Soffit & fascia Charter Oak Standard Color": {
+     "lab": 2.0
+    },
+    "Vinyl Soffit with Siding::Soffit & fascia Charter Oak Architectural color": {
+     "lab": 2.0
+    },
+    "Vinyl Soffit with Siding::Soffit & fascia Greenbriar": {
+     "lab": 2.0
+    },
+    "Vinyl Soffit with Siding::Soffit & fascia 2T": {
+     "lab": 2.0
+    },
+    "Porch Ceiling::Charter Oak Soffit White": {
+     "lab": 2.0
+    },
+    "Porch Ceiling::Wrap porch beam": {
+     "lab": 1.0
+    },
+    "Seamless Gutter::Gutter 6\"": {
+     "lab": 1.0
+    },
+    "Seamless Gutter::Downspout 6\"": {
+     "lab": 1.0
+    },
+    "Misc. Labor and Material::R&R gutter": {
+     "lab": 2.0
+    },
+    "Misc. Labor and Material::R&R downspout": {
+     "lab": 2.0
+    },
+    "Misc. Labor and Material::Dormer upcharge": {
+     "lab": 100.0
+    }
+   },
+   "updated_at": "2026-07-03T13:10:05.062529+00:00"
+  }
+ ]
+}

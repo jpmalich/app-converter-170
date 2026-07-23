@@ -30,7 +30,7 @@ import requests
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 LETRICK = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
 
 

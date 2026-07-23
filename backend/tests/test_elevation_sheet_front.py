@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 LETRICK_EST = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"   # Mark Letrick EST-373526
 LETRICK_RUN = "d66794488ef848509446431b355db8e5"        # archived: elevation-sheet-pin
 

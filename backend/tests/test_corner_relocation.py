@@ -17,7 +17,7 @@ from pymongo import MongoClient
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-BASE_URL = "https://app-converter-170.preview.emergentagent.com"
+from api_base import BASE_URL  # env-derived (un-hardcoded 2026-07-23)
 API = f"{BASE_URL}/api"
 EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick 7-14-26 7pm
 CHASE_KEY = "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall"

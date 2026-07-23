@@ -20,7 +20,7 @@ from routes.ai_measure import (  # noqa: E402
     PER_PHOTO_EXTRACT_PROMPT, RECONCILE_PROMPT, _prompt_version_hash,
 )
 
-BASE_URL = "https://app-converter-170.preview.emergentagent.com"
+from api_base import BASE_URL  # env-derived (un-hardcoded 2026-07-23)
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASSWORD = TEST_PASSWORD

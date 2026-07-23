@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick
 HOVER_RUN = "7c6194d46b91444990b6910a175b12ff"  # re-ingested 2026-07-18 (TTL 2nd-instance re-arm; archived from birth)
 BATTEN = '190 Series Trim 19/32" x 3" x 16\''

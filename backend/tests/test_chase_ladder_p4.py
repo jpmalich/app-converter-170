@@ -28,7 +28,7 @@ from routes.elevation_sheets import (  # noqa: E402
     _chase_dims_ladder,
 )
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 DOUG_EST = "db82ec7a-3177-406d-a602-927255e9e10e"
 
 

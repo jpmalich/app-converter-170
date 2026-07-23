@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 REDHOUSE_EST = "673707d5-9b7e-4d8f-8eaf-63c86820f611"
 PROTECTED_FIXTURES = [
     "673707d5-9b7e-4d8f-8eaf-63c86820f611",  # red house

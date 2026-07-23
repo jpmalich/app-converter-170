@@ -22,10 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-BASE_URL = (
-    os.environ.get("REACT_APP_BACKEND_URL")
-    or "https://app-converter-170.preview.emergentagent.com"
-).rstrip("/")
+from api_base import BASE_URL  # env-derived (un-hardcoded 2026-07-23).rstrip("/")
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "hhunt6677@yahoo.com")
 ADMIN_PW = os.environ.get("ADMIN_PASSWORD", TEST_PASSWORD)

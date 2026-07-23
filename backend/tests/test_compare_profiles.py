@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-API = "https://app-converter-170.preview.emergentagent.com/api"
+from api_base import API  # env-derived (un-hardcoded 2026-07-23)
 EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick (lap house)
 
 PANEL = "38 Series 4' x 10' Panel"
