@@ -198,6 +198,8 @@ class TestBookCheckAmendments:
         assert 'lab_src: "human"' in ue                       # contractor edit wins
         assert "lab_src: l.lab_src || null" in ue             # save round-trip
         assert "/company/labor-rates" in ue                   # real rates become standing
+        # labor-rate toast (AUTHORIZED 2026-07-24): visible confirmation
+        assert "standing rate — future estimates will use it" in ue
 
 
 class TestV3MoneyWalk:

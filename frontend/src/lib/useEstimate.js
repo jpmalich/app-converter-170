@@ -62,6 +62,7 @@ export default function useEstimate(id) {
   // would otherwise re-fire 2 seconds later with the same data).
   const savedUpToRef = useRef(0);
   const laborRateTimers = useRef({});
+  const laborRateToasted = useRef({});
 
   useEffect(() => {
     let cancelled = false;
@@ -201,7 +202,21 @@ export default function useEstimate(id) {
       const k = `${tab}|${section}|${name}`;
       clearTimeout(laborRateTimers.current[k]);
       laborRateTimers.current[k] = setTimeout(() => {
-        api.put("/company/labor-rates", { name, rate: Number(value) || 0 }).catch(() => {});
+        api
+          .put("/company/labor-rates", { name, rate: Number(value) || 0 })
+          .then(() => {
+            // Labor-rate toast (AUTHORIZED 2026-07-24): make the
+            // catalog-as-labor-home mechanism visible at the moment it
+            // matters — once per row per session, only for real rates.
+            if ((Number(value) || 0) > 0 && !laborRateToasted.current[k]) {
+              laborRateToasted.current[k] = true;
+              toast.success(
+                `Labor rate saved as your company standing rate — future estimates will use it (${name})`,
+                { id: `labor-rate-${k}` }
+              );
+            }
+          })
+          .catch(() => {});
       }, 1500);
     }
     setUserEdits((n) => n + 1);
