@@ -4693,3 +4693,47 @@ STAMPS: - 2026-07-23 21:35 UTC · 878f681 · CLEAN (binding session)
 Screenshots: readiness panel (9 items), soft quote gate live. Tests: test_labor_conventions_readiness.py
 (7) + amendments (binding pending set now empty, Letrick totals, iter96 sell-only rows).
 STAMP: - 2026-07-24 03:50 UTC · 4af0676 · CLEAN · [tests] · 1250 passed, 1 skipped, 3 warnings in 107.95s (0:01:47)
+
+## SESSION 2026-07-24 (part 34) — P0 PROFILE OWNS ITS FAMILY + CLOBBER-TRAP CLASS + ESTIMATE CONSOLIDATION
+1. P0 MECHANISM WITH EVIDENCE (two layers, register entry 2026-07-24):
+   (a) LAP LEAK — "Restore HOVER lines" called /measure/map PROFILE-BLIND → mapper derived
+       default (lap) family → additive apply merge put lap 251 × $30.99 = $7,778.49 beside
+       B&B panels 57 × $137.94. Reproduction pinned to the penny.
+   (b) CLOBBER-TRAP CLASS (named: silent field-default corruption on partial updates) —
+       PUT dumped full EstimateIn with exclude_none: 39/64 defaulted fields (kind, lines,
+       waste_pct, margin_pct, colors, status_label…) rewritten on EVERY partial PUT.
+       Evidence: EST-523061 materialized 7 hover-lp runs as lp_smart, then a partial PUT
+       flipped kind→siding (rebuild 400'd). 2nd flip same day via a stale client's
+       full-payload autosave.
+2. FIXES (all pinned): /measure/map takes profile + returns zero_family_lines; restore sends
+   mapped profile; apply merge zeroes non-human residue; hover-lp-run rebuild zeroes other
+   families' DERIVED rows (visible qty-0, price kept) and preserves qty_src=human verbatim;
+   PUT writes ONLY model_fields_set (class dies by construction); KIND IS IDENTITY —
+   immutable post-create on PUT+PATCH, editor payload no longer sends it; qty_src declared
+   on EstimateLine (was silently stripped at the PUT boundary); editor round-trip now
+   carries raw_qty + qty_src (load-merge + buildPayload used to strip both — human-survival
+   and waste-recompute machinery were dead through the UI); calc.js wasteAdd is DISPLAY
+   ONLY (dormant `subMat + wasteAdd` double-count removed before raw_qty flow activated it).
+3. HEALS (backup receipts per permanent rule):
+   /app/memory/backups/20260724_110943_estimates_e2ce35b8_kind_flip_heal.json
+   /app/memory/backups/20260724_113324_estimates_e2ce35b8_kind_flip_reheal_and_display_fields.json
+   (kind→lp_smart, waste 10, customer/address/number/estimator/date recovered from paired
+   EST-523061-S record — clobber-trap collateral).
+4. JON RE-DERIVES CLEAN (live-verified header): BEFORE 25,436.00 mat / 1,780.52 tax /
+   1,780 labor → base 28,996.52 → sell $41,423.60 (Jon's ~41k). AFTER lap-0: 17,657.51 mat /
+   1,236.03 tax / 1,780 labor → base 20,673.54 → sell $29,533.62. Delta −$11,889.98 = lap
+   family only (7,778.49 mat + 544.49 tax, /0.7 margin). One family everywhere: lap 0,
+   panels 57, screenshot-verified.
+5. ESTIMATE CONSOLIDATION (UI): ONE COLOR HOME — Job Info MATERIAL COLORS block governs;
+   panel ExpertFinish picker REMOVED (jobInfoLpColors maps siding/soffit_fascia/
+   opening_trim+isc/osc, mirrors to lp_colors — all consumers unchanged). AI Material List
+   COLLAPSED — item/qty table removed; flags/amber/dim/tape strips + profile picker +
+   compare + FieldVerify kept; provenance chips (⌁ derived + human qty) now on group tab
+   lines. SAFETY: print composes from server pkg, freeze/QR posts est.lp_colors, CSV/accept
+   backend-composed, quote pinned to never read lpPkg — nothing consumed the removed table.
+6. Tests: test_profile_owns_family.py (7), test_partial_put_clobber_class.py (7),
+   test_estimate_ui_consolidation.py (11).
+STAMP: - 2026-07-24 11:39 UTC · c49adef · CLEAN · [tests] · 1274 passed, 1 skipped, 3 warnings in 132.15s (0:02:12)
+PENDING HOWARD RULINGS: OSC/440-trim tab-vs-list divergence (statement stands, session 33+34
+live quantities confirmed; tab side looks stale — NO silent reconcile). Hover-native elevation
+sheet sizing report delivered (report only — build awaits authorization).
