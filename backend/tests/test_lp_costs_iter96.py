@@ -146,7 +146,9 @@ def test_summary_totals_internal():
     pr = pkg["summary"]["pricing"]
     priced = [l for l in pkg["lines"] if l.get("pricing_status") == "priced"]
     assert pr["priced_lines"] == len(priced)
-    assert pr["total_cost"] == round(sum(l["line_cost"] for l in priced), 2)
+    # Convention/sheet-bound rows are SELL-side only (no dealer cost) —
+    # total_cost sums cost-bearing lines; total_sell sums every priced line.
+    assert pr["total_cost"] == round(sum(l.get("line_cost") or 0 for l in priced), 2)
     assert pr["total_sell"] == round(sum(l["line_sell"] for l in priced), 2)
     assert pr["total_sell"] > pr["total_cost"]
 
