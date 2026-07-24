@@ -139,7 +139,8 @@ def test_casile_gutter_lines_bind_to_master_sheet(pkg):
 
 def test_zero_dollar_rows_bind_from_labor_conventions(pkg):
     """AMENDED (Howard's prices, 2026-07-23): the five $0.00-sheet rows now
-    bind from his standing labor conventions — basis named, exact amounts,
+    bind from the provisional labor rates (labor is the contractor's,
+    ruled 2026-07-24) — basis named, exact amounts,
     NOTHING pending on the Casile package."""
     pending = {str(l.get("name") or "").lower()
                for l in pkg["lines"] if l.get("pricing_status") == "pending"}
@@ -149,7 +150,7 @@ def test_zero_dollar_rows_bind_from_labor_conventions(pkg):
         l = by_name[name]
         assert l["pricing_status"] == "priced", l
         assert l["unit_sell"] == amount, (name, l.get("unit_sell"))
-        assert "labor convention" in str(l.get("price_basis")), l.get("price_basis")
+        assert "provisional labor" in str(l.get("price_basis")), l.get("price_basis")
     summary = (pkg.get("summary") or {}).get("pricing") or {}
     assert summary.get("pending_lines") == 0
 

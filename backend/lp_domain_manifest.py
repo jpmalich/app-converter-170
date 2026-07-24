@@ -32,6 +32,7 @@ SEAMS = [
     "routes/pricing_admin.py",  # S3: LP section guard
     "routes/hover.py",          # S4: _build_lines LP branches (carve to lp_ingest.py at fork time)
     "routes/elevation_sheets.py",  # S5: 2D sheet binder — READ-ONLY sealed-key + tape-walls constants (build 2026-07-18)
+    "routes/company.py",        # S6: contractor-owned labor rates — sheet_norm keys only (labor is the contractor's, ruled 2026-07-24)
 ]
 
 # Estimate-level fields on the SHARED estimates collection written by LP

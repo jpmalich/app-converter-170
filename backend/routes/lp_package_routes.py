@@ -941,10 +941,10 @@ async def set_default_profile(
             "default_siding_profile_change": change}
     # WASTE IS FAMILY-DEFAULTED (sealed 2026-07-24): profile selection
     # pre-fills the ONE visible waste field with the family default
-    # (lap 10 · B&B 30) — contractor edits it afterwards as ever.
-    if profile:
-        from lp_conventions import family_waste_default_pct
-        sets["waste_pct"] = family_waste_default_pct(profile)
+    # (lap 10 · B&B 30; cleared profile → base 10) — contractor edits it
+    # afterwards as ever.
+    from lp_conventions import family_waste_default_pct
+    sets["waste_pct"] = family_waste_default_pct(profile)
     await db.estimates.update_one({"id": est_id}, {"$set": sets})
     await log_estimate_event(est_id, "lp.default_profile.set", {
         "from": prev, "to": profile, "by": user.get("email"),
