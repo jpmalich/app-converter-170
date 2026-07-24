@@ -4853,3 +4853,28 @@ NEXT: await Howard's book-check of the sizing report + his timing call on the
 Hover-Vision rung. BACKLOG unchanged: upload-access security tightening (P0
 post-Sept, pairs with S1), compare-toggle overlay, P6 massing families, layer
 toggles, ISS New Construction catalog (awaiting Excel).
+
+## SESSION 2026-07-24 (part 39) — INLINE ELEVATION SHEETS ON THE ESTIMATE PAGE (ruled)
+1. SIZING REPORT accepted; geometry-source ladder is the standing design when the
+   Hover-Vision rung builds (DEFERRED post-Sept, all 3 slices; S1 pairs with upload
+   security). Labor-completeness meter QUEUED post-Sept.
+2. NEW SECTION shipped: ELEVATION SHEETS on the estimate page (ElevationSheetsPanel,
+   mounted after PhotosPanel). Probes /elevation-sheet/{which} for all 4 walls;
+   mounts from the completed AI run — NOT gated on Apply; EL-1..4 tabs render the
+   SAME SheetSvg inline (imported from pages/ElevationSheet — identical by
+   construction), read-only, sized to page ([&_svg]:w-full). "Print all 4 sheets" +
+   per-sheet "Open full page" — both new tabs. No run → NAMED empty state
+   ("no completed AI measurement run yet… no Apply needed"), never a dead section.
+3. MODAL SECONDARY: FieldVerifyCard sheet/source links (source-view, EL-1..4,
+   print-all) converted from router <Link> to <a target=_blank> — the AI Measure
+   modal never unmounts; five-click resume-and-scroll RETIRED. react-router Link
+   import removed.
+4. Pins: test_inline_elevation_sheets.py (8) — editor mounts section, mount not
+   gated on Apply, named empty state, tabs/print/open-full-page + SheetSvg import,
+   modal new-tab links, live 200 on Letrick front sheet, named 404 on run-less
+   scratch estimate + walls-less run (Casile).
+5. Screenshot delivered: Letrick estimate page with inline EL-3 BACK sheet active.
+STAMP: - 2026-07-24 21:21 UTC · 8cd195b · CLEAN · [tests] · 1307 passed, 1 skipped, 3 warnings in 196.69s (0:03:16)
+NEXT: idle pending Howard's inputs. BACKLOG unchanged: upload security (P0
+post-Sept, pairs with Hover-Vision S1), labor-completeness meter (post-Sept),
+compare-toggle overlay, P6 massing, layer toggles, ISS NC catalog (awaiting Excel).
