@@ -4792,3 +4792,40 @@ sequence); full vision extension PARKED pending pre-registered scored trial.
    founding-scope pin (68), provisional basis strings, panels-68 founding pins.
 STAMP: - 2026-07-24 18:44 UTC · 668ef77 · CLEAN · [tests] · 1294 passed, 1 skipped, 3 warnings in 138.97s (0:02:18)
 AWAITING: Howard book-check of v2 → print clearance. Shake/nickel-gap waste ruling.
+
+## SESSION 2026-07-24 (part 37) — V3 ZEROING SEALED + JON WALK v3 (clears the print)
+1. V2 BOOK-CHECK: PASS on derivation (68 panels @30% stands). V3 amendment executed:
+   ALL LABOR = $0 UNTIL THE CONTRACTOR FILLS IT — no exceptions. The five provisional
+   guesses (98/107/100/138/334) RETIRED ENTIRELY (PROVISIONAL_LABOR_RATES +
+   LABOR_CONVENTIONS deleted; both retired generations in RETIRED_LABOR_DEFAULTS);
+   gutter $280 ($1/LF × 184 + $1/LF × 96) zeroed. Rebuild binding (hover.py, runs on
+   the FINAL merged lines, vinyl/ascend/lp_smart only): human wins → company rate /
+   Price Catalog LABOR override binds (lab_src company) → $0 (misc rows lab_src
+   "pending" + "contractor sets labor" chip). Readiness: labor_pending aggregated item.
+   lp_costs: misc rows price $0 with named basis, never pending-price escalation.
+2. THE CATALOG IS THE LABOR HOME (no new card — MY LABOR RATES declined): the 5 misc
+   rows confirmed in catalog sections (Tear-Off/Clean Up + Misc. Labor and Material,
+   lp_smart-shared) with editable LABOR $ columns; filled catalog rates flow into
+   rebuilds and package pricing through the sheet binding.
+3. SHAKE 15 · NICKEL GAP 12 (CONTRACTOR-SPEC sealed): FAMILY_WASTE_DEFAULTS now
+   lap 10 / B&B 30 / shake 15 / nickel_gap 12; SHAKE_WASTE 0.10→0.15.
+4. HEAL WITH RECEIPTS: 41 machine-era catalog lab overrides (siding $250 flat,
+   gutter/downspout $1/LF, soffit $2 …) cleared — at BOTH the db AND the fixture
+   transport doc (fixtures/docs/accounts.json — seed_runner re-upserts every boot;
+   a db-only heal reverts on restart). Register: "a heal is not a heal until the
+   seed that resurrects the data is healed with it." Process defect logged: first
+   re-derive ran without the ruled scope payload (panels 68→85) — caught on pins,
+   re-derived WITH facade wrap-only 2064/2610 + soffit 216/164/83.
+5. JON WALK v3 (UI live-verified, header $30,610.77): lp_smart mat $20,025.74 +
+   7% tax $1,401.80 + labor $0.00 → base $21,427.54 → homeowner (30% margin)
+   $30,610.77. Deltas from v2: labor −4,509.00 → sell −6,441.43. Letrick pins
+   re-walked 14,477.52 → 12,901.52 (−1,430 retired conventions, −146 healed
+   gutter labs). Quantities unchanged (68 panels, soffit 11/8, OSC 9, 440-8" 21).
+6. Pins: TestLaborZeroedV3 + TestV3MoneyWalk (casile), labor_conventions_readiness
+   rewritten to v3, master-sheet-binding (no-residue pin + temp-override mechanism
+   test), iteration_47/haugh_round_two Letrick 12901.52.
+STAMP: - 2026-07-24 19:43 UTC · 64da2cf · CLEAN · [tests] · 1299 passed, 1 skipped, 3 warnings in 121.35s (0:02:01)
+NEXT: Hover-native elevation sheets SIZING REPORT (report only), then Hover-Vision
+rung (authorized small-medium). BACKLOG: upload-access security tightening (P0
+post-Sept), compare-toggle overlay, P6 massing families, layer toggles, ISS New
+Construction catalog (awaiting Excel).
