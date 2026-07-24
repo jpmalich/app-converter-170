@@ -6,7 +6,6 @@
 // blueprint-path estimates only (live or CUT-archived run). Ships BEFORE the
 // 3D flag flips so the tape workflow is never dark.
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { Ruler, FileText, Camera, FileSpreadsheet, PencilRuler, Printer } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -102,37 +101,43 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {door && (
-            <Link
-              to={`/estimate/${estimate.id}/source-view`}
+            <a
+              href={`/estimate/${estimate.id}/source-view`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-[var(--ai)] text-[var(--ai)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--ai)] hover:text-white transition-colors"
               data-testid="field-verify-source-link"
-              title="Read-only source view — the exact intake evidence the AI worked from, with per-item provenance"
+              title="Read-only source view — the exact intake evidence the AI worked from, with per-item provenance (opens in a new tab — the modal stays put)"
             >
               <DoorIcon className="w-3 h-3" /> {DOOR_LABEL[door]}
-            </Link>
+            </a>
           )}
           {door === "photo" && (sheetWalls.length > 0 ? (
             <span className="inline-flex items-center gap-1.5" data-testid="field-verify-elevation-sheets">
               <PencilRuler className="w-3 h-3 text-[var(--ai)]" />
               {sheetWalls.map((w) => (
-                <Link
+                <a
                   key={w}
-                  to={`/estimate/${estimate.id}/elevation-sheet/${w}`}
+                  href={`/estimate/${estimate.id}/elevation-sheet/${w}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center px-2 py-1.5 border border-[var(--ai)] text-[var(--ai)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--ai)] hover:text-white transition-colors"
                   data-testid={`field-verify-elevation-sheet-link-${w}`}
-                  title={`${SHEET_CODES[w]} — ${w} elevation sheet, drawn from the run this takeoff binds (live or CUT-archived)`}
+                  title={`${SHEET_CODES[w]} — ${w} elevation sheet, drawn from the run this takeoff binds (live or CUT-archived). Opens in a new tab — the modal stays put.`}
                 >
                   {SHEET_CODES[w]} {w}
-                </Link>
+                </a>
               ))}
-              <Link
-                to={`/estimate/${estimate.id}/elevation-sheets/print`}
+              <a
+                href={`/estimate/${estimate.id}/elevation-sheets/print`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2 py-1.5 border border-[var(--ai)] bg-[var(--ai)] text-white text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
                 data-testid="field-verify-elevation-sheets-print-all"
-                title="One print flow — every renderable elevation sheet, one per page (leave-behind package)"
+                title="One print flow — every renderable elevation sheet, one per page (leave-behind package). Opens in a new tab — the modal stays put."
               >
                 <Printer className="w-3 h-3" /> Print all
-              </Link>
+              </a>
             </span>
           ) : (
             <span

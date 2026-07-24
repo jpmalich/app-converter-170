@@ -21,6 +21,7 @@ import VeroPanel from "@/components/estimate/VeroPanel";
 import VeroJobSnapshot from "@/components/estimate/VeroJobSnapshot";
 import SettingsRow from "@/components/estimate/SettingsRow";
 import PhotosPanel from "@/components/estimate/PhotosPanel";
+import ElevationSheetsPanel from "@/components/estimate/ElevationSheetsPanel";
 import SectionAccordion from "@/components/estimate/SectionAccordion";
 import TotalsSummary from "@/components/estimate/TotalsSummary";
 import CatalogSyncBanner from "@/components/estimate/CatalogSyncBanner";
@@ -395,6 +396,7 @@ export default function EstimateEditor() {
         />
         <SettingsRow est={est} update={update} />
         <PhotosPanel est={est} update={update} />
+        <ElevationSheetsPanel est={est} />
 
         <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} derivedUnappliedTab={lpDerivedUnapplied ? "lp_smart" : null} />
 
