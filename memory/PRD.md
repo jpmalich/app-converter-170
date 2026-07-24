@@ -4902,3 +4902,26 @@ compare-toggle overlay, P6 massing, layer toggles, ISS NC catalog (awaiting Exce
    optional conftest tripwire. NOTHING BUILT — reports only per ruling.
 NEXT: idle pending Howard's inputs (book-check of both reports; heal + test-fixture
 fix await his authorization). Backlog unchanged.
+
+## SESSION 2026-07-24 (part 41) — RESIDUE CLASS KILLED + CAPTURE GUIDANCE SHIPPED
+1. TEST-SIDE FIX (authorized): both offending fixtures (test_blueprint_page_paths_http,
+   test_profile_annotations_http) now ALWAYS create TEST_-prefixed throwaway
+   estimates with full teardown (estimate + module's run docs). HEAL with receipts:
+   residue run faa6e978 deleted (matched 1; 0 blueprint runs remain on EST-644081;
+   latest-for-estimate returns {run: None} — the card clears).
+2. CONFTEST TRIPWIRE armed (tests/conftest.py, session-autouse): any run doc created
+   during a suite attached to a pre-existing non-TEST_ estimate fails the session by
+   name. First live catch on its maiden run (Jon's own hover-…-board_batten
+   derivation upsert) → precise exemption: run_id == est.lp_source_run_id (an
+   estimate's OWN standing derivation record is sanctioned; pollution = foreign
+   artifacts). Third bite of the class — dies here.
+3. CAPTURE GUIDANCE shipped in the photo checklist (approved content change):
+   NEW "Wall refs live on the MAIN wall plane" tip; NEW "Pin your windows —
+   especially any window up in the roof" tip; elevations tip amended to "All 4
+   elevations, square-on… oblique frames fall back to assumed width". Pinned in
+   test_capture_guidance_pins.py. Exact wording delivered for Howard's read.
+4. Dormer-taxonomy hardening + Phase B raised-structure tripwire: LOGGED post-Sept
+   prompt item, pre-registered scored trial when it runs.
+STAMP: - 2026-07-24 22:21 UTC · b5753a0 · CLEAN · [tests] · 1310 passed, 1 skipped, 3 warnings in 116.17s (0:01:56)
+NEXT: Howard's one-look verify of the cleared card + book-check of the checklist
+wording. Then idle pending inputs. Backlog unchanged.
