@@ -61,6 +61,7 @@ export default function useEstimate(id) {
   // flow that explicitly saves immediately AND bumps the counter (which
   // would otherwise re-fire 2 seconds later with the same data).
   const savedUpToRef = useRef(0);
+  const laborRateTimers = useRef({});
 
   useEffect(() => {
     let cancelled = false;
@@ -107,6 +108,7 @@ export default function useEstimate(id) {
                 // Stripping these here silently killed both on save.
                 raw_qty: saved && saved.raw_qty != null ? saved.raw_qty : null,
                 qty_src: (saved && saved.qty_src) || null,
+                lab_src: (saved && saved.lab_src) || null,
                 ami_part: it.ami_part || (saved ? saved.ami_part : null) || null,
                 // Catalog defaults — used to flag overrides in the UI.
                 defaultMat: it.mat,
@@ -181,9 +183,27 @@ export default function useEstimate(id) {
     setEst((e) => ({
       ...e,
       lines: e.lines.map((l) =>
-        matchLine(l, tab, section, name) ? { ...l, [field]: Number(value) || 0 } : l
+        matchLine(l, tab, section, name)
+          ? {
+              ...l,
+              [field]: Number(value) || 0,
+              // LABOR IS THE CONTRACTOR'S (ruled 2026-07-24): editing a
+              // labor rate marks it human — it wins over provisional/
+              // company bindings through every rebuild.
+              ...(field === "lab" ? { lab_src: "human" } : {}),
+            }
+          : l
       ),
     }));
+    // Contractor-entered labor becomes their company standing rate
+    // (debounced fire-and-forget — future estimates bind it).
+    if (field === "lab") {
+      const k = `${tab}|${section}|${name}`;
+      clearTimeout(laborRateTimers.current[k]);
+      laborRateTimers.current[k] = setTimeout(() => {
+        api.put("/company/labor-rates", { name, rate: Number(value) || 0 }).catch(() => {});
+      }, 1500);
+    }
     setUserEdits((n) => n + 1);
   }, []);
 
@@ -407,6 +427,7 @@ export default function useEstimate(id) {
           qty: l.qty,
           raw_qty: l.raw_qty ?? null,
           qty_src: l.qty_src || null,
+          lab_src: l.lab_src || null,
           mat: l.mat,
           lab: l.lab,
           ami_part: l.ami_part || null,

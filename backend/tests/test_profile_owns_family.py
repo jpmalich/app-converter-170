@@ -3,7 +3,8 @@
 THE REGRESSION (Jon Casile, live): the "Restore HOVER lines" path called
 /measure/map PROFILE-BLIND → it derived the DEFAULT (lap) family from the
 cached measurements → the legacy apply merge ADDED lap rows beside the
-mapped B&B rows → 38 Series Lap 251 PCS ($7,778.49) AND 4'×10' Panel 57
+mapped B&B rows → 38 Series Lap 251 PCS ($7,778.49) AND 4'×10' Panel
+rows priced together on one estimate.
 ($7,862.58) both summed into the homeowner price. Exact reproduction:
 /measure/map on Jon's cached 2064-scope measurements emits lap 228 →
 client 10% bake → 251 × $30.99 = $7,778.49 to the penny.
@@ -14,7 +15,8 @@ siding family's DERIVED quantities (visible qty-0). Human-typed
 quantities (qty_src == "human") survive — mixed-material jobs are human
 choices, never derivation residue.
 
-FOUNDING STATE (this estimate, pinned): after fix — lap = 0, panels = 57,
+FOUNDING STATE (this estimate, pinned): after fix — lap = 0, panels = 68
+(B&B family waste 30%, sealed 2026-07-24),
 group total = panels only.
 """
 import sys
@@ -66,6 +68,10 @@ def test_measure_map_profile_blind_reproduces_the_regression(session):
     est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()
     hm = est.get("hover_measurements") or {}
     assert hm.get("siding_sqft") == 2064.0
+    # FOUNDING-ERA state: the import stamped _waste_pct 0.0 (draft base
+    # quantities; the field baked client-side). Family-waste rebuilds
+    # (sealed 2026-07-24) stamp 0.30 — reset so the evidence stays exact.
+    hm = {**hm, "_waste_pct": 0.0}
     d = session.post(f"{API}/measure/map", json={"measurements": hm}, timeout=60).json()
     lap = [l for l in d["lines"] if l["name"] == LAP_KEY["name"]]
     assert lap and lap[0]["qty"] == 228  # × 1.10 bake → 251 (Jon's number)
@@ -87,7 +93,7 @@ def test_measure_map_with_profile_owns_its_family(session):
 
 def test_founding_state_rebuild_zeroes_lap_keeps_panels(session):
     """FOUNDING TEST (Jon's exact regression state): seed lap 251 as
-    machine residue → rebuild → lap row PRESENT at qty 0, panels 57,
+    machine residue → rebuild → lap row PRESENT at qty 0, panels 68,
     lp_smart group total counts the panel family only."""
     lines = _get_lines(session)
     lines = [l for l in lines if l.get("name") != LAP_KEY["name"]]
@@ -101,7 +107,7 @@ def test_founding_state_rebuild_zeroes_lap_keeps_panels(session):
     lap = [l for l in after if l.get("name") == LAP_KEY["name"]]
     assert lap and lap[0]["qty"] == 0, lap  # zeroed, visible, price kept
     panel = next(l for l in after if l.get("name") == PANEL_NAME)
-    assert panel["qty"] == 57
+    assert panel["qty"] == 68  # B&B family waste 30% (sealed 2026-07-24)
     lap_dollars = sum((l.get("qty") or 0) * ((l.get("mat") or 0) + (l.get("lab") or 0))
                       for l in after if "Lap" in str(l.get("name")) and l.get("tab") == "lp_smart")
     assert lap_dollars == 0

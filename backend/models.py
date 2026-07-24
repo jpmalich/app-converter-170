@@ -100,6 +100,10 @@ class EstimateLine(BaseModel):
     # hand-typed quantity — it survives profile rebuilds/restores verbatim.
     # Derived quantities leave this None and are owned by the derivation.
     qty_src: Optional[str] = None
+    # "human" = contractor-edited labor (wins) · "company" = contractor's
+    # stored rate · "provisional" = Howard's guess, flagged pending
+    # contractor rates (labor is the contractor's, ruled 2026-07-24).
+    lab_src: Optional[str] = None
     ami_part: Optional[str] = None  # Snapshotted at quote time so re-runs are reproducible
     # Which "tab" (product-line option) in the estimator this line belongs to.
     # "vinyl" (default — backward compat), "ascend", "lp_smart", or "windows".

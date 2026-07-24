@@ -76,7 +76,9 @@ class TestSealedConventionsOnTheTab:
         assert jon_rows["38 Series Soffit 16 x 16 Closed"]["qty"] == 8      # was 9 (double-baked)
 
     def test_one_family_holds(self, jon_rows):
-        assert jon_rows["38 Series 4' x 10' Panel"]["qty"] == 57
+        # B&B family waste 30% (CONTRACTOR-SPEC, sealed 2026-07-24):
+        # 2064 ft² ÷ 40 × 1.30 → 68 panels (was 57 at the flat 10%).
+        assert jon_rows["38 Series 4' x 10' Panel"]["qty"] == 68
         # lap: absent (qty-0 rows drop on save; the catalog merge renders
         # them at 0) or present at exactly 0 — never a positive residue.
         lap = jon_rows.get('38 Series Lap 3/8" x 8" x 16\'')
@@ -114,6 +116,68 @@ class TestPorchCeilingServerSide:
         src = (BACKEND / "routes" / "hover.py").read_text()
         assert 'scoped["porch_ceiling_sqft"] = porch_sqft' in src
         assert '"porch_ceilings": 1' in src
+
+
+class TestBookCheckAmendments:
+    """2026-07-24 book-check rulings: family-defaulted waste + contractor-
+    owned labor (provisional flags)."""
+
+    def test_family_waste_defaults_sealed(self):
+        from lp_conventions import FAMILY_WASTE_DEFAULTS, family_waste_default_pct
+        assert FAMILY_WASTE_DEFAULTS == {"lap": 10.0, "board_batten": 30.0}
+        assert family_waste_default_pct("board_batten") == 30.0
+        assert family_waste_default_pct("shake") == 10.0  # PENDING RULING fallback
+
+    def test_jon_field_prefilled_thirty(self, session):
+        est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()
+        assert est["waste_pct"] == 30.0  # ONE visible, editable number
+
+    def test_profile_selection_prefills_family_default(self, session):
+        r = session.post(f"{API}/estimates", json={
+            "kind": "lp_smart", "customer_name": "ZZ wastefill TEMP",
+            "waste_pct": 10.0}, timeout=15)
+        eid = r.json()["id"]
+        try:
+            rr = session.post(f"{API}/estimates/{eid}/default-profile",
+                              json={"profile": "board_batten"}, timeout=15)
+            assert rr.status_code == 200, rr.text
+            est = session.get(f"{API}/estimates/{eid}", timeout=15).json()
+            assert est["waste_pct"] == 30.0
+        finally:
+            session.delete(f"{API}/estimates/{eid}", timeout=15)
+
+    def test_labor_rows_flagged_provisional(self, jon_rows):
+        for name in ("Cap window", "Cap entry door", "Cap patio door",
+                     "Cap single garage door", "clean up/ haul away job debris"):
+            assert jon_rows[name]["lab_src"] == "provisional", name
+
+    def test_readiness_states_labor_pending(self, session):
+        rd = session.get(f"{API}/estimates/{CASILE_EST}/readiness", timeout=90).json()
+        prov = [i for i in rd["items"] if i["kind"] == "provisional_labor"]
+        assert len(prov) == 1 and "contractor rate pending" in prov[0]["label"]
+
+    def test_company_rate_endpoint_stores_contractor_rates(self, session):
+        # use a name OUTSIDE the five pinned rows so Jon's provisional
+        # walk stays exactly as booked (a stored company rate would
+        # legitimately clear the flag — that's Jon's move, not the suite's).
+        r = session.put(f"{API}/company/labor-rates",
+                        json={"name": "ZZ Suite Probe Row", "rate": 125.0}, timeout=15)
+        assert r.status_code == 200
+        assert r.json()["labor_rates"]["zz suite probe row"] == 125.0
+        r2 = session.put(f"{API}/company/labor-rates",
+                         json={"name": "ZZ Suite Probe Row", "rate": 0}, timeout=15)
+        assert r2.status_code == 200
+
+    def test_ui_flags_and_roundtrip(self):
+        acc = (BACKEND.parent / "frontend" / "src" / "components" / "estimate"
+               / "SectionAccordion.jsx").read_text()
+        assert "contractor sets labor" in acc
+        assert "prov-labor-" in acc
+        assert "onWheel={(e) => e.currentTarget.blur()}" in acc  # phantom-stamp footgun closed
+        ue = (BACKEND.parent / "frontend" / "src" / "lib" / "useEstimate.js").read_text()
+        assert 'lab_src: "human"' in ue                       # contractor edit wins
+        assert "lab_src: l.lab_src || null" in ue             # save round-trip
+        assert "/company/labor-rates" in ue                   # real rates become standing
 
 
 class TestFamilyCheckTripwire:

@@ -296,13 +296,41 @@ def spec_discrepancies() -> list:
 # the named row would otherwise be $0. Contractor-editable per estimate
 # on the money surface (an edited tab-line price inherits and wins),
 # same class as the waste pre-fill. Keys are sheet_norm()-normalized. ──
-LABOR_CONVENTIONS = {
+# WASTE IS FAMILY-DEFAULTED (CONTRACTOR-SPEC, sealed 2026-07-24): siding
+# waste DEFAULTS by product family — vertical panel cutting reality makes
+# board & batten 30% vs lap 10%. The estimate field stays the ONE visible,
+# contractor-editable number; only its DEFAULT derives from the selected
+# family (profile selection + Hover materialize pre-fill it). No silent
+# waste anywhere. Shake / nickel gap: PENDING RULING (proposed in the
+# 2026-07-24 handback) — they fall back to 10% until Howard rules.
+# Soffit keeps its baked-10 convention inside soffit_pieces (unruled).
+FAMILY_WASTE_DEFAULTS = {
+    "lap": 10.0,
+    "board_batten": 30.0,
+}
+
+
+def family_waste_default_pct(profile: str | None) -> float:
+    return float(FAMILY_WASTE_DEFAULTS.get(profile or "", 10.0))
+
+
+# LABOR IS THE CONTRACTOR'S (architecture ruled 2026-07-24): the global
+# labor "standing defaults" RETIRE. Labor rates are contractor-owned —
+# stored per-company (companies.labor_rates), editable per estimate.
+# These five values are Howard's PROVISIONAL GUESSES from the Casile
+# close-out: they bind ONLY when no company rate exists, always stamped
+# lab_src="provisional" and visibly flagged ("contractor sets labor") —
+# never a silent supplier-side number. A contractor-entered rate replaces
+# them and re-derives.
+PROVISIONAL_LABOR_RATES = {
     "cap window": 98.0,
     "cap entry door": 107.0,
     "cap patio door": 100.0,
     "cap single garage door": 138.0,
     "clean up/ haul away job debris": 334.0,
 }
+# Back-compat alias — list-side pricing + earlier pins import this name.
+LABOR_CONVENTIONS = PROVISIONAL_LABOR_RATES
 
 # Superseded standing defaults (ruled 2026-07-24 Casile close-out prices
 # replace the 2026-07-23 provisional set). A row still carrying a retired

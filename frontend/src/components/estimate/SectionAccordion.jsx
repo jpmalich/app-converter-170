@@ -248,6 +248,15 @@ export default function SectionAccordion({
                 human qty
               </span>
             )}
+            {l.lab_src === "provisional" && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-amber-400 bg-amber-50 text-amber-800"
+                title="Provisional labor guess — labor is the contractor's. Enter your real rate to replace it (it becomes your company standing rate)."
+                data-testid={`prov-labor-${section.title}-${l.name}`}
+              >
+                contractor sets labor
+              </span>
+            )}
           </div>
         </div>
         <div className="col-span-3 md:col-span-1 text-xs text-[var(--muted)] uppercase tracking-wider">
@@ -306,6 +315,10 @@ export default function SectionAccordion({
             min="0"
             value={l.qty || ""}
             placeholder="0"
+            // Wheel-over-a-number-input silently mutates qty and stamps a
+            // phantom qty_src=human (Casile forensic item, 2026-07-24) —
+            // blur kills the browser's scroll-to-spin footgun.
+            onWheel={(e) => e.currentTarget.blur()}
             onChange={(e) => onQty(l.tab, l.section, l.name, e.target.value)}
             data-testid={`qty-${section.title}-${l.name}`}
           />

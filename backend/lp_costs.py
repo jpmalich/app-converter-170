@@ -208,8 +208,9 @@ def price_package(pkg: dict, cfg: dict, tier_name=None, tier_sheet=None) -> dict
                     l["price_basis"] = (("master price sheet (sell-side — sheet "
                                          "governs; no LP margin re-applied)")
                                         if sheet_sell > 0 else
-                                        ("labor convention — standing default "
-                                         "(contractor-editable per estimate; ruled 2026-07-23)"))
+                                        ("provisional labor — contractor rate pending "
+                                         "(labor is the contractor's, ruled 2026-07-24; "
+                                         "editable per estimate)"))
                     total_sell += l["line_sell"]
                     priced += 1
                     continue

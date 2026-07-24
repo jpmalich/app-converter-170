@@ -1,0 +1,2885 @@
+{
+ "reason": "2nd phantom qty_src=human (OSC 6in qty 10, stale bake value) \u2014 same forensic class as the panel stamp. Strip so sealed pooling re-derives 9.",
+ "git_sha": "688cbddf75a664ead596385aba30f21d1d50221e",
+ "doc": {
+  "_id": "6a626b37c1df443f25f464f0",
+  "customer_name": "Jon Casile",
+  "address": "261 Haugh dr, pittsburgh, PA 15237",
+  "estimate_number": "EST-523061",
+  "estimate_date": "2026-07-23",
+  "estimator": "Howard Hunt",
+  "notes": "",
+  "lp_colors": null,
+  "customer_email": "",
+  "customer_phone": "",
+  "customer_phone_alt": "",
+  "customer_fax": "",
+  "customer_contact_method": "",
+  "customer_company": "VC Prop",
+  "customer_contact_title": "",
+  "billing_address": "",
+  "lead_source": "",
+  "lead_source_detail": "",
+  "address_street": "261 Haugh dr",
+  "address_city": "pittsburgh",
+  "address_state": "PA",
+  "address_zip": "15237",
+  "billing_street": "",
+  "billing_city": "",
+  "billing_state": "",
+  "billing_zip": "",
+  "siding_color": "Glacier White",
+  "ascend_color": "",
+  "shake_color": "",
+  "board_batten_color": "",
+  "accessories_color": "",
+  "outside_corner_color": "",
+  "soffit_fascia_color": "",
+  "window_wrap_color": "",
+  "gutter_color": "",
+  "window_frame_color": "",
+  "window_interior_color": "",
+  "window_exterior_color": "",
+  "mezzo_interior_color": "",
+  "mezzo_exterior_color": "",
+  "waste_pct": 30.0,
+  "lp_soffit_type": "mix",
+  "tax_enabled": true,
+  "tax_rate": 7.0,
+  "margin_pct": 30.0,
+  "pricing_mode": "margin",
+  "kind": "lp_smart",
+  "install_method": "",
+  "home_pre_1978": false,
+  "paired_estimate_id": "40bb13a3-3ba7-4113-b77a-69ec2654a6ea",
+  "paired_lp_estimate_id": null,
+  "lines": [
+   {
+    "tab": "vinyl",
+    "section": "Vinyl Siding",
+    "name": "vertical board and batten Standard color 7\"",
+    "unit": "SQ",
+    "qty": 27.0,
+    "_waste_included": false,
+    "note": "Per-elevation breakdown: BOARD BATTEN 2064 ft\u00b2",
+    "raw_qty": 20.6,
+    "mat": 151.31,
+    "lab": 250.0,
+    "adders": [],
+    "ami_part": "016021"
+   },
+   {
+    "tab": "ascend",
+    "section": "Ascend Cladding",
+    "name": "Ascend Composite B&B 12\" (add 30% Waste)",
+    "unit": "SQ",
+    "qty": 27.0,
+    "_waste_included": false,
+    "note": "Per-elevation breakdown: BOARD BATTEN 2064 ft\u00b2",
+    "raw_qty": 20.6,
+    "mat": 408.66,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "018021"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP Smart Siding",
+    "name": "38 Series 4' x 10' Panel",
+    "unit": "PCS",
+    "qty": 68,
+    "_waste_included": true,
+    "note": "Per-elevation breakdown: BOARD BATTEN 2064 ft\u00b2",
+    "mat": 137.94,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP SmartSide Trim",
+    "name": "440 Series Trim 4/4\" x 4\" x 16'",
+    "unit": "PCS",
+    "qty": 3.0,
+    "_waste_included": true,
+    "note": "Inside-corner pooling \u2014 ISC 36.92 LF \u00f7 16, whole-stick = entire allowance (sealed convention, ruled 2026-07-24)",
+    "mat": 28.2,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP SmartSide Trim",
+    "name": "440 Series Trim 4/4\" x 8\" x 16'",
+    "unit": "PCS",
+    "qty": 21.0,
+    "_waste_included": true,
+    "note": "Fascia 184.17 LF + rake 136.58 LF \u00f7 16, whole-stick = entire allowance (sealed convention; 8\" width CONTRACTOR-SPEC, Letrick precedent)",
+    "mat": 56.43,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP SmartSide Trim",
+    "name": "540 Series Trim 5/4\" x 4\" x 16'",
+    "unit": "PCS",
+    "qty": 33.0,
+    "_waste_included": true,
+    "note": "Measured opening perimeter 574.33 LF \u2212 door bottoms (garage 1\u00d716' + entry 3\u00d73' + SGD 3\u00d78') \u00f7 16 \u2014 doors trim 3 sides",
+    "mat": 34.3,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP SmartSide Trim",
+    "name": "190 Series Trim 19/32\" x 3\" x 16'",
+    "unit": "PCS",
+    "qty": 97.0,
+    "_waste_included": true,
+    "note": "Batten strips \u2014 wall area \u00f7 spacing ft (+1 run \u00d7 wall height when field-verified), 16' stock, no waste (16\" o.c. provisional; SKU + default spacing pending ruling)",
+    "mat": 19.66,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP Siding Accessories",
+    "name": "Touch up kits",
+    "unit": "PCS",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 per color \u2014 bump if multi-color job",
+    "mat": 60.96,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP Siding Accessories",
+    "name": "OSI Quad Max Caulking",
+    "unit": "Tube",
+    "qty": 2.0,
+    "_waste_included": false,
+    "note": "Default 2 tubes per job",
+    "mat": 14.03,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP Siding Accessories",
+    "name": "J blocks",
+    "unit": "Each",
+    "qty": 9.0,
+    "_waste_included": false,
+    "note": "Min 4 \u2014 lights, outlets, hose bibs scaled by openings",
+    "mat": 57.14,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP Siding Accessories",
+    "name": "Mini Splits",
+    "unit": "Each",
+    "qty": 2.0,
+    "_waste_included": false,
+    "note": "Min 1 \u2014 AC linesets, dryer vents, range hoods",
+    "mat": 80.0,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "Outside corners Standard color",
+    "unit": "PCS",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "Vinyl 12.5' outside-corner pieces (HOVER LF \u00f7 12.5, round up)",
+    "raw_qty": 12.0,
+    "mat": 31.54,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "105644"
+   },
+   {
+    "tab": "ascend",
+    "section": "Ascend Cladding/Accessories",
+    "name": "Ascend 5.5\" Outside Corner  - MATTE",
+    "unit": "PCS",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "Ascend 12.5' outside-corner pieces / corner LF",
+    "raw_qty": 12.0,
+    "mat": 59.36,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "108052"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP Siding Accessories",
+    "name": "540 Series OSC 5/4\" x 6\" x 16'",
+    "unit": "PCS",
+    "qty": 10.0,
+    "_waste_included": true,
+    "note": "Outside-corner pooling \u2014 140.33 LF \u00f7 16, whole-stick (sealed convention; 6\" width CONTRACTOR-SPEC)",
+    "mat": 271.69,
+    "lab": 0.0,
+    "adders": [],
+    "raw_qty": null,
+    "qty_src": "human"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "Inside Corners (Siding) Standard color",
+    "unit": "PCS",
+    "qty": 4.0,
+    "_waste_included": false,
+    "note": "12.5' pieces per HOVER inside-corner LF, round up \u2014 defaults to Standard color",
+    "raw_qty": 3.0,
+    "mat": 15.77,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "105053"
+   },
+   {
+    "tab": "ascend",
+    "section": "Ascend Cladding/Accessories",
+    "name": "Inside Corners",
+    "unit": "PCS",
+    "qty": 4.0,
+    "_waste_included": false,
+    "note": "Ascend inside-corner 12.5' pieces / corner LF, round up",
+    "raw_qty": 3.0,
+    "mat": 0.0,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "Finish Trim Standard color",
+    "unit": "PCS",
+    "qty": 66.5,
+    "_waste_included": false,
+    "note": "184 eaves + 448 LF window perim (32 wins \u00d7 14 LF (fallback)) = 632 LF \u00f7 12.5 = 51 pcs",
+    "raw_qty": 51.0,
+    "mat": 7.28,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "105200"
+   },
+   {
+    "tab": "ascend",
+    "section": "Ascend Cladding/Accessories",
+    "name": "ASCEND Finish Trim",
+    "unit": "PCS",
+    "qty": 66.5,
+    "_waste_included": false,
+    "note": "184 eaves + 448 LF window perim (32 wins \u00d7 14 LF (fallback)) = 632 LF \u00f7 12.5 = 51 pcs",
+    "raw_qty": 51.0,
+    "mat": 8.25,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "105210"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "3/4\" J-Channel Standard color (2 per Sq of siding)",
+    "unit": "PCS",
+    "qty": 69.0,
+    "_waste_included": false,
+    "note": "(574 HOVER perim \u2212 3 entry \u00d7 19 \u2212 1 garage \u00d7 32) = 485 LF window+patio + 1 garage \u00d7 32 + 137 rakes = 654 LF \u00f7 12.5 = 53 pcs",
+    "raw_qty": 53.0,
+    "mat": 7.28,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "105118"
+   },
+   {
+    "tab": "ascend",
+    "section": "Ascend Cladding/Accessories",
+    "name": "Ascend - J - Channel  (2 per Sq of siding)",
+    "unit": "PCS",
+    "qty": 69.0,
+    "_waste_included": false,
+    "note": "(574 HOVER perim \u2212 3 entry \u00d7 19 \u2212 1 garage \u00d7 32) = 485 LF window+patio + 1 garage \u00d7 32 + 137 rakes = 654 LF \u00f7 12.5 = 53 pcs",
+    "raw_qty": 53.0,
+    "mat": 10.4,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "108062"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": ".019 Coil",
+    "unit": "ROLL",
+    "qty": 6.03,
+    "_waste_included": false,
+    "note": "448 LF windows + 3 entry \u00d7 19 + 3 sliding \u00d7 22 + 1 garage \u00d7 32 = 603 LF \u00f7 100 = 6.03 rolls",
+    "mat": 161.33,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "103954"
+   },
+   {
+    "tab": "ascend",
+    "section": "Siding Accessories",
+    "name": ".019 Coil",
+    "unit": "ROLL",
+    "qty": 6.03,
+    "_waste_included": false,
+    "note": "448 LF windows + 3 entry \u00d7 19 + 3 sliding \u00d7 22 + 1 garage \u00d7 32 = 603 LF \u00f7 100 = 6.03 rolls",
+    "mat": 161.33,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "103954"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "House Wrap",
+    "unit": "SQ",
+    "qty": 27.0,
+    "_waste_included": false,
+    "note": "Matches HOVER 'SIDING WASTE TOTALS \u2192 + Openings < 20ft\u00b2 +10%'",
+    "raw_qty": 20.6,
+    "mat": 11.55,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "646662A0"
+   },
+   {
+    "tab": "ascend",
+    "section": "Siding Accessories",
+    "name": "RainDrop",
+    "unit": "SQ",
+    "qty": 20.6,
+    "_waste_included": false,
+    "note": "Ascend rainscreen underlayment \u2014 same SQ as siding",
+    "mat": 30.73,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "646686"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "2\" Nails 30 lbs (1 per 15 Sq)",
+    "unit": "JOB",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 box per 15 SQ of siding",
+    "mat": 81.63,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "ascend",
+    "section": "Siding Accessories",
+    "name": "2\" Nails 30 lbs (1 per 15 Sq)",
+    "unit": "JOB",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 box per 15 SQ of siding",
+    "mat": 81.63,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "1 1/4\" Trim Nails",
+    "unit": "Box",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 box per job (standard)",
+    "mat": 9.0,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "780052"
+   },
+   {
+    "tab": "ascend",
+    "section": "Siding Accessories",
+    "name": "1 1/4\" Trim Nails",
+    "unit": "Box",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 box per job (standard)",
+    "mat": 9.0,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "780052"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Vinyl Soffit with Siding",
+    "name": "Soffit & fascia Charter Oak Standard Color",
+    "unit": "PCS",
+    "qty": 34.0,
+    "_waste_included": false,
+    "note": "Pieces = ((Overhang 12\" \u00f7 12) \u00d7 (Eaves+Rakes) + porch_ceiling 15.5 sqft) \u00f7 10 sqft/pc; Standard color default",
+    "mat": 20.2,
+    "lab": 2.0,
+    "adders": [],
+    "ami_part": "105020"
+   },
+   {
+    "tab": "ascend",
+    "section": "Vinyl Soffit with Siding",
+    "name": "Soffit & fascia Charter Oak Standard Color",
+    "unit": "PCS",
+    "qty": 34.0,
+    "_waste_included": false,
+    "note": "Pieces = ((Overhang 12\" \u00f7 12) \u00d7 (Eaves+Rakes) + porch_ceiling 15.5 sqft) \u00f7 10 sqft/pc; Standard color default",
+    "mat": 20.2,
+    "lab": 2.0,
+    "adders": [],
+    "ami_part": "105020"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Vinyl Soffit with Siding",
+    "name": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+    "unit": "PCS",
+    "qty": 48.5,
+    "_waste_included": false,
+    "note": "(Eaves + 2 \u00d7 Rakes) \u00f7 12.5 LF/stick \u2014 soffit J runs 2 passes at each rake (wall side + fascia return)",
+    "raw_qty": 37.0,
+    "mat": 7.28,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "105118"
+   },
+   {
+    "tab": "ascend",
+    "section": "Vinyl Soffit with Siding",
+    "name": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+    "unit": "PCS",
+    "qty": 48.5,
+    "_waste_included": false,
+    "note": "(Eaves + 2 \u00d7 Rakes) \u00f7 12.5 LF/stick \u2014 soffit J runs 2 passes at each rake (wall side + fascia return)",
+    "raw_qty": 37.0,
+    "mat": 7.28,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "105118"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Vinyl Soffit with Siding",
+    "name": "Fascia/rake or frieze up to 8\" coverage",
+    "unit": "LF",
+    "qty": 321.0,
+    "_waste_included": false,
+    "note": "Eaves LF + Rakes LF (fascia wraps both eave runs and gable rakes)",
+    "mat": 0.0,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "ascend",
+    "section": "Vinyl Soffit with Siding",
+    "name": "Fascia/rake or frieze up to 8\" coverage",
+    "unit": "LF",
+    "qty": 321.0,
+    "_waste_included": false,
+    "note": "Eaves LF + Rakes LF (fascia wraps both eave runs and gable rakes)",
+    "mat": 0.0,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Vinyl Soffit with Siding",
+    "name": ".019 Coil (1 per 50' fascia)",
+    "unit": "ROLL",
+    "qty": 3.21,
+    "_waste_included": false,
+    "note": "Soffit & fascia LF \u00f7 100 (per Howard)",
+    "mat": 161.33,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "103954"
+   },
+   {
+    "tab": "ascend",
+    "section": "Vinyl Soffit with Siding",
+    "name": ".019 Coil (1 per 50' fascia)",
+    "unit": "ROLL",
+    "qty": 3.21,
+    "_waste_included": false,
+    "note": "Soffit & fascia LF \u00f7 100 (per Howard)",
+    "mat": 161.33,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "103954"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Siding Accessories",
+    "name": "Caulking (per color)",
+    "unit": "EA",
+    "qty": 2.0,
+    "_waste_included": false,
+    "note": "Default 2 tubes per job (per Howard)",
+    "mat": 8.23,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "701170"
+   },
+   {
+    "tab": "ascend",
+    "section": "Siding Accessories",
+    "name": "Caulking (per color)",
+    "unit": "EA",
+    "qty": 2.0,
+    "_waste_included": false,
+    "note": "Default 2 tubes per job (per Howard)",
+    "mat": 8.23,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "701170"
+   },
+   {
+    "tab": "windows",
+    "section": "Window Misc.",
+    "name": "Second/Third/Clear Story Fee",
+    "unit": "each",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "HOVER stories > 1 \u2192 1 fee applies",
+    "mat": 0.0,
+    "lab": 1846.15,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP SmartSide Soffit",
+    "name": "38 Series Soffit 16 x 16 Vented",
+    "unit": "PCS",
+    "qty": 11.0,
+    "_waste_included": true,
+    "note": "Vented (eaves + porches) \u2014 ceil( ((overhang 12\" \u00f7 12) \u00d7 eaves_LF + porch_ceiling 15.5 sqft) \u00f7 21.3 \u00d7 1.10 ) \u2014 PDF 16\" Soffit",
+    "mat": 85.83,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "LP SmartSide Soffit",
+    "name": "38 Series Soffit 16 x 16 Closed",
+    "unit": "PCS",
+    "qty": 8.0,
+    "_waste_included": true,
+    "note": "Closed (rakes) \u2014 ceil( (overhang 12\" \u00f7 12) \u00d7 rakes_LF \u00f7 21.3 \u00d7 1.10 ) \u2014 PDF 16\" Soffit",
+    "mat": 73.5,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "Gutter 6\"",
+    "unit": "LF",
+    "qty": 184.0,
+    "_waste_included": false,
+    "note": "Eaves LF (gutters run along eaves, not rakes)",
+    "mat": 3.25,
+    "lab": 1.0,
+    "adders": []
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "Gutter 6\"",
+    "unit": "LF",
+    "qty": 184.0,
+    "_waste_included": false,
+    "note": "Eaves LF (gutters run along eaves, not rakes)",
+    "mat": 3.25,
+    "lab": 1.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "Gutter 6\"",
+    "unit": "LF",
+    "qty": 184.0,
+    "_waste_included": false,
+    "note": "Eaves LF (gutters run along eaves, not rakes)",
+    "mat": 3.25,
+    "lab": 1.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "Downspout 6\"",
+    "unit": "LF",
+    "qty": 96.0,
+    "_waste_included": false,
+    "note": "184 LF eaves \u00f7 25 = 7.4 \u2192 ceil = 8 downspouts \u00d7 12 LF drop = 96 LF coil",
+    "mat": 2.8,
+    "lab": 1.0,
+    "adders": []
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "Downspout 6\"",
+    "unit": "LF",
+    "qty": 96.0,
+    "_waste_included": false,
+    "note": "184 LF eaves \u00f7 25 = 7.4 \u2192 ceil = 8 downspouts \u00d7 12 LF drop = 96 LF coil",
+    "mat": 2.8,
+    "lab": 1.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "Downspout 6\"",
+    "unit": "LF",
+    "qty": 96.0,
+    "_waste_included": false,
+    "note": "184 LF eaves \u00f7 25 = 7.4 \u2192 ceil = 8 downspouts \u00d7 12 LF drop = 96 LF coil",
+    "mat": 2.8,
+    "lab": 1.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "elbow",
+    "unit": "Each",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "184 LF eaves \u00f7 25 = 7.4 \u2192 8 downspouts \u00d7 2 elbows (top turn + kick-out) = 16 elbows",
+    "mat": 2.69,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "elbow",
+    "unit": "Each",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "184 LF eaves \u00f7 25 = 7.4 \u2192 8 downspouts \u00d7 2 elbows (top turn + kick-out) = 16 elbows",
+    "mat": 2.69,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "elbow",
+    "unit": "Each",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "184 LF eaves \u00f7 25 = 7.4 \u2192 8 downspouts \u00d7 2 elbows (top turn + kick-out) = 16 elbows",
+    "mat": 2.69,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "End Cap",
+    "unit": "Each",
+    "qty": 14.0,
+    "_waste_included": false,
+    "note": "2 end caps per gutter run (~1 run per 30 LF eaves, min 2 runs)",
+    "mat": 2.08,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "End Cap",
+    "unit": "Each",
+    "qty": 14.0,
+    "_waste_included": false,
+    "note": "2 end caps per gutter run (~1 run per 30 LF eaves, min 2 runs)",
+    "mat": 2.08,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "End Cap",
+    "unit": "Each",
+    "qty": 14.0,
+    "_waste_included": false,
+    "note": "2 end caps per gutter run (~1 run per 30 LF eaves, min 2 runs)",
+    "mat": 2.08,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "Hangars with Screws",
+    "unit": "Each",
+    "qty": 100.0,
+    "_waste_included": false,
+    "note": "184 LF \u00f7 2 ft spacing = 93 + 7 runs (1 per run) = 100 hangers",
+    "mat": 2.39,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71160200"
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "Hangars with Screws",
+    "unit": "Each",
+    "qty": 100.0,
+    "_waste_included": false,
+    "note": "184 LF \u00f7 2 ft spacing = 93 + 7 runs (1 per run) = 100 hangers",
+    "mat": 2.39,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71160200"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "Hangars with Screws",
+    "unit": "Each",
+    "qty": 100.0,
+    "_waste_included": false,
+    "note": "184 LF \u00f7 2 ft spacing = 93 + 7 runs (1 per run) = 100 hangers",
+    "mat": 2.39,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71160200"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "Mitre",
+    "unit": "Each",
+    "qty": 20.0,
+    "_waste_included": false,
+    "note": "Hip roof \u2014 gutter wraps. Outside 16 + inside 4 = 20 mitres",
+    "mat": 13.75,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "Mitre",
+    "unit": "Each",
+    "qty": 20.0,
+    "_waste_included": false,
+    "note": "Hip roof \u2014 gutter wraps. Outside 16 + inside 4 = 20 mitres",
+    "mat": 13.75,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "Mitre",
+    "unit": "Each",
+    "qty": 20.0,
+    "_waste_included": false,
+    "note": "Hip roof \u2014 gutter wraps. Outside 16 + inside 4 = 20 mitres",
+    "mat": 13.75,
+    "lab": 0.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "Pipe Clips",
+    "unit": "Each",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "8 downspouts \u00d7 2 clips (12 LF drop \u00f7 6) = 16 clips",
+    "mat": 2.58,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71161400"
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "Pipe Clips",
+    "unit": "Each",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "8 downspouts \u00d7 2 clips (12 LF drop \u00f7 6) = 16 clips",
+    "mat": 2.58,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71161400"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "Pipe Clips",
+    "unit": "Each",
+    "qty": 16.0,
+    "_waste_included": false,
+    "note": "8 downspouts \u00d7 2 clips (12 LF drop \u00f7 6) = 16 clips",
+    "mat": 2.58,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71161400"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Seamless Gutter",
+    "name": "Gutter Sealant",
+    "unit": "Each",
+    "qty": 11.0,
+    "_waste_included": false,
+    "note": "20 mitres + 14 end caps + 8 outlets = 42 joints \u00f7 4 = 11 tubes",
+    "mat": 9.31,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71159900"
+   },
+   {
+    "tab": "ascend",
+    "section": "Seamless Gutter",
+    "name": "Gutter Sealant",
+    "unit": "Each",
+    "qty": 11.0,
+    "_waste_included": false,
+    "note": "20 mitres + 14 end caps + 8 outlets = 42 joints \u00f7 4 = 11 tubes",
+    "mat": 9.31,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71159900"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Seamless Gutter",
+    "name": "Gutter Sealant",
+    "unit": "Each",
+    "qty": 11.0,
+    "_waste_included": false,
+    "note": "20 mitres + 14 end caps + 8 outlets = 42 joints \u00f7 4 = 11 tubes",
+    "mat": 9.31,
+    "lab": 0.0,
+    "adders": [],
+    "ami_part": "71159900"
+   },
+   {
+    "tab": "iss",
+    "section": "Seamless Gutter with Siding",
+    "name": "Gutter",
+    "unit": "LF",
+    "qty": 184.0,
+    "_waste_included": false,
+    "note": "Eaves LF (gutters run along eaves, not rakes)",
+    "mat": 0.0,
+    "lab": 0.0
+   },
+   {
+    "tab": "iss",
+    "section": "Seamless Gutter with Siding",
+    "name": "Downspout",
+    "unit": "LF",
+    "qty": 96.0,
+    "_waste_included": false,
+    "note": "184 LF eaves \u00f7 25 = 7.4 \u2192 ceil = 8 downspouts \u00d7 12 LF drop = 96 LF coil",
+    "mat": 0.0,
+    "lab": 0.0
+   },
+   {
+    "tab": "vinyl",
+    "section": "Misc. Labor and Material",
+    "name": "Cap window",
+    "unit": "Each",
+    "qty": 32.0,
+    "_waste_included": false,
+    "note": "1 per window from HOVER",
+    "mat": 0.0,
+    "lab": 98.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "ascend",
+    "section": "Misc. Labor and Material",
+    "name": "Cap window",
+    "unit": "Each",
+    "qty": 32.0,
+    "_waste_included": false,
+    "note": "1 per window from HOVER",
+    "mat": 0.0,
+    "lab": 98.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Misc. Labor and Material",
+    "name": "Cap window",
+    "unit": "Each",
+    "qty": 32.0,
+    "_waste_included": false,
+    "note": "1 per window from HOVER",
+    "mat": 0.0,
+    "lab": 98.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Misc. Labor and Material",
+    "name": "Cap entry door",
+    "unit": "Each",
+    "qty": 3.0,
+    "_waste_included": false,
+    "note": "1 per entry door (D-N prefix, < 72in wide)",
+    "mat": 0.0,
+    "lab": 107.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "ascend",
+    "section": "Misc. Labor and Material",
+    "name": "Cap entry door",
+    "unit": "Each",
+    "qty": 3.0,
+    "_waste_included": false,
+    "note": "1 per entry door (D-N prefix, < 72in wide)",
+    "mat": 0.0,
+    "lab": 107.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Misc. Labor and Material",
+    "name": "Cap entry door",
+    "unit": "Each",
+    "qty": 3.0,
+    "_waste_included": false,
+    "note": "1 per entry door (D-N prefix, < 72in wide)",
+    "mat": 0.0,
+    "lab": 107.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Misc. Labor and Material",
+    "name": "Cap patio door",
+    "unit": "Each",
+    "qty": 3.0,
+    "_waste_included": false,
+    "note": "1 per sliding glass / patio door",
+    "mat": 0.0,
+    "lab": 100.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "ascend",
+    "section": "Misc. Labor and Material",
+    "name": "Cap patio door",
+    "unit": "Each",
+    "qty": 3.0,
+    "_waste_included": false,
+    "note": "1 per sliding glass / patio door",
+    "mat": 0.0,
+    "lab": 100.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Misc. Labor and Material",
+    "name": "Cap patio door",
+    "unit": "Each",
+    "qty": 3.0,
+    "_waste_included": false,
+    "note": "1 per sliding glass / patio door",
+    "mat": 0.0,
+    "lab": 100.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "vinyl",
+    "section": "Misc. Labor and Material",
+    "name": "Cap single garage door",
+    "unit": "Each",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 per garage door (OHD-N or \u226572\u00d784in)",
+    "mat": 0.0,
+    "lab": 138.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "ascend",
+    "section": "Misc. Labor and Material",
+    "name": "Cap single garage door",
+    "unit": "Each",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 per garage door (OHD-N or \u226572\u00d784in)",
+    "mat": 0.0,
+    "lab": 138.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Misc. Labor and Material",
+    "name": "Cap single garage door",
+    "unit": "Each",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "1 per garage door (OHD-N or \u226572\u00d784in)",
+    "mat": 0.0,
+    "lab": 138.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "windows",
+    "section": "Window Installation",
+    "name": "Window DH/Slider - Pocket Install",
+    "unit": "Each",
+    "qty": 32.0,
+    "_waste_included": false,
+    "note": "Default install method \u2014 swap to Full Fin per job",
+    "mat": 0.0,
+    "lab": 170.0,
+    "adders": []
+   },
+   {
+    "tab": "windows",
+    "section": "Sliding Glass Door Install",
+    "name": "Vinyl Sliding Glass Door (5' & 6' width)",
+    "unit": "Each",
+    "qty": 3.0,
+    "_waste_included": false,
+    "note": "1 install per HOVER patio door",
+    "mat": 0.0,
+    "lab": 669.63,
+    "adders": []
+   },
+   {
+    "tab": "windows",
+    "section": "Window Installation",
+    "name": "Cap window (Windows)",
+    "unit": "Each",
+    "qty": 32.0,
+    "_waste_included": false,
+    "note": "1 cap per HOVER window (default exterior wrap)",
+    "mat": 0.0,
+    "lab": 20.0,
+    "adders": []
+   },
+   {
+    "tab": "windows",
+    "section": "Window Installation",
+    "name": "Job Measure Standard Fee 4 days+",
+    "unit": "JOB",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "Standard measure fee \u2014 one per job",
+    "mat": 0.0,
+    "lab": 150.0,
+    "adders": []
+   },
+   {
+    "tab": "windows",
+    "section": "Window Installation",
+    "name": "Disposal Fee (Windows)",
+    "unit": "JOB",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "Disposal fee \u2014 one per job",
+    "mat": 0.0,
+    "lab": 125.0,
+    "adders": []
+   },
+   {
+    "tab": "vinyl",
+    "section": "Tear-Off / Clean Up",
+    "name": "clean up/ haul away job debris",
+    "unit": "JOB",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "Disposal \u2014 one per job when siding work is present",
+    "mat": 0.0,
+    "lab": 334.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "ascend",
+    "section": "Tear-Off / Clean Up",
+    "name": "clean up/ haul away job debris",
+    "unit": "JOB",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "Disposal \u2014 one per job when siding work is present",
+    "mat": 0.0,
+    "lab": 334.0,
+    "adders": [],
+    "lab_src": "provisional"
+   },
+   {
+    "tab": "lp_smart",
+    "section": "Tear-Off / Clean Up",
+    "name": "clean up/ haul away job debris",
+    "unit": "JOB",
+    "qty": 1.0,
+    "_waste_included": false,
+    "note": "Disposal \u2014 one per job when siding work is present",
+    "mat": 0.0,
+    "lab": 334.0,
+    "adders": [],
+    "lab_src": "provisional"
+   }
+  ],
+  "misc_labor": [],
+  "misc_material": [],
+  "mezzo_openings": [],
+  "vero_openings": [],
+  "vero_package_quote": null,
+  "mezzo_package_quote": null,
+  "photos": [],
+  "status_label": "draft",
+  "overhang_in": 12.0,
+  "porch_ceilings": [
+   {
+    "label": "set-back entry",
+    "length_ft": 7.75,
+    "width_ft": 2.0
+   }
+  ],
+  "photo_zones_summary": "",
+  "photo_zones_deducted_sqft": 0,
+  "hover_measurements": {
+   "siding_sqft": 2064.0,
+   "siding_with_openings_sqft": null,
+   "soffit_sqft": 463,
+   "eaves_lf": 184.17,
+   "rakes_lf": 136.58,
+   "starter_lf": 304.67,
+   "outside_corner_count": 20,
+   "outside_corner_lf": 140.33,
+   "inside_corner_count": 6,
+   "inside_corner_lf": 36.92,
+   "opening_count": 39,
+   "opening_perimeter_lf": 574.33,
+   "window_count": 32,
+   "window_bottom_width_total_lf": 100.17,
+   "door_count": 7,
+   "entry_door_count": 3,
+   "patio_door_count": 3,
+   "garage_door_count": 1,
+   "stories": ">1",
+   "address": "261 Haugh Drive, Pittsburgh, PA 15237",
+   "level_frieze_lf": 215.67,
+   "sloped_frieze_lf": 129.83,
+   "drip_edge_lf": 320.75,
+   "total_trim_sqft": null,
+   "shutter_count": 0,
+   "vent_count": 0,
+   "united_inches": 2748,
+   "per_elevation_siding": {
+    "front": null,
+    "back": null,
+    "left": null,
+    "right": null
+   },
+   "roof_area_sqft": 2126,
+   "facade_breakdown": {
+    "siding_sqft": null,
+    "stucco_sqft": 312,
+    "brick_sqft": 234,
+    "stone_sqft": null,
+    "metal_sqft": null,
+    "other_sqft": 2064
+   },
+   "overhang_in": 12.0,
+   "_waste_pct": 0.3,
+   "_waste_field_prefill_pct": 10.0,
+   "porch_ceiling_sqft": 15.5
+  },
+  "id": "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170",
+  "company_id": "ecfe9396-0b00-4839-94c0-79cdba1cb8fc",
+  "created_by": "63577a8f-8c6c-4cdc-b84c-bf88b481ee7b",
+  "created_by_name": "Howard Hunt",
+  "created_at": "2026-07-23T19:27:51.260094+00:00",
+  "updated_at": "2026-07-24T18:07:59.971701+00:00",
+  "lp_pricing_tier": "Contractor",
+  "default_siding_profile": "board_batten",
+  "lp_source_run_id": "hover-8f6f9b5e6bb3-board_batten",
+  "tracking": [
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-23T19:53:53.388677+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-23T20:43:01.801657+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-23T20:47:05.557634+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-23T21:10:36.761937+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-23T21:12:33.071519+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-23T21:14:03.132446+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T03:35:45.601006+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:09:53.963871+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:09:54.167400+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:10:22.095243+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:10:22.308801+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:10:29.900057+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:34.079664+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:34.309994+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:34.524143+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:57.058554+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:57.257673+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:57.459224+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:59.280415+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:59.479188+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:12:59.677472+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:33:37.219902+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:33:37.431837+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:33:37.637092+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:38:06.512947+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:38:06.746521+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:38:06.952734+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:38:22.123087+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:38:22.338825+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:38:22.569594+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:40:51.610705+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:40:51.837970+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T11:40:52.070162+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:18:30.917259+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:18:44.882049+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:18:45.100846+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:18:45.308331+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:23:03.416769+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:23:03.656313+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:23:03.906929+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:27:43.415876+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:27:43.620010+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:27:43.818809+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:31:06.584849+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:31:06.805509+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T17:31:07.014653+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 10.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T18:09:33.802994+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 30.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T18:14:06.201871+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 30.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T18:17:09.606777+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 30.0
+    }
+   },
+   {
+    "type": "lp.hover_run.materialized",
+    "at": "2026-07-24T18:22:26.659035+00:00",
+    "meta": {
+     "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+     "lp_run_id": "hover-8f6f9b5e6bb3-board_batten",
+     "profile": "board_batten",
+     "mapping_flags": [
+      {
+       "code": "corner_locators",
+       "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
+       "verify": "Walk the corners on site \u2014 confirm OSC/ISC counts match the report"
+      },
+      {
+       "code": "facade_scope",
+       "label": "facade scope custom: 2064 ft\u00b2 composes; excluded: stucco 312 ft\u00b2, brick 234 ft\u00b2 (never silently summed)",
+       "verify": "Confirm the excluded facade materials stay out of the siding scope \u2014 re-import with them included if the job wraps them"
+      },
+      {
+       "code": "batten_wall_heights",
+       "label": "batten +height term = 0 (Hover carries no per-wall heights) \u2014 PENDING field verify",
+       "verify": "Tape each wall height \u2014 closing re-derives batten LF live (+1 run \u00d7 height per wall)"
+      },
+      {
+       "code": "opening_schedule",
+       "label": "opening schedule not itemized (Hover counts only) \u2014 starter deduction + wrap use per-count constants",
+       "verify": "Confirm opening count + entry-door widths on site"
+      }
+     ],
+     "by": "hhunt6677@yahoo.com",
+     "waste_pct_written": 30.0
+    }
+   }
+  ]
+ }
+}

@@ -703,6 +703,21 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
                 "label": (f"Unpriced money-surface row: {l.get('name')} "
                           f"({l.get('tab') or 'vinyl'} tab, qty {l.get('qty'):g})"),
             })
+    # LABOR IS THE CONTRACTOR'S (ruled 2026-07-24): provisional labor stays
+    # in the math so the walk is realistic, but the quote states it is
+    # pending the contractor's rates — one aggregated, always-visible item.
+    prov_rows = [l for l in est.get("lines") or []
+                 if (l.get("lab_src") or "") == "provisional" and (l.get("qty") or 0) > 0]
+    if prov_rows:
+        detail = " · ".join(
+            f"{l.get('name')} @ ${float(l.get('lab') or 0):g}" for l in prov_rows)
+        items.append({
+            "kind": "provisional_labor", "code": "labor_pending_contractor",
+            "label": (f"LABOR PROVISIONAL — contractor rate pending on "
+                      f"{len(prov_rows)} row(s) ({detail}). These are supplier-side "
+                      "guesses kept in the math for a realistic total; enter your "
+                      "real rates to replace them."),
+        })
     try:
         pkg = await lp_package_preview(est_id, None, user)
     except HTTPException:
@@ -922,9 +937,15 @@ async def set_default_profile(
     prev = est.get("default_siding_profile")
     now = datetime.now(timezone.utc).isoformat()
     change = {"from": prev, "to": profile, "by": user.get("email"), "at": now}
-    await db.estimates.update_one(
-        {"id": est_id}, {"$set": {"default_siding_profile": profile,
-                                  "default_siding_profile_change": change}})
+    sets = {"default_siding_profile": profile,
+            "default_siding_profile_change": change}
+    # WASTE IS FAMILY-DEFAULTED (sealed 2026-07-24): profile selection
+    # pre-fills the ONE visible waste field with the family default
+    # (lap 10 · B&B 30) — contractor edits it afterwards as ever.
+    if profile:
+        from lp_conventions import family_waste_default_pct
+        sets["waste_pct"] = family_waste_default_pct(profile)
+    await db.estimates.update_one({"id": est_id}, {"$set": sets})
     await log_estimate_event(est_id, "lp.default_profile.set", {
         "from": prev, "to": profile, "by": user.get("email"),
     })

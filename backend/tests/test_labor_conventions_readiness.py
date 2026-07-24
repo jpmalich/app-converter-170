@@ -68,8 +68,8 @@ def test_price_package_binds_conventions_when_sheet_is_zero():
     cap, clean = pkg["lines"]
     assert cap["pricing_status"] == "priced" and cap["unit_sell"] == 98.0
     assert cap["line_sell"] == 392.0
-    assert "labor convention" in cap["price_basis"]
-    assert clean["unit_sell"] == 334.0 and "labor convention" in clean["price_basis"]
+    assert "provisional labor" in cap["price_basis"]
+    assert clean["unit_sell"] == 334.0 and "provisional labor" in clean["price_basis"]
 
 
 def test_real_sheet_price_outranks_convention():

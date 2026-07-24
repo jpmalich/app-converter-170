@@ -1923,11 +1923,17 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
                     ),
                 })
                 continue
-            # Iter 78ab — LP tab applies 10% waste + round-up per PDF.
+            # Iter 78ab — LP tab applies waste + round-up per PDF.
+            # WASTE IS FAMILY-DEFAULTED (sealed 2026-07-24): the surfaced
+            # _waste_pct (estimate field / family default) governs when
+            # present — 0.0 means BASE qty (import draft; the field bakes).
             # Vinyl + Ascend keep the legacy 1-decimal quantity to
             # preserve existing quote behaviour.
             if tab == "lp_smart" and lp_formulas.is_enabled():
-                qty = lp_formulas.pieces_needed(sqft, sqft_per_unit)
+                _w = measurements.get("_waste_pct")
+                qty = lp_formulas.pieces_needed(
+                    sqft, sqft_per_unit,
+                    float(_w) if _w is not None else lp_formulas.DEFAULT_WASTE)
                 waste_included = True
             else:
                 qty = round(sqft / sqft_per_unit, 1)
@@ -2378,10 +2384,14 @@ async def hover_lp_run(
     # written INTO the estimate's visible waste_pct field on import —
     # contractor-editable; downstream math reads the field via
     # _apply_contractor_waste (never a silent engine default). An explicit
-    # payload waste_pct (fraction) wins over the ruled default.
+    # payload waste_pct (fraction) wins over the family default.
+    # WASTE IS FAMILY-DEFAULTED (sealed 2026-07-24): lap 10 · B&B 30 —
+    # the visible field pre-fills from the selected family.
+    from lp_conventions import family_waste_default_pct
     payload_waste = (payload or {}).get("waste_pct")
     waste_field = (round(float(payload_waste) * 100, 1)
-                   if payload_waste is not None else DEFAULT_WASTE_PCT)
+                   if payload_waste is not None
+                   else family_waste_default_pct(profile))
     est_set = {"lp_source_run_id": lp_run_id,
                "default_siding_profile": profile,
                "waste_pct": waste_field}
@@ -2409,6 +2419,9 @@ async def hover_lp_run(
             scoped["porch_ceiling_sqft"] = porch_sqft
         if est.get("overhang_in") is not None:
             scoped["overhang_in"] = est["overhang_in"]
+        # Family-defaulted waste flows INTO the derivation (sealed
+        # 2026-07-24): profile siding rows derive with the resolved field.
+        scoped["_waste_pct"] = waste_field / 100.0
         tab_lines = _bake_tab_waste(
             _build_lines(_force_profile_measurements(scoped, profile)), waste_field)
         prev = await db.estimates.find_one(
@@ -2455,20 +2468,39 @@ async def hover_lp_run(
         # named labor/misc rows (cap window/doors, cleanup) carry the
         # standing labor price when the row would otherwise be $0.00 —
         # contractor-editable per estimate (an edited price inherits and wins).
-        from lp_conventions import LABOR_CONVENTIONS, RETIRED_LABOR_DEFAULTS
+        # LABOR IS THE CONTRACTOR'S (architecture ruled 2026-07-24): the
+        # global standing defaults RETIRED. Binding order per named row:
+        #   1. contractor edit (lab_src "human" or an unrecognized value)
+        #      — inherits and WINS, untouched;
+        #   2. company-owned rate (companies.labor_rates) — lab_src
+        #      "company", no flag;
+        #   3. Howard's PROVISIONAL guess — lab_src "provisional", visibly
+        #      flagged "contractor sets labor" until real rates exist.
+        # Rows carrying a RETIRED machine default (25/75/75/100/150) or the
+        # current provisional value are machine bindings and rebind.
+        from lp_conventions import PROVISIONAL_LABOR_RATES, RETIRED_LABOR_DEFAULTS
         from lp_costs import sheet_norm as _sheet_norm
+        comp_doc_rates = await db.companies.find_one(
+            {"id": user["company_id"]}, {"_id": 0, "labor_rates": 1})
+        company_rates = (comp_doc_rates or {}).get("labor_rates") or {}
         for l in tab_lines:
             key = _sheet_norm(l.get("name") or "")
-            conv = LABOR_CONVENTIONS.get(key)
-            if not conv or (l.get("mat") or 0):
+            prov = PROVISIONAL_LABOR_RATES.get(key)
+            if not prov or (l.get("mat") or 0):
                 continue
+            if (l.get("lab_src") or "") == "human":
+                continue  # contractor edit wins
             lab = float(l.get("lab") or 0)
-            # $0 rows bind; rows still carrying a RETIRED standing default
-            # are machine bindings (not contractor edits) and rebind to the
-            # current default (ruled 2026-07-24). Any other value is a
-            # contractor edit — inherits and wins.
-            if lab == 0 or lab in RETIRED_LABOR_DEFAULTS.get(key, set()):
-                l["lab"] = float(conv)
+            is_machine = (lab == 0 or lab == float(prov)
+                          or lab in RETIRED_LABOR_DEFAULTS.get(key, set()))
+            if not is_machine:
+                continue  # unrecognized human-entered value — wins
+            if company_rates.get(key) is not None:
+                l["lab"] = float(company_rates[key])
+                l["lab_src"] = "company"
+            else:
+                l["lab"] = float(prov)
+                l["lab_src"] = "provisional"
         # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 —
         # Casile lap-251 double-quote): a profile-mapped rebuild writes the
         # selected family's derived quantities and ZEROES every other

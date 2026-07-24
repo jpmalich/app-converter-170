@@ -388,3 +388,22 @@ payload no longer sends it. 2nd heal with display-field recovery from the
 paired EST-523061-S record:
 /app/memory/backups/20260724_113324_estimates_e2ce35b8_kind_flip_reheal_and_display_fields.json
 Pinned: test_partial_put_clobber_class.py (kind-immutability + editor-payload pins, 7 total).
+
+## 2026-07-24 — BOOK-CHECK AMENDMENTS (sealed) + PHANTOM HUMAN-STAMP FORENSIC ITEM
+1. WASTE IS FAMILY-DEFAULTED (CONTRACTOR-SPEC, sealed): lap/clap 10% · board &
+   batten 30%. ONE visible, contractor-editable field; its DEFAULT derives from
+   the selected family (profile selection + hover-lp-run pre-fill). Shake /
+   nickel gap PENDING RULING (fall back 10%). Soffit keeps baked-10 convention.
+2. LABOR IS THE CONTRACTOR'S (architecture): global standing defaults RETIRED.
+   Binding order per named row: contractor edit (lab_src human — wins) →
+   company-owned rate (companies.labor_rates, lab_src company) → Howard's
+   PROVISIONAL guess (lab_src provisional, visible "contractor sets labor" flag,
+   readiness states labor pending). Contractor-entered rates persist to the
+   company via PUT /company/labor-rates (editor auto-saves on lab edit).
+3. FORENSIC ITEM (OPEN — origin not conclusively established): two derived rows
+   on EST-523061 surfaced with qty_src=human stamps NO human typed (Panel qty 67,
+   OSC qty 10 — both stale bake values fossilized by the human-survival rule).
+   Most plausible vector: browser wheel-over-number-input mutates qty and fires
+   onChange → stamps human. VECTOR CLOSED: qty inputs blur on wheel. Heals with
+   receipts: 20260724_182203_…panel_phantom…json · 20260724_182436_…osc_phantom…json.
+   Watch item: if a third phantom stamp appears, escalate before quoting.
