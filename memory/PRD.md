@@ -4767,3 +4767,28 @@ PARKED: W-204/205 → Picture styles (Howard sets in-app); Vero Picture price pa
 (windows work parked until after September — escalated-no-price flags stay visible).
 QUEUED: hover-vision sheet rung (AUTHORIZED small-medium, after Jon ships + prod
 sequence); full vision extension PARKED pending pre-registered scored trial.
+
+## SESSION 2026-07-24 (part 36) — BOOK-CHECK AMENDMENTS + JON WALK v2
+1. WASTE FAMILY-DEFAULTED (sealed): FAMILY_WASTE_DEFAULTS lap 10 / board_batten 30;
+   ONE visible field, default derives from family (hover-lp-run + default-profile
+   pre-fill; cleared profile → base 10). Derivation reads _waste_pct (profile rows,
+   both tab + list — single emitter). Shake/nickel-gap PENDING RULING (fallback 10,
+   proposed: shake 15%, nickel gap 12%). Soffit keeps baked-10.
+2. LABOR CONTRACTOR-OWNED (architecture): global defaults retired →
+   PROVISIONAL_LABOR_RATES (98/107/100/138/334) bind only when no company rate,
+   stamped lab_src=provisional + "contractor sets labor" chip + readiness
+   provisional_labor item (quote states pending). Contractor lab edit → lab_src
+   human (wins) + auto-persists to companies.labor_rates via PUT /company/labor-rates
+   (S6 seam enumerated). Company rates bind as lab_src=company.
+3. PHANTOM HUMAN-STAMP FORENSIC (register): Panel 67 + OSC 10 carried qty_src=human
+   no human typed (stale bake values fossilized). Heals with receipts
+   (20260724_182203, 20260724_182436). Vector closed: qty inputs blur on wheel.
+4. JON WALK v2 (header live-verified $37,052.20): mat 20,025.74 (panel 68 @30%
+   family waste) + tax 1,401.80 + labor 4,509.00 (provisional-flagged) → base
+   25,936.54 → sell 37,052.20. Delta from v1: +1,517.34 mat (panel 57→68) +
+   106.21 tax → +2,319.36 sell. Letrick UNCHANGED (lap 10%; waste residue from
+   profile-toggling tests healed to 10).
+5. Pins: test_casile_closeout (20 incl. TestBookCheckAmendments), amended
+   founding-scope pin (68), provisional basis strings, panels-68 founding pins.
+STAMP: - 2026-07-24 18:44 UTC · 668ef77 · CLEAN · [tests] · 1294 passed, 1 skipped, 3 warnings in 138.97s (0:02:18)
+AWAITING: Howard book-check of v2 → print clearance. Shake/nickel-gap waste ruling.
