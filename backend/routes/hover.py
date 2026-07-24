@@ -2464,43 +2464,6 @@ async def hover_lp_run(
                     # convention is an explicit $0.00, never a None hole.
                     l["mat"] = 0.0
                     l["lab"] = 0.0
-        # LABOR CONVENTIONS (Howard's standing defaults, ruled 2026-07-23):
-        # named labor/misc rows (cap window/doors, cleanup) carry the
-        # standing labor price when the row would otherwise be $0.00 —
-        # contractor-editable per estimate (an edited price inherits and wins).
-        # LABOR IS THE CONTRACTOR'S (architecture ruled 2026-07-24): the
-        # global standing defaults RETIRED. Binding order per named row:
-        #   1. contractor edit (lab_src "human" or an unrecognized value)
-        #      — inherits and WINS, untouched;
-        #   2. company-owned rate (companies.labor_rates) — lab_src
-        #      "company", no flag;
-        #   3. Howard's PROVISIONAL guess — lab_src "provisional", visibly
-        #      flagged "contractor sets labor" until real rates exist.
-        # Rows carrying a RETIRED machine default (25/75/75/100/150) or the
-        # current provisional value are machine bindings and rebind.
-        from lp_conventions import PROVISIONAL_LABOR_RATES, RETIRED_LABOR_DEFAULTS
-        from lp_costs import sheet_norm as _sheet_norm
-        comp_doc_rates = await db.companies.find_one(
-            {"id": user["company_id"]}, {"_id": 0, "labor_rates": 1})
-        company_rates = (comp_doc_rates or {}).get("labor_rates") or {}
-        for l in tab_lines:
-            key = _sheet_norm(l.get("name") or "")
-            prov = PROVISIONAL_LABOR_RATES.get(key)
-            if not prov or (l.get("mat") or 0):
-                continue
-            if (l.get("lab_src") or "") == "human":
-                continue  # contractor edit wins
-            lab = float(l.get("lab") or 0)
-            is_machine = (lab == 0 or lab == float(prov)
-                          or lab in RETIRED_LABOR_DEFAULTS.get(key, set()))
-            if not is_machine:
-                continue  # unrecognized human-entered value — wins
-            if company_rates.get(key) is not None:
-                l["lab"] = float(company_rates[key])
-                l["lab_src"] = "company"
-            else:
-                l["lab"] = float(prov)
-                l["lab_src"] = "provisional"
         # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 —
         # Casile lap-251 double-quote): a profile-mapped rebuild writes the
         # selected family's derived quantities and ZEROES every other
@@ -2529,6 +2492,42 @@ async def hover_lp_run(
                 zeroed["qty"] = 0
                 zeroed["raw_qty"] = None
                 tab_lines.append(zeroed)
+        # LABOR IS THE CONTRACTOR'S — v3 ZEROING (sealed 2026-07-24): ALL
+        # labor on the LP walk surface (vinyl/ascend/lp_smart tabs) is $0
+        # until the contractor fills it — the provisional guesses RETIRED
+        # ENTIRELY. Binding order per row:
+        #   1. contractor edit (lab_src "human") — wins, untouched;
+        #   2. contractor standing rate — companies.labor_rates or the
+        #      Price Catalog LABOR $ override (the catalog is the labor
+        #      home, ruled: no new card) — lab_src "company";
+        #   3. $0 — named misc-labor rows stamp lab_src "pending" (the
+        #      visible "contractor sets labor" state). No unflagged labor
+        #      anywhere. Windows-tab labor is Excel-authored ISS pricing —
+        #      out of scope.
+        from lp_conventions import MISC_LABOR_ROWS
+        from lp_costs import sheet_norm as _sheet_norm
+        from routes.lp_package_routes import _load_tier_sheet_for
+        comp_doc_rates = await db.companies.find_one(
+            {"id": user["company_id"]}, {"_id": 0, "labor_rates": 1})
+        company_rates = (comp_doc_rates or {}).get("labor_rates") or {}
+        catalog_sheet = await _load_tier_sheet_for({"company_id": user["company_id"]})
+        for l in tab_lines:
+            if (l.get("tab") or "vinyl") not in ("vinyl", "ascend", "lp_smart"):
+                continue
+            if (l.get("lab_src") or "") == "human":
+                continue  # contractor edit wins, forever
+            key = _sheet_norm(l.get("name") or "")
+            rate = company_rates.get(key)
+            cat_lab = float((catalog_sheet.get(key) or {}).get("lab") or 0)
+            if rate is not None and float(rate) > 0:
+                l["lab"] = float(rate)
+                l["lab_src"] = "company"
+            elif cat_lab > 0:
+                l["lab"] = cat_lab
+                l["lab_src"] = "company"
+            else:
+                l["lab"] = 0.0
+                l["lab_src"] = "pending" if key in MISC_LABOR_ROWS else None
         rebuilt_lines = tab_lines
         est_set["lines"] = tab_lines
         # Porch-ceiling recompute basis (Casile set-back doorway item):

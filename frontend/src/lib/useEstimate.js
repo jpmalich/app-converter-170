@@ -188,7 +188,7 @@ export default function useEstimate(id) {
               ...l,
               [field]: Number(value) || 0,
               // LABOR IS THE CONTRACTOR'S (ruled 2026-07-24): editing a
-              // labor rate marks it human — it wins over provisional/
+              // labor rate marks it human — it wins over pending/
               // company bindings through every rebuild.
               ...(field === "lab" ? { lab_src: "human" } : {}),
             }

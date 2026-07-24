@@ -11,10 +11,10 @@ All coverage figures WASTE-EXCLUSIVE; waste applied on top (10% default
 for lap/soffit), THEN round up to whole pieces. Whole-piece rounding is
 per-line, always up, never averaged across lines.
 
-TWO ITEMS PENDING HOWARD'S CONFIRMATION — never filled from other sources:
-  1. Shake waste factor (lap default 10% used meanwhile, FLAGGED pending)
-  2. LP trim/accessory conventions (starter / J / finish trim carry-over
+ONE ITEM PENDING HOWARD'S CONFIRMATION — never filled from other sources:
+  1. LP trim/accessory conventions (starter / J / finish trim carry-over
      from the Alside context) — not encoded as LP rules until confirmed.
+(Shake waste sealed 15% by the 2026-07-24 v3 book-check — see below.)
 """
 from __future__ import annotations
 import math
@@ -41,11 +41,9 @@ SHAKE_PCS_PER_SQUARE_MAX_REVEAL = 31   # 9-7/8" reveal
 
 SOFFIT_BUNDLE_PCS = 9  # 38 Series ships 9 pcs/bundle where bundle rounding applies
 
-# ── Pending confirmations (hold flagged, do NOT default) ──
-# Shake waste RULED 2026-07-11: 10%, same as lap, before whole-piece
-# round-up. Provisional — revisions ship as conventions updates, never
-# silent edits.
-SHAKE_WASTE = 0.10
+# Shake waste CONTRACTOR-SPEC, sealed 2026-07-24 (v3 book-check): 15%,
+# before whole-piece round-up — supersedes the 2026-07-11 provisional 10%.
+SHAKE_WASTE = 0.15
 
 # LP-native line composition RULED 2026-07-11 (supersedes Alside carry-over):
 # NO J-channel, NO finish trim, NO aluminum coil lines on LP takeoffs —
@@ -156,8 +154,8 @@ def line_math(area_sqft: float, coverage_sqft_per_pc: float, waste: float = DEFA
 def shake_takeoff(area_sqft: float, reveal_in=None, waste=None) -> dict:
     """Reveal is JOB-SPECIFIC — never defaulted silently. Unspecified →
     flag `reveal: unconfirmed` and price at MINIMUM reveal (worst case,
-    more pieces) with the flag visible. Shake waste RULED 10% (same as
-    lap, provisional — revisions ship as conventions updates)."""
+    more pieces) with the flag visible. Shake waste sealed 15%
+    (CONTRACTOR-SPEC, 2026-07-24 v3 book-check)."""
     flags = []
     if reveal_in is None:
         reveal_in = SHAKE_REVEAL_MIN_INCHES
@@ -301,12 +299,14 @@ def spec_discrepancies() -> list:
 # board & batten 30% vs lap 10%. The estimate field stays the ONE visible,
 # contractor-editable number; only its DEFAULT derives from the selected
 # family (profile selection + Hover materialize pre-fill it). No silent
-# waste anywhere. Shake / nickel gap: PENDING RULING (proposed in the
-# 2026-07-24 handback) — they fall back to 10% until Howard rules.
+# waste anywhere. Shake 15 · Nickel Gap 12: CONTRACTOR-SPEC, sealed
+# 2026-07-24 (v3 book-check) — same one-visible-field mechanics.
 # Soffit keeps its baked-10 convention inside soffit_pieces (unruled).
 FAMILY_WASTE_DEFAULTS = {
     "lap": 10.0,
     "board_batten": 30.0,
+    "shake": 15.0,
+    "nickel_gap": 12.0,
 }
 
 
@@ -314,32 +314,33 @@ def family_waste_default_pct(profile: str | None) -> float:
     return float(FAMILY_WASTE_DEFAULTS.get(profile or "", 10.0))
 
 
-# LABOR IS THE CONTRACTOR'S (architecture ruled 2026-07-24): the global
-# labor "standing defaults" RETIRE. Labor rates are contractor-owned —
-# stored per-company (companies.labor_rates), editable per estimate.
-# These five values are Howard's PROVISIONAL GUESSES from the Casile
-# close-out: they bind ONLY when no company rate exists, always stamped
-# lab_src="provisional" and visibly flagged ("contractor sets labor") —
-# never a silent supplier-side number. A contractor-entered rate replaces
-# them and re-derives.
-PROVISIONAL_LABOR_RATES = {
-    "cap window": 98.0,
-    "cap entry door": 107.0,
-    "cap patio door": 100.0,
-    "cap single garage door": 138.0,
-    "clean up/ haul away job debris": 334.0,
-}
-# Back-compat alias — list-side pricing + earlier pins import this name.
-LABOR_CONVENTIONS = PROVISIONAL_LABOR_RATES
+# LABOR IS THE CONTRACTOR'S — v3 ZEROING (sealed 2026-07-24): ALL labor
+# defaults are $0 until the contractor fills them — NO exceptions. The
+# five provisional guesses RETIRED ENTIRELY (they were never the
+# contractor's numbers) and joined the retired machine set below. The
+# Price Catalog's per-item LABOR $ column is the standing labor home
+# ("Labor is yours to set — overrides save to your company only"): a
+# filled catalog rate or a companies.labor_rates entry binds on rebuild
+# (lab_src "company"); a per-estimate edit wins forever (lab_src
+# "human"); everything else shows $0 in the visible "contractor sets
+# labor" state (lab_src "pending" on the named misc-labor rows).
+MISC_LABOR_ROWS = (
+    "cap window",
+    "cap entry door",
+    "cap patio door",
+    "cap single garage door",
+    "clean up/ haul away job debris",
+)
 
-# Superseded standing defaults (ruled 2026-07-24 Casile close-out prices
-# replace the 2026-07-23 provisional set). A row still carrying a retired
-# value is a MACHINE binding, not a contractor edit — it rebinds to the
-# current default. Any other value is a contractor edit: inherits and wins.
+# Superseded machine defaults, BOTH retired generations (the 2026-07-23
+# provisional set 25/75/75/100/150 AND the 2026-07-24 close-out guesses
+# 98/107/100/138/334, retired by the v3 zeroing ruling). A row still
+# carrying one of these is a MACHINE binding, never a contractor edit —
+# it rebinds to the current default ($0 / company rate) on rebuild.
 RETIRED_LABOR_DEFAULTS = {
-    "cap window": {25.0},
-    "cap entry door": {75.0},
-    "cap patio door": {75.0},
-    "cap single garage door": {100.0},
-    "clean up/ haul away job debris": {150.0},
+    "cap window": {25.0, 98.0},
+    "cap entry door": {75.0, 107.0},
+    "cap patio door": {75.0, 100.0},
+    "cap single garage door": {100.0, 138.0},
+    "clean up/ haul away job debris": {150.0, 334.0},
 }

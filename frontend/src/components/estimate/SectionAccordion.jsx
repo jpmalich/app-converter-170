@@ -248,11 +248,11 @@ export default function SectionAccordion({
                 human qty
               </span>
             )}
-            {l.lab_src === "provisional" && (
+            {l.lab_src === "pending" && (
               <span
                 className="inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-amber-400 bg-amber-50 text-amber-800"
-                title="Provisional labor guess — labor is the contractor's. Enter your real rate to replace it (it becomes your company standing rate)."
-                data-testid={`prov-labor-${section.title}-${l.name}`}
+                title="Labor is yours to set — $0 until you enter your rate. Type it here (it becomes your company standing rate) or fill the Price Catalog LABOR column."
+                data-testid={`pending-labor-${section.title}-${l.name}`}
               >
                 contractor sets labor
               </span>

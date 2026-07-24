@@ -4,17 +4,17 @@ Root cause found: the Pro-Quote company's `price_tier_id` DANGLED (tier
 reseed churn recreated price_tiers with new ids) so `_load_tier_sheet_for`
 returned an EMPTY sheet — every sheet-bound row (gutter, capping, cleanup)
 went pending with a MISLEADING 'no dealer cost' reason. Also: the sheet
-index ignored the company's catalog OVERRIDES (Gutter 6" carries their
-$1.00/LF labor), so binding spoke different numbers than the tabs.
+index ignored the company's catalog OVERRIDES, so binding spoke different
+numbers than the tabs.
 
 FIX PINNED here:
   • dangling tier pointer → default-tier sheet fallback (the SAME fallback
     the catalog surface applies) — never an empty sheet
   • company catalog overrides merge into the sheet index (section::name
     keyed, exactly like the catalog surface) — one sheet everywhere
-  • $0.00 sheet rows STAY pending — escalated by name, never a placeholder
-    (Casile: Cap window / Cap entry door / Cap patio door / Cap single
-    garage door / clean up-haul away hold $0.00 on EVERY tier sheet)
+  • $0.00 sheet rows: the five misc-labor rows price at $0 (labor is the
+    contractor's, v3 zeroing sealed 2026-07-24); any OTHER $0.00 sheet row
+    stays pending — escalated by name, never a placeholder
 """
 import asyncio
 import sys
@@ -33,14 +33,15 @@ from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 CASILE_EST = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"  # EST-523061
 CASILE_COMPANY = "ecfe9396-0b00-4839-94c0-79cdba1cb8fc"
 
-# The five labor/misc conventions (Howard's standing defaults, ruled
-# 2026-07-23): $0.00 on EVERY tier sheet — they bind from LABOR_CONVENTIONS,
-# never from the master sheet, never a placeholder.
-LABOR_CONVENTION_ROWS = {
-    "cap window": 98.0, "cap entry door": 107.0, "cap patio door": 100.0,
-    "cap single garage door": 138.0, "clean up/ haul away job debris": 334.0,
-}
-ZERO_DOLLAR_SHEET_ROWS = set(LABOR_CONVENTION_ROWS)
+# The five misc-labor rows (v3 zeroing, sealed 2026-07-24): $0.00 on EVERY
+# tier sheet AND $0 labor until the contractor fills them — the Price
+# Catalog LABOR column is the standing home; never a placeholder, never a
+# supplier-side guess.
+MISC_LABOR_NAMES = (
+    "cap window", "cap entry door", "cap patio door",
+    "cap single garage door", "clean up/ haul away job debris",
+)
+ZERO_DOLLAR_SHEET_ROWS = set(MISC_LABOR_NAMES)
 
 
 @pytest.fixture(scope="module")
@@ -89,11 +90,6 @@ def pkg(session):
     return r.json()
 
 
-def _load_sheet(loop, est: dict) -> dict:
-    from routes.lp_package_routes import _load_tier_sheet_for
-    return loop.run_until_complete(_load_tier_sheet_for(est))
-
-
 def test_dangling_tier_pointer_falls_back_never_empty(loop, patched_db):
     """A company whose price_tier_id resolves to NO tier doc still gets
     the default tier sheet — an empty sheet unbinds every row (the bug)."""
@@ -114,43 +110,71 @@ def test_dangling_tier_pointer_falls_back_never_empty(loop, patched_db):
 
 
 def test_company_overrides_merge_into_sheet(loop, patched_db):
-    """The sheet the contractor SEES is tier + their overrides: Pro-Quote
-    carries Gutter/Downspout 6\" labor $1.00/LF as catalog overrides —
-    the binding index must speak the same numbers as the tabs."""
-    idx = _load_sheet(loop, {"company_id": CASILE_COMPANY})
+    """The sheet the contractor SEES is tier + their overrides — the
+    binding index must speak the same numbers as the catalog surface.
+    (V3 zeroing healed the machine-era lab residue, so the mechanism is
+    exercised with a temporary override, cleaned up after.)"""
+    key = 'Seamless Gutter::Gutter 6"'
+
+    async def run():
+        await patched_db.catalogs.update_one(
+            {"company_id": CASILE_COMPANY},
+            {"$set": {f"overrides.{key}": {"lab": 1.0}}})
+        try:
+            from routes.lp_package_routes import _load_tier_sheet_for
+            return await _load_tier_sheet_for({"company_id": CASILE_COMPANY})
+        finally:
+            await patched_db.catalogs.update_one(
+                {"company_id": CASILE_COMPANY},
+                {"$unset": {f"overrides.{key}": ""}})
+
+    idx = loop.run_until_complete(run())
     assert idx['gutter 6"']["lab"] == 1.0, idx.get('gutter 6"')
     assert idx['gutter 6"']["mat"] > 0
-    assert idx['downspout 6"']["lab"] == 1.0, idx.get('downspout 6"')
+
+
+def test_no_machine_era_lab_residue_in_casile_catalog(loop, patched_db):
+    """V3 zeroing (sealed 2026-07-24): the machine-seeded catalog labor
+    overrides (siding $250, gutter/downspout $1.00/LF, soffit $2, …) were
+    HEALED — labor overrides exist only when the contractor typed them."""
+    async def run():
+        cat = await patched_db.catalogs.find_one(
+            {"company_id": CASILE_COMPANY}, {"_id": 0, "overrides": 1})
+        return (cat or {}).get("overrides") or {}
+
+    overrides = loop.run_until_complete(run())
+    labbed = {k: v for k, v in overrides.items()
+              if isinstance(v, dict) and float(v.get("lab") or 0) > 0}
+    assert labbed == {}, labbed
 
 
 def test_casile_gutter_lines_bind_to_master_sheet(pkg):
-    """Gutter 6\" = sheet mat 3.25 + override lab 1.00 → unit sell 4.25;
-    sheet numbers are SELL-side, no LP margin re-applies (ruled)."""
+    """Gutter 6\" = sheet mat 3.25, labor $0 (contractor's) → unit sell
+    3.25; sheet numbers are SELL-side, no LP margin re-applies (ruled)."""
     by_name = {str(l.get("name") or "").lower(): l for l in pkg["lines"]}
     g = by_name['gutter 6"']
     assert g["pricing_status"] == "priced", g
-    assert g["unit_sell"] == 4.25, g
+    assert g["unit_sell"] == 3.25, g
     d = by_name['downspout 6"']
-    assert d["pricing_status"] == "priced" and d["unit_sell"] == 3.8, d
+    assert d["pricing_status"] == "priced" and d["unit_sell"] == 2.8, d
     for n in ("elbow", "end cap", "mitre", "pipe clips",
               "gutter sealant", "hangars with screws"):
         assert by_name[n]["pricing_status"] == "priced", (n, by_name[n])
 
 
-def test_zero_dollar_rows_bind_from_labor_conventions(pkg):
-    """AMENDED (Howard's prices, 2026-07-23): the five $0.00-sheet rows now
-    bind from the provisional labor rates (labor is the contractor's,
-    ruled 2026-07-24) — basis named, exact amounts,
-    NOTHING pending on the Casile package."""
+def test_zero_dollar_rows_price_at_zero_labor(pkg):
+    """V3 ZEROING (sealed 2026-07-24): the five $0.00-sheet rows price at
+    $0 — labor is the contractor's, basis named, NOTHING pending on the
+    Casile package, never a supplier-side guess."""
     pending = {str(l.get("name") or "").lower()
                for l in pkg["lines"] if l.get("pricing_status") == "pending"}
     assert pending == set(), pending
     by_name = {str(l.get("name") or "").lower(): l for l in pkg["lines"]}
-    for name, amount in LABOR_CONVENTION_ROWS.items():
+    for name in MISC_LABOR_NAMES:
         l = by_name[name]
         assert l["pricing_status"] == "priced", l
-        assert l["unit_sell"] == amount, (name, l.get("unit_sell"))
-        assert "provisional labor" in str(l.get("price_basis")), l.get("price_basis")
+        assert l["unit_sell"] == 0.0, (name, l.get("unit_sell"))
+        assert "labor is the contractor's" in str(l.get("price_basis")), l.get("price_basis")
     summary = (pkg.get("summary") or {}).get("pricing") or {}
     assert summary.get("pending_lines") == 0
 

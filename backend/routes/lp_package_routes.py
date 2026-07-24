@@ -703,20 +703,21 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
                 "label": (f"Unpriced money-surface row: {l.get('name')} "
                           f"({l.get('tab') or 'vinyl'} tab, qty {l.get('qty'):g})"),
             })
-    # LABOR IS THE CONTRACTOR'S (ruled 2026-07-24): provisional labor stays
-    # in the math so the walk is realistic, but the quote states it is
-    # pending the contractor's rates — one aggregated, always-visible item.
-    prov_rows = [l for l in est.get("lines") or []
-                 if (l.get("lab_src") or "") == "provisional" and (l.get("qty") or 0) > 0]
-    if prov_rows:
-        detail = " · ".join(
-            f"{l.get('name')} @ ${float(l.get('lab') or 0):g}" for l in prov_rows)
+    # LABOR IS THE CONTRACTOR'S — v3 zeroing (sealed 2026-07-24): every
+    # labor default is $0 until the contractor fills it. The quote carries
+    # this labor-pending statement as one aggregated, always-visible item.
+    pend_names = []
+    for l in est.get("lines") or []:
+        if ((l.get("lab_src") or "") == "pending" and (l.get("qty") or 0) > 0
+                and l.get("name") not in pend_names):
+            pend_names.append(l.get("name"))
+    if pend_names:
         items.append({
-            "kind": "provisional_labor", "code": "labor_pending_contractor",
-            "label": (f"LABOR PROVISIONAL — contractor rate pending on "
-                      f"{len(prov_rows)} row(s) ({detail}). These are supplier-side "
-                      "guesses kept in the math for a realistic total; enter your "
-                      "real rates to replace them."),
+            "kind": "labor_pending", "code": "labor_pending_contractor",
+            "label": (f"LABOR PENDING — contractor sets labor on "
+                      f"{len(pend_names)} row(s) ({' · '.join(pend_names)}). "
+                      "All labor is $0 until you enter your rates — fill the "
+                      "row's Labor field or the Price Catalog LABOR column."),
         })
     try:
         pkg = await lp_package_preview(est_id, None, user)

@@ -1,20 +1,21 @@
-"""LABOR CONVENTIONS (Howard's standing defaults, re-priced by the
-2026-07-24 Casile close-out ruling) + ESTIMATE READINESS CHECKLIST /
-SOFT QUOTE GATE (authorized 2026-07-23).
+"""LABOR IS THE CONTRACTOR'S — v3 ZEROING (sealed 2026-07-24) +
+ESTIMATE READINESS CHECKLIST / SOFT QUOTE GATE (authorized 2026-07-23).
 
-Conventions pinned:
-  • Cap window $98 · Cap entry door $107 · Cap patio door $100 ·
-    Cap single garage door $138 · clean up/haul away $334/job
-  • Rows still carrying a RETIRED default (2026-07-23 provisional set:
-    25/75/75/100/150) are machine bindings — they REBIND on rebuild.
-  • NOT master-sheet SKUs — they bind wherever the named row would
-    otherwise be $0.00; a REAL sheet price outranks the convention; a
-    contractor-edited tab price inherits through rebuilds and wins
-    (contractor-editable per estimate, same class as waste).
+Labor pinned:
+  • ALL labor defaults = $0 until the contractor fills them — NO
+    exceptions. The five provisional guesses (98/107/100/138/334)
+    RETIRED ENTIRELY; both retired generations rebind on rebuild.
+  • The Price Catalog per-item LABOR $ column is the standing labor
+    home ("Labor is yours to set — overrides save to your company
+    only") — a filled catalog rate flows through the sheet binding; a
+    contractor-edited tab price (lab_src "human") wins forever.
+  • The five misc-labor rows price at $0 (basis named) — never a
+    "pending price" escalation, never a supplier-side guess.
 
 Readiness pinned:
   • GET /estimates/{id}/readiness lists pending prices, open flags,
-    unentered field-verify, unpriced money-surface rows.
+    unentered field-verify, unpriced money-surface rows, and the
+    aggregated LABOR PENDING statement.
   • SOFT ONLY (ruled): the Customer Quote flow shows the warning and
     always lets the contractor proceed — never a hard block.
 """
@@ -34,10 +35,8 @@ from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 CASILE_EST = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"
 FRONTEND_SRC = BACKEND.parent / "frontend" / "src"
 
-EXPECTED = {
-    "cap window": 98.0, "cap entry door": 107.0, "cap patio door": 100.0,
-    "cap single garage door": 138.0, "clean up/ haul away job debris": 334.0,
-}
+MISC_ROWS = ("cap window", "cap entry door", "cap patio door",
+             "cap single garage door", "clean up/ haul away job debris")
 
 
 @pytest.fixture(scope="module")
@@ -49,12 +48,21 @@ def session():
     return s
 
 
-def test_constants_are_howards_numbers():
-    from lp_conventions import LABOR_CONVENTIONS
-    assert LABOR_CONVENTIONS == EXPECTED
+def test_constants_are_zeroed_v3():
+    import lp_conventions
+    assert not hasattr(lp_conventions, "PROVISIONAL_LABOR_RATES")
+    assert not hasattr(lp_conventions, "LABOR_CONVENTIONS")
+    assert set(lp_conventions.MISC_LABOR_ROWS) == set(MISC_ROWS)
+    assert lp_conventions.RETIRED_LABOR_DEFAULTS == {
+        "cap window": {25.0, 98.0},
+        "cap entry door": {75.0, 107.0},
+        "cap patio door": {75.0, 100.0},
+        "cap single garage door": {100.0, 138.0},
+        "clean up/ haul away job debris": {150.0, 334.0},
+    }
 
 
-def test_price_package_binds_conventions_when_sheet_is_zero():
+def test_price_package_zeroes_misc_labor_when_sheet_is_zero():
     from lp_costs import DEFAULT_TIER, MARGIN_TIER_SEED, price_package
     cfg = {"tiers": dict(MARGIN_TIER_SEED), "default_tier": DEFAULT_TIER,
            "category_overrides": {}, "line_overrides": {}}
@@ -66,13 +74,16 @@ def test_price_package_binds_conventions_when_sheet_is_zero():
              "clean up/ haul away job debris": {"mat": 0.0, "lab": 0.0}}
     price_package(pkg, cfg, None, tier_sheet=sheet)
     cap, clean = pkg["lines"]
-    assert cap["pricing_status"] == "priced" and cap["unit_sell"] == 98.0
-    assert cap["line_sell"] == 392.0
-    assert "provisional labor" in cap["price_basis"]
-    assert clean["unit_sell"] == 334.0 and "provisional labor" in clean["price_basis"]
+    assert cap["pricing_status"] == "priced" and cap["unit_sell"] == 0.0
+    assert cap["line_sell"] == 0.0
+    assert "labor is the contractor's" in cap["price_basis"]
+    assert clean["unit_sell"] == 0.0
+    assert "labor is the contractor's" in clean["price_basis"]
 
 
-def test_real_sheet_price_outranks_convention():
+def test_filled_catalog_rate_flows_through_the_sheet():
+    """The Price Catalog LABOR column is the standing home — a filled
+    rate arrives through the sheet binding (tier + company overrides)."""
     from lp_costs import DEFAULT_TIER, MARGIN_TIER_SEED, price_package
     cfg = {"tiers": dict(MARGIN_TIER_SEED), "default_tier": DEFAULT_TIER,
            "category_overrides": {}, "line_overrides": {}}
@@ -84,17 +95,16 @@ def test_real_sheet_price_outranks_convention():
     assert "master price sheet" in l["price_basis"]
 
 
-def test_casile_money_surface_carries_conventions(session):
-    """Tab lines (the money surface) carry the standing labor defaults;
+def test_casile_money_surface_is_labor_zeroed(session):
+    """Tab lines (the money surface) carry $0 labor in the pending state;
     the pre-existing edited row (Cap window (Windows) @ $20) is untouched —
     contractor-edited values always win."""
     est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()
     rows = {(l.get("tab"), l.get("name")): l for l in est["lines"]}
-    assert rows[("lp_smart", "Cap window")]["lab"] == 98.0
-    assert rows[("lp_smart", "Cap entry door")]["lab"] == 107.0
-    assert rows[("lp_smart", "Cap patio door")]["lab"] == 100.0
-    assert rows[("lp_smart", "Cap single garage door")]["lab"] == 138.0
-    assert rows[("lp_smart", "clean up/ haul away job debris")]["lab"] == 334.0
+    for name in ("Cap window", "Cap entry door", "Cap patio door",
+                 "Cap single garage door", "clean up/ haul away job debris"):
+        assert rows[("lp_smart", name)]["lab"] == 0.0, name
+        assert rows[("lp_smart", name)]["lab_src"] == "pending", name
     assert rows[("windows", "Cap window (Windows)")]["lab"] == 20.0  # edited value wins
 
 
@@ -109,9 +119,9 @@ def test_readiness_endpoint_shape_and_content(session):
     # every item carries a human label.
     assert "open_flag" in kinds
     assert all(it.get("label") for it in d["items"])
-    # conventions bound → the five labor rows never appear as pending
+    # v3 zeroing: the five misc-labor rows never appear as pending prices
     labels = " | ".join(it["label"].lower() for it in d["items"])
-    for name in EXPECTED:
+    for name in MISC_ROWS:
         assert f"pending price (escalated by name): {name}" not in labels
 
 

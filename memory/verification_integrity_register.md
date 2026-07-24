@@ -407,3 +407,44 @@ Pinned: test_partial_put_clobber_class.py (kind-immutability + editor-payload pi
    onChange → stamps human. VECTOR CLOSED: qty inputs blur on wheel. Heals with
    receipts: 20260724_182203_…panel_phantom…json · 20260724_182436_…osc_phantom…json.
    Watch item: if a third phantom stamp appears, escalate before quoting.
+
+## 2026-07-24 — V3 ZEROING (sealed): ALL LABOR = $0 UNTIL THE CONTRACTOR FILLS IT
+1. RULING EXECUTED (v3 book-check): the five provisional labor guesses
+   (98/107/100/138/334) RETIRED ENTIRELY — they do NOT stay in the math; the
+   gutter $280 ($1.00/LF × 184 gutter + $1.00/LF × 96 downspout) zeroed too.
+   NO unflagged labor anywhere: on the LP walk surface (vinyl/ascend/lp_smart)
+   only lab_src "human" (estimate edit) or "company" (standing rate) may carry
+   dollars; everything else rebinds $0 on rebuild, the five named misc rows in
+   the visible "contractor sets labor" state (lab_src "pending"). The quote
+   carries the aggregated LABOR PENDING statement via readiness.
+   THE CATALOG IS THE LABOR HOME (no new card — MY LABOR RATES proposal
+   declined): Price Catalog per-item LABOR $ columns are the standing
+   mechanism; a filled catalog rate flows into rebuilds (lab_src "company")
+   and into package pricing through the sheet binding.
+2. HEAL WITH RECEIPTS — MACHINE-ERA CATALOG LAB RESIDUE: the Pro-Quote company
+   catalog carried 41 labor overrides NO contractor typed (vinyl siding $250
+   flat across every profile, gutter/downspout $1.00/LF, soffit $2, tear-off
+   $25 …) — pre-Iter-43 defaults preserved as overrides when tier labor was
+   zeroed. Under v3 these are unflagged labor by definition — cleared; the
+   catalog's LABOR column now shows $0 until Howard types real rates. Pinned:
+   test_lp_master_sheet_binding.py::test_no_machine_era_lab_residue_in_casile_catalog.
+3. PROCESS DEFECT (own miss, logged per the honesty rule): the first v3
+   re-derive of EST-523061 called hover-lp-run WITHOUT the ruled scope payload
+   (facade wrap-only 2064 of 2610, soffit 216/164/83) — panels jumped 68→85
+   off the unscoped 2610 ft². Caught against the pinned walk figures and
+   re-derived WITH the ruled payload; final state matches every pin (68
+   panels, soffit 11/8, OSC 9). RULE OF THUMB: a re-derive must carry the
+   estimate's ruled scope contract, never bare run-id + profile.
+4. WALK V3 FIGURES (pinned, test_casile_closeout.py::TestV3MoneyWalk):
+   lp_smart mat $20,025.74 + 7% tax $1,401.80 + labor $0.00 → base $21,427.54;
+   30% true margin → homeowner $30,610.77.
+5. SHAKE = 15% · NICKEL GAP = 12% (CONTRACTOR-SPEC, sealed) — family waste
+   defaults now lap 10 · B&B 30 · shake 15 · nickel gap 12, same
+   one-visible-field mechanics; SHAKE_WASTE 0.10 → 0.15 (shake_takeoff).
+   ADDENDUM (same session): the residue lives in the FIXTURE TRANSPORT DOC
+   (backend/fixtures/docs/accounts.json → demo_catalogs) and seed_runner
+   re-upserts it EVERY boot — a db-only heal silently reverted on the next
+   restart. Healed at the source (fixture doc) + db; Letrick pins re-walked
+   14477.52 → 12901.52 (−1430 retired conventions, −146 healed gutter labs).
+   RULE: a heal is not a heal until the seed that resurrects the data is
+   healed with it.

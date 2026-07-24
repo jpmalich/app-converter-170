@@ -149,12 +149,17 @@ class TestRoundTwoPins:
         AMENDED AGAIN (labor conventions, Howard's prices 2026-07-23):
         the escalated rows bind from his standing defaults — Cap window
         9×98 + Cap entry door 2×107 + cleanup 334 = +1430.00 → 14477.52
-        (close-out labor prices, ruled 2026-07-24)."""
+        (close-out labor prices, ruled 2026-07-24).
+        AMENDED AGAIN (V3 ZEROING, sealed 2026-07-24): ALL labor = $0
+        until the contractor fills it — the +1430.00 conventions RETIRE
+        (misc rows price $0, labor is the contractor's) and the healed
+        gutter/downspout $1.00/LF machine lab overrides drop −146.00
+        (Gutter 100×3.25 + Downspout 46×2.80) → total_sell 12901.52."""
         import os
         tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
         d = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
                          json={}, headers={"X-Admin-Token": tok}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 14477.52
+        assert d["summary"]["pricing"]["total_sell"] == 12901.52
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

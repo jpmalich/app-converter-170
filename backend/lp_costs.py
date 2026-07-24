@@ -186,32 +186,38 @@ def price_package(pkg: dict, cfg: dict, tier_name=None, tier_sheet=None) -> dict
             if basis not in PREFINISHED_FINISHES:
                 sheet_sell = (round(float(sheet.get("mat") or 0) + float(sheet.get("lab") or 0), 2)
                               if sheet is not None else 0.0)
-                from lp_conventions import LABOR_CONVENTIONS
-                conv = LABOR_CONVENTIONS.get(sheet_norm(l.get("name") or ""))
+                from lp_conventions import MISC_LABOR_ROWS
                 # MASTER-SHEET BINDING (ruled 2026-07-23, Casile founding
                 # example): items with no dealer cost on the LP quote sheet
                 # bind to the company's master price sheet entry — sheet
-                # numbers are SELL-side, no LP margin re-applies. LABOR
-                # CONVENTIONS (ruled 2026-07-23): named labor/misc rows
-                # ($0.00 on every tier sheet — cap window/doors, cleanup)
-                # bind to Howard's standing defaults instead of pending;
-                # a real sheet price outranks the convention.
-                unit_sell = sheet_sell if sheet_sell > 0 else round(float(conv), 2) if conv else 0.0
-                if unit_sell > 0:
+                # numbers are SELL-side, no LP margin re-applies. LABOR IS
+                # THE CONTRACTOR'S (v3 zeroing, sealed 2026-07-24): the
+                # named misc-labor rows carry $0 until the contractor sets
+                # a rate — the Price Catalog LABOR column is the standing
+                # home; a filled rate arrives here THROUGH the sheet
+                # (tier + company overrides). Never a supplier-side guess,
+                # never a "pending price" escalation.
+                if sheet_sell > 0:
                     try:
                         q = float(l.get("qty") or 0)
                     except (TypeError, ValueError):
                         q = 0.0
-                    l["unit_sell"] = unit_sell
-                    l["line_sell"] = round(unit_sell * q, 2)
+                    l["unit_sell"] = sheet_sell
+                    l["line_sell"] = round(sheet_sell * q, 2)
                     l["pricing_status"] = "priced"
-                    l["price_basis"] = (("master price sheet (sell-side — sheet "
-                                         "governs; no LP margin re-applied)")
-                                        if sheet_sell > 0 else
-                                        ("provisional labor — contractor rate pending "
-                                         "(labor is the contractor's, ruled 2026-07-24; "
-                                         "editable per estimate)"))
+                    l["price_basis"] = ("master price sheet (sell-side — sheet "
+                                        "governs; no LP margin re-applied)")
                     total_sell += l["line_sell"]
+                    priced += 1
+                    continue
+                if sheet_norm(l.get("name") or "") in MISC_LABOR_ROWS:
+                    l["unit_sell"] = 0.0
+                    l["line_sell"] = 0.0
+                    l["pricing_status"] = "priced"
+                    l["price_basis"] = ("labor is the contractor's — $0 until "
+                                        "set (v3 zeroing, sealed 2026-07-24; "
+                                        "enter your rate on the row or the "
+                                        "Price Catalog LABOR column)")
                     priced += 1
                     continue
                 if sheet is not None:
