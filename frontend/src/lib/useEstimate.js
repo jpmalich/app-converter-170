@@ -101,6 +101,12 @@ export default function useEstimate(id) {
                 mat: saved && saved.mat != null ? saved.mat : it.mat,
                 lab: saved && saved.lab != null ? saved.lab : it.lab,
                 qty: saved ? saved.qty || 0 : 0,
+                // Round-trip provenance (ruled 2026-07-24): raw_qty feeds
+                // the waste-recompute machinery; qty_src="human" marks a
+                // hand-typed quantity that survives profile rebuilds.
+                // Stripping these here silently killed both on save.
+                raw_qty: saved && saved.raw_qty != null ? saved.raw_qty : null,
+                qty_src: (saved && saved.qty_src) || null,
                 ami_part: it.ami_part || (saved ? saved.ami_part : null) || null,
                 // Catalog defaults — used to flag overrides in the UI.
                 defaultMat: it.mat,
@@ -331,7 +337,9 @@ export default function useEstimate(id) {
   // hit the stale-closure issue).
   const buildPayload = useCallback((source) => {
     return {
-      kind: source.kind || "siding",
+      // kind is IDENTITY — never sent on update (ruled 2026-07-24: a
+      // stale tab's full-payload autosave replayed kind onto Jon's
+      // healed estimate). The server ignores it on PUT/PATCH too.
       customer_name: source.customer_name || "",
       address: source.address || "",
       estimate_number: source.estimate_number || "",
@@ -387,13 +395,18 @@ export default function useEstimate(id) {
       margin_pct: source.margin_pct || 0,
       pricing_mode: source.pricing_mode || "margin",
       lines: (source.lines || [])
-        .filter((l) => (l.qty || 0) > 0)
+        // qty-0 rows drop (they re-materialize from the catalog merge) —
+        // EXCEPT human-typed zeros: a hand-entered 0 is a choice that
+        // survives (profile-owns-family rule, 2026-07-24).
+        .filter((l) => (l.qty || 0) > 0 || l.qty_src === "human")
         .map((l) => ({
           tab: l.tab || "vinyl",
           section: l.section,
           name: l.name,
           unit: l.unit,
           qty: l.qty,
+          raw_qty: l.raw_qty ?? null,
+          qty_src: l.qty_src || null,
           mat: l.mat,
           lab: l.lab,
           ami_part: l.ami_part || null,

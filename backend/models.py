@@ -96,6 +96,10 @@ class EstimateLine(BaseModel):
     # recompute qty without re-running the import. Lines entered
     # manually leave this field as None.
     raw_qty: Optional[float] = None
+    # PROFILE OWNS ITS FAMILY (ruled 2026-07-24): "human" marks a
+    # hand-typed quantity — it survives profile rebuilds/restores verbatim.
+    # Derived quantities leave this None and are owned by the derivation.
+    qty_src: Optional[str] = None
     ami_part: Optional[str] = None  # Snapshotted at quote time so re-runs are reproducible
     # Which "tab" (product-line option) in the estimator this line belongs to.
     # "vinyl" (default — backward compat), "ascend", "lp_smart", or "windows".

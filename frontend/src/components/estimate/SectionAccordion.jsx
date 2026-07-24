@@ -50,6 +50,9 @@ export default function SectionAccordion({
   est,
   update,
   activeTab = "vinyl",
+  // Estimate consolidation (ruled 2026-07-24): derivation notes from the
+  // LP package render as provenance chips on the matching tab line.
+  provenance = null,
 }) {
   const t = useT();
   const { lang } = useLang();
@@ -224,6 +227,25 @@ export default function SectionAccordion({
                 data-testid={`ami-${section.title}-${l.name}`}
               >
                 AMI #{l.ami_part}
+              </span>
+            )}
+            {provenance?.[l.name] && (
+              <details className="inline-block align-middle" data-testid={`prov-chip-${section.title}-${l.name}`}>
+                <summary className="cursor-pointer list-none inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-[var(--border)] bg-[var(--bg-app)] text-[var(--muted)]" title="Derivation provenance — click to expand">
+                  ⌁ derived
+                </summary>
+                <div className="text-[10px] text-[var(--muted)] mt-1 max-w-xl whitespace-pre-wrap font-normal normal-case tracking-normal">
+                  {provenance[l.name]}
+                </div>
+              </details>
+            )}
+            {l.qty_src === "human" && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-sky-300 bg-sky-50 text-sky-800"
+                title="Hand-typed quantity — survives profile rebuilds/restores verbatim"
+                data-testid={`prov-human-${section.title}-${l.name}`}
+              >
+                human qty
               </span>
             )}
           </div>

@@ -140,3 +140,25 @@ def test_restore_flow_wires_profile_and_zero_list():
     assert 'qty_src !== "human"' in src
     ue = (BACKEND.parent / "frontend" / "src" / "lib" / "useEstimate.js").read_text()
     assert 'qty_src: "human"' in ue
+
+
+def test_qty_src_and_raw_qty_survive_the_editor_round_trip():
+    """JSX pins (found 2026-07-24, same defect family): the editor's
+    load-merge and save payload used to STRIP raw_qty + qty_src — the
+    human-survival machinery was dead through the UI and any full save
+    wiped raw_qty (waste recompute basis) server-side."""
+    ue = (BACKEND.parent / "frontend" / "src" / "lib" / "useEstimate.js").read_text()
+    assert "raw_qty: saved && saved.raw_qty != null" in ue     # load-merge keeps
+    assert "qty_src: (saved && saved.qty_src) || null" in ue   # load-merge keeps
+    assert "raw_qty: l.raw_qty ?? null" in ue                  # save payload sends
+    assert "qty_src: l.qty_src || null" in ue                  # save payload sends
+    assert '(l.qty || 0) > 0 || l.qty_src === "human"' in ue   # human zero survives save
+
+
+def test_waste_display_never_added_back_into_base():
+    """calc.js pin: waste is IN the qty — wasteAdd is display only. The
+    dormant `wasted = subMat + wasteAdd` add-on would have double-counted
+    waste dollars the moment raw_qty flowed through the editor."""
+    calc = (BACKEND.parent / "frontend" / "src" / "lib" / "calc.js").read_text()
+    assert "const wasted = subMat;" in calc
+    assert "subMat + wasteAdd" not in calc

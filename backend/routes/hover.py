@@ -2368,6 +2368,12 @@ async def hover_lp_run(
                 for k in ("mat", "lab", "adders", "ami_part"):
                     if old.get(k) is not None:
                         l[k] = old[k]
+                # Human-typed quantities survive the rebuild verbatim —
+                # mixed-material jobs are human choices, never residue.
+                if (old.get("qty_src") or "") == "human":
+                    l["qty"] = old.get("qty")
+                    l["raw_qty"] = old.get("raw_qty")
+                    l["qty_src"] = "human"
         # Rows with NO previous line to inherit from bind to the company's
         # resolved catalog (tier + overrides + LP engine) — the same source
         # the frontend import-apply merge reads. Never a silent None price.

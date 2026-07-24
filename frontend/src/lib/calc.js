@@ -107,7 +107,12 @@ export function calcTotals(est, { tab } = {}) {
     if (!isFinite(raw) || raw <= 0 || raw >= qty) return s;
     return s + (qty - raw) * (Number(l?.mat) || 0);
   }, 0);
-  const wasted = subMat + wasteAdd;
+  // Waste is IN the qty (Iter 78 design) — subMat already contains the
+  // waste dollars; wasteAdd is the DISPLAY of that portion, never an
+  // add-on. Adding it back (pre-2026-07-24 code) re-introduced exactly
+  // the over-count the raw_qty mechanism was built to remove — dormant
+  // only because the editor's load-merge used to strip raw_qty.
+  const wasted = subMat;
   const tax = est?.tax_enabled ? wasted * ((est?.tax_rate || 0) / 100) : 0;
   const base = wasted + tax + subLab;
   const pct = (est?.margin_pct || 0) / 100;

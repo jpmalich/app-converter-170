@@ -110,6 +110,15 @@ export default function EstimateEditor() {
   // Cluster A (ruled 2026-07-16): applied-lines surfaces never show bare
   // $0.00 while a derived-unapplied package exists.
   const lpDerivedTotal = isLpKind && lpPkg ? (lpPkg.summary?.pricing?.total_sell || 0) : 0;
+  // Estimate consolidation (ruled 2026-07-24): the panel's item/qty table
+  // is removed — each derived line's provenance note renders as a chip on
+  // the matching group tab line instead.
+  const lpProvenance = useMemo(() => {
+    if (!isLpKind || !lpPkg) return null;
+    const m = {};
+    (lpPkg.lines || []).forEach((l) => { if (l.note) m[l.name] = l.note; });
+    return m;
+  }, [isLpKind, lpPkg]);
   const lpAppliedSell = useMemo(
     () => (isLpKind && est ? calcTotals(est, { tab: "lp_smart" }).sell : 0),
     [est, isLpKind],
@@ -468,6 +477,7 @@ export default function EstimateEditor() {
               onResetLine={resetLineToDefault}
               onToggleAdder={toggleLineAdder}
               onUpdateAdderQty={updateAdderQty}
+              provenance={activeTab === "lp_smart" ? lpProvenance : null}
               est={est}
               update={update}
               activeTab={activeTab}

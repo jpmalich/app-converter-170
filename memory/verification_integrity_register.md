@@ -339,3 +339,52 @@ PINNED: backend/tests/test_one_money_surface.py (7 pins: unpriced preview, unpri
 frozen/QR read incl. legacy snapshots, admin cost-preview retains pricing, JSX
 no-package-contributor pin, unpriced-surface JSX pins, scoped accept total,
 calc_totals scope unit pin).
+
+## 2026-07-24 — P0: PROFILE-BLIND RESTORE DOUBLE-QUOTED TWO SIDING FAMILIES (Jon Casile, live)
+CLASS: money-surface integrity + derivation ownership.
+MECHANISM (two layers, both evidenced):
+1. THE LAP LEAK — "Restore HOVER lines" called /measure/map PROFILE-BLIND →
+   the mapper derived the DEFAULT (lap) family from the cached 2064-scope
+   measurements → the legacy apply merge ADDED lap rows beside the mapped B&B
+   rows (additive merge, no family ownership). Exact reproduction pinned:
+   lap 228 raw × client 10% bake → 251 × $30.99 = $7,778.49 to the penny,
+   summed beside 4'×10' Panel 57 × $137.94 = $7,862.58.
+2. SILENT FIELD-DEFAULT CORRUPTION ON PARTIAL UPDATES (named defect class:
+   the clobber-trap family) — PUT /estimates/{id} dumped the full EstimateIn
+   model with exclude_none=True: every field with a non-None DEFAULT
+   (39 of 64: kind="siding", lines=[], waste_pct=0, margin_pct=30, tax_rate=7,
+   status_label="draft", every color="") was silently rewritten on EVERY
+   partial PUT. Evidence: EST-523061 materialized 7 Hover→LP runs as
+   lp_smart-kind (tracking log 2026-07-23/24), then a lines-only PUT flipped
+   kind → "siding" and the rebuild endpoint 400'd on Jon's own estimate.
+PERMANENT RULES (ruled 2026-07-24):
+  (1) PROFILE OWNS ITS FAMILY — a profile-mapped rebuild/restore writes the
+      selected family's derived quantities and ZEROES every other siding
+      family's DERIVED rows (visible qty-0, price kept). Human-typed rows
+      (qty_src == "human") survive verbatim — mixed-material jobs are human
+      choices, never derivation residue.
+  (2) THE CLOBBER-TRAP DIES AS A CLASS — partial updates write ONLY the
+      fields explicitly sent (model_fields_set include); the guard covers the
+      whole default surface by construction, so new model fields can never
+      re-open the trap.
+HEAL: EST-523061 kind restored siding→lp_smart with pre-heal snapshot
+  /app/memory/backups/20260724_110943_estimates_e2ce35b8_kind_flip_heal.json
+  (heal query + diff + git SHA inside, per the permanent backup rule).
+ALSO FOUND: qty_src was silently STRIPPED at the PUT boundary (EstimateLine
+  had no such field) — the "human survives" machinery was dead end-to-end
+  until the field was declared on the model.
+PINNED: backend/tests/test_profile_owns_family.py (5 pins incl. the exact
+  regression vector + founding state lap-0/panels-57) and
+  backend/tests/test_partial_put_clobber_class.py (4 pins incl. the Jon
+  vector and the guard-by-construction code pin).
+ADDENDUM (same day, 2nd flip): minutes after the first heal, kind flipped
+siding again at 11:29 UTC via a FULL-PAYLOAD PUT (the editor's save/autosave
+sent every field — including kind — from client state; a stale tab replays
+old state wholesale). Collateral from the pre-fix trap window was also found
+on the live doc: customer_name, address, estimate_number, estimator, and
+waste_pct had been wiped to defaults. RULE EXTENDED: KIND IS IDENTITY —
+PUT and PATCH both IGNORE kind post-create (server-side), and the editor
+payload no longer sends it. 2nd heal with display-field recovery from the
+paired EST-523061-S record:
+/app/memory/backups/20260724_113324_estimates_e2ce35b8_kind_flip_reheal_and_display_fields.json
+Pinned: test_partial_put_clobber_class.py (kind-immutability + editor-payload pins, 7 total).

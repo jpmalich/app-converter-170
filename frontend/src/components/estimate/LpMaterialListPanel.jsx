@@ -15,62 +15,34 @@
 //     meshes pending — flagged, not faked).
 //   • Lines without a cost basis render "pricing pending", never $0.
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Lock, MapPin, Pencil, RefreshCcw, Ruler, ShieldCheck } from "lucide-react";
+import { Loader2, MapPin, RefreshCcw, Ruler, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
-import { lpHex, LP_GROUP_LABELS } from "@/lib/lpColors";
+import { lpHex } from "@/lib/lpColors";
 import HouseModel3D from "@/components/estimate/HouseModel3D";
 import FieldVerifyCard from "@/components/estimate/FieldVerifyCard";
 import { RENDER_3D_ENABLED } from "@/lib/featureFlags";
 import { OpeningsReviewCard } from "@/components/estimate/OpeningsReviewCard";
 
-function Swatch({ name }) {
-  const hex = lpHex(name);
-  if (!hex) return null;
-  return (
-    <span
-      className="inline-block w-3 h-3 border border-[var(--border)] align-middle"
-      style={{ backgroundColor: hex }}
-      title={name}
-    />
-  );
-}
-
-function ColorSelect({ value, onChange, colors, disabled, testId, matrix }) {
-  // Approved constraint: badged combos remain SELECTABLE — the matrix
-  // informs, never forbids (dealer-verified: available = orderable).
-  const badge = (c) => {
-    const m = matrix?.[c];
-    if (!m || m.status === "available") return "";
-    return m.status === "unsupported" ? " ⛔" : " ⚑";
-  };
-  const sel = matrix?.[value];
-  return (
-    <span className="inline-flex flex-col">
-      <select
-        className="input text-xs py-1 max-w-[190px]"
-        value={value || ""}
-        onChange={(e) => onChange(e.target.value || null)}
-        disabled={disabled}
-        data-testid={testId}
-      >
-        <option value="">—</option>
-        {colors.map((c) => (
-          <option key={c} value={c}>{c}{badge(c)}</option>
-        ))}
-      </select>
-      {value && sel && sel.status !== "available" && (
-        <span
-          className={`text-[10px] font-semibold max-w-[190px] ${sel.status === "unsupported" ? "text-red-700" : "text-[#B45309]"}`}
-          data-testid={`${testId}-warning`}
-        >
-          {sel.status === "unsupported" ? "⛔ not available in this color (dealer-verified)" : "⚑ availability caveat — verify with dealer"}
-          {sel.flagged_items > 0 && sel.item_count > 1 ? ` (${sel.flagged_items}/${sel.item_count} items)` : ""}
-        </span>
-      )}
-    </span>
-  );
+// ONE COLOR HOME (Estimate consolidation, ruled 2026-07-24): colors live
+// on the Job Info card's MATERIAL COLORS block — the ExpertFinish picker
+// row that used to live on this panel is REMOVED. Job Info fields map to
+// the LP component groups here (single writer mirrors to est.lp_colors so
+// every existing consumer — preview, freeze/QR, print — reads unchanged).
+//   siding_color → siding · soffit_fascia_color → soffit_fascia
+//   accessories_color ("Trim Color" on LP) → opening_trim + isc
+//   outside_corner_color → osc
+export function jobInfoLpColors(est) {
+  const m = {};
+  if (est?.siding_color) m.siding = est.siding_color;
+  if (est?.soffit_fascia_color) m.soffit_fascia = est.soffit_fascia_color;
+  if (est?.accessories_color) {
+    m.opening_trim = est.accessories_color;
+    m.isc = est.accessories_color;
+  }
+  if (est?.outside_corner_color) m.osc = est.outside_corner_color;
+  return m;
 }
 
 export default function LpMaterialListPanel({ est, update, onPackage }) {
@@ -78,13 +50,16 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   const estId = est?.id;
   const [pkg, setPkg] = useState(null);
   const [run, setRun] = useState(null);
-  const [palette, setPalette] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  // session-only (ruled: substitutions are never remembered)
-  const [subs, setSubs] = useState({});
-  const [colors, setColors] = useState(() => est?.lp_colors || {});
+  // ONE COLOR HOME (ruled 2026-07-24): Job Info MATERIAL COLORS govern.
+  // Legacy lp_colors (from the removed panel picker) only apply while
+  // every mapped Job Info field is still empty.
+  const jobInfoColors = useMemo(() => jobInfoLpColors(est), [
+    est?.siding_color, est?.soffit_fascia_color,
+    est?.accessories_color, est?.outside_corner_color,
+  ]);
+  const colors = Object.keys(jobInfoColors).length ? jobInfoColors : (est?.lp_colors || {});
   const [noRun, setNoRun] = useState(false);
   const [relocating, setRelocating] = useState(null); // amber key picking a wall
   // "Tape the chase" nudge (approved 2026-07-15): offer-only quick entry
@@ -151,7 +126,6 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         : "Default profile cleared — composition follows the extraction");
       const { data: fresh } = await api.post(`/estimates/${estId}/lp-package/preview`, {
         colors: colors && Object.keys(colors).length ? colors : undefined,
-        substitutions: subs && Object.keys(subs).length ? subs : undefined,
       });
       setPkg(fresh);
       revalidateColors(fresh.color_matrix, data.label || "extraction default");
@@ -192,8 +166,10 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   };
 
   // Iter 99 one-surface rule: expose the live package upstream so the
-  // MATERIAL LIST button prints the exact same composition (colors +
-  // session substitutions) — never the legacy stored-lines view.
+  // MATERIAL LIST button prints the exact same composition — never the
+  // legacy stored-lines view. (Substitution UI retired with the panel
+  // table — Estimate consolidation, ruled 2026-07-24.)
+  const subs = useMemo(() => ({}), []);
   useEffect(() => { onPackage?.(pkg); /* eslint-disable-next-line */ }, [pkg]);
 
   const fetchPackage = useCallback(async (nextColors, nextSubs) => {
@@ -218,12 +194,10 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
     (async () => {
       setLoading(true);
       try {
-        const [pal, latest] = await Promise.all([
-          api.get(`/lp-package/colors`),
-          api.get(`/measure/ai-measure/latest-for-estimate/${estId}`).catch(() => null),
-        ]);
+        const latest = await api
+          .get(`/measure/ai-measure/latest-for-estimate/${estId}`)
+          .catch(() => null);
         if (cancelled) return;
-        setPalette(pal.data);
         let r = latest?.data?.run;
         // paired LP estimates: the AI run lives on the siding source
         const pairedId = est?.paired_lp_estimate_id || est?.paired_estimate_id;
@@ -234,7 +208,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           r = pairedLatest?.data?.run;
         }
         if (r?.status === "done" && r?.result?.raw_ai) setRun(r);
-        await fetchPackage(est?.lp_colors || {}, {});
+        await fetchPackage(colors, {});
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -243,37 +217,21 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estId]);
 
-  const groupColors = pkg?.summary?.group_colors || {};
-  const groups = palette?.groups || [];
-  const allColors = palette?.colors || [];
-
-  const setGroupColor = (group, name) => {
-    let next;
-    if (group === "all") {
-      next = name ? { all: name } : {};
-    } else {
-      next = { ...colors };
-      delete next.all;
-      // keep other groups at their resolved values so dropping "all"
-      // doesn't silently clear them
-      groups.forEach((g) => {
-        if (next[g] === undefined && groupColors[g]) next[g] = groupColors[g];
-      });
-      if (name) next[group] = name; else delete next[group];
+  // ONE COLOR HOME mirror (single writer): Job Info colors persist to
+  // est.lp_colors so freeze/QR/print consumers read unchanged. Re-derives
+  // the package whenever a Job Info color changes.
+  const jobColorsKey = JSON.stringify(jobInfoColors);
+  useEffect(() => {
+    if (loading) return;
+    if (Object.keys(jobInfoColors).length &&
+        JSON.stringify(est?.lp_colors || {}) !== jobColorsKey) {
+      update({ lp_colors: jobInfoColors });
     }
-    setColors(next);
-    update({ lp_colors: next }); // persisted on the estimate (autosave)
-    fetchPackage(next, subs);
-  };
+    fetchPackage(Object.keys(jobInfoColors).length ? jobInfoColors : (est?.lp_colors || {}), {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobColorsKey]);
 
-  const substitute = (line, newName) => {
-    const key = line.substituted_from || line.name;
-    const next = { ...subs };
-    if (!newName || newName === key) delete next[key];
-    else next[key] = newName;
-    setSubs(next);
-    fetchPackage(colors, next);
-  };
+  const groupColors = pkg?.summary?.group_colors || {};
 
   // 3D repaint colors (hex approximations)
   const lpGroupColors = useMemo(() => ({
@@ -342,14 +300,6 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
     }
   };
 
-  const bySection = useMemo(() => {
-    const acc = {};
-    (pkg?.lines || []).forEach((l) => {
-      (acc[l.section] = acc[l.section] || []).push(l);
-    });
-    return acc;
-  }, [pkg]);
-
   if (loading) {
     return (
       <div className="card p-6 mb-4 flex items-center gap-2 text-sm text-[var(--ink-2)]" data-testid="lp-material-list-loading">
@@ -369,6 +319,14 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   const pricing = pkg.summary?.pricing || {};
   const subErrors = pkg.summary?.substitution_errors || [];
   const colorErrors = pkg.summary?.color_errors || [];
+  // Matrix caveats surface on the strip since the per-picker warnings
+  // retired with the picker (matrix informs, never forbids — ruled).
+  const colorCaveats = Object.entries(groupColors)
+    .map(([g, c]) => {
+      const cell = c ? pkg.color_matrix?.[g]?.[c] : null;
+      return cell && cell.status !== "available" ? `${g}: ${c} → ${cell.status}` : null;
+    })
+    .filter(Boolean);
 
   return (
     <div className="card p-0 mb-4 overflow-hidden" data-testid="lp-material-list-panel">
@@ -520,61 +478,10 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           >
             {comparing ? "…" : compare ? "Hide compare" : "Compare Lap vs B&B"}
           </button>
-          <button
-            type="button"
-            className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider inline-flex items-center gap-1 border ${
-              editMode
-                ? "bg-[var(--bar-bg)] text-white border-transparent"
-                : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)]"
-            }`}
-            onClick={() => setEditMode((v) => !v)}
-            data-testid="lp-material-list-edit-toggle"
-          >
-            {editMode ? <Pencil className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-            {editMode ? t("lp.mat.lock") : t("lp.mat.edit")}
-          </button>
         </div>
       </div>
 
       {compare && <CompareProfilesCard compare={compare} />}
-
-      {/* color selector */}
-      <div className="px-4 py-3 border-b border-[var(--border)]">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] mb-2">
-          {t("lp.mat.colors")} — ExpertFinish
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <label className="flex items-center gap-1.5 text-xs">
-            <span className="font-bold">{t("lp.mat.allComponents")}:</span>
-            <Swatch name={colors.all} />
-            <ColorSelect
-              value={colors.all}
-              onChange={(v) => setGroupColor("all", v)}
-              colors={allColors}
-              testId="lp-color-all"
-              matrix={pkg.color_matrix?.all}
-            />
-          </label>
-          {groups.map((g) => (
-            <label key={g} className="flex items-center gap-1.5 text-xs">
-              <span>{LP_GROUP_LABELS[g] || g}:</span>
-              <Swatch name={groupColors[g]} />
-              <ColorSelect
-                value={colors.all ? groupColors[g] : (colors[g] ?? groupColors[g])}
-                onChange={(v) => setGroupColor(g, v)}
-                colors={allColors}
-                testId={`lp-color-${g}`}
-                matrix={pkg.color_matrix?.[g]}
-              />
-            </label>
-          ))}
-        </div>
-        {colorErrors.length > 0 && (
-          <div className="text-[11px] text-[#B45309] mt-2" data-testid="lp-color-errors">
-            {colorErrors.join(" · ")}
-          </div>
-        )}
-      </div>
 
       {/* confirm openings — pre-derivation ratification (skippable) */}
       <OpeningsReviewCard
@@ -584,121 +491,38 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         t={t}
       />
 
-      {/* read-only hint */}
-      {!editMode && (
-        <div className="px-4 py-2 text-[11px] text-[var(--muted)] border-b border-[var(--border)]" data-testid="lp-material-list-readonly-hint">
-          <Lock className="w-3 h-3 inline mr-1 align-[-1px]" />{t("lp.mat.readonly")}
-        </div>
-      )}
       {subErrors.length > 0 && (
         <div className="px-4 py-2 text-[11px] text-[#B91C1C] border-b border-[var(--border)]" data-testid="lp-sub-errors">
           {subErrors.join(" · ")}
         </div>
       )}
 
-      {/* lines */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-[10px] uppercase tracking-wider text-[var(--muted)] border-b border-[var(--border)]">
-              <th className="text-left px-4 py-2">Item</th>
-              <th className="text-right px-2 py-2">Qty</th>
-              <th className="text-left px-2 py-2">Unit</th>
-              <th className="text-left px-4 py-2">Color</th>
-            </tr>
-          </thead>
-          {Object.entries(bySection).map(([section, lines]) => (
-            <tbody key={section}>
-              <tr className="bg-[var(--surface-muted)]">
-                <td colSpan={4} className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
-                  {section}
-                </td>
-              </tr>
-              {lines.map((l) => {
-                const key = `${l.name}::${l.color || ""}`;
-                const canSub = editMode && (l.substitutable_with || []).length > 0;
-                return (
-                  <tr key={key} className="border-b border-[var(--border)] last:border-0 align-top" data-testid={`lp-line-${l.name}`}>
-                    <td className="px-4 py-2">
-                      <div className="font-medium">{l.name}</div>
-                      {l.priced_unit && l.pieces_added ? (
-                        <div className="text-[9px] text-[var(--muted)]" data-testid={`lp-line-board-pricing-${l.name}`}>
-                          {l.pieces_added} whole board{l.pieces_added === 1 ? "" : "s"} — {l.priced_unit}
-                        </div>
-                      ) : null}
-                      {l.pricing_status === "pending" && (
-                        <div className="text-[10px] uppercase tracking-wider text-[#B45309] font-bold" data-testid={`lp-line-pending-${l.name}`}>
-                          ⚑ no sheet price — escalated by name
-                        </div>
-                      )}
-                      {l.substituted_from && (
-                        <div className="text-[10px] text-[#7C3AED]" data-testid={`lp-line-substituted-${l.name}`}>
-                          {t("lp.mat.substituted")} {l.substituted_from} — re-derived
-                        </div>
-                      )}
-                      {(l.color_flags || []).map((f, fi) => (
-                        <div
-                          key={fi}
-                          className={`text-[10px] font-semibold ${l.color_status === "unsupported" ? "text-red-700" : "text-[#B45309]"}`}
-                          data-testid={`lp-line-color-flag-${l.name}`}
-                        >
-                          ⚑ {f}
-                        </div>
-                      ))}
-                      {l.note && (
-                        <details className="text-[10px] text-[var(--muted)] mt-0.5">
-                          <summary className="cursor-pointer select-none">{t("lp.mat.provenance")}</summary>
-                          <div className="mt-1 max-w-xl whitespace-pre-wrap">{l.note}</div>
-                        </details>
-                      )}
-                      {canSub && (
-                        <select
-                          className="input text-xs py-1 mt-1"
-                          value=""
-                          onChange={(e) => e.target.value && substitute(l, e.target.value)}
-                          data-testid={`lp-line-substitute-${l.name}`}
-                        >
-                          <option value="">Substitute with…</option>
-                          {l.substitutable_with.map((o) => (
-                            <option key={o} value={o}>{o}</option>
-                          ))}
-                          {l.substituted_from && (
-                            <option value={l.substituted_from}>{`↩ revert to ${l.substituted_from}`}</option>
-                          )}
-                        </select>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono-num">{l.qty}</td>
-                    <td className="px-2 py-2">{l.unit}</td>
-                    <td className="px-4 py-2">
-                      {l.color ? (
-                        <span className="inline-flex items-center gap-1 text-xs">
-                          <Swatch name={l.color} /> {l.color}
-                        </span>
-                      ) : (
-                        <span className="text-[var(--muted)] text-xs">—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          ))}
-        </table>
-      </div>
-
-      {/* ONE MONEY SURFACE (ruled 2026-07-23): verification surface only —
-          quantities, units, derivations, provenance. Pricing lives
-          exclusively on the estimate group tabs / summary. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-[var(--surface-muted)] border-t border-[var(--border)]">
+      {/* ESTIMATE CONSOLIDATION (ruled 2026-07-24): the duplicate item/qty
+          table is REMOVED — quantities live on the group tab lines below
+          (provenance chips carry each line's derivation). Colors live on
+          the Job Info MATERIAL COLORS block (ONE COLOR HOME).
+          ONE MONEY SURFACE (ruled 2026-07-23): pricing lives exclusively
+          on the estimate group tabs / summary. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-[var(--border)] bg-[var(--surface-muted)]">
         <div className="text-[11px] text-[var(--muted)]" data-testid="lp-material-unpriced-note">
-          Verification surface — quantities &amp; derivations only. Pricing lives on the estimate tabs.
+          {pkg.summary?.line_count} derived line(s) — quantities &amp; provenance live on the
+          group tab lines below · colors on the Job Info MATERIAL COLORS block · pricing on the estimate tabs.
         </div>
         <div className="text-[11px] text-[var(--muted)]">
           {pricing.pending_lines > 0 && (
             <span data-testid="lp-pending-count">{pricing.pending_lines} line(s) without a sheet price — escalated by name</span>
           )}
         </div>
+        {colorErrors.length > 0 && (
+          <div className="text-[11px] text-[#B45309] w-full" data-testid="lp-color-errors">
+            {colorErrors.join(" · ")}
+          </div>
+        )}
+        {colorCaveats.length > 0 && (
+          <div className="text-[11px] text-[#B45309] w-full" data-testid="lp-color-caveats">
+            {colorCaveats.join(" · ")} — matrix informs, never forbids; verify with dealer.
+          </div>
+        )}
       </div>
 
       {/* dimension cross-check flags — disagreement flagged, never averaged */}

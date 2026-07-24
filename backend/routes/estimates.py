@@ -570,7 +570,15 @@ async def get_estimate(est_id: str, user: dict = Depends(get_current_user)):
 @router.put("/estimates/{est_id}")
 async def update_estimate(est_id: str, body: EstimateIn, user: dict = Depends(get_current_user)):
     # exclude_none so PUTs that omit pricing_mode don't clobber the stored value
-    update = body.model_dump(exclude_none=True)
+    # CLOBBER-TRAP CLASS FIX (ruled 2026-07-24, Jon kind-flip): only write
+    # fields EXPLICITLY sent in the request — model defaults (kind="siding",
+    # lines=[], waste_pct=0, margin_pct=30, colors="", …39 fields) must never
+    # silently overwrite stored values on a partial PUT. The class dies here.
+    update = body.model_dump(exclude_none=True, include=body.model_fields_set)
+    # KIND IS IDENTITY (ruled 2026-07-24, 2nd Jon flip — a stale client's
+    # full-payload autosave replayed kind="siding" onto the healed
+    # lp_smart estimate): no update path may change kind post-create.
+    update.pop("kind", None)
     update["updated_at"] = datetime.now(timezone.utc).isoformat()
     res = await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]}, {"$set": update}
@@ -593,6 +601,7 @@ async def patch_estimate(est_id: str, body: dict, user: dict = Depends(get_curre
     if unknown:
         raise HTTPException(status_code=400, detail=f"unknown fields: {sorted(unknown)}")
     validated = EstimateIn.model_validate(body).model_dump(include=set(body.keys()))
+    validated.pop("kind", None)  # kind is identity — immutable post-create (ruled 2026-07-24)
     validated["updated_at"] = datetime.now(timezone.utc).isoformat()
     res = await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]}, {"$set": validated}
