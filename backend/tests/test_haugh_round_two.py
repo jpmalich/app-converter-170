@@ -148,12 +148,13 @@ class TestRoundTwoPins:
         this dollar pin rides the supplier-admin cost-preview.
         AMENDED AGAIN (labor conventions, Howard's prices 2026-07-23):
         the escalated rows bind from his standing defaults — Cap window
-        9×25 + Cap entry door 2×75 + cleanup 150 = +525.00 → 13572.52."""
+        9×98 + Cap entry door 2×107 + cleanup 334 = +1430.00 → 14477.52
+        (close-out labor prices, ruled 2026-07-24)."""
         import os
         tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
         d = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
                          json={}, headers={"X-Admin-Token": tok}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 13572.52
+        assert d["summary"]["pricing"]["total_sell"] == 14477.52
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

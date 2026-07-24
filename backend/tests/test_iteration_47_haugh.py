@@ -138,7 +138,7 @@ def test_C_letrick_photo_regression(sess):
     ONE MONEY SURFACE (2026-07-23): the contractor preview is unpriced — this dollar
     pin rides the supplier-admin cost-preview. AMENDED AGAIN (labor conventions,
     Howard's prices 2026-07-23): escalated rows bind from standing defaults
-    (+525.00) → 13572.52."""
+    (+1430.00, close-out labor prices ruled 2026-07-24) → 14477.52."""
     import os
     tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
     p = sess.post(f"{API}/admin/estimates/{LETRICK_ID}/lp-package/cost-preview",
@@ -149,7 +149,7 @@ def test_C_letrick_photo_regression(sess):
     pricing = summary.get("pricing") or {}
     total = pricing.get("total_sell") or summary.get("total_sell") or data.get("total_sell")
     assert total is not None, f"no total_sell; summary keys={list(summary.keys())} pricing={pricing}"
-    assert abs(float(total) - 13572.52) < 0.01, f"total_sell={total}, expected 13572.52"
+    assert abs(float(total) - 14477.52) < 0.01, f"total_sell={total}, expected 14477.52"
     wpa = summary.get("waste_pct_applied")
     assert wpa is not None, "summary.waste_pct_applied missing on letrick"
     assert abs(float(wpa) - 0.10) < 1e-6, f"waste_pct_applied={wpa}"

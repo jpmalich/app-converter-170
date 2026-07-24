@@ -37,8 +37,8 @@ CASILE_COMPANY = "ecfe9396-0b00-4839-94c0-79cdba1cb8fc"
 # 2026-07-23): $0.00 on EVERY tier sheet — they bind from LABOR_CONVENTIONS,
 # never from the master sheet, never a placeholder.
 LABOR_CONVENTION_ROWS = {
-    "cap window": 25.0, "cap entry door": 75.0, "cap patio door": 75.0,
-    "cap single garage door": 100.0, "clean up/ haul away job debris": 150.0,
+    "cap window": 98.0, "cap entry door": 107.0, "cap patio door": 100.0,
+    "cap single garage door": 138.0, "clean up/ haul away job debris": 334.0,
 }
 ZERO_DOLLAR_SHEET_ROWS = set(LABOR_CONVENTION_ROWS)
 
