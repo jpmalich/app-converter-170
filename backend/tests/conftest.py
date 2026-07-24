@@ -49,9 +49,17 @@ def measure_run_pollution_tripwire():
             if not eid:
                 continue
             est = db.estimates.find_one(
-                {"id": eid}, {"customer_name": 1, "created_at": 1})
+                {"id": eid},
+                {"customer_name": 1, "created_at": 1, "lp_source_run_id": 1})
             if est is None:
                 continue  # throwaway already deleted by its own teardown
+            # SANCTIONED: the estimate's OWN standing derivation record
+            # (deterministic lp_run_id, upserted by re-derivation tests on
+            # the ruled fixture estimates — e.g. Jon's
+            # hover-…-board_batten). Pollution is FOREIGN artifacts, not
+            # an estimate's own run refreshed in place.
+            if run.get("run_id") and run["run_id"] == est.get("lp_source_run_id"):
+                continue
             name = str(est.get("customer_name") or "")
             born = _naive_utc(est.get("created_at"))
             if name.startswith("TEST_") or (born is not None and born >= start):
