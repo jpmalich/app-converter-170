@@ -4667,3 +4667,29 @@ NOTE flagged to Howard: tab vs list SKU divergence on OSC/440-trim awaits his ru
 Tests: test_one_money_surface.py (7 pins) + 9 amended pins across 7 files.
 STAMPS: - 2026-07-23 21:35 UTC · 878f681 · CLEAN (binding session)
         - 2026-07-23 22:28 UTC · 7f1d16f · CLEAN · 1244 passed, 1 skipped
+
+## SESSION 2026-07-24 (part 33) — LABOR CONVENTIONS + READINESS CHECKLIST + SOFT QUOTE GATE
+1. LABOR CONVENTIONS (Howard's standing defaults, ruled): cap window $25 / cap entry $75 /
+   cap patio $75 / cap single garage $100 / cleanup $150-job. Recorded in lp_conventions.py
+   LABOR_CONVENTIONS (code-level standing default → reaches prod on deploy). NOT master-sheet
+   SKUs: bind wherever the named row would be $0.00 — price_package (LP surface, basis
+   "labor convention — standing default") + hover-lp-run rebuild (tab labor fill). Real sheet
+   price outranks convention; contractor-edited tab price inherits and wins (per-estimate
+   editable, same class as waste; pinned via Cap window (Windows) @ $20 edited row).
+   Casile money surface: labor 1,780 → base 20,673.54 → sell $29,533.62. Letrick +525 → 13,572.52
+   (pins amended). Casile LP list: 24 priced / 0 pending.
+2. READINESS CHECKLIST (authorized): GET /api/estimates/{id}/readiness — pending prices,
+   open flags, unentered field-verify (amber), unpriced money-surface rows. ReadinessPanel
+   (Readiness button in TotalsSummary, data-testids readiness-btn/panel/item/all-clear).
+3. QUOTE-BUTTON GATE (authorized, SOFT only): QuoteModal fetches readiness, shows amber
+   warning (quote-readiness-warning) listing up to 6 items + "you can proceed anyway" —
+   NEVER a hard block (pinned in test_labor_conventions_readiness.py).
+4. OSC/440 divergence STATEMENT delivered (no reconciliation — Howard rules):
+   tab spec (hover.py raw _build_lines) vs LP-list sealed override layer (lp_package.py).
+   Tab: 540 OSC 5/4×4 (corner LF/16), 440 4/4×4 mixes ISC + eaves/rakes; NO 4/4×8 row.
+   List: 540 OSC 5/4×6 whole sticks per corner location (sealed 2026-07-19), 440 4/4×8
+   fascia+rake, 4/4×4 ISC-only. Tab side looks STALE (predates sealed rulings; the sealed
+   override layer applies only to LP-list composition, not the tab rebuild). AWAITING RULING.
+Screenshots: readiness panel (9 items), soft quote gate live. Tests: test_labor_conventions_readiness.py
+(7) + amendments (binding pending set now empty, Letrick totals, iter96 sell-only rows).
+STAMP: - 2026-07-24 03:50 UTC · 4af0676 · CLEAN · [tests] · 1250 passed, 1 skipped, 3 warnings in 107.95s (0:01:47)
