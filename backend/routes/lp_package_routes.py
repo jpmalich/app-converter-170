@@ -673,6 +673,29 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
     items = []
+    # FAMILY-CHECK TRIPWIRE (authorized 2026-07-24, Casile lap-leak class):
+    # exactly ONE siding family may carry derived qty on the money surface.
+    # Human-typed rows (qty_src == "human") are choices, not residue.
+    fam_markers = {"lap": ("series lap",), "board & batten": ("4' x 10' panel",),
+                   "shake": ("shake",)}
+    fams_hit = {}
+    for l in est.get("lines") or []:
+        if l.get("tab") != "lp_smart" or not (l.get("qty") or 0):
+            continue
+        if (l.get("qty_src") or "") == "human":
+            continue
+        nm = str(l.get("name") or "").lower()
+        for fam, marks in fam_markers.items():
+            if any(mk in nm for mk in marks):
+                fams_hit.setdefault(fam, []).append(f"{l.get('name')} (qty {l.get('qty'):g})")
+    if len(fams_hit) > 1:
+        detail = " + ".join(f"{fam}: {', '.join(rows)}" for fam, rows in fams_hit.items())
+        items.append({
+            "kind": "family_conflict", "code": "siding_family_conflict",
+            "label": (f"SIDING FAMILY CONFLICT — {len(fams_hit)} families carry derived "
+                      f"quantity on the money surface ({detail}). Profile owns its family: "
+                      "re-derive before quoting."),
+        })
     for l in est.get("lines") or []:
         if (l.get("qty") or 0) > 0 and not (l.get("mat") or 0) and not (l.get("lab") or 0):
             items.append({

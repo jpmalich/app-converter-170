@@ -297,9 +297,21 @@ def spec_discrepancies() -> list:
 # on the money surface (an edited tab-line price inherits and wins),
 # same class as the waste pre-fill. Keys are sheet_norm()-normalized. ──
 LABOR_CONVENTIONS = {
-    "cap window": 25.0,
-    "cap entry door": 75.0,
-    "cap patio door": 75.0,
-    "cap single garage door": 100.0,
-    "clean up/ haul away job debris": 150.0,
+    "cap window": 98.0,
+    "cap entry door": 107.0,
+    "cap patio door": 100.0,
+    "cap single garage door": 138.0,
+    "clean up/ haul away job debris": 334.0,
+}
+
+# Superseded standing defaults (ruled 2026-07-24 Casile close-out prices
+# replace the 2026-07-23 provisional set). A row still carrying a retired
+# value is a MACHINE binding, not a contractor edit — it rebinds to the
+# current default. Any other value is a contractor edit: inherits and wins.
+RETIRED_LABOR_DEFAULTS = {
+    "cap window": {25.0},
+    "cap entry door": {75.0},
+    "cap patio door": {75.0},
+    "cap single garage door": {100.0},
+    "clean up/ haul away job debris": {150.0},
 }

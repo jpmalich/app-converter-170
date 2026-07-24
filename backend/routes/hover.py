@@ -696,18 +696,36 @@ HOVER_MAPPING_SPEC = [
     # Iter 68a: 6" Lap auto-fill removed after Howard caught the double-
     # count in preview. Row stays in the catalog at $26.45 PCS (whole-sale)
     # but qty starts at 0.
-    # 440 Series Trim 4/4" x 4" — inside corners + level/sloped runs
-    # (Howard's formula: (eaves + rakes) ÷ 16).
+    # 440 Series Trim — SEALED CONVENTIONS GOVERN THE TAB (ruled 2026-07-24,
+    # Casile close-out): the pre-sealed (eaves+rakes)÷16 × %waste formula
+    # RETIRED. 4/4"×4" = inside-corner pooling; 4/4"×8" = fascia + rake
+    # runs (Letrick width precedent, CONTRACTOR-SPEC confirmed). Whole-stick
+    # rounding is the entire allowance — no % waste on stick counts.
     {
         "tabs": ["lp_smart"],
         "section": "LP SmartSide Trim",
         "item": '440 Series Trim 4/4" x 4" x 16\'',
         "unit": "PCS",
-        "extract": lambda m: max(
-            1,
-            math.ceil(((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 16),
+        "waste_included": True,
+        "extract": lambda m: math.ceil((m.get("inside_corner_lf") or 0) / 16),
+        "note": lambda m: (
+            f"Inside-corner pooling — ISC {float(m.get('inside_corner_lf') or 0):g} LF ÷ 16, "
+            "whole-stick = entire allowance (sealed convention, ruled 2026-07-24)"
         ),
-        "note": "Inside corners + horizontal runs — (eaves + rakes) ÷ 16",
+    },
+    {
+        "tabs": ["lp_smart"],
+        "section": "LP SmartSide Trim",
+        "item": '440 Series Trim 4/4" x 8" x 16\'',
+        "unit": "PCS",
+        "waste_included": True,
+        "extract": lambda m: math.ceil(
+            ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 16
+        ),
+        "note": lambda m: (
+            f"Fascia {float(m.get('eaves_lf') or 0):g} LF + rake {float(m.get('rakes_lf') or 0):g} LF ÷ 16, "
+            "whole-stick = entire allowance (sealed convention; 8\" width CONTRACTOR-SPEC, Letrick precedent)"
+        ),
     },
     # 540 Series Trim 5/4" x 4" — window / entry door / patio / garage trim
     # wrap. Per-opening trim LF mirrors the J-channel formula divisors
@@ -721,6 +739,8 @@ HOVER_MAPPING_SPEC = [
         "section": "LP SmartSide Trim",
         "item": '540 Series Trim 5/4" x 4" x 16\'',
         "unit": "PCS",
+        # Whole-stick rounding is the entire allowance (ruled 2026-07-24).
+        "waste_included": True,
         # RULED 2026-07-17 (261 Haugh shakedown): measured opening
         # perimeter governs when the report supplies it — doors trim
         # 3 sides (deduct bottoms: garage 16', entry 3', SGD 8' each).
@@ -776,6 +796,9 @@ HOVER_MAPPING_SPEC = [
         "section": "LP SmartSide Trim",
         "item": '190 Series Trim 19/32" x 3" x 16\'',
         "unit": "PCS",
+        # "no waste on battens" is the sealed rule — the tab bake violated
+        # the row's own note until 2026-07-24.
+        "waste_included": True,
         "extract": lambda m: (
             lp_formulas.board_batten_batten_pieces(
                 float((m.get("_per_profile_sqft") or {}).get("board_batten") or 0)
@@ -864,10 +887,17 @@ HOVER_MAPPING_SPEC = [
     {
         "tabs": ["lp_smart"],
         "section": "LP Siding Accessories",
-        "item": "540 Series OSC 5/4\" x 4\" x 16'",
+        # SEALED (ruled 2026-07-24): OSC product width is 5/4"×6"
+        # (Howard's default, CONTRACTOR-SPEC confirmed) — the 4" tab row
+        # retired. Whole-stick pooling = entire allowance.
+        "item": "540 Series OSC 5/4\" x 6\" x 16'",
         "unit": "PCS",
-        "extract": lambda m: max(1, round((m.get("outside_corner_lf") or 0) / 16)),
-        "note": "LP 16' outside-corner pieces / corner LF",
+        "waste_included": True,
+        "extract": lambda m: math.ceil((m.get("outside_corner_lf") or 0) / 16),
+        "note": lambda m: (
+            f"Outside-corner pooling — {float(m.get('outside_corner_lf') or 0):g} LF ÷ 16, "
+            "whole-stick (sealed convention; 6\" width CONTRACTOR-SPEC)"
+        ),
     },
     # =====================================================================
     # INSIDE CORNERS — vinyl + ascend. LP doesn't ship a dedicated inside-
@@ -1163,6 +1193,9 @@ HOVER_MAPPING_SPEC = [
         "section": "LP SmartSide Soffit",
         "item": "38 Series Soffit 16 x 16 Vented",
         "unit": "PCS",
+        # soffit_pieces carries ×1.10 inside — the tab bake was doubling
+        # waste (10% on 10%) until 2026-07-24.
+        "waste_included": True,
         # RULED 2026-07-17: measured per-surface soffit governs when the
         # report supplies it (_soffit_vented_sqft) — eaves vent; rakes +
         # ceilings close. Overhang-depth estimate is the fallback only.
@@ -1199,6 +1232,8 @@ HOVER_MAPPING_SPEC = [
         "section": "LP SmartSide Soffit",
         "item": "38 Series Soffit 16 x 16 Closed",
         "unit": "PCS",
+        # soffit_pieces carries ×1.10 inside — see Vented row.
+        "waste_included": True,
         "extract": lambda m: (
             lp_formulas.soffit_pieces(float(m.get("_soffit_closed_sqft") or 0))
             if (m.get("_soffit_closed_sqft") or 0) > 0
@@ -1960,6 +1995,11 @@ def _build_lines(measurements: dict) -> list[dict]:
                 "name": spec["item"],
                 "unit": spec["unit"],
                 "qty": qty,
+                # Sealed-convention stick rows (whole-stick rounding IS the
+                # entire allowance) and formulas with ×1.10 inside opt out
+                # of the tab waste bake (ruled 2026-07-24 — the old
+                # ÷16 × %waste tab formulas retired).
+                "_waste_included": bool(spec.get("waste_included")),
                 "note": note_val,
             })
     return out
@@ -2292,7 +2332,8 @@ async def hover_lp_run(
     if profile not in _DEFAULT_PROFILES:
         raise HTTPException(status_code=422, detail=f"profile must be one of {_DEFAULT_PROFILES}")
     est = await db.estimates.find_one(
-        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0, "kind": 1})
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
     if est.get("kind") != "lp_smart":
@@ -2356,6 +2397,18 @@ async def hover_lp_run(
         scoped = dict(hover_meas)
         if engine_meas.get("siding_sqft") is not None:
             scoped["siding_sqft"] = engine_meas["siding_sqft"]  # scope governs
+        # PORCH CEILINGS ROLL INTO SOFFIT SERVER-SIDE (ruled 2026-07-24,
+        # Casile set-back entry): Job-Info porch entries feed the Vented
+        # soffit derivation on every rebuild — same math as the editor's
+        # recalc hook (porchCeilingTotalSqft mirror).
+        porches = est.get("porch_ceilings") or []
+        porch_sqft = sum(
+            (float(p.get("width_ft") or 0) * float(p.get("length_ft") or 0))
+            for p in porches if isinstance(p, dict))
+        if porch_sqft > 0:
+            scoped["porch_ceiling_sqft"] = porch_sqft
+        if est.get("overhang_in") is not None:
+            scoped["overhang_in"] = est["overhang_in"]
         tab_lines = _bake_tab_waste(
             _build_lines(_force_profile_measurements(scoped, profile)), waste_field)
         prev = await db.estimates.find_one(
@@ -2402,11 +2455,19 @@ async def hover_lp_run(
         # named labor/misc rows (cap window/doors, cleanup) carry the
         # standing labor price when the row would otherwise be $0.00 —
         # contractor-editable per estimate (an edited price inherits and wins).
-        from lp_conventions import LABOR_CONVENTIONS
+        from lp_conventions import LABOR_CONVENTIONS, RETIRED_LABOR_DEFAULTS
         from lp_costs import sheet_norm as _sheet_norm
         for l in tab_lines:
-            conv = LABOR_CONVENTIONS.get(_sheet_norm(l.get("name") or ""))
-            if conv and not (l.get("mat") or 0) and not (l.get("lab") or 0):
+            key = _sheet_norm(l.get("name") or "")
+            conv = LABOR_CONVENTIONS.get(key)
+            if not conv or (l.get("mat") or 0):
+                continue
+            lab = float(l.get("lab") or 0)
+            # $0 rows bind; rows still carrying a RETIRED standing default
+            # are machine bindings (not contractor edits) and rebind to the
+            # current default (ruled 2026-07-24). Any other value is a
+            # contractor edit — inherits and wins.
+            if lab == 0 or lab in RETIRED_LABOR_DEFAULTS.get(key, set()):
                 l["lab"] = float(conv)
         # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 —
         # Casile lap-251 double-quote): a profile-mapped rebuild writes the

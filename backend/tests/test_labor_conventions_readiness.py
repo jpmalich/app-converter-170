@@ -1,9 +1,12 @@
-"""LABOR CONVENTIONS (Howard's standing defaults, ruled 2026-07-23) +
-ESTIMATE READINESS CHECKLIST / SOFT QUOTE GATE (authorized 2026-07-23).
+"""LABOR CONVENTIONS (Howard's standing defaults, re-priced by the
+2026-07-24 Casile close-out ruling) + ESTIMATE READINESS CHECKLIST /
+SOFT QUOTE GATE (authorized 2026-07-23).
 
 Conventions pinned:
-  • Cap window $25 · Cap entry door $75 · Cap patio door $75 ·
-    Cap single garage door $100 · clean up/haul away $150/job
+  • Cap window $98 · Cap entry door $107 · Cap patio door $100 ·
+    Cap single garage door $138 · clean up/haul away $334/job
+  • Rows still carrying a RETIRED default (2026-07-23 provisional set:
+    25/75/75/100/150) are machine bindings — they REBIND on rebuild.
   • NOT master-sheet SKUs — they bind wherever the named row would
     otherwise be $0.00; a REAL sheet price outranks the convention; a
     contractor-edited tab price inherits through rebuilds and wins
@@ -32,8 +35,8 @@ CASILE_EST = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"
 FRONTEND_SRC = BACKEND.parent / "frontend" / "src"
 
 EXPECTED = {
-    "cap window": 25.0, "cap entry door": 75.0, "cap patio door": 75.0,
-    "cap single garage door": 100.0, "clean up/ haul away job debris": 150.0,
+    "cap window": 98.0, "cap entry door": 107.0, "cap patio door": 100.0,
+    "cap single garage door": 138.0, "clean up/ haul away job debris": 334.0,
 }
 
 
@@ -63,10 +66,10 @@ def test_price_package_binds_conventions_when_sheet_is_zero():
              "clean up/ haul away job debris": {"mat": 0.0, "lab": 0.0}}
     price_package(pkg, cfg, None, tier_sheet=sheet)
     cap, clean = pkg["lines"]
-    assert cap["pricing_status"] == "priced" and cap["unit_sell"] == 25.0
-    assert cap["line_sell"] == 100.0
+    assert cap["pricing_status"] == "priced" and cap["unit_sell"] == 98.0
+    assert cap["line_sell"] == 392.0
     assert "labor convention" in cap["price_basis"]
-    assert clean["unit_sell"] == 150.0 and "labor convention" in clean["price_basis"]
+    assert clean["unit_sell"] == 334.0 and "labor convention" in clean["price_basis"]
 
 
 def test_real_sheet_price_outranks_convention():
@@ -87,11 +90,11 @@ def test_casile_money_surface_carries_conventions(session):
     contractor-edited values always win."""
     est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()
     rows = {(l.get("tab"), l.get("name")): l for l in est["lines"]}
-    assert rows[("lp_smart", "Cap window")]["lab"] == 25.0
-    assert rows[("lp_smart", "Cap entry door")]["lab"] == 75.0
-    assert rows[("lp_smart", "Cap patio door")]["lab"] == 75.0
-    assert rows[("lp_smart", "Cap single garage door")]["lab"] == 100.0
-    assert rows[("lp_smart", "clean up/ haul away job debris")]["lab"] == 150.0
+    assert rows[("lp_smart", "Cap window")]["lab"] == 98.0
+    assert rows[("lp_smart", "Cap entry door")]["lab"] == 107.0
+    assert rows[("lp_smart", "Cap patio door")]["lab"] == 100.0
+    assert rows[("lp_smart", "Cap single garage door")]["lab"] == 138.0
+    assert rows[("lp_smart", "clean up/ haul away job debris")]["lab"] == 334.0
     assert rows[("windows", "Cap window (Windows)")]["lab"] == 20.0  # edited value wins
 
 
