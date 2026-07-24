@@ -4829,3 +4829,27 @@ NEXT: Hover-native elevation sheets SIZING REPORT (report only), then Hover-Visi
 rung (authorized small-medium). BACKLOG: upload-access security tightening (P0
 post-Sept), compare-toggle overlay, P6 massing families, layer toggles, ISS New
 Construction catalog (awaiting Excel).
+
+## SESSION 2026-07-24 (part 38) — LABOR-RATE TOAST + HOVER-NATIVE SHEETS SIZING REPORT
+1. V3 CLEARED by Howard: Jon's quote prints ($30,610.77 materials-true, labor-honest).
+   Machine-era labor heal ACCEPTED with the register rule (no seed resurrects
+   unflagged labor). Hover-Vision rung: authorized but DEFERRED — Howard calls timing.
+2. LABOR-RATE TOAST (authorized, shipped): editing a labor rate on an estimate row
+   toasts "Labor rate saved as your company standing rate — future estimates will
+   use it (row)" — once per row per session, only for real (>0) rates, fires on the
+   successful /company/labor-rates PUT (useEstimate.js). Pinned in
+   test_casile_closeout::test_ui_flags_and_roundtrip. Live-verified on a scratch
+   estimate; smoke residue cleaned (scratch deleted, cap-window rate unset).
+3. HOVER-NATIVE ELEVATION SHEETS SIZING REPORT delivered (report only, NO build):
+   /app/memory/hover_native_sheets_sizing_report.md — Hover PDF inventory (text
+   schedule carries per-opening WxH already parsed; drawing pages carry wall dims +
+   opening placement, already rendered for Phase 2/3), 5-rung geometry-source
+   ladder (TAPED > HOVER-SCHEDULE > HOVER-DIM > PHOTO-AI > ESTIMATED, divergence
+   flags never averages), 3 slices (S1 substrate persistence SMALL — pair with
+   post-Sept upload security; S2 wall-geometry extraction MEDIUM — only new AI
+   surface; S3 binder integration MEDIUM). Fits the authorized S–M envelope.
+STAMP: - 2026-07-24 20:00 UTC · 16b6e99 · CLEAN · [tests] · 1299 passed, 1 skipped, 3 warnings in 132.88s (0:02:12)
+NEXT: await Howard's book-check of the sizing report + his timing call on the
+Hover-Vision rung. BACKLOG unchanged: upload-access security tightening (P0
+post-Sept, pairs with S1), compare-toggle overlay, P6 massing families, layer
+toggles, ISS New Construction catalog (awaiting Excel).
