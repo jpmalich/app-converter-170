@@ -2320,12 +2320,30 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           and the wall-ref to lock scale.
                         </span>
                       </li>
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-ref-plane">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>Wall refs live on the MAIN wall plane.</b> Draw the reference
+                          across the widest full span of the wall itself — never across a
+                          dormer, pop-up, or porch face. A ref that crosses planes scales
+                          the wrong surface and drags the whole wall&apos;s confidence down.
+                        </span>
+                      </li>
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-dormers">
                         <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
                         <span>
                           <b>One marker per dormer face.</b> Stand square to the dormer if you
                           can. Without a direct read, width is back-solved from the window
                           and comes in <span className="text-[#F59E0B] font-bold">amber</span>.
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-pin-windows">
+                        <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
+                        <span>
+                          <b>Pin your windows — especially any window up in the roof.</b>{" "}
+                          A yellow pin makes that window ground truth: the AI enumerates it
+                          on the correct face (dormer vs. wall) instead of guessing — which
+                          is exactly where phantom window collisions come from.
                         </span>
                       </li>
                       {/* Iter 79j.69 — SOP line from the red-house exam
@@ -2352,9 +2370,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-elevations">
                         <Check className="w-4 h-4 text-[var(--success)] flex-shrink-0 mt-0.5" />
                         <span>
-                          <b>All 4 elevations.</b> Front, right, back, left. Any missing wall
-                          is flagged in the result and comes in as an estimate, not a
-                          measurement.
+                          <b>All 4 elevations, square-on.</b> Front, right, back, left — stand
+                          centered and shoot the wall flat, not from a corner angle. An
+                          oblique frame gets re-read as a corner view and the wall falls back
+                          to an assumed width. Any missing wall is flagged in the result and
+                          comes in as an estimate, not a measurement.
                         </span>
                       </li>
                       <li className="flex items-start gap-2" data-testid="ai-measure-onboarding-tip-aerial">

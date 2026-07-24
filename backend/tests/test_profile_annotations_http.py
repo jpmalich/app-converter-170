@@ -49,19 +49,17 @@ def admin_session():
 
 @pytest.fixture(scope="module")
 def estimate_id(admin_session):
-    r = admin_session.get(f"{BASE_URL}/api/estimates", timeout=15)
-    assert r.status_code == 200, r.text
-    items = r.json()
-    if not items:
-        # Seed one if none exist
-        r2 = admin_session.post(
-            f"{BASE_URL}/api/estimates",
-            json={"customer": {"name": "TEST_Annotator"}, "items": []},
-            timeout=15,
-        )
-        assert r2.status_code in (200, 201), r2.text
-        return r2.json()["id"]
-    return items[0]["id"]
+    """ALWAYS a throwaway TEST_ estimate, deleted on teardown (ruled
+    2026-07-24 — residue-banner class: never target a real estimate)."""
+    r = admin_session.post(
+        f"{BASE_URL}/api/estimates",
+        json={"customer_name": "TEST_Annotator", "address": "TEST_Annotator"},
+        timeout=15,
+    )
+    assert r.status_code in (200, 201), r.text
+    eid = r.json()["id"]
+    yield eid
+    admin_session.delete(f"{BASE_URL}/api/estimates/{eid}", timeout=15)
 
 
 # ---------------------------------------------------------------------------

@@ -448,3 +448,30 @@ Pinned: test_partial_put_clobber_class.py (kind-immutability + editor-payload pi
    14477.52 → 12901.52 (−1430 retired conventions, −146 healed gutter labs).
    RULE: a heal is not a heal until the seed that resurrects the data is
    healed with it.
+
+## 2026-07-24 — TEST-DATA POLLUTION CLASS: THIRD BITE, DIES HERE (ruled)
+1. DEFECT: test fixtures "reusing the first existing estimate" (GET /estimates
+   sorts updated_at DESC → the most-recently-touched REAL job) attached measure
+   artifacts to live estimates. Third bite of the class (red-house waste
+   residue · Letrick residue · EST-644081 "PREVIOUS READ · 2 PG" blueprint
+   banner — run faa6e978, created 21:21:49 = the handback suite to the minute,
+   source test_blueprint_page_paths_http.py's synthetic 2-page reportlab PDF).
+   Product Restore scoping verified CLEAN (server-side, user+estimate keyed).
+2. HEAL WITH RECEIPTS: run faa6e978… deleted from ai_blueprint_runs
+   (delete_one matched 1; 0 blueprint runs remain on EST-644081 — the residue
+   card clears).
+3. FIX SHIPPED (authorized, test-side small): both offending fixtures
+   (test_blueprint_page_paths_http.py, test_profile_annotations_http.py) now
+   ALWAYS create TEST_-prefixed throwaway estimates and tear them down
+   (estimate + this module's run docs).
+4. TRIPWIRE ARMED (tests/conftest.py, session-autouse): after every suite run,
+   any ai_measure_runs / ai_blueprint_runs doc created during the session and
+   attached to a PRE-EXISTING non-TEST_ estimate FAILS the whole session by
+   name, with receipts. Allowed: no estimate_id, suite-born estimates, TEST_
+   names. The class dies here.
+5. CAPTURE-GUIDANCE SHIPPED (approved, content change): photo checklist gains
+   "Wall refs live on the MAIN wall plane" + "Pin your windows — especially
+   any window up in the roof" and the elevations tip becomes "All 4
+   elevations, square-on". Pinned in test_capture_guidance_pins.py. Dormer
+   taxonomy hardening + Phase B raised-structure tripwire: LOGGED post-Sept,
+   pre-registered scored trial when it runs.

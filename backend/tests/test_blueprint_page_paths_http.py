@@ -49,15 +49,9 @@ def session():
 
 @pytest.fixture(scope="module")
 def estimate_id(session):
-    """Reuse the first existing estimate; if none, create a throwaway TEST_ one."""
-    r = session.get(f"{BASE_URL}/api/estimates", timeout=15)
-    assert r.status_code == 200, r.text
-    items = r.json()
-    if isinstance(items, dict):
-        items = items.get("items") or items.get("estimates") or []
-    if items:
-        return items[0]["id"]
-    # Create a throwaway estimate
+    """ALWAYS a throwaway TEST_ estimate, deleted on teardown (ruled
+    2026-07-24 — residue-banner class: never target a real estimate).
+    The blueprint run docs this module creates are deleted with it."""
     r = session.post(
         f"{BASE_URL}/api/estimates",
         json={"customer_name": "TEST_iter78z_blueprint",
@@ -65,7 +59,14 @@ def estimate_id(session):
         timeout=15,
     )
     assert r.status_code == 200, f"Create estimate failed: {r.status_code} {r.text}"
-    return r.json()["id"]
+    eid = r.json()["id"]
+    yield eid
+    session.delete(f"{BASE_URL}/api/estimates/{eid}", timeout=15)
+    import os
+    from pymongo import MongoClient
+    client = MongoClient(os.environ["MONGO_URL"])
+    client[os.environ["DB_NAME"]].ai_blueprint_runs.delete_many({"estimate_id": eid})
+    client.close()
 
 
 @pytest.fixture(scope="module")
