@@ -4737,3 +4737,33 @@ STAMP: - 2026-07-24 11:39 UTC · c49adef · CLEAN · [tests] · 1274 passed, 1 s
 PENDING HOWARD RULINGS: OSC/440-trim tab-vs-list divergence (statement stands, session 33+34
 live quantities confirmed; tab side looks stale — NO silent reconcile). Hover-native elevation
 sheet sizing report delivered (report only — build awaits authorization).
+
+## SESSION 2026-07-24 (part 35) — CASILE CLOSE-OUT (rulings executed)
+1. OSC/440 RULING EXECUTED — sealed conventions now govern the TABS: hover.py
+   pre-sealed formulas retired. OSC = 5/4"×6" ceil(LF/16) whole-stick; 440 4/4"×8"
+   fascia+rake whole-stick; 440 4/4"×4" ISC pooling; 540/190 whole-stick no bake;
+   soffit rows exempt from tab bake (×1.10 lives in soffit_pieces — old bake made
+   10%-on-10%). Runner now propagates waste_included from specs.
+2. LABOR CLOSE-OUT PRICES bound as standing defaults: 98/107/100/138/334.
+   RETIRED_LABOR_DEFAULTS rebind machinery: rows carrying the retired 2026-07-23
+   provisional set (25/75/75/100/150) are machine bindings and rebind on rebuild;
+   any other value = contractor edit, inherits and wins (windows Cap @ $20 pinned).
+3. PORCH CEILING (set-back entry 2'×7'9" = 15.5 sqft): machinery now accepts it
+   SERVER-SIDE — hover_lp_run injects porch_ceiling_sqft + overhang_in from the
+   estimate into the rebuild basis. Entry recorded from the ruling; vented soffit
+   composes eaves 184.17 + porch 15.5. Soffit-vs-Hover gap 142.25 → 126.75 ft².
+4. FAMILY-CHECK TRIPWIRE live on GET /readiness: >1 siding family with derived
+   qty raises family_conflict (human-typed second family = choice, never trips).
+5. JON'S FINAL MONEY SURFACE (header live-verified $34,732.84):
+   mat 18,508.40 + tax 1,295.59 + labor 4,509.00 → base 24,312.99 → sell 34,732.84.
+   Deltas from 29,533.62: mat +850.89 (OSC +634.11, 440-8 +1,185.03, 440-4 −578.10,
+   540 −120.05, 190 −196.60, soffit closed −73.50, vented net 0), labor +2,729.00,
+   tax +59.56 → sell +5,199.22. All named, reconciled to the penny.
+6. Pins: test_casile_closeout.py (13); amended test_labor_conventions_readiness,
+   test_haugh_round_two + test_iteration_47_haugh (Letrick 13,572.52 → 14,477.52,
+   +1,430 close-out conventions), test_lp_master_sheet_binding.
+STAMP: - 2026-07-24 17:29 UTC · dc48b98 · CLEAN · [tests] · 1287 passed, 1 skipped, 3 warnings in 173.58s (0:02:53)
+PARKED: W-204/205 → Picture styles (Howard sets in-app); Vero Picture price page
+(windows work parked until after September — escalated-no-price flags stay visible).
+QUEUED: hover-vision sheet rung (AUTHORIZED small-medium, after Jon ships + prod
+sequence); full vision extension PARKED pending pre-registered scored trial.
