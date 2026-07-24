@@ -33,12 +33,14 @@ from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 CASILE_EST = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"  # EST-523061
 CASILE_COMPANY = "ecfe9396-0b00-4839-94c0-79cdba1cb8fc"
 
-# The ONLY honest pendings on the Casile package: $0.00 on every tier
-# sheet — escalated to Howard BY NAME, never placeholder-priced.
-ZERO_DOLLAR_SHEET_ROWS = {
-    "cap window", "cap entry door", "cap patio door",
-    "cap single garage door", "clean up/ haul away job debris",
+# The five labor/misc conventions (Howard's standing defaults, ruled
+# 2026-07-23): $0.00 on EVERY tier sheet — they bind from LABOR_CONVENTIONS,
+# never from the master sheet, never a placeholder.
+LABOR_CONVENTION_ROWS = {
+    "cap window": 25.0, "cap entry door": 75.0, "cap patio door": 75.0,
+    "cap single garage door": 100.0, "clean up/ haul away job debris": 150.0,
 }
+ZERO_DOLLAR_SHEET_ROWS = set(LABOR_CONVENTION_ROWS)
 
 
 @pytest.fixture(scope="module")
@@ -135,26 +137,29 @@ def test_casile_gutter_lines_bind_to_master_sheet(pkg):
         assert by_name[n]["pricing_status"] == "priced", (n, by_name[n])
 
 
-def test_zero_dollar_rows_escalate_by_name_never_placeholder(pkg):
-    """EVERY pending line on the Casile package is one of the five $0.00
-    master-sheet rows — nothing else may be pending, and none of the five
-    may carry an invented price."""
+def test_zero_dollar_rows_bind_from_labor_conventions(pkg):
+    """AMENDED (Howard's prices, 2026-07-23): the five $0.00-sheet rows now
+    bind from his standing labor conventions — basis named, exact amounts,
+    NOTHING pending on the Casile package."""
     pending = {str(l.get("name") or "").lower()
                for l in pkg["lines"] if l.get("pricing_status") == "pending"}
-    assert pending == ZERO_DOLLAR_SHEET_ROWS, pending
+    assert pending == set(), pending
+    by_name = {str(l.get("name") or "").lower(): l for l in pkg["lines"]}
+    for name, amount in LABOR_CONVENTION_ROWS.items():
+        l = by_name[name]
+        assert l["pricing_status"] == "priced", l
+        assert l["unit_sell"] == amount, (name, l.get("unit_sell"))
+        assert "labor convention" in str(l.get("price_basis")), l.get("price_basis")
     summary = (pkg.get("summary") or {}).get("pricing") or {}
-    assert summary.get("pending_lines") == len(ZERO_DOLLAR_SHEET_ROWS)
-    for l in pkg["lines"]:
-        if str(l.get("name") or "").lower() in ZERO_DOLLAR_SHEET_ROWS:
-            assert l.get("unit_sell") is None, l
+    assert summary.get("pending_lines") == 0
 
 
 def test_contractor_preview_same_pending_escalations(session):
-    """The (unpriced) contractor preview carries the SAME escalation set —
-    pricing_status is verification info and survives redaction."""
+    """The (unpriced) contractor preview mirrors the escalation state —
+    with conventions bound there is nothing pending on Casile."""
     r = session.post(f"{API}/estimates/{CASILE_EST}/lp-package/preview",
                      json={}, timeout=90)
     assert r.status_code == 200, r.text
     pending = {str(l.get("name") or "").lower()
                for l in r.json()["lines"] if l.get("pricing_status") == "pending"}
-    assert pending == ZERO_DOLLAR_SHEET_ROWS, pending
+    assert pending == set(), pending

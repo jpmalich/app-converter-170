@@ -136,7 +136,9 @@ def test_C_letrick_photo_regression(sess):
     sheet-bound gutter rows price from the company master sheet + overrides (+852.40)
     → total_sell 13047.52; cap/cleanup rows stay pending ($0.00 sheet, escalated by name).
     ONE MONEY SURFACE (2026-07-23): the contractor preview is unpriced — this dollar
-    pin rides the supplier-admin cost-preview."""
+    pin rides the supplier-admin cost-preview. AMENDED AGAIN (labor conventions,
+    Howard's prices 2026-07-23): escalated rows bind from standing defaults
+    (+525.00) → 13572.52."""
     import os
     tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
     p = sess.post(f"{API}/admin/estimates/{LETRICK_ID}/lp-package/cost-preview",
@@ -147,7 +149,7 @@ def test_C_letrick_photo_regression(sess):
     pricing = summary.get("pricing") or {}
     total = pricing.get("total_sell") or summary.get("total_sell") or data.get("total_sell")
     assert total is not None, f"no total_sell; summary keys={list(summary.keys())} pricing={pricing}"
-    assert abs(float(total) - 13047.52) < 0.01, f"total_sell={total}, expected 13047.52"
+    assert abs(float(total) - 13572.52) < 0.01, f"total_sell={total}, expected 13572.52"
     wpa = summary.get("waste_pct_applied")
     assert wpa is not None, "summary.waste_pct_applied missing on letrick"
     assert abs(float(wpa) - 0.10) < 1e-6, f"waste_pct_applied={wpa}"

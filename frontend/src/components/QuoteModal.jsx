@@ -9,11 +9,13 @@ import { X, Printer, Send } from "lucide-react";
 import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/emailQuote";
 import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
 import { isValidEmail } from "@/lib/validate";
+import { useReadiness } from "@/components/estimate/ReadinessPanel";
 
 export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail, derivedUnapplied }) {
   const { company } = useCompany();
   const branding = useBranding();
   const { user } = useAuth();
+  const { readiness } = useReadiness(estimate?.id);
   const { lang: uiLang } = useLang();
   const t = useT();
   // Iter 79j.47 — Two-way email sync. Prefill the recipient input
@@ -161,6 +163,25 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   return (
     <div className="fixed inset-0 z-[60] bg-[#09090B]/70 backdrop-blur-sm overflow-y-auto" data-testid="quote-modal">
       <div className="min-h-screen flex flex-col items-center py-6 sm:py-10 px-4">
+        {/* QUOTE-BUTTON GATE (authorized 2026-07-23): SOFT warning only —
+            readiness items surface here when the quote opens; the
+            contractor can always proceed. NEVER a hard block (ruled). */}
+        {readiness && readiness.open_count > 0 && (
+          <div className="no-print w-full max-w-3xl mb-3 bg-[#FFFBEB] border border-[#F59E0B] px-4 py-3" data-testid="quote-readiness-warning">
+            <div className="text-xs font-bold text-[#92400E] mb-1">
+              ⚠ {readiness.open_count} open item{readiness.open_count === 1 ? "" : "s"} on the readiness checklist — the number may not be final.
+            </div>
+            <ul className="space-y-0.5">
+              {readiness.items.slice(0, 6).map((it, i) => (
+                <li key={i} className="text-[11px] text-[#92400E]" data-testid="quote-readiness-item">• {it.label}</li>
+              ))}
+              {readiness.items.length > 6 && (
+                <li className="text-[11px] text-[#92400E]">… and {readiness.items.length - 6} more (see Readiness on the estimate page)</li>
+              )}
+            </ul>
+            <div className="text-[10px] text-[#92400E] mt-1 opacity-80">Soft check only — you can proceed anyway.</div>
+          </div>
+        )}
         {/* Floating action bar */}
         <div className="no-print w-full max-w-3xl flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
           <div className="flex flex-col md:flex-1 gap-1">

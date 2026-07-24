@@ -660,6 +660,48 @@ async def lp_package_preview(
 _COMPARE_FAMILIES = ("lap", "board_batten")
 
 
+@router.get("/estimates/{est_id}/readiness")
+async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)):
+    """ESTIMATE READINESS CHECKLIST (authorized 2026-07-23): one glance at
+    everything standing between the contractor and a real number —
+    pending prices, open mapping flags, unentered field-verify items,
+    unpriced money-surface rows. SOFT surface only (ruled): informational;
+    the Customer Quote button NEVER hard-blocks on it."""
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "id": 1, "lines": 1, "kind": 1})
+    if not est:
+        raise HTTPException(status_code=404, detail="Estimate not found")
+    items = []
+    for l in est.get("lines") or []:
+        if (l.get("qty") or 0) > 0 and not (l.get("mat") or 0) and not (l.get("lab") or 0):
+            items.append({
+                "kind": "unpriced_row", "code": l.get("name"),
+                "label": (f"Unpriced money-surface row: {l.get('name')} "
+                          f"({l.get('tab') or 'vinyl'} tab, qty {l.get('qty'):g})"),
+            })
+    try:
+        pkg = await lp_package_preview(est_id, None, user)
+    except HTTPException:
+        pkg = None
+    if pkg:
+        for l in pkg.get("lines") or []:
+            if l.get("pricing_status") == "pending" and (l.get("qty") or 0) > 0:
+                items.append({"kind": "pending_price", "code": l.get("name"),
+                              "label": f"Pending price (escalated by name): {l.get('name')}"})
+        for f in pkg.get("hover_mapping_flags") or []:
+            if f.get("status") != "closed":
+                items.append({"kind": "open_flag", "code": f.get("code"),
+                              "label": f"Open flag: {f.get('label')}"})
+        for a in pkg.get("amber_items") or []:
+            if (a.get("status") or "unverified") == "unverified":
+                items.append({"kind": "field_verify", "code": a.get("key"),
+                              "label": (f"Field-verify open: {a.get('kind') or 'corner'} "
+                                        f"@ {a.get('locator') or '?'}")})
+    return {"estimate_id": est_id, "items": items,
+            "open_count": len(items), "ready": not items}
+
+
 async def _load_tier_sheet_for(est: dict) -> dict:
     """Master-price-sheet index for sheet-binding (ruled 2026-07-23):
     the sheet the contractor ACTUALLY SEES — company tier baseline merged

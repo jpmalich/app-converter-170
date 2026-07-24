@@ -183,13 +183,20 @@ def price_package(pkg: dict, cfg: dict, tier_name=None, tier_sheet=None) -> dict
         unit_cost = cost_for(name, basis)
         if unit_cost is None:
             sheet = (tier_sheet or {}).get(sheet_norm(name))
-            if sheet is not None and basis not in PREFINISHED_FINISHES:
+            if basis not in PREFINISHED_FINISHES:
+                sheet_sell = (round(float(sheet.get("mat") or 0) + float(sheet.get("lab") or 0), 2)
+                              if sheet is not None else 0.0)
+                from lp_conventions import LABOR_CONVENTIONS
+                conv = LABOR_CONVENTIONS.get(sheet_norm(l.get("name") or ""))
                 # MASTER-SHEET BINDING (ruled 2026-07-23, Casile founding
                 # example): items with no dealer cost on the LP quote sheet
-                # (gutter, capping labor, cleanup…) bind to the company's
-                # master price sheet entry. Sheet numbers are SELL-side —
-                # the tier sheet IS the sell — so no LP margin re-applies.
-                unit_sell = round(float(sheet.get("mat") or 0) + float(sheet.get("lab") or 0), 2)
+                # bind to the company's master price sheet entry — sheet
+                # numbers are SELL-side, no LP margin re-applies. LABOR
+                # CONVENTIONS (ruled 2026-07-23): named labor/misc rows
+                # ($0.00 on every tier sheet — cap window/doors, cleanup)
+                # bind to Howard's standing defaults instead of pending;
+                # a real sheet price outranks the convention.
+                unit_sell = sheet_sell if sheet_sell > 0 else round(float(conv), 2) if conv else 0.0
                 if unit_sell > 0:
                     try:
                         q = float(l.get("qty") or 0)
@@ -198,15 +205,19 @@ def price_package(pkg: dict, cfg: dict, tier_name=None, tier_sheet=None) -> dict
                     l["unit_sell"] = unit_sell
                     l["line_sell"] = round(unit_sell * q, 2)
                     l["pricing_status"] = "priced"
-                    l["price_basis"] = ("master price sheet (sell-side — sheet "
-                                        "governs; no LP margin re-applied)")
+                    l["price_basis"] = (("master price sheet (sell-side — sheet "
+                                         "governs; no LP margin re-applied)")
+                                        if sheet_sell > 0 else
+                                        ("labor convention — standing default "
+                                         "(contractor-editable per estimate; ruled 2026-07-23)"))
                     total_sell += l["line_sell"]
                     priced += 1
                     continue
-                _mark_pending(l, "master price sheet holds $0.00 for this item — "
-                                 "needs a sheet price (escalated by name, never a placeholder)")
-                pending += 1
-                continue
+                if sheet is not None:
+                    _mark_pending(l, "master price sheet holds $0.00 for this item — "
+                                     "needs a sheet price (escalated by name, never a placeholder)")
+                    pending += 1
+                    continue
             if basis in PREFINISHED_FINISHES:
                 reason = (f"no dealer cost on {QUOTE_REF} for this product at ExpertFinish — "
                           "cost pending; NEVER falls back to mill for a prefinished selection (ruled)")

@@ -2392,6 +2392,16 @@ async def hover_lp_run(
                     # convention is an explicit $0.00, never a None hole.
                     l["mat"] = 0.0
                     l["lab"] = 0.0
+        # LABOR CONVENTIONS (Howard's standing defaults, ruled 2026-07-23):
+        # named labor/misc rows (cap window/doors, cleanup) carry the
+        # standing labor price when the row would otherwise be $0.00 —
+        # contractor-editable per estimate (an edited price inherits and wins).
+        from lp_conventions import LABOR_CONVENTIONS
+        from lp_costs import sheet_norm as _sheet_norm
+        for l in tab_lines:
+            conv = LABOR_CONVENTIONS.get(_sheet_norm(l.get("name") or ""))
+            if conv and not (l.get("mat") or 0) and not (l.get("lab") or 0):
+                l["lab"] = float(conv)
         rebuilt_lines = tab_lines
         est_set["lines"] = tab_lines
         # Porch-ceiling recompute basis (Casile set-back doorway item):

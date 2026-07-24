@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
-import { Save, FileText, Printer, Download, ClipboardList } from "lucide-react";
+import { Save, FileText, Printer, Download, ClipboardList, ListChecks } from "lucide-react";
+import ReadinessPanel from "./ReadinessPanel";
 
 const TAB_LABEL_KEYS = {
   vinyl: "tabLabel.vinyl",
@@ -13,6 +14,7 @@ const TAB_LABEL_KEYS = {
 
 export default function TotalsSummary({ est, totals, activeTab, saving, onSave, onOpenQuote, onPrint, onExportCsv, onPrintMaterials, lpDerivedUnapplied, lpDerivedTotal }) {
   const t = useT();
+  const [showReadiness, setShowReadiness] = useState(false);
   const modeLabel = est.pricing_mode === "markup" ? t("est.markup").toLowerCase() : t("est.margin").toLowerCase();
   const tabLabel = t(TAB_LABEL_KEYS[activeTab] || TAB_LABEL_KEYS.vinyl);
   return (
@@ -68,7 +70,11 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
         <button className="btn-secondary" onClick={onExportCsv} data-testid="export-csv-btn">
           <Download className="w-4 h-4" /> {t("est.exportCsv")}
         </button>
+        <button className="btn-secondary" onClick={() => setShowReadiness((v) => !v)} data-testid="readiness-btn">
+          <ListChecks className="w-4 h-4" /> Readiness
+        </button>
       </div>
+      {showReadiness && <ReadinessPanel estId={est.id} />}
     </section>
   );
 }

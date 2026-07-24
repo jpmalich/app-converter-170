@@ -288,3 +288,18 @@ def spec_discrepancies() -> list:
         if pieces_per_square(want_reveal, 12) != LAP_PCS_PER_SQUARE_12FT[name]:
             out.append(f"{name}: 12' pcs/square mismatch")
     return out
+
+
+# ── LABOR / MISC CONVENTIONS (Howard's standing defaults, ruled
+# 2026-07-23 with the Casile handback): these are NOT master-sheet SKUs —
+# they are the contractor's standing labor conventions, applied wherever
+# the named row would otherwise be $0. Contractor-editable per estimate
+# on the money surface (an edited tab-line price inherits and wins),
+# same class as the waste pre-fill. Keys are sheet_norm()-normalized. ──
+LABOR_CONVENTIONS = {
+    "cap window": 25.0,
+    "cap entry door": 75.0,
+    "cap patio door": 75.0,
+    "cap single garage door": 100.0,
+    "clean up/ haul away job debris": 150.0,
+}
