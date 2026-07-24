@@ -6622,8 +6622,42 @@ async def map_measurements_to_lines(
     the contractor produces measurements by tapping on a photo and we
     just need the same line mapping HOVER provides."""
     measurements = payload.get("measurements") or {}
+    # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 — Casile
+    # lap-251 double-quote): the cached-measurement RESTORE path was
+    # profile-blind and emitted the DEFAULT (lap) family beside the
+    # estimate's mapped B&B rows. When the caller names a profile, the
+    # mapper derives THAT family and returns `zero_family_lines` — every
+    # other siding family's derived row keys — so the apply merge zeroes
+    # derivation residue (human-typed rows survive on the client side).
+    profile = payload.get("profile") or None
+    zero_family_lines = []
     try:
-        lines = _build_lines(measurements)
+        if profile:
+            from routes.lp_package_routes import (_DEFAULT_PROFILES,
+                                                  _force_profile_measurements)
+            if profile not in _DEFAULT_PROFILES:
+                raise HTTPException(status_code=422,
+                                    detail=f"profile must be one of {_DEFAULT_PROFILES}")
+            lines = _build_lines(_force_profile_measurements(dict(measurements), profile))
+            selected = {(l.get("tab"), l.get("section"), l.get("name")) for l in lines}
+            seen = set()
+            for fam in _DEFAULT_PROFILES:
+                if fam == profile:
+                    continue
+                try:
+                    fam_lines = _build_lines(_force_profile_measurements(dict(measurements), fam))
+                except Exception:
+                    continue
+                for fl in fam_lines:
+                    k = (fl.get("tab"), fl.get("section"), fl.get("name"))
+                    if k not in selected and k not in seen:
+                        seen.add(k)
+                        zero_family_lines.append(
+                            {"tab": k[0], "section": k[1], "name": k[2]})
+        else:
+            lines = _build_lines(measurements)
+    except HTTPException:
+        raise
     except Exception:
         lines = []
     # Iter 78o — Phase 1 sanity checks also run on the cached-measurement
@@ -6634,7 +6668,8 @@ async def map_measurements_to_lines(
         warnings = run_checks(measurements)
     except Exception:
         warnings = []
-    return {"measurements": measurements, "lines": lines, "vero_openings": [], "warnings": warnings}
+    return {"measurements": measurements, "lines": lines, "vero_openings": [],
+            "warnings": warnings, "zero_family_lines": zero_family_lines}
 
 
 

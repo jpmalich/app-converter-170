@@ -162,7 +162,10 @@ export default function useEstimate(id) {
     setEst((e) => ({
       ...e,
       lines: e.lines.map((l) =>
-        matchLine(l, tab, section, name) ? { ...l, qty: Number(qty) || 0 } : l
+        // qty_src "human" (ruled 2026-07-24): a contractor-typed quantity
+        // is a human choice — it survives every rebuild/restore; only
+        // DERIVED quantities get zeroed by family-owning derivations.
+        matchLine(l, tab, section, name) ? { ...l, qty: Number(qty) || 0, qty_src: "human" } : l
       ),
     }));
     setUserEdits((n) => n + 1);

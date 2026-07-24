@@ -2402,6 +2402,34 @@ async def hover_lp_run(
             conv = LABOR_CONVENTIONS.get(_sheet_norm(l.get("name") or ""))
             if conv and not (l.get("mat") or 0) and not (l.get("lab") or 0):
                 l["lab"] = float(conv)
+        # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 —
+        # Casile lap-251 double-quote): a profile-mapped rebuild writes the
+        # selected family's derived quantities and ZEROES every other
+        # siding family's DERIVED rows (visible qty-0, price kept).
+        # Human-typed rows (qty_src == "human") always survive verbatim —
+        # mixed-material jobs are human choices, never derivation residue.
+        current_keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in tab_lines}
+        other_family_keys = set()
+        for fam in _DEFAULT_PROFILES:
+            if fam == profile:
+                continue
+            try:
+                for fl in _build_lines(_force_profile_measurements(dict(scoped), fam)):
+                    k = (fl.get("tab"), fl.get("section"), fl.get("name"))
+                    if k not in current_keys:
+                        other_family_keys.add(k)
+            except Exception:
+                continue
+        for k, old in prev_idx.items():
+            if k in current_keys:
+                continue
+            if (old.get("qty_src") or "") == "human":
+                tab_lines.append(dict(old))
+            elif k in other_family_keys:
+                zeroed = dict(old)
+                zeroed["qty"] = 0
+                zeroed["raw_qty"] = None
+                tab_lines.append(zeroed)
         rebuilt_lines = tab_lines
         est_set["lines"] = tab_lines
         # Porch-ceiling recompute basis (Casile set-back doorway item):

@@ -313,6 +313,11 @@ export default function HoverImportButton({ est, update, save }) {
     try {
       const { data } = await api.post("/measure/map", {
         measurements: est.hover_measurements,
+        // PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24): on a
+        // profile-mapped estimate the restore derives the MAPPED family
+        // and returns zero_family_lines so residue from other families
+        // is zeroed on apply — never both families on the money surface.
+        profile: est?.default_siding_profile || null,
       });
       setResult(data);
       setOpenings(data.vero_openings || []);
@@ -417,6 +422,16 @@ export default function HoverImportButton({ est, update, save }) {
           raw_qty: ln.raw_qty ?? null,
         };
         updated += 1;
+      }
+    }
+    // PROFILE OWNS ITS FAMILY (ruled 2026-07-24): zero every other siding
+    // family's DERIVED rows named by the mapper. Human-typed quantities
+    // (qty_src === "human") survive — mixed-material jobs are human
+    // choices, never derivation residue.
+    for (const zk of result?.zero_family_lines || []) {
+      const idx = byKey.get(`${zk.tab || "vinyl"}::${zk.section}::${zk.name}`);
+      if (idx != null && nextLines[idx].qty_src !== "human" && (nextLines[idx].qty || 0) > 0) {
+        nextLines[idx] = { ...nextLines[idx], qty: 0, raw_qty: null };
       }
     }
     const nextOpenings = [
