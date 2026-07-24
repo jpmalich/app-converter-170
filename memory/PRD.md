@@ -4878,3 +4878,27 @@ STAMP: - 2026-07-24 21:21 UTC · 8cd195b · CLEAN · [tests] · 1307 passed, 1 s
 NEXT: idle pending Howard's inputs. BACKLOG unchanged: upload security (P0
 post-Sept, pairs with Hover-Vision S1), labor-completeness meter (post-Sept),
 compare-toggle overlay, P6 massing, layer toggles, ISS NC catalog (awaiting Excel).
+
+## SESSION 2026-07-24 (part 40) — TWO INVESTIGATION REPORTS (report only, no code)
+1. EXTRACTION VARIANCE (/app/memory/extraction_variance_report.md): fresh red-house
+   run vs fixture, same house, same prompt_hash/model — prompt path ruled out.
+   Evidence: fresh left-wall ref drawn across the dormer/monitor plane (Phase A
+   flagged eave_scale_cross_plane), zero window pins (fixture had 5 on the dormer
+   wall), no square-on RIGHT frame. Dormer miss = taxonomy flip ("roof monitor /
+   raised half-story", seen in 6/8 photos but dormers=0) cascading to wall-plane
+   windows → phantom W1×W2 collision. Low scores (55/45) correlate exactly with
+   the missed walls — confidence system worked. VERDICT: (c) both, weighted (a) —
+   capture-guidance sentence (zero code) + post-Sept prompt-hardening item
+   (taxonomy rule + Phase B raised-structure tripwire).
+2. BLUEPRINT-CARD RESIDUE (/app/memory/blueprint_card_residue_report.md): the
+   "PREVIOUS READ · 2 PG · 21 MIN" on EST-644081 is a REAL ai_blueprint_runs doc
+   (faa6e978, created 21:21:49 = the handback suite to the minute) written by
+   test_blueprint_page_paths_http.py whose fixture "reuses the first existing
+   estimate" (GET /estimates sorts updated_at DESC → most-recently-touched REAL
+   job). Product Restore mechanism is CLEAN (server-side, user+estimate scoped, no
+   cross-estimate path); defect class = test-data pollution. RESTORE would load
+   the synthetic 2-page test read into preview; APPLY would graft it. Fix SMALL
+   (test-side): throwaway TEST_ estimates + teardown, heal the residue run,
+   optional conftest tripwire. NOTHING BUILT — reports only per ruling.
+NEXT: idle pending Howard's inputs (book-check of both reports; heal + test-fixture
+fix await his authorization). Backlog unchanged.
