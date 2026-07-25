@@ -14,6 +14,9 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
+import {
+  inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges,
+} from "@/lib/gableMath";
 // Iter 78z — Profile annotator: lets contractor draw boxes tagged
 // Shake / B&B / etc. so the AI worker treats those regions as
 // authoritative accent material. Both AI Measure + Blueprint share it.
@@ -71,7 +74,7 @@ const ELEVATION_OPTIONS = [
   { key: "detail",      label: "Detail" },
 ];
 const annotEmpty = (a) =>
-  !a || (!a.reference && !a.windowReference && (!a.zones || a.zones.length === 0) && (!a.elevation || a.elevation === "") && !a.targetPin);
+  !a || (!a.reference && !a.windowReference && (!a.zones || a.zones.length === 0) && (!a.elevation || a.elevation === "") && !a.targetPin && (!a.gables || a.gables.length === 0));
 
 const KEY_LABELS = {
   siding_sqft: "Siding",
@@ -1738,6 +1741,41 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       // can offer to Resume / Restore the most recent run for this job.
       if (estimateId) {
         fd.append("estimate_id", estimateId);
+      }
+      // CONTRACTOR GABLES (ruled 2026-07-24): structured payload persists
+      // on the run doc → Field Verify rows + sheet callouts. The burned
+      // triangles + annotation text already carry them to Claude as
+      // ground truth; this is the takeoff-visible record.
+      const contractorGables = [];
+      const risesByElevation = {};
+      for (const gname of photoUrls) {
+        const ga = photoAnnotations[gname];
+        if (!ga || !ga.gables || !ga.gables.length) continue;
+        const inPerPx = gableInchesPerPx(ga.reference, ga.windowReference);
+        for (const gb of ga.gables) {
+          const d = gableNetArea(gb, ga.zones || [], inPerPx);
+          if (!d) continue;
+          const gelev = ga.elevation || "other";
+          const row = {
+            elevation: gelev,
+            pitch: d.pitch,
+            base_ft: d.baseFt !== undefined ? Math.round(d.baseFt * 10) / 10 : null,
+            rise_ft: d.riseFt !== undefined ? Math.round(d.riseFt * 10) / 10 : null,
+            area_ft: d.netAreaFt !== undefined ? Math.round(d.netAreaFt * 10) / 10 : null,
+            masked_ft: d.maskedFt ? Math.round(d.maskedFt * 10) / 10 : 0,
+            photo: gname,
+          };
+          contractorGables.push(row);
+          if (row.rise_ft !== null) {
+            (risesByElevation[gelev] = risesByElevation[gelev] || []).push(row.rise_ft);
+          }
+        }
+      }
+      if (contractorGables.length) {
+        fd.append("contractor_gables", JSON.stringify(contractorGables));
+        // Ridge cross-check (ruled: 1.0 ft) — gentle, never blocks.
+        const ridgeWarn = crossCheckRidges(risesByElevation);
+        if (ridgeWarn) toast.warning(ridgeWarn, { duration: 9000 });
       }
       // Iter 57q — async launcher + polling. The backend used to do
       // all the Claude work synchronously in a single 60–120 s
@@ -4812,7 +4850,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         profileBoxes={
           annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.profileBoxes || []) : []
         }
-        onSave={({ reference, windowReference, zones, targetPin, windows, profileBoxes, imageDims }) => {
+        gables={
+          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.gables || []) : []
+        }
+        onSave={({ reference, windowReference, zones, targetPin, windows, profileBoxes, gables, imageDims }) => {
           if (!annotateOpenFor) return;
           setPhotoAnnotations((prev) => ({
             ...prev,
@@ -4824,6 +4865,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               targetPin,
               windows,
               profileBoxes,
+              gables,
             },
           }));
           // Iter 78z+++ — push the new in-modal profile boxes into the

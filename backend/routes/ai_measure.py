@@ -2169,6 +2169,42 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     return measurements
 
 
+def parse_contractor_gables(raw):
+    """Contractor gable payload (ruled 2026-07-24): strict parse, clamp,
+    cap at 20 — garbage never lands on the run doc. Rows carry
+    {elevation, pitch, base_ft, rise_ft, area_ft, masked_ft, photo}."""
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(data, list):
+        return []
+
+    def _num(v):
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return round(f, 1) if 0 <= f < 1e6 else None
+
+    out = []
+    for g in data[:20]:
+        if not isinstance(g, dict):
+            continue
+        out.append({
+            "elevation": str(g.get("elevation") or "other")[:24].lower(),
+            "pitch": _num(g.get("pitch")),
+            "base_ft": _num(g.get("base_ft")),
+            "rise_ft": _num(g.get("rise_ft")),
+            "area_ft": _num(g.get("area_ft")),
+            "masked_ft": _num(g.get("masked_ft")) or 0,
+            "photo": str(g.get("photo") or "")[:120],
+        })
+    return out
+
+
 @router.post("/ai-measure")
 async def ai_measure(
     files: list[UploadFile] = File(default=[]),
@@ -2206,6 +2242,12 @@ async def ai_measure(
     # `_MODEL_CHOICES` (claude-opus-4-5, claude-opus-4-8, gemini-3.5-flash,
     # gpt-5.5, etc.). Blank / unknown → default (Opus 4.5).
     model_choice: Optional[str] = Form(None),
+    # Contractor-measured gables (ruled 2026-07-24): JSON list of
+    # {elevation, pitch, base_ft, rise_ft, area_ft, masked_ft, photo}
+    # from the annotator's Add Gable tool. Stored on the run doc —
+    # NEVER injected into derivation (ruled: takeoff-visible record;
+    # Claude gets them as burned-in ground truth separately).
+    contractor_gables: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
 ):
     """Kick off an async AI photo-measure run. Iter 57q: the old
@@ -2317,6 +2359,7 @@ async def ai_measure(
     # to write into MongoDB (8 photos × 8 MB = 64 MB per run).
     await db.ai_measure_runs.insert_one({
         "run_id": run_id,
+        "contractor_gables": parse_contractor_gables(contractor_gables),
         "user_id": user_id,
         "estimate_id": estimate_id,
         "prompt_hash": _prompt_version_hash(),
@@ -3359,6 +3402,9 @@ async def ai_measure_latest_for_estimate(
             # from the CUT archive after the live doc's 30-day TTL reaped.
             "archived": archived,
             "deep_dormer_scan": doc.get("deep_dormer_scan"),
+            # Contractor-measured gables (ruled 2026-07-24) — Field
+            # Verify rows + sheet callouts read these TAPED-class dims.
+            "contractor_gables": doc.get("contractor_gables") or [],
             "result": strip_cost_keys(doc.get("result")),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,

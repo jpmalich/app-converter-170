@@ -18,7 +18,11 @@
 // patterns stay consistent, but stripped down: no measurement loop,
 // no openings, no labels — annotations only.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { X, Check, Ruler, Square, Trash2, RotateCcw, ZoomIn, ZoomOut, Maximize, Tags, Pencil, Crosshair, AppWindow, BrickWall, Home } from "lucide-react";
+import { X, Check, Ruler, Square, Trash2, RotateCcw, ZoomIn, ZoomOut, Maximize, Tags, Pencil, Crosshair, AppWindow, BrickWall, Home, Triangle } from "lucide-react";
+import {
+  GABLE_PITCH_PRESETS, RIDGE_TOLERANCE_FT, inchesPerPx as gableInchesPerPx,
+  gableDims, gableNetArea, pitchOutOfRange,
+} from "@/lib/gableMath";
 import { toast } from "sonner";
 
 const MODE_SCALE = "scale";
@@ -40,6 +44,12 @@ const MODE_WINDOW = "window";
 // instead of running a separate scale calibration. Each box gets a
 // profile family + callout location + auto-computed ft².
 const MODE_PROFILE = "profile";
+// GABLE / ABOVE-EAVE mode (ruled 2026-07-24) — three taps (left eave →
+// peak → right eave) draw a translucent measured triangle. Symmetric
+// default ON (peak centered), pitch presets recompute the peak, dragging
+// the peak recomputes the pitch. Only appears when the contractor taps
+// the tool — the rectangular-house workflow is untouched.
+const MODE_GABLE = "gable";
 
 const PROFILE_FAMILIES = [
   { key: "lap",          label: "Lap",        bg: "#DBEAFE", fg: "#1E40AF" },
@@ -150,7 +160,8 @@ export default function PhotoAnnotateModal({
   targetPin,    // { x, y } | null — single point marking the target house
   windows,      // Iter 57e — array of {x,y,style,width_in,height_in,id}
   profileBoxes, // Iter 78z+++ — array of saved profile boxes {id, shape, points/coords, profile, location, sqft, note}
-  onSave,       // ({ reference, windowReference, zones, targetPin, windows, profileBoxes }) => void
+  gables,       // ruled 2026-07-24 — array of {id, pts:[L,P,R], symmetric, pitch_set}
+  onSave,       // ({ reference, windowReference, zones, targetPin, windows, profileBoxes, gables }) => void
   onOpenProfileAnnotator, // (legacy) — kept for cross-photo Tag Profiles tool
   // Iter 79j (Feb 2026) — guided-flow mode. When set, the modal hides
   // the mode picker toolbar and instead surfaces a 5-step wizard shell
@@ -192,6 +203,8 @@ export default function PhotoAnnotateModal({
   // its bounds in PHOTO NATURAL PIXELS so sqft can be computed against
   // the same Wall Scale Anchor that PIN/WALL/WINDOW/MASK already use.
   const [localProfileBoxes, setLocalProfileBoxes] = useState(profileBoxes || []);
+  const [localGables, setLocalGables] = useState(gables || []);
+  const [gablePts, setGablePts] = useState([]); // in-progress taps (0-2)
   const [profileFamily, setProfileFamily] = useState("shake");
   // Pending window-tag entry: after the contractor taps a window pixel,
   // we open a small picker (style + W×H). Saved with `confirmWindow`.
@@ -282,6 +295,8 @@ export default function PhotoAnnotateModal({
     setLocalTarget(targetPin || null);
     setLocalWindows(windows || []);
     setLocalProfileBoxes(profileBoxes || []);
+    setLocalGables(gables || []);
+    setGablePts([]);
     setWindowPending(null);
     // Iter 79j — guided mode overrides the aerial-default: always start
     // on step 0 (Wall Scale) since that's the required first pass. The
@@ -426,6 +441,20 @@ export default function PhotoAnnotateModal({
       };
       g.pinch = { d0, m0, z0: zoom, pan0: { ...pan } };
       g.panActive = true;     // pinch implies no tap
+      g.gableDrag = null;     // two fingers cancels a vertex drag
+    } else if (mode === MODE_GABLE && photo && localGables.length) {
+      // Vertex-drag support (ruled): a press near a gable point grabs it.
+      const pt = evtPointFromClient(e.clientX, e.clientY);
+      const grabPx = Math.max(14, photo.width / 60);
+      for (const gb of localGables) {
+        for (let i = 0; i < 3; i++) {
+          if (Math.hypot(gb.pts[i].x - pt.x, gb.pts[i].y - pt.y) <= grabPx) {
+            g.gableDrag = { id: gb.id, idx: i };
+            break;
+          }
+        }
+        if (g.gableDrag) break;
+      }
     }
   };
   const onPointerMove = (e) => {
@@ -470,6 +499,11 @@ export default function PhotoAnnotateModal({
       }
       return;
     }
+    // Gable vertex drag consumes the gesture before pan (ruled).
+    if (g.gableDrag && g.pointers.size === 1) {
+      moveGablePoint(g.gableDrag.id, g.gableDrag.idx, evtPointFromClient(e.clientX, e.clientY));
+      return;
+    }
     // 1-pointer drag-pan when zoomed-in: incremental delta-since-last
     if (g.pointers.size === 1 && p && p.moved && zoom > 1) {
       setPan((prev) => ({ x: prev.x + dxFromLast, y: prev.y + dyFromLast }));
@@ -486,6 +520,11 @@ export default function PhotoAnnotateModal({
     const p = g.pointers.get(e.pointerId);
     g.pointers.delete(e.pointerId);
     if (g.pointers.size < 2) g.pinch = null;
+    if (g.gableDrag) {
+      // A vertex drag never counts as a tap (even a micro-drag).
+      if (g.pointers.size === 0) { g.gableDrag = null; g.panActive = false; }
+      return;
+    }
     if (g.pointers.size === 0) {
       // Last finger up. If it was a clean tap (no drag), invoke the
       // click logic. Otherwise reset panActive for the next gesture.
@@ -521,6 +560,25 @@ export default function PhotoAnnotateModal({
   // Iter 57l — tap → place point. Extracted from the old onCanvasClick
   // so the unified pointer pipeline can invoke it on tap-up.
   const handleTap = (p) => {
+    if (mode === MODE_GABLE) {
+      // 3 taps: left eave → peak → right eave (order normalized by x).
+      const next = [...gablePts, p];
+      if (next.length < 3) { setGablePts(next); return; }
+      let [t1, peak, t2] = next;
+      let L = t1, R = t2;
+      if (L.x > R.x) { L = t2; R = t1; }
+      // Symmetric default ON — peak centered between the eave points.
+      const g = {
+        id: `g-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        pts: [L, { x: (L.x + R.x) / 2, y: peak.y }, R],
+        symmetric: true,
+        pitch_set: null,
+      };
+      setLocalGables((prev) => [...prev, g]);
+      setGablePts([]);
+      toast.success("Gable added — drag any point to refine");
+      return;
+    }
     if (mode === MODE_WINDOW) {
       setWindowPending({ x: p.x, y: p.y });
       return;
@@ -760,6 +818,47 @@ export default function PhotoAnnotateModal({
   };
   const cancelWindow = () => setWindowPending(null);
 
+  // ── Gable helpers (ruled 2026-07-24) ──
+  const moveGablePoint = (id, idx, pt) => {
+    setLocalGables((prev) => prev.map((g) => {
+      if (g.id !== id) return g;
+      const pts = g.pts.map((p) => ({ ...p }));
+      if (idx === 1) {
+        // Peak: symmetric keeps x centered; manual drag re-derives pitch.
+        pts[1] = g.symmetric ? { x: (pts[0].x + pts[2].x) / 2, y: pt.y } : pt;
+      } else {
+        pts[idx] = pt;
+        if (g.symmetric) pts[1] = { x: (pts[0].x + pts[2].x) / 2, y: pts[1].y };
+      }
+      return { ...g, pts, pitch_set: null };
+    }));
+  };
+  const applyGablePitch = (id, pitch) => {
+    // Pitch → peak (both directions live, ruled): rise = base/2 × pitch/12.
+    // Ratio math is scale-free — works with or without a scale anchor.
+    setLocalGables((prev) => prev.map((g) => {
+      if (g.id !== id) return g;
+      const [L, P, R] = g.pts;
+      const basePx = Math.hypot(R.x - L.x, R.y - L.y);
+      if (basePx <= 0) return g;
+      const risePx = (basePx / 2) * (pitch / 12);
+      const mid = { x: (L.x + R.x) / 2, y: (L.y + R.y) / 2 };
+      const peakX = g.symmetric ? mid.x : P.x;
+      return { ...g, pts: [L, { x: peakX, y: mid.y - risePx }, R], pitch_set: pitch };
+    }));
+  };
+  const toggleGableSymmetric = (id) => {
+    setLocalGables((prev) => prev.map((g) => {
+      if (g.id !== id) return g;
+      const sym = !g.symmetric;
+      const pts = g.pts.map((p) => ({ ...p }));
+      if (sym) pts[1] = { x: (pts[0].x + pts[2].x) / 2, y: pts[1].y };
+      return { ...g, symmetric: sym, pts };
+    }));
+  };
+  const removeGable = (id) => setLocalGables((prev) => prev.filter((g) => g.id !== id));
+  const gableScaleInPerPx = gableInchesPerPx(localRef, localWindowRef);
+
   const save = () => {
     onSave({
       reference: localRef,
@@ -768,6 +867,7 @@ export default function PhotoAnnotateModal({
       targetPin: localTarget,
       windows: localWindows,
       profileBoxes: localProfileBoxes,
+      gables: localGables,
       imageDims: photo ? { w: photo.width, h: photo.height } : null,
     });
     onClose();
@@ -876,6 +976,41 @@ export default function PhotoAnnotateModal({
             </g>
           );
         })}
+        {/* GABLES (ruled 2026-07-24) — translucent measured triangles */}
+        {localGables.map((g) => {
+          const [L, P, R] = g.pts;
+          const dims = gableNetArea(g, localZones, gableScaleInPerPx);
+          const fontPx = Math.max(13, photo.width / 75);
+          const cx = (L.x + P.x + R.x) / 3;
+          const cy = (L.y + P.y + R.y) / 3;
+          const warn = dims && pitchOutOfRange(dims.pitch);
+          const label = dims && dims.netAreaFt !== undefined
+            ? `GABLE · ${dims.baseFt.toFixed(1)}′ × ${dims.riseFt.toFixed(1)}′ · ${dims.netAreaFt.toFixed(0)} ft² · ${dims.pitch}/12`
+            : `GABLE · ${dims ? `${dims.pitch}/12 · ` : ""}add a scale reference for dims`;
+          const labelLen = Math.max(150, label.length * fontPx * 0.55);
+          const r = Math.max(7, photo.width / 260);
+          return (
+            <g key={g.id} data-testid={`gable-svg-${g.id}`}>
+              <path d={`M${L.x},${L.y} L${P.x},${P.y} L${R.x},${R.y} Z`}
+                    fill="#16A34A" fillOpacity={0.18}
+                    stroke="#16A34A" strokeWidth={Math.max(3, photo.width / 500)} />
+              {[L, P, R].map((pt, i) => (
+                <circle key={i} cx={pt.x} cy={pt.y} r={r}
+                        fill={i === 1 ? "#15803D" : "#16A34A"} stroke="#FFFFFF"
+                        strokeWidth={Math.max(2, photo.width / 900)} />
+              ))}
+              <rect x={cx - labelLen / 2} y={cy - fontPx - 4} width={labelLen} height={fontPx + 8}
+                    fill={warn ? "#B45309" : "#16A34A"} rx={3} />
+              <text x={cx} y={cy + 2} fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
+                {warn ? "⚠ " : ""}{label}
+              </text>
+            </g>
+          );
+        })}
+        {mode === MODE_GABLE && gablePts.map((pt, i) => (
+          <circle key={`gp-${i}`} cx={pt.x} cy={pt.y} r={Math.max(7, photo.width / 260)}
+                  fill="#16A34A" stroke="#FFFFFF" strokeWidth={2} />
+        ))}
         {localRef && (
           <g>
             <line x1={localRef.p1.x} y1={localRef.p1.y} x2={localRef.p2.x} y2={localRef.p2.y}
@@ -1755,7 +1890,97 @@ export default function PhotoAnnotateModal({
               >
                 <Tags className="w-3 h-3" /> Profile
               </button>
+              <button
+                type="button"
+                onClick={() => { setMode(MODE_GABLE); setPending(null); setHoverPoint(null); setPolyPoints([]); setGablePts([]); }}
+                className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
+                  mode === MODE_GABLE ? "bg-[#16A34A] text-white border-[#16A34A]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
+                }`}
+                data-testid="annotate-mode-gable"
+                title="Add Gable / above-eave area — tap left eave, peak, right eave. Area = base × height ÷ 2, minus any NO-SIDING masks inside the triangle."
+              >
+                <Triangle className="w-3 h-3" /> Gable
+              </button>
             </div>
+            )}
+
+            {!guidedFlow && mode === MODE_GABLE && (
+              <div className="space-y-2" data-testid="gable-panel">
+                <div className="text-[10px] text-[var(--muted)] font-medium">
+                  {gablePts.length === 0 && "Tap the LEFT EAVE point of the gable."}
+                  {gablePts.length === 1 && "Tap the PEAK (ridge) point."}
+                  {gablePts.length === 2 && "Tap the RIGHT EAVE point to finish the triangle."}
+                  {gablePts.length === 0 && localGables.length > 0 && " Tap again to add another gable / dormer."}
+                </div>
+                {!gableScaleInPerPx && (
+                  <div className="text-[10px] font-bold text-[#B45309]" data-testid="gable-no-scale-warning">
+                    No scale reference on this photo — add a WALL REF or WIN REF to get real dimensions. The triangle still saves.
+                  </div>
+                )}
+                {localGables.map((g, gi) => {
+                  const dims = gableNetArea(g, localZones, gableScaleInPerPx);
+                  const warn = dims && pitchOutOfRange(dims.pitch);
+                  return (
+                    <div key={g.id} className="border border-[var(--border)] p-2 space-y-1" data-testid={`gable-row-${g.id}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#15803D]">
+                          Gable {gi + 1}
+                          {dims && dims.netAreaFt !== undefined
+                            ? ` — ${dims.baseFt.toFixed(1)} ft × ${dims.riseFt.toFixed(1)} ft = ${dims.netAreaFt.toFixed(1)} ft²`
+                            : " — dims pending scale ref"}
+                        </span>
+                        <button type="button" onClick={() => removeGable(g.id)}
+                                className="text-[var(--danger)]" data-testid={`gable-delete-${g.id}`}
+                                aria-label="Delete gable">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {dims && dims.maskedFt > 0 && (
+                        <div className="text-[10px] text-[var(--muted)]">
+                          masks inside gable subtract {dims.maskedFt.toFixed(1)} ft² (gross {dims.grossAreaFt.toFixed(1)} ft²)
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <label className="flex items-center gap-1 text-[10px] text-[var(--ink-2)]">
+                          <input type="checkbox" checked={!!g.symmetric}
+                                 onChange={() => toggleGableSymmetric(g.id)}
+                                 data-testid={`gable-symmetric-${g.id}`} />
+                          Symmetric gable
+                        </label>
+                        <select
+                          value={GABLE_PITCH_PRESETS.includes(g.pitch_set) ? String(g.pitch_set) : ""}
+                          onChange={(e) => { const v = Number(e.target.value); if (v) applyGablePitch(g.id, v); }}
+                          className="text-[10px] border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5"
+                          data-testid={`gable-pitch-select-${g.id}`}
+                          title="Selecting a pitch moves the peak (rise = base/2 × pitch/12). Dragging the peak re-derives the pitch."
+                        >
+                          <option value="">pitch {dims ? `${dims.pitch}/12` : "—"}</option>
+                          {GABLE_PITCH_PRESETS.map((p) => (
+                            <option key={p} value={p}>{p}/12</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number" min="1" max="24" step="0.5" placeholder="custom"
+                          className="w-16 text-[10px] border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5"
+                          data-testid={`gable-pitch-custom-${g.id}`}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const v = Number(e.target.value);
+                              if (v > 0) applyGablePitch(g.id, v);
+                            }
+                          }}
+                          title="Custom pitch — type a value and press Enter"
+                        />
+                      </div>
+                      {warn && (
+                        <div className="text-[10px] font-bold text-[#B45309]" data-testid={`gable-pitch-warning-${g.id}`}>
+                          Pitch {dims.pitch}/12 is outside the usual 3/12–18/12 range — double-check the tapped points.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
 
             {!guidedFlow && mode === MODE_ZONE && (

@@ -204,6 +204,32 @@ def _norm_face(f):
     return {"rear": "back"}.get(f, f)
 
 
+def contractor_gables_for(run: dict, which: str) -> list:
+    """TAPED-class contractor gable rows for one sheet (ruled 2026-07-24):
+    the annotator's Add Gable dims, filtered to this wall, each with the
+    named basis string. Read-only — never mutates the run."""
+    out = []
+    for g in run.get("contractor_gables") or []:
+        if _norm_face(g.get("elevation")) != which:
+            continue
+        base, rise, area = g.get("base_ft"), g.get("rise_ft"), g.get("area_ft")
+        pitch = g.get("pitch")
+        label = (f"CONTRACTOR GABLE · base {base:g}′ × rise {rise:g}′ = {area:g} ft²"
+                 if base is not None and rise is not None and area is not None
+                 else "CONTRACTOR GABLE · marked (no scale ref on photo)")
+        if pitch is not None:
+            label += f" · {pitch:g}/12"
+        if (g.get("masked_ft") or 0) > 0:
+            label += f" (net of {g['masked_ft']:g} ft² masks)"
+        out.append({
+            "label": label,
+            "basis": ("contractor gable annotation — photo-taped, scale-anchored "
+                      "(Add Gable tool, ruled 2026-07-24)"),
+            **{k: g.get(k) for k in ("base_ft", "rise_ft", "area_ft", "pitch", "masked_ft")},
+        })
+    return out
+
+
 # drawing side of a perpendicular dormer profile, per the exterior-view
 # convention (left elevation mirrors; back flips left/right)
 _PROFILE_SIDE = {("front", "left"): "left", ("front", "right"): "right",
@@ -1341,5 +1367,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "walls": walls_basis_line,
             "openings": f"openings: AI run {run['run_id'][:8]}…{run['run_id'][-2:]} ({model_name}, {completed_str})",
         },
+        # Contractor gable dims (TAPED-class, ruled 2026-07-24) for the
+        # matching wall — the sheet renders them as a labeled callout.
+        "contractor_gables": contractor_gables_for(run, which),
         "run": {"run_id": run["run_id"], "model_name": model_name, "completed_at": completed_str},
     }

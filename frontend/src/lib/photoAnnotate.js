@@ -37,6 +37,8 @@ const ZONE_NAMES = {
 // side to 2400 px (Claude's vision quality plateaus around there) and
 // re-encode as JPEG @ 0.85 quality. Typical output: 800 KB – 2 MB.
 const MAX_LONG_SIDE_PX = 2400;
+import { inchesPerPx, gableNetArea } from "./gableMath";
+
 const JPEG_QUALITY = 0.85;
 
 function loadImage(url) {
@@ -245,6 +247,41 @@ export async function renderAnnotated(photoUrl, annot) {
     ctx.fillText(abbr, bx + pad, by + pad);
   }
 
+  // GABLES (ruled 2026-07-24) — translucent measured triangle + dims
+  // label, burned exactly like the live overlay so Claude and the
+  // contractor see the same drawing.
+  for (const g of annot?.gables || []) {
+    if (!g.pts || g.pts.length !== 3) continue;
+    const [L, P, R] = g.pts;
+    ctx.fillStyle = "rgba(22,163,74,0.18)";
+    ctx.strokeStyle = "#16A34A";
+    ctx.lineWidth = Math.max(3, naturalW / 500);
+    ctx.beginPath();
+    ctx.moveTo(L.x, L.y);
+    ctx.lineTo(P.x, P.y);
+    ctx.lineTo(R.x, R.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    const inPerPx = inchesPerPx(annot?.reference, annot?.windowReference);
+    const dims = gableNetArea(g, annot?.zones || [], inPerPx);
+    const label = dims && dims.netAreaFt !== undefined
+      ? `GABLE ${dims.baseFt.toFixed(1)}' x ${dims.riseFt.toFixed(1)}' = ${dims.netAreaFt.toFixed(0)} ft2 (${dims.pitch}/12)`
+      : "GABLE (no scale ref)";
+    const fontPx = Math.max(20, naturalW / 60);
+    ctx.font = `bold ${fontPx}px sans-serif`;
+    const cx = (L.x + P.x + R.x) / 3;
+    const cy = (L.y + P.y + R.y) / 3;
+    const pad = fontPx * 0.35;
+    const tw = ctx.measureText(label).width;
+    ctx.fillStyle = "#15803D";
+    ctx.fillRect(cx - tw / 2 - pad, cy - fontPx / 2 - pad, tw + pad * 2, fontPx + pad * 2);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(label, cx - tw / 2, cy - fontPx / 2);
+  }
+
   // Elevation badge — top-left corner.
   if (annot?.elevation && annot.elevation !== "detail") {
     const fontPx = Math.max(28, naturalW / 45);
@@ -307,6 +344,20 @@ export function describeAnnotations(entries) {
         `exact style and style_confidence=100, BUT YOU still measure width_in ` +
         `and height_in from the photo using your normal scale reference. ` +
         `Don't size-tag a yellow pin as 0×0 — measure it like any other window.`
+      );
+    }
+    if (e.gables && e.gables.length) {
+      const inPerPx = inchesPerPx(e.reference, e.windowReference);
+      const gb = e.gables.map((g, gi) => {
+        const d = gableNetArea(g, e.zones || [], inPerPx);
+        return d && d.netAreaFt !== undefined
+          ? `gable ${gi + 1}: base ${d.baseFt.toFixed(1)} ft × rise ${d.riseFt.toFixed(1)} ft = ${d.netAreaFt.toFixed(1)} ft² net of masks (pitch ${d.pitch}/12)`
+          : `gable ${gi + 1}: triangle marked, pitch ${d ? `${d.pitch}/12` : "unknown"} (no scale ref on this photo)`;
+      });
+      parts.push(
+        `GREEN TRIANGLES marked GABLE are CONTRACTOR-MEASURED above-eave gable areas — ` +
+        `treat their dimensions as GROUND TRUTH for the gable/above-eave portion of this wall ` +
+        `(they already exclude any NO SIDING masks inside the triangle): ${gb.join("; ")}`
       );
     }
     if (parts.length) {

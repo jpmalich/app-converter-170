@@ -184,6 +184,40 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
         </div>
       )}
 
+      {/* Contractor gables (TAPED-class, ruled 2026-07-24) — separate,
+          visible rows; assignable their own waste factor later. Never
+          injected into derivation. */}
+      {(aiRun?.contractor_gables || []).length > 0 && (() => {
+        const gbs = aiRun.contractor_gables;
+        const rises = {};
+        for (const g of gbs) {
+          if (g.rise_ft != null) (rises[g.elevation] = rises[g.elevation] || []).push(g.rise_ft);
+        }
+        const ridgeWarn = crossCheckRidges(rises);
+        return (
+          <div className="p-3 bg-[var(--surface)] border border-[#16A34A]/40 space-y-1" data-testid="field-verify-contractor-gables">
+            <div className="text-[10px] uppercase tracking-wider text-[#15803D] font-bold mb-1">
+              Contractor gables — photo-taped, scale-anchored <span className="text-[9px] italic font-normal">· own waste factor assignable · not auto-injected into the estimate</span>
+            </div>
+            {gbs.map((g, i) => (
+              <div key={i} className="flex items-center justify-between text-[11px] py-0.5 border-t border-[var(--border)] first:border-t-0" data-testid={`contractor-gable-row-${i}`}>
+                <span className="uppercase tracking-wider text-[var(--ink-2)] font-bold">{g.elevation}</span>
+                <span className="font-mono-num">
+                  {g.base_ft != null && g.rise_ft != null
+                    ? `${g.base_ft} ft × ${g.rise_ft} ft = ${g.area_ft} ft²${g.pitch != null ? ` · ${g.pitch}/12` : ""}${g.masked_ft > 0 ? ` (−${g.masked_ft} ft² masks)` : ""}`
+                    : "marked — no scale ref on photo"}
+                </span>
+              </div>
+            ))}
+            {ridgeWarn && (
+              <div className="text-[10px] font-bold text-[#B45309] pt-1" data-testid="contractor-gable-ridge-warning">
+                ⚠ {ridgeWarn}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {appendages.length > 0 && (
         <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-1" data-testid="field-verify-taped-dims">
           <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
