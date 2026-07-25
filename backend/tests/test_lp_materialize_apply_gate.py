@@ -86,6 +86,7 @@ def photo_est(session, mongo_db):
                      timeout=15)
     est_id = r.json()["id"]
     run_id = "test-lpmat-" + uuid.uuid4().hex[:10]
+    # test_artifact stamp lives inside _photo_run_doc (ruled 2026-07-18)
     mongo_db.ai_measure_runs.insert_one(_photo_run_doc(est_id, run_id))
     yield est_id, run_id
     session.delete(f"{API}/estimates/{est_id}", timeout=15)
@@ -157,6 +158,7 @@ class TestMaterializeRefusals:
                          json={"customer_name": "TEST_lpmat siding"}, timeout=15)
         est_id = r.json()["id"]
         run_id = "test-lpmat-sd-" + uuid.uuid4().hex[:8]
+        # test_artifact stamp lives inside _photo_run_doc (ruled 2026-07-18)
         mongo_db.ai_measure_runs.insert_one(_photo_run_doc(est_id, run_id))
         try:
             rr = session.post(f"{API}/estimates/{est_id}/lp-package/materialize",
