@@ -4925,3 +4925,31 @@ fix await his authorization). Backlog unchanged.
 STAMP: - 2026-07-24 22:21 UTC · b5753a0 · CLEAN · [tests] · 1310 passed, 1 skipped, 3 warnings in 116.17s (0:01:56)
 NEXT: Howard's one-look verify of the cleared card + book-check of the checklist
 wording. Then idle pending inputs. Backlog unchanged.
+
+## SESSION 2026-07-25 (part 42) — GABLE / ABOVE-EAVE MEASUREMENT SUPPORT (ruled)
+Scope confirmed via book-check: defaults + 1.0 ft ridge tolerance; no estimate line
+injection; sheet callouts yes; pitch↔peak both directions live.
+1. NEW lib frontend/src/lib/gableMath.js: presets [4..12], warning range 3-18/12,
+   RIDGE_TOLERANCE_FT=1.0, scale ladder (WALL ref → WIN ref), gableDims (base =
+   eave-point distance, rise = perpendicular peak→eave-line, area = b×h/2),
+   gableNetArea (NO-SIDING masks with centroid inside triangle subtract),
+   crossCheckRidges (max-rise spread per elevation > 1.0 ft → gentle warning).
+2. PhotoAnnotateModal: MODE_GABLE ("Gable" toolbar button, annotate-mode-gable) —
+   3 taps with step hints, symmetric default ON per gable, vertex dragging via
+   gestureRef.gableDrag (consumes before pan, never a tap), pitch preset select +
+   custom Enter input (moves peak; manual peak drag clears pitch_set → re-derived),
+   per-gable sidebar rows (dims, masks-subtract note, delete), amber pitch warning,
+   no-scale warning ("triangle still saves"), SVG translucent green triangle +
+   dims label. Legacy (free-form) toolbar only — guided wizard untouched.
+3. Pipeline: photoAnnotate.js burns triangles + "GREEN TRIANGLES … GROUND TRUTH"
+   sentence; AIMeasureButton passes gables prop, annotEmpty counts gables, launch
+   appends contractor_gables JSON + ridge cross-check toast (warning, non-block).
+4. Backend: parse_contractor_gables (strict, clamp, cap 20) → run doc field;
+   latest-for-estimate exposes it; elevation_sheets.contractor_gables_for → payload
+   "contractor_gables" with TAPED-class basis; SheetSvg renders green callout box
+   (elevation-contractor-gable-callout); FieldVerifyCard "Contractor gables" rows +
+   ridge warning (field-verify-contractor-gables). NOT injected into derivation.
+5. 21 pins in test_gable_annotations.py (math/UI/pipeline/parse/binder).
+STAMP: - 2026-07-25 04:28 UTC · 1f521ac · CLEAN · [tests] · 1331 passed, 1 skipped, 3 warnings in 181.23s (0:03:01)
+NEXT: Howard live-tests the gable flow on real photos (agent could not drive a full
+photo-run E2E — UI pins + unit tests + compile + page smoke only). Backlog unchanged.
