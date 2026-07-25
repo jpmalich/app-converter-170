@@ -221,6 +221,8 @@ def contractor_gables_for(run: dict, which: str) -> list:
             label += f" · {pitch:g}/12"
         if (g.get("masked_ft") or 0) > 0:
             label += f" (net of {g['masked_ft']:g} ft² masks)"
+        if g.get("x_center_frac") is not None and base is not None:
+            label += " · GOVERNS DRAWN GABLE"
         out.append({
             "label": label,
             "basis": ("contractor gable annotation — photo-taped, scale-anchored "
@@ -228,6 +230,81 @@ def contractor_gables_for(run: dict, which: str) -> list:
             **{k: g.get(k) for k in ("base_ft", "rise_ft", "area_ft", "pitch", "masked_ft")},
         })
     return out
+
+
+def _contractor_gable_bands(run, raw, which, width_ft):
+    """CONTRACTOR GABLE TRIANGLE GOVERNS THE DRAWN GABLE (ruled 2026-07-25
+    follow-up #2 — exact mirror of the dormer-quad model). Each positioned
+    Add Gable triangle for this wall binds:
+      • base / rise — TAPED (eave-tap distance × eave-line→peak height,
+        the tool's own scale-anchored dims);
+      • horizontal placement — triangle base-center mapped through this
+        wall's window anchors (bbox center-x ↔ along_wall_ft) at the
+        triangle's OWN scale (base_ft / base_frac), same-photo preferred,
+        clamped in-wall;
+      • peak offset — asymmetric peaks keep their tapped offset from the
+        base center, clamped inside the base.
+    No anchor → dims still govern, position falls back FLAGGED INDICATIVE
+    (never silent). Multiple gables per wall each get a governed band.
+    Scale is the existing calibration + window-anchor ladder — no new
+    scale system. Returns [] when no dimensioned contractor gable exists."""
+    rows = [g for g in (run or {}).get("contractor_gables") or []
+            if _norm_face(g.get("elevation")) == which
+            and g.get("base_ft") and g.get("rise_ft")]
+    if not rows:
+        return []
+    names = [n.strip() for n in str((run or {}).get("photo_paths") or "").split(",") if n.strip()]
+    bands = []
+    for g in rows:
+        base, rise = float(g["base_ft"]), float(g["rise_ft"])
+        pidx = names.index(g["photo"]) if g.get("photo") in names else None
+        ops = [o for o in (raw.get("openings") or [])
+               if str(o.get("wall", "")).lower() == which and not o.get("on_dormer")
+               and (o.get("bbox") or {}).get("w") and (o.get("bbox") or {}).get("x") is not None]
+        same_photo = [o for o in ops
+                      if pidx is not None and o.get("bbox_photo_idx", o.get("photo_idx")) == pidx]
+        anchors = same_photo or ops
+        anchor_word = "same-photo" if same_photo else "same-wall"
+        fpp = (base / float(g["base_frac"])) if g.get("base_frac") else None
+        center_ft, center_basis = None, None
+        if g.get("x_center_frac") is not None and fpp:
+            h_anchors = [o for o in anchors if o.get("along_wall_ft") is not None]
+            if h_anchors:
+                ests = [float(o["along_wall_ft"])
+                        + (float(g["x_center_frac"])
+                           - (float(o["bbox"]["x"]) + float(o["bbox"]["w"]) / 2.0)) * fpp
+                        for o in h_anchors]
+                center_ft = sum(ests) / len(ests)
+                center_basis = (f"triangle base-center mapped through {len(h_anchors)} "
+                                f"{anchor_word} window anchor(s) at the triangle's own "
+                                f"scale ({fpp:.1f} ft/frac)")
+        if center_ft is not None and width_ft:
+            center_ft = min(max(center_ft, base / 2.0),
+                            max(float(width_ft) - base / 2.0, base / 2.0))
+            center_tag = "TAPED (contractor triangle)"
+        else:
+            center_ft = float(width_ft or 0) / 2.0
+            center_basis = ("no window anchor on the annotated photo — drawn at wall "
+                            "center INDICATIVE")
+            center_tag = "TAPED dims · center INDICATIVE"
+        peak_off = 0.0
+        if (g.get("peak_x_frac") is not None and g.get("x_center_frac") is not None and fpp):
+            peak_off = (float(g["peak_x_frac"]) - float(g["x_center_frac"])) * fpp
+            peak_off = min(max(peak_off, -base / 2.0), base / 2.0)
+        bands.append({
+            "base_ft": base, "base_label": fmt_ftin(base),
+            "rise_ft": rise, "rise_label": fmt_ftin(rise),
+            "tag": "TAPED (contractor triangle)",
+            "center_ft": round(center_ft, 2), "center_label": fmt_ftin(center_ft),
+            "center_tag": center_tag,
+            "peak_offset_ft": round(peak_off, 2),
+            "pitch": g.get("pitch"),
+            "basis": (f"CONTRACTOR GABLE TRIANGLE GOVERNS (ruled 2026-07-25) — base "
+                      f"{fmt_ftin(base)} × rise {fmt_ftin(rise)} photo-taped, "
+                      f"scale-anchored (Add Gable tool) · center {fmt_ftin(center_ft)} "
+                      f"— {center_basis}"),
+        })
+    return bands
 
 
 def contractor_dormers_for(run: dict, which: str) -> list:
@@ -1506,6 +1583,9 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         # Contractor gable dims (TAPED-class, ruled 2026-07-24) for the
         # matching wall — the sheet renders them as a labeled callout.
         "contractor_gables": contractor_gables_for(run, which),
+        # Contractor gable triangles GOVERN the drawn gable geometry
+        # (ruled 2026-07-25 follow-up #2 — mirror of the dormer band).
+        "contractor_gable_bands": _contractor_gable_bands(run, raw, which, width_ft),
         # Contractor dormer dims (TAPED-class, ruled 2026-07-25) — same
         # labeled-callout treatment as gables.
         "contractor_dormers": contractor_dormers_for(run, which),

@@ -1756,6 +1756,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           const d = gableNetArea(gb, ga.zones || [], inPerPx);
           if (!d) continue;
           const gelev = ga.elevation || "other";
+          // Photo-frac norms (ruled 2026-07-25 follow-up #2 — exact
+          // mirror of the dormer quads): the triangle's position rides
+          // along so the sheet binder can draw the gable AT the taps.
+          const gnW = ga.imageDims?.w || 0;
+          const gnH = ga.imageDims?.h || 0;
+          const gr4 = (v) => Math.round(v * 10000) / 10000;
+          const [gL, gP, gR] = gb.pts;
           const row = {
             elevation: gelev,
             pitch: d.pitch,
@@ -1764,6 +1771,11 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             area_ft: d.netAreaFt !== undefined ? Math.round(d.netAreaFt * 10) / 10 : null,
             masked_ft: d.maskedFt ? Math.round(d.maskedFt * 10) / 10 : 0,
             photo: gname,
+            x_center_frac: gnW ? gr4((gL.x + gR.x) / 2 / gnW) : null,
+            y_eave_frac: gnH ? gr4((gL.y + gR.y) / 2 / gnH) : null,
+            peak_x_frac: gnW ? gr4(gP.x / gnW) : null,
+            base_frac: gnW && d.basePx ? gr4(d.basePx / gnW) : null,
+            rise_frac: gnH && d.risePx ? gr4(d.risePx / gnH) : null,
           };
           contractorGables.push(row);
           if (row.rise_ft !== null) {

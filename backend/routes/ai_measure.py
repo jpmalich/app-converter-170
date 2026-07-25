@@ -2189,6 +2189,13 @@ def parse_contractor_gables(raw):
             return None
         return round(f, 1) if 0 <= f < 1e6 else None
 
+    def _frac(v):
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return round(f, 4) if 0 <= f <= 1 else None
+
     out = []
     for g in data[:20]:
         if not isinstance(g, dict):
@@ -2201,6 +2208,14 @@ def parse_contractor_gables(raw):
             "area_ft": _num(g.get("area_ft")),
             "masked_ft": _num(g.get("masked_ft")) or 0,
             "photo": str(g.get("photo") or "")[:120],
+            # Photo-frac position norms (ruled 2026-07-25 follow-up #2 —
+            # exact mirror of the dormer-quad model): the sheet binder
+            # draws the gable AT the contractor's taps.
+            "x_center_frac": _frac(g.get("x_center_frac")),
+            "y_eave_frac": _frac(g.get("y_eave_frac")),
+            "peak_x_frac": _frac(g.get("peak_x_frac")),
+            "base_frac": _frac(g.get("base_frac")),
+            "rise_frac": _frac(g.get("rise_frac")),
         })
     return out
 

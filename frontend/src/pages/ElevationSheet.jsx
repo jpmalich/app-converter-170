@@ -86,9 +86,16 @@ export function SheetSvg({ data }) {
   const gableFt = W.gable_triangle_ft || 0;
   const rl = data.roofline || null;
   const roofRiseFt = rl && rl.kind === "eave_ridge" ? rl.rise_ft : 0;
+  // CONTRACTOR GABLE TRIANGLES GOVERN (ruled 2026-07-25 follow-up #2):
+  // positioned Add Gable triangles replace the AI full-width wall-center
+  // gable on gable-end views (band[0]) — extras (and every band on eave
+  // views, where the AI has no gable to replace) draw as standalone
+  // governed triangles on the eave line.
+  const cgb = data.contractor_gable_bands || [];
+  const cgbRise = cgb.reduce((m, b) => Math.max(m, b.rise_ft || 0), 0);
   // ── drawing math (auto-fit BOTH axes, spec §5; P3: roof height included) ──
   const wallBottom = 520, drawable = 820.8, maxDrawH = 300;
-  const ppf = Math.min(drawable / W.width_ft, maxDrawH / (W.height_ft + Math.max(gableFt, roofRiseFt)));
+  const ppf = Math.min(drawable / W.width_ft, maxDrawH / (W.height_ft + Math.max(gableFt, cgbRise, roofRiseFt)));
   const wallW = W.width_ft * ppf;
   const wallX = 90 + (drawable - wallW) / 2;
   const wallRight = wallX + wallW;
@@ -220,16 +227,35 @@ export function SheetSvg({ data }) {
         x1: wallX - ovFt * ppf, x2: wallRight + ovFt * ppf }
     : null;
   let rakeExt = null;
-  if (rl && rl.kind === "gable_end" && gableFt > 0) {
-    const apex = { x: (wallX + wallRight) / 2, y: apexY };
+  // Governed gable geometry: contractor band[0] drives the drawn triangle
+  // on gable-end views; otherwise the AI full-width wall-center triangle
+  // draws exactly as before.
+  const gableGoverns = !!(rl && rl.kind === "gable_end" && cgb.length > 0);
+  const cgb0 = gableGoverns ? cgb[0] : null;
+  const gLx = cgb0 ? wallX + (cgb0.center_ft - cgb0.base_ft / 2) * ppf : wallX;
+  const gRx = cgb0 ? wallX + (cgb0.center_ft + cgb0.base_ft / 2) * ppf : wallRight;
+  const gAx = cgb0 ? wallX + (cgb0.center_ft + (cgb0.peak_offset_ft || 0)) * ppf : (wallX + wallRight) / 2;
+  const gLy = cgb0 ? topRefY : segTopY[0];
+  const gRy = cgb0 ? topRefY : segTopY[stepped ? 1 : 0];
+  const gApexY = cgb0 ? topRefY - cgb0.rise_ft * ppf : apexY;
+  const standaloneBandGs = (gableGoverns ? cgb.slice(1) : cgb).map((b) => ({
+    lx: wallX + (b.center_ft - b.base_ft / 2) * ppf,
+    rx: wallX + (b.center_ft + b.base_ft / 2) * ppf,
+    ax: wallX + (b.center_ft + (b.peak_offset_ft || 0)) * ppf,
+    y: topRefY,
+    ay: topRefY - b.rise_ft * ppf,
+    label: `GABLE ${b.base_label} × ${b.rise_label} — ${String(b.center_tag).toUpperCase()}`,
+  }));
+  if (rl && rl.kind === "gable_end" && (gableFt > 0 || cgb0)) {
+    const apex = { x: gAx, y: gApexY };
     const ext = (c) => {
       const dx = c.x - apex.x, dy = c.y - apex.y, len = Math.hypot(dx, dy) || 1;
       const k = (ovFt * ppf) / len;
       return { x: c.x + dx * k, y: c.y + dy * k };
     };
     rakeExt = {
-      l: ext({ x: wallX, y: segTopY[0] }), apex,
-      r: ext({ x: wallRight, y: segTopY[stepped ? 1 : 0] }),
+      l: ext({ x: gLx, y: gLy }), apex,
+      r: ext({ x: gRx, y: gRy }),
     };
   }
   // chase CAP over ridge (front) — render only when geometry supports it
@@ -389,6 +415,12 @@ export function SheetSvg({ data }) {
   S.viewLine = `${data.view.convention} · ${data.view.datum}`;
   S.dateLine = `Pro-Quote · ${data.generated_date}`;
   S.gableCallout = gableFt > 0 ? `GABLE TRIANGLE ${fmtFt(gableFt)} RISE` : "";
+  if (gableGoverns) {
+    // contractor triangle replaced the AI gable — headline says so
+    S.gableCallout = `GABLE TRIANGLE ${fmtFt(cgb[0].rise_ft)} RISE — GOVERNS DRAWN GABLE`;
+    S.gable = fmtFt(cgb[0].rise_ft);
+    S.gableTag = " [TAPED (CONTRACTOR TRIANGLE)]";
+  }
   // P3 roofline strings — composed from the payload, nothing hand-typed
   if (rl && (rl.kind === "eave_ridge" || rl.kind === "gable_end")) {
     S.ridgeLabel = `RIDGE ${rl.ridge_label}`;
@@ -503,31 +535,33 @@ export function SheetSvg({ data }) {
 
         {/* Gable-end walls: siding gable + TRUE RAKES (P3, overhang overshoot);
             eave walls: fascia band + soffit + DRAWN RIDGE (P3, C-3) */}
-        {gableFt > 0 ? (
+        {(gableFt > 0 || gableGoverns) ? (
           <g data-testid="elevation-gable">
             <clipPath id="gable-clip">
-              <path d={`M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]} Z`} />
+              <path d={`M ${gLx} ${gLy} L ${gAx} ${gApexY} L ${gRx} ${gRy} Z`} />
             </clipPath>
             <g clipPath="url(#gable-clip)" stroke={C.siding} strokeWidth="0.5" data-testid="elevation-gable-hatch">
-              {hatchYs.filter((y) => y > apexY + 2 && y < Math.max(...segTopY)).map((y, i) => (
-                <line key={i} x1={wallX} y1={y} x2={wallRight} y2={y} />
+              {hatchYs.filter((y) => y > gApexY + 2 && y < Math.max(gLy, gRy)).map((y, i) => (
+                <line key={i} x1={gLx} y1={y} x2={gRx} y2={y} />
               ))}
             </g>
             <path d={rakeExt
                 ? `M ${rakeExt.l.x} ${rakeExt.l.y} L ${rakeExt.apex.x} ${rakeExt.apex.y} L ${rakeExt.r.x} ${rakeExt.r.y}`
-                : `M ${wallX} ${segTopY[0]} L ${(wallX + wallRight) / 2} ${apexY} L ${wallRight} ${segTopY[stepped ? 1 : 0]}`}
+                : `M ${gLx} ${gLy} L ${gAx} ${gApexY} L ${gRx} ${gRy}`}
               fill="none" stroke={C.fascia} strokeWidth="2" data-testid="elevation-rake-lines" />
             {rl && rl.kind === "gable_end" && (
               <g data-testid="elevation-roofline">
-                <line x1={(wallX + wallRight) / 2 - 7} y1={apexY} x2={(wallX + wallRight) / 2 + 7} y2={apexY} stroke={C.ink} strokeWidth="2.5" />
-                <text x={(wallX + wallRight) / 2} y={apexY - 20} fontSize="8.5" textAnchor="middle" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
-                <Chip x={(wallX + wallRight) / 2 + 44} y={apexY - 28} w={30} label="EST" kind="est" />
-                <text x={(wallX + wallRight) / 2} y={apexY - 11} fontSize="6" textAnchor="middle" fill={C.muted}>{S.ridgeBasis}</text>
+                <line x1={gAx - 7} y1={gApexY} x2={gAx + 7} y2={gApexY} stroke={C.ink} strokeWidth="2.5" />
+                <text x={gAx} y={gApexY - 20} fontSize="8.5" textAnchor="middle" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
+                <Chip x={gAx + 44} y={gApexY - 28} w={30} label="EST" kind="est" />
+                <text x={gAx} y={gApexY - 11} fontSize="6" textAnchor="middle" fill={C.muted}>{S.ridgeBasis}</text>
               </g>
             )}
-            <text x={(wallX + wallRight) / 2} y={apexY + 10} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
-            <Chip x={(wallX + wallRight) / 2 + 4} y={apexY + 16}
-              w={W.gable_tag === "AI-READ ✓" ? 62 : 66} label={W.gable_tag} kind={tagKind(W.gable_tag)} />
+            <text x={gAx} y={gApexY + 10} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
+            <Chip x={gAx + 4} y={gApexY + 16}
+              w={gableGoverns ? 58 : W.gable_tag === "AI-READ ✓" ? 62 : 66}
+              label={gableGoverns ? "TAPED" : W.gable_tag}
+              kind={gableGoverns ? "taped" : tagKind(W.gable_tag)} />
             <text x={wallX - 14} y={segTopY[0] - 8} fontSize="8.5" fill="#0284c7" fontWeight="bold">RAKE (GABLE END) ↗</text>
           </g>
         ) : (
@@ -555,6 +589,20 @@ export function SheetSvg({ data }) {
         {S.rooflineNote && (
           <text x={(wallX + wallRight) / 2} y={Math.min(topRefY, wallTop) - 44} fontSize="8.5" textAnchor="middle" fill={C.amber} fontWeight="bold" letterSpacing="1" data-testid="elevation-roofline-note">{S.rooflineNote}</text>
         )}
+
+        {/* CONTRACTOR GABLE TRIANGLES — standalone governed polygons
+            (ruled 2026-07-25 follow-up #2): extras beyond the governing
+            band, and every band on eave views where the AI drew no gable
+            to replace. Same visual language as the dormer band. */}
+        {standaloneBandGs.map((b, i) => (
+          <g key={i} data-testid={`elevation-contractor-gable-triangle-${i}`}>
+            <path d={`M ${b.lx} ${b.y} L ${b.ax} ${b.ay} L ${b.rx} ${b.y} Z`}
+              fill="#fbfcfe" stroke={C.ink} strokeWidth="1.75" />
+            <path d={`M ${b.lx} ${b.y} L ${b.ax} ${b.ay} L ${b.rx} ${b.y}`}
+              fill="none" stroke={C.fascia} strokeWidth="2" />
+            <text x={b.ax} y={b.ay - 5} fontSize="7.5" textAnchor="middle" fill="#0284c7" fontWeight="bold">{b.label}</text>
+          </g>
+        ))}
 
         {/* P5 — FACE-ON DORMER (roof plane): paints AFTER the roofline so
             the ridge cannot render through it (occlusion rule family).
