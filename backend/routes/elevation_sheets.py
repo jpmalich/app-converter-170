@@ -230,6 +230,30 @@ def contractor_gables_for(run: dict, which: str) -> list:
     return out
 
 
+def contractor_dormers_for(run: dict, which: str) -> list:
+    """TAPED-class contractor dormer rows for one sheet (ruled 2026-07-25 —
+    mirror of contractor_gables_for): the annotator's Add Dormer dims,
+    filtered to this wall, each with the named basis string. Read-only —
+    never mutates the run."""
+    out = []
+    for d in run.get("contractor_dormers") or []:
+        if _norm_face(d.get("elevation")) != which:
+            continue
+        w, h, area = d.get("width_ft"), d.get("height_ft"), d.get("area_ft")
+        label = (f"CONTRACTOR DORMER · width {w:g}′ × height {h:g}′ = {area:g} ft²"
+                 if w is not None and h is not None and area is not None
+                 else "CONTRACTOR DORMER · marked (no scale ref on photo)")
+        if (d.get("masked_ft") or 0) > 0:
+            label += f" (net of {d['masked_ft']:g} ft² masks)"
+        out.append({
+            "label": label,
+            "basis": ("contractor dormer annotation — photo-taped, scale-anchored "
+                      "(Add Dormer tool, ruled 2026-07-25)"),
+            **{k: d.get(k) for k in ("width_ft", "height_ft", "area_ft", "masked_ft")},
+        })
+    return out
+
+
 # drawing side of a perpendicular dormer profile, per the exterior-view
 # convention (left elevation mirrors; back flips left/right)
 _PROFILE_SIDE = {("front", "left"): "left", ("front", "right"): "right",
@@ -1370,5 +1394,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         # Contractor gable dims (TAPED-class, ruled 2026-07-24) for the
         # matching wall — the sheet renders them as a labeled callout.
         "contractor_gables": contractor_gables_for(run, which),
+        # Contractor dormer dims (TAPED-class, ruled 2026-07-25) — same
+        # labeled-callout treatment as gables.
+        "contractor_dormers": contractor_dormers_for(run, which),
         "run": {"run_id": run["run_id"], "model_name": model_name, "completed_at": completed_str},
     }

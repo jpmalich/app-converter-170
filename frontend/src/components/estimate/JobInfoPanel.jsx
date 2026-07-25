@@ -16,6 +16,8 @@ import { Upload, FileText, Sparkles, Layers, ChevronDown, ChevronUp, MoreHorizon
 import ElevationCompareModal, { countSources } from "@/components/estimate/ElevationCompareModal";
 import { isValidEmail, isValidPhone, isValidZip, formatPhoneUS } from "@/lib/validate";
 import { NO_AUTOFILL } from "@/lib/noAutofill";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 // Iter 79j.47 — US-state select options for the structured address grid.
 // Includes DC per USPS. Kept as [code] pairs — labels use the same
@@ -297,6 +299,20 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                 if (Object.keys(patch).length) {
                   update(patch);
                   if (save) await save({ ...est, ...patch });
+                }
+                // APPLY GATE (ruled 2026-07-25 — Apply Measurements
+                // regression): materialize the derived LP composition into
+                // the group tab lines SERVER-SIDE (same rebuild machinery
+                // as hover-lp-run: family zeroing, human-qty survival, v3
+                // labor binding). THE CUT stands — no composition lines
+                // merge through the frontend.
+                try {
+                  const { data } = await api.post(`/estimates/${est.id}/lp-package/materialize`, {});
+                  const { data: fresh } = await api.get(`/estimates/${est.id}`);
+                  if (fresh) update(fresh);
+                  toast.success(`LP list applied to line items — ${data.line_count} row(s) derived from the run`);
+                } catch (e) {
+                  toast.error(e?.response?.data?.detail || "Could not apply the derived LP list to the line items");
                 }
                 return;
               }

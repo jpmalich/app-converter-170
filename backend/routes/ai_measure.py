@@ -2205,6 +2205,41 @@ def parse_contractor_gables(raw):
     return out
 
 
+def parse_contractor_dormers(raw):
+    """Contractor dormer payload (ruled 2026-07-25 — mirror of gables):
+    strict parse, clamp, cap at 20 — garbage never lands on the run doc.
+    Rows carry {elevation, width_ft, height_ft, area_ft, masked_ft, photo}."""
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(data, list):
+        return []
+
+    def _num(v):
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return round(f, 1) if 0 <= f < 1e6 else None
+
+    out = []
+    for d in data[:20]:
+        if not isinstance(d, dict):
+            continue
+        out.append({
+            "elevation": str(d.get("elevation") or "other")[:24].lower(),
+            "width_ft": _num(d.get("width_ft")),
+            "height_ft": _num(d.get("height_ft")),
+            "area_ft": _num(d.get("area_ft")),
+            "masked_ft": _num(d.get("masked_ft")) or 0,
+            "photo": str(d.get("photo") or "")[:120],
+        })
+    return out
+
+
 @router.post("/ai-measure")
 async def ai_measure(
     files: list[UploadFile] = File(default=[]),
@@ -2248,6 +2283,12 @@ async def ai_measure(
     # NEVER injected into derivation (ruled: takeoff-visible record;
     # Claude gets them as burned-in ground truth separately).
     contractor_gables: Optional[str] = Form(None),
+    # Contractor-measured dormer faces (ruled 2026-07-25): JSON list of
+    # {elevation, width_ft, height_ft, area_ft, masked_ft, photo} from
+    # the annotator's Add Dormer tool. Same rules as gables: stored on
+    # the run doc, NEVER injected into derivation — burned-in ground
+    # truth for the AI read + takeoff-visible record.
+    contractor_dormers: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
 ):
     """Kick off an async AI photo-measure run. Iter 57q: the old
@@ -2360,6 +2401,7 @@ async def ai_measure(
     await db.ai_measure_runs.insert_one({
         "run_id": run_id,
         "contractor_gables": parse_contractor_gables(contractor_gables),
+        "contractor_dormers": parse_contractor_dormers(contractor_dormers),
         "user_id": user_id,
         "estimate_id": estimate_id,
         "prompt_hash": _prompt_version_hash(),
@@ -3405,6 +3447,9 @@ async def ai_measure_latest_for_estimate(
             # Contractor-measured gables (ruled 2026-07-24) — Field
             # Verify rows + sheet callouts read these TAPED-class dims.
             "contractor_gables": doc.get("contractor_gables") or [],
+            # Contractor-measured dormer faces (ruled 2026-07-25) — same
+            # TAPED-class treatment as gables.
+            "contractor_dormers": doc.get("contractor_dormers") or [],
             "result": strip_cost_keys(doc.get("result")),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,

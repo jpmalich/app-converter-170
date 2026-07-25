@@ -219,6 +219,27 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
         );
       })()}
 
+      {/* Contractor dormers (TAPED-class, ruled 2026-07-25) — separate,
+          visible rows; assignable their own waste factor later. Never
+          injected into derivation. */}
+      {(aiRun?.contractor_dormers || []).length > 0 && (
+        <div className="p-3 bg-[var(--surface)] border border-[#16A34A]/40 space-y-1" data-testid="field-verify-contractor-dormers">
+          <div className="text-[10px] uppercase tracking-wider text-[#15803D] font-bold mb-1">
+            Contractor dormers — photo-taped, scale-anchored <span className="text-[9px] italic font-normal">· own waste factor assignable · not auto-injected into the estimate</span>
+          </div>
+          {aiRun.contractor_dormers.map((d, i) => (
+            <div key={i} className="flex items-center justify-between text-[11px] py-0.5 border-t border-[var(--border)] first:border-t-0" data-testid={`contractor-dormer-row-${i}`}>
+              <span className="uppercase tracking-wider text-[var(--ink-2)] font-bold">{d.elevation}</span>
+              <span className="font-mono-num">
+                {d.width_ft != null && d.height_ft != null
+                  ? `${d.width_ft} ft × ${d.height_ft} ft = ${d.area_ft} ft²${d.masked_ft > 0 ? ` (−${d.masked_ft} ft² masks)` : ""}`
+                  : "marked — no scale ref on photo"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {appendages.length > 0 && (
         <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-1" data-testid="field-verify-taped-dims">
           <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">

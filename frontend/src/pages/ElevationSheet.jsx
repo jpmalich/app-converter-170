@@ -448,6 +448,19 @@ export function SheetSvg({ data }) {
             ))}
           </g>
         )}
+        {/* Contractor dormer callout (TAPED-class, ruled 2026-07-25) —
+            stacks under the gable callouts, same visual language */}
+        {(data.contractor_dormers || []).length > 0 && (
+          <g data-testid="elevation-contractor-dormer-callout">
+            {(data.contractor_dormers || []).map((d, i) => (
+              <g key={i}>
+                <rect x="90" y={202 + ((data.contractor_gables || []).length + i) * 40} width="420" height="36" fill="#f0fdf4" stroke="#16A34A" strokeWidth="1.2" strokeDasharray="6 3" />
+                <text x="100" y={216 + ((data.contractor_gables || []).length + i) * 40} fontSize="9.5" fontWeight="bold" fill="#15803D">{d.label}</text>
+                <text x="100" y={230 + ((data.contractor_gables || []).length + i) * 40} fontSize="7.5" fill="#166534">{d.basis}</text>
+              </g>
+            ))}
+          </g>
+        )}
         {/* Chase annotation — AI-read, footprint untaped: annotation box +
             INDICATIVE on-wall locator glyph (largest opening-free span) */}
         {chase && (

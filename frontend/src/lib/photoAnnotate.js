@@ -37,7 +37,7 @@ const ZONE_NAMES = {
 // side to 2400 px (Claude's vision quality plateaus around there) and
 // re-encode as JPEG @ 0.85 quality. Typical output: 800 KB – 2 MB.
 const MAX_LONG_SIDE_PX = 2400;
-import { inchesPerPx, gableNetArea } from "./gableMath";
+import { inchesPerPx, gableNetArea, dormerNetArea } from "./gableMath";
 
 const JPEG_QUALITY = 0.85;
 
@@ -358,6 +358,20 @@ export function describeAnnotations(entries) {
         `GREEN TRIANGLES marked GABLE are CONTRACTOR-MEASURED above-eave gable areas — ` +
         `treat their dimensions as GROUND TRUTH for the gable/above-eave portion of this wall ` +
         `(they already exclude any NO SIDING masks inside the triangle): ${gb.join("; ")}`
+      );
+    }
+    if (e.dormers && e.dormers.length) {
+      const inPerPx = inchesPerPx(e.reference, e.windowReference);
+      const dm = e.dormers.map((d, di) => {
+        const dd = dormerNetArea(d, e.zones || [], inPerPx);
+        return dd && dd.netAreaFt !== undefined
+          ? `dormer ${di + 1}: width ${dd.widthFt.toFixed(1)} ft × height ${dd.heightFt.toFixed(1)} ft = ${dd.netAreaFt.toFixed(1)} ft² net of masks`
+          : `dormer ${di + 1}: face marked (no scale ref on this photo)`;
+      });
+      parts.push(
+        `GREEN DASHED RECTANGLES marked DORMER are CONTRACTOR-MEASURED vertical dormer faces — ` +
+        `treat their width, height AND position as GROUND TRUTH for the dormers on this wall ` +
+        `(they already exclude any NO SIDING masks inside the rectangle): ${dm.join("; ")}`
       );
     }
     if (parts.length) {

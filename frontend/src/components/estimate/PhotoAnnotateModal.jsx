@@ -21,7 +21,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { X, Check, Ruler, Square, Trash2, RotateCcw, ZoomIn, ZoomOut, Maximize, Tags, Pencil, Crosshair, AppWindow, BrickWall, Home, Triangle } from "lucide-react";
 import {
   GABLE_PITCH_PRESETS, RIDGE_TOLERANCE_FT, inchesPerPx as gableInchesPerPx,
-  gableDims, gableNetArea, pitchOutOfRange,
+  gableDims, gableNetArea, pitchOutOfRange, dormerNetArea,
 } from "@/lib/gableMath";
 import { toast } from "sonner";
 
@@ -50,6 +50,13 @@ const MODE_PROFILE = "profile";
 // the peak recomputes the pitch. Only appears when the contractor taps
 // the tool — the rectangular-house workflow is untouched.
 const MODE_GABLE = "gable";
+// DORMER FACE mode (ruled 2026-07-25) — four taps (bottom-left →
+// bottom-right → top-right → top-left) draw a translucent measured
+// rectangle over the VERTICAL dormer face. All four corners stay
+// draggable, multiple dormers per photo, NO-SIDING masks inside the
+// rectangle subtract. Only appears when the contractor taps the tool —
+// the rectangular-house workflow is untouched.
+const MODE_DORMER = "dormer";
 
 const PROFILE_FAMILIES = [
   { key: "lap",          label: "Lap",        bg: "#DBEAFE", fg: "#1E40AF" },
@@ -161,7 +168,8 @@ export default function PhotoAnnotateModal({
   windows,      // Iter 57e — array of {x,y,style,width_in,height_in,id}
   profileBoxes, // Iter 78z+++ — array of saved profile boxes {id, shape, points/coords, profile, location, sqft, note}
   gables,       // ruled 2026-07-24 — array of {id, pts:[L,P,R], symmetric, pitch_set}
-  onSave,       // ({ reference, windowReference, zones, targetPin, windows, profileBoxes, gables }) => void
+  dormers,      // ruled 2026-07-25 — array of {id, pts:[BL,BR,TR,TL]} dormer faces
+  onSave,       // ({ reference, windowReference, zones, targetPin, windows, profileBoxes, gables, dormers }) => void
   onOpenProfileAnnotator, // (legacy) — kept for cross-photo Tag Profiles tool
   // Iter 79j (Feb 2026) — guided-flow mode. When set, the modal hides
   // the mode picker toolbar and instead surfaces a 5-step wizard shell
@@ -205,6 +213,8 @@ export default function PhotoAnnotateModal({
   const [localProfileBoxes, setLocalProfileBoxes] = useState(profileBoxes || []);
   const [localGables, setLocalGables] = useState(gables || []);
   const [gablePts, setGablePts] = useState([]); // in-progress taps (0-2)
+  const [localDormers, setLocalDormers] = useState(dormers || []);
+  const [dormerPts, setDormerPts] = useState([]); // in-progress taps (0-3)
   const [profileFamily, setProfileFamily] = useState("shake");
   // Pending window-tag entry: after the contractor taps a window pixel,
   // we open a small picker (style + W×H). Saved with `confirmWindow`.
@@ -297,6 +307,8 @@ export default function PhotoAnnotateModal({
     setLocalProfileBoxes(profileBoxes || []);
     setLocalGables(gables || []);
     setGablePts([]);
+    setLocalDormers(dormers || []);
+    setDormerPts([]);
     setWindowPending(null);
     // Iter 79j — guided mode overrides the aerial-default: always start
     // on step 0 (Wall Scale) since that's the required first pass. The
@@ -442,6 +454,7 @@ export default function PhotoAnnotateModal({
       g.pinch = { d0, m0, z0: zoom, pan0: { ...pan } };
       g.panActive = true;     // pinch implies no tap
       g.gableDrag = null;     // two fingers cancels a vertex drag
+      g.dormerDrag = null;
     } else if (mode === MODE_GABLE && photo && localGables.length) {
       // Vertex-drag support (ruled): a press near a gable point grabs it.
       const pt = evtPointFromClient(e.clientX, e.clientY);
@@ -454,6 +467,19 @@ export default function PhotoAnnotateModal({
           }
         }
         if (g.gableDrag) break;
+      }
+    } else if (mode === MODE_DORMER && photo && localDormers.length) {
+      // Corner-drag support (mirror of gable) — press near a corner grabs it.
+      const pt = evtPointFromClient(e.clientX, e.clientY);
+      const grabPx = Math.max(14, photo.width / 60);
+      for (const dm of localDormers) {
+        for (let i = 0; i < 4; i++) {
+          if (Math.hypot(dm.pts[i].x - pt.x, dm.pts[i].y - pt.y) <= grabPx) {
+            g.dormerDrag = { id: dm.id, idx: i };
+            break;
+          }
+        }
+        if (g.dormerDrag) break;
       }
     }
   };
@@ -504,6 +530,11 @@ export default function PhotoAnnotateModal({
       moveGablePoint(g.gableDrag.id, g.gableDrag.idx, evtPointFromClient(e.clientX, e.clientY));
       return;
     }
+    // Dormer corner drag — same rule.
+    if (g.dormerDrag && g.pointers.size === 1) {
+      moveDormerPoint(g.dormerDrag.id, g.dormerDrag.idx, evtPointFromClient(e.clientX, e.clientY));
+      return;
+    }
     // 1-pointer drag-pan when zoomed-in: incremental delta-since-last
     if (g.pointers.size === 1 && p && p.moved && zoom > 1) {
       setPan((prev) => ({ x: prev.x + dxFromLast, y: prev.y + dyFromLast }));
@@ -520,9 +551,9 @@ export default function PhotoAnnotateModal({
     const p = g.pointers.get(e.pointerId);
     g.pointers.delete(e.pointerId);
     if (g.pointers.size < 2) g.pinch = null;
-    if (g.gableDrag) {
+    if (g.gableDrag || g.dormerDrag) {
       // A vertex drag never counts as a tap (even a micro-drag).
-      if (g.pointers.size === 0) { g.gableDrag = null; g.panActive = false; }
+      if (g.pointers.size === 0) { g.gableDrag = null; g.dormerDrag = null; g.panActive = false; }
       return;
     }
     if (g.pointers.size === 0) {
@@ -577,6 +608,19 @@ export default function PhotoAnnotateModal({
       setLocalGables((prev) => [...prev, g]);
       setGablePts([]);
       toast.success("Gable added — drag any point to refine");
+      return;
+    }
+    if (mode === MODE_DORMER) {
+      // 4 taps: bottom-left → bottom-right → top-right → top-left.
+      const next = [...dormerPts, p];
+      if (next.length < 4) { setDormerPts(next); return; }
+      const d = {
+        id: `d-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        pts: next,
+      };
+      setLocalDormers((prev) => [...prev, d]);
+      setDormerPts([]);
+      toast.success("Dormer added — drag any corner to refine");
       return;
     }
     if (mode === MODE_WINDOW) {
@@ -859,6 +903,17 @@ export default function PhotoAnnotateModal({
   const removeGable = (id) => setLocalGables((prev) => prev.filter((g) => g.id !== id));
   const gableScaleInPerPx = gableInchesPerPx(localRef, localWindowRef);
 
+  // ── Dormer helpers (ruled 2026-07-25 — mirror of the gable tool) ──
+  const moveDormerPoint = (id, idx, pt) => {
+    setLocalDormers((prev) => prev.map((d) => {
+      if (d.id !== id) return d;
+      const pts = d.pts.map((p) => ({ ...p }));
+      pts[idx] = pt;
+      return { ...d, pts };
+    }));
+  };
+  const removeDormer = (id) => setLocalDormers((prev) => prev.filter((d) => d.id !== id));
+
   const save = () => {
     onSave({
       reference: localRef,
@@ -868,6 +923,7 @@ export default function PhotoAnnotateModal({
       windows: localWindows,
       profileBoxes: localProfileBoxes,
       gables: localGables,
+      dormers: localDormers,
       imageDims: photo ? { w: photo.width, h: photo.height } : null,
     });
     onClose();
@@ -1009,6 +1065,41 @@ export default function PhotoAnnotateModal({
         })}
         {mode === MODE_GABLE && gablePts.map((pt, i) => (
           <circle key={`gp-${i}`} cx={pt.x} cy={pt.y} r={Math.max(7, photo.width / 260)}
+                  fill="#16A34A" stroke="#FFFFFF" strokeWidth={2} />
+        ))}
+        {/* DORMERS (ruled 2026-07-25) — translucent measured face quads,
+            dashed stroke to read apart from gable triangles */}
+        {localDormers.map((d) => {
+          const dims = dormerNetArea(d, localZones, gableScaleInPerPx);
+          const fontPx = Math.max(13, photo.width / 75);
+          const cx = d.pts.reduce((s, p) => s + p.x, 0) / 4;
+          const cy = d.pts.reduce((s, p) => s + p.y, 0) / 4;
+          const label = dims && dims.netAreaFt !== undefined
+            ? `DORMER · ${dims.widthFt.toFixed(1)}′ × ${dims.heightFt.toFixed(1)}′ · ${dims.netAreaFt.toFixed(0)} ft²`
+            : "DORMER · add a scale reference for dims";
+          const labelLen = Math.max(150, label.length * fontPx * 0.55);
+          const r = Math.max(7, photo.width / 260);
+          return (
+            <g key={d.id} data-testid={`dormer-svg-${d.id}`}>
+              <path d={`M${d.pts.map((p) => `${p.x},${p.y}`).join(" L")} Z`}
+                    fill="#16A34A" fillOpacity={0.18}
+                    stroke="#16A34A" strokeWidth={Math.max(3, photo.width / 500)}
+                    strokeDasharray={`${Math.max(8, photo.width / 200)} ${Math.max(5, photo.width / 320)}`} />
+              {d.pts.map((pt, i) => (
+                <circle key={i} cx={pt.x} cy={pt.y} r={r}
+                        fill="#16A34A" stroke="#FFFFFF"
+                        strokeWidth={Math.max(2, photo.width / 900)} />
+              ))}
+              <rect x={cx - labelLen / 2} y={cy - fontPx - 4} width={labelLen} height={fontPx + 8}
+                    fill="#16A34A" rx={3} />
+              <text x={cx} y={cy + 2} fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
+                {label}
+              </text>
+            </g>
+          );
+        })}
+        {mode === MODE_DORMER && dormerPts.map((pt, i) => (
+          <circle key={`dp-${i}`} cx={pt.x} cy={pt.y} r={Math.max(7, photo.width / 260)}
                   fill="#16A34A" stroke="#FFFFFF" strokeWidth={2} />
         ))}
         {localRef && (
@@ -1901,6 +1992,17 @@ export default function PhotoAnnotateModal({
               >
                 <Triangle className="w-3 h-3" /> Gable
               </button>
+              <button
+                type="button"
+                onClick={() => { setMode(MODE_DORMER); setPending(null); setHoverPoint(null); setPolyPoints([]); setGablePts([]); setDormerPts([]); }}
+                className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider border flex items-center justify-center gap-1 ${
+                  mode === MODE_DORMER ? "bg-[#16A34A] text-white border-[#16A34A]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
+                }`}
+                data-testid="annotate-mode-dormer"
+                title="Add Dormer face — tap bottom-left, bottom-right, top-right, top-left. Area = width × height, minus any NO-SIDING masks inside the rectangle."
+              >
+                <Home className="w-3 h-3" /> Dormer
+              </button>
             </div>
             )}
 
@@ -1975,6 +2077,48 @@ export default function PhotoAnnotateModal({
                       {warn && (
                         <div className="text-[10px] font-bold text-[#B45309]" data-testid={`gable-pitch-warning-${g.id}`}>
                           Pitch {dims.pitch}/12 is outside the usual 3/12–18/12 range — double-check the tapped points.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {!guidedFlow && mode === MODE_DORMER && (
+              <div className="space-y-2" data-testid="dormer-panel">
+                <div className="text-[10px] text-[var(--muted)] font-medium">
+                  {dormerPts.length === 0 && "Tap the BOTTOM-LEFT corner of the dormer face."}
+                  {dormerPts.length === 1 && "Tap the BOTTOM-RIGHT corner."}
+                  {dormerPts.length === 2 && "Tap the TOP-RIGHT corner."}
+                  {dormerPts.length === 3 && "Tap the TOP-LEFT corner to finish the face."}
+                  {dormerPts.length === 0 && localDormers.length > 0 && " Tap again to add another dormer."}
+                </div>
+                {!gableScaleInPerPx && (
+                  <div className="text-[10px] font-bold text-[#B45309]" data-testid="dormer-no-scale-warning">
+                    No scale reference on this photo — add a WALL REF or WIN REF to get real dimensions. The face still saves.
+                  </div>
+                )}
+                {localDormers.map((d, di) => {
+                  const dims = dormerNetArea(d, localZones, gableScaleInPerPx);
+                  return (
+                    <div key={d.id} className="border border-[var(--border)] p-2 space-y-1" data-testid={`dormer-row-${d.id}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#15803D]">
+                          Dormer {di + 1}
+                          {dims && dims.netAreaFt !== undefined
+                            ? ` — ${dims.widthFt.toFixed(1)} ft × ${dims.heightFt.toFixed(1)} ft = ${dims.netAreaFt.toFixed(1)} ft²`
+                            : " — dims pending scale ref"}
+                        </span>
+                        <button type="button" onClick={() => removeDormer(d.id)}
+                                className="text-[var(--danger)]" data-testid={`dormer-delete-${d.id}`}
+                                aria-label="Delete dormer">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {dims && dims.maskedFt > 0 && (
+                        <div className="text-[10px] text-[var(--muted)]">
+                          masks inside dormer subtract {dims.maskedFt.toFixed(1)} ft² (gross {dims.grossAreaFt.toFixed(1)} ft²)
                         </div>
                       )}
                     </div>

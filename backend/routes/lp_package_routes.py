@@ -591,6 +591,63 @@ async def lp_blueprint_applied(est_id: str, body: dict | None = None,
     return {"ok": True, "archived_run_id": archived}
 
 
+@router.post("/estimates/{est_id}/lp-package/materialize")
+async def lp_package_materialize(est_id: str, payload: dict | None = None,
+                                 user: dict = Depends(get_current_user)):
+    """APPLY GATE for photo/blueprint-sourced LP estimates (ruled
+    2026-07-25 — Apply Measurements regression). Materializes the derived
+    LP composition into the group tab lines through the SAME rebuild
+    machinery hover-lp-run uses (rebuild_lp_tab_lines: price inheritance,
+    family zeroing, human-qty survival, v3 labor binding). THE CUT stands:
+    the frontend still merges NO composition lines — this is the
+    server-side engine path. Idempotent: re-applying re-derives on the
+    same governing run. The governing run is archived (persistent
+    artifact) and stamped as lp_source_run_id."""
+    est_meta, run, binding = await _load_run(
+        est_id, user["company_id"], (payload or {}).get("run_id"))
+    full_est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "kind": 1, "waste_pct": 1, "porch_ceilings": 1,
+         "overhang_in": 1, "default_siding_profile": 1})
+    if (full_est or {}).get("kind") != "lp_smart":
+        raise HTTPException(status_code=400,
+                            detail="LP materialize is lp_smart-kind only")
+    # Same measurement gates the preview composes through — the tab lines
+    # must speak the exact numbers the Material List panel shows.
+    measurements, corner_locations, wall_heights = _extract(run)
+    op_items = _openings_items(run, est_meta.get("lp_openings_review"))
+    measurements, _op_summary = _apply_openings_review(measurements, op_items)
+    measurements = _apply_default_profile(measurements, est_meta)
+    measurements = _apply_flag_checklist(measurements, est_meta, run)
+    measurements = _apply_key_bound_areas(measurements, est_meta)
+    # WASTE IS THE CONTRACTOR'S (ruled 2026-07-19): the visible field is
+    # the only waste applied — never a silent engine default.
+    waste_field = float((full_est or {}).get("waste_pct") or 0)
+    from routes.hover import rebuild_lp_tab_lines
+    # profile=None: default-profile inheritance already applied above via
+    # _apply_default_profile (annotations beat the default — pinned).
+    tab_lines, _scoped = await rebuild_lp_tab_lines(
+        est_id=est_id, company_id=user["company_id"],
+        base_measurements=measurements, est=full_est or {},
+        profile=None, waste_field=waste_field)
+    est_set: dict = {"lines": tab_lines}
+    rid = str(run.get("run_id") or "").strip() or None
+    archived = await archive_run_for_artifact(
+        run_id=rid, reason="lp-materialize") if rid else None
+    if archived:
+        est_set["lp_source_run_id"] = archived
+    await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]}, {"$set": est_set})
+    await log_estimate_event(est_id, "lp.tab_lines.materialized", {
+        "run_id": rid, "binding": binding,
+        "default_profile": est_meta.get("default_siding_profile"),
+        "waste_pct": waste_field, "line_count": len(tab_lines),
+        "by": user.get("email"),
+    })
+    return {"ok": True, "run_id": rid, "binding": binding,
+            "line_count": len(tab_lines)}
+
+
 @router.get("/lp-package/colors")
 async def lp_package_colors(user: dict = Depends(get_current_user)):
     """ExpertFinish palette + component groups for the Material List

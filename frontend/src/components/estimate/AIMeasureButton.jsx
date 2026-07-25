@@ -15,7 +15,7 @@ import api from "@/lib/api";
 import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
 import {
-  inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges,
+  inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges, dormerNetArea,
 } from "@/lib/gableMath";
 // Iter 78z — Profile annotator: lets contractor draw boxes tagged
 // Shake / B&B / etc. so the AI worker treats those regions as
@@ -74,7 +74,7 @@ const ELEVATION_OPTIONS = [
   { key: "detail",      label: "Detail" },
 ];
 const annotEmpty = (a) =>
-  !a || (!a.reference && !a.windowReference && (!a.zones || a.zones.length === 0) && (!a.elevation || a.elevation === "") && !a.targetPin && (!a.gables || a.gables.length === 0));
+  !a || (!a.reference && !a.windowReference && (!a.zones || a.zones.length === 0) && (!a.elevation || a.elevation === "") && !a.targetPin && (!a.gables || a.gables.length === 0) && (!a.dormers || a.dormers.length === 0));
 
 const KEY_LABELS = {
   siding_sqft: "Siding",
@@ -1776,6 +1776,31 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         // Ridge cross-check (ruled: 1.0 ft) — gentle, never blocks.
         const ridgeWarn = crossCheckRidges(risesByElevation);
         if (ridgeWarn) toast.warning(ridgeWarn, { duration: 9000 });
+      }
+      // CONTRACTOR DORMERS (ruled 2026-07-25 — mirror of gables): the
+      // structured payload persists on the run doc → Field Verify rows +
+      // sheet callouts. Burn-in + annotation text already carry them to
+      // Claude as ground truth; this is the takeoff-visible record.
+      const contractorDormers = [];
+      for (const dname of photoUrls) {
+        const da = photoAnnotations[dname];
+        if (!da || !da.dormers || !da.dormers.length) continue;
+        const dInPerPx = gableInchesPerPx(da.reference, da.windowReference);
+        for (const dm of da.dormers) {
+          const d = dormerNetArea(dm, da.zones || [], dInPerPx);
+          if (!d) continue;
+          contractorDormers.push({
+            elevation: da.elevation || "other",
+            width_ft: d.widthFt !== undefined ? Math.round(d.widthFt * 10) / 10 : null,
+            height_ft: d.heightFt !== undefined ? Math.round(d.heightFt * 10) / 10 : null,
+            area_ft: d.netAreaFt !== undefined ? Math.round(d.netAreaFt * 10) / 10 : null,
+            masked_ft: d.maskedFt ? Math.round(d.maskedFt * 10) / 10 : 0,
+            photo: dname,
+          });
+        }
+      }
+      if (contractorDormers.length) {
+        fd.append("contractor_dormers", JSON.stringify(contractorDormers));
       }
       // Iter 57q — async launcher + polling. The backend used to do
       // all the Claude work synchronously in a single 60–120 s
@@ -4853,7 +4878,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         gables={
           annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.gables || []) : []
         }
-        onSave={({ reference, windowReference, zones, targetPin, windows, profileBoxes, gables, imageDims }) => {
+        dormers={
+          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.dormers || []) : []
+        }
+        onSave={({ reference, windowReference, zones, targetPin, windows, profileBoxes, gables, dormers, imageDims }) => {
           if (!annotateOpenFor) return;
           setPhotoAnnotations((prev) => ({
             ...prev,
@@ -4866,6 +4894,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               windows,
               profileBoxes,
               gables,
+              dormers,
             },
           }));
           // Iter 78z+++ — push the new in-modal profile boxes into the

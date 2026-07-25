@@ -118,3 +118,56 @@ export function crossCheckRidges(risesByElevation) {
     `Double-check the tapped points — same ridge should read the same height.`
   );
 }
+
+// ── DORMER FACE math (ruled 2026-07-25 — mirrors the gable tool) ──
+// pts = [bottomLeft, bottomRight, topRight, topLeft] photo-pixel corners
+// of the VERTICAL dormer face. Width/height average the opposing edges
+// (photos are square-on; a touch of tilt averages out honestly).
+// Area = width × height, minus NO-SIDING masks inside the quad.
+export function pointInPolygon(pt, pts) {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+    if ((yi > pt.y) !== (yj > pt.y) &&
+        pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+export function dormerDims(pts, inPerPx) {
+  if (!pts || pts.length !== 4) return null;
+  const [bl, br, tr, tl] = pts;
+  const widthPx = (Math.hypot(br.x - bl.x, br.y - bl.y) +
+                   Math.hypot(tr.x - tl.x, tr.y - tl.y)) / 2;
+  const heightPx = (Math.hypot(tl.x - bl.x, tl.y - bl.y) +
+                    Math.hypot(tr.x - br.x, tr.y - br.y)) / 2;
+  if (widthPx <= 0 || heightPx <= 0) return null;
+  const out = { widthPx, heightPx };
+  if (inPerPx) {
+    out.widthFt = (widthPx * inPerPx) / 12;
+    out.heightFt = (heightPx * inPerPx) / 12;
+    out.grossAreaFt = out.widthFt * out.heightFt;
+  }
+  return out;
+}
+
+// NET dormer-face area: width × height minus masked NO-SIDING zones
+// whose centroid sits inside the quad — same rule the gables follow.
+export function dormerNetArea(dormer, zones, inPerPx) {
+  const dims = dormerDims(dormer.pts, inPerPx);
+  if (!dims || dims.grossAreaFt === undefined) return dims;
+  let maskedPx = 0;
+  for (const z of zones || []) {
+    const pts = zonePoints(z);
+    if (!pts || pts.length < 3) continue;
+    if (pointInPolygon(centroid(pts), dormer.pts)) maskedPx += polyAreaPx(pts);
+  }
+  const maskedFt = (maskedPx * inPerPx * inPerPx) / 144;
+  return {
+    ...dims,
+    maskedFt,
+    netAreaFt: Math.max(0, dims.grossAreaFt - maskedFt),
+  };
+}

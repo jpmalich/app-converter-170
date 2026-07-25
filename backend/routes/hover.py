@@ -2320,6 +2320,143 @@ def _bake_tab_waste(lines: list, waste_pct) -> list:
     return out
 
 
+async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
+                               base_measurements: dict, est: dict,
+                               profile, waste_field) -> tuple:
+    """ONE FAMILY EVERYWHERE tab-line rebuild (extracted verbatim from
+    hover-lp-run's rebuild_tab_lines block, rulings 2026-07-23/24; shared
+    with the photo/blueprint LP APPLY GATE — lp-package/materialize, ruled
+    2026-07-25). profile=None composes at the extraction's own profile
+    split (default-profile inheritance already applied upstream).
+    Returns (tab_lines, scoped_measurements)."""
+    from routes.lp_package_routes import _DEFAULT_PROFILES, _force_profile_measurements
+    scoped = dict(base_measurements)
+    # PORCH CEILINGS ROLL INTO SOFFIT SERVER-SIDE (ruled 2026-07-24,
+    # Casile set-back entry): Job-Info porch entries feed the Vented
+    # soffit derivation on every rebuild — same math as the editor's
+    # recalc hook (porchCeilingTotalSqft mirror).
+    porches = est.get("porch_ceilings") or []
+    porch_sqft = sum(
+        (float(p.get("width_ft") or 0) * float(p.get("length_ft") or 0))
+        for p in porches if isinstance(p, dict))
+    if porch_sqft > 0:
+        scoped["porch_ceiling_sqft"] = porch_sqft
+    if est.get("overhang_in") is not None:
+        scoped["overhang_in"] = est["overhang_in"]
+    # Family-defaulted waste flows INTO the derivation (sealed
+    # 2026-07-24): profile siding rows derive with the resolved field.
+    scoped["_waste_pct"] = float(waste_field or 0) / 100.0
+    tab_lines = _bake_tab_waste(
+        _build_lines(_force_profile_measurements(scoped, profile)
+                     if profile else dict(scoped)),
+        waste_field)
+    prev = await db.estimates.find_one(
+        {"id": est_id}, {"_id": 0, "lines": 1, "lp_pricing_tier": 1})
+    prev_idx = {(l.get("tab"), l.get("section"), l.get("name")): l
+                for l in (prev or {}).get("lines") or []}
+    for l in tab_lines:
+        old = prev_idx.get((l.get("tab"), l.get("section"), l.get("name")))
+        if old:
+            for k in ("mat", "lab", "adders", "ami_part"):
+                if old.get(k) is not None:
+                    l[k] = old[k]
+            # Human-typed quantities survive the rebuild verbatim —
+            # mixed-material jobs are human choices, never residue.
+            if (old.get("qty_src") or "") == "human":
+                l["qty"] = old.get("qty")
+                l["raw_qty"] = old.get("raw_qty")
+                l["qty_src"] = "human"
+    # Rows with NO previous line to inherit from bind to the company's
+    # resolved catalog (tier + overrides + LP engine) — the same source
+    # the frontend import-apply merge reads. Never a silent None price.
+    if any(l.get("mat") is None for l in tab_lines):
+        from routes.catalog import _resolve_catalog_for_company
+        comp_doc = await db.companies.find_one({"id": company_id}, {"_id": 0})
+        cat = await _resolve_catalog_for_company(
+            comp_doc, (prev or {}).get("lp_pricing_tier"))
+        cat_idx = {(s["title"], it["name"]): it
+                   for s in cat.get("sections") or [] for it in s.get("items") or []}
+        for l in tab_lines:
+            if l.get("mat") is not None:
+                continue
+            it = cat_idx.get((l.get("section"), l.get("name")))
+            if it and not it.get("pricing_pending"):
+                l["mat"] = it["mat"]
+                l["lab"] = it["lab"]
+                if it.get("ami_part") is not None:
+                    l["ami_part"] = it["ami_part"]
+            else:
+                # No catalog row either — the frontend import-apply
+                # convention is an explicit $0.00, never a None hole.
+                l["mat"] = 0.0
+                l["lab"] = 0.0
+    # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 —
+    # Casile lap-251 double-quote): a profile-mapped rebuild writes the
+    # selected family's derived quantities and ZEROES every other
+    # siding family's DERIVED rows (visible qty-0, price kept).
+    # Human-typed rows (qty_src == "human") always survive verbatim —
+    # mixed-material jobs are human choices, never derivation residue.
+    current_keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in tab_lines}
+    other_family_keys = set()
+    for fam in _DEFAULT_PROFILES:
+        if fam == profile:
+            continue
+        try:
+            for fl in _build_lines(_force_profile_measurements(dict(scoped), fam)):
+                k = (fl.get("tab"), fl.get("section"), fl.get("name"))
+                if k not in current_keys:
+                    other_family_keys.add(k)
+        except Exception:
+            continue
+    for k, old in prev_idx.items():
+        if k in current_keys:
+            continue
+        if (old.get("qty_src") or "") == "human":
+            tab_lines.append(dict(old))
+        elif k in other_family_keys:
+            zeroed = dict(old)
+            zeroed["qty"] = 0
+            zeroed["raw_qty"] = None
+            tab_lines.append(zeroed)
+    # LABOR IS THE CONTRACTOR'S — v3 ZEROING (sealed 2026-07-24): ALL
+    # labor on the LP walk surface (vinyl/ascend/lp_smart tabs) is $0
+    # until the contractor fills it — the provisional guesses RETIRED
+    # ENTIRELY. Binding order per row:
+    #   1. contractor edit (lab_src "human") — wins, untouched;
+    #   2. contractor standing rate — companies.labor_rates or the
+    #      Price Catalog LABOR $ override (the catalog is the labor
+    #      home, ruled: no new card) — lab_src "company";
+    #   3. $0 — named misc-labor rows stamp lab_src "pending" (the
+    #      visible "contractor sets labor" state). No unflagged labor
+    #      anywhere. Windows-tab labor is Excel-authored ISS pricing —
+    #      out of scope.
+    from lp_conventions import MISC_LABOR_ROWS
+    from lp_costs import sheet_norm as _sheet_norm
+    from routes.lp_package_routes import _load_tier_sheet_for
+    comp_doc_rates = await db.companies.find_one(
+        {"id": company_id}, {"_id": 0, "labor_rates": 1})
+    company_rates = (comp_doc_rates or {}).get("labor_rates") or {}
+    catalog_sheet = await _load_tier_sheet_for({"company_id": company_id})
+    for l in tab_lines:
+        if (l.get("tab") or "vinyl") not in ("vinyl", "ascend", "lp_smart"):
+            continue
+        if (l.get("lab_src") or "") == "human":
+            continue  # contractor edit wins, forever
+        key = _sheet_norm(l.get("name") or "")
+        rate = company_rates.get(key)
+        cat_lab = float((catalog_sheet.get(key) or {}).get("lab") or 0)
+        if rate is not None and float(rate) > 0:
+            l["lab"] = float(rate)
+            l["lab_src"] = "company"
+        elif cat_lab > 0:
+            l["lab"] = cat_lab
+            l["lab_src"] = "company"
+        else:
+            l["lab"] = 0.0
+            l["lab_src"] = "pending" if key in MISC_LABOR_ROWS else None
+    return tab_lines, scoped
+
+
 @router.post("/estimates/{est_id}/hover-lp-run")
 async def hover_lp_run(
     est_id: str, payload: dict, user: dict = Depends(get_current_user),
@@ -2403,133 +2540,18 @@ async def hover_lp_run(
     # contractor-waste rule the import apply bakes.
     rebuilt_lines = None
     if bool((payload or {}).get("rebuild_tab_lines", True)):
-        from routes.lp_package_routes import _force_profile_measurements
-        scoped = dict(hover_meas)
+        # Extracted to rebuild_lp_tab_lines (shared with the photo/blueprint
+        # LP APPLY GATE — lp-package/materialize, ruled 2026-07-25).
+        # Behavior identical: porch/overhang injection, waste bake, price
+        # inheritance, family zeroing, v3 labor binding.
+        scoped_base = dict(hover_meas)
         if engine_meas.get("siding_sqft") is not None:
-            scoped["siding_sqft"] = engine_meas["siding_sqft"]  # scope governs
-        # PORCH CEILINGS ROLL INTO SOFFIT SERVER-SIDE (ruled 2026-07-24,
-        # Casile set-back entry): Job-Info porch entries feed the Vented
-        # soffit derivation on every rebuild — same math as the editor's
-        # recalc hook (porchCeilingTotalSqft mirror).
-        porches = est.get("porch_ceilings") or []
-        porch_sqft = sum(
-            (float(p.get("width_ft") or 0) * float(p.get("length_ft") or 0))
-            for p in porches if isinstance(p, dict))
-        if porch_sqft > 0:
-            scoped["porch_ceiling_sqft"] = porch_sqft
-        if est.get("overhang_in") is not None:
-            scoped["overhang_in"] = est["overhang_in"]
-        # Family-defaulted waste flows INTO the derivation (sealed
-        # 2026-07-24): profile siding rows derive with the resolved field.
-        scoped["_waste_pct"] = waste_field / 100.0
-        tab_lines = _bake_tab_waste(
-            _build_lines(_force_profile_measurements(scoped, profile)), waste_field)
-        prev = await db.estimates.find_one(
-            {"id": est_id}, {"_id": 0, "lines": 1, "lp_pricing_tier": 1})
-        prev_idx = {(l.get("tab"), l.get("section"), l.get("name")): l
-                    for l in (prev or {}).get("lines") or []}
-        for l in tab_lines:
-            old = prev_idx.get((l.get("tab"), l.get("section"), l.get("name")))
-            if old:
-                for k in ("mat", "lab", "adders", "ami_part"):
-                    if old.get(k) is not None:
-                        l[k] = old[k]
-                # Human-typed quantities survive the rebuild verbatim —
-                # mixed-material jobs are human choices, never residue.
-                if (old.get("qty_src") or "") == "human":
-                    l["qty"] = old.get("qty")
-                    l["raw_qty"] = old.get("raw_qty")
-                    l["qty_src"] = "human"
-        # Rows with NO previous line to inherit from bind to the company's
-        # resolved catalog (tier + overrides + LP engine) — the same source
-        # the frontend import-apply merge reads. Never a silent None price.
-        if any(l.get("mat") is None for l in tab_lines):
-            from routes.catalog import _resolve_catalog_for_company
-            comp_doc = await db.companies.find_one({"id": user["company_id"]}, {"_id": 0})
-            cat = await _resolve_catalog_for_company(
-                comp_doc, (prev or {}).get("lp_pricing_tier"))
-            cat_idx = {(s["title"], it["name"]): it
-                       for s in cat.get("sections") or [] for it in s.get("items") or []}
-            for l in tab_lines:
-                if l.get("mat") is not None:
-                    continue
-                it = cat_idx.get((l.get("section"), l.get("name")))
-                if it and not it.get("pricing_pending"):
-                    l["mat"] = it["mat"]
-                    l["lab"] = it["lab"]
-                    if it.get("ami_part") is not None:
-                        l["ami_part"] = it["ami_part"]
-                else:
-                    # No catalog row either — the frontend import-apply
-                    # convention is an explicit $0.00, never a None hole.
-                    l["mat"] = 0.0
-                    l["lab"] = 0.0
-        # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 —
-        # Casile lap-251 double-quote): a profile-mapped rebuild writes the
-        # selected family's derived quantities and ZEROES every other
-        # siding family's DERIVED rows (visible qty-0, price kept).
-        # Human-typed rows (qty_src == "human") always survive verbatim —
-        # mixed-material jobs are human choices, never derivation residue.
-        current_keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in tab_lines}
-        other_family_keys = set()
-        for fam in _DEFAULT_PROFILES:
-            if fam == profile:
-                continue
-            try:
-                for fl in _build_lines(_force_profile_measurements(dict(scoped), fam)):
-                    k = (fl.get("tab"), fl.get("section"), fl.get("name"))
-                    if k not in current_keys:
-                        other_family_keys.add(k)
-            except Exception:
-                continue
-        for k, old in prev_idx.items():
-            if k in current_keys:
-                continue
-            if (old.get("qty_src") or "") == "human":
-                tab_lines.append(dict(old))
-            elif k in other_family_keys:
-                zeroed = dict(old)
-                zeroed["qty"] = 0
-                zeroed["raw_qty"] = None
-                tab_lines.append(zeroed)
-        # LABOR IS THE CONTRACTOR'S — v3 ZEROING (sealed 2026-07-24): ALL
-        # labor on the LP walk surface (vinyl/ascend/lp_smart tabs) is $0
-        # until the contractor fills it — the provisional guesses RETIRED
-        # ENTIRELY. Binding order per row:
-        #   1. contractor edit (lab_src "human") — wins, untouched;
-        #   2. contractor standing rate — companies.labor_rates or the
-        #      Price Catalog LABOR $ override (the catalog is the labor
-        #      home, ruled: no new card) — lab_src "company";
-        #   3. $0 — named misc-labor rows stamp lab_src "pending" (the
-        #      visible "contractor sets labor" state). No unflagged labor
-        #      anywhere. Windows-tab labor is Excel-authored ISS pricing —
-        #      out of scope.
-        from lp_conventions import MISC_LABOR_ROWS
-        from lp_costs import sheet_norm as _sheet_norm
-        from routes.lp_package_routes import _load_tier_sheet_for
-        comp_doc_rates = await db.companies.find_one(
-            {"id": user["company_id"]}, {"_id": 0, "labor_rates": 1})
-        company_rates = (comp_doc_rates or {}).get("labor_rates") or {}
-        catalog_sheet = await _load_tier_sheet_for({"company_id": user["company_id"]})
-        for l in tab_lines:
-            if (l.get("tab") or "vinyl") not in ("vinyl", "ascend", "lp_smart"):
-                continue
-            if (l.get("lab_src") or "") == "human":
-                continue  # contractor edit wins, forever
-            key = _sheet_norm(l.get("name") or "")
-            rate = company_rates.get(key)
-            cat_lab = float((catalog_sheet.get(key) or {}).get("lab") or 0)
-            if rate is not None and float(rate) > 0:
-                l["lab"] = float(rate)
-                l["lab_src"] = "company"
-            elif cat_lab > 0:
-                l["lab"] = cat_lab
-                l["lab_src"] = "company"
-            else:
-                l["lab"] = 0.0
-                l["lab_src"] = "pending" if key in MISC_LABOR_ROWS else None
-        rebuilt_lines = tab_lines
-        est_set["lines"] = tab_lines
+            scoped_base["siding_sqft"] = engine_meas["siding_sqft"]  # scope governs
+        rebuilt_lines, scoped = await rebuild_lp_tab_lines(
+            est_id=est_id, company_id=user["company_id"],
+            base_measurements=scoped_base, est=est,
+            profile=profile, waste_field=waste_field)
+        est_set["lines"] = rebuilt_lines
         # Porch-ceiling recompute basis (Casile set-back doorway item):
         # the classic import apply persists est.hover_measurements; the
         # server-side rebuild must too, or a Job-Info porch-ceiling entry
