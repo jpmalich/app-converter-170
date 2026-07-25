@@ -5056,3 +5056,31 @@ STAMP: - 2026-07-25 11:31 UTC · 845fb3b · CLEAN · [tests] · 1357 passed, 1 s
 NEXT: Howard on-device verification; dormer sheet-placement accuracy re-check
 on Front/Back/Right with contractor dormers as ground truth; then backlog
 (upload-security split-class signed URLs P0, Hover-Vision rung P1).
+
+## 2026-07-25 — CONTRACTOR DORMER QUAD GOVERNS THE DRAWN BAND (follow-up ruling)
+Howard ratified: the Add Dormer annotation is the ground-truth LOCATION and
+SIZE on the elevation sheet — not just a callout box.
+- Frontend: contractor_dormers rows now carry photo-frac position norms
+  (x_center_frac, y_bottom_frac, width_frac, height_frac — bbox-frac
+  convention the AI openings already use); imageDims round-trips on the
+  annotation save so the launcher can compute them.
+- Backend parse: _frac clamp 0..1, round 4 — garbage never lands.
+- elevation_sheets: new _contractor_dormer_band() + _bind_dormers(run=…):
+  when a positioned quad exists for the sheet's wall the face-on band is
+  REPLACED (or synthesized when the AI missed the dormer entirely):
+  · width/knee — TAPED (contractor quad);
+  · center — quad center mapped through this wall's window anchors
+    (bbox center-x ↔ along_wall_ft) at the quad's OWN scale
+    (width_ft/width_frac), same-photo anchors preferred, clamped in-wall;
+  · base — quad bottom edge off the wall-window head line at the quad's
+    own vertical scale, anchored at the CONTRACTOR-SPEC 6'-8" header;
+  · no anchors → dims still govern, center/v-pos fall back FLAGGED
+    INDICATIVE (never silent); ridge-exceeds flag preserved;
+  · callout label appends "· GOVERNS DRAWN BAND" when positioned.
+- Pins: TestContractorQuadGovernsDrawnBand (exact math: center 16.0 ft via
+  40 ft/frac quad scale, base 8.67 ft via 104" chain; AI-missed synthesis;
+  legacy no-frac fallback; no-row leaves AI binding untouched; clamp).
+STAMP: - 2026-07-25 22:08 UTC · 282bd05 · CLEAN · [tests] · 1365 passed, 1 skipped, 3 warnings in 188.21s (0:03:08)
+NEXT: Howard on-device — place dormer quads on Front/Back/Right, re-run, and
+field-compare the sheet placement; then backlog (upload-security P0,
+Hover-Vision rung P1).
