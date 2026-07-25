@@ -2225,6 +2225,13 @@ def parse_contractor_dormers(raw):
             return None
         return round(f, 1) if 0 <= f < 1e6 else None
 
+    def _frac(v):
+        try:
+            f = float(v)
+        except (TypeError, ValueError):
+            return None
+        return round(f, 4) if 0 <= f <= 1 else None
+
     out = []
     for d in data[:20]:
         if not isinstance(d, dict):
@@ -2236,6 +2243,12 @@ def parse_contractor_dormers(raw):
             "area_ft": _num(d.get("area_ft")),
             "masked_ft": _num(d.get("masked_ft")) or 0,
             "photo": str(d.get("photo") or "")[:120],
+            # Photo-frac position norms (ruled 2026-07-25 follow-up) —
+            # the sheet binder moves the DRAWN dormer band to the quad.
+            "x_center_frac": _frac(d.get("x_center_frac")),
+            "y_bottom_frac": _frac(d.get("y_bottom_frac")),
+            "width_frac": _frac(d.get("width_frac")),
+            "height_frac": _frac(d.get("height_frac")),
         })
     return out
 

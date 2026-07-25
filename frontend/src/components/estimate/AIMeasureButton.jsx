@@ -1789,6 +1789,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         for (const dm of da.dormers) {
           const d = dormerNetArea(dm, da.zones || [], dInPerPx);
           if (!d) continue;
+          // Photo-frac norms (ruled 2026-07-25 follow-up): the quad's
+          // position rides along so the elevation-sheet binder can move
+          // the DRAWN dormer band to the contractor's taps — the same
+          // bbox-frac convention the AI openings already use.
+          const nW = da.imageDims?.w || 0;
+          const nH = da.imageDims?.h || 0;
+          const r4 = (v) => Math.round(v * 10000) / 10000;
           contractorDormers.push({
             elevation: da.elevation || "other",
             width_ft: d.widthFt !== undefined ? Math.round(d.widthFt * 10) / 10 : null,
@@ -1796,6 +1803,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             area_ft: d.netAreaFt !== undefined ? Math.round(d.netAreaFt * 10) / 10 : null,
             masked_ft: d.maskedFt ? Math.round(d.maskedFt * 10) / 10 : 0,
             photo: dname,
+            x_center_frac: nW ? r4(dm.pts.reduce((s, p) => s + p.x, 0) / 4 / nW) : null,
+            y_bottom_frac: nH ? r4((dm.pts[0].y + dm.pts[1].y) / 2 / nH) : null,
+            width_frac: nW && d.widthPx ? r4(d.widthPx / nW) : null,
+            height_frac: nH && d.heightPx ? r4(d.heightPx / nH) : null,
           });
         }
       }
@@ -4895,6 +4906,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
               profileBoxes,
               gables,
               dormers,
+              // natural photo dims — the dormer quad's photo-frac norms
+              // (position ground truth for the sheet binder) need them
+              imageDims: imageDims || prev[annotateOpenFor]?.imageDims || null,
             },
           }));
           // Iter 78z+++ — push the new in-modal profile boxes into the

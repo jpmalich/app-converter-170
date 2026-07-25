@@ -113,10 +113,22 @@ class TestParseContractorDormers:
         from routes.ai_measure import parse_contractor_dormers
         rows = parse_contractor_dormers(
             '[{"elevation":"Front","width_ft":8.04,"height_ft":6.0,'
-            '"area_ft":48.22,"masked_ft":0,"photo":"p1.jpg"}]')
+            '"area_ft":48.22,"masked_ft":0,"photo":"p1.jpg",'
+            '"x_center_frac":0.51234,"y_bottom_frac":0.2,'
+            '"width_frac":0.2,"height_frac":0.15}]')
         assert rows == [{"elevation": "front", "width_ft": 8.0,
                          "height_ft": 6.0, "area_ft": 48.2, "masked_ft": 0,
-                         "photo": "p1.jpg"}]
+                         "photo": "p1.jpg", "x_center_frac": 0.5123,
+                         "y_bottom_frac": 0.2, "width_frac": 0.2,
+                         "height_frac": 0.15}]
+
+    def test_fracs_clamped_to_unit_interval(self):
+        from routes.ai_measure import parse_contractor_dormers
+        row = parse_contractor_dormers(
+            '[{"x_center_frac":1.5,"y_bottom_frac":-0.1,"width_frac":"x"}]')[0]
+        assert row["x_center_frac"] is None
+        assert row["y_bottom_frac"] is None
+        assert row["width_frac"] is None
 
     def test_garbage_never_lands(self):
         from routes.ai_measure import parse_contractor_dormers
@@ -155,3 +167,87 @@ class TestSheetCalloutBinder:
         assert "no scale ref" in left[0]["label"]
         assert contractor_dormers_for(run, "right") == []
         assert contractor_dormers_for({}, "front") == []
+
+    def test_positioned_quad_flags_governs_drawn_band(self):
+        from routes.elevation_sheets import contractor_dormers_for
+        run = {"contractor_dormers": [
+            {"elevation": "front", "width_ft": 8.0, "height_ft": 6.0,
+             "area_ft": 48.0, "masked_ft": 0, "x_center_frac": 0.5},
+        ]}
+        assert "GOVERNS DRAWN BAND" in contractor_dormers_for(run, "front")[0]["label"]
+
+
+RAW_ANCHORED = {
+    "dormers": [{"face": "front", "width_ft": 17.0, "knee_wall_height_ft": 4.0,
+                 "width_source": "estimated", "offset_x_ft": 0.0}],
+    "openings": [{"wall": "front", "type": "window", "along_wall_ft": 10.0,
+                  "height_in": 48.0, "on_dormer": False,
+                  "bbox": {"x": 0.3, "y": 0.25, "w": 0.1, "h": 0.1},
+                  "bbox_photo_idx": 1}],
+}
+
+
+def _quad_run(**over):
+    row = {"elevation": "front", "width_ft": 8.0, "height_ft": 6.0,
+           "area_ft": 48.0, "masked_ft": 0, "photo": "p2.jpg",
+           "x_center_frac": 0.5, "y_bottom_frac": 0.2,
+           "width_frac": 0.2, "height_frac": 0.15}
+    row.update(over)
+    return {"contractor_dormers": [row], "photo_paths": "p1.jpg,p2.jpg"}
+
+
+class TestContractorQuadGovernsDrawnBand:
+    """Ruled 2026-07-25 follow-up: the quad IS the drawn geometry."""
+
+    def _bind(self, run, raw=None):
+        from routes.elevation_sheets import _bind_dormers
+        return _bind_dormers({}, raw or RAW_ANCHORED, "front", 40.0, 9.0,
+                             {"ridge_ft": 16.0}, run=run)
+
+    def test_quad_overrides_ai_band_dims_and_position(self):
+        face_on, _ = self._bind(_quad_run())
+        assert face_on["contractor_quad"] is True
+        assert face_on["width_ft"] == 8.0 and face_on["knee_ft"] == 6.0
+        assert face_on["width_tag"] == "TAPED (contractor quad)"
+        # center: quad's own scale 8/0.2 = 40 ft/frac; window anchor at
+        # frac 0.35 ↔ 10 ft → 10 + (0.5 − 0.35) × 40 = 16.0
+        assert face_on["center_ft"] == 16.0
+        assert face_on["center_tag"] == "TAPED (contractor quad)"
+        # base: 80" + (0.25 − 0.2) × (6/0.15) × 12 = 104" → 8.67 ft
+        assert face_on["base_ft"] == 8.67
+        assert face_on["top_ft"] == 14.67
+        assert "TAPED (contractor quad" in face_on["vpos_tag"]
+        assert "CONTRACTOR DORMER QUAD GOVERNS" in face_on["basis"]
+        assert face_on["top_note"] is None  # 14.67 ≤ ridge 16
+
+    def test_quad_draws_even_when_ai_missed_the_dormer(self):
+        raw = {"dormers": [], "openings": RAW_ANCHORED["openings"]}
+        face_on, _ = self._bind(_quad_run(), raw=raw)
+        assert face_on is not None and face_on["contractor_quad"] is True
+        assert face_on["center_ft"] == 16.0
+
+    def test_legacy_rows_without_fracs_fall_back_flagged(self):
+        run = _quad_run(x_center_frac=None, y_bottom_frac=None,
+                        width_frac=None, height_frac=None)
+        face_on, _ = self._bind(run)
+        assert face_on["width_ft"] == 8.0  # dims still govern
+        assert face_on["center_ft"] == 20.0  # wall center
+        assert "INDICATIVE" in face_on["center_tag"]
+        assert "INDICATIVE" in face_on["vpos_tag"]
+
+    def test_no_contractor_rows_leaves_ai_binding_untouched(self):
+        face_on, _ = self._bind({"contractor_dormers": []})
+        assert face_on is not None
+        assert face_on.get("contractor_quad") is None
+        assert face_on["width_ft"] == 17.0  # the AI read
+
+    def test_center_clamped_inside_the_wall(self):
+        face_on, _ = self._bind(_quad_run(x_center_frac=1.0))
+        # unclamped: 10 + (1.0 − 0.35) × 40 = 36 → clamp max(40 − 4) = 36
+        assert face_on["center_ft"] == 36.0
+
+    def test_frontend_sends_position_fracs(self):
+        assert "x_center_frac" in AIBTN and "y_bottom_frac" in AIBTN
+        assert "width_frac" in AIBTN and "height_frac" in AIBTN
+        # natural dims round-trip on the annotation save
+        assert "imageDims: imageDims || prev[annotateOpenFor]?.imageDims" in AIBTN

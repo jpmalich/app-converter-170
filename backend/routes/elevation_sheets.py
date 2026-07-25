@@ -245,6 +245,8 @@ def contractor_dormers_for(run: dict, which: str) -> list:
                  else "CONTRACTOR DORMER · marked (no scale ref on photo)")
         if (d.get("masked_ft") or 0) > 0:
             label += f" (net of {d['masked_ft']:g} ft² masks)"
+        if d.get("x_center_frac") is not None and w is not None:
+            label += " · GOVERNS DRAWN BAND"
         out.append({
             "label": label,
             "basis": ("contractor dormer annotation — photo-taped, scale-anchored "
@@ -353,7 +355,107 @@ def _dormer_tape(est, face):
     return out
 
 
-def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj):
+def _contractor_dormer_band(run, raw, which, width_ft, height_ft, roofline_obj):
+    """CONTRACTOR DORMER QUAD GOVERNS THE DRAWN BAND (ruled 2026-07-25
+    follow-up). When the annotator's Add Dormer quad carries photo-frac
+    position norms, the face-on band draws AT the contractor's taps:
+      • width / knee — TAPED (the quad's scale-anchored dims);
+      • horizontal center — quad center mapped through this wall's
+        window anchors (bbox center-x ↔ along_wall_ft) at the quad's
+        OWN scale (width_ft / width_frac) — same-photo anchors preferred;
+      • base — quad bottom edge above the wall-window head line at the
+        quad's own vertical scale, anchored at the CONTRACTOR-SPEC 6'-8"
+        header (RATIFIED 2026-07-22) — the same chain _dormer_vpos trusts.
+    No anchor on the annotated photo → dims still govern, position falls
+    back flagged INDICATIVE (never silent). Returns a full face-on dict
+    or None when no positioned contractor dormer exists for this wall."""
+    rows = [d for d in (run or {}).get("contractor_dormers") or []
+            if _norm_face(d.get("elevation")) == which
+            and d.get("width_ft") and d.get("height_ft")]
+    if not rows:
+        return None
+    d = rows[0]
+    w, knee = float(d["width_ft"]), float(d["height_ft"])
+    names = [n.strip() for n in str((run or {}).get("photo_paths") or "").split(",") if n.strip()]
+    pidx = names.index(d["photo"]) if d.get("photo") in names else None
+    ops = [o for o in (raw.get("openings") or [])
+           if str(o.get("wall", "")).lower() == which and not o.get("on_dormer")
+           and (o.get("bbox") or {}).get("w") and (o.get("bbox") or {}).get("x") is not None]
+    same_photo = [o for o in ops
+                  if pidx is not None and o.get("bbox_photo_idx", o.get("photo_idx")) == pidx]
+    anchors = same_photo or ops
+    anchor_word = "same-photo" if same_photo else "same-wall"
+    # ── horizontal center ──
+    center_ft, center_basis = None, None
+    if d.get("x_center_frac") is not None and d.get("width_frac"):
+        fpp = w / float(d["width_frac"])  # wall-ft per photo-frac, the quad's own scale
+        h_anchors = [o for o in anchors if o.get("along_wall_ft") is not None]
+        if h_anchors:
+            ests = [float(o["along_wall_ft"])
+                    + (float(d["x_center_frac"])
+                       - (float(o["bbox"]["x"]) + float(o["bbox"]["w"]) / 2.0)) * fpp
+                    for o in h_anchors]
+            center_ft = sum(ests) / len(ests)
+            center_basis = (f"quad center mapped through {len(h_anchors)} {anchor_word} "
+                            f"window anchor(s) at the quad's own scale ({fpp:.1f} ft/frac)")
+    if center_ft is not None and width_ft:
+        center_ft = min(max(center_ft, w / 2.0), max(float(width_ft) - w / 2.0, w / 2.0))
+        center_tag = "TAPED (contractor quad)"
+    else:
+        center_ft = float(width_ft or 0) / 2.0
+        center_basis = ("no window anchor on the annotated photo — drawn at wall "
+                        "center INDICATIVE")
+        center_tag = "TAPED dims · center INDICATIVE"
+    # ── vertical band ──
+    base_ft, v_basis = None, None
+    if d.get("y_bottom_frac") is not None and d.get("height_frac"):
+        fppy = knee / float(d["height_frac"])
+        heads = [o for o in anchors if (o.get("bbox") or {}).get("y") is not None]
+        if heads:
+            head_frac = min(float(o["bbox"]["y"]) for o in heads)
+            base_in = WINDOW_HEAD_ANCHOR_IN + (head_frac - float(d["y_bottom_frac"])) * fppy * 12.0
+            base_ft = round(max(base_in, 0.0) / 12.0, 2)
+            v_basis = (f"quad bottom edge scaled off the {anchor_word} wall-window head "
+                       f"line ({fppy:.1f} ft/frac), anchored at the CONTRACTOR-SPEC "
+                       f"6'-8\" header (RATIFIED 2026-07-22)")
+    if base_ft is not None:
+        v_tag = "TAPED (contractor quad · head-anchor CONTRACTOR-SPEC 6'-8\")"
+    else:
+        ridge_ft = (roofline_obj or {}).get("ridge_ft")
+        span_top = float(ridge_ft) if ridge_ft else float(height_ft or 0) + knee
+        base_ft = round(float(height_ft or 0)
+                        + max((span_top - float(height_ft or 0) - knee) / 2.0, 0), 2)
+        v_tag = "TAPED dims · v-pos INDICATIVE"
+        v_basis = ("no window anchor on the annotated photo — drawn mid-slope "
+                   "INDICATIVE, tape or re-shoot with a window in frame to bind")
+    top_ft = round(base_ft + knee, 2)
+    ridge_ft = (roofline_obj or {}).get("ridge_ft")
+    top_note = ("dormer top exceeds the drawn ridge — reads disagree — flagged"
+                if ridge_ft and top_ft > float(ridge_ft) + 0.05 else None)
+    extra = f" · +{len(rows) - 1} more contractor dormer(s) on this wall (callout rows)" if len(rows) > 1 else ""
+    return {
+        "face": which,
+        "width_ft": w, "width_label": fmt_ftin(w),
+        "width_tag": "TAPED (contractor quad)",
+        "knee_ft": knee, "knee_label": fmt_ftin(knee),
+        "knee_tag": "TAPED (contractor quad)",
+        "center_ft": round(center_ft, 2), "center_label": fmt_ftin(center_ft),
+        "center_tag": center_tag,
+        "offset_x_ft": round(center_ft - float(width_ft or 0) / 2.0, 2),
+        "base_ft": base_ft, "base_label": fmt_ftin(base_ft),
+        "top_ft": top_ft, "top_label": fmt_ftin(top_ft),
+        "vpos_tag": v_tag,
+        "base_note": f"base {fmt_ftin(base_ft)} · v-pos {v_tag} — {v_basis}",
+        "top_note": top_note,
+        "basis": (f"CONTRACTOR DORMER QUAD GOVERNS (ruled 2026-07-25) — width "
+                  f"{fmt_ftin(w)} × knee {fmt_ftin(knee)} photo-taped, scale-anchored "
+                  f"(Add Dormer tool) · center {fmt_ftin(center_ft)} — {center_basis}{extra}"),
+        "source_photos": [pidx] if pidx is not None else [],
+        "contractor_quad": True,
+    }
+
+
+def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
     """P5 DORMERS (C-5 ruling; v-pos + profile orientation AMENDED by
     Howard's field-compare FAIL ruling 2026-07-22). Face-on: the dormer
     band draws at its BOUND v-pos (TAPED > ESTIMATED photo-scaled bbox
@@ -478,6 +580,16 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj):
                     "basis": (f"knee {fmt_ftin(knee)} — AI run dormer read ({tag}) · "
                               f"{face} slope · {v_basis}"),
                 })
+    # CONTRACTOR DORMER QUAD GOVERNS (ruled 2026-07-25 follow-up): when
+    # the contractor placed an Add Dormer quad on this wall, its dims AND
+    # position replace the AI-bound face-on band entirely — the annotation
+    # is the ground-truth location and size on the sheet. AI source photos
+    # are preserved for the compare trail when the quad carries none.
+    cd = _contractor_dormer_band(run, raw, which, width_ft, height_ft, roofline_obj)
+    if cd:
+        if face_on and not cd.get("source_photos"):
+            cd["source_photos"] = face_on.get("source_photos") or []
+        face_on = cd
     return face_on, profiles
 
 
@@ -1056,7 +1168,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     # chase corner-location reads (see below).
     roofline_obj = _bind_roofline(raw, which, height_ft, basis["height_tag"])
     # P5 (C-5 ruling): dormers face-on + cheek profiles on perpendiculars
-    dormer, dormer_profiles = _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj)
+    dormer, dormer_profiles = _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=run)
     chase = None
     for acc in (wall.get("accent_profiles") or []):
         loc = str(acc.get("location") or "")
