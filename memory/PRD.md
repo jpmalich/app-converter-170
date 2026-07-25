@@ -4983,3 +4983,16 @@ rakes 19 LF (= 2×9.33 ✓), Live Totals "Gables: 41 ft²".
 STAMP: - 2026-07-25 08:56 UTC · d1957f4 · CLEAN · [tests] · 1331 passed, 1 skipped, 3 warnings in 176.76s (0:02:56)
 NEXT: Howard verifies on-device; then backlog (upload-security split-class
 signed URLs P0, Hover-Vision rung P1, labor-completeness meter P2).
+
+## 2026-07-25 — HOTFIX: FieldVerifyCard missing crossCheckRidges import
+Refreshing an estimate whose latest run had contractor_gables crashed the page
+(ReferenceError: crossCheckRidges is not defined at FieldVerifyCard). The
+2026-07-24 gable session used crossCheckRidges at FieldVerifyCard.jsx:196 but
+never imported it — the branch only executes when contractor_gables is
+non-empty, so tests/compile/screenshots all passed until Howard saved gables.
+Fix: `import { crossCheckRidges } from "@/lib/gableMath";`. Audited other
+callers (AIMeasureButton imports it correctly).
+Verified: playwright load of EST-780008 (2 contractor gables) — zero page
+errors, contractor-gables block renders FRONT 26.2×6.5=85.4 ft² 6/12 + BACK
+25.9×6.3=81.6 ft² 5.8/12.
+STAMP: - 2026-07-25 09:31 UTC · 0b01494 · CLEAN · [tests] · 1331 passed, 1 skipped, 3 warnings in 175.84s (0:02:55)
