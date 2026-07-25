@@ -4953,3 +4953,33 @@ injection; sheet callouts yes; pitch↔peak both directions live.
 STAMP: - 2026-07-25 04:28 UTC · 1f521ac · CLEAN · [tests] · 1331 passed, 1 skipped, 3 warnings in 181.23s (0:03:01)
 NEXT: Howard live-tests the gable flow on real photos (agent could not drive a full
 photo-run E2E — UI pins + unit tests + compile + page smoke only). Backlog unchanged.
+
+## 2026-07-25 — Gable button surfaced in "Measure/Refine on Photo" (PhotoMeasureButton)
+Howard reported the Measure-on-Photo annotator toolbar only showed MEASURE /
+OPENINGS / MASK ZONE — the gable tool built 2026-07-24 lived only in
+PhotoAnnotateModal (which already had annotate-mode-gable, legacy toolbar).
+Fix: ported the gable tool into PhotoMeasureButton.jsx (the Refine on Photo
+modal inside AIMeasureButton, hideTrigger path):
+1. MODE_GABLE + 4th toolbar button (photo-measure-mode-gable, disabled until
+   calibrated, green #16A34A active), header step hint, tap prompts + cancel.
+2. 3 taps (L eave → peak → R eave) → gableDims from lib/gableMath (12/pxPerFt
+   inches-per-px); dims stored at creation (base_ft/rise_ft/area_sqft/pitch)
+   so values survive photo swaps, tagged photoUrl like zones.
+3. Gable list rows (photo-measure-gable-list): base × rise = ft², pitch preset
+   select (moves peak: rise = base/2 × pitch/12, perpendicular reposition),
+   pitchOutOfRange amber warning, delete.
+4. Totals: gable tri area rolls into siding_sqft gross (zones still deduct
+   globally — no double subtraction); derived rakes 2×√((b/2)²+r²) added when
+   no explicit rake taps; _photo_gable_tri_sqft surfaced + Live Totals line.
+5. apply(): gables in raw_photo payload + apply enabled with gables alone.
+   NOTE: refine merge in AIMeasureButton intentionally never moves siding ft²
+   (ruled "siding ft² unchanged") — gable ft² shows in modal totals; rakes_lf
+   DOES merge. The siding-affecting gable path remains PhotoAnnotateModal →
+   contractor_gables.
+Verified: live playwright E2E (login → EST-780008 → AI Measure → Restore
+Preview → Advanced → Refine on Photo → calibrate 7 ft → Gable ×3 taps) —
+button visible, triangle rendered, Gable 1 15.5×5.2 ft = 41 ft² pitch 8.1/12,
+rakes 19 LF (= 2×9.33 ✓), Live Totals "Gables: 41 ft²".
+STAMP: - 2026-07-25 08:56 UTC · d1957f4 · CLEAN · [tests] · 1331 passed, 1 skipped, 3 warnings in 176.76s (0:02:56)
+NEXT: Howard verifies on-device; then backlog (upload-security split-class
+signed URLs P0, Hover-Vision rung P1, labor-completeness meter P2).
