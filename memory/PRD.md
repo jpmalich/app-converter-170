@@ -4996,3 +4996,63 @@ Verified: playwright load of EST-780008 (2 contractor gables) — zero page
 errors, contractor-gables block renders FRONT 26.2×6.5=85.4 ft² 6/12 + BACK
 25.9×6.3=81.6 ft² 5.8/12.
 STAMP: - 2026-07-25 09:31 UTC · 0b01494 · CLEAN · [tests] · 1331 passed, 1 skipped, 3 warnings in 175.84s (0:02:55)
+
+## 2026-07-25 — LP APPLY GATE: lp-package/materialize (Apply Measurements regression)
+Photo-sourced lp_smart estimates lost their quantity path when the 2026-07-24
+consolidation removed the panel's item/qty table: HOVER imports materialize
+tab lines server-side (hover-lp-run rebuild) but photo/blueprint runs had NO
+equivalent — Apply Measurements hit THE CUT and left every category $0.00
+with "Derived — not applied" stuck.
+Fix (user-approved option a — auto-materialize on Apply):
+1. Extracted hover-lp-run's rebuild block verbatim into shared
+   `rebuild_lp_tab_lines()` (hover.py) — porch/overhang injection, waste
+   bake, price inheritance, family zeroing, human-qty survival, v3 labor
+   binding. profile=None composes at the extraction's own split.
+2. New `POST /estimates/{id}/lp-package/materialize` (lp_package_routes):
+   lp_smart-only (400 otherwise), loads governing run via _load_run, applies
+   the preview gates (openings review, default profile — annotations beat
+   default, flag checklist, key-bound areas), waste = visible est.waste_pct,
+   rebuilds tab lines, archives run + stamps lp_source_run_id, logs
+   lp.tab_lines.materialized.
+3. JobInfoPanel lp_smart apply branch calls it then refreshes the estimate
+   (THE CUT stands — no client-side composition merge).
+Verified: EST-780008 materialized 22 qty rows (172 PCS Lap @ $30.99 …),
+LP tab now $13,947.37; pytest suite green incl. new
+test_lp_materialize_apply_gate.py (7 pins: derived qty lands, human qty
+survives re-materialize, v3 labor flags, 400/404 refusals, archive stamp,
+FE gate wired, hover shares helper). Hover pins re-ran green.
+STAMP: - 2026-07-25 09:31→11:31 series · final CLEAN below.
+
+## 2026-07-25 — DORMER FACE annotation tool (ruled, mirrors the gable tool)
+Contractor ground-truth for dormers (sheet placement was inaccurate on
+Front/Back/Right). Shipped exactly on the gable pattern:
+- gableMath.js: pointInPolygon, dormerDims ([BL,BR,TR,TL], width/height
+  average opposing edges, area = w × h), dormerNetArea (NO-SIDING masks
+  with centroid inside the quad subtract).
+- PhotoAnnotateModal: MODE_DORMER + DORMER toolbar button
+  (annotate-mode-dormer, green, appears only when tapped), 4-tap capture
+  with per-corner prompts, all 4 corners draggable (dormerDrag mirrors
+  gableDrag), dashed translucent green quad + live "DORMER · w′ × h′ · ft²"
+  label, multiple dormers per photo, no-scale warning (face still saves),
+  dormer-panel rows w/ delete + mask note. Gable tool untouched (pins hold).
+- Burn-in (photoAnnotate.js): dashed quad + label + GREEN DASHED RECTANGLES
+  ground-truth sentence (width/height/POSITION authoritative).
+- AIMeasureButton: dormers round-trip through annotations save; launch
+  appends contractor_dormers JSON rows {elevation,width_ft,height_ft,
+  area_ft,masked_ft,photo}.
+- Backend: parse_contractor_dormers (strict, cap 20) → run doc →
+  latest-for-estimate; elevation_sheets contractor_dormers_for → TAPED-class
+  dashed callout stacked under gable callouts (ElevationSheet.jsx).
+- Field Verify: "Contractor dormers" rows (field-verify-contractor-dormers),
+  own waste factor assignable later, NOT auto-injected into the estimate
+  (same rule as gables).
+- NOTE (fixed during build): a duplicated-tail residue in photoAnnotate.js
+  from an edit glitch was caught by eslint and removed before commit.
+Verified: live playwright E2E — annotator toolbar shows …GABLE | DORMER;
+4 taps drew the quad with "DORMER · 6.0′ × 4.0′ · 24 ft²" live label +
+panel row + delete; existing gable triangle + wall anchor intact; zero page
+errors. New test_dormer_annotations.py (18 pins) + full suite green.
+STAMP: - 2026-07-25 11:31 UTC · 845fb3b · CLEAN · [tests] · 1357 passed, 1 skipped, 3 warnings in 115.94s (0:01:55)
+NEXT: Howard on-device verification; dormer sheet-placement accuracy re-check
+on Front/Back/Right with contractor dormers as ground truth; then backlog
+(upload-security split-class signed URLs P0, Hover-Vision rung P1).
