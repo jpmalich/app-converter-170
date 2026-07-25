@@ -5084,3 +5084,36 @@ STAMP: - 2026-07-25 22:08 UTC · 282bd05 · CLEAN · [tests] · 1365 passed, 1 s
 NEXT: Howard on-device — place dormer quads on Front/Back/Right, re-run, and
 field-compare the sheet placement; then backlog (upload-security P0,
 Hover-Vision rung P1).
+
+## 2026-07-25 — CONTRACTOR GABLE TRIANGLE GOVERNS THE DRAWN GABLE (follow-up #2)
+Update-only mandate: dormer-quad governing logic, photo capture, wall/window
+annotations, masks, Calibration button and scale ladder all untouched
+(pins re-ran green). Gables get the exact dormer-model treatment:
+- Frontend launcher: contractor_gables rows now carry photo-frac norms
+  (x_center_frac = eave-midpoint, y_eave_frac, peak_x_frac, base_frac,
+  rise_frac) from the existing Add Gable triangle pts + imageDims.
+- Backend parse: _frac clamp 0..1 — garbage never lands.
+- elevation_sheets: _contractor_gable_bands() (payload key
+  contractor_gable_bands, one band per gable — multiple supported):
+  · base/rise — TAPED (contractor triangle);
+  · center — base-center mapped through wall window anchors at the
+    triangle's OWN scale (base_ft/base_frac), same-photo preferred,
+    clamped in-wall; · asymmetric peak offset clamped inside the base;
+  · no anchors → dims still govern, center FLAGGED INDICATIVE;
+  · callout label appends "· GOVERNS DRAWN GABLE" when positioned.
+- SheetSvg: on gable_end views band[0] REPLACES the AI full-width
+  wall-center triangle (clip/hatch/rakes/ridge marker/callout/chip all move
+  to the governed geometry, chip = TAPED); extra bands and every band on
+  eave views draw as standalone governed triangles on the eave line
+  (elevation-contractor-gable-triangle-N); auto-fit includes band rises;
+  headline "GABLE TRIANGLE … RISE — GOVERNS DRAWN GABLE".
+- Pins: TestContractorTriangleGovernsDrawnGable (exact math: center 19.0 ft
+  @60 ft/frac, peak offset 3.0, clamp 28.0, multi-band, legacy fallback,
+  empty untouched, SVG wiring) + parse frac pins. Dormer + gable suites
+  re-ran green.
+Verified live: EST-780008 front sheet — contractor 26.2′ base triangle
+drawn inset on the 27′ wall, TAPED chip, GOVERNS DRAWN GABLE headline;
+right sheet dormer band unaffected; zero page errors.
+STAMP: - 2026-07-25 23:45 UTC · 2ed7258 · CLEAN · [tests] · 1375 passed, 1 skipped, 3 warnings in 125.93s (0:02:05)
+NEXT: Howard on-device field-compare (gable + dormer taps on Front/Back/
+Right → re-run → sheet placement); then upload-security P0, Hover-Vision P1.
