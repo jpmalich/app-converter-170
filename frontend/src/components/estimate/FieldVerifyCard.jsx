@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
 import { buildHouseJson, DimEditRow } from "@/components/estimate/HouseModel3D";
+import { crossCheckRidges } from "@/lib/gableMath";
 
 export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved, dimsRefreshKey }) {
   const [apDims, setApDims] = useState(() => estimate?.lp_appendage_dims || {});
