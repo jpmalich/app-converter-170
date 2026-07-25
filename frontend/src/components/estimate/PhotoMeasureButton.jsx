@@ -20,6 +20,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Ruler, Camera, X, Check, Trash2, Plus, RotateCcw, Images } from "lucide-react";
 import { toast } from "sonner";
+import { GABLE_PITCH_PRESETS, gableDims, pitchOutOfRange } from "@/lib/gableMath";
 
 // Output unit for each measurement label. Drives how the role rolls up
 // into siding_sqft / eaves_lf / rakes_lf etc.
@@ -56,6 +57,9 @@ const MODE_CALIBRATE = "calibrate";
 const MODE_MEASURE = "measure";
 const MODE_OPENING = "opening";
 const MODE_ZONE = "zone";
+// GABLE / ABOVE-EAVE (ruled 2026-07-24) — three taps (left eave → peak →
+// right eave) form a triangle; area = base × rise ÷ 2, rolled into siding ft².
+const MODE_GABLE = "gable";
 
 // Shoelace formula for polygon area in pixel-squared units.
 function polygonAreaPx2(pts) {
@@ -78,7 +82,7 @@ function dist(p1, p2) {
 // rake_lf sums map straight across; openings count drives perimeters.
 // `zones` is a list of masked-out regions (brick / stone / garage etc.)
 // whose ft² is deducted from the final siding figure.
-function buildMeasurements(measures, openings, zones = []) {
+function buildMeasurements(measures, openings, zones = [], gables = []) {
   const sum = (key) =>
     measures.filter((m) => m.label === key).reduce((a, m) => a + m.feet, 0);
   const widths = measures.filter((m) => m.label === "wall_w").map((m) => m.feet);
@@ -98,7 +102,10 @@ function buildMeasurements(measures, openings, zones = []) {
   for (let i = 0; i < gableWidths.length; i++) {
     gableArea += gableWidths[i] * (gableHeights[i] || gableHeights[0] || 0) * 0.7;
   }
-  const grossSqft = wallArea + gableArea;
+  // Tap-triangle gables (ruled 2026-07-24): area stored at creation time
+  // (base × rise ÷ 2), so the value survives photo swaps like zones do.
+  const gableTriArea = gables.reduce((a, g) => a + (g.area_sqft || 0), 0);
+  const grossSqft = wallArea + gableArea + gableTriArea;
 
   // Roll up zone deductions. Zones already store their area in ft² at
   // creation time (so the value survives a photo swap).
@@ -123,6 +130,13 @@ function buildMeasurements(measures, openings, zones = []) {
       rakesLf += 2 * Math.sqrt((gw / 2) ** 2 + gh ** 2);
     }
     rakesLf = Math.round(rakesLf);
+  }
+  if (sum("rake_lf") === 0 && gables.length) {
+    let triRakes = 0;
+    for (const g of gables) {
+      if (g.base_ft && g.rise_ft) triRakes += 2 * Math.sqrt((g.base_ft / 2) ** 2 + g.rise_ft ** 2);
+    }
+    rakesLf = Math.round(rakesLf + triRakes);
   }
 
   const counts = { window: 0, entry_door: 0, patio_door: 0, garage_door: 0 };
@@ -153,6 +167,7 @@ function buildMeasurements(measures, openings, zones = []) {
     _photo_gross_wall_sqft: Math.round(grossSqft),
     _photo_zones_deducted_sqft: Math.round(zonesDeducted),
     _photo_zones_summary: zonesSummary,
+    _photo_gable_tri_sqft: Math.round(gableTriArea),
   };
 }
 
@@ -233,6 +248,10 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
   const [zoneCategory, setZoneCategory] = useState("brick");
   const [zoneShape, setZoneShape] = useState("rect"); // "rect" | "poly"
   const [polyPoints, setPolyPoints] = useState([]);   // in-progress polygon vertices
+  // Gable triangles (ruled 2026-07-24).
+  // shape: { id, photoUrl, pts: [L, P, R], symmetric, pitch_set, base_ft, rise_ft, area_sqft, pitch }
+  const [gables, setGables] = useState([]);
+  const [gablePts, setGablePts] = useState([]); // in-progress taps (0-2)
   const [busy, setBusy] = useState(false);
   // Tracks any photo the user has explicitly navigated away from, so the
   // single-photo auto-load effect doesn't immediately reload it.
@@ -250,6 +269,8 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     setOpenings([]);
     setZones([]);
     setPolyPoints([]);
+    setGables([]);
+    setGablePts([]);
     setCalibPending(null);
     setCalibValue("");
     setLabelPending(null);
@@ -348,6 +369,35 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
       setPolyPoints((prev) => [...prev, p]);
       return;
     }
+    if (mode === MODE_GABLE) {
+      if (!pxPerFt) {
+        toast.error("Calibrate first — gables use the px/ft scale to compute ft²");
+        return;
+      }
+      const next = [...gablePts, p];
+      if (next.length < 3) {
+        setGablePts(next);
+        return;
+      }
+      const dims = gableDims(next, 12 / pxPerFt);
+      if (!dims || !dims.grossAreaFt) {
+        setGablePts([]);
+        toast.error("Points too close together — tap left eave, peak, right eave");
+        return;
+      }
+      setGables((prev) => [
+        ...prev,
+        {
+          id: `g-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          photoUrl: photo.url, pts: next, symmetric: true, pitch_set: null,
+          base_ft: dims.baseFt, rise_ft: dims.riseFt,
+          area_sqft: dims.grossAreaFt, pitch: dims.pitch,
+        },
+      ]);
+      setGablePts([]);
+      toast.success("Gable added — area counts toward siding ft²");
+      return;
+    }
     // Calibrate or Measure both need two clicks
     if (!pending) {
       setPending(p);
@@ -439,6 +489,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     setPxPerFt(0);
     setPending(null);
     setPolyPoints([]);
+    setGablePts([]);
   };
 
   const removeMeasurement = (id) =>
@@ -447,6 +498,28 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     setOpenings((prev) => prev.filter((o) => o.id !== id));
   const removeZone = (id) =>
     setZones((prev) => prev.filter((z) => z.id !== id));
+  const removeGable = (id) =>
+    setGables((prev) => prev.filter((g) => g.id !== id));
+
+  // Selecting a pitch moves the peak (rise = base/2 × pitch/12) — same
+  // rule the PhotoAnnotateModal gable tool follows.
+  const applyGablePitch = (id, pitch) => {
+    setGables((prev) => prev.map((g) => {
+      if (g.id !== id || !g.base_ft) return g;
+      const rise_ft = (g.base_ft / 2) * (pitch / 12);
+      let pts = g.pts;
+      if (photo && g.photoUrl === photo.url && pxPerFt) {
+        const [L, P, R] = g.pts;
+        const mx = (L.x + R.x) / 2, my = (L.y + R.y) / 2;
+        const bl = Math.hypot(R.x - L.x, R.y - L.y) || 1;
+        let nx = -(R.y - L.y) / bl, ny = (R.x - L.x) / bl;
+        if (nx * (P.x - mx) + ny * (P.y - my) < 0) { nx = -nx; ny = -ny; }
+        const risePx = rise_ft * pxPerFt;
+        pts = [L, { x: mx + nx * risePx, y: my + ny * risePx }, R];
+      }
+      return { ...g, pts, pitch_set: pitch, pitch, rise_ft, area_sqft: (g.base_ft * rise_ft) / 2 };
+    }));
+  };
 
   // Commit the polygon currently being drawn into a zone.
   const closePolygon = () => {
@@ -473,17 +546,17 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
   const cancelPolygon = () => setPolyPoints([]);
 
   const apply = async () => {
-    if (!measures.length && !openings.length && !zones.length) {
-      toast.error("Mark at least one measurement, opening, or zone first");
+    if (!measures.length && !openings.length && !zones.length && !gables.length) {
+      toast.error("Mark at least one measurement, opening, zone, or gable first");
       return;
     }
     setBusy(true);
     try {
-      const measurements = buildMeasurements(measures, openings, zones);
+      const measurements = buildMeasurements(measures, openings, zones, gables);
       // Hand back the same shape AI Measure produces so the page-level
       // onApply callback (in JobInfoPanel / ISSEstimateEditor) just works.
       await onApply({ measurements, lines: [], vero_openings: [], raw_photo: {
-        measures, openings, zones, pxPerFt,
+        measures, openings, zones, gables, pxPerFt,
       } });
       toast.success("Photo measurements applied");
       closeAll();
@@ -503,6 +576,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     const visibleMeasures = measures.filter((m) => !m.photoUrl || m.photoUrl === photo.url);
     const visibleOpenings = openings.filter((o) => !o.photoUrl || o.photoUrl === photo.url);
     const visibleZones = zones.filter((z) => !z.photoUrl || z.photoUrl === photo.url);
+    const visibleGables = gables.filter((g) => !g.photoUrl || g.photoUrl === photo.url);
     const hatchSize = Math.max(8, photo.width / 120);
     return (
       <svg
@@ -592,6 +666,26 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                     fill="none" stroke={c.color} strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="6 4" />
           );
         })()}
+        {visibleGables.map((g) => {
+          const d = g.pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
+          const cx = (g.pts[0].x + g.pts[1].x + g.pts[2].x) / 3;
+          const cy = (g.pts[0].y + g.pts[1].y + g.pts[2].y) / 3;
+          return (
+            <g key={g.id}>
+              <path d={d} fill="#16A34A" fillOpacity={0.18} stroke="#16A34A" strokeWidth={Math.max(3, photo.width / 600)} />
+              {g.pts.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r={Math.max(5, photo.width / 350)} fill="#16A34A" />
+              ))}
+              <rect x={cx - 70} y={cy - 14} width={140} height={28} fill="#09090B" rx={3} />
+              <text x={cx} y={cy + 5} fill="#FFFFFF" fontSize={Math.max(13, photo.width / 75)} textAnchor="middle" fontWeight="bold">
+                {Math.round(g.area_sqft)} ft² gable
+              </text>
+            </g>
+          );
+        })}
+        {mode === MODE_GABLE && gablePts.map((pt, i) => (
+          <circle key={`gp-${i}`} cx={pt.x} cy={pt.y} r={Math.max(6, photo.width / 300)} fill="#16A34A" stroke="#FFFFFF" strokeWidth={2} />
+        ))}
         {pending && mode !== MODE_ZONE && (
           <circle cx={pending.x} cy={pending.y} r={Math.max(6, photo.width / 300)}
                   fill="none" stroke="#F97316" strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="6 4" />
@@ -610,7 +704,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
     };
   }, [photo, prefillThumbs]);
 
-  const totals = buildMeasurements(measures, openings, zones);
+  const totals = buildMeasurements(measures, openings, zones, gables);
 
   return (
     <div data-testid="photo-measure">
@@ -649,6 +743,8 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                       ? "Step 2 · Tap two points on a known reference, then enter its real length"
                       : mode === MODE_MEASURE
                       ? `Step 3 · ${pxPerFt.toFixed(1)} px/ft · Tap two points to measure`
+                      : mode === MODE_GABLE
+                      ? "Step 4 · Tap left eave → peak → right eave to add a gable triangle"
                       : mode === MODE_ZONE
                       ? (zoneShape === "rect"
                           ? `Step 4 · Tap top-left then bottom-right to mask ${ZONE_CATEGORIES.find((c) => c.key === zoneCategory)?.name}`
@@ -921,7 +1017,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
               <div className="space-y-3">
                 {photo && (
                   <>
-                    <div className="grid grid-cols-3 gap-1">
+                    <div className="grid grid-cols-4 gap-1">
                       <button
                         type="button"
                         className={`px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider border ${
@@ -950,6 +1046,16 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                         data-testid="photo-measure-mode-zone"
                         title="Mask out brick / stone / garage / stucco — area gets deducted from siding sqft"
                       >Mask zone</button>
+                      <button
+                        type="button"
+                        className={`px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider border ${
+                          mode === MODE_GABLE ? "bg-[#16A34A] text-white border-[#16A34A]" : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:bg-[var(--bg-app)]"
+                        }`}
+                        onClick={() => { setMode(MODE_GABLE); setPending(null); setPolyPoints([]); setGablePts([]); }}
+                        disabled={!pxPerFt}
+                        data-testid="photo-measure-mode-gable"
+                        title="Add Gable / above-eave area — tap left eave, peak, right eave. Area = base × rise ÷ 2, rolled into siding ft²."
+                      >Gable</button>
                     </div>
 
                     {mode === MODE_OPENING && (
@@ -1030,6 +1136,24 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                               Cancel
                             </button>
                           </div>
+                        )}
+                      </div>
+                    )}
+
+                    {mode === MODE_GABLE && (
+                      <div className="space-y-1" data-testid="photo-measure-gable-controls">
+                        <div className="text-[10px] text-[var(--muted)] font-medium">
+                          {gablePts.length === 0 && "Tap the LEFT EAVE point of the gable."}
+                          {gablePts.length === 1 && "Tap the PEAK (ridge) point."}
+                          {gablePts.length === 2 && "Tap the RIGHT EAVE point to finish the triangle."}
+                        </div>
+                        {gablePts.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setGablePts([])}
+                            className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:bg-[var(--bg-app)]"
+                            data-testid="photo-measure-gable-cancel"
+                          >Cancel ({gablePts.length}/3 pts)</button>
                         )}
                       </div>
                     )}
@@ -1139,6 +1263,61 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                       </ul>
                     </div>
 
+                    {/* Gable list */}
+                    <div className="border-t border-[var(--border)] pt-2">
+                      <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
+                        Gables ({gables.length})
+                      </div>
+                      <ul className="space-y-1 max-h-32 overflow-y-auto" data-testid="photo-measure-gable-list">
+                        {gables.map((g, gi) => {
+                          const offPhoto = g.photoUrl && photo && g.photoUrl !== photo.url;
+                          const warn = pitchOutOfRange(g.pitch);
+                          return (
+                            <li key={g.id} className="text-xs space-y-0.5" data-testid={`photo-measure-gable-row-${g.id}`}>
+                              <div className="flex items-center justify-between gap-2">
+                                <span>
+                                  <span className="font-bold text-[#15803D]">Gable {gi + 1}</span>{" "}
+                                  <span className="font-mono-num font-bold">
+                                    {g.base_ft.toFixed(1)} × {g.rise_ft.toFixed(1)} ft = {Math.round(g.area_sqft)} ft²
+                                  </span>
+                                  {offPhoto && (
+                                    <span className="ml-1 text-[9px] uppercase tracking-wider text-[var(--muted)] border border-[var(--border)] px-1 py-px rounded-sm" title="Placed on a different photo — still counted in totals">
+                                      other photo
+                                    </span>
+                                  )}
+                                </span>
+                                <button onClick={() => removeGable(g.id)} className="text-[var(--muted)] hover:text-[var(--danger-text)]" data-testid={`photo-measure-gable-delete-${g.id}`} aria-label="Delete gable">
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={GABLE_PITCH_PRESETS.includes(g.pitch_set) ? String(g.pitch_set) : ""}
+                                  onChange={(e) => { const v = Number(e.target.value); if (v) applyGablePitch(g.id, v); }}
+                                  className="text-[10px] border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5"
+                                  data-testid={`photo-measure-gable-pitch-${g.id}`}
+                                  title="Selecting a pitch recomputes rise = base/2 × pitch/12 and moves the peak."
+                                >
+                                  <option value="">pitch {g.pitch != null ? `${g.pitch}/12` : "—"}</option>
+                                  {GABLE_PITCH_PRESETS.map((p) => (
+                                    <option key={p} value={p}>{p}/12</option>
+                                  ))}
+                                </select>
+                                {warn && (
+                                  <span className="text-[10px] font-bold text-[#B45309]" data-testid={`photo-measure-gable-pitch-warn-${g.id}`}>
+                                    pitch {g.pitch}/12 looks unusual — double-check the peak
+                                  </span>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
+                        {!gables.length && (
+                          <li className="text-[11px] text-[var(--muted)] italic">No gables yet — switch to &quot;Gable&quot; and tap left eave → peak → right eave.</li>
+                        )}
+                      </ul>
+                    </div>
+
                     {/* Live totals */}
                     <div className="border-t border-[var(--border)] pt-2 bg-[var(--surface-muted)] -mx-1 px-2 py-1.5">
                       <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">Live Totals</div>
@@ -1147,6 +1326,9 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                         <div>Eaves: <span className="font-mono-num font-bold">{totals.eaves_lf} LF</span></div>
                         <div>Rakes: <span className="font-mono-num font-bold">{totals.rakes_lf} LF</span></div>
                         <div>Openings: <span className="font-mono-num font-bold">{totals.opening_count}</span></div>
+                        {totals._photo_gable_tri_sqft > 0 && (
+                          <div data-testid="photo-measure-gable-total">Gables: <span className="font-mono-num font-bold">{totals._photo_gable_tri_sqft} ft²</span></div>
+                        )}
                       </div>
                       {totals._photo_zones_deducted_sqft > 0 && (
                         <div className="text-[11px] text-[var(--muted)] mt-1.5 pt-1.5 border-t border-[var(--border)]" data-testid="photo-measure-deductions">
@@ -1177,7 +1359,7 @@ export default function PhotoMeasureButton({ onApply, externalOpen, onExternalCl
                 <button
                   type="button"
                   onClick={apply}
-                  disabled={busy || (!measures.length && !openings.length && !zones.length)}
+                  disabled={busy || (!measures.length && !openings.length && !zones.length && !gables.length)}
                   className="px-3 py-2 bg-[var(--brand)] text-[var(--on-brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   data-testid="photo-measure-apply-btn"
                 >
