@@ -5309,3 +5309,38 @@ advisory today (lp_package_routes does not consume it); the moment
 per-profile splits feed materialize quote lines it needs a ruling.
 STAMP: RECORDED: 2026-07-26 18:46 UTC · 06dac7e · CLEAN
 RESULT: 1394 passed, 1 skipped, 3 warnings in 187.26s (0:03:07)
+
+## 2026-07-26 — CONTRADICTION RECONCILED + GUARD SWEEP + MONEY GATE
+INVENTORY CORRECTED (my audit missed rendered features — grep-term
+literalism: case-sensitive `asShake` vs `quoteGablesAsShake`,
+hyphen/underscore vs the space-separated banner). DOM-verified live on
+EST-986945:
+- "AI EXTRACTION GAPS DETECTED" = ai-measure-empty-photos-banner
+  (AIMeasureButton ~3634): empty-photos (79j.43) + orphaned-walls
+  (79j.20-class) + pin-gap hints (79j.59). Advisory only — NO money.
+- "QUOTE GABLES/DORMERS AS SHAKE" = quoteGables/DormersAsShake
+  (Iter 51, landed 6-17 auto-commit faf7682 — bypassed class).
+  TOUCHES MONEY TODAY on Apply: swapSidingToShake deducts from the
+  headline siding line and adds a shake SKU line at FLAT math
+  (LP pieces = ceil(sqft/4)) — bypasses lp_conventions
+  waste/coverage. 79j.71 single-owner guard prevents double-count vs
+  the breakdown. Flagged in the proposal §0/§4 for ruling.
+GUARD AUTO-COMMIT SWEEP (authorized): tests/test_guard_autocommit_sweep.py
+— fails handback when commits since the last stamp touched
+backend/frontend code with an auto-commit message; runtime-data paths
+excluded (uploads/blobs); memory/ratified_commits.txt escape hatch.
+PER-ELEVATION MONEY GATE: tests/test_per_elevation_money_gate.py —
+corrected facts: splits ALREADY feed money in ruled places (/measure/map
+per-profile lines for vinyl/ascend/lp_smart [78z/78ab/79j.71],
+default-profile inheritance, shake 540 bump). Actual unruled gap = LP
+PACKAGE materialize siding lines don't split per family. Gate freezes
+consumption counts at the ruled set.
+PROPOSAL FILED (report-class, nothing wired):
+memory/proposals/per_elevation_splits_lp_money_proposal.md — mapping,
+conservation invariant, precedence under sealed keys, as-shake alias
+retirement, waste table, test plan. Rulings requested A/B/C.
+PRIORITIES (Howard's correction): upload-security + Hover-Vision PARKED
+post-September. Queue = this reconciliation + splits proposal, then
+idle. Dormer-taxonomy trial P2, timing Howard's.
+STAMP: RECORDED: 2026-07-26 19:06 UTC · bbcee9c · CLEAN
+RESULT: 1397 passed, 1 skipped, 3 warnings in 137.77s (0:02:17)
