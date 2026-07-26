@@ -5117,3 +5117,26 @@ right sheet dormer band unaffected; zero page errors.
 STAMP: - 2026-07-25 23:45 UTC · 2ed7258 · CLEAN · [tests] · 1375 passed, 1 skipped, 3 warnings in 125.93s (0:02:05)
 NEXT: Howard on-device field-compare (gable + dormer taps on Front/Back/
 Right → re-run → sheet placement); then upload-security P0, Hover-Vision P1.
+
+## 2026-07-26 — DORMER DEPTH + CHEEK AREAS (ruled)
+Cheek area (each) = dormer front-face height × depth; total cheeks = 2 ×.
+Update-only: quad/gable governing, calibration, scale ladder, masks all
+untouched (pins re-ran green). NOT auto-injected into the estimate.
+- Annotator (primary): Depth (ft) numeric field on every dormer row
+  (dormer-depth-input-*, setDormerDepth), live "+ cheeks 2 × H×D = Y ft²"
+  or amber "depth missing — cheeks 0" flag; depth_ft rides on the same
+  contractor_dormers payload as the quad fracs.
+- Backend: parse derives cheeks_ft SERVER-SIDE (client value ignored);
+  new PATCH /api/measure/ai-measure/runs/{run_id}/contractor-dormers/{idx}
+  (user-scoped, 422 garbage, 404 missing) re-derives cheeks, clears to 0
+  when depth blanked.
+- Field Verify (secondary, synced): editable depth per row writes back to
+  the IDENTICAL run field; breakdown "Front face XX ft² + cheeks 2 × H×D
+  = YY ft² (Total ZZ ft²)" or depth-missing flag.
+- Sheet callout: "+ cheeks 2 × H′×D′ = Y ft²" / "· depth missing —
+  cheeks 0" appended to the contractor dormer line.
+- Pins: TestDormerCheeks + TestDormerDepthEndpointLive (live PATCH:
+  4.0 ft → cheeks 48.0, clear → 0, 422/404) + parse exact-dict updated.
+Verified live: annotator row "Depth (ft) 4 → + cheeks 2 × 4.0×4.0 =
+32.0 ft²" on EST-780008, zero page errors.
+STAMP: - 2026-07-26 10:38 UTC · 085a43d · CLEAN · [tests] · 1382 passed, 1 skipped, 3 warnings in 159.81s (0:02:39)
