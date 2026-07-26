@@ -5214,3 +5214,28 @@ Step 6 GABLES (correct header hint) → Exit guided mode shows classic
 toolbar + gable panel, zero page errors.
 STAMP: RECORDED: 2026-07-26 13:45 UTC · 1563333 · CLEAN
 RESULT: 1387 passed, 1 skipped, 3 warnings in 196.43s (0:03:16)
+
+## 2026-07-26 — AMBER RE-RUN NUDGE + UNIFORM MARKER SIZES (ruled)
+### Amber "annotations changed" chip
+- annotDirtySinceRun state: set on annotate-modal save + wizard-complete
+  (with annotations); cleared on run success + Start Over.
+- Chip (ai-measure-annot-dirty-chip) renders in the preview footer next
+  to Re-run: "Annotations changed — Re-run to fold them in".
+- Verified live: absent on resume, appears after a Refine save, zero
+  page errors.
+### Uniform annotation marker sizes (display-only)
+- Root cause: mixed photo resolutions (front 2856px vs rear-left
+  2016px) + Math.max pixel floors + fixed px constants → markers ~40%
+  larger on smaller photos.
+- Fix inside PhotoAnnotateModal renderOverlay only: all sizes now
+  purely proportional to photo.width; new `u = photo.width / 2856`
+  display unit (front-photo standard) scales former fixed constants
+  (strokes, dashes, offsets, rx). WALL REF / WIN REF / TARGET / NO
+  SIDING label chips rebuilt to hug their text (was fixed 180/200/220px
+  boxes that overflowed on high-res photos).
+- NO changes to measurement logic, grab/hit radii, burn-in renderer
+  (photoAnnotate.js), governing, or the guided flow.
+- Verified live: front (2856px) vs rear-left (2016px) WALL/WIN REF
+  chips render identical on-screen size.
+STAMP: RECORDED: 2026-07-26 14:24 UTC · d9e5de7 · CLEAN
+RESULT: 1387 passed, 1 skipped, 3 warnings in 196.66s (0:03:16)
