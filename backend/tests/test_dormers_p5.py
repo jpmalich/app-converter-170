@@ -136,7 +136,9 @@ def test_paired_tape_closes_both_faces():
     est = {"lp_appendage_dims": {"dormer:right": {
         "base_ft": {"value": 10.6, "status": "user_measured"}}}}
     dl, _ = _bind_dormers(est, raw, "left", 37.0, 9.3, {"ridge_ft": 17.65})
-    assert dl["base_ft"] == 10.6 and dl["vpos_tag"] == "TAPED (user-measured · paired)"
+    # AMENDED (single house model): the twin binds the taped base with
+    # pair-governed provenance
+    assert dl["base_ft"] == 10.6 and dl["vpos_tag"] == "TAPED (user-measured) · pair-governed"
     dr, _ = _bind_dormers(est, raw, "right", 37.0, 8.1, {"ridge_ft": 16.4})
     assert dr["base_ft"] == 10.6 and dr["vpos_tag"] == "TAPED (user-measured)"
 

@@ -5418,3 +5418,28 @@ memory/evidence/xaxis_2026-07-26/ — Howard's eyes re-gate. Pin
 amendment declared in test_dormers_p5.py.
 STAMP (verbatim): - 2026-07-26 21:24 UTC · a69c375 · CLEAN · [tests] · 1420 passed, 1 skipped, 3 warnings in 159.15s (0:02:39)
 AWAITING: Howard's photo re-compare of EST-986945 (4 sheets) + red house re-gate; Part 2 proposal still awaiting ruling.
+
+## 2026-07-26 — SINGLE HOUSE MODEL for vertical geometry (ruled; the per-view patch era ends)
+Full mechanism report: memory/single_house_model_report_2026-07-26.md.
+RULED: one reconciled vertical model per estimate — `_dormer_solids`
+reconciles each dormer ONCE (W × KNEE × band × center, rung-aware:
+tape > contractor quad > AI); every view renders a PROJECTION.
+Pair dims = PER-DIMENSION WORST CASE, flagged with delta, never
+averaged (P3 precedent); TAPED on either twin supersedes both.
+THE CLAMP RETIRED: roofline bounds flag-only, never relocate; a TAPED
+band re-derives the eave-view ridge UPWARD (EST-986945 right 14.2→14.6).
+SEATING: face-on slope renders as a real plane (eave→ridge), dormer
+seats on it — floating boxes impossible. Per-wall grade datums stand,
+named on-sheet; front/back ridge deltas print as implied grade slope.
+ANNOTATION LAYOUT: collision-managed (pure annotationLayout.js, fixed
+panels + stacking + abbreviation), node-executed no-overlap pin.
+Howard's five findings named → retired derivations: front unlevel
+profiles / back two-size profiles (per-face knees), left floating face /
+right floating profile (plane-less rendering), right ridge-jam (clamp).
+EST-986945 now: ONE SOLID 15.1×3.8 all views, band 10.8–14.6 level,
+centers 18.7/18.3 mirrored, both quad reads on-sheet.
+FIXTURE GATE: letrick/doug/haugh geometry HASH-IDENTICAL; red house
+drawn numbers IDENTICAL (provenance wording only — declared).
+Pins: test_single_house_model.py (8), test_annotation_layout_pin.py (4);
+amended (declared): crossview clamp pins → flag-only, dormers_p5 tape tag.
+AWAITING: Howard's four-photo acceptance vs the four sheets.

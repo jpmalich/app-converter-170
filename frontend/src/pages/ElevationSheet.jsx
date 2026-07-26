@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "@/lib/api";
+import { layoutAnnotations, estWidth, abbrev } from "@/lib/annotationLayout";
 
 /* Dimensioned 2D Elevation Sheet — LIVE RENDER, EL-1..EL-4 (front/left/back/right).
    Replicates approved mock v3 anatomy; every value is DATA-BOUND from
@@ -296,8 +297,8 @@ export function SheetSvg({ data }) {
     const apexH = (wallBottom - apex.y) / ppf;
     const cornerH = (wallBottom - cornerPt.y) / ppf;
     const out = { ...p,
-      _label: `DORMER PROFILE (${String(p.face).toUpperCase()} SLOPE) — KNEE ${p.knee_label} — ${p.tag}`,
-      _note: String(p.note).toUpperCase() };
+      _label: abbrev(`DORMER PROFILE (${String(p.face).toUpperCase()} SLOPE) — KNEE ${p.knee_label} — ${p.tag}`, 100),
+      _note: abbrev(String(p.note).toUpperCase(), 100) };
     if (p.base_ft == null || apexH <= cornerH) return { ...out, unresolved: true };
     const xAt = (h) => apex.x + ((apexH - h) / (apexH - cornerH)) * (cornerPt.x - apex.x);
     const baseH = Math.max(p.base_ft, cornerH + 0.05);
@@ -387,7 +388,8 @@ export function SheetSvg({ data }) {
   if (dormer) {
     S.dormerTitle = `DORMER — ${dormer.width_label} W × ${dormer.knee_label} KNEE — ${dormer.width_tag}`;
     S.dormerSub = `BAND ${dormer.base_label}–${dormer.top_label} ABOVE GRADE — V-POS ${String(dormer.vpos_tag).toUpperCase()}`;
-    S.dormerMirror = dormer.center_note || "";
+    S.dormerMirror = abbrev(dormer.center_note || "", 118);
+    S.dormerDims = (dormer.dim_notes || []).length ? abbrev(dormer.dim_notes.join(" · "), 118) : "";
     S.dormerTop = dormer.top_note ? String(dormer.top_note).toUpperCase() : "";
   }
   S.widthTail = ` — ${W.width_tag} (${W.width_source})`;
@@ -436,11 +438,14 @@ export function SheetSvg({ data }) {
   // P3 roofline strings — composed from the payload, nothing hand-typed
   if (rl && (rl.kind === "eave_ridge" || rl.kind === "gable_end")) {
     S.ridgeLabel = `RIDGE ${rl.ridge_label}`;
-    S.ridgeBasis = rl.basis;
+    S.ridgeBasis = abbrev(rl.basis, 96);
     S.ridgeNote = rl.note ? String(rl.note).toUpperCase() : "";
+    S.ridgeNoteLines = S.ridgeNote
+      ? S.ridgeNote.split(" · ").map((l) => abbrev(l, 92))
+      : [];
   }
   if (rl && (rl.kind === "hip_unreconciled" || rl.kind === "none_readable")) {
-    S.rooflineNote = rl.note;
+    S.rooflineNote = abbrev(rl.note, 100);
   }
   if (stepped) {
     S.seg0Formula = segList[0].height_formula;
@@ -457,6 +462,53 @@ export function SheetSvg({ data }) {
   }
   const anyDormerOpening = data.openings.some((o) => o.on_dormer);
 
+  // ANNOTATION LAYOUT (ruled 2026-07-26): collision-managed callouts —
+  // no overlapping text; boxed panels are fixed, callouts stack below.
+  const _blocks = [];
+  if (dev) _blocks.push({ id: "devBox", x: 90, y: 150, w: 420, h: 46, fixed: true });
+  (data.contractor_gables || []).forEach((g, i) => _blocks.push({ id: `cgBox${i}`, x: 90, y: 202 + i * 40, w: 420, h: 36, fixed: true }));
+  (data.contractor_dormers || []).forEach((d, i) => _blocks.push({ id: `cdBox${i}`, x: 90, y: 202 + ((data.contractor_gables || []).length + i) * 40, w: 420, h: 36, fixed: true }));
+  if (chase) _blocks.push({ id: "chaseBox", x: 530, y: 150, w: 466, h: chaseBoxH, fixed: true });
+  colLines.forEach((c, i) => _blocks.push({ id: `colBox${i}`, x: 530, y: collisionBoxY + i * 48, w: 466, h: 44, fixed: true }));
+  if (ridgeG) {
+    _blocks.push({ id: "ridgeE", x: ridgeG.x1 + 6, y: ridgeG.y - 15, w: Math.max(estWidth(S.ridgeLabel, 8.5) + 40, estWidth(S.ridgeBasis, 6)), h: 20 });
+    if (S.ridgeNoteLines.length) {
+      const wN = Math.max(...S.ridgeNoteLines.map((l) => estWidth(l, 6.5)));
+      _blocks.push({ id: "ridgeNote", x: Math.max(64, ridgeG.x2 - 6 - wN), y: ridgeG.y - 13, w: wN, h: 9 * S.ridgeNoteLines.length + 2 });
+    }
+  }
+  if (rl && rl.kind === "gable_end" && S.ridgeLabel) {
+    const wG = Math.max(estWidth(S.ridgeLabel, 8.5) + 40, estWidth(S.ridgeBasis, 6));
+    _blocks.push({ id: "ridgeGable", x: gAx - wG / 2, y: gApexY - 28, w: wG, h: 19 });
+  }
+  if (S.gableCallout) {
+    const wGC = estWidth(S.gableCallout, 9);
+    _blocks.push({ id: "gableCallout", x: gAx - wGC / 2, y: gApexY + 1, w: wGC, h: 11 });
+  }
+  if (dormerG) {
+    const dLines = 2 + (S.dormerTop ? 1 : 0) + (S.dormerMirror ? 1 : 0) + (S.dormerDims ? 1 : 0);
+    const wD = Math.max(estWidth(S.dormerTitle, 7.5), estWidth(S.dormerSub, 6.5), estWidth(S.dormerMirror || "", 6));
+    _blocks.push({ id: "dormerCallout", x: 64, y: 248, w: wD, h: dLines * 10 + 4 });
+  }
+  dProfGs.forEach((p) => {
+    const wP = Math.max(estWidth(p._label, 7.5), estWidth(p._note, 6.5));
+    _blocks.push(p.drawing_side === "left"
+      ? { id: `dprof-${p.face}`, x: 64, y: 226, w: wP, h: 22 }
+      : { id: `dprof-${p.face}`, x: 992 - wP, y: 226, w: wP, h: 22 });
+  });
+  if (prof) {
+    const wC = Math.max(estWidth(S.prof1, 7.5), estWidth(S.prof2, 6.5));
+    _blocks.push(data.sheet === "left"
+      ? { id: "chaseProf", x: 64, y: 226, w: wC, h: 22 }
+      : { id: "chaseProf", x: 992 - wC, y: 226, w: wC, h: 22 });
+  }
+  if (S.rooflineNote) {
+    const wR = estWidth(S.rooflineNote, 8.5);
+    _blocks.push({ id: "roofNote", x: Math.max(64, Math.min((wallX + wallRight) / 2 - wR / 2, 992 - wR)), y: Math.min(topRefY, wallTop) - 53, w: wR, h: 10 });
+  }
+  const laid = layoutAnnotations(_blocks);
+  const layY = (id, fb) => (laid[id] ? laid[id].y : fb);
+
   return (
     <svg viewBox="0 0 1056 816" width="1056" height="816" style={{ background: "#fff", boxShadow: "0 2px 12px rgba(0,0,0,.18)" }}
       fontFamily="Helvetica, Arial, sans-serif" data-testid="elevation-sheet-svg">
@@ -468,7 +520,11 @@ export function SheetSvg({ data }) {
         <text x="60" y="72" fontSize="26" fontWeight="bold" letterSpacing="3" fill={C.ink} data-testid="elevation-sheet-title">{S.title}</text>
         <text x="60" y="92" fontSize="11" fill={C.muted} letterSpacing="1">{S.headerLine}</text>
         {/* VIEW-ORIENTATION PIN (ruled 2026-07-26) — every sheet names its axis */}
-        <text x="60" y="118" fontSize="8.5" fill={C.amber} letterSpacing="0.5" data-testid="elevation-orientation-note">{String(S.viewLine).toUpperCase()}</text>
+        <text x="60" y="118" fontSize="8.5" fill={C.amber} letterSpacing="0.5" data-testid="elevation-orientation-note">{String(S.viewLine).split(" · heights")[0].toUpperCase()}</text>
+        <text x="60" y="130" fontSize="8" fill={C.amber} data-testid="elevation-datum-note">
+          {("heights" + (String(S.viewLine).split(" · heights")[1] || " above this wall's grade (per-wall datum)")).toUpperCase()}
+          {data.view.grade_note && <tspan fontWeight="bold" data-testid="elevation-grade-note">{" — " + String(data.view.grade_note).toUpperCase()}</tspan>}
+        </text>
         <text x="996" y="72" fontSize="11" textAnchor="end" fill={C.amber} fontWeight="bold" letterSpacing="1">NOT A SURVEY — SOURCE-TAGGED VERIFICATION SHEET</text>
         <text x="996" y="90" fontSize="10" textAnchor="end" fill={C.muted}>BLACK = GEOMETRY · COLOR = COMPONENT · CHIPS = SOURCE</text>
         <line x1="60" y1="104" x2="996" y2="104" stroke={C.ink} strokeWidth="1" />
@@ -566,12 +622,12 @@ export function SheetSvg({ data }) {
             {rl && rl.kind === "gable_end" && (
               <g data-testid="elevation-roofline">
                 <line x1={gAx - 7} y1={gApexY} x2={gAx + 7} y2={gApexY} stroke={C.ink} strokeWidth="2.5" />
-                <text x={gAx} y={gApexY - 20} fontSize="8.5" textAnchor="middle" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
-                <Chip x={gAx + 44} y={gApexY - 28} w={30} label="EST" kind="est" />
-                <text x={gAx} y={gApexY - 11} fontSize="6" textAnchor="middle" fill={C.muted}>{S.ridgeBasis}</text>
+                <text x={gAx} y={layY("ridgeGable", gApexY - 28) + 8} fontSize="8.5" textAnchor="middle" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
+                <Chip x={gAx + 44} y={layY("ridgeGable", gApexY - 28)} w={30} label="EST" kind="est" />
+                <text x={gAx} y={layY("ridgeGable", gApexY - 28) + 17} fontSize="6" textAnchor="middle" fill={C.muted}>{S.ridgeBasis}</text>
               </g>
             )}
-            <text x={gAx} y={gApexY + 10} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
+            <text x={gAx} y={layY("gableCallout", gApexY + 1) + 9} fontSize="9" textAnchor="middle" fill="#0284c7" fontWeight="bold" letterSpacing="1">{S.gableCallout}</text>
             <Chip x={gAx + 4} y={gApexY + 16}
               w={gableGoverns ? 58 : W.gable_tag === "AI-READ ✓" ? 62 : 66}
               label={gableGoverns ? "TAPED" : W.gable_tag}
@@ -584,16 +640,31 @@ export function SheetSvg({ data }) {
             <text x={fasciaLabelX} y={wallTop - 29.4} fontSize="9" textAnchor="middle" fill="#0284c7" letterSpacing="1" fontWeight="bold">{S.fasciaLabel}</text>
             <line x1={wallX - ovFt * ppf + 1.2} y1={wallTop - 2.6} x2={wallRight + ovFt * ppf - 1.2} y2={wallTop - 2.6} stroke={C.soffit} strokeWidth="2.5" />
             <text x={wallX - 14} y={wallTop - 29.4} fontSize="8.5" fill={C.soffit} fontWeight="bold">SOFFIT (EAVES ONLY) ↴</text>
+            {/* SEATING (single house model, ruled 2026-07-26): the face-on
+                slope is a REAL plane (eave→ridge) — painted UNDER the
+                roofline; the dormer band paints after and SEATS on it */}
+            {dormerG && (
+              <g>
+                <rect x={wallX} y={ridgeG ? ridgeG.y + 1.5 : dormerG.topY - 8} width={wallRight - wallX}
+                  height={Math.max(wallTop - fasciaBandH - (ridgeG ? ridgeG.y + 1.5 : dormerG.topY - 8), 0)}
+                  fill="#f4f7fa" stroke="#c9d4e0" strokeWidth="0.8" data-testid="elevation-roof-plane" />
+                <text x={wallX + 8} y={wallTop - fasciaBandH - 5} fontSize="6.5" fill="#8a93a2" data-testid="elevation-roof-plane-label">ROOF PLANE (FACE-ON SLOPE, EAVE → RIDGE) — DORMER SEATS ON THIS PLANE</text>
+              </g>
+            )}
             {ridgeG && (
               <g data-testid="elevation-roofline">
                 <line x1={ridgeG.x1} y1={wallTop - fasciaBandH} x2={ridgeG.x1} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-l" />
                 <line x1={ridgeG.x2} y1={wallTop - fasciaBandH} x2={ridgeG.x2} y2={ridgeG.y} stroke={C.ink} strokeWidth="1.5" data-testid="elevation-roofline-rake-r" />
                 <line x1={ridgeG.x1} y1={ridgeG.y} x2={ridgeG.x2} y2={ridgeG.y} stroke={C.ink} strokeWidth="2" data-testid="elevation-roofline-ridge" />
-                <text x={ridgeG.x1 + 6} y={ridgeG.y - 6} fontSize="8.5" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
-                <Chip x={ridgeG.x1 + 6 + S.ridgeLabel.length * 5.2} y={ridgeG.y - 14} w={30} label="EST" kind="est" />
-                <text x={ridgeG.x1 + 6} y={ridgeG.y + 10} fontSize="6" fill={C.muted}>{S.ridgeBasis}</text>
+                <text x={ridgeG.x1 + 6} y={layY("ridgeE", ridgeG.y - 15) + 9} fontSize="8.5" fill={C.ink} fontWeight="bold" data-testid="elevation-roofline-ridge-label">{S.ridgeLabel}</text>
+                <Chip x={ridgeG.x1 + 6 + S.ridgeLabel.length * 5.2} y={layY("ridgeE", ridgeG.y - 15) + 1} w={30} label="EST" kind="est" />
+                <text x={ridgeG.x1 + 6} y={layY("ridgeE", ridgeG.y - 15) + 18} fontSize="6" fill={C.muted}>{S.ridgeBasis}</text>
                 {rl.note && (
-                  <text x={ridgeG.x2 - 6} y={ridgeG.y - 6} fontSize="6.5" textAnchor="end" fill={C.amber} fontWeight="bold" data-testid="elevation-roofline-disagreement">{S.ridgeNote}</text>
+                  <g data-testid="elevation-roofline-disagreement">
+                    {S.ridgeNoteLines.map((l, i) => (
+                      <text key={i} x={ridgeG.x2 - 6} y={layY("ridgeNote", ridgeG.y - 13) + 7 + i * 9} fontSize="6.5" textAnchor="end" fill={C.amber} fontWeight="bold">{l}</text>
+                    ))}
+                  </g>
                 )}
               </g>
             )}
@@ -601,7 +672,7 @@ export function SheetSvg({ data }) {
         )}
 
         {S.rooflineNote && (
-          <text x={(wallX + wallRight) / 2} y={Math.min(topRefY, wallTop) - 44} fontSize="8.5" textAnchor="middle" fill={C.amber} fontWeight="bold" letterSpacing="1" data-testid="elevation-roofline-note">{S.rooflineNote}</text>
+          <text x={(wallX + wallRight) / 2} y={layY("roofNote", Math.min(topRefY, wallTop) - 53) + 9} fontSize="8.5" textAnchor="middle" fill={C.amber} fontWeight="bold" letterSpacing="1" data-testid="elevation-roofline-note">{S.rooflineNote}</text>
         )}
 
         {/* CONTRACTOR GABLE TRIANGLES — standalone governed polygons
@@ -639,14 +710,17 @@ export function SheetSvg({ data }) {
             <line x1={dormerG.cx - dormerG.w / 2 - 3} y1={dormerG.topY} x2={dormerG.cx + dormerG.w / 2 + 3} y2={dormerG.topY} stroke={C.fascia} strokeWidth="3" data-testid="elevation-dormer-eave-fascia" />
             {/* callout corner block (leader to the band's top-left) — keeps
                 the long v-pos provenance clear of bubbles and rooflines */}
-            <line x1={dormerG.cx - dormerG.w / 2} y1={dormerG.topY - 2} x2="96" y2="246" stroke={C.amber} strokeWidth="0.9" />
-            <text x="64" y="256" fontSize="7.5" fill={C.amber} fontWeight="bold" data-testid="elevation-dormer-title">{S.dormerTitle}</text>
-            <text x="64" y="266" fontSize="6.5" fill={C.amber}>{S.dormerSub}</text>
+            <line x1={dormerG.cx - dormerG.w / 2} y1={dormerG.topY - 2} x2="96" y2={layY("dormerCallout", 248) + 6} stroke={C.amber} strokeWidth="0.9" />
+            <text x="64" y={layY("dormerCallout", 248) + 8} fontSize="7.5" fill={C.amber} fontWeight="bold" data-testid="elevation-dormer-title">{S.dormerTitle}</text>
+            <text x="64" y={layY("dormerCallout", 248) + 18} fontSize="6.5" fill={C.amber}>{S.dormerSub}</text>
             {S.dormerTop && (
-              <text x="64" y="276" fontSize="6.5" fill={C.trim} fontWeight="bold" data-testid="elevation-dormer-top-note">{S.dormerTop}</text>
+              <text x="64" y={layY("dormerCallout", 248) + 28} fontSize="6.5" fill={C.trim} fontWeight="bold" data-testid="elevation-dormer-top-note">{S.dormerTop}</text>
             )}
             {S.dormerMirror && (
-              <text x="64" y={S.dormerTop ? 286 : 276} fontSize="6" fill={C.amber} data-testid="elevation-dormer-mirror-note">{S.dormerMirror}</text>
+              <text x="64" y={layY("dormerCallout", 248) + (S.dormerTop ? 38 : 28)} fontSize="6" fill={C.amber} data-testid="elevation-dormer-mirror-note">{S.dormerMirror}</text>
+            )}
+            {S.dormerDims && (
+              <text x="64" y={layY("dormerCallout", 248) + 18 + ((1 + (S.dormerTop ? 1 : 0) + (S.dormerMirror ? 1 : 0)) * 10)} fontSize="6" fill={C.trim} fontWeight="bold" data-testid="elevation-dormer-dims-note">{S.dormerDims}</text>
             )}
           </g>
         )}
@@ -671,15 +745,15 @@ export function SheetSvg({ data }) {
             )}
             {p.drawing_side === "left" ? (
               <g>
-                {!p.unresolved && <line x1={p.B.x} y1={p.B.y - 3} x2="96" y2="224" stroke={C.amber} strokeWidth="0.9" />}
-                <text x="64" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber}>{p._label}</text>
-                <text x="64" y="244" fontSize="6.5" fill={C.amber}>{p._note}</text>
+                {!p.unresolved && <line x1={p.B.x} y1={p.B.y - 3} x2="96" y2={layY(`dprof-${p.face}`, 226) - 2} stroke={C.amber} strokeWidth="0.9" />}
+                <text x="64" y={layY(`dprof-${p.face}`, 226) + 8} fontSize="7.5" fontWeight="bold" fill={C.amber}>{p._label}</text>
+                <text x="64" y={layY(`dprof-${p.face}`, 226) + 18} fontSize="6.5" fill={C.amber}>{p._note}</text>
               </g>
             ) : (
               <g>
-                {!p.unresolved && <line x1={p.B.x} y1={p.B.y - 3} x2="960" y2="224" stroke={C.amber} strokeWidth="0.9" />}
-                <text x="992" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{p._label}</text>
-                <text x="992" y="244" fontSize="6.5" fill={C.amber} textAnchor="end">{p._note}</text>
+                {!p.unresolved && <line x1={p.B.x} y1={p.B.y - 3} x2="960" y2={layY(`dprof-${p.face}`, 226) - 2} stroke={C.amber} strokeWidth="0.9" />}
+                <text x="992" y={layY(`dprof-${p.face}`, 226) + 8} fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{p._label}</text>
+                <text x="992" y={layY(`dprof-${p.face}`, 226) + 18} fontSize="6.5" fill={C.amber} textAnchor="end">{p._note}</text>
               </g>
             )}
           </g>
@@ -701,15 +775,15 @@ export function SheetSvg({ data }) {
             <line x1={profX + 3} y1={profTop + 10} x2={profX + profW - 3} y2={profTop + 10} stroke="#8a93a2" strokeWidth="0.7" />
             {data.sheet === "left" ? (
               <g>
-                <line x1={profX + profW / 2} y1={profTop - 4} x2="96" y2="224" stroke={C.amber} strokeWidth="0.9" />
-                <text x="64" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber}>{S.prof1}</text>
-                <text x="64" y="244" fontSize="6.5" fill={C.amber}>{S.prof2}</text>
+                <line x1={profX + profW / 2} y1={profTop - 4} x2="96" y2={layY("chaseProf", 226) - 2} stroke={C.amber} strokeWidth="0.9" />
+                <text x="64" y={layY("chaseProf", 226) + 8} fontSize="7.5" fontWeight="bold" fill={C.amber}>{S.prof1}</text>
+                <text x="64" y={layY("chaseProf", 226) + 18} fontSize="6.5" fill={C.amber}>{S.prof2}</text>
               </g>
             ) : (
               <g>
-                <line x1={profX + profW / 2} y1={profTop - 4} x2="960" y2="224" stroke={C.amber} strokeWidth="0.9" />
-                <text x="992" y="234" fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.prof1}</text>
-                <text x="992" y="244" fontSize="6.5" fill={C.amber} textAnchor="end">{S.prof2}</text>
+                <line x1={profX + profW / 2} y1={profTop - 4} x2="960" y2={layY("chaseProf", 226) - 2} stroke={C.amber} strokeWidth="0.9" />
+                <text x="992" y={layY("chaseProf", 226) + 8} fontSize="7.5" fontWeight="bold" fill={C.amber} textAnchor="end">{S.prof1}</text>
+                <text x="992" y={layY("chaseProf", 226) + 18} fontSize="6.5" fill={C.amber} textAnchor="end">{S.prof2}</text>
               </g>
             )}
           </g>

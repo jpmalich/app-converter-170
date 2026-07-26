@@ -437,25 +437,21 @@ CONTRACTOR_PAIR_TOL_W_FT = 1.25
 # quads (knee tol unchanged at 0.5'). AI-only pairs keep the sealed 0.5'.
 
 
-def _clamp_band_to_roof(band, ridge_ft):
-    """ROOFLINE BOUNDS (ruled 2026-07-26): nothing draws through the drawn
-    roof edge. A band whose top exceeds the ridge shifts DOWN to it —
-    the photo-chain read is preserved in the flag, never silently."""
+def _flag_band_vs_roof(band, ridge_ft):
+    """ROOFLINE BOUNDS â FLAG ONLY (the clamp RETIRED by the single-house-
+    model ruling 2026-07-26): a band above the drawn ridge is a NAMED
+    disagreement, never relocated. The retired clamp crushed TAPED bands
+    down to fit ridge ESTIMATES (EST-986945 right-sheet ridge-jam) â a
+    taped measurement is never crushed to fit a guess. Conflicts now
+    re-derive the ridge UPWARD at the route level; anything still above
+    the drawn ridge after re-derivation flags here, geometry untouched."""
     if not band or band.get("top_ft") is None or not ridge_ft:
         return band
-    ridge = float(ridge_ft)
-    if float(band["top_ft"]) > ridge + 0.05:
-        ob, ot = band.get("base_ft"), band["top_ft"]
-        band["base_ft"] = round(float(band["base_ft"]) - (float(ot) - ridge), 2)
-        band["top_ft"] = round(ridge, 2)
-        if "base_label" in band:
-            band["base_label"] = fmt_ftin(band["base_ft"])
-        if "top_label" in band:
-            band["top_label"] = fmt_ftin(band["top_ft"])
+    if float(band["top_ft"]) > float(ridge_ft) + 0.05:
         band["top_note"] = (
-            "BAND CLAMPED to the drawn roof edge (ROOFLINE BOUNDS, ruled "
-            f"2026-07-26) — photo-chain read {fmt_ftin(ob)}–{fmt_ftin(ot)} "
-            "exceeds the drawn ridge — reads disagree — flagged")
+            f"band {fmt_ftin(band.get('base_ft'))}–{fmt_ftin(band['top_ft'])} tops out "
+            f"above the drawn ridge {fmt_ftin(ridge_ft)} — reads disagree — FLAGGED "
+            "(geometry NOT relocated — clamp retired, ruled 2026-07-26)")
     return band
 
 
@@ -617,248 +613,308 @@ def _dormer_center_ladder(raw, run, face, width_ft):
             float(d["knee_wall_height_ft"]), False)
 
 
-def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
-    """P5 DORMERS (C-5 ruling; v-pos + profile orientation AMENDED by
-    Howard's field-compare FAIL ruling 2026-07-22). Face-on: the dormer
-    band draws at its BOUND v-pos (TAPED > ESTIMATED photo-scaled bbox
-    chain > mid-slope UNRESOLVED flag — base-at-eave RETIRED as an
-    unratified assumption). Profiles (perpendicular gable views): the
-    dormer renders as its ROOF EDGE — a LEVEL line projecting off the
-    main slope — with the vertical face edge below it (height = knee by
-    construction) and the cheek closing back to the roof plane. Wide and
-    low, per the site-photo ground truth."""
-    face_on, profiles = None, []
-    # CROSS-VIEW CONSISTENCY (ruled 2026-07-26, EST-986945 field-compare):
-    # the governing contractor W×KNEE previously entered ONLY the face-on
-    # band (outside reconciliation) — profiles kept AI dims and each quad
-    # bound its own v-pos, so one physical dormer drew DIFFERENT bands per
-    # view and twins never leveled. Contractor quads now enter the same
-    # ladder: dims TAPED-appendage > contractor quad > AI; v-pos taped >
-    # contractor photo-chain (pair-LEVELED across opposite faces) > AI.
+def _dormer_solids(est, raw, run, view_widths=None):
+    """SINGLE HOUSE MODEL — vertical geometry (ruled 2026-07-26): each
+    dormer reconciles ONCE into ONE SOLID (W × KNEE × band × center) from
+    all sources per the ladders (tape appendage > contractor quad > AI
+    read/chain); every view then renders a PROJECTION of that solid. The
+    per-view patch era ends here. Opposite-face twins (pair identity per
+    the sealed tolerances) bind ONE solid, by construction:
+      • dims — TAPED on either twin supersedes and closes both; equal
+        rungs bind the PER-DIMENSION WORST CASE (never averaged — P3
+        precedent; W × KNEE feeds siding area), both reads flagged with
+        their delta;
+      • band — stronger rung governs; equal rungs bind ONE LEVEL band;
+      • center — PAIRED-FEATURE MIRROR (positions, not material)."""
+    walls_w = {str(w.get("label", "")).lower(): w.get("width_ft")
+               for w in (raw.get("walls") or [])}
+    for k, v in (view_widths or {}).items():
+        if v:
+            walls_w[k] = v
     c_rows = {}
     for cdr in (run or {}).get("contractor_dormers") or []:
         cf = _norm_face(cdr.get("elevation"))
         if cf and cdr.get("width_ft") and cdr.get("height_ft") and cf not in c_rows:
             c_rows[cf] = cdr
-    c_vpos = {}
-    for cf in c_rows:
-        band = _contractor_dormer_band(run, raw, cf, None, None, None)
-        if band and "INDICATIVE" not in (band.get("vpos_tag") or ""):
-            c_vpos[cf] = {"base": band["base_ft"], "knee": band["knee_ft"],
-                          "w": band["width_ft"], "tag": band["vpos_tag"],
-                          "basis": band["base_note"]}
-    _lvl_done = set()
-    for cf, cr in list(c_vpos.items()):
-        co = c_vpos.get(_OPPOSITE.get(cf))
-        if not co or cf in _lvl_done:
-            continue
-        if (abs(cr["w"] - co["w"]) <= CONTRACTOR_PAIR_TOL_W_FT
-                and abs(cr["knee"] - co["knee"]) <= PAIRED_DORMER_TOL_FT):
-            lvl = round((cr["base"] + co["base"]) / 2.0, 2)
-            lvl_basis = (
-                "PAIRED-FEATURE RECONCILIATION (contractor twins, ruled "
-                f"2026-07-26): {cf} {fmt_ftin(cr['base'])} / {_OPPOSITE[cf]} "
-                f"{fmt_ftin(co['base'])} → one LEVEL band, base {fmt_ftin(lvl)}")
-            for x in (cr, co):
-                x["base"] = lvl
-                x["tag"] = "TAPED (contractor quad · PAIRED-RECONCILED LEVEL)"
-                x["basis"] = lvl_basis
-            _lvl_done.update({cf, _OPPOSITE[cf]})
+    solids = {}
+    ai_by_face = {}
     for d in (raw.get("dormers") or []):
-        if not d:
-            continue
-        face = _norm_face(d.get("face"))
-        w, knee = d.get("width_ft"), d.get("knee_wall_height_ft")
-        tag = _AI_TAGS.get(str(d.get("width_source")), "ESTIMATED")
-        if not knee:
-            continue
+        f = _norm_face((d or {}).get("face"))
+        if d and d.get("knee_wall_height_ft") and f not in ai_by_face:
+            ai_by_face[f] = d
+    # a contractor quad with NO AI read still makes a solid (the quad IS
+    # the drawn geometry, ruled 2026-07-25)
+    all_faces = list(ai_by_face) + [f for f in c_rows if f not in ai_by_face]
+    for face in all_faces:
+        d = ai_by_face.get(face) or {}
         tape = _dormer_tape(est, face)
-        knee = tape.get("knee_ft", float(knee))
-        knee_tag = "TAPED (user-measured)" if "knee_ft" in tape else tag
-        # contractor quad dims govern cross-view (ruled 2026-07-26)
         cq = c_rows.get(face)
-        if cq and "knee_ft" not in tape:
-            knee = float(cq["height_ft"])
-            knee_tag = "TAPED (contractor quad)"
+        ai_tag = _AI_TAGS.get(str(d.get("width_source")), "ESTIMATED")
+        s = {"face": face, "source_photos": d.get("_source_photo_indices") or [],
+             "contractor_quad": bool(cq), "dim_notes": []}
         if cq:
-            w = float(cq["width_ft"])
-            tag = "TAPED (contractor quad)"
-        # PAIRED-FEATURE RECONCILIATION (ruled 2026-07-22): opposite-face
-        # twins bind ONE band, drawn LEVEL — tape on either face closes both
-        pair = _paired_dormer(raw, d)
-        pair_tape = _dormer_tape(est, _norm_face(pair.get("face"))) if pair else {}
-        vpos = _dormer_vpos(raw, face, knee)
+            s.update(w=float(cq["width_ft"]), w_rung=1, w_tag="TAPED (contractor quad)")
+        else:
+            s.update(w=float(d.get("width_ft") or 0), w_rung=0, w_tag=ai_tag)
+        if "knee_ft" in tape:
+            s.update(knee=tape["knee_ft"], k_rung=2, k_tag="TAPED (user-measured)")
+        elif cq:
+            s.update(knee=float(cq["height_ft"]), k_rung=1, k_tag="TAPED (contractor quad)")
+        else:
+            s.update(knee=float(d["knee_wall_height_ft"]), k_rung=0, k_tag=ai_tag)
+        cband = (_contractor_dormer_band(run, raw, face, walls_w.get(face), None, None)
+                 if cq else None)
         if "base_ft" in tape:
-            base_ft, top_ft = tape["base_ft"], round(tape["base_ft"] + knee, 2)
-            v_tag, v_basis = "TAPED (user-measured)", "base taped via appendage dims"
-        elif face in c_vpos:
-            # contractor photo-chain v-pos (pair-LEVELED when twins) —
-            # outranks the AI chain, below appendage tape
-            base_ft = c_vpos[face]["base"]
-            top_ft = round(base_ft + knee, 2)
-            v_tag = c_vpos[face]["tag"]
-            v_basis = c_vpos[face]["basis"]
-        elif pair and "base_ft" in pair_tape:
-            base_ft = pair_tape["base_ft"]
-            top_ft = round(base_ft + knee, 2)
-            v_tag = "TAPED (user-measured · paired)"
-            v_basis = (f"base taped on the {_norm_face(pair.get('face'))} twin — "
-                       f"paired-feature reconciliation binds both LEVEL")
-        elif vpos:
-            v_pair = (_dormer_vpos(raw, _norm_face(pair.get("face")),
-                                   float(pair.get("knee_wall_height_ft")))
-                      if pair else None)
-            if v_pair:
-                base_ft = round((vpos["base_ft"] + v_pair["base_ft"]) / 2.0, 2)
-                top_ft = round((vpos["top_ft"] + v_pair["top_ft"]) / 2.0, 2)
-                v_tag = ("ESTIMATED (photo-scaled · PAIRED-RECONCILED · "
-                         "head-anchor CONTRACTOR-SPEC 6'-8\")")
-                v_basis = (f"paired-feature reconciliation ({face} "
-                           f"{fmt_ftin(vpos['base_ft'])}–{fmt_ftin(vpos['top_ft'])} / "
-                           f"{_norm_face(pair.get('face'))} {fmt_ftin(v_pair['base_ft'])}–"
-                           f"{fmt_ftin(v_pair['top_ft'])} → one LEVEL band) · {vpos['basis']}")
+            s.update(base=tape["base_ft"], v_rung=2, v_tag="TAPED (user-measured)",
+                     v_basis="base taped via appendage dims")
+        elif cq:
+            # THE QUAD GOVERNS the face (ruled 2026-07-25) — its band chain
+            # binds v-pos; an INDICATIVE chain leaves base to the
+            # projection's flagged mid-slope fallback (never the AI chain)
+            if cband and "INDICATIVE" not in (cband.get("vpos_tag") or ""):
+                s.update(base=cband["base_ft"], v_rung=1, v_tag=cband["vpos_tag"],
+                         v_basis=cband["base_note"])
             else:
-                base_ft, top_ft = vpos["base_ft"], vpos["top_ft"]
-                v_tag, v_basis = vpos["tag"], vpos["basis"]
+                s.update(base=None, v_rung=-1,
+                         v_tag=(cband or {}).get("vpos_tag") or "TAPED dims · v-pos INDICATIVE",
+                         v_basis="no window anchor on the annotated photo — "
+                                 "drawn mid-slope INDICATIVE")
         else:
-            base_ft, top_ft = None, None
-            v_tag = "UNRESOLVED"
-            v_basis = ("no same-photo window chain — v-pos not derivable; "
-                       "drawn mid-slope INDICATIVE · default PENDING RATIFICATION")
-        # HORIZONTAL CENTER LADDER (offset-evidence ruling 2026-07-22):
-        # on-dormer window positions (structured bboxes, windows-centered
-        # norm — same norm ratified for v-pos) outrank the reconciler's
-        # rounded offset_x_ft claim
-        d_wins = [o for o in (raw.get("openings") or [])
-                  if str(o.get("wall", "")).lower() == face and o.get("on_dormer")
-                  and o.get("along_wall_ft") is not None]
+            vp = _dormer_vpos(raw, face, s["knee"])
+            if vp:
+                s.update(base=vp["base_ft"], v_rung=0, v_tag=vp["tag"],
+                         v_basis=vp["basis"])
+            else:
+                s.update(base=None, v_rung=-1, v_tag="UNRESOLVED",
+                         v_basis=("no same-photo window chain — v-pos not "
+                                  "derivable; drawn mid-slope INDICATIVE · "
+                                  "default PENDING RATIFICATION"))
         off = float(d.get("offset_x_ft") or 0.0)
-        if d_wins:
-            center_val = sum(float(o["along_wall_ft"]) for o in d_wins) / len(d_wins)
-            center_tag = "ESTIMATED (windows-centered norm)"
-            center_basis = (f"midpoint of {len(d_wins)} on-dormer window position(s) "
-                            f"(bbox-consistent) — outranks the run's rounded "
-                            f"offset_x_ft {off:g}' claim")
+        if cq:
+            # the quad governs the face's center too — INDICATIVE stays
+            # INDICATIVE (wall center at projection), never the AI norm
+            if (cband and walls_w.get(face)
+                    and "INDICATIVE" not in (cband.get("center_tag") or "")):
+                s.update(center=float(cband["center_ft"]),
+                         c_tag="TAPED (contractor quad)",
+                         c_basis="quad center mapped through window anchors")
+            else:
+                s.update(center=None,
+                         c_tag=(cband or {}).get("center_tag") or "TAPED dims · center INDICATIVE",
+                         c_basis="no window anchor — wall center INDICATIVE")
         else:
-            center_val = None
-            center_tag = _AI_TAGS.get(str(d.get("width_source")), "ESTIMATED")
-            center_basis = f"run offset_x_ft {off:g}' from wall center"
-        if face == which and w and width_ft and height_ft is not None:
+            ctr = _dormer_center_ladder(raw, run, face, walls_w.get(face))
+            if ctr:
+                s.update(center=float(ctr[0]),
+                         c_tag="ESTIMATED (windows-centered norm)",
+                         c_basis=("windows-centered norm — outranks the run's "
+                                  f"rounded offset_x_ft {off:g}' claim"))
+            else:
+                s.update(center=None, c_tag=ai_tag,
+                         c_basis=f"run offset_x_ft {off:g}' from wall center")
+        s["offset_x_ft"] = off
+        solids[face] = s
+    # ── PAIR RECONCILIATION — opposite-face twins bind ONE solid ──
+    for face, s in list(solids.items()):
+        opp = _OPPOSITE.get(face)
+        o = solids.get(opp)
+        if not o or s.get("pair"):
+            continue
+        w_tol = (CONTRACTOR_PAIR_TOL_W_FT
+                 if s["contractor_quad"] and o["contractor_quad"]
+                 else PAIRED_DORMER_TOL_FT)
+        if not (abs(s["w"] - o["w"]) <= w_tol
+                and abs(s["knee"] - o["knee"]) <= PAIRED_DORMER_TOL_FT):
+            continue
+        s["pair"], o["pair"] = opp, face
+        # dims — taped side supersedes; equal rungs = worst case, flagged
+        for dim, rung_k, tag_k, word in (("w", "w_rung", "w_tag", "width"),
+                                         ("knee", "k_rung", "k_tag", "knee")):
+            if abs(s[dim] - o[dim]) <= 0.005:
+                continue
+            if s[rung_k] != o[rung_k]:
+                src, dst = (s, o) if s[rung_k] > o[rung_k] else (o, s)
+                note = (f"ONE SOLID (ruled 2026-07-26): {word} — {src['face']} "
+                        f"{fmt_ftin(src[dim])} ({src[tag_k]}) supersedes the "
+                        f"{dst['face']} read {fmt_ftin(dst[dim])}")
+                dst[dim] = src[dim]
+                dst[tag_k] = src[tag_k] + " · pair-governed"
+            else:
+                hi = max(s[dim], o[dim])
+                delta_in = abs(s[dim] - o[dim]) * 12.0
+                note = (f"ONE SOLID (worst case — flagged, not averaged; ruled "
+                        f"2026-07-26): {word} {s['face']} {fmt_ftin(s[dim])} / "
+                        f"{o['face']} {fmt_ftin(o[dim])} — Δ {fmt_inches(delta_in)} "
+                        f"— drawn at {fmt_ftin(hi)}, both reads on record")
+                for x in (s, o):
+                    x[dim] = hi
+                    if "PAIR worst-case" not in x[tag_k]:
+                        x[tag_k] += " · PAIR worst-case"
+            for x in (s, o):
+                if note not in x["dim_notes"]:
+                    x["dim_notes"].append(note)
+        # vertical band — stronger rung governs; equal rungs LEVEL (mean)
+        if s["base"] is not None or o["base"] is not None:
+            if s["base"] is None or (o["base"] is not None and o["v_rung"] > s["v_rung"]):
+                s["base"], s["v_rung"] = o["base"], o["v_rung"]
+                s["v_tag"] = o["v_tag"] + " · pair-governed"
+                s["v_basis"] = (f"bound on the {opp} twin — one solid, one band: "
+                                f"{o['v_basis']}")
+            elif o["base"] is None or s["v_rung"] > o["v_rung"]:
+                o["base"], o["v_rung"] = s["base"], s["v_rung"]
+                o["v_tag"] = s["v_tag"] + " · pair-governed"
+                o["v_basis"] = (f"bound on the {face} twin — one solid, one band: "
+                                f"{s['v_basis']}")
+            elif abs(s["base"] - o["base"]) > 0.005:
+                lvl = round((s["base"] + o["base"]) / 2.0, 2)
+                basis = (f"PAIRED-FEATURE RECONCILIATION: {face} "
+                         f"{fmt_ftin(s['base'])} / {opp} {fmt_ftin(o['base'])} "
+                         f"→ one LEVEL band, base {fmt_ftin(lvl)}")
+                for x in (s, o):
+                    x["base"] = lvl
+                    if "PAIRED-RECONCILED" not in x["v_tag"]:
+                        x["v_tag"] += " · PAIRED-RECONCILED LEVEL"
+                    x["v_basis"] = basis
+        # horizontal center — PAIRED-FEATURE MIRROR (exterior frames)
+        w_here, w_opp = walls_w.get(face), walls_w.get(opp)
+        if (s["center"] is not None and o["center"] is not None
+                and w_here and w_opp):
+            c_s, c_o = float(s["center"]), float(o["center"])
+            mir_s = float(w_opp) - c_o
+            mir_o = float(w_here) - c_s
+            rec_s = round((c_s + mir_s) / 2.0, 2)
+            rec_o = round((c_o + mir_o) / 2.0, 2)
+            if abs(rec_s - c_s) > 0.05:
+                s["center"] = rec_s
+                s["c_tag"] += " · PAIRED-RECONCILED MIRROR"
+                s["c_note"] = (
+                    f"PAIRED-FEATURE MIRROR (ruled 2026-07-26): one physical dormer "
+                    f"— {face} read {fmt_ftin(c_s)} / {opp} read {fmt_ftin(c_o)} "
+                    f"(= {fmt_ftin(mir_s)} in this view) → one mirrored center "
+                    f"{fmt_ftin(rec_s)}")
+            if abs(rec_o - c_o) > 0.05:
+                o["center"] = rec_o
+                o["c_tag"] += " · PAIRED-RECONCILED MIRROR"
+                o["c_note"] = (
+                    f"PAIRED-FEATURE MIRROR (ruled 2026-07-26): one physical dormer "
+                    f"— {opp} read {fmt_ftin(c_o)} / {face} read {fmt_ftin(c_s)} "
+                    f"(= {fmt_ftin(mir_o)} in this view) → one mirrored center "
+                    f"{fmt_ftin(rec_o)}")
+    return solids
+
+
+def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
+    """P5 DORMERS — SINGLE HOUSE MODEL PROJECTION (ruled 2026-07-26,
+    supersedes the per-view derivations): _dormer_solids reconciles each
+    dormer ONCE; this function only PROJECTS the solid onto the requested
+    view. Face-on: the solid's band at its mirrored center. Profiles
+    (perpendicular gable views): the SAME solid's knee and band — one
+    dormer = one size on every view; opposite-slope profiles sit LEVEL by
+    construction. Roofline conflicts are handled at the route (ridge
+    re-derives upward; flag-only bounds — the clamp is retired)."""
+    solids = _dormer_solids(est, raw, run,
+                            view_widths={which: width_ft} if width_ft else None)
+    face_on, profiles = None, []
+    for face, s in solids.items():
+        if face == which and s["w"] and width_ft and height_ft is not None:
             ridge_ft = (roofline_obj or {}).get("ridge_ft")
+            dim_notes = " · ".join(s["dim_notes"])
+            if s["contractor_quad"]:
+                # the quad builds the face dict (legacy provenance strings
+                # stand), then the SOLID's reconciled values overlay it
+                face_on = _contractor_dormer_band(run, raw, which, width_ft,
+                                                  height_ft, roofline_obj)
+                if s["w"] != face_on["width_ft"] or s["knee"] != face_on["knee_ft"]:
+                    face_on.update(width_ft=float(s["w"]), width_label=fmt_ftin(s["w"]),
+                                   width_tag=s["w_tag"], knee_ft=s["knee"],
+                                   knee_label=fmt_ftin(s["knee"]), knee_tag=s["k_tag"])
+                if s["base"] is not None:
+                    face_on.update(base_ft=s["base"], base_label=fmt_ftin(s["base"]),
+                                   vpos_tag=s["v_tag"],
+                                   base_note=(f"base {fmt_ftin(s['base'])} · v-pos "
+                                              f"{s['v_tag']} — {s['v_basis']}"))
+                face_on["top_ft"] = round(float(face_on["base_ft"]) + s["knee"], 2)
+                face_on["top_label"] = fmt_ftin(face_on["top_ft"])
+                face_on["top_note"] = None
+                if s["center"] is not None:
+                    half = float(s["w"]) / 2.0
+                    c = round(min(max(float(s["center"]), half),
+                                  max(float(width_ft) - half, half)), 2)
+                    face_on.update(center_ft=c, center_label=fmt_ftin(c),
+                                   center_tag=s["c_tag"],
+                                   offset_x_ft=round(c - float(width_ft) / 2.0, 2))
+                face_on["center_note"] = s.get("c_note")
+                if dim_notes:
+                    face_on["basis"] += f" · {dim_notes}"
+                face_on["dim_notes"] = s["dim_notes"]
+                face_on["source_photos"] = (face_on.get("source_photos")
+                                            or s["source_photos"])
+                continue
+            base_ft, v_tag, v_basis = s["base"], s["v_tag"], s["v_basis"]
             if base_ft is None:
                 # mid-slope fallback — flagged, never silent
-                span_top = float(ridge_ft) if ridge_ft else float(height_ft) + knee
-                base_ft = round(float(height_ft) + max((span_top - float(height_ft) - knee) / 2.0, 0), 2)
-                top_ft = round(base_ft + knee, 2)
-            off = float(d.get("offset_x_ft") or 0.0)
-            center = center_val if center_val is not None else width_ft / 2.0 + off
-            top_note = None
-            if ridge_ft and top_ft > float(ridge_ft) + 0.05:
-                top_note = "dormer top exceeds the drawn ridge — reads disagree — flagged"
+                span_top = float(ridge_ft) if ridge_ft else float(height_ft) + s["knee"]
+                base_ft = round(float(height_ft)
+                                + max((span_top - float(height_ft) - s["knee"]) / 2.0, 0), 2)
+            top_ft = round(base_ft + s["knee"], 2)
+            center = (s["center"] if s["center"] is not None
+                      else width_ft / 2.0 + s["offset_x_ft"])
+            half = float(s["w"]) / 2.0
+            center = round(min(max(center, half),
+                               max(float(width_ft) - half, half)), 2)
+            dim_notes = " · ".join(s["dim_notes"])
             face_on = {
                 "face": face,
-                "width_ft": float(w), "width_label": fmt_ftin(w), "width_tag": tag,
-                "knee_ft": knee, "knee_label": fmt_ftin(knee), "knee_tag": knee_tag,
-                "center_ft": round(center, 2), "center_label": fmt_ftin(center),
-                "center_tag": center_tag,
-                "offset_x_ft": off,
+                "width_ft": float(s["w"]), "width_label": fmt_ftin(s["w"]),
+                "width_tag": s["w_tag"],
+                "knee_ft": s["knee"], "knee_label": fmt_ftin(s["knee"]),
+                "knee_tag": s["k_tag"],
+                "center_ft": center, "center_label": fmt_ftin(center),
+                "center_tag": s["c_tag"],
+                "center_note": s.get("c_note"),
+                "offset_x_ft": round(center - float(width_ft) / 2.0, 2),
                 "base_ft": base_ft, "base_label": fmt_ftin(base_ft),
                 "top_ft": top_ft, "top_label": fmt_ftin(top_ft),
                 "vpos_tag": v_tag,
                 "base_note": f"base {fmt_ftin(base_ft)} · v-pos {v_tag} — {v_basis}",
-                "top_note": top_note,
-                "basis": (f"width {fmt_ftin(w)} · knee {fmt_ftin(knee)} — AI run "
-                          f"dormer read ({tag}) · center {fmt_ftin(center)} — {center_basis}"),
-                "source_photos": d.get("_source_photo_indices") or [],
+                "top_note": None,
+                "basis": (f"ONE SOLID (single house model, ruled 2026-07-26) — "
+                          f"width {fmt_ftin(s['w'])} ({s['w_tag']}) × knee "
+                          f"{fmt_ftin(s['knee'])} ({s['k_tag']}) · center "
+                          f"{fmt_ftin(center)} — {s['c_basis']}"
+                          + (f" · {dim_notes}" if dim_notes else "")),
+                "dim_notes": s["dim_notes"],
+                "source_photos": s["source_photos"],
+                "contractor_quad": (True if s["contractor_quad"] else None),
             }
-        elif face in ("front", "back", "left", "right") and face != which:
+        elif face != which:
             side = _PROFILE_SIDE.get((which, face))
-            if side:
-                # compact tag for the on-sheet note (full chain in basis)
-                if "PAIRED-RECONCILED" in v_tag:
-                    v_short = "ESTIMATED · PAIRED-RECONCILED"
-                elif v_tag.startswith("ESTIMATED"):
-                    v_short = "ESTIMATED (photo-scaled)"
-                else:
-                    v_short = v_tag
-                profiles.append({
-                    "face": face, "drawing_side": side,
-                    "knee_ft": knee, "knee_label": fmt_ftin(knee), "tag": knee_tag,
-                    "width_ft": float(w) if w else None,
-                    "width_label": fmt_ftin(w) if w else None,
-                    "base_ft": base_ft, "top_ft": top_ft,
-                    "vpos_tag": v_tag,
-                    "note": ("roof edge drawn LEVEL — dormer roof pitch NOT READ · "
-                             f"v-pos {v_short}"),
-                    "basis": (f"knee {fmt_ftin(knee)} — AI run dormer read ({tag}) · "
-                              f"{face} slope · {v_basis}"),
-                })
-    # CONTRACTOR DORMER QUAD GOVERNS (ruled 2026-07-25 follow-up): when
-    # the contractor placed an Add Dormer quad on this wall, its dims AND
-    # position replace the AI-bound face-on band entirely — the annotation
-    # is the ground-truth location and size on the sheet. AI source photos
-    # are preserved for the compare trail when the quad carries none.
-    cd = _contractor_dormer_band(run, raw, which, width_ft, height_ft, roofline_obj)
-    if cd:
-        if which in c_vpos:
-            # bind the face-on band to the SAME reconciled (leveled) v-pos
-            cd["base_ft"] = c_vpos[which]["base"]
-            cd["top_ft"] = round(cd["base_ft"] + cd["knee_ft"], 2)
-            cd["base_label"] = fmt_ftin(cd["base_ft"])
-            cd["top_label"] = fmt_ftin(cd["top_ft"])
-            cd["vpos_tag"] = c_vpos[which]["tag"]
-            cd["base_note"] = (f"base {fmt_ftin(cd['base_ft'])} · v-pos "
-                               f"{cd['vpos_tag']} — {c_vpos[which]['basis']}")
-            _r = (roofline_obj or {}).get("ridge_ft")
-            cd["top_note"] = ("dormer top exceeds the drawn ridge — reads disagree — flagged"
-                              if _r and cd["top_ft"] > float(_r) + 0.05 else None)
-        if face_on and not cd.get("source_photos"):
-            cd["source_photos"] = face_on.get("source_photos") or []
-        face_on = cd
-    # PAIRED-FEATURE MIRROR (ruled 2026-07-26, EST-986945 field-compare
-    # follow-up — horizontal axis): opposite side views MUST mirror. One
-    # physical dormer box = ONE horizontal span; twin bands previously
-    # bound centers PER VIEW (quad-through-anchor / windows-centered
-    # jitter), so the same dormer could draw on the SAME side of wall
-    # center in both opposite views — physically impossible. Paired twins
-    # now reconcile in the shared physical frame: this view's drawing-left
-    # corner is the opposite view's drawing-right corner (VIEW-ORIENTATION
-    # PIN), so center_here ↔ opp_width − center_opp, averaged — the exact
-    # horizontal mirror of the ruled vertical LEVEL reconciliation.
-    if face_on and width_ft:
-        opp = _OPPOSITE.get(which)
-        opp_width = next((w2.get("width_ft") for w2 in (raw.get("walls") or [])
-                          if str(w2.get("label", "")).lower() == opp), None)
-        there = _dormer_center_ladder(raw, run, opp, opp_width)
-        if there and opp_width:
-            c_there, w_there, k_there, q_there = there
-            q_here = bool(face_on.get("contractor_quad"))
-            w_tol = (CONTRACTOR_PAIR_TOL_W_FT if (q_here and q_there)
-                     else PAIRED_DORMER_TOL_FT)
-            if (abs(float(face_on["width_ft"]) - w_there) <= w_tol
-                    and abs(float(face_on["knee_ft"]) - k_there) <= PAIRED_DORMER_TOL_FT):
-                mirrored = float(opp_width) - float(c_there)
-                rec = (float(face_on["center_ft"]) + mirrored) / 2.0
-                half = float(face_on["width_ft"]) / 2.0
-                rec = round(min(max(rec, half),
-                                max(float(width_ft) - half, half)), 2)
-                if abs(rec - float(face_on["center_ft"])) > 0.05:
-                    old = face_on["center_ft"]
-                    face_on["center_ft"] = rec
-                    face_on["center_label"] = fmt_ftin(rec)
-                    face_on["offset_x_ft"] = round(rec - float(width_ft) / 2.0, 2)
-                    face_on["center_tag"] = (f"{face_on['center_tag']}"
-                                             " · PAIRED-RECONCILED MIRROR")
-                    face_on["center_note"] = (
-                        f"PAIRED-FEATURE MIRROR (ruled 2026-07-26): one physical "
-                        f"dormer — {which} read {fmt_ftin(old)} / {opp} read "
-                        f"{fmt_ftin(c_there)} (= {fmt_ftin(mirrored)} in this view) "
-                        f"→ one mirrored center {fmt_ftin(rec)}")
-                    face_on["basis"] += f" · {face_on['center_note']}"
-    # ROOFLINE BOUNDS (ruled 2026-07-26): nothing draws through the roof edge
-    _ridge = (roofline_obj or {}).get("ridge_ft")
-    face_on = _clamp_band_to_roof(face_on, _ridge)
-    profiles = [_clamp_band_to_roof(p, _ridge) for p in profiles]
+            if not side:
+                continue
+            v_tag = s["v_tag"]
+            if "PAIRED-RECONCILED" in v_tag:
+                v_short = "ESTIMATED · PAIRED-RECONCILED"
+            elif str(v_tag).startswith("ESTIMATED"):
+                v_short = "ESTIMATED (photo-scaled)"
+            else:
+                v_short = v_tag
+            base_ft = s["base"]
+            top_ft = round(base_ft + s["knee"], 2) if base_ft is not None else None
+            profiles.append({
+                "face": face, "drawing_side": side,
+                "knee_ft": s["knee"], "knee_label": fmt_ftin(s["knee"]),
+                "tag": s["k_tag"],
+                "width_ft": float(s["w"]) if s["w"] else None,
+                "width_label": fmt_ftin(s["w"]) if s["w"] else None,
+                "base_ft": base_ft, "top_ft": top_ft,
+                "vpos_tag": v_tag,
+                "note": ("roof edge drawn LEVEL — dormer roof pitch NOT READ · "
+                         f"v-pos {v_short}"),
+                "basis": (f"ONE SOLID (single house model, ruled 2026-07-26) — "
+                          f"knee {fmt_ftin(s['knee'])} ({s['k_tag']}) · {face} "
+                          f"slope · {s['v_basis']}"),
+                "dim_notes": s["dim_notes"],
+            })
     return face_on, profiles
 
 
@@ -1440,6 +1496,53 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
     roofline_obj = _bind_roofline(raw, which, height_ft, basis["height_tag"])
     # P5 (C-5 ruling): dormers face-on + cheek profiles on perpendiculars
     dormer, dormer_profiles = _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=run)
+    # THE CLAMP RETIRES (single house model, ruled 2026-07-26): when a
+    # TAPED-class dormer band tops out above this eave view's derived
+    # ridge, the ridge ESTIMATE loses — it re-derives UPWARD to the
+    # strongest source (the taped band top); the rise read stays on
+    # record as the flagged comparison. A taped measurement is never
+    # crushed to fit a guess.
+    _bands = ([dormer] if dormer else []) + list(dormer_profiles or [])
+    _taped_tops = [float(b["top_ft"]) for b in _bands
+                   if b.get("top_ft") is not None
+                   and "TAPED" in str(b.get("vpos_tag") or "")]
+    if (roofline_obj and roofline_obj.get("kind") == "eave_ridge"
+            and roofline_obj.get("ridge_ft") and _taped_tops
+            and max(_taped_tops) > float(roofline_obj["ridge_ft"]) + 0.05):
+        _old_r = float(roofline_obj["ridge_ft"])
+        _new_r = round(max(_taped_tops), 3)
+        roofline_obj["ridge_ft"] = _new_r
+        roofline_obj["ridge_label"] = fmt_ftin(_new_r)
+        roofline_obj["note"] = (
+            (str(roofline_obj["note"]) + " · " if roofline_obj.get("note") else "")
+            + f"RIDGE RE-DERIVED UPWARD (clamp retired, ruled 2026-07-26): "
+              f"taped dormer band top {fmt_ftin(_new_r)} outranks the "
+              f"{fmt_ftin(_old_r)} rise-read estimate — flagged comparison")
+        roofline_obj["basis"] = (f"ridge = taped dormer band top (strongest source, "
+                                 f"ruled 2026-07-26) · superseded: {roofline_obj.get('basis', '')}")
+    # ROOFLINE BOUNDS — FLAG ONLY (relocation retired with the clamp)
+    _ridge_now = (roofline_obj or {}).get("ridge_ft")
+    dormer = _flag_band_vs_roof(dormer, _ridge_now)
+    dormer_profiles = [_flag_band_vs_roof(p, _ridge_now) for p in (dormer_profiles or [])]
+    # IMPLIED GRADE SLOPE (ruled 2026-07-26 follow-up): per-wall grade
+    # datums stand; when the opposite gable end derives a different ridge
+    # figure, the delta prints as EXPLAINED geometry — never silent.
+    grade_note = None
+    if roofline_obj and roofline_obj.get("kind") == "gable_end":
+        _opp = _OPPOSITE[which]
+        _opp_wall = next((w2 for w2 in (raw.get("walls") or [])
+                          if str(w2.get("label", "")).lower() == _opp), None)
+        _opp_tape = _sealed_tape_basis(est, _opp) or _tape_check_basis(est, _opp)
+        _opp_h = (max(sg["height_ft"] for sg in _opp_tape["segments"])
+                  if _opp_tape else (_opp_wall or {}).get("height_ft"))
+        _opp_rl = _bind_roofline(raw, _opp, _opp_h, "") if _opp_h else None
+        if (_opp_rl and _opp_rl.get("ridge_ft")
+                and abs(float(_opp_rl["ridge_ft"]) - float(roofline_obj["ridge_ft"])) > 0.05):
+            _d = float(roofline_obj["ridge_ft"]) - float(_opp_rl["ridge_ft"])
+            grade_note = (f"ridge figures differ {fmt_inches(abs(_d) * 12.0)} vs the "
+                          f"{_opp} sheet — implied grade slope {_opp}→{which} "
+                          f"{'down' if _d > 0 else 'up'} (per-wall grade datums, "
+                          f"ruled 2026-07-26)")
     chase = None
     for acc in (wall.get("accent_profiles") or []):
         loc = str(acc.get("location") or "")
@@ -1763,7 +1866,9 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "orientation_note": (
                 f"viewed from outside — drawing-left = "
                 f"{_VIEW_DATUM[which]['drawing_left']} · drawing-right = "
-                f"{_VIEW_DATUM[which]['drawing_right']} (VIEW-ORIENTATION PIN)"),
+                f"{_VIEW_DATUM[which]['drawing_right']} (VIEW-ORIENTATION PIN)"
+                " · heights above this wall's grade (per-wall datum)"),
+            "grade_note": grade_note,
             "mirrored_segments": bool(which == "left" and stepped),
         },
         "deviation": deviation,
