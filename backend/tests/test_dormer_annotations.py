@@ -113,14 +113,25 @@ class TestParseContractorDormers:
         from routes.ai_measure import parse_contractor_dormers
         rows = parse_contractor_dormers(
             '[{"elevation":"Front","width_ft":8.04,"height_ft":6.0,'
-            '"area_ft":48.22,"masked_ft":0,"photo":"p1.jpg",'
+            '"area_ft":48.22,"masked_ft":0,"photo":"p1.jpg","depth_ft":4.0,'
             '"x_center_frac":0.51234,"y_bottom_frac":0.2,'
             '"width_frac":0.2,"height_frac":0.15}]')
         assert rows == [{"elevation": "front", "width_ft": 8.0,
                          "height_ft": 6.0, "area_ft": 48.2, "masked_ft": 0,
-                         "photo": "p1.jpg", "x_center_frac": 0.5123,
+                         "photo": "p1.jpg", "depth_ft": 4.0,
+                         # cheeks derive server-side: 2 × 6.0 × 4.0
+                         "cheeks_ft": 48.0,
+                         "x_center_frac": 0.5123,
                          "y_bottom_frac": 0.2, "width_frac": 0.2,
                          "height_frac": 0.15}]
+
+    def test_blank_depth_means_zero_cheeks(self):
+        from routes.ai_measure import parse_contractor_dormers
+        row = parse_contractor_dormers('[{"height_ft":6.0}]')[0]
+        assert row["depth_ft"] is None and row["cheeks_ft"] == 0
+        # client-computed cheeks are ignored — the server derives
+        row2 = parse_contractor_dormers('[{"height_ft":6.0,"cheeks_ft":999}]')[0]
+        assert row2["cheeks_ft"] == 0
 
     def test_fracs_clamped_to_unit_interval(self):
         from routes.ai_measure import parse_contractor_dormers
@@ -251,3 +262,99 @@ class TestContractorQuadGovernsDrawnBand:
         assert "width_frac" in AIBTN and "height_frac" in AIBTN
         # natural dims round-trip on the annotation save
         assert "imageDims: imageDims || prev[annotateOpenFor]?.imageDims" in AIBTN
+
+
+class TestDormerCheeks:
+    """Ruled 2026-07-26: cheek area (each) = dormer wall height × depth;
+    total cheeks = 2 × that. Depth is TYPED (annotator row primary, Field
+    Verify secondary, same field). Blank depth → cheeks 0 + flagged.
+    Same landing rule as the face: visible everywhere, NEVER auto-injected
+    into the estimate."""
+
+    def test_callout_gains_cheek_line(self):
+        from routes.elevation_sheets import contractor_dormers_for
+        run = {"contractor_dormers": [
+            {"elevation": "front", "width_ft": 8.0, "height_ft": 6.0,
+             "area_ft": 48.0, "masked_ft": 0, "depth_ft": 4.0, "cheeks_ft": 48.0},
+            {"elevation": "front", "width_ft": 6.0, "height_ft": 5.0,
+             "area_ft": 30.0, "masked_ft": 0, "depth_ft": None, "cheeks_ft": 0},
+        ]}
+        rows = contractor_dormers_for(run, "front")
+        assert "+ cheeks 2 × 6′×4′ = 48 ft²" in rows[0]["label"]
+        assert "depth missing — cheeks 0" in rows[1]["label"]
+
+    def test_annotator_row_has_depth_input_and_flag(self):
+        modal = (FE / "components" / "estimate" / "PhotoAnnotateModal.jsx").read_text()
+        assert "dormer-depth-input-" in modal
+        assert "depth missing — cheeks 0" in modal
+        assert "setDormerDepth" in modal
+
+    def test_field_verify_secondary_entry_syncs_same_field(self):
+        fvc = (FE / "components" / "estimate" / "FieldVerifyCard.jsx").read_text()
+        assert "contractor-dormer-depth-input-" in fvc
+        assert "contractor-dormer-cheeks-" in fvc
+        assert "contractor-dormer-depth-missing-" in fvc
+        assert "/contractor-dormers/" in fvc  # PATCH write-back path
+
+    def test_launch_payload_carries_depth(self):
+        aibtn = (FE / "components" / "estimate" / "AIMeasureButton.jsx").read_text()
+        assert "depth_ft: dm.depth_ft" in aibtn
+
+    def test_patch_endpoint_exists(self):
+        aim = (BACKEND / "routes" / "ai_measure.py").read_text()
+        assert '"/ai-measure/runs/{run_id}/contractor-dormers/{idx}"' in aim
+
+
+class TestDormerDepthEndpointLive:
+    @staticmethod
+    def _session_and_db():
+        import os
+        import requests
+        from dotenv import load_dotenv
+        load_dotenv(BACKEND / ".env")
+        from pymongo import MongoClient
+        from api_base import API
+        from creds_for_tests import TEST_EMAIL, TEST_PASSWORD
+        s = requests.Session()
+        r = s.post(f"{API}/auth/login",
+                   json={"email": TEST_EMAIL, "password": TEST_PASSWORD}, timeout=15)
+        assert r.status_code == 200
+        db = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
+        return s, db, r.json()["id"], API
+
+    def test_patch_depth_recomputes_cheeks_and_clears(self):
+        import uuid
+        from datetime import datetime, timezone
+        s, db, uid, API = self._session_and_db()
+        run_id = "test-dormerdepth-" + uuid.uuid4().hex[:8]
+        # test_artifact-stamped throwaway run (TEST_ estimate id)
+        db.ai_measure_runs.insert_one({
+            "test_artifact": True, "run_id": run_id, "user_id": uid,
+            "estimate_id": "TEST_dormer-depth", "status": "done",
+            "created_at": datetime.now(timezone.utc),
+            "contractor_dormers": [
+                {"elevation": "front", "width_ft": 8.0, "height_ft": 6.0,
+                 "area_ft": 48.0, "masked_ft": 0, "depth_ft": None, "cheeks_ft": 0},
+            ],
+        })
+        try:
+            r = s.patch(f"{API}/measure/ai-measure/runs/{run_id}/contractor-dormers/0",
+                        json={"depth_ft": 4.0}, timeout=15)
+            assert r.status_code == 200, r.text[:200]
+            assert r.json() == {"ok": True, "idx": 0, "depth_ft": 4.0, "cheeks_ft": 48.0}
+            doc = db.ai_measure_runs.find_one({"run_id": run_id})
+            assert doc["contractor_dormers"][0]["depth_ft"] == 4.0
+            assert doc["contractor_dormers"][0]["cheeks_ft"] == 48.0
+            # clearing depth zeroes the cheeks — flagged, never stale
+            r2 = s.patch(f"{API}/measure/ai-measure/runs/{run_id}/contractor-dormers/0",
+                         json={"depth_ft": None}, timeout=15)
+            assert r2.json()["cheeks_ft"] == 0 and r2.json()["depth_ft"] is None
+            # garbage refused
+            r3 = s.patch(f"{API}/measure/ai-measure/runs/{run_id}/contractor-dormers/0",
+                         json={"depth_ft": "abc"}, timeout=15)
+            assert r3.status_code == 422
+            r4 = s.patch(f"{API}/measure/ai-measure/runs/{run_id}/contractor-dormers/9",
+                         json={"depth_ft": 4}, timeout=15)
+            assert r4.status_code == 404
+        finally:
+            db.ai_measure_runs.delete_one({"run_id": run_id})

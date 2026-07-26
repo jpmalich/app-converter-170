@@ -913,6 +913,10 @@ export default function PhotoAnnotateModal({
     }));
   };
   const removeDormer = (id) => setLocalDormers((prev) => prev.filter((d) => d.id !== id));
+  // DORMER DEPTH (ruled 2026-07-26): typed, never photo-derived — feeds
+  // cheek math (each = face height × depth, total = 2 ×) downstream.
+  const setDormerDepth = (id, v) =>
+    setLocalDormers((prev) => prev.map((d) => (d.id === id ? { ...d, depth_ft: v } : d)));
 
   const save = () => {
     onSave({
@@ -2121,6 +2125,26 @@ export default function PhotoAnnotateModal({
                           masks inside dormer subtract {dims.maskedFt.toFixed(1)} ft² (gross {dims.grossAreaFt.toFixed(1)} ft²)
                         </div>
                       )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <label className="text-[10px] text-[var(--muted)] font-medium" htmlFor={`dormer-depth-${d.id}`}>Depth (ft)</label>
+                        <input
+                          id={`dormer-depth-${d.id}`}
+                          type="number" min="0" step="0.1" inputMode="decimal"
+                          value={d.depth_ft ?? ""}
+                          onChange={(e) => setDormerDepth(d.id, e.target.value)}
+                          className="w-16 text-[10px] border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5"
+                          data-testid={`dormer-depth-input-${d.id}`}
+                        />
+                        {dims && dims.heightFt !== undefined && parseFloat(d.depth_ft) > 0 ? (
+                          <span className="text-[10px] font-bold text-[#15803D]" data-testid={`dormer-cheeks-${d.id}`}>
+                            + cheeks 2 × {dims.heightFt.toFixed(1)}×{parseFloat(d.depth_ft).toFixed(1)} = {(2 * dims.heightFt * parseFloat(d.depth_ft)).toFixed(1)} ft²
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-[#B45309]" data-testid={`dormer-depth-missing-${d.id}`}>
+                            depth missing — cheeks 0
+                          </span>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

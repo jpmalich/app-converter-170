@@ -322,6 +322,15 @@ def contractor_dormers_for(run: dict, which: str) -> list:
                  else "CONTRACTOR DORMER · marked (no scale ref on photo)")
         if (d.get("masked_ft") or 0) > 0:
             label += f" (net of {d['masked_ft']:g} ft² masks)"
+        # Cheek line (ruled 2026-07-26): each cheek = face height × depth,
+        # total = 2 ×; depth is typed — blank stays flagged, never silent.
+        if h is not None:
+            dep = d.get("depth_ft")
+            if dep:
+                ch = d.get("cheeks_ft") or round(2 * h * dep, 1)
+                label += f" + cheeks 2 × {h:g}′×{dep:g}′ = {ch:g} ft²"
+            else:
+                label += " · depth missing — cheeks 0"
         if d.get("x_center_frac") is not None and w is not None:
             label += " · GOVERNS DRAWN BAND"
         out.append({

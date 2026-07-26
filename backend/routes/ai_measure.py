@@ -2251,13 +2251,21 @@ def parse_contractor_dormers(raw):
     for d in data[:20]:
         if not isinstance(d, dict):
             continue
+        h = _num(d.get("height_ft"))
+        # DORMER DEPTH (ruled 2026-07-26): typed, never photo-derived.
+        # Cheek math derives SERVER-SIDE (each = face height × depth,
+        # total = 2 ×) — any client-computed value is ignored. Blank
+        # depth → cheeks 0, row stays flagged "depth missing".
+        depth = _num(d.get("depth_ft"))
         out.append({
             "elevation": str(d.get("elevation") or "other")[:24].lower(),
             "width_ft": _num(d.get("width_ft")),
-            "height_ft": _num(d.get("height_ft")),
+            "height_ft": h,
             "area_ft": _num(d.get("area_ft")),
             "masked_ft": _num(d.get("masked_ft")) or 0,
             "photo": str(d.get("photo") or "")[:120],
+            "depth_ft": depth,
+            "cheeks_ft": round(2 * h * depth, 1) if h and depth else 0,
             # Photo-frac position norms (ruled 2026-07-25 follow-up) —
             # the sheet binder moves the DRAWN dormer band to the quad.
             "x_center_frac": _frac(d.get("x_center_frac")),
@@ -2266,6 +2274,42 @@ def parse_contractor_dormers(raw):
             "height_frac": _frac(d.get("height_frac")),
         })
     return out
+
+
+@router.patch("/ai-measure/runs/{run_id}/contractor-dormers/{idx}")
+async def update_contractor_dormer_depth(run_id: str, idx: int, payload: dict,
+                                         user: dict = Depends(get_current_user)):
+    """DORMER DEPTH secondary entry (ruled 2026-07-26): Field Verify edits
+    write back to the IDENTICAL field the annotator payload carries, so
+    both places stay in sync. Cheeks re-derive server-side (each = face
+    height × depth, total = 2 ×); blank depth → cheeks 0 and the row
+    stays flagged "depth missing". Never touches the quad, the fracs or
+    the governing logic."""
+    doc = await db.ai_measure_runs.find_one(
+        {"run_id": run_id, "user_id": user.get("id") or "anon"},
+        {"_id": 0, "contractor_dormers": 1})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Run not found")
+    rows = doc.get("contractor_dormers") or []
+    if not (0 <= idx < len(rows)):
+        raise HTTPException(status_code=404, detail="No such contractor dormer")
+    raw_depth = (payload or {}).get("depth_ft")
+    depth = None
+    if raw_depth not in (None, ""):
+        try:
+            f = float(raw_depth)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="depth_ft must be a number (ft)")
+        if not (0 < f < 100):
+            raise HTTPException(status_code=422, detail="depth_ft out of range")
+        depth = round(f, 1)
+    h = rows[idx].get("height_ft")
+    cheeks = round(2 * h * depth, 1) if h and depth else 0
+    await db.ai_measure_runs.update_one(
+        {"run_id": run_id},
+        {"$set": {f"contractor_dormers.{idx}.depth_ft": depth,
+                  f"contractor_dormers.{idx}.cheeks_ft": cheeks}})
+    return {"ok": True, "idx": idx, "depth_ft": depth, "cheeks_ft": cheeks}
 
 
 @router.post("/ai-measure")

@@ -1815,6 +1815,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             area_ft: d.netAreaFt !== undefined ? Math.round(d.netAreaFt * 10) / 10 : null,
             masked_ft: d.maskedFt ? Math.round(d.maskedFt * 10) / 10 : 0,
             photo: dname,
+            // Depth is typed on the dormer row (ruled 2026-07-26) —
+            // cheeks derive server-side (2 × face height × depth).
+            depth_ft: dm.depth_ft != null && dm.depth_ft !== "" && !isNaN(parseFloat(dm.depth_ft))
+              ? Math.round(parseFloat(dm.depth_ft) * 10) / 10 : null,
             x_center_frac: nW ? r4(dm.pts.reduce((s, p) => s + p.x, 0) / 4 / nW) : null,
             y_bottom_frac: nH ? r4((dm.pts[0].y + dm.pts[1].y) / 2 / nH) : null,
             width_frac: nW && d.widthPx ? r4(d.widthPx / nW) : null,

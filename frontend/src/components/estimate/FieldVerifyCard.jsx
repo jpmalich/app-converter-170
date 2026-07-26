@@ -57,6 +57,24 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
     }
   };
 
+  // DORMER DEPTH secondary entry (ruled 2026-07-26): writes back to the
+  // IDENTICAL contractor_dormers field the annotator payload carries —
+  // cheeks re-derive server-side, both surfaces stay in sync.
+  const saveDormerDepth = async (idx, v) => {
+    try {
+      const { data } = await api.patch(
+        `/measure/ai-measure/runs/${aiRun.run_id}/contractor-dormers/${idx}`,
+        { depth_ft: v === "" ? null : v });
+      setAiRun((prev) => {
+        const rows = [...(prev.contractor_dormers || [])];
+        rows[idx] = { ...rows[idx], depth_ft: data.depth_ft, cheeks_ft: data.cheeks_ft };
+        return { ...prev, contractor_dormers: rows };
+      });
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not save dormer depth — try again.");
+    }
+  };
+
   const house = useMemo(() => {
     try {
       return buildHouseJson(preview, { pitch: null, eaveHeights: {}, widths: {} }, estimate, apDims);
@@ -228,12 +246,30 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
             Contractor dormers — photo-taped, scale-anchored <span className="text-[9px] italic font-normal">· own waste factor assignable · not auto-injected into the estimate</span>
           </div>
           {aiRun.contractor_dormers.map((d, i) => (
-            <div key={i} className="flex items-center justify-between text-[11px] py-0.5 border-t border-[var(--border)] first:border-t-0" data-testid={`contractor-dormer-row-${i}`}>
+            <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-0.5 border-t border-[var(--border)] first:border-t-0" data-testid={`contractor-dormer-row-${i}`}>
               <span className="uppercase tracking-wider text-[var(--ink-2)] font-bold">{d.elevation}</span>
-              <span className="font-mono-num">
-                {d.width_ft != null && d.height_ft != null
-                  ? `${d.width_ft} ft × ${d.height_ft} ft = ${d.area_ft} ft²${d.masked_ft > 0 ? ` (−${d.masked_ft} ft² masks)` : ""}`
-                  : "marked — no scale ref on photo"}
+              <span className="font-mono-num flex items-center gap-2 flex-wrap justify-end">
+                {d.width_ft != null && d.height_ft != null ? (
+                  <span>
+                    Front face {d.width_ft} ft × {d.height_ft} ft = {d.area_ft} ft²{d.masked_ft > 0 ? ` (−${d.masked_ft} ft² masks)` : ""}
+                    {d.depth_ft ? (
+                      <span data-testid={`contractor-dormer-cheeks-${i}`}>
+                        {" "}+ cheeks 2 × {d.height_ft}×{d.depth_ft} = {d.cheeks_ft} ft² (Total {Math.round(((d.area_ft || 0) + (d.cheeks_ft || 0)) * 10) / 10} ft²)
+                      </span>
+                    ) : (
+                      <span className="text-[#B45309] font-bold" data-testid={`contractor-dormer-depth-missing-${i}`}> · depth missing — cheeks 0</span>
+                    )}
+                  </span>
+                ) : "marked — no scale ref on photo"}
+                <label className="text-[10px] text-[var(--muted)]">depth (ft)</label>
+                <input
+                  key={`${i}-${d.depth_ft ?? ""}`}
+                  type="number" min="0" step="0.1" inputMode="decimal"
+                  defaultValue={d.depth_ft ?? ""}
+                  onBlur={(e) => { if (e.target.value !== String(d.depth_ft ?? "")) saveDormerDepth(i, e.target.value); }}
+                  className="w-14 text-[11px] border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5 font-mono-num"
+                  data-testid={`contractor-dormer-depth-input-${i}`}
+                />
               </span>
             </div>
           ))}
