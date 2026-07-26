@@ -5159,3 +5159,30 @@ Zero-typing goal: most shed/box dormers project ~1.5 ft.
 Verified live: new dormer shows cheeks immediately (no typing), typed 4
 overrides → 32.0 ft².
 STAMP: - 2026-07-26 11:15 UTC · 63c114c · CLEAN · [tests] · 1383 passed, 1 skipped, 3 warnings in 177.81s (0:02:57)
+
+## 2026-07-26 — GUIDED FLOW STEPS 6 (GABLES) + 7 (DORMERS) (ruled)
+Guided Photo Annotation walkthrough extended from 5 to 7 steps; both new
+steps optional (skippable), appended after Profile.
+- Step 6 · Gables (key "gable", MODE_GABLE): banner "Tap left eave → peak
+  → right eave to add a contractor-governed gable triangle. Drag points to
+  refine. Symmetric toggle and pitch available as before." · skip label
+  "Skip – no gables on this wall".
+- Step 7 · Dormers (key "dormer", MODE_DORMER): banner "Draw the dormer
+  quad (front face). Depth pre-fills with the smart default 1.5 ft (user
+  can change it). Cheeks calculate automatically." · skip label
+  "Skip – no dormers on this wall".
+- Step titles: Triangle icon "Gables", Square icon "Dormers"; 7 progress dots.
+- Gable/dormer side panels (rows, symmetric toggle, pitch select, depth
+  input) now render in guided mode too (removed !guidedFlow gate).
+- Step nav (Next/Back/Skip) clears in-progress gablePts/dormerPts taps.
+- GuidedCaptureWizard now re-feeds saved gables/dormers on annotator
+  re-open (props were missing — annotations survived save but vanished on
+  re-edit).
+- Bonus fix: annotator header hint had no MODE_GABLE/MODE_DORMER cases and
+  fell through to the mask-zone text; dedicated hints added.
+Verified live (playwright, EST-644081): Step 1 of 7 → skip through → Step
+6 GABLES banner+skip exact → Step 7 DORMERS banner+skip exact, "Save &
+Continue" chrome on last step; skipping step 7 saves + auto-advances the
+capture wizard (modal closes cleanly).
+STAMP: RECORDED: 2026-07-26 12:05 UTC · 41b711d · CLEAN
+RESULT: 1383 passed, 1 skipped, 3 warnings in 139.25s (0:02:19)
