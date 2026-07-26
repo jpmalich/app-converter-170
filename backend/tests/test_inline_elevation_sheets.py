@@ -113,3 +113,21 @@ class TestMountConditionLive:
         r = session.get(f"{API}/estimates/{CASILE}/elevation-sheet/front", timeout=60)
         assert r.status_code == 404, r.text
         assert "wall" in r.json()["detail"].lower()
+
+
+class TestRunCompletedRefresh:
+    """EST-986945 defect (ruled 2026-07-26): the panel probed once at
+    mount, so a run completing while the page was open left the empty
+    state stuck until a manual reload. NOT a schema mismatch — the
+    endpoint served the new-format run fine. The panel now re-probes on
+    the ai-run-completed window event AIMeasureButton dispatches."""
+
+    def test_panel_listens_for_run_completed(self):
+        assert 'window.addEventListener("ai-run-completed"' in PANEL
+        assert 'window.removeEventListener("ai-run-completed"' in PANEL
+        # scoped to this estimate — a run on another tab's estimate is ignored
+        assert "e.detail.estimateId !== est.id" in PANEL
+
+    def test_measure_button_dispatches_on_run_success(self):
+        aim = (FE / "components" / "estimate" / "AIMeasureButton.jsx").read_text()
+        assert 'new CustomEvent("ai-run-completed", { detail: { estimateId } })' in aim

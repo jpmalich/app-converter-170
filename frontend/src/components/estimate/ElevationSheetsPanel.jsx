@@ -22,7 +22,7 @@ export default function ElevationSheetsPanel({ est }) {
     let dead = false;
     setSheets(null);
     setActive(null);
-    Promise.all(
+    const probe = () => Promise.all(
       SHEETS.map((w) =>
         api.get(`/estimates/${est.id}/elevation-sheet/${w}`)
           .then(({ data }) => [w, data])
@@ -32,9 +32,21 @@ export default function ElevationSheetsPanel({ est }) {
       if (dead) return;
       const ok = Object.fromEntries(pairs.filter(([, d]) => d));
       setSheets(ok);
-      setActive(SHEETS.find((w) => ok[w]) || null);
+      setActive((cur) => (cur && ok[cur] ? cur : SHEETS.find((w) => ok[w]) || null));
     });
-    return () => { dead = true; };
+    probe();
+    // Re-probe when an AI run completes on THIS estimate — the mount-time
+    // probe alone left the empty state stuck until a manual page reload
+    // when the run finished while the page was open (EST-986945 defect).
+    const onRunCompleted = (e) => {
+      if (e?.detail?.estimateId && e.detail.estimateId !== est.id) return;
+      probe();
+    };
+    window.addEventListener("ai-run-completed", onRunCompleted);
+    return () => {
+      dead = true;
+      window.removeEventListener("ai-run-completed", onRunCompleted);
+    };
   }, [est.id]);
 
   const available = sheets ? SHEETS.filter((w) => sheets[w]) : [];

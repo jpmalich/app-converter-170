@@ -1978,6 +1978,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       }
       setPreview(data);
       setAnnotDirtySinceRun(false); // fresh run folded the annotations in
+      // Inline Elevation Sheets panel probes once on mount — tell it a
+      // run just completed so the sheets appear without a page reload.
+      window.dispatchEvent(new CustomEvent("ai-run-completed", { detail: { estimateId } }));
       setRunError(null);   // Iter 79j.30 — clear any prior failure banner
       setRunErrorMeta(null);
       // Iter 57: auto-apply Claude's per-photo elevation guesses to
