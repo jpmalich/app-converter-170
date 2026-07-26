@@ -350,6 +350,26 @@ _PROFILE_SIDE = {("front", "left"): "left", ("front", "right"): "right",
                  ("left", "front"): "right", ("left", "back"): "left",
                  ("right", "front"): "left", ("right", "back"): "right"}
 
+# VIEW-ORIENTATION PIN (ruled 2026-07-26, EST-986945 field-compare):
+# standard exterior projection — every sheet is the wall seen from
+# OUTSIDE; drawing-left (SVG x=0) is the named physical corner below.
+# The along_wall_ft datum (extraction prompt iter 79j.40 — left corner
+# as viewed from outside) IS this drawing-left corner, so opening and
+# dormer x-positions map 1:1 with NO per-view flip, and opposite views
+# mirror by construction. No renderer change may flip a view silently —
+# pinned in tests/test_view_orientation_pin.py; the on-sheet orientation
+# note cites this pin.
+_VIEW_DATUM = {
+    "front": {"drawing_left": "front-LEFT corner (left elevation adjoins)",
+              "drawing_right": "front-RIGHT corner (right elevation adjoins)"},
+    "back":  {"drawing_left": "back-RIGHT corner (right elevation adjoins)",
+              "drawing_right": "back-LEFT corner (left elevation adjoins)"},
+    "left":  {"drawing_left": "BACK corner",
+              "drawing_right": "FRONT corner"},
+    "right": {"drawing_left": "FRONT corner",
+              "drawing_right": "BACK corner"},
+}
+
 
 WINDOW_HEAD_ANCHOR_IN = 80.0
 # CONTRACTOR-SPEC (RATIFIED by Howard 2026-07-22, re-ratification to
@@ -569,6 +589,34 @@ def _contractor_dormer_band(run, raw, which, width_ft, height_ft, roofline_obj):
     }
 
 
+def _dormer_center_ladder(raw, run, face, width_ft):
+    """Best-known horizontal center for FACE's dormer band — the SAME
+    ladder the face-on band binds (contractor quad-through-anchor >
+    windows-centered norm > None). Returns (center_ft, width_ft, knee_ft,
+    is_contractor_quad) or None when no evidence-bound center exists."""
+    c_row = next((c for c in (run or {}).get("contractor_dormers") or []
+                  if _norm_face(c.get("elevation")) == face
+                  and c.get("width_ft") and c.get("height_ft")), None)
+    if c_row is not None and width_ft:
+        band = _contractor_dormer_band(run, raw, face, width_ft, None, None)
+        if band and "INDICATIVE" not in (band.get("center_tag") or ""):
+            return (band["center_ft"], float(c_row["width_ft"]),
+                    float(c_row["height_ft"]), True)
+    d = next((x for x in (raw.get("dormers") or [])
+              if _norm_face(x.get("face")) == face
+              and x.get("knee_wall_height_ft")), None)
+    if d is None:
+        return None
+    d_wins = [o for o in (raw.get("openings") or [])
+              if str(o.get("wall", "")).lower() == face and o.get("on_dormer")
+              and o.get("along_wall_ft") is not None]
+    if not d_wins:
+        return None
+    center = sum(float(o["along_wall_ft"]) for o in d_wins) / len(d_wins)
+    return (center, float(d.get("width_ft") or 0),
+            float(d["knee_wall_height_ft"]), False)
+
+
 def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
     """P5 DORMERS (C-5 ruling; v-pos + profile orientation AMENDED by
     Howard's field-compare FAIL ruling 2026-07-22). Face-on: the dormer
@@ -767,6 +815,46 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
         if face_on and not cd.get("source_photos"):
             cd["source_photos"] = face_on.get("source_photos") or []
         face_on = cd
+    # PAIRED-FEATURE MIRROR (ruled 2026-07-26, EST-986945 field-compare
+    # follow-up — horizontal axis): opposite side views MUST mirror. One
+    # physical dormer box = ONE horizontal span; twin bands previously
+    # bound centers PER VIEW (quad-through-anchor / windows-centered
+    # jitter), so the same dormer could draw on the SAME side of wall
+    # center in both opposite views — physically impossible. Paired twins
+    # now reconcile in the shared physical frame: this view's drawing-left
+    # corner is the opposite view's drawing-right corner (VIEW-ORIENTATION
+    # PIN), so center_here ↔ opp_width − center_opp, averaged — the exact
+    # horizontal mirror of the ruled vertical LEVEL reconciliation.
+    if face_on and width_ft:
+        opp = _OPPOSITE.get(which)
+        opp_width = next((w2.get("width_ft") for w2 in (raw.get("walls") or [])
+                          if str(w2.get("label", "")).lower() == opp), None)
+        there = _dormer_center_ladder(raw, run, opp, opp_width)
+        if there and opp_width:
+            c_there, w_there, k_there, q_there = there
+            q_here = bool(face_on.get("contractor_quad"))
+            w_tol = (CONTRACTOR_PAIR_TOL_W_FT if (q_here and q_there)
+                     else PAIRED_DORMER_TOL_FT)
+            if (abs(float(face_on["width_ft"]) - w_there) <= w_tol
+                    and abs(float(face_on["knee_ft"]) - k_there) <= PAIRED_DORMER_TOL_FT):
+                mirrored = float(opp_width) - float(c_there)
+                rec = (float(face_on["center_ft"]) + mirrored) / 2.0
+                half = float(face_on["width_ft"]) / 2.0
+                rec = round(min(max(rec, half),
+                                max(float(width_ft) - half, half)), 2)
+                if abs(rec - float(face_on["center_ft"])) > 0.05:
+                    old = face_on["center_ft"]
+                    face_on["center_ft"] = rec
+                    face_on["center_label"] = fmt_ftin(rec)
+                    face_on["offset_x_ft"] = round(rec - float(width_ft) / 2.0, 2)
+                    face_on["center_tag"] = (f"{face_on['center_tag']}"
+                                             " · PAIRED-RECONCILED MIRROR")
+                    face_on["center_note"] = (
+                        f"PAIRED-FEATURE MIRROR (ruled 2026-07-26): one physical "
+                        f"dormer — {which} read {fmt_ftin(old)} / {opp} read "
+                        f"{fmt_ftin(c_there)} (= {fmt_ftin(mirrored)} in this view) "
+                        f"→ one mirrored center {fmt_ftin(rec)}")
+                    face_on["basis"] += f" · {face_on['center_note']}"
     # ROOFLINE BOUNDS (ruled 2026-07-26): nothing draws through the roof edge
     _ridge = (roofline_obj or {}).get("ridge_ft")
     face_on = _clamp_band_to_roof(face_on, _ridge)
@@ -1672,6 +1760,10 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "convention": "viewed from exterior",
             "datum": ("along-wall datum: left corner as viewed from outside "
                       "(extraction prompt iter 79j.40)"),
+            "orientation_note": (
+                f"viewed from outside — drawing-left = "
+                f"{_VIEW_DATUM[which]['drawing_left']} · drawing-right = "
+                f"{_VIEW_DATUM[which]['drawing_right']} (VIEW-ORIENTATION PIN)"),
             "mirrored_segments": bool(which == "left" and stepped),
         },
         "deviation": deviation,

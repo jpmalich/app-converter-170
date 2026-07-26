@@ -387,6 +387,7 @@ export function SheetSvg({ data }) {
   if (dormer) {
     S.dormerTitle = `DORMER — ${dormer.width_label} W × ${dormer.knee_label} KNEE — ${dormer.width_tag}`;
     S.dormerSub = `BAND ${dormer.base_label}–${dormer.top_label} ABOVE GRADE — V-POS ${String(dormer.vpos_tag).toUpperCase()}`;
+    S.dormerMirror = dormer.center_note || "";
     S.dormerTop = dormer.top_note ? String(dormer.top_note).toUpperCase() : "";
   }
   S.widthTail = ` — ${W.width_tag} (${W.width_source})`;
@@ -423,7 +424,7 @@ export function SheetSvg({ data }) {
   S.schedHead = `OPENING SCHEDULE — ${sheetName}`;
   S.basisWalls = `GEOMETRY BASIS: ${data.geometry_basis.walls}`;
   S.scaleLine = `Scale ≈ ${scaleLabel} = 1'-0" (auto-fit)`;
-  S.viewLine = `${data.view.convention} · ${data.view.datum}`;
+  S.viewLine = data.view.orientation_note || `${data.view.convention} · ${data.view.datum}`;
   S.dateLine = `Pro-Quote · ${data.generated_date}`;
   S.gableCallout = gableFt > 0 ? `GABLE TRIANGLE ${fmtFt(gableFt)} RISE` : "";
   if (gableGoverns) {
@@ -466,6 +467,8 @@ export function SheetSvg({ data }) {
         {/* Header */}
         <text x="60" y="72" fontSize="26" fontWeight="bold" letterSpacing="3" fill={C.ink} data-testid="elevation-sheet-title">{S.title}</text>
         <text x="60" y="92" fontSize="11" fill={C.muted} letterSpacing="1">{S.headerLine}</text>
+        {/* VIEW-ORIENTATION PIN (ruled 2026-07-26) — every sheet names its axis */}
+        <text x="60" y="118" fontSize="8.5" fill={C.amber} letterSpacing="0.5" data-testid="elevation-orientation-note">{String(S.viewLine).toUpperCase()}</text>
         <text x="996" y="72" fontSize="11" textAnchor="end" fill={C.amber} fontWeight="bold" letterSpacing="1">NOT A SURVEY — SOURCE-TAGGED VERIFICATION SHEET</text>
         <text x="996" y="90" fontSize="10" textAnchor="end" fill={C.muted}>BLACK = GEOMETRY · COLOR = COMPONENT · CHIPS = SOURCE</text>
         <line x1="60" y1="104" x2="996" y2="104" stroke={C.ink} strokeWidth="1" />
@@ -641,6 +644,9 @@ export function SheetSvg({ data }) {
             <text x="64" y="266" fontSize="6.5" fill={C.amber}>{S.dormerSub}</text>
             {S.dormerTop && (
               <text x="64" y="276" fontSize="6.5" fill={C.trim} fontWeight="bold" data-testid="elevation-dormer-top-note">{S.dormerTop}</text>
+            )}
+            {S.dormerMirror && (
+              <text x="64" y={S.dormerTop ? 286 : 276} fontSize="6" fill={C.amber} data-testid="elevation-dormer-mirror-note">{S.dormerMirror}</text>
             )}
           </g>
         )}
