@@ -996,7 +996,11 @@ export default function PhotoAnnotateModal({
   // Render overlay markup
   const renderOverlay = () => {
     if (!photo) return null;
-    const hatchSize = Math.max(8, photo.width / 120);
+    const hatchSize = photo.width / 120;
+    // Display unit — all fixed-pixel marker constants scale with photo
+    // resolution so annotations render the SAME relative size on every
+    // photo (calibrated to the 2856px-wide front-photo standard).
+    const u = photo.width / 2856;
     return (
       <svg viewBox={`0 0 ${photo.width} ${photo.height}`} className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
@@ -1004,7 +1008,7 @@ export default function PhotoAnnotateModal({
             <pattern key={c.key} id={`annot-hatch-${c.key}`} patternUnits="userSpaceOnUse"
                      width={hatchSize} height={hatchSize} patternTransform="rotate(45)">
               <rect width={hatchSize} height={hatchSize} fill={c.color} fillOpacity={0.22} />
-              <line x1="0" y1="0" x2="0" y2={hatchSize} stroke={c.color} strokeWidth={Math.max(2, hatchSize / 4)} />
+              <line x1="0" y1="0" x2="0" y2={hatchSize} stroke={c.color} strokeWidth={hatchSize / 4} />
             </pattern>
           ))}
         </defs>
@@ -1015,11 +1019,14 @@ export default function PhotoAnnotateModal({
           const ys = z.points.map((p) => p.y);
           const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
           const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+          const fontPx = photo.width / 75;
+          const label = `NO SIDING · ${c.name}`;
+          const labelLen = label.length * fontPx * 0.62;
           return (
             <g key={z.id}>
-              <path d={d} fill={`url(#annot-hatch-${c.key})`} stroke={c.color} strokeWidth={Math.max(3, photo.width / 600)} />
-              <rect x={cx - 90} y={cy - 18} width={180} height={28} fill="#09090B" rx={3} />
-              <text x={cx} y={cy + 3} fill="#FFFFFF" fontSize={Math.max(13, photo.width / 75)} textAnchor="middle" fontWeight="bold">
+              <path d={d} fill={`url(#annot-hatch-${c.key})`} stroke={c.color} strokeWidth={photo.width / 600} />
+              <rect x={cx - labelLen / 2} y={cy - fontPx * 0.75} width={labelLen} height={fontPx * 1.4} fill="#09090B" rx={3 * u} />
+              <text x={cx} y={cy + fontPx * 0.35} fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
                 NO SIDING · {c.name}
               </text>
             </g>
@@ -1033,13 +1040,13 @@ export default function PhotoAnnotateModal({
           const ys = b.points.map((p) => p.y);
           const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
           const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-          const fontPx = Math.max(13, photo.width / 75);
+          const fontPx = photo.width / 75;
           const label = `${fam.label.toUpperCase()} · ${b.sqft} ft²`;
-          const labelLen = Math.max(140, label.length * fontPx * 0.55);
+          const labelLen = label.length * fontPx * 0.55;
           return (
             <g key={b.id}>
-              <path d={d} fill={fam.fg} fillOpacity={0.22} stroke={fam.fg} strokeWidth={Math.max(3, photo.width / 600)} />
-              <rect x={cx - labelLen / 2} y={cy - fontPx - 4} width={labelLen} height={fontPx + 8} fill={fam.fg} rx={3} />
+              <path d={d} fill={fam.fg} fillOpacity={0.22} stroke={fam.fg} strokeWidth={photo.width / 600} />
+              <rect x={cx - labelLen / 2} y={cy - fontPx - 4 * u} width={labelLen} height={fontPx + 8 * u} fill={fam.fg} rx={3 * u} />
               <text x={cx} y={cy + 2} fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
                 {label}
               </text>
@@ -1050,27 +1057,27 @@ export default function PhotoAnnotateModal({
         {localGables.map((g) => {
           const [L, P, R] = g.pts;
           const dims = gableNetArea(g, localZones, gableScaleInPerPx);
-          const fontPx = Math.max(13, photo.width / 75);
+          const fontPx = photo.width / 75;
           const cx = (L.x + P.x + R.x) / 3;
           const cy = (L.y + P.y + R.y) / 3;
           const warn = dims && pitchOutOfRange(dims.pitch);
           const label = dims && dims.netAreaFt !== undefined
             ? `GABLE · ${dims.baseFt.toFixed(1)}′ × ${dims.riseFt.toFixed(1)}′ · ${dims.netAreaFt.toFixed(0)} ft² · ${dims.pitch}/12`
             : `GABLE · ${dims ? `${dims.pitch}/12 · ` : ""}add a scale reference for dims`;
-          const labelLen = Math.max(150, label.length * fontPx * 0.55);
-          const r = Math.max(7, photo.width / 260);
+          const labelLen = label.length * fontPx * 0.55;
+          const r = photo.width / 260;
           return (
             <g key={g.id} data-testid={`gable-svg-${g.id}`}>
               <path d={`M${L.x},${L.y} L${P.x},${P.y} L${R.x},${R.y} Z`}
                     fill="#16A34A" fillOpacity={0.18}
-                    stroke="#16A34A" strokeWidth={Math.max(3, photo.width / 500)} />
+                    stroke="#16A34A" strokeWidth={photo.width / 500} />
               {[L, P, R].map((pt, i) => (
                 <circle key={i} cx={pt.x} cy={pt.y} r={r}
                         fill={i === 1 ? "#15803D" : "#16A34A"} stroke="#FFFFFF"
-                        strokeWidth={Math.max(2, photo.width / 900)} />
+                        strokeWidth={photo.width / 900} />
               ))}
-              <rect x={cx - labelLen / 2} y={cy - fontPx - 4} width={labelLen} height={fontPx + 8}
-                    fill={warn ? "#B45309" : "#16A34A"} rx={3} />
+              <rect x={cx - labelLen / 2} y={cy - fontPx - 4 * u} width={labelLen} height={fontPx + 8 * u}
+                    fill={warn ? "#B45309" : "#16A34A"} rx={3 * u} />
               <text x={cx} y={cy + 2} fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
                 {warn ? "⚠ " : ""}{label}
               </text>
@@ -1078,34 +1085,34 @@ export default function PhotoAnnotateModal({
           );
         })}
         {mode === MODE_GABLE && gablePts.map((pt, i) => (
-          <circle key={`gp-${i}`} cx={pt.x} cy={pt.y} r={Math.max(7, photo.width / 260)}
-                  fill="#16A34A" stroke="#FFFFFF" strokeWidth={2} />
+          <circle key={`gp-${i}`} cx={pt.x} cy={pt.y} r={photo.width / 260}
+                  fill="#16A34A" stroke="#FFFFFF" strokeWidth={photo.width / 900} />
         ))}
         {/* DORMERS (ruled 2026-07-25) — translucent measured face quads,
             dashed stroke to read apart from gable triangles */}
         {localDormers.map((d) => {
           const dims = dormerNetArea(d, localZones, gableScaleInPerPx);
-          const fontPx = Math.max(13, photo.width / 75);
+          const fontPx = photo.width / 75;
           const cx = d.pts.reduce((s, p) => s + p.x, 0) / 4;
           const cy = d.pts.reduce((s, p) => s + p.y, 0) / 4;
           const label = dims && dims.netAreaFt !== undefined
             ? `DORMER · ${dims.widthFt.toFixed(1)}′ × ${dims.heightFt.toFixed(1)}′ · ${dims.netAreaFt.toFixed(0)} ft²`
             : "DORMER · add a scale reference for dims";
-          const labelLen = Math.max(150, label.length * fontPx * 0.55);
-          const r = Math.max(7, photo.width / 260);
+          const labelLen = label.length * fontPx * 0.55;
+          const r = photo.width / 260;
           return (
             <g key={d.id} data-testid={`dormer-svg-${d.id}`}>
               <path d={`M${d.pts.map((p) => `${p.x},${p.y}`).join(" L")} Z`}
                     fill="#16A34A" fillOpacity={0.18}
-                    stroke="#16A34A" strokeWidth={Math.max(3, photo.width / 500)}
-                    strokeDasharray={`${Math.max(8, photo.width / 200)} ${Math.max(5, photo.width / 320)}`} />
+                    stroke="#16A34A" strokeWidth={photo.width / 500}
+                    strokeDasharray={`${photo.width / 200} ${photo.width / 320}`} />
               {d.pts.map((pt, i) => (
                 <circle key={i} cx={pt.x} cy={pt.y} r={r}
                         fill="#16A34A" stroke="#FFFFFF"
-                        strokeWidth={Math.max(2, photo.width / 900)} />
+                        strokeWidth={photo.width / 900} />
               ))}
-              <rect x={cx - labelLen / 2} y={cy - fontPx - 4} width={labelLen} height={fontPx + 8}
-                    fill="#16A34A" rx={3} />
+              <rect x={cx - labelLen / 2} y={cy - fontPx - 4 * u} width={labelLen} height={fontPx + 8 * u}
+                    fill="#16A34A" rx={3 * u} />
               <text x={cx} y={cy + 2} fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
                 {label}
               </text>
@@ -1113,43 +1120,53 @@ export default function PhotoAnnotateModal({
           );
         })}
         {mode === MODE_DORMER && dormerPts.map((pt, i) => (
-          <circle key={`dp-${i}`} cx={pt.x} cy={pt.y} r={Math.max(7, photo.width / 260)}
-                  fill="#16A34A" stroke="#FFFFFF" strokeWidth={2} />
+          <circle key={`dp-${i}`} cx={pt.x} cy={pt.y} r={photo.width / 260}
+                  fill="#16A34A" stroke="#FFFFFF" strokeWidth={photo.width / 900} />
         ))}
-        {localRef && (
+        {localRef && (() => {
+          const fontPx = photo.width / 65;
+          const label = `WALL REF = ${localRef.inches}"`;
+          const w = label.length * fontPx * 0.62;
+          const mx = (localRef.p1.x + localRef.p2.x) / 2;
+          const my = (localRef.p1.y + localRef.p2.y) / 2;
+          return (
           <g>
             <line x1={localRef.p1.x} y1={localRef.p1.y} x2={localRef.p2.x} y2={localRef.p2.y}
-                  stroke="#DC2626" strokeWidth={Math.max(4, photo.width / 500)} />
-            <circle cx={localRef.p1.x} cy={localRef.p1.y} r={Math.max(6, photo.width / 300)} fill="#DC2626" />
-            <circle cx={localRef.p2.x} cy={localRef.p2.y} r={Math.max(6, photo.width / 300)} fill="#DC2626" />
-            <rect x={(localRef.p1.x + localRef.p2.x) / 2 - 90}
-                  y={(localRef.p1.y + localRef.p2.y) / 2 - 20}
-                  width={180} height={32} fill="#DC2626" rx={3} />
-            <text x={(localRef.p1.x + localRef.p2.x) / 2}
-                  y={(localRef.p1.y + localRef.p2.y) / 2 + 5}
-                  fill="#FFFFFF" fontSize={Math.max(15, photo.width / 65)}
+                  stroke="#DC2626" strokeWidth={photo.width / 500} />
+            <circle cx={localRef.p1.x} cy={localRef.p1.y} r={photo.width / 300} fill="#DC2626" />
+            <circle cx={localRef.p2.x} cy={localRef.p2.y} r={photo.width / 300} fill="#DC2626" />
+            <rect x={mx - w / 2} y={my - fontPx * 1.1}
+                  width={w} height={fontPx * 1.5} fill="#DC2626" rx={3 * u} />
+            <text x={mx} y={my + fontPx * 0.15}
+                  fill="#FFFFFF" fontSize={fontPx}
                   textAnchor="middle" fontWeight="bold">
               WALL REF = {localRef.inches}&quot;
             </text>
           </g>
-        )}
-        {localWindowRef && (
+          );
+        })()}
+        {localWindowRef && (() => {
+          const fontPx = photo.width / 65;
+          const label = `WIN REF = ${localWindowRef.inches}"`;
+          const w = label.length * fontPx * 0.62;
+          const mx = (localWindowRef.p1.x + localWindowRef.p2.x) / 2;
+          const my = (localWindowRef.p1.y + localWindowRef.p2.y) / 2;
+          return (
           <g>
             <line x1={localWindowRef.p1.x} y1={localWindowRef.p1.y} x2={localWindowRef.p2.x} y2={localWindowRef.p2.y}
-                  stroke="#2563EB" strokeWidth={Math.max(4, photo.width / 500)} />
-            <circle cx={localWindowRef.p1.x} cy={localWindowRef.p1.y} r={Math.max(6, photo.width / 300)} fill="#2563EB" />
-            <circle cx={localWindowRef.p2.x} cy={localWindowRef.p2.y} r={Math.max(6, photo.width / 300)} fill="#2563EB" />
-            <rect x={(localWindowRef.p1.x + localWindowRef.p2.x) / 2 - 100}
-                  y={(localWindowRef.p1.y + localWindowRef.p2.y) / 2 - 20}
-                  width={200} height={32} fill="#2563EB" rx={3} />
-            <text x={(localWindowRef.p1.x + localWindowRef.p2.x) / 2}
-                  y={(localWindowRef.p1.y + localWindowRef.p2.y) / 2 + 5}
-                  fill="#FFFFFF" fontSize={Math.max(15, photo.width / 65)}
+                  stroke="#2563EB" strokeWidth={photo.width / 500} />
+            <circle cx={localWindowRef.p1.x} cy={localWindowRef.p1.y} r={photo.width / 300} fill="#2563EB" />
+            <circle cx={localWindowRef.p2.x} cy={localWindowRef.p2.y} r={photo.width / 300} fill="#2563EB" />
+            <rect x={mx - w / 2} y={my - fontPx * 1.1}
+                  width={w} height={fontPx * 1.5} fill="#2563EB" rx={3 * u} />
+            <text x={mx} y={my + fontPx * 0.15}
+                  fill="#FFFFFF" fontSize={fontPx}
                   textAnchor="middle" fontWeight="bold">
               WIN REF = {localWindowRef.inches}&quot;
             </text>
           </g>
-        )}
+          );
+        })()}
         {/* Iter 57k — Rubber-band preview line + live angle readout
             while the contractor is placing the second tap. Color-coded
             to the mode (red=wall, blue=window). Shows angle off the
@@ -1166,22 +1183,22 @@ export default function PhotoAnnotateModal({
           else if (angle >= 90 - snapTol) { drawP2 = { x: pending.x, y: hoverPoint.y }; snapTag = "VERTICAL"; }
           const mx = (pending.x + drawP2.x) / 2;
           const my = (pending.y + drawP2.y) / 2;
-          const fontPx = Math.max(13, photo.width / 80);
+          const fontPx = photo.width / 80;
           const label = snapTag
             ? `🔒 SNAP ${snapTag}`
             : `${angle.toFixed(1)}° off ${angle < 45 ? "H" : "V"}`;
-          const labelLen = Math.max(110, label.length * fontPx * 0.55);
+          const labelLen = label.length * fontPx * 0.55;
           return (
             <g>
               <line x1={pending.x} y1={pending.y} x2={drawP2.x} y2={drawP2.y}
-                    stroke={color} strokeWidth={Math.max(3, photo.width / 700)}
-                    strokeDasharray="10 6" opacity={0.85} />
-              <circle cx={drawP2.x} cy={drawP2.y} r={Math.max(5, photo.width / 350)}
-                      fill="none" stroke={color} strokeWidth={Math.max(2, photo.width / 800)} />
-              <rect x={mx - labelLen / 2} y={my - fontPx - 12}
-                    width={labelLen} height={fontPx + 8}
-                    fill={snapTag ? "#10B981" : "#09090B"} opacity={0.92} rx={3} />
-              <text x={mx} y={my - 6}
+                    stroke={color} strokeWidth={photo.width / 700}
+                    strokeDasharray={`${10 * u} ${6 * u}`} opacity={0.85} />
+              <circle cx={drawP2.x} cy={drawP2.y} r={photo.width / 350}
+                      fill="none" stroke={color} strokeWidth={photo.width / 800} />
+              <rect x={mx - labelLen / 2} y={my - fontPx - 12 * u}
+                    width={labelLen} height={fontPx + 8 * u}
+                    fill={snapTag ? "#10B981" : "#09090B"} opacity={0.92} rx={3 * u} />
+              <text x={mx} y={my - 6 * u}
                     fill="#FFFFFF" fontSize={fontPx}
                     textAnchor="middle" fontWeight="bold">
                 {label}
@@ -1193,21 +1210,21 @@ export default function PhotoAnnotateModal({
           // New format: rectangle {x1,y1,x2,y2} from two taps. Legacy:
           // single point {x,y} from the old single-tap pin — keep
           // rendering a small ring so old saved sessions still display.
-          const lw = Math.max(4, photo.width / 240);
+          const lw = photo.width / 240;
           if ("x1" in localTarget) {
             const { x1, y1, x2, y2 } = localTarget;
             const w = x2 - x1;
             const h = y2 - y1;
             const cx = (x1 + x2) / 2;
-            const fontPx = Math.max(15, photo.width / 65);
+            const fontPx = photo.width / 65;
             return (
               <g>
                 <rect x={x1} y={y1} width={w} height={h}
                       fill="rgba(16, 185, 129, 0.18)"
                       stroke="#10B981" strokeWidth={lw} />
-                <rect x={cx - 110} y={y1 - fontPx - 8}
-                      width={220} height={32} fill="#10B981" rx={3} />
-                <text x={cx} y={y1 - 12}
+                <rect x={cx - fontPx * 4.1} y={y1 - fontPx * 1.9}
+                      width={fontPx * 8.2} height={fontPx * 1.5} fill="#10B981" rx={3 * u} />
+                <text x={cx} y={y1 - fontPx * 0.75}
                       fill="#FFFFFF" fontSize={fontPx}
                       textAnchor="middle" fontWeight="bold">
                   TARGET HOUSE
@@ -1216,16 +1233,16 @@ export default function PhotoAnnotateModal({
             );
           }
           // Legacy small-ring fallback for any sessions saved pre-fix.
-          const ringR = Math.max(20, photo.width / 50);
+          const ringR = photo.width / 50;
           return (
             <g>
               <circle cx={localTarget.x} cy={localTarget.y} r={ringR}
                       fill="none" stroke="#10B981" strokeWidth={lw} />
-              <circle cx={localTarget.x} cy={localTarget.y} r={Math.max(4, photo.width / 350)} fill="#10B981" />
-              <rect x={localTarget.x - 110} y={localTarget.y - ringR - 36}
-                    width={220} height={32} fill="#10B981" rx={3} />
-              <text x={localTarget.x} y={localTarget.y - ringR - 14}
-                    fill="#FFFFFF" fontSize={Math.max(15, photo.width / 65)}
+              <circle cx={localTarget.x} cy={localTarget.y} r={photo.width / 350} fill="#10B981" />
+              <rect x={localTarget.x - (photo.width / 65) * 4.1} y={localTarget.y - ringR - (photo.width / 65) * 2.4}
+                    width={(photo.width / 65) * 8.2} height={(photo.width / 65) * 1.5} fill="#10B981" rx={3 * u} />
+              <text x={localTarget.x} y={localTarget.y - ringR - (photo.width / 65) * 1.25}
+                    fill="#FFFFFF" fontSize={photo.width / 65}
                     textAnchor="middle" fontWeight="bold">
                 TARGET HOUSE
               </text>
@@ -1238,11 +1255,11 @@ export default function PhotoAnnotateModal({
           const d = polyPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
           // Iter 79j.4 — snap-close visual cue on the first vertex
           const canSnap = polyPoints.length >= 3 && hoverPoint && _isNearFirstPoint(hoverPoint, polyPoints[0]);
-          const r0 = Math.max(5, photo.width / 350);
-          const fontPx = Math.max(13, photo.width / 75);
+          const r0 = photo.width / 350;
+          const fontPx = photo.width / 75;
           return (
             <g>
-              <path d={d} fill="none" stroke={c.color} strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="8 4" />
+              <path d={d} fill="none" stroke={c.color} strokeWidth={photo.width / 600} strokeDasharray={`${8 * u} ${4 * u}`} />
               {polyPoints.map((p, i) => (
                 <circle key={i} cx={p.x} cy={p.y} r={i === 0 && polyPoints.length >= 3 ? r0 * 1.4 : r0} fill={c.color} />
               ))}
@@ -1250,14 +1267,14 @@ export default function PhotoAnnotateModal({
                 <circle cx={polyPoints[0].x} cy={polyPoints[0].y}
                         r={r0 * (canSnap ? 3.2 : 2.4)}
                         fill="none" stroke={c.color}
-                        strokeWidth={Math.max(2, photo.width / 800)}
-                        strokeDasharray={canSnap ? "none" : "4 3"}
+                        strokeWidth={photo.width / 800}
+                        strokeDasharray={canSnap ? "none" : `${4 * u} ${3 * u}`}
                         opacity={canSnap ? 1 : 0.6} />
               )}
               {canSnap && (
                 <g>
-                  <rect x={polyPoints[0].x + r0 * 4} y={polyPoints[0].y - fontPx / 2 - 6}
-                        width={fontPx * 7.5} height={fontPx + 12} fill={c.color} rx={3} />
+                  <rect x={polyPoints[0].x + r0 * 4} y={polyPoints[0].y - fontPx / 2 - 6 * u}
+                        width={fontPx * 7.5} height={fontPx + 12 * u} fill={c.color} rx={3 * u} />
                   <text x={polyPoints[0].x + r0 * 4 + fontPx * 0.4}
                         y={polyPoints[0].y + fontPx / 2 - 1}
                         fill="#FFFFFF" fontSize={fontPx} fontWeight="bold">
@@ -1279,15 +1296,15 @@ export default function PhotoAnnotateModal({
             { x: x1, y: y1 }, { x: x2, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 },
           ];
           const liveSqft = _computeProfileSqft(previewPts, localRef);
-          const fontPx = Math.max(13, photo.width / 75);
+          const fontPx = photo.width / 75;
           const label = `~${liveSqft} ft²`;
           return (
             <g>
               <rect x={x1} y={y1} width={x2 - x1} height={y2 - y1}
                     fill={fam.fg} fillOpacity={0.18} stroke={fam.fg}
-                    strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="8 4" />
-              <rect x={(x1 + x2) / 2 - 70} y={(y1 + y2) / 2 - fontPx - 4}
-                    width={140} height={fontPx + 8} fill={fam.fg} rx={3} />
+                    strokeWidth={photo.width / 600} strokeDasharray={`${8 * u} ${4 * u}`} />
+              <rect x={(x1 + x2) / 2 - label.length * fontPx * 0.3} y={(y1 + y2) / 2 - fontPx - 4 * u}
+                    width={label.length * fontPx * 0.6} height={fontPx + 8 * u} fill={fam.fg} rx={3 * u} />
               <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 + 2}
                     fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
                 {label}
@@ -1303,13 +1320,13 @@ export default function PhotoAnnotateModal({
             : polyPoints;
           const d = previewPts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
           const live = polyPoints.length >= 2 ? _computeProfileSqft(previewPts, localRef) : null;
-          const fontPx = Math.max(13, photo.width / 75);
+          const fontPx = photo.width / 75;
           // Iter 79j.4 — snap-close visual cue
           const canSnap = polyPoints.length >= 3 && hoverPoint && _isNearFirstPoint(hoverPoint, polyPoints[0]);
-          const r0 = Math.max(5, photo.width / 350);
+          const r0 = photo.width / 350;
           return (
             <g>
-              <path d={d} fill="none" stroke={fam.fg} strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="8 4" />
+              <path d={d} fill="none" stroke={fam.fg} strokeWidth={photo.width / 600} strokeDasharray={`${8 * u} ${4 * u}`} />
               {polyPoints.map((p, i) => (
                 <circle key={i} cx={p.x} cy={p.y} r={i === 0 && polyPoints.length >= 3 ? r0 * 1.4 : r0} fill={fam.fg} />
               ))}
@@ -1317,14 +1334,14 @@ export default function PhotoAnnotateModal({
                 <circle cx={polyPoints[0].x} cy={polyPoints[0].y}
                         r={r0 * (canSnap ? 3.2 : 2.4)}
                         fill="none" stroke={fam.fg}
-                        strokeWidth={Math.max(2, photo.width / 800)}
-                        strokeDasharray={canSnap ? "none" : "4 3"}
+                        strokeWidth={photo.width / 800}
+                        strokeDasharray={canSnap ? "none" : `${4 * u} ${3 * u}`}
                         opacity={canSnap ? 1 : 0.6} />
               )}
               {canSnap && (
                 <g>
-                  <rect x={polyPoints[0].x + r0 * 4} y={polyPoints[0].y - fontPx / 2 - 6}
-                        width={fontPx * 7.5} height={fontPx + 12} fill={fam.fg} rx={3} />
+                  <rect x={polyPoints[0].x + r0 * 4} y={polyPoints[0].y - fontPx / 2 - 6 * u}
+                        width={fontPx * 7.5} height={fontPx + 12 * u} fill={fam.fg} rx={3 * u} />
                   <text x={polyPoints[0].x + r0 * 4 + fontPx * 0.4}
                         y={polyPoints[0].y + fontPx / 2 - 1}
                         fill="#FFFFFF" fontSize={fontPx} fontWeight="bold">
@@ -1334,9 +1351,9 @@ export default function PhotoAnnotateModal({
               )}
               {live != null && polyPoints.length >= 2 && (
                 <>
-                  <rect x={polyPoints[0].x - 70} y={polyPoints[0].y - fontPx - 14}
-                        width={140} height={fontPx + 8} fill={fam.fg} rx={3} />
-                  <text x={polyPoints[0].x} y={polyPoints[0].y - 8}
+                  <rect x={polyPoints[0].x - fontPx * 2.7} y={polyPoints[0].y - fontPx - 14 * u}
+                        width={fontPx * 5.4} height={fontPx + 8 * u} fill={fam.fg} rx={3 * u} />
+                  <text x={polyPoints[0].x} y={polyPoints[0].y - 8 * u}
                         fill="#FFFFFF" fontSize={fontPx} textAnchor="middle" fontWeight="bold">
                     ~{live} ft²
                   </text>
@@ -1349,14 +1366,14 @@ export default function PhotoAnnotateModal({
             badge + W×H label. Drawn on top of zones so contractors can
             see windows that overlap a brick mask. */}
         {localWindows.map((w) => {
-          const r = Math.max(8, photo.width / 200);
-          const fontPx = Math.max(11, photo.width / 95);
+          const r = photo.width / 200;
+          const fontPx = photo.width / 95;
           const abbr = STYLE_ABBR[w.style] || "?";
           return (
             <g key={w.id}>
-              <circle cx={w.x} cy={w.y} r={r} fill="#FBBF24" stroke="#92400E" strokeWidth={Math.max(2, photo.width / 700)} />
-              <rect x={w.x + r + 4} y={w.y - fontPx / 2 - 4} width={Math.max(40, fontPx * 3)} height={fontPx + 8} fill="#92400E" rx={2} />
-              <text x={w.x + r + 8} y={w.y + fontPx / 2 - 2} fill="#FFFFFF" fontSize={fontPx} fontWeight="bold">
+              <circle cx={w.x} cy={w.y} r={r} fill="#FBBF24" stroke="#92400E" strokeWidth={photo.width / 700} />
+              <rect x={w.x + r + 4 * u} y={w.y - fontPx / 2 - 4 * u} width={fontPx * 3} height={fontPx + 8 * u} fill="#92400E" rx={2 * u} />
+              <text x={w.x + r + 8 * u} y={w.y + fontPx / 2 - 2 * u} fill="#FFFFFF" fontSize={fontPx} fontWeight="bold">
                 {abbr}
               </text>
             </g>
@@ -1365,13 +1382,13 @@ export default function PhotoAnnotateModal({
         {/* In-progress window pin (before picker confirm) */}
         {mode === MODE_WINDOW && windowPending && (
           <circle cx={windowPending.x} cy={windowPending.y}
-                  r={Math.max(10, photo.width / 180)}
-                  fill="none" stroke="#FBBF24" strokeWidth={Math.max(3, photo.width / 600)} strokeDasharray="6 4" />
+                  r={photo.width / 180}
+                  fill="none" stroke="#FBBF24" strokeWidth={photo.width / 600} strokeDasharray={`${6 * u} ${4 * u}`} />
         )}
         {pending && (
-          <circle cx={pending.x} cy={pending.y} r={Math.max(6, photo.width / 300)}
+          <circle cx={pending.x} cy={pending.y} r={photo.width / 300}
                   fill={mode === MODE_SCALE_WINDOW ? "#2563EB" : "#DC2626"}
-                  stroke="#FFFFFF" strokeWidth={Math.max(2, photo.width / 700)} />
+                  stroke="#FFFFFF" strokeWidth={photo.width / 700} />
         )}
       </svg>
     );

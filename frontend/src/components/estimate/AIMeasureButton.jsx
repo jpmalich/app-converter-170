@@ -112,6 +112,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Refine on Photo now opens the SAME PhotoAnnotateModal in guided
   // 7-step mode (one annotation system — no separate tap-measure UI).
   const [annotateGuided, setAnnotateGuided] = useState(false);
+  // Amber nudge — annotations edited after the last run only fold into
+  // the measurements on Re-run. Cleared on run success / Start Over.
+  const [annotDirtySinceRun, setAnnotDirtySinceRun] = useState(false);
   // Iter 78z — Profile annotator modal (box-tag Shake / B&B regions).
   const [profileAnnotatorOpen, setProfileAnnotatorOpen] = useState(false);
   const [savedProfileAnnotations, setSavedProfileAnnotations] = useState({});
@@ -1049,6 +1052,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     setSidingPct("");
     setWallsDirty(false);
     setPhotoAnnotations({});
+    setAnnotDirtySinceRun(false);
     delete window.__aiMeasurePendingSession;
     if (estimateId) {
       try {
@@ -1220,6 +1224,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       });
       return next;
     });
+    if (ok.some((u) => u.annotations)) setAnnotDirtySinceRun(true);
     // Iter 79j.18 — CRITICAL fix: persist profile boxes from the
     // Guided Capture Wizard to the estimate's `profile_annotations`
     // in Mongo. Previously the wizard's `handleAnnotateSave` only
@@ -1972,6 +1977,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         setWallsDirty(false);
       }
       setPreview(data);
+      setAnnotDirtySinceRun(false); // fresh run folded the annotations in
       setRunError(null);   // Iter 79j.30 — clear any prior failure banner
       setRunErrorMeta(null);
       // Iter 57: auto-apply Claude's per-photo elevation guesses to
@@ -4686,6 +4692,19 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     >
                       {showAdvanced ? "Hide" : "Advanced"}
                     </button>
+                    {/* Amber nudge — Refine/annotate edits only reach the
+                        measurements on Re-run. Shown until the next
+                        successful run folds them in. */}
+                    {annotDirtySinceRun && (
+                      <span
+                        className="px-2.5 py-2 bg-[#FEF3C7] border border-[#F59E0B] text-[var(--warning-text)] text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5"
+                        data-testid="ai-measure-annot-dirty-chip"
+                        title="You edited photo annotations after the last run. Click Re-run so the measurements fold them in."
+                      >
+                        <AlertTriangle aria-hidden="true" className="w-3.5 h-3.5" />
+                        Annotations changed — Re-run to fold them in
+                      </span>
+                    )}
                     {/* Iter 79j.16 — Re-run button so contractors can
                         A/B a different model on the SAME photos without
                         hitting Start Over. Uses the current model in
@@ -4985,6 +5004,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             });
           }
           toast.success("Annotations saved · Claude will see them when you Run AI Measure");
+          setAnnotDirtySinceRun(true);
         }}
         onOpenProfileAnnotator={
           estimateId
