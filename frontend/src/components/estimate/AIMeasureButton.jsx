@@ -12,7 +12,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug, Lightbulb, ScanSearch, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import PhotoMeasureButton from "@/components/estimate/PhotoMeasureButton";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
 import {
   inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges, dormerNetArea,
@@ -110,6 +109,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // before sending to Claude, and described as text alongside.
   const [photoAnnotations, setPhotoAnnotations] = useState({});
   const [annotateOpenFor, setAnnotateOpenFor] = useState(null); // filename or null
+  // Refine on Photo now opens the SAME PhotoAnnotateModal in guided
+  // 7-step mode (one annotation system — no separate tap-measure UI).
+  const [annotateGuided, setAnnotateGuided] = useState(false);
   // Iter 78z — Profile annotator modal (box-tag Shake / B&B regions).
   const [profileAnnotatorOpen, setProfileAnnotatorOpen] = useState(false);
   const [savedProfileAnnotations, setSavedProfileAnnotations] = useState({});
@@ -255,27 +257,6 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Tracks whether walls were edited so apply() refreshes lines via
   // /measure/map (otherwise the pre-rolled lines are reused).
   const [wallsDirty, setWallsDirty] = useState(false);
-  // Iter 55: how to merge the values coming out of Refine on Photo into
-  // the AI's aggregate. Howard's mental model is "I'm tapping each
-  // elevation in turn; the LFs and counts should ADD together across
-  // refines." Previously the merge was a hard overwrite which silently
-  // downgraded the multi-photo aggregate (136 LF eaves → 58 LF, 11
-  // windows → 3) whenever the contractor refined a single elevation.
-  //   "add"     — running total grows with each refine (default)
-  //   "max"     — take the larger of refined vs current (safe baseline)
-  //   "replace" — refined wins (legacy Iter 39 behavior)
-  // Stored in localStorage so the contractor's pick sticks across jobs.
-  const [refineMergeMode, setRefineMergeMode] = useState(() => {
-    try {
-      const v = localStorage.getItem("aiMeasureRefineMergeMode");
-      return v === "max" || v === "replace" || v === "add" ? v : "max";
-    } catch {
-      return "max";
-    }
-  });
-  useEffect(() => {
-    try { localStorage.setItem("aiMeasureRefineMergeMode", refineMergeMode); } catch { /* ignore */ }
-  }, [refineMergeMode]);
   // Iter 57: hide Refine on Photo behind an Advanced Tools toggle.
   // Now that pre-AI annotations (Iter 56) cover most use cases, Refine
   // on Photo is the rare-case escape hatch — keep it accessible but out
@@ -1228,6 +1209,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           if (annotations.targetPin !== undefined) merged.targetPin = annotations.targetPin;
           if (annotations.windows !== undefined) merged.windows = annotations.windows;
           if (annotations.profileBoxes !== undefined) merged.profileBoxes = annotations.profileBoxes;
+          // One annotation system — wizard-drawn gables/dormers (steps
+          // 6+7) must land in the same photoAnnotations store so they
+          // reach the AI run AND stay editable via Refine on Photo.
+          if (annotations.gables !== undefined) merged.gables = annotations.gables;
+          if (annotations.dormers !== undefined) merged.dormers = annotations.dormers;
+          if (annotations.imageDims !== undefined) merged.imageDims = annotations.imageDims;
         }
         next[name] = merged;
       });
@@ -4721,46 +4708,28 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           : "Running…")
                         : "Re-run"}
                     </button>
-                    {/* Merge-mode picker — controls how Refine on Photo
-                        deltas roll into the AI's aggregate measurements.
-                        Add accumulates LFs/counts across per-elevation
-                        refines; Max keeps the larger of the two; Replace
-                        is the legacy overwrite. */}
-                    {showAdvanced && (
-                    <div className="flex items-center gap-1 mr-1 border border-[var(--border)] rounded-sm overflow-hidden" data-testid="refine-merge-mode">
-                      <span className="px-2 py-2 text-[9px] uppercase tracking-wider text-[var(--muted)] font-bold bg-[var(--surface-muted)]" title="How to merge values from Refine on Photo into the AI aggregate">
-                        Refine merge
-                      </span>
-                      {[
-                        { key: "add",     label: "+ Add",   hint: "Refines ADD to the aggregate — best when measuring each elevation separately" },
-                        { key: "max",     label: "Max",    hint: "Keep the larger of the AI value vs the refined value — never lowers your totals" },
-                        { key: "replace", label: "Replace", hint: "Refined value wins — overwrites the AI aggregate (legacy behavior)" },
-                      ].map((m) => (
-                        <button
-                          key={m.key}
-                          type="button"
-                          onClick={() => setRefineMergeMode(m.key)}
-                          className={`px-2 py-2 text-[10px] font-bold uppercase tracking-wider transition ${
-                            refineMergeMode === m.key
-                              ? "bg-[#0EA5E9] text-white"
-                              : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"
-                          }`}
-                          data-testid={`refine-merge-${m.key}`}
-                          title={m.hint}
-                        >
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-                    )}
+                    {/* Refine on Photo — opens the SAME guided 7-step
+                        annotation flow (PhotoAnnotateModal) on one of
+                        the run's photos. One annotation system: same
+                        data, same tools (scale, windows, masks,
+                        profiles, gables, dormers) as the capture path.
+                        Edits feed the identical photoAnnotations store
+                        Claude reads on Re-run. */}
                     {showAdvanced && (
                     <button
                       type="button"
-                      onClick={() => setRefineOpen(true)}
-                      disabled={busy}
+                      onClick={() => {
+                        if (photoUrls.length === 1) {
+                          setAnnotateGuided(true);
+                          setAnnotateOpenFor(photoUrls[0]);
+                        } else {
+                          setRefineOpen(true);
+                        }
+                      }}
+                      disabled={busy || photoUrls.length === 0}
                       className="px-3 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                       data-testid="ai-measure-refine-btn"
-                      title="Pick one of your photos and tap-measure. Merge mode controls whether refines ADD, take MAX, or REPLACE the AI aggregate."
+                      title="Pick one of your photos and walk the same guided 7-step annotation flow (scale, windows, masks, profiles, gables, dormers). Re-run to fold the edits into the measurements."
                     >
                       <Ruler className="w-3.5 h-3.5" />
                       Refine on Photo
@@ -4877,7 +4846,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           rendered image in runMeasure() and described as text alongside. */}
       <PhotoAnnotateModal
         open={!!annotateOpenFor}
-        onClose={() => setAnnotateOpenFor(null)}
+        onClose={() => { setAnnotateOpenFor(null); setAnnotateGuided(false); }}
+        guidedFlow={annotateGuided ? {
+          // Refine path — same 7-step guided walkthrough as capture.
+          // Last-step Save fires onSave (below) then onClose.
+          onExit: () => setAnnotateGuided(false),
+        } : null}
         photoUrl={annotateOpenFor ? `/api/uploads/${annotateOpenFor}` : null}
         elevation={
           annotateOpenFor
@@ -5024,78 +4998,53 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
             : undefined
         }
       />
-      {/* Child modal: tap-on-photo refinement. Overrides any subset of
-          the AI measurements with hand-measured values. The AI photos
-          are handed down via prefillUrls (session-persistent server
-          URLs) so the user can skip the re-upload step. */}
-      <PhotoMeasureButton
-        hideTrigger
-        externalOpen={refineOpen}
-        onExternalClose={() => setRefineOpen(false)}
-        prefillUrls={photoUrls}
-        onApply={async ({ measurements: refined }) => {
-          // Iter 55: Merge ONLY the linear / count fields. The
-          // `siding_sqft` from PhotoMeasureButton is partial (only the
-          // walls the contractor tapped this session) and would clobber
-          // the AI's full-house geometry. Siding stays anchored to the
-          // editable Wall Breakdown table.
-          //
-          // The merge MODE (add / max / replace) lets the contractor pick
-          // semantics. Default = "add" so refining each elevation in turn
-          // accumulates LFs and counts naturally. Mode is selectable
-          // inside the Refine on Photo modal header.
-          const MERGEABLE_KEYS = new Set([
-            "eaves_lf",
-            "rakes_lf",
-            "starter_lf",
-            "outside_corner_lf",
-            "inside_corner_lf",
-            "opening_perimeter_lf",
-            "opening_count",
-            "window_count",
-            "entry_door_count",
-            "patio_door_count",
-            "garage_door_count",
-          ]);
-          const mergeOne = (prev, refinedVal) => {
-            const p = Number(prev) || 0;
-            const r = Number(refinedVal) || 0;
-            if (refineMergeMode === "add") return p + r;
-            if (refineMergeMode === "max") return Math.max(p, r);
-            return r; // "replace"
-          };
-          const diffs = []; // [{ key, prev, refined, after }]
-          setPreview((prev) => {
-            if (!prev) return prev;
-            const next = { ...prev.measurements };
-            for (const [k, v] of Object.entries(refined || {})) {
-              if (!MERGEABLE_KEYS.has(k)) continue;
-              const num = Number(v) || 0;
-              if (num <= 0) continue;
-              const before = Number(next[k] || 0);
-              const after = mergeOne(before, num);
-              if (after !== before) {
-                next[k] = after;
-                diffs.push({ key: k, prev: before, refined: num, after });
-              }
-            }
-            return { ...prev, measurements: next };
-          });
-          setWallsDirty(true);
-          setRefineOpen(false);
-          // Surface the actual deltas so the contractor can see what
-          // moved. e.g. "+ eaves 40 → 176, + windows 3 → 14" on Add mode.
-          if (diffs.length) {
-            const sample = diffs.slice(0, 3).map((d) =>
-              `${d.key.replace(/_/g, " ")} ${d.prev}→${d.after}`
-            ).join(", ");
-            const more = diffs.length > 3 ? ` (+${diffs.length - 3} more)` : "";
-            toast.success(`Refined (${refineMergeMode}): ${sample}${more} · siding ft² unchanged`);
-          } else {
-            toast.success(`Refine applied — no changes vs ${refineMergeMode} mode · siding ft² unchanged`);
-          }
-        }}
-      />
+      {/* Refine on Photo photo picker — choose which photo to re-open
+          in the guided 7-step annotation flow. Same modal, same data,
+          same tools as the capture path (one annotation system). */}
+      {refineOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" data-testid="refine-photo-picker">
+          <div className="bg-[var(--surface)] max-w-2xl w-full shadow-2xl border border-[#0EA5E9]">
+            <div className="bg-[#0EA5E9] px-4 py-3 flex items-start justify-between gap-3">
+              <div>
+                <div className="text-white text-sm font-heading font-bold uppercase tracking-wider">Refine on Photo</div>
+                <div className="text-white/80 text-[11px] mt-0.5 leading-snug">
+                  Pick a photo — it opens in the same guided 7-step annotation flow (scale · windows · masks · profiles · gables · dormers). Your existing annotations load for editing.
+                </div>
+              </div>
+              <button type="button" onClick={() => setRefineOpen(false)}
+                      className="text-white/80 hover:text-white" title="Close"
+                      data-testid="refine-photo-picker-close">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto">
+              {photoUrls.map((name, i) => {
+                const elev = photoAnnotations[name]?.elevation || "";
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setRefineOpen(false);
+                      setAnnotateGuided(true);
+                      setAnnotateOpenFor(name);
+                    }}
+                    className="relative border border-[var(--border)] hover:border-[#0EA5E9] focus:border-[#0EA5E9] overflow-hidden group"
+                    data-testid={`refine-photo-pick-${i}`}
+                    title={`Refine ${elev || `photo ${i + 1}`}`}
+                  >
+                    <img src={`/api/uploads/${name}`} alt={elev || `photo ${i + 1}`}
+                         className="w-full h-24 object-cover group-hover:opacity-90" />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 text-left">
+                      {elev || `photo ${i + 1}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       <GuidedCaptureWizard
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}
