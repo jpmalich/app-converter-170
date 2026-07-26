@@ -5186,3 +5186,31 @@ Continue" chrome on last step; skipping step 7 saves + auto-advances the
 capture wizard (modal closes cleanly).
 STAMP: RECORDED: 2026-07-26 12:05 UTC · 41b711d · CLEAN
 RESULT: 1383 passed, 1 skipped, 3 warnings in 139.25s (0:02:19)
+
+## 2026-07-26 — ONE ANNOTATION SYSTEM (ruled)
+Refine on Photo unified with the guided 7-step annotation flow — one
+data set, one set of tools, one governing path.
+- "Refine on Photo" (Advanced) now opens a photo picker
+  (refine-photo-picker, elevation-labeled thumbnails; single photo
+  opens directly) → the SAME PhotoAnnotateModal in guidedFlow mode.
+  Existing annotations (scale refs, windows, masks, profiles, gables,
+  dormers) load for editing; saves land in the identical
+  photoAnnotations store + profile-annotations PUT the AI run reads.
+- PhotoMeasureButton tap-measure path RETIRED from AI Measure (import,
+  instance, onApply merge and the add/max/replace merge-mode picker all
+  removed). Exit guided mode drops to the classic toolbar of the same
+  modal — same tools either way.
+- CRITICAL gap fixed: handleWizardComplete's wizard→photoAnnotations
+  merge dropped gables, dormers and imageDims — guided-capture gables/
+  dormers (steps 6+7) never reached the AI run payloads or Refine.
+  Now merged like every other annotation type.
+- Pins: tests/test_refine_single_annotation_system.py (PhotoMeasureButton
+  absence, guided refine wiring, wizard merge carries gables/dormers/
+  imageDims, steps 6+7 in default flow).
+Verified live (playwright, EST-067615 8-photo session): Resume →
+Advanced → Refine → picker (8 labeled thumbs) → front photo opens
+guided Step 1 of 7 with WALL REF + WIN REF + NO SIDING mask loaded →
+Step 6 GABLES (correct header hint) → Exit guided mode shows classic
+toolbar + gable panel, zero page errors.
+STAMP: RECORDED: 2026-07-26 13:45 UTC · 1563333 · CLEAN
+RESULT: 1387 passed, 1 skipped, 3 warnings in 196.43s (0:03:16)
