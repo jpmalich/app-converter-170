@@ -194,7 +194,9 @@ def _sheet(session, which, est=REDHOUSE_EST):
 
 def test_redhouse_left_reconciled_band_center_and_sills(session):
     """PINS AMENDED (before → after): band 10.54–15.54 → 10.34–15.34
-    (paired-reconciled); center 18.5 → 17.8 (windows-centered norm);
+    (paired-reconciled); center 18.5 → 17.8 (windows-centered norm)
+    → 17.4 (PAIRED-FEATURE MIRROR, ruled 2026-07-26 — twin centers bind
+    ONE mirrored span; RE-LOOK EVENT flagged, Howard's eyes re-gate);
     wall sills None → W1/W3 29" · W5 30" (sill-binding extension).
     Counts unchanged: 5 openings (5 windows)."""
     s = _sheet(session, "left")
@@ -202,8 +204,9 @@ def test_redhouse_left_reconciled_band_center_and_sills(session):
     assert d["base_ft"] == pytest.approx(10.34, abs=0.01)
     assert d["top_ft"] == pytest.approx(15.34, abs=0.01)
     assert "PAIRED-RECONCILED" in d["vpos_tag"]
-    assert d["center_ft"] == pytest.approx(17.8, abs=0.01)
-    assert d["center_tag"] == "ESTIMATED (windows-centered norm)"
+    assert d["center_ft"] == pytest.approx(17.4, abs=0.01)
+    assert d["center_tag"] == ("ESTIMATED (windows-centered norm)"
+                               " · PAIRED-RECONCILED MIRROR")
     assert [o["tag"] for o in s["openings"]] == ["W1", "W2", "W3", "W4", "W5"]
     sills = {o["tag"]: o["sill_in"] for o in s["openings"]}
     assert sills["W1"] == pytest.approx(29.0, abs=0.3)   # wall, head chain
@@ -217,13 +220,18 @@ def test_redhouse_left_reconciled_band_center_and_sills(session):
 
 def test_redhouse_right_reconciled_band_center_and_corner_guard(session):
     """PINS AMENDED: band 10.14–15.14 → 10.34–15.34 (LEVEL with left);
-    center 18.5 → 20.0; W1 40.7" / W3 37.2" bound; W4–W6 (corner-shot,
+    center 18.5 → 20.0 → 19.6 (PAIRED-FEATURE MIRROR, ruled 2026-07-26 —
+    17.4 + 19.6 = 37.0 = wall width, opposite views mirror; RE-LOOK EVENT
+    flagged); W1 40.7" / W3 37.2" bound; W4–W6 (corner-shot,
     position-less) stay '—' — the −94.1" nonsense bind is retired."""
     s = _sheet(session, "right")
     d = s["dormer"]
     assert d["base_ft"] == pytest.approx(10.34, abs=0.01)
     assert d["top_ft"] == pytest.approx(15.34, abs=0.01)
-    assert d["center_ft"] == pytest.approx(20.0, abs=0.01)
+    assert d["center_ft"] == pytest.approx(19.6, abs=0.01)
+    # the ruled mirror invariant — one physical box, opposite views
+    left_c = _sheet(session, "left")["dormer"]["center_ft"]
+    assert left_c + d["center_ft"] == pytest.approx(37.0, abs=0.05)
     sills = {o["tag"]: o["sill_in"] for o in s["openings"]}
     assert sills["W1"] == pytest.approx(40.7, abs=0.3)
     assert sills["W3"] == pytest.approx(37.2, abs=0.3)
