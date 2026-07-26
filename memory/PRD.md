@@ -5140,3 +5140,22 @@ untouched (pins re-ran green). NOT auto-injected into the estimate.
 Verified live: annotator row "Depth (ft) 4 → + cheeks 2 × 4.0×4.0 =
 32.0 ft²" on EST-780008, zero page errors.
 STAMP: - 2026-07-26 10:38 UTC · 085a43d · CLEAN · [tests] · 1382 passed, 1 skipped, 3 warnings in 159.81s (0:02:39)
+
+## 2026-07-26 — DORMER DEPTH SMART DEFAULT 1.5 ft (ruled follow-up)
+Zero-typing goal: most shed/box dormers project ~1.5 ft.
+- DORMER_DEPTH_DEFAULT_FT = 1.5 (ai_measure.py, pinned).
+- Annotator: depth_ft pre-filled 1.5 at quad creation; cleared field still
+  computes cheeks at the default with "(default depth)" note; amber flag
+  survives only when no scale ref (heightless — the rare no-default case),
+  reworded "no scale ref — cheeks pending".
+- Parse + PATCH: blank/cleared depth resolves to 1.5 when face height is
+  known (heightless rows stay depthless, cheeks 0); typed always overrides.
+- Field Verify + sheet callout: legacy blank-depth rows resolve to the
+  default at read with the provenance note; sync via the same PATCH.
+- Pins updated: parse default (blank→1.5/cheeks 18.0, heightless→0,
+  typed override), live PATCH clear→1.5/18.0, callout default note, modal
+  prefill pin. First handback run hit a transient 1-error flake; clean
+  re-run stamped.
+Verified live: new dormer shows cheeks immediately (no typing), typed 4
+overrides → 32.0 ft².
+STAMP: - 2026-07-26 11:15 UTC · 63c114c · CLEAN · [tests] · 1383 passed, 1 skipped, 3 warnings in 177.81s (0:02:57)
