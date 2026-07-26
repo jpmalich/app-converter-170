@@ -33,6 +33,9 @@ def test_refine_opens_guided_annotate_modal():
     # guidedFlow threaded into the shared modal instance
     assert "guidedFlow={annotateGuided ? {" in AIBTN
     assert "onExit: () => setAnnotateGuided(false)" in AIBTN
+    # finishing the refine walkthrough returns to the photo picker,
+    # not the main AI Photo Measure screen
+    assert "onFinish: () => setRefineOpen(true)" in AIBTN
 
 
 def test_wizard_merge_carries_gables_dormers_imagedims():

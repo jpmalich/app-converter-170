@@ -4869,6 +4869,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         guidedFlow={annotateGuided ? {
           // Refine path — same 7-step guided walkthrough as capture.
           // Last-step Save fires onSave (below) then onClose.
+          // On finish, return to the Refine photo picker so the
+          // contractor can keep refining other photos (NOT the main
+          // AI Photo Measure screen).
+          onFinish: () => setRefineOpen(true),
           onExit: () => setAnnotateGuided(false),
         } : null}
         photoUrl={annotateOpenFor ? `/api/uploads/${annotateOpenFor}` : null}
