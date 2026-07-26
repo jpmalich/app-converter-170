@@ -5344,3 +5344,48 @@ post-September. Queue = this reconciliation + splits proposal, then
 idle. Dormer-taxonomy trial P2, timing Howard's.
 STAMP: RECORDED: 2026-07-26 19:06 UTC · bbcee9c · CLEAN
 RESULT: 1397 passed, 1 skipped, 3 warnings in 137.77s (0:02:17)
+
+## 2026-07-26 — A/B/C WIRED + PART 1 DORMER PLACEMENT (ruled)
+### Rulings A/B/C wired (§6 order)
+- A: _conserve_per_profile in lp_package (residue→default family,
+  proportional-scale fallback, single-family no-op = fixture
+  byte-identity by construction) + unknown-family amber qty-0 line.
+- B: as-shake toggles = breakdown alias re-deriving via /measure/map;
+  flat ceil(sqft/4) swap + SKU pickers retired; equivalence pinned.
+- C (corrected): split-path waste is FAMILY-DEFAULTED (sealed 7/24:
+  lap10 · shake15 · B&B/vertical30 · nickel12); visible field governs
+  only its own family. WHERE THE 10 CAME FROM: (1) my proposal table
+  error; (2) hover.py split branch applied the single _waste_pct (or
+  10% fallback) to every family; (3) BB_RULED_FINAL registry 0.10
+  (7/16, superseded — now 0.30, pin amended); (4) retired toggle math
+  had NO waste. NOTHING PRICED B&B AT 10 SINCE 7/24: zero multi-family
+  runs since 7/24 (DB-checked); the only positive B&B line is Casile
+  EST-523061 @ 68 = ceil(2064/40×1.30) — priced at the sealed 30.
+- Pin amendments (before→after): default-profile identity pins now
+  expect surfaced _default_family; shake split qty 237→247 (flat 10% →
+  sealed 15%); BB panel_waste_default 0.10→0.30.
+- 20 pins in test_splits_lp_money_ruled.py; money gate updated to the
+  post-ruling set. STAMP: 2026-07-26 20:10 UTC · 6b87c87 · CLEAN (1407).
+### Part 1 — dormer placement defects (EST-986945)
+MECHANISM (evidence): contractor W×KNEE quads entered OUTSIDE the
+reconciliation — face-on bands bound each quad's own photo chain (left
+base 11.22 / right 10.39, never leveled → not mirrored), profiles kept
+AI dims/v-pos (11.19) → one physical dormer drew different bands per
+view; nothing bounded a band at the drawn ridge (left top 14.62 > ridge
+14.5 = broke the roofline); on-dormer window glyphs were grade-anchored
+(sill from grade) and could exit the band.
+FIX: contractor quads enter the ladder (dims govern cross-view; v-pos
+rung above AI chain; opposite-face twins bind ONE LEVEL band — width
+tol amended 0.5→1.25 ft for contractor tap jitter, AI pairs keep 0.5);
+_clamp_band_to_roof on every view (photo-chain read preserved in flag);
+on-dormer window containment in the renderer (schedule keeps true
+dims). EST-986945 now: all views base 10.81 LEVEL, right clamped+flagged,
+W2 contained. Fixtures hash-verified byte-identical. Pins:
+test_dormer_crossview_consistency.py.
+STAMP: RECORDED: 2026-07-26 20:30 UTC · 4cb05eb · CLEAN
+RESULT: 1412 passed, 1 skipped, 3 warnings in 141.08s (0:02:21)
+### Part 2 proposal filed (no wiring):
+memory/proposals/part2_add_dormer_drag_adjust_proposal.md — Add Dormer
+photo tool already shipped (ruled 7-25/26); drag-to-adjust interaction
++ sheet_overrides data model proposed; rulings 1/2 requested.
+### Still owed: money-surfaces map (authorized, ships whenever).
