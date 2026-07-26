@@ -5389,3 +5389,32 @@ memory/proposals/part2_add_dormer_drag_adjust_proposal.md — Add Dormer
 photo tool already shipped (ruled 7-25/26); drag-to-adjust interaction
 + sheet_overrides data model proposed; rulings 1/2 requested.
 ### Still owed: money-surfaces map (authorized, ships whenever).
+
+## 2026-07-26 — Part 1 follow-up: HORIZONTAL placement (x-axis) — VIEW-ORIENTATION PIN + PAIRED-FEATURE MIRROR
+MECHANISM (evidence, memory/xaxis_mechanism_report_2026-07-26.md): the
+per-view axis convention was NOT wrong — all four EST-986945 sheets
+matched their annotated site photos 1:1 (along_wall_ft datum = each
+sheet's drawing-left corner, standard exterior projection, no flip;
+verified by photo landmarks: chairs/bins/truck fix every corner). The
+real defect was CROSS-VIEW: twin dormer horizontal centers bound PER
+VIEW (quad-through-anchor / windows-centered jitter) and never mirrored
+— left 17.9' / right 17.5' on 37' walls = both LEFT of wall-center,
+physically impossible for one box seen from opposite sides.
+FIX: horizontal PAIRED-FEATURE MIRROR (exact mirror of the ruled
+vertical LEVEL): paired twins bind ONE mirrored center
+(center_here ↔ opp_width − center_opp, averaged, flagged on-sheet).
+EST-986945: left 17.9→18.7 (photo ≈18.8 ✓), right 17.5→18.3;
+18.7+18.3=37.0 — mirror invariant holds, asserted in pins.
+CONVENTION PINNED: _VIEW_DATUM (front→front-LEFT corner, back→back-
+RIGHT, left→BACK, right→FRONT at drawing-left) + profile-side mirror
+property + 1:1 opening mapping — tests/test_view_orientation_pin.py (8);
+every sheet renders an orientation note citing the pin.
+FIXTURE RE-LOOK GATE: doug jones / letrick / haugh — geometry
+HASH-IDENTICAL (only note text added). RED HOUSE CHANGED (RE-LOOK
+EVENT): its twins were also unreconciled (0.8' mirror gap) — centers
+17.8/20.0 → 17.4/19.6 (~5" shift each, NO flip; prior field-compares
+were NOT against mirrored drawings). Before→after screenshots in
+memory/evidence/xaxis_2026-07-26/ — Howard's eyes re-gate. Pin
+amendment declared in test_dormers_p5.py.
+STAMP (verbatim): - 2026-07-26 21:24 UTC · a69c375 · CLEAN · [tests] · 1420 passed, 1 skipped, 3 warnings in 159.15s (0:02:39)
+AWAITING: Howard's photo re-compare of EST-986945 (4 sheets) + red house re-gate; Part 2 proposal still awaiting ruling.
