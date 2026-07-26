@@ -2220,6 +2220,12 @@ def parse_contractor_gables(raw):
     return out
 
 
+# Smart depth default (ruled 2026-07-26 follow-up): most shed/box dormers
+# project ~1.5 ft — blank/cleared depth resolves to it so cheeks still
+# calculate with zero extra typing. Typed values always override.
+DORMER_DEPTH_DEFAULT_FT = 1.5
+
+
 def parse_contractor_dormers(raw):
     """Contractor dormer payload (ruled 2026-07-25 — mirror of gables):
     strict parse, clamp, cap at 20 — garbage never lands on the run doc.
@@ -2255,8 +2261,12 @@ def parse_contractor_dormers(raw):
         # DORMER DEPTH (ruled 2026-07-26): typed, never photo-derived.
         # Cheek math derives SERVER-SIDE (each = face height × depth,
         # total = 2 ×) — any client-computed value is ignored. Blank
-        # depth → cheeks 0, row stays flagged "depth missing".
+        # depth resolves to the 1.5 ft smart default (ruled follow-up)
+        # whenever the face height is known; only a heightless row
+        # (no scale ref) stays depthless with cheeks 0.
         depth = _num(d.get("depth_ft"))
+        if depth is None and h:
+            depth = DORMER_DEPTH_DEFAULT_FT
         out.append({
             "elevation": str(d.get("elevation") or "other")[:24].lower(),
             "width_ft": _num(d.get("width_ft")),
@@ -2294,8 +2304,13 @@ async def update_contractor_dormer_depth(run_id: str, idx: int, payload: dict,
     if not (0 <= idx < len(rows)):
         raise HTTPException(status_code=404, detail="No such contractor dormer")
     raw_depth = (payload or {}).get("depth_ft")
-    depth = None
-    if raw_depth not in (None, ""):
+    h = rows[idx].get("height_ft")
+    if raw_depth in (None, ""):
+        # blank/cleared → the 1.5 ft smart default (ruled 2026-07-26
+        # follow-up) — cheeks still calculate; only heightless rows
+        # (no scale ref) stay depthless.
+        depth = DORMER_DEPTH_DEFAULT_FT if h else None
+    else:
         try:
             f = float(raw_depth)
         except (TypeError, ValueError):
@@ -2303,7 +2318,6 @@ async def update_contractor_dormer_depth(run_id: str, idx: int, payload: dict,
         if not (0 < f < 100):
             raise HTTPException(status_code=422, detail="depth_ft out of range")
         depth = round(f, 1)
-    h = rows[idx].get("height_ft")
     cheeks = round(2 * h * depth, 1) if h and depth else 0
     await db.ai_measure_runs.update_one(
         {"run_id": run_id},

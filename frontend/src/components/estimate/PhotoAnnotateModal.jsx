@@ -617,6 +617,10 @@ export default function PhotoAnnotateModal({
       const d = {
         id: `d-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         pts: next,
+        // Smart default (ruled 2026-07-26 follow-up): most shed/box
+        // dormers project ~1.5 ft — pre-filled so cheeks calculate with
+        // zero extra typing; any typed value overrides.
+        depth_ft: 1.5,
       };
       setLocalDormers((prev) => [...prev, d]);
       setDormerPts([]);
@@ -2135,13 +2139,17 @@ export default function PhotoAnnotateModal({
                           className="w-16 text-[10px] border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5"
                           data-testid={`dormer-depth-input-${d.id}`}
                         />
-                        {dims && dims.heightFt !== undefined && parseFloat(d.depth_ft) > 0 ? (
+                        {dims && dims.heightFt !== undefined ? (
                           <span className="text-[10px] font-bold text-[#15803D]" data-testid={`dormer-cheeks-${d.id}`}>
-                            + cheeks 2 × {dims.heightFt.toFixed(1)}×{parseFloat(d.depth_ft).toFixed(1)} = {(2 * dims.heightFt * parseFloat(d.depth_ft)).toFixed(1)} ft²
+                            {(() => {
+                              const typed = parseFloat(d.depth_ft);
+                              const eff = typed > 0 ? typed : 1.5;
+                              return `+ cheeks 2 × ${dims.heightFt.toFixed(1)}×${eff.toFixed(1)} = ${(2 * dims.heightFt * eff).toFixed(1)} ft²${typed > 0 ? "" : " (default depth)"}`;
+                            })()}
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold text-[#B45309]" data-testid={`dormer-depth-missing-${d.id}`}>
-                            depth missing — cheeks 0
+                            no scale ref — cheeks pending
                           </span>
                         )}
                       </div>

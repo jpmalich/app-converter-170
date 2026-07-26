@@ -125,13 +125,20 @@ class TestParseContractorDormers:
                          "y_bottom_frac": 0.2, "width_frac": 0.2,
                          "height_frac": 0.15}]
 
-    def test_blank_depth_means_zero_cheeks(self):
+    def test_blank_depth_defaults_to_one_five(self):
         from routes.ai_measure import parse_contractor_dormers
+        # blank depth + known height → 1.5 ft smart default, cheeks derive
         row = parse_contractor_dormers('[{"height_ft":6.0}]')[0]
-        assert row["depth_ft"] is None and row["cheeks_ft"] == 0
+        assert row["depth_ft"] == 1.5 and row["cheeks_ft"] == 18.0
+        # heightless (no scale ref) → no default, cheeks 0 — the rare case
+        row_h = parse_contractor_dormers('[{"width_ft":8.0}]')[0]
+        assert row_h["depth_ft"] is None and row_h["cheeks_ft"] == 0
         # client-computed cheeks are ignored — the server derives
         row2 = parse_contractor_dormers('[{"height_ft":6.0,"cheeks_ft":999}]')[0]
-        assert row2["cheeks_ft"] == 0
+        assert row2["cheeks_ft"] == 18.0
+        # typed depth always overrides the default
+        row3 = parse_contractor_dormers('[{"height_ft":6.0,"depth_ft":4.0}]')[0]
+        assert row3["depth_ft"] == 4.0 and row3["cheeks_ft"] == 48.0
 
     def test_fracs_clamped_to_unit_interval(self):
         from routes.ai_measure import parse_contractor_dormers
@@ -281,19 +288,28 @@ class TestDormerCheeks:
         ]}
         rows = contractor_dormers_for(run, "front")
         assert "+ cheeks 2 × 6′×4′ = 48 ft²" in rows[0]["label"]
-        assert "depth missing — cheeks 0" in rows[1]["label"]
+        assert "(default depth)" not in rows[0]["label"]
+        # legacy blank-depth rows resolve to the 1.5 ft default at read
+        assert "+ cheeks 2 × 5′×1.5′ = 15 ft² (default depth)" in rows[1]["label"]
+
+    def test_smart_default_pins(self):
+        from routes.ai_measure import DORMER_DEPTH_DEFAULT_FT
+        assert DORMER_DEPTH_DEFAULT_FT == 1.5
+        modal = (FE / "components" / "estimate" / "PhotoAnnotateModal.jsx").read_text()
+        assert "depth_ft: 1.5" in modal  # pre-filled at creation
+        assert "(default depth)" in modal
 
     def test_annotator_row_has_depth_input_and_flag(self):
         modal = (FE / "components" / "estimate" / "PhotoAnnotateModal.jsx").read_text()
         assert "dormer-depth-input-" in modal
-        assert "depth missing — cheeks 0" in modal
+        assert "dormer-depth-missing-" in modal  # rare no-scale flag survives
         assert "setDormerDepth" in modal
 
     def test_field_verify_secondary_entry_syncs_same_field(self):
         fvc = (FE / "components" / "estimate" / "FieldVerifyCard.jsx").read_text()
         assert "contractor-dormer-depth-input-" in fvc
         assert "contractor-dormer-cheeks-" in fvc
-        assert "contractor-dormer-depth-missing-" in fvc
+        assert "(default depth)" in fvc  # blank resolves to the smart default
         assert "/contractor-dormers/" in fvc  # PATCH write-back path
 
     def test_launch_payload_carries_depth(self):
@@ -345,10 +361,11 @@ class TestDormerDepthEndpointLive:
             doc = db.ai_measure_runs.find_one({"run_id": run_id})
             assert doc["contractor_dormers"][0]["depth_ft"] == 4.0
             assert doc["contractor_dormers"][0]["cheeks_ft"] == 48.0
-            # clearing depth zeroes the cheeks — flagged, never stale
+            # clearing depth resolves to the 1.5 ft smart default —
+            # cheeks stay calculated, never stale
             r2 = s.patch(f"{API}/measure/ai-measure/runs/{run_id}/contractor-dormers/0",
                          json={"depth_ft": None}, timeout=15)
-            assert r2.json()["cheeks_ft"] == 0 and r2.json()["depth_ft"] is None
+            assert r2.json()["depth_ft"] == 1.5 and r2.json()["cheeks_ft"] == 18.0
             # garbage refused
             r3 = s.patch(f"{API}/measure/ai-measure/runs/{run_id}/contractor-dormers/0",
                          json={"depth_ft": "abc"}, timeout=15)

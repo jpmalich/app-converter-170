@@ -252,20 +252,24 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
                 {d.width_ft != null && d.height_ft != null ? (
                   <span>
                     Front face {d.width_ft} ft × {d.height_ft} ft = {d.area_ft} ft²{d.masked_ft > 0 ? ` (−${d.masked_ft} ft² masks)` : ""}
-                    {d.depth_ft ? (
-                      <span data-testid={`contractor-dormer-cheeks-${i}`}>
-                        {" "}+ cheeks 2 × {d.height_ft}×{d.depth_ft} = {d.cheeks_ft} ft² (Total {Math.round(((d.area_ft || 0) + (d.cheeks_ft || 0)) * 10) / 10} ft²)
-                      </span>
-                    ) : (
-                      <span className="text-[#B45309] font-bold" data-testid={`contractor-dormer-depth-missing-${i}`}> · depth missing — cheeks 0</span>
-                    )}
+                    {(() => {
+                      // blank depth → 1.5 ft smart default (ruled 2026-07-26
+                      // follow-up) — cheeks always calculate when height known
+                      const eff = d.depth_ft || 1.5;
+                      const ch = d.cheeks_ft || Math.round(2 * d.height_ft * eff * 10) / 10;
+                      return (
+                        <span data-testid={`contractor-dormer-cheeks-${i}`}>
+                          {" "}+ cheeks 2 × {d.height_ft}×{eff} = {ch} ft²{d.depth_ft ? "" : " (default depth)"} (Total {Math.round(((d.area_ft || 0) + ch) * 10) / 10} ft²)
+                        </span>
+                      );
+                    })()}
                   </span>
                 ) : "marked — no scale ref on photo"}
                 <label className="text-[10px] text-[var(--muted)]">depth (ft)</label>
                 <input
                   key={`${i}-${d.depth_ft ?? ""}`}
                   type="number" min="0" step="0.1" inputMode="decimal"
-                  defaultValue={d.depth_ft ?? ""}
+                  defaultValue={d.depth_ft ?? 1.5}
                   onBlur={(e) => { if (e.target.value !== String(d.depth_ft ?? "")) saveDormerDepth(i, e.target.value); }}
                   className="w-14 text-[11px] border border-[var(--border)] bg-[var(--surface)] px-1 py-0.5 font-mono-num"
                   data-testid={`contractor-dormer-depth-input-${i}`}
