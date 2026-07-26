@@ -162,6 +162,7 @@ export function SheetSvg({ data }) {
     const x = wallX + o.center_ft * ppf - w / 2;
     const noSill = o.sill_in == null && !o.on_dormer;
     let bottom;
+    let h2 = h;
     if (o.sill_in != null) {
       bottom = wallBottom - (o.sill_in / 12) * ppf;
     } else if (o.on_dormer && dormerG) {
@@ -170,7 +171,17 @@ export function SheetSvg({ data }) {
     } else {
       bottom = (wallBottom + topRefY) / 2 + h / 2;
     }
-    return { ...o, drawable: true, noSill, x, y: bottom - h, w, h, cx: wallX + o.center_ft * ppf };
+    // ON-DORMER WINDOW CONTAINMENT (ruled 2026-07-26): a window never
+    // exits its dormer — the drawn glyph clamps inside the band (true
+    // dims stay in the schedule; identity via tags).
+    if (o.on_dormer && dormerG) {
+      const bandH = dormerG.baseY - dormerG.topY;
+      h2 = Math.min(h, Math.max(bandH - 2, 2));
+      bottom = Math.min(bottom, dormerG.baseY - 1);
+      if (bottom - h2 < dormerG.topY + 1) bottom = dormerG.topY + 1 + h2;
+      bottom = Math.min(bottom, dormerG.baseY - 1);
+    }
+    return { ...o, drawable: true, noSill, x, y: bottom - h2, w, h: h2, cx: wallX + o.center_ft * ppf };
   });
 
   // opening-center dimension chain segments

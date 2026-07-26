@@ -410,6 +410,33 @@ def _dormer_vpos(raw, wall_label, knee_ft):
 
 _OPPOSITE = {"left": "right", "right": "left", "front": "back", "back": "front"}
 PAIRED_DORMER_TOL_FT = 0.5
+CONTRACTOR_PAIR_TOL_W_FT = 1.25
+# PIN AMENDMENT (ruled 2026-07-26, EST-986945 field-compare): contractor
+# Add-Dormer quads carry tap jitter — twin identity for PAIRED-FEATURE
+# reconciliation accepts width within 1'-3" when BOTH sides are contractor
+# quads (knee tol unchanged at 0.5'). AI-only pairs keep the sealed 0.5'.
+
+
+def _clamp_band_to_roof(band, ridge_ft):
+    """ROOFLINE BOUNDS (ruled 2026-07-26): nothing draws through the drawn
+    roof edge. A band whose top exceeds the ridge shifts DOWN to it —
+    the photo-chain read is preserved in the flag, never silently."""
+    if not band or band.get("top_ft") is None or not ridge_ft:
+        return band
+    ridge = float(ridge_ft)
+    if float(band["top_ft"]) > ridge + 0.05:
+        ob, ot = band.get("base_ft"), band["top_ft"]
+        band["base_ft"] = round(float(band["base_ft"]) - (float(ot) - ridge), 2)
+        band["top_ft"] = round(ridge, 2)
+        if "base_label" in band:
+            band["base_label"] = fmt_ftin(band["base_ft"])
+        if "top_label" in band:
+            band["top_label"] = fmt_ftin(band["top_ft"])
+        band["top_note"] = (
+            "BAND CLAMPED to the drawn roof edge (ROOFLINE BOUNDS, ruled "
+            f"2026-07-26) — photo-chain read {fmt_ftin(ob)}–{fmt_ftin(ot)} "
+            "exceeds the drawn ridge — reads disagree — flagged")
+    return band
 
 
 def _paired_dormer(raw, d):
@@ -553,6 +580,42 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
     construction) and the cheek closing back to the roof plane. Wide and
     low, per the site-photo ground truth."""
     face_on, profiles = None, []
+    # CROSS-VIEW CONSISTENCY (ruled 2026-07-26, EST-986945 field-compare):
+    # the governing contractor W×KNEE previously entered ONLY the face-on
+    # band (outside reconciliation) — profiles kept AI dims and each quad
+    # bound its own v-pos, so one physical dormer drew DIFFERENT bands per
+    # view and twins never leveled. Contractor quads now enter the same
+    # ladder: dims TAPED-appendage > contractor quad > AI; v-pos taped >
+    # contractor photo-chain (pair-LEVELED across opposite faces) > AI.
+    c_rows = {}
+    for cdr in (run or {}).get("contractor_dormers") or []:
+        cf = _norm_face(cdr.get("elevation"))
+        if cf and cdr.get("width_ft") and cdr.get("height_ft") and cf not in c_rows:
+            c_rows[cf] = cdr
+    c_vpos = {}
+    for cf in c_rows:
+        band = _contractor_dormer_band(run, raw, cf, None, None, None)
+        if band and "INDICATIVE" not in (band.get("vpos_tag") or ""):
+            c_vpos[cf] = {"base": band["base_ft"], "knee": band["knee_ft"],
+                          "w": band["width_ft"], "tag": band["vpos_tag"],
+                          "basis": band["base_note"]}
+    _lvl_done = set()
+    for cf, cr in list(c_vpos.items()):
+        co = c_vpos.get(_OPPOSITE.get(cf))
+        if not co or cf in _lvl_done:
+            continue
+        if (abs(cr["w"] - co["w"]) <= CONTRACTOR_PAIR_TOL_W_FT
+                and abs(cr["knee"] - co["knee"]) <= PAIRED_DORMER_TOL_FT):
+            lvl = round((cr["base"] + co["base"]) / 2.0, 2)
+            lvl_basis = (
+                "PAIRED-FEATURE RECONCILIATION (contractor twins, ruled "
+                f"2026-07-26): {cf} {fmt_ftin(cr['base'])} / {_OPPOSITE[cf]} "
+                f"{fmt_ftin(co['base'])} → one LEVEL band, base {fmt_ftin(lvl)}")
+            for x in (cr, co):
+                x["base"] = lvl
+                x["tag"] = "TAPED (contractor quad · PAIRED-RECONCILED LEVEL)"
+                x["basis"] = lvl_basis
+            _lvl_done.update({cf, _OPPOSITE[cf]})
     for d in (raw.get("dormers") or []):
         if not d:
             continue
@@ -564,6 +627,14 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
         tape = _dormer_tape(est, face)
         knee = tape.get("knee_ft", float(knee))
         knee_tag = "TAPED (user-measured)" if "knee_ft" in tape else tag
+        # contractor quad dims govern cross-view (ruled 2026-07-26)
+        cq = c_rows.get(face)
+        if cq and "knee_ft" not in tape:
+            knee = float(cq["height_ft"])
+            knee_tag = "TAPED (contractor quad)"
+        if cq:
+            w = float(cq["width_ft"])
+            tag = "TAPED (contractor quad)"
         # PAIRED-FEATURE RECONCILIATION (ruled 2026-07-22): opposite-face
         # twins bind ONE band, drawn LEVEL — tape on either face closes both
         pair = _paired_dormer(raw, d)
@@ -572,6 +643,13 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
         if "base_ft" in tape:
             base_ft, top_ft = tape["base_ft"], round(tape["base_ft"] + knee, 2)
             v_tag, v_basis = "TAPED (user-measured)", "base taped via appendage dims"
+        elif face in c_vpos:
+            # contractor photo-chain v-pos (pair-LEVELED when twins) —
+            # outranks the AI chain, below appendage tape
+            base_ft = c_vpos[face]["base"]
+            top_ft = round(base_ft + knee, 2)
+            v_tag = c_vpos[face]["tag"]
+            v_basis = c_vpos[face]["basis"]
         elif pair and "base_ft" in pair_tape:
             base_ft = pair_tape["base_ft"]
             top_ft = round(base_ft + knee, 2)
@@ -674,9 +752,25 @@ def _bind_dormers(est, raw, which, width_ft, height_ft, roofline_obj, run=None):
     # are preserved for the compare trail when the quad carries none.
     cd = _contractor_dormer_band(run, raw, which, width_ft, height_ft, roofline_obj)
     if cd:
+        if which in c_vpos:
+            # bind the face-on band to the SAME reconciled (leveled) v-pos
+            cd["base_ft"] = c_vpos[which]["base"]
+            cd["top_ft"] = round(cd["base_ft"] + cd["knee_ft"], 2)
+            cd["base_label"] = fmt_ftin(cd["base_ft"])
+            cd["top_label"] = fmt_ftin(cd["top_ft"])
+            cd["vpos_tag"] = c_vpos[which]["tag"]
+            cd["base_note"] = (f"base {fmt_ftin(cd['base_ft'])} · v-pos "
+                               f"{cd['vpos_tag']} — {c_vpos[which]['basis']}")
+            _r = (roofline_obj or {}).get("ridge_ft")
+            cd["top_note"] = ("dormer top exceeds the drawn ridge — reads disagree — flagged"
+                              if _r and cd["top_ft"] > float(_r) + 0.05 else None)
         if face_on and not cd.get("source_photos"):
             cd["source_photos"] = face_on.get("source_photos") or []
         face_on = cd
+    # ROOFLINE BOUNDS (ruled 2026-07-26): nothing draws through the roof edge
+    _ridge = (roofline_obj or {}).get("ridge_ft")
+    face_on = _clamp_band_to_roof(face_on, _ridge)
+    profiles = [_clamp_band_to_roof(p, _ridge) for p in profiles]
     return face_on, profiles
 
 
