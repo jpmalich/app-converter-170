@@ -292,6 +292,8 @@ export default function PhotoAnnotateModal({
       { key: "window-style", mode: MODE_WINDOW, banner: "Window Style — tap each window on this wall to place it and tag its style (double-hung, casement, picture, etc.)", skipLabel: "Skip · no windows on this wall" },
       { key: "mask", mode: MODE_ZONE, banner: "Mask — draw a rectangle OR polygon around brick / stone / masonry that is NOT getting new siding. For polygon: place at least 3 corners, then tap your first corner again to close.", skipLabel: "Skip · nothing to mask" },
       { key: "profile", mode: MODE_PROFILE, banner: "Profile — draw a rectangle OR polygon around each siding profile family (Lap · Shake · B&B · Vertical · etc). For polygon: place at least 3 corners, then tap your first corner again to close. Skip if this whole wall is one profile.", skipLabel: "Skip · single profile" },
+      { key: "gable", mode: MODE_GABLE, banner: "Tap left eave → peak → right eave to add a contractor-governed gable triangle. Drag points to refine. Symmetric toggle and pitch available as before.", skipLabel: "Skip – no gables on this wall" },
+      { key: "dormer", mode: MODE_DORMER, banner: "Draw the dormer quad (front face). Depth pre-fills with the smart default 1.5 ft (user can change it). Cheeks calculate automatically.", skipLabel: "Skip – no dormers on this wall" },
     ];
   }, [guidedFlow]);
   const [guidedStepIdx, setGuidedStepIdx] = useState(0);
@@ -963,6 +965,8 @@ export default function PhotoAnnotateModal({
     setScalePending(null);
     setScaleValue("");
     setWindowPending(null);
+    setGablePts([]);
+    setDormerPts([]);
   };
   const handleGuidedSkip = () => handleGuidedNext();
 
@@ -985,6 +989,8 @@ export default function PhotoAnnotateModal({
     setScalePending(null);
     setScaleValue("");
     setWindowPending(null);
+    setGablePts([]);
+    setDormerPts([]);
   };
 
   // Render overlay markup
@@ -1669,6 +1675,8 @@ export default function PhotoAnnotateModal({
                 {guidedSteps[guidedStepIdx]?.key === "window-style" && (<><AppWindow aria-hidden="true" className="w-5 h-5" /> Window Style</>)}
                 {guidedSteps[guidedStepIdx]?.key === "mask" && (<><BrickWall aria-hidden="true" className="w-5 h-5" /> Mask (brick / stone)</>)}
                 {guidedSteps[guidedStepIdx]?.key === "profile" && (<><Home aria-hidden="true" className="w-5 h-5" /> Profile</>)}
+                {guidedSteps[guidedStepIdx]?.key === "gable" && (<><Triangle aria-hidden="true" className="w-5 h-5" /> Gables</>)}
+                {guidedSteps[guidedStepIdx]?.key === "dormer" && (<><Square aria-hidden="true" className="w-5 h-5" /> Dormers</>)}
               </div>
               <div className="text-sm text-[var(--ink-2)] font-medium mb-3">
                 {guidedSteps[guidedStepIdx]?.banner}
@@ -2014,7 +2022,7 @@ export default function PhotoAnnotateModal({
             </div>
             )}
 
-            {!guidedFlow && mode === MODE_GABLE && (
+            {mode === MODE_GABLE && (
               <div className="space-y-2" data-testid="gable-panel">
                 <div className="text-[10px] text-[var(--muted)] font-medium">
                   {gablePts.length === 0 && "Tap the LEFT EAVE point of the gable."}
@@ -2093,7 +2101,7 @@ export default function PhotoAnnotateModal({
               </div>
             )}
 
-            {!guidedFlow && mode === MODE_DORMER && (
+            {mode === MODE_DORMER && (
               <div className="space-y-2" data-testid="dormer-panel">
                 <div className="text-[10px] text-[var(--muted)] font-medium">
                   {dormerPts.length === 0 && "Tap the BOTTOM-LEFT corner of the dormer face."}

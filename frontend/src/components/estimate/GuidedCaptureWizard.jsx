@@ -751,6 +751,8 @@ export default function GuidedCaptureWizard({ open, onClose, onComplete }) {
           targetPin={taken.annotations?.targetPin || null}
           windows={taken.annotations?.windows || []}
           profileBoxes={taken.annotations?.profileBoxes || []}
+          gables={taken.annotations?.gables || []}
+          dormers={taken.annotations?.dormers || []}
           onSave={handleAnnotateSave}
           guidedFlow={{
             // Default 5-step sequence baked into PhotoAnnotateModal;
