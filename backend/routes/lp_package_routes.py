@@ -27,7 +27,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
     if company_id is not None:
         q_est["company_id"] = company_id
     est = await db.estimates.find_one(
-        q_est, {"_id": 0, "id": 1, "estimate_number": 1, "waste_pct": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
+        q_est, {"_id": 0, "id": 1, "estimate_number": 1, "sealed_key": 1, "waste_pct": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
                 "lp_openings_review": 1, "lp_appendage_dims": 1, "lp_source_run_id": 1,
                 "default_siding_profile": 1, "lp_flag_checklist": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
@@ -258,8 +258,10 @@ def _apply_key_bound_areas(measurements, est):
     they exist; AI-run values are the NAMED FALLBACK only where no key
     value exists. Every area line names its basis. Letrick: 54' eaves,
     taped heights, stepped sides, book gables (w×h×0.7, sealed), composed
-    chase faces (item-3 ratified) → key raw_sqft governs siding area."""
-    if est.get("estimate_number") != "EST-373526":
+    chase faces (item-3 ratified) → key raw_sqft governs siding area.
+    Gate: portable `sealed_key` doc flag (ruled 2026-07-26) — no runtime
+    match on estimate numbers; values stay in letrick_hand_takeoff_key.py."""
+    if est.get("sealed_key") != "letrick_v3":
         return measurements  # no sealed key — AI values are the named fallback
     dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
     h = dims.get("height_ft") or {}

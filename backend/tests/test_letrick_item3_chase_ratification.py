@@ -136,6 +136,11 @@ def test_gate_scoped_to_ratified_estimate_only():
     m = {"siding_sqft": 1000.0, "_ai_appendage_sqft": 50.0}
     out = _apply_key_bound_areas(m, {"estimate_number": "EST-999999"})
     assert out == m
-    out2 = _apply_key_bound_areas(m, {"estimate_number": "EST-373526",
+    # sealed_key flag gate (ruled 2026-07-26): estimate number alone no
+    # longer opens the gate — the portable doc flag does
+    out_num_only = _apply_key_bound_areas(m, {"estimate_number": "EST-373526",
+                                              "lp_appendage_dims": {}})
+    assert out_num_only == m
+    out2 = _apply_key_bound_areas(m, {"sealed_key": "letrick_v3",
                                       "lp_appendage_dims": {}})
     assert out2 == m  # no machinery dims → gate stays shut

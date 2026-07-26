@@ -824,8 +824,10 @@ def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     artifact + the Class-1-corrected structured tape walls — never retyped.
     Sides carry NO taped width (key eaves formula covers front/back only):
     width falls back to the extraction run, labeled. Stepped sides carry
-    BOTH tape segments, each with its own courses × exposure basis."""
-    if est.get("estimate_number") != "EST-373526":
+    BOTH tape segments, each with its own courses × exposure basis.
+    Gate: portable `sealed_key` doc flag (ruled 2026-07-26) — no runtime
+    match on estimate numbers."""
+    if est.get("sealed_key") != "letrick_v3":
         return None
     from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
     from routes.demo import LETRICK_TAPE_WALLS  # constant import only
@@ -1115,7 +1117,7 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
         raise HTTPException(status_code=404, detail="Unknown elevation")
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
-        {"_id": 0, "id": 1, "estimate_number": 1, "customer_name": 1, "address": 1,
+        {"_id": 0, "id": 1, "estimate_number": 1, "sealed_key": 1, "customer_name": 1, "address": 1,
          "lp_openings_review": 1, "lp_appendage_dims": 1, "tape_check": 1})
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")

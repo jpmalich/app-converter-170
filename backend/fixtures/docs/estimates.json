@@ -5014,7 +5014,8 @@
   },
   "lp_openings_review": {},
   "protected": true,
-  "company_slot": "demo"
+  "company_slot": "demo",
+  "sealed_key": "letrick_v3"
  },
  {
   "customer_name": "doug jones",
