@@ -48,7 +48,12 @@ class TestApplyDefaultProfileUnit:
     def test_no_default_is_untouched(self):
         from routes.lp_package_routes import _apply_default_profile
         m = {"siding_sqft": 1000, "_per_profile_sqft": {"lap": 1000}}
-        assert _apply_default_profile(m, {}) is m
+        # PIN AMENDED (rulings A/C, 2026-07-26): was `is m` (object
+        # identity). The ruled wiring surfaces `_default_family` on every
+        # pass (conservation residue + split-line waste need the selected
+        # family) — content otherwise untouched.
+        out = _apply_default_profile(m, {})
+        assert out == {**m, "_default_family": "lap"}
 
     def test_single_profile_needs_zero_annotations(self):
         from routes.lp_package_routes import _apply_default_profile
@@ -68,7 +73,11 @@ class TestApplyDefaultProfileUnit:
     def test_unknown_profile_ignored(self):
         from routes.lp_package_routes import _apply_default_profile
         m = {"siding_sqft": 1000, "_per_profile_sqft": {"lap": 1000}}
-        assert _apply_default_profile(m, {"default_siding_profile": "stucco"}) is m
+        # PIN AMENDED (rulings A/C, 2026-07-26): non-family default
+        # (stucco) still forces nothing; _default_family falls back to
+        # lap for the ruled split wiring — content otherwise untouched.
+        out = _apply_default_profile(m, {"default_siding_profile": "stucco"})
+        assert out == {**m, "_default_family": "lap"}
 
 
 class TestHoverMappingContractUnit:

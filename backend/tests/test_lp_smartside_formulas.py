@@ -181,8 +181,11 @@ def test_lp_lap_uses_book_formula_when_flag_on(flag_on):
 
 
 def test_per_profile_lp_shake_qty_with_flag_on(flag_on):
-    """Multi-profile breakdown: 500 sqft shake @ 7" reveal should land
-    at 237 pcs (ceil(500/2.33 × 1.10))."""
+    """Multi-profile breakdown: 500 sqft shake @ 7" reveal.
+    PIN AMENDED (ruling C, 2026-07-26): was 237 (ceil(500/2.33 × 1.10) —
+    the flat 10% every-family waste). Split-path waste is FAMILY-DEFAULTED
+    per the sealed 2026-07-24 table: shake 15% → ceil(500/2.33 × 1.15) =
+    247 pcs."""
     m = {
         "_per_profile_sqft": {"lap": 600, "shake": 500},
         "siding_with_openings_sqft": 1100,
@@ -190,7 +193,7 @@ def test_per_profile_lp_shake_qty_with_flag_on(flag_on):
     lines = _build_lines(m)
     lp_shake = _find(_lp_lines(lines), "Shake")
     assert lp_shake is not None
-    assert lp_shake["qty"] == 237
+    assert lp_shake["qty"] == 247
 
 
 def test_per_profile_lp_shake_qty_with_flag_off(flag_off):
