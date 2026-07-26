@@ -1,0 +1,2 @@
+# Ratified commits — hashes ruled clean by Howard despite auto-commit landing
+# format: <hash> <optional note>
