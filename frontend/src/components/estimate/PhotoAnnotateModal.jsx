@@ -1428,6 +1428,10 @@ export default function PhotoAnnotateModal({
                 ? "WINDOW SCALE — tap two points on a known window edge (a window you know the size of, e.g. 36\" wide), then enter it. Gives Claude per-window precision (±5%). Auto-snaps to H/V."
                 : mode === MODE_WINDOW
                 ? "Tap each window to tag its style. Claude treats your tags as ground-truth."
+                : mode === MODE_GABLE
+                ? "GABLE — tap left eave → peak → right eave to place a gable triangle. Drag points to refine."
+                : mode === MODE_DORMER
+                ? "DORMER — tap the 4 corners of the dormer front face (bottom-left → bottom-right → top-right → top-left)."
                 : mode === MODE_PROFILE
                 ? (zoneShape === "rect"
                     ? `Tap top-left then bottom-right to mark a ${(PROFILE_FAMILIES.find((f) => f.key === profileFamily)?.label) || profileFamily} region`
