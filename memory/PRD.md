@@ -5239,3 +5239,18 @@ RESULT: 1387 passed, 1 skipped, 3 warnings in 196.43s (0:03:16)
   chips render identical on-screen size.
 STAMP: RECORDED: 2026-07-26 14:24 UTC · d9e5de7 · CLEAN
 RESULT: 1387 passed, 1 skipped, 3 warnings in 196.66s (0:03:16)
+
+## 2026-07-26 — REFINE RETURN-TO-PICKER (ruled)
+Finishing the Refine on Photo guided walkthrough (Save & Continue or
+Skip on step 7) now reopens the elevation-labeled photo picker so the
+contractor keeps refining other photos — no more drop back to the main
+AI Photo Measure screen.
+- Refine guidedFlow gained `onFinish: () => setRefineOpen(true)` (fires
+  after save+close on the last step only).
+- Cancel/discard still closes without reopening the picker; the
+  guided-capture wizard's own onFinish (auto-advance) untouched.
+- Pin added to test_refine_single_annotation_system.py.
+Verified live: finish photo 2 → picker reopens → pick photo 3 →
+guided flow again → cancel → no picker. Zero page errors.
+STAMP: RECORDED: 2026-07-26 14:34 UTC · f16bc3a · CLEAN
+RESULT: 1387 passed, 1 skipped, 3 warnings in 235.44s (0:03:55)
