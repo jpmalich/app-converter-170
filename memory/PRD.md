@@ -5278,3 +5278,34 @@ Verified live: Letrick back sheet binds width 54.0 TAPED "sealed key"
 via the flag.
 STAMP: RECORDED: 2026-07-26 17:59 UTC · 1c93dd0 · CLEAN
 RESULT: 1392 passed, 1 skipped, 3 warnings in 172.22s (0:02:52)
+
+## 2026-07-26 — REGRESSION + INTEGRATION AUDIT (EST-986945 sheets)
+STATE CHECK: suite CLEAN at 121a0e8 BEFORE any fix (1392/1/3) — zero
+failing pins. Range 8cd195b..HEAD = 42 commits, all ruled+stamped work
+(gable tool → dormer tool → governing → depth/cheeks → my 4 items) + 11
+log-only auto-commits. NO unstamped code in the range. The measure-tool
+capabilities Howard attributed to "external updates" landed 2026-06-27
+via code-carrying auto-commits ebac65e/e190a1d/a7b09bc (parallel jobs,
+no stamped messages = bypassed the handback discipline at landing), but
+their tests ride in the suite and are green today.
+DEFECT MECHANISM (evidence-backed, NOT the expected schema mismatch):
+all 4 sheet endpoints returned 200 with full geometry for EST-986945's
+new-format run (curl + browser). ElevationSheetsPanel probed ONCE at
+mount (useEffect [est.id]); run completed at 18:16 while the page was
+open → empty state stuck until manual reload.
+FIX: AIMeasureButton dispatches `ai-run-completed` (detail.estimateId)
+on run success; panel re-probes, scoped to its estimate. Pins in
+test_inline_elevation_sheets.py (TestRunCompletedRefresh). Verified in
+browser: wrong-id event → no refetch; right-id event → +4 fetches; SVG
+renders. Fixture sheets regression-checked: Letrick 54/30 (sealed key),
+red house 27/37, doug jones 50/30 — all 200.
+DORMER NOTE: EST-986945 run prompt_hash cbcb392fc94104fa — IDENTICAL to
+both red-house runs in extraction_variance_report.md. NO extraction/
+prompt change landed; the better dormer outcome = contractor dormer
+quads + gable triangles governing (2+2 on the run). Taxonomy fix
+remains OPEN (P2 scored trial).
+MONEY FLAGS (await ruling before pricing): _per_elevation_breakdown is
+advisory today (lp_package_routes does not consume it); the moment
+per-profile splits feed materialize quote lines it needs a ruling.
+STAMP: RECORDED: 2026-07-26 18:46 UTC · 06dac7e · CLEAN
+RESULT: 1394 passed, 1 skipped, 3 warnings in 187.26s (0:03:07)
