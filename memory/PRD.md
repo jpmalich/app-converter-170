@@ -5254,3 +5254,27 @@ Verified live: finish photo 2 → picker reopens → pick photo 3 →
 guided flow again → cancel → no picker. Zero page errors.
 STAMP: RECORDED: 2026-07-26 14:34 UTC · f16bc3a · CLEAN
 RESULT: 1387 passed, 1 skipped, 3 warnings in 235.44s (0:03:55)
+
+## 2026-07-26 — SEALED-KEY PORTABILITY (ruled; server-move prep)
+No runtime code matches on estimate numbers anymore.
+- Audit (delivered in chat): only EST-373526 had runtime value-binding
+  lookups (2 gates); DEMO-LETRICK is demo_key-based machinery; EST-067615
+  / EST-510771 / EST-910869 are tests/seed/scripts only. Waste, dormer
+  depth default, pricing, labor: code constants + catalog collections —
+  never read from estimates.
+- Gates swapped: _apply_key_bound_areas (lp_package_routes.py) +
+  _sealed_tape_basis (elevation_sheets.py) now match
+  est.sealed_key == "letrick_v3" (portable doc flag). Sealed VALUES stay
+  in letrick_hand_takeoff_key.py (code), never in the doc.
+- Projections: _load_run + the sheet endpoint now project sealed_key
+  (gate silently never opened without this).
+- Migration: live DB Letrick doc flagged; fixtures/docs/estimates.json +
+  manifest.json checksum updated; seed_runner.py verify GREEN (57/0).
+- Pins: tests/test_sealed_key_portability.py (gate strings, projections,
+  routes-wide sweep for estimate-number matching, fixture flag, sealed
+  values stay in code). test_letrick_item3_chase_ratification.py gate
+  test updated: number-only doc no longer opens the gate.
+Verified live: Letrick back sheet binds width 54.0 TAPED "sealed key"
+via the flag.
+STAMP: RECORDED: 2026-07-26 17:59 UTC · 1c93dd0 · CLEAN
+RESULT: 1392 passed, 1 skipped, 3 warnings in 172.22s (0:02:52)
