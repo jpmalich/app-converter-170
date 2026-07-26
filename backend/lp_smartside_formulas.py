@@ -187,15 +187,18 @@ BATTEN_STOCK_LENGTH_FT = 16.0
 #                    starter line on B&B composition is a BUG (pinned)
 #   gable factor   → ×0.7, same as lap (carried by the measurement
 #                    engine's C4 gable-area convention upstream)
-#   panel waste    → default 10% incl. B&B panels; contractor's dial
-#                    overrides per estimate (their judgment,
-#                    provenance-visible); no global default changes
+#   panel waste    → family default 30% (SEALED 2026-07-24 — Casile
+#                    68-panel walk is the standing proof; corrected here
+#                    by ruling C 2026-07-26; the 2026-07-16 "10% incl.
+#                    B&B" registry value was superseded by the seal);
+#                    contractor's visible waste field overrides per
+#                    estimate — no silent waste anywhere
 BB_RULED_FINAL = {
     "batten_sku": '190 Series Trim 19/32" x 3" x 16\'',
     "default_spacing_in": 16,
     "starter_on_bb": False,
     "gable_factor": "0.7 — same as lap, applied upstream (C4)",
-    "panel_waste_default": 0.10,
+    "panel_waste_default": 0.30,
 }
 
 

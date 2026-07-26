@@ -246,16 +246,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Populated by both the fresh-run path and the resume path.
   const [currentRunId, setCurrentRunId] = useState(null);
   const [refineOpen, setRefineOpen] = useState(false);
-  // Iter 51: Optional "quote gables as shake" override. Adds a shake-
-  // siding line for the total gable ft² and deducts that area from the
-  // main Charter Oak / Ascend siding qty so we don't double-count.
+  // RULING B (2026-07-26): "quote gables/dormers as shake" are a thin
+  // alias over the per-elevation breakdown — the toggle sets the
+  // surfaces' profile to shake and re-derives lines via /measure/map
+  // (the conventions path). The Iter 51/52 flat swap math is retired.
   const [quoteGablesAsShake, setQuoteGablesAsShake] = useState(false);
-  const [shakeSku, setShakeSku] = useState("Pelican Bay Shakes 9\"");
-  // Iter 52: Same idea for dormer faces — homeowners often want shake or
-  // an accent siding on the dormer for visual interest. Independent
-  // toggle + SKU from gables so they can be quoted differently.
   const [quoteDormersAsShake, setQuoteDormersAsShake] = useState(false);
-  const [dormerShakeSku, setDormerShakeSku] = useState("Pelican Bay Shakes 9\"");
   // Iter 47: contractor can override Claude's wall geometry inline.
   // Tracks whether walls were edited so apply() refreshes lines via
   // /measure/map (otherwise the pre-rolled lines are reused).
@@ -2103,63 +2099,41 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         }
       }
 
-      // Shared swap routine: pull `swapSqft` ft² out of the headline
-      // siding line and add it as a separate shake line. Used for both
-      // the gable and dormer toggles below.
-      const swapSidingToShake = (currentToApply, swapSqft, sku) => {
-        if (!sku || swapSqft <= 0) return currentToApply;
-        const isLp = sku.startsWith("LP");
-        const tab = isLp ? "lp_smart" : "vinyl";
-        const section = isLp ? "LP Smart Siding" : "Vinyl Siding";
-        const unit = isLp ? "PCS" : "SQ";
-        const qty = isLp ? Math.ceil(swapSqft / 4) : Math.ceil(swapSqft / 100);
-        const deductSq = Math.ceil(swapSqft / 100);
-        const lines = (currentToApply.lines || []).map((ln) => ({ ...ln }));
-        const sidingPrefix = isLp ? "LP Smart Side" : "Charter Oak";
-        const idx = lines.findIndex(
-          (l) => (l.tab || "vinyl") === tab && (l.name || "").startsWith(sidingPrefix)
-        );
-        if (idx >= 0) {
-          lines[idx] = {
-            ...lines[idx],
-            qty: Math.max(0, (Number(lines[idx].qty) || 0) - deductSq),
-          };
+      // RULING B (2026-07-26): the flat ceil(sqft/4) swap math RETIRED.
+      // The toggles are a thin alias — they set gable/dormer surfaces to
+      // SHAKE on the per-elevation breakdown and re-derive the lines via
+      // the SAME conventions path (/measure/map) a hand-set profile uses.
+      // Equivalence by construction: toggle ≡ hand-set profile.
+      if (quoteGablesAsShake || quoteDormersAsShake) {
+        const meas = { ...(toApply.measurements || {}) };
+        const perElev = (meas._per_elevation_breakdown || []).map((e) => ({ ...e }));
+        const per = { ...(meas._per_profile_sqft || {}) };
+        let moved = false;
+        const setSurfaceShake = (e, kind) => {
+          const sqft = Number(e[`${kind}_sqft`]) || 0;
+          if (sqft <= 0) return;
+          const from = e[`${kind}_profile`] || "lap";
+          if (from === "shake") return;
+          e[`${kind}_profile`] = "shake";
+          per[from] = Math.max(0, (Number(per[from]) || 0) - sqft);
+          per.shake = (Number(per.shake) || 0) + sqft;
+          moved = true;
+        };
+        for (const e of perElev) {
+          if (quoteGablesAsShake) setSurfaceShake(e, "gable");
+          if (quoteDormersAsShake) setSurfaceShake(e, "dormer");
         }
-        const existing = lines.findIndex(
-          (l) => (l.tab || "vinyl") === tab && l.name === sku
-        );
-        if (existing >= 0) {
-          lines[existing] = {
-            ...lines[existing],
-            qty: (Number(lines[existing].qty) || 0) + qty,
-          };
+        if (moved) {
+          const newMeas = { ...meas, _per_elevation_breakdown: perElev, _per_profile_sqft: per };
+          try {
+            const { data } = await api.post("/measure/map", { measurements: newMeas });
+            toApply = { ...toApply, measurements: newMeas, lines: data.lines || toApply.lines };
+            toast.success("Gable/dormer surfaces set to SHAKE on the breakdown — lines re-derived via the conventions path (sealed shake waste applies)");
+          } catch {
+            toast.error("Could not re-derive lines for the shake override — applied without it. Set the profile on the breakdown card instead.");
+          }
         } else {
-          lines.push({ tab, section, name: sku, unit, qty, mat: 0, lab: 0 });
-        }
-        return { ...currentToApply, lines };
-      };
-
-      const gableSqft = preview?.measurements?._ai_gable_sqft || 0;
-      const dormerSqft = preview?.measurements?._ai_dormer_sqft || 0;
-      // Iter 79j.71 — single-owner guard: when the per-elevation profile
-      // breakdown already quotes a surface as shake (its own SKU line),
-      // the toggle would bill the same ft² twice AND deduct it from a lap
-      // line that never contained it.
-      const perElev = preview?.measurements?._per_elevation_breakdown || [];
-      const dormerAlreadyShake = perElev.some((e) => (e.dormer_sqft || 0) > 0 && e.dormer_profile === "shake");
-      const gableAlreadyShake = perElev.some((e) => (e.gable_sqft || 0) > 0 && e.gable_profile === "shake");
-      if (quoteGablesAsShake && gableSqft > 0) {
-        if (gableAlreadyShake) {
-          toast.info("Gables are already quoted as shake by the profile breakdown — toggle skipped to avoid double-counting.");
-        } else {
-          toApply = swapSidingToShake(toApply, gableSqft, shakeSku);
-        }
-      }
-      if (quoteDormersAsShake && dormerSqft > 0) {
-        if (dormerAlreadyShake) {
-          toast.info("Dormers are already quoted as shake by the profile breakdown — toggle skipped to avoid double-counting.");
-        } else {
-          toApply = swapSidingToShake(toApply, dormerSqft, dormerShakeSku);
+          toast.info("Shake override: those surfaces are already shake (or carry no ft²) — nothing to move.");
         }
       }
 
@@ -3984,22 +3958,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)]">
                               Quote gables as shake
                             </span>
-                            {quoteGablesAsShake && (
-                              <select
-                                value={shakeSku}
-                                onChange={(e) => setShakeSku(e.target.value)}
-                                className="ml-2 px-1 py-0.5 border border-[var(--border)] text-xs"
-                                data-testid="ai-measure-shake-sku"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <option value={'Pelican Bay Shakes 9"'}>Pelican Bay Shakes 9&quot; (vinyl)</option>
-                                <option value={'LP Strand Shake 3/8" x 12" x 4\''}>LP Strand Shake 3/8&quot; × 12&quot; × 4&apos;</option>
-                              </select>
-                            )}
                           </label>
                           {quoteGablesAsShake && (
                             <div className="text-[10px] text-[var(--ink-2)] mt-1 ml-7" data-testid="ai-measure-shake-preview">
-                              On Apply: <span className="font-bold">{shakeSku}</span> qty = {shakeSku.startsWith("LP") ? Math.ceil((preview?.measurements?._ai_gable_sqft || 0) / 4) + " PCS" : Math.ceil((preview?.measurements?._ai_gable_sqft || 0) / 100) + " SQ"} · main siding reduced by {Math.ceil((preview?.measurements?._ai_gable_sqft || 0) / 100)} SQ
+                              On Apply: gable surfaces flip to <span className="font-bold">SHAKE</span> on the per-elevation breakdown ({(preview?.measurements?._ai_gable_sqft || 0).toFixed(0)} ft²) — lines re-derive via the conventions path (sealed shake waste 15%). Same result as hand-setting the profile.
                             </div>
                           )}
                         </>
@@ -4021,22 +3983,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                             <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-2)]">
                               Quote dormers as shake
                             </span>
-                            {quoteDormersAsShake && (
-                              <select
-                                value={dormerShakeSku}
-                                onChange={(e) => setDormerShakeSku(e.target.value)}
-                                className="ml-2 px-1 py-0.5 border border-[var(--border)] text-xs"
-                                data-testid="ai-measure-dormer-shake-sku"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <option value={'Pelican Bay Shakes 9"'}>Pelican Bay Shakes 9&quot; (vinyl)</option>
-                                <option value={'LP Strand Shake 3/8" x 12" x 4\''}>LP Strand Shake 3/8&quot; × 12&quot; × 4&apos;</option>
-                              </select>
-                            )}
                           </label>
                           {quoteDormersAsShake && (
                             <div className="text-[10px] text-[var(--ink-2)] mt-1 ml-7" data-testid="ai-measure-dormer-shake-preview">
-                              On Apply: <span className="font-bold">{dormerShakeSku}</span> qty = {dormerShakeSku.startsWith("LP") ? Math.ceil((preview?.measurements?._ai_dormer_sqft || 0) / 4) + " PCS" : Math.ceil((preview?.measurements?._ai_dormer_sqft || 0) / 100) + " SQ"} · main siding reduced by {Math.ceil((preview?.measurements?._ai_dormer_sqft || 0) / 100)} SQ
+                              On Apply: dormer surfaces flip to <span className="font-bold">SHAKE</span> on the per-elevation breakdown ({(preview?.measurements?._ai_dormer_sqft || 0).toFixed(0)} ft²) — lines re-derive via the conventions path (sealed shake waste 15%). Same result as hand-setting the profile.
                             </div>
                           )}
                         </>

@@ -10,10 +10,11 @@ ALREADY RULED + WIRED (not gated, pinned in place):
     (_force_profile_measurements writes / _apply_default_profile reads,
     ruled slice 1; B&B starter OFF ruled+pinned).
   - lp_package.py: shake 540-series trim bump ONLY (ruled 2026-07-17).
-THE UNRULED GAP (this gate): mixed-family splits do NOT reach the LP
-PACKAGE materialize siding lines — that wiring waits on Howard's ruling
-on memory/proposals/per_elevation_splits_lp_money_proposal.md. Any NEW
-consumption point in the LP package path trips this gate.
+THE RULED WIRING (Howard A/B/C, 2026-07-26): conservation lives in
+lp_package._conserve_per_profile; the mapper's per-profile branch prices
+each family at its sealed family waste. This gate now freezes
+consumption at the POST-RULING set — growth beyond it needs a new
+ruling.
 """
 from pathlib import Path
 
@@ -27,13 +28,15 @@ def test_lp_package_split_consumption_frozen_at_ruled_set():
     # lp_package_routes: exactly the 2 default-profile-inheritance touches
     assert LP_ROUTES.count("_per_profile_sqft") == 2, (
         "per-profile consumption in lp_package_routes.py changed — "
-        "new LP-money wiring requires Howard's ruling on the splits proposal"
+        "new LP-money wiring requires Howard's ruling"
     )
-    # lp_package: exactly the 1 ruled shake 540-bump read
-    assert LP_PKG.count("_per_profile_sqft") == 1, (
+    # lp_package: shake 540-bump read + the ruled conservation pass
+    # (ruling A 2026-07-26: _conserve_per_profile reads + rewrites)
+    assert LP_PKG.count("_per_profile_sqft") == 3, (
         "per-profile consumption in lp_package.py changed — "
-        "new LP-money wiring requires Howard's ruling on the splits proposal"
+        "new LP-money wiring requires Howard's ruling"
     )
+    assert "_conserve_per_profile(measurements)" in LP_PKG
     # the raw breakdown never enters the LP package path at all
     for src, name in ((LP_ROUTES, "lp_package_routes.py"), (LP_PKG, "lp_package.py")):
         assert "_per_elevation_breakdown" not in src, (

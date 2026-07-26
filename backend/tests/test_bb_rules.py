@@ -87,7 +87,10 @@ def test_ruled_final_registry():
     assert r["batten_sku"] == '190 Series Trim 19/32" x 3" x 16\''
     assert r["default_spacing_in"] == 16
     assert r["starter_on_bb"] is False
-    assert r["panel_waste_default"] == 0.10
+    # PIN AMENDED (ruling C, 2026-07-26): was 0.10 (2026-07-16 registry) —
+    # superseded by the SEALED 2026-07-24 family waste (B&B 30%, Casile
+    # 68-panel walk). The split path must never consume 10 for B&B.
+    assert r["panel_waste_default"] == 0.30
     assert "0.7" in r["gable_factor"]
 
 

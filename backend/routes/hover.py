@@ -1895,6 +1895,22 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
     for tab in ("vinyl", "ascend", "lp_smart"):
         section = _PROFILE_SECTION_BY_TAB[tab]
         for family, sqft in positive.items():
+            # UNKNOWN family (ruled 2026-07-26 A): never priced by guess —
+            # hard amber flag on the LP tab, qty 0.
+            if family == "unknown":
+                if tab != "lp_smart":
+                    continue
+                out.append({
+                    "tab": tab,
+                    "section": section,
+                    "name": "UNCLASSIFIED SIDING PROFILE",
+                    "unit": "SQFT",
+                    "qty": 0,
+                    "note": (f"⚠ {sqft:.0f} ft² carries an unclassifiable profile "
+                             "callout — classify by hand before quoting; never "
+                             "priced by guess (ruled 2026-07-26 A)"),
+                })
+                continue
             # Iter 78ab — flag-aware LP override. When
             # LP_AI_FORMULAS_V1 is ON, swap the legacy 9.09 sqft/PCS
             # row for the PDF-accurate per-profile coverage rate.
@@ -1930,16 +1946,34 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
             # Vinyl + Ascend keep the legacy 1-decimal quantity to
             # preserve existing quote behaviour.
             if tab == "lp_smart" and lp_formulas.is_enabled():
+                # WASTE IS FAMILY-DEFAULTED, split path corrected by
+                # ruling C (2026-07-26): each family line defaults to ITS
+                # family waste (lap 10 · B&B/vertical 30 · shake 15 ·
+                # nickel gap 12 — sealed 2026-07-24). The ONE visible
+                # estimate field governs its own (selected) family and
+                # single-family jobs — never another family's line.
+                from lp_conventions import family_waste_default_pct
                 _w = measurements.get("_waste_pct")
-                qty = lp_formulas.pieces_needed(
-                    sqft, sqft_per_unit,
-                    float(_w) if _w is not None else lp_formulas.DEFAULT_WASTE)
+                _sel = measurements.get("_default_family")
+                _fam_key = "board_batten" if family == "vertical" else family
+                if _w is not None and (len(positive) <= 1 or family == _sel):
+                    _waste = float(_w)
+                    _waste_src = "estimate field"
+                else:
+                    _waste = family_waste_default_pct(_fam_key) / 100.0
+                    _waste_src = "family default"
+                qty = lp_formulas.pieces_needed(sqft, sqft_per_unit, _waste)
                 waste_included = True
             else:
                 qty = round(sqft / sqft_per_unit, 1)
                 waste_included = False
+                _waste = None
+                _waste_src = None
             if qty <= 0:
                 continue
+            _note = _composition_note(family, sqft)
+            if _waste_src == "family default":
+                _note += f" · waste {_waste * 100:g}% (family default — sealed 2026-07-24)"
             out.append({
                 "tab": tab,
                 "section": section,
@@ -1947,7 +1981,7 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
                 "unit": unit,
                 "qty": qty,
                 "_waste_included": waste_included,
-                "note": _composition_note(family, sqft),
+                "note": _note,
             })
     return out
 

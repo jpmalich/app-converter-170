@@ -221,11 +221,51 @@ def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
             "feature_heights": t["feature_heights"], "flags": flags}
 
 
+def _conserve_per_profile(m: dict) -> dict:
+    """CONSERVATION (ruling A, 2026-07-26): Σ family ft² == the siding ft²
+    the package prices (post key-bound overrides). Residue → the DEFAULT
+    family; if the default can't absorb a negative residue, scale all
+    families proportionally. Splits reallocate ft² — never create or
+    destroy it. Single-family: no-op (fixture byte-identity by
+    construction)."""
+    per = m.get("_per_profile_sqft") or {}
+    positive = {f: float(s) for f, s in per.items()
+                if isinstance(s, (int, float)) and s > 0}
+    if len(positive) <= 1:
+        return m
+    try:
+        total = float(m.get("siding_sqft") or 0)
+    except (TypeError, ValueError):
+        total = 0.0
+    if total <= 0:
+        return m
+    s = sum(positive.values())
+    resid = round(total - s, 2)
+    if abs(resid) < 0.05:
+        return m
+    fam = m.get("_default_family") or "lap"
+    out = dict(positive)
+    newv = round(out.get(fam, 0.0) + resid, 2)
+    if newv < 0:
+        out = {f: round(v * total / s, 2) for f, v in positive.items()}
+        note = (f"CONSERVATION (ruled 2026-07-26 A): Σ families {s:g} ft² "
+                f"scaled proportionally to siding {total:g} ft²")
+    else:
+        out[fam] = newv
+        note = (f"CONSERVATION (ruled 2026-07-26 A): residue {resid:+g} ft² → "
+                f"{fam.upper().replace('_', ' ')} (Σ families == siding {total:g} ft²)")
+    m2 = dict(m)
+    m2["_per_profile_sqft"] = out
+    m2["_profile_conservation_note"] = note
+    return m2
+
+
 def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=None,
                         substitutions: dict | None = None,
                         colors: dict | None = None) -> dict:
     from routes.hover import _build_lines  # local import to dodge cycle
 
+    measurements = _conserve_per_profile(measurements)
     with override_flag(True):
         lines = [l for l in _build_lines(dict(measurements)) if l.get("tab") == "lp_smart"]
 

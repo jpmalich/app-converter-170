@@ -869,6 +869,12 @@ def _apply_default_profile(measurements: dict, est: dict) -> dict:
     when a non-lap default is set on an otherwise single-profile job.
     """
     profile = est.get("default_siding_profile")
+    # Surface the selected family (rulings A/C, 2026-07-26): conservation
+    # residue lands on it; the visible waste field governs ITS split line;
+    # other families default by family.
+    measurements = dict(measurements)
+    measurements["_default_family"] = (
+        profile if profile in _DEFAULT_PROFILES else "lap")
     if profile not in _DEFAULT_PROFILES:
         return measurements
     per_profile = measurements.get("_per_profile_sqft") or {}
