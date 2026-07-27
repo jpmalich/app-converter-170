@@ -1,4 +1,6 @@
 # REAL-JOB DELTA REPORT — EST-562488 "3 Degree Rd" (2026-07)
+> **ADDENDUM 2026-07-27**: Howard ruled Q1–Q17 in one sitting; all seventeen landed as code.
+> Acceptance re-derive + regenerated app-vs-real table: `/app/memory/rulings_q1_q17_landed_2026-07-27.md`.
 **Report only. No code was touched. Rules with the pasted Completeness Matrix in ONE sitting.**
 
 ## Job identity & provenance

@@ -1,4 +1,8 @@
 # MATERIAL-LIST COMPLETENESS MATRIX — 2026-07
+> **ADDENDUM 2026-07-27**: Q1–Q8 (this matrix) + Q9–Q17 (delta report) RULED and LANDED as code —
+> see `/app/memory/rulings_q1_q17_landed_2026-07-27.md`. Cells referencing retired conventions
+> (ISC 440 default, 16" battens, flat caulk/touch-up, soffit overhang-fallback-first, pooled corner
+> sticks, non-priced dormer SKUs) are superseded by the rulings file.
 **Report only. Nothing builds until Howard rules on this document.**
 
 ## How this matrix was built (per your correction)
