@@ -1,5 +1,10 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## WORKSTREAM STATUS (2026-07, post-handoff)
+- Render/dormer-placement work TRANSFERRED to a human partner. Agent workstream = MATERIAL-LIST COMPLETENESS only.
+- **DELIVERED**: Material-List Completeness Matrix (report only, no code changes) → `/app/memory/material_completeness_matrix_2026-07.md`. Rows seeded from the full Price Catalog (SECTION_LAYOUT) + kickoff standard-job checklist; cells = DERIVED (formula + ruling) / FLAGGED-PENDING / MISSING across Photo · Hover · Blueprint; family-dimension rows (starter vs J-at-base, battens, family waste); Hover-disease trio (Soffit, J-channel, Porch Ceilings) as named rows; dormer fascia/OSC non-priced lines + the five contractor-labor rows with pending states; "LOUD LIST" of never-derived rows + 8 ruling questions.
+- **GATE**: Nothing builds until Howard reads the matrix and rules. Queued behind it (authorized): MODEL LEDGER panel, Part-2 Add-Dormer drag-to-adjust, money-surfaces map.
+
 ## THESIS
 ProQuotes exists to give contractors accurate, reliable, tape-provable takeoffs WITHOUT costing them margin the way per-scan tools do. Accuracy and honesty are the product. Everything else is optional. When prioritizing, features that serve measurement accuracy, honesty, or contractor margin outrank features that serve appearance or homeowner persuasion.
 
