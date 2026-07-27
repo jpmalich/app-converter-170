@@ -2,6 +2,80 @@ import React from "react";
 import { useT } from "@/lib/i18n";
 import { recomputeWasteQtys, recomputeAllWaste } from "@/lib/wasteLogic";
 import PorchCeilingsCard from "./PorchCeilingsCard";
+import api from "@/lib/api";
+import { toast } from "sonner";
+
+/* WALL-HEIGHT ONE-TAP (authorized 2026-07-27): estimate-page field that
+   tapes B&B wall heights straight into the batten_wall_heights checklist —
+   closing it feeds the batten +height term and retires the standing flag. */
+function WallHeightTapeField({ est }) {
+  const entry = (est?.lp_flag_checklist || {})["batten_wall_heights"] || {};
+  const [val, setVal] = React.useState("");
+  const [state, setState] = React.useState(entry.status === "closed" ? "closed" : "open");
+  const [savedTotal, setSavedTotal] = React.useState(() => {
+    const hs = (entry.values || {}).wall_heights_ft || [];
+    return hs.reduce((a, b) => a + Number(b || 0), 0);
+  });
+  const save = async () => {
+    const hs = String(val || "").split(/[,\s]+/).map(Number).filter((n) => n > 0);
+    if (!hs.length) { toast.error("Enter taped wall heights in feet, e.g. 9, 9, 18.5"); return; }
+    try {
+      await api.post(`/estimates/${est.id}/flag-checklist`, {
+        code: "batten_wall_heights", action: "close",
+        values: { wall_heights_ft: hs },
+      });
+      setState("closed");
+      setSavedTotal(hs.reduce((a, b) => a + b, 0));
+      toast.success("Wall heights taped — batten height term feeds the next derivation; flag cleared");
+      window.dispatchEvent(new CustomEvent("lp-flag-checklist-changed"));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not save wall heights");
+    }
+  };
+  const reopen = async () => {
+    try {
+      await api.post(`/estimates/${est.id}/flag-checklist`, {
+        code: "batten_wall_heights", action: "reopen",
+      });
+      setState("open");
+      toast.success("Flag reopened — batten height term back to 0 pending tape");
+      window.dispatchEvent(new CustomEvent("lp-flag-checklist-changed"));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Could not reopen the flag");
+    }
+  };
+  return (
+    <div className="mt-4 pt-4 border-t border-[var(--border)]">
+      <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+        B&amp;B wall heights (taped)
+      </div>
+      {state === "closed" ? (
+        <div className="text-sm" data-testid="wall-height-closed">
+          <span className="text-[var(--ink-2)]">Taped — {savedTotal.toFixed(1)} ft total feeds the batten height term.</span>
+          <button type="button" className="ml-2 underline text-[11px] uppercase font-bold" onClick={reopen} data-testid="wall-height-reopen">
+            Reopen
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            className="input h-9 text-sm w-56"
+            placeholder="heights ft, e.g. 9, 9, 18.5, 9"
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            data-testid="wall-height-input"
+          />
+          <button type="button" className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[var(--border)]" onClick={save} data-testid="wall-height-save">
+            Tape it
+          </button>
+        </div>
+      )}
+      <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+        Closes the batten_wall_heights flag — +1 run × height per wall re-derives batten LF on the next rebuild
+      </p>
+    </div>
+  );
+}
 
 export default function SettingsRow({ est, update }) {
   const t = useT();
@@ -112,6 +186,7 @@ export default function SettingsRow({ est, update }) {
               <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
                 Applied on HOVER / Blueprint import — collapses or splits the two soffit lines automatically
               </p>
+              <WallHeightTapeField est={est} />
             </div>
           )}
           {/* Q8 (ruled 2026-07-27): per-estimate color tier — re-lands

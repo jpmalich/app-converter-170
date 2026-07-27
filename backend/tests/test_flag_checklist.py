@@ -119,3 +119,33 @@ class TestFlagChecklist:
         assert r.status_code == 200
         _, pkg = _batten_qty(session, hover_est)
         assert next(f for f in pkg["hover_mapping_flags"] if f["code"] == "opening_schedule")["status"] == "closed"
+
+
+class TestWallHeightOneTap:
+    """WALL-HEIGHT ONE-TAP (authorized 2026-07-27): the estimate-page tape
+    field closes batten_wall_heights — and the taped total now feeds the
+    TAB-LINE rebuild too (rebuild_lp_tab_lines folds the closed checklist,
+    same as the package paths)."""
+
+    def test_taped_heights_feed_tab_line_rebuild(self, session, hover_est):
+        r = session.post(f"{API}/estimates/{hover_est}/flag-checklist",
+                         json={"code": "batten_wall_heights", "action": "close",
+                               "values": {"wall_heights_ft": [9, 9, 18.5]}}, timeout=15)
+        assert r.status_code == 200, r.text
+        rr = session.post(f"{API}/estimates/{hover_est}/hover-lp-run",
+                          json={"hover_run_id": HOVER_RUN, "profile": "board_batten"}, timeout=30)
+        assert rr.status_code == 200, rr.text
+        est = session.get(f"{API}/estimates/{hover_est}", timeout=30).json()
+        batten = next(l for l in est["lines"]
+                      if l.get("tab") == "lp_smart" and l["name"] == BATTEN)
+        # 2610 ft² @ 8" o.c. (Q9) = 3915 LF + Σ taped 36.5 = 3951.5 → ÷16 = 247
+        assert batten["qty"] == 247
+        # reopen reverts the term on the next rebuild
+        session.post(f"{API}/estimates/{hover_est}/flag-checklist",
+                     json={"code": "batten_wall_heights", "action": "reopen"}, timeout=15)
+        session.post(f"{API}/estimates/{hover_est}/hover-lp-run",
+                     json={"hover_run_id": HOVER_RUN, "profile": "board_batten"}, timeout=30)
+        est2 = session.get(f"{API}/estimates/{hover_est}", timeout=30).json()
+        batten2 = next(l for l in est2["lines"]
+                       if l.get("tab") == "lp_smart" and l["name"] == BATTEN)
+        assert batten2["qty"] == 245  # 3915 ÷ 16 — height term back to 0

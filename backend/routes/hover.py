@@ -2538,6 +2538,19 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     # Q8 (ruled 2026-07-27): per-estimate color tier re-lands derivations.
     if est.get("color_tier"):
         scoped["_color_tier"] = est["color_tier"]
+    # WALL-HEIGHT ONE-TAP (authorized 2026-07-27): a closed
+    # batten_wall_heights checklist entry (taped heights) feeds the batten
+    # +height term on the TAB-LINE rebuild too — same fold as the package
+    # paths (_apply_flag_checklist); TAPED provenance rides the entry.
+    _bbf = (est.get("lp_flag_checklist") or {}).get("batten_wall_heights") or {}
+    if _bbf.get("status") == "closed":
+        try:
+            _bbh = float(sum(float(h) for h in
+                             ((_bbf.get("values") or {}).get("wall_heights_ft") or [])))
+        except (TypeError, ValueError):
+            _bbh = 0.0
+        if _bbh > 0:
+            scoped["_bb_wall_height_ft"] = _bbh
     # Family-defaulted waste flows INTO the derivation (sealed
     # 2026-07-24): profile siding rows derive with the resolved field.
     scoped["_waste_pct"] = float(waste_field or 0) / 100.0
@@ -2671,7 +2684,8 @@ async def hover_lp_run(
         raise HTTPException(status_code=422, detail=f"profile must be one of {_DEFAULT_PROFILES}")
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
-        {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1})
+        {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
+         "color_tier": 1, "lp_flag_checklist": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
     if est.get("kind") != "lp_smart":

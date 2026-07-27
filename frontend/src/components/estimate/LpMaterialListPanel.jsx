@@ -172,6 +172,15 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
   const subs = useMemo(() => ({}), []);
   useEffect(() => { onPackage?.(pkg); /* eslint-disable-next-line */ }, [pkg]);
 
+  // WALL-HEIGHT ONE-TAP (2026-07-27): the estimate-page tape field closes
+  // the batten flag — refetch the derived package live when it fires.
+  useEffect(() => {
+    const h = () => fetchPackage(colors, subs);
+    window.addEventListener("lp-flag-checklist-changed", h);
+    return () => window.removeEventListener("lp-flag-checklist-changed", h);
+    // eslint-disable-next-line
+  }, [colors, subs]);
+
   const fetchPackage = useCallback(async (nextColors, nextSubs) => {
     setRefreshing(true);
     try {
