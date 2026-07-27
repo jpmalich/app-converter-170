@@ -53,7 +53,10 @@ class TestSealedConventionsOnTheTab:
     def test_osc_is_6in_whole_stick(self, jon_rows):
         assert "540 Series OSC 5/4\" x 4\" x 16'" not in jon_rows  # retired SKU gone
         osc = jon_rows["540 Series OSC 5/4\" x 6\" x 16'"]
-        assert osc["qty"] == 9            # 140.33 LF ÷ 16, whole-stick, NO % bake
+        # PIN AMENDED (Q13 ruled 2026-07-27, 3 Degree Rd sitting): per-
+        # corner whole-stick round-up min 1 pc/corner — 20 corners × 1
+        # (7.02' avg) = 20; the pooled ÷16 basis (was 9) RETIRES.
+        assert osc["qty"] == 20
         assert not osc.get("raw_qty")
         assert (osc.get("mat") or 0) > 0  # catalog-bound, never a None/0 hole
 
@@ -64,19 +67,25 @@ class TestSealedConventionsOnTheTab:
         assert (t8.get("mat") or 0) > 0
 
     def test_440_4in_is_isc_pooling_only(self, jon_rows):
-        t4 = jon_rows["440 Series Trim 4/4\" x 4\" x 16'"]
-        assert t4["qty"] == 3             # ISC 36.92 LF ÷ 16 (was 23.5 via retired formula)
-        assert not t4.get("raw_qty")
+        # PIN AMENDED (Q12 ruled 2026-07-27): 540 5/4"×4" is the LP ISC
+        # DEFAULT — the 440 4/4"×4" machine row RETIRES (substitution
+        # option only); ISC sticks merge onto the 540 wrap line.
+        assert "440 Series Trim 4/4\" x 4\" x 16'" not in jon_rows
 
     def test_stick_rows_carry_no_extra_bake(self, jon_rows):
-        assert jon_rows["540 Series Trim 5/4\" x 4\" x 16'"]["qty"] == 33   # was 36.5
-        assert jon_rows["190 Series Trim 19/32\" x 3\" x 16'"]["qty"] == 97  # was 107
+        # PIN AMENDED (Q10/Q12/Q13 ruled 2026-07-27): 540-4" = wrap 33 +
+        # frieze 23 + ISC 6 per-corner = 62 (was 33 wrap-only).
+        assert jon_rows["540 Series Trim 5/4\" x 4\" x 16'"]["qty"] == 62
+        # PIN AMENDED (Q9 ruled 2026-07-27): battens @8" o.c. — 2064 ft²
+        # ÷ (2/3) = 3096 LF ÷ 16 = 194 (was 97 at the provisional 16").
+        assert jon_rows["190 Series Trim 19/32\" x 3\" x 16'"]["qty"] == 194
 
     def test_soffit_single_waste_and_porch(self, jon_rows):
-        # vented = ceil((184.17 eaves + 15.5 porch) / 21.3 × 1.10) = 11 —
-        # single ×1.10 (the old bake made it 10%-on-10%), porch included.
-        assert jon_rows["38 Series Soffit 16 x 16 Vented"]["qty"] == 11
-        assert jon_rows["38 Series Soffit 16 x 16 Closed"]["qty"] == 8      # was 9 (double-baked)
+        # PIN AMENDED (Q14a ruled 2026-07-27): the measured Hover soffit
+        # TOTAL governs over the overhang fallback — vented 11→14,
+        # closed 8→11 on Jon's measured total (proportional split).
+        assert jon_rows["38 Series Soffit 16 x 16 Vented"]["qty"] == 14
+        assert jon_rows["38 Series Soffit 16 x 16 Closed"]["qty"] == 11
 
     def test_one_family_holds(self, jon_rows):
         # B&B family waste 30% (CONTRACTOR-SPEC, sealed 2026-07-24):
@@ -116,7 +125,9 @@ class TestLaborZeroedV3:
 
     def test_retired_set_carries_both_generations(self):
         from lp_conventions import MISC_LABOR_ROWS, RETIRED_LABOR_DEFAULTS
-        assert set(RETIRED_LABOR_DEFAULTS) == set(MISC_LABOR_ROWS)
+        # Q1 (ruled 2026-07-27): tear-off + dumpster join MISC_LABOR_ROWS
+        # with NO retired machine generations (they never had defaults).
+        assert set(RETIRED_LABOR_DEFAULTS) == set(MISC_LABOR_ROWS) - {"tear-off", "dumpster"}
         assert RETIRED_LABOR_DEFAULTS["cap window"] == {25.0, 98.0}
         assert RETIRED_LABOR_DEFAULTS["clean up/ haul away job debris"] == {150.0, 334.0}
 
@@ -219,13 +230,23 @@ class TestV3MoneyWalk:
             sub_mat += q * float(l.get("mat") or 0)
             sub_lab += q * float(l.get("lab") or 0)
         assert round(sub_lab, 2) == 0.0        # labor-honest
-        assert round(sub_mat, 2) == 20025.74   # materials-true
+        # PIN AMENDED (Q1–Q17 sitting, ruled 2026-07-27) — Jon Casile
+        # BEFORE→AFTER walk (named delta, unprinted quote re-derives):
+        #   battens 97→194 (Q9 8" o.c.)      +97 × 19.66 = +1907.02
+        #   OSC 9→20 (Q13 per-corner)        +11 × 271.69 = +2988.59
+        #   540-4" 33→62 (Q10 frieze+Q12 ISC) +29 × 34.30 = +994.70
+        #   440-4"×4" 3→0 (Q12 merged)        row retired
+        #   soffit V 11→14, C 8→11 (Q14)     +3×85.83 +3×73.50 = +477.99
+        #   caulk 2→9, touch-up 1→2 (Q15)    +98.21 +60.96
+        #   Tear-Off/Dumpster rows appear qty 0 pending (Q1)
+        # sub_mat 20025.74 → 26468.61
+        assert round(sub_mat, 2) == 26468.61   # materials-true
         tax = sub_mat * 0.07
-        assert round(tax, 2) == 1401.80
+        assert round(tax, 2) == 1852.80
         base = sub_mat + tax + sub_lab
-        assert round(base, 2) == 21427.54
+        assert round(base, 2) == 28321.41
         sell = base / (1 - 0.30)
-        assert round(sell, 2) == 30610.77
+        assert round(sell, 2) == 40459.16
 
     def test_no_unflagged_labor_anywhere_on_walk_surface(self, session):
         est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()

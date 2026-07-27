@@ -51,7 +51,9 @@ SHAKE_WASTE = 0.15
 LP_FORBIDDEN_LINE_MARKERS = ("j-channel", "j channel", "finish trim", "coil")
 
 # LP trim system (rulings on record; full profile spec ALWAYS — never "440 Series" bare):
-ISC_TRIM_ITEM = "440 Series Trim 4/4\" x 4\" x 16'"       # per inside-corner location
+# RULED Q12 (2026-07-27, 3 Degree Rd): 540 5/4"×4" is the LP ISC DEFAULT —
+# crews run 540 in place of 440; 440 4/4"×4" demoted to substitution option.
+ISC_TRIM_ITEM = "540 Series Trim 5/4\" x 4\" x 16'"       # per inside-corner location
 FASCIA_RAKE_ITEM = "440 Series Trim 4/4\" x 8\" x 16'"    # fascia + rake boards
 WRAP_TRIM_ITEM = "540 Series Trim 5/4\" x 4\" x 16'"      # window/door wrap
 TRIM_STICK_LEN_FT = 16.0
@@ -241,19 +243,32 @@ def soffit_run_area_sqft(eaves_lf: float, rakes_lf: float, overhang_in: float,
     return round(runs * float(overhang_in or 0) / 12.0, 1)
 
 
-def fascia_rake_takeoff(eaves_lf: float, rakes_lf: float) -> dict:
+def fascia_rake_takeoff(eaves_lf: float, rakes_lf: float,
+                        dormer_fascia_lf: float = 0.0) -> dict:
     """LP fascia + rake boards: 440 Series Trim 4/4"×8"×16' — one product
     across both run types (RULED, amendment 2026-07-11). LF = eave runs +
-    rake SLOPE lengths (never plan-view). C4 (ruled 2026-07-13): stick-
-    count lines get whole-stick rounding as their ENTIRE allowance — no
-    percentage waste. Splice-and-round-up TOTAL sticks."""
-    total_lf = float(eaves_lf or 0) + float(rakes_lf or 0)
+    rake SLOPE lengths (never plan-view). C4 (ruled 2026-07-13): whole-
+    stick rounding is the ENTIRE allowance — no percentage waste.
+    Q16 (ruled 2026-07-27): rounding applies PER-SEGMENT where segment
+    data exists (eaves / rakes / dormer fascia are the known segments);
+    within each segment the LF is an aggregate → pooled, flagged.
+    Q4 (ruled 2026-07-27): dormer fascia LF POOLS into this line — the
+    separate non-priced dormer-fascia SKU retires."""
+    e = float(eaves_lf or 0)
+    r = float(rakes_lf or 0)
+    d = float(dormer_fascia_lf or 0)
+    total_lf = e + r + d
     if total_lf <= 0:
         return {"total_lf": 0.0, "ordered_pcs": 0, "flags": []}
+    segs = [lf for lf in (e, r, d) if lf > 0]
+    pcs = sum(int(math.ceil(lf / TRIM_STICK_LEN_FT - 1e-9)) for lf in segs)
     return {
         "total_lf": round(total_lf, 1),
-        "ordered_pcs": int(math.ceil(total_lf / TRIM_STICK_LEN_FT - 1e-9)),
-        "flags": [],
+        "ordered_pcs": pcs,
+        "dormer_fascia_lf": round(d, 1),
+        "flags": (["per-segment rounding (Q16): eaves/rakes/dormer segments; "
+                   "aggregate LF within each segment — pooled, flagged"]
+                  if len(segs) > 1 else []),
     }
 
 
@@ -330,6 +345,10 @@ MISC_LABOR_ROWS = (
     "cap patio door",
     "cap single garage door",
     "clean up/ haul away job debris",
+    # RULED Q1 (2026-07-27): tear-off + dumpster EXIST on every door,
+    # quantity AND labor contractor-entered — pending until set.
+    "tear-off",
+    "dumpster",
 )
 
 # Superseded machine defaults, BOTH retired generations (the 2026-07-23

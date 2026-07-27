@@ -213,6 +213,10 @@ class EstimateIn(BaseModel):
     mezzo_interior_color: str = ""
     mezzo_exterior_color: str = ""
     waste_pct: float = 0
+    # Q8 (ruled 2026-07-27): per-estimate color-tier selector — "standard"
+    # (default) or "architectural"; re-lands vinyl/ascend derivations on
+    # the Architectural-color catalog twins. Manual swap stays for one-offs.
+    color_tier: str = "standard"
     # Iter 78 — LP SmartSide soffit steering. Controls how the
     # auto-imported soffit qty is split between Vented (eaves) and
     # Closed (rakes) on LP estimates only. Backend's HOVER spec

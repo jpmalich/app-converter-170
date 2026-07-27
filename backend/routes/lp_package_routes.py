@@ -762,6 +762,18 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
                 "label": (f"Unpriced money-surface row: {l.get('name')} "
                           f"({l.get('tab') or 'vinyl'} tab, qty {l.get('qty'):g})"),
             })
+    # Q1 (ruled 2026-07-27): Tear-Off + Dumpster quantity is the
+    # contractor's — readiness panel shows them while unset.
+    _q1_seen = set()
+    for l in est.get("lines") or []:
+        nm = (l.get("name") or "")
+        if nm in ("Tear-Off", "Dumpster") and not (l.get("qty") or 0) and nm not in _q1_seen:
+            _q1_seen.add(nm)
+            items.append({
+                "kind": "qty_pending", "code": nm,
+                "label": (f"QUANTITY PENDING — {nm}: contractor-entered by ruling "
+                          "(Q1, 2026-07-27); set the quantity (and labor) before quoting"),
+            })
     # LABOR IS THE CONTRACTOR'S — v3 zeroing (sealed 2026-07-24): every
     # labor default is $0 until the contractor fills it. The quote carries
     # this labor-pending statement as one aggregated, always-visible item.
@@ -918,6 +930,12 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
         "window_count", "entry_door_count", "patio_door_count",
         "garage_door_count", "door_count", "opening_perimeter_lf",
         "stories", "overhang_in",
+        # Q10/Q14 (ruled 2026-07-27): MEASURED DATA NEVER DROPS — the
+        # report's soffit total, frieze runs and accessory counts pass
+        # through to the engine (3 Degree Rd: dropped soffit 2620 sqft
+        # and 683 LF of frieze were the two biggest misses).
+        "soffit_sqft", "level_frieze_lf", "sloped_frieze_lf",
+        "drip_edge_lf", "total_trim_sqft", "vent_count", "shutter_count",
     )
     m = {k: hover_meas[k] for k in passthrough if k in hover_meas}
     m["_hover_source"] = True
@@ -960,6 +978,21 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
         "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
         "verify": "Walk the corners on site — confirm OSC/ISC counts match the report",
     }]
+    # Q2 (ruled 2026-07-27): porch-ceiling FLAG when implied — flag-only,
+    # never auto-invent area. Implied when the measured soffit total reads
+    # a much deeper average overhang than the stated one.
+    _sof = float(m.get("soffit_sqft") or 0)
+    _runs = float(m.get("eaves_lf") or 0) + float(m.get("rakes_lf") or 0)
+    _oh_ft = float(m.get("overhang_in") or 12) / 12.0
+    if _sof > 0 and _runs > 0 and (_sof / _runs) > 2.0 * max(_oh_ft, 0.5):
+        flags.append({
+            "code": "porch_ceiling_implied",
+            "label": (f"porch ceilings IMPLIED (Q2 ruled 2026-07-27): measured soffit "
+                      f"{_sof:g} sqft over {_runs:g} LF of runs = {_sof / _runs:.1f}' avg "
+                      f"overhang vs stated {_oh_ft:g}' — enter Job-Info porch entries; "
+                      "flag-only, no area invented"),
+            "verify": "Measure porch ceilings on site and enter them in Job Info",
+        })
     fs = m.get("_facade_scope")
     if fs and fs.get("excluded"):
         excl = ", ".join(f"{k} {v:g} ft²" for k, v in fs["excluded"].items())

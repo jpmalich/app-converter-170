@@ -117,12 +117,18 @@ def test_rake_slope_never_plan_view():
 # ── LP fascia/rake + composition guard ──
 
 def test_fascia_rake_takeoff():
-    # C4 (ruled 2026-07-13): stick-count lines carry NO percentage waste —
-    # whole-stick rounding is the entire allowance. 181.4 ÷ 16 → 12.
+    # C4 (ruled 2026-07-13): stick-count lines carry NO percentage waste.
+    # Q16 (ruled 2026-07-27): PER-SEGMENT whole-stick rounding where
+    # segment data exists — ceil(108/16)=7 + ceil(73.4/16)=5 = 12;
+    # aggregate LF within each segment stays pooled, flagged.
     fr = fascia_rake_takeoff(108.0, 73.4)
     assert fr["total_lf"] == 181.4
     assert fr["ordered_pcs"] == 12
-    assert fr["flags"] == []  # splice-and-round-up + always-present RULED
+    assert any("per-segment" in f for f in fr["flags"])
+    # Q4 (ruled 2026-07-27): dormer fascia LF pools in as its own segment.
+    fr_d = fascia_rake_takeoff(108.0, 73.4, dormer_fascia_lf=30.0)
+    assert fr_d["ordered_pcs"] == 14  # 7 + 5 + ceil(30/16)=2
+    assert fr_d["dormer_fascia_lf"] == 30.0
 
 
 def test_lp_composition_bugs_detector():

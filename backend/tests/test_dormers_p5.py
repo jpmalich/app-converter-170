@@ -339,22 +339,17 @@ def test_redhouse_wall_course_fill_counted(session):
 
 
 def test_dormer_material_lines_flagged_non_priced(session):
-    """RULED 2026-07-23: dormer fascia (eave widths: 15'×2 = 30 LF) and
-    dormer OSC (2 posts × 5' knee × 2 dormers = 20 LF) join the material
-    list FLAGGED and NON-PRICED — footage exists, list says so, pricing
-    pending Howard's ruling. Rake/soffit stay off (pitch/overhang NOT READ)."""
+    """PIN AMENDED (Q4 ruled 2026-07-27): the separate NON-PRICED dormer
+    SKUs RETIRE — dormer fascia LF (15'×2 = 30 LF) POOLS into the 440-8"
+    fascia line as its own segment (+2 sticks), and dormer corners
+    (2 posts × 5' knee × 2 dormers) pool into OSC per-corner round-up
+    (+4 sticks). Rake/soffit stay off (pitch/overhang NOT READ)."""
     r = session.post(f"{API}/estimates/{LP_EST}/lp-package/preview", json={}, timeout=60)
     assert r.status_code == 200, r.text
-    lines = {l["name"]: l for l in r.json()["lines"] if "Dormer" in l["name"]}
-    fas = lines["Dormer fascia (eave)"]
-    osc = lines["Dormer outside corners (OSC)"]
-    assert fas["qty"] == 30.0 and fas["unit"] == "LF"
-    assert osc["qty"] == 20.0 and osc["unit"] == "LF"
-    for l in (fas, osc):
-        assert l["non_priced"] is True
-        assert l["pricing_status"] == "pending"
-        # ONE MONEY SURFACE (2026-07-23): dollar keys are stripped from
-        # the contractor preview entirely — absent, not null.
-        assert l.get("unit_sell") is None and l.get("line_sell") is None
-        assert "pricing pending ruling" in l["note"]
-    assert not any("Dormer rake" in n or "Dormer soffit" in n for n in lines)
+    lines = {l["name"]: l for l in r.json()["lines"]}
+    assert not any("Dormer" in n for n in lines), "separate dormer SKUs retired (Q4)"
+    fas = lines['440 Series Trim 4/4" x 8" x 16\'']
+    assert "dormer fascia 30" in fas["note"] and "Q4 ruled 2026-07-27" in fas["note"]
+    osc = lines['540 Series OSC 5/4" x 6" x 16\'']
+    assert "dormer corners pooled into OSC" in osc["note"]
+    assert "2 dormer(s) × 2 posts" in osc["note"]

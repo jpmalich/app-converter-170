@@ -143,7 +143,9 @@ def test_C_letrick_photo_regression(sess):
     AMENDED AGAIN (V3 ZEROING, sealed 2026-07-24): ALL labor = $0 until the
     contractor fills it — the +1430.00 conventions RETIRE (misc rows price $0)
     and the healed gutter/downspout $1.00/LF machine lab overrides drop −146.00
-    → 12901.52."""
+    → 12901.52. AMENDED AGAIN (Q12 ruled 2026-07-27, 3 Degree Rd sitting):
+    ISC default re-SKUs 440 4/4"×4" → 540 5/4"×4" (merged onto the wrap
+    line) — Letrick's 2 ISC sticks reprice at the 540 rate → 13037.21."""
     import os
     tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
     p = sess.post(f"{API}/admin/estimates/{LETRICK_ID}/lp-package/cost-preview",
@@ -154,7 +156,7 @@ def test_C_letrick_photo_regression(sess):
     pricing = summary.get("pricing") or {}
     total = pricing.get("total_sell") or summary.get("total_sell") or data.get("total_sell")
     assert total is not None, f"no total_sell; summary keys={list(summary.keys())} pricing={pricing}"
-    assert abs(float(total) - 12901.52) < 0.01, f"total_sell={total}, expected 12901.52"
+    assert abs(float(total) - 13037.21) < 0.01, f"total_sell={total}, expected 13037.21"
     wpa = summary.get("waste_pct_applied")
     assert wpa is not None, "summary.waste_pct_applied missing on letrick"
     assert abs(float(wpa) - 0.10) < 1e-6, f"waste_pct_applied={wpa}"

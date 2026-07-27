@@ -46,10 +46,12 @@ def group_for_line(line: dict):
         return "soffit_fascia"
     if "OSC" in name:
         return "osc"
-    if name == ISC_TRIM_ITEM:
-        return "isc"
+    # Q12 (ruled 2026-07-27): ISC default = 540 5/4"×4" — same SKU as the
+    # wrap line, one consolidated row, ONE color group (opening_trim).
     if name == WRAP_TRIM_ITEM:
         return "opening_trim"
+    if name == ISC_TRIM_ITEM:
+        return "isc"
     if section == "LP Smart Siding":
         return "siding"
     return None

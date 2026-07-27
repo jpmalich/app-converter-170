@@ -283,13 +283,18 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     # supplies MEASURED per-surface soffit (_soffit_closed_sqft), the
     # measured basis governs — rakes + ceilings compose as Closed
     # (ceilings via the porch-ceiling mechanism, no venting).
+    # Q14a (ruled 2026-07-27): a MEASURED soffit TOTAL likewise governs —
+    # the proportional rake share composes as Closed; removal applies only
+    # on the overhang-fallback basis.
+    _measured_soffit = ((measurements.get("_soffit_closed_sqft") or 0) > 0
+                        or (measurements.get("soffit_sqft") or 0) > 0)
     rake_soffit = next((l for l in lines if l["name"] == "38 Series Soffit 16 x 16 Closed"), None)
-    if rake_soffit is not None and not (measurements.get("_soffit_closed_sqft") or 0) > 0:
+    if rake_soffit is not None and not _measured_soffit:
         lines.remove(rake_soffit)
         system_enforced.append(
             "38 Series Soffit 16 x 16 Closed removed — LP soffit panels eaves only "
             "(no rake soffit wrap); rakes carry 440 4/4\"×8\" rake boards")
-    if not (measurements.get("_soffit_closed_sqft") or 0) > 0:
+    if not _measured_soffit:
         for l in lines:
             if l["name"] == "38 Series Soffit 16 x 16 Vented":
                 l["note"] = f"{l.get('note') or ''} — LP soffit panels eaves only (per-system rule)".strip(" —")
@@ -373,12 +378,20 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         cnt = int(measurements.get("outside_corner_count") or 0)
         feats = measurements.get("_ai_osc_features") or []
         if measurements.get("_hover_source") and lf > 0:
-            # RULED 2026-07-17 (261 Haugh shakedown): Hover supplies MEASURED
-            # corner LF — measured basis governs, whole-piece round-up once.
-            q = max(1, math.ceil(lf / 16.0 - 1e-9))
-            _set_line(OSC_ITEM, "LP Siding Accessories", q,
-                      f"Hover measured corner LF basis: {lf:g} LF ÷ 16' = {q} "
-                      f"({cnt} corner locations — field verify)",
+            # Q13 (ruled 2026-07-27): PER-CORNER whole-stick round-up,
+            # min 1 pc per corner — flat ÷16 LF pooling RETIRED (it was
+            # maximum-optimism cut yield; 3 Degree Rd: 11 app vs 19 real).
+            if cnt > 0:
+                per_h = lf / cnt
+                q = cnt * max(1, math.ceil(per_h / 16.0 - 1e-9))
+                note = (f"Hover {cnt} corner(s) × per-corner whole-stick round-up "
+                        f"({per_h:g}' each, min 1 pc/corner — Q13 ruled 2026-07-27)")
+            else:
+                q = max(1, math.ceil(lf / 16.0 - 1e-9))
+                note = (f"Hover corner LF {lf:g} ÷ 16' = {q} — POOLED (corner "
+                        "count unavailable; Q16: pooled only when segment data missing, flagged)")
+                flags.append("OSC pooled — Hover corner count unavailable (Q16 flag)")
+            _set_line(OSC_ITEM, "LP Siding Accessories", q, note,
                       _derivation={"kind": "osc_hover_lf", "lf": lf, "count": cnt})
         elif cnt > 0 or feats:
             bits = []
@@ -412,12 +425,19 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                       f"LP 16' outside-corner pieces — whole-piece: {lf:g} LF ÷ 16' = {q}",
                       _derivation={"kind": "osc_lf", "lf": lf})
 
-    # ── 440 4/4"×4": ISC locations only (full profile spec, never bare)
+    # ── ISC (Q12 ruled 2026-07-27: 540 5/4"×4" is the LP ISC DEFAULT —
+    # same SKU as the wrap line; merged into it after the wrap block so
+    # one consolidated 540-4" row carries both scopes. 440 4/4"×4"
+    # demoted to substitution option.)
     isc = isc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
+    isc_qty = 0
+    isc_note = ""
+    isc_deriv = None
     if isc:
-        _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", isc["qty"], isc["note"],
-                  _derivation={"kind": "isc", "heights": isc["heights"],
-                               "feature_heights": isc["feature_heights"]})
+        isc_qty = isc["qty"]
+        isc_note = isc["note"]
+        isc_deriv = {"kind": "isc", "heights": isc["heights"],
+                     "feature_heights": isc["feature_heights"]}
         if isc["amber"]:
             flags.append(f"{isc['amber']} amber inside-corner location(s) included — field verify")
     else:
@@ -428,43 +448,32 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             except (TypeError, ValueError):
                 ilf = 0.0
             per_h = (ilf / ic) if ilf > 0 else (avg_h or 9.5)
-            if measurements.get("_hover_source") and ilf > 0:
-                # RULED 2026-07-17 (261 Haugh round-two score): ISC on the
-                # Hover path = measured-LF pooling — cut-stock yield (two
-                # ~6' corners per 16' stick). VALIDITY CAVEAT (ruled): the
-                # pooling holds only while individual corner heights ≤ 16'
-                # (stick length); taller corners revert to splice-and-
-                # round-up per corner.
-                if per_h <= TRIM_STICK_LEN_FT:
-                    qty = max(1, math.ceil(ilf / TRIM_STICK_LEN_FT - 1e-9))
-                    _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
-                              f"Hover measured ISC LF pooling: {ilf:g} LF ÷ 16' = {qty} — "
-                              f"cut-stock yield ({ic} corners, {per_h:g}' avg ≤ 16')",
-                              _derivation={"kind": "isc_hover_lf", "lf": ilf, "count": ic})
-                else:
-                    qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
-                    _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
-                              f"Hover ISC {ic} corner(s) × splice-and-round-up "
-                              f"({per_h:g}' each > 16' stick — LF pooling invalid above stick length, ruled)",
-                              _derivation={"kind": "isc_hover_splice", "lf": ilf, "count": ic})
-            else:
-                qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
-                _set_line(ISC_TRIM_ITEM, "LP SmartSide Trim", qty,
-                          f"{ic} inside-corner location(s) × whole-stick ({per_h:g}' each) — "
-                          "corner-walk basis (no C3 locators)",
-                      _derivation={"kind": "isc_corner_walk", "count": ic, "lf": ilf})
+            # Q13 (ruled 2026-07-27): PER-CORNER whole-stick round-up,
+            # min 1 pc per corner — Hover measured-LF cut-stock pooling
+            # RETIRED (splice-optimism; cut-reuse only with PROVEN cut
+            # tracking, never assumed). Corner-walk was already per-corner.
+            isc_qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
+            isc_note = (f"ISC {ic} corner(s) × per-corner whole-stick round-up "
+                        f"({per_h:g}' each, min 1 pc/corner — Q13 ruled 2026-07-27; "
+                        "pooled splice-optimism retired)")
+            isc_deriv = {"kind": "isc_corner_walk", "count": ic, "lf": ilf}
 
-    # ── 440 4/4"×8": fascia + rake boards
+    # ── 440 4/4"×8": fascia + rake boards (+ dormer fascia pooled — Q4)
     eaves_lf = float(measurements.get("eaves_lf") or 0)
     rakes_lf = float(measurements.get("rakes_lf") or 0)
-    fr = fascia_rake_takeoff(eaves_lf, rakes_lf)
+    dormers = measurements.get("_ai_dormers") or []
+    dormer_fascia_lf = round(sum(float(d.get("width_ft") or 0) for d in dormers), 1)
+    fr = fascia_rake_takeoff(eaves_lf, rakes_lf, dormer_fascia_lf)
     if fr["ordered_pcs"] > 0:
+        dtxt = (f" + dormer fascia {dormer_fascia_lf:g} LF ({len(dormers)} dormer(s), "
+                "pooled — Q4 ruled 2026-07-27)" if dormer_fascia_lf > 0 else "")
         _set_line(
             FASCIA_RAKE_ITEM, "LP SmartSide Trim", fr["ordered_pcs"],
-            f"Fascia (eaves {eaves_lf:g} LF) + rake slope ({rakes_lf:g} LF) = {fr['total_lf']} LF "
-            f"÷ 16' sticks = {fr['ordered_pcs']} — one product both run types; "
-            "splice-and-round-up total sticks (ruled, C4: whole-stick rounding is the "
-            "entire allowance on stick-count lines — no % waste); always present on LP-native (ruled)",
+            f"Fascia (eaves {eaves_lf:g} LF) + rake slope ({rakes_lf:g} LF){dtxt} "
+            f"= {fr['total_lf']} LF — per-segment whole-stick rounding (Q16 ruled "
+            f"2026-07-27) = {fr['ordered_pcs']} — one product both run types; "
+            "whole-stick rounding is the entire allowance (C4, no % waste); "
+            "always present on LP-native (ruled)",
             _derivation={"kind": "fascia_rake", "total_lf": fr["total_lf"]})
 
     # ── 540 wrap: DOOR TRIM 3-SIDE RULED (head + legs; windows 4-side).
@@ -484,6 +493,8 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     # per-opening constants.
     if not measurements.get("_hover_source"):
         opening_perim = 0.0
+    wrap_set = False
+    wrap_qty = 0
     if wc + ec + pc + gc > 0 or opening_perim > 0:
         from lp_smartside_formulas import shake_540_series_bump
         bump = shake_540_series_bump(
@@ -509,6 +520,41 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             if gc:
                 note += f"; garage {gc}×32' held (16+2×8 already reads 3-side — confirm)"
         _set_line(WRAP_TRIM_ITEM, "LP SmartSide Trim", wrap_qty, note)
+        wrap_set = True
+
+    # ── Q10 (ruled 2026-07-27): FRIEZE LF is CONSUMED — measured data
+    # never drops. 540-4" scope = opening wrap + ISC + frieze. Per-segment
+    # whole-stick rounding (Q16): level + sloped frieze round separately.
+    level_frz = float(measurements.get("level_frieze_lf") or 0)
+    sloped_frz = float(measurements.get("sloped_frieze_lf") or 0)
+    frieze_qty = (int(math.ceil(level_frz / 16.0 - 1e-9)) if level_frz > 0 else 0) + \
+                 (int(math.ceil(sloped_frz / 16.0 - 1e-9)) if sloped_frz > 0 else 0)
+    extra_540 = []
+    if frieze_qty > 0:
+        extra_540.append((frieze_qty,
+                          f"FRIEZE (Q10 ruled 2026-07-27): level {level_frz:g} LF + sloped "
+                          f"{sloped_frz:g} LF, per-segment ÷16 = {frieze_qty}"))
+    if isc_qty > 0:
+        extra_540.append((isc_qty, isc_note))
+    if extra_540:
+        target = next((l for l in lines if l["name"] == WRAP_TRIM_ITEM), None)
+        add_q = sum(q for q, _ in extra_540)
+        add_notes = "; ".join(n for _, n in extra_540)
+        if target is not None:
+            # assemble is authoritative for this SKU: wrap component (0
+            # when no openings) + frieze + ISC — ASSIGN, never add onto
+            # the tab-spec seed (which already carries these components).
+            base = wrap_qty if wrap_set else 0
+            base_note = (target.get("note") or "") if wrap_set else ""
+            target["qty"] = base + add_q
+            target["note"] = f"{base_note}; {add_notes}".strip("; ")
+            if isc_deriv and not target.get("_derivation"):
+                target["_derivation"] = isc_deriv
+        else:
+            lines.append({"tab": "lp_smart", "section": "LP SmartSide Trim",
+                          "name": WRAP_TRIM_ITEM, "unit": "PCS", "qty": add_q,
+                          "note": add_notes,
+                          **({"_derivation": isc_deriv} if isc_deriv else {})})
 
     # ── LP STARTER (rip yield RULED FINAL): 3 strips per 16' board =
     # 48 LF/board; pieces = ceil(starter LF ÷ 48), line-itemed as starter
@@ -599,29 +645,30 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     pending = [PENDING_CONFIRMATIONS["expertfinish_availability_matrix"],
                PENDING_CONFIRMATIONS["bluelinx_sku_upload"]]
 
-    # ── DORMER COMPONENT LINES (ruled 2026-07-23): only what the
-    # extraction supports — dormer eave FASCIA LF (width per face) and
-    # dormer OSC LF (2 posts × knee per dormer). FLAGGED, NON-PRICED —
-    # the list states the footage; pricing pending Howard's ruling.
-    # (Dormer rake LF / soffit stay off the list — pitch/overhang NOT READ.)
-    dormers = measurements.get("_ai_dormers") or []
+    # ── DORMER CORNERS POOL INTO OSC (Q4 ruled 2026-07-27 — the separate
+    # non-priced dormer SKUs RETIRE; dormer fascia already pooled into the
+    # 440-8" line above). Per-corner whole-stick round-up per Q13.
     if dormers:
-        fascia_lf = round(sum(float(d.get("width_ft") or 0) for d in dormers), 1)
-        osc_lf = round(sum(2.0 * float(d.get("knee_wall_height_ft") or 0) for d in dormers), 1)
-        if fascia_lf > 0:
-            lines.append({
-                "tab": "lp_smart", "section": "Trim", "unit": "LF",
-                "name": "Dormer fascia (eave)", "qty": fascia_lf,
-                "non_priced": True,
-                "note": (f"{len(dormers)} dormer(s) — eave width per face "
-                         f"(AI run dormer read); NON-PRICED — pricing pending ruling")})
-        if osc_lf > 0:
-            lines.append({
-                "tab": "lp_smart", "section": "Trim", "unit": "LF",
-                "name": "Dormer outside corners (OSC)", "qty": osc_lf,
-                "non_priced": True,
-                "note": (f"{len(dormers)} dormer(s) × 2 posts × knee height "
-                         f"(AI run dormer read); NON-PRICED — pricing pending ruling")})
+        post_sticks = 0
+        post_lf = 0.0
+        for d in dormers:
+            knee = float(d.get("knee_wall_height_ft") or 0)
+            if knee > 0:
+                post_sticks += 2 * max(1, int(math.ceil(knee / 16.0 - 1e-9)))
+                post_lf += 2.0 * knee
+        if post_sticks > 0:
+            osc_line = next((l for l in lines if l["name"] == OSC_ITEM), None)
+            dnote = (f"+ dormer corners pooled into OSC (Q4 ruled 2026-07-27): "
+                     f"{len(dormers)} dormer(s) × 2 posts × knee height "
+                     f"({post_lf:g} LF, per-corner round-up) = {post_sticks}")
+            if osc_line is not None:
+                osc_line["qty"] = int(osc_line.get("qty") or 0) + post_sticks
+                osc_line["note"] = f"{osc_line.get('note') or ''}; {dnote}".strip("; ")
+            else:
+                lines.append({"tab": "lp_smart", "section": "LP Siding Accessories",
+                              "name": OSC_ITEM, "unit": "PCS", "qty": post_sticks,
+                              "note": dnote,
+                              "_derivation": {"kind": "osc_lf", "lf": post_lf}})
 
     # ── COLOR ARCHITECTURE (ruled): per-component line-level colors;
     # identity = (name, color); availability flagged while unverified

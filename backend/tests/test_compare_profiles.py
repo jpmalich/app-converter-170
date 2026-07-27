@@ -73,6 +73,11 @@ class TestCompareProfiles:
         shared = set(cur) & set(alt)
         assert len(shared) >= 10
         for n in shared:
+            # Q15 (sealed 2026-07-27): caulk scales PER-FAMILY (B&B: 1
+            # tube per 23 batten sticks) — legitimately differs across
+            # compared families, excluded from the shared-identical pin.
+            if n == "OSI Quad Max Caulking":
+                continue
             assert cur[n]["qty"] == alt[n]["qty"], n
             assert cur[n].get("line_sell") == alt[n].get("line_sell"), n
 

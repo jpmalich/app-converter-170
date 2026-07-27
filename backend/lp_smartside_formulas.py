@@ -172,8 +172,11 @@ SOFFIT_PROFILES: dict[str, dict] = {
 #             divide 48 (12/16/24 o.c. valid) so every seam lands on a
 #             scheduled batten; pieces = ceil(LF ÷ 16), NO waste term on battens.
 BB_PANEL_COVERAGE_SQFT = 40.0  # 4ft × 10ft nominal
-VALID_BATTEN_SPACINGS_IN = (12, 16, 24)  # every 48" seam must land on a batten
-DEFAULT_BATTEN_SPACING_IN = 16  # sheet's "standard look" — default NOT ratified (see BB_HELD)
+VALID_BATTEN_SPACINGS_IN = (8, 12, 16, 24)  # every 48" seam must land on a batten
+# RULED Q9 (2026-07-27, 3 Degree Rd ground truth): spacing = 8" o.c. —
+# batten on every panel-board seam; height term STAYS; NO doubling at
+# corners/jambs. Retires the provisional 16" (BB_HELD closed).
+DEFAULT_BATTEN_SPACING_IN = 8
 
 # 190 Series Trim is the EXISTING catalog mapping for the batten strip —
 # product/width + SKU not ratified (see BB_HELD).

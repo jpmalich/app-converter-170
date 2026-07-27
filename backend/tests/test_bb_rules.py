@@ -47,21 +47,23 @@ def test_batten_pieces_no_waste():
     assert lp.bb_batten_pieces(310.0) == 20
     assert lp.bb_batten_pieces(320.0) == 20
     assert lp.bb_batten_pieces(320.1) == 21
-    # aggregate helper: 400 sqft @16" +0 height → 300 LF → 19 pcs
-    assert lp.board_batten_batten_pieces(400.0) == 19
-    # old behavior applied 1.10 waste (would have been 21) — ruled out
-    assert lp.board_batten_batten_pieces(400.0) != math.ceil(300 * 1.10 / 16)
+    # aggregate helper (Q9 ruled 2026-07-27: default spacing 8" o.c.):
+    # 400 sqft @8" +0 height → 600 LF → 38 pcs
+    assert lp.board_batten_batten_pieces(400.0) == 38
+    # no waste on battens (ruled 2026-07-16): 600 × 1.10 would be 42
+    assert lp.board_batten_batten_pieces(400.0) != math.ceil(600 * 1.10 / 16)
 
 
 def test_spacing_must_divide_48():
-    assert lp.VALID_BATTEN_SPACINGS_IN == (12, 16, 24)
+    # Q9 (ruled 2026-07-27): 8" o.c. joins the valid set as the default.
+    assert lp.VALID_BATTEN_SPACINGS_IN == (8, 12, 16, 24)
     for bad in (10, 18, 20, 32, 48, 0, -12):
         try:
             lp.bb_batten_lf(100.0, bad, 0.0)
             assert False, f"spacing {bad} must raise"
         except ValueError:
             pass
-    for ok in (12, 16, 24):
+    for ok in (8, 12, 16, 24):
         assert 48 % ok == 0
         lp.bb_batten_lf(100.0, ok, 0.0)
 

@@ -664,6 +664,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "entry_door_count": counts["entry_door"],
         "patio_door_count": counts["patio_door"],
         "garage_door_count": counts["garage_door"],
+        # Q7 (ruled 2026-07-27): vents/shutters wired on the blueprint door.
+        "vent_count": int(raw.get("vent_count") or 0),
+        "shutter_count": int(raw.get("shutter_count") or 0),
+        # Q6 (ruled 2026-07-27): story-fee key aligned across all doors.
+        **({"stories": str(raw.get("story_count"))} if raw.get("story_count") else {}),
         # Feed the Windows-workspace populator. Same shape HOVER produces.
         "windows": expanded_windows,
         # Surfaced fields for the preview UI

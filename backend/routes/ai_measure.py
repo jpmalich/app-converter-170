@@ -48,6 +48,7 @@ from PIL import Image
 from deps import get_current_user
 from db import db
 from routes.hover import _build_lines  # reuse the same measurement→line mapper
+from routes.hover import _vero_to_mezzo_product_type  # Q5 — Mezzo pairing
 
 logger = logging.getLogger(__name__)
 
@@ -2037,6 +2038,15 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "entry_door_count": counts["entry_door"],
         "patio_door_count": counts["patio_door"],
         "garage_door_count": counts["garage_door"],
+        # Q7 (ruled 2026-07-27): vents wired from the openings the photo
+        # door already sees; shutters pass through when the AI reports them.
+        "vent_count": (
+            sum(int(o.get("count") or 0) for o in schedule_for_counts
+                if (o.get("type") or "").lower() == "vent")
+            if schedule_for_counts
+            else sum(1 for o in openings if (o.get("type") or "").lower() == "vent")
+        ),
+        "shutter_count": int(raw.get("shutter_count") or 0),
         # AI-specific surfaced fields
         "_ai_scale_confidence": raw.get("scale_confidence") or "low",
         "_ai_reference_used": raw.get("reference_used") or "none",
@@ -6698,6 +6708,10 @@ async def _execute_ai_measure_worker(
         # catalog mapper emits per-profile lines.
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
         measurements["overhang_in"] = float(overhang_in)
+        # Q6 (ruled 2026-07-27): story-fee key ALIGNED across all doors —
+        # the Windows-tab Second/Third-Story Fee reads `stories`.
+        if measurements.get("_ai_story_count"):
+            measurements["stories"] = str(measurements["_ai_story_count"])
 
         await _set_stage("mapping")
         try:
@@ -6718,6 +6732,15 @@ async def _execute_ai_measure_worker(
                 raw.get("openings") or [],
                 raw.get("openings_schedule") or [],
             ),
+            # Q5 (ruled 2026-07-27): photo door pairs Mezzo rows with the
+            # Vero rows it already spawns (same shape as the Hover door).
+            "mezzo_openings": [
+                {**v, "product_type": _vero_to_mezzo_product_type(v["product_type"])}
+                for v in _build_vero_openings_from_ai(
+                    raw.get("openings") or [],
+                    raw.get("openings_schedule") or [],
+                )
+            ],
             "raw_ai": raw,
             "model": model_name,          # Iter 79j.15 — actual model used (may differ from MODEL_NAME default)
             "model_provider": model_provider,
@@ -6799,6 +6822,9 @@ async def map_measurements_to_lines(
     the contractor produces measurements by tapping on a photo and we
     just need the same line mapping HOVER provides."""
     measurements = payload.get("measurements") or {}
+    # Q8 (ruled 2026-07-27): caller may name the estimate's color tier.
+    if payload.get("color_tier"):
+        measurements["_color_tier"] = payload["color_tier"]
     # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 — Casile
     # lap-251 double-quote): the cached-measurement RESTORE path was
     # profile-blind and emitted the DEFAULT (lap) family beside the

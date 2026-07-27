@@ -114,6 +114,23 @@ export default function SettingsRow({ est, update }) {
               </p>
             </div>
           )}
+          {/* Q8 (ruled 2026-07-27): per-estimate color tier — re-lands
+              vinyl/ascend derivations on Architectural-color catalog twins
+              on the next rebuild. Manual per-line swap stays for one-offs. */}
+          <div className="mt-4 pt-4 border-t border-[var(--border)]">
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+              Color tier
+            </div>
+            <select
+              className="input h-9 text-sm"
+              value={est.color_tier || "standard"}
+              onChange={(e) => update({ color_tier: e.target.value })}
+              data-testid="color-tier-select"
+            >
+              <option value="standard">Standard color (default)</option>
+              <option value="architectural">Architectural color — derivations re-land on Architectural rows</option>
+            </select>
+          </div>
           {/* Iter 45: soffit overhang in inches — drives the
               Pieces = (Overhang × Length) ÷ panel-area formula on the
               Vinyl Soffit line. Lives in the same card as Waste Factor

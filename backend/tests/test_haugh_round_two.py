@@ -100,14 +100,22 @@ class TestRoundTwoPins:
         assert _line(pkg, "38 Series Lap")["qty"] == 250
 
     def test_540_measured_perimeter_doors_3_side(self, pkg):
+        """PIN AMENDED (Q10/Q12 ruled 2026-07-27): wrap 33 (measured perim
+        574.33 − door bottoms ÷ 16) + FRIEZE consumed (level 215.67 →14 +
+        sloped 129.83 →9 = 23, per-segment Q16) + ISC merged onto the same
+        SKU (6 corners × per-corner round-up = 6, Q12/Q13) = 62."""
         l = _line(pkg, '540 Series Trim 5/4" x 4"')
-        assert l["qty"] == 33
+        assert l["qty"] == 62
         assert "574.33" in l["note"] and "door bottoms" in l["note"]
+        assert "FRIEZE (Q10" in l["note"] and "ISC 6" in l["note"]
 
     def test_osc_measured_lf_basis(self, pkg):
+        """PIN AMENDED (Q13 ruled 2026-07-27): per-corner whole-stick
+        round-up, min 1 pc/corner — 20 corners × 1 (7.02' avg) = 20;
+        flat ÷16 pooling (was 9) retired."""
         l = _line(pkg, "540 Series OSC")
-        assert l["qty"] == 9
-        assert "140.33" in l["note"]
+        assert l["qty"] == 20
+        assert "per-corner whole-stick round-up" in l["note"]
 
     def test_soffit_full_measured_total_composes(self, pkg):
         vented = _line(pkg, "38 Series Soffit 16 x 16 Vented")
@@ -154,12 +162,16 @@ class TestRoundTwoPins:
         until the contractor fills it — the +1430.00 conventions RETIRE
         (misc rows price $0, labor is the contractor's) and the healed
         gutter/downspout $1.00/LF machine lab overrides drop −146.00
-        (Gutter 100×3.25 + Downspout 46×2.80) → total_sell 12901.52."""
+        (Gutter 100×3.25 + Downspout 46×2.80) → total_sell 12901.52.
+        AMENDED AGAIN (Q12 ruled 2026-07-27, 3 Degree Rd sitting): ISC
+        default re-SKUs 440 4/4"×4" → 540 5/4"×4" (merged onto the wrap
+        line) — Letrick's 2 ISC sticks reprice at the 540 rate →
+        total_sell 12901.52 → 13037.21 (+135.69)."""
         import os
         tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
         d = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
                          json={}, headers={"X-Admin-Token": tok}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 12901.52
+        assert d["summary"]["pricing"]["total_sell"] == 13037.21
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 
@@ -199,24 +211,27 @@ class TestRoundTwoFollowUps:
         assert m["siding_sqft"] == 2376  # stucco explicitly included
         assert m["_facade_scope"]["excluded"] == {"brick": 234}
 
-    def test_isc_measured_lf_pooling_cut_stock_yield(self):
+    def test_isc_per_corner_round_up_q13(self):
+        """Q13 (ruled 2026-07-27): PER-CORNER whole-stick round-up, min 1
+        pc/corner — measured-LF cut-stock pooling RETIRED. ISC lands on
+        the 540-4" SKU (Q12) merged with the wrap line."""
         from lp_package import assemble_lp_package
         pkg = assemble_lp_package({"_hover_source": True,
                                    "inside_corner_count": 6,
                                    "inside_corner_lf": 36})
-        l = _line(pkg, '440 Series Trim 4/4" x 4"')
-        assert l["qty"] == 3  # pooled ceil(36 ÷ 16) — NOT 6 per-corner sticks
-        assert "cut-stock yield" in l["note"]
+        l = _line(pkg, '540 Series Trim 5/4" x 4"')
+        assert l["qty"] == 6  # 6 × max(1, ceil(6 ÷ 16)) — NOT pooled 3
+        assert "per-corner whole-stick round-up" in l["note"]
+        assert "cut-stock" not in l["note"]
 
-    def test_isc_tall_corners_revert_to_splice_round_up(self):
+    def test_isc_tall_corners_two_sticks_each_q13(self):
         from lp_package import assemble_lp_package
         pkg = assemble_lp_package({"_hover_source": True,
                                    "inside_corner_count": 2,
                                    "inside_corner_lf": 36})  # 18' each > 16'
-        l = _line(pkg, '440 Series Trim 4/4" x 4"')
-        assert l["qty"] == 4  # 2 × ceil(18 ÷ 16) — validity caveat holds
-        assert "splice-and-round-up" in l["note"]
-        assert "cut-stock" not in l["note"]
+        l = _line(pkg, '540 Series Trim 5/4" x 4"')
+        assert l["qty"] == 4  # 2 × ceil(18 ÷ 16) = 4
+        assert "per-corner whole-stick round-up" in l["note"]
 
     def test_waste_display_matches_application(self):
         """Display-sync invariant (ruled 2026-07-18) holds under the

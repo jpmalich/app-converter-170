@@ -29,7 +29,10 @@ def test_published_palette_pinned():
 
 def test_group_mapping():
     assert group_for_line({"name": OSC_ITEM}) == "osc"
-    assert group_for_line({"name": ISC_TRIM_ITEM}) == "isc"
+    # Q12 (ruled 2026-07-27): ISC default = 540 5/4"×4" — same SKU as the
+    # wrap line, ONE consolidated row, ONE color group (opening_trim).
+    assert ISC_TRIM_ITEM == WRAP_TRIM_ITEM
+    assert group_for_line({"name": ISC_TRIM_ITEM}) == "opening_trim"
     assert group_for_line({"name": WRAP_TRIM_ITEM}) == "opening_trim"
     assert group_for_line({"name": FASCIA_RAKE_ITEM}) == "soffit_fascia"
     assert group_for_line({"name": "38 Series Soffit 16 x 16 Vented"}) == "soffit_fascia"

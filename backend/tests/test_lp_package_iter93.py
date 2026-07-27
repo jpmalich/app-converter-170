@@ -100,13 +100,15 @@ def test_assemble_ruled_trim_system():
     pkg = assemble_lp_package(MEAS, _letrick_locations(), LETRICK_HEIGHTS)
     by = {l["name"]: l for l in pkg["lines"]}
     assert by[OSC_ITEM]["qty"] == 6  # C4 feature pooling (4 house + chase 2)
-    # 440 4/4"×4" is ISC-only now (horizontal runs superseded by 4/4"×8")
-    assert by[ISC_TRIM_ITEM]["qty"] == 2
+    # Q12 (ruled 2026-07-27): ISC default = 540 5/4"×4" — merged with the
+    # wrap line (one SKU, one row): wrap 11 + ISC 2 = 13.
+    assert ISC_TRIM_ITEM == '540 Series Trim 5/4" x 4" x 16\''
+    assert by[ISC_TRIM_ITEM]["qty"] == 13
     assert "ISC locations" in by[ISC_TRIM_ITEM]["note"]
     # 440 4/4"×8" fascia + rake (C4 waste-scope: no % waste on stick-count
-    # lines): (108 + 73.4) = 181.4 ÷ 16 = 11.34 → 12
+    # lines; Q16 per-segment): ceil(108/16)=7 + ceil(73.4/16)=5 = 12
     assert by[FASCIA_RAKE_ITEM]["qty"] == 12
-    assert "splice-and-round-up total sticks (ruled" in by[FASCIA_RAKE_ITEM]["note"]
+    assert "per-segment whole-stick rounding (Q16" in by[FASCIA_RAKE_ITEM]["note"]
     assert pkg["summary"]["osc_source"] == "c3_corner_locations"
 
 
@@ -164,7 +166,8 @@ def test_wrap_doors_three_side_ruled():
     from lp_conventions import WRAP_TRIM_ITEM
     wrap = next(l for l in pkg["lines"] if l["name"] == WRAP_TRIM_ITEM)
     # 10 windows × 14 + 2 entry × 18 (21 − 3' sill, 3-SIDE ruled) = 176 → 11
-    assert wrap["qty"] == 11
+    # + ISC 2 sticks merged onto the same SKU (Q12 ruled 2026-07-27) = 13
+    assert wrap["qty"] == 13
     assert "3-SIDE" in wrap["note"]
     assert "garage" not in wrap["note"]  # no garage doors on Letrick
 

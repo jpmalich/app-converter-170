@@ -36,7 +36,10 @@ CASILE_EST = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"
 FRONTEND_SRC = BACKEND.parent / "frontend" / "src"
 
 MISC_ROWS = ("cap window", "cap entry door", "cap patio door",
-             "cap single garage door", "clean up/ haul away job debris")
+             "cap single garage door", "clean up/ haul away job debris",
+             # Q1 (ruled 2026-07-27): tear-off + dumpster join the
+             # contractor-labor pending set (qty AND labor pending).
+             "tear-off", "dumpster")
 
 
 @pytest.fixture(scope="module")

@@ -621,6 +621,85 @@ def _j_channel_compute(m: dict, include_rakes: bool = True) -> tuple[int, str]:
     return pcs, breakdown
 
 
+def _frieze_540_pcs(m: dict) -> int:
+    """Q10 (ruled 2026-07-27): frieze LF consumed — per-segment ÷16 (Q16)."""
+    lvl = float(m.get("level_frieze_lf") or 0)
+    slp = float(m.get("sloped_frieze_lf") or 0)
+    return (math.ceil(lvl / 16.0 - 1e-9) if lvl > 0 else 0) + \
+           (math.ceil(slp / 16.0 - 1e-9) if slp > 0 else 0)
+
+
+def _isc_540_pcs(m: dict) -> int:
+    """Q12/Q13 (ruled 2026-07-27): ISC default = 540-4"; PER-CORNER
+    whole-stick round-up, min 1 pc per corner (pooling retired)."""
+    ic = int(m.get("inside_corner_count") or 0)
+    ilf = float(m.get("inside_corner_lf") or 0)
+    if ic > 0:
+        per_h = (ilf / ic) if ilf > 0 else 9.5
+        return ic * max(1, math.ceil(per_h / 16.0 - 1e-9))
+    if ilf > 0:
+        return math.ceil(ilf / 16.0 - 1e-9)
+    return 0
+
+
+def _osc_lp_pcs(m: dict) -> int:
+    """Q13 (ruled 2026-07-27): OSC per-corner whole-stick round-up, min 1
+    pc per corner; pooled ÷16 only when the corner count is unavailable."""
+    oc = int(m.get("outside_corner_count") or 0)
+    olf = float(m.get("outside_corner_lf") or 0)
+    if oc > 0 and olf > 0:
+        return oc * max(1, math.ceil((olf / oc) / 16.0 - 1e-9))
+    if olf > 0:
+        return math.ceil(olf / 16.0 - 1e-9)
+    return 0
+
+
+def _soffit_total_split(m: dict) -> tuple[float, float]:
+    """Q14a (ruled 2026-07-27): a measured Hover soffit TOTAL governs over
+    the overhang fallback. Split proportionally to eave vs rake run LF
+    (eaves vent, rakes close — standing convention). Returns
+    (vented_sqft, closed_sqft); (0, 0) when no measured total."""
+    total = float(m.get("soffit_sqft") or 0)
+    if total <= 0:
+        return 0.0, 0.0
+    e = float(m.get("eaves_lf") or 0)
+    r = float(m.get("rakes_lf") or 0)
+    if e + r <= 0:
+        return total, 0.0
+    return round(total * e / (e + r), 1), round(total * r / (e + r), 1)
+
+
+def _bb_batten_sticks(m: dict) -> int:
+    bb = float((m.get("_per_profile_sqft") or {}).get("board_batten") or 0) \
+        + float((m.get("_per_profile_sqft") or {}).get("vertical") or 0)
+    if bb <= 0 or not lp_formulas.is_enabled():
+        return 0
+    return lp_formulas.board_batten_batten_pieces(
+        bb, wall_height_ft=float(m.get("_bb_wall_height_ft") or 0))
+
+
+# Q8 (ruled 2026-07-27): per-estimate COLOR-TIER selector re-lands
+# derivations — Standard-color rows swap to their Architectural twins.
+_COLOR_TIER_SWAPS = (("Standard color", "Architectural color"),
+                     ("Standard Color", "Architectural color"))
+
+
+def _apply_color_tier(lines: list, tier: str | None) -> list:
+    if (tier or "").lower() != "architectural":
+        return lines
+    for l in lines:
+        if (l.get("tab") or "vinyl") not in ("vinyl", "ascend"):
+            continue
+        name = l.get("name") or ""
+        for old, new in _COLOR_TIER_SWAPS:
+            if old in name:
+                l["name"] = name.replace(old, new)
+                l["note"] = (f"{l.get('note') or ''} — Architectural color tier "
+                             "(Q8 ruled 2026-07-27)").strip(" —")
+                break
+    return lines
+
+
 HOVER_MAPPING_SPEC = [
     # =====================================================================
     # HEADLINE SIDING — one per tab. We use HOVER's "+ Openings < 20ft²
@@ -701,18 +780,8 @@ HOVER_MAPPING_SPEC = [
     # RETIRED. 4/4"×4" = inside-corner pooling; 4/4"×8" = fascia + rake
     # runs (Letrick width precedent, CONTRACTOR-SPEC confirmed). Whole-stick
     # rounding is the entire allowance — no % waste on stick counts.
-    {
-        "tabs": ["lp_smart"],
-        "section": "LP SmartSide Trim",
-        "item": '440 Series Trim 4/4" x 4" x 16\'',
-        "unit": "PCS",
-        "waste_included": True,
-        "extract": lambda m: math.ceil((m.get("inside_corner_lf") or 0) / 16),
-        "note": lambda m: (
-            f"Inside-corner pooling — ISC {float(m.get('inside_corner_lf') or 0):g} LF ÷ 16, "
-            "whole-stick = entire allowance (sealed convention, ruled 2026-07-24)"
-        ),
-    },
+    # Q12 (ruled 2026-07-27): the 440 4/4"×4" ISC tab row RETIRED — 540
+    # 5/4"×4" is the LP ISC default; ISC sticks land on the 540 row below.
     {
         "tabs": ["lp_smart"],
         "section": "LP SmartSide Trim",
@@ -761,7 +830,13 @@ HOVER_MAPPING_SPEC = [
                     + (m.get("patio_door_count") or 0) * 25
                     + (m.get("garage_door_count") or 0) * 32
                 ) / 16)
-            ) + (
+            )
+            # Q10 (ruled 2026-07-27): frieze CONSUMED — per-segment ÷16 (Q16)
+            + _frieze_540_pcs(m)
+            # Q12/Q13 (ruled 2026-07-27): ISC default = 540-4"; per-corner
+            # whole-stick round-up, min 1 pc per corner
+            + _isc_540_pcs(m)
+            + (
                 lp_formulas.shake_540_series_bump(
                     float((m.get("_per_profile_sqft") or {}).get("shake") or 0)
                 )
@@ -771,18 +846,23 @@ HOVER_MAPPING_SPEC = [
         ),
         "note": lambda m: (
             (
-                f"Measured opening perimeter {float(m.get('opening_perimeter_lf') or 0):g} LF "
-                f"− door bottoms (garage {(m.get('garage_door_count') or 0)}×16' + entry {(m.get('entry_door_count') or 0)}×3' "
-                f"+ SGD {(m.get('patio_door_count') or 0)}×8') ÷ 16 — doors trim 3 sides"
+                (
+                    f"Measured opening perimeter {float(m.get('opening_perimeter_lf') or 0):g} LF "
+                    f"− door bottoms (garage {(m.get('garage_door_count') or 0)}×16' + entry {(m.get('entry_door_count') or 0)}×3' "
+                    f"+ SGD {(m.get('patio_door_count') or 0)}×8') ÷ 16 — doors trim 3 sides"
+                )
+                if (m.get("opening_perimeter_lf") or 0) > 0
+                else "Window/entry/patio/garage perimeter wrap ÷ 16"
             )
-            if (m.get("opening_perimeter_lf") or 0) > 0
-            else (
-                "Window/entry/patio/garage perimeter wrap ÷ 16 + "
-                f"{lp_formulas.shake_540_series_bump(float((m.get('_per_profile_sqft') or {}).get('shake') or 0))} "
-                "shake belly-band pcs (LP PDF)"
+            + (f" + frieze {float(m.get('level_frieze_lf') or 0):g}+{float(m.get('sloped_frieze_lf') or 0):g} LF per-segment = {_frieze_540_pcs(m)} (Q10 ruled 2026-07-27)"
+               if _frieze_540_pcs(m) else "")
+            + (f" + ISC {int(m.get('inside_corner_count') or 0)} corner(s) per-corner round-up = {_isc_540_pcs(m)} (Q12/Q13 ruled 2026-07-27; 440-4\" demoted to substitution)"
+               if _isc_540_pcs(m) else "")
+            + (
+                f" + {lp_formulas.shake_540_series_bump(float((m.get('_per_profile_sqft') or {}).get('shake') or 0))} shake belly-band pcs (LP PDF)"
                 if lp_formulas.is_enabled()
                    and float((m.get("_per_profile_sqft") or {}).get("shake") or 0) > 0
-                else "Window/entry/patio/garage perimeter wrap ÷ 16"
+                else ""
             )
         ),
     },
@@ -816,26 +896,36 @@ HOVER_MAPPING_SPEC = [
     # LP Siding Accessories catalog as a flagged cross_domain_manual_add
     # exception; contractors add it by hand when a job needs flashing.
     # (Iter 68/79b mapping superseded on the lp_smart tab only.)
-    # Touch up kits — 1 per job per color. We don't know the color count
-    # from HOVER, so default 1 and let the contractor bump it if multi-
-    # color.
+    # Q15 (SEALED 2026-07-27, 3 Degree Rd): touch-up = 1 kit per 11 SQ per
+    # color (flat per-job constant retired). Colors unknown at import → 1.
     {
         "tabs": ["lp_smart"],
         "section": "LP Siding Accessories",
         "item": 'Touch up kits',
         "unit": "PCS",
-        "extract": lambda m: 1,
-        "note": "1 per color — bump if multi-color job",
+        "extract": lambda m: max(1, round(
+            ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0 / 11.0)),
+        "note": lambda m: (
+            f"1 kit per 11 SQ per color (Q15 sealed 2026-07-27): "
+            f"{((m.get('siding_with_openings_sqft') or m.get('siding_sqft') or 0)) / 100.0:g} SQ ÷ 11 — ×N if multi-color"),
     },
-    # OSI Quad Max Caulking — 2 tubes per job (matches the vinyl
-    # "Caulking (per color)" default Howard set in Iter 57m).
+    # Q15 (SEALED 2026-07-27): caulk scales per-family — B&B: 1 tube per
+    # 23 batten sticks; non-B&B keeps the 2-tube default.
     {
         "tabs": ["lp_smart"],
         "section": "LP Siding Accessories",
         "item": 'OSI Quad Max Caulking',
         "unit": "Tube",
-        "extract": lambda m: 2,
-        "note": "Default 2 tubes per job",
+        "extract": lambda m: (
+            max(2, math.ceil(_bb_batten_sticks(m) / 23.0 - 1e-9))
+            if _bb_batten_sticks(m) > 0 else 2
+        ),
+        "note": lambda m: (
+            f"B&B: 1 tube per 23 batten sticks (Q15 sealed 2026-07-27) — "
+            f"{_bb_batten_sticks(m)} sticks ÷ 23"
+            if _bb_batten_sticks(m) > 0
+            else "Default 2 tubes per job (non-B&B)"
+        ),
     },
     # J blocks — small penetration cover plates (lights, outlets, hose
     # bibs, dryer vents). Scaled by openings as a rough house-size proxy
@@ -893,10 +983,16 @@ HOVER_MAPPING_SPEC = [
         "item": "540 Series OSC 5/4\" x 6\" x 16'",
         "unit": "PCS",
         "waste_included": True,
-        "extract": lambda m: math.ceil((m.get("outside_corner_lf") or 0) / 16),
+        # Q13 (ruled 2026-07-27): per-corner whole-stick round-up, min 1
+        # pc per corner — flat ÷16 pooling retired.
+        "extract": lambda m: _osc_lp_pcs(m),
         "note": lambda m: (
-            f"Outside-corner pooling — {float(m.get('outside_corner_lf') or 0):g} LF ÷ 16, "
-            "whole-stick (sealed convention; 6\" width CONTRACTOR-SPEC)"
+            f"OSC {int(m.get('outside_corner_count') or 0)} corner(s) × per-corner "
+            f"whole-stick round-up ({float(m.get('outside_corner_lf') or 0):g} LF total, "
+            "min 1 pc/corner — Q13 ruled 2026-07-27)"
+            if int(m.get("outside_corner_count") or 0) > 0
+            else (f"Outside-corner {float(m.get('outside_corner_lf') or 0):g} LF ÷ 16 — "
+                  "POOLED (corner count unavailable; Q16 flag)")
         ),
     },
     # =====================================================================
@@ -1067,19 +1163,28 @@ HOVER_MAPPING_SPEC = [
         "section": "Vinyl Soffit with Siding",
         "item": "Soffit & fascia Charter Oak Standard Color",
         "unit": "PCS",
-        "extract": lambda m: max(
-            0,
-            math.ceil(
-                (
-                    (float(m.get("overhang_in") or 12) / 12.0)
-                    * ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0))
-                    + (m.get("porch_ceiling_sqft") or 0)
-                )
-                / 10.0
-            ),
+        # Q14a (ruled 2026-07-27): measured soffit TOTAL governs on the
+        # vinyl list too (the substitution target pulls real quantities).
+        "extract": lambda m: (
+            math.ceil(float(m.get("soffit_sqft") or 0) / 10.0)
+            if (m.get("soffit_sqft") or 0) > 0
+            else max(
+                0,
+                math.ceil(
+                    (
+                        (float(m.get("overhang_in") or 12) / 12.0)
+                        * ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0))
+                        + (m.get("porch_ceiling_sqft") or 0)
+                    )
+                    / 10.0
+                ),
+            )
         ),
         "note": lambda m: (
-            (
+            (f"MEASURED soffit total {float(m.get('soffit_sqft') or 0):g} sqft ÷ 10 sqft/pc "
+             "(Q14a ruled 2026-07-27 — measured total governs); Standard color default")
+            if (m.get("soffit_sqft") or 0) > 0
+            else (
                 f"Pieces = ((Overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × (Eaves+Rakes) "
                 f"+ porch_ceiling {float(m.get('porch_ceiling_sqft') or 0):g} sqft) ÷ 10 sqft/pc; Standard color default"
             )
@@ -1113,15 +1218,25 @@ HOVER_MAPPING_SPEC = [
     # .019 FASCIA COIL — 1 roll per 100 LF of soffit/fascia (per Howard).
     # Soffit/fascia LF = eaves LF + rakes LF.
     # =====================================================================
+    # Q3 (ruled 2026-07-27): fascia coil is WIDTH-CONDITIONAL — fascia
+    # ≤10" → 100 LF/roll (24" coil ripped in half); >10" → 50 LF/roll.
     {
         "tabs": ["vinyl", "ascend"],
         "section": "Vinyl Soffit with Siding",
         "item": ".019 Coil (1 per 50' fascia)",
         "unit": "ROLL",
         "extract": lambda m: round(
-            ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 100, 2
+            ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0))
+            / (100.0 if float(m.get("fascia_width_in") or 8) <= 10 else 50.0), 2
         ),
-        "note": "Soffit & fascia LF ÷ 100 (per Howard)",
+        "note": lambda m: (
+            f"Width-conditional (Q3 ruled 2026-07-27): fascia "
+            f"{float(m.get('fascia_width_in') or 8):g}\" "
+            + ("≤10\" → 24\" coil ripped in half = 100 LF/roll"
+               if float(m.get("fascia_width_in") or 8) <= 10
+               else ">10\" → 50 LF/roll")
+            + " — soffit & fascia LF ÷ divisor"
+        ),
     },
     # =====================================================================
     # CAULKING — flat default of 2 tubes per job regardless of size (per
@@ -1196,21 +1311,25 @@ HOVER_MAPPING_SPEC = [
         # soffit_pieces carries ×1.10 inside — the tab bake was doubling
         # waste (10% on 10%) until 2026-07-24.
         "waste_included": True,
-        # RULED 2026-07-17: measured per-surface soffit governs when the
-        # report supplies it (_soffit_vented_sqft) — eaves vent; rakes +
-        # ceilings close. Overhang-depth estimate is the fallback only.
+        # Q14a (ruled 2026-07-27): explicit per-surface breakdown governs
+        # first; else a MEASURED Hover soffit TOTAL governs (proportional
+        # eave/rake split); overhang-depth estimate is the LAST fallback.
         "extract": lambda m: (
             lp_formulas.soffit_pieces(float(m.get("_soffit_vented_sqft") or 0))
             if (m.get("_soffit_vented_sqft") or 0) > 0
             else (
-                lp_formulas.soffit_pieces(
-                    (float(m.get("overhang_in") or 12) / 12.0) * (m.get("eaves_lf") or 0)
-                    + (m.get("porch_ceiling_sqft") or 0)
-                )
-                if lp_formulas.is_enabled()
-                else max(
-                    1,
-                    math.ceil(((m.get("eaves_lf") or 0) + (m.get("porch_ceiling_sqft") or 0) / max(float(m.get("overhang_in") or 12) / 12.0, 0.1)) / 16),
+                lp_formulas.soffit_pieces(_soffit_total_split(m)[0])
+                if _soffit_total_split(m)[0] > 0
+                else (
+                    lp_formulas.soffit_pieces(
+                        (float(m.get("overhang_in") or 12) / 12.0) * (m.get("eaves_lf") or 0)
+                        + (m.get("porch_ceiling_sqft") or 0)
+                    )
+                    if lp_formulas.is_enabled()
+                    else max(
+                        1,
+                        math.ceil(((m.get("eaves_lf") or 0) + (m.get("porch_ceiling_sqft") or 0) / max(float(m.get("overhang_in") or 12) / 12.0, 0.1)) / 16),
+                    )
                 )
             )
         ),
@@ -1218,12 +1337,17 @@ HOVER_MAPPING_SPEC = [
             f"Vented — MEASURED eave soffit {float(m.get('_soffit_vented_sqft') or 0):g} sqft ÷ 21.3 × 1.10 (report per-surface basis)"
             if (m.get("_soffit_vented_sqft") or 0) > 0
             else (
-                (
-                    f"Vented (eaves + porches) — ceil( ((overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × eaves_LF "
-                    f"+ porch_ceiling {float(m.get('porch_ceiling_sqft') or 0):g} sqft) ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+                (f"Vented — MEASURED soffit TOTAL governs (Q14a ruled 2026-07-27): "
+                 f"eave share {_soffit_total_split(m)[0]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
+                if _soffit_total_split(m)[0] > 0
+                else (
+                    (
+                        f"Vented (eaves + porches) — ceil( ((overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × eaves_LF "
+                        f"+ porch_ceiling {float(m.get('porch_ceiling_sqft') or 0):g} sqft) ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+                    )
+                    if lp_formulas.is_enabled()
+                    else "Vented goes on eaves (attic vent path) — eaves LF ÷ 16"
                 )
-                if lp_formulas.is_enabled()
-                else "Vented goes on eaves (attic vent path) — eaves LF ÷ 16"
             )
         ),
     },
@@ -1238,14 +1362,18 @@ HOVER_MAPPING_SPEC = [
             lp_formulas.soffit_pieces(float(m.get("_soffit_closed_sqft") or 0))
             if (m.get("_soffit_closed_sqft") or 0) > 0
             else (
-                lp_formulas.soffit_pieces(
-                    (float(m.get("overhang_in") or 12) / 12.0) * (m.get("rakes_lf") or 0)
-                )
-                if lp_formulas.is_enabled()
+                lp_formulas.soffit_pieces(_soffit_total_split(m)[1])
+                if _soffit_total_split(m)[1] > 0
                 else (
-                    max(1, math.ceil((m.get("rakes_lf") or 0) / 16))
-                    if (m.get("rakes_lf") or 0) > 0
-                    else 0
+                    lp_formulas.soffit_pieces(
+                        (float(m.get("overhang_in") or 12) / 12.0) * (m.get("rakes_lf") or 0)
+                    )
+                    if lp_formulas.is_enabled()
+                    else (
+                        max(1, math.ceil((m.get("rakes_lf") or 0) / 16))
+                        if (m.get("rakes_lf") or 0) > 0
+                        else 0
+                    )
                 )
             )
         ),
@@ -1256,9 +1384,14 @@ HOVER_MAPPING_SPEC = [
             )
             if (m.get("_soffit_closed_sqft") or 0) > 0
             else (
-                f"Closed (rakes) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × rakes_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
-                if lp_formulas.is_enabled()
-                else "Closed goes on rakes (gable ends, no venting) — rakes LF ÷ 16"
+                (f"Closed — MEASURED soffit TOTAL governs (Q14a ruled 2026-07-27): "
+                 f"rake share {_soffit_total_split(m)[1]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
+                if _soffit_total_split(m)[1] > 0
+                else (
+                    f"Closed (rakes) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × rakes_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"
+                    if lp_formulas.is_enabled()
+                    else "Closed goes on rakes (gable ends, no venting) — rakes LF ÷ 16"
+                )
             )
         ),
     },
@@ -1513,6 +1646,27 @@ HOVER_MAPPING_SPEC = [
         "unit": "JOB",
         "extract": lambda m: 1 if (m.get("siding_sqft") or 0) > 0 else 0,
         "note": "Disposal — one per job when siding work is present",
+    },
+    # Q1 (ruled 2026-07-27): Tear-Off + Dumpster EXIST on every door —
+    # quantity AND labor CONTRACTOR-ENTERED (pending until set; readiness
+    # panel surfaces them). No auto-derive.
+    {
+        "tabs": ["vinyl", "ascend", "lp_smart"],
+        "section": "Tear-Off / Clean Up",
+        "item": "Tear-Off",
+        "unit": "SQ",
+        "always_emit": True,
+        "extract": lambda m: 0,
+        "note": "Quantity CONTRACTOR-ENTERED (Q1 ruled 2026-07-27) — pending until set",
+    },
+    {
+        "tabs": ["vinyl", "ascend", "lp_smart"],
+        "section": "Tear-Off / Clean Up",
+        "item": "Dumpster",
+        "unit": "Each",
+        "always_emit": True,
+        "extract": lambda m: 0,
+        "note": "Quantity CONTRACTOR-ENTERED (Q1 ruled 2026-07-27) — pending until set",
     },
 ]
 
@@ -2013,7 +2167,9 @@ def _build_lines(measurements: dict) -> list[dict]:
             qty = float(spec["extract"](measurements))
         except (TypeError, ValueError):
             qty = 0
-        if qty <= 0:
+        # Q1 (ruled 2026-07-27): presence rows (Tear-Off / Dumpster) emit
+        # at qty 0 — contractor-entered, flagged pending until set.
+        if qty <= 0 and not spec.get("always_emit"):
             continue
         # Emit one line per tab the spec targets. The contractor's estimator
         # already creates parallel entries for every (tab, section, item)
@@ -2041,8 +2197,10 @@ def _build_lines(measurements: dict) -> list[dict]:
                 # ÷16 × %waste tab formulas retired).
                 "_waste_included": bool(spec.get("waste_included")),
                 "note": note_val,
+                **({"qty_pending": True} if spec.get("always_emit") and qty <= 0 else {}),
             })
-    return out
+    # Q8 (ruled 2026-07-27): per-estimate color tier re-lands derivations.
+    return _apply_color_tier(out, measurements.get("_color_tier"))
 
 
 def _build_window_openings(measurements: dict) -> tuple[list[dict], list[dict]]:
@@ -2377,6 +2535,9 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
         scoped["porch_ceiling_sqft"] = porch_sqft
     if est.get("overhang_in") is not None:
         scoped["overhang_in"] = est["overhang_in"]
+    # Q8 (ruled 2026-07-27): per-estimate color tier re-lands derivations.
+    if est.get("color_tier"):
+        scoped["_color_tier"] = est["color_tier"]
     # Family-defaulted waste flows INTO the derivation (sealed
     # 2026-07-24): profile siding rows derive with the resolved field.
     scoped["_waste_pct"] = float(waste_field or 0) / 100.0
