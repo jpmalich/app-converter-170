@@ -5465,3 +5465,20 @@ totals ~11–13 min, all-8-photo fleet, per-stage wall-clock telemetry gap
 named; (c) async rungs sized, no build: R1 active watchdog (S), R2
 supervisor worker + Mongo lease queue (M), R3 ETA/SSE + concurrency trial
 (S–M); preview hibernation boundary named.
+
+## 2026-07-27 — Photo-Metadata Report (report only, no build)
+Full report: memory/photo_metadata_report_2026-07-27.md.
+(a) Server path verbatim (no transcode); stripping is CLIENT-side at two
+rungs: iOS web-input HEIC→JPEG transcode kills camera EXIF before upload
+(store-wide scan: 1,210 originals — ZERO Make/Model/Focal/GPS; richest
+survivor = Orientation+padding on 135 files; zero HEIC on disk), and
+canvas annotation re-encode strips the rest (435 ai_* photos: EXIF None).
+Depth maps never delivered via web file inputs — boundary named.
+(b) Persistence-only slice sized S (~0.5d, additive blob metadata, zero
+behavior change) — but on the dominant path it would persist ABSENCE;
+the real prerequisite is the client-side capture slice (read EXIF from
+the original File pre-canvas, JSON side-channel) sized M (~1d).
+(c) LOGGED post-September scored trial: extraction use of focal/FOV/depth
+as scale priors, under the model-change rule — candidate merge with the
+dormer-taxonomy prompt trial (same frozen-fixture scored harness).
+Standing queue unchanged: B (drag-adjust) → model ledger → money map.
