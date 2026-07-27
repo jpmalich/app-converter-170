@@ -5443,3 +5443,25 @@ drawn numbers IDENTICAL (provenance wording only — declared).
 Pins: test_single_house_model.py (8), test_annotation_layout_pin.py (4);
 amended (declared): crossview clamp pins → flag-only, dormers_p5 tape tag.
 AWAITING: Howard's four-photo acceptance vs the four sheets.
+
+## 2026-07-27 — Part 2 rulings sealed + Robustness Report (report only)
+PART 2 RULED: A satisfied by shipped photo MODE_DORMER (sheet-side variant
+parked with Hover-native path). B APPROVED with conformance: drag
+UNCONSTRAINED; a released human position above the drawn ridge RE-DERIVES
+the ridge upward (human position outranks ridge estimate); where
+re-derivation impossible → FLAG, never relocate. Ladder: TAPED appendage >
+USER sheet-drag > CONTRACTOR quad (pair-leveled) > AI chain. Twin-level
+one-tap never silent; v-pos never prices. Mandatory pins incl. fixture
+byte-identity with no overrides + drag-above-ridge re-derives pin.
+TIMING: B builds AFTER Howard's four-photo acceptance → then B → model
+ledger (merged w/ cross-view disagreement ledger, one panel) →
+money-surfaces map.
+ROBUSTNESS REPORT delivered (memory/robustness_report_2026-07-27.md):
+(a) both timed-out runs completed server-side + persist/surface on reload
+(7bcc56e2 in-session 9m25s; d8ea786a died at 'reconciling', startup-sweep
+resumed at next pod boot 4h51m later — systemic class, 2nd occurrence);
+(b) split bought reliability not speed — Phase B grew 226s→271s median,
+totals ~11–13 min, all-8-photo fleet, per-stage wall-clock telemetry gap
+named; (c) async rungs sized, no build: R1 active watchdog (S), R2
+supervisor worker + Mongo lease queue (M), R3 ETA/SSE + concurrency trial
+(S–M); preview hibernation boundary named.
