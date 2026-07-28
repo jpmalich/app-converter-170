@@ -87,7 +87,12 @@ def test_ruled_final_registry():
     assert not hasattr(lp, "BB_HELD_PENDING_HOWARD")
     r = lp.BB_RULED_FINAL
     assert r["batten_sku"] == '190 Series Trim 19/32" x 3" x 16\''
-    assert r["default_spacing_in"] == 16
+    # PIN AMENDED (audit ruling #8, 2026-07-28): the registry's stale 16
+    # contradicted the LIVE sealed default (Q9 2026-07-27: 8" o.c.) — the
+    # registry now mirrors the sealed constant; 16 kept as named
+    # superseded provenance only.
+    assert r["default_spacing_in"] == lp.DEFAULT_BATTEN_SPACING_IN == 8
+    assert r["default_spacing_in_2026_07_16_superseded"] == 16
     assert r["starter_on_bb"] is False
     # PIN AMENDED (ruling C, 2026-07-26): was 0.10 (2026-07-16 registry) —
     # superseded by the SEALED 2026-07-24 family waste (B&B 30%, Casile

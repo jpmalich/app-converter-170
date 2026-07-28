@@ -475,3 +475,34 @@ Pinned: test_partial_put_clobber_class.py (kind-immutability + editor-payload pi
    elevations, square-on". Pinned in test_capture_guidance_pins.py. Dormer
    taxonomy hardening + Phase B raised-structure tripwire: LOGGED post-Sept,
    pre-registered scored trial when it runs.
+
+## 2026-07-28 — DOCTRINE SEALED: ONE EMITTER PER MONEY FORMULA (class KILLED BY CONSTRUCTION)
+- **Class:** a doctrine pinned in PROSE but never asserted in CODE. Founding
+  instance: ONE MONEY SURFACE was sealed 2026-07-23 while `services.calc_totals`
+  ran a SECOND waste formula (`sub_mat + waste_base × waste_pct`) on the Accept
+  page / CSV / admin roll-up the entire time — found by the convergence audit,
+  same failure mode as the cross-view mirror invariant (written down, believed,
+  never asserted, found by a human's eye). Sibling: Vero opening pricing lost
+  its adders term on every backend money surface (Mezzo had it; Vero left behind).
+- **Ruling (Howard):** any number that reaches a dollar has exactly ONE
+  implementation; every other surface COMPOSES through it — never mirrors,
+  never re-derives, never a copy behind a "must mirror backend" comment.
+  A comment is not a pin.
+- **Enforcement mechanism (named):** `backend/tests/test_one_money_emitter.py` —
+  SECOND-IMPLEMENTATION DETECTORS, not agreement assertions: tokenize-stripped
+  source scans that FAIL when a money-formula signature (totals-waste add-on,
+  margin division, client-side waste-default writer) appears anywhere outside
+  the named emitter whitelist. Plus behavior pins: accept-vs-editor fixture
+  (waste_pct cannot move a dollar), Vero adders fixture, OSC/ISC hover-basis
+  tab-vs-package equivalence.
+- **Named emitters:** totals → `services.calc_totals` (backend) + `lib/calc.js`
+  (frontend, reference behavior); tier sell → `lp_costs.sell_price`.
+- **Named exceptions pending hand ruling (found BY the new detector, 2026-07-28):**
+  `vero_catalog.py` (seed-time cost→sell generator; output pinned by
+  test_pricing_parity) · `ISSEstimateEditor.jsx` (ISS workspace computes sell
+  locally; unification queued post-Sept). Whitelisted BY NAME in the pin —
+  removing either from the whitelist without unifying fails the suite.
+- **Rider audit (#1):** 5 draft estimates carried the inflated backend number
+  (3 Degree +7,978.23 · Casile +6,933.23 · EST-934889 +4,660.05 · doug jones
+  +2,367.01 · EST-986945 +1,183.51 — all-tab unscoped totals); ZERO sent,
+  ZERO accepted. The drift never reached a homeowner.

@@ -198,7 +198,12 @@ BATTEN_STOCK_LENGTH_FT = 16.0
 #                    estimate — no silent waste anywhere
 BB_RULED_FINAL = {
     "batten_sku": '190 Series Trim 19/32" x 3" x 16\'',
-    "default_spacing_in": 16,
+    # SUPERSEDED (Q9 ruled 2026-07-27; stale registry text fixed per
+    # convergence-audit ruling #8, 2026-07-28): the live sealed default is
+    # DEFAULT_BATTEN_SPACING_IN = 8" o.c. The 2026-07-16 value 16 is
+    # provenance history only — never rebind from this registry.
+    "default_spacing_in": DEFAULT_BATTEN_SPACING_IN,
+    "default_spacing_in_2026_07_16_superseded": 16,
     "starter_on_bb": False,
     "gable_factor": "0.7 — same as lap, applied upstream (C4)",
     "panel_waste_default": 0.30,

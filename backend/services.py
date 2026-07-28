@@ -1388,14 +1388,20 @@ def calc_totals(est: dict, tabs=None) -> dict:
                      for a in (op.get("adders") or []))
         return qty * base + adders
     def _vero_opening_mat(op: dict) -> float:
+        # ONE EMITTER (doctrine 2026-07-28; audit ruling #2): mirrors
+        # lib/calc.js exactly — Iter 44 adders model + legacy
+        # glass/tempered/premium fields. The adders term was MISSING here
+        # (Mezzo had it, Vero was left behind): adder dollars vanished
+        # from the Accept page / CSV — flag-always violation, fixed.
         qty = float(op.get("qty") or 0)
-        per_window = (
-            float(op.get("base_mat") or 0)
-            + float(op.get("glass_mat") or 0)
+        adders = sum((float(a.get("qty") or 0)) * (float(a.get("mat") or 0))
+                     for a in (op.get("adders") or []))
+        legacy = qty * (
+            float(op.get("glass_mat") or 0)
             + float(op.get("tempered_mat") or 0)
             + float(op.get("premium_mat") or 0)
         )
-        return qty * per_window
+        return qty * float(op.get("base_mat") or 0) + adders + legacy
     sub_mat = (
         sum((ln.get("qty", 0) or 0) * (ln.get("mat", 0) or 0) + _adders_mat_total(ln) for ln in lines)
         + sum((m.get("mat", 0) or 0) for m in misc_material)
@@ -1407,32 +1413,15 @@ def calc_totals(est: dict, tabs=None) -> dict:
         + sum((m.get("lab", 0) or 0) for m in misc_material)
         + sum((m.get("lab", 0) or 0) for m in misc_labor)
     )
-    # Waste factor inflates only the actual siding material (cut-offs from
-    # panel cuts). Trim, accessories, soffit, gutter, etc. are ordered to
-    # actual count and should not be padded. Ascend Composite Lap + B&B are
-    # treated as siding material alongside the Vinyl Siding section.
-    WASTE_ASCEND = {
-        "Ascend Composite Lap Siding 7\"",
-        "Ascend Composite B&B 12\" (add 30% Waste)",
-    }
-    def _is_waste_line(ln: dict) -> bool:
-        if ln.get("section") == "Vinyl Siding":
-            return True
-        # Iter 23: the 2 Ascend siding items moved into their own "Ascend
-        # Cladding" section. Accept BOTH the new section name and the legacy
-        # "Ascend Cladding/Accessories" name so old estimates that haven't
-        # been re-saved (and thus haven't picked up the migration) still
-        # apply waste correctly.
-        return (
-            ln.get("section") in {"Ascend Cladding", "Ascend Cladding/Accessories"}
-            and ln.get("name") in WASTE_ASCEND
-        )
-    waste_base = sum(
-        (ln.get("qty", 0) or 0) * (ln.get("mat", 0) or 0)
-        for ln in lines if _is_waste_line(ln)
-    )
-    waste_add = waste_base * ((est.get("waste_pct", 0) or 0) / 100)
-    wasted = sub_mat + waste_add
+    # ONE EMITTER PER MONEY FORMULA (doctrine SEALED 2026-07-28; ruling #1
+    # of the convergence audit): waste lives IN the qty (Iter 78 bake —
+    # lib/calc.js `wasted = subMat` is the reference behavior, pinned
+    # 2026-07-24). The legacy `waste_base × waste_pct` add-on RETIRED here:
+    # it re-added waste on top of already-baked qtys and ran on the Accept
+    # page / CSV / admin roll-up the whole time (audit finding A1; rider
+    # audit 2026-07-28: 5 draft estimates carried the inflated number,
+    # ZERO sent/accepted — it never reached a homeowner).
+    wasted = sub_mat
     tax = wasted * ((est.get("tax_rate", 0) or 0) / 100) if est.get("tax_enabled") else 0
     base = wasted + tax + sub_lab
     pct = (est.get("margin_pct", 0) or 0) / 100

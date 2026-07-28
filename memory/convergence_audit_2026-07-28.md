@@ -94,3 +94,22 @@ Batten sticks: single emitter `board_batten_batten_pieces` feeds spec + caulk + 
 **HARMLESS:** B3 stale BB_RULED_FINAL registry text (provenance-only — mark superseded); 9.17 reference table (pinned as reference); hardcoded rate strings inside note text (display duplicates); SettingsRow multiplier display.
 
 *Sources: services.py, lib/calc.js, routes/hover.py, lp_package.py, lp_conventions.py, lp_smartside_formulas.py, lp_costs.py, routes/public.py, routes/estimates.py, routes/catalog.py, wasteLogic.js, wasteDefaults.js, useRecalcSoffitOnOverhang.js, materialList.js. Read-only audit; register-#1–#8 wiring (separately ordered) is the only code that moved today.*
+
+---
+# RULINGS LANDED (Howard, 2026-07-28) — status
+DOCTRINE SEALED: ONE EMITTER PER MONEY FORMULA — enforcement `test_one_money_emitter.py` (second-implementation detectors, not agreement pins). Register entry in verification_integrity_register.md.
+
+| # | Ruling | Status |
+|---|---|---|
+| 1 | Totals waste UNIFY (backend add-on retires) + rider audit | **BUILT** — rider: 5 drafts, 0 sent/accepted; drift never reached a homeowner |
+| 2 | Vero adders UNIFY + pin | **BUILT** |
+| 3 | wasteDefaults writer KILLED (promoted above #2) + client-writer pin | **BUILT** — lib/wasteDefaults.js deleted, prompt/caption removed |
+| 4 | Per-locator heights GOVERN, count×avg retires (never-average) | equivalence pin **BUILT** (pre-Sept); full collapse PARKED post-Sept |
+| 5 | Whole units at the order layer everywhere | PARKED post-Sept |
+| 6 | Constants single-emitter + literal sweep | PARKED post-Sept |
+| 7 | API-served conventions for frontend soffit; interim jest pin | PARKED post-Sept (jest pin pending) |
+| 8 | Stale BB_RULED_FINAL text | **FIXED** (spacing now reads DEFAULT_BATTEN_SPACING_IN=8; 16 kept as superseded provenance) |
+
+Detector's own catch (new, needs hand ruling): `vero_catalog.py` seed-time margin divisor · `ISSEstimateEditor.jsx` local sell — whitelisted BY NAME pending ruling/post-Sept unification.
+
+§C RIDER — verified vs assumed: VERIFIED composing through an engine: Accept page, accept emails, CSV, admin roll-up (services.calc_totals — now unified); editor/dashboard/quote email (lib/calc.js); LP freeze/QR + MaterialListShare (assemble, explicitly unpriced); materialize/tab rebuild (rebuild_lp_tab_lines); admin cost-preview (lp_costs); printTakeoff (pure presentation, no dollars — verified); elevation sheets (no price strings — verified). PREVIOUSLY ASSUMED, NOW RESOLVED: ISSEstimateEditor = second sell emitter (named exception); VeroPanel/VeroJobSnapshot = entry/display surfaces, totals compose in the emitters.

@@ -28,12 +28,6 @@ import HouseModel3D from "@/components/estimate/HouseModel3D";
 import FieldVerifyCard from "@/components/estimate/FieldVerifyCard";
 import { RENDER_3D_ENABLED } from "@/lib/featureFlags";
 import { printTakeoff } from "@/lib/printTakeoff";
-import {
-  getSavedWasteDefault,
-  saveWasteDefault,
-  clearWasteDefault,
-  workspaceLabel,
-} from "@/lib/wasteDefaults";
 import { bakeWasteIntoLines, steerLpSoffit } from "@/lib/wasteLogic";
 // Iter 78t — shared elevation drawing renderer. Blueprint may produce
 // AI-Measure-shaped data (walls + openings) OR HOVER-vision-shaped data
@@ -603,35 +597,12 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         type="button"
         className="w-full justify-center px-3 py-1.5 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[#FAF5FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
         onClick={() => {
-          // Iter 78 — Waste % flow:
-          //   1. If estimate already has waste_pct > 0 → respect it, no prompt.
-          //   2. Else if a saved default exists for this workspace → silently
-          //      apply it and proceed. ("Save as Job Standard" behavior.)
-          //   3. Else → prompt once; the entered value is saved as the
-          //      per-workspace default + applied to this estimate.
-          const kind = est?.kind || "siding";
-          const currentWaste = Number(est?.waste_pct ?? 0);
-          const canUpdate = typeof update === "function";
-          if (currentWaste > 0 || !canUpdate) {
-            fileRef.current?.click();
-            return;
-          }
-          const savedDefault = getSavedWasteDefault(kind);
-          if (savedDefault) {
-            update({ waste_pct: savedDefault });
-            fileRef.current?.click();
-            return;
-          }
-          const raw = window.prompt(
-            `Set Waste Factor % for ${workspaceLabel(kind)} quotes (applies to Siding + Soffit panel orders).\n\nThis value will be saved as your default for this workspace — you won't be asked again on future uploads (use the "change" link under the button to update it later).\n\nTypical: 10% small, 15% standard, 25–33% complex / lots of cuts.`,
-            "15"
-          );
-          if (raw === null) return;
-          const pct = Number(raw);
-          if (!isNaN(pct) && pct > 0) {
-            update({ waste_pct: pct });
-            saveWasteDefault(kind, pct);
-          }
+          // WASTE WRITER KILLED (audit ruling #3, 2026-07-28): the
+          // localStorage per-browser default RETIRED — it could silently
+          // overwrite a SEALED family waste with a non-sealed number and
+          // made two laptops print different quotes for the same house.
+          // Waste defaults are SERVER-SERVED only (family table via
+          // profile selection / import bake); the visible field governs.
           fileRef.current?.click();
         }}
         disabled={busy}
@@ -676,59 +647,6 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         </button>
       )}
 
-      {/* Iter 78 — Default waste % caption. Shown when a saved default
-          exists for this workspace; provides quick "change" + "clear"
-          affordances so Howard can update or reset without leaving the
-          page. Hidden when no default is saved yet (the upload button's
-          first-click prompt creates it). */}
-      {typeof update === "function" && (() => {
-        const kind = est?.kind || "siding";
-        const saved = getSavedWasteDefault(kind);
-        if (!saved) return null;
-        return (
-          <div
-            className="mt-1.5 text-[10px] uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
-            data-testid="blueprint-waste-default-caption"
-          >
-            <span>
-              Default waste · <span className="font-bold text-[var(--ink)]">{saved}%</span>
-            </span>
-            <button
-              type="button"
-              className="text-[var(--ai)] hover:underline font-bold"
-              onClick={() => {
-                const raw = window.prompt(
-                  `Update default Waste Factor % for ${workspaceLabel(kind)} quotes.\n\nThis replaces the saved default and applies to this estimate too.`,
-                  String(saved)
-                );
-                if (raw === null) return;
-                const pct = Number(raw);
-                if (!isNaN(pct) && pct > 0) {
-                  update({ waste_pct: pct });
-                  saveWasteDefault(kind, pct);
-                }
-              }}
-              data-testid="blueprint-waste-default-change"
-            >
-              change
-            </button>
-            <span className="text-[#D4D4D8]">·</span>
-            <button
-              type="button"
-              className="text-[var(--muted)] hover:text-[var(--danger-text)] font-bold"
-              onClick={() => {
-                clearWasteDefault(kind);
-                // Force re-render by nudging the estimate (any update will do)
-                update({ waste_pct: est?.waste_pct || 0 });
-              }}
-              data-testid="blueprint-waste-default-clear"
-              title="Clear the saved default — next upload will prompt again"
-            >
-              clear
-            </button>
-          </div>
-        );
-      })()}
 
       {/* Iter 57x — Restore banner. Surfaces when a blueprint run for
           this estimate completed on the backend but the frontend never
