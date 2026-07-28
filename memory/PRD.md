@@ -5502,3 +5502,10 @@ Standing queue unchanged: B (drag-adjust) → model ledger → money map.
 - Stamp: 46c40c0 CLEAN (1494).
 - PARKED POST-SEPT: #4 full collapse (per-locator governs, count×avg retires), #5 whole-unit rounding everywhere, #6 constant sweep (~12 literal 16.0s, 11/0.7/15% duplicates), #7 API-served conventions for frontend soffit (+interim jest pin pending).
 - NEXT QUEUE: MODEL LEDGER → Part-2 drag (partner's acceptance eye) → money-surfaces map build (on the now-enforced §C inventory).
+
+## 2026-07-28 — INTAKE CLASSES A/B/C + TALL-CORNER + CEILING-DEDUP (sealed) — CASILE WALK v3
+- Class A conservation at intake (zero-Siding-row lump NEVER composes; Haugh evidence verbatim in _hover_mapping_contract docstring; `_area_conservation` ledger pinned). Class C: labels SUGGEST never GOVERN; opening↔facade attribution READ never inferred (flag when unattributable). Class B: hover_field_register.py + detectors — detection only, NO number (Rider 2 held). Never-average rule SEALED (tall corners per-unit in both OSC emitters + rebuild). Ceiling-dedup class (TAPED governs). TEST_ doctrine: roll-up + QR exclusions, 5 estimates swept, Haugh graduated to fixture (test_intake_classes_2026_07_28.py, 17 pins).
+- Acceptance: photo-door fixtures hash-identical (Letrick 13303.78, red house — pins green); hover-door moved: Haugh 2610→2064 (Class A), 3 Degree 4504→4239 (same anatomy, brick 265 suggested-excluded).
+- CASILE WALK v3: OSC 14→15 (18'5" back corner), soffit 463→423 dedup → HOMEOWNER $38,139.13 (v2 37,967.38, +171.75). PRINT-BLOCKED 27 items incl. NEW opening-attribution flag. Doc: memory/casile_walk_v3_2026-07-28.md.
+- Stamps: fa590e0 (1495) · f071c62 CLEAN (1512).
+- NEXT: MODEL LEDGER (carrying ISS→calc.js unification) → Part-2 drag → money-surfaces map. Post-Sept parked: OSC full collapse, whole-unit rounding, constant sweep, API-served conventions + jest pin.
