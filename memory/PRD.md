@@ -1,5 +1,41 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## WASTE SEALED — ALL FAMILIES, ONE RULE (2026-07-28 PM, commit 79a2582)
+- **RULING (Howard)**: the contractor's ONE visible Waste % field, family-
+  defaulted (lap/soffit 10 · shake 15 · B&B 30 · nickel gap 12), fully
+  editable incl. 0, ALWAYS applied into the quantity, every family, same
+  layer; tab lines == printed material list (pinned); field never lies;
+  the % prints on the document; ONE EMITTER with detector.
+- **Q1 answered**: vinyl/Ascend waste was the Iter 79c convention — Hover
+  door hard-coded wastePct=0 at apply ("HOVER's sqft already includes
+  waste"), leaning on Hover's own `+Openings<20ft²+10%` figure baked in the
+  RAW. Post facade-composition that figure is cleared → waste was ABSENT.
+  RETIRED: the Hover openings figure is a report measurement, not waste;
+  the field is the only waste, applied on top by the emitter.
+- **Q2 answered**: siding_sqft consumers enumerated (HOVER_MAPPING_SPEC
+  formulas, contract/_force_profile, lp_package, truck reconcile,
+  hover_sanity, hover_vision, lp_admin, Class B register, frontend display
+  cards) — silent-zero class closed at source by intake composition;
+  remaining zero states are loud; guard (a) will make them unprintable.
+- **BUILT**: HoverImportButton bakes the family default for ALL kinds +
+  writes waste_pct on apply (field never lies); one emitter
+  `wasteLogic.applyWasteQty` (frontend) ↔ `_bake_tab_waste` (backend,
+  equality pinned incl. IEEE754 case); TakeoffReconCard composes through
+  it (dup killed); materialList.js prints % + family defaults (dead
+  roundUpHalf mirror removed); waste scopes in ratified_money_emitters.txt
+  (+ TEMPORARY ISS line riding MODEL LEDGER); detector
+  `test_one_waste_emitter.py` fails any second implementation.
+- **WHAT MOVED (verified end-to-end on the real 3 Degree run)**: vinyl
+  42.4→47.0 SQ · ascend 42.4→47.0 SQ at 10% (round-up-half, never down);
+  LP B&B 138 · LP lap 513 UNCHANGED; tab==package equality asserted live.
+  Guard: `2026-07-28 17:40 UTC · 79a2582 · CLEAN · 1527 passed, 1 skipped`.
+- **QUEUE (Howard's order)**: a) two sealed-unbuilt guards (no priced
+  printable output from unresolved intake — EST-109465; kill MARK VERIFIED
+  on area-conservation flags) → b) acceptance-table 4 required columns as a
+  REAL fresh-import-to-material-list suite test → c) Casile 34/5
+  attribution closure + both-counts print → d) 3 Degree ground-truth check
+  → e) batten wall-heights statement → f) MODEL LEDGER (ISS→calc.js rider).
+
 ## PRODUCTION RESTORE (2026-07-28 PM, commit 2f8a0fd — AWAITING HOWARD'S OWN-EYES VERIFY)
 - **BREAK**: fresh VINYL Hover import produced NO siding line. Root cause: the
   extractor (correctly following the pinned "Siding row only" rule) returned
