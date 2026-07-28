@@ -616,7 +616,7 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "waste_pct": 1, "porch_ceilings": 1,
          "overhang_in": 1, "default_siding_profile": 1, "color_tier": 1,
-         "shake_reveal_in": 1, "lp_flag_checklist": 1})
+         "shake_reveal_in": 1, "lp_colors": 1, "lp_flag_checklist": 1})
     if (full_est or {}).get("kind") != "lp_smart":
         raise HTTPException(status_code=400,
                             detail="LP materialize is lp_smart-kind only")

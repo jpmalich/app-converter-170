@@ -904,12 +904,15 @@ HOVER_MAPPING_SPEC = [
         "item": 'Touch up kits',
         "unit": "PCS",
         "extract": lambda m: max(1, round(
-            ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0 / 11.0)),
+            ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0 / 11.0)) \
+            * max(1, int(m.get("_lp_color_count") or 1)),
         "note": lambda m: (
             f"1 kit per 11 SQ per color (Q15 sealed 2026-07-27): "
             f"{((m.get('siding_with_openings_sqft') or m.get('siding_sqft') or 0)) / 100.0:g} SQ ÷ 11 — "
             "color count reads the estimate's Job Info selections "
-            "(register #7 ruled 2026-07-28); unknown at import → 1"),
+            "(register #7 ruled 2026-07-28); unknown at import → 1"
+            + (f" · × {int(m.get('_lp_color_count'))} selected colors"
+               if int(m.get("_lp_color_count") or 1) > 1 else "")),
     },
     # CAULK FAMILY-SHAPED (register #5 ruled 2026-07-28) — flat 2/job
     # RETIRED everywhere. B&B keeps the sealed 1 tube per 23 batten sticks
@@ -2583,6 +2586,15 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     # rides the tab-line rebuild too — same fold as the package paths.
     if est.get("shake_reveal_in") is not None:
         scoped["_shake_reveal_in"] = float(est["shake_reveal_in"])
+    # TOUCH-UP COLOR COUNT (register #7 ruled 2026-07-28): Job-Info color
+    # selections multiply the kit count on the tab lines too — the same
+    # count the package path reads (tab/package parity, never divergent).
+    if est.get("lp_colors"):
+        from lp_colors import resolve_group_colors
+        _resolved, _ = resolve_group_colors(est["lp_colors"])
+        _n = len({v for v in _resolved.values() if v})
+        if _n > 0:
+            scoped["_lp_color_count"] = _n
     # WALL-HEIGHT ONE-TAP (authorized 2026-07-27): a closed
     # batten_wall_heights checklist entry (taped heights) feeds the batten
     # +height term on the TAB-LINE rebuild too — same fold as the package
@@ -2742,7 +2754,8 @@ async def hover_lp_run(
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
-         "color_tier": 1, "shake_reveal_in": 1, "lp_flag_checklist": 1})
+         "color_tier": 1, "shake_reveal_in": 1, "lp_colors": 1,
+         "lp_flag_checklist": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
     if est.get("kind") != "lp_smart":

@@ -212,6 +212,16 @@ def test_r7_no_colors_selected_base_stays():
     assert "selected color" not in (tk["note"] or "")  # nothing invented
 
 
+def test_r7_tab_line_path_multiplies_too():
+    """Tab/package parity: the tab-line spec multiplies by the same
+    Job-Info color count the package path reads (never divergent)."""
+    m = dict(_bb_meas())
+    m["_lp_color_count"] = 2
+    tk = _find(_build_lines(m), "Touch up kits", "lp_smart")
+    assert tk["qty"] == 4
+    assert "× 2 selected colors" in tk["note"]
+
+
 # ── #8 — CATALOG-ONLY rows stay manual BY DESIGN ──────────────────────────
 def test_r8_catalog_only_rows_never_grow_a_derivation(flag_on):
     lines = _build_lines({

@@ -684,7 +684,7 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     # reads the estimate's SELECTED colors (Job Info card) — 1 kit per
     # 11 SQ PER COLOR (Q15); distinct selected colors multiply the base.
     _distinct_colors = sorted({v for v in (group_colors or {}).values() if v})
-    if _distinct_colors:
+    if _distinct_colors and not measurements.get("_lp_color_count"):
         _tk = next((l for l in lines if l["name"] == "Touch up kits"), None)
         if _tk is not None:
             n = len(_distinct_colors)
