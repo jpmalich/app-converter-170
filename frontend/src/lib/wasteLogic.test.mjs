@@ -211,7 +211,7 @@ eq(baked[2].qty, 115, "Soffit qty = 100 × 1.15");
 
 console.log("\nrecomputeWasteQtys: 15% → 25%:");
 const recomputed = recomputeWasteQtys(baked, 25);
-eq(recomputed[0].qty, 22.5, "Siding qty recomputes to 18 × 1.25 = 22.5");
+eq(recomputed[0].qty, 23, "Siding qty recomputes to 18 × 1.25 = 22.5 → WHOLE UNITS (sealed 2026-07-28) → 23");
 eq(recomputed[0].raw_qty, 18, "Siding raw_qty unchanged");
 eq(recomputed[1].qty, 108, "Gutter qty still unchanged (no raw_qty)");
 eq(recomputed[2].qty, 125, "Soffit qty recomputes to 100 × 1.25");

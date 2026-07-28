@@ -102,15 +102,16 @@ export function isCutProneItem(line) {
   return false;
 }
 
-// Round to nearest 0.5 unit, rounding up. Mirrors materialList.js so the
-// PDF Order column and the on-screen qty match exactly. Items like
-// J-channel pcs round to whole numbers naturally because (raw × waste)
-// of an integer is rarely fractional — but soffit/siding SQ can land at
-// 23.7 and we want to bump to 24.0 for ordering.
-function roundUpHalf(n) {
+// WHOLE UNITS AT THE ORDER LAYER (Howard — ruled in the convergence
+// audit, made LIVE + sealed 2026-07-28): nobody orders half a stick and
+// no yard will pick one. Every ordered quantity rounds UP to a whole
+// unit AFTER waste, every family, every line. The 0.5 convention is
+// RETIRED (540 trim: raw 100 × 1.1 → IEEE754 110.000…01 → round-up-half
+// kept 110.5). The 1e-9 epsilon strips float noise, never real waste.
+function roundUpWhole(n) {
   const x = Number(n);
   if (!isFinite(x) || x <= 0) return 0;
-  return Math.ceil(x * 2) / 2;
+  return Math.ceil(x - 1e-9);
 }
 
 // WASTE — SEALED, ALL FAMILIES, ONE RULE (Howard, 2026-07-28): the
@@ -121,7 +122,7 @@ function roundUpHalf(n) {
 // Any second implementation fails test_one_waste_emitter.py.
 export function applyWasteQty(raw, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
-  return roundUpHalf((Number(raw) || 0) * (1 + pct / 100));
+  return roundUpWhole((Number(raw) || 0) * (1 + pct / 100));
 }
 
 // On import (HOVER / Blueprint): take freshly-computed catalog lines
@@ -134,9 +135,13 @@ export function applyWasteQty(raw, wastePct) {
 export function bakeWasteIntoLines(lines, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
   return (lines || []).map((l) => {
-    if (l._waste_included || !isCutProneItem(l)) return l;
     const raw = Number(l.qty) || 0;
-    if (raw <= 0) return l;
+    if (raw <= 0 || l._waste_included) return l;
+    if (!isCutProneItem(l)) {
+      // WHOLE UNITS apply to every ordered line at this layer — a
+      // fractional non-cut-prone qty (e.g. coil 5.28 ROLL) rounds up.
+      return Number.isInteger(raw) ? l : { ...l, qty: roundUpWhole(raw) };
+    }
     return {
       ...l,
       raw_qty: raw,
@@ -165,7 +170,7 @@ export function recomputeWasteQtys(lines, wastePct) {
 // helper walks every cut-prone line in the estimate and:
 //   1. If `raw_qty` is missing, treats the current `qty` AS the raw
 //      measurement and stamps it into `raw_qty`.
-//   2. Recomputes `qty = roundUpHalf(raw_qty × (1 + waste/100))`.
+//   2. Recomputes `qty = applyWasteQty(raw_qty, waste)` — whole units.
 //
 // Non-cut-prone lines (gutter, downspouts, manual entries that
 // don't match the classifier) are left untouched.

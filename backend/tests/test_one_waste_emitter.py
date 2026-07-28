@@ -106,11 +106,12 @@ def test_frontend_waste_math_only_in_ratified_emitters():
 
 def test_backend_frontend_bake_mirror_identical_math():
     """The two qty-bake emitters (one per language) carry the SAME sealed
-    formula: qty = ceil(raw × (1 + w/100) × 2) / 2 — round up to half,
-    never down."""
+    formula: qty = ceil(raw × (1 + w/100) − 1e-9) — WHOLE UNITS at the
+    order layer (0.5 RETIRED, Howard sealed 2026-07-28), never down."""
     from routes.hover import _bake_tab_waste
     js = (FRONTEND_SRC / "lib" / "wasteLogic.js").read_text()
-    assert "Math.ceil(x * 2) / 2" in js          # roundUpHalf
+    assert "Math.ceil(x - 1e-9)" in js           # roundUpWhole
+    assert "Math.ceil(x * 2) / 2" not in js      # the 0.5 convention is DEAD
     assert "(1 + pct / 100)" in js               # inside applyWasteQty
     assert "export function applyWasteQty" in js
     vinyl = {"tab": "vinyl", "section": "Vinyl Siding",
@@ -130,7 +131,7 @@ def test_field_never_lies_including_zero():
     at0 = _bake_tab_waste([dict(vinyl)], 0)[0]
     assert at0["qty"] == 42.0                    # editable to zero → raw
     at10 = _bake_tab_waste([dict(vinyl)], 10)[0]
-    assert at10["qty"] == 46.5 and at10["raw_qty"] == 42.0
+    assert at10["qty"] == 47.0 and at10["raw_qty"] == 42.0   # whole units
     # raw preserved → a later field edit recomputes losslessly
 
 
@@ -177,6 +178,44 @@ def test_recon_card_composes_through_the_emitter():
     tc = (FRONTEND_SRC / "components" / "estimate" / "TakeoffReconCard.jsx").read_text()
     assert "applyWasteQty" in tc
     assert "roundUpHalf(qty * (1 + pct" not in tc
+
+
+# ── WHOLE UNITS AT THE ORDER LAYER (Howard sealed 2026-07-28) ────────────
+def test_whole_units_at_order_layer_every_line():
+    """Nobody orders half a stick: 540 trim raw 100 × 1.1 was IEEE754
+    110.000…01 and round-up-half kept 110.5 on estimate f3e7d728. Whole
+    units, every family, every line, applied AFTER waste."""
+    from routes.hover import _bake_tab_waste
+    trim = {"tab": "lp_smart", "section": "LP SmartSide Trim",
+            "name": '540 Series Trim 5/4" x 4" x 16\'', "unit": "PCS", "qty": 100.0}
+    out = _bake_tab_waste([dict(trim)], 10)[0]
+    assert out["qty"] == 110.0                   # float noise stripped, NOT 110.5, NOT 111
+    # fractional qty on a non-cut-prone ordered row rounds up at the same layer
+    coil = {"tab": "vinyl", "section": "Vinyl Accessories",
+            "name": ".019 Coil", "unit": "ROLL", "qty": 5.28}
+    assert _bake_tab_waste([dict(coil)], 10)[0]["qty"] == 6.0
+    # sealed derivation rows (_waste_included) are the formulas' own —
+    # already order-ready, never re-touched here
+    lap = {"tab": "lp_smart", "section": "LP Smart Siding",
+           "name": '38 Series Lap 3/8" x 8" x 16\'', "unit": "PCS",
+           "qty": 513.0, "_waste_included": True}
+    assert _bake_tab_waste([dict(lap)], 10)[0]["qty"] == 513.0
+
+
+# ── NOTHING STALE LEFT BEHIND (Howard sealed 2026-07-28 — f3e7d728) ──────
+def test_profile_pick_rederive_is_the_last_write():
+    """The B&B pick re-derived correctly server-side and the editor's
+    debounced autosave replayed the pre-pick lap merge over it (lap 514
+    standing, panels 0). The apply flow now adopts the rebuilt tab_lines
+    into client state and persists them as the LAST write."""
+    src = (FRONTEND_SRC / "components" / "estimate" / "HoverImportButton.jsx").read_text()
+    assert "const { data: freshEst }" in src      # server truth re-fetched
+    assert "lines: freshEst.lines" in src         # rebuilt lines adopted
+    assert "waste_pct: freshEst.waste_pct" in src # family waste adopted (B&B 30)
+    # the stale wrap-0 facade scope builder is dead: untouched picker
+    # sends NO scope on the lp-run door too
+    assert '"wrap_only"' not in src and '"all_included"' not in src
+    assert "facadeMaterials.length && Object.keys(facadeInclude).length" in src
 
 
 # ── family defaults sealed values ────────────────────────────────────────

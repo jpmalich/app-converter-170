@@ -2595,16 +2595,25 @@ def _cut_prone_line(line: dict) -> bool:
 
 
 def _bake_tab_waste(lines: list, waste_pct) -> list:
-    """bakeWasteIntoLines mirror: qty = ceil(raw × (1+w) × 2)/2 on
-    cut-prone rows, raw kept in raw_qty."""
+    """bakeWasteIntoLines mirror (equality pinned): cut-prone rows bake the
+    field's waste then round UP to WHOLE units — 0.5 RETIRED (whole units
+    at the order layer, Howard sealed 2026-07-28: 540 trim 110.5 was raw
+    100 × 1.1 IEEE754 noise kept by round-up-half). Fractional qtys on
+    other ordered rows round up at the same layer; sealed derivation rows
+    (_waste_included) are already order-ready."""
     factor = 1 + max(0.0, float(waste_pct or 0)) / 100.0
     out = []
     for l in lines:
         l = dict(l)
         raw = float(l.get("qty") or 0)
-        if raw > 0 and not l.get("_waste_included") and _cut_prone_line(l):
+        if raw <= 0 or l.get("_waste_included"):
+            out.append(l)
+            continue
+        if _cut_prone_line(l):
             l["raw_qty"] = raw
-            l["qty"] = math.ceil(raw * factor * 2) / 2
+            l["qty"] = float(math.ceil(raw * factor - 1e-9))
+        elif raw != int(raw):
+            l["qty"] = float(math.ceil(raw - 1e-9))
         out.append(l)
     return out
 

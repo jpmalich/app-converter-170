@@ -574,6 +574,10 @@ export default function HoverImportButton({ est, update, save }) {
       }
 
       const winNote = sourceOpenings.length ? ` + ${sourceOpenings.length} windows` : "";
+      // The waste toast must state the value the field ACTUALLY carries —
+      // on LP the pick's family default (B&B 30 · lap 10) is written
+      // server-side and adopted below.
+      let appliedWastePct = wastePct;
       toast.success(
         `Imported HOVER: ${added} new + ${updated} updated${winNote} · saved${pairedMsg}`
       );
@@ -586,25 +590,40 @@ export default function HoverImportButton({ est, update, save }) {
       }
       if (srcKind === "lp_smart" && hoverRunId && profile) {
         try {
-          // Facade scope from the picker — explicit choice, wrap default.
+          // Facade scope from the picker — sent ONLY when the contractor
+          // TOUCHED it; untouched = the backend composes the sealed
+          // default (2026-07-28). Never a stale wrap-0 scope.
           let facadeScope = null;
-          if (facadeMaterials.length) {
+          if (facadeMaterials.length && Object.keys(facadeInclude).length) {
             const excluded = {};
             let wrap = 0;
             for (const m of facadeMaterials) {
-              if (m.key === "siding" || facadeInclude[m.key]) wrap += m.sqft;
+              if (facadeIncluded(m.key)) wrap += m.sqft;
               else excluded[m.key] = m.sqft;
             }
-            const mode = Object.keys(excluded).length === 0
-              ? "all_included"
-              : (Object.keys(facadeInclude).filter((k) => facadeInclude[k]).length ? "custom" : "wrap_only");
-            facadeScope = { mode, wrap_sqft: wrap, excluded };
+            facadeScope = { mode: "custom", wrap_sqft: wrap, excluded };
           }
           const { data: lpRun } = await api.post(`/estimates/${est.id}/hover-lp-run`, {
             hover_run_id: hoverRunId,
             profile,
             ...(facadeScope ? { facade_scope: facadeScope } : {}),
           });
+          // NOTHING STALE LEFT BEHIND (Howard, sealed 2026-07-28 —
+          // f3e7d728): the profile pick RE-DERIVES and the SERVER'S
+          // materialized truth (rebuilt lines, family-defaulted waste
+          // field, scoped measurements) becomes the client state. Before
+          // this, the debounced autosave could replay the pre-pick
+          // default-family merge over the finished rebuild (lap 514
+          // standing, B&B panels 0 — the pick never reached the screen).
+          if (Array.isArray(lpRun?.tab_lines) && lpRun.tab_lines.length) {
+            const { data: freshEst } = await api.get(`/estimates/${est.id}`);
+            appliedWastePct = Number(freshEst.waste_pct ?? wastePct);
+            update({
+              lines: freshEst.lines,
+              waste_pct: freshEst.waste_pct,
+              hover_measurements: freshEst.hover_measurements,
+            });
+          }
           toast.info(
             `LP list now derives from this Hover report (${profile === "board_batten" ? "Board & Batten" : profile}). ${lpRun.mapping_flags?.length || 0} mapping note(s) — see the Material List panel.`,
             { duration: 8000 }
@@ -619,7 +638,7 @@ export default function HoverImportButton({ est, update, save }) {
       // visible field — never a silent engine default, never a family
       // exception.
       toast.info(
-        `Waste ${wastePct}% (family default — visible + editable, including to 0) written into the Waste % field. Line qtys carry it; change the field to recompute.`,
+        `Waste ${appliedWastePct}% (family default — visible + editable, including to 0) written into the Waste % field. Line qtys carry it; change the field to recompute.`,
         { duration: 8000 }
       );
     } catch (e) {
