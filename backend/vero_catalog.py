@@ -107,7 +107,13 @@ VERO_MARGIN_PCT = {
     "Contractor":     30,
     "Builder-Dealer": 25,
 }
-_VERO_MARGIN_DIVISOR = {tier: round(1 - pct / 100, 2) for tier, pct in VERO_MARGIN_PCT.items()}
+# ONE EMITTER amendment (Howard, ruled 2026-07-28): this generator is a
+# BUILD-TIME exception to the derivation-time doctrine, granted — but it
+# must not RE-IMPLEMENT sell = cost ÷ (1 − m). The formula is imported
+# from the named emitter (lp_costs.sell_price); only the Vero tier
+# percentages remain local data. An output pin (test_pricing_parity)
+# would not catch a tier-margin change applied in one place and not the
+# other — the import does, by construction.
 
 # Cost basis per UI-bucket product (single bucket "0-101" each).
 VERO_BASE_COSTS = {
@@ -144,11 +150,13 @@ VERO_SINGLE_BUCKET = "0-101"
 
 
 def compute_tier_price(cost: float, tier: str) -> float:
-    """Apply the Vero gross-margin formula. Falls back to wholesale
-    (highest price) for any tier not in the divisor table — keeps
-    one-opp companies in a sane safe state until they're re-tiered."""
-    divisor = _VERO_MARGIN_DIVISOR.get(tier) or _VERO_MARGIN_DIVISOR.get("Builder-Dealer")
-    return round(float(cost) / float(divisor), 2)
+    """Apply the gross-margin formula VIA THE NAMED EMITTER
+    (lp_costs.sell_price — ONE EMITTER amendment 2026-07-28). Falls back
+    to Builder-Dealer margin for any unknown tier — keeps one-opp
+    companies in a sane safe state until they're re-tiered."""
+    from lp_costs import sell_price
+    pct = VERO_MARGIN_PCT.get(tier, VERO_MARGIN_PCT["Builder-Dealer"])
+    return sell_price(cost, pct)
 
 
 # ──────────────────── Catalog assembly ────────────────────

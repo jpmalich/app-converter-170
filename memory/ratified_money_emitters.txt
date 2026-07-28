@@ -1,0 +1,12 @@
+# RATIFIED MONEY EMITTERS — ONE EMITTER PER MONEY FORMULA (doctrine sealed 2026-07-28)
+# GOVERNANCE (Howard, ruled 2026-07-28): adding a name here requires HOWARD'S
+# RATIFICATION — same class as ratified_commits.txt. The detector
+# (test_one_money_emitter.py) builds its whitelist FROM THIS FILE ONLY; a name
+# added to the test without a ratified line here fails the suite.
+# format: <scope> <file> <ruled-date> <note>
+backend-margin services.py 2026-07-28 named emitter — totals (waste/tax/margin)
+backend-margin lp_costs.py 2026-07-28 named emitter — tier sell (sell_price)
+backend-margin vero_catalog.py 2026-07-28 BUILD-TIME generator exception, GRANTED + AMENDED (imports lp_costs.sell_price; doctrine governs derivation time)
+frontend-margin calc.js 2026-07-28 named emitter — frontend totals (reference behavior)
+frontend-margin SettingsRow.jsx 2026-07-28 display-only multiplier preview, feeds no dollar
+frontend-margin ISSEstimateEditor.jsx 2026-07-28 TEMPORARY — unification to calc.js RULED (no exception granted); rides the MODEL LEDGER session; remove this line when unified

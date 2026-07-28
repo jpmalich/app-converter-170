@@ -39,3 +39,9 @@ Your re-book-check: the house has **14 outside corners, not Hover's 20** — the
 The quote header renders **"PRINT-BLOCKED: N items"** and send + PDF stay disabled until the readiness list clears (authorized 2026-07-28 — supersedes the 2026-07-23 soft-only ruling on the homeowner surface; the estimate-page readiness panel stays informational). Standing blockers on EST-523061: the 5 labor-pending rows (cap window ×32 is the big one), Tear-Off + Dumpster quantities, unpriced money-surface rows on the secondary tabs, and the open `batten_wall_heights` flag (tape the walls via the one-tap field).
 
 *Pinned: `test_casile_closeout.py` (OSC 14 + note both ways, walk figures), `test_flag_checklist.py::TestCornerCountCorrection` (close→14, reopen→20, bad count 422), `test_labor_conventions_readiness.py::test_quote_gate_is_hard_print_block`.*
+
+---
+**CLEARED (Howard, 2026-07-28): WALK v2 CLEARED at $37,967.38** — book-checked
+twice over (his corner count drove the final delta): materials-true,
+labor-honest, print-blocked by construction until the contractor inputs land.
+Recorded per item-1(g) of the 2026-07-28 reconciliation order.

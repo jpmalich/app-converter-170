@@ -506,3 +506,37 @@ Pinned: test_partial_put_clobber_class.py (kind-immutability + editor-payload pi
   (3 Degree +7,978.23 · Casile +6,933.23 · EST-934889 +4,660.05 · doug jones
   +2,367.01 · EST-986945 +1,183.51 — all-tab unscoped totals); ZERO sent,
   ZERO accepted. The drift never reached a homeowner.
+
+## 2026-07-28 (later) — DOCTRINE AMENDED: SCOPE + WHITELIST GOVERNANCE (Howard's rulings on the two whitelisted emitters)
+- **SCOPE written into the doctrine:** ONE EMITTER PER MONEY FORMULA governs
+  DERIVATION TIME. Build-time generators are a boundary, not a hole: output is
+  data, but the formula must be IMPORTED from the named emitter, never
+  re-implemented.
+- **vero_catalog.py — exception GRANTED, re-classed BUILD-TIME, AMENDED:** now
+  imports lp_costs.sell_price (the sealed divisor) instead of its own
+  `_VERO_MARGIN_DIVISOR`; only the Vero tier percentages remain local data.
+  Output verified unchanged (test_pricing_parity green).
+- **ISSEstimateEditor.jsx — NO exception. UNIFY to calc.js ruled**, rides the
+  MODEL LEDGER session; its ratification line is marked TEMPORARY and must be
+  removed at unification.
+- **WHITELIST GOVERNANCE SEALED:** the detector whitelist now lives in
+  `memory/ratified_money_emitters.txt` (scope · file · ruled-date · note) and
+  `test_one_money_emitter.py` builds its whitelist FROM THAT FILE ONLY — an
+  unratified addition fails the suite, not just a new implementation. Honest
+  boundary, stated: a builder who forges the ratification file defeats it —
+  same trust boundary as ratified_commits.txt; the mechanism makes every
+  addition an explicit, dated, greppable act for Howard's audit.
+
+## 2026-07-28 — TEST-DATA POLLUTION CLASS: FOURTH SIGHTING (transient, self-healed, OPEN for RCA)
+- During one full-suite run (suite6, ~02:05–02:16 UTC) Jon Casile's LIVE
+  estimate briefly read waste_pct=10 / 57 panels / OSC note missing — 4 tests
+  failed mid-run (casile_closeout ×2, hover_bb_profile_mapping, fork_boundary
+  — the last a real seam fix, landed). By 02:17 the estimate read 30 / 68 /
+  note intact again and an immediate identical re-run (suite7) was GREEN 1495
+  with all casile pins asserting the live walk-state.
+- Signature matches a hover re-import (fresh imports write waste 10 and
+  rebuild tabs) landing MID-SUITE, then the correction machinery re-closing.
+  The TEST_ prefix tripwire guards direct test writes; it does NOT cover an
+  async worker processing a queued job against a live estimate. RCA queued —
+  suspect: background extraction/import worker path. No fixture or live value
+  is currently wrong; walk-state verified by pins post-run.

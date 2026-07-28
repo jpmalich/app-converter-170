@@ -33,6 +33,7 @@ SEAMS = [
     "routes/hover.py",          # S4: _build_lines LP branches (carve to lp_ingest.py at fork time)
     "routes/elevation_sheets.py",  # S5: 2D sheet binder — READ-ONLY sealed-key + tape-walls constants (build 2026-07-18)
     "routes/company.py",        # S6: contractor-owned labor rates — sheet_norm keys only (labor is the contractor's, ruled 2026-07-24)
+    "vero_catalog.py",          # S7: ONE EMITTER amendment (Howard, 2026-07-28) — build-time generator IMPORTS lp_costs.sell_price instead of re-implementing sell = cost ÷ (1−m); ratified in memory/ratified_money_emitters.txt
 ]
 
 # Estimate-level fields on the SHARED estimates collection written by LP

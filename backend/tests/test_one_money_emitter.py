@@ -1,17 +1,28 @@
 """ONE EMITTER PER MONEY FORMULA — doctrine SEALED 2026-07-28 (convergence
-audit rulings). Any number that reaches a dollar has exactly ONE
-implementation; every other surface COMPOSES through it. A comment is not
-a pin. These pins FAIL WHEN A SECOND IMPLEMENTATION APPEARS — they scan
-the source for money-formula signatures and refuse any location outside
-the named emitter (not merely asserting today's agreement).
+audit rulings). SCOPE (Howard, ruled 2026-07-28): the doctrine governs
+DERIVATION TIME — any number computed on the way to a dollar at quote /
+accept / export time has exactly ONE implementation; every other surface
+COMPOSES through it. BUILD-TIME generators (seed catalogs) are a
+boundary, not a hole: their OUTPUT is data, but they must IMPORT the
+sealed formula from the named emitter, never re-implement it
+(vero_catalog amendment, 2026-07-28). A comment is not a pin. These pins
+FAIL WHEN A SECOND IMPLEMENTATION APPEARS — they scan the source for
+money-formula signatures and refuse any location outside the RATIFIED
+whitelist (not merely asserting today's agreement).
+
+WHITELIST GOVERNANCE (Howard, ruled 2026-07-28): the whitelist lives in
+memory/ratified_money_emitters.txt and every entry requires Howard's
+ratification — same class as ratified_commits.txt. The detector builds
+its whitelist FROM THAT FILE; an unratified addition (a name in code, or
+in this test, without a ratified line) fails the suite. Honest boundary:
+a builder who forges the ratification file defeats it — the mechanism
+makes every addition an explicit, dated, greppable act for Howard's eye,
+the same trust boundary as the ratified-commits escape hatch.
 
 Named emitters:
   TOTALS (waste/tax/margin) ... backend services.calc_totals · frontend lib/calc.js
   TIER SELL .................. backend lp_costs.sell_price
   VERO/MEZZO OPENING $ ....... inside the two totals emitters only
-Named display-only exceptions (render a preview, feed no dollar):
-  SettingsRow.jsx (margin multiplier preview) · VeroPanel/VeroJobSnapshot
-  (per-opening entry surfaces write fields; totals compose elsewhere).
 """
 import re
 import sys
@@ -21,6 +32,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 BACKEND = Path("/app/backend")
 FRONTEND_SRC = Path("/app/frontend/src")
+RATIFIED_EMITTERS = Path("/app/memory/ratified_money_emitters.txt")
+
+
+def _ratified(scope: str) -> set[str]:
+    """Whitelist comes ONLY from Howard's ratification file."""
+    out = set()
+    for raw in RATIFIED_EMITTERS.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = line.split(None, 3)
+        assert len(parts) >= 3, f"malformed ratification line: {raw}"
+        s, fname, ruled_date = parts[0], parts[1], parts[2]
+        assert re.match(r"\d{4}-\d{2}-\d{2}$", ruled_date), (
+            f"ratification line missing ruled-date: {raw}")
+        if s == scope:
+            out.add(fname)
+    return out
+
+
+def test_whitelist_is_ratified_and_governed():
+    assert RATIFIED_EMITTERS.exists(), (
+        "ratified_money_emitters.txt missing — the whitelist has no governance")
+    for scope in ("backend-margin", "frontend-margin"):
+        names = _ratified(scope)
+        assert names, f"no ratified entries for scope {scope}"
 
 
 def _py_files():
@@ -155,15 +192,13 @@ def test_isc_hover_basis_tab_equals_package_formula():
         assert _isc_540_pcs(m) == package_math
 
 
-# ── DOCTRINE detector: margin division exists ONLY in named emitters ─────
+# ── DOCTRINE detector: margin division exists ONLY in RATIFIED emitters ──
 _MARGIN_SIG = re.compile(r"/\s*\(\s*1(\.0)?\s*-\s*|/\s*denom|\(1\s*-\s*min\(pct|1\s*-\s*pct\s*/\s*100")
-# NAMED exceptions (reported to Howard 2026-07-28 — hand ruling pending):
-#   vero_catalog.py — seed-time cost→sell catalog generator (its OUTPUT is
-#     pinned by test_pricing_parity); second FORMULA instance nonetheless.
-#   ISSEstimateEditor.jsx — ISS workspace computes sell locally instead of
-#     lib/calc.js; unification queued post-Sept.
-_ALLOWED_MARGIN_PY = {"services.py", "lp_costs.py", "vero_catalog.py"}
-_ALLOWED_MARGIN_JS = {"calc.js", "SettingsRow.jsx", "ISSEstimateEditor.jsx"}
+# Whitelists are NOT defined here — they come from Howard's ratification
+# file (memory/ratified_money_emitters.txt). Adding a name to that file
+# without his ruling is the same violation class as an unruled auto-commit.
+_ALLOWED_MARGIN_PY = _ratified("backend-margin")
+_ALLOWED_MARGIN_JS = _ratified("frontend-margin")
 
 
 def _code_lines_py(path):
