@@ -166,12 +166,18 @@ class TestRoundTwoPins:
         AMENDED AGAIN (Q12 ruled 2026-07-27, 3 Degree Rd sitting): ISC
         default re-SKUs 440 4/4"×4" → 540 5/4"×4" (merged onto the wrap
         line) — Letrick's 2 ISC sticks reprice at the 540 rate →
-        total_sell 12901.52 → 13037.21 (+135.69)."""
+        total_sell 12901.52 → 13037.21 (+135.69).
+        AMENDED AGAIN (register #5 CAULK ruled 2026-07-28): flat 2/job
+        RETIRED — LP non-B&B = 1 tube per SQUARE (SmartSide butt joints
+        take sealant). Letrick key-bound 2099.7 ft² = 21 SQ → OSI Quad
+        Max 2 → 21 tubes (+19 × $14.03 = +$266.57) → total_sell
+        13037.21 → 13303.78. B&B jobs hold at the sealed 1/23 sticks
+        (Casile unchanged at 9 — pinned in test_casile_closeout)."""
         import os
         tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
         d = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
                          json={}, headers={"X-Admin-Token": tok}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 13037.21
+        assert d["summary"]["pricing"]["total_sell"] == 13303.78
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

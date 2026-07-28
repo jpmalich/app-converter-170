@@ -45,6 +45,23 @@ SOFFIT_BUNDLE_PCS = 9  # 38 Series ships 9 pcs/bundle where bundle rounding appl
 # before whole-piece round-up — supersedes the 2026-07-11 provisional 10%.
 SHAKE_WASTE = 0.15
 
+# SHAKE REVEAL FIELD (register #4 ruled 2026-07-28): contractor-selectable
+# per-estimate field bounded 7"–10", DEFAULT 7" — per LP install
+# instructions verbatim: "540 Series Trim is recommended when the shake
+# reveal selected ranges between a maximum of 10 inches to a minimum of
+# 7 inches". Coverage stays 4' × reveal/12 (clamped to the panel's
+# physical 9-7/8" max — a 10" selection prices at 9.875). The sealed
+# 44 pcs/sq is the MIN-reveal (6-7/8") instantiation of that same curve;
+# at the ruled 7" default it reads ~43 pcs/sq, at 10" (→9.875) ~31. The
+# sealed 15% shake waste applies multiplicatively ON TOP regardless of
+# the selected reveal. 540-trim pairing consistent with Q12.
+SHAKE_REVEAL_FIELD_MIN_IN = 7.0
+SHAKE_REVEAL_FIELD_MAX_IN = 10.0
+SHAKE_REVEAL_RULE_SOURCE = (
+    'LP install instructions: "540 Series Trim is recommended when the '
+    'shake reveal selected ranges between a maximum of 10 inches to a '
+    'minimum of 7 inches" (register #4 ruled 2026-07-28)')
+
 # LP-native line composition RULED 2026-07-11 (supersedes Alside carry-over):
 # NO J-channel, NO finish trim, NO aluminum coil lines on LP takeoffs —
 # their appearance on any LP-native line is a COMPOSITION BUG.
@@ -154,15 +171,17 @@ def line_math(area_sqft: float, coverage_sqft_per_pc: float, waste: float = DEFA
 
 
 def shake_takeoff(area_sqft: float, reveal_in=None, waste=None) -> dict:
-    """Reveal is JOB-SPECIFIC — never defaulted silently. Unspecified →
-    flag `reveal: unconfirmed` and price at MINIMUM reveal (worst case,
-    more pieces) with the flag visible. Shake waste sealed 15%
-    (CONTRACTOR-SPEC, 2026-07-24 v3 book-check)."""
+    """Reveal is the CONTRACTOR'S FIELD (register #4 ruled 2026-07-28):
+    bounded 7"–10", DEFAULT 7" — per LP install instructions (see
+    SHAKE_REVEAL_RULE_SOURCE). Unspecified → the ruled 7" default with
+    the flag visible. Shake waste sealed 15% (CONTRACTOR-SPEC,
+    2026-07-24 v3 book-check) applies on top regardless of reveal."""
     flags = []
     if reveal_in is None:
-        reveal_in = SHAKE_REVEAL_MIN_INCHES
+        reveal_in = SHAKE_REVEAL_FIELD_MIN_IN
         flags.append(
-            "reveal: unconfirmed — priced at minimum reveal 6-7/8\" (worst case, more pieces)"
+            "reveal: unconfirmed — priced at the ruled 7\" default "
+            "(register #4 2026-07-28; was min 6-7/8\" worst-case before the ruling)"
         )
     if waste is None:
         waste = SHAKE_WASTE
@@ -316,7 +335,10 @@ def spec_discrepancies() -> list:
 # family (profile selection + Hover materialize pre-fill it). No silent
 # waste anywhere. Shake 15 · Nickel Gap 12: CONTRACTOR-SPEC, sealed
 # 2026-07-24 (v3 book-check) — same one-visible-field mechanics.
-# Soffit keeps its baked-10 convention inside soffit_pieces (unruled).
+# Soffit baked-10: RECOGNIZED as the SEALED soffit convention (register
+# #6 ruled 2026-07-28) — the 1.10 cut factor inside soffit_pieces is the
+# LP PDF convention (single-bake pinned), predates the family-waste seal,
+# now cited; NO change.
 FAMILY_WASTE_DEFAULTS = {
     "lap": 10.0,
     "board_batten": 30.0,
@@ -327,6 +349,27 @@ FAMILY_WASTE_DEFAULTS = {
 
 def family_waste_default_pct(profile: str | None) -> float:
     return float(FAMILY_WASTE_DEFAULTS.get(profile or "", 10.0))
+
+
+# CATALOG-ONLY ROWS — MANUAL BY DESIGN (register #8 ruled 2026-07-28):
+# these rows carry NO formula on purpose; no silent derivation is ever
+# added. The coils are manual by the iter97 composition ruling; the rest
+# by Howard's standing order (manual by omission, named).
+CATALOG_ONLY_MANUAL_BY_DESIGN = (
+    "38 Series 4' x 8' Panel",
+    "38 Series Vertical Panel",
+    '540 Series OSC 5/4" x 4" x 16\'',
+    '440 Series Trim 4/4" x 6" x 16\'',
+    '440 Series Trim 4/4" x 10" x 16\'',
+    '440 Series Trim 4/4" x 12" x 16\'',
+    '540 Series Trim 5/4" x 6" x 16\'',
+    '540 Series Trim 5/4" x 8" x 16\'',
+    '540 Series Trim 5/4" x 10" x 16\'',
+    '540 Series Trim 5/4" x 12" x 16\'',
+    "Flash tape",
+    '24" CTW',
+    '24" VSSFT',
+)
 
 
 # LABOR IS THE CONTRACTOR'S — v3 ZEROING (sealed 2026-07-24): ALL labor

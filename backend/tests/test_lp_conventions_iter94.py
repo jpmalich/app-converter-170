@@ -73,7 +73,9 @@ def test_near_boundary_annotation():
 
 def test_shake_unspecified_reveal_flags_and_worst_cases():
     m = shake_takeoff(500.0)
-    assert m["reveal_in"] == 6.875
+    # register #4 (ruled 2026-07-28): unspecified → the ruled 7" field
+    # default (was min 6-7/8" worst-case before the ruling) — flag stays.
+    assert m["reveal_in"] == 7.0
     assert any("reveal: unconfirmed" in f for f in m["flags"])
     assert not any("PENDING" in f for f in m["flags"])  # waste ruled, no longer pending
     specified = shake_takeoff(500.0, reveal_in=9.875)

@@ -186,6 +186,36 @@ export default function SettingsRow({ est, update }) {
               <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
                 Applied on HOVER / Blueprint import — collapses or splits the two soffit lines automatically
               </p>
+              {/* SHAKE REVEAL (register #4 ruled 2026-07-28): contractor-
+                  selectable, bounded 7"–10", default 7" — per LP install
+                  instructions. Feeds shake coverage = 4' × reveal/12 on the
+                  next derivation; sealed 15% shake waste applies on top. */}
+              <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                  Shake reveal
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <input
+                    className="input num w-24"
+                    type="number"
+                    step="0.125"
+                    min="7"
+                    max="10"
+                    value={est.shake_reveal_in ?? 7}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      if (v >= 7 && v <= 10) update({ shake_reveal_in: v });
+                    }}
+                    data-testid="shake-reveal-in"
+                  />
+                  <span className="text-[var(--ink-2)]">in</span>
+                </div>
+                <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                  Bounded 7"–10", default 7" — LP install instructions: "540 Series Trim is recommended
+                  when the shake reveal selected ranges between a maximum of 10 inches to a minimum of
+                  7 inches". Coverage = 4' × reveal ÷ 12 (panel max 9-7/8"); sealed 15% shake waste applies on top.
+                </p>
+              </div>
               <WallHeightTapeField est={est} />
             </div>
           )}

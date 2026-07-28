@@ -907,24 +907,33 @@ HOVER_MAPPING_SPEC = [
             ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0 / 11.0)),
         "note": lambda m: (
             f"1 kit per 11 SQ per color (Q15 sealed 2026-07-27): "
-            f"{((m.get('siding_with_openings_sqft') or m.get('siding_sqft') or 0)) / 100.0:g} SQ ÷ 11 — ×N if multi-color"),
+            f"{((m.get('siding_with_openings_sqft') or m.get('siding_sqft') or 0)) / 100.0:g} SQ ÷ 11 — "
+            "color count reads the estimate's Job Info selections "
+            "(register #7 ruled 2026-07-28); unknown at import → 1"),
     },
-    # Q15 (SEALED 2026-07-27): caulk scales per-family — B&B: 1 tube per
-    # 23 batten sticks; non-B&B keeps the 2-tube default.
+    # CAULK FAMILY-SHAPED (register #5 ruled 2026-07-28) — flat 2/job
+    # RETIRED everywhere. B&B keeps the sealed 1 tube per 23 batten sticks
+    # (Q15 2026-07-27); LP non-B&B = 1 tube per SQUARE (SmartSide butt
+    # joints take sealant).
     {
         "tabs": ["lp_smart"],
         "section": "LP Siding Accessories",
         "item": 'OSI Quad Max Caulking',
         "unit": "Tube",
         "extract": lambda m: (
-            max(2, math.ceil(_bb_batten_sticks(m) / 23.0 - 1e-9))
-            if _bb_batten_sticks(m) > 0 else 2
+            max(1, math.ceil(_bb_batten_sticks(m) / 23.0 - 1e-9))
+            if _bb_batten_sticks(m) > 0
+            else max(1, math.ceil(
+                ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0 - 1e-9))
         ),
         "note": lambda m: (
-            f"B&B: 1 tube per 23 batten sticks (Q15 sealed 2026-07-27) — "
+            f"B&B: 1 tube per 23 batten sticks (Q15 sealed 2026-07-27; register #5 2026-07-28 holds it) — "
             f"{_bb_batten_sticks(m)} sticks ÷ 23"
             if _bb_batten_sticks(m) > 0
-            else "Default 2 tubes per job (non-B&B)"
+            else (
+                f"LP non-B&B: 1 tube per SQUARE — SmartSide butt joints take sealant "
+                f"(register #5 ruled 2026-07-28, flat 2/job retired): "
+                f"{((m.get('siding_with_openings_sqft') or m.get('siding_sqft') or 0)) / 100.0:g} SQ")
         ),
     },
     # J blocks — small penetration cover plates (lights, outlets, hose
@@ -939,7 +948,9 @@ HOVER_MAPPING_SPEC = [
             4,
             round((m.get("window_count") or 0) / 6 + (m.get("door_count") or 0) / 2),
         ),
-        "note": "Min 4 — lights, outlets, hose bibs scaled by openings",
+        "note": ("Min 4 — lights, outlets, hose bibs scaled by openings "
+                 "(SEALED AS-IS register #1 ruled 2026-07-28: per-job variance makes "
+                 "photo-counting unreliable — contractor owns the final qty)"),
     },
     # Mini Splits — large penetration covers (AC linesets, dryer vents,
     # range hoods). Most homes have 1-3.
@@ -952,7 +963,8 @@ HOVER_MAPPING_SPEC = [
             1,
             round((m.get("entry_door_count") or 0) / 2),
         ),
-        "note": "Min 1 — AC linesets, dryer vents, range hoods",
+        "note": ("Min 1 — AC linesets, dryer vents, range hoods "
+                 "(SEALED AS-IS register #2 ruled 2026-07-28: contractor owns the final qty)"),
     },
     # =====================================================================
     # OUTSIDE CORNERS — count is HOVER outside-corner LF ÷ piece length.
@@ -1244,16 +1256,20 @@ HOVER_MAPPING_SPEC = [
         ),
     },
     # =====================================================================
-    # CAULKING — flat default of 2 tubes per job regardless of size (per
-    # Howard). Contractor can bump it up on bigger jobs.
+    # CAULKING — family-shaped (register #5 ruled 2026-07-28): flat 2/job
+    # RETIRED. Vinyl/Ascend interlock — caulk at OPENINGS only: 1 tube per
+    # opening (windows + doors).
     # =====================================================================
     {
         "tabs": ["vinyl", "ascend"],
         "section": "Siding Accessories",
         "item": "Caulking (per color)",
         "unit": "EA",
-        "extract": lambda m: 2,
-        "note": "Default 2 tubes per job (per Howard)",
+        "extract": lambda m: max(1, int(m.get("window_count") or 0) + int(m.get("door_count") or 0)),
+        "note": lambda m: (
+            f"1 tube per opening — interlocking siding, caulk at openings only "
+            f"(register #5 ruled 2026-07-28, flat 2/job retired): "
+            f"{int(m.get('window_count') or 0)} windows + {int(m.get('door_count') or 0)} doors"),
     },
     # Iter 70 (2026-06-22): wire HOVER fields previously left on the floor.
     # Gable Vents — auto-populate from HOVER's Accessories → Vents Qty.
@@ -1956,7 +1972,7 @@ _PROFILE_SKU_MAP: dict[tuple[str, str], tuple[str, str, float]] = {
 }
 
 
-def _lp_profile_sku_entry(family: str) -> tuple[str, str, float] | None:
+def _lp_profile_sku_entry(family: str, measurements: dict | None = None) -> tuple[str, str, float] | None:
     """Iter 78ab — When `LP_AI_FORMULAS_V1` is enabled, return the LP
     SKU + accurate per-profile coverage rate from the PDF formulas
     (8" Lap / 16" Soffit / 7" shake reveal defaults). Else None so
@@ -1968,16 +1984,28 @@ def _lp_profile_sku_entry(family: str) -> tuple[str, str, float] | None:
     if not lp_formulas.is_enabled():
         return None
     if family in ("lap", "dutch_lap"):
+        # LAP UNIFY (register #3 ruled 2026-07-28): the split path CONFORMS
+        # to the sealed book 11 pcs/sq (2026-07-19) — the PDF 9.17 coverage
+        # retires from ORDERING (stays on record as reference pedigree).
+        # 100/11 ≈ 9.0909 sqft/pc ⇒ pieces_needed ≡ lap_pieces_book, pinned.
         return (
             '38 Series Lap 3/8" x 8" x 16\'',
             "PCS",
-            lp_formulas.lap_coverage_sqft_per_pc(),  # default 8" Lap
+            100.0 / lp_formulas.LAP_PCS_PER_SQUARE,
         )
     if family == "shake":
+        # SHAKE REVEAL (register #4 ruled 2026-07-28): contractor-selectable
+        # estimate field bounded 7"–10", default 7" — per LP install
+        # instructions ("540 Series Trim is recommended when the shake
+        # reveal selected ranges between a maximum of 10 inches to a
+        # minimum of 7 inches"). Coverage = 4' × reveal/12, clamped to the
+        # panel's physical max 9-7/8" (a 10" selection prices at 9.875).
+        _reveal = float((measurements or {}).get("_shake_reveal_in")
+                        or lp_formulas.DEFAULT_SHAKE_REVEAL_INCHES)
         return (
             'Shake',
             "PCS",
-            lp_formulas.shake_coverage_sqft_per_pc(lp_formulas.DEFAULT_SHAKE_REVEAL_INCHES),
+            lp_formulas.shake_coverage_sqft_per_pc(_reveal),
         )
     if family == "nickel_gap":
         return (
@@ -2075,7 +2103,7 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
             # row for the PDF-accurate per-profile coverage rate.
             sku = None
             if tab == "lp_smart":
-                sku = _lp_profile_sku_entry(family)
+                sku = _lp_profile_sku_entry(family, measurements)
             if sku is None:
                 sku = _PROFILE_SKU_MAP.get((family, tab))
             if not sku:
@@ -2133,6 +2161,14 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
             _note = _composition_note(family, sqft)
             if _waste_src == "family default":
                 _note += f" · waste {_waste * 100:g}% (family default — sealed 2026-07-24)"
+            if tab == "lp_smart" and lp_formulas.is_enabled():
+                if family in ("lap", "dutch_lap"):
+                    _note += " · book 11 pcs/sq (LAP UNIFY register #3 ruled 2026-07-28 — PDF 9.17 retired to reference)"
+                elif family == "shake":
+                    _rv = float(measurements.get("_shake_reveal_in")
+                                or lp_formulas.DEFAULT_SHAKE_REVEAL_INCHES)
+                    _note += (f" · reveal {_rv:g}\" (contractor field, bounded 7\"–10\", default 7\" — "
+                              "register #4 ruled 2026-07-28 per LP install instructions)")
             out.append({
                 "tab": tab,
                 "section": section,
@@ -2543,6 +2579,10 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     # Q8 (ruled 2026-07-27): per-estimate color tier re-lands derivations.
     if est.get("color_tier"):
         scoped["_color_tier"] = est["color_tier"]
+    # SHAKE REVEAL (register #4 ruled 2026-07-28): the estimate field
+    # rides the tab-line rebuild too — same fold as the package paths.
+    if est.get("shake_reveal_in") is not None:
+        scoped["_shake_reveal_in"] = float(est["shake_reveal_in"])
     # WALL-HEIGHT ONE-TAP (authorized 2026-07-27): a closed
     # batten_wall_heights checklist entry (taped heights) feeds the batten
     # +height term on the TAB-LINE rebuild too — same fold as the package
@@ -2702,7 +2742,7 @@ async def hover_lp_run(
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
-         "color_tier": 1, "lp_flag_checklist": 1})
+         "color_tier": 1, "shake_reveal_in": 1, "lp_flag_checklist": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
     if est.get("kind") != "lp_smart":

@@ -278,7 +278,9 @@ def test_lp_profile_sku_entry_returns_pdf_values_when_flag_on(flag_on):
     lap = _lp_profile_sku_entry("lap")
     assert lap is not None
     assert lap[0] == '38 Series Lap 3/8" x 8" x 16\''
-    assert lap[2] == pytest.approx(9.17)
+    # LAP UNIFY (register #3 ruled 2026-07-28): split path conforms to the
+    # sealed book 11 pcs/sq → 100/11 ≈ 9.0909 (PDF 9.17 retired to reference).
+    assert lap[2] == pytest.approx(100.0 / 11.0)
     shake = _lp_profile_sku_entry("shake")
     assert shake is not None
     assert shake[2] == pytest.approx(2.33)

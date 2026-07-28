@@ -1,6 +1,6 @@
 """All Pydantic request/response models live here."""
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class RegisterIn(BaseModel):
@@ -213,6 +213,24 @@ class EstimateIn(BaseModel):
     mezzo_interior_color: str = ""
     mezzo_exterior_color: str = ""
     waste_pct: float = 0
+    # SHAKE REVEAL (register #4 ruled 2026-07-28): contractor-selectable,
+    # bounded 7"–10", default 7" — per LP install instructions ("540
+    # Series Trim is recommended when the shake reveal selected ranges
+    # between a maximum of 10 inches to a minimum of 7 inches").
+    # Optional so partial PUTs never clobber; None = the ruled 7" default.
+    shake_reveal_in: Optional[float] = None
+
+    @field_validator("shake_reveal_in")
+    @classmethod
+    def _shake_reveal_bounds(cls, v):
+        if v is None:
+            return v
+        if not (7.0 <= float(v) <= 10.0):
+            raise ValueError(
+                'shake reveal must be between 7" and 10" — LP install '
+                "instructions (register #4 ruled 2026-07-28)")
+        return float(v)
+
     # Q8 (ruled 2026-07-27): per-estimate color-tier selector — "standard"
     # (default) or "architectural"; re-lands vinyl/ascend derivations on
     # the Architectural-color catalog twins. Manual swap stays for one-offs.

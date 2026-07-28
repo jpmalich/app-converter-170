@@ -174,9 +174,10 @@ def test_q15_caulk_and_touchup_scaling(flag_on):
     touch = _find(lines, "Touch up kits", "lp_smart")
     assert touch["qty"] == 4  # 45.04 SQ ÷ 11 per color → 4 (real: 4)
     assert "1 kit per 11 SQ per color" in touch["note"]
-    # non-B&B keeps the 2-tube default
+    # non-B&B: register #5 (ruled 2026-07-28) retired the flat 2/job —
+    # LP non-B&B = 1 tube per SQUARE: 1000 sqft = 10 SQ → 10 tubes
     caulk2 = _find(_build_lines({"siding_sqft": 1000}), "OSI Quad Max Caulking", "lp_smart")
-    assert caulk2["qty"] == 2
+    assert caulk2["qty"] == 10
 
 
 def test_q10_frieze_consumed():

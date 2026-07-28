@@ -105,8 +105,9 @@ def test_lp_uses_pcs_unit_with_correct_conversion():
     lp = _siding_lines(lines, "lp_smart")
     lap_line = next(l for l in lp if "Lap" in l["name"])
     assert lap_line["unit"] == "PCS"
-    # 500 sqft / 9.09 sqft per piece ≈ 55 pieces
-    assert 50 <= lap_line["qty"] <= 60
+    # 500 sqft at book 11 pcs/sq (LAP UNIFY register #3, 2026-07-28) =
+    # 55 pcs × 1.10 family-default waste = 60.5 → 61 (was 60 via PDF 9.17)
+    assert 50 <= lap_line["qty"] <= 61
 
 
 def test_stone_brick_excluded_from_siding_lines():

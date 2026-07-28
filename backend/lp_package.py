@@ -680,6 +680,20 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     group_colors, color_errors = apply_colors(lines, colors)
     lines = consolidate_lines(lines)
 
+    # ── TOUCH-UP COLOR COUNT (register #7 ruled 2026-07-28): kit count
+    # reads the estimate's SELECTED colors (Job Info card) — 1 kit per
+    # 11 SQ PER COLOR (Q15); distinct selected colors multiply the base.
+    _distinct_colors = sorted({v for v in (group_colors or {}).values() if v})
+    if _distinct_colors:
+        _tk = next((l for l in lines if l["name"] == "Touch up kits"), None)
+        if _tk is not None:
+            n = len(_distinct_colors)
+            if n > 1:
+                _tk["qty"] = int(_tk.get("qty") or 0) * n
+            _tk["note"] = (f"{_tk.get('note') or ''} — {n} selected color(s) "
+                           f"({', '.join(_distinct_colors)}) read from Job Info "
+                           "(register #7 ruled 2026-07-28)").strip(" —")
+
     # ── SUBSTITUTION OPTIONS (Phase 2 UI): table-limited per line —
     # exposes what each derived line MAY become; never free-text SKUs
     sub_table = _lp_product_table()

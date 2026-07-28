@@ -311,10 +311,15 @@ def _apply_contractor_waste(measurements, est):
     default 0, per-estimate, surfaced. Hover unification (ruled
     2026-07-20): new Hover imports write 10.0 into that field and no
     longer carry a silent _waste_pct — this fallback reads the field for
-    Hover too. An explicit per-run _waste_pct override still wins."""
-    if measurements.get("_waste_pct") is None:
-        return {**measurements, "_waste_pct": float(est.get("waste_pct") or 0.0) / 100.0}
-    return measurements
+    Hover too. An explicit per-run _waste_pct override still wins.
+    SHAKE REVEAL (register #4 ruled 2026-07-28): the estimate's
+    shake_reveal_in field (bounded 7–10, default 7) rides along here."""
+    out = measurements
+    if out.get("_waste_pct") is None:
+        out = {**out, "_waste_pct": float(est.get("waste_pct") or 0.0) / 100.0}
+    if out.get("_shake_reveal_in") is None and est.get("shake_reveal_in") is not None:
+        out = {**out, "_shake_reveal_in": float(est["shake_reveal_in"])}
+    return out
 
 
 def _appendage_dim_flags(measurements, dims_state):
@@ -611,7 +616,7 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "waste_pct": 1, "porch_ceilings": 1,
          "overhang_in": 1, "default_siding_profile": 1, "color_tier": 1,
-         "lp_flag_checklist": 1})
+         "shake_reveal_in": 1, "lp_flag_checklist": 1})
     if (full_est or {}).get("kind") != "lp_smart":
         raise HTTPException(status_code=400,
                             detail="LP materialize is lp_smart-kind only")
