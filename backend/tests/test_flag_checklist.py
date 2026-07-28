@@ -149,3 +149,39 @@ class TestWallHeightOneTap:
         batten2 = next(l for l in est2["lines"]
                        if l.get("tab") == "lp_smart" and l["name"] == BATTEN)
         assert batten2["qty"] == 245  # 3915 ÷ 16 — height term back to 0
+
+
+class TestCornerCountCorrection:
+    """CORNER-COUNT CORRECTION (ruled 2026-07-28, Casile re-book-check):
+    closing corner_locators with a walked HUMAN count re-derives OSC
+    per-corner (Q13) from the corrected count; the report's count stays
+    on the line as the flagged comparison. Reopen restores the report."""
+
+    def test_human_corner_count_governs(self, session, hover_est):
+        r = session.post(f"{API}/estimates/{hover_est}/flag-checklist",
+                         json={"code": "corner_locators", "action": "close",
+                               "values": {"outside_corner_count": 14}}, timeout=15)
+        assert r.status_code == 200, r.text
+        session.post(f"{API}/estimates/{hover_est}/hover-lp-run",
+                     json={"hover_run_id": HOVER_RUN, "profile": "board_batten"}, timeout=30)
+        est = session.get(f"{API}/estimates/{hover_est}", timeout=30).json()
+        osc = next(l for l in est["lines"]
+                   if l.get("tab") == "lp_smart" and l["name"].startswith("540 Series OSC"))
+        assert osc["qty"] == 14  # 14 × max(1, ceil((140.33/14)/16)) — Q13
+        assert "HUMAN count 14" in osc["note"] and "report read 20" in osc["note"]
+        # reopen → report count governs again
+        session.post(f"{API}/estimates/{hover_est}/flag-checklist",
+                     json={"code": "corner_locators", "action": "reopen"}, timeout=15)
+        session.post(f"{API}/estimates/{hover_est}/hover-lp-run",
+                     json={"hover_run_id": HOVER_RUN, "profile": "board_batten"}, timeout=30)
+        est2 = session.get(f"{API}/estimates/{hover_est}", timeout=30).json()
+        osc2 = next(l for l in est2["lines"]
+                    if l.get("tab") == "lp_smart" and l["name"].startswith("540 Series OSC"))
+        assert osc2["qty"] == 20
+        assert "HUMAN count" not in osc2["note"]
+
+    def test_bad_count_rejected(self, session, hover_est):
+        r = session.post(f"{API}/estimates/{hover_est}/flag-checklist",
+                         json={"code": "corner_locators", "action": "close",
+                               "values": {"outside_corner_count": -3}}, timeout=15)
+        assert r.status_code == 422

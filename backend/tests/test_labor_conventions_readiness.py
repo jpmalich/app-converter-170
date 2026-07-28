@@ -128,14 +128,18 @@ def test_readiness_endpoint_shape_and_content(session):
         assert f"pending price (escalated by name): {name}" not in labels
 
 
-def test_quote_gate_is_soft_never_blocking():
-    """JSX pins: the readiness warning renders inside the quote flow,
-    states it is soft, and NOTHING gates the send/print actions on it."""
+def test_quote_gate_is_hard_print_block():
+    """PIN AMENDED (PRINT-BLOCKED authorized 2026-07-28 — supersedes the
+    2026-07-23 soft-only ruling on the HOMEOWNER surface): the quote flow
+    shows "PRINT-BLOCKED: N items" and gates send + PDF on readiness; a
+    half-walked quote can't reach a homeowner by construction. The
+    estimate-page ReadinessPanel stays informational (soft)."""
     qm = (FRONTEND_SRC / "components" / "QuoteModal.jsx").read_text()
-    assert "quote-readiness-warning" in qm
-    assert "you can proceed" in qm.lower()
-    # no action is disabled by readiness state — soft only (ruled)
-    assert "readiness" not in qm[qm.index("send-email-btn") - 600:qm.index("send-email-btn")].lower()
+    assert "quote-print-blocked-banner" in qm
+    assert "PRINT-BLOCKED" in qm
+    # send + PDF actions gate on the blocked state
+    assert "blocked" in qm[qm.index("send-email-btn") - 600:qm.index("send-email-btn")]
+    assert "blocked" in qm[qm.index("download-pdf-btn") - 400:qm.index("download-pdf-btn")]
     ts = (FRONTEND_SRC / "components" / "estimate" / "TotalsSummary.jsx").read_text()
     assert "readiness-btn" in ts and "ReadinessPanel" in ts
     rp = (FRONTEND_SRC / "components" / "estimate" / "ReadinessPanel.jsx").read_text()

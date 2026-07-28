@@ -1065,6 +1065,7 @@ def _apply_flag_checklist(measurements: dict, est: dict, run: dict) -> dict:
     """Fold CLOSED checklist values into the derivation basis (live)."""
     if run.get("source") != "hover":
         return measurements
+    m = measurements
     bb = (est.get("lp_flag_checklist") or {}).get("batten_wall_heights") or {}
     if bb.get("status") == "closed":
         heights = (bb.get("values") or {}).get("wall_heights_ft") or []
@@ -1073,10 +1074,24 @@ def _apply_flag_checklist(measurements: dict, est: dict, run: dict) -> dict:
         except (TypeError, ValueError):
             total = 0.0
         if total > 0:
-            m = dict(measurements)
+            m = dict(m)
             m["_bb_wall_height_ft"] = total
-            return m
-    return measurements
+    # CORNER-COUNT CORRECTION (ruled 2026-07-28): human-provenance walked
+    # count GOVERNS the per-corner derivation (Q13); the report's count is
+    # preserved on the line as the flagged comparison.
+    cc = (est.get("lp_flag_checklist") or {}).get("corner_locators") or {}
+    if cc.get("status") == "closed" and not m.get("_corner_count_human"):
+        vals = cc.get("values") or {}
+        for key, mk in (("outside_corner_count", "_osc_count_hover"),
+                        ("inside_corner_count", "_isc_count_hover")):
+            v = vals.get(key)
+            if isinstance(v, (int, float)) and v > 0:
+                if m is measurements:
+                    m = dict(m)
+                m[mk] = m.get(key)
+                m[key] = int(v)
+                m["_corner_count_human"] = True
+    return m
 
 
 def _checklist_flags(run: dict, est: dict) -> list:
@@ -1119,6 +1134,15 @@ async def flag_checklist_act(
                 or any(not isinstance(h, (int, float)) or h <= 0 for h in heights)):
             raise HTTPException(status_code=422,
                                 detail="wall_heights_ft must be a non-empty list of positive numbers (taped per wall)")
+    # CORNER-COUNT CORRECTION (ruled 2026-07-28, Casile re-book-check):
+    # closing corner_locators may carry the HUMAN-provenance corner count
+    # (walked on site); the report's count is preserved for comparison.
+    if action == "close" and code == "corner_locators":
+        for k in ("outside_corner_count", "inside_corner_count"):
+            v = values.get(k)
+            if v is not None and (not isinstance(v, (int, float)) or v <= 0 or int(v) != v):
+                raise HTTPException(status_code=422,
+                                    detail=f"{k} must be a positive whole number (walked count)")
     prev = (est.get("lp_flag_checklist") or {}).get(code)
     now = datetime.now(timezone.utc).isoformat()
     entry = ({"status": "closed", "values": values, "by": user.get("email"), "at": now, "prev": prev}

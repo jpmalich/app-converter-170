@@ -386,6 +386,10 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                 q = cnt * max(1, math.ceil(per_h / 16.0 - 1e-9))
                 note = (f"Hover {cnt} corner(s) × per-corner whole-stick round-up "
                         f"({per_h:g}' each, min 1 pc/corner — Q13 ruled 2026-07-27)")
+                if measurements.get("_corner_count_human") and measurements.get("_osc_count_hover"):
+                    note += (f" — HUMAN-provenance count {cnt} (walked; report read "
+                             f"{measurements['_osc_count_hover']}, preserved as flagged "
+                             "comparison — correction ruled 2026-07-28)")
             else:
                 q = max(1, math.ceil(lf / 16.0 - 1e-9))
                 note = (f"Hover corner LF {lf:g} ÷ 16' = {q} — POOLED (corner "

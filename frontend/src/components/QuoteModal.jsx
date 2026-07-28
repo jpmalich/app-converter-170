@@ -16,6 +16,8 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   const branding = useBranding();
   const { user } = useAuth();
   const { readiness } = useReadiness(estimate?.id);
+  // PRINT-BLOCKED (authorized 2026-07-28): hard gate on the homeowner surface.
+  const blocked = !!(readiness && readiness.open_count > 0);
   const { lang: uiLang } = useLang();
   const t = useT();
   // Iter 79j.47 — Two-way email sync. Prefill the recipient input
@@ -99,6 +101,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   const tabOrder = TAB_ORDER.filter((t) => linesByTab[t]);
 
   const handleEmail = async () => {
+    if (blocked) return;
     if (!email) return;
     if (derivedUnapplied && !confirmArmed) {
       setConfirmArmed(true);
@@ -122,6 +125,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   };
 
   const handleDownloadPdf = async () => {
+    if (blocked) return;
     setSending(true);
     try {
       const html = buildEmailHtml({
@@ -163,23 +167,23 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   return (
     <div className="fixed inset-0 z-[60] bg-[#09090B]/70 backdrop-blur-sm overflow-y-auto" data-testid="quote-modal">
       <div className="min-h-screen flex flex-col items-center py-6 sm:py-10 px-4">
-        {/* QUOTE-BUTTON GATE (authorized 2026-07-23): SOFT warning only —
-            readiness items surface here when the quote opens; the
-            contractor can always proceed. NEVER a hard block (ruled). */}
-        {readiness && readiness.open_count > 0 && (
-          <div className="no-print w-full max-w-3xl mb-3 bg-[#FFFBEB] border border-[#F59E0B] px-4 py-3" data-testid="quote-readiness-warning">
-            <div className="text-xs font-bold text-[#92400E] mb-1">
-              ⚠ {readiness.open_count} open item{readiness.open_count === 1 ? "" : "s"} on the readiness checklist — the number may not be final.
+        {/* PRINT-BLOCKED GATE (authorized 2026-07-28, supersedes the
+            2026-07-23 soft-only ruling for the homeowner surface): a
+            half-walked quote can't reach a homeowner by construction —
+            send + PDF stay disabled while readiness items stand. */}
+        {blocked && (
+          <div className="no-print w-full max-w-3xl mb-3 bg-[#FEF2F2] border border-[#DC2626] px-4 py-3" data-testid="quote-print-blocked-banner">
+            <div className="text-xs font-bold text-[#991B1B] mb-1">
+              PRINT-BLOCKED: {readiness.open_count} item{readiness.open_count === 1 ? "" : "s"} — clear the readiness checklist before this quote reaches a homeowner.
             </div>
             <ul className="space-y-0.5">
               {readiness.items.slice(0, 6).map((it, i) => (
-                <li key={i} className="text-[11px] text-[#92400E]" data-testid="quote-readiness-item">• {it.label}</li>
+                <li key={i} className="text-[11px] text-[#991B1B]" data-testid="quote-readiness-item">• {it.label}</li>
               ))}
               {readiness.items.length > 6 && (
-                <li className="text-[11px] text-[#92400E]">… and {readiness.items.length - 6} more (see Readiness on the estimate page)</li>
+                <li className="text-[11px] text-[#991B1B]">… and {readiness.items.length - 6} more (see Readiness on the estimate page)</li>
               )}
             </ul>
-            <div className="text-[10px] text-[#92400E] mt-1 opacity-80">Soft check only — you can proceed anyway.</div>
           </div>
         )}
         {/* Floating action bar */}
@@ -201,9 +205,9 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               <button
                 className="btn-primary h-12 md:h-9 justify-center md:justify-start"
                 onClick={handleEmail}
-                disabled={!email || sending || !emailConfigured || emailInvalid}
+                disabled={!email || sending || !emailConfigured || emailInvalid || blocked}
                 data-testid="send-email-btn"
-                title={!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : ""}
+                title={blocked ? "PRINT-BLOCKED — clear the readiness checklist first" : (!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : "")}
               >
                 <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
               </button>
@@ -241,9 +245,9 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             <button
               className="btn-secondary h-12 md:h-9 flex-1 md:flex-none justify-center md:justify-start"
               onClick={handleDownloadPdf}
-              disabled={sending}
+              disabled={sending || blocked}
               data-testid="download-pdf-btn"
-              title={t("quote.downloadPdf")}
+              title={blocked ? "PRINT-BLOCKED — clear the readiness checklist first" : t("quote.downloadPdf")}
             >
               <Printer className="w-4 h-4" /> {sending ? "…" : t("quote.downloadPdf")}
             </button>

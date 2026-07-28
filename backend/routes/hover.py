@@ -888,7 +888,7 @@ HOVER_MAPPING_SPEC = [
             if lp_formulas.is_enabled()
             else 0
         ),
-        "note": "Batten strips — wall area ÷ spacing ft (+1 run × wall height when field-verified), 16' stock, no waste (16\" o.c. provisional; SKU + default spacing pending ruling)",
+        "note": "Batten strips — wall area ÷ (8\"/12) + 1 run × wall height when taped (Q9 ruled 2026-07-27: 8\" o.c. sealed, no doubling), 16' stock, no waste",
     },
     # .019 Coil LP AUTO-ADD RETIRED (iter97 composition ruling, 2026-07-12):
     # an auto-add is DERIVED composition — coil on an LP-native derived
@@ -987,9 +987,14 @@ HOVER_MAPPING_SPEC = [
         # pc per corner — flat ÷16 pooling retired.
         "extract": lambda m: _osc_lp_pcs(m),
         "note": lambda m: (
-            f"OSC {int(m.get('outside_corner_count') or 0)} corner(s) × per-corner "
-            f"whole-stick round-up ({float(m.get('outside_corner_lf') or 0):g} LF total, "
-            "min 1 pc/corner — Q13 ruled 2026-07-27)"
+            (
+                f"OSC {int(m.get('outside_corner_count') or 0)} corner(s) × per-corner "
+                f"whole-stick round-up ({float(m.get('outside_corner_lf') or 0):g} LF total, "
+                "min 1 pc/corner — Q13 ruled 2026-07-27)"
+                + ((f" — HUMAN count {int(m.get('outside_corner_count') or 0)} (report read "
+                    f"{m.get('_osc_count_hover')}, flagged comparison — correction ruled 2026-07-28)")
+                   if m.get("_corner_count_human") and m.get("_osc_count_hover") else "")
+            )
             if int(m.get("outside_corner_count") or 0) > 0
             else (f"Outside-corner {float(m.get('outside_corner_lf') or 0):g} LF ÷ 16 — "
                   "POOLED (corner count unavailable; Q16 flag)")
@@ -2551,6 +2556,18 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
             _bbh = 0.0
         if _bbh > 0:
             scoped["_bb_wall_height_ft"] = _bbh
+    # CORNER-COUNT CORRECTION (ruled 2026-07-28): human walked count
+    # governs the tab-line rebuild too; report count kept for comparison.
+    _ccf = (est.get("lp_flag_checklist") or {}).get("corner_locators") or {}
+    if _ccf.get("status") == "closed" and not scoped.get("_corner_count_human"):
+        _cvals = _ccf.get("values") or {}
+        for _k, _mk in (("outside_corner_count", "_osc_count_hover"),
+                        ("inside_corner_count", "_isc_count_hover")):
+            _v = _cvals.get(_k)
+            if isinstance(_v, (int, float)) and _v > 0:
+                scoped[_mk] = scoped.get(_k)
+                scoped[_k] = int(_v)
+                scoped["_corner_count_human"] = True
     # Family-defaulted waste flows INTO the derivation (sealed
     # 2026-07-24): profile siding rows derive with the resolved field.
     scoped["_waste_pct"] = float(waste_field or 0) / 100.0

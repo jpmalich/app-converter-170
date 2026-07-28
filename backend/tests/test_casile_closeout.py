@@ -53,10 +53,13 @@ class TestSealedConventionsOnTheTab:
     def test_osc_is_6in_whole_stick(self, jon_rows):
         assert "540 Series OSC 5/4\" x 4\" x 16'" not in jon_rows  # retired SKU gone
         osc = jon_rows["540 Series OSC 5/4\" x 6\" x 16'"]
-        # PIN AMENDED (Q13 ruled 2026-07-27, 3 Degree Rd sitting): per-
-        # corner whole-stick round-up min 1 pc/corner — 20 corners × 1
-        # (7.02' avg) = 20; the pooled ÷16 basis (was 9) RETIRES.
-        assert osc["qty"] == 20
+        # PIN AMENDED (corner correction ruled 2026-07-28, Casile re-book-
+        # check): Howard walked the house — 14 outside corners, not
+        # Hover's 20 (returns/chase corners take no posts). HUMAN count
+        # governs Q13 per-corner math; Hover's 20 preserved on the line.
+        assert osc["qty"] == 14
+        assert "HUMAN count 14" in osc["note"]
+        assert "report read 20" in osc["note"]
         assert not osc.get("raw_qty")
         assert (osc.get("mat") or 0) > 0  # catalog-bound, never a None/0 hole
 
@@ -230,8 +233,9 @@ class TestV3MoneyWalk:
             sub_mat += q * float(l.get("mat") or 0)
             sub_lab += q * float(l.get("lab") or 0)
         assert round(sub_lab, 2) == 0.0        # labor-honest
-        # PIN AMENDED (Q1–Q17 sitting, ruled 2026-07-27) — Jon Casile
-        # BEFORE→AFTER walk (named delta, unprinted quote re-derives):
+        # PIN AMENDED (Q1–Q17 sitting 2026-07-27; corner correction
+        # 2026-07-28: HUMAN count 14 governs → OSC 20→14, −6 × 271.69 =
+        # −1,630.14; sub_mat 26,468.61 → 24,838.47) — original walk:
         #   battens 97→194 (Q9 8" o.c.)      +97 × 19.66 = +1907.02
         #   OSC 9→20 (Q13 per-corner)        +11 × 271.69 = +2988.59
         #   540-4" 33→62 (Q10 frieze+Q12 ISC) +29 × 34.30 = +994.70
@@ -240,13 +244,13 @@ class TestV3MoneyWalk:
         #   caulk 2→9, touch-up 1→2 (Q15)    +98.21 +60.96
         #   Tear-Off/Dumpster rows appear qty 0 pending (Q1)
         # sub_mat 20025.74 → 26468.61
-        assert round(sub_mat, 2) == 26468.61   # materials-true
+        assert round(sub_mat, 2) == 24838.47   # materials-true
         tax = sub_mat * 0.07
-        assert round(tax, 2) == 1852.80
+        assert round(tax, 2) == 1738.69
         base = sub_mat + tax + sub_lab
-        assert round(base, 2) == 28321.41
+        assert round(base, 2) == 26577.16
         sell = base / (1 - 0.30)
-        assert round(sell, 2) == 40459.16
+        assert round(sell, 2) == 37967.38
 
     def test_no_unflagged_labor_anywhere_on_walk_surface(self, session):
         est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()
