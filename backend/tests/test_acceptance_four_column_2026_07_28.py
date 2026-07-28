@@ -240,8 +240,10 @@ def test_zz_emit_acceptance_table():
     assert {"Hover", "Photo"} <= doors, f"BOTH DOORS required, got {doors}"
     assert {"VINYL", "ASCEND", "LP B&B", "LP LAP"} <= fams, f"EVERY FAMILY required, got {fams}"
     assert any("installed" in r[2] for r in _rows), "GROUND TRUTH column missing"
-    lines = ["# Four-column acceptance — " + datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+    lines = ["# Four-column acceptance — 3 Degree Rd (run 7862dd2c)",
              "", "Sealed 2026-07-28: fresh run · every family · ground truth · both doors.",
+             "(Deterministic content — re-emitted identically on every green run so the",
+             "guard's clean-tree covenant holds; qty changes here are REAL changes.)",
              "", "| Family | Door | Line | Qty | Unit | Note |",
              "|---|---|---|---|---|---|"]
     for r in _rows:

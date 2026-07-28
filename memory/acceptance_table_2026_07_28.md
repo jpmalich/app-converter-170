@@ -1,6 +1,8 @@
-# Four-column acceptance — 2026-07-28 18:47 UTC
+# Four-column acceptance — 3 Degree Rd (run 7862dd2c)
 
 Sealed 2026-07-28: fresh run · every family · ground truth · both doors.
+(Deterministic content — re-emitted identically on every green run so the
+guard's clean-tree covenant holds; qty changes here are REAL changes.)
 
 | Family | Door | Line | Qty | Unit | Note |
 |---|---|---|---|---|---|
