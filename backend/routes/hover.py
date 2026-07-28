@@ -2635,6 +2635,20 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
                 scoped[_mk] = scoped.get(_k)
                 scoped[_k] = int(_v)
                 scoped["_corner_count_human"] = True
+        # TALL CORNERS (never-average sealed 2026-07-28): taped heights
+        # ride the rebuild too — same fold as _apply_flag_checklist.
+        _tall = _cvals.get("tall_corners_ft")
+        if isinstance(_tall, list) and _tall:
+            scoped["_osc_tall_corners_ft"] = [float(h) for h in _tall]
+    # CEILING DEDUP (class sealed 2026-07-28): TAPED ceiling governs —
+    # the Hover-measured duplicate deducts on the rebuild too.
+    _cdf = (est.get("lp_flag_checklist") or {}).get("ceiling_dedup") or {}
+    if _cdf.get("status") == "closed":
+        _dup = float((_cdf.get("values") or {}).get("duplicate_sqft") or 0)
+        if _dup > 0 and float(scoped.get("soffit_sqft") or 0) > 0:
+            scoped["_soffit_sqft_hover"] = float(scoped["soffit_sqft"])
+            scoped["soffit_sqft"] = max(float(scoped["soffit_sqft"]) - _dup, 0.0)
+            scoped["_soffit_dedup_sqft"] = _dup
     # Family-defaulted waste flows INTO the derivation (sealed
     # 2026-07-24): profile siding rows derive with the resolved field.
     scoped["_waste_pct"] = float(waste_field or 0) / 100.0
