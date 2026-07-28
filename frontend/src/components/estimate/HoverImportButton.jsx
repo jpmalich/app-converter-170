@@ -189,7 +189,7 @@ export default function HoverImportButton({ est, update, save }) {
   // Hover waste unification (ruled 2026-07-20): the ruled 10% default is
   // WRITTEN into the estimate's visible Waste % field on import — the
   // field governs; nothing applies silently inside formulas.
-  const lpWasteFieldPrefill = Number(
+  const wasteFieldPrefill = Number(
     result?.measurements?._waste_field_prefill_pct ?? 10
   );
 
@@ -393,7 +393,15 @@ export default function HoverImportButton({ est, update, save }) {
     // uses — the field governs; nothing applies silently inside formulas.
     // Vinyl/Ascend keep Iter 79c's 0% (HOVER sqft already includes its
     // own waste). Paired (windows) lines never carry siding waste.
-    const wastePct = srcKind === "lp_smart" ? lpWasteFieldPrefill : 0;
+    // WASTE — SEALED, ALL FAMILIES, ONE RULE (Howard, 2026-07-28): the
+    // contractor's visible Waste % field, family-defaulted (lap/soffit 10 ·
+    // shake 15 · B&B 30 · nickel gap 12), is ALWAYS applied into the
+    // quantity — vinyl and Ascend included. The Iter 79c "reset to 0 —
+    // HOVER's sqft already includes waste" convention is RETIRED: post
+    // facade-composition the +Openings<20ft² figure no longer anchors, and
+    // a Hover-supplied adder was never the contractor's field. Paired
+    // (windows) lines never carry siding waste.
+    const wastePct = wasteFieldPrefill;
     const soffitType = est?.lp_soffit_type || "mix";
     const wastedSource = steerLpSoffit(bakeWasteIntoLines(sourceLines, wastePct), soffitType);
     const wastedPaired = steerLpSoffit(bakeWasteIntoLines(pairedLines, 0), soffitType);
@@ -497,8 +505,9 @@ export default function HoverImportButton({ est, update, save }) {
       vero_openings: nextOpenings,
       mezzo_openings: nextMezzoOpenings,
       hover_measurements: hoverMeasurementsWithDrawings,
-      // Unification (ruled 2026-07-20): pre-fill the visible field on LP.
-      ...(srcKind === "lp_smart" ? { waste_pct: wastePct } : {}),
+      // Unification (ruled 2026-07-20; ALL FAMILIES sealed 2026-07-28):
+      // the visible field always states what the quantities carry.
+      waste_pct: wastePct,
     });
     setApplying(true);
     try {
@@ -509,7 +518,7 @@ export default function HoverImportButton({ est, update, save }) {
           vero_openings: nextOpenings,
           mezzo_openings: nextMezzoOpenings,
           hover_measurements: hoverMeasurementsWithDrawings,
-          ...(srcKind === "lp_smart" ? { waste_pct: wastePct } : {}),
+          waste_pct: wastePct,
         });
       }
 
@@ -605,19 +614,14 @@ export default function HoverImportButton({ est, update, save }) {
           toast.error(e?.response?.data?.detail || "Hover→LP run failed — LP list unchanged");
         }
       }
-      // Hover waste unification (ruled 2026-07-20): the message states the
-      // value actually written to the visible field — never a silent
-      // engine default.
-      if (srcKind === "lp_smart") {
-        toast.info(
-          `LP waste: ${lpWasteFieldPrefill}% written into the Waste % field (ruled default — visible + editable). Line qtys derive from it; change the field to recompute.`,
-          { duration: 8000 }
-        );
-      } else {
-        toast.info("Waste % reset to 0 — HOVER's sqft already includes waste. Bump it manually if you need extra.", {
-          duration: 6000,
-        });
-      }
+      // Waste unification (ruled 2026-07-20; ALL FAMILIES sealed
+      // 2026-07-28): the message states the value actually written to the
+      // visible field — never a silent engine default, never a family
+      // exception.
+      toast.info(
+        `Waste ${wastePct}% (family default — visible + editable, including to 0) written into the Waste % field. Line qtys carry it; change the field to recompute.`,
+        { duration: 8000 }
+      );
     } catch (e) {
       toast.error(e?.response?.data?.detail || e?.message || "Saved locally but failed to persist — click Save");
     } finally {
@@ -966,7 +970,7 @@ export default function HoverImportButton({ est, update, save }) {
               <TakeoffReconCard
                 measurements={result.measurements || {}}
                 lines={result.lines || []}
-                wastePct={est?.kind === "lp_smart" ? lpWasteFieldPrefill : (est?.waste_pct || 0)}
+                wastePct={wasteFieldPrefill}
                 wasteInFormula={false}
                 kind={est?.kind || "siding"}
                 lpSoffitType={est?.lp_soffit_type || "mix"}

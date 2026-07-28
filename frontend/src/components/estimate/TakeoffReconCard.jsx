@@ -13,7 +13,7 @@
 // Reads `measurements` + `lines` from the takeoff result and the
 // estimate's `waste_pct`. Pure presentation — no side effects.
 import React from "react";
-import { isCutProneItem, steerLpSoffit } from "@/lib/wasteLogic";
+import { isCutProneItem, steerLpSoffit, applyWasteQty } from "@/lib/wasteLogic";
 
 // Items to surface, in display order. Two parallel row sets keyed by
 // estimate.kind: vinyl/ascend uses the standard catalog item names;
@@ -169,12 +169,6 @@ const fmtSq = (v) => {
   return `${(n / 100).toFixed(1)} SQ`;
 };
 
-const roundUpHalf = (n) => {
-  const x = Number(n);
-  if (!isFinite(x) || x <= 0) return 0;
-  return Math.ceil(x * 2) / 2;
-};
-
 // Iter 78g — compute total window perimeter from HOVER measurements.
 // Mirrors backend `_window_perim_total_lf` in routes/hover.py so the
 // recon card and the takeoff mapper agree.
@@ -284,7 +278,8 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
       formulaQty = qty;
       // Waste display sync (ruled 2026-07-18): LP engine formulas already
       // bake the waste — never re-multiply, the display states the applied %.
-      orderQty = wasteInFormula ? qty : roundUpHalf(qty * (1 + pct / 100));
+      // ONE WASTE EMITTER (sealed 2026-07-28): composes through wasteLogic.
+      orderQty = wasteInFormula ? qty : applyWasteQty(qty, pct);
     } else {
       formulaQty = qty;
       orderQty = qty;

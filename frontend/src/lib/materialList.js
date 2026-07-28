@@ -24,12 +24,6 @@ const esc = (s) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-// Round qty UP to the nearest 0.5 — siding/coils don't come in fractional pieces.
-function roundUpHalf(n) {
-  if (!isFinite(n) || n <= 0) return 0;
-  return Math.ceil(n * 2) / 2;
-}
-
 function absUrl(path) {
   if (!path) return "";
   if (path.startsWith("http")) return path;
@@ -384,7 +378,8 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
   </tr></table>
 
   <div class="notice">
-    <strong>Order Quantity</strong> shows the qty <em>with</em> ${wastePct}% waste factor applied (rounded up).
+    <strong>Order Quantity</strong> shows the qty <em>with</em> ${wastePct}% waste factor applied (rounded up) —
+    the contractor's Waste % field (sealed 2026-07-28: one rule, all families; family defaults lap/soffit 10 · shake 15 · B&amp;B 30 · nickel gap 12, editable including to 0).
     Hand this list to ${esc(supplierName)} to pull / quote materials.
   </div>
 

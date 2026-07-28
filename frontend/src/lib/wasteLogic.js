@@ -113,6 +113,17 @@ function roundUpHalf(n) {
   return Math.ceil(x * 2) / 2;
 }
 
+// WASTE — SEALED, ALL FAMILIES, ONE RULE (Howard, 2026-07-28): the
+// contractor's visible Waste % field is the ONLY waste; whatever the
+// field says is ALWAYS applied into the quantity, every family, at this
+// one layer. applyWasteQty is the SINGLE frontend waste-math site —
+// mirrored by backend routes/hover.py::_bake_tab_waste (equality pinned).
+// Any second implementation fails test_one_waste_emitter.py.
+export function applyWasteQty(raw, wastePct) {
+  const pct = Math.max(0, Number(wastePct) || 0);
+  return roundUpHalf((Number(raw) || 0) * (1 + pct / 100));
+}
+
 // On import (HOVER / Blueprint): take freshly-computed catalog lines
 // and bake the waste % into qty for cut-prone items. Stores the
 // original raw value in `raw_qty` so future waste-% changes can
@@ -122,7 +133,6 @@ function roundUpHalf(n) {
 // labor, etc.) are returned unchanged.
 export function bakeWasteIntoLines(lines, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
-  const factor = 1 + pct / 100;
   return (lines || []).map((l) => {
     if (l._waste_included || !isCutProneItem(l)) return l;
     const raw = Number(l.qty) || 0;
@@ -130,7 +140,7 @@ export function bakeWasteIntoLines(lines, wastePct) {
     return {
       ...l,
       raw_qty: raw,
-      qty: roundUpHalf(raw * factor),
+      qty: applyWasteQty(raw, pct),
     };
   });
 }
@@ -140,11 +150,10 @@ export function bakeWasteIntoLines(lines, wastePct) {
 // non-cut-prone) keep whatever qty the contractor typed.
 export function recomputeWasteQtys(lines, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
-  const factor = 1 + pct / 100;
   return (lines || []).map((l) => {
     const raw = Number(l?.raw_qty);
     if (!raw || !isFinite(raw) || raw <= 0) return l;
-    return { ...l, qty: roundUpHalf(raw * factor) };
+    return { ...l, qty: applyWasteQty(raw, pct) };
   });
 }
 
@@ -167,7 +176,6 @@ export function recomputeWasteQtys(lines, wastePct) {
 // confirm dialog so contractors don't accidentally bump manual lines.
 export function recomputeAllWaste(lines, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
-  const factor = 1 + pct / 100;
   return (lines || []).map((l) => {
     if (l._waste_included || !isCutProneItem(l)) return l;
     const stored = Number(l.raw_qty);
@@ -177,7 +185,7 @@ export function recomputeAllWaste(lines, wastePct) {
     return {
       ...l,
       raw_qty: rawQty,
-      qty: roundUpHalf(rawQty * factor),
+      qty: applyWasteQty(rawQty, pct),
     };
   });
 }

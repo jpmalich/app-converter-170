@@ -10,3 +10,16 @@ backend-margin vero_catalog.py 2026-07-28 BUILD-TIME generator exception, GRANTE
 frontend-margin calc.js 2026-07-28 named emitter — frontend totals (reference behavior)
 frontend-margin SettingsRow.jsx 2026-07-28 display-only multiplier preview, feeds no dollar
 frontend-margin ISSEstimateEditor.jsx 2026-07-28 TEMPORARY — unification to calc.js RULED (no exception granted); rides the MODEL LEDGER session; remove this line when unified
+# WASTE EMITTERS — WASTE SEALED ALL FAMILIES ONE RULE (Howard, ruled 2026-07-28):
+# the contractor's visible Waste % field is the ONLY waste, family-defaulted
+# (lap/soffit 10 · shake 15 · B&B 30 · nickel gap 12), always applied into the
+# quantity at the same layer; tab lines == printed list (pinned). Detector:
+# test_one_waste_emitter.py fails on any waste-factor math outside these lines.
+backend-waste hover.py 2026-07-28 named emitter — _bake_tab_waste (the qty bake; byte-mirror of frontend wasteLogic, equality pinned)
+backend-waste lp_smartside_formulas.py 2026-07-28 sealed LP derivation formulas (lap book 11/sq, B&B panels ÷40, coverage generic) — compose the SAME field value plumbed by _apply_contractor_waste; parity with tab lines pinned
+backend-waste lp_conventions.py 2026-07-28 sealed derivation formulas (starter/batten adj) — same field value composes
+backend-waste lp_package.py 2026-07-28 package assembly — consumes _waste_pct (the field) inside sealed line formulas; waste_pct_applied surfaced on the printed panel
+backend-waste lp_truck_reconcile.py 2026-07-28 diagnostic truck reconcile — DEFAULT_WASTE constant basis, report-only comparison surface, feeds no order and no dollar
+frontend-waste wasteLogic.js 2026-07-28 named emitter — applyWasteQty (the only frontend waste math; bake/recompute compose through it)
+frontend-waste calc.js 2026-07-28 totals emitter — $-layer waste factor inside the ratified totals formula (money scope, already governed)
+frontend-waste ISSEstimateEditor.jsx 2026-07-28 TEMPORARY — ISS waste add-on; unification RULED, rides the MODEL LEDGER session; remove this line when unified

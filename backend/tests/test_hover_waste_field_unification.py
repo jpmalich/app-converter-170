@@ -128,7 +128,12 @@ def test_pin5_frontend_field_prefill_mechanism():
            / "HoverImportButton.jsx").read_text()
     assert "_lp_waste_pct_applied" not in jsx
     assert "_waste_field_prefill_pct" in jsx
-    # LP bakes the field pre-fill via the SettingsRow raw_qty mechanism…
-    assert 'srcKind === "lp_smart" ? lpWasteFieldPrefill : 0' in jsx
-    # …and writes the value into the visible field on apply + save.
-    assert jsx.count('{ waste_pct: wastePct }') >= 2
+    # PIN AMENDED (WASTE SEALED ALL FAMILIES, Howard ruled 2026-07-28):
+    # the Iter 79c vinyl/ascend zero-waste branch is RETIRED — ONE family-
+    # defaulted prefill bakes via the SettingsRow raw_qty mechanism for
+    # EVERY kind…
+    assert 'srcKind === "lp_smart" ? lpWasteFieldPrefill : 0' not in jsx
+    assert "const wastePct = wasteFieldPrefill" in jsx
+    # …and the value is written into the visible field on apply + save
+    # for ALL kinds (the field never lies).
+    assert jsx.count("waste_pct: wastePct") >= 2
