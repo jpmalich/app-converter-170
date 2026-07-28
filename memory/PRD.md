@@ -5490,3 +5490,15 @@ the original File pre-canvas, JSON side-channel) sized M (~1d).
 as scale priors, under the model-change rule — candidate merge with the
 dormer-taxonomy prompt trial (same frozen-fixture scored harness).
 Standing queue unchanged: B (drag-adjust) → model ledger → money map.
+
+## 2026-07-28 — WALK v2 CLEARED ($37,967.38) + UNRULED-MATH REGISTER ALL 8 RULED
+- Casile Walk v2 cleared by Howard; register executed: #1/#2 J-blocks+Mini-splits SEALED AS-IS; #3 LAP UNIFY (split path → book 11 pcs/sq, equivalence pinned forever); #4 shake reveal contractor field 7"–10" default 7" (LP install citation; **ACCEPTED REDUCTION**: 500 ft² 252→247 pcs, Howard-accepted consciously); #5 caulk family-shaped, flat 2/job retired (LP non-B&B 1/SQ · vinyl/ascend 1/opening · B&B holds 1/23 — Letrick +19 tubes +$266.57 → 13303.78, Casile holds 9); #6 soffit baked-10 cited sealed; #7 touch-up × Job-Info colors (tab/package parity); #8 catalog-only rows named manual-by-design.
+- Stamps: ea95b64 CLEAN (1482) · 6f78d36 CLEAN (1483). Pins: tests/test_register_rulings_2026_07_28.py.
+
+## 2026-07-28 — CONVERGENCE AUDIT + DOCTRINE: ONE EMITTER PER MONEY FORMULA (SEALED)
+- Audit report /app/memory/convergence_audit_2026-07-28.md (money-surfaces map §C included). Two LIVE dollar divergences found: backend totals waste add-on (Accept/CSV/roll-up vs editor/email) and Vero adders missing from backend.
+- Howard's rulings landed PRE-SEPT: #1 UNIFY (backend `wasted = sub_mat`, add-on retired; RIDER: 5 drafts inflated, ZERO sent/accepted — never reached a homeowner) · #2 Vero adders unified · #3 wasteDefaults localStorage writer KILLED (lib/wasteDefaults.js deleted) · #4 hover-basis OSC/ISC equivalence pins · #8 stale BB registry fixed.
+- Doctrine enforcement: backend/tests/test_one_money_emitter.py — SECOND-IMPLEMENTATION DETECTORS (tokenize-stripped source scans + behavior pins). Detector caught 2 more: vero_catalog.py (seed-time divisor) + ISSEstimateEditor.jsx (local sell) — whitelisted BY NAME pending hand ruling. Register entry in verification_integrity_register.md.
+- Stamp: 46c40c0 CLEAN (1494).
+- PARKED POST-SEPT: #4 full collapse (per-locator governs, count×avg retires), #5 whole-unit rounding everywhere, #6 constant sweep (~12 literal 16.0s, 11/0.7/15% duplicates), #7 API-served conventions for frontend soffit (+interim jest pin pending).
+- NEXT QUEUE: MODEL LEDGER → Part-2 drag (partner's acceptance eye) → money-surfaces map build (on the now-enforced §C inventory).
