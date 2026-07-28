@@ -1,5 +1,36 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## STANDING HANDBACK RULE (Howard, 2026-07-28): LEAD WITH COUNTS
+Quantities per line, per family, derivation named. Dollars only where
+they disagree with the count behind them. Dollars are derived; the
+reasoning lives in the counts.
+
+## COUNT-FIRST SESSION — report-and-pin (2026-07-28 eve, commit ec41217)
+- **1) W-REGISTER** (`test_line_write_paths_register.py`): every path that
+  persists estimate lines enumerated W1–W7 (PUT/create/duplicate ·
+  hover-lp-run · materialize · lp_admin reprice · demo seed · startup
+  field-scoped migrations); detector fails on any unregistered writer.
+  ORDERING (the door the clobber came back through) pinned: every W2/W3
+  frontend caller must adopt server truth. NAMED uncovered: W4 admin
+  reprice (no concurrent story) and two live browser tabs (last-write-wins
+  by design — OCC/versioning is an architecture change, parked).
+- **2) Epsilon lives IN THE CEIL** both emitters (`Math.ceil(x - 1e-9)` /
+  `math.ceil(… - 1e-9)` both branches); integer-landing pins: 40×1.3=52
+  not 53 · 100×1.1=110 · 200×1.15 (noise below integer)=230 · non-cut-prone
+  branch same.
+- **3) SEALED — count-display provenance**: any UI figure that feeds a
+  count reads FROM THE EMITTER (toast = adopted freshEst.waste_pct; recon
+  card = server prefill; print = estimate.waste_pct; chip =
+  waste_pct_applied); detector rejects local family-waste tables in UI.
+  Known residual (reported, not built): facade-picker banner recomputes
+  sided/excluded ft² client-side from the same sealed class map — math
+  pinned identical to the backend emitter; switch to reading
+  measurements._facade_scope when next in that file.
+- **4) Summary label now prints the DERIVED percent** — "Cut waste inside
+  Material ({pct}% of Material)" with pct = wasteAdd/subMat (the 22%
+  blend), EN + ES + ISS. Field default no longer masquerades as the blend.
+- Guard: `2026-07-28 19:36 UTC · ec41217 · CLEAN · 1541 passed, 1 skipped`.
+
 ## THREE DEFECTS FROM ONE SCREEN — FIXED (2026-07-28 evening, commit 9bc1dbd)
 - **1) B&B routing (f3e7d728)**: the pick DID re-derive server-side (run
   hover-96217b288bdb-board_batten, per-profile 4239) — the editor's
