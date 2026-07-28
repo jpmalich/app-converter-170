@@ -173,14 +173,16 @@ Worked-example inputs (Hover door, forced board & batten, contractor waste 30%):
 | Tear-Off (SQ) · Dumpster (Each) | rows EXIST on every door, qty 0 + labor $0 `pending`; readiness panel names them until the contractor sets both | **Q1 2026-07-27** |
 | Cap window / entry / patio / garage · clean up/haul away | qty derives from counts (1 per opening; cleanup 1/job); labor $0 `lab_src=pending` (both retired machine generations rebind to $0) | v3 zeroing sealed 2026-07-24 |
 
-# ⚠ UNRULED-MATH REGISTER (every LP line whose formula lacks a ruling citation)
-1. **J blocks** — max(4, round(W/6 + D/2)): heuristic, no ruling (exact twice on real jobs).
-2. **Mini Splits** — max(1, round(entry/2)): heuristic, no ruling (exact twice).
-3. **Split-path lap coverage 9.17 ft²/pc vs the sealed book 11 pcs/sq (≡ 9.09 ft²/pc)** — the multi-family split path prices the lap PORTION via the PDF 9.17 coverage while the single-family lap line uses the sealed book rate. ~1% divergence, two conventions coexisting; needs a one-line ruling to unify.
-4. **Shake default reveal 7"** — PDF default, contractor-adjustable, never ruled.
-5. **Non-B&B caulk 2 tubes/job** — legacy Iter 57m constant; Q15 sealed only the B&B scaling.
-6. **Soffit 1.10 cut factor** — LP PDF convention (single-bake pinned), predates the family-waste seal.
-7. **Touch-up color count** — "× N if multi-color" is contractor-bumped; color count is never derived.
-8. Catalog-only rows with NO formula at all (manual by omission, named per your standing order): 4×8 Panel · Vertical Panel · 540 OSC 5/4×4 · 440 4/4×6/10/12 · 540 5/4×6/8/10/12 · Flash tape · 24" CTW · 24" VSSFT · all four coils (the coils by iter97 ruling, the rest by silence).
+# ⚠ UNRULED-MATH REGISTER — ALL 8 RULED 2026-07-28 (post Walk-v2 clearance; pins in `test_register_rulings_2026_07_28.py`)
+1. **J blocks** — SEALED AS-IS: max(4, round(W/6 + D/2)) — contractor owns final qty; more-pronounced-flag PARKED, no date.
+2. **Mini Splits** — SEALED AS-IS: max(1, round(entry/2)).
+3. **LAP UNIFY** — split path CONFORMS to sealed 11 pcs/sq (100/11 coverage); 9.17 retired to reference; equivalence pinned forever. Worked example: 500 ft² @ 10% → 61 pcs on BOTH paths (was 60 via 9.17 on the split path).
+4. **SHAKE REVEAL** — contractor field bounded 7"–10", DEFAULT 7" (LP install instructions verbatim, cited in code). Interaction with the sealed rates: 44 pcs/sq is the MIN-reveal (6-7/8") instantiation of coverage = 4'×reveal/12 — at the ruled 7" default ~43/sq, at 10" (panel-clamped 9.875) ~31/sq; the sealed 15% waste applies multiplicatively ON TOP regardless. Worked example regenerated: shake_takeoff(500) → 247 pcs (was 252 at the pre-ruling 6-7/8" worst-case default).
+5. **CAULK family-shaped** — flat 2/job RETIRED everywhere: LP non-B&B 1 tube/SQUARE · vinyl/ascend 1 tube/OPENING · B&B holds sealed 1/23 sticks. Fixture walk: Letrick (lap, 21 SQ) 2 → 21 tubes (+19 × $14.03 = +$266.57), total_sell 13037.21 → 13303.78 (two dollar pins amended). CASILE DOES NOT MOVE — B&B holds at 9 tubes (194÷23), pinned.
+6. **SOFFIT 1.10** — RECOGNIZED as the sealed baked-10 soffit convention; citation landed, no change (r6 pin).
+7. **TOUCH-UP color count** — reads the estimate's selected Job Info colors; distinct colors multiply the 1-kit-per-11-SQ base on BOTH the package and the tab-line rebuild (parity pinned); unknown at import → 1.
+8. **CATALOG-ONLY manual rows** — manual BY DESIGN, named in `lp_conventions.CATALOG_ONLY_MANUAL_BY_DESIGN`; r8 pin asserts none ever grows a silent derivation.
+
+Handback stamps: 2026-07-28 01:06 UTC · ea95b64 · CLEAN (1482) and 01:16 UTC · 6f78d36 · CLEAN (1483).
 
 *Sources: `lp_smartside_formulas.py`, `lp_conventions.py`, `lp_package.py`, `routes/hover.py` (HOVER_MAPPING_SPEC + `_build_lines`), `routes/lp_package_routes.py`, live re-derivation of EST-562488. Every worked example recomputed against the running engine. No source file modified.*
