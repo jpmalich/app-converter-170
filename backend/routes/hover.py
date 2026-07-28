@@ -644,11 +644,21 @@ def _isc_540_pcs(m: dict) -> int:
 
 def _osc_lp_pcs(m: dict) -> int:
     """Q13 (ruled 2026-07-27): OSC per-corner whole-stick round-up, min 1
-    pc per corner; pooled ÷16 only when the corner count is unavailable."""
+    pc per corner; pooled ÷16 only when the corner count is unavailable.
+    TALL CORNERS (never-average rule sealed 2026-07-28): taped heights
+    over one 16' stick take ceil(h/16) each — a material-governing
+    dimension is NEVER averaged (261 Haugh: 18'5" corner = 2 sticks that
+    the 10' average hid). Identical math to the package emitter, pinned."""
     oc = int(m.get("outside_corner_count") or 0)
     olf = float(m.get("outside_corner_lf") or 0)
+    tall = [float(h) for h in (m.get("_osc_tall_corners_ft") or []) if h]
     if oc > 0 and olf > 0:
-        return oc * max(1, math.ceil((olf / oc) / 16.0 - 1e-9))
+        k = min(len(tall), oc)
+        rest_cnt = oc - k
+        rest_lf = max(olf - sum(tall[:k]), 0.0)
+        q_rest = rest_cnt * max(1, math.ceil((rest_lf / rest_cnt) / 16.0 - 1e-9)) if rest_cnt else 0
+        q_tall = sum(max(1, math.ceil(h / 16.0 - 1e-9)) for h in tall[:k])
+        return q_rest + q_tall
     if olf > 0:
         return math.ceil(olf / 16.0 - 1e-9)
     return 0
@@ -1006,6 +1016,10 @@ HOVER_MAPPING_SPEC = [
                 f"OSC {int(m.get('outside_corner_count') or 0)} corner(s) × per-corner "
                 f"whole-stick round-up ({float(m.get('outside_corner_lf') or 0):g} LF total, "
                 "min 1 pc/corner — Q13 ruled 2026-07-27)"
+                + ((" — " + str(len(m.get('_osc_tall_corners_ft') or [])) + " taped TALL corner(s) ["
+                    + ", ".join(f"{float(h):g}'" for h in (m.get('_osc_tall_corners_ft') or []))
+                    + "] take ceil(h/16) sticks each (never-average sealed 2026-07-28)")
+                   if m.get("_osc_tall_corners_ft") else "")
                 + ((f" — HUMAN count {int(m.get('outside_corner_count') or 0)} (report read "
                     f"{m.get('_osc_count_hover')}, flagged comparison — correction ruled 2026-07-28)")
                    if m.get("_corner_count_human") and m.get("_osc_count_hover") else "")
@@ -1784,6 +1798,7 @@ PROMPT_TEMPLATE = """Extract from this HOVER report:
 {{
   "siding_sqft": <total Facades Siding area, ft² — the BASE area before any waste>,
   "siding_with_openings_sqft": <value from the "SIDING WASTE TOTALS" section, specifically the line labeled "+ Openings < 20ft² +10%" (or "Openings <20ft² +10%"). This is the siding area AFTER the 10% small-openings adder. ft². If that exact line is not present, return null.>,
+  "opening_facade_assignments": <ONLY if the report explicitly assigns openings to facades/materials (e.g., an opening listed under a Stucco or Brick facade section): a list of {{"id": "<opening id like W-101 or D-2>", "facade": "<siding|stucco|brick|stone|metal|other>"}}. NEVER infer placement from opening type, elevation, or height — if the report does not state it, return []. (Class C sealed 2026-07-28)>,
   "soffit_sqft": <total Soffit Area, ft²>,
   "eaves_lf": <total Eaves length, feet (decimal)>,
   "rakes_lf": <total Rakes length, feet (decimal)>,

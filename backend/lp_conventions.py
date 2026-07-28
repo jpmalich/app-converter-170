@@ -351,6 +351,14 @@ def family_waste_default_pct(profile: str | None) -> float:
     return float(FAMILY_WASTE_DEFAULTS.get(profile or "", 10.0))
 
 
+# SEALED (Howard, 2026-07-28 — P3 gable precedent; 261 Haugh corner
+# evidence): MATERIAL-GOVERNING DIMENSIONS ARE NEVER AVERAGED — per-unit
+# or FLAGGED, no third option. An average on a material-governing
+# dimension hides the unit that takes extra material (Haugh: one 18'5"
+# corner takes 2 sticks; the 10' per-corner average hid it).
+NEVER_AVERAGE_RULE = ("material-governing dimensions are NEVER averaged — "
+                      "per-unit or FLAGGED, no third option (sealed 2026-07-28)")
+
 # CATALOG-ONLY ROWS — MANUAL BY DESIGN (register #8 ruled 2026-07-28):
 # these rows carry NO formula on purpose; no silent derivation is ever
 # added. The coils are manual by the iter97 composition ruling; the rest

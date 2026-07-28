@@ -927,6 +927,30 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
         (ruled 2026-07-20): hover-lp-run writes 10.0 into the field on
         import; _waste_pct is set here ONLY on explicit override —
         otherwise the field governs via _apply_contractor_waste
+
+    CLASS A — MEASURED AREA SILENTLY LOST AT INTAKE (sealed 2026-07-28).
+    EVIDENCE #1, verbatim per Howard's rider: "the raw Hover door
+    over-composes Haugh by 546 ft² and the only reason my real quote is
+    right is my own manual facade-scope custom." 261 Haugh is new
+    construction in Tyvek: every Siding column reads 0, the extractor
+    folded the FACADES TOTAL (2,610 ft² = wrap 2,064 + stucco 312 +
+    brick 234) into top-level siding_sqft, and the old wrap-only guard
+    (fb.siding_sqft > 0) could not fire — 546 ft² of block composed
+    silently. The machine defaulted wrong and a human caught it. That is
+    the whole argument for the class.
+    CONSERVATION INVARIANT, at intake: every measured ft² lands in
+    exactly one of SIDED · EXPLICITLY EXCLUDED · FLAGGED; sum in = sum
+    out (`_area_conservation`, pinned). Any import where area moves
+    without an exclusion decision FAILS.
+
+    CLASS C — VISION-GRADE DATA GOVERNING A MONEY LINE (sealed
+    2026-07-28). Hover AREAS are MEASURED; Hover MATERIAL LABELS are a
+    VISION READ — a label SUGGESTS, never GOVERNS. With a zero/absent
+    Siding row the label-suggested wrap row composes ONLY under an OPEN
+    amber facade_scope flag, reversible both ways (same machinery as the
+    14-vs-20 corner correction). Opening-to-facade attribution is READ
+    FROM THE FACADE ASSIGNMENT — never inferred from opening type,
+    elevation, or height; where Hover cannot attribute, it FLAGS.
     """
     passthrough = (
         "siding_sqft", "siding_with_openings_sqft",
@@ -947,21 +971,43 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
     m["_hover_source"] = True
     if waste_pct is not None:
         m["_waste_pct"] = float(waste_pct)
-    # WRAP-DEFAULT enforcement (ruled 2026-07-18): when the report carries
-    # a facade_breakdown and no explicit scope was chosen, only the Siding
-    # row composes — other materials are named + excluded, never silently
-    # summed. Explicit facade_scope (the picker) always overrides.
+    # WRAP-DEFAULT enforcement (ruled 2026-07-18) + CLASS A/C (sealed
+    # 2026-07-28): when the report carries a facade_breakdown and no
+    # explicit scope was chosen, only the Siding row composes. With a
+    # ZERO/ABSENT Siding row (261 Haugh anatomy) the lumped facades total
+    # NEVER composes: the label-suggested wrap row ("other") composes
+    # under an OPEN amber flag; masonry-class labels (stucco/brick/stone/
+    # metal) are suggested-excluded. Explicit facade_scope (the picker)
+    # always overrides. Conservation ledger emitted on every path.
     fb = hover_meas.get("facade_breakdown") or {}
-    if not facade_scope and isinstance(fb, dict):
-        sid = float(fb.get("siding_sqft") or 0)
-        others = {k[:-5]: float(v) for k, v in fb.items()
-                  if k != "siding_sqft" and k.endswith("_sqft")
-                  and isinstance(v, (int, float)) and v > 0}
+    flags = []
+    fb_rows = {k[:-5]: float(v) for k, v in fb.items()
+               if k.endswith("_sqft") and isinstance(v, (int, float)) and v > 0} \
+        if isinstance(fb, dict) else {}
+    measured_total = sum(fb_rows.values()) if fb_rows else float(hover_meas.get("siding_sqft") or 0)
+    if not facade_scope and fb_rows:
+        sid = fb_rows.get("siding", 0.0)
+        others = {k: v for k, v in fb_rows.items() if k != "siding"}
         if sid > 0 and others:
             facade_scope = {"mode": "wrap_only", "wrap_sqft": sid,
                             "excluded": others}
+        elif sid <= 0 and others:
+            suggested = others.get("other", 0.0)
+            excluded = {k: v for k, v in others.items() if k != "other"}
+            facade_scope = {"mode": "label_suggested_wrap",
+                            "wrap_sqft": suggested, "excluded": excluded}
+            flags.append({
+                "code": "facade_scope",
+                "label": (f"FACADE SCOPE SUGGESTED FROM VISION LABELS (Class C sealed "
+                          f"2026-07-28 — labels SUGGEST, never GOVERN): Siding row absent/0; "
+                          f"wrap-labeled {suggested:g} ft² composes; "
+                          + (f"excluded (suggested): " + ", ".join(f"{k} {v:g} ft²" for k, v in sorted(excluded.items())) + "; "
+                             if excluded else "")
+                          + f"lumped facades total {measured_total:g} ft² NEVER composes "
+                          "(Class A: raw door over-composed 261 Haugh by 546 ft²; a human caught it)"),
+                "verify": "Confirm the sided facade on site (or in the facade picker) — reversible both ways",
+            })
     if facade_scope and (facade_scope.get("wrap_sqft") or 0) > 0:
-        measured_total = float(hover_meas.get("siding_sqft") or 0)
         wrap = float(facade_scope["wrap_sqft"])
         m["siding_sqft"] = wrap
         m["_facade_scope"] = {
@@ -970,6 +1016,39 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
             "measured_total": measured_total,
             "excluded": facade_scope.get("excluded") or {},
         }
+    # CLASS A CONSERVATION LEDGER (sealed 2026-07-28): sum in = sum out.
+    _sided = float(m.get("siding_sqft") or 0)
+    _excl = sum(float(v) for v in ((m.get("_facade_scope") or {}).get("excluded") or {}).values())
+    _flagged_residue = round(measured_total - _sided - _excl, 1) if measured_total > 0 else 0.0
+    m["_area_conservation"] = {
+        "measured_total_sqft": round(measured_total, 1),
+        "sided_sqft": round(_sided, 1),
+        "excluded_sqft": round(_excl, 1),
+        "flagged_sqft": max(_flagged_residue, 0.0),
+    }
+    if _flagged_residue > 0.5:
+        flags.append({
+            "code": "area_conservation",
+            "label": (f"AREA CONSERVATION (Class A sealed 2026-07-28): {_flagged_residue:g} ft² "
+                      f"of measured facade area is neither SIDED nor EXPLICITLY EXCLUDED — "
+                      "no ft² disappears without an exclusion decision"),
+            "verify": "Attribute the residue in the facade picker (side it or exclude it)",
+        })
+    # CLASS C — OPENING ATTRIBUTION (R6 sealed 2026-07-28): read from the
+    # facade assignment, never inferred. This report carries none → FLAG.
+    _opening_total = int(hover_meas.get("opening_count") or 0)
+    if (m.get("_facade_scope") and (m["_facade_scope"].get("excluded") or {})
+            and _opening_total > 0
+            and not hover_meas.get("opening_facade_assignments")):
+        flags.append({
+            "code": "opening_facade_attribution",
+            "label": (f"OPENING↔FACADE ATTRIBUTION UNAVAILABLE (Class C sealed 2026-07-28): "
+                      f"{_opening_total} openings cannot be attributed to a facade from this "
+                      "report — attribution is READ from the facade assignment, never inferred "
+                      "from opening type/elevation/height; count-driven trim lines derive "
+                      "against ALL openings until attributed (close with in-scope counts)"),
+            "verify": "Walk the openings — count which sit in the sided facade vs excluded area",
+        })
     if soffit_breakdown:
         eaves = float(soffit_breakdown.get("eaves_sqft") or 0)
         rakes = float(soffit_breakdown.get("rakes_sqft") or 0)
@@ -979,11 +1058,16 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
             m["_soffit_closed_sqft"] = rakes + ceilings
             m["_soffit_ceiling_sqft"] = ceilings
     m = _force_profile_measurements(m, profile)
-    flags = [{
+    flags.append({
         "code": "corner_locators",
-        "label": "corner sticks on measured corner-LF basis (Hover has counts/LF, no per-corner locators)",
-        "verify": "Walk the corners on site — confirm OSC/ISC counts match the report",
-    }]
+        "label": ("corner sticks on measured corner-LF basis — Hover has counts/LF, "
+                  "no per-corner heights, so the per-corner figure is an AVERAGE and "
+                  "averages HIDE any corner taller than one 16' stick (never-average "
+                  "rule sealed 2026-07-28, P3 precedent; 261 Haugh: an 18'5\" corner "
+                  "takes 2 sticks). Tape tall corners on the walk — close with "
+                  "tall_corners_ft"),
+        "verify": "Walk the corners — confirm counts AND tape any corner taller than 16'",
+    })
     # Q2 (ruled 2026-07-27): porch-ceiling FLAG when implied — flag-only,
     # never auto-invent area. Implied when the measured soffit total reads
     # a much deeper average overhang than the stated one.
@@ -1000,7 +1084,8 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
             "verify": "Measure porch ceilings on site and enter them in Job Info",
         })
     fs = m.get("_facade_scope")
-    if fs and fs.get("excluded"):
+    if fs and fs.get("excluded") and not any(f.get("code") == "facade_scope" for f in flags):
+        # (label_suggested_wrap already emits its own Class C flag above)
         excl = ", ".join(f"{k} {v:g} ft²" for k, v in fs["excluded"].items())
         flags.append({
             "code": "facade_scope",
@@ -1063,7 +1148,9 @@ async def set_default_profile(
 # (by/at, revertible, journey-logged); per-item retirement as flags close;
 # an OFFER, never a gate. Closing batten wall-heights re-derives batten LF
 # live (+1 run × wall height per wall).
-_FLAG_CODES = ("corner_locators", "batten_wall_heights", "opening_schedule")
+_FLAG_CODES = ("corner_locators", "batten_wall_heights", "opening_schedule",
+               "facade_scope", "area_conservation",
+               "opening_facade_attribution", "ceiling_dedup")
 
 
 def _apply_flag_checklist(measurements: dict, est: dict, run: dict) -> dict:
@@ -1096,6 +1183,40 @@ def _apply_flag_checklist(measurements: dict, est: dict, run: dict) -> dict:
                 m[mk] = m.get(key)
                 m[key] = int(v)
                 m["_corner_count_human"] = True
+        # TALL CORNERS (never-average rule sealed 2026-07-28): taped
+        # heights for corners exceeding one 16' stick — per-corner
+        # ceil(h/16), never averaged in.
+        tall = vals.get("tall_corners_ft")
+        if isinstance(tall, list) and tall:
+            if m is measurements:
+                m = dict(m)
+            m["_osc_tall_corners_ft"] = [float(h) for h in tall]
+    # CEILING DEDUP (class sealed 2026-07-28): a hand-entered ceiling and
+    # a Hover soffit row never both compose for the same surface — TAPED
+    # governs; the Hover-measured area is deducted as a named comparison.
+    cd = (est.get("lp_flag_checklist") or {}).get("ceiling_dedup") or {}
+    if cd.get("status") == "closed":
+        dup = float((cd.get("values") or {}).get("duplicate_sqft") or 0)
+        if dup > 0 and float(m.get("soffit_sqft") or 0) > 0:
+            if m is measurements:
+                m = dict(m)
+            m["_soffit_sqft_hover"] = float(m["soffit_sqft"])
+            m["soffit_sqft"] = max(float(m["soffit_sqft"]) - dup, 0.0)
+            m["_soffit_dedup_sqft"] = dup
+    # OPENING ATTRIBUTION (Class C sealed 2026-07-28): walked in-scope
+    # counts GOVERN count-driven trim lines; Hover counts preserved.
+    oa = (est.get("lp_flag_checklist") or {}).get("opening_facade_attribution") or {}
+    if oa.get("status") == "closed":
+        vals = oa.get("values") or {}
+        for key in ("window_count", "entry_door_count", "patio_door_count",
+                    "garage_door_count", "door_count"):
+            v = vals.get(key)
+            if isinstance(v, (int, float)) and v >= 0:
+                if m is measurements:
+                    m = dict(m)
+                m[f"_{key}_hover"] = m.get(key)
+                m[key] = int(v)
+                m["_openings_attributed"] = True
     return m
 
 
@@ -1104,10 +1225,33 @@ def _checklist_flags(run: dict, est: dict) -> list:
     retire from the amber list but stay visible (struck, by/at named)."""
     checklist = est.get("lp_flag_checklist") or {}
     out = []
+    seen = set()
     for f in run.get("hover_mapping_flags") or []:
         item = dict(f) if isinstance(f, dict) else {"code": "", "label": str(f)}
         entry = checklist.get(item.get("code")) or {}
         item["status"] = "closed" if entry.get("status") == "closed" else "open"
+        if item["status"] == "closed":
+            item["closed_by"] = entry.get("by")
+            item["closed_at"] = entry.get("at")
+            item["values"] = entry.get("values")
+        out.append(item)
+        seen.add(item.get("code"))
+    # CEILING DEDUP (class sealed 2026-07-28): dynamic flag whenever a
+    # hand-entered ceiling and a Hover-measured soffit total coexist —
+    # the same square footage must never compose twice.
+    _porch = est.get("porch_ceilings") or []
+    _sof = float((((run.get("result") or {}).get("measurements")) or run.get("measurements") or {}).get("soffit_sqft") or 0)
+    if _porch and _sof > 0 and "ceiling_dedup" not in seen:
+        hand = sum(float(p.get("length_ft") or 0) * float(p.get("width_ft") or 0) for p in _porch)
+        entry = checklist.get("ceiling_dedup") or {}
+        item = {
+            "code": "ceiling_dedup",
+            "label": (f"CEILING DOUBLE-COUNT GUARD (class sealed 2026-07-28): hand-entered "
+                      f"ceiling(s) {hand:g} ft² + Hover soffit total {_sof:g} ft² may cover the "
+                      "same surface — TAPED governs; close with the Hover-measured duplicate area"),
+            "verify": "Confirm whether a Hover soffit row is the same ceiling you hand-entered",
+            "status": "closed" if entry.get("status") == "closed" else "open",
+        }
         if item["status"] == "closed":
             item["closed_by"] = entry.get("by")
             item["closed_at"] = entry.get("at")
@@ -1148,6 +1292,32 @@ async def flag_checklist_act(
             if v is not None and (not isinstance(v, (int, float)) or v <= 0 or int(v) != v):
                 raise HTTPException(status_code=422,
                                     detail=f"{k} must be a positive whole number (walked count)")
+        # TALL CORNERS (sealed 2026-07-28): heights only for corners
+        # EXCEEDING one 16' stick (≤16' corners take exactly 1 by Q13).
+        tall = values.get("tall_corners_ft")
+        if tall is not None:
+            if (not isinstance(tall, list) or not tall
+                    or any(not isinstance(h, (int, float)) or not (16.0 < float(h) <= 60.0)
+                           for h in tall)):
+                raise HTTPException(status_code=422,
+                                    detail="tall_corners_ft must list taped heights strictly over 16' "
+                                           "(a corner at or under 16' takes exactly one stick — Q13)")
+    if action == "close" and code == "ceiling_dedup":
+        dup = values.get("duplicate_sqft")
+        if not isinstance(dup, (int, float)) or dup <= 0:
+            raise HTTPException(status_code=422,
+                                detail="duplicate_sqft must be a positive number (the Hover-measured "
+                                       "area of the same ceiling the hand entry covers)")
+    if action == "close" and code == "opening_facade_attribution":
+        ks = ("window_count", "entry_door_count", "patio_door_count", "garage_door_count", "door_count")
+        if not any(values.get(k) is not None for k in ks):
+            raise HTTPException(status_code=422,
+                                detail=f"provide at least one in-scope count from {ks} (read from the "
+                                       "facade assignment — never inferred)")
+        for k in ks:
+            v = values.get(k)
+            if v is not None and (not isinstance(v, (int, float)) or v < 0 or int(v) != v):
+                raise HTTPException(status_code=422, detail=f"{k} must be a whole number ≥ 0")
     prev = (est.get("lp_flag_checklist") or {}).get(code)
     now = datetime.now(timezone.utc).isoformat()
     entry = ({"status": "closed", "values": values, "by": user.get("email"), "at": now, "prev": prev}
@@ -1459,6 +1629,11 @@ async def lp_material_list_freeze(
     from datetime import datetime, timedelta, timezone
 
     est, run, binding = await _load_run(est_id, user["company_id"], (payload or {}).get("run_id"))
+    # TEST-ESTIMATE DOCTRINE (sealed 2026-07-28): TEST_ estimates never
+    # mint QR shares — evidence for a run only, never a customer surface.
+    if str(est.get("customer_name") or "").startswith("TEST_"):
+        raise HTTPException(status_code=409,
+                            detail="TEST_ estimate — QR minting refused (test-estimate doctrine sealed 2026-07-28)")
     measurements, corner_locations, wall_heights = _extract(run)
     # openings + corner reviews apply on EVERY derivation surface
     # (coherence) — the frozen snapshot must match what the panel showed.

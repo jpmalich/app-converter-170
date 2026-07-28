@@ -57,9 +57,14 @@ class TestSealedConventionsOnTheTab:
         # check): Howard walked the house — 14 outside corners, not
         # Hover's 20 (returns/chase corners take no posts). HUMAN count
         # governs Q13 per-corner math; Hover's 20 preserved on the line.
-        assert osc["qty"] == 14
+        # AMENDED AGAIN (never-average rule sealed 2026-07-28, intake-class
+        # sitting): GROUND TRUTH — the back corner runs 18'5" and takes
+        # TWO sticks; taped via tall_corners_ft. 14 corners → 15 sticks
+        # (13 × 1 + ceil(18.42/16) = 2). Averages hid it.
+        assert osc["qty"] == 15
         assert "HUMAN count 14" in osc["note"]
         assert "report read 20" in osc["note"]
+        assert "TALL corner" in osc["note"] and "18.42'" in osc["note"]
         assert not osc.get("raw_qty")
         assert (osc.get("mat") or 0) > 0  # catalog-bound, never a None/0 hole
 
@@ -87,8 +92,12 @@ class TestSealedConventionsOnTheTab:
         # PIN AMENDED (Q14a ruled 2026-07-27): the measured Hover soffit
         # TOTAL governs over the overhang fallback — vented 11→14,
         # closed 8→11 on Jon's measured total (proportional split).
-        assert jon_rows["38 Series Soffit 16 x 16 Vented"]["qty"] == 14
-        assert jon_rows["38 Series Soffit 16 x 16 Closed"]["qty"] == 11
+        # AMENDED AGAIN (ceiling-dedup class sealed 2026-07-28): the Hover
+        # soffit total 463 included the back-set entry ceiling row (40 ft²)
+        # — the SAME ceiling Howard hand-entered (2'×7'9"). TAPED governs;
+        # duplicate deducted: 463 → 423 ft² → vented 14→13, closed 11→10.
+        assert jon_rows["38 Series Soffit 16 x 16 Vented"]["qty"] == 13
+        assert jon_rows["38 Series Soffit 16 x 16 Closed"]["qty"] == 10
 
     def test_one_family_holds(self, jon_rows):
         # B&B family waste 30% (CONTRACTOR-SPEC, sealed 2026-07-24):
@@ -244,13 +253,20 @@ class TestV3MoneyWalk:
         #   caulk 2→9, touch-up 1→2 (Q15)    +98.21 +60.96
         #   Tear-Off/Dumpster rows appear qty 0 pending (Q1)
         # sub_mat 20025.74 → 26468.61
-        assert round(sub_mat, 2) == 24838.47   # materials-true
+        # AMENDED AGAIN (intake-class sitting, WALK v3 2026-07-28):
+        #   OSC 14→15 sticks (18'5" back corner taped — never-average
+        #   sealed 2026-07-28)               +1 × 271.69 = +271.69
+        #   soffit V 14→13, C 11→10 (ceiling dedup 463→423: Hover row =
+        #   the hand-entered 2'×7'9" ceiling; TAPED governs)
+        #                                    −85.83 −73.50 = −159.33
+        # sub_mat 24,838.47 → 24,950.83
+        assert round(sub_mat, 2) == 24950.83   # materials-true
         tax = sub_mat * 0.07
-        assert round(tax, 2) == 1738.69
+        assert round(tax, 2) == 1746.56
         base = sub_mat + tax + sub_lab
-        assert round(base, 2) == 26577.16
+        assert round(base, 2) == 26697.39
         sell = base / (1 - 0.30)
-        assert round(sell, 2) == 37967.38
+        assert round(sell, 2) == 38139.13
 
     def test_no_unflagged_labor_anywhere_on_walk_surface(self, session):
         est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()

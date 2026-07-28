@@ -381,11 +381,26 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             # Q13 (ruled 2026-07-27): PER-CORNER whole-stick round-up,
             # min 1 pc per corner — flat ÷16 LF pooling RETIRED (it was
             # maximum-optimism cut yield; 3 Degree Rd: 11 app vs 19 real).
+            # TALL CORNERS (never-average rule sealed 2026-07-28, 261
+            # Haugh 18'5" back corner): taped heights over one stick take
+            # ceil(h/16) each — material-governing dimensions are NEVER
+            # averaged, per-unit or flagged.
+            tall = [float(h) for h in (measurements.get("_osc_tall_corners_ft") or []) if h]
             if cnt > 0:
-                per_h = lf / cnt
-                q = cnt * max(1, math.ceil(per_h / 16.0 - 1e-9))
+                k = min(len(tall), cnt)
+                rest_cnt = cnt - k
+                rest_lf = max(lf - sum(tall[:k]), 0.0)
+                per_h = (rest_lf / rest_cnt) if rest_cnt else 0.0
+                q_rest = rest_cnt * max(1, math.ceil(per_h / 16.0 - 1e-9)) if rest_cnt else 0
+                q_tall = sum(max(1, math.ceil(h / 16.0 - 1e-9)) for h in tall[:k])
+                q = q_rest + q_tall
                 note = (f"Hover {cnt} corner(s) × per-corner whole-stick round-up "
-                        f"({per_h:g}' each, min 1 pc/corner — Q13 ruled 2026-07-27)")
+                        f"({(lf / cnt):g}' avg, min 1 pc/corner — Q13 ruled 2026-07-27)")
+                if k:
+                    _tall_txt = ", ".join(f"{h:g}'" for h in tall[:k])
+                    note = (f"Hover {cnt} corner(s): {rest_cnt} × whole-stick "
+                            f"({per_h:g}' each) + {k} taped TALL corner(s) [{_tall_txt}] → "
+                            f"{q_tall} stick(s) (never-average sealed 2026-07-28)")
                 if measurements.get("_corner_count_human") and measurements.get("_osc_count_hover"):
                     note += (f" — HUMAN-provenance count {cnt} (walked; report read "
                              f"{measurements['_osc_count_hover']}, preserved as flagged "

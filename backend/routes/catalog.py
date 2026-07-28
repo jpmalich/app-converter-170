@@ -233,6 +233,10 @@ async def admin_pipeline_stats(request: Request):
     }
     company_names = {c["id"]: c["name"] async for c in db.companies.find({}, {"id": 1, "name": 1})}
     for e in estimates:
+        # TEST-ESTIMATE DOCTRINE (sealed 2026-07-28): TEST_ estimates are
+        # evidence for a run only — they never reach admin roll-ups.
+        if str(e.get("customer_name") or "").startswith("TEST_"):
+            continue
         bucket = "accepted" if e.get("accepted_at") else ("sent" if e.get("last_sent_at") else "drafts")
         sell = calc_totals(e)["sell"]
         tot[bucket] += 1
