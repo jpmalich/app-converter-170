@@ -1,5 +1,39 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## THREE DEFECTS FROM ONE SCREEN — FIXED (2026-07-28 evening, commit 9bc1dbd)
+- **1) B&B routing (f3e7d728)**: the pick DID re-derive server-side (run
+  hover-96217b288bdb-board_batten, per-profile 4239) — the editor's
+  debounced autosave then replayed the pre-pick lap merge over it (lap
+  514/raw 467 standing, panels 0). FIX: after hover-lp-run the apply flow
+  re-fetches the estimate and adopts the SERVER truth (rebuilt lines,
+  family waste field B&B 30, scoped measurements) into client state — the
+  armed autosave can only replay the adopted state. Also killed a stale
+  wrap-0 facade-scope builder on the lp-run door (touched-only now).
+  Estimate f3e7d728 HEALED by re-running the pick (backup at
+  /app/memory/backups/f3e7d728_pre_heal_2026-07-28.json): panel 138, lap 0,
+  waste field 30. Sealed: composition at import is PROVISIONAL; the pick
+  RE-DERIVES, NOTHING STALE.
+- **2) Whole units at the order layer (no longer parked)**: 0.5 RETIRES —
+  qty = ceil(x − 1e-9) AFTER waste, every family, every line, both
+  emitters (wasteLogic.applyWasteQty ↔ _bake_tab_waste, mirror pinned).
+  540 trim 110.5 was raw 100 × 1.1 IEEE754 noise kept by round-up-half →
+  now 110. Fractional non-cut-prone ordered rows (coil 5.28) ceil too.
+- **3) Summary waste line NAMED: option (a)** — calc.js wasteAdd is the
+  dollar DISCLOSURE of the waste portion inside Material (Σ(qty−raw)×mat),
+  never added to base (chain reconciles: mat+tax+labor=base ÷ (1−margin)).
+  The LABEL lied. Relabeled "Cut waste inside Material ({pct}%)" EN + ES +
+  ISS editor; math untouched. Verified on screen: 30% · $15,378.29 beside
+  Material $69,642.15 → base $74,517.10 → $106,453.00.
+- **4) FOUR-COLUMN ACCEPTANCE suite test** (`test_acceptance_four_column_2026_07_28.py`,
+  in handback_green): drives THE USER ORDER — import exists, family picked
+  AFTER (hover-lp-run / default-profile endpoint), material list read from
+  the ESTIMATE. Columns: fresh run · every family (VINYL 47 SQ · ASCEND 47
+  SQ · LP B&B 138 · LP LAP 513, stale rows asserted 0) · ground truth
+  (3 Degree installed: battens 465 vs 398 OPEN Δ−67, 540-4" 142 vs 100
+  OPEN Δ−42 — queue item d owns diagnosis; recorded on every run) · both
+  doors (Hover + photo). Emits /app/memory/acceptance_table_2026_07_28.md.
+- Guard: `2026-07-28 18:47 UTC · 9bc1dbd · CLEAN · 1535 passed, 1 skipped`.
+
 ## WASTE SEALED — ALL FAMILIES, ONE RULE (2026-07-28 PM, commit 79a2582)
 - **RULING (Howard)**: the contractor's ONE visible Waste % field, family-
   defaulted (lap/soffit 10 · shake 15 · B&B 30 · nickel gap 12), fully
