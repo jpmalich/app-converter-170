@@ -43,18 +43,26 @@ def _flag(flags, code):
     return next((f for f in flags if f.get("code") == code), None)
 
 
-# ── CLASS A — conservation at intake ─────────────────────────────────────
+# ── CLASS A — conservation at intake · SEALED DEFAULT COMPOSES (Howard,
+# 2026-07-28 production restore): wall classes side, masonry classes
+# exclude with the reason named, unrecognized labels SIDE and flag loudly.
+# FLAGGED means WE MADE A CALL AND TOLD THE USER — the "no call made, no
+# material produced" fourth state is RETIRED (it zeroed the vinyl door). ──
 def test_class_a_haugh_zero_siding_row_never_composes_the_lump():
     m, flags = _hover_mapping_contract(dict(HAUGH), "board_batten")
-    assert m["siding_sqft"] == 2064          # wrap-suggested, NOT 2610
+    assert m["siding_sqft"] == 2064          # composed default, NOT 2610
     fs = m["_facade_scope"]
-    assert fs["mode"] == "label_suggested_wrap"
+    assert fs["mode"] == "composed_default"
     assert fs["excluded"] == {"stucco": 312, "brick": 234}
     f = _flag(flags, "facade_scope")
-    assert f is not None and "SUGGEST" in f["label"] and "never GOVERN" in f["label"]
+    assert f is not None
+    assert "COMPOSED AT IMPORT" in f["label"]
+    assert "never a gate" in f["label"]
+    assert "masonry" in f["label"]           # exclusion reason NAMED
     cons = m["_area_conservation"]
     assert cons["measured_total_sqft"] == 2610
     assert cons["sided_sqft"] + cons["excluded_sqft"] + cons["flagged_sqft"] == 2610
+    assert cons["flagged_sqft"] == 0         # every ft² attributed AT IMPORT
 
 
 def test_class_a_conservation_holds_on_every_intake_shape():
@@ -86,6 +94,96 @@ def test_class_a_3degree_same_anatomy_moves():
     assert m["siding_sqft"] == 4239          # was 4504 (brick composed silently)
     assert m["_facade_scope"]["excluded"] == {"brick": 265}
     assert _flag(flags, "facade_scope") is not None
+
+
+# ── PRODUCTION RESTORE (Howard, 2026-07-28) — the sealed default COMPOSES
+# on the SHARED Hover door; a fresh VINYL import fills siding again. ──────
+DEGREE3_MORNING = {
+    # verbatim anatomy of the 2026-07-28 12:39 UTC production run that
+    # came back with NO siding line: extractor followed the pinned
+    # "Siding row only" rule and returned a top-level zero.
+    "siding_sqft": 0, "siding_with_openings_sqft": 0,
+    "eaves_lf": 308.25, "rakes_lf": 319.42, "starter_lf": 654.67,
+    "outside_corner_count": 26, "outside_corner_lf": 175.42,
+    "window_count": 30, "door_count": 5, "entry_door_count": 4,
+    "opening_perimeter_lf": 535.08, "soffit_sqft": 2620, "overhang_in": 12.0,
+    "facade_breakdown": {"siding_sqft": None, "stucco_sqft": None,
+                         "brick_sqft": 265, "stone_sqft": None,
+                         "metal_sqft": None, "other_sqft": 4239},
+}
+
+
+def test_restore_known_truth_defaults():
+    """Howard's known-truth check: the default yields 2,064 ft² on 261
+    Haugh and 4,239 ft² on 3 Degree Rd with nobody touching anything."""
+    from lp_conventions import compose_default_facade_scope
+    assert compose_default_facade_scope(HAUGH["facade_breakdown"])["wrap_sqft"] == 2064
+    assert compose_default_facade_scope(DEGREE3_MORNING["facade_breakdown"])["wrap_sqft"] == 4239
+
+
+def test_restore_worker_door_composes_into_measurements():
+    from routes.hover import _compose_facade_default_into
+    m = dict(DEGREE3_MORNING)
+    scope = _compose_facade_default_into(m)
+    assert scope is not None
+    assert m["siding_sqft"] == 4239
+    assert m["_siding_sqft_report"] == 0     # report figure preserved
+    assert m["_facade_scope"]["excluded_reasons"]["brick"].startswith("masonry")
+    c = m["_area_conservation"]
+    assert c["sided_sqft"] + c["excluded_sqft"] + c["flagged_sqft"] == c["measured_total_sqft"]
+    assert c["flagged_sqft"] == 0
+
+
+def test_restore_vinyl_and_ascend_siding_lines_fill():
+    """FRESH-DOOR pin: the exact code path a fresh import runs (worker
+    composition → _build_lines) produces vinyl AND ascend siding rows
+    with real quantities — never an empty siding section."""
+    from routes.hover import _compose_facade_default_into, _build_lines
+    m = dict(DEGREE3_MORNING)
+    _compose_facade_default_into(m)
+    lines = _build_lines(m)
+    vinyl = next(l for l in lines if l["tab"] == "vinyl"
+                 and l["section"] == "Vinyl Siding")
+    ascend = next(l for l in lines if l["tab"] == "ascend"
+                  and l["section"] == "Ascend Cladding")
+    assert vinyl["qty"] == pytest.approx(42.4, abs=0.05)   # 4239 ÷ 100
+    assert ascend["qty"] == pytest.approx(42.4, abs=0.05)
+    lp = next(l for l in lines if l["tab"] == "lp_smart"
+              and l["name"].startswith("38 Series Lap"))
+    assert lp["qty"] > 0
+
+
+def test_restore_consistent_report_untouched():
+    """Pure-vinyl house whose Facades table agrees with the top level:
+    composition is a no-op — swo (+10% openings adder) keeps composing."""
+    from routes.hover import _compose_facade_default_into
+    m = {"siding_sqft": 3000, "siding_with_openings_sqft": 3300,
+         "facade_breakdown": {"siding_sqft": 3000}}
+    _compose_facade_default_into(m)
+    assert m["siding_sqft"] == 3000
+    assert m["siding_with_openings_sqft"] == 3300
+    assert "_siding_sqft_report" not in m
+
+
+def test_restore_unrecognized_label_sides_and_flags_loudly():
+    """Howard's invariant: if a facade cannot be attributed at all, SIDE
+    IT and flag loudly — a short load costs a contractor a day; an extra
+    bundle goes back on the truck."""
+    from lp_conventions import compose_default_facade_scope, facade_scope_flag_label
+    scope = compose_default_facade_scope({"wood_sqft": 500, "brick_sqft": 100})
+    assert scope["wrap_sqft"] == 500         # SIDED, not zeroed
+    assert scope["unrecognized_sided"] == ["wood"]
+    label = facade_scope_flag_label(scope)
+    assert "UNRECOGNIZED" in label and "SIDED by rule" in label
+
+
+def test_restore_flag_is_informational_never_a_gate():
+    """The flag rides WITH a composed siding figure — it never holds the
+    area at zero."""
+    m, flags = _hover_mapping_contract(dict(DEGREE3_MORNING), "lap")
+    assert m["siding_sqft"] == 4239
+    f = _flag(flags, "facade_scope")
+    assert f is not None and "never a gate" in f["label"]
 
 
 # ── CLASS C — labels suggest; opening attribution never inferred ─────────

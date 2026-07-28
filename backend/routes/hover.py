@@ -2201,6 +2201,44 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
 
 
 
+def _compose_facade_default_into(measurements: dict) -> dict | None:
+    """PRODUCTION RESTORE (Howard, sealed 2026-07-28): compose the sealed
+    facade default AT IMPORT on the SHARED Hover door — every measured ft²
+    attributed with NO user action. WALL classes side; MASONRY classes
+    exclude (reason named); an unrecognized label SIDES and flags loudly.
+    The lumped facades total never composes (Class A). FLAGGED means WE
+    MADE A CALL AND TOLD THE USER — no zero from an unmade decision.
+    Informational, never a gate. Mutates `measurements`; returns scope."""
+    from lp_conventions import compose_default_facade_scope
+    scope = compose_default_facade_scope(measurements.get("facade_breakdown"))
+    if not scope:
+        return None
+    top = float(measurements.get("siding_sqft") or 0)
+    if round(top, 1) != scope["wrap_sqft"]:
+        measurements["_siding_sqft_report"] = top
+        measurements["siding_sqft"] = scope["wrap_sqft"]
+        swo = float(measurements.get("siding_with_openings_sqft") or 0)
+        if swo > 0:
+            # the +10% small-openings figure keys to the report's Siding
+            # basis — no valid anchor once the composed scope differs;
+            # preserved (named), never composes
+            measurements["_siding_with_openings_report"] = swo
+            measurements["siding_with_openings_sqft"] = None
+    measurements["_facade_scope"] = {
+        "mode": scope["mode"], "wrap_sqft": scope["wrap_sqft"],
+        "measured_total": scope["measured_total"], "sided": scope["sided"],
+        "excluded": scope["excluded"],
+        "excluded_reasons": scope["excluded_reasons"],
+    }
+    measurements["_area_conservation"] = {
+        "measured_total_sqft": scope["measured_total"],
+        "sided_sqft": scope["wrap_sqft"],
+        "excluded_sqft": round(sum(scope["excluded"].values()), 1),
+        "flagged_sqft": 0.0,
+    }
+    return scope
+
+
 def _build_lines(measurements: dict) -> list[dict]:
     out = []
     # Iter 78z (P1.2) — Multi-profile siding split. When the AI Measure /
@@ -2921,6 +2959,11 @@ async def _execute_hover_import_worker(
             {"windows": windows_payload}
         )
         measurements["overhang_in"] = overhang_in
+        # PRODUCTION RESTORE (Howard, sealed 2026-07-28): the sealed
+        # facade default composes AT IMPORT — the vinyl/ascend/LP draft
+        # lines below derive from the ATTRIBUTED siding area, never a
+        # zero from an unmade decision.
+        _fb_scope = _compose_facade_default_into(measurements)
         # Hover waste unification (ruled 2026-07-20): the ruled 10%
         # default is no longer applied inside formulas — it is WRITTEN
         # into the estimate's visible waste_pct field at apply/
@@ -2936,6 +2979,12 @@ async def _execute_hover_import_worker(
         lines = _build_lines(measurements)
         from routes.hover_sanity import run_checks
         warnings = run_checks(measurements)
+        if _fb_scope and (_fb_scope["excluded"] or _fb_scope["unrecognized_sided"]):
+            from lp_conventions import facade_scope_flag_label
+            warnings.append({
+                "code": "facade_scope_composed", "level": "info",
+                "message": facade_scope_flag_label(_fb_scope), "detail": None,
+            })
 
         # Stage 3 — Optional Phase 2 vision verification (renders elevation
         # pages, sends each to Claude Opus 4.5 Vision, compares drawing-

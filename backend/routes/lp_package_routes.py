@@ -971,43 +971,31 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
     m["_hover_source"] = True
     if waste_pct is not None:
         m["_waste_pct"] = float(waste_pct)
-    # WRAP-DEFAULT enforcement (ruled 2026-07-18) + CLASS A/C (sealed
-    # 2026-07-28): when the report carries a facade_breakdown and no
-    # explicit scope was chosen, only the Siding row composes. With a
-    # ZERO/ABSENT Siding row (261 Haugh anatomy) the lumped facades total
-    # NEVER composes: the label-suggested wrap row ("other") composes
-    # under an OPEN amber flag; masonry-class labels (stucco/brick/stone/
-    # metal) are suggested-excluded. Explicit facade_scope (the picker)
-    # always overrides. Conservation ledger emitted on every path.
     fb = hover_meas.get("facade_breakdown") or {}
     flags = []
-    fb_rows = {k[:-5]: float(v) for k, v in fb.items()
-               if k.endswith("_sqft") and isinstance(v, (int, float)) and v > 0} \
-        if isinstance(fb, dict) else {}
-    measured_total = sum(fb_rows.values()) if fb_rows else float(hover_meas.get("siding_sqft") or 0)
-    if not facade_scope and fb_rows:
-        sid = fb_rows.get("siding", 0.0)
-        others = {k: v for k, v in fb_rows.items() if k != "siding"}
-        if sid > 0 and others:
-            facade_scope = {"mode": "wrap_only", "wrap_sqft": sid,
-                            "excluded": others}
-        elif sid <= 0 and others:
-            suggested = others.get("other", 0.0)
-            excluded = {k: v for k, v in others.items() if k != "other"}
-            facade_scope = {"mode": "label_suggested_wrap",
-                            "wrap_sqft": suggested, "excluded": excluded}
-            flags.append({
-                "code": "facade_scope",
-                "label": (f"FACADE SCOPE SUGGESTED FROM VISION LABELS (Class C sealed "
-                          f"2026-07-28 — labels SUGGEST, never GOVERN): Siding row absent/0; "
-                          f"wrap-labeled {suggested:g} ft² composes; "
-                          + (f"excluded (suggested): " + ", ".join(f"{k} {v:g} ft²" for k, v in sorted(excluded.items())) + "; "
-                             if excluded else "")
-                          + f"lumped facades total {measured_total:g} ft² NEVER composes "
-                          "(Class A: raw door over-composed 261 Haugh by 546 ft²; a human caught it)"),
-                "verify": "Confirm the sided facade on site (or in the facade picker) — reversible both ways",
-            })
-    if facade_scope and (facade_scope.get("wrap_sqft") or 0) > 0:
+    # SEALED DEFAULT (Howard, 2026-07-28 — production restore): the default
+    # COMPOSES at the door — WALL classes side, MASONRY classes exclude
+    # with the reason named, an unrecognized label SIDES and flags loudly.
+    # FLAGGED MEANS WE MADE A CALL AND TOLD THE USER — no zero is ever
+    # produced by an unmade decision. The flag is INFORMATIONAL, never a
+    # gate. label_suggested_wrap ("no call made, no material produced")
+    # RETIRED — a fourth state Howard never ruled; it zeroed the vinyl
+    # door on 2026-07-28 morning. Explicit facade_scope (the picker)
+    # always overrides. One emitter: lp_conventions.compose_default_facade_scope.
+    from lp_conventions import compose_default_facade_scope, facade_scope_flag_label
+    scope_default = compose_default_facade_scope(fb)
+    measured_total = (scope_default["measured_total"] if scope_default
+                      else float(hover_meas.get("siding_sqft") or 0))
+    composed = False
+    if not facade_scope and scope_default:
+        facade_scope = scope_default
+        composed = True
+        flags.append({
+            "code": "facade_scope",
+            "label": facade_scope_flag_label(scope_default),
+            "verify": "Informational — change the scope in the facade picker if the walk disagrees (reversible both ways)",
+        })
+    if facade_scope and (composed or (facade_scope.get("wrap_sqft") or 0) > 0):
         wrap = float(facade_scope["wrap_sqft"])
         m["siding_sqft"] = wrap
         m["_facade_scope"] = {
@@ -1015,6 +1003,9 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
             "wrap_sqft": wrap,
             "measured_total": measured_total,
             "excluded": facade_scope.get("excluded") or {},
+            **({"sided": facade_scope["sided"],
+                "excluded_reasons": facade_scope["excluded_reasons"]}
+               if composed else {}),
         }
     # CLASS A CONSERVATION LEDGER (sealed 2026-07-28): sum in = sum out.
     _sided = float(m.get("siding_sqft") or 0)
@@ -1085,7 +1076,7 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
         })
     fs = m.get("_facade_scope")
     if fs and fs.get("excluded") and not any(f.get("code") == "facade_scope" for f in flags):
-        # (label_suggested_wrap already emits its own Class C flag above)
+        # (the composed default already emits its informational flag above)
         excl = ", ".join(f"{k} {v:g} ft²" for k, v in fs["excluded"].items())
         flags.append({
             "code": "facade_scope",

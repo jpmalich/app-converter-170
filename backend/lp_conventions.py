@@ -359,6 +359,64 @@ def family_waste_default_pct(profile: str | None) -> float:
 NEVER_AVERAGE_RULE = ("material-governing dimensions are NEVER averaged — "
                       "per-unit or FLAGGED, no third option (sealed 2026-07-28)")
 
+
+# SEALED DEFAULT — FACADE COMPOSITION AT IMPORT (Howard, 2026-07-28,
+# production restore): every measured facade ft² is attributed AT IMPORT
+# with NO user action. WALL classes SIDE; MASONRY classes (brick / block /
+# stone — plus stucco per the sealed stucco/brick rule and metal per
+# Class C) AUTO-EXCLUDE with the reason named. A label that cannot be
+# attributed SIDES and flags loudly — FLAGGED MEANS WE MADE A CALL AND
+# TOLD THE USER; NO ZERO IS EVER PRODUCED BY AN UNMADE DECISION. The
+# lumped facades total never composes (Class A conservation stands); the
+# flag is INFORMATIONAL, never a gate. ONE EMITTER: both Hover doors
+# (worker draft lines + LP mapping contract) compose through here.
+FACADE_EXCLUDED_CLASSES = {
+    "brick": "masonry (stone/brick rule sealed)",
+    "block": "masonry (stone/brick rule sealed)",
+    "stone": "masonry (stone/brick rule sealed)",
+    "stucco": "stucco (stucco/brick exclusion ruled 2026-07-17)",
+    "metal": "non-sided cladding (Class C sealed 2026-07-28)",
+}
+
+
+def compose_default_facade_scope(facade_breakdown: dict | None) -> dict | None:
+    """One emitter of the sealed facade default (Howard, 2026-07-28)."""
+    rows = {k[:-5]: float(v) for k, v in (facade_breakdown or {}).items()
+            if k.endswith("_sqft") and isinstance(v, (int, float)) and v > 0}
+    if not rows:
+        return None
+    sided = {k: v for k, v in rows.items() if k not in FACADE_EXCLUDED_CLASSES}
+    excluded = {k: v for k, v in rows.items() if k in FACADE_EXCLUDED_CLASSES}
+    unrecognized = sorted(k for k in sided if k not in ("siding", "other"))
+    beyond_siding_row = any(k != "siding" for k in sided)
+    return {
+        "mode": "composed_default" if beyond_siding_row else "wrap_only",
+        "wrap_sqft": round(sum(sided.values()), 1),
+        "sided": sided,
+        "excluded": excluded,
+        "excluded_reasons": {k: FACADE_EXCLUDED_CLASSES[k] for k in excluded},
+        "unrecognized_sided": unrecognized,
+        "measured_total": round(sum(rows.values()), 1),
+    }
+
+
+def facade_scope_flag_label(scope: dict) -> str:
+    """Informational flag text — 'sided X · excluded Y as masonry · tap to
+    change'. Never a gate."""
+    sided_txt = ", ".join(f"{k} {v:g} ft²" for k, v in sorted(scope["sided"].items()))
+    parts = [(f"FACADE SCOPE COMPOSED AT IMPORT (sealed 2026-07-28): "
+              f"sided {scope['wrap_sqft']:g} ft²"
+              + (f" ({sided_txt})" if sided_txt else ""))]
+    if scope["excluded"]:
+        excl_txt = ", ".join(f"{k} {v:g} ft² — {scope['excluded_reasons'][k]}"
+                             for k, v in sorted(scope["excluded"].items()))
+        parts.append(f"excluded {round(sum(scope['excluded'].values()), 1):g} ft² ({excl_txt})")
+    if scope["unrecognized_sided"]:
+        parts.append("UNRECOGNIZED label(s) " + ", ".join(scope["unrecognized_sided"])
+                     + " SIDED by rule — no zero from an unmade decision; verify on the walk")
+    parts.append("tap to change in the facade picker — informational, never a gate")
+    return " · ".join(parts)
+
 # CATALOG-ONLY ROWS — MANUAL BY DESIGN (register #8 ruled 2026-07-28):
 # these rows carry NO formula on purpose; no silent derivation is ever
 # added. The coils are manual by the iter97 composition ruling; the rest

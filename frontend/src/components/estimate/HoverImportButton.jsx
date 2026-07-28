@@ -164,18 +164,28 @@ export default function HoverImportButton({ est, update, save }) {
   // elevations can be verified independently. Value shape:
   //   "loading" | { ok, label, scale_bar_found, measured_*, delta_vs_*, ... }
   const [deepVerify, setDeepVerify] = useState({});
-  // Facade-breakdown picker (ruled 2026-07-18): wrap-default + never-
-  // silently-sum. Non-siding materials start EXCLUDED; the contractor
-  // explicitly opts each one in. Keyed by material name → bool.
+  // SEALED DEFAULT (Howard, 2026-07-28 — production restore): the facade
+  // default COMPOSES AT IMPORT — wall classes side; masonry classes
+  // (brick/block/stone + stucco/metal per sealed rules) exclude with the
+  // reason named. Informational, never a gate. Untouched picker sends NO
+  // scope (backend sealed default is the one emitter); a touched picker
+  // sends an explicit custom scope (LP door).
+  const FACADE_EXCLUDED_CLASSES = {
+    brick: "masonry", block: "masonry", stone: "masonry",
+    stucco: "stucco rule", metal: "non-sided cladding",
+  };
+  const facadeSidedByDefault = (k) => !(k in FACADE_EXCLUDED_CLASSES);
   const [facadeInclude, setFacadeInclude] = useState({});
 
-  const facadeBreakdown =
-    (est?.kind === "lp_smart" && result?.measurements?.facade_breakdown) || {};
+  const facadeBreakdown = result?.measurements?.facade_breakdown || {};
   const facadeMaterials = Object.entries(facadeBreakdown)
     .filter(([k, v]) => k.endsWith("_sqft") && Number(v) > 0)
     .map(([k, v]) => ({ key: k.replace(/_sqft$/, ""), sqft: Number(v) }));
   const hasFacadePicker =
     facadeMaterials.length > 0 && facadeMaterials.some((m) => m.key !== "siding");
+  const facadePickerInteractive = est?.kind === "lp_smart";
+  const facadeIncluded = (k) =>
+    k === "siding" || (facadeInclude[k] ?? facadeSidedByDefault(k));
   // Hover waste unification (ruled 2026-07-20): the ruled 10% default is
   // WRITTEN into the estimate's visible Waste % field on import — the
   // field governs; nothing applies silently inside formulas.
@@ -962,55 +972,70 @@ export default function HoverImportButton({ est, update, save }) {
                 lpSoffitType={est?.lp_soffit_type || "mix"}
               />
 
-              {/* Facade-breakdown picker (ruled 2026-07-18): explicit scope
-                  choice at import — wrap default, never silently summed. */}
+              {/* Facade scope — SEALED DEFAULT composes at import (Howard,
+                  2026-07-28): wall classes side, masonry excludes with the
+                  reason named. Informational, never a gate. */}
               {hasFacadePicker && (
                 <div className="p-5 border-b border-[#FCD34D] bg-[#FFFBEB]" data-testid="hover-facade-scope-picker">
                   <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--warning-text)] mb-1">
-                    Facade Scope — wrap default
+                    Facade Scope — composed at import
                   </div>
                   <p className="text-[11px] text-[#78350F] leading-snug mb-3">
-                    This report breaks the facades into materials. Only <strong>Siding</strong> composes
-                    by default — other materials are <strong>never silently summed</strong> into the LP
-                    derivation. Tick a material to explicitly include its area.
+                    Every measured ft² is attributed automatically: <strong>wall classes side</strong>;{" "}
+                    <strong>masonry classes (brick / block / stone / stucco / metal) exclude</strong>{" "}
+                    with the reason named. Informational — never a gate.{" "}
+                    {facadePickerInteractive
+                      ? "Tap to change before applying."
+                      : "Already composed into the draft lines below."}
                   </p>
                   <div className="space-y-1.5">
                     {facadeMaterials.map((m) => {
-                      const included = m.key === "siding" || !!facadeInclude[m.key];
+                      const included = facadeIncluded(m.key);
                       return (
                         <label
                           key={m.key}
-                          className={`flex items-center gap-2 text-xs ${m.key === "siding" ? "opacity-80" : "cursor-pointer"}`}
+                          className={`flex items-center gap-2 text-xs ${!facadePickerInteractive || m.key === "siding" ? "opacity-80" : "cursor-pointer"}`}
                           data-testid={`facade-scope-row-${m.key}`}
                         >
-                          <input
-                            type="checkbox"
-                            checked={included}
-                            disabled={m.key === "siding"}
-                            onChange={(e) =>
-                              setFacadeInclude((prev) => ({ ...prev, [m.key]: e.target.checked }))
-                            }
-                            data-testid={`facade-scope-check-${m.key}`}
-                          />
+                          {facadePickerInteractive && (
+                            <input
+                              type="checkbox"
+                              checked={included}
+                              disabled={m.key === "siding"}
+                              onChange={(e) =>
+                                setFacadeInclude((prev) => ({ ...prev, [m.key]: e.target.checked }))
+                              }
+                              data-testid={`facade-scope-check-${m.key}`}
+                            />
+                          )}
                           <span className="font-bold capitalize text-[var(--ink)]">{m.key}</span>
                           <span className="font-mono-num text-[var(--ink-2)]">{m.sqft.toLocaleString()} ft²</span>
                           <span className="text-[10px] text-[var(--muted)]">
-                            {m.key === "siding" ? "always composes (wrap default)" : included ? "explicitly included" : "excluded"}
+                            {m.key === "siding"
+                              ? "always sides"
+                              : included
+                                ? (facadeSidedByDefault(m.key) ? "sided (wall class)" : "explicitly included")
+                                : `excluded — ${FACADE_EXCLUDED_CLASSES[m.key] || "by choice"}`}
                           </span>
                         </label>
                       );
                     })}
                   </div>
                   <div className="text-[11px] font-mono-num text-[#78350F] mt-2" data-testid="facade-scope-summary">
-                    LP derivation scope:{" "}
+                    Sided:{" "}
                     <strong>
                       {facadeMaterials
-                        .filter((m) => m.key === "siding" || facadeInclude[m.key])
+                        .filter((m) => facadeIncluded(m.key))
                         .reduce((s, m) => s + m.sqft, 0)
                         .toLocaleString()}{" "}
                       ft²
                     </strong>{" "}
-                    of {facadeMaterials.reduce((s, m) => s + m.sqft, 0).toLocaleString()} ft² measured
+                    · excluded{" "}
+                    {facadeMaterials
+                      .filter((m) => !facadeIncluded(m.key))
+                      .reduce((s, m) => s + m.sqft, 0)
+                      .toLocaleString()}{" "}
+                    ft² of {facadeMaterials.reduce((s, m) => s + m.sqft, 0).toLocaleString()} ft² measured
                   </div>
                 </div>
               )}
