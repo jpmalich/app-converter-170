@@ -1,5 +1,44 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## PRODUCTION RESTORE (2026-07-28 PM, commit 2f8a0fd — AWAITING HOWARD'S OWN-EYES VERIFY)
+- **BREAK**: fresh VINYL Hover import produced NO siding line. Root cause: the
+  extractor (correctly following the pinned "Siding row only" rule) returned
+  top-level `siding_sqft: 0` with `facade_breakdown {brick 265, other 4239}`
+  (3 Degree Rd run 7862dd2c, 12:39 UTC), and Class A held the zero — the
+  composed default only ever ran inside the LP-only `_hover_mapping_contract`;
+  the worker's `_build_lines` (vinyl/ascend door) never composed anything.
+- **RULING (Howard, verbatim intent)**: FLAGGED MEANS WE MADE A CALL AND TOLD
+  THE USER — "no call made, no material produced" was a fourth state never
+  ruled; RETIRED. SEALED DEFAULT composes AT IMPORT with NO user action: WALL
+  classes side; MASONRY classes (brick/block/stone + stucco/metal per sealed
+  rules) auto-exclude with the reason named; an unattributable label SIDES
+  and flags loudly. Flag is INFORMATIONAL ("sided X · excluded Y as masonry ·
+  tap to change"), never a gate. NOT a git revert — one behavior change; all
+  other f071c62/78c50f4 work kept (tall-corner ceil, ceiling dedup, Class B
+  register, TEST_ doctrine, one-emitter detectors).
+- **ONE EMITTER**: `lp_conventions.compose_default_facade_scope` +
+  `facade_scope_flag_label`; consumed by `routes/hover.py::_compose_facade_default_into`
+  (worker, shared door — runs before `_build_lines`) and by
+  `_hover_mapping_contract` (LP door). Picker untouched → client sends NO
+  scope (backend default governs); touched → explicit `custom` scope.
+  Picker now shows for all kinds (interactive on LP; informational otherwise).
+- **VERIFIED on Howard's behalf (fresh estimates from the real morning run,
+  lists read end to end, TEST_ estimates deleted after)**: VINYL Charter Oak
+  Dutch Lap 42.4 SQ · ASCEND Composite Lap 42.4 SQ · LP B&B 38-Series panel
+  138 PCS · LP LAP 38-Series 513 PCS. Known truth: default yields 2,064 on
+  261 Haugh · 4,239 on 3 Degree Rd, nobody touching anything. Guard:
+  `2026-07-28 13:09 UTC · 2f8a0fd · CLEAN · 1518 passed, 1 skipped`.
+- **STOPPED HERE per Howard's order** — he verifies with his own eyes next.
+- **AFTER HE CLEARS (sealed, unbuilt)**: (1) acceptance tables gain 4 required
+  columns (FRESH RUN · EVERY FAMILY the changed code serves · GROUND TRUTH
+  where a real installed list exists · BOTH DOORS Hover+photo); (2) unresolved
+  intake state must never produce a priced printable output (EST-109465
+  printed $41,191.59 with NO siding); (3) MARK VERIFIED must not exist on an
+  area-conservation flag. Then the pre-break queue: Casile attribution closure
+  (34/5 + both-counts print) → 3 Degree ground-truth check → batten
+  wall-heights flag statement → MODEL LEDGER (carries ISSEstimateEditor→calc.js
+  unification rider) → Part-2 dormer drag → money-surfaces map.
+
 ## WORKSTREAM STATUS (2026-07, post-handoff)
 - Render/dormer-placement work TRANSFERRED to a human partner. Agent workstream = MATERIAL-LIST COMPLETENESS only.
 - **DELIVERED**: Material-List Completeness Matrix (report only, no code changes) → `/app/memory/material_completeness_matrix_2026-07.md`. Rows seeded from the full Price Catalog (SECTION_LAYOUT) + kickoff standard-job checklist; cells = DERIVED (formula + ruling) / FLAGGED-PENDING / MISSING across Photo · Hover · Blueprint; family-dimension rows (starter vs J-at-base, battens, family waste); Hover-disease trio (Soffit, J-channel, Porch Ceilings) as named rows; dormer fascia/OSC non-priced lines + the five contractor-labor rows with pending states; "LOUD LIST" of never-derived rows + 8 ruling questions.
