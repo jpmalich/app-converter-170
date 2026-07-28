@@ -1816,6 +1816,8 @@ PROMPT_TEMPLATE = """Extract from this HOVER report:
   "patio_door_count": <number of sliding/patio doors — typically `SGD-N` IDs (Sliding Glass Door), or `FD-N` (French Door)>,
   "garage_door_count": <number of garage/overhead doors — `OHD-N` prefix, or any door with width >= 96in (8ft, the smallest standard garage door). Most garage doors are 96-216in wide.>,
   "stories": <"1" | ">1" | "2" etc as printed>,
+  "footprint_perimeter_ft": <FOOTPRINT section — Footprint Perimeter, feet (decimal). If not present, null.>,
+  "footprint_area_sqft": <FOOTPRINT section — Footprint Area, ft² (decimal). If not present, null.>,
   "address": <property address if shown, else null>,
   "level_frieze_lf": <Level Frieze Board Length under Roofline section, feet (decimal). If not present, null.>,
   "sloped_frieze_lf": <Sloped Frieze Board Length under Roofline section, feet (decimal). If not present, null.>,

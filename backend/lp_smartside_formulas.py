@@ -306,8 +306,52 @@ def board_batten_batten_pieces(
     spacing_in: int = DEFAULT_BATTEN_SPACING_IN,
     wall_height_ft: float = 0.0,
 ) -> int:
-    """Aggregate helper (hover ingest path): ruled LF → 16' pieces."""
+    """Aggregate helper (hover ingest path): ruled LF → 16' pieces.
+    METHOD UNDER DIAGNOSIS (Howard, 2026-07-28): "the number looks right
+    but the method is a guess" — the aggregate silently splices offcuts
+    end-to-end, loses the +1 per segment, and cannot honor LP's
+    floor-line rule. Stays the LIVE emitter only until queue item d rules
+    the inputs; the sealed replacement is bb_batten_pieces_hard below."""
     return bb_batten_pieces(bb_batten_lf(wall_area_sqft, spacing_in, wall_height_ft))
+
+
+# ── HARD BATTEN FORMULA (Howard SEALED 2026-07-28 — not yet the live
+# emitter: spacing becomes a job input 12/16/24 and stick length / story
+# heights ride queue item d's diagnosis before this wires in).
+# THREE NON-NEGOTIABLES:
+#   a) +1 PER SEGMENT — a wall has one more batten than it has spaces;
+#      every aggregate method loses this (twenty facades = twenty pieces)
+#   b) PER STORY, NOT PER WALL HEIGHT — battens break at floor lines and
+#      horizontal panel joints and get flashed (LP install rule, sealed);
+#      a two-story wall was never one batten (why the trade buys 10'/12')
+#   c) NO SPLICING — a piece serves one run on one story; scrap is scrap
+# Then the contractor waste field, then whole-unit ceil at the order
+# layer (both already sealed).
+def bb_batten_pieces_hard(segments, spacing_in, stick_length_ft,
+                          batten_width_in=3.0) -> int:
+    """segments: iterable of (segment_width_ft, [story_height_ft, ...]).
+    battens = round((width_in − batten width) ÷ spacing) + 1 per segment;
+    pieces/batten = ceil(story height ÷ purchased stick length) per story;
+    total = Σ battens × pieces — BEFORE the waste field."""
+    spacing_in = int(spacing_in)
+    if spacing_in not in VALID_BATTEN_SPACINGS_IN or 48 % spacing_in != 0:
+        raise ValueError(
+            f"batten spacing {spacing_in}\" o.c. invalid — must divide 48 "
+            f"(valid: {VALID_BATTEN_SPACINGS_IN})")
+    if float(stick_length_ft) <= 0:
+        raise ValueError("stick length must be positive")
+    total = 0
+    for width_ft, story_heights in segments:
+        w_in = float(width_ft) * 12.0
+        if w_in <= 0:
+            continue
+        battens = int(round((w_in - float(batten_width_in)) / spacing_in)) + 1
+        for h in story_heights:
+            h = float(h)
+            if h <= 0:
+                continue
+            total += battens * int(math.ceil(h / float(stick_length_ft) - 1e-9))
+    return total
 
 
 def shake_540_series_bump(shake_sqft: float) -> int:

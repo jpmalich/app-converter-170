@@ -31,6 +31,15 @@ HOVER_FIELD_REGISTER = {
     "patio_door_count": {"status": CONSUMED, "consumed_by": ["Cap patio door rows"]},
     "garage_door_count": {"status": CONSUMED, "consumed_by": ["Cap garage door rows"]},
     "stories": {"status": CONSUMED, "consumed_by": ["labor/story context on tab lines"]},
+    "footprint_perimeter_ft": {"status": CONSUMED, "consumed_by": [
+        "HOVER-SCHEDULE stacked-wall-height term = sided facade area / footprint perimeter "
+        "(batten_wall_heights flag comparison, sealed 2026-07-28 — measured, not guessed; "
+        "Haugh 2064/181 = 11.4 ft wrap-only). Provenance ladder: blueprint/Hover schedule -> "
+        "derived area/perimeter (HOVER-SCHEDULE) -> AI vision floor count (SUGGESTS only, "
+        "Class C) -> estimated default, flagged"]},
+    "footprint_area_sqft": {"status": NOT_CONSUMED, "reason":
+        "published on the FOOTPRINT page; perimeter is the batten run term — area held for "
+        "plan-view sanity checks, ruled with queue item d (2026-07-28)"},
     "address": {"status": CONSUMED, "consumed_by": ["job info surface (not a derivation input)"]},
     "level_frieze_lf": {"status": CONSUMED, "consumed_by": ["Q10 frieze consumption — per-segment ÷16 (Q16)"]},
     "sloped_frieze_lf": {"status": CONSUMED, "consumed_by": ["Q10 frieze consumption — sloped segments"]},
@@ -44,4 +53,39 @@ HOVER_FIELD_REGISTER = {
     "facade_breakdown": {"status": CONSUMED, "consumed_by": ["Class A/C intake scope (wrap-only default, label-suggested wrap, conservation ledger)"]},
     "opening_facade_assignments": {"status": CONSUMED, "consumed_by": ["Class C opening↔facade attribution (R6 sealed 2026-07-28: read from assignment, never inferred; absent → flag)"]},
     "windows": {"status": CONSUMED, "consumed_by": ["per-opening Vero/Mezzo pricing lists (preferred over lumped perimeter)"]},
+}
+
+# ── PUBLISHED-FIELD REGISTER (Howard, 2026-07-28 — "five confirmed
+# dropped fields is not a queue item any more"): every figure the Hover
+# REPORT PUBLISHES maps to a schema key. This is the detector that would
+# have caught soffit area, frieze LF, outside-corner length, opening
+# perimeter, and the FOOTPRINT page in one pass instead of one-at-a-time
+# across a day. A published figure with no schema key FAILS. ─────────────
+HOVER_PUBLISHED_FIELDS = {
+    "Siding table (area / openings / net)": "siding_sqft",
+    "Siding waste table (+openings adder)": "siding_with_openings_sqft",
+    "Facade material breakdown rows": "facade_breakdown",
+    "Soffit area (dropped-field #1, caught 2026-07)": "soffit_sqft",
+    "Level frieze board length (dropped-field #2)": "level_frieze_lf",
+    "Sloped frieze board length (dropped-field #2)": "sloped_frieze_lf",
+    "Outside corner count": "outside_corner_count",
+    "Outside corner length (dropped-field #3)": "outside_corner_lf",
+    "Inside corner count": "inside_corner_count",
+    "Inside corner length": "inside_corner_lf",
+    "Opening perimeter (dropped-field #4)": "opening_perimeter_lf",
+    "Opening count": "opening_count",
+    "Window schedule (per-opening dims)": "windows",
+    "Opening→facade assignments": "opening_facade_assignments",
+    "Eaves fascia length": "eaves_lf",
+    "Rakes fascia length": "rakes_lf",
+    "Starter length": "starter_lf",
+    "FOOTPRINT — Number of Stories (carried since intake)": "stories",
+    "FOOTPRINT — Footprint Perimeter (dropped-field #5, caught 2026-07-28)": "footprint_perimeter_ft",
+    "FOOTPRINT — Footprint Area (dropped-field #6, caught 2026-07-28)": "footprint_area_sqft",
+    "Roof area (waived: out of scope)": "roof_area_sqft",
+    "United inches (waived: per-opening pricing)": "united_inches",
+    "Drip edge / perimeter length": "drip_edge_lf",
+    "Trim total area": "total_trim_sqft",
+    "Vents / shutters accessory counts": "vent_count",
+    "Property address": "address",
 }

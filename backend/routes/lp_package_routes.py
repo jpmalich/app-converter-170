@@ -1085,10 +1085,30 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
             "verify": "Confirm the excluded facade materials stay out of the siding scope — re-import with them included if the job wraps them",
         })
     if profile in ("board_batten", "vertical"):
+        # HOVER-SCHEDULE height term (Howard, sealed 2026-07-28): Hover
+        # PUBLISHES the footprint perimeter — stacked wall height = sided
+        # facade area ÷ footprint perimeter (measured, not guessed).
+        # QUOTE GATE: never — the quote is sellable with the field empty.
+        # ORDER GATE (B&B): taped heights entered at the house before
+        # material leaves; TAPED SUPERSEDES DERIVED, derived preserved as
+        # flagged comparison, reversible both ways (14-vs-20 machinery).
+        _perim = float(hover_meas.get("footprint_perimeter_ft") or 0)
+        _sided = float(m.get("siding_sqft") or 0)
+        if _perim > 0 and _sided > 0:
+            _stacked = round(_sided / _perim, 1)
+            _bwh_label = (
+                f"batten height term rides HOVER-SCHEDULE: stacked wall height "
+                f"{_stacked:g} ft = sided {_sided:g} ft² ÷ footprint perimeter {_perim:g} ft — "
+                "sellable as derived; taped heights supersede at ORDER stage (reversible)")
+        else:
+            _bwh_label = (
+                "batten +height term = 0 (report published no footprint perimeter — "
+                "pre-2026-07-28 import; re-import to carry it) — sellable as derived; "
+                "tape at ORDER stage")
         flags.append({
             "code": "batten_wall_heights",
-            "label": "batten +height term = 0 (Hover carries no per-wall heights) — PENDING field verify",
-            "verify": "Tape each wall height — closing re-derives batten LF live (+1 run × height per wall)",
+            "label": _bwh_label,
+            "verify": "ORDER GATE on any B&B job: tape wall heights at the house before material order — taped supersedes derived, battens re-derive live",
         })
     flags.append({
         "code": "opening_schedule",

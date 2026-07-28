@@ -269,6 +269,25 @@ def test_class_b_every_schema_field_registered():
         f"NEW/unregistered Hover fields (fail until Howard rules them): {sorted(missing)}")
 
 
+def test_class_b_published_field_register():
+    """MOVED UP (Howard, 2026-07-28): 'five confirmed dropped fields is
+    not a queue item any more.' Every figure the Hover REPORT publishes
+    maps to a schema key AND a consumption ruling — the detector that
+    catches the next dropped field at once instead of one-at-a-time."""
+    from hover_field_register import HOVER_PUBLISHED_FIELDS
+    schema = _schema_fields()
+    no_schema = {label: key for label, key in HOVER_PUBLISHED_FIELDS.items()
+                 if key not in schema}
+    assert not no_schema, (
+        f"PUBLISHED figures with no extraction key (the dropped-field class): {no_schema}")
+    unruled = sorted(k for k in HOVER_PUBLISHED_FIELDS.values()
+                     if k not in HOVER_FIELD_REGISTER)
+    assert not unruled, f"published fields without a consumption ruling: {unruled}"
+    # the two caught 2026-07-28 stay pinned by name
+    assert "footprint_perimeter_ft" in HOVER_FIELD_REGISTER
+    assert "footprint_area_sqft" in HOVER_FIELD_REGISTER
+
+
 def test_class_b_registered_fields_exist_in_schema_or_payload():
     stale = set(HOVER_FIELD_REGISTER) - _schema_fields()
     assert not stale, f"register entries with no schema field (dropped field?): {sorted(stale)}"
