@@ -1,5 +1,46 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## ESTIMATE PAGE · BATTEN SEAL · CLASS B UP (2026-07-28 night, fa1dd25)
+- Color tier vinyl-only (kind==="siding"); term kept.
+- B&B wall heights: ORDER-stage copy (quote sells from derived; taped
+  supersedes, reversible; battens re-derive). Final-job SURFACE does not
+  exist yet — rides the two-gate wiring after Howard rules the gate split.
+- batten_wall_heights flag now prints HOVER-SCHEDULE stacked height =
+  sided ÷ footprint perimeter (pre-2026-07-28 imports lack perimeter —
+  label says re-import).
+- Extraction schema + Class B register: footprint_perimeter_ft (CONSUMED,
+  HOVER-SCHEDULE term) + footprint_area_sqft (NOT_CONSUMED, ruled reason)
+  = dropped fields #5/#6. `stories` was already carried (fee only).
+  PUBLISHED-FIELD register + detector added: a Hover-published figure
+  with no schema key FAILS.
+- HARD BATTEN FORMULA sealed (`bb_batten_pieces_hard`) + pins on the
+  three non-negotiables (+1/segment · per-story break · no splicing) and
+  the 3 Degree reproduction (480 pcs @12" o.c./10' sticks vs 465
+  installed vs aggregate 398). NOT the live emitter — awaits queue item d
+  ruling (spacing 12/16/24 job input, stick length). Q9 8" untouched.
+- SKU check: 190 Series 19/32"×3"×16' MEETS PREFERRED spec (≥2½" wide).
+- 30% B&B waste stands; research's 10–15% NOT sealed.
+- GATES (report for Howard's ruling): standing flags = facade_scope,
+  area_conservation, opening_facade_attribution, opening_schedule,
+  batten_wall_heights, corner_locators, ceiling_dedup,
+  porch_ceiling_implied, siding_family_conflict, labor_pending_contractor.
+  NO hard print gate exists today (how EST-109465 printed). Proposed:
+  QUOTE GATE = facade_scope unresolved-zero / area_conservation breach /
+  siding_family_conflict / no-siding-on-siding-job; ORDER GATE =
+  batten_wall_heights (B&B) / corner_locators taped / opening_schedule /
+  labor_pending_contractor. Howard rules the split before wiring.
+- 3 DEGREE DIAGNOSIS (item d, report): app buys 398×16' = 6,368 LF
+  (8" o.c., splicing, +height 0). Installed 465 pcs = 4,650 LF @10' /
+  5,580 @12' / 7,440 @16'. Hard formula @12" o.c., 9' story, 10' sticks,
+  ~10 segments → 480 pcs (Howard's ~490 CONFIRMED; aggregate killed).
+  LF math points to 12" o.c. + ~10' sticks. OPEN for Howard: installed
+  stick length · battened area (4,239 vs 4,504, gables) · does 465
+  include offcuts. Then spacing becomes a 12/16/24 job input.
+- Guard: `2026-07-28 20:36 UTC · fa1dd25 · CLEAN · 1549 passed, 1 skipped`.
+- REVISED QUEUE (Howard): Class B register ✓ (moved up, done) → two
+  guards (a) → Casile 34/5 → 3 Degree diagnosis closure (his answers) →
+  batten wall-heights statement → MODEL LEDGER.
+
 ## STANDING HANDBACK RULE (Howard, 2026-07-28): LEAD WITH COUNTS
 Quantities per line, per family, derivation named. Dollars only where
 they disagree with the count behind them. Dollars are derived; the
