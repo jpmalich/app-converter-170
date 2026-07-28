@@ -48,7 +48,7 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         <Stat label={t("est.sum.material")} val={fmt(totals.subMat)} />
-        <Stat label={t("est.sum.waste", { pct: est.waste_pct || 0 })} val={fmt(totals.wasteAdd || 0)} />
+        <Stat label={t("est.sum.waste", { pct: totals.subMat > 0 ? Math.round((totals.wasteAdd / totals.subMat) * 100) : 0 })} val={fmt(totals.wasteAdd || 0)} />
         <Stat label={t("est.sum.tax", { pct: est.tax_enabled ? est.tax_rate : 0 })} val={fmt(totals.tax)} />
         <Stat label={t("est.sum.labor")} val={fmt(totals.subLab)} />
         <Stat label={t("est.sum.baseCost")} val={fmt(totals.base)} bold />

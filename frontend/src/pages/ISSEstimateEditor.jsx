@@ -1029,7 +1029,7 @@ export default function ISSEstimateEditor() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
             <Stat label="Subtotal" val={fmt(totals.subTotal)} testid="iss-subtotal" />
             <Stat
-              label={`Cut waste inside Material (${est.waste_pct || 0}%)`}
+              label={`Cut waste inside Material (${totals.subMat > 0 ? Math.round((totals.wasteAdd / totals.subMat) * 100) : 0}% of Material)`}
               val={fmt(totals.wasteAdd)}
               testid="iss-waste-add"
             />
