@@ -1,26 +1,22 @@
 // Cut-waste logic — baked into line qty on import.
 //
-// Iter 78 (Howard's "1C · 2C · 3A"):
-//   • Waste % is applied directly to the qty of cut-prone items on HOVER /
-//     Blueprint import. The estimate then SHOWS the wasted total (e.g.
-//     Siding line displays 24 SQ instead of 18) so the contractor sees
-//     "what they need to order" in the editor, not just on the Material
-//     List PDF.
-//   • The separate $ Waste Factor card no longer adds dollars on top —
-//     waste is in the qty, so the dollar bump would double-count. The
-//     Waste % field remains as the master knob.
+// AREA GOODS ONLY (Howard sealed 2026-07-29): the contractor's waste %
+// multiplies AREA-counted goods — siding panels, lap, soffit panels,
+// house wrap, fan fold. LENGTH-CUT goods (whole-stick-per-run /
+// -per-corner / -per-segment counts: outside/inside corners, starter,
+// finish trim, J-channel, soffit-J, LP trim sticks, battens) are
+// waste-included BY CONSTRUCTION — the whole-stick count already
+// contains the scrap; a percentage on top buys sticks nobody cuts.
+// Those rows carry `_waste_included: true` from the backend spec and
+// this classifier no longer matches them, both doors, every family.
+//
+// Iter 78 (Howard's "1C · 2C · 3A") mechanics still hold for area goods:
+//   • Waste % is applied directly to the qty on HOVER / Blueprint import
+//     so the estimate SHOWS the wasted total the contractor orders.
 //   • When the contractor changes Waste % later, every line with a
 //     stored `raw_qty` recomputes: qty = raw_qty × (1 + waste/100),
-//     rounded to the nearest 0.5 unit. Lines without `raw_qty` were
-//     entered manually and are left alone.
-//
-// Cut-prone items per Howard's 1C choice:
-//   - Siding panels (Vinyl Siding section, Ascend Composite Lap/B&B)
-//   - Soffit panels (Charter Oak Soffit)
-//   - J-Channel (all variants: vinyl, ascend, soffit-J)
-//   - Finish Trim (vinyl + ascend)
-//   - Outside corners + Inside corners
-//   - Starter strip
+//     whole units. Length-cut rows with legacy baked waste snap back to
+//     the whole-stick count (raw_qty) instead.
 
 const ASCEND_SIDING_NAMES = new Set([
   'Ascend Composite Lap Siding 7"',
@@ -43,51 +39,19 @@ export function isCutProneItem(line) {
     return true;
   }
 
-  // LP SmartSide cut-prone sections (Iter 78a bug fix) — all panel,
-  // trim, and soffit boards ship as 16'-long PCS that incur cut waste.
-  // Without this branch the contractor's waste % was being silently
-  // ignored on LP estimates, producing under-counted order qtys (Howard
-  // reported 194 PCS for 18 SQ where 232+ was expected at 20%).
+  // LP panel + soffit sections are AREA goods (lap boards by coverage,
+  // soffit by sqft). LP SmartSide Trim + OSC accessories are LENGTH-CUT
+  // — dropped 2026-07-29 (rows carry _waste_included from the spec).
   if (section === "lp smart siding") return true;
-  if (section === "lp smartside trim") return true;
   if (section === "lp smartside soffit") return true;
-  // LP Outside Corner lives in "LP Siding Accessories" alongside
-  // small-count items (coil, touch-up kits, J blocks, mini splits).
-  // Only the OSC + Series-540 trim variants need waste.
-  if (
-    section === "lp siding accessories" &&
-    (name.includes("osc") || name.includes("outside corner"))
-  ) {
-    return true;
-  }
 
-  // Soffit panels (Charter Oak)
+  // Soffit panels (Charter Oak) — area-counted (sqft ÷ 10/pc)
   if (
     section === "vinyl soffit with siding" &&
     name.includes("charter oak soffit")
   ) {
     return true;
   }
-
-  // J-Channel (regular accessory J + Ascend J + Soffit J)
-  if (
-    name.includes("j-channel") ||
-    name.includes("j - channel") ||
-    name.includes("j channel")
-  ) {
-    return true;
-  }
-
-  // Finish Trim (both vinyl + ascend variants)
-  if (name.includes("finish trim")) return true;
-
-  // Outside / Inside corners — handle "Outside corners" + "Inside Corners"
-  // + Ascend variants like "Outside Corner Post".
-  if (name.includes("outside corner")) return true;
-  if (name.includes("inside corner")) return true;
-
-  // Starter strip
-  if (name === "starter" || name.startsWith("starter ")) return true;
 
   // Iter 78l — House Wrap. Wrap rolls are full-coverage so contractors
   // cut waste at every opening, seam, and corner. Howard's request: the
@@ -158,6 +122,9 @@ export function recomputeWasteQtys(lines, wastePct) {
   return (lines || []).map((l) => {
     const raw = Number(l?.raw_qty);
     if (!raw || !isFinite(raw) || raw <= 0) return l;
+    // LENGTH-CUT rows carrying legacy baked waste snap BACK to the
+    // whole-stick count (sealed 2026-07-29): the count IS the allowance.
+    if (!isCutProneItem(l)) return { ...l, qty: roundUpWhole(raw) };
     return { ...l, qty: applyWasteQty(raw, pct) };
   });
 }

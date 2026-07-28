@@ -471,9 +471,12 @@ def _region_context_lines(m: dict) -> list[dict]:
     out: list[dict] = []
 
     def line(name, base_item, qty, note):
+        # LENGTH-CUT context rows (ruled 2026-07-29): ÷12.5 whole-stick
+        # counts are the entire allowance — never take the waste field.
         out.append({"tab": "vinyl", "section": "Siding Accessories",
                     "name": name, "base_item": base_item,
-                    "unit": "PCS", "qty": qty, "note": note})
+                    "unit": "PCS", "qty": qty, "note": note,
+                    "_waste_included": True})
 
     clap_fams = sorted(f for f in per if f not in _NO_STARTER_FAMILIES)
     clap_label = "/".join(clap_fams) if clap_fams else "lap"
@@ -753,6 +756,14 @@ HOVER_MAPPING_SPEC = [
         "section": "LP Smart Siding",
         "item": '38 Series Lap 3/8" x 8" x 16\'',
         "unit": "PCS",
+        # AREA GOOD, SINGLE APPLICATION (Howard ruled 2026-07-29 — the
+        # pre-pick default-lap DOUBLE-BAKE fix): when the rebuild carries
+        # a positive _waste_pct the book bakes it INSIDE, so the flag opts
+        # this row OUT of the tab bake; import drafts (_waste_pct 0) leave
+        # the field to the ONE bake. Callable — evaluated per build.
+        "waste_included": lambda m: (
+            float(m["_waste_pct"]) if m.get("_waste_pct") is not None else 0.0
+        ) > 0,
         "extract": lambda m: (
             # SEALED (Howard, ruled 2026-07-19): book counter convention —
             # 11 pcs/square. PDF 9.17 divisor RETIRED for 38 Series lap
@@ -988,6 +999,9 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Outside corners Standard color",
         "unit": "PCS",
+        # LENGTH-CUT (Howard ruled 2026-07-29): whole-stick count IS the
+        # allowance — the waste field multiplies AREA GOODS only.
+        "waste_included": True,
         "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5)),
         "note": "Vinyl 12.5' outside-corner pieces (HOVER LF ÷ 12.5, round up)",
     },
@@ -996,6 +1010,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Ascend Cladding/Accessories",
         "item": "Ascend 5.5\" Outside Corner  - MATTE",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5)),
         "note": "Ascend 12.5' outside-corner pieces / corner LF",
     },
@@ -1038,6 +1053,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Inside Corners (Siding) Standard color",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5)),
         "note": "12.5' pieces per HOVER inside-corner LF, round up — defaults to Standard color",
     },
@@ -1046,6 +1062,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Ascend Cladding/Accessories",
         "item": "Inside Corners",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5)),
         "note": "Ascend inside-corner 12.5' pieces / corner LF, round up",
     },
@@ -1061,6 +1078,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Starter",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: 0 if _region_split_active(m) else max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
         "note": "Vinyl Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
@@ -1069,6 +1087,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Ascend Cladding/Accessories",
         "item": "Ascend - Starter",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
         "note": "Ascend Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
@@ -1084,6 +1103,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Finish Trim Standard color",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: 0 if _region_split_active(m) else _finish_trim_pcs(m),
         "note": lambda m: _finish_trim_note(m),
     },
@@ -1092,6 +1112,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Ascend Cladding/Accessories",
         "item": "ASCEND Finish Trim",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: _finish_trim_pcs(m),
         "note": lambda m: _finish_trim_note(m),
     },
@@ -1108,6 +1129,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "3/4\" J-Channel Standard color (2 per Sq of siding)",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: 0 if _region_split_active(m) else _j_channel_pcs(m),
         "note": lambda m: _j_channel_breakdown(m),
     },
@@ -1116,6 +1138,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Ascend Cladding/Accessories",
         "item": "Ascend - J - Channel  (2 per Sq of siding)",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: _j_channel_pcs(m),
         "note": lambda m: _j_channel_breakdown(m),
     },
@@ -1229,6 +1252,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Vinyl Soffit with Siding",
         "item": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
         "unit": "PCS",
+        "waste_included": True,
         "extract": lambda m: max(
             0,
             math.ceil(((m.get("eaves_lf") or 0) + 2 * (m.get("rakes_lf") or 0)) / 12.5),
@@ -2293,8 +2317,12 @@ def _build_lines(measurements: dict) -> list[dict]:
                 # Sealed-convention stick rows (whole-stick rounding IS the
                 # entire allowance) and formulas with ×1.10 inside opt out
                 # of the tab waste bake (ruled 2026-07-24 — the old
-                # ÷16 × %waste tab formulas retired).
-                "_waste_included": bool(spec.get("waste_included")),
+                # ÷16 × %waste tab formulas retired). Callable flags
+                # evaluate per build (default-lap single-application,
+                # ruled 2026-07-29).
+                "_waste_included": (bool(spec["waste_included"](measurements))
+                                    if callable(spec.get("waste_included"))
+                                    else bool(spec.get("waste_included"))),
                 "note": note_val,
                 **({"qty_pending": True} if spec.get("always_emit") and qty <= 0 else {}),
             })
@@ -2567,9 +2595,13 @@ _CUT_PRONE_ASCEND = {'Ascend Composite Lap Siding 7"',
 
 
 def _cut_prone_line(line: dict) -> bool:
-    """Python mirror of frontend lib/wasteLogic.js isCutProneItem — the
-    materialize path re-derives tab lines server-side and must bake the
-    same contractor waste the import apply bakes. Keep in lockstep."""
+    """Python mirror of frontend lib/wasteLogic.js isCutProneItem — AREA
+    GOODS ONLY (Howard sealed 2026-07-29): the waste field multiplies
+    area-counted goods (panels, lap, soffit, wrap). LENGTH-CUT goods
+    (whole-stick-per-run / -per-corner / -per-segment: corners, starter,
+    finish trim, J-channel, LP trim sticks) are waste-included BY
+    CONSTRUCTION — the whole-stick count already contains the scrap; a
+    percentage on top buys sticks nobody cuts. Keep in lockstep."""
     section = str(line.get("section") or "").lower()
     name = str(line.get("name") or "").lower()
     if section == "vinyl siding":
@@ -2577,17 +2609,9 @@ def _cut_prone_line(line: dict) -> bool:
     if (line.get("section") in ("Ascend Cladding", "Ascend Cladding/Accessories")
             and line.get("name") in _CUT_PRONE_ASCEND):
         return True
-    if section in ("lp smart siding", "lp smartside trim", "lp smartside soffit"):
-        return True
-    if section == "lp siding accessories" and ("osc" in name or "outside corner" in name):
+    if section in ("lp smart siding", "lp smartside soffit"):
         return True
     if section == "vinyl soffit with siding" and "charter oak soffit" in name:
-        return True
-    if "j-channel" in name or "j - channel" in name or "j channel" in name:
-        return True
-    if "finish trim" in name or "outside corner" in name or "inside corner" in name:
-        return True
-    if name == "starter" or name.startswith("starter "):
         return True
     if name in ("house wrap", "raindrop house wrap"):
         return True

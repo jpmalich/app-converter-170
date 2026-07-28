@@ -44,6 +44,10 @@ SEAMS = [
 LP_SHARED_ESTIMATE_FIELDS = [
     "default_siding_profile",
     "default_siding_profile_change",
+    # ORDER GATE stamp (ruled 2026-07-29): material-release is a shared
+    # estimate concept (every family orders) — written by the gate
+    # endpoint that lives in the LP router today; carve at fork time.
+    "order_released",
 ]
 
 # One-time scripts (not runtime dependencies, exempt from seam rules).

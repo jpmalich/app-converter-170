@@ -30,6 +30,7 @@ import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, S
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
 import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
+import FinalJobSurface from "@/components/estimate/FinalJobSurface";
 
 export default function EstimateEditor() {
   const { id } = useParams();
@@ -488,6 +489,8 @@ export default function EstimateEditor() {
             ))}
           </>
         )}
+
+        <FinalJobSurface estId={est.id} />
 
         <TotalsSummary
           est={est}

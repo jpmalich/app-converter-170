@@ -184,12 +184,19 @@ def test_recon_card_composes_through_the_emitter():
 def test_whole_units_at_order_layer_every_line():
     """Nobody orders half a stick: 540 trim raw 100 × 1.1 was IEEE754
     110.000…01 and round-up-half kept 110.5 on estimate f3e7d728. Whole
-    units, every family, every line, applied AFTER waste."""
+    units, every family, every line, applied AFTER waste. AREA GOODS ONLY
+    (sealed 2026-07-29): the float-noise pin rides an area good now —
+    length-cut trim rows take NO percentage at all."""
     from routes.hover import _bake_tab_waste
+    siding = {"tab": "vinyl", "section": "Vinyl Siding",
+              "name": "Charter Oak lap", "unit": "SQ", "qty": 100.0}
+    out = _bake_tab_waste([dict(siding)], 10)[0]
+    assert out["qty"] == 110.0                   # float noise stripped, NOT 110.5, NOT 111
+    # LENGTH-CUT trim stands even without the flag (classifier narrowed
+    # 2026-07-29 — whole-stick count IS the allowance)
     trim = {"tab": "lp_smart", "section": "LP SmartSide Trim",
             "name": '540 Series Trim 5/4" x 4" x 16\'', "unit": "PCS", "qty": 100.0}
-    out = _bake_tab_waste([dict(trim)], 10)[0]
-    assert out["qty"] == 110.0                   # float noise stripped, NOT 110.5, NOT 111
+    assert _bake_tab_waste([dict(trim)], 10)[0]["qty"] == 100.0
     # fractional qty on a non-cut-prone ordered row rounds up at the same layer
     coil = {"tab": "vinyl", "section": "Vinyl Accessories",
             "name": ".019 Coil", "unit": "ROLL", "qty": 5.28}

@@ -24,6 +24,10 @@ async def email_quote(est_id: str, body: EmailQuoteIn, user: dict = Depends(get_
     )
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
+    # QUOTE GATE (ruled 2026-07-29): the email door mints the Accept token
+    # — blocking here blocks the Accept page too.
+    from routes.lp_package_routes import assert_quote_gate
+    await assert_quote_gate(est_id, user)
     if not RESEND_API_KEY:
         raise HTTPException(
             status_code=503,
@@ -111,6 +115,9 @@ async def download_pdf(est_id: str, body: EmailQuoteIn, user: dict = Depends(get
     )
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
+    # QUOTE GATE (ruled 2026-07-29): the PDF is a customer surface.
+    from routes.lp_package_routes import assert_quote_gate
+    await assert_quote_gate(est_id, user)
     try:
         pdf_bytes = await asyncio.to_thread(render_pdf, body.html_quote)
     except Exception as e:

@@ -818,6 +818,115 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
             "open_count": len(items), "ready": not items}
 
 
+# ═══════════ QUOTE GATE vs ORDER GATE (Howard ruled 2026-07-29) ══════════
+# Two distinct failure points: QUOTE blocks the customer surfaces (email,
+# Accept page at token mint, PDF, freeze, QR); ORDER blocks material
+# release / PO / truck. Every flag lives in exactly one tier (gates.py
+# registry — an unassigned flag fails the suite). The ORDER side is the
+# FINAL-JOB SURFACE: taped fields (batten_wall_heights et al.) live there
+# and SUPERSEDE derived values.
+async def evaluate_gates(est_id: str, user: dict) -> dict:
+    from gates import ORDER_BLOCKING, quote_gate_blockers, tier_for
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "id": 1, "lines": 1, "kind": 1, "order_released": 1,
+         "customer_name": 1})
+    if not est:
+        raise HTTPException(status_code=404, detail="Estimate not found")
+    measurements = None
+    try:
+        _, run, _ = await _load_run(est_id, user["company_id"])
+        measurements, _, _ = _extract(run)
+    except HTTPException:
+        run = None
+    quote_items = quote_gate_blockers(est, measurements)
+    order_items: list[dict] = []
+    try:
+        pkg = await lp_package_preview(est_id, None, user)
+    except HTTPException:
+        pkg = None
+    if pkg:
+        for f in pkg.get("hover_mapping_flags") or []:
+            code = f.get("code")
+            try:
+                tier = tier_for(code, "open_flag")
+            except KeyError:
+                tier = "order"   # runtime never hard-fails; the SUITE does
+            item = {"code": code, "tier": tier,
+                    "blocking": tier == "order" and code in ORDER_BLOCKING
+                    and f.get("status") != "closed",
+                    "status": f.get("status") or "open",
+                    "label": f.get("label"), "verify": f.get("verify"),
+                    **({"closed_by": f.get("closed_by"),
+                        "closed_at": f.get("closed_at"),
+                        "values": f.get("values")}
+                       if f.get("status") == "closed" else {})}
+            (order_items if tier == "order" else quote_items).append(item)
+        for a in pkg.get("amber_items") or []:
+            if (a.get("status") or "unverified") == "unverified":
+                order_items.append({
+                    "code": a.get("key"), "tier": "order", "blocking": False,
+                    "status": "open",
+                    "label": (f"Field-verify open: {a.get('kind') or 'corner'} "
+                              f"@ {a.get('locator') or '?'}")})
+    quote_blocking = [i for i in quote_items if i.get("blocking", True)
+                      and i.get("status", "open") != "closed"]
+    order_blocking = [i for i in order_items if i.get("blocking")
+                      and i.get("status", "open") != "closed"]
+    return {
+        "estimate_id": est_id,
+        "quote": {"blocked": bool(quote_blocking), "blocking": quote_blocking,
+                  "items": quote_items},
+        "order": {"blocked": bool(order_blocking), "blocking": order_blocking,
+                  "items": order_items},
+        "order_released": est.get("order_released"),
+    }
+
+
+@router.get("/estimates/{est_id}/gates")
+async def estimate_gates(est_id: str, user: dict = Depends(get_current_user)):
+    return await evaluate_gates(est_id, user)
+
+
+async def assert_quote_gate(est_id: str, user: dict) -> None:
+    """HARD block for the customer surfaces (email, PDF, freeze/QR —
+    the Accept page blocks at token mint via the email door)."""
+    gates = await evaluate_gates(est_id, user)
+    if gates["quote"]["blocked"]:
+        raise HTTPException(status_code=409, detail={
+            "gate": "quote",
+            "message": ("QUOTE GATE — this estimate cannot reach a customer "
+                        "surface until the blocking items clear (ruled 2026-07-29)"),
+            "blocking": [{"code": i.get("code"), "label": i.get("label")}
+                         for i in gates["quote"]["blocking"]],
+        })
+
+
+@router.post("/estimates/{est_id}/order-release")
+async def order_release(est_id: str, payload: dict | None = None,
+                        user: dict = Depends(get_current_user)):
+    """MATERIAL RELEASE — the ORDER gate's enforcement point (PO/truck
+    surfaces hang off this stamp). Refused while any order-tier blocking
+    flag is open; the stamp records the gate snapshot it cleared on."""
+    gates = await evaluate_gates(est_id, user)
+    if gates["order"]["blocked"]:
+        raise HTTPException(status_code=409, detail={
+            "gate": "order",
+            "message": ("ORDER GATE — material does not leave until the "
+                        "taped fields close (ruled 2026-07-29)"),
+            "blocking": [{"code": i.get("code"), "label": i.get("label")}
+                         for i in gates["order"]["blocking"]],
+        })
+    now = datetime.now(timezone.utc).isoformat()
+    stamp = {"by": user.get("email"), "at": now,
+             "order_items_cleared": [i.get("code") for i in gates["order"]["items"]]}
+    await db.estimates.update_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"$set": {"order_released": stamp}})
+    await log_estimate_event(est_id, "order.released", stamp)
+    return {"ok": True, "order_released": stamp}
+
+
 async def _load_tier_sheet_for(est: dict) -> dict:
     """Master-price-sheet index for sheet-binding (ruled 2026-07-23):
     the sheet the contractor ACTUALLY SEES — company tier baseline merged
@@ -1161,7 +1270,10 @@ async def set_default_profile(
 # live (+1 run × wall height per wall).
 _FLAG_CODES = ("corner_locators", "batten_wall_heights", "opening_schedule",
                "facade_scope", "area_conservation",
-               "opening_facade_attribution", "ceiling_dedup")
+               "opening_facade_attribution", "ceiling_dedup",
+               # ORDER-tier close (ruling d 2026-07-29): porch ceilings
+               # confirmed on site (entered in Job Info, or none exist).
+               "porch_ceiling_implied")
 
 
 def _apply_flag_checklist(measurements: dict, est: dict, run: dict) -> dict:
@@ -1645,6 +1757,9 @@ async def lp_material_list_freeze(
     if str(est.get("customer_name") or "").startswith("TEST_"):
         raise HTTPException(status_code=409,
                             detail="TEST_ estimate — QR minting refused (test-estimate doctrine sealed 2026-07-28)")
+    # QUOTE GATE (ruled 2026-07-29): the frozen QR list is a customer
+    # surface — blocked while any quote-tier blocker stands.
+    await assert_quote_gate(est_id, user)
     measurements, corner_locations, wall_heights = _extract(run)
     # openings + corner reviews apply on EVERY derivation surface
     # (coherence) — the frozen snapshot must match what the panel showed.

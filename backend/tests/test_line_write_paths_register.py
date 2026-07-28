@@ -145,9 +145,11 @@ def test_no_local_family_waste_table_in_frontend():
 # raw × waste comes back as the integer, not integer+1. ──────────────────
 def test_integer_landing_never_buys_an_extra_piece():
     from routes.hover import _bake_tab_waste
+    # AREA-GOOD probe row (sealed 2026-07-29: length-cut rows take no
+    # percentage at all — the epsilon pins ride the vinyl siding shape).
     # 40 × 1.3 = 52.000000000000007 in IEEE754 — the LP B&B panel shape.
-    row = {"tab": "lp_smart", "section": "LP SmartSide Trim",
-           "name": '440 Series Trim 4/4" x 8" x 16\'', "unit": "PCS", "qty": 40.0}
+    row = {"tab": "vinyl", "section": "Vinyl Siding",
+           "name": "Charter Oak lap", "unit": "SQ", "qty": 40.0}
     assert _bake_tab_waste([dict(row)], 30)[0]["qty"] == 52.0   # not 53
     # 100 × 1.1 = 110.000…01 — the 540-trim shape (also pinned in
     # test_one_waste_emitter as the 110.5 regression).
