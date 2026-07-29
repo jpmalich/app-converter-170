@@ -29,6 +29,11 @@ GATE_TIERS: dict[str, str] = {
     "siding_family_conflict": "quote",       # BLOCKING
     "no_siding_on_siding_job": "quote",      # BLOCKING
     "labor_pending_contractor": "quote",     # BLOCKING (ruling d)
+    "vision_zero_pages": "quote",            # informational, LOUD, never blocks —
+                                             # silent-zero-verification class
+                                             # (Howard 2026-07-29): a verification
+                                             # step that finds nothing must not
+                                             # render as a pass
     # ── ORDER tier ──
     "batten_wall_heights": "order",          # BLOCKING (taped at the house)
     "corner_locators": "order",              # BLOCKING (taped/walked)
