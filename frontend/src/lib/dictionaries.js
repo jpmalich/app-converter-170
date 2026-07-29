@@ -236,7 +236,7 @@ export const dict = {
     "est.sync.toast": "Synced {n} item(s) to current catalog prices",
     "est.wasteFactor": "Waste Factor",
     "est.wasteSuffix": "% extra material",
-    "est.wasteHint": "Applies to Vinyl Siding + Ascend Composite Lap/B&B + LP SmartSide Lap (38 Series — sealed 2026-07-19: no waste baked into the formula; this field is the only waste applied). Default derives from the siding family — Lap 10% · Board & Batten 30% (contractor-spec, sealed 2026-07-24); still one visible, editable number.",
+    "est.wasteHint": "Applies to Vinyl Siding + Ascend Composite Lap/B&B + LP SmartSide Lap (38 Series) — no waste is baked into the formula; this field is the only waste applied. Default follows the siding family — Lap 10% · Board & Batten 30% — one visible, editable number.",
     "est.overhang": "Eave Overhang",
     "est.overhangHint": "Drives the soffit piece count (default 12\")",
     "est.salesTax": "Sales Tax",

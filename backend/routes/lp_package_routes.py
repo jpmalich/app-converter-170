@@ -3,6 +3,8 @@ Iter 79j.94 — truck-list reconciliation endpoint (pre-±3% acceptance harness)
 Iter 79j.96 — confidential cost layer + tiered sell pricing. Contractor-facing
 preview is ALWAYS redacted (sell only); the unredacted cost view exists only
 behind the supplier-admin token."""
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from datetime import datetime, timezone
@@ -791,10 +793,10 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
     if pend_names:
         items.append({
             "kind": "labor_pending", "code": "labor_pending_contractor",
-            "label": (f"LABOR PENDING — contractor sets labor on "
-                      f"{len(pend_names)} row(s) ({' · '.join(pend_names)}). "
-                      "All labor is $0 until you enter your rates — fill the "
-                      "row's Labor field or the Price Catalog LABOR column."),
+            # ONE LINE, a count, never a list (re-ruled 2026-07-29): labor
+            # is N/A or >$0 — anything else is UNDECIDED. Does NOT block.
+            "label": (f"LABOR UNDECIDED on {len(pend_names)} row(s) — enter "
+                      "your rate (above $0) or mark N/A."),
         })
     try:
         pkg = await lp_package_preview(est_id, None, user)
@@ -1129,7 +1131,7 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
     if _flagged_residue > 0.5:
         flags.append({
             "code": "area_conservation",
-            "label": (f"AREA CONSERVATION (Class A sealed 2026-07-28): {_flagged_residue:g} ft² "
+            "label": (f"AREA CHECK: {_flagged_residue:g} ft² "
                       f"of measured facade area is neither SIDED nor EXPLICITLY EXCLUDED — "
                       "no ft² disappears without an exclusion decision"),
             "verify": "Attribute the residue in the facade picker (side it or exclude it)",
@@ -1142,12 +1144,11 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
             and not hover_meas.get("opening_facade_assignments")):
         flags.append({
             "code": "opening_facade_attribution",
-            "label": (f"OPENING↔FACADE ATTRIBUTION UNAVAILABLE (Class C sealed 2026-07-28): "
-                      f"{_opening_total} openings cannot be attributed to a facade from this "
-                      "report — attribution is READ from the facade assignment, never inferred "
-                      "from opening type/elevation/height; count-driven trim lines derive "
-                      "against ALL openings until attributed (close with in-scope counts)"),
-            "verify": "Walk the openings — count which sit in the sided facade vs excluded area",
+            "label": (f"OPENINGS NOT TIED TO WALLS: {_opening_total} openings are not "
+                      "assigned to a wall in this report. Window and door trim is "
+                      "figured against ALL openings until you say which sit on the "
+                      "siding — close this with the in-scope counts."),
+            "verify": "Walk the openings — count which sit in the sided walls vs the excluded area",
         })
     if soffit_breakdown:
         eaves = float(soffit_breakdown.get("eaves_sqft") or 0)
@@ -1160,12 +1161,11 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
     m = _force_profile_measurements(m, profile)
     flags.append({
         "code": "corner_locators",
-        "label": ("corner sticks on measured corner-LF basis — Hover has counts/LF, "
-                  "no per-corner heights, so the per-corner figure is an AVERAGE and "
-                  "averages HIDE any corner taller than one 16' stick (never-average "
-                  "rule sealed 2026-07-28, P3 precedent; 261 Haugh: an 18'5\" corner "
-                  "takes 2 sticks). Tape tall corners on the walk — close with "
-                  "tall_corners_ft"),
+        "label": ("Corner sticks are figured from total corner length — the report "
+                  "gives counts and total feet, not each corner's own height, so the "
+                  "per-corner figure is an average. An average hides any corner "
+                  "taller than one 16' stick (an 18'5\" corner takes 2). Tape tall "
+                  "corners on the walk — close with the taped heights."),
         "verify": "Walk the corners — confirm counts AND tape any corner taller than 16'",
     })
     # Q2 (ruled 2026-07-27): porch-ceiling FLAG when implied — flag-only,
@@ -1177,10 +1177,11 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
     if _sof > 0 and _runs > 0 and (_sof / _runs) > 2.0 * max(_oh_ft, 0.5):
         flags.append({
             "code": "porch_ceiling_implied",
-            "label": (f"porch ceilings IMPLIED (Q2 ruled 2026-07-27): measured soffit "
-                      f"{_sof:g} sqft over {_runs:g} LF of runs = {_sof / _runs:.1f}' avg "
-                      f"overhang vs stated {_oh_ft:g}' — enter Job-Info porch entries; "
-                      "flag-only, no area invented"),
+            "label": (f"PORCH CEILINGS LIKELY: measured soffit {_sof:g} ft² over "
+                      f"{_runs:g} LF of eaves+rakes works out to a {_sof / _runs:.1f}' "
+                      f"average overhang vs the stated {_oh_ft:g}' — porch ceilings "
+                      "are probably inside that soffit number. Measure them and "
+                      "enter porch entries in Job Info."),
             "verify": "Measure porch ceilings on site and enter them in Job Info",
         })
     fs = m.get("_facade_scope")
@@ -1206,22 +1207,25 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
         if _perim > 0 and _sided > 0:
             _stacked = round(_sided / _perim, 1)
             _bwh_label = (
-                f"batten height term rides HOVER-SCHEDULE: stacked wall height "
+                f"Batten height figured from the report: stacked wall height "
                 f"{_stacked:g} ft = sided {_sided:g} ft² ÷ footprint perimeter {_perim:g} ft — "
-                "sellable as derived; taped heights supersede at ORDER stage (reversible)")
+                "good enough to sell; tape the wall heights at the house before "
+                "material orders (taped replaces figured, reversible)")
         else:
             _bwh_label = (
-                "batten +height term = 0 (report published no footprint perimeter — "
-                "pre-2026-07-28 import; re-import to carry it) — sellable as derived; "
-                "tape at ORDER stage")
+                "Batten height term = 0 — this report carries no footprint "
+                "perimeter (older import; re-import to carry it). Good enough to "
+                "sell; tape wall heights at the house before material orders")
         flags.append({
             "code": "batten_wall_heights",
             "label": _bwh_label,
-            "verify": "ORDER GATE on any B&B job: tape wall heights at the house before material order — taped supersedes derived, battens re-derive live",
+            "verify": "On any board-and-batten job: tape the wall heights at the house before ordering — taped replaces figured, battens re-figure live",
         })
     flags.append({
         "code": "opening_schedule",
-        "label": "opening schedule not itemized (Hover counts only) — starter deduction + wrap use per-count constants",
+        "label": ("Opening schedule not itemized (report gives counts only) — "
+                  "starter deduction and window/door wrap run on per-count "
+                  "standards, not each opening's own size."),
         "verify": "Confirm opening count + entry-door widths on site",
     })
     return m, flags
@@ -1343,6 +1347,28 @@ def _apply_flag_checklist(measurements: dict, est: dict, run: dict) -> dict:
     return m
 
 
+_DOCTRINE_PAREN_RE = re.compile(r"\s*\([^()]*\b(?:sealed|ruled)\b[^()]*20\d\d-\d\d-\d\d[^()]*\)")
+
+
+def _plain_label(text: str) -> str:
+    """PLAIN TRADE LANGUAGE (Howard ruled 2026-07-29): stored flag labels
+    written by older imports carry internal doctrine tags and, worse,
+    OTHER customers' addresses. Sanitize at the serve-time choke point —
+    new emitters already write plain wording."""
+    s = str(text or "")
+    s = _DOCTRINE_PAREN_RE.sub("", s)
+    s = s.replace("OPENING↔FACADE ATTRIBUTION UNAVAILABLE: ",
+                  "OPENINGS NOT TIED TO WALLS: ")
+    s = s.replace(" — attribution is READ from the facade assignment, never "
+                  "inferred from opening type/elevation/height;",
+                  ".")
+    s = s.replace("porch ceilings IMPLIED", "PORCH CEILINGS LIKELY")
+    s = re.sub(r";?\s*261 Haugh[^.;)]*", "", s)
+    s = re.sub(r",?\s*P3 precedent", "", s)
+    s = s.replace("(stone/brick rule sealed)", "").replace("Class C ", "")
+    return re.sub(r"\s{2,}", " ", s).strip()
+
+
 def _checklist_flags(run: dict, est: dict) -> list:
     """Mapping-contract flags merged with checklist state — closed items
     retire from the amber list but stay visible (struck, by/at named)."""
@@ -1351,6 +1377,9 @@ def _checklist_flags(run: dict, est: dict) -> list:
     seen = set()
     for f in run.get("hover_mapping_flags") or []:
         item = dict(f) if isinstance(f, dict) else {"code": "", "label": str(f)}
+        item["label"] = _plain_label(item.get("label"))
+        if item.get("verify"):
+            item["verify"] = _plain_label(item.get("verify"))
         entry = checklist.get(item.get("code")) or {}
         item["status"] = "closed" if entry.get("status") == "closed" else "open"
         if item["status"] == "closed":
@@ -1369,7 +1398,7 @@ def _checklist_flags(run: dict, est: dict) -> list:
         entry = checklist.get("ceiling_dedup") or {}
         item = {
             "code": "ceiling_dedup",
-            "label": (f"CEILING DOUBLE-COUNT GUARD (class sealed 2026-07-28): hand-entered "
+            "label": (f"CEILING DOUBLE-COUNT GUARD: hand-entered "
                       f"ceiling(s) {hand:g} ft² + Hover soffit total {_sof:g} ft² may cover the "
                       "same surface — TAPED governs; close with the Hover-measured duplicate area"),
             "verify": "Confirm whether a Hover soffit row is the same ceiling you hand-entered",

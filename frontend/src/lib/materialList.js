@@ -379,7 +379,7 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
 
   <div class="notice">
     <strong>Order Quantity</strong> shows the qty <em>with</em> ${wastePct}% waste factor applied (rounded up) —
-    the contractor's Waste % field (sealed 2026-07-28: one rule, all families; family defaults lap/soffit 10 · shake 15 · B&amp;B 30 · nickel gap 12, editable including to 0).
+    the contractor's Waste % field (one rule, all families; family defaults lap/soffit 10 · shake 15 · B&amp;B 30 · nickel gap 12, editable including to 0).
     Hand this list to ${esc(supplierName)} to pull / quote materials.
   </div>
 

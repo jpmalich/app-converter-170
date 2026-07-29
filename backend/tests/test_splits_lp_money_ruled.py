@@ -93,7 +93,8 @@ def test_split_lines_use_family_waste_not_field():
     assert _family_line(lines, "shake")["qty"] == expected["shake"]
     assert _family_line(lines, "nickel gap")["qty"] == expected["nickel_gap"]
     # provenance: non-selected families carry the family-default note
-    assert "family default — sealed 2026-07-24" in _family_line(lines, "panel")["note"]
+    # (wording de-doctrined 2026-07-29 — plain trade language in the UI)
+    assert "family default" in _family_line(lines, "panel")["note"]
     assert "family default" not in _family_line(lines, "lap")["note"]
 
 

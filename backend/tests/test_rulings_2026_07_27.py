@@ -51,7 +51,7 @@ def test_q1_tearoff_dumpster_presence_rows():
             l = _find(lines, nm, tab)
             assert l is not None, f"{nm} missing on {tab}"
             assert l["qty"] == 0 and l.get("qty_pending") is True
-            assert "CONTRACTOR-ENTERED" in l["note"]
+            assert "contractor-entered" in l["note"]  # wording de-doctrined 2026-07-29
     assert "tear-off" in MISC_LABOR_ROWS and "dumpster" in MISC_LABOR_ROWS
 
 
@@ -114,7 +114,7 @@ def test_q8_color_tier_relands_standard_rows():
     out = _apply_color_tier(copy.deepcopy(lines), "architectural")
     assert out[0]["name"] == "Outside corners Architectural color"
     assert out[1]["name"] == "Soffit & fascia Charter Oak Architectural color"
-    assert "Q8 ruled 2026-07-27" in out[0]["note"]
+    assert "Architectural color tier" in out[0]["note"]  # wording de-doctrined 2026-07-29
     assert out[2]["name"] == "Touch up kits"  # LP tab untouched
     same = _apply_color_tier(copy.deepcopy(lines), "standard")
     assert same[0]["name"] == "Outside corners Standard color"
@@ -148,7 +148,7 @@ def test_q14_measured_soffit_total_governs():
     lines = _build_lines(dict(DEGREE3))
     vented = _find(lines, "38 Series Soffit 16 x 16 Vented", "lp_smart")
     closed = _find(lines, "38 Series Soffit 16 x 16 Closed", "lp_smart")
-    assert vented["qty"] == 67 and "MEASURED soffit TOTAL governs" in vented["note"]
+    assert vented["qty"] == 67 and "measured soffit total governs" in vented["note"]
     assert closed["qty"] == 69
     # Q14a: the measured total also KEEPS the Closed row on the assembled
     # LP-native package (eaves-only removal is fallback-basis only)
@@ -184,7 +184,7 @@ def test_q10_frieze_consumed():
     assert _frieze_540_pcs(DEGREE3) == 26 + 18  # per-segment (Q16)
     wrap = _find(_build_lines(dict(DEGREE3)),
                  '540 Series Trim 5/4" x 4" x 16\'', "lp_smart")
-    assert "frieze" in wrap["note"] and "Q10 ruled 2026-07-27" in wrap["note"]
+    assert "frieze" in wrap["note"]  # doctrine tag out of UI wording 2026-07-29
     # wrap 32 + frieze 44 + ISC 24 = 100 (3 Degree Rd re-derive; real 142 —
     # residual logged as evidence, no invented scope)
     assert wrap["qty"] == 100

@@ -191,7 +191,7 @@ def test_class_c_opening_attribution_flags_when_unattributable():
     m, flags = _hover_mapping_contract(dict(HAUGH), "board_batten")
     f = _flag(flags, "opening_facade_attribution")
     assert f is not None
-    assert "never inferred" in f["label"]
+    assert "not assigned to a wall" in f["label"]  # wording de-doctrined 2026-07-29
     # counts DO NOT move on a guess — all openings derive until attributed
     assert m["window_count"] == 32 and m["door_count"] == 7
 
@@ -213,7 +213,7 @@ def test_tall_corner_takes_two_sticks_never_averaged():
     pkg = assemble_lp_package(dict(tall))
     osc = next(l for l in pkg["lines"] if l["name"] == OSC_ITEM)
     assert osc["qty"] == 15
-    assert "TALL corner" in osc["note"] and "never-average" in osc["note"]
+    assert "TALL corner" in osc["note"] and "never the average" in osc["note"]
 
 
 @pytest.mark.parametrize("tall,expected_extra", [([16.5], 1), ([18.42, 33.0], 1 + 2)])
@@ -232,7 +232,7 @@ def test_never_average_rule_sealed_text():
     # the Hover flag names the exposure
     _, flags = _hover_mapping_contract(dict(HAUGH), "board_batten")
     cl = _flag(flags, "corner_locators")
-    assert "AVERAGE" in cl["label"] and "tall" in cl["label"].lower()
+    assert "average" in cl["label"] and "tall" in cl["label"].lower()  # wording de-doctrined 2026-07-29
 
 
 # ── CEILING DEDUP class ──────────────────────────────────────────────────

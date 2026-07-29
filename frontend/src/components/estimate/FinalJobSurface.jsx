@@ -185,6 +185,12 @@ export default function FinalJobSurface({ estId }) {
           ))}
         </div>
       )}
+      {(q.items || []).filter((i) => !i.blocking).map((i, idx) => (
+        <div key={`qi-${idx}`} className="text-[11px] opacity-70 py-0.5"
+          data-testid={`quote-info-${i.code}`}>
+          {i.label}
+        </div>
+      ))}
 
       {(o.items || []).length > 0 && (
         <div data-testid="order-gate-items">

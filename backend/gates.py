@@ -52,7 +52,9 @@ KIND_TIERS: dict[str, str] = {
 QUOTE_BLOCKING = frozenset({
     "facade_scope_unresolved_zero", "area_conservation_breach",
     "siding_family_conflict", "no_siding_on_siding_job",
-    "labor_pending_contractor",
+    # labor_pending_contractor REMOVED from blocking (Howard re-ruled
+    # 2026-07-29): labor is N/A or >$0; anything else is UNDECIDED —
+    # ONE line with a count, never a block.
 })
 ORDER_BLOCKING = frozenset({
     "batten_wall_heights", "corner_locators", "opening_schedule",
@@ -123,15 +125,14 @@ def quote_gate_blockers(est: dict, measurements: dict | None = None) -> list[dic
                           "Re-derive or pick the family before quoting."),
             })
 
-    # labor_pending_contractor — v3 zeroing: $0 labor rows can't be quoted
-    pend = [l.get("name") for l in lines
+    # labor UNDECIDED — one line, a count, never a block (re-ruled 2026-07-29)
+    pend = [l for l in lines
             if (l.get("lab_src") or "") == "pending" and (l.get("qty") or 0) > 0]
     if pend:
         items.append({
-            "code": "labor_pending_contractor", "tier": "quote", "blocking": True,
-            "label": (f"LABOR PENDING on {len(pend)} row(s) ({' · '.join(pend[:6])}"
-                      f"{' …' if len(pend) > 6 else ''}) — all labor is $0 until "
-                      "you enter your rates (QUOTE gate, ruling 2026-07-29)."),
+            "code": "labor_pending_contractor", "tier": "quote", "blocking": False,
+            "label": (f"LABOR UNDECIDED on {len(pend)} row(s) — labor is either "
+                      "N/A or a value above $0; enter your rates or mark N/A."),
         })
 
     m = measurements or {}

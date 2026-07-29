@@ -2,11 +2,13 @@
 // EXACT frozen material list that was printed. When the live estimate has
 // drifted, a banner flags that a newer list exists — never a silent swap.
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { Loader2, Lock, TriangleAlert } from "lucide-react";
 
 export default function MaterialListShare() {
   const { token } = useParams();
+  const [searchParams] = useSearchParams();
+  const backEst = searchParams.get("est");
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -77,7 +79,18 @@ export default function MaterialListShare() {
     (bySection[l.section] = bySection[l.section] || []).push(l);
   });
 
+  const backLink = backEst ? (
+    <div className="no-print px-6 pt-4">
+      <Link to={`/estimate/${backEst}`} className="text-sm underline text-zinc-600"
+        data-testid="material-share-back-to-estimate">
+        ← Back to estimate
+      </Link>
+    </div>
+  ) : null;
+
   return (
+    <>
+    {backLink}
     <div className="min-h-screen bg-zinc-100 py-6 px-3 sm:px-6" data-testid="material-share-page">
       <div className="max-w-3xl mx-auto bg-white border border-zinc-200 shadow-sm">
         {data.newer_available && (
@@ -185,5 +198,6 @@ export default function MaterialListShare() {
         </div>
       </div>
     </div>
+    </>
   );
 }

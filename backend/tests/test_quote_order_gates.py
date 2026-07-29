@@ -68,10 +68,12 @@ def test_checklist_codes_all_assigned():
 
 # ── tier assignments pinned exactly per the rulings ──────────────────────
 def test_tier_assignments_sealed():
+    # labor_pending_contractor removed from blocking (re-ruled 2026-07-29):
+    # labor is N/A or >$0 — anything else is UNDECIDED, one line, a count,
+    # NEVER a block.
     assert QUOTE_BLOCKING == {
         "facade_scope_unresolved_zero", "area_conservation_breach",
-        "siding_family_conflict", "no_siding_on_siding_job",
-        "labor_pending_contractor"}
+        "siding_family_conflict", "no_siding_on_siding_job"}
     assert ORDER_BLOCKING == {
         "batten_wall_heights", "corner_locators", "opening_schedule",
         "opening_facade_attribution", "porch_ceiling_implied"}
@@ -113,15 +115,24 @@ def test_quote_blocker_no_siding_on_siding_job():
     assert "no_siding_on_siding_job" not in codes
 
 
-def test_quote_blocker_labor_pending():
+def test_quote_labor_undecided_one_line_never_blocks():
+    """Re-ruled 2026-07-29: labor is N/A or >$0 — anything else is
+    UNDECIDED, surfaced as ONE line with a COUNT (no row list), and it
+    does NOT block."""
     est = {"kind": "siding", "lines": [
         {"tab": "vinyl", "section": "Vinyl Siding", "name": "Charter Oak lap",
-         "unit": "SQ", "qty": 20, "lab_src": "pending"}]}
-    codes = {i["code"] for i in quote_gate_blockers(est)}
-    assert "labor_pending_contractor" in codes
+         "unit": "SQ", "qty": 20, "lab_src": "pending"},
+        {"tab": "vinyl", "section": "Siding Accessories", "name": "Starter",
+         "unit": "PCS", "qty": 12, "lab_src": "pending"}]}
+    items = quote_gate_blockers(est)
+    labor = next(i for i in items if i["code"] == "labor_pending_contractor")
+    assert labor["blocking"] is False
+    assert "2 row(s)" in labor["label"]
+    assert "Charter Oak" not in labor["label"]   # a count, not a list
     est["lines"][0]["lab_src"] = "human"
-    assert "labor_pending_contractor" not in {
-        i["code"] for i in quote_gate_blockers(est)}
+    est["lines"][1]["lab_src"] = "human"
+    assert not [i for i in quote_gate_blockers(est)
+                if i["code"] == "labor_pending_contractor"]
 
 
 def test_quote_blocker_facade_zero_and_conservation():
@@ -157,13 +168,19 @@ def session():
 
 @pytest.fixture()
 def gated_estimate(session):
-    """TEST_ estimate with a labor-pending siding row → QUOTE-blocked."""
+    """TEST_ estimate with TWO families carrying derived qty → QUOTE-blocked
+    (family conflict). Labor no longer blocks (re-ruled 2026-07-29)."""
     r = session.post(f"{API}/estimates", json={
         "customer_name": f"TEST_gates_{uuid.uuid4().hex[:6]}",
         "kind": "lp_smart",
-        "lines": [{"tab": "lp_smart", "section": "LP Smart Siding",
-                   "name": '38 Series Lap 3/8" x 8" x 16"', "unit": "PCS",
-                   "qty": 100, "mat": 10, "lab": 0, "lab_src": "pending"}],
+        "lines": [
+            {"tab": "lp_smart", "section": "LP Smart Siding",
+             "name": '38 Series Lap 3/8" x 8" x 16"', "unit": "PCS",
+             "qty": 100, "mat": 10, "lab": 0, "lab_src": "pending"},
+            {"tab": "lp_smart", "section": "LP Smart Siding",
+             "name": "38 Series 4' x 10' Panel", "unit": "PCS",
+             "qty": 68, "mat": 10, "lab": 5},
+        ],
     }, timeout=15)
     assert r.status_code == 200, r.text
     est = r.json()
@@ -176,7 +193,12 @@ def test_gates_endpoint_and_quote_surfaces_block(session, gated_estimate):
     g = session.get(f"{API}/estimates/{eid}/gates", timeout=30).json()
     assert g["quote"]["blocked"] is True
     codes = {i["code"] for i in g["quote"]["blocking"]}
-    assert "labor_pending_contractor" in codes
+    assert "siding_family_conflict" in codes
+    # labor is present as info — one line, a count, never blocking
+    labor = [i for i in g["quote"]["items"]
+             if i["code"] == "labor_pending_contractor"]
+    assert labor and labor[0]["blocking"] is False
+    assert "labor_pending_contractor" not in codes
     # PDF blocked with the structured 409
     r = session.post(f"{API}/estimates/{eid}/pdf",
                      json={"recipient_email": "x@example.com",
@@ -184,26 +206,59 @@ def test_gates_endpoint_and_quote_surfaces_block(session, gated_estimate):
     assert r.status_code == 409, r.text
     d = r.json()["detail"]
     assert d["gate"] == "quote"
-    assert any(b["code"] == "labor_pending_contractor" for b in d["blocking"])
+    assert any(b["code"] == "siding_family_conflict" for b in d["blocking"])
     # email blocked at the same door (Accept token mints there)
     r = session.post(f"{API}/estimates/{eid}/email",
                      json={"recipient_email": "x@example.com",
                            "html_quote": "<html>x</html>"}, timeout=30)
     assert r.status_code == 409, r.text
-    # order release refused while labor still pending? labor is QUOTE-tier
-    # — the ORDER gate judges only its own items; with no run there are
-    # no open order flags, release passes.
+    # ORDER gate judges only its own items; with no run there are no open
+    # order flags, release passes.
     r = session.post(f"{API}/estimates/{eid}/order-release", json={}, timeout=30)
     assert r.status_code == 200, r.text
     assert r.json()["order_released"]["by"]
 
 
-def test_quote_clears_when_labor_filled(session, gated_estimate):
+def test_quote_clears_when_conflict_resolved(session, gated_estimate):
     eid = gated_estimate["id"]
     est = session.get(f"{API}/estimates/{eid}", timeout=15).json()
-    est["lines"][0]["lab"] = 55.0
-    est["lines"][0]["lab_src"] = "human"
+    est["lines"][1]["qty"] = 0          # second family zeroed — one family stands
     r = session.put(f"{API}/estimates/{eid}", json=est, timeout=15)
     assert r.status_code == 200, r.text
     g = session.get(f"{API}/estimates/{eid}/gates", timeout=30).json()
     assert g["quote"]["blocked"] is False, g["quote"]["blocking"]
+    # labor UNDECIDED still rides as the non-blocking one-liner
+    labor = [i for i in g["quote"]["items"]
+             if i["code"] == "labor_pending_contractor"]
+    assert labor and labor[0]["blocking"] is False
+
+
+# ── PLAIN TRADE LANGUAGE (Howard ruled 2026-07-29) ───────────────────────
+def test_stored_flag_labels_sanitized_at_serve_time():
+    """Older imports stored labels carrying doctrine tags and ANOTHER
+    customer's address. The serve-time choke point strips both — no seal
+    dates, no ruling tags, no cross-estimate references reach the UI."""
+    from routes.lp_package_routes import _checklist_flags, _plain_label
+    run = {"hover_mapping_flags": [
+        {"code": "corner_locators",
+         "label": ("corner sticks — averages HIDE tall corners (never-average "
+                   "rule sealed 2026-07-28, P3 precedent; 261 Haugh: an 18'5\" "
+                   "corner takes 2 sticks). Tape tall corners"),
+         "verify": "Walk the corners (P3 precedent)"},
+        {"code": "opening_facade_attribution",
+         "label": ("OPENING↔FACADE ATTRIBUTION UNAVAILABLE (Class C sealed "
+                   "2026-07-28): 35 openings cannot be attributed")},
+        {"code": "porch_ceiling_implied",
+         "label": "porch ceilings IMPLIED (Q2 ruled 2026-07-27): soffit 2620"},
+    ]}
+    served = _checklist_flags(run, {})
+    joined = " ".join((f.get("label") or "") + " " + (f.get("verify") or "")
+                      for f in served)
+    for banned in ("sealed 20", "ruled 20", "261 Haugh", "P3 precedent",
+                   "Class C"):
+        assert banned not in joined, f"doctrine/cross-estimate leak: {banned}"
+    assert "OPENINGS NOT TIED TO WALLS" in joined
+    assert "PORCH CEILINGS LIKELY" in joined
+    # sanitizer is idempotent on already-plain wording
+    plain = "Tape tall corners on the walk — close with the taped heights."
+    assert _plain_label(plain) == plain

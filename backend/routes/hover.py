@@ -707,8 +707,7 @@ def _apply_color_tier(lines: list, tier: str | None) -> list:
         for old, new in _COLOR_TIER_SWAPS:
             if old in name:
                 l["name"] = name.replace(old, new)
-                l["note"] = (f"{l.get('note') or ''} — Architectural color tier "
-                             "(Q8 ruled 2026-07-27)").strip(" —")
+                l["note"] = (f"{l.get('note') or ''} — Architectural color tier").strip(" —")
                 break
     return lines
 
@@ -782,7 +781,7 @@ HOVER_MAPPING_SPEC = [
             )
         ),
         "note": lambda m: (
-            "38 Lap: ceil(sqft ÷ 100 × 11 × (1+waste)) — book convention (sealed 2026-07-19); waste = contractor's %, not baked (PDF 9.17 retired to reference)"
+            "38 Lap: ceil(sqft ÷ 100 × 11 × (1+waste)) — 11 pcs per square; waste = contractor's % field, not baked into the formula"
             if lp_formulas.is_enabled()
             else "11 PCS per Sq (LP 8\" lap exposure); sqft × 0.11 rounded"
         ),
@@ -814,7 +813,7 @@ HOVER_MAPPING_SPEC = [
          - 1e-9),
         "note": lambda m: (
             f"Fascia {float(m.get('eaves_lf') or 0):g} LF + rake {float(m.get('rakes_lf') or 0):g} LF ÷ 16, "
-            "whole-stick = entire allowance (sealed convention; 8\" width CONTRACTOR-SPEC, Letrick precedent)"
+            "whole-stick count is the entire allowance; 8\" width is contractor-spec"
         ),
     },
     # 540 Series Trim 5/4" x 4" — window / entry door / patio / garage trim
@@ -875,9 +874,9 @@ HOVER_MAPPING_SPEC = [
                 if (m.get("opening_perimeter_lf") or 0) > 0
                 else "Window/entry/patio/garage perimeter wrap ÷ 16"
             )
-            + (f" + frieze {float(m.get('level_frieze_lf') or 0):g}+{float(m.get('sloped_frieze_lf') or 0):g} LF per-segment = {_frieze_540_pcs(m)} (Q10 ruled 2026-07-27)"
+            + (f" + frieze {float(m.get('level_frieze_lf') or 0):g}+{float(m.get('sloped_frieze_lf') or 0):g} LF per-segment = {_frieze_540_pcs(m)}"
                if _frieze_540_pcs(m) else "")
-            + (f" + ISC {int(m.get('inside_corner_count') or 0)} corner(s) per-corner round-up = {_isc_540_pcs(m)} (Q12/Q13 ruled 2026-07-27; 440-4\" demoted to substitution)"
+            + (f" + ISC {int(m.get('inside_corner_count') or 0)} corner(s) per-corner round-up = {_isc_540_pcs(m)}"
                if _isc_540_pcs(m) else "")
             + (
                 f" + {lp_formulas.shake_540_series_bump(float((m.get('_per_profile_sqft') or {}).get('shake') or 0))} shake belly-band pcs (LP PDF)"
@@ -909,7 +908,7 @@ HOVER_MAPPING_SPEC = [
             if lp_formulas.is_enabled()
             else 0
         ),
-        "note": "Batten strips — wall area ÷ (8\"/12) + 1 run × wall height when taped (Q9 ruled 2026-07-27: 8\" o.c. sealed, no doubling), 16' stock, no waste",
+        "note": "Batten strips — wall area ÷ (8\"/12) + 1 run × wall height when taped, 8\" on-center, 16' stock, no waste",
     },
     # .019 Coil LP AUTO-ADD RETIRED (iter97 composition ruling, 2026-07-12):
     # an auto-add is DERIVED composition — coil on an LP-native derived
@@ -928,10 +927,9 @@ HOVER_MAPPING_SPEC = [
             ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0 / 11.0)) \
             * max(1, int(m.get("_lp_color_count") or 1)),
         "note": lambda m: (
-            f"1 kit per 11 SQ per color (Q15 sealed 2026-07-27): "
+            f"1 kit per 11 SQ per color: "
             f"{((m.get('siding_with_openings_sqft') or m.get('siding_sqft') or 0)) / 100.0:g} SQ ÷ 11 — "
-            "color count reads the estimate's Job Info selections "
-            "(register #7 ruled 2026-07-28); unknown at import → 1"
+            "color count reads the estimate's Job Info selections; unknown at import → 1"
             + (f" · × {int(m.get('_lp_color_count'))} selected colors"
                if int(m.get("_lp_color_count") or 1) > 1 else "")),
     },
@@ -951,12 +949,12 @@ HOVER_MAPPING_SPEC = [
                 ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0 - 1e-9))
         ),
         "note": lambda m: (
-            f"B&B: 1 tube per 23 batten sticks (Q15 sealed 2026-07-27; register #5 2026-07-28 holds it) — "
+            f"B&B: 1 tube per 23 batten sticks — "
             f"{_bb_batten_sticks(m)} sticks ÷ 23"
             if _bb_batten_sticks(m) > 0
             else (
                 f"LP non-B&B: 1 tube per SQUARE — SmartSide butt joints take sealant "
-                f"(register #5 ruled 2026-07-28, flat 2/job retired): "
+                f""
                 f"{((m.get('siding_with_openings_sqft') or m.get('siding_sqft') or 0)) / 100.0:g} SQ")
         ),
     },
@@ -1030,13 +1028,13 @@ HOVER_MAPPING_SPEC = [
             (
                 f"OSC {int(m.get('outside_corner_count') or 0)} corner(s) × per-corner "
                 f"whole-stick round-up ({float(m.get('outside_corner_lf') or 0):g} LF total, "
-                "min 1 pc/corner — Q13 ruled 2026-07-27)"
+                "min 1 pc/corner)"
                 + ((" — " + str(len(m.get('_osc_tall_corners_ft') or [])) + " taped TALL corner(s) ["
                     + ", ".join(f"{float(h):g}'" for h in (m.get('_osc_tall_corners_ft') or []))
-                    + "] take ceil(h/16) sticks each (never-average sealed 2026-07-28)")
+                    + "] take ceil(h/16) sticks each — taped height counts, never the average")
                    if m.get("_osc_tall_corners_ft") else "")
                 + ((f" — HUMAN count {int(m.get('outside_corner_count') or 0)} (report read "
-                    f"{m.get('_osc_count_hover')}, flagged comparison — correction ruled 2026-07-28)")
+                    f"{m.get('_osc_count_hover')}, shown for comparison)")
                    if m.get("_corner_count_human") and m.get("_osc_count_hover") else "")
             )
             if int(m.get("outside_corner_count") or 0) > 0
@@ -1288,7 +1286,7 @@ HOVER_MAPPING_SPEC = [
             / (100.0 if float(m.get("fascia_width_in") or 8) <= 10 else 50.0), 2
         ),
         "note": lambda m: (
-            f"Width-conditional (Q3 ruled 2026-07-27): fascia "
+            f"Width-conditional: fascia "
             f"{float(m.get('fascia_width_in') or 8):g}\" "
             + ("≤10\" → 24\" coil ripped in half = 100 LF/roll"
                if float(m.get("fascia_width_in") or 8) <= 10
@@ -1309,7 +1307,7 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: max(1, int(m.get("window_count") or 0) + int(m.get("door_count") or 0)),
         "note": lambda m: (
             f"1 tube per opening — interlocking siding, caulk at openings only "
-            f"(register #5 ruled 2026-07-28, flat 2/job retired): "
+            f""
             f"{int(m.get('window_count') or 0)} windows + {int(m.get('door_count') or 0)} doors"),
     },
     # Iter 70 (2026-06-22): wire HOVER fields previously left on the floor.
@@ -1399,7 +1397,7 @@ HOVER_MAPPING_SPEC = [
             f"Vented — MEASURED eave soffit {float(m.get('_soffit_vented_sqft') or 0):g} sqft ÷ 21.3 × 1.10 (report per-surface basis)"
             if (m.get("_soffit_vented_sqft") or 0) > 0
             else (
-                (f"Vented — MEASURED soffit TOTAL governs (Q14a ruled 2026-07-27): "
+                (f"Vented — measured soffit total governs: "
                  f"eave share {_soffit_total_split(m)[0]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
                 if _soffit_total_split(m)[0] > 0
                 else (
@@ -1446,7 +1444,7 @@ HOVER_MAPPING_SPEC = [
             )
             if (m.get("_soffit_closed_sqft") or 0) > 0
             else (
-                (f"Closed — MEASURED soffit TOTAL governs (Q14a ruled 2026-07-27): "
+                (f"Closed — measured soffit total governs: "
                  f"rake share {_soffit_total_split(m)[1]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
                 if _soffit_total_split(m)[1] > 0
                 else (
@@ -1719,7 +1717,7 @@ HOVER_MAPPING_SPEC = [
         "unit": "SQ",
         "always_emit": True,
         "extract": lambda m: 0,
-        "note": "Quantity CONTRACTOR-ENTERED (Q1 ruled 2026-07-27) — pending until set",
+        "note": "Quantity contractor-entered — pending until set",
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
@@ -1728,7 +1726,7 @@ HOVER_MAPPING_SPEC = [
         "unit": "Each",
         "always_emit": True,
         "extract": lambda m: 0,
-        "note": "Quantity CONTRACTOR-ENTERED (Q1 ruled 2026-07-27) — pending until set",
+        "note": "Quantity contractor-entered — pending until set",
     },
 ]
 
@@ -2204,7 +2202,7 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
                 continue
             _note = _composition_note(family, sqft)
             if _waste_src == "family default":
-                _note += f" · waste {_waste * 100:g}% (family default — sealed 2026-07-24)"
+                _note += f" · waste {_waste * 100:g}% (family default)"
             if tab == "lp_smart" and lp_formulas.is_enabled():
                 if family in ("lap", "dutch_lap"):
                     _note += " · book 11 pcs/sq (LAP UNIFY register #3 ruled 2026-07-28 — PDF 9.17 retired to reference)"

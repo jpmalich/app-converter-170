@@ -166,3 +166,43 @@ def test_integer_landing_never_buys_an_extra_piece():
     assert "Math.ceil(x - 1e-9)" in js
     py = (BACKEND / "routes" / "hover.py").read_text()
     assert py.count("- 1e-9)") >= 2               # both _bake_tab_waste branches
+
+
+# ── W1 FIELD PRESERVATION (sealed 2026-07-29) ────────────────────────────
+def test_w1_put_preserves_derivation_fields_verbatim():
+    """THE STRIP CLASS: the EstimateLine whitelist was silently dropping
+    `note`, `_waste_included`, `base_item` (+ any future derivation
+    field) on EVERY api write — the browser autosave then destroyed the
+    waste flags and notes the derivations wrote. Suite green, broken in
+    the browser (found on the Casile fixture 2026-07-29). Extra fields
+    round-trip verbatim now; this pin fails if the whitelist ever comes
+    back."""
+    import uuid
+
+    import requests
+
+    from api_base import API
+    from creds_for_tests import TEST_EMAIL, TEST_PASSWORD
+    s = requests.Session()
+    r = s.post(f"{API}/auth/login",
+               json={"email": TEST_EMAIL, "password": TEST_PASSWORD}, timeout=15)
+    assert r.status_code == 200, r.text
+    probe = {"tab": "lp_smart", "section": "LP Smart Siding", "name": "probe",
+             "unit": "PCS", "qty": 5, "note": "KEEP ME",
+             "_waste_included": True, "base_item": "base-x",
+             "raw_qty": 4.5, "qty_src": "human", "lab_src": "pending"}
+    r = s.post(f"{API}/estimates", json={
+        "customer_name": f"TEST_w1strip_{uuid.uuid4().hex[:6]}",
+        "kind": "lp_smart", "lines": [dict(probe)]}, timeout=15)
+    assert r.status_code == 200, r.text
+    eid = r.json()["id"]
+    try:
+        got = s.get(f"{API}/estimates/{eid}", timeout=15).json()
+        assert s.put(f"{API}/estimates/{eid}", json=got, timeout=15).status_code == 200
+        back = s.get(f"{API}/estimates/{eid}", timeout=15).json()["lines"][0]
+        for k in ("note", "_waste_included", "base_item", "raw_qty",
+                  "qty_src", "lab_src"):
+            assert back.get(k) == probe[k], (
+                f"W1 write STRIPPED {k!r}: {back.get(k)!r} != {probe[k]!r}")
+    finally:
+        s.delete(f"{API}/estimates/{eid}", timeout=15)

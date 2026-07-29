@@ -290,7 +290,7 @@ export default function EstimateEditor() {
           colors: est.lp_colors && Object.keys(est.lp_colors).length ? est.lp_colors : undefined,
           substitutions: Object.keys(subs).length ? subs : undefined,
         });
-        const shareUrl = `${window.location.origin}/m/${data.token}`;
+        const shareUrl = `${window.location.origin}/m/${data.token}?est=${id}`;
         const qrDataUrl = await QRCode.toDataURL(shareUrl, { width: 240, margin: 1 });
         share = { shareUrl, qrDataUrl, printedAt: new Date().toISOString() };
       } catch {

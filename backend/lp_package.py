@@ -400,7 +400,7 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                     _tall_txt = ", ".join(f"{h:g}'" for h in tall[:k])
                     note = (f"Hover {cnt} corner(s): {rest_cnt} × whole-stick "
                             f"({per_h:g}' each) + {k} taped TALL corner(s) [{_tall_txt}] → "
-                            f"{q_tall} stick(s) (never-average sealed 2026-07-28)")
+                            f"{q_tall} stick(s) — taped height counts, never the average")
                 if measurements.get("_corner_count_human") and measurements.get("_osc_count_hover"):
                     note += (f" — HUMAN-provenance count {cnt} (walked; report read "
                              f"{measurements['_osc_count_hover']}, preserved as flagged "

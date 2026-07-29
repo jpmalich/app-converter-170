@@ -20,10 +20,17 @@ TARGETS="${*:-tests}"
 HASH=$(git rev-parse --short HEAD)
 TS=$(date -u +"%Y-%m-%d %H:%M UTC")
 cd /app/backend
-OUT=$(python3 -m pytest ${TARGETS} -q 2>&1 | tail -1)
+FULL_LOG=/tmp/handback_green_pytest.log
+python3 -m pytest ${TARGETS} -q 2>&1 > "${FULL_LOG}"
+OUT=$(tail -1 "${FULL_LOG}")
 if echo "${OUT}" | grep -qE "failed|error" || ! echo "${OUT}" | grep -qE "^[0-9]+ passed"; then
   echo "GUARD HARD-FAIL: SUITE NOT GREEN — nothing stamped, nothing logged."
   echo "RESULT: ${OUT}"
+  # NAME THE FAILURES (Howard ruled 2026-07-29: surface the name on the
+  # FIRST failure — an unnameable flake is not investigable).
+  echo "FAILED TESTS:"
+  grep -E "^(FAILED|ERROR) " "${FULL_LOG}" | sed 's/^/  /'
+  grep -E "^(FAILED|ERROR) " "${FULL_LOG}" | sed "s/^/- $(date -u +'%Y-%m-%d %H:%M UTC') · ${HASH} · GUARD-FAIL · /" >> /app/memory/handback_green_log.md
   exit 1
 fi
 echo "- ${TS} · ${HASH} · CLEAN · [${TARGETS}] · ${OUT}" >> /app/memory/handback_green_log.md

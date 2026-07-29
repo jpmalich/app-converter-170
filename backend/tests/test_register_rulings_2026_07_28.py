@@ -145,7 +145,7 @@ def test_r5_lp_non_bb_one_tube_per_square():
     lines = _build_lines({"siding_sqft": 2000})
     c = _find(lines, "OSI Quad Max Caulking", "lp_smart")
     assert c["qty"] == 20  # 20 SQ → 20 tubes (not the retired flat 2)
-    assert "1 tube per SQUARE" in c["note"] and "register #5" in c["note"]
+    assert "1 tube per SQUARE" in c["note"]  # register tag out of UI wording 2026-07-29
     # small job: ceil, min 1 — the flat-2 floor is gone
     small = _find(_build_lines({"siding_sqft": 90}), "OSI Quad Max Caulking", "lp_smart")
     assert small["qty"] == 1
@@ -166,7 +166,7 @@ def test_r5_vinyl_ascend_one_tube_per_opening():
     for tab in ("vinyl", "ascend"):
         c = _find(lines, "Caulking (per color)", tab)
         assert c["qty"] == 15  # 12 windows + 3 doors
-        assert "1 tube per opening" in c["note"] and "register #5" in c["note"]
+        assert "1 tube per opening" in c["note"]  # register tag out of UI wording 2026-07-29
     # no openings listed → min 1, never the retired flat 2
     c = _find(_build_lines({"siding_sqft": 900}), "Caulking (per color)", "vinyl")
     assert c["qty"] == 1

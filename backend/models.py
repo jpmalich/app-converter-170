@@ -1,6 +1,6 @@
 """All Pydantic request/response models live here."""
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 class RegisterIn(BaseModel):
@@ -82,6 +82,14 @@ class EstimateLineAdder(BaseModel):
 
 
 class EstimateLine(BaseModel):
+    # PRESERVE DERIVATION FIELDS THROUGH EVERY WRITE (sealed 2026-07-29):
+    # the strict whitelist was silently STRIPPING `note`, `_waste_included`,
+    # `base_item`, `qty_pending` from every line on every API write
+    # (create/PUT) — the browser autosave then destroyed the waste flags
+    # and notes the derivations wrote ("suite green, broken in the
+    # browser"). Extra fields now round-trip verbatim.
+    model_config = ConfigDict(extra="allow")
+
     section: str
     name: str
     unit: str

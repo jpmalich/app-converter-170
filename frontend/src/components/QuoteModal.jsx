@@ -17,7 +17,10 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   const { user } = useAuth();
   const { readiness } = useReadiness(estimate?.id);
   // PRINT-BLOCKED (authorized 2026-07-28): hard gate on the homeowner surface.
-  const blocked = !!(readiness && readiness.open_count > 0);
+  // LABOR UNDECIDED never blocks (re-ruled 2026-07-29) — one line, a count.
+  const laborItem = (readiness?.items || []).find((i) => i.kind === "labor_pending");
+  const blockingItems = (readiness?.items || []).filter((i) => i.kind !== "labor_pending");
+  const blocked = blockingItems.length > 0;
   const { lang: uiLang } = useLang();
   const t = useT();
   // Iter 79j.47 — Two-way email sync. Prefill the recipient input
@@ -174,16 +177,22 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
         {blocked && (
           <div className="no-print w-full max-w-3xl mb-3 bg-[#FEF2F2] border border-[#DC2626] px-4 py-3" data-testid="quote-print-blocked-banner">
             <div className="text-xs font-bold text-[#991B1B] mb-1">
-              PRINT-BLOCKED: {readiness.open_count} item{readiness.open_count === 1 ? "" : "s"} — clear the readiness checklist before this quote reaches a homeowner.
+              PRINT-BLOCKED: {blockingItems.length} item{blockingItems.length === 1 ? "" : "s"} — clear the readiness checklist before this quote reaches a homeowner.
             </div>
             <ul className="space-y-0.5">
-              {readiness.items.slice(0, 6).map((it, i) => (
+              {blockingItems.slice(0, 6).map((it, i) => (
                 <li key={i} className="text-[11px] text-[#991B1B]" data-testid="quote-readiness-item">• {it.label}</li>
               ))}
-              {readiness.items.length > 6 && (
-                <li className="text-[11px] text-[#991B1B]">… and {readiness.items.length - 6} more (see Readiness on the estimate page)</li>
+              {blockingItems.length > 6 && (
+                <li className="text-[11px] text-[#991B1B]">… and {blockingItems.length - 6} more (see Readiness on the estimate page)</li>
               )}
             </ul>
+          </div>
+        )}
+        {/* LABOR UNDECIDED — one line, a count, never a block (re-ruled 2026-07-29) */}
+        {laborItem && (
+          <div className="no-print w-full max-w-3xl mb-3 bg-[#FFFBEB] border border-[#D97706] px-4 py-2 text-[11px] text-[#92400E]" data-testid="quote-labor-undecided-line">
+            {laborItem.label}
           </div>
         )}
         {/* Floating action bar */}
