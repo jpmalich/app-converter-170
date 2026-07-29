@@ -1,5 +1,21 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## STC-1 SECOND PROBE — DRAWINGS CANNOT SETTLE PLACEMENT (2026-07-29 night, 43b7dab)
+- FRONT boundary-box probe (2 calls, ≈$0.30): STC-1's drawn footprint is a
+  TINY wall section BETWEEN D-1 and D-2 — the doors sit OUTSIDE its
+  outline; no ID tags inside; nothing invented. VERDICT: drawing-content
+  problem, not boundary detection. Per Howard's pre-made ruling: stop
+  asking drawings to do placement. Crop pass = checking tool only.
+- Target contested + named: Hover table 5 STC + 2 BR = 7 vs Howard's
+  walked 5 (and his ruling that Hover's "brick" is also block).
+- STANDING RULE WIRED: ID-as-constraint rides every S2 read (printed ID
+  universe in the prompt), pinned.
+- Cost comparison delivered: triggered crop ~$2–4/import + 2–3 min and
+  demonstrated unreliable, vs contractor tap (one deterministic "which
+  openings sit on block?" list, ~30s, $0/import, ~half-day build) — awaits
+  Howard's ruling.
+- Guard: 2026-07-29 20:52 UTC · 43b7dab · CLEAN · 1563 passed.
+
 ## DEEP VERIFY RETIRED + STC-1 PROBE RUN (2026-07-29 evening, bd63fff)
 - **RETIREMENT EXECUTED as reported**: Phase 2 vision-verify + Phase 3 Deep
   Verify removed (endpoint, hover_page_cache + TTL indexes, dead cache key,

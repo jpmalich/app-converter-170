@@ -32,3 +32,25 @@ count. bbox pass on all 4 cardinal pages, crop (+10% margin) where found.
 
 Raw log: /tmp/probe_stc1.log (script: /app/memory/evidence/probe_stc1.py)
 STOPPED per ruling — nothing else built off this one-region result.
+
+## SECOND PROBE — FRONT BOUNDARY-BOX REFINEMENT (2 calls, 11s, ≈$0.30)
+- Boundary trace found STC-1 on FRONT but reports it as "a small wall
+  section BETWEEN the door D-1 and the large D-2 area" — 87×36 px of a
+  1684×1191 page, boundary_fully_traced=false, "no distinct hatched or
+  colored area."
+- Crop of that section + margin: openings visible with size callouts
+  (2'9", 3') but NO printed ID tags inside; opening_ids_inside=[],
+  nothing invented, nothing uncertain.
+- VERDICT: DRAWING-CONTENT problem, not boundary detection. Hover's FRONT
+  drawing gives STC-1 a tiny footprint and draws D-1/D-2 OUTSIDE its
+  outline (consistent with the page reads that placed D-1 on WR-1 and
+  D-2 on WR-7). The printed table's "STC-1: 5" is not reflected in the
+  drawn region's boundary. Combined with the RIGHT-view structural
+  finding (that masonry is labeled STC-2): the drawings cannot settle
+  opening-to-region placement in this format.
+- TARGET CONTESTED (named, unresolved): Hover's table = 5 STC + 2 BR = 7
+  non-wrap openings; Howard walked 5; Howard has ruled Hover's "brick" is
+  also block. The drawing cannot arbitrate this; disagreement stands.
+- STANDING RULE EXECUTED: ID-as-constraint now rides EVERY S2 read (the
+  printed ID universe is in the prompt; "an honest omission beats a
+  guessed tag"), pinned by test_id_constraint_rides_every_read.
