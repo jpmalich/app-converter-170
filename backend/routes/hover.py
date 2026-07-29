@@ -2505,6 +2505,14 @@ async def hover_import(
     user_id = user.get("id", "anon")
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
+    # S1 — SUBSTRATE PERSISTENCE (authorized 2026-07-29): keep the PDF on
+    # disk past the 1h page-cache TTL so the elevation-geometry read
+    # (S2) can re-render Hover's drawn pages any time. Keyed by run_id.
+    pdf_dir = os.path.join(os.path.dirname(__file__), "..", "uploads", "hover_pdfs")
+    os.makedirs(pdf_dir, exist_ok=True)
+    pdf_path = os.path.abspath(os.path.join(pdf_dir, f"{run_id}.pdf"))
+    with open(pdf_path, "wb") as fh:
+        fh.write(raw)
     await db.hover_import_runs.insert_one({
         "run_id": run_id,
         "user_id": user_id,
@@ -2513,6 +2521,8 @@ async def hover_import(
         "overhang_in": overhang_in,
         "raw_extract_chars": len(text),
         "pdf_size_bytes": len(raw),
+        "pdf_name": file.filename,
+        "pdf_path": pdf_path,
         "created_at": now,
         "updated_at": now,
         "completed_at": None,
@@ -2537,6 +2547,36 @@ async def hover_import(
 
 # Iter 79d — index for hover_import_runs lives in startup.py
 # (run_id unique + created_at TTL 24h).
+
+
+@router.post("/estimates/hover-elevation-read/{run_id}")
+async def hover_elevation_read(run_id: str, user: dict = Depends(get_current_user)):
+    """S2 — read Hover's OWN drawn elevation pages (report only, no S3:
+    nothing feeds flags or counts; Howard reviews the acceptance runs
+    first). Requires the persisted PDF from S1 — older runs need a
+    re-upload."""
+    doc = await db.hover_import_runs.find_one({"run_id": run_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Hover run not found (runs expire after 24h — re-upload the PDF)")
+    pdf_path = doc.get("pdf_path")
+    if not pdf_path or not os.path.exists(pdf_path):
+        raise HTTPException(status_code=409, detail=(
+            "This run predates PDF persistence (S1) — re-upload the Hover "
+            "PDF and run the read on the fresh import."))
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
+    with open(pdf_path, "rb") as fh:
+        raw = fh.read()
+    from routes.hover_elevation_read import read_elevation_geometry
+    schedule_text = _extract_pdf_text(raw)
+    report = await read_elevation_geometry(
+        raw, api_key, session_id=f"elevread-{run_id}", schedule_text=schedule_text)
+    await db.hover_import_runs.update_one(
+        {"run_id": run_id},
+        {"$set": {"elevation_read": report,
+                  "elevation_read_at": datetime.now(timezone.utc).isoformat()}})
+    return {"run_id": run_id, **report}
 
 
 @router.get("/estimates/hover-import/status/{run_id}")
