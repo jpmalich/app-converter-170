@@ -243,7 +243,7 @@ def pieces_needed(
     """Generic LP material qty: ceil(area / coverage × (1 + waste))."""
     if wall_area_sqft <= 0 or coverage_sqft_per_pc <= 0:
         return 0
-    return int(math.ceil(float(wall_area_sqft) / float(coverage_sqft_per_pc) * (1.0 + float(waste))))
+    return int(math.ceil(float(wall_area_sqft) / float(coverage_sqft_per_pc) * (1.0 + float(waste)) - 1e-9))
 
 
 def lap_pieces(wall_area_sqft: float, profile: str | None = None,
@@ -298,7 +298,7 @@ def bb_batten_pieces(total_lf: float) -> int:
     """RULED: pieces = ceil(LF ÷ 16). NO waste term on battens."""
     if total_lf <= 0:
         return 0
-    return int(math.ceil(float(total_lf) / BATTEN_STOCK_LENGTH_FT))
+    return int(math.ceil(float(total_lf) / BATTEN_STOCK_LENGTH_FT - 1e-9))
 
 
 def board_batten_batten_pieces(
@@ -360,4 +360,4 @@ def shake_540_series_bump(shake_sqft: float) -> int:
     are present."""
     if shake_sqft <= 0:
         return 0
-    return int(math.ceil(shake_sqft / 100.0 * SHAKE_540_BUMP_PCS_PER_100_SQFT))
+    return int(math.ceil(shake_sqft / 100.0 * SHAKE_540_BUMP_PCS_PER_100_SQFT - 1e-9))

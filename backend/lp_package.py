@@ -532,7 +532,7 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                     + (f" + {bump} shake belly-band pcs" if bump else ""))
         else:
             wrap_lf = wc * 14 + ec * 18 + pc * 19 + gc * 32
-            wrap_qty = max(1, math.ceil(wrap_lf / 16.0)) + bump
+            wrap_qty = max(1, math.ceil(wrap_lf / 16.0 - 1e-9)) + bump
             note = (f"windows 4-side ({wc}×14') + doors 3-SIDE head+legs (ruled): entry {ec}×18' "
                     f"(21−3 sill), patio {pc}×19' (25−6 sill) = {wrap_lf} LF ÷ 16"
                     + (f" + {bump} shake belly-band pcs" if bump else ""))
@@ -611,7 +611,7 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             flags.append("thin siding waste margin — starter rips may consume the cushion")
         lines.append({"tab": "lp_smart", "section": "LP Siding Accessories",
                       "name": STARTER_LINE_NAME, "unit": "LF",
-                      "qty": int(math.ceil(starter_lf)), "pieces_added": rip_pcs,
+                      "qty": int(math.ceil(starter_lf - 1e-9)), "pieces_added": rip_pcs,
                       "non_sku": True, "source_sku": LAP8_ITEM,
                       "note": note,
                       "_derivation": {"kind": "starter", "starter_lf": starter_lf}})

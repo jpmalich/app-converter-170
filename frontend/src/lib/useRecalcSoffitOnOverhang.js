@@ -69,14 +69,14 @@ function findCatalogItem(catalog, sectionTitle, itemName) {
 function lpSoffitPcs(overhangIn, lf, extraSqft = 0) {
   const area = (overhangIn / 12.0) * (lf || 0) + (extraSqft || 0);
   if (area <= 0) return 0;
-  return Math.max(0, Math.ceil(area / LP_SOFFIT_SQFT_PER_PC * LP_WASTE));
+  return Math.max(0, Math.ceil(area / LP_SOFFIT_SQFT_PER_PC * LP_WASTE - 1e-9));
 }
 
 function charterOakSoffitPcs(overhangIn, eavesLf, rakesLf, extraSqft = 0) {
   const totalLf = (eavesLf || 0) + (rakesLf || 0);
   const area = (overhangIn / 12.0) * totalLf + (extraSqft || 0);
   if (area <= 0) return 0;
-  return Math.max(0, Math.ceil(area / CHARTER_OAK_SQFT_PER_PC));
+  return Math.max(0, Math.ceil(area / CHARTER_OAK_SQFT_PER_PC - 1e-9));
 }
 
 export default function useRecalcSoffitOnOverhang(est, update, catalog = []) {
@@ -120,7 +120,7 @@ export default function useRecalcSoffitOnOverhang(est, update, catalog = []) {
     // Charter Oak Soffit covers ~10 sqft (10" exposure × 12' panel), so
     // qty_pcs = ceil(porch_sqft / 10).
     const porchCharterPcs =
-      porchTotal > 0 ? Math.ceil(porchTotal / CHARTER_OAK_SQFT_PER_PC) : 0;
+      porchTotal > 0 ? Math.ceil(porchTotal / CHARTER_OAK_SQFT_PER_PC - 1e-9) : 0;
     const targets = {
       [CHARTER_OAK_SOFFIT]: charterOakSoffitPcs(current, eavesLf, rakesLf, porchTotal),
       [LP_VENTED]: lpSoffitPcs(current, eavesLf, porchTotal),

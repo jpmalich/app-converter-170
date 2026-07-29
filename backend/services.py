@@ -673,7 +673,7 @@ async def ensure_tiers_seeded():
         for ln in lines:
             if ln.get("name") in SOFFIT_J_NAMES and ln.get("unit") == "LF":
                 ln["unit"] = "PCS"
-                ln["qty"] = max(1, math.ceil(float(ln.get("qty") or 0) / 12.5))
+                ln["qty"] = max(1, math.ceil(float(ln.get("qty") or 0) / 12.5 - 1e-9))
                 dirty = True
         if dirty:
             await db.estimates.update_one(
@@ -818,7 +818,7 @@ async def ensure_tiers_seeded():
             # Trim LF → PCS: ceil(qty / 16), unit "LF" → "PCS", mat × 16
             # (old LF mat × 16 = per-16'-board mat → preserves line total).
             if ln.get("name") in LP_TRIM_NEW_NAMES and ln.get("unit") == "LF":
-                ln["qty"] = max(1, math.ceil(float(ln.get("qty") or 0) / 16.0))
+                ln["qty"] = max(1, math.ceil(float(ln.get("qty") or 0) / 16.0 - 1e-9))
                 ln["unit"] = "PCS"
                 old_mat = float(ln.get("mat") or 0)
                 if old_mat > 0:
@@ -1151,7 +1151,7 @@ async def ensure_tiers_seeded():
             if ln.get("name") == PORCH_OLD or ln.get("unit") == "SQ FT":
                 if ln.get("unit") == "SQ FT":
                     ln["unit"] = "PCS"
-                    ln["qty"] = max(1, math.ceil(float(ln.get("qty") or 0) / 10))
+                    ln["qty"] = max(1, math.ceil(float(ln.get("qty") or 0) / 10 - 1e-9))
                     cur_mat = float(ln.get("mat") or 0)
                     if cur_mat > 0 and cur_mat < 5:
                         ln["mat"] = round(cur_mat * 10, 2)

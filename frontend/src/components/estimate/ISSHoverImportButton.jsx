@@ -69,7 +69,7 @@ export function buildISSLinesFromMeasurements(m) {
   // coil = ~9 ft drop + slack). Howard reported this was missing from
   // the ISS Apply flow because ISS bypasses the shared hover.py mapper.
   const eavesLf = Number(m.eaves_lf) || 0;
-  const downspoutCount = eavesLf > 0 ? Math.max(2, Math.ceil(eavesLf / 30)) : 0;
+  const downspoutCount = eavesLf > 0 ? Math.max(2, Math.ceil(eavesLf / 30 - 1e-9)) : 0;
   push("Seamless Gutter with Siding", "Downspout", "lf", downspoutCount * 10);
   push("Misc. Labor and Material", "Cap windows", "ea", m.window_count);
   push("Misc. Labor and Material", "Cap entry door", "ea", m.entry_door_count);

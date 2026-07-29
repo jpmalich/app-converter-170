@@ -54,7 +54,7 @@ export function porchMathHint(porches, kind) {
     return `${exprStr} = ${round2(total)} LF (${labelStr})`;
   }
   // sqft kind — show sqft → pcs conversion (10 sqft per piece)
-  const pcs = Math.ceil(total / 10);
+  const pcs = Math.ceil(total / 10 - 1e-9);
   return `${exprStr} = ${round2(total)} sqft → ${pcs} pcs (${labelStr})`;
 }
 

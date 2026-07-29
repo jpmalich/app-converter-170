@@ -163,7 +163,7 @@ def _finish_trim_pcs(m: dict) -> int:
     2 passes at each rake total — adding rake here would push it to 4."""
     eaves = float(m.get("eaves_lf") or 0)
     win_perim = _window_perim_total_lf(m)
-    return max(0, math.ceil((eaves + win_perim) / 12.5))
+    return max(0, math.ceil((eaves + win_perim) / 12.5 - 1e-9))
 
 
 def _finish_trim_note(m: dict) -> str:
@@ -174,7 +174,7 @@ def _finish_trim_note(m: dict) -> str:
            if windows else
            f"{int(m.get('window_count') or 0)} wins × {int(WINDOW_PERIM_LF_FALLBACK)} LF (fallback)")
     total = eaves + win_perim
-    pcs = max(0, math.ceil(total / 12.5))
+    pcs = max(0, math.ceil(total / 12.5 - 1e-9))
     return (f"{eaves:.0f} eaves + {win_perim:.0f} LF window perim "
             f"({src}) = {total:.0f} LF ÷ 12.5 = {pcs} pcs")
 
@@ -221,7 +221,7 @@ def _downspout_count(m: dict) -> int:
     eaves = float(m.get("eaves_lf") or 0)
     if eaves <= 0:
         return 0
-    return max(2, math.ceil(eaves / 25))
+    return max(2, math.ceil(eaves / 25 - 1e-9))
 
 
 # Iter 78z (P1.4) — Story-aware downspout drop length.
@@ -277,14 +277,14 @@ def _gutter_run_count(m: dict) -> int:
     eaves = float(m.get("eaves_lf") or 0)
     if eaves <= 0:
         return 0
-    return max(2, math.ceil(eaves / 30))
+    return max(2, math.ceil(eaves / 30 - 1e-9))
 
 
 def _hangers_count(m: dict) -> int:
     eaves = float(m.get("eaves_lf") or 0)
     if eaves <= 0:
         return 0
-    spaced = math.ceil(eaves / 2)
+    spaced = math.ceil(eaves / 2 - 1e-9)
     runs = _gutter_run_count(m)
     return spaced + runs
 
@@ -293,7 +293,7 @@ def _hangers_breakdown(m: dict) -> str:
     eaves = float(m.get("eaves_lf") or 0)
     if eaves <= 0:
         return "No eaves → 0 hangers"
-    spaced = math.ceil(eaves / 2)
+    spaced = math.ceil(eaves / 2 - 1e-9)
     runs = _gutter_run_count(m)
     return (f"{eaves:.0f} LF ÷ 2 ft spacing = {spaced} + {runs} runs "
             f"(1 per run) = {spaced + runs} hangers")
@@ -373,7 +373,7 @@ def _pipe_clips_count(m: dict) -> int:
     if n_down <= 0:
         return 0
     drop = _downspout_drop_ft(m)
-    per_down = max(2, math.ceil(drop / 6))
+    per_down = max(2, math.ceil(drop / 6 - 1e-9))
     return n_down * per_down
 
 
@@ -382,7 +382,7 @@ def _pipe_clips_breakdown(m: dict) -> str:
     if n_down <= 0:
         return "No downspouts → 0 pipe clips"
     drop = _downspout_drop_ft(m)
-    per_down = max(2, math.ceil(drop / 6))
+    per_down = max(2, math.ceil(drop / 6 - 1e-9))
     total = n_down * per_down
     return (f"{n_down} downspouts × {per_down} clips ({drop:.0f} LF drop ÷ 6) "
             f"= {total} clips")
@@ -400,7 +400,7 @@ def _sealant_count(m: dict) -> int:
     end_caps = runs * 2
     outlets = _downspout_count(m)
     joints = mitres + end_caps + outlets
-    return max(1, math.ceil(joints / 4)) if joints > 0 else 0
+    return max(1, math.ceil(joints / 4 - 1e-9)) if joints > 0 else 0
 
 
 def _sealant_breakdown(m: dict) -> str:
@@ -489,17 +489,17 @@ def _region_context_lines(m: dict) -> list[dict]:
         clap_base = sum(base_lf.get(f, 0.0) for f in clap_fams)
         if base_lf:
             net = max(0.0, clap_base - door_ded)
-            qty = max(0, math.ceil(net / 12.5)) if net > 0 else 0
+            qty = max(0, math.ceil(net / 12.5 - 1e-9)) if net > 0 else 0
             line(f"Starter — {clap_label} body", "Starter", qty,
                  f"clap starter 12'6\" (ruled): {clap_base:.0f} LF {clap_label} base − {door_ded:.0f} door deduction = {net:.0f} ÷ 12.5 = {qty} (door deduction assigned to the clap body)")
         else:
-            qty = max(0, math.ceil(starter_lf / 12.5))
+            qty = max(0, math.ceil(starter_lf / 12.5 - 1e-9))
             line(f"Starter — {clap_label} body", "Starter", qty,
                  f"older run without per-region base LF — clap starter from whole-house {starter_lf:.0f} LF; re-run measurement for the region split")
     if "shake" in per:
         s_lf = base_lf.get("shake", 0.0) + gable_lf.get("shake", 0.0)
         if s_lf > 0:
-            qty = math.ceil(s_lf / 12.5)
+            qty = math.ceil(s_lf / 12.5 - 1e-9)
             line("Pelican Bay Shake Starter — shake region", _SHAKE_STARTER_SKU, qty,
                  f"#65516000, own product (never priced as clap starter): {s_lf:.0f} LF shake base/gable-break ÷ 12.5 = {qty} (12'6\" stick assumed — flag for ruling)")
         else:
@@ -508,7 +508,7 @@ def _region_context_lines(m: dict) -> list[dict]:
     if "board_batten" in per:
         bb_lf = base_lf.get("board_batten", 0.0)
         if bb_lf > 0:
-            qty = math.ceil(bb_lf / 12.5)
+            qty = math.ceil(bb_lf / 12.5 - 1e-9)
             line("3/4\" J-Channel Standard color — B&B base", _J_SKU, qty,
                  f"B&B base treatment = J-channel, NO starter (ruled): {bb_lf:.0f} LF B&B base ÷ 12.5 = {qty} — carries the B&B region's product color")
         else:
@@ -522,7 +522,7 @@ def _region_context_lines(m: dict) -> list[dict]:
              f"{br_open} — {clap_label} body region color")
     rakes = float(m.get("rakes_lf") or 0)
     if rakes > 0:
-        qty = math.ceil(rakes / 12.5)
+        qty = math.ceil(rakes / 12.5 - 1e-9)
         gable_note = (f" — borders {'/'.join(sorted(gable_lf))} gable region color"
                       if gable_lf else f" — {clap_label} body region color")
         line("3/4\" J-Channel Standard color — rake/gable", _J_SKU, qty,
@@ -531,12 +531,12 @@ def _region_context_lines(m: dict) -> list[dict]:
     # ---- FINISH TRIM context split ----
     eaves = float(m.get("eaves_lf") or 0)
     if eaves > 0:
-        qty = math.ceil(eaves / 12.5)
+        qty = math.ceil(eaves / 12.5 - 1e-9)
         line("Finish Trim Standard color — eave run", _FT_SKU, qty,
              f"{eaves:.0f} LF eaves ÷ 12.5 = {qty}")
     win_perim = _window_perim_total_lf(m)
     if win_perim > 0:
-        qty = math.ceil(win_perim / 12.5)
+        qty = math.ceil(win_perim / 12.5 - 1e-9)
         line("Finish Trim Standard color — window perimeter", _FT_SKU, qty,
              f"{win_perim:.0f} LF window perimeter ÷ 12.5 = {qty}")
     return out
@@ -619,7 +619,7 @@ def _j_channel_compute(m: dict, include_rakes: bool = True) -> tuple[int, str]:
     )
     if total_lf <= 0:
         return 0, "no openings + no rakes → 0 pcs"
-    pcs = int(math.ceil(total_lf / 12.5))
+    pcs = int(math.ceil(total_lf / 12.5 - 1e-9))
     breakdown = f"{' + '.join(parts)} = {total_lf:.0f} LF ÷ 12.5 = {pcs} pcs"
     return pcs, breakdown
 
@@ -811,7 +811,7 @@ HOVER_MAPPING_SPEC = [
         "waste_included": True,
         "extract": lambda m: math.ceil(
             ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 16
-        ),
+         - 1e-9),
         "note": lambda m: (
             f"Fascia {float(m.get('eaves_lf') or 0):g} LF + rake {float(m.get('rakes_lf') or 0):g} LF ÷ 16, "
             "whole-stick = entire allowance (sealed convention; 8\" width CONTRACTOR-SPEC, Letrick precedent)"
@@ -843,14 +843,14 @@ HOVER_MAPPING_SPEC = [
                     - 16.0 * (m.get("garage_door_count") or 0)
                     - 3.0 * (m.get("entry_door_count") or 0)
                     - 8.0 * (m.get("patio_door_count") or 0)
-                ) / 16)
+                ) / 16 - 1e-9)
                 if (m.get("opening_perimeter_lf") or 0) > 0
                 else math.ceil((
                     (m.get("window_count") or 0) * 14
                     + (m.get("entry_door_count") or 0) * 21
                     + (m.get("patio_door_count") or 0) * 25
                     + (m.get("garage_door_count") or 0) * 32
-                ) / 16)
+                ) / 16 - 1e-9)
             )
             # Q10 (ruled 2026-07-27): frieze CONSUMED — per-segment ÷16 (Q16)
             + _frieze_540_pcs(m)
@@ -1002,7 +1002,7 @@ HOVER_MAPPING_SPEC = [
         # LENGTH-CUT (Howard ruled 2026-07-29): whole-stick count IS the
         # allowance — the waste field multiplies AREA GOODS only.
         "waste_included": True,
-        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5)),
+        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9)),
         "note": "Vinyl 12.5' outside-corner pieces (HOVER LF ÷ 12.5, round up)",
     },
     {
@@ -1011,7 +1011,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Ascend 5.5\" Outside Corner  - MATTE",
         "unit": "PCS",
         "waste_included": True,
-        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5)),
+        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9)),
         "note": "Ascend 12.5' outside-corner pieces / corner LF",
     },
     {
@@ -1054,7 +1054,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Inside Corners (Siding) Standard color",
         "unit": "PCS",
         "waste_included": True,
-        "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5)),
+        "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5 - 1e-9)),
         "note": "12.5' pieces per HOVER inside-corner LF, round up — defaults to Standard color",
     },
     {
@@ -1063,7 +1063,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Inside Corners",
         "unit": "PCS",
         "waste_included": True,
-        "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5)),
+        "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5 - 1e-9)),
         "note": "Ascend inside-corner 12.5' pieces / corner LF, round up",
     },
     # =====================================================================
@@ -1079,7 +1079,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Starter",
         "unit": "PCS",
         "waste_included": True,
-        "extract": lambda m: 0 if _region_split_active(m) else max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
+        "extract": lambda m: 0 if _region_split_active(m) else max(0, math.ceil((m.get("starter_lf") or 0) / 12.5 - 1e-9)),
         "note": "Vinyl Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
     {
@@ -1088,7 +1088,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Ascend - Starter",
         "unit": "PCS",
         "waste_included": True,
-        "extract": lambda m: max(0, math.ceil((m.get("starter_lf") or 0) / 12.5)),
+        "extract": lambda m: max(0, math.ceil((m.get("starter_lf") or 0) / 12.5 - 1e-9)),
         "note": "Ascend Starter pcs = ceil(HOVER starter LF ÷ 12.5)",
     },
     # =====================================================================
@@ -1223,7 +1223,7 @@ HOVER_MAPPING_SPEC = [
         # Q14a (ruled 2026-07-27): measured soffit TOTAL governs on the
         # vinyl list too (the substitution target pulls real quantities).
         "extract": lambda m: (
-            math.ceil(float(m.get("soffit_sqft") or 0) / 10.0)
+            math.ceil(float(m.get("soffit_sqft") or 0) / 10.0 - 1e-9)
             if (m.get("soffit_sqft") or 0) > 0
             else max(
                 0,
@@ -1234,7 +1234,7 @@ HOVER_MAPPING_SPEC = [
                         + (m.get("porch_ceiling_sqft") or 0)
                     )
                     / 10.0
-                ),
+                 - 1e-9),
             )
         ),
         "note": lambda m: (
@@ -1255,7 +1255,7 @@ HOVER_MAPPING_SPEC = [
         "waste_included": True,
         "extract": lambda m: max(
             0,
-            math.ceil(((m.get("eaves_lf") or 0) + 2 * (m.get("rakes_lf") or 0)) / 12.5),
+            math.ceil(((m.get("eaves_lf") or 0) + 2 * (m.get("rakes_lf") or 0)) / 12.5 - 1e-9),
         ),
         "note": "(Eaves + 2 × Rakes) ÷ 12.5 LF/stick — soffit J runs 2 passes at each rake (wall side + fascia return)",
     },
@@ -1330,7 +1330,7 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Shutters (louvered, raised panel) standard sizes",
         "unit": "PR",
-        "extract": lambda m: math.ceil((m.get("shutter_count") or 0) / 2),
+        "extract": lambda m: math.ceil((m.get("shutter_count") or 0) / 2 - 1e-9),
         "note": "HOVER shutter qty ÷ 2 (catalog priced per pair)",
     },
     # Second/Third/Clear Story Fee — flat $1,846 labor adder on Windows
@@ -1390,7 +1390,7 @@ HOVER_MAPPING_SPEC = [
                     if lp_formulas.is_enabled()
                     else max(
                         1,
-                        math.ceil(((m.get("eaves_lf") or 0) + (m.get("porch_ceiling_sqft") or 0) / max(float(m.get("overhang_in") or 12) / 12.0, 0.1)) / 16),
+                        math.ceil(((m.get("eaves_lf") or 0) + (m.get("porch_ceiling_sqft") or 0) / max(float(m.get("overhang_in") or 12) / 12.0, 0.1)) / 16 - 1e-9),
                     )
                 )
             )
@@ -1432,7 +1432,7 @@ HOVER_MAPPING_SPEC = [
                     )
                     if lp_formulas.is_enabled()
                     else (
-                        max(1, math.ceil((m.get("rakes_lf") or 0) / 16))
+                        max(1, math.ceil((m.get("rakes_lf") or 0) / 16 - 1e-9))
                         if (m.get("rakes_lf") or 0) > 0
                         else 0
                     )
@@ -1498,7 +1498,7 @@ HOVER_MAPPING_SPEC = [
         # 2 elbows per downspout (top turn + bottom kick-out). Same
         # 1-per-25 LF rule as downspouts.
         "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 25)) * 2
+            max(2, math.ceil((m.get("eaves_lf") or 0) / 25 - 1e-9)) * 2
             if (m.get("eaves_lf") or 0) > 0 else 0
         ),
         "note": lambda m: _elbow_breakdown(m),
@@ -1515,7 +1515,7 @@ HOVER_MAPPING_SPEC = [
         "item": "End Cap",
         "unit": "Each",
         "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 30)) * 2
+            max(2, math.ceil((m.get("eaves_lf") or 0) / 30 - 1e-9)) * 2
             if (m.get("eaves_lf") or 0) > 0 else 0
         ),
         "note": "2 end caps per gutter run (~1 run per 30 LF eaves, min 2 runs)",
