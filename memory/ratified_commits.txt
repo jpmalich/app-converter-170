@@ -1,2 +1,3 @@
 # Ratified commits — hashes ruled clean by Howard despite auto-commit landing
 # format: <hash> <optional note>
+dce8c1a rulings a-d accepted by Howard 2026-07-29 (AREA-GOODS-ONLY waste seal + detector, batten 0% pin, default-lap double-bake fix, QUOTE/ORDER gates + final-job surface) — platform auto-commit landed the ruled work
