@@ -108,3 +108,12 @@ def test_straight_on_only_oblique_pages_dropped():
     assert set(CARDINAL_VIEWS) == {"FRONT", "BACK", "LEFT", "RIGHT"}
     src = (BACKEND / "routes" / "hover_elevation_read.py").read_text()
     assert 'p["label"] in CARDINAL_VIEWS' in src
+
+
+def test_id_constraint_rides_every_read():
+    """Howard's standing rule from the STC-1 probe (2026-07-29): every
+    vision read carries the deterministic ID universe as a constraint —
+    an honest omission beats a guessed tag."""
+    src = (BACKEND / "routes" / "hover_elevation_read.py").read_text()
+    assert "NEVER invent an ID" in src
+    assert "known_ids_line" in src

@@ -102,7 +102,8 @@ RULES:
 """
 
 
-async def _read_one_geometry(page: dict, api_key: str, session_id: str) -> Optional[dict]:
+async def _read_one_geometry(page: dict, api_key: str, session_id: str,
+                             known_ids_line: str = "") -> Optional[dict]:
     from emergentintegrations.llm.chat import ImageContent, LlmChat, UserMessage
     chat = LlmChat(
         api_key=api_key,
@@ -111,7 +112,7 @@ async def _read_one_geometry(page: dict, api_key: str, session_id: str) -> Optio
     ).with_model("anthropic", MODEL_NAME)
     msg = UserMessage(
         text=(f"Hint: this is most likely the '{page['label']} Elevation' page. "
-              "Extract per the JSON schema."),
+              "Extract per the JSON schema." + known_ids_line),
         file_contents=[ImageContent(
             image_base64=base64.b64encode(page["png_bytes"]).decode("ascii"))],
     )
@@ -227,8 +228,19 @@ async def read_elevation_geometry(pdf_bytes: bytes, api_key: str,
                 "facades": [], "openings_placed": [],
                 "corner_heights_ft": [], "warnings": [], "pages_read": 0}
     reads = []
+    # COUNT/ID-AS-CONSTRAINT (Howard's standing rule from the STC-1 probe,
+    # 2026-07-29): give every read the deterministic ID universe — an
+    # honest omission beats a guessed tag. Text outranks vision.
+    known = sorted({m for m in _ID_RE.findall(schedule_text or "")})
+    known_ids_line = ""
+    if known:
+        known_ids_line = (
+            "\nCONSTRAINT — the report's printed label IDs are exactly: "
+            + ", ".join(known)
+            + ". Anything else does not exist. NEVER invent an ID to fill a "
+              "gap — an honest omission beats a guessed tag.")
     for pg in pages:
-        parsed = await _read_one_geometry(pg, api_key, session_id)
+        parsed = await _read_one_geometry(pg, api_key, session_id, known_ids_line)
         if parsed:
             reads.append(parsed)
     return aggregate_geometry(reads, schedule_text)
