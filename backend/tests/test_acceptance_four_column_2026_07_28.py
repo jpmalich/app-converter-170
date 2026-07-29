@@ -38,7 +38,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from api_base import API  # noqa: E402
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
-HOVER_RUN = "7862dd2cb23b41a4bb16145bbccd4103"   # real 3 Degree Rd import, 2026-07-28
+HOVER_RUN = "a425e75577844733bb512e9fa4959782"   # real 3 Degree Rd import, 2026-07-29 (S1-persisted PDF; archived in fixture_runs, no TTL)
 LAP = '38 Series Lap 3/8" x 8" x 16\''
 PANEL_10 = "38 Series 4' x 10' Panel"
 # SECOND OPINION — the estimate-dept takeoff on 3 Degree Rd (CORRECTED by
@@ -70,6 +70,10 @@ def mongo_db():
 @pytest.fixture(scope="module")
 def hover_measurements(mongo_db):
     run = mongo_db.hover_import_runs.find_one({"run_id": HOVER_RUN}, {"_id": 0})
+    if not run:
+        # 24h TTL on live runs — the acceptance run is archived in
+        # fixture_runs (no TTL), same fallback the apply endpoint uses.
+        run = mongo_db.fixture_runs.find_one({"run_id": HOVER_RUN}, {"_id": 0})
     if not run or not (run.get("result") or {}).get("measurements"):
         pytest.skip("3 Degree hover run expired from substrate — re-import to re-arm")
     return dict(run["result"]["measurements"])
