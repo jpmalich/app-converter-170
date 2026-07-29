@@ -1,5 +1,40 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## S1+S2 HOVER ELEVATION READ · 261 HAUGH ACCEPTANCE (2026-07-29, 469bf90)
+- S1 (PDF persists on import: uploads/hover_pdfs/{run_id}.pdf + pdf_path on
+  run doc) + S2 (drawn-view geometry read, POST
+  /api/estimates/hover-elevation-read/{run_id}) BUILT + pinned (6 tests).
+  S3 UNWIRED BY TEST — Howard reviews acceptance before any wiring ruling.
+- FORMAT FIX (d98b89d): current Hover format titles drawn pages FRONT /
+  FRONT-RIGHT / … (bare compass tokens), not "<label> Elevation" — dedicated
+  exactly-one-token page locator (compass page carries 4 tokens → excluded)
+  + legacy fallback; ID vocab widened (SGD/STC/BR real IDs never falsely
+  flagged); region-in-openings-bucket + facade-label-printed-nowhere are
+  named ⚠.
+- 261 HAUGH RUN (18ac182047fe4def9b2de2063277fa89): 39/39 real openings
+  placed, 18'5" corner read twice (WR-13 BACK + WR-16 LEFT), WR-20 29'3"
+  exact, 35 corner heights; 24 INVENTED IDs on oblique views + WR-30
+  invented label + 2 width disagreements (WR-2, STC-6) + STC-1's 5 block
+  openings scattered to adjacent regions. Full report:
+  /app/memory/s2_haugh_acceptance_2026-07-29.md
+- 3 DEGREE STOPPED: the chat asset hover_pro_measurements_21447034.pdf is
+  2692 TIMBERGLEN DRIVE EAST, Franklin Park — NOT 3 Degree. No substitution
+  per Howard's order; needs the real 3 Degree Hover PDF re-uploaded.
+- Blast-radius answers delivered (Howard's two questions): the 23:26
+  failures were the QUOTE-GATE first cut judging package-only estimates
+  with empty lines arrays (Letrick + Archive-M fixtures) → freeze door
+  409'd, no dollar rule breached, fixed by scoping the gate to
+  rows-carry-qty; test_fork_boundary was the order_released field lagging
+  the LP_SHARED_ESTIMATE_FIELDS register. The 01:38 intake failures were
+  the label sanitizer rewriting the exact flag TEXT those pins assert —
+  logic untouched, pins re-pinned to ruled plain language (85cb873).
+- W1 stale-write SIZING delivered (size only, not authorized): full OCC
+  refuse ≈2 days; warn-only ≈1 day (class survives); lines-only guard not
+  worth it. W2/W3 adopt flows unaffected (adoption delivers fresh rev).
+- Guard sweep note: fork-landing auto-commit f0b7c71 carried the
+  authorized S1/S2 substrate → ratified in memory/ratified_commits.txt.
+  Guard: 2026-07-29 02:54 UTC · 469bf90 · CLEAN · 1575 passed, 1 skipped.
+
 ## ESTIMATE PAGE · BATTEN SEAL · CLASS B UP (2026-07-28 night, fa1dd25)
 - Color tier vinyl-only (kind==="siding"); term kept.
 - B&B wall heights: ORDER-stage copy (quote sells from derived; taped
