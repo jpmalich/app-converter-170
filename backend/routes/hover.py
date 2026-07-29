@@ -3095,8 +3095,28 @@ async def _execute_hover_import_worker(
             warnings.extend(vision_warns)
             if per_elev_drawing:
                 measurements["per_elevation_siding_from_drawing"] = per_elev_drawing
+            else:
+                # SILENT-ZERO-VERIFICATION class (Howard 2026-07-29,
+                # 92/92 audit): a verification step that finds nothing
+                # must NOT render as a pass — loud, on the import, every
+                # time. Detector: test_verification_silent_zero.py
+                warnings.append({
+                    "code": "vision_zero_pages",
+                    "message": ("DRAWING VERIFICATION DID NOT RUN — 0 "
+                                "elevation pages recognized in this PDF's "
+                                "format. Nothing was cross-checked against "
+                                "the drawings."),
+                    "detail": "old-format page finder found no '<label> Elevation' pages",
+                })
         except Exception as e:
             logger.warning("Iter 79d: vision pass failed silently: %s", e)
+            warnings.append({
+                "code": "vision_zero_pages",
+                "message": ("DRAWING VERIFICATION DID NOT RUN — the vision "
+                            "pass errored. Nothing was cross-checked "
+                            "against the drawings."),
+                "detail": str(e)[:200],
+            })
 
         result_payload = {
             "measurements": measurements,

@@ -540,3 +540,26 @@ Pinned: test_partial_put_clobber_class.py (kind-immutability + editor-payload pi
   async worker processing a queued job against a live estimate. RCA queued —
   suspect: background extraction/import worker path. No fixture or live value
   is currently wrong; walk-state verified by pins post-run.
+
+## 2026-07-29 — SILENT-ZERO-VERIFICATION CLASS: NAMED + DETECTOR (Howard's ruling)
+- **THE RULE: A VERIFICATION STEP THAT FINDS NOTHING MUST NOT RENDER AS A
+  PASS.** Silence where verification was expected is the silent-zero class
+  on the surface whose whole job is catching silent zeros.
+- **THE SIGHTING (92-of-92 audit):** the Phase 2 vision-verify / Deep Verify
+  page finder (`_ELEV_RE`, hover_vision.py) matches only "<label> Elevation"
+  page titles; the current Hover report format titles its drawn pages with
+  bare compass tokens (FRONT / FRONT-RIGHT / …). Result: 92 of 92 surviving
+  run docs — including every REAL import in the 24h TTL window (261 Haugh
+  18ac1820, 3 Degree 7862dd2c / 96217b28 / e7a8d661) — carried ZERO drawing
+  pages, and every one of those imports rendered CLEAN: no banner, no named
+  state, since the stage shipped 24 June. An absent verification rendered
+  identically to a passed one.
+- **DETECTOR (not a note):** `tests/test_verification_silent_zero.py` —
+  fails the suite if the vision-verify stage can yield no data without
+  emitting the loud `vision_zero_pages` warning ("DRAWING VERIFICATION DID
+  NOT RUN — …", visible on the import, every time), if the exception path
+  swallows silently, or if the S2 read loses its named zero-page error.
+- **DISPOSITION (Howard):** Deep Verify RETIRES rather than repairs — the
+  straight-on S2 elevation read becomes the single verification pass
+  (checking tool ruling, same date). Retirement executes after Howard rules
+  on the carry-over report.

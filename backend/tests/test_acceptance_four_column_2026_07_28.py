@@ -11,8 +11,12 @@ material list. Not a programmatic fixture with the profile pre-set.
   1. FRESH RUN ....... a NEW estimate from an import, list read end to end
   2. EVERY FAMILY .... VINYL · ASCEND · LP B&B · LP LAP (code in the shared
                        door is tested on the production family, not only LP)
-  3. GROUND TRUTH .... where a real installed list exists (3 Degree Rd:
-                       battens 465 · 540-4" 142 · soffit ≈260)
+  3. SECOND OPINION .. vs the estimate-dept takeoff on 3 Degree Rd
+                       (battens 465 · 540-4" 142 · soffit ≈260). CORRECTED
+                       2026-07-29 (Howard): these are NOT installed
+                       quantities — they are another estimator's read of
+                       the same Hover report. NO HOUSE IN THIS PROJECT IS
+                       VALIDATED AGAINST DELIVERED MATERIAL yet.
   4. BOTH DOORS ...... Hover AND photo
 
 Emits /app/memory/acceptance_table_2026_07_28.md with all four columns.
@@ -37,9 +41,11 @@ from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 HOVER_RUN = "7862dd2cb23b41a4bb16145bbccd4103"   # real 3 Degree Rd import, 2026-07-28
 LAP = '38 Series Lap 3/8" x 8" x 16\''
 PANEL_10 = "38 Series 4' x 10' Panel"
-# GROUND TRUTH — the real installed list on 3 Degree Rd (Howard, 2026-07-28)
-GROUND_TRUTH = {"battens_lf_installed": 465, "trim_540_4_installed": 142,
-                "soffit_sqft_installed": 260}
+# SECOND OPINION — the estimate-dept takeoff on 3 Degree Rd (CORRECTED by
+# Howard 2026-07-29: NOT installed/delivered quantities; another
+# estimator's read of the same source — either side may be off).
+SECOND_OPINION = {"battens_second_opinion": 465, "trim_540_4_second_opinion": 142,
+                  "soffit_sqft_second_opinion": 260}
 
 TABLE_PATH = Path("/app/memory/acceptance_table_2026_07_28.md")
 _rows = []
@@ -173,10 +179,11 @@ def test_pick_after_import_rederives_nothing_stale(session, hover_measurements,
 
 
 def _ground_truth_column(pkg, est_doc):
-    """COLUMN 3 — machine vs the real installed list on 3 Degree Rd.
-    Reconciled lines HARD-ASSERT; open gaps are RECORDED with their delta
-    (queue item d owns the diagnosis — this column keeps them visible on
-    every acceptance run, never silently theoretical)."""
+    """COLUMN 3 — machine vs the SECOND OPINION (estimate-dept takeoff)
+    on 3 Degree Rd. CORRECTED 2026-07-29: not installed quantities —
+    another estimator's read of the same Hover report; either may be off.
+    Reconciled lines HARD-ASSERT presence; deltas are RECORDED, never
+    silently theoretical."""
     lines = pkg["lines"]
     def total(pred):
         return sum(float(l.get("qty") or 0) for l in lines if pred(l))
@@ -184,12 +191,12 @@ def _ground_truth_column(pkg, est_doc):
     trim540_4 = total(lambda l: l["name"].startswith('540 Series Trim') and '4" x 16' in l["name"])
     soffit = sum(float(l.get("qty") or 0) for l in (est_doc.get("lines") or [])
                  if l.get("tab") == "lp_smart" and "Soffit 16" in (l.get("name") or ""))
-    _record("LP B&B", "Hover", "Battens 190 Series sticks (installed 465)",
-            battens, "PCS", f"delta {battens - 465:+.1f} — OPEN, queue item d")
-    _record("LP B&B", "Hover", '540-4" trim (machine vs installed 142)',
-            trim540_4, "PCS", f"delta {trim540_4 - 142:+.1f} — OPEN, queue item d")
-    _record("LP B&B", "Hover", "Soffit pcs (installed ≈260 ft² basis)",
-            soffit, "PCS", "recorded")
+    _record("LP B&B", "Hover", "Battens 190 Series sticks (second opinion 465)",
+            battens, "PCS", f"delta {battens - 465:+.1f} — vs est-dept read, OPEN")
+    _record("LP B&B", "Hover", '540-4" trim (machine vs second opinion 142)',
+            trim540_4, "PCS", f"delta {trim540_4 - 142:+.1f} — vs est-dept read, OPEN")
+    _record("LP B&B", "Hover", "Soffit pcs (second opinion ≈260 ft² basis — UNCONFIRMED)",
+            soffit, "PCS", "recorded — Hover's 2620 ft² soffit stands UNVALIDATED")
     assert battens > 0 and trim540_4 >= 0   # column populated, never blank
 
 
@@ -239,10 +246,18 @@ def test_zz_emit_acceptance_table():
     fams = {r[0] for r in _rows}
     assert {"Hover", "Photo"} <= doors, f"BOTH DOORS required, got {doors}"
     assert {"VINYL", "ASCEND", "LP B&B", "LP LAP"} <= fams, f"EVERY FAMILY required, got {fams}"
-    assert any("installed" in r[2] for r in _rows), "GROUND TRUTH column missing"
+    assert any("second opinion" in r[2] for r in _rows), "SECOND-OPINION column missing"
     lines = ["# Four-column acceptance — 3 Degree Rd (run 7862dd2c)",
-             "", "Sealed 2026-07-28: fresh run · every family · ground truth · both doors.",
-             "(Deterministic content — re-emitted identically on every green run so the",
+             "", "Sealed 2026-07-28: fresh run · every family · second opinion · both doors.",
+             "",
+             "**CORRECTION (Howard, 2026-07-29): the 3 Degree comparison figures",
+             "(battens 465 · 540-4\" 142 · soffit ≈260) are the ESTIMATE",
+             "DEPARTMENT'S takeoff off the same Hover report — NOT installed or",
+             "delivered quantities. They are a SECOND OPINION; either side may be",
+             "off. NO HOUSE IN THIS PROJECT HAS BEEN VALIDATED AGAINST MATERIAL",
+             "THAT ACTUALLY GOT DELIVERED. A match in this column is agreement",
+             "between two estimates, not proof.**",
+             "", "(Deterministic content — re-emitted identically on every green run so the",
              "guard's clean-tree covenant holds; qty changes here are REAL changes.)",
              "", "| Family | Door | Line | Qty | Unit | Note |",
              "|---|---|---|---|---|---|"]

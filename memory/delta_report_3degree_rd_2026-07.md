@@ -1,4 +1,13 @@
 # REAL-JOB DELTA REPORT — EST-562488 "3 Degree Rd" (2026-07)
+> **CORRECTION (Howard, 2026-07-29) — READ FIRST**: the "real"/"installed"
+> figures in this report (155 panels · 465 battens · 142 trim · ≈260 soffit
+> pcs) are the ESTIMATE DEPARTMENT'S takeoff off the same Hover report —
+> NOT installed or delivered quantities. Treat every "real" column as a
+> SECOND OPINION; either side may be off. **The soffit validation
+> COLLAPSES**: 2620 ÷ 10 ≈ 260 only matched another estimate, so Hover's
+> 2,620 ft² soffit stands UNCONFIRMED (Howard's eye says ~1 ft overhangs;
+> it is an $11,900 line). NO HOUSE IN THIS PROJECT IS VALIDATED AGAINST
+> MATERIAL THAT ACTUALLY GOT DELIVERED.
 > **ADDENDUM 2026-07-27**: Howard ruled Q1–Q17 in one sitting; all seventeen landed as code.
 > Acceptance re-derive + regenerated app-vs-real table: `/app/memory/rulings_q1_q17_landed_2026-07-27.md`.
 **Report only. No code was touched. Rules with the pasted Completeness Matrix in ONE sitting.**
