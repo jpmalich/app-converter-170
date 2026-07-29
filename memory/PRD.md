@@ -1,5 +1,29 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## STRAIGHT-ON RULING + DEEP VERIFY SILENT-ZERO FOUND (2026-07-29, 6d8fe50)
+- Howard ruled STRAIGHT-ON ONLY: oblique compass pages dropped from the S2
+  read (CARDINAL_VIEWS pin). Haugh re-run: 63⚠→9⚠, invented 24→2,
+  real-opening doubles 22→0; STC-1 still gets 0 of its 5 openings —
+  REGION-BOUNDARY placement is the real weakness. 3 Degree fresh S1+S2
+  (a425e755): 21/35 openings, 13/37 width callouts (46% area coverage) —
+  drawn pages don't dimension every facade; formulas off extracted dims:
+  battens 373@12"/546@8" vs 465 shipped, panels 68 vs 155 (147 off
+  Hover-printed 4504). Full artifact:
+  /app/memory/s2_straight_on_acceptance_2026-07-29.md
+- DEEP VERIFY SILENT-ZERO (report only, unwired): old _ELEV_RE matches
+  "<label> Elevation" only — current format uses bare compass tokens.
+  92/92 surviving run docs (24h TTL) found ZERO drawing pages incl. every
+  real import; zero-page runs render as CLEAN imports (no banner, no named
+  state). New locator used ONLY by S2; Deep Verify wiring awaits ruling.
+- HEIGHTS RE-PLAN: corner dims cannot carry per-facade height (1 facade
+  height callout on 3 Degree; corners disagree on gables; corner dim =
+  trim length not wall avg). Corner reads = cross-checks + tall-corner
+  detection only; height input stays HOVER-SCHEDULE stacked or taped.
+- W1 stale-write: PARKED by Howard (warn-only rejected; full fix moves up
+  only if work is ever lost to a second tab).
+- S3 STAYS UNWIRED until Howard reads the straight-on re-run + 3 Degree
+  columns. Guard: 2026-07-29 04:11 UTC · 6d8fe50 · CLEAN · 1576 passed.
+
 ## S1+S2 HOVER ELEVATION READ · 261 HAUGH ACCEPTANCE (2026-07-29, 469bf90)
 - S1 (PDF persists on import: uploads/hover_pdfs/{run_id}.pdf + pdf_path on
   run doc) + S2 (drawn-view geometry read, POST
