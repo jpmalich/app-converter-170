@@ -31,7 +31,7 @@ def test_zero_page_vision_pass_is_loud_on_the_import():
     assert "DRAWING VERIFICATION DID NOT RUN" in src
     # the warning lands in the same `warnings` list the import result
     # carries — the UI banner renders result.warnings unconditionally
-    block = src.split('vision_warns, per_elev_drawing = await run_vision_pass')[1][:2000]
+    block = src.split('elevation_read = await read_elevation_geometry')[1][:2500]
     assert 'warnings.append' in block
 
 

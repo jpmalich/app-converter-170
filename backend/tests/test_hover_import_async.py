@@ -178,7 +178,7 @@ def test_status_eventually_done_or_error(auth_session, small_pdf_bytes):
         result = body.get("result")
         assert result is not None, "status=done but result is None"
         # Required fields per spec
-        for key in ("measurements", "lines", "vero_openings", "mezzo_openings", "warnings", "deep_verify_cache_key"):
+        for key in ("measurements", "lines", "vero_openings", "mezzo_openings", "warnings", "elevation_read"):
             assert key in result, f"Missing '{key}' in result. Keys present: {list(result.keys())}"
     elif body["status"] == "error":
         assert body.get("error"), "status=error but no error message"

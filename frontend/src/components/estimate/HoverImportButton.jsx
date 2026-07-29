@@ -8,7 +8,7 @@
 // them read-only above the line list so the contractor can sanity-check before
 // committing.
 import React, { useRef, useState } from "react";
-import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer, ScanSearch } from "lucide-react";
+import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
@@ -160,10 +160,8 @@ export default function HoverImportButton({ est, update, save }) {
     && cachedSource !== "blueprint"
     && cachedSource !== "ai_photo"
   );
-  // Iter 78q — Phase 3 Deep Verify state. Keyed by warning code so multiple
-  // elevations can be verified independently. Value shape:
-  //   "loading" | { ok, label, scale_bar_found, measured_*, delta_vs_*, ... }
-  const [deepVerify, setDeepVerify] = useState({});
+  // (Deep Verify retired 2026-07-29 — the straight-on elevation read is
+  // the single verification pass; its warnings ride the same banner.)
   // SEALED DEFAULT (Howard, 2026-07-28 — production restore): the facade
   // default COMPOSES AT IMPORT — wall classes side; masonry classes
   // (brick/block/stone + stucco/metal per sealed rules) exclude with the
@@ -192,33 +190,6 @@ export default function HoverImportButton({ est, update, save }) {
   const wasteFieldPrefill = Number(
     result?.measurements?._waste_field_prefill_pct ?? 10
   );
-
-  const runDeepVerify = async (warning) => {
-    // Extract elevation label from the warning code, e.g.
-    // "vision_elev_delta_front" -> "Front"
-    const match = (warning.code || "").match(/^vision_elev_delta_(.+)$/);
-    if (!match) return;
-    const label = match[1].replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    const cacheKey = result?.deep_verify_cache_key;
-    if (!cacheKey) {
-      toast.error("Deep Verify is only available right after a fresh HOVER import");
-      return;
-    }
-    setDeepVerify((prev) => ({ ...prev, [warning.code]: "loading" }));
-    try {
-      const { data } = await api.post("/estimates/hover-deep-verify", {
-        cache_key: cacheKey,
-        label,
-        measurements: result?.measurements || {},
-        phase2_drawing:
-          (result?.measurements?.per_elevation_siding_from_drawing || {})[label] || {},
-      });
-      setDeepVerify((prev) => ({ ...prev, [warning.code]: data }));
-    } catch (e) {
-      setDeepVerify((prev) => ({ ...prev, [warning.code]: null }));
-      toast.error(e?.response?.data?.detail || "Deep Verify failed");
-    }
-  };
 
   const upload = async (f) => {
     if (!f) return;
@@ -648,7 +619,6 @@ export default function HoverImportButton({ est, update, save }) {
       setResult(null);
       setOpenings([]);
       setRestoredAt(null);
-      setDeepVerify({});
     }
   };
 
@@ -739,7 +709,7 @@ export default function HoverImportButton({ est, update, save }) {
       {result && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-          onClick={() => { setResult(null); setOpenings([]); setRestoredAt(null); setDeepVerify({}); }}
+          onClick={() => { setResult(null); setOpenings([]); setRestoredAt(null); }}
           data-testid="hover-modal-backdrop"
         >
           <div
@@ -764,7 +734,7 @@ export default function HoverImportButton({ est, update, save }) {
               <button
                 type="button"
                 className="text-white/90 hover:text-white"
-                onClick={() => { setResult(null); setOpenings([]); setRestoredAt(null); setDeepVerify({}); }}
+                onClick={() => { setResult(null); setOpenings([]); setRestoredAt(null); }}
                 aria-label="Close"
                 data-testid="hover-modal-close"
               >
@@ -791,99 +761,20 @@ export default function HoverImportButton({ est, update, save }) {
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {result.warnings.map((w) => {
-                      const canDeepVerify =
-                        (w.code || "").startsWith("vision_elev_delta_") &&
-                        !!result?.deep_verify_cache_key;
-                      const dv = deepVerify[w.code];
-                      return (
-                        <div
-                          key={w.code}
-                          className="text-[12px] text-[#78350F] leading-snug"
-                          data-testid={`hover-warning-${w.code}`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <div className="font-bold">⚠ {w.message}</div>
-                              {w.detail && (
-                                <div className="text-[10px] font-mono-num text-[var(--warning-text)] mt-0.5">
-                                  {w.detail}
-                                </div>
-                              )}
-                            </div>
-                            {canDeepVerify && dv !== "loading" && !dv?.ok && (
-                              <button
-                                type="button"
-                                onClick={() => runDeepVerify(w)}
-                                className="px-2 py-1 bg-[var(--surface)] text-[var(--warning-text)] border border-[var(--warning-text)] hover:bg-[#FEF3C7] text-[10px] font-bold uppercase tracking-wider whitespace-nowrap inline-flex items-center gap-1"
-                                title="Re-measure this elevation using the scale bar (~$0.40, ~10s)"
-                                data-testid={`deep-verify-${w.code}`}
-                              >
-                                <ScanSearch aria-hidden="true" className="w-3 h-3" /> Deep Verify
-                              </button>
-                            )}
-                            {dv === "loading" && (
-                              <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--warning-text)] flex items-center gap-1.5 whitespace-nowrap">
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                                Verifying…
-                              </div>
-                            )}
+                    {result.warnings.map((w) => (
+                      <div
+                        key={w.code}
+                        className="text-[12px] text-[#78350F] leading-snug"
+                        data-testid={`hover-warning-${w.code}`}
+                      >
+                        <div className="font-bold">⚠ {w.message}</div>
+                        {w.detail && (
+                          <div className="text-[10px] font-mono-num text-[var(--warning-text)] mt-0.5">
+                            {w.detail}
                           </div>
-                          {/* Iter 78q — Deep Verify result panel: 3-way
-                              comparison (deep-verify vs Phase 2 drawing
-                              vs text). Renders inline under the warning
-                              that triggered it. */}
-                          {dv && dv !== "loading" && (
-                            <div
-                              className="mt-2 p-2.5 bg-[var(--surface)] border border-[var(--warning-text)] space-y-1.5"
-                              data-testid={`deep-verify-result-${w.code}`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--warning-text)] inline-flex items-center gap-1">
-                                  <ScanSearch aria-hidden="true" className="w-3 h-3" /> Deep Verify · {dv.label} Elevation
-                                </div>
-                                <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">
-                                  confidence: {dv.confidence || "—"}
-                                </div>
-                              </div>
-                              {dv.scale_bar_found === false && (
-                                <div className="text-[10px] text-[var(--warning-text)] italic">
-                                  Scale bar not detected — measurement is best-effort.
-                                </div>
-                              )}
-                              <div className="grid grid-cols-3 gap-2 text-[10px] font-mono-num">
-                                <div className="border border-[#FCD34D] bg-[#FFFBEB] p-1.5">
-                                  <div className="text-[9px] uppercase tracking-wider font-bold text-[var(--warning-text)]">Scale-bar</div>
-                                  <div className="text-[13px] font-bold text-[var(--ink)]">
-                                    {dv.measured_gross_wall_sqft?.toFixed?.(0) || "—"} ft²
-                                  </div>
-                                  <div className="text-[9px] text-[var(--muted)]">
-                                    {dv.measured_width_ft?.toFixed?.(0) || "—"}×{dv.measured_height_ft?.toFixed?.(0) || "—"} ft
-                                  </div>
-                                </div>
-                                <div className="border border-[var(--border)] p-1.5">
-                                  <div className="text-[9px] uppercase tracking-wider font-bold text-[var(--muted)]">Phase 2 drawing</div>
-                                  <div className="text-[13px] font-bold text-[var(--ink)]">
-                                    {dv.phase2_gross_wall_sqft?.toFixed?.(0) || "—"} ft²
-                                  </div>
-                                  <div className="text-[9px] text-[var(--muted)]">{dv.delta_vs_phase2 || "—"}</div>
-                                </div>
-                                <div className="border border-[var(--border)] p-1.5">
-                                  <div className="text-[9px] uppercase tracking-wider font-bold text-[var(--muted)]">Text extract</div>
-                                  <div className="text-[13px] font-bold text-[var(--ink)]">
-                                    {dv.text_area_sqft?.toFixed?.(0) || "—"} ft²
-                                  </div>
-                                  <div className="text-[9px] text-[var(--muted)]">{dv.delta_vs_text || "—"}</div>
-                                </div>
-                              </div>
-                              {dv.notes && (
-                                <div className="text-[10px] text-[var(--ink-2)] italic">📝 {dv.notes}</div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        )}
+                      </div>
+                    ))}
                   </div>
                   <div className="text-[10px] text-[var(--warning-text)] mt-2 italic">
                     These are heuristic checks — review the elevation drawings to confirm before applying.

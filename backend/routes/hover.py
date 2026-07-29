@@ -1796,11 +1796,9 @@ class HoverImportResult(BaseModel):
     # consistent. Frontend renders these as a yellow banner inside the
     # preview modal so contractors see discrepancies BEFORE they apply.
     warnings: list[dict] = []
-    # Iter 78q — Phase 3 Deep Verify cache key. Frontend echoes this back
-    # when the contractor clicks "Deep Verify {Elevation}" — backend uses
-    # it to look up the cached PNG without re-uploading the PDF. None when
-    # no elevation pages were rendered (cached only on successful Phase 2).
-    deep_verify_cache_key: Optional[str] = None
+    # Straight-on S2 elevation read result (checking tool — Deep Verify
+    # retired 2026-07-29). None when the read errored before returning.
+    elevation_read: Optional[dict] = None
 
 
 # -----------------------------------------------------------------------------
@@ -2388,72 +2386,10 @@ def _build_window_openings(measurements: dict) -> tuple[list[dict], list[dict]]:
 
 
 # -----------------------------------------------------------------------------
-# Iter 78q — Phase 3 Deep Verify
+# (Phase 3 Deep Verify RETIRED 2026-07-29 — Howard's ruling. The straight-on
+# S2 elevation read below is the single verification pass. See
+# verification_integrity_register.md · SILENT-ZERO-VERIFICATION.)
 # -----------------------------------------------------------------------------
-async def _ensure_deep_verify_index():
-    """Create the TTL index on `hover_page_cache.created_at` so cached
-    elevation PNGs auto-purge 1 hour after import. Idempotent — Mongo
-    silently no-ops if the index already exists."""
-    if db is None:
-        return
-    try:
-        await db.hover_page_cache.create_index(
-            "created_at", expireAfterSeconds=3600,
-        )
-    except Exception as e:
-        logger.warning("Iter 78q: TTL index create failed: %s", e)
-
-
-@router.post("/estimates/hover-deep-verify")
-async def hover_deep_verify(
-    payload: dict,
-    user: dict = Depends(get_current_user),
-):
-    """Phase 3 Deep Verify endpoint. Replays a single cached elevation PNG
-    against a scale-bar-focused Claude Vision prompt that explicitly
-    IGNORES the dim callouts and re-derives the wall area from the
-    scale bar. Returns the new measurement + a 3-way comparison
-    (deep-verify vs Phase 2 drawing vs text)."""
-    if db is None:
-        raise HTTPException(status_code=503, detail="Database unavailable")
-    cache_key = (payload or {}).get("cache_key")
-    label = (payload or {}).get("label")
-    measurements = (payload or {}).get("measurements") or {}
-    phase2_drawing = (payload or {}).get("phase2_drawing") or {}
-    if not cache_key or not label:
-        raise HTTPException(
-            status_code=400, detail="cache_key and label are required",
-        )
-    cached = await db.hover_page_cache.find_one(
-        {"cache_key": cache_key, "label": label},
-        {"_id": 0, "png_b64": 1, "user_id": 1},
-    )
-    if not cached or not cached.get("png_b64"):
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                "Cached page not found or expired (1-hour TTL). "
-                "Re-import the HOVER PDF to refresh the cache."
-            ),
-        )
-    if cached.get("user_id") and cached["user_id"] != user.get("id"):
-        # Same-user scope: a contractor can only Deep Verify their own
-        # cached imports.
-        raise HTTPException(status_code=403, detail="Access denied")
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key:
-        raise HTTPException(status_code=503, detail="LLM key not configured")
-    from routes.hover_vision import deep_verify_elevation, reconcile_deep_verify
-    deep_result = await deep_verify_elevation(
-        cached["png_b64"], label, api_key,
-        session_id=f"deep-verify-{user.get('id','anon')}-{cache_key[:8]}",
-    )
-    if not deep_result.get("ok"):
-        raise HTTPException(
-            status_code=502,
-            detail=f"Deep Verify call failed: {deep_result.get('error', 'unknown')}",
-        )
-    return reconcile_deep_verify(deep_result, measurements, phase2_drawing)
 
 
 # -----------------------------------------------------------------------------
@@ -3059,42 +2995,31 @@ async def _execute_hover_import_worker(
                 "message": facade_scope_flag_label(_fb_scope), "detail": None,
             })
 
-        # Stage 3 — Optional Phase 2 vision verification (renders elevation
-        # pages, sends each to Claude Opus 4.5 Vision, compares drawing-
-        # derived area to text-extracted siding_sqft). Adds additional
-        # warnings + per-elevation drawing data. Stash rendered PNGs in
-        # MongoDB (TTL 1h) so Phase 3 Deep Verify can run without re-upload.
+        # Stage 3 — Drawing verification. The straight-on S2 elevation read
+        # is the SINGLE verification pass (Deep Verify retired by Howard
+        # 2026-07-29; scale-bar re-derivation deliberately NOT carried over
+        # — pixel-derived numbers arguing with printed callouts reopen the
+        # sealed provenance door). CHECKING TOOL ONLY: results live on the
+        # run doc + warnings banner; nothing feeds a flag, count, or line
+        # (S3 unwired by test).
         await _set_stage("vision-verify")
-        deep_verify_cache_key: Optional[str] = None
+        elevation_read: Optional[dict] = None
         try:
-            from routes.hover_vision import run_vision_pass
-            deep_verify_cache_key = f"dv-{uuid.uuid4().hex}"
-
-            async def _cache_writer(key: str, label: str, png_b64: str, page_num: int):
-                if db is None:
-                    return
-                await db.hover_page_cache.update_one(
-                    {"cache_key": key, "label": label},
-                    {"$set": {
-                        "cache_key": key,
-                        "label": label,
-                        "page_num": page_num,
-                        "png_b64": png_b64,
-                        "user_id": user_id,
-                        "created_at": datetime.now(timezone.utc),
-                    }},
-                    upsert=True,
-                )
-
-            vision_warns, per_elev_drawing = await run_vision_pass(
-                raw, measurements, api_key,
-                session_id=f"hover-vision-{user_id}",
-                cache_key=deep_verify_cache_key,
-                cache_writer=_cache_writer,
+            from routes.hover_elevation_read import read_elevation_geometry
+            elevation_read = await read_elevation_geometry(
+                raw, api_key,
+                session_id=f"elevread-{run_id}",
+                schedule_text=text,
             )
-            warnings.extend(vision_warns)
-            if per_elev_drawing:
-                measurements["per_elevation_siding_from_drawing"] = per_elev_drawing
+            if elevation_read.get("pages_read"):
+                for i, wtext in enumerate(elevation_read.get("warnings") or []):
+                    # every ⚠ individually — never a summary
+                    warnings.append({
+                        "code": f"elevation_read_{i + 1}",
+                        "message": wtext,
+                        "detail": ("straight-on elevation read (checking tool "
+                                   "— printed text tables outrank vision reads)"),
+                    })
             else:
                 # SILENT-ZERO-VERIFICATION class (Howard 2026-07-29,
                 # 92/92 audit): a verification step that finds nothing
@@ -3106,15 +3031,15 @@ async def _execute_hover_import_worker(
                                 "elevation pages recognized in this PDF's "
                                 "format. Nothing was cross-checked against "
                                 "the drawings."),
-                    "detail": "old-format page finder found no '<label> Elevation' pages",
+                    "detail": elevation_read.get("error") or "no straight-on view pages located",
                 })
         except Exception as e:
-            logger.warning("Iter 79d: vision pass failed silently: %s", e)
+            logger.warning("elevation read failed: %s", e)
             warnings.append({
                 "code": "vision_zero_pages",
-                "message": ("DRAWING VERIFICATION DID NOT RUN — the vision "
-                            "pass errored. Nothing was cross-checked "
-                            "against the drawings."),
+                "message": ("DRAWING VERIFICATION DID NOT RUN — the "
+                            "elevation read errored. Nothing was "
+                            "cross-checked against the drawings."),
                 "detail": str(e)[:200],
             })
 
@@ -3126,7 +3051,7 @@ async def _execute_hover_import_worker(
             "mezzo_openings": [HoverMezzoOpening(**op).model_dump() for op in mezzo_openings],
             "raw_extract_chars": len(text),
             "warnings": warnings,
-            "deep_verify_cache_key": deep_verify_cache_key,
+            "elevation_read": elevation_read,
         }
         await db.hover_import_runs.update_one(
             {"run_id": run_id},

@@ -74,13 +74,8 @@ async def run_startup():
     await db.price_tiers.create_index("id", unique=True)
     await db.price_tiers.create_index("name", unique=True)
 
-    # Iter 78q — TTL index on Phase 3 Deep Verify page cache (1 hour).
-    # Auto-purges rendered elevation PNGs so we never accumulate stale
-    # render data beyond a contractor's preview session.
-    await db.hover_page_cache.create_index("cache_key")
-    await db.hover_page_cache.create_index(
-        "created_at", expireAfterSeconds=3600,
-    )
+    # (Deep Verify page cache retired 2026-07-29 — hover_page_cache indexes
+    # no longer created; the collection is dead.)
 
     # Iter 79d — TTL index on HOVER async-import run docs (24 hours).
     # Each `/api/estimates/hover-import` POST inserts one doc that holds
