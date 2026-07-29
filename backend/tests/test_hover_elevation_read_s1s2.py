@@ -40,7 +40,7 @@ def _haugh_like_pages():
 
 def test_aggregate_reads_widths_heights_placements_and_corners():
     out = aggregate_geometry(_haugh_like_pages(),
-                             schedule_text="W-206 W-207 W-211 D-2")
+                             schedule_text="W-206 W-207 W-211 D-2 WR-20 WR-17 WR-2 WR-7")
     labels = {f["label"]: f for f in out["facades"]}
     assert labels["WR-20"]["width_ft"] == 29.25          # the batten input
     assert labels["WR-20"]["height_min_ft"] == 9.25
@@ -57,7 +57,7 @@ def test_every_warning_is_named_not_summarized():
     pages[1]["openings_placed"].append({"id": "W-999", "on_facade": "WR-7"})
     pages[1]["facades"].append({"label": "WR-20", "width_ft": 31.0})
     pages[1]["openings_placed"].append({"id": "W-206", "on_facade": "WR-7"})
-    out = aggregate_geometry(pages, schedule_text="W-206 W-207 W-211 D-2")
+    out = aggregate_geometry(pages, schedule_text="W-206 W-207 W-211 D-2 WR-20 WR-17 WR-2 WR-7")
     joined = "\n".join(out["warnings"])
     assert "W-999" in joined and "not in the report's schedule" in joined
     assert "WR-20" in joined and "width disagrees" in joined
@@ -82,3 +82,19 @@ def test_s1_import_persists_pdf():
     assert '"pdf_path": pdf_path' in src
     # the read endpoint refuses politely when the substrate predates S1
     assert "re-upload the Hover" in src
+
+
+def test_view_page_locator_exactly_one_token_rule():
+    """The drawn-view pages carry ONE bare compass token; the footprint/
+    compass page carries several at once and must be excluded."""
+    import fitz
+    from routes.hover_elevation_read import _find_view_pages
+    doc = fitz.open()
+    p = doc.new_page()   # compass page — all four tokens → excluded
+    p.insert_text((72, 72), "FRONT\nRIGHT\nBACK\nLEFT")
+    p = doc.new_page()   # true view page
+    p.insert_text((72, 72), "Complete Measurements\nFRONT-RIGHT\nN")
+    p = doc.new_page()   # unrelated table page
+    p.insert_text((72, 72), "OPENINGS\nWindows")
+    pages = _find_view_pages(doc.tobytes())
+    assert [(pg["page_num"], pg["label"]) for pg in pages] == [(2, "FRONT-RIGHT")]

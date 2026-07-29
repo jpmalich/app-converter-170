@@ -18,10 +18,52 @@ import logging
 import re
 from typing import Optional
 
+import fitz
+
 from routes.hover_vision import (MODEL_NAME, _json_from_reply,
                                  _render_pdf_pages)
 
 logger = logging.getLogger(__name__)
+
+# The drawn-view pages in the current Hover report format are titled with a
+# bare compass token (FRONT / FRONT-RIGHT / …), NOT "<label> Elevation" —
+# the shared _render_pdf_pages regex (Deep Verify's format) misses them.
+VIEW_TOKENS = ("FRONT", "FRONT-RIGHT", "RIGHT", "RIGHT-BACK",
+               "BACK", "BACK-LEFT", "LEFT", "LEFT-FRONT")
+
+
+def _find_view_pages(pdf_bytes: bytes, max_pages: int = 8) -> list[dict]:
+    """Locate + render the 8 drawn-view pages: a view page carries EXACTLY
+    ONE standalone view-token line (the compass/footprint page carries all
+    four cardinal tokens at once — excluded by the exactly-one rule)."""
+    out: list[dict] = []
+    try:
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    except Exception as e:
+        logger.warning("S2: PyMuPDF could not open HOVER PDF: %s", e)
+        return out
+    try:
+        for page_num in range(doc.page_count):
+            if len(out) >= max_pages:
+                break
+            page = doc.load_page(page_num)
+            lines = [ln.strip() for ln in (page.get_text("text") or "").splitlines()]
+            toks = [ln for ln in lines if ln in VIEW_TOKENS]
+            if len(toks) != 1:
+                continue
+            try:
+                png_bytes = page.get_pixmap(dpi=144).tobytes("png")
+            except Exception as e:
+                logger.warning("S2: page %d render failed: %s", page_num, e)
+                continue
+            if len(png_bytes) > 2_500_000:
+                logger.info("S2: page %d image too large, skipped", page_num)
+                continue
+            out.append({"page_num": page_num + 1, "label": toks[0],
+                        "png_bytes": png_bytes})
+    finally:
+        doc.close()
+    return out
 
 GEOMETRY_PROMPT = """\
 You are reading ONE elevation drawing page from a HOVER measurement report
@@ -80,7 +122,10 @@ async def _read_one_geometry(page: dict, api_key: str, session_id: str) -> Optio
     return parsed
 
 
-_ID_RE = re.compile(r"\b([WD]R?-?\d+)\b", re.I)
+# Full Hover ID vocabulary: W-101 D-2 (openings) · SGD-1 (sliding glass
+# door) · WR/BR/STC (wall/brick/stucco regions) — a REAL printed ID must
+# never be flagged as unknown just because the regex was too narrow.
+_ID_RE = re.compile(r"\b([A-Z]{1,4}\d?-\d+)\b")
 
 
 def aggregate_geometry(pages: list[dict], schedule_text: str = "") -> dict:
@@ -103,6 +148,10 @@ def aggregate_geometry(pages: list[dict], schedule_text: str = "") -> dict:
                                 f"({f.get('width_text')}/{f.get('height_text')}) — dropped")
                 continue
             entry = {**f, "label": lab, "view": view, "read": "✓"}
+            if known_ids and lab not in known_ids:
+                warnings.append(f"⚠ {view}: facade label {lab} is not printed "
+                                "anywhere in the report — misread label ⚠")
+                entry["read"] = "⚠"
             prev = facades.get(lab)
             if prev and prev.get("width_ft") and f.get("width_ft") and \
                     abs(prev["width_ft"] - f["width_ft"]) > 0.6:
@@ -118,7 +167,11 @@ def aggregate_geometry(pages: list[dict], schedule_text: str = "") -> dict:
             if not oid or not fac:
                 continue
             read = "✓"
-            if known_ids and oid not in known_ids:
+            if re.match(r"^(WR|BR|STC)-", oid):
+                warnings.append(f"⚠ {view}: {oid} is a facade-region label but "
+                                f"was read as an OPENING on {fac} — wrong bucket ⚠")
+                read = "⚠"
+            elif known_ids and oid not in known_ids:
                 warnings.append(f"⚠ {view}: opening {oid} placed on {fac} but the "
                                 "ID is not in the report's schedule text — ⚠")
                 read = "⚠"
@@ -157,7 +210,10 @@ def aggregate_geometry(pages: list[dict], schedule_text: str = "") -> dict:
 async def read_elevation_geometry(pdf_bytes: bytes, api_key: str,
                                   session_id: str, schedule_text: str = "",
                                   max_pages: int = 8) -> dict:
-    pages = _render_pdf_pages(pdf_bytes, max_pages=max_pages)
+    pages = _find_view_pages(pdf_bytes, max_pages=max_pages)
+    if not pages:
+        # older "<label> Elevation" report format
+        pages = _render_pdf_pages(pdf_bytes, max_pages=max_pages)
     if not pages:
         return {"error": "no elevation pages found in the PDF",
                 "facades": [], "openings_placed": [],
