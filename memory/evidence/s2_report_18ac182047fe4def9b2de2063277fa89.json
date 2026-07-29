@@ -1,0 +1,689 @@
+{
+ "provenance": "HOVER-DIM (HOVER-READ \u2713/\u26a0) \u2014 Hover's printed measurement via vision read; never TAPED, never photo-inference",
+ "facades": [
+  {
+   "label": "BR-1",
+   "width_ft": 7.75,
+   "width_text": "7'9\"",
+   "height_min_ft": 3.42,
+   "height_max_ft": 3.42,
+   "height_text": "3'5\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "BR-2",
+   "width_ft": 4.83,
+   "width_text": "4'10\"",
+   "height_min_ft": 3.75,
+   "height_max_ft": 3.75,
+   "height_text": "3'9\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "label": "BR-3",
+   "width_ft": 27.33,
+   "width_text": "27'4\"",
+   "height_min_ft": 2.58,
+   "height_max_ft": 2.58,
+   "height_text": "2'7\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "label": "STC-5",
+   "width_ft": 4.17,
+   "width_text": "4'2\"",
+   "height_min_ft": 3.25,
+   "height_max_ft": null,
+   "height_text": "3'3\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "STC-6",
+   "width_ft": 26.58,
+   "width_text": "26'7\"",
+   "height_min_ft": 5.67,
+   "height_max_ft": null,
+   "height_text": "5'8\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-1",
+   "width_ft": 15.92,
+   "width_text": "15'11\"",
+   "height_min_ft": 5.67,
+   "height_max_ft": 5.67,
+   "height_text": "5'8\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-10",
+   "width_ft": 13.33,
+   "width_text": "13'4\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-11",
+   "width_ft": 16.75,
+   "width_text": "16'9\"",
+   "height_min_ft": 8.92,
+   "height_max_ft": 8.92,
+   "height_text": "8'11\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-12",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-13",
+   "width_ft": 30,
+   "width_text": "30'",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-14",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-15",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-16",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-17",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-19",
+   "width_ft": 13.33,
+   "width_text": "13'4\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-2",
+   "width_ft": 9.17,
+   "width_text": "9'2\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-20",
+   "width_ft": 29.25,
+   "width_text": "29'3\"",
+   "height_min_ft": 9.25,
+   "height_max_ft": 9.25,
+   "height_text": "9'3\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-3",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": 3.75,
+   "height_max_ft": 3.75,
+   "height_text": "3'9\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-4",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-6",
+   "width_ft": 13.08,
+   "width_text": "13'1\"",
+   "height_min_ft": 3.33,
+   "height_max_ft": 3.33,
+   "height_text": "3'4\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-7",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-8",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": 2.67,
+   "height_max_ft": 2.67,
+   "height_text": "2'8\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-9",
+   "width_ft": 29.25,
+   "width_text": "29'3\"",
+   "height_min_ft": 7.92,
+   "height_max_ft": 7.92,
+   "height_text": "7'11\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  }
+ ],
+ "openings_placed": [
+  {
+   "id": "W-101",
+   "on_facade": "WR-1",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-102",
+   "on_facade": "WR-1",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-204",
+   "on_facade": "WR-2",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-205",
+   "on_facade": "WR-2",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-206",
+   "on_facade": "WR-2",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-207",
+   "on_facade": "WR-2",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-208",
+   "on_facade": "WR-1",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-209",
+   "on_facade": "WR-3",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-210",
+   "on_facade": "WR-3",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-211",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-212",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-213",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-214",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-321",
+   "on_facade": "WR-3",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-322",
+   "on_facade": "WR-3",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-427",
+   "on_facade": "WR-8",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-428",
+   "on_facade": "WR-8",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "D-1",
+   "on_facade": "WR-1",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "D-2",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "STC-1",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-215",
+   "on_facade": "WR-9",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-216",
+   "on_facade": "WR-9",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "id": "D-3",
+   "on_facade": "BR-3",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-103",
+   "on_facade": "BR-3",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "id": "D-4",
+   "on_facade": "WR-10",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-217",
+   "on_facade": "WR-10",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "id": "STC-2",
+   "on_facade": "WR-10",
+   "view": "RIGHT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-429",
+   "on_facade": "WR-13",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-430",
+   "on_facade": "WR-13",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-323",
+   "on_facade": "WR-13",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-324",
+   "on_facade": "WR-13",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-431",
+   "on_facade": "WR-13",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-218",
+   "on_facade": "WR-14",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "SGD-2",
+   "on_facade": "WR-14",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-219",
+   "on_facade": "WR-14",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "SGD-1",
+   "on_facade": "WR-14",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "SGD-3",
+   "on_facade": "WR-15",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "STC-1",
+   "on_facade": "WR-14",
+   "view": "BACK",
+   "read": "\u26a0"
+  },
+  {
+   "id": "STC-4",
+   "on_facade": "WR-15",
+   "view": "BACK",
+   "read": "\u26a0"
+  },
+  {
+   "id": "BR-1",
+   "on_facade": "WR-14",
+   "view": "BACK",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-432",
+   "on_facade": "WR-17",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-220",
+   "on_facade": "WR-16",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-329",
+   "on_facade": "WR-17",
+   "view": "LEFT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-320",
+   "on_facade": "WR-19",
+   "view": "LEFT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "BR-5",
+   "on_facade": "STC-6",
+   "view": "LEFT",
+   "read": "\u26a0"
+  }
+ ],
+ "corner_heights_ft": [
+  {
+   "near_facade": "WR-2",
+   "height_ft": 6.67,
+   "text": "6'8\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-7",
+   "height_ft": 9.58,
+   "text": "9'7\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-7",
+   "height_ft": 8.58,
+   "text": "8'7\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-1",
+   "height_ft": 7.08,
+   "text": "7'1\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-8",
+   "height_ft": 3.92,
+   "text": "3'11\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-6",
+   "height_ft": 13.33,
+   "text": "13'4\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-11",
+   "height_ft": 9.58,
+   "text": "9'7\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-9",
+   "height_ft": 15.25,
+   "text": "15'3\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "BR-3",
+   "height_ft": 11.75,
+   "text": "11'9\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-10",
+   "height_ft": 10.08,
+   "text": "10'1\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-10",
+   "height_ft": 12.92,
+   "text": "12'11\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-10",
+   "height_ft": 14.25,
+   "text": "14'3\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "BR-2",
+   "height_ft": 8.58,
+   "text": "8'7\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "BR-2",
+   "height_ft": 6.75,
+   "text": "6'9\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-9",
+   "height_ft": 9.83,
+   "text": "9'10\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-6",
+   "height_ft": 3.42,
+   "text": "3'5\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-6",
+   "height_ft": 3.92,
+   "text": "3'11\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-13",
+   "height_ft": 18.42,
+   "text": "18'5\"",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-17",
+   "height_ft": 9.58,
+   "text": "9'7\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-17",
+   "height_ft": 9.58,
+   "text": "9'7\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-16",
+   "height_ft": 18.42,
+   "text": "18'5\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-20",
+   "height_ft": 9.58,
+   "text": "9'7\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-19",
+   "height_ft": 15.25,
+   "text": "15'3\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-19",
+   "height_ft": 3.33,
+   "text": "3'4\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  }
+ ],
+ "warnings": [
+  "\u26a0 FRONT: STC-1 is a facade-region label but was read as an OPENING on WR-7 \u2014 wrong bucket \u26a0",
+  "\u26a0 RIGHT: STC-2 is a facade-region label but was read as an OPENING on WR-10 \u2014 wrong bucket \u26a0",
+  "\u26a0 BACK: STC-1 is a facade-region label but was read as an OPENING on WR-14 \u2014 wrong bucket \u26a0",
+  "\u26a0 BACK: STC-4 is a facade-region label but was read as an OPENING on WR-15 \u2014 wrong bucket \u26a0",
+  "\u26a0 BACK: BR-1 is a facade-region label but was read as an OPENING on WR-14 \u2014 wrong bucket \u26a0",
+  "\u26a0 LEFT: opening W-329 placed on WR-17 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 LEFT: opening W-320 placed on WR-19 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 LEFT: BR-5 is a facade-region label but was read as an OPENING on STC-6 \u2014 wrong bucket \u26a0",
+  "\u26a0 opening STC-1 drawn on 2 different walls (WR-14 + WR-7) \u2014 corner window or mis-association, resolve by eye \u26a0"
+ ],
+ "pages_read": 4
+}

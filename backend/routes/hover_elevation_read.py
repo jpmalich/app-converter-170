@@ -31,6 +31,12 @@ logger = logging.getLogger(__name__)
 VIEW_TOKENS = ("FRONT", "FRONT-RIGHT", "RIGHT", "RIGHT-BACK",
                "BACK", "BACK-LEFT", "LEFT", "LEFT-FRONT")
 
+# STRAIGHT-ON ONLY (Howard ruled 2026-07-29 after the Haugh acceptance
+# run): all 24 invented opening IDs, the invented WR-30 label and nearly
+# all double-placements came off the OBLIQUE views. The four oblique
+# pages are DROPPED from the extraction — not down-weighted, dropped.
+CARDINAL_VIEWS = ("FRONT", "BACK", "LEFT", "RIGHT")
+
 
 def _find_view_pages(pdf_bytes: bytes, max_pages: int = 8) -> list[dict]:
     """Locate + render the 8 drawn-view pages: a view page carries EXACTLY
@@ -167,7 +173,7 @@ def aggregate_geometry(pages: list[dict], schedule_text: str = "") -> dict:
             if not oid or not fac:
                 continue
             read = "✓"
-            if re.match(r"^(WR|BR|STC)-", oid):
+            if re.match(r"^(WR|BR|STC|UN)-", oid):
                 warnings.append(f"⚠ {view}: {oid} is a facade-region label but "
                                 f"was read as an OPENING on {fac} — wrong bucket ⚠")
                 read = "⚠"
@@ -211,8 +217,10 @@ async def read_elevation_geometry(pdf_bytes: bytes, api_key: str,
                                   session_id: str, schedule_text: str = "",
                                   max_pages: int = 8) -> dict:
     pages = _find_view_pages(pdf_bytes, max_pages=max_pages)
+    # straight-on ruling: oblique compass pages never reach the vision call
+    pages = [p for p in pages if p["label"] in CARDINAL_VIEWS]
     if not pages:
-        # older "<label> Elevation" report format
+        # older "<label> Elevation" format — every page is straight-on
         pages = _render_pdf_pages(pdf_bytes, max_pages=max_pages)
     if not pages:
         return {"error": "no elevation pages found in the PDF",

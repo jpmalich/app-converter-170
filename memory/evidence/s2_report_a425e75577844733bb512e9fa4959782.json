@@ -1,0 +1,732 @@
+{
+ "provenance": "HOVER-DIM (HOVER-READ \u2713/\u26a0) \u2014 Hover's printed measurement via vision read; never TAPED, never photo-inference",
+ "facades": [
+  {
+   "label": "BR-10",
+   "width_ft": 9.17,
+   "width_text": "9'2\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "BR-11",
+   "width_ft": 9.42,
+   "width_text": "9'5\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "BR-12",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "BR-13",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "BR-3",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-1",
+   "width_ft": 11.92,
+   "width_text": "11'11\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-10",
+   "width_ft": 4.75,
+   "width_text": "4'9\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-11",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-12",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-13",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-14",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-15",
+   "width_ft": 10.33,
+   "width_text": "10'4\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-16",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-17",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-18",
+   "width_ft": 6.08,
+   "width_text": "6'1\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-19",
+   "width_ft": 7.33,
+   "width_text": "7'4\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-2",
+   "width_ft": 10.5,
+   "width_text": "10'6\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-20",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": 9.5,
+   "height_max_ft": 9.5,
+   "height_text": "9'6\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-21",
+   "width_ft": 4.92,
+   "width_text": "4'11\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-22",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-23",
+   "width_ft": 48.75,
+   "width_text": "48'9\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-24",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-25",
+   "width_ft": 24.83,
+   "width_text": "24'10\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-27",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-29",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-3",
+   "width_ft": 8.58,
+   "width_text": "8'7\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-31",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-32",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-33",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-34",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-35",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-36",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-4",
+   "width_ft": 23.75,
+   "width_text": "23'9\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-5",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-6",
+   "width_ft": 4.83,
+   "width_text": "4'10\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-7",
+   "width_ft": 12.1,
+   "width_text": "12'10\"",
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-8",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "label": "WR-9",
+   "width_ft": null,
+   "width_text": null,
+   "height_min_ft": null,
+   "height_max_ft": null,
+   "height_text": null,
+   "view": "FRONT",
+   "read": "\u2713"
+  }
+ ],
+ "openings_placed": [
+  {
+   "id": "W-203",
+   "on_facade": "WR-1",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-204",
+   "on_facade": "WR-1",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-205",
+   "on_facade": "WR-1",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-314",
+   "on_facade": "WR-5",
+   "view": "FRONT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-315",
+   "on_facade": "WR-8",
+   "view": "FRONT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-206",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-207",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-208",
+   "on_facade": "WR-7",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-10",
+   "on_facade": "WR-9",
+   "view": "FRONT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "D-1",
+   "on_facade": "WR-9",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-209",
+   "on_facade": "WR-12",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-210",
+   "on_facade": "WR-17",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-316",
+   "on_facade": "WR-14",
+   "view": "FRONT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-317",
+   "on_facade": "WR-16",
+   "view": "FRONT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-217",
+   "on_facade": "WR-20",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-218",
+   "on_facade": "WR-20",
+   "view": "RIGHT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-322",
+   "on_facade": "WR-23",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-324",
+   "on_facade": "WR-23",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-325",
+   "on_facade": "WR-23",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-326",
+   "on_facade": "WR-23",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-327",
+   "on_facade": "WR-23",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-328",
+   "on_facade": "WR-24",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-329",
+   "on_facade": "WR-24",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-31",
+   "on_facade": "WR-22",
+   "view": "BACK",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-215",
+   "on_facade": "WR-22",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-216",
+   "on_facade": "WR-25",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-217",
+   "on_facade": "WR-25",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-18",
+   "on_facade": "WR-21",
+   "view": "BACK",
+   "read": "\u26a0"
+  },
+  {
+   "id": "W-19",
+   "on_facade": "WR-21",
+   "view": "BACK",
+   "read": "\u26a0"
+  },
+  {
+   "id": "D-3",
+   "on_facade": "WR-22",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "D-4",
+   "on_facade": "WR-22",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "D-1",
+   "on_facade": "WR-21",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "id": "W-308",
+   "on_facade": "WR-35",
+   "view": "LEFT",
+   "read": "\u26a0"
+  },
+  {
+   "id": "UN-8",
+   "on_facade": "WR-29",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "id": "UN-9",
+   "on_facade": "WR-36",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "id": "UN-7",
+   "on_facade": "WR-32",
+   "view": "LEFT",
+   "read": "\u2713"
+  }
+ ],
+ "corner_heights_ft": [
+  {
+   "near_facade": "WR-1",
+   "height_ft": 11.83,
+   "text": "11'10\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-5",
+   "height_ft": 8.83,
+   "text": "8'10\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-11",
+   "height_ft": 11.83,
+   "text": "11'10\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-9",
+   "height_ft": 7.92,
+   "text": "7'11\"",
+   "view": "FRONT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-14",
+   "height_ft": 7.75,
+   "text": "7'9\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-20",
+   "height_ft": 11.67,
+   "text": "11'8\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-10",
+   "height_ft": 8.75,
+   "text": "8'9\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-5",
+   "height_ft": 9.42,
+   "text": "9'5\"",
+   "view": "RIGHT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-23",
+   "height_ft": 13.0,
+   "text": "13'0\"",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-23",
+   "height_ft": 13.08,
+   "text": "13'1\"",
+   "view": "BACK",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-33",
+   "height_ft": 14.92,
+   "text": "14'11\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-33",
+   "height_ft": 14.25,
+   "text": "14'3\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-34",
+   "height_ft": 10.67,
+   "text": "10'8\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-34",
+   "height_ft": 10.67,
+   "text": "10'8\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-32",
+   "height_ft": 8.42,
+   "text": "8'5\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  },
+  {
+   "near_facade": "WR-29",
+   "height_ft": 13.5,
+   "text": "13'6\"",
+   "view": "LEFT",
+   "read": "\u2713"
+  }
+ ],
+ "warnings": [
+  "\u26a0 FRONT: opening W-314 placed on WR-5 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 FRONT: opening W-315 placed on WR-8 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 FRONT: opening W-10 placed on WR-9 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 FRONT: opening W-316 placed on WR-14 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 FRONT: opening W-317 placed on WR-16 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 RIGHT: opening W-218 placed on WR-20 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 BACK: opening W-31 placed on WR-22 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 BACK: opening W-18 placed on WR-21 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 BACK: opening W-19 placed on WR-21 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 LEFT: opening W-308 placed on WR-35 but the ID is not in the report's schedule text \u2014 \u26a0",
+  "\u26a0 opening D-1 drawn on 2 different walls (WR-21 + WR-9) \u2014 corner window or mis-association, resolve by eye \u26a0",
+  "\u26a0 opening W-217 drawn on 2 different walls (WR-20 + WR-25) \u2014 corner window or mis-association, resolve by eye \u26a0"
+ ],
+ "pages_read": 4
+}

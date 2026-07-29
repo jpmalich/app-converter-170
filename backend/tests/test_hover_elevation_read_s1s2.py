@@ -98,3 +98,13 @@ def test_view_page_locator_exactly_one_token_rule():
     p.insert_text((72, 72), "OPENINGS\nWindows")
     pages = _find_view_pages(doc.tobytes())
     assert [(pg["page_num"], pg["label"]) for pg in pages] == [(2, "FRONT-RIGHT")]
+
+
+def test_straight_on_only_oblique_pages_dropped():
+    """Howard's ruling 2026-07-29: the four oblique compass pages are
+    DROPPED from the extraction — every invented ID on the Haugh
+    acceptance run came off an oblique view."""
+    from routes.hover_elevation_read import CARDINAL_VIEWS
+    assert set(CARDINAL_VIEWS) == {"FRONT", "BACK", "LEFT", "RIGHT"}
+    src = (BACKEND / "routes" / "hover_elevation_read.py").read_text()
+    assert 'p["label"] in CARDINAL_VIEWS' in src
