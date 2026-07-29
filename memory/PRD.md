@@ -1,5 +1,27 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## DEEP VERIFY RETIRED + STC-1 PROBE RUN (2026-07-29 evening, bd63fff)
+- **RETIREMENT EXECUTED as reported**: Phase 2 vision-verify + Phase 3 Deep
+  Verify removed (endpoint, hover_page_cache + TTL indexes, dead cache key,
+  frontend chip/panel); scale-bar re-derivation NOT carried over (Howard
+  confirmed — provenance door stays sealed). REPLACEMENT: S2 straight-on
+  read runs at import — result.elevation_read on run doc, every ⚠
+  individually on the existing banner, loud vision_zero_pages on empty AND
+  error branches. Retirement pin test_deep_verify_is_retired. E2E-verified
+  on a live Haugh import (4 pages, 23 facades, warnings on banner).
+  S3 STAYS UNWIRED. Suite count 1580→1562 (retired pins removed).
+- **STC-1 PROBE (~$0.75, 6 calls, 21s)**: count-as-constraint prompt held —
+  NOTHING invented. Found 2 of 5 (W-209, W-210) — DISAGREES, table wins.
+  Probe artifact named: bbox was label-tight; crop note says region
+  continues beyond. STRUCTURAL: STC-1 not printed on RIGHT view (that
+  masonry is STC-2) — the five can never sit in one drawn STC-1 boundary;
+  boundary-box refinement untested (~$1) — Howard rules next.
+  /app/memory/evidence/probe_stc1_result_2026-07-29.md
+- **Substrate re-arm**: pinned 3 Degree run 7862dd2c TTL-reaped mid-day —
+  acceptance tests repointed to fresh real import a425e755 + archived into
+  fixture_runs (no TTL, same fallback the apply endpoint uses).
+- Guard: 2026-07-29 19:35 UTC · bd63fff · CLEAN · 1562 passed, 1 skipped.
+
 ## SILENT-ZERO-VERIFICATION SEALED + 3-DEGREE CORRECTION (2026-07-29, 3d5ed9d)
 - **CORRECTION (Howard)**: 3 Degree's 155 panels / 465 battens / 142 trim /
   ≈260 soffit are the ESTIMATE DEPARTMENT'S takeoff, NOT installed material.
