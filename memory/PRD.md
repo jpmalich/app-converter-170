@@ -1,5 +1,32 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## SILENT-ZERO-VERIFICATION SEALED + 3-DEGREE CORRECTION (2026-07-29, 3d5ed9d)
+- **CORRECTION (Howard)**: 3 Degree's 155 panels / 465 battens / 142 trim /
+  ≈260 soffit are the ESTIMATE DEPARTMENT'S takeoff, NOT installed material.
+  Acceptance table column 3 relabeled SECOND OPINION + plain statement: NO
+  HOUSE IS VALIDATED AGAINST DELIVERED MATERIAL. Soffit 2,620 ft² now
+  UNCONFIRMED (delta report correction banner — $11,900 line). Howard owes a
+  real delivered list from a completed job.
+- **SILENT-ZERO-VERIFICATION class sealed**: loud `vision_zero_pages`
+  warning on BOTH empty-result and exception branches of the vision-verify
+  stage — "DRAWING VERIFICATION DID NOT RUN" visible on every import.
+  Detector `test_verification_silent_zero.py` (4 pins) + register entry
+  (92-of-92 sighting). Tier: quote, informational, never blocks.
+- **DEEP VERIFY: RETIRE ruled (not repair)** — carry-over report delivered
+  (/app/memory/deep_verify_retirement_report_2026-07-29.md): only true loss
+  is scale-bar pixel re-derivation (produced nothing since 24 June);
+  blueprint door unaffected; execution AWAITS Howard's carry-over ruling.
+- **REGION-CROP proposal delivered** (report only,
+  /app/memory/region_crop_proposal_2026-07-29.md): bbox pass + per-region
+  crop pass with Hover's printed per-facade counts as built-in self-check;
+  $3–7/import full or $2–4 mismatch-triggered; STC-1's five openings is THE
+  acceptance test; unlocatable regions flag loudly, no oblique fallback.
+- **S2 READ RULED: CHECKING TOOL** — cross-checks the deterministic text
+  tables (corner heights, tall corners, segment widths, opening presence);
+  NEVER supplies a quantity that reaches money. Build toward the 18'5"
+  catch. S3 stays unwired. W1 stays parked.
+- Guard: 2026-07-29 11:30 UTC · 3d5ed9d · CLEAN · 1580 passed, 1 skipped.
+
 ## STRAIGHT-ON RULING + DEEP VERIFY SILENT-ZERO FOUND (2026-07-29, 6d8fe50)
 - Howard ruled STRAIGHT-ON ONLY: oblique compass pages dropped from the S2
   read (CARDINAL_VIEWS pin). Haugh re-run: 63⚠→9⚠, invented 24→2,
