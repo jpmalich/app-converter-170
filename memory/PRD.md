@@ -1,5 +1,32 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## BATTEN SPACING RULED + TRADE-SPEC GROUP SHIPPED (2026-07-30, 3f859ab)
+- **Batten spacing = TRADE SPEC**: 12/16/24" o.c., default 12", 8" RETIRED
+  (raises ValueError; Q9's 8" was tuned toward the 3 Degree second opinion).
+  190 line note names spacing + piece DELTA vs 12" when moved. Spacing flag
+  retired (spec, not check). HOVER-SCHEDULE feeds it — never drawn reads.
+- **Fascia width = TRADE SPEC**: 4/6/8/10/12" (default 8", silent), picks
+  the 440 SKU — width PRINTS on the line, both emitter paths, single-row
+  supersede. lp_colors matches any 440 width.
+- **TRADE-SPEC GROUP box** in SettingsRow (data-testid trade-spec-group):
+  eave overhang, fascia width, batten spacing, shake reveal (moved in),
+  porch ceilings. New specs join this box — no new panels. SPEC vs CHECK
+  doctrine recorded in test_trade_specs_2026_07_29.py header.
+- **Money movement (named)**: Casile live surface 194→129 battens, caulk
+  9→6 → sub_mat 24,950.83 → 23,630.84, sell 38,139.13 → 36,121.43. Frozen
+  order snapshots do not move. Screenshot-verified UI + live totals.
+- **Haugh SECOND OPINION #2 recorded** in acceptance table: battens 129
+  (ruled) vs 144 (implied 10.7" spliced); 540-4" 62 = wrap 33 + frieze 23 +
+  ISC 6 vs their 32 (≈ wrap alone); panels 68×4×10 vs 70×4×8 (like-for-like
+  4×8 @30% = 84); OSC/soffit agreed; FASCIA COMPARISON DROPPED (their 5/4"
+  thickness wrong). No fascia double-count: frieze 345.5 LF (wall band) vs
+  fascia 320.75 LF (440 line) — different planes.
+- **AWAITING HOWARD'S RULINGS**: (1) panel size 4×8/4×10 selectability —
+  BAKED to 4×10 today (BB_PANEL_SIZES_SQFT constant staged); (2) window/
+  door trim width — 540 5/4"×4" SKU is BAKED (qty is LF-based, width only
+  changes the SKU) — same defect shape as fascia; join trade-spec box?
+- Guard: 2026-07-30 00:30 UTC · 3f859ab · CLEAN · 1568 passed.
+
 ## STC-1 SECOND PROBE — DRAWINGS CANNOT SETTLE PLACEMENT (2026-07-29 night, 43b7dab)
 - FRONT boundary-box probe (2 calls, ≈$0.30): STC-1's drawn footprint is a
   TINY wall section BETWEEN D-1 and D-2 — the doors sit OUTSIDE its
