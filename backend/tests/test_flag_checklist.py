@@ -141,9 +141,9 @@ class TestWallHeightOneTap:
         # WALKED (Class A sealed 2026-07-28): this fixture is the 261 Haugh
         # anatomy (Siding row 0; wrap 2064 + stucco 312 + brick 234) — the
         # lumped 2610 NEVER composes now; wrap-suggested 2064 governs.
-        # 2064 ft² @ 8" o.c. (Q9) = 3096 LF + Σ taped 36.5 = 3132.5 → ÷16 = 196
-        # (was 247 on the pre-class 2610 lump).
-        assert batten["qty"] == 196
+        # 2064 ft² @ 12" o.c. (trade-spec default, ruled 2026-07-29) =
+        # 2064 LF + Σ taped 36.5 = 2100.5 → ÷16 = 132.
+        assert batten["qty"] == 132
         # reopen reverts the term on the next rebuild
         session.post(f"{API}/estimates/{hover_est}/flag-checklist",
                      json={"code": "batten_wall_heights", "action": "reopen"}, timeout=15)
@@ -152,7 +152,7 @@ class TestWallHeightOneTap:
         est2 = session.get(f"{API}/estimates/{hover_est}", timeout=30).json()
         batten2 = next(l for l in est2["lines"]
                        if l.get("tab") == "lp_smart" and l["name"] == BATTEN)
-        assert batten2["qty"] == 194  # 3096 ÷ 16 — height term back to 0 (Class A basis)
+        assert batten2["qty"] == 129  # 2064 ÷ 16 — height term back to 0 (12" o.c. default)
 
 
 class TestCornerCountCorrection:

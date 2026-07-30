@@ -168,8 +168,9 @@ def test_q14_measured_soffit_total_governs():
 def test_q15_caulk_and_touchup_scaling(flag_on):
     lines = _build_lines(dict(DEGREE3))
     caulk = _find(lines, "OSI Quad Max Caulking", "lp_smart")
-    # B&B @8" o.c.: 4504 ÷ (2/3) = 6756 LF → 423 sticks; ÷23 → 19 tubes
-    assert caulk["qty"] == 19
+    # B&B @12" o.c. (trade-spec default, ruled 2026-07-29): 4504 ÷ 1 =
+    # 4504 LF → 282 sticks; ÷23 → 13 tubes
+    assert caulk["qty"] == 13
     assert "1 tube per 23 batten sticks" in caulk["note"]
     touch = _find(lines, "Touch up kits", "lp_smart")
     assert touch["qty"] == 4  # 45.04 SQ ÷ 11 per color → 4 (real: 4)

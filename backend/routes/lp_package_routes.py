@@ -32,6 +32,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         q_est, {"_id": 0, "id": 1, "estimate_number": 1, "sealed_key": 1, "waste_pct": 1, "lp_pricing_tier": 1, "lp_field_verify": 1,
                 "lp_openings_review": 1, "lp_appendage_dims": 1, "lp_source_run_id": 1,
                 "default_siding_profile": 1, "lp_flag_checklist": 1,
+                "shake_reveal_in": 1, "batten_spacing_in": 1, "fascia_width_in": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -321,6 +322,12 @@ def _apply_contractor_waste(measurements, est):
         out = {**out, "_waste_pct": float(est.get("waste_pct") or 0.0) / 100.0}
     if out.get("_shake_reveal_in") is None and est.get("shake_reveal_in") is not None:
         out = {**out, "_shake_reveal_in": float(est["shake_reveal_in"])}
+    # TRADE SPECS (Howard ruled 2026-07-29): batten spacing (12/16/24,
+    # default 12") + fascia width (4–12", default 8") ride the same fold.
+    if out.get("_batten_spacing_in") is None and est.get("batten_spacing_in") is not None:
+        out = {**out, "_batten_spacing_in": int(est["batten_spacing_in"])}
+    if out.get("_fascia_width_in") is None and est.get("fascia_width_in") is not None:
+        out = {**out, "_fascia_width_in": int(est["fascia_width_in"])}
     return out
 
 
@@ -618,7 +625,8 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "waste_pct": 1, "porch_ceilings": 1,
          "overhang_in": 1, "default_siding_profile": 1, "color_tier": 1,
-         "shake_reveal_in": 1, "lp_colors": 1, "lp_flag_checklist": 1})
+         "shake_reveal_in": 1, "lp_colors": 1, "lp_flag_checklist": 1,
+         "batten_spacing_in": 1, "fascia_width_in": 1})
     if (full_est or {}).get("kind") != "lp_smart":
         raise HTTPException(status_code=400,
                             detail="LP materialize is lp_smart-kind only")

@@ -42,7 +42,7 @@ AVAILABILITY_FLAG = ("color availability per dealer-verified ExpertFinish matrix
 def group_for_line(line: dict):
     name = str(line.get("name") or "")
     section = str(line.get("section") or "")
-    if name == FASCIA_RAKE_ITEM or "Soffit" in name:
+    if name.startswith('440 Series Trim 4/4"') or "Soffit" in name:
         return "soffit_fascia"
     if "OSC" in name:
         return "osc"

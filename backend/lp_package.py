@@ -18,6 +18,7 @@ import re
 from lp_conventions import (
     FASCIA_RAKE_ITEM, ISC_TRIM_ITEM, PENDING_CONFIRMATIONS, TRIM_STICK_LEN_FT,
     WRAP_TRIM_ITEM, fascia_rake_takeoff, line_math, lp_composition_bugs,
+    DEFAULT_FASCIA_WIDTH_IN, fascia_item_for_width,
 )
 from lp_smartside_formulas import (DEFAULT_WASTE, LAP_PCS_PER_SQUARE,
                                    lap_coverage_sqft_per_pc, lap_pieces_book,
@@ -483,16 +484,25 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     dormers = measurements.get("_ai_dormers") or []
     dormer_fascia_lf = round(sum(float(d.get("width_ft") or 0) for d in dormers), 1)
     fr = fascia_rake_takeoff(eaves_lf, rakes_lf, dormer_fascia_lf)
+    # FASCIA WIDTH TRADE SPEC (Howard ruled 2026-07-29): contractor's
+    # call-out picks the 440 SKU width (default 8", printed on the line).
+    fascia_item = fascia_item_for_width(measurements.get("_fascia_width_in"))
+    _fw = int(measurements.get("_fascia_width_in") or DEFAULT_FASCIA_WIDTH_IN)
+    _fw_txt = (f' — fascia width {_fw}" (trade spec, contractor call-out; default 8")'
+               if fascia_item != FASCIA_RAKE_ITEM else "")
+    # one fascia row only — supersede any width variant from the tab build
+    lines[:] = [l for l in lines
+                if not str(l.get("name", "")).startswith('440 Series Trim 4/4" x ')]
     if fr["ordered_pcs"] > 0:
         dtxt = (f" + dormer fascia {dormer_fascia_lf:g} LF ({len(dormers)} dormer(s), "
                 "pooled — Q4 ruled 2026-07-27)" if dormer_fascia_lf > 0 else "")
         _set_line(
-            FASCIA_RAKE_ITEM, "LP SmartSide Trim", fr["ordered_pcs"],
+            fascia_item, "LP SmartSide Trim", fr["ordered_pcs"],
             f"Fascia (eaves {eaves_lf:g} LF) + rake slope ({rakes_lf:g} LF){dtxt} "
             f"= {fr['total_lf']} LF — per-segment whole-stick rounding (Q16 ruled "
             f"2026-07-27) = {fr['ordered_pcs']} — one product both run types; "
             "whole-stick rounding is the entire allowance (C4, no % waste); "
-            "always present on LP-native (ruled)",
+            f"always present on LP-native (ruled){_fw_txt}",
             _derivation={"kind": "fascia_rake", "total_lf": fr["total_lf"]})
 
     # ── 540 wrap: DOOR TRIM 3-SIDE RULED (head + legs; windows 4-side).

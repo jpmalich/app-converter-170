@@ -47,23 +47,23 @@ def test_batten_pieces_no_waste():
     assert lp.bb_batten_pieces(310.0) == 20
     assert lp.bb_batten_pieces(320.0) == 20
     assert lp.bb_batten_pieces(320.1) == 21
-    # aggregate helper (Q9 ruled 2026-07-27: default spacing 8" o.c.):
-    # 400 sqft @8" +0 height → 600 LF → 38 pcs
-    assert lp.board_batten_batten_pieces(400.0) == 38
-    # no waste on battens (ruled 2026-07-16): 600 × 1.10 would be 42
-    assert lp.board_batten_batten_pieces(400.0) != math.ceil(600 * 1.10 / 16)
+    # aggregate helper (RULED 2026-07-29: trade-spec default 12" o.c.):
+    # 400 sqft @12" +0 height → 400 LF → 25 pcs
+    assert lp.board_batten_batten_pieces(400.0) == 25
+    # no waste on battens (ruled 2026-07-16): 400 × 1.10 would be 28
+    assert lp.board_batten_batten_pieces(400.0) != math.ceil(400 * 1.10 / 16)
 
 
 def test_spacing_must_divide_48():
-    # Q9 (ruled 2026-07-27): 8" o.c. joins the valid set as the default.
-    assert lp.VALID_BATTEN_SPACINGS_IN == (8, 12, 16, 24)
-    for bad in (10, 18, 20, 32, 48, 0, -12):
+    # RULED 2026-07-29: 8" RETIRED — trade-spec set is 12/16/24, default 12.
+    assert lp.VALID_BATTEN_SPACINGS_IN == (12, 16, 24)
+    for bad in (8, 10, 18, 20, 32, 48, 0, -12):
         try:
             lp.bb_batten_lf(100.0, bad, 0.0)
             assert False, f"spacing {bad} must raise"
         except ValueError:
             pass
-    for ok in (8, 12, 16, 24):
+    for ok in (12, 16, 24):
         assert 48 % ok == 0
         lp.bb_batten_lf(100.0, ok, 0.0)
 
@@ -87,12 +87,12 @@ def test_ruled_final_registry():
     assert not hasattr(lp, "BB_HELD_PENDING_HOWARD")
     r = lp.BB_RULED_FINAL
     assert r["batten_sku"] == '190 Series Trim 19/32" x 3" x 16\''
-    # PIN AMENDED (audit ruling #8, 2026-07-28): the registry's stale 16
-    # contradicted the LIVE sealed default (Q9 2026-07-27: 8" o.c.) — the
-    # registry now mirrors the sealed constant; 16 kept as named
-    # superseded provenance only.
-    assert r["default_spacing_in"] == lp.DEFAULT_BATTEN_SPACING_IN == 8
+    # PIN AMENDED (Howard ruled 2026-07-29): spacing is a TRADE SPEC —
+    # default 12" o.c., 8" (Q9) retired as tuned toward a second opinion;
+    # both superseded values kept as named provenance only.
+    assert r["default_spacing_in"] == lp.DEFAULT_BATTEN_SPACING_IN == 12
     assert r["default_spacing_in_2026_07_16_superseded"] == 16
+    assert lp.DEFAULT_BATTEN_SPACING_IN_Q9_SUPERSEDED == 8
     assert r["starter_on_bb"] is False
     # PIN AMENDED (ruling C, 2026-07-26): was 0.10 (2026-07-16 registry) —
     # superseded by the SEALED 2026-07-24 family waste (B&B 30%, Casile

@@ -171,12 +171,20 @@ SOFFIT_PROFILES: dict[str, dict] = {
 #             seam battens mandatory at every 48" panel joint — spacing MUST
 #             divide 48 (12/16/24 o.c. valid) so every seam lands on a
 #             scheduled batten; pieces = ceil(LF ÷ 16), NO waste term on battens.
-BB_PANEL_COVERAGE_SQFT = 40.0  # 4ft × 10ft nominal
-VALID_BATTEN_SPACINGS_IN = (8, 12, 16, 24)  # every 48" seam must land on a batten
-# RULED Q9 (2026-07-27, 3 Degree Rd ground truth): spacing = 8" o.c. —
-# batten on every panel-board seam; height term STAYS; NO doubling at
-# corners/jambs. Retires the provisional 16" (BB_HELD closed).
-DEFAULT_BATTEN_SPACING_IN = 8
+BB_PANEL_COVERAGE_SQFT = 40.0  # 4ft × 10ft nominal (see BB_PANEL_SIZES for 4×8)
+# PANEL SIZE — baked to 4×10 today; 4×8 selectability reported to Howard
+# 2026-07-29 (second-takeoff comparison), awaiting his ruling on whether
+# it joins the trade-spec group.
+BB_PANEL_SIZES_SQFT = {"4x10": 40.0, "4x8": 32.0}
+# 8" RETIRED (Howard ruled 2026-07-29): spacing is a TRADE SPEC — 12/16/24
+# o.c., 12" default. The Q9 8" value was tuned toward the 3 Degree "465"
+# which is a SECOND OPINION (estimate-dept takeoff, implied ~6.8" o.c.
+# with splicing), not installed material — never a target. Every 48" seam
+# must still land on a scheduled batten (divides-48 rule stands).
+VALID_BATTEN_SPACINGS_IN = (12, 16, 24)
+# RULED (2026-07-29): default 12" o.c. — supersedes Q9's 8" (see above).
+DEFAULT_BATTEN_SPACING_IN = 12
+DEFAULT_BATTEN_SPACING_IN_Q9_SUPERSEDED = 8  # provenance history only
 
 # 190 Series Trim is the EXISTING catalog mapping for the batten strip —
 # product/width + SKU not ratified (see BB_HELD).

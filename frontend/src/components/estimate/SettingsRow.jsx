@@ -186,36 +186,6 @@ export default function SettingsRow({ est, update }) {
               <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
                 Applied on HOVER / Blueprint import — collapses or splits the two soffit lines automatically
               </p>
-              {/* SHAKE REVEAL (register #4 ruled 2026-07-28): contractor-
-                  selectable, bounded 7"–10", default 7" — per LP install
-                  instructions. Feeds shake coverage = 4' × reveal/12 on the
-                  next derivation; sealed 15% shake waste applies on top. */}
-              <div className="mt-4 pt-4 border-t border-[var(--border)]">
-                <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                  Shake reveal
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <input
-                    className="input num w-24"
-                    type="number"
-                    step="0.125"
-                    min="7"
-                    max="10"
-                    value={est.shake_reveal_in ?? 7}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (v >= 7 && v <= 10) update({ shake_reveal_in: v });
-                    }}
-                    data-testid="shake-reveal-in"
-                  />
-                  <span className="text-[var(--ink-2)]">in</span>
-                </div>
-                <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                  Bounded 7"–10", default 7" — LP install instructions: "540 Series Trim is recommended
-                  when the shake reveal selected ranges between a maximum of 10 inches to a minimum of
-                  7 inches". Coverage = 4' × reveal ÷ 12 (panel max 9-7/8"); sealed 15% shake waste applies on top.
-                </p>
-              </div>
               <WallHeightTapeField est={est} />
             </div>
           )}
@@ -238,12 +208,18 @@ export default function SettingsRow({ est, update }) {
               </select>
             </div>
           )}
-          {/* Iter 45: soffit overhang in inches — drives the
-              Pieces = (Overhang × Length) ÷ panel-area formula on the
-              Vinyl Soffit line. Lives in the same card as Waste Factor
-              since it's the other knob that affects qty-not-price. */}
-          <div className="mt-4 pt-4 border-t border-[var(--border)]">
+          {/* TRADE-SPEC GROUP (Howard ruled 2026-07-29): roofline + install
+              specs the contractor supplies — eave overhang, fascia width,
+              shake reveal, batten spacing, porch ceilings. SPECS, not
+              CHECKS: the contractor telling the app what he is installing.
+              Defaults apply silently — no gate, no flag — the material
+              list prints the chosen value on the line. New specs join this
+              box; they do not get their own panels. */}
+          <div className="mt-4 pt-4 border-t border-[var(--border)]" data-testid="trade-spec-group">
             <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+              Trade specs
+            </div>
+            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2 mt-3">
               {t("est.overhang")}
             </div>
             <div className="flex items-baseline gap-2">
@@ -261,10 +237,86 @@ export default function SettingsRow({ est, update }) {
             <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
               {t("est.overhangHint")}
             </p>
-            {/* Iter 78aj — Porch ceilings live right below the overhang
-                field so contractors see them as part of the same "what
-                drives soffit qty" decision. The total sqft is summed
-                into the same soffit formula. */}
+            {est.kind === "lp_smart" && (
+              <>
+                {/* FASCIA WIDTH (ruled 2026-07-29): contractor call-out,
+                    WIDTH ONLY inside the 440 Series. Changes WHICH SKU gets
+                    ordered — the material list prints series + width. */}
+                <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                    Fascia width — 440 Series
+                  </div>
+                  <select
+                    className="input h-9 text-sm"
+                    value={est.fascia_width_in ?? 8}
+                    onChange={(e) => update({ fascia_width_in: Number(e.target.value) })}
+                    data-testid="fascia-width-select"
+                  >
+                    <option value={4}>4"</option>
+                    <option value={6}>6"</option>
+                    <option value={8}>8" (default)</option>
+                    <option value={10}>10"</option>
+                    <option value={12}>12"</option>
+                  </select>
+                  <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    Contractor call-out — no derivation. Picks the 440 board width; the material
+                    list prints the width on the line. Re-derives live.
+                  </p>
+                </div>
+                {/* BATTEN SPACING (ruled 2026-07-29): 12/16/24 o.c., default
+                    12" — 8" retired. The batten line note names the delta
+                    when spacing moves off default. */}
+                <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                    Batten spacing
+                  </div>
+                  <select
+                    className="input h-9 text-sm"
+                    value={est.batten_spacing_in ?? 12}
+                    onChange={(e) => update({ batten_spacing_in: Number(e.target.value) })}
+                    data-testid="batten-spacing-select"
+                  >
+                    <option value={12}>12" o.c. (default)</option>
+                    <option value={16}>16" o.c.</option>
+                    <option value={24}>24" o.c.</option>
+                  </select>
+                  <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    Every 48" seam lands on a batten. The 190 Series line note names the spacing
+                    and the piece delta vs the 12" default when it moves.
+                  </p>
+                </div>
+                {/* SHAKE REVEAL (register #4 ruled 2026-07-28): bounded
+                    7"–10", default 7" — LP install instructions. */}
+                <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                    Shake reveal
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <input
+                      className="input num w-24"
+                      type="number"
+                      step="0.125"
+                      min="7"
+                      max="10"
+                      value={est.shake_reveal_in ?? 7}
+                      onChange={(e) => {
+                        const v = Number(e.target.value);
+                        if (v >= 7 && v <= 10) update({ shake_reveal_in: v });
+                      }}
+                      data-testid="shake-reveal-in"
+                    />
+                    <span className="text-[var(--ink-2)]">in</span>
+                  </div>
+                  <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    Bounded 7"–10", default 7" — LP install instructions: "540 Series Trim is recommended
+                    when the shake reveal selected ranges between a maximum of 10 inches to a minimum of
+                    7 inches". Coverage = 4' × reveal ÷ 12 (panel max 9-7/8"); sealed 15% shake waste applies on top.
+                  </p>
+                </div>
+              </>
+            )}
+            {/* Iter 78aj — Porch ceilings live in the trade-spec box; the
+                total sqft is summed into the same soffit formula. */}
             <PorchCeilingsCard
               value={est.porch_ceilings || []}
               onChange={(next) => update({ porch_ceilings: next })}

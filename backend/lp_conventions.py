@@ -71,8 +71,26 @@ LP_FORBIDDEN_LINE_MARKERS = ("j-channel", "j channel", "finish trim", "coil")
 # RULED Q12 (2026-07-27, 3 Degree Rd): 540 5/4"×4" is the LP ISC DEFAULT —
 # crews run 540 in place of 440; 440 4/4"×4" demoted to substitution option.
 ISC_TRIM_ITEM = "540 Series Trim 5/4\" x 4\" x 16'"       # per inside-corner location
-FASCIA_RAKE_ITEM = "440 Series Trim 4/4\" x 8\" x 16'"    # fascia + rake boards
+FASCIA_RAKE_ITEM = "440 Series Trim 4/4\" x 8\" x 16'"    # fascia + rake boards (8" DEFAULT width)
 WRAP_TRIM_ITEM = "540 Series Trim 5/4\" x 4\" x 16'"      # window/door wrap
+
+# FASCIA WIDTH — TRADE SPEC (Howard ruled 2026-07-29): the contractor
+# calls it out; no derivation, no heuristic, no inference. Default 8"
+# applied silently — no gate, no flag — but the material list PRINTS the
+# width on the line (this changes WHICH SKU gets ordered, so it rides the
+# money-emitter path, never display).
+FASCIA_WIDTHS_IN = (4, 6, 8, 10, 12)
+DEFAULT_FASCIA_WIDTH_IN = 8
+
+
+def fascia_item_for_width(width_in) -> str:
+    try:
+        w = int(width_in or DEFAULT_FASCIA_WIDTH_IN)
+    except (TypeError, ValueError):
+        w = DEFAULT_FASCIA_WIDTH_IN
+    if w not in FASCIA_WIDTHS_IN:
+        w = DEFAULT_FASCIA_WIDTH_IN
+    return FASCIA_RAKE_ITEM.replace(' x 8" x', f' x {w}" x')
 TRIM_STICK_LEN_FT = 16.0
 
 # Per-system derivation table (Howard amendment, 2026-07-11 — any line
@@ -192,10 +210,10 @@ def shake_takeoff(area_sqft: float, reveal_in=None, waste=None) -> dict:
 
 
 def batten_takeoff_flags(spacing=None) -> list:
-    """Batten spacing is job-specific — flag if unspecified (PDF-standard
-    16\" o.c. applied meanwhile, visibly)."""
-    if spacing is None:
-        return ["batten spacing: unconfirmed — PDF-standard 16\" o.c. applied, job-specific"]
+    """RETIRED AS A FLAG (Howard 2026-07-29): batten spacing is a TRADE
+    SPEC — the contractor calls it out in the trade-spec group (12/16/24,
+    default 12" applied silently, no gate, no flag; the batten line note
+    names the spacing and the delta when it moves off default)."""
     return []
 
 

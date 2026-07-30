@@ -682,13 +682,44 @@ def _soffit_total_split(m: dict) -> tuple[float, float]:
     return round(total * e / (e + r), 1), round(total * r / (e + r), 1)
 
 
+def _batten_spacing_in(m: dict) -> int:
+    try:
+        s = int(m.get("_batten_spacing_in") or 0)
+    except (TypeError, ValueError):
+        s = 0
+    return s if s in lp_formulas.VALID_BATTEN_SPACINGS_IN \
+        else lp_formulas.DEFAULT_BATTEN_SPACING_IN
+
+
 def _bb_batten_sticks(m: dict) -> int:
     bb = float((m.get("_per_profile_sqft") or {}).get("board_batten") or 0) \
         + float((m.get("_per_profile_sqft") or {}).get("vertical") or 0)
     if bb <= 0 or not lp_formulas.is_enabled():
         return 0
     return lp_formulas.board_batten_batten_pieces(
-        bb, wall_height_ft=float(m.get("_bb_wall_height_ft") or 0))
+        bb, spacing_in=_batten_spacing_in(m),
+        wall_height_ft=float(m.get("_bb_wall_height_ft") or 0))
+
+
+def _batten_note(m: dict) -> str:
+    """Batten statement — names the spacing, and NAMES THE DELTA
+    explicitly when the trade-spec spacing moves off the 12\" default
+    (Howard ruled 2026-07-29)."""
+    s = _batten_spacing_in(m)
+    base = (f"Batten strips — wall area ÷ ({s}\"/12) + 1 run × wall height "
+            f"when taped, {s}\" on-center (trade spec, default 12\"), "
+            "16' stock, no waste")
+    if s == lp_formulas.DEFAULT_BATTEN_SPACING_IN:
+        return base
+    bb = float((m.get("_per_profile_sqft") or {}).get("board_batten") or 0) \
+        + float((m.get("_per_profile_sqft") or {}).get("vertical") or 0)
+    h = float(m.get("_bb_wall_height_ft") or 0)
+    at_default = lp_formulas.board_batten_batten_pieces(
+        bb, spacing_in=lp_formulas.DEFAULT_BATTEN_SPACING_IN, wall_height_ft=h)
+    at_spec = lp_formulas.board_batten_batten_pieces(
+        bb, spacing_in=s, wall_height_ft=h)
+    return (f"{base} — DELTA vs 12\" default: {at_spec - at_default:+d} pcs "
+            f"({at_spec} @ {s}\" vs {at_default} @ 12\")")
 
 
 # Q8 (ruled 2026-07-27): per-estimate COLOR-TIER selector re-lands
@@ -888,9 +919,14 @@ HOVER_MAPPING_SPEC = [
     },
     # RULED (2026-07-16, LPZB0884): batten LF = wall_area ÷ spacing(ft)
     # + 1 run × wall height per wall; pcs = ceil(LF ÷ 16), no waste on
-    # battens; spacing must divide 48 (12/16/24 o.c.). Ingest path lacks
-    # per-wall heights so the +height term is 0 here. Batten SKU and
-    # default spacing are HELD pending Howard (BB_HELD_PENDING_HOWARD).
+    # battens; spacing must divide 48. Ingest path lacks per-wall heights
+    # so the +height term is 0 here. Spacing became a TRADE SPEC 2026-07-29
+    # (see the row comment below).
+    # RULED (2026-07-29): spacing is a TRADE SPEC — 12/16/24 o.c., 12"
+    # default (8" retired; the 3 Degree 465 is a second opinion, not a
+    # target). batten LF = wall_area ÷ spacing(ft) + 1 run × wall height
+    # per wall; pcs = ceil(LF ÷ 16), no waste on battens; spacing must
+    # divide 48. HOVER-SCHEDULE numbers feed this — never drawn reads.
     {
         "tabs": ["lp_smart"],
         "section": "LP SmartSide Trim",
@@ -899,16 +935,8 @@ HOVER_MAPPING_SPEC = [
         # "no waste on battens" is the sealed rule — the tab bake violated
         # the row's own note until 2026-07-24.
         "waste_included": True,
-        "extract": lambda m: (
-            lp_formulas.board_batten_batten_pieces(
-                float((m.get("_per_profile_sqft") or {}).get("board_batten") or 0)
-                + float((m.get("_per_profile_sqft") or {}).get("vertical") or 0),
-                wall_height_ft=float(m.get("_bb_wall_height_ft") or 0),
-            )
-            if lp_formulas.is_enabled()
-            else 0
-        ),
-        "note": "Batten strips — wall area ÷ (8\"/12) + 1 run × wall height when taped, 8\" on-center, 16' stock, no waste",
+        "extract": lambda m: (_bb_batten_sticks(m) if lp_formulas.is_enabled() else 0),
+        "note": _batten_note,
     },
     # .019 Coil LP AUTO-ADD RETIRED (iter97 composition ruling, 2026-07-12):
     # an auto-add is DERIVED composition — coil on an LP-native derived
@@ -2323,7 +2351,29 @@ def _build_lines(measurements: dict) -> list[dict]:
                 **({"qty_pending": True} if spec.get("always_emit") and qty <= 0 else {}),
             })
     # Q8 (ruled 2026-07-27): per-estimate color tier re-lands derivations.
-    return _apply_color_tier(out, measurements.get("_color_tier"))
+    out = _apply_color_tier(out, measurements.get("_color_tier"))
+    # FASCIA WIDTH TRADE SPEC (Howard ruled 2026-07-29): the contractor's
+    # width call-out renames the 440 fascia SKU — the material list prints
+    # the width on the line (wrong lumber on the truck is the risk; the
+    # printed width is the protection). Default 8" applies silently.
+    return _apply_fascia_width(out, measurements)
+
+
+def _apply_fascia_width(lines: list, m: dict) -> list:
+    from lp_conventions import (DEFAULT_FASCIA_WIDTH_IN, FASCIA_RAKE_ITEM,
+                                fascia_item_for_width)
+    try:
+        w = int(m.get("_fascia_width_in") or DEFAULT_FASCIA_WIDTH_IN)
+    except (TypeError, ValueError):
+        w = DEFAULT_FASCIA_WIDTH_IN
+    if w == DEFAULT_FASCIA_WIDTH_IN:
+        return lines
+    for l in lines:
+        if l.get("tab") == "lp_smart" and l.get("name") == FASCIA_RAKE_ITEM:
+            l["name"] = fascia_item_for_width(w)
+            l["note"] = ((l.get("note") or "") +
+                         f' — fascia width {w}" (trade spec, contractor call-out; default 8")').strip(" —")
+    return lines
 
 
 def _build_window_openings(measurements: dict) -> tuple[list[dict], list[dict]]:
@@ -2648,6 +2698,12 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     # rides the tab-line rebuild too — same fold as the package paths.
     if est.get("shake_reveal_in") is not None:
         scoped["_shake_reveal_in"] = float(est["shake_reveal_in"])
+    # TRADE SPECS (Howard ruled 2026-07-29): batten spacing + fascia width
+    # ride the tab-line rebuild too — tab/package parity, never divergent.
+    if est.get("batten_spacing_in") is not None:
+        scoped["_batten_spacing_in"] = int(est["batten_spacing_in"])
+    if est.get("fascia_width_in") is not None:
+        scoped["_fascia_width_in"] = int(est["fascia_width_in"])
     # TOUCH-UP COLOR COUNT (register #7 ruled 2026-07-28): Job-Info color
     # selections multiply the kit count on the tab lines too — the same
     # count the package path reads (tab/package parity, never divergent).
@@ -2831,6 +2887,7 @@ async def hover_lp_run(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
          "color_tier": 1, "shake_reveal_in": 1, "lp_colors": 1,
+         "batten_spacing_in": 1, "fascia_width_in": 1,
          "lp_flag_checklist": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")

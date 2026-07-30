@@ -126,10 +126,11 @@ def test_bb_panel_pieces_uses_40_sqft():
     assert lp.board_batten_panel_pieces(0) == 0
 
 
-def test_batten_pieces_default_8_inch_oc():
-    """Q9 (ruled 2026-07-27, 3 Degree Rd): default spacing = 8" o.c. —
-    100 sqft @ 8": LF = 100 ÷ (2/3) = 150. NO waste: ceil(150/16) = 10."""
-    assert lp.board_batten_batten_pieces(100) == 10
+def test_batten_pieces_default_12_inch_oc():
+    """RULED 2026-07-29: spacing is a TRADE SPEC — default 12" o.c. (8"
+    retired; the 3 Degree 465 was a second opinion, never a target) —
+    100 sqft @ 12": LF = 100 ÷ 1 = 100. NO waste: ceil(100/16) = 7."""
+    assert lp.board_batten_batten_pieces(100) == 7
 
 
 def test_batten_pieces_24_inch_oc_uses_50_lf():
@@ -247,10 +248,11 @@ def test_190_series_battens_only_emitted_when_bb_present_and_flag_on(flag_on):
     lines = _build_lines(m)
     batten = _find(_lp_lines(lines), '190 Series Trim 19/32" x 3" x 16\'')
     assert batten is not None
-    # Q9 (ruled 2026-07-27): 400 sqft @ 8" o.c.: LF = 400 ÷ (2/3) = 600;
-    # pcs = ceil(600 / 16) = 38 (no waste on battens; +height term is 0
-    # on the ingest path — no per-wall heights there)
-    assert batten["qty"] == 38
+    # RULED 2026-07-29 (trade spec, default 12"): 400 sqft @ 12" o.c.:
+    # LF = 400 ÷ 1 = 400; pcs = ceil(400 / 16) = 25 (no waste on battens;
+    # +height term is 0 on the ingest path — no per-wall heights there)
+    assert batten["qty"] == 25
+    assert 'trade spec, default 12"' in batten["note"]
 
 
 def test_190_series_battens_skipped_when_flag_off(flag_off):

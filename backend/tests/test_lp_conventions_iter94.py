@@ -84,7 +84,9 @@ def test_shake_unspecified_reveal_flags_and_worst_cases():
 
 
 def test_batten_spacing_flag():
-    assert batten_takeoff_flags(None) != []
+    # RETIRED AS A FLAG (Howard 2026-07-29): spacing is a TRADE SPEC —
+    # default applied silently, no gate, no flag; the line note names it.
+    assert batten_takeoff_flags(None) == []
     assert batten_takeoff_flags("16\" o.c.") == []
 
 

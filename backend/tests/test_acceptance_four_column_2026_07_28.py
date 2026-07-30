@@ -267,5 +267,24 @@ def test_zz_emit_acceptance_table():
              "|---|---|---|---|---|---|"]
     for r in _rows:
         lines.append("| " + " | ".join(str(x) for x in r) + " |")
+    lines += [
+        "",
+        "## SECOND OPINION #2 — 261 Haugh (recorded 2026-07-29, Howard's ruling)",
+        "Another estimator's takeoff off the same Hover report — NOT installed",
+        "material. Neither second opinion is a standard or a target; the ruled",
+        "formula is never tuned toward either.",
+        "",
+        "| Line | App (ruled) | Second takeoff | Note |",
+        "|---|---|---|---|",
+        "| Battens 190 | 129 @ 12\" o.c. (was 194 @ retired 8\") | 144 | theirs implies ~10.7\" o.c. WITH end-to-end splicing — not a standard |",
+        "| Panels | 68 × 4×10 = 2,720 ft² @ sealed 30% | 70 × 4×8 = 2,240 ft² (~8.5% waste) | like-for-like: app on 4×8 @ 30% = 84 — panel size is BAKED to 4×10 today (reported for ruling) |",
+        "| OSC | 15 | 13 | effectively agreed |",
+        "| 540 trim 4\" | 62 = wrap 33 + frieze 23 + ISC 6 | 32 | their 32 ≈ our WRAP component alone (525.33 LF ÷ 16 = 33) — gap is frieze + ISC scope, not wrap math |",
+        "| Soffit | 23 | 22 | agreed |",
+        "| 5/4×12×16 fascia | — | 19 | **COMPARISON DROPPED (Howard ruled 2026-07-29): their 5/4\" thickness is wrong — 4/4\" (440 Series) is correct; a wrong-thickness line validates nothing** |",
+        "",
+        "Implied spacings named: 3 Degree second opinion ≈ 6.8\" o.c.; Haugh",
+        "second opinion ≈ 10.7\" o.c. — both splice-implied, both non-standard.",
+    ]
     TABLE_PATH.write_text("\n".join(lines) + "\n")
     assert TABLE_PATH.exists()
