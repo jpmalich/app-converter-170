@@ -58,8 +58,8 @@ def test_aggregate_carries_no_plus_one():
     carry the +1 per segment — bb_batten_lf is area ÷ spacing + height
     term, blind to segment count. Pinned as a documented deficiency until
     the hard formula wires in."""
-    flat = bb_batten_lf(1000.0, 8, 0.0)
-    split_blind = bb_batten_lf(500.0, 8, 0.0) + bb_batten_lf(500.0, 8, 0.0)
+    flat = bb_batten_lf(1000.0, 12, 0.0)
+    split_blind = bb_batten_lf(500.0, 12, 0.0) + bb_batten_lf(500.0, 12, 0.0)
     assert flat == split_blind                            # segments invisible
 
 
@@ -72,8 +72,16 @@ def test_3degree_reproduction_howards_arithmetic():
     seg_w = run_ft / n_segments
     pieces = bb_batten_pieces_hard([(seg_w, [9.0])] * n_segments, 12, 10.0)
     assert 465 <= pieces <= 500, f"hard formula gives {pieces} — Howard's ~490 confirmed"
-    # the live aggregate on the same house: 398 (8\" o.c., 16' splicing)
-    assert bb_batten_pieces(bb_batten_lf(4239.0, 8, 0.0)) == 398
+    # CORRECTED 2026-07-29: the 465 is a SECOND OPINION (estimate-dept
+    # takeoff, implied ~6.8" o.c. spliced), never a target. The live
+    # aggregate at the ruled 12" default: 4239 LF ÷ 16 = 265 (the retired
+    # 8" gave 398; 8 now raises).
+    assert bb_batten_pieces(bb_batten_lf(4239.0, 12, 0.0)) == 265
+    try:
+        bb_batten_lf(4239.0, 8, 0.0)
+        assert False, "8\" spacing is retired and must raise"
+    except ValueError:
+        pass
 
 
 def test_sku_meets_preferred_spec_not_minimum():

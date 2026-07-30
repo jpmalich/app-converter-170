@@ -107,3 +107,5 @@
 - 2026-07-29 19:30 UTC · 9e6513d · GUARD-FAIL · FAILED tests/test_acceptance_four_column_2026_07_28.py::test_zz_emit_acceptance_table
 - 2026-07-29 19:35 UTC · bd63fff · CLEAN · [tests] · 1562 passed, 1 skipped, 3 warnings in 181.50s (0:03:01)
 - 2026-07-29 20:52 UTC · 43b7dab · CLEAN · [tests] · 1563 passed, 1 skipped, 3 warnings in 267.78s (0:04:27)
+- 2026-07-30 00:18 UTC · 83cf93a · GUARD-FAIL · FAILED tests/test_batten_hard_formula_2026_07_28.py::test_aggregate_carries_no_plus_one
+- 2026-07-30 00:18 UTC · 83cf93a · GUARD-FAIL · FAILED tests/test_batten_hard_formula_2026_07_28.py::test_3degree_reproduction_howards_arithmetic
