@@ -1,0 +1,73 @@
+{
+  "summary": "Human-eye walkthrough of the new LP trade-spec dropdowns (panel-size, wrap-trim-width, fascia-width, batten-spacing) on the Jon Casile lp_smart estimate. Backend is green (10/10 pytest, incl. PUT bounds 422 for panel_size='4x12' and wrap_trim_width_in=5; PUT+materialize renames 38 Series 4' x 10' Panel -> 4' x 8' Panel and lifts qty 68 -> 84 (~40/32); 540 Series wrap trim 5/4\" x 4\" -> 5/4\" x 6\" NAME-ONLY (qty 62 -> 62); 440 Series fascia -> 4/4\" x 12\"; no fractional qtys). FRONTEND SILENT-STRIP BUG CONFIRMED: the four selects update React state (UI shows the picked value in the moment) but the autosave PUT payload does NOT include panel_size, wrap_trim_width_in, fascia_width_in, batten_spacing_in. Network trace of a UI select_option shows exactly one PUT /api/estimates/{id} whose body has customer_name, address, waste_pct, overhang_in, porch_ceilings, colors, tax, margin, lines, misc, openings, photos, status_label, install_method, home_pre_1978 -- and NOTHING for the four new trade specs. Server GET immediately after four UI flips still returns {panel_size:'4x10', wrap_trim_width_in:4, fascia_width_in:8, batten_spacing_in:12}. Reopen-the-estimate reload shows all four selects back at defaults. This is precisely the 'silent PUT strip / pytest-green / browser-broken' pattern Howard has been burned by 4 times.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "useEstimate.js buildPayload (lib/useEstimate.js:373-517)", "issue": "SILENT-STRIP: PUT /api/estimates/{id} payload whitelist omits panel_size, wrap_trim_width_in, fascia_width_in, batten_spacing_in. React state updates so the UI 'looks right', but reload restores defaults and materialize/rebuild never sees the new spec. Also missing from the whitelist and therefore vulnerable: shake_reveal_in and color_tier (SettingsRow writes them via the same update() path).", "selector": "[data-testid=panel-size-select] / wrap-trim-width-select / fascia-width-select / batten-spacing-select", "priority": "CRITICAL"}
+    ],
+    "integration_issues": [
+      {"flow": "Trade-spec change -> autosave -> reopen", "issue": "Silent strip: UI drops the four specs before hitting PUT; server GET after change shows defaults; reload shows defaults; LP tab line names / counts never re-derive from the picked spec in the browser flow. Backend materialize + PUT via API works perfectly (backend test 10/10 green); the gap is 100% in buildPayload.", "affected_selectors": ["[data-testid=panel-size-select]","[data-testid=wrap-trim-width-select]","[data-testid=fascia-width-select]","[data-testid=batten-spacing-select]"]}
+    ],
+    "design_issues": []
+  },
+  "verified_pass_backend": [
+    "PUT /api/estimates/{id} {panel_size:'4x12'} -> 422 (rejected)",
+    "PUT /api/estimates/{id} {wrap_trim_width_in:5} -> 422 (rejected)",
+    "PUT {panel_size:'4x8'} + POST /lp-package/materialize on Jon Casile: 38 Series 4' x 10' Panel -> 4' x 8' Panel, qty 68 -> 84 (spec 68->84 expected, within tolerance vs 40/32 ratio ~85)",
+    "PUT {wrap_trim_width_in:6} + materialize: 540 Series Trim 5/4\" x 4\" x 16' -> 5/4\" x 6\" x 16', qty 62 -> 62 (name-only, per spec)",
+    "PUT {fascia_width_in:12} + materialize: 440 Series Trim 4/4\" x 8\" x 16' -> 4/4\" x 12\" x 16', qty 21",
+    "Silent-strip via API: PUT with all four fields, then GET -> all four persist (panel_size=4x8, wrap_trim_width_in=6, fascia_width_in=12, batten_spacing_in=16)",
+    "Whole-units on stored lines: no fractional qty anywhere on the estimate after materialize"
+  ],
+  "verified_pass_frontend": [
+    "Login flow (email-input / password-input / auth-submit-btn) works",
+    "Workspace picker -> Contractor Quotes -> OPEN LP SMARTSIDE -> Jon Casile estimate opens; URL /estimate/{id}",
+    "Trade-spec group testids present and visible: trade-spec-group, panel-size-select (options: 4x10,4x8), wrap-trim-width-select (4,6,8,10,12), fascia-width-select (4,6,8,10,12), batten-spacing-select (12,16,24)",
+    "Client-side option lists honor the backend bounds (no 4x12 option in panel-size-select; no 5 in wrap-trim-width-select)",
+    "Select onChange updates the visible select value in the browser (React state)",
+    "In-app navigation from estimate page: ESTIMATES top-nav returns to workspace picker without using the browser back button"
+  ],
+  "not_verified_because_of_silent_strip_bug": [
+    "LP tab UI line rename (4' x 10' Panel -> 4' x 8' Panel) after picking 4x8 in the browser -- cannot observe because the value is stripped before save/materialize",
+    "LP tab UI count 68 -> 84 -- same reason",
+    "540 Series wrap trim rename in the browser -- same reason",
+    "440 Series fascia rename in the browser at fascia=12 -- same reason",
+    "F2 fix live proof on the VINYL tab .019 Coil in 'Vinyl Soffit with Siding' doubling roll count vs fascia=8 -- fascia_width_in never reaches the server from the UI, so re-derivation is unreachable via the browser path; the backend rule itself is pytest-pinned and untouched",
+    "Coil-colour chips on '.019 Coil' rows (window-wrap / soffit-fascia colours) -- did not exercise; color fields are IN buildPayload so this is a separate deliverable, not blocked by the bug above",
+    "Print/takeoff in-app navigation round-trip -- not exercised in this pass; a nav element with text 'Print' is present (count=5) but link target not walked because the trade-spec regression was already CRITICAL"
+  ],
+  "rca_of_the_issue": {
+    "file": "/app/frontend/src/lib/useEstimate.js",
+    "function": "buildPayload (lines 373-517)",
+    "reproduction": [
+      "1. Log in as hhunt6677@yahoo.com (ADMIN_PASSWORD from backend/.env)",
+      "2. Contractor Quotes -> LP SmartSide -> open Jon Casile (id e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170)",
+      "3. Scroll to [data-testid=trade-spec-group]; change panel-size-select to 4x8",
+      "4. Observe network: exactly one PUT /api/estimates/{id} fires. Body contains customer_name, waste_pct, overhang_in, ... but does NOT contain 'panel_size'",
+      "5. Immediately GET /api/estimates/{id} -> panel_size still '4x10'",
+      "6. Reload estimate -> select shows 4x10 (default). Same for wrap_trim_width_in, fascia_width_in, batten_spacing_in"
+    ],
+    "why": "buildPayload is a strict field whitelist. It was extended for overhang_in, porch_ceilings, color pickers, tax, margin, install_method, home_pre_1978 -- but the four new LP trade-spec fields (and also shake_reveal_in, color_tier, lp_soffit_type) were never added. React state updates so the UI 'looks right', but the autosave PUT drops them and the reload / materialize / vinyl-tab-recalc never sees them.",
+    "mitigation": "Add the missing fields to the buildPayload return object. Suggested (all optional, fall through to server defaults if absent -- backend validators already enforce bounds):\n  panel_size: source.panel_size || undefined,\n  wrap_trim_width_in: source.wrap_trim_width_in ?? undefined,\n  fascia_width_in: source.fascia_width_in ?? undefined,\n  batten_spacing_in: source.batten_spacing_in ?? undefined,\n  shake_reveal_in: source.shake_reveal_in ?? undefined,\n  color_tier: source.color_tier || undefined,\n  lp_soffit_type: source.lp_soffit_type || undefined,\nAlso confirm that after save, the frontend either receives the re-derived lines in the PUT response, or fires POST /api/estimates/{id}/lp-package/materialize so the LP tab visibly renames/recounts live (the review said 're-derives live'). Backend materialize is proven to do the rename+recount when called after PUT."
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_48_trade_specs.py",
+    "/app/test_reports/pytest/iter48.xml"
+  ],
+  "action_items": [
+    "CRITICAL: Extend buildPayload in /app/frontend/src/lib/useEstimate.js to include panel_size, wrap_trim_width_in, fascia_width_in, batten_spacing_in (and shake_reveal_in, color_tier, lp_soffit_type while there -- same shape of bug).",
+    "After PUT of an LP trade-spec, fire POST /api/estimates/{est_id}/lp-package/materialize (or use the same 'apply' path the review references) so the LP tab visibly renames + recounts in the browser -- current PUT alone does not re-derive stored lines.",
+    "Once fixed, re-run the browser walkthrough: expect Jon Casile 38 Series to rename to 4' x 8' Panel and qty 68 -> ~84; 540 to rename to 5/4\" x 6\"; 440 to rename to 4/4\" x 12\"; and (F2 live proof) the .019 Coil row in 'Vinyl Soffit with Siding' to roughly double vs fascia=8 after the derivation runs."
+  ],
+  "critical_code_review_comments": [
+    "buildPayload is a strict whitelist -- every new estimate-level field will silently strip until it's added there. Consider replacing the whitelist with a small deny-list ({kind, id, company_id, _id, created_at, updated_at, lp_source_run_id, ...}) so newly-shipped SettingsRow fields don't require a paired buildPayload edit. This is a recurring class of the exact bug Howard flagged 4 times.",
+    "SettingsRow.jsx wires each select directly to update({key:value}) but there is no shared 'trade-spec' contract enumerated in one place -- adding a lint/test that asserts buildPayload keys is a superset of the union of update({...}) keys emitted from SettingsRow would kill this bug class."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration_48_trade_specs.py (new)"],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "trade-spec save flow BROKEN (silent-strip); UI mount + selects + option bounds render correctly"},
+  "test_credentials": "hhunt6677@yahoo.com / ADMIN_PASSWORD from backend/.env (never printed)",
+  "seed_data_creation": "No new seed data. Jon Casile estimate mutated during test then reverted (panel_size=4x10, wrap_trim_width_in=4, fascia_width_in=8, batten_spacing_in=12).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The bug is 100% in /app/frontend/src/lib/useEstimate.js buildPayload -- the four new LP trade-spec keys are absent from the whitelist. Backend (models, materialize, rebuild_lp_tab_lines) is pytest-pinned green and proven via test_iteration_48_trade_specs.py (10/10). Once buildPayload is extended, re-open Jon Casile in the browser, flip each select, and verify: (a) network PUT body contains the four keys, (b) GET returns them, (c) LP tab line names+counts re-derive (may require the frontend to also POST /lp-package/materialize after PUT since PUT alone does not re-derive stored lines). Also worth checking whether shake_reveal_in and color_tier (siding kind) share the same silent strip -- inspection says yes."
+}

@@ -36,6 +36,20 @@ const EDITABLE_MAT_ITEMS = new Set([
   "Vero - Sliding glass door Custom Size",
 ]);
 
+// R2 follow-on GO (Howard 2026-07-30): coil-family rows carry the colour
+// of the component they wrap, from Job Info MATERIAL COLORS. Manual rows
+// (PVC/G8) have no emitter, so the chip lives here at the display layer —
+// a note cannot ride a line that is never emitted.
+const COIL_COLOUR_ROWS = new Set([".019 Coil", "PVC Trim Coil", "Performance G8 Trim Coil"]);
+function coilColourFor(sectionTitle, name, est) {
+  if (!COIL_COLOUR_ROWS.has(name)) return null;
+  if (sectionTitle === "Siding Accessories")
+    return { label: "wraps openings — window-wrap colour", value: est?.window_wrap_color };
+  if (sectionTitle === "Vinyl Soffit with Siding")
+    return { label: "fascia wrap — soffit/fascia colour", value: est?.soffit_fascia_color };
+  return null;
+}
+
 export default function SectionAccordion({
   section,
   lines,
@@ -257,6 +271,19 @@ export default function SectionAccordion({
                 contractor sets labor
               </span>
             )}
+            {(() => {
+              const cc = coilColourFor(section.title, l.name, est);
+              if (!cc) return null;
+              return (
+                <span
+                  className={`inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border ${cc.value ? "border-[var(--border)] bg-[var(--bg-app)] text-[var(--ink-2)]" : "border-amber-400 bg-amber-50 text-amber-800"}`}
+                  title="Colour of the component this coil wraps — from Job Info MATERIAL COLORS"
+                  data-testid={`coil-colour-${section.title}-${l.name}`}
+                >
+                  {cc.value ? `${cc.label}: ${cc.value}` : "colour not set — set in Job Info"}
+                </span>
+              );
+            })()}
           </div>
         </div>
         <div className="col-span-3 md:col-span-1 text-xs text-[var(--muted)] uppercase tracking-wider">
