@@ -1,5 +1,20 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## BINDING AUDIT — HOWARD'S DEMAND CAUGHT A REAL CLASS (2026-07-30, 32a4b8b)
+- **THE BUG**: trade-spec fields were SILENTLY STRIPPED by the PUT model —
+  EstimateIn lacked batten_spacing_in/fascia_width_in, so the UI "saved,"
+  nothing persisted, the derivation never saw the width. Fixed: declared,
+  bounds-validated model fields (12/16/24; 4/6/8/10/12). Pin:
+  test_spec_fields_survive_the_put_model.
+- **BINDING VERIFIED e2e**: all five 440 widths + all five 540 widths bind
+  and price (normalized-string sheet_norm match). 540 12" = $107.73 exact;
+  others within cents of Howard's sheet. Named risk: string matching is
+  fragile — pin test_every_width_variant_sku_binds fails the suite on any
+  name drift on the dimensioned-SKU class.
+- One transient GUARD-FAIL on record: 7 request-timeout ERRORs in
+  test_openings_remove during a full run; 13/13 in isolation; clean rerun.
+- Guard: 2026-07-30 01:07 UTC · 32a4b8b · CLEAN · 1570 passed.
+
 ## BATTEN SPACING RULED + TRADE-SPEC GROUP SHIPPED (2026-07-30, 3f859ab)
 - **Batten spacing = TRADE SPEC**: 12/16/24" o.c., default 12", 8" RETIRED
   (raises ValueError; Q9's 8" was tuned toward the 3 Degree second opinion).
