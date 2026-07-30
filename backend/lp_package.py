@@ -360,6 +360,18 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
 
     avg_h = measurements.get("_ai_avg_wall_height_ft")
 
+    # WRAP TRIM WIDTH trade spec (ruled 2026-07-30): SKU name derived
+    # UP-FRONT like fascia so seed-assign matches; name-only, counts stay.
+    from lp_conventions import wrap_item_for_width
+    _wrap_name = wrap_item_for_width(measurements.get("_wrap_trim_width_in"))
+    _wrap_spec_note = ("" if _wrap_name == WRAP_TRIM_ITEM else
+                       ' — wrap-trim width spec (name-only, counts unchanged; default 4")')
+    # Supersede stale 540 Trim seeds under OTHER widths (OSC precedent) —
+    # otherwise a width change leaves the old-named seed beside the new.
+    lines[:] = [l for l in lines
+                if not (str(l.get("name", "")).startswith("540 Series Trim")
+                        and l.get("name") != _wrap_name)]
+
     # ── OSC: Howard's default width 5/4"×6" — spec-emitted OSC rows superseded
     lines[:] = [l for l in lines if "540 Series OSC" not in l["name"]]
     osc = osc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
@@ -548,7 +560,7 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                     + (f" + {bump} shake belly-band pcs" if bump else ""))
             if gc:
                 note += f"; garage {gc}×32' held (16+2×8 already reads 3-side — confirm)"
-        _set_line(WRAP_TRIM_ITEM, "LP SmartSide Trim", wrap_qty, note)
+        _set_line(_wrap_name, "LP SmartSide Trim", wrap_qty, note + _wrap_spec_note)
         wrap_set = True
 
     # ── Q10 (ruled 2026-07-27): FRIEZE LF is CONSUMED — measured data
@@ -566,7 +578,7 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     if isc_qty > 0:
         extra_540.append((isc_qty, isc_note))
     if extra_540:
-        target = next((l for l in lines if l["name"] == WRAP_TRIM_ITEM), None)
+        target = next((l for l in lines if l["name"] == _wrap_name), None)
         add_q = sum(q for q, _ in extra_540)
         add_notes = "; ".join(n for _, n in extra_540)
         if target is not None:
@@ -576,29 +588,23 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             base = wrap_qty if wrap_set else 0
             base_note = (target.get("note") or "") if wrap_set else ""
             target["qty"] = base + add_q
-            target["note"] = f"{base_note}; {add_notes}".strip("; ")
+            target["note"] = (f"{base_note}; {add_notes}".strip("; ") +
+                              (_wrap_spec_note if _wrap_spec_note and
+                               _wrap_spec_note not in (base_note or "") else ""))
             if isc_deriv and not target.get("_derivation"):
                 target["_derivation"] = isc_deriv
         else:
             lines.append({"tab": "lp_smart", "section": "LP SmartSide Trim",
-                          "name": WRAP_TRIM_ITEM, "unit": "PCS", "qty": add_q,
-                          "note": add_notes,
+                          "name": _wrap_name, "unit": "PCS", "qty": add_q,
+                          "note": add_notes + _wrap_spec_note,
                           **({"_derivation": isc_deriv} if isc_deriv else {})})
 
     # WRAP TRIM WIDTH trade spec (Howard ruled 2026-07-30): changes ONLY
     # the 540 SKU name — the whole Q12 scope (wrap + ISC + frieze) carries
-    # the selected width; counts untouched.
-    from lp_conventions import DEFAULT_WRAP_TRIM_WIDTH_IN, wrap_item_for_width
-    try:
-        _ww = int(measurements.get("_wrap_trim_width_in") or DEFAULT_WRAP_TRIM_WIDTH_IN)
-    except (TypeError, ValueError):
-        _ww = DEFAULT_WRAP_TRIM_WIDTH_IN
-    if _ww != DEFAULT_WRAP_TRIM_WIDTH_IN:
-        for l in lines:
-            if l.get("name") == WRAP_TRIM_ITEM:
-                l["name"] = wrap_item_for_width(_ww)
-                l["note"] = ((l.get("note") or "") +
-                             f' — wrap-trim width {_ww}" (trade spec; name-only, counts unchanged; default 4")').strip(" —")
+    # the selected width; counts untouched. NOTE the FASCIA PATTERN: the
+    # SKU name is derived UP-FRONT (see _wrap_name above) so the assign
+    # matches the tab-spec seed hover already renamed — a post-pass rename
+    # here DOUBLED the line (62→124, caught by Howard's UI pass retest).
 
     # ── LP STARTER (rip yield RULED FINAL): 3 strips per 16' board =
     # 48 LF/board; pieces = ceil(starter LF ÷ 48), line-itemed as starter
