@@ -395,7 +395,7 @@ export default function EstimateEditor() {
           setInstallMethod={setInstallMethod}
           setHomePre1978={setHomePre1978}
         />
-        <SettingsRow est={est} update={update} />
+        <SettingsRow est={est} update={update} save={save} />
         <PhotosPanel est={est} update={update} />
         <ElevationSheetsPanel est={est} />
 

@@ -77,8 +77,18 @@ function WallHeightTapeField({ est }) {
   );
 }
 
-export default function SettingsRow({ est, update }) {
+export default function SettingsRow({ est, update, save }) {
   const t = useT();
+  // TRADE-SPEC SAVE PATH (silent-strip fix, Howard's UI pass 2026-07-30):
+  // specs save IMMEDIATELY (no debounce race) and then tell the LP
+  // package panel to re-derive so the rename/count is visible live.
+  const saveSpec = async (patch) => {
+    update(patch);
+    if (save) {
+      await save({ ...est, ...patch });
+      window.dispatchEvent(new Event("lp-flag-checklist-changed"));
+    }
+  };
   const mode = est.pricing_mode || "margin";
   const isMargin = mode === "margin";
   // Iter 78 — Waste % change recomputes line.qty for any cut-prone line
@@ -249,7 +259,7 @@ export default function SettingsRow({ est, update }) {
                   <select
                     className="input h-9 text-sm"
                     value={est.fascia_width_in ?? 8}
-                    onChange={(e) => update({ fascia_width_in: Number(e.target.value) })}
+                    onChange={(e) => saveSpec({ fascia_width_in: Number(e.target.value) })}
                     data-testid="fascia-width-select"
                   >
                     <option value={4}>4"</option>
@@ -273,7 +283,7 @@ export default function SettingsRow({ est, update }) {
                   <select
                     className="input h-9 text-sm"
                     value={est.batten_spacing_in ?? 12}
-                    onChange={(e) => update({ batten_spacing_in: Number(e.target.value) })}
+                    onChange={(e) => saveSpec({ batten_spacing_in: Number(e.target.value) })}
                     data-testid="batten-spacing-select"
                   >
                     <option value={12}>12" o.c. (default)</option>
@@ -294,7 +304,7 @@ export default function SettingsRow({ est, update }) {
                   <select
                     className="input h-9 text-sm"
                     value={est.panel_size ?? "4x10"}
-                    onChange={(e) => update({ panel_size: e.target.value })}
+                    onChange={(e) => saveSpec({ panel_size: e.target.value })}
                     data-testid="panel-size-select"
                   >
                     <option value="4x10">4' × 10' (default, 40 ft²)</option>
@@ -313,7 +323,7 @@ export default function SettingsRow({ est, update }) {
                   <select
                     className="input h-9 text-sm"
                     value={est.wrap_trim_width_in ?? 4}
-                    onChange={(e) => update({ wrap_trim_width_in: Number(e.target.value) })}
+                    onChange={(e) => saveSpec({ wrap_trim_width_in: Number(e.target.value) })}
                     data-testid="wrap-trim-width-select"
                   >
                     <option value={4}>4" (default)</option>
@@ -343,7 +353,7 @@ export default function SettingsRow({ est, update }) {
                       value={est.shake_reveal_in ?? 7}
                       onChange={(e) => {
                         const v = Number(e.target.value);
-                        if (v >= 7 && v <= 10) update({ shake_reveal_in: v });
+                        if (v >= 7 && v <= 10) saveSpec({ shake_reveal_in: v });
                       }}
                       data-testid="shake-reveal-in"
                     />

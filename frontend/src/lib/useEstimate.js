@@ -513,6 +513,18 @@ export default function useEstimate(id) {
       status_label: source.status_label || "draft",
       install_method: source.install_method || "",
       home_pre_1978: !!source.home_pre_1978,
+      // TRADE SPECS (F2/silent-strip class — Howard's UI pass 2026-07-30
+      // caught the whitelist dropping every spec the SettingsRow writes;
+      // pinned by test_spec_fields_survive_the_put_model server-side and
+      // the buildPayload guard in wasteLogic.test.mjs' sibling below).
+      // undefined keys are stripped by JSON.stringify → server defaults.
+      batten_spacing_in: source.batten_spacing_in ?? undefined,
+      fascia_width_in: source.fascia_width_in ?? undefined,
+      shake_reveal_in: source.shake_reveal_in ?? undefined,
+      panel_size: source.panel_size || undefined,
+      wrap_trim_width_in: source.wrap_trim_width_in ?? undefined,
+      color_tier: source.color_tier || undefined,
+      lp_soffit_type: source.lp_soffit_type || undefined,
     };
   }, []);
 
