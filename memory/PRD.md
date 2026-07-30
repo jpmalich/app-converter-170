@@ -5895,3 +5895,12 @@ Standing queue unchanged: B (drag-adjust) → model ledger → money map.
 - Stamps: 2026-07-30 11:00 UTC · 2c53b54 · CLEAN · 1589 & 2026-07-30 12:01 UTC · 9a899aa · CLEAN · 1594.
 - Frontend: webpack compiles; SettingsRow selects (panel-size-select, wrap-trim-width-select) follow the proven spec-select pattern. Authenticated UI walkthrough not screenshot-verified this session (secrets-in-chat rule); backend behavior fully pytest-pinned.
 - AWAITING HOWARD: PVC/G8 colour-chip display pass go · ID-binding queue ruling.
+
+## 2026-07-30 (NIGHT) — UI PASS RUN (Howard: "SAID") + PVC/G8 CHIP + BLIND-SPOT CENSUS
+- Testing agent iterations 48+49 (/app/test_reports/). CAUGHT EXACTLY THE PREDICTED SHAPE: buildPayload whitelist silently stripped ALL spec fields (batten/fascia/shake/panel/wrap + color_tier + lp_soffit_type) from every PUT — pytest-green, browser-broken. FIXED: fields ride payload; SettingsRow saveSpec() saves immediately + dispatches lp-flag-checklist-changed so the LP panel re-derives live. SECOND FIND: wrap post-pass rename doubled the 540 line (62→124) vs the hover-renamed seed — FIXED with fascia pattern (wrap SKU derived up-front in assemble) + OSC-precedent stale-seed supersede; API walk 4→6→12→4 all qty 62 name-only.
+- Human-eye retest PASSED: silent-strip test (save→navigate→return, all 4 values), panel 4x8 → 84 live, wrap rename qty-stable, fascia 12" rename, whole units everywhere, coil colour chips (incl. amber "colour not set"), print + in-app return.
+- PVC/G8 colour chip GO delivered at the DISPLAY layer (SectionAccordion coilColourFor) — a note cannot ride a line that is never emitted.
+- MANUAL-ROW CENSUS: 153/226 catalog rows never emitted; ~39 TRULY BLIND hand-filled rows (list: memory/manual_rows_census_2026-07-30.txt; report: memory/ui_pass_report_2026-07-30.md).
+- STANDING GAP NAMED: vinyl/ascend tabs have NO rebuild path — F2's doubled roll count is visible only on next import for stored vinyl estimates ("re-derive vinyl tab" action ~0.5–1d, NOT built, awaiting ruling).
+- Stamp: 2026-07-30 13:19 UTC · 0b05f0c · CLEAN · 1604 passed, 1 skipped (includes testing agent's 10 iteration_48 pins).
+- AWAITING HOWARD: vinyl-tab re-derive action ruling · ID-binding queue · his dealer-page Closed/Vertical check.
