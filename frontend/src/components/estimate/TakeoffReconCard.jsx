@@ -48,7 +48,7 @@ const VINYL_RECON_ROWS = [
   {
     label: "J-Channel",
     raw: () => "—",
-    item: '3/4" J-Channel Standard color (2 per Sq of siding)',
+    item: '3/4" J-Channel Standard color',
     tab: "vinyl",
   },
   {

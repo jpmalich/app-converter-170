@@ -460,7 +460,7 @@ def _j_channel_breakdown(m: dict) -> str:
 # can inherit tier pricing for the new context-named rows.
 # =========================================================================
 _SHAKE_STARTER_SKU = "Pelican Bay Shake Starter"
-_J_SKU = "3/4\" J-Channel Standard color (2 per Sq of siding)"
+_J_SKU = "3/4\" J-Channel Standard color"
 _FT_SKU = "Finish Trim Standard color"
 _NO_STARTER_FAMILIES = {"shake", "board_batten"}
 
@@ -1093,15 +1093,11 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5 - 1e-9)),
         "note": "12.5' pieces per HOVER inside-corner LF, round up — defaults to Standard color",
     },
-    {
-        "tabs": ["ascend"],
-        "section": "Ascend Cladding/Accessories",
-        "item": "Inside Corners",
-        "unit": "PCS",
-        "waste_included": True,
-        "extract": lambda m: max(0, math.ceil((m.get("inside_corner_lf") or 0) / 12.5 - 1e-9)),
-        "note": "Ascend inside-corner 12.5' pieces / corner LF, round up",
-    },
+    # R4 (Howard ruled 2026-07-30): the Ascend "Inside Corners" emitter is
+    # RETIRED — the item does not exist (supplier-dropped Feb 2026); an
+    # emitter feeding a retired catalog name puts an unbuyable line on a
+    # real quote. Detector: test_every_static_emitter_item_resolves_to_a_
+    # live_catalog_row.
     # =====================================================================
     # STARTER — both vinyl and Ascend now per-PCS in the catalog. HOVER
     # qty = LF ÷ 12.5 (RULED 2026-07-18, vinyl-conventions batch: "clap
@@ -1164,7 +1160,7 @@ HOVER_MAPPING_SPEC = [
     {
         "tabs": ["vinyl"],
         "section": "Siding Accessories",
-        "item": "3/4\" J-Channel Standard color (2 per Sq of siding)",
+        "item": "3/4\" J-Channel Standard color",
         "unit": "PCS",
         "waste_included": True,
         "extract": lambda m: 0 if _region_split_active(m) else _j_channel_pcs(m),
@@ -1173,7 +1169,7 @@ HOVER_MAPPING_SPEC = [
     {
         "tabs": ["ascend"],
         "section": "Ascend Cladding/Accessories",
-        "item": "Ascend - J - Channel  (2 per Sq of siding)",
+        "item": "Ascend - J - Channel",
         "unit": "PCS",
         "waste_included": True,
         "extract": lambda m: _j_channel_pcs(m),
@@ -1194,7 +1190,9 @@ HOVER_MAPPING_SPEC = [
         "item": ".019 Coil",
         "unit": "ROLL",
         "extract": lambda m: _coil_019_rolls(m),
-        "note": lambda m: _coil_019_breakdown(m),
+        "note": lambda m: (_coil_019_breakdown(m)
+                           + _coil_color_note(m, "_window_wrap_color",
+                                              "wraps openings — window-wrap colour")),
     },
     # =====================================================================
     # WALL UNDERLAYMENT — vinyl gets House Wrap; Ascend gets RainDrop House
@@ -1229,7 +1227,7 @@ HOVER_MAPPING_SPEC = [
     {
         "tabs": ["vinyl", "ascend"],
         "section": "Siding Accessories",
-        "item": "2\" Nails 30 lbs (1 per 15 Sq)",
+        "item": "2\" Nails 30 lbs",
         "unit": "JOB",
         "extract": lambda m: max(1, round((m.get("siding_sqft") or 0) / 100.0 / 15)),
         "note": "1 box per 15 SQ of siding",
@@ -1314,7 +1312,7 @@ HOVER_MAPPING_SPEC = [
     {
         "tabs": ["vinyl", "ascend"],
         "section": "Vinyl Soffit with Siding",
-        "item": 'Fascia/rake or frieze up to 8" coverage',
+        "item": 'Fascia/rake or frieze',
         "unit": "LF",
         "extract": lambda m: round((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)),
         "note": "Eaves LF + Rakes LF (fascia wraps both eave runs and gable rakes)",
@@ -1328,19 +1326,20 @@ HOVER_MAPPING_SPEC = [
     {
         "tabs": ["vinyl", "ascend"],
         "section": "Vinyl Soffit with Siding",
-        "item": ".019 Coil (1 per 50' fascia)",
+        "item": ".019 Coil",
         "unit": "ROLL",
         "extract": lambda m: round(
             ((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0))
-            / (100.0 if float(m.get("fascia_width_in") or 8) <= 10 else 50.0), 2
+            / (100.0 if float(m.get("_fascia_width_in") or 8) <= 10 else 50.0), 2
         ),
         "note": lambda m: (
             f"Width-conditional: fascia "
-            f"{float(m.get('fascia_width_in') or 8):g}\" "
+            f"{float(m.get('_fascia_width_in') or 8):g}\" "
             + ("≤10\" → 24\" coil ripped in half = 100 LF/roll"
-               if float(m.get("fascia_width_in") or 8) <= 10
+               if float(m.get("_fascia_width_in") or 8) <= 10
                else ">10\" → 50 LF/roll")
             + " — soffit & fascia LF ÷ divisor"
+            + _coil_color_note(m, "_soffit_fascia_color", "fascia wrap — soffit/fascia colour")
         ),
     },
     # =====================================================================
@@ -2044,8 +2043,7 @@ _PROFILE_SKU_MAP: dict[tuple[str, str], tuple[str, str, float]] = {
     # ---- Ascend tab --------------------------------------------------
     ("lap",          "ascend"):   ('Ascend Composite Lap Siding 7"',                       "SQ", 100.0),
     ("dutch_lap",    "ascend"):   ('Ascend Composite Lap Siding 7"',                       "SQ", 100.0),
-    ("board_batten", "ascend"):   ('Ascend Composite B&B 12" (add 30% Waste)',             "SQ", 100.0),
-    ("vertical",     "ascend"):   ('Ascend Composite B&B 12" (add 30% Waste)',             "SQ", 100.0),
+    ("board_batten", "ascend"):   ('Ascend Composite B&B 12"',             "SQ", 100.0),    ("vertical",     "ascend"):   ('Ascend Composite B&B 12"',             "SQ", 100.0),
     # Shake has no Ascend SKU — skipped.
     # ---- LP tab — 38 Series + Shake + Nickel Gap ---------------------
     # Legacy uniform 9.09 sqft/PCS conversion. When LP_AI_FORMULAS_V1 is
@@ -2056,8 +2054,9 @@ _PROFILE_SKU_MAP: dict[tuple[str, str], tuple[str, str, float]] = {
     ("dutch_lap",    "lp_smart"): ('38 Series Lap 3/8" x 8" x 16\'', "PCS", 100.0 / 11),
     ("shake",        "lp_smart"): ('Shake',                          "PCS", 100.0 / 11),
     ("nickel_gap",   "lp_smart"): ('Nickel Gap',                     "PCS", 100.0 / 11),
-    ("board_batten", "lp_smart"): ('38 Series Vertical Panel',       "PCS", 32.0),
-    ("vertical",     "lp_smart"): ('38 Series Vertical Panel',       "PCS", 32.0),
+    # F7 (Howard ruled 2026-07-30): the gated-legacy 4×8 Vertical Panel
+    # rows (÷32 while the live path is 4×10 ÷40) are DELETED — flag-off
+    # emits no BB line rather than a divergent one.
 }
 
 
@@ -2103,6 +2102,14 @@ def _lp_profile_sku_entry(family: str, measurements: dict | None = None) -> tupl
             lp_formulas.NICKEL_GAP_COVERAGE_SQFT_PER_PC,
         )
     if family in ("board_batten", "vertical"):
+        # PANEL SIZE trade spec (Howard ruled 2026-07-30): contractor picks
+        # 4×10 (default, 40 ft²) or 4×8 (32 ft²) — changes COUNT and SKU.
+        if str((measurements or {}).get("_panel_size") or "4x10") == "4x8":
+            return (
+                "38 Series 4' x 8' Panel",
+                "PCS",
+                lp_formulas.BB_PANEL_SIZES_SQFT["4x8"],
+            )
         return (
             "38 Series 4' x 10' Panel",
             "PCS",
@@ -2377,23 +2384,59 @@ def _build_lines(measurements: dict) -> list[dict]:
     # width call-out renames the 440 fascia SKU — the material list prints
     # the width on the line (wrong lumber on the truck is the risk; the
     # printed width is the protection). Default 8" applies silently.
-    return _apply_fascia_width(out, measurements)
+    return _order_whole_units(_apply_trade_spec_widths(out, measurements))
 
 
-def _apply_fascia_width(lines: list, m: dict) -> list:
-    from lp_conventions import (DEFAULT_FASCIA_WIDTH_IN, FASCIA_RAKE_ITEM,
-                                fascia_item_for_width)
+def _coil_color_note(m: dict, key: str, label: str) -> str:
+    """R2 follow-on (Howard GO 2026-07-30): the coil line NAMES the colour
+    of the component it wraps, from Job Info MATERIAL COLORS — never
+    silence when unset."""
+    c = str(m.get(key) or "").strip()
+    return f" — {label}: {c}" if c else f" — {label}: colour not set — set in Job Info"
+
+
+def _order_whole_units(lines: list) -> list:
+    """R3 (Howard ruled 2026-07-30): WHOLE UNITS on every ordered line,
+    every unit, EACH LINE ON ITS OWN — 0.5 retires (ceil, −1e-9 guard).
+    Cut-prone (area) rows keep raw qty HERE because the waste bake (both
+    mirrors) is their order layer and must see raw; everything else
+    fractional rounds up at the source emitter so no door can print a
+    quantity a contractor cannot buy."""
+    for l in lines:
+        q = l.get("qty")
+        if isinstance(q, (int, float)) and q > 0 and q != int(q) \
+                and not _cut_prone_line(l):
+            l["raw_qty"] = float(q)
+            l["qty"] = float(math.ceil(q - 1e-9))
+    return lines
+
+
+def _apply_trade_spec_widths(lines: list, m: dict) -> list:
+    """Trade-spec width renames on the LP tab lines: fascia width (440)
+    and wrap-trim width (540, Howard ruled 2026-07-30 — changes ONLY the
+    name; the whole Q12 540 scope wrap+ISC+frieze carries the width)."""
+    from lp_conventions import (DEFAULT_FASCIA_WIDTH_IN, DEFAULT_WRAP_TRIM_WIDTH_IN,
+                                FASCIA_RAKE_ITEM, WRAP_TRIM_ITEM,
+                                fascia_item_for_width, wrap_item_for_width)
     try:
         w = int(m.get("_fascia_width_in") or DEFAULT_FASCIA_WIDTH_IN)
     except (TypeError, ValueError):
         w = DEFAULT_FASCIA_WIDTH_IN
-    if w == DEFAULT_FASCIA_WIDTH_IN:
-        return lines
+    try:
+        ww = int(m.get("_wrap_trim_width_in") or DEFAULT_WRAP_TRIM_WIDTH_IN)
+    except (TypeError, ValueError):
+        ww = DEFAULT_WRAP_TRIM_WIDTH_IN
     for l in lines:
-        if l.get("tab") == "lp_smart" and l.get("name") == FASCIA_RAKE_ITEM:
+        if l.get("tab") != "lp_smart":
+            continue
+        if w != DEFAULT_FASCIA_WIDTH_IN and l.get("name") == FASCIA_RAKE_ITEM:
             l["name"] = fascia_item_for_width(w)
             l["note"] = ((l.get("note") or "") +
                          f' — fascia width {w}" (trade spec, contractor call-out; default 8")').strip(" —")
+        elif ww != DEFAULT_WRAP_TRIM_WIDTH_IN and l.get("name") == WRAP_TRIM_ITEM:
+            l["name"] = wrap_item_for_width(ww)
+            l["note"] = ((l.get("note") or "") +
+                         f' — wrap-trim width {ww}" (trade spec; name-only, counts unchanged; default 4")').strip(" —")
     return lines
 
 
@@ -2636,7 +2679,7 @@ async def hover_import_status(
 
 
 _CUT_PRONE_ASCEND = {'Ascend Composite Lap Siding 7"',
-                     'Ascend Composite B&B 12" (add 30% Waste)'}
+                     'Ascend Composite B&B 12"'}
 
 
 def _cut_prone_line(line: dict) -> bool:
@@ -2725,6 +2768,18 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
         scoped["_batten_spacing_in"] = int(est["batten_spacing_in"])
     if est.get("fascia_width_in") is not None:
         scoped["_fascia_width_in"] = int(est["fascia_width_in"])
+    # PANEL SIZE + WRAP TRIM WIDTH (Howard ruled 2026-07-30) — same spec
+    # plumbing, exact-key discipline (F2 class).
+    if est.get("panel_size") is not None:
+        scoped["_panel_size"] = str(est["panel_size"])
+    if est.get("wrap_trim_width_in") is not None:
+        scoped["_wrap_trim_width_in"] = int(est["wrap_trim_width_in"])
+    # R2 follow-on (GO 2026-07-30): coil lines carry the wrapped
+    # component's colour from Job Info MATERIAL COLORS.
+    if est.get("window_wrap_color"):
+        scoped["_window_wrap_color"] = str(est["window_wrap_color"])
+    if est.get("soffit_fascia_color"):
+        scoped["_soffit_fascia_color"] = str(est["soffit_fascia_color"])
     # TOUCH-UP COLOR COUNT (register #7 ruled 2026-07-28): Job-Info color
     # selections multiply the kit count on the tab lines too — the same
     # count the package path reads (tab/package parity, never divergent).
@@ -2909,6 +2964,8 @@ async def hover_lp_run(
         {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
          "color_tier": 1, "shake_reveal_in": 1, "lp_colors": 1,
          "batten_spacing_in": 1, "fascia_width_in": 1,
+         "panel_size": 1, "wrap_trim_width_in": 1,
+         "window_wrap_color": 1, "soffit_fascia_color": 1,
          "lp_flag_checklist": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")

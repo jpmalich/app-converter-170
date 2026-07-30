@@ -234,17 +234,17 @@ const ITEM_DESCRIPTIONS = {
   },
 
   // J-Channel 3/4"
-  "3/4\" J-Channel Standard color (2 per Sq of siding)": {
+  "3/4\" J-Channel Standard color": {
     en: "J-Channel 3/4\". 3/4\" receiving channel; 1\" face; 12'6\" length; matte texture; low-gloss finish. Packaging: 500' per carton; 40 pieces per carton.",
     es: "J-Channel 3/4\". Canal receptor 3/4\"; cara 1\"; longitud 12'6\"; textura mate; acabado bajo brillo. Empaque: 500' por caja; 40 piezas por caja.",
   },
-  "3/4\" J-Channel Architectural color (2 per Sq of siding)": {
+  "3/4\" J-Channel Architectural color": {
     en: "J-Channel 3/4\". 3/4\" receiving channel; 1\" face; 12'6\" length; matte texture; low-gloss finish. Packaging: 500' per carton; 40 pieces per carton.",
     es: "J-Channel 3/4\". Canal receptor 3/4\"; cara 1\"; longitud 12'6\"; textura mate; acabado bajo brillo. Empaque: 500' por caja; 40 piezas por caja.",
   },
 
   // J-Channel 1/2"
-  "1/2\" J-Channel (2 per Sq of siding)": {
+  "1/2\" J-Channel": {
     en: "J-Channel 1/2\". 1/2\" receiving channel; 1\" face; 12'6\" length; matte texture; low-gloss finish. Packaging: 500' per carton; 40 pieces per carton.",
     es: "J-Channel 1/2\". Canal receptor 1/2\"; cara 1\"; longitud 12'6\"; textura mate; acabado bajo brillo. Empaque: 500' por caja; 40 piezas por caja.",
   },

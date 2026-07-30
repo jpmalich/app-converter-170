@@ -50,7 +50,7 @@ def test_split_activates_only_on_multi_region():
 def test_no_pooled_j_or_starter_or_ft_on_multi_region():
     names = [l["name"] for l in _vinyl(_build_lines(MIXED))]
     assert "Starter" not in names
-    assert '3/4" J-Channel Standard color (2 per Sq of siding)' not in names
+    assert '3/4" J-Channel Standard color' not in names
     assert "Finish Trim Standard color" not in names
 
 
@@ -96,7 +96,7 @@ def test_j_and_ft_context_split_with_region_colors():
 def test_single_profile_keeps_pooled_rows_regression():
     names = [l["name"] for l in _vinyl(_build_lines(SINGLE))]
     assert "Starter" in names
-    assert '3/4" J-Channel Standard color (2 per Sq of siding)' in names
+    assert '3/4" J-Channel Standard color' in names
     assert "Finish Trim Standard color" in names
     assert not any("—" in n and ("body" in n or "region" in n) for n in names)
 

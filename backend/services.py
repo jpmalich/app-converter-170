@@ -82,7 +82,7 @@ async def ensure_tiers_seeded():
     # existing quotes keep matching their catalog source after the split.
     ASCEND_SIDING_NAMES = [
         'Ascend Composite Lap Siding 7"',
-        'Ascend Composite B&B 12" (add 30% Waste)',
+        'Ascend Composite B&B 12"',
     ]
     await db.estimates.update_many(
         {"lines": {"$elemMatch": {
@@ -157,10 +157,10 @@ async def ensure_tiers_seeded():
          ".019 Coil"),
         (".019 Coil (1 per 5 Sq Siding)",
          ".019 Coil"),
-        ("PVC Trim Coil (1 per 5 Sq Siding) (1 per 50' fascia)",
-         "PVC Trim Coil (1 per 5 Sq Siding)"),
-        ("Performance G8 Trim Coil (1 per 5 Sq Siding) (1 per 50' fascia)",
-         "Performance G8 Trim Coil (1 per 5 Sq Siding)"),
+        ("PVC Trim Coil (1 per 50' fascia)",
+         "PVC Trim Coil"),
+        ("Performance G8 Trim Coil (1 per 50' fascia)",
+         "Performance G8 Trim Coil"),
     ]
     for old_name, new_name in COIL_RENAMES:
         # Scope the rename to the Siding Accessories section so we don't
@@ -177,7 +177,7 @@ async def ensure_tiers_seeded():
             {"$set": {"lines.$[l].name": new_name}},
             array_filters=[{"l.section": "Siding Accessories", "l.name": old_name}],
         )
-    # Iter 36: 'Fascia/rake or frieze up to 8" coverage' moved from
+    # Iter 36: 'Fascia/rake or frieze' moved from
     # PER_TIER_PRICES → ZERO_PRICED (Howard: mat should be $0.00 across all
     # tiers; this is a labor-only line). Force-set mat=0 on any existing
     # tier doc that still carries the old non-zero price. Idempotent: once
@@ -185,11 +185,11 @@ async def ensure_tiers_seeded():
     # subsequent boots.
     await db.price_tiers.update_many(
         {"sections.items": {"$elemMatch": {
-            "name": 'Fascia/rake or frieze up to 8" coverage',
+            "name": 'Fascia/rake or frieze',
             "mat": {"$ne": 0},
         }}},
         {"$set": {"sections.$[].items.$[it].mat": 0.0}},
-        array_filters=[{"it.name": 'Fascia/rake or frieze up to 8" coverage'}],
+        array_filters=[{"it.name": 'Fascia/rake or frieze'}],
     )
     # Iter 65: 'End Cap' added to Seamless Gutter at $2.08 on all tiers.
     # The first hot-reload after the catalog edit landed inserted the row
@@ -682,9 +682,9 @@ async def ensure_tiers_seeded():
 
     BACKFILL = [
         TRIM, "ASCEND Finish Trim", "Ascend - Starter",
-        ".019 Coil (1 per 50' fascia)",
-        "PVC Trim Coil (1 per 50' fascia)",
-        "Performance G8 Trim Coil (1 per 50' fascia)",
+        ".019 Coil",
+        "PVC Trim Coil",
+        "Performance G8 Trim Coil",
         # Iter 34: Standard/Architectural color variants — backfill mat for
         # any variant currently sitting at $0 (which happens when an earlier
         # hot-reload race rebuilt the section with the new names but the
@@ -722,8 +722,8 @@ async def ensure_tiers_seeded():
         "Outside corners Architectural color",
         "Inside Corners (Siding) Standard color",
         "Inside Corners (Siding) Architectural color",
-        '3/4" J-Channel Standard color (2 per Sq of siding)',
-        '3/4" J-Channel Architectural color (2 per Sq of siding)',
+        '3/4" J-Channel Standard color',
+        '3/4" J-Channel Architectural color',
         "Finish Trim Standard color",
         "Finish Trim Architectural color",
         # Vinyl Soffit with Siding — Iter 45: renamed and converted to PCS
@@ -1072,7 +1072,7 @@ async def ensure_tiers_seeded():
     #         Charter Oak Soffit Architectural color → Soffit & fascia Charter Oak Architectural color
     #         Greenbriar Soffit → Soffit & fascia Greenbriar
     #         T2 Soffit → Soffit & fascia 2T
-    #         1/2" Soffit J-Channel (for T2 Soffit) → 1/2" J-Channel (2 per Sq of siding) White
+    #         1/2" Soffit J-Channel (for T2 Soffit) → 1/2" J-Channel White
     #         RainDrop House Wrap → RainDrop
     #         With or without siding Charter Oak (SQ FT) → Charter Oak Soffit White (PCS)
     #   • Restructured Porch Ceiling row to PCS pricing:
@@ -1091,7 +1091,7 @@ async def ensure_tiers_seeded():
         'Charter Oak Soffit Architectural color': 'Soffit & fascia Charter Oak Architectural color',
         'Greenbriar Soffit': 'Soffit & fascia Greenbriar',
         'T2 Soffit': 'Soffit & fascia 2T',
-        '1/2" Soffit J-Channel (for T2 Soffit)': '1/2" J-Channel (2 per Sq of siding) White',
+        '1/2" Soffit J-Channel (for T2 Soffit)': '1/2" J-Channel White',
         'RainDrop House Wrap': 'RainDrop',
     }
     for old_name, new_name in ITER79_RENAMES.items():
@@ -1174,7 +1174,7 @@ async def ensure_tiers_seeded():
         'Soffit & fascia Charter Oak Architectural color',
         'Soffit & fascia Greenbriar',
         'Soffit & fascia 2T',
-        '1/2" J-Channel (2 per Sq of siding) White',
+        '1/2" J-Channel White',
         'RainDrop',
         'Charter Oak Soffit White',
         # Price-only changes

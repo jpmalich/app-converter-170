@@ -69,11 +69,13 @@ def test_q2_porch_ceiling_implied_flag_only():
 
 def test_q3_fascia_coil_width_conditional():
     m = {"siding_sqft": 1000, "eaves_lf": 100, "rakes_lf": 100}
-    l = _find(_build_lines(m), ".019 Coil (1 per 50' fascia)", "vinyl")
+    l = _find(_build_lines(m), ".019 Coil", "vinyl")
     assert l["qty"] == 2.0  # ≤10" fascia → 24" coil ripped in half = 100 LF/roll
     assert "100 LF/roll" in l["note"]
-    l2 = _find(_build_lines({**m, "fascia_width_in": 12}),
-               ".019 Coil (1 per 50' fascia)", "vinyl")
+    # F2 FIXED (ruled 2026-07-30): the divisor reads _fascia_width_in —
+    # the EXACT key the trade-spec plumbing writes.
+    l2 = _find(_build_lines({**m, "_fascia_width_in": 12}),
+               ".019 Coil", "vinyl")
     assert l2["qty"] == 4.0  # >10" → 50 LF/roll
     assert "50 LF/roll" in l2["note"]
 

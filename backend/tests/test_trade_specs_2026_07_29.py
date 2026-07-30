@@ -93,15 +93,24 @@ def test_spec_fields_survive_the_put_model():
     assert "batten_spacing_in" in fields
     assert "fascia_width_in" in fields
     assert "shake_reveal_in" in fields
+    # PANEL SIZE + WRAP TRIM WIDTH (Howard ruled 2026-07-30) — same class
+    assert "panel_size" in fields
+    assert "wrap_trim_width_in" in fields
     # bounds enforced at the door
     import pytest
     with pytest.raises(Exception):
         EstimateIn.model_validate({"customer_name": "x", "batten_spacing_in": 8})
     with pytest.raises(Exception):
         EstimateIn.model_validate({"customer_name": "x", "fascia_width_in": 7})
+    with pytest.raises(Exception):
+        EstimateIn.model_validate({"customer_name": "x", "panel_size": "4x12"})
+    with pytest.raises(Exception):
+        EstimateIn.model_validate({"customer_name": "x", "wrap_trim_width_in": 5})
     ok = EstimateIn.model_validate(
-        {"customer_name": "x", "batten_spacing_in": 16, "fascia_width_in": 10})
+        {"customer_name": "x", "batten_spacing_in": 16, "fascia_width_in": 10,
+         "panel_size": "4x8", "wrap_trim_width_in": 6})
     assert ok.batten_spacing_in == 16 and ok.fascia_width_in == 10
+    assert ok.panel_size == "4x8" and ok.wrap_trim_width_in == 6
 
 
 def test_every_width_variant_sku_binds_to_a_priced_row():

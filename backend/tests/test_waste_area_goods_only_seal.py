@@ -83,7 +83,7 @@ def test_bake_never_touches_length_cut_rows_even_unflagged():
         {"tab": "vinyl", "section": "Siding Accessories",
          "name": "Finish Trim Standard color", "unit": "PCS", "qty": 21.0},
         {"tab": "vinyl", "section": "Siding Accessories",
-         "name": '3/4" J-Channel Standard color (2 per Sq of siding)',
+         "name": '3/4" J-Channel Standard color',
          "unit": "PCS", "qty": 30.0},
         {"tab": "vinyl", "section": "Vinyl Soffit with Siding",
          "name": '3/4" Soffit J-Channel (Charter Oak) Standard color',
@@ -112,7 +112,7 @@ def test_vinyl_whole_stick_counts_stand_area_goods_move():
     pre, post = by[("vinyl", "Outside corners Standard color")]
     assert pre == post == 12.0  # ceil(142/12.5)
     for name in ("Starter", "Finish Trim Standard color",
-                 '3/4" J-Channel Standard color (2 per Sq of siding)',
+                 '3/4" J-Channel Standard color',
                  "Inside Corners (Siding) Standard color"):
         pre, post = by[("vinyl", name)]
         assert pre == post, f"{name} bought waste sticks: {pre} → {post}"
@@ -187,7 +187,7 @@ def test_frontend_classifier_mirror_area_goods_only():
                 {"section": "Siding Accessories", "name": "Starter"},
                 {"section": "Siding Accessories", "name": "Finish Trim Standard color"},
                 {"section": "Siding Accessories",
-                 "name": '3/4" J-Channel Standard color (2 per Sq of siding)'},
+                 "name": '3/4" J-Channel Standard color'},
                 {"section": "LP Siding Accessories",
                  "name": "540 Series OSC 5/4\" x 6\" x 16'"}):
         assert not _cut_prone_line(cut), f"{cut['name']} still classifies cut-prone"

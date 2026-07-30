@@ -285,6 +285,48 @@ export default function SettingsRow({ est, update }) {
                     and the piece delta vs the 12" default when it moves.
                   </p>
                 </div>
+                {/* PANEL SIZE (ruled 2026-07-30): 4×10 default (40 ft²) vs
+                    4×8 (32 ft²) — changes COUNT and SKU. */}
+                <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                    Panel size — 38 Series B&B
+                  </div>
+                  <select
+                    className="input h-9 text-sm"
+                    value={est.panel_size ?? "4x10"}
+                    onChange={(e) => update({ panel_size: e.target.value })}
+                    data-testid="panel-size-select"
+                  >
+                    <option value="4x10">4' × 10' (default, 40 ft²)</option>
+                    <option value="4x8">4' × 8' (32 ft²)</option>
+                  </select>
+                  <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    Changes the panel COUNT and the SKU — 4×8 coverage is 32 ft². Re-derives live.
+                  </p>
+                </div>
+                {/* WRAP TRIM WIDTH (ruled 2026-07-30): 540 Series width —
+                    name-only, counts unchanged. */}
+                <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                    Wrap trim width — 540 Series
+                  </div>
+                  <select
+                    className="input h-9 text-sm"
+                    value={est.wrap_trim_width_in ?? 4}
+                    onChange={(e) => update({ wrap_trim_width_in: Number(e.target.value) })}
+                    data-testid="wrap-trim-width-select"
+                  >
+                    <option value={4}>4" (default)</option>
+                    <option value={6}>6"</option>
+                    <option value={8}>8"</option>
+                    <option value={10}>10"</option>
+                    <option value={12}>12"</option>
+                  </select>
+                  <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    Changes ONLY the 540 SKU name (wrap + ISC + frieze scope) — counts stay
+                    whole-stick ÷16. Re-derives live.
+                  </p>
+                </div>
                 {/* SHAKE REVEAL (register #4 ruled 2026-07-28): bounded
                     7"–10", default 7" — LP install instructions. */}
                 <div className="mt-4 pt-4 border-t border-[var(--border)]">

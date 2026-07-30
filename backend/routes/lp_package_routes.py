@@ -33,6 +33,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
                 "lp_openings_review": 1, "lp_appendage_dims": 1, "lp_source_run_id": 1,
                 "default_siding_profile": 1, "lp_flag_checklist": 1,
                 "shake_reveal_in": 1, "batten_spacing_in": 1, "fascia_width_in": 1,
+                "panel_size": 1, "wrap_trim_width_in": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -328,6 +329,10 @@ def _apply_contractor_waste(measurements, est):
         out = {**out, "_batten_spacing_in": int(est["batten_spacing_in"])}
     if out.get("_fascia_width_in") is None and est.get("fascia_width_in") is not None:
         out = {**out, "_fascia_width_in": int(est["fascia_width_in"])}
+    if out.get("_panel_size") is None and est.get("panel_size") is not None:
+        out = {**out, "_panel_size": str(est["panel_size"])}
+    if out.get("_wrap_trim_width_in") is None and est.get("wrap_trim_width_in") is not None:
+        out = {**out, "_wrap_trim_width_in": int(est["wrap_trim_width_in"])}
     return out
 
 
@@ -626,7 +631,8 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
         {"_id": 0, "kind": 1, "waste_pct": 1, "porch_ceilings": 1,
          "overhang_in": 1, "default_siding_profile": 1, "color_tier": 1,
          "shake_reveal_in": 1, "lp_colors": 1, "lp_flag_checklist": 1,
-         "batten_spacing_in": 1, "fascia_width_in": 1})
+         "batten_spacing_in": 1, "fascia_width_in": 1,
+         "panel_size": 1, "wrap_trim_width_in": 1})
     if (full_est or {}).get("kind") != "lp_smart":
         raise HTTPException(status_code=400,
                             detail="LP materialize is lp_smart-kind only")
@@ -751,7 +757,7 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
     # FAMILY-CHECK TRIPWIRE (authorized 2026-07-24, Casile lap-leak class):
     # exactly ONE siding family may carry derived qty on the money surface.
     # Human-typed rows (qty_src == "human") are choices, not residue.
-    fam_markers = {"lap": ("series lap",), "board & batten": ("4' x 10' panel",),
+    fam_markers = {"lap": ("series lap",), "board & batten": ("4' x 10' panel", "4' x 8' panel"),
                    "shake": ("shake",)}
     fams_hit = {}
     for l in est.get("lines") or []:

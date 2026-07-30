@@ -233,6 +233,32 @@ class EstimateIn(BaseModel):
     # never clobber; None = the ruled defaults (12" o.c. / 8" fascia).
     batten_spacing_in: Optional[int] = None
     fascia_width_in: Optional[int] = None
+    # PANEL SIZE + WRAP TRIM WIDTH (Howard ruled 2026-07-30): panel size
+    # changes COUNT and SKU (4×10 = 40 ft², 4×8 = 32 ft²); wrap-trim width
+    # changes ONLY the 540 SKU name. Declared here so the PUT can never
+    # silent-strip them (F2 class).
+    panel_size: Optional[str] = None
+    wrap_trim_width_in: Optional[int] = None
+
+    @field_validator("panel_size")
+    @classmethod
+    def _panel_size_valid(cls, v):
+        if v is None:
+            return v
+        if str(v) not in ("4x10", "4x8"):
+            raise ValueError('panel size must be "4x10" or "4x8" '
+                             "(38 Series panels — ruled 2026-07-30)")
+        return str(v)
+
+    @field_validator("wrap_trim_width_in")
+    @classmethod
+    def _wrap_trim_width_valid(cls, v):
+        if v is None:
+            return v
+        if int(v) not in (4, 6, 8, 10, 12):
+            raise ValueError("wrap trim width must be 4, 6, 8, 10 or 12 inches "
+                             "(540 Series widths — ruled 2026-07-30)")
+        return int(v)
 
     @field_validator("batten_spacing_in")
     @classmethod

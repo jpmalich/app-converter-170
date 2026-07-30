@@ -82,14 +82,17 @@ def test_build_lines_emits_both_tabs():
         "windows": [
             {"width_in": 36.0, "height_in": 60.0},   # 16 LF
             {"width_in": 48.0, "height_in": 72.0},   # 20 LF
-        ],  # total 36 LF → 0.36 rolls
+        ],  # total 36 LF → raw 0.36 rolls → R3 whole units = 1
     })
     coil_lines = [ln for ln in lines if ln["name"] == "Windows - .019 Coil"]
     assert len(coil_lines) == 2, f"Expected 2 .019 Coil lines, got {len(coil_lines)}"
     tabs = {ln["tab"] for ln in coil_lines}
     assert tabs == {"windows", "mezzo"}
     for ln in coil_lines:
-        assert ln["qty"] == 0.36
+        # R3 (Howard ruled 2026-07-30): whole units at the order layer —
+        # the raw 0.36 survives on raw_qty, the ordered qty rounds up.
+        assert ln["qty"] == 1.0
+        assert ln["raw_qty"] == 0.36
         assert ln["unit"] == "ROLL"
         assert ln["section"] == "Window Material List"
 

@@ -20,7 +20,7 @@
 
 const ASCEND_SIDING_NAMES = new Set([
   'Ascend Composite Lap Siding 7"',
-  'Ascend Composite B&B 12" (add 30% Waste)',
+  'Ascend Composite B&B 12"',
 ]);
 
 export function isCutProneItem(line) {

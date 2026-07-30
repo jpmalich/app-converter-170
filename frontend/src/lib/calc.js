@@ -3,7 +3,7 @@
 // per-estimate totals (calc.js) and the Material List PDF generator.
 const WASTE_ASCEND_NAMES = new Set([
   'Ascend Composite Lap Siding 7"',
-  'Ascend Composite B&B 12" (add 30% Waste)',
+  'Ascend Composite B&B 12"',
 ]);
 
 export function isWasteLine(line) {

@@ -57,7 +57,7 @@ def test_inside_corner_vinyl_ceil_12_5_zero_ok():
 
 
 def test_fascia_includes_rakes():
-    s = _spec('Fascia/rake or frieze up to 8" coverage', "vinyl")
+    s = _spec('Fascia/rake or frieze', "vinyl")
     # 100 eaves + 60 rakes → 160 LF
     assert s["extract"]({"eaves_lf": 100, "rakes_lf": 60}) == 160
     # Eaves only (no gables)

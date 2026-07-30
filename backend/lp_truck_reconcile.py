@@ -161,6 +161,11 @@ def reconcile_letrick_truck(geometry: dict, corner_locations: list | None = None
     ))
 
     # ── Soffit J (2× eave rule on file)
+    # SUPERSESSION STAMP (Howard ruled 2026-07-30 — annotate, never edit):
+    # records the 2× eave rule as of the September truck (matched the
+    # delivered 18); SUPERSEDED BY R1, 2026-07-30 — live derivations count
+    # the rake ONCE on Soffit J (routes/hover.py RAKE_J_DOCTRINE). This
+    # harness stays as historical evidence of the rules THEN.
     sj_raw = 2.0 * eaves_lf / VINYL_PIECE_LEN_FT if eaves_lf else 0.0
     sj_derived = int(math.ceil(sj_raw - 1e-9))
     lines.append(_line(

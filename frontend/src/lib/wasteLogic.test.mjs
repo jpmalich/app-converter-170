@@ -62,7 +62,7 @@ eq(
 eq(
   isCutProneItem({
     section: "x",
-    name: 'Ascend - J - Channel  (2 per Sq of siding)',
+    name: 'Ascend - J - Channel',
   }),
   true,
   "Ascend J - Channel (spaced) = cut-prone"

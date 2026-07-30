@@ -585,6 +585,21 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                           "note": add_notes,
                           **({"_derivation": isc_deriv} if isc_deriv else {})})
 
+    # WRAP TRIM WIDTH trade spec (Howard ruled 2026-07-30): changes ONLY
+    # the 540 SKU name — the whole Q12 scope (wrap + ISC + frieze) carries
+    # the selected width; counts untouched.
+    from lp_conventions import DEFAULT_WRAP_TRIM_WIDTH_IN, wrap_item_for_width
+    try:
+        _ww = int(measurements.get("_wrap_trim_width_in") or DEFAULT_WRAP_TRIM_WIDTH_IN)
+    except (TypeError, ValueError):
+        _ww = DEFAULT_WRAP_TRIM_WIDTH_IN
+    if _ww != DEFAULT_WRAP_TRIM_WIDTH_IN:
+        for l in lines:
+            if l.get("name") == WRAP_TRIM_ITEM:
+                l["name"] = wrap_item_for_width(_ww)
+                l["note"] = ((l.get("note") or "") +
+                             f' — wrap-trim width {_ww}" (trade spec; name-only, counts unchanged; default 4")').strip(" —")
+
     # ── LP STARTER (rip yield RULED FINAL): 3 strips per 16' board =
     # 48 LF/board; pieces = ceil(starter LF ÷ 48), line-itemed as starter
     # stock (ripped) carrying the 38 Series 8" lap source SKU

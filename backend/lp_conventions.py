@@ -91,6 +91,22 @@ def fascia_item_for_width(width_in) -> str:
     if w not in FASCIA_WIDTHS_IN:
         w = DEFAULT_FASCIA_WIDTH_IN
     return FASCIA_RAKE_ITEM.replace(' x 8" x', f' x {w}" x')
+
+
+# WRAP TRIM WIDTH (Howard ruled 2026-07-30): 540 Series widths — changes
+# ONLY the SKU name (counts stay ceil LF/16); default 4" per Q12.
+WRAP_TRIM_WIDTHS_IN = (4, 6, 8, 10, 12)
+DEFAULT_WRAP_TRIM_WIDTH_IN = 4
+
+
+def wrap_item_for_width(width_in) -> str:
+    try:
+        w = int(width_in or DEFAULT_WRAP_TRIM_WIDTH_IN)
+    except (TypeError, ValueError):
+        w = DEFAULT_WRAP_TRIM_WIDTH_IN
+    if w not in WRAP_TRIM_WIDTHS_IN:
+        w = DEFAULT_WRAP_TRIM_WIDTH_IN
+    return WRAP_TRIM_ITEM.replace(' x 4" x', f' x {w}" x')
 TRIM_STICK_LEN_FT = 16.0
 
 # Per-system derivation table (Howard amendment, 2026-07-11 — any line
@@ -440,7 +456,8 @@ def facade_scope_flag_label(scope: dict) -> str:
 # added. The coils are manual by the iter97 composition ruling; the rest
 # by Howard's standing order (manual by omission, named).
 CATALOG_ONLY_MANUAL_BY_DESIGN = (
-    "38 Series 4' x 8' Panel",
+    # "38 Series 4' x 8' Panel" LEFT the registry 2026-07-30: panel_size
+    # trade spec grew it a ruled, spec-gated derivation (Howard #6).
     "38 Series Vertical Panel",
     '540 Series OSC 5/4" x 4" x 16\'',
     '440 Series Trim 4/4" x 6" x 16\'',
@@ -450,9 +467,12 @@ CATALOG_ONLY_MANUAL_BY_DESIGN = (
     '540 Series Trim 5/4" x 8" x 16\'',
     '540 Series Trim 5/4" x 10" x 16\'',
     '540 Series Trim 5/4" x 12" x 16\'',
-    "Flash tape",
-    '24" CTW',
-    '24" VSSFT',
+    # Ghost names fixed per Howard #6 (2026-07-30): a guard must watch the
+    # EXACT catalog string — pinned by test_registry_names_resolve_to_
+    # live_catalog_rows.
+    'Flash tape 3 3/4" x 90\'',
+    '24 inch CTW soffit',
+    '24 inch VSSFT',
 )
 
 

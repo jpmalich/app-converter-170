@@ -148,8 +148,8 @@ class TestSidingAccessoriesSection:
             "Outside corners Architectural color",
             "Inside Corners (Siding) Standard color",
             "Inside Corners (Siding) Architectural color",
-            '3/4" J-Channel Standard color (2 per Sq of siding)',
-            '3/4" J-Channel Architectural color (2 per Sq of siding)',
+            '3/4" J-Channel Standard color',
+            '3/4" J-Channel Architectural color',
             "Finish Trim Standard color",
             "Finish Trim Architectural color",
         }

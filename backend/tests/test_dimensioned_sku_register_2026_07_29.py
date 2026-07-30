@@ -60,7 +60,7 @@ REGISTER: dict[str, tuple[str, str]] = {
         (IDENTITY, "per SQ; 7\" identity"),
     'Pelican Bay Shakes 9"': (IDENTITY, "per SQ; 9\" identity"),
     'Ascend Composite Lap Siding 7"': (IDENTITY, "per SQ; 7\" identity"),
-    'Ascend Composite B&B 12" (add 30% Waste)':
+    'Ascend Composite B&B 12"':
         (IDENTITY, "per SQ; 30% claim == FAMILY_WASTE_DEFAULTS board_batten "
                    "30 (sealed 2026-07-24) — claim matches math"),
     'Ascend 3.5" Outside Corner  - MATTE':
@@ -70,16 +70,17 @@ REGISTER: dict[str, tuple[str, str]] = {
                 "5.5\" width identity"),
     "Ascend - 5.5\" Trim  (16' length)":
         (MANUAL, "16' in name; no derivation exists"),
-    'Ascend - J - Channel  (2 per Sq of siding)':
-        (STALE_NAME, "F4: math = openings+eaves+rakes ÷ 12.5 (Iter 78f); "
-                     "name still claims 2/SQ"),
+    'Ascend - J - Channel':
+        (CONST, "math = openings+eaves+rakes ÷ 12.5 (Iter 78f); '(2 per Sq)' "
+                "suffix stripped per naming seal 2026-07-30"),
     '38 Series Lap 3/8" x 8" x 16\'':
         (CONST, "book 11 pcs/sq == curve(face 7.875, 16') — pinned below"),
     "38 Series 4' x 8' Panel":
-        (MANUAL, "register #8 manual; 32 ft² enters math ONLY on the gated "
-                 "legacy Vertical Panel row; 4x8 selectability awaiting ruling"),
+        (SPEC, "panel_size trade spec (ruled 2026-07-30): 4x8 = 32 ft² — "
+               "changes COUNT and SKU; left register #8 the day it grew "
+               "the spec-gated derivation"),
     "38 Series 4' x 10' Panel":
-        (CONST, "BB live emitter ÷ 40 == 4×10 nominal — pinned below"),
+        (SPEC, "panel_size DEFAULT (40 ft²) — pinned below"),
     '190 Series Trim 19/32" x 3" x 16\'':
         (CONST, "3\" == hard-formula batten width; 16' == stock length; "
                 "SPACING is the trade spec (not in the name)"),
@@ -90,43 +91,41 @@ REGISTER: dict[str, tuple[str, str]] = {
     '440 Series Trim 4/4" x 10" x 16\'': (SPEC, "fascia_width_in variant"),
     '440 Series Trim 4/4" x 12" x 16\'': (SPEC, "fascia_width_in variant"),
     '540 Series Trim 5/4" x 4" x 16\'':
-        (CONST, "wrap/ISC/frieze default (Q12 ruled); ÷ 16 == name's 16'"),
-    '540 Series Trim 5/4" x 6" x 16\'': (MANUAL, "substitution option, priced"),
-    '540 Series Trim 5/4" x 8" x 16\'': (MANUAL, "substitution option, priced"),
-    '540 Series Trim 5/4" x 10" x 16\'': (MANUAL, "substitution option, priced"),
-    '540 Series Trim 5/4" x 12" x 16\'': (MANUAL, "substitution option, priced"),
+        (SPEC, "wrap_trim_width_in DEFAULT (Q12); ÷ 16 == name's 16'"),
+    '540 Series Trim 5/4" x 6" x 16\'': (SPEC, "wrap_trim_width_in variant"),
+    '540 Series Trim 5/4" x 8" x 16\'': (SPEC, "wrap_trim_width_in variant"),
+    '540 Series Trim 5/4" x 10" x 16\'': (SPEC, "wrap_trim_width_in variant"),
+    '540 Series Trim 5/4" x 12" x 16\'': (SPEC, "wrap_trim_width_in variant"),
     '540 Series OSC 5/4" x 4" x 16\'':
         (MANUAL, "substitution option; retired default"),
     '540 Series OSC 5/4" x 6" x 16\'':
         (CONST, "sealed OSC width (2026-07-24); per-corner ceil(h/16) == 16'"),
     'Trim Coil Aluminum 24" x 50\'': (MANUAL, "no derivation"),
     'Flash tape 3 3/4" x 90\'':
-        (MANUAL, "F6: register #8 lists bare 'Flash tape' — registry-name "
-                 "drift, that guard is vacuous for this row"),
+        (MANUAL, "F6 CLOSED 2026-07-30: register #8 now carries this exact "
+                 "string; resolution pinned"),
     '38 Series Soffit 16 x 16 Vented':
         (CONST, "16\" width / 16' length == SOFFIT_PROFILES (21.3 ft², "
                 "×1.10 register #6 sealed) — pinned below"),
     '38 Series Soffit 16 x 16 Closed':
         (CONST, "same 21.3 ft² profile; measured-soffit governed"),
     '24 inch CTW soffit':
-        (MANUAL, "F6: register #8 lists '24\" CTW' — registry-name drift"),
+        (MANUAL, "F6 CLOSED 2026-07-30: register #8 renamed to this string"),
     '24 inch VSSFT':
-        (MANUAL, "F6: register #8 lists '24\" VSSFT' — registry-name drift"),
-    'PVC Trim Coil (1 per 5 Sq Siding)':
-        (STALE_NAME, "F5: manual row; per-5-Sq rule retired Feb 2026 — "
-                     ".019 was renamed then, these two were not"),
-    'Performance G8 Trim Coil (1 per 5 Sq Siding)':
-        (STALE_NAME, "F5: same as PVC row"),
-    '3/4" J-Channel Standard color (2 per Sq of siding)':
-        (STALE_NAME, "F4: math = openings+eaves+rakes ÷ 12.5; name claims "
-                     "2/SQ; 3/4\" is identity"),
-    '3/4" J-Channel Architectural color (2 per Sq of siding)':
-        (STALE_NAME, "F4: same"),
-    '1/2" J-Channel (2 per Sq of siding)':
-        (STALE_NAME, "F4: manual row carrying the retired 2/SQ claim"),
+        (MANUAL, "F6 CLOSED 2026-07-30: register #8 renamed to this string"),
+    '3/4" J-Channel Standard color':
+        (CONST, "math = openings+eaves+rakes ÷ 12.5; 3/4\" identity; "
+                "'(2 per Sq)' suffix stripped per naming seal 2026-07-30"),
+    '3/4" J-Channel Architectural color': (CONST, "same; Architectural twin"),
     '3/8" Fan Fold': (IDENTITY, "thickness identity; manual qty"),
-    '2" Nails 30 lbs (1 per 15 Sq)':
-        (CONST, "claim == math: ceil(sqft ÷ 100 ÷ 15) — pinned below"),
+    '1/2" J-Channel':
+        (IDENTITY, "manual row; 1/2\" identity — '(2 per Sq)' suffix "
+                   "stripped per naming seal 2026-07-30"),
+    '1/2" J-Channel White':
+        (IDENTITY, "manual row; colour twin — suffix stripped 2026-07-30"),
+    '2" Nails 30 lbs':
+        (CONST, "ruled 1-per-15-SQ constant lives in the derivation "
+                "(÷100÷15, pinned below); claim suffix stripped 2026-07-30"),
     'Dryer Vents 4" (82A014)': (IDENTITY, "each; 4\" identity"),
     '1 1/4" Trim Nails': (IDENTITY, "flat 1/job; size identity"),
     '3/4" Soffit J-Channel (Charter Oak) Standard color':
@@ -134,21 +133,6 @@ REGISTER: dict[str, tuple[str, str]] = {
                 "2×rakes retired); 3/4\" identity"),
     '3/4" Soffit J-Channel (Charter Oak) Architectural color':
         (CONST, "same; Architectural twin"),
-    '1/2" J-Channel (2 per Sq of siding) White':
-        (STALE_NAME, "F4: manual row carrying the retired 2/SQ claim"),
-    'Fascia/rake or frieze up to 8" coverage':
-        (STALE_NAME, "F3: LF emitter is WIDTH-BLIND — always this ≤8\" band "
-                     "even when fascia_width_in is 10/12; no 'over 8\"' twin "
-                     "in the vinyl catalog — held for ruling"),
-    ".019 Coil (1 per 50' fascia)":
-        (STALE_NAME, "F1+F2: name claims flat 50'/roll; Q3 live math is "
-                     "width-conditional 100/50 — AND it reads "
-                     "m['fascia_width_in'] while the trade spec injects "
-                     "'_fascia_width_in', so the divisor is ALWAYS 100"),
-    "PVC Trim Coil (1 per 50' fascia)":
-        (STALE_NAME, "F1: manual row; claim mismatches Q3 width-conditional"),
-    "Performance G8 Trim Coil (1 per 50' fascia)":
-        (STALE_NAME, "F1: same as PVC fascia row"),
     'Gutter 6"': (IDENTITY, "LF-driven; 6\" identity"),
     'Downspout 6"': (IDENTITY, "LF-driven; 6\" identity"),
     'Cut out 4x4 section of wall and insulate': (IDENTITY, "each"),
@@ -188,21 +172,14 @@ def test_register_carries_no_ghost_names():
 
 
 def test_stale_name_rows_stay_named_never_silent():
+    """Howard #6 (2026-07-30): the strip list LANDED — every formula-claim
+    suffix left the app names (the sheet keeps its parentheticals). The
+    class stays registered so any FUTURE name that welds a rate back into
+    a SKU must be explicitly ruled here before the suite goes green."""
     stale = sorted(n for n, (cls, _) in REGISTER.items() if cls == STALE_NAME)
-    assert stale == sorted([
-        ".019 Coil (1 per 50' fascia)",
-        "PVC Trim Coil (1 per 50' fascia)",
-        "Performance G8 Trim Coil (1 per 50' fascia)",
-        'PVC Trim Coil (1 per 5 Sq Siding)',
-        'Performance G8 Trim Coil (1 per 5 Sq Siding)',
-        '3/4" J-Channel Standard color (2 per Sq of siding)',
-        '3/4" J-Channel Architectural color (2 per Sq of siding)',
-        '1/2" J-Channel (2 per Sq of siding)',
-        '1/2" J-Channel (2 per Sq of siding) White',
-        'Ascend - J - Channel  (2 per Sq of siding)',
-        'Fascia/rake or frieze up to 8" coverage',
-    ]), ("STALE_NAME set changed — a rename lands only with Howard's audit "
-         "ruling; update the register AND the audit report together")
+    assert stale == [], (
+        "STALE_NAME set must stay EMPTY after the 2026-07-30 strip ruling — "
+        f"a new name-claims-math row needs Howard's ruling: {stale}")
 
 
 # ───────────── name-constant == math-constant coupling pins ─────────────
@@ -226,15 +203,18 @@ def test_soffit_16x16_name_matches_profile_math():
         p["coverage_sqft_per_pc"] == 21.3
 
 
-def test_bb_live_emitter_is_4x10_at_40_legacy_vertical_is_4x8_at_32():
+def test_bb_panel_spec_governs_sku_and_count_legacy_4x8_path_deleted():
     from routes.hover import _PROFILE_SKU_MAP, _lp_profile_sku_entry
     with lpf.override_flag(True):
         sku, unit, cov = _lp_profile_sku_entry("board_batten")
+        sku8, _, cov8 = _lp_profile_sku_entry("board_batten", {"_panel_size": "4x8"})
     assert sku == "38 Series 4' x 10' Panel" and cov == 40.0
+    assert sku8 == "38 Series 4' x 8' Panel" and cov8 == 32.0  # COUNT moves
     assert lpf.BB_PANEL_SIZES_SQFT["4x10"] == 40.0 == lpf.BB_PANEL_COVERAGE_SQFT
-    legacy = _PROFILE_SKU_MAP[("board_batten", "lp_smart")]
-    assert legacy == ('38 Series Vertical Panel', "PCS", 32.0)
-    assert lpf.BB_PANEL_SIZES_SQFT["4x8"] == 32.0  # divergence NAMED, gated
+    # F7 (ruled 2026-07-30): the gated-legacy 4×8 Vertical Panel rows are
+    # DELETED — no path may divide by 32 without the 4x8 spec selected.
+    assert ("board_batten", "lp_smart") not in _PROFILE_SKU_MAP
+    assert ("vertical", "lp_smart") not in _PROFILE_SKU_MAP
 
 
 def test_batten_sku_width_matches_hard_formula_default():
@@ -249,23 +229,30 @@ def test_fascia_width_variants_stay_inside_the_ruled_product_table():
         assert fascia_item_for_width(w) in LP_TRIM_SKUS
 
 
-def test_nails_claim_matches_live_math():
+def test_nails_per_15_sq_math_still_live():
     src = (Path(__file__).resolve().parent.parent / "routes" / "hover.py"
            ).read_text()
-    i = src.index('2\\" Nails 30 lbs (1 per 15 Sq)')
+    i = src.index('2\\" Nails 30 lbs')
     assert "/ 100.0 / 15)" in src[i:i + 400], \
-        "nails derivation moved off the name's 1-per-15-SQ claim"
+        "nails derivation moved off the ruled 1-per-15-SQ constant"
 
 
-def test_fascia_coil_width_conditional_still_live_as_audited():
-    src = (Path(__file__).resolve().parent.parent / "routes" / "hover.py"
-           ).read_text()
-    i = src.index(".019 Coil (1 per 50' fascia)")
-    block = src[i:i + 700]
-    assert '100.0 if float(m.get("fascia_width_in") or 8) <= 10 else 50.0' \
-        in block, ("F2 pin: the audited state changed — if this was FIXED "
-                   "(key or name), land it only with Howard's audit ruling "
-                   "and update F1/F2 in the register + report")
+def test_fascia_coil_width_conditional_reads_the_spec_key():
+    """F2 FIXED (Howard ruled 2026-07-30): the width-conditional divisor
+    reads _fascia_width_in — the EXACT key the trade spec injects. 12"
+    fascia → 50 LF/roll; default → 100. Whole units land at the order
+    layer (R3), so the fractional raw ratio is asserted via raw_qty."""
+    from routes.hover import _build_lines
+
+    def coil_fascia(m):
+        return [l for l in _build_lines(m)
+                if l["name"] == ".019 Coil"
+                and l["section"] == "Vinyl Soffit with Siding"
+                and l["tab"] == "vinyl"][0]
+
+    m = {"siding_sqft": 2000, "eaves_lf": 100, "rakes_lf": 100, "window_count": 0}
+    assert coil_fascia(m)["qty"] == 2.0                              # 200/100
+    assert coil_fascia({**m, "_fascia_width_in": 12})["qty"] == 4.0  # 200/50
 
 
 def test_mezzo_bucket_labels_match_their_bounds():

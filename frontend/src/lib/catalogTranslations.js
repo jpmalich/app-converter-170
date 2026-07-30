@@ -52,8 +52,8 @@ const ITEMS_ES = {
   "Outside corners Architectural color": "Esquinas exteriores color arquitectónico",
   "Inside Corners (Siding) Standard color": "Esquinas interiores (vinil) color estándar",
   "Inside Corners (Siding) Architectural color": "Esquinas interiores (vinil) color arquitectónico",
-  '3/4" J-Channel Standard color (2 per Sq of siding)': '3/4" J-Channel color estándar (2 por MC de vinil)',
-  '3/4" J-Channel Architectural color (2 per Sq of siding)': '3/4" J-Channel color arquitectónico (2 por MC de vinil)',
+  '3/4" J-Channel Standard color': '3/4" J-Channel color estándar (2 por MC de vinil)',
+  '3/4" J-Channel Architectural color': '3/4" J-Channel color arquitectónico (2 por MC de vinil)',
   "Finish Trim Standard color": "Moldura de acabado color estándar",
   "Finish Trim Architectural color": "Moldura de acabado color arquitectónico",
   'Soffit & fascia up to 13" wide Charter Oak Standard color': 'Plafón y fascia hasta 13" Charter Oak color estándar',
@@ -184,7 +184,7 @@ const ITEM_NAME_ALIASES = {
   "Charter Oak Soffit Architectural color": "Soffit & fascia Charter Oak Architectural color",
   "Greenbriar Soffit": "Soffit & fascia Greenbriar",
   "T2 Soffit": "Soffit & fascia 2T",
-  '1/2" Soffit J-Channel (for T2 Soffit)': '1/2" J-Channel (2 per Sq of siding) White',
+  '1/2" Soffit J-Channel (for T2 Soffit)': '1/2" J-Channel White',
   "With or without siding Charter Oak": "Charter Oak Soffit White",
 };
 
