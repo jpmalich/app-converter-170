@@ -156,11 +156,21 @@ def _window_perim_total_lf(m: dict) -> float:
     return float(m.get("window_count") or 0) * WINDOW_PERIM_LF_FALLBACK
 
 
+# R1 ruled 2026-07-30 (Howard): exactly 2 J passes per rake — ONE wall pass
+# carried by the wall J-Channel line (vinyl accessories), ONE rake pass
+# carried by Soffit J (soffit category). The old soffit-J 2×rakes term made
+# 3 total and is retired. ONE DOCTRINE STRING — the finish-trim exclusion,
+# the wall-J rake term and the soffit-J derivation all pin to this marker
+# (test_rake_j_passes_2026_07_30).
+RAKE_J_DOCTRINE = ("R1 ruled 2026-07-30: exactly 2 J passes per rake — "
+                   "wall pass on the wall J-Channel line, ONE rake pass on Soffit J")
+
+
 def _finish_trim_pcs(m: dict) -> int:
     """Iter 78f — Finish Trim qty = ceil((Eaves + full window perimeter) ÷ 12.5).
-    Rakes are deliberately excluded: Soffit J-Channel already covers the rake
-    in 2 passes (wall + fascia side), and Howard's install rule is exactly
-    2 passes at each rake total — adding rake here would push it to 4."""
+    Rakes are deliberately excluded: the rake's two passes are already
+    carried by wall J-Channel (1) + Soffit J (1) — R1 ruled 2026-07-30
+    (see RAKE_J_DOCTRINE); adding rake here would push it to 3."""
     eaves = float(m.get("eaves_lf") or 0)
     win_perim = _window_perim_total_lf(m)
     return max(0, math.ceil((eaves + win_perim) / 12.5 - 1e-9))
@@ -1121,8 +1131,9 @@ HOVER_MAPPING_SPEC = [
     # FINISH TRIM — qty = (eaves LF + FULL window perimeter) ÷ 12.5
     # Iter 78f (2026-02-25): Howard's clarification — finish trim wraps the
     # full window perimeter (top + sides + bottom), not just the sill width.
-    # Rakes are NOT included here: Soffit J-Channel already counts 2 passes
-    # at each rake; total install rule is exactly 2 passes per rake.
+    # Rakes ARE included here as the rake's WALL pass (R1 ruled 2026-07-30,
+    # RAKE_J_DOCTRINE): wall pass on this line, ONE rake pass on Soffit J —
+    # exactly 2 per rake.
     # =====================================================================
     {
         "tabs": ["vinyl"],
@@ -1279,11 +1290,21 @@ HOVER_MAPPING_SPEC = [
         "item": "3/4\" Soffit J-Channel (Charter Oak) Standard color",
         "unit": "PCS",
         "waste_included": True,
+        # R1 ruled 2026-07-30: rakes counted ONCE (was 2× before the ruling —
+        # 3 passes total with the wall-J rake term; see RAKE_J_DOCTRINE).
+        # The note NAMES the pre-ruling quantity so the change never arrives
+        # silently inside a rebuild.
         "extract": lambda m: max(
             0,
-            math.ceil(((m.get("eaves_lf") or 0) + 2 * (m.get("rakes_lf") or 0)) / 12.5 - 1e-9),
+            math.ceil(((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 12.5 - 1e-9),
         ),
-        "note": "(Eaves + 2 × Rakes) ÷ 12.5 LF/stick — soffit J runs 2 passes at each rake (wall side + fascia return)",
+        "note": lambda m: (
+            f"(Eaves + Rakes) ÷ 12.5 LF/stick — {RAKE_J_DOCTRINE}"
+            + ((" — pre-ruling 2×rakes rule gave "
+                f"{max(0, math.ceil(((m.get('eaves_lf') or 0) + 2.0 * (m.get('rakes_lf') or 0)) / 12.5 - 1e-9))} pcs, "
+                f"now {max(0, math.ceil(((m.get('eaves_lf') or 0) + (m.get('rakes_lf') or 0)) / 12.5 - 1e-9))}")
+               if (m.get("rakes_lf") or 0) > 0 else "")
+        ),
     },
     # =====================================================================
     # FASCIA / RAKE / FRIEZE COVERAGE — driven off eaves LF (per Howard).

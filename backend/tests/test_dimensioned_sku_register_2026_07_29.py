@@ -130,7 +130,8 @@ REGISTER: dict[str, tuple[str, str]] = {
     'Dryer Vents 4" (82A014)': (IDENTITY, "each; 4\" identity"),
     '1 1/4" Trim Nails': (IDENTITY, "flat 1/job; size identity"),
     '3/4" Soffit J-Channel (Charter Oak) Standard color':
-        (CONST, "(eaves + 2×rakes) ÷ 12.5 baked; 3/4\" identity"),
+        (CONST, "(eaves + rakes) ÷ 12.5 — rakes ONCE (R1 ruled 2026-07-30; "
+                "2×rakes retired); 3/4\" identity"),
     '3/4" Soffit J-Channel (Charter Oak) Architectural color':
         (CONST, "same; Architectural twin"),
     '1/2" J-Channel (2 per Sq of siding) White':
