@@ -92,9 +92,10 @@ class TestSealedConventionsOnTheTab:
         # PIN AMENDED (Q10/Q12/Q13 ruled 2026-07-27): 540-4" = wrap 33 +
         # frieze 23 + ISC 6 per-corner = 62 (was 33 wrap-only).
         assert jon_rows["540 Series Trim 5/4\" x 4\" x 16'"]["qty"] == 62
-        # PIN AMENDED (Q9 ruled 2026-07-27): battens @8" o.c. — 2064 ft²
-        # ÷ (2/3) = 3096 LF ÷ 16 = 194 (was 97 at the provisional 16").
-        assert jon_rows["190 Series Trim 19/32\" x 3\" x 16'"]["qty"] == 194
+        # PIN AMENDED (spacing ruled 2026-07-29): battens @12" o.c. trade-
+        # spec default (8" retired) — 2064 ft² ÷ 1 = 2064 LF ÷ 16 = 129
+        # (was 194 at the retired 8").
+        assert jon_rows["190 Series Trim 19/32\" x 3\" x 16'"]["qty"] == 129
 
     def test_soffit_single_waste_and_porch(self, jon_rows):
         # PIN AMENDED (Q14a ruled 2026-07-27): the measured Hover soffit
@@ -270,13 +271,18 @@ class TestV3MoneyWalk:
         #   the hand-entered 2'×7'9" ceiling; TAPED governs)
         #                                    −85.83 −73.50 = −159.33
         # sub_mat 24,838.47 → 24,950.83
-        assert round(sub_mat, 2) == 24950.83   # materials-true
+        # AMENDED AGAIN (spacing ruled 2026-07-29 — 12" o.c. trade-spec
+        # default, 8" retired):
+        #   battens 194→129                  −65 × 19.66 = −1,277.90
+        #   caulk 9→6 (129 sticks ÷ 23)      −3 × 14.03 = −42.09
+        # sub_mat 24,950.83 → 23,630.84
+        assert round(sub_mat, 2) == 23630.84   # materials-true
         tax = sub_mat * 0.07
-        assert round(tax, 2) == 1746.56
+        assert round(tax, 2) == 1654.16
         base = sub_mat + tax + sub_lab
-        assert round(base, 2) == 26697.39
+        assert round(base, 2) == 25285.00
         sell = base / (1 - 0.30)
-        assert round(sell, 2) == 38139.13
+        assert round(sell, 2) == 36121.43
 
     def test_no_unflagged_labor_anywhere_on_walk_surface(self, session):
         est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()
