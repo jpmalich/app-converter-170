@@ -81,3 +81,48 @@ def test_batten_spacing_default_12_and_delta_named_when_moved():
 
 def test_batten_spacing_is_a_spec_not_a_flag():
     assert batten_takeoff_flags(None) == []
+
+
+def test_spec_fields_survive_the_put_model():
+    """CLASS CAUGHT BY HOWARD 2026-07-29 (binding audit): a spec field not
+    declared on EstimateIn is SILENTLY STRIPPED by the PUT model — the UI
+    saves, nothing persists, the derivation never sees it. Every trade
+    spec must be a declared, validated model field."""
+    from models import EstimateIn
+    fields = EstimateIn.model_fields
+    assert "batten_spacing_in" in fields
+    assert "fascia_width_in" in fields
+    assert "shake_reveal_in" in fields
+    # bounds enforced at the door
+    import pytest
+    with pytest.raises(Exception):
+        EstimateIn.model_validate({"customer_name": "x", "batten_spacing_in": 8})
+    with pytest.raises(Exception):
+        EstimateIn.model_validate({"customer_name": "x", "fascia_width_in": 7})
+    ok = EstimateIn.model_validate(
+        {"customer_name": "x", "batten_spacing_in": 16, "fascia_width_in": 10})
+    assert ok.batten_spacing_in == 16 and ok.fascia_width_in == 10
+
+
+def test_every_width_variant_sku_binds_to_a_priced_row():
+    """DIMENSIONED-SKU CLASS (Howard 2026-07-29): a dimension that is
+    selectable but whose SKU does not bind to a price is not actually
+    selectable. Binding is normalized-string name match (sheet_norm) —
+    fragile by nature, so every emitted width variant is pinned against
+    the tier sheet here; a name drift fails the suite."""
+    import os
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+    from pymongo import MongoClient
+    from lp_costs import sheet_norm
+    db = MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
+    tier = db.price_tiers.find_one({}, {"_id": 0, "sections": 1})
+    assert tier, "no tier sheet seeded"
+    sheet_names = {sheet_norm(it.get("name") or "")
+                   for sec in tier.get("sections") or []
+                   for it in sec.get("items") or []}
+    for w in FASCIA_WIDTHS_IN:
+        assert sheet_norm(fascia_item_for_width(w)) in sheet_names, \
+            f'440 width {w}" SKU does not bind'
+        assert sheet_norm(f'540 Series Trim 5/4" x {w}" x 16\'') in sheet_names, \
+            f'540 width {w}" SKU does not bind'

@@ -228,6 +228,32 @@ class EstimateIn(BaseModel):
     # Optional so partial PUTs never clobber; None = the ruled 7" default.
     shake_reveal_in: Optional[float] = None
 
+    # TRADE SPECS (Howard ruled 2026-07-29): the contractor telling the
+    # app what he is installing — never a check. Optional so partial PUTs
+    # never clobber; None = the ruled defaults (12" o.c. / 8" fascia).
+    batten_spacing_in: Optional[int] = None
+    fascia_width_in: Optional[int] = None
+
+    @field_validator("batten_spacing_in")
+    @classmethod
+    def _batten_spacing_valid(cls, v):
+        if v is None:
+            return v
+        if int(v) not in (12, 16, 24):
+            raise ValueError('batten spacing must be 12, 16 or 24 (o.c.) — '
+                             '8" retired (ruled 2026-07-29)')
+        return int(v)
+
+    @field_validator("fascia_width_in")
+    @classmethod
+    def _fascia_width_valid(cls, v):
+        if v is None:
+            return v
+        if int(v) not in (4, 6, 8, 10, 12):
+            raise ValueError("fascia width must be 4, 6, 8, 10 or 12 inches "
+                             "(440 Series widths — ruled 2026-07-29)")
+        return int(v)
+
     @field_validator("shake_reveal_in")
     @classmethod
     def _shake_reveal_bounds(cls, v):
