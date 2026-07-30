@@ -5885,3 +5885,13 @@ Standing queue unchanged: B (drag-adjust) → model ledger → money map.
 - R2 SEALED: shared product for different purposes = DIFFERENT LINES (coil colours differ; never summed). product_id order layer NOT BUILT, removed from ID-binding scope (stands 3–4d +0.5d). Follow-on report delivered: coil lines can carry window_wrap_color / soffit_fascia_color from Job Info (fields already live) as emitter-sourced notes — ~0.5d, awaiting go.
 - R3 "COIL ROUNDS UP — AND SO DOES EVERYTHING" arrived TRUNCATED (headline only; rulings on F1–F8/strip/Inside Corners/register renames/540 readback missing). Nothing built. Re-send requested.
 - Stamp: 2026-07-30 11:00 UTC · 2c53b54 · CLEAN · 1589 passed, 1 skipped.
+
+## 2026-07-30 (EVE) — ALL SIX RULINGS LANDED (report: memory/rulings_landing_2026-07-30.md)
+- R1 accepted; Letrick harness supersession-STAMPED (annotated, never edited).
+- Coil colour GO: derived .019 lines carry window_wrap_color / soffit_fascia_color notes ("colour not set — set in Job Info" when blank). RESIDUAL: PVC/G8 manual rows need a ~0.25d display-layer chip (no emitter to carry a note) — awaiting go.
+- R3: diagnosis delivered (seal covered LP-rebuild + frontend-apply layers only; live 5.28s were PRE-SEAL rows, vinyl tab has no rebuild; pin tested the layer not the surface). BUILT: _order_whole_units inside _build_lines (every tab/unit, raw_qty preserved), surface detector test_no_door_prints_a_fractional_order_quantity, retroactive heal migration with delta NAMED per line. Coil now 6+7=13 rolls.
+- R4: Ascend Inside Corners emitter deleted, $11.83 orphan removed, 4 estimates healed, total effect $0.00 each. Detector test_every_static_emitter_item_resolves_to_a_live_catalog_row.
+- #6: strip list landed (13 renames everywhere incl. DB migration; ISS labor bands kept); register #8 exact names + test_registry_names_resolve_to_live_catalog_rows; F2 key fixed + class detector test_spec_keys_are_read_by_the_exact_key_they_are_written_under; F3 renamed + $0-labor-row scan clean; F7 legacy 4×8 paths deleted; panel_size & wrap_trim_width_in trade specs BUILT (PUT-validated, bound, pinned — see report for test names); ID binding HELD (not authorized).
+- Stamps: 2026-07-30 11:00 UTC · 2c53b54 · CLEAN · 1589 & 2026-07-30 12:01 UTC · 9a899aa · CLEAN · 1594.
+- Frontend: webpack compiles; SettingsRow selects (panel-size-select, wrap-trim-width-select) follow the proven spec-select pattern. Authenticated UI walkthrough not screenshot-verified this session (secrets-in-chat rule); backend behavior fully pytest-pinned.
+- AWAITING HOWARD: PVC/G8 colour-chip display pass go · ID-binding queue ruling.
