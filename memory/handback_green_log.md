@@ -124,3 +124,4 @@
 - 2026-07-30 02:15 UTC · 2823d09 · CLEAN · [tests] · 1583 passed, 1 skipped, 3 warnings in 163.08s (0:02:43)
 - 2026-07-30 11:00 UTC · 2c53b54 · CLEAN · [tests] · 1589 passed, 1 skipped, 3 warnings in 200.16s (0:03:20)
 - 2026-07-30 12:01 UTC · 9a899aa · CLEAN · [tests] · 1594 passed, 1 skipped, 3 warnings in 160.47s (0:02:40)
+- 2026-07-30 13:05 UTC · 43b622b · GUARD-FAIL · ERROR tests/test_iteration_48_trade_specs.py

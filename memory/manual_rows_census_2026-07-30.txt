@@ -1,0 +1,178 @@
+MANUAL (never emitted): 153 of 226 catalog rows
+[Ascend Cladding/Accessories]
+    Ascend - 5.5" Trim  (16' length)
+    Ascend 3.5" Outside Corner  - MATTE
+[LP Siding Accessories]
+    540 Series OSC 5/4" x 4" x 16'
+    Flash tape 3 3/4" x 90'
+    PVC Trim Coil
+    Performance G8 Trim Coil
+    Trim Coil Aluminum 24" x 50'
+[LP Smart Siding]
+    38 Series Vertical Panel
+[LP SmartSide Soffit]
+    24 inch CTW soffit
+    24 inch VSSFT
+[Misc. Labor and Material]
+    Bird box
+    Build out for windows w/furring (includes capping)
+    Cap tops of bird boxes
+    Cap window headers only
+    Cap windows with wide crown
+    Capping general
+    Cut out 4x4 section of wall and insulate
+    Dormer upcharge
+    Fascia Return
+    Flashing
+    R&R Gable louvers
+    R&R Utilities
+    R&R downspout
+    R&R gutter
+[Porch Ceiling]
+    Charter Oak Soffit White
+    Wrap porch beam
+[Seamless Gutter]
+    Gutter Guard (USA Shurflo)
+[Siding Accessories]
+    1/2" J-Channel
+    3/4" J-Channel Architectural color
+    3/8" Fan Fold
+    Dryer Vents 4" (82A014)
+    Finish Trim Architectural color
+    Flash tape 3 3/4" x 90'
+    Inside Corners (Siding) Architectural color
+    J-blocks - Jumbo Blocks (82A011)
+    J-blocks - Light Blocks (82A010)
+    J-blocks - Split Blocks (82A009)
+    J-blocks - UL Blocks (82A017)
+    Outside corners Architectural color
+    PVC Trim Coil
+    Performance G8 Trim Coil
+[Sliding Glass Door Install]
+    Oversize Vinyl Door - (greater than 8' width)
+    Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)
+[Tear-Off / Clean Up]
+    Wood shake tear off (requires a dumpster)
+[Vero 2 Lite Slider Windows]
+    Vero - Slider 0-101 UI
+    Vero - Slider 102-110 UI
+    Vero - Slider 111-120 UI
+    Vero - Slider 121-130 UI
+    Vero - Slider 131-140 UI
+    Vero - Slider 141-150 UI
+    Vero - Slider 151-160 UI
+    Vero - Slider 161-170 UI
+[Vero 3 Lite Slider Windows]
+    Vero - 3 Lite Slider 102-110 UI
+    Vero - 3 Lite Slider 111-120 UI
+    Vero - 3 Lite Slider 121-130 UI
+    Vero - 3 Lite Slider 131-140 UI
+    Vero - 3 Lite Slider 141-150 UI
+    Vero - 3 Lite Slider 151-160 UI
+    Vero - 3 Lite Slider 161-170 UI
+    Vero - 3 Lite Slider 171-180 UI
+    Vero - 3 Lite Slider 181-190 UI
+    Vero - 3 Lite Slider 74-83 UI
+    Vero - 3 Lite Slider 84-93 UI
+    Vero - 3 Lite Slider 94-101 UI
+    Vero - 3 Lite Slider Min-73 UI
+[Vero Casement Windows]
+    Vero - Casement 102-108 UI
+    Vero - Casement 44-53 UI
+    Vero - Casement 54-63 UI
+    Vero - Casement 64-73 UI
+    Vero - Casement 74-83 UI
+    Vero - Casement 84-93 UI
+    Vero - Casement 93-101 UI
+    Vero - Casement Min-43 UI
+[Vero Double Hung Windows]
+    Vero - Double Hung 0-101 UI
+    Vero - Double Hung 102-110 UI
+    Vero - Double Hung 111-120 UI
+    Vero - Double Hung 121-130 UI
+    Vero - Double Hung 131-140 UI
+    Vero - Double Hung 141-150 UI
+    Vero - Double Hung 151-160 UI
+    Vero - Double Hung 161-170 UI
+[Vero Picture Windows]
+    Vero - Picture 102-110 UI
+    Vero - Picture 111-120 UI
+    Vero - Picture 121-130 UI
+    Vero - Picture 131-140 UI
+    Vero - Picture 141-150 UI
+    Vero - Picture 151-160 UI
+    Vero - Picture 161-170 UI
+    Vero - Picture 171-180 UI
+    Vero - Picture 181-190 UI
+    Vero - Picture 74-83 UI
+    Vero - Picture 84-93 UI
+    Vero - Picture 94-101 UI
+    Vero - Picture Min-73 UI
+[Vero Sliding Glass Doors]
+    Vero - Sliding glass door 60" x 80"
+    Vero - Sliding glass door 72" x 80"
+    Vero - Sliding glass door 96" x 80"
+    Vero - Sliding glass door Custom Size
+[Vero Windows Custom Quote]
+    Vero Window Quote
+[Vinyl Siding]
+    Charter Oak Architectural color Clap 4.5" .046
+    Charter Oak Architectural color Dutch Lap 4.5" .046
+    Charter Oak Standard color Clap 4.5" .046
+    Conquest Architectural color Clap 4.5" .040
+    Conquest Architectural color Dutch lap 4.5" .040
+    Conquest Standard color Clap 4.5" .040
+    Conquest Standard color Dutch lap 4.5" .040
+    Coventry Architectural color Clap 4" .042
+    Coventry Architectural color Clap 5" .042
+    Coventry Architectural color Dutch lap 4" .042
+    Coventry Architectural color Dutch lap 5" .042
+    Coventry Standard color Clap 4" .042
+    Coventry Standard color Clap 5" .042
+    Coventry Standard color Dutch lap 4" .042
+    Coventry Standard color Dutch lap 5" .042
+    Odyssey Architectural color Clap 4" .044
+    Odyssey Architectural color Clap 5" .044
+    Odyssey Architectural color Dutch Lap 4" .044
+    Odyssey Architectural color Dutch Lap 5" .044
+    Odyssey Standard color Clap 4" .044
+    Odyssey Standard color Clap 5" .044
+    Odyssey Standard color Dutch Lap 4" .044
+    Odyssey Standard color Dutch Lap 5" .044
+    vertical board and batten Architectural color 7"
+[Vinyl Soffit with Siding]
+    1/2" J-Channel White
+    3/4" Soffit J-Channel (Charter Oak) Architectural color
+    Cap porch band
+    PVC Trim Coil
+    Performance G8 Trim Coil
+    Soffit & fascia 2T
+    Soffit & fascia Charter Oak Architectural color
+    Soffit & fascia Greenbriar
+[Window Exterior Trim Work]
+    New Exterior Composite Trim
+    New Exterior Primed Stops or Snap Trim
+    New Exterior Primed Wood Trim
+[Window Installation]
+    Field Mull Assembly and/or Field Glaze (adder per each opening)
+    Large Window - adder for windows 30 sq-ft or larger
+    Lead Safe - Test Fee (all homes 1978 and older are tested)
+    Lead Safe Installation Practices For Window Installation
+    Mullion Removal & Cut-Out of Non-Structural Framing Members
+    Window - Full Fin Replacement
+[Window Interior Trim Work]
+    New Interior Casing
+    New Interior Jamb Extension
+    New Interior Sill - create or replace interior window sill - QUOTE ONLY
+    New Interior Stops or Flat Trim
+[Window Material List]
+    Windows - Caulking (per color)
+    Windows - PVC Trim Coil
+    Windows - Performance G8 Trim Coil
+[Window Misc.]
+    Add New Channel on ALL, Close up opening to match master Front opening
+    Interior Blinds - Remove For Window Install & Reinstall
+    Job Measure Rush Fee 3 days or less
+    Minimum Job Charge For Window Installs
+    Shutters - Take Down & Put Up (REUSE EXISTING ONLY)
+    Storm Window Removal

@@ -8,7 +8,7 @@ Uses Jon Casile estimate (lp_smart, B&B family, 68 panels @ 4x10).
 import os
 import pytest
 import requests
-from backend.creds_for_tests import TEST_EMAIL, TEST_PASSWORD
+from creds_for_tests import TEST_EMAIL, TEST_PASSWORD
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0]
 JON = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"  # Jon Casile — LP B&B, 68 4x10 panels
