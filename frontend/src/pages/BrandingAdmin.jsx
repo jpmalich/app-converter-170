@@ -718,16 +718,31 @@ function PricingTiersPanel({ token }) {
     });
   };
 
-  const saveTier = async () => {
+  const saveTier = async (confirmMagnitude = false) => {
     setBusy(true);
     try {
       await axios.put(`${API}/admin/tiers/${editingId}`, {
         sections: editTier.sections,
+        confirm_magnitude: confirmMagnitude === true,
       }, { headers: { "X-Admin-Token": token } });
       toast.success(`${editTier.name} prices saved`);
       await load();
     } catch (e) {
-      toast.error(e.response?.data?.detail || e.message);
+      // TRANSPOSITION GATE (ruled 2026-07-31): a price moving past ×3
+      // never saves without an explicit human confirm.
+      const gate = e.response?.status === 409 ? e.response?.data?.detail?.magnitude_gate : null;
+      if (gate && confirmMagnitude !== true) {
+        const rows = gate.map((g) =>
+          `${g.name} (${g.field}): $${Number(g.old).toFixed(2)} → $${Number(g.new).toFixed(2)} (${g.pct > 0 ? "+" : ""}${g.pct}%)`
+        ).join("\n");
+        setBusy(false);
+        if (window.confirm(`⚠ PRICE MOVES MORE THAN ×3 — real swing, or a crossed/transposed entry?\n\n${rows}\n\nSave anyway?`)) {
+          return saveTier(true);
+        }
+        return;
+      }
+      const d = e.response?.data?.detail;
+      toast.error(typeof d === "string" ? d : e.message);
     } finally {
       setBusy(false);
     }
@@ -785,7 +800,7 @@ function PricingTiersPanel({ token }) {
         <div className="border-t border-[var(--border)] pt-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-heading text-xl">{editTier.name}</h3>
-            <button className="btn-primary" onClick={saveTier} disabled={busy} data-testid="save-tier-btn">
+            <button className="btn-primary" onClick={() => saveTier()} disabled={busy} data-testid="save-tier-btn">
               {busy ? "Saving…" : "Save Tier"}
             </button>
           </div>

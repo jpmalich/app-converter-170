@@ -47,6 +47,10 @@ class CatalogOverridesIn(BaseModel):
 class TierUpdate(BaseModel):
     name: Optional[str] = None
     sections: Optional[List[CatalogSection]] = None
+    # TRANSPOSITION GATE (ruled 2026-07-31): required True when any edited
+    # price moves past the ×3 threshold — the editor gets a 409 naming the
+    # rows and re-sends after the human confirms.
+    confirm_magnitude: bool = False
 
 
 class CompanyTierAssign(BaseModel):

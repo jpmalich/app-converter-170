@@ -29,20 +29,32 @@ export default function PricingUpdatePanel({ token }) {
     })();
   }, [token]);
 
-  const applyChanges = useCallback(async () => {
+  const applyChanges = useCallback(async (confirmedKeys) => {
     if (!changes?.length) return;
     setBusy(true);
     try {
+      // TRANSPOSITION GATE (ruled 2026-07-31): rows past ×3 carry the
+      // human's explicit per-row confirm — the server re-checks live.
+      const keyOf = (c) => `${c.tier_id}-${c.section}-${c.name}-${c.field}`;
+      const payload = changes.map((c) => ({
+        ...c,
+        confirmed: confirmedKeys instanceof Set ? confirmedKeys.has(keyOf(c)) : false,
+      }));
       const { data } = await axios.post(
         `${API}/admin/pricing/apply`,
-        { changes },
+        { changes: payload },
         { headers: { "X-Admin-Token": token } },
       );
       toast.success(`Applied ${data.applied} price ${data.applied === 1 ? "change" : "changes"}`);
       setChanges(null);
       setUnmatched([]);
     } catch (e) {
-      toast.error(e.response?.data?.detail || e.message);
+      const d = e.response?.data?.detail;
+      if (d?.magnitude_gate) {
+        toast.error(`${d.magnitude_gate.length} row(s) move past ×3 — confirm each red row before applying`);
+      } else {
+        toast.error(typeof d === "string" ? d : e.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -340,6 +352,21 @@ function ExportPanel({ token }) {
 // ---------------------------------------------------------------------------
 function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
   const usd = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
+  const keyOf = (c) => `${c.tier_id}-${c.section}-${c.name}-${c.field}`;
+  // TRANSPOSITION GATE (Howard ruled 2026-07-31): rows moving past ×3
+  // render RED with the % named and need a per-row confirm click before
+  // Apply unlocks. server-annotated; falls back to the same math.
+  const isFlagged = (c) =>
+    c.magnitude_flag ?? (c.old > 0 && (c.new <= 0 || c.new / c.old >= 3 || c.new / c.old <= 1 / 3));
+  const [confirmed, setConfirmed] = React.useState(() => new Set());
+  const toggleConfirm = (k) =>
+    setConfirmed((prev) => {
+      const next = new Set(prev);
+      next.has(k) ? next.delete(k) : next.add(k);
+      return next;
+    });
+  const flagged = changes.filter(isFlagged);
+  const unconfirmed = flagged.filter((c) => !confirmed.has(keyOf(c))).length;
   const total = changes.length;
   const increases = changes.filter((c) => c.new > c.old).length;
   const decreases = changes.filter((c) => c.new < c.old).length;
@@ -352,6 +379,7 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
           <div className="text-xs opacity-90 mt-0.5">
             {total} change{total === 1 ? "" : "s"} · {increases} up · {decreases} down
             {unmatched.length > 0 && ` · ${unmatched.length} unmatched`}
+            {flagged.length > 0 && ` · ${flagged.length} past ×3`}
           </div>
         </div>
         <div className="flex gap-2">
@@ -367,14 +395,26 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
           <button
             type="button"
             className="px-3 py-1.5 bg-[var(--bar-bg)] text-white border border-[var(--border-strong)] hover:bg-black text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
-            onClick={onApply}
-            disabled={busy || total === 0}
+            onClick={() => onApply(confirmed)}
+            disabled={busy || total === 0 || unconfirmed > 0}
+            title={unconfirmed > 0 ? `${unconfirmed} row(s) past ×3 still need their confirm` : undefined}
             data-testid="diff-apply-btn"
           >
-            <Check className="w-3.5 h-3.5" /> {busy ? "Applying…" : `Apply ${total}`}
+            <Check className="w-3.5 h-3.5" /> {busy ? "Applying…" : unconfirmed > 0 ? `Confirm ${unconfirmed} red row${unconfirmed === 1 ? "" : "s"} first` : `Apply ${total}`}
           </button>
         </div>
       </div>
+
+      {flagged.length > 0 && (
+        <div className="px-4 py-3 bg-red-100 border-b-2 border-red-400" data-testid="magnitude-gate-banner">
+          <div className="text-xs uppercase tracking-wider font-bold text-red-800">
+            ⚠ {flagged.length} row{flagged.length === 1 ? "" : "s"} move{flagged.length === 1 ? "s" : ""} more than ×3 — a real market swing, or a crossed/transposed entry?
+          </div>
+          <div className="text-[11px] text-red-900 mt-1">
+            Confirm each red row to unlock Apply. Nothing saves past the threshold without your click.
+          </div>
+        </div>
+      )}
 
       {unmatched.length > 0 && (
         <div className="px-4 py-3 bg-red-50 border-b border-red-200">
@@ -408,22 +448,42 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
                 <th className="px-3 py-2 text-right">Old</th>
                 <th className="px-3 py-2 text-right">New</th>
                 <th className="px-3 py-2 text-right">Δ</th>
+                <th className="px-3 py-2 text-center">Confirm</th>
               </tr>
             </thead>
             <tbody className="bg-[var(--surface)]">
               {changes.map((c) => {
                 const delta = c.new - c.old;
-                const pct = c.old ? (delta / c.old) * 100 : 0;
+                const pct = c.pct ?? (c.old ? (delta / c.old) * 100 : 0);
+                const flagged = isFlagged(c);
+                const k = keyOf(c);
                 return (
-                  <tr key={`${c.tier_id}-${c.section}-${c.name}-${c.field}`} className="border-b border-[var(--bg-app)] hover:bg-[var(--surface-muted)]">
+                  <tr
+                    key={k}
+                    className={`border-b ${flagged ? "bg-red-50 border-red-200" : "border-[var(--bg-app)] hover:bg-[var(--surface-muted)]"}`}
+                    data-testid={flagged ? `magnitude-flagged-row-${c.name}-${c.field}` : undefined}
+                  >
                     <td className="px-3 py-1.5 font-mono-num text-xs text-[var(--ink-2)]">{c.tier_name}</td>
                     <td className="px-3 py-1.5 text-xs text-[var(--ink-2)]">{c.section}</td>
                     <td className="px-3 py-1.5 text-xs">{c.name}</td>
                     <td className="px-3 py-1.5 text-center text-[10px] uppercase font-bold tracking-wider text-[var(--muted)]">{c.field}</td>
                     <td className="px-3 py-1.5 text-right font-mono-num text-xs text-[var(--muted)] line-through">{usd(c.old)}</td>
-                    <td className="px-3 py-1.5 text-right font-mono-num text-xs font-bold">{usd(c.new)}</td>
-                    <td className={`px-3 py-1.5 text-right font-mono-num text-xs font-bold ${delta > 0 ? "text-green-700" : "text-red-700"}`}>
-                      {delta > 0 ? "+" : ""}{usd(delta)} <span className="opacity-60">({pct > 0 ? "+" : ""}{pct.toFixed(1)}%)</span>
+                    <td className={`px-3 py-1.5 text-right font-mono-num text-xs font-bold ${flagged ? "text-red-700" : ""}`}>{usd(c.new)}</td>
+                    <td className={`px-3 py-1.5 text-right font-mono-num text-xs font-bold ${flagged ? "text-red-700" : delta > 0 ? "text-green-700" : "text-red-700"}`}>
+                      {delta > 0 ? "+" : ""}{usd(delta)} <span className={flagged ? "" : "opacity-60"}>({pct > 0 ? "+" : ""}{pct.toFixed(1)}%)</span>
+                    </td>
+                    <td className="px-3 py-1.5 text-center">
+                      {flagged && (
+                        <label className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-red-800 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={confirmed.has(k)}
+                            onChange={() => toggleConfirm(k)}
+                            data-testid={`magnitude-confirm-${c.name}-${c.field}`}
+                          />
+                          ×3
+                        </label>
+                      )}
                     </td>
                   </tr>
                 );

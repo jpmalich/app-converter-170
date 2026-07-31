@@ -60,6 +60,13 @@ class PriceChange(BaseModel):
     field: str          # "mat" | "lab"
     old: float
     new: float
+    # TRANSPOSITION GATE (ruled 2026-07-31): the client echoes the preview
+    # row back with confirmed=True after the human clicks the red confirm.
+    # The server re-derives the flag against LIVE values — never trusts
+    # the posted old.
+    confirmed: bool = False
+    pct: Optional[float] = None
+    magnitude_flag: Optional[bool] = None
 
 
 class ApplyIn(BaseModel):
@@ -237,6 +244,7 @@ async def _apply_changes(changes: list[dict]) -> tuple[int, list[dict]]:
     applied-then-ignored). The 5 cross-domain manual-add exceptions
     remain editable (they price from the vinyl domain)."""
     from lp_costs import CROSS_DOMAIN_MANUAL_ADD_EXCEPTIONS, LP_SECTION_TITLES
+    from price_age import magnitude_flag, magnitude_pct
     refused = []
     allowed = []
     for c in changes:
@@ -253,9 +261,47 @@ async def _apply_changes(changes: list[dict]) -> tuple[int, list[dict]]:
     for c in changes:
         by_tier.setdefault(c["tier_id"], []).append(c)
 
+    # TRANSPOSITION GATE (Howard ruled 2026-07-31): validate EVERY change
+    # against the LIVE stored value BEFORE any write — a move past the ×3
+    # threshold without an explicit per-row confirm fails the whole batch
+    # (409 with the offending rows named). Nothing half-applies.
+    tiers_cache: dict[str, dict] = {}
+    for tier_id in by_tier:
+        t = await db.price_tiers.find_one({"id": tier_id}, {"_id": 0})
+        if t:
+            tiers_cache[tier_id] = t
+    blocked = []
+    for tier_id, tier_changes in by_tier.items():
+        tier = tiers_cache.get(tier_id)
+        if not tier:
+            continue
+        sec_index = {s["title"]: s for s in tier.get("sections", []) or []}
+        for c in tier_changes:
+            sec = sec_index.get(c["section"])
+            if not sec:
+                continue
+            for it in sec.get("items", []) or []:
+                if it["name"] == c["name"]:
+                    live_old = float(it.get(c["field"], 0) or 0)
+                    if magnitude_flag(live_old, c["new"]) and not c.get("confirmed"):
+                        blocked.append({
+                            "tier_name": c.get("tier_name"), "section": c["section"],
+                            "name": c["name"], "field": c["field"],
+                            "old": live_old, "new": c["new"],
+                            "pct": magnitude_pct(live_old, c["new"]),
+                        })
+                    break
+    if blocked:
+        raise HTTPException(status_code=409, detail={
+            "magnitude_gate": blocked,
+            "message": "These rows move past the ×3 threshold — confirm each "
+                       "row explicitly (confirmed: true) and re-apply. A crossed "
+                       "or transposed price never saves without a human click.",
+        })
+
     applied = 0
     for tier_id, tier_changes in by_tier.items():
-        tier = await db.price_tiers.find_one({"id": tier_id}, {"_id": 0})
+        tier = tiers_cache.get(tier_id)
         if not tier:
             continue
         # Index items by (section_title, name) so we can patch in place.
@@ -286,7 +332,8 @@ async def preview_bump(body: BumpIn, request: Request):
     check_admin_token(request)
     tiers = await _load_all_tiers()
     changes = _build_bump_changes(tiers, body)
-    return {"changes": changes}
+    from price_age import annotate_magnitude
+    return {"changes": annotate_magnitude(changes)}
 
 
 @router.post("/admin/pricing/upload")
@@ -301,9 +348,12 @@ async def upload_pricing(request: Request, file: UploadFile = File(...), commit:
     rows, _ = _parse_upload(file.filename or "", raw)
     tiers = await _load_all_tiers()
     changes, unmatched = _diff_upload(tiers, rows)
+    from price_age import annotate_magnitude
+    annotate_magnitude(changes)
     applied = 0
     refused = []
     if commit.lower() == "true":
+        # commit=true rides the SAME gate — a script cannot cross it blind.
         applied, refused = await _apply_changes(changes)
     return {"changes": changes, "unmatched": unmatched, "applied": applied, "refused": refused}
 

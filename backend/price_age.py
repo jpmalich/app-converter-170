@@ -48,3 +48,42 @@ def price_stamp(who: str = "supplier-admin") -> dict:
 
 def stamp_price_change(obj: dict, who: str = "supplier-admin") -> None:
     obj.update(price_stamp(who))
+
+
+# ═══ TRANSPOSITION GATE (Howard ruled 2026-07-31) ═══════════════════════
+# His uploaded price page landed House Wrap and RainDrop CROSSED and
+# nothing but his own sanity check caught it. THE RULE: a price write
+# that moves past the threshold without an explicit confirm FAILS.
+# A ×3 move is either a real market swing he confirms in one click, or a
+# transposition he catches before it saves. Either way he SEES it.
+MAGNITUDE_THRESHOLD = 3.0
+
+
+def magnitude_flag(old, new) -> bool:
+    """True when a price write moves past the ×3 threshold, up or down."""
+    old = float(old or 0)
+    new = float(new or 0)
+    if old <= 0:
+        return False  # first price on an unpriced row has no basis to gate
+    if new <= 0:
+        return True  # zeroing a live price is a −100% move — confirm it
+    r = new / old
+    return r >= MAGNITUDE_THRESHOLD or r <= 1.0 / MAGNITUDE_THRESHOLD
+
+
+def magnitude_pct(old, new):
+    old = float(old or 0)
+    new = float(new or 0)
+    if old <= 0:
+        return None
+    return round((new - old) / old * 100.0, 1)
+
+
+def annotate_magnitude(changes: list) -> list:
+    """Stamp pct + magnitude_flag on preview changes so the diff table
+    can print 'House Wrap $11.55 → $336.13 (+2810%)' in red."""
+    for c in changes:
+        c["pct"] = magnitude_pct(c.get("old"), c.get("new"))
+        c["magnitude_flag"] = magnitude_flag(c.get("old"), c.get("new"))
+    return changes
+

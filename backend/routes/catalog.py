@@ -201,13 +201,34 @@ async def admin_update_tier(tier_id: str, body: TierUpdate, request: Request):
         # sections, so stamps are computed SERVER-side by diffing mat/lab
         # against the stored doc — changed items get a fresh who+when,
         # unchanged items carry their old stamp (the client may not echo it).
-        from price_age import stamp_price_change
+        from price_age import stamp_price_change, magnitude_flag, magnitude_pct
         old = await db.price_tiers.find_one({"id": tier_id}, {"_id": 0, "sections": 1})
         old_idx = {}
         for s in (old or {}).get("sections", []) or []:
             for it in s.get("items", []) or []:
                 old_idx[(s.get("title"), it.get("name"))] = it
         new_sections = [s.model_dump() for s in body.sections]
+        # TRANSPOSITION GATE (Howard ruled 2026-07-31): same wall as the
+        # bulk upload — a cell moving past ×3 fails without a confirm.
+        gated = []
+        for s in new_sections:
+            for it in s.get("items", []) or []:
+                prev = old_idx.get((s.get("title"), it.get("name")))
+                if prev is None:
+                    continue
+                for f in ("mat", "lab"):
+                    o, n = float(prev.get(f) or 0), float(it.get(f) or 0)
+                    if round(o, 2) != round(n, 2) and magnitude_flag(o, n):
+                        gated.append({"section": s.get("title"), "name": it.get("name"),
+                                      "field": f, "old": o, "new": n,
+                                      "pct": magnitude_pct(o, n)})
+        if gated and not body.confirm_magnitude:
+            raise HTTPException(status_code=409, detail={
+                "magnitude_gate": gated,
+                "message": "These prices move past the ×3 threshold — confirm "
+                           "to save. A crossed or transposed price never saves "
+                           "without a human click.",
+            })
         for s in new_sections:
             for it in s.get("items", []) or []:
                 prev = old_idx.get((s.get("title"), it.get("name")))
