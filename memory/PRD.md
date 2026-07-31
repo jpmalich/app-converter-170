@@ -1,5 +1,27 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## PURGE PRE-FLIGHT: ISOLATION PINNED + RULED LIST DELIVERED (2026-07-31, 3075033)
+- **NOTHING DELETED — Howard rules the list first.** Full report:
+  memory/purge_isolation_report_2026_07_31.md.
+- RULE 1 PINNED: test_material_list_reads_only_its_own_estimate (5 pins,
+  in the guard forever) — delete-A-leaves-B-byte-identical proven through
+  the real API; LP preview refuses to borrow runs; every run lookup
+  estimate-scoped; the ONE named cross-read is the pair-lp stamp
+  (pairs keep/purge TOGETHER — the list never splits a pair).
+- TAGGING GAP CLOSED: TEST_-named estimates tag test_artifact at
+  creation (routes/estimates.py — joined the tag-setter register);
+  census/purge reach tagged estimates, refuse protected/fixture docs.
+- THE LIST (25): KEEP-GROUND-TRUTH 10 (3 Degree ×4 pairs incl. the HELD
+  786ff854 + 261 Haugh ×2) · KEEP-REFERENCED 7 (Letrick 8f95c9c2, doug
+  jones db82ec7a, red house pair, Casile pair, LP Photo Demo aac77586) ·
+  PURGE 8 (58bd6ccd, ee077937, 37242baf, e3c469df, 40b8d771+59d66e71,
+  e876e6c0+7650bf9a — pairs intact). Companies ride along: 77 companies /
+  110 users / 77 catalogs / 11 invitations (census receipt live);
+  keeps Pro-Quote, GusGear, Pappans, ZZ Fixture Test Co (seeded).
+  Predicted after pass: 25→17 estimates, 81→4 companies.
+- Guard: 2026-07-31 13:30 UTC · 3075033 · CLEAN · 1652 passed.
+
+
 ## WRAP ROLLS + TRANSPOSITION CATCH + BLIND ROW NOTES + SPANISH REPORT (2026-07-31, a75f50a+)
 - **WRAP ROLL CONVERSION LANDED (cross-corrected)**: Howard's price-page
   entry landed TRANSPOSED (HW $336.13 / RD $119.11, stamped 11:57 UTC, all
