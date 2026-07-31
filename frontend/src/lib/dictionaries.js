@@ -39,7 +39,6 @@ export const dict = {
     "nav.estimates": "Estimates",
     "nav.catalog": "Catalog",
     "nav.team": "Team",
-    "nav.brandingAdmin": "Branding Admin",
     "nav.logout": "Log out",
     "nav.estimatorTag": "Estimator",
     "nav.role.owner": "Owner",

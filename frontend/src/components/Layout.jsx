@@ -3,8 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { useCompany } from "@/lib/company";
 import { useT } from "@/lib/i18n";
-import api from "@/lib/api";
-import { LogOut, LayoutGrid, Settings2, Users, Shield } from "lucide-react";
+import { LogOut, LayoutGrid, Settings2, Users } from "lucide-react";
 import CompanyLogo from "@/components/CompanyLogo";
 import InstallBanner from "@/components/InstallBanner";
 import LangToggle from "@/components/LangToggle";
@@ -17,18 +16,6 @@ export default function Layout() {
   const t = useT();
   const nav = useNavigate();
   const loc = useLocation();
-  // Supplier-admin shortcut (2026-07-31): probe once for owners; the link
-  // renders only for the seeded supplier account (server 403s the rest),
-  // so the token never needs fishing out of .env.
-  const [brandingAdminUrl, setBrandingAdminUrl] = React.useState(null);
-  React.useEffect(() => {
-    if (user?.role !== "owner") return;
-    let live = true;
-    api.get("/admin/branding-admin-link")
-      .then(({ data }) => { if (live && data?.url) setBrandingAdminUrl(data.url); })
-      .catch(() => {});
-    return () => { live = false; };
-  }, [user?.role]);
 
   const roleLabel =
     user?.role === "owner"
@@ -67,17 +54,6 @@ export default function Layout() {
             <Link to="/team" className={linkCls("/team")} data-testid="nav-team">
               <Users className="inline w-4 h-4 mr-1" /> {t("nav.team")}
             </Link>
-            {brandingAdminUrl && (
-              <a
-                href={brandingAdminUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={linkCls("/branding-admin")}
-                data-testid="nav-branding-admin"
-              >
-                <Shield className="inline w-4 h-4 mr-1" /> {t("nav.brandingAdmin")}
-              </a>
-            )}
           </nav>
           <div className="flex items-center gap-3">
             <ThemePicker />
