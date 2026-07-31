@@ -266,8 +266,10 @@ def _downspout_breakdown(m: dict) -> str:
     drop = _downspout_drop_ft(m)
     total_lf = _downspout_lf(m)
     min_hit = " (min 2)" if n == 2 and raw < 2 else ""
+    sticks = math.ceil(total_lf / 10 - 1e-9) if total_lf > 0 else 0
     return (f"{eaves:.0f} LF eaves ÷ 25 = {raw:.1f} → ceil = "
-            f"{n} downspouts{min_hit} × {drop:.0f} LF drop = {total_lf} LF coil")
+            f"{n} downspouts{min_hit} × {drop:.0f} LF drop = {total_lf} LF "
+            f"→ {sticks} sticks (10' each, whole sticks — ruled 2026-07-31)")
 
 
 def _elbow_breakdown(m: dict) -> str:
@@ -1228,9 +1230,12 @@ HOVER_MAPPING_SPEC = [
         "tabs": ["vinyl", "ascend"],
         "section": "Siding Accessories",
         "item": "2\" Nails 30 lbs",
-        "unit": "JOB",
-        "extract": lambda m: max(1, round((m.get("siding_sqft") or 0) / 100.0 / 15)),
-        "note": "1 box per 15 SQ of siding",
+        # SALES UNIT (Howard ruled 2026-07-31): sold by the 30-lb BOX,
+        # 1 box per 15 SQ — the JOB label was the lie; the count was
+        # already boxes. round → ceil per the whole-units doctrine.
+        "unit": "BOX",
+        "extract": lambda m: max(1, math.ceil((m.get("siding_sqft") or 0) / 100.0 / 15 - 1e-9)),
+        "note": "1 box per 15 SQ of siding — ordered by the 30-lb box (ruled 2026-07-31)",
     },
     {
         "tabs": ["vinyl", "ascend"],
@@ -1527,13 +1532,11 @@ HOVER_MAPPING_SPEC = [
         "tabs": ["vinyl", "ascend", "lp_smart"],
         "section": "Seamless Gutter",
         "item": "Downspout 6\"",
-        "unit": "LF",
-        # Iter 78z (P1.4): story-aware drop length. 1 downspout per 25 LF
-        # eaves (min 2), drop = avg_wall_height + 3 ft (kick + slack).
-        # 1-story → ~12 LF/drop, 2-story → ~21 LF/drop. Previous flat 10 LF
-        # under-counted 2-story by 2x per Howard's LETRICK reconciliation.
-        "extract": lambda m: _downspout_lf(m),
-        # Iter 78h — surface the per-job math so Howard can spot drift.
+        # SALES UNIT (Howard ruled 2026-07-31): downspout comes in 10'
+        # STICKS — qty is whole sticks, ceil(LF ÷ 10). LF math unchanged
+        # underneath (story-aware drops, Iter 78z).
+        "unit": "Stick",
+        "extract": lambda m: math.ceil(_downspout_lf(m) / 10 - 1e-9) if _downspout_lf(m) > 0 else 0,
         "note": lambda m: _downspout_breakdown(m),
     },
     {

@@ -1254,6 +1254,14 @@ async def ensure_tiers_seeded():
                     sorted(fresh_items - current_items),
                     sorted(current_items - fresh_items),
                 )
+                # PRICE AGE (ruled 2026-07-31): a rebuild is not a price
+                # decision — carry existing stamps for same-named items.
+                _old_stamps = {it.get("name"): it for it in sec.get("items", [])}
+                for _it in fresh_sec["items"]:
+                    _prev = _old_stamps.get(_it["name"])
+                    if _prev and _prev.get("price_changed_at"):
+                        _it["price_changed_at"] = _prev["price_changed_at"]
+                        _it["price_changed_by"] = _prev.get("price_changed_by")
                 sections[i] = fresh_sec
                 dirty = True
             else:
@@ -1317,6 +1325,14 @@ async def create_company(name: str, owner_user_id: str) -> dict:
         "price_tier_id": tier_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+    # TEST-DATA HYGIENE (Howard ruled 2026-07-31): every test path names
+    # its company TEST_* — tag it at creation so the purge tool can reach
+    # it. 2,039 untagged TEST companies proved the gap. "Tester's Company"
+    # is the suite's legacy derived default (signup without company_name,
+    # user name "Tester") — 293 of those proved the convention miss.
+    _n = name.strip()
+    if _n.upper().startswith("TEST_") or _n.startswith("Tester's Company"):
+        company["test_artifact"] = True
     await db.companies.insert_one(company)
     # Per-company catalog stores only labor overrides; material is locked to the
     # assigned price tier (managed by the supplier in /branding-admin).

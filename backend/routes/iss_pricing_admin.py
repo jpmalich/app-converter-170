@@ -153,12 +153,14 @@ async def _diff_upload(rows: list[dict]) -> tuple[list[dict], list[dict]]:
 async def _apply_changes(changes: list[dict]) -> int:
     applied = 0
     now_iso = datetime.now(timezone.utc).isoformat()
+    from price_age import price_stamp
     for c in changes:
         res = await db.iss_catalog.update_one(
             {"section": c["section"], "name": c["name"]},
             {"$set": {
                 "price": _round2(c["new"]),
                 "updated_at": now_iso,
+                **price_stamp(),
             }},
         )
         if res.modified_count:

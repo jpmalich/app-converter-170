@@ -268,6 +268,8 @@ async def _apply_changes(changes: list[dict]) -> tuple[int, list[dict]]:
             for it in sec.get("items", []) or []:
                 if it["name"] == c["name"]:
                     it[c["field"]] = _round2(c["new"])
+                    from price_age import stamp_price_change
+                    stamp_price_change(it)
                     applied += 1
                     break
         await db.price_tiers.update_one(

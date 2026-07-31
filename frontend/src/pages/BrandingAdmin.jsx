@@ -627,20 +627,78 @@ function LpMarginTiersPanel({ token }) {
 }
 
 
+function priceAgeDays(iso) {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+}
+
+function newestStamp(tier) {
+  let best = null;
+  for (const s of tier.sections || []) {
+    for (const it of s.items || []) {
+      if (it.price_changed_at && (!best || it.price_changed_at > best)) best = it.price_changed_at;
+    }
+  }
+  return best;
+}
+
+// PRICE AGE (Howard ruled 2026-07-31): a stale price is the one defect
+// that reaches a homeowner — every row shows when its price last changed,
+// rows older than the (settable) threshold get the STALE chip, and rows
+// with no record say so instead of faking a date.
+function PriceAgeCell({ it, staleDays }) {
+  const days = priceAgeDays(it.price_changed_at);
+  if (days === null) {
+    return (
+      <span className="text-[9px] uppercase tracking-wider text-[var(--muted)]" data-testid={`price-age-none-${it.name}`}>
+        no age record
+      </span>
+    );
+  }
+  const stale = days > staleDays;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[9px] uppercase tracking-wider font-bold ${stale ? "text-amber-700" : "text-[var(--ink-2)]"}`}
+      title={`Last changed ${new Date(it.price_changed_at).toLocaleString()} by ${it.price_changed_by || "?"}`}
+      data-testid={`price-age-${it.name}`}
+    >
+      {new Date(it.price_changed_at).toLocaleDateString()}
+      {stale && (
+        <span className="px-1 py-0.5 border border-amber-400 bg-amber-50" data-testid={`price-stale-chip-${it.name}`}>
+          STALE {days}d
+        </span>
+      )}
+    </span>
+  );
+}
+
 function PricingTiersPanel({ token }) {
   const [tiers, setTiers] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editTier, setEditTier] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [staleDays, setStaleDays] = useState(90);
 
   const load = React.useCallback(async () => {
     try {
       const { data } = await axios.get(`${API}/admin/tiers`, { headers: { "X-Admin-Token": token } });
       setTiers(data);
+      const b = await axios.get(`${API}/branding`);
+      if (b.data?.stale_price_days) setStaleDays(b.data.stale_price_days);
     } catch (e) {
       toast.error(e.response?.data?.detail || e.message);
     }
   }, [token]);
+
+  const saveStaleDays = async (v) => {
+    const n = Number(v) || 90;
+    setStaleDays(n);
+    try {
+      await axios.put(`${API}/admin/branding`, { stale_price_days: n }, { headers: { "X-Admin-Token": token } });
+    } catch (e) {
+      toast.error(e.response?.data?.detail || e.message);
+    }
+  };
 
   useEffect(() => {
     load();
@@ -685,6 +743,22 @@ function PricingTiersPanel({ token }) {
         Material prices each contractor sees, by tier. Labor numbers shown here are the
         defaults — contractors can override labor per estimate. Click a tier to edit prices.
       </p>
+      <div className="flex items-center gap-2 mb-4" data-testid="stale-threshold-row">
+        <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
+          Flag prices older than
+        </span>
+        <input
+          className="input num h-8 text-sm w-20"
+          type="number"
+          min="1"
+          max="3650"
+          value={staleDays}
+          onChange={(e) => setStaleDays(Number(e.target.value) || 0)}
+          onBlur={(e) => saveStaleDays(e.target.value)}
+          data-testid="stale-days-input"
+        />
+        <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">days</span>
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {tiers.map((t) => (
           <button
@@ -697,6 +771,11 @@ function PricingTiersPanel({ token }) {
             <div className="font-heading text-lg text-[var(--ink)]">{t.name}</div>
             <div className="text-xs text-[var(--ink-2)] mt-1">
               {(t.sections || []).reduce((s, x) => s + (x.items || []).length, 0)} items
+            </div>
+            <div className="text-[10px] text-[var(--muted)] mt-1" data-testid={`tier-age-${t.name}`}>
+              {newestStamp(t)
+                ? `last price change ${new Date(newestStamp(t)).toLocaleDateString()}`
+                : "no price-change record yet"}
             </div>
           </button>
         ))}
@@ -721,7 +800,7 @@ function PricingTiersPanel({ token }) {
                   const ii = s.items.indexOf(it);
                   return (
                     <div key={it.name} className="grid grid-cols-12 gap-2 px-3 py-1 border-t border-[var(--border)] items-center">
-                      <div className="col-span-6 text-sm">{it.name}</div>
+                      <div className="col-span-4 text-sm">{it.name}</div>
                       <div className="col-span-1 text-[10px] text-[var(--muted)] uppercase">{it.unit}</div>
                       <div className="col-span-2">
                         <input
@@ -740,6 +819,9 @@ function PricingTiersPanel({ token }) {
                           value={it.lab}
                           onChange={(e) => updateItem(si, ii, "lab", e.target.value)}
                         />
+                      </div>
+                      <div className="col-span-3 text-right">
+                        <PriceAgeCell it={it} staleDays={staleDays} />
                       </div>
                     </div>
                   );

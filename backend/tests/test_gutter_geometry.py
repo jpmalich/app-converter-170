@@ -191,8 +191,9 @@ def test_build_lines_emits_new_gutter_accessories():
     assert _gutter_line(lines, 'Gutter 6"') is not None
     downspout = _gutter_line(lines, 'Downspout 6"')
     assert downspout is not None
-    # 160/25 = 7 downspouts × 21 LF = 147 LF
-    assert downspout["qty"] == 147
+    # 160/25 = 7 downspouts × 21 LF = 147 LF → 15 × 10' sticks
+    # (SALES UNIT ruled 2026-07-31)
+    assert downspout["qty"] == 15
     assert _gutter_line(lines, "elbow") is not None
     assert _gutter_line(lines, "End Cap") is not None
     assert _gutter_line(lines, "Hangars with Screws") is not None

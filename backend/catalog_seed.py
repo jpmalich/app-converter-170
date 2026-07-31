@@ -407,8 +407,8 @@ ITEM_META = {
     # Priced 13.99 FLAT ×4 in IDENTICAL_PRICES (master-catalog apply,
     # Howard's go 2026-07-18).
     "Pelican Bay Shake Starter": ("PCS", 0),
-    "House Wrap": ("SQ", 0), "RainDrop": ("SQ", 0), '3/8" Fan Fold': ("SQ", 0),
-    '2" Nails 30 lbs': ("JOB", 0), "Caulking (per color)": ("Each", 0),
+    "House Wrap": ("SQ", 0), "RainDrop": ("SQ", 0), '3/8" Fan Fold': ("Bundle", 0),
+    '2" Nails 30 lbs': ("BOX", 0), "Caulking (per color)": ("Each", 0),
     "J-blocks - Split Blocks (82A009)": ("Each", 0),
     "J-blocks - Light Blocks (82A010)": ("Each", 0),
     "J-blocks - UL Blocks (82A017)": ("Each", 0),
@@ -435,7 +435,7 @@ ITEM_META = {
     "PVC Trim Coil": ("ROLL", 0),
     "Performance G8 Trim Coil": ("ROLL", 0),
     "Charter Oak Soffit White": ("PCS", 0), "Wrap porch beam": ("LF", 0),
-    'Gutter 6"': ("LF", 0), 'Downspout 6"': ("LF", 0),
+    'Gutter 6"': ("LF", 0), 'Downspout 6"': ("Stick", 0),
     "elbow": ("Each", 0), "Mitre": ("Each", 0), "End Cap": ("Each", 0), "Gutter Guard (USA Shurflo)": ("LF", 0),
     "R&R gutter": ("LF", 0), "R&R downspout": ("LF", 0),
     "Cap window": ("Each", 0), "Cap windows with wide crown": ("Each", 0),
@@ -625,7 +625,8 @@ IDENTICAL_PRICES = {
     'Cap tops of bird boxes': 60,
     'Caulking (per color)': 8.23,
     'Cut out 4x4 section of wall and insulate': 100,
-    'Downspout 6"': 2.8,
+    # SALES UNIT ruled 2026-07-31: LF -> 10' stick; 2.80 x 10.
+    'Downspout 6"': 28.0,
     'End Cap': 2.08,
     'Gable vents (round,octagon)': 92.2875,
     'Gutter 6"': 3.25,
@@ -645,6 +646,8 @@ IDENTICAL_PRICES = {
     'Pelican Bay Shake Starter': 13.99,
     # R3 ruled 2026-07-31: unit moved SQ → 1/2 SQ; price follows (419.94 ÷ 2).
     'Pelican Bay Shakes 9"': 209.97,
+    # SALES UNIT ruled 2026-07-31: SQ → Bundle (2 SQ per bundle); 11.06 × 2.
+    '3/8" Fan Fold': 22.12,
     'RainDrop': 30.73,
     'Shutters (louvered, raised panel) standard sizes': 114.2225,
     'Starter': 7.64,

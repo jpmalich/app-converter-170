@@ -15,6 +15,10 @@ everywhere, never extrapolated. Descriptions ingested verbatim.
 Piece prices ingested (UOM: Piece unless noted)."""
 
 QUOTE_REF = "BlueLinx PIT00003 — 2.26.2026"
+# CONFIRMED CURRENT by Howard on 2026-07-31: he checked with his supplier —
+# the February numbers are still what BlueLinx charges. KEEP-CURRENT stands
+# as a CONFIRMATION now, not just a source choice. Next re-ask only if the
+# supplier issues new pages.
 
 PREFINISHED_FINISHES = ("expertfinish", "expertfinish_brushed")
 

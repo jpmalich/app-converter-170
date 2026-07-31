@@ -233,7 +233,8 @@ def test_nails_per_15_sq_math_still_live():
     src = (Path(__file__).resolve().parent.parent / "routes" / "hover.py"
            ).read_text()
     i = src.index('2\\" Nails 30 lbs')
-    assert "/ 100.0 / 15)" in src[i:i + 400], \
+    # ruled 2026-07-31: round → ceil per whole-units; the 15-SQ constant stands
+    assert "/ 100.0 / 15" in src[i:i + 500], \
         "nails derivation moved off the ruled 1-per-15-SQ constant"
 
 

@@ -60,7 +60,12 @@ FN_RE = re.compile(r"\b((?:ai_|bp_)?[0-9a-f]{32}(?:_p\d+)?\.(?:jpg|jpeg|png|webp
 def checksum(doc: dict) -> str:
     # updated_at excluded: seed-on-boot re-stamps pricing docs every server
     # start; machinery touches it on estimates — volatile, not content
-    d = {k: v for k, v in doc.items() if k not in ("_id", "fixture_import", "updated_at")}
+    d = {k: v for k, v in doc.items() if k not in ("_id", "fixture_import", "updated_at",
+                                     # price-age stamps (ruled 2026-07-31): who/when
+                                     # metadata, not price content — volatile
+                                     "price_changed_at", "price_changed_by",
+                                     # admin-tunable stale threshold (ruled 2026-07-31)
+                                     "stale_price_days")}
     return hashlib.sha256(json.dumps(d, sort_keys=True, default=str).encode()).hexdigest()
 
 

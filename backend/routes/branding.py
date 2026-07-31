@@ -32,6 +32,7 @@ async def public_branding():
         "supplier_tagline": b.get("supplier_tagline") or SUPPLIER_TAGLINE,
         "supplier_logo_url": b.get("supplier_logo_url"),
         "default_pricing_mode": b.get("default_pricing_mode") or "margin",
+        "stale_price_days": int(b.get("stale_price_days") or 90),
         "lp_native_mode": await load_lp_native_mode(),
     }
 
@@ -56,6 +57,62 @@ async def admin_purge_test_artifacts(request: Request):
     return {"deleted": deleted}
 
 
+@router.get("/admin/test-data/census")
+async def admin_test_data_census(request: Request):
+    """TEST-DATA HYGIENE (Howard ruled 2026-07-31): what the purge would
+    remove — companies named TEST_* or tagged, their users/catalogs/
+    estimates, resend.dev invitations, and TEST_-named estimates anywhere."""
+    check_admin_token(request)
+    q_co = {"$or": [{"test_artifact": True},
+                    {"name": {"$regex": "^TEST_", "$options": "i"}},
+                    {"name": {"$regex": "^Tester's Company"}}]}
+    co_ids = [c["id"] async for c in db.companies.find(q_co, {"_id": 0, "id": 1})]
+    return {
+        "companies": len(co_ids),
+        "users": await db.users.count_documents({"company_id": {"$in": co_ids}}),
+        "catalogs": await db.catalogs.count_documents({"company_id": {"$in": co_ids}}),
+        "estimates_in_test_companies": await db.estimates.count_documents({"company_id": {"$in": co_ids}}),
+        "test_named_estimates_elsewhere": await db.estimates.count_documents(
+            {"company_id": {"$nin": co_ids},
+             "customer_name": {"$regex": "^TEST_", "$options": "i"}}),
+        "invitations": await db.invitations.count_documents(
+            {"$or": [{"test_artifact": True}, {"email": {"$regex": "@resend\\.dev$", "$options": "i"}}]}),
+    }
+
+
+@router.post("/admin/test-data/purge")
+async def admin_test_data_purge(request: Request):
+    """Purge everything the census names. SAFE ON THIS BUILD BY RULING
+    (Howard 2026-07-31): this is the TEST/PREVIEW build — real contractors
+    live on production (pro-quotes.com). Never enable blind on prod."""
+    check_admin_token(request)
+    q_co = {"$or": [{"test_artifact": True},
+                    {"name": {"$regex": "^TEST_", "$options": "i"}},
+                    {"name": {"$regex": "^Tester's Company"}}]}
+    co_ids = [c["id"] async for c in db.companies.find(q_co, {"_id": 0, "id": 1})]
+    user_ids = [u["id"] async for u in db.users.find(
+        {"company_id": {"$in": co_ids}}, {"_id": 0, "id": 1})]
+    receipt = {
+        "companies": (await db.companies.delete_many({"id": {"$in": co_ids}})).deleted_count,
+        "users": (await db.users.delete_many({"id": {"$in": user_ids}})).deleted_count,
+        "sessions": (await db.sessions.delete_many({"user_id": {"$in": user_ids}})).deleted_count
+        if "sessions" in await db.list_collection_names() else 0,
+        "catalogs": (await db.catalogs.delete_many({"company_id": {"$in": co_ids}})).deleted_count,
+        "estimates_in_test_companies": (await db.estimates.delete_many(
+            {"company_id": {"$in": co_ids}})).deleted_count,
+        "test_named_estimates_elsewhere": (await db.estimates.delete_many(
+            {"customer_name": {"$regex": "^TEST_", "$options": "i"},
+             "fixture_import": {"$ne": True}})).deleted_count,
+        "invitations": (await db.invitations.delete_many(
+            {"$or": [{"test_artifact": True},
+                     {"email": {"$regex": "@resend\\.dev$", "$options": "i"}}]})).deleted_count,
+    }
+    receipt["companies_remaining"] = await db.companies.count_documents({})
+    receipt["estimates_remaining"] = await db.estimates.count_documents({})
+    logger.info("admin test-data purge: %s", receipt)
+    return receipt
+
+
 @router.put("/admin/branding")
 async def admin_update_branding(body: BrandingUpdate, request: Request):
     check_admin_token(request)
@@ -71,6 +128,10 @@ async def admin_update_branding(body: BrandingUpdate, request: Request):
         if mode not in {"margin", "markup"}:
             raise HTTPException(status_code=400, detail="default_pricing_mode must be 'margin' or 'markup'")
         updates["default_pricing_mode"] = mode
+    if body.stale_price_days is not None:
+        if not (1 <= int(body.stale_price_days) <= 3650):
+            raise HTTPException(status_code=400, detail="stale_price_days must be 1–3650")
+        updates["stale_price_days"] = int(body.stale_price_days)
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.settings.update_one({"id": "branding"}, {"$set": updates}, upsert=True)
@@ -261,6 +322,10 @@ async def admin_invite_contractor(body: InviteContractorIn, request: Request):
         "resend_id": (result or {}).get("id"),
         "sent_at": datetime.now(timezone.utc).isoformat(),
     }
+    # TEST-DATA HYGIENE (ruled 2026-07-31): resend.dev addresses are test
+    # deliveries — tag them so the purge tool can reach them.
+    if recipient.lower().endswith("@resend.dev"):
+        record["test_artifact"] = True
     await db.invitations.insert_one(record)
     record.pop("_id", None)
     return {"status": "sent", "invitation": record}

@@ -156,7 +156,9 @@ def test_casile_gutter_lines_bind_to_master_sheet(pkg):
     assert g["pricing_status"] == "priced", g
     assert g["unit_sell"] == 3.25, g
     d = by_name['downspout 6"']
-    assert d["pricing_status"] == "priced" and d["unit_sell"] == 2.8, d
+    # SALES UNIT (ruled 2026-07-31): downspout sells by the 10' stick —
+    # sheet mat converted 2.80/LF → 28.00/stick by the migration.
+    assert d["pricing_status"] == "priced" and d["unit_sell"] == 28.0, d
     for n in ("elbow", "end cap", "mitre", "pipe clips",
               "gutter sealant", "hangars with screws"):
         assert by_name[n]["pricing_status"] == "priced", (n, by_name[n])

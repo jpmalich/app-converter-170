@@ -172,12 +172,14 @@ class TestRoundTwoPins:
         take sealant). Letrick key-bound 2099.7 ft² = 21 SQ → OSI Quad
         Max 2 → 21 tubes (+19 × $14.03 = +$266.57) → total_sell
         13037.21 → 13303.78. B&B jobs hold at the sealed 1/23 sticks
-        (Casile unchanged at 9 — pinned in test_casile_closeout)."""
+        (Casile unchanged at 9 — pinned in test_casile_closeout).
+        SALES UNIT (ruled 2026-07-31): downspout LF → 10' sticks moved
+        Letrick 46 LF ($128.80) → 5 sticks ($140.00): 13303.78 → 13314.98."""
         import os
         tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
         d = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
                          json={}, headers={"X-Admin-Token": tok}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 13303.78
+        assert d["summary"]["pricing"]["total_sell"] == 13314.98
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

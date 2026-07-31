@@ -276,13 +276,15 @@ class TestV3MoneyWalk:
         #   battens 194→129                  −65 × 19.66 = −1,277.90
         #   caulk 9→6 (129 sticks ÷ 23)      −3 × 14.03 = −42.09
         # sub_mat 24,950.83 → 23,630.84
-        assert round(sub_mat, 2) == 23630.84   # materials-true
+        # SALES UNIT (ruled 2026-07-31): downspout 46 LF ($128.80) →
+        # 5 × 10' sticks ($140.00): 23,630.84 → 23,642.04
+        assert round(sub_mat, 2) == 23642.04   # materials-true
         tax = sub_mat * 0.07
-        assert round(tax, 2) == 1654.16
+        assert round(tax, 2) == 1654.94
         base = sub_mat + tax + sub_lab
-        assert round(base, 2) == 25285.00
+        assert round(base, 2) == 25296.98
         sell = base / (1 - 0.30)
-        assert round(sell, 2) == 36121.43
+        assert round(sell, 2) == 36138.55
 
     def test_no_unflagged_labor_anywhere_on_walk_surface(self, session):
         est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()

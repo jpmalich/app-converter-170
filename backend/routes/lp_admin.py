@@ -145,6 +145,8 @@ async def put_lp_margin_tiers(payload: dict, request: Request):
             updates[key] = {str(k): float(v) for k, v in ov.items()}
     if not updates:
         raise HTTPException(status_code=400, detail="Nothing to update")
+    from price_age import price_stamp
+    updates.update(price_stamp())
     await db.settings.update_one({"id": TIER_DOC_ID}, {"$set": updates}, upsert=True)
     cfg.update(updates)
     return cfg

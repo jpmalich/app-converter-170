@@ -197,7 +197,29 @@ async def admin_update_tier(tier_id: str, body: TierUpdate, request: Request):
     if body.name:
         updates["name"] = body.name.strip()
     if body.sections is not None:
-        updates["sections"] = [s.model_dump() for s in body.sections]
+        # PRICE AGE (ruled 2026-07-31): the editor round-trips whole
+        # sections, so stamps are computed SERVER-side by diffing mat/lab
+        # against the stored doc — changed items get a fresh who+when,
+        # unchanged items carry their old stamp (the client may not echo it).
+        from price_age import stamp_price_change
+        old = await db.price_tiers.find_one({"id": tier_id}, {"_id": 0, "sections": 1})
+        old_idx = {}
+        for s in (old or {}).get("sections", []) or []:
+            for it in s.get("items", []) or []:
+                old_idx[(s.get("title"), it.get("name"))] = it
+        new_sections = [s.model_dump() for s in body.sections]
+        for s in new_sections:
+            for it in s.get("items", []) or []:
+                prev = old_idx.get((s.get("title"), it.get("name")))
+                if prev is None:
+                    stamp_price_change(it)
+                elif (round(float(it.get("mat") or 0), 2) != round(float(prev.get("mat") or 0), 2)
+                      or round(float(it.get("lab") or 0), 2) != round(float(prev.get("lab") or 0), 2)):
+                    stamp_price_change(it)
+                else:
+                    it["price_changed_at"] = prev.get("price_changed_at")
+                    it["price_changed_by"] = prev.get("price_changed_by")
+        updates["sections"] = new_sections
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         res = await db.price_tiers.update_one({"id": tier_id}, {"$set": updates})

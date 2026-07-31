@@ -28,7 +28,14 @@ ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
 
 # Production files ALLOWED to reference the tag: run_archive owns the
 # fixture_runs query surface; branding exposes the admin endpoints.
+# SUPERSEDED IN PART (Howard ruled 2026-07-31, test-data hygiene): a
+# company created by any TEST PATH (TEST_* name convention or the suite's
+# "Tester's Company" derived default) IS tagged at creation — 2,332
+# untagged test companies proved the gap. services.py::create_company is
+# the ONE production site allowed to SET the tag, and only off the name
+# convention. Runs remain governed by the 2026-07-18 ruling.
 _ALLOWED_REFS = {"run_archive.py", "routes/branding.py"}
+_ALLOWED_SETTERS = {"services.py"}
 
 
 def _production_sources():
@@ -41,11 +48,24 @@ def _production_sources():
 
 def test_production_code_never_sets_the_tag():
     for rel, src in _production_sources():
+        if rel in _ALLOWED_SETTERS:
+            # ruled 2026-07-31: the company-creation convention tag —
+            # exactly one setter, gated on the TEST name convention.
+            assert 'company["test_artifact"] = True' in src, rel
+            _code = "\n".join(l for l in src.splitlines()
+                              if not l.strip().startswith("#"))
+            assert _code.count("test_artifact") == 1, (
+                f"{rel}: the tag may only be set in create_company off the "
+                "name convention — nowhere else")
+            continue
         if rel in _ALLOWED_REFS:
             # even here: query/projection only — never a $set/insert write
             assert not re.search(r'"\$set"[^)]*test_artifact', src), rel
-            assert not re.search(r'test_artifact"?\s*:\s*True', src) or \
-                re.search(r'delete_many\(\{"test_artifact": True\}\)|find\(\s*\{"test_artifact": True\}', src), rel
+            # ruled 2026-07-31: branding may tag INVITATION records off the
+            # resend.dev convention at insert — the one allowed write there.
+            _src = src.replace('record["test_artifact"] = True', "")
+            assert not re.search(r'test_artifact"?\s*:\s*True', _src) or \
+                re.search(r'delete_many\(\{"\$or"|find\(\s*\{"test_artifact": True\}', _src), rel
             continue
         assert "test_artifact" not in src, (
             f"{rel} references test_artifact — production run-creation "

@@ -84,4 +84,8 @@ async def admin_update_vero_prices(body: VeroPriceUpdate, request: Request):
     if err:
         raise HTTPException(status_code=400, detail=err)
     saved = await vero_prices.save_prices(body.tier, body.product_type, body.payload)
+    from price_age import price_stamp
+    await db.vero_prices.update_one(
+        {"tier": body.tier, "product_type": body.product_type},
+        {"$set": price_stamp()})
     return saved

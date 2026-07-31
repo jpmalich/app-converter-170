@@ -94,4 +94,8 @@ async def admin_update_mezzo_prices(body: MezzoPriceUpdate, request: Request):
     saved = await mezzo_prices.save_prices(
         body.tier, body.product_type, body.base_prices, body.adder_prices
     )
+    from price_age import price_stamp
+    await db.mezzo_prices.update_one(
+        {"tier": body.tier, "product_type": body.product_type},
+        {"$set": price_stamp()})
     return saved

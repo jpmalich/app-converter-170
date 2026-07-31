@@ -73,9 +73,10 @@ def test_two_story_hip_roof_downspout_lf(auth_session):
     lines = data["lines"]
     ds = _gutter(lines, 'Downspout 6"')
     assert ds is not None, "Downspout 6\" line missing"
-    # 4 downspouts × (18+3=21) drop = 84 LF (per implementation: max(2, ceil(100/25))=4)
-    assert ds["qty"] == 84, f"expected 84 LF, got {ds['qty']}"
-    assert ds["unit"] == "LF"
+    # SALES UNIT (ruled 2026-07-31): 4 downspouts × 21 LF drop = 84 LF
+    # → ceil(84/10) = 9 × 10' sticks
+    assert ds["qty"] == 9, f"expected 9 sticks, got {ds['qty']}"
+    assert ds["unit"] == "Stick"
     print("DOWNSPOUT 2-STORY:", ds["qty"], ds.get("note", ""))
 
 
@@ -176,8 +177,8 @@ def test_one_story_fallback_downspout_drop(auth_session):
     data = _post_map(auth_session, {"eaves_lf": 100, "_ai_story_count": 1})
     ds = _gutter(data["lines"], 'Downspout 6"')
     assert ds is not None
-    # 4 downspouts × 12 = 48
-    assert ds["qty"] == 48, f"expected 48 LF, got {ds['qty']}"
+    # 4 downspouts × 12 = 48 LF → 5 × 10' sticks (ruled 2026-07-31)
+    assert ds["qty"] == 5, f"expected 5 sticks, got {ds['qty']}"
 
 
 def test_two_story_fallback_downspout_drop(auth_session):
@@ -185,7 +186,8 @@ def test_two_story_fallback_downspout_drop(auth_session):
     data = _post_map(auth_session, {"eaves_lf": 100, "_ai_story_count": 2})
     ds = _gutter(data["lines"], 'Downspout 6"')
     assert ds is not None
-    assert ds["qty"] == 84, f"expected 84 LF, got {ds['qty']}"
+    # 4 downspouts × 21 = 84 LF → 9 × 10' sticks (ruled 2026-07-31)
+    assert ds["qty"] == 9, f"expected 9 sticks, got {ds['qty']}"
 
 
 def test_no_height_data_falls_back_to_12(auth_session):
@@ -193,7 +195,8 @@ def test_no_height_data_falls_back_to_12(auth_session):
     data = _post_map(auth_session, {"eaves_lf": 100})
     ds = _gutter(data["lines"], 'Downspout 6"')
     assert ds is not None
-    assert ds["qty"] == 48, f"expected 48 LF (4×12), got {ds['qty']}"
+    # 48 LF → 5 × 10' sticks (ruled 2026-07-31)
+    assert ds["qty"] == 5, f"expected 5 sticks (4×12 LF), got {ds['qty']}"
 
 
 # ---------------------------------------------------------------------------

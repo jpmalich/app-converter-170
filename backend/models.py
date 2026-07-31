@@ -23,6 +23,10 @@ class CatalogItem(BaseModel):
     mat: float
     lab: float
     ami_part: Optional[str] = None  # Supplier SKU for the material list / ordering
+    # PRICE AGE (ruled 2026-07-31): stamped server-side on every human
+    # price write; seed syncs never stamp. Optional so old docs load.
+    price_changed_at: Optional[str] = None
+    price_changed_by: Optional[str] = None
 
 
 class CatalogSection(BaseModel):
@@ -60,6 +64,9 @@ class BrandingUpdate(BaseModel):
     supplier_tagline: Optional[str] = None
     supplier_logo_url: Optional[str] = None
     default_pricing_mode: Optional[str] = None
+    # PRICE AGE (ruled 2026-07-31): rows whose price is older than this
+    # threshold get the stale chip on the admin surfaces.
+    stale_price_days: Optional[int] = None
 
 
 class InviteContractorIn(BaseModel):
