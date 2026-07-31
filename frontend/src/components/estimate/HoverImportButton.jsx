@@ -402,14 +402,22 @@ export default function HoverImportButton({ est, update, save }) {
         });
         added += 1;
       } else {
-        nextLines[idx] = {
-          ...nextLines[idx],
-          qty: ln.qty,
-          // Preserve raw_qty when present so future waste-% changes
-          // recompute correctly. null clears prior raw_qty for items
-          // that re-imported as non-cut-prone (rare).
-          raw_qty: ln.raw_qty ?? null,
-        };
+        const cur = nextLines[idx];
+        if (cur.qty_src === "human") {
+          // HUMAN QTY IS ABSOLUTE (R6 ruled 2026-07-31): re-import never
+          // clobbers a hand-typed quantity — the fresh derived value is
+          // stamped for the "yours · derived" chip instead.
+          nextLines[idx] = { ...cur, derived_qty: ln.qty };
+        } else {
+          nextLines[idx] = {
+            ...cur,
+            qty: ln.qty,
+            // Preserve raw_qty when present so future waste-% changes
+            // recompute correctly. null clears prior raw_qty for items
+            // that re-imported as non-cut-prone (rare).
+            raw_qty: ln.raw_qty ?? null,
+          };
+        }
         updated += 1;
       }
     }

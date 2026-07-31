@@ -87,6 +87,35 @@ export default function SettingsRow({ est, update, save }) {
     if (save) {
       await save({ ...est, ...patch });
       window.dispatchEvent(new Event("lp-flag-checklist-changed"));
+      // ONE SHARED REBUILD (ruled 2026-07-31): siding-kind specs re-derive
+      // server-side through the same emitter LP uses. The patch rides the
+      // call so the rebuild never reads a stale autosave.
+      if (est.kind === "siding") {
+        try {
+          const { data } = await api.post(`/estimates/${est.id}/rederive`, {
+            trigger: "spec-save", ...patch,
+          });
+          if (Array.isArray(data?.lines)) update({ lines: data.lines });
+        } catch {
+          /* no measurements yet — spec saved; derives on import */
+        }
+      }
+    }
+  };
+  // Manual trigger (Howard ruled 2026-07-31): a rule change landing AFTER
+  // import reaches a stored estimate only through a control the
+  // contractor can press — nothing automatic fires when no spec moved.
+  const rederiveNow = async () => {
+    try {
+      const { data } = await api.post(`/estimates/${est.id}/rederive`, { trigger: "manual" });
+      if (Array.isArray(data?.lines)) update({ lines: data.lines });
+      const kept = (data?.human_preserved || []).length;
+      toast.success(
+        `Re-derived from stored measurements${kept ? ` — ${kept} hand-typed qty preserved (yours · derived shown)` : ""}`
+      );
+      window.dispatchEvent(new Event("lp-flag-checklist-changed"));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Re-derive failed");
     }
   };
   const mode = est.pricing_mode || "margin";
@@ -226,8 +255,19 @@ export default function SettingsRow({ est, update, save }) {
               list prints the chosen value on the line. New specs join this
               box; they do not get their own panels. */}
           <div className="mt-4 pt-4 border-t border-[var(--border)]" data-testid="trade-spec-group">
-            <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-              Trade specs
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
+                Trade specs
+              </div>
+              <button
+                type="button"
+                className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider border border-[var(--border)] hover:bg-[var(--bg-app)]"
+                onClick={rederiveNow}
+                data-testid="rederive-now-btn"
+                title="Replay the current derivation rules over the stored measurements — pulls in rule changes that landed after import. Hand-typed quantities always survive."
+              >
+                Re-derive material list
+              </button>
             </div>
             <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2 mt-3">
               {t("est.overhang")}
@@ -247,32 +287,37 @@ export default function SettingsRow({ est, update, save }) {
             <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
               {t("est.overhangHint")}
             </p>
+            {(est.kind === "lp_smart" || est.kind === "siding") && (
+              /* FASCIA WIDTH (ruled 2026-07-29; R1 extended to siding-kind
+                 2026-07-31): on LP it picks the 440 board width; on
+                 Vinyl/Ascend it governs the .019 coil divisor — ≤10" the
+                 24" roll rips lengthwise for 100 LF, over 10" it covers
+                 50 LF. Same spec, every family. */
+              <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                  {est.kind === "lp_smart" ? "Fascia width — 440 Series" : "Fascia width"}
+                </div>
+                <select
+                  className="input h-9 text-sm"
+                  value={est.fascia_width_in ?? 8}
+                  onChange={(e) => saveSpec({ fascia_width_in: Number(e.target.value) })}
+                  data-testid="fascia-width-select"
+                >
+                  <option value={4}>4"</option>
+                  <option value={6}>6"</option>
+                  <option value={8}>8" (default)</option>
+                  <option value={10}>10"</option>
+                  <option value={12}>12"</option>
+                </select>
+                <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                  {est.kind === "lp_smart"
+                    ? 'Contractor call-out — no derivation. Picks the 440 board width; the material list prints the width on the line. Re-derives live.'
+                    : 'Governs .019 coil coverage: ≤10" the 24" roll rips in half for 100 LF/roll; over 10" one roll covers 50 LF. Re-derives live.'}
+                </p>
+              </div>
+            )}
             {est.kind === "lp_smart" && (
               <>
-                {/* FASCIA WIDTH (ruled 2026-07-29): contractor call-out,
-                    WIDTH ONLY inside the 440 Series. Changes WHICH SKU gets
-                    ordered — the material list prints series + width. */}
-                <div className="mt-4 pt-4 border-t border-[var(--border)]">
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                    Fascia width — 440 Series
-                  </div>
-                  <select
-                    className="input h-9 text-sm"
-                    value={est.fascia_width_in ?? 8}
-                    onChange={(e) => saveSpec({ fascia_width_in: Number(e.target.value) })}
-                    data-testid="fascia-width-select"
-                  >
-                    <option value={4}>4"</option>
-                    <option value={6}>6"</option>
-                    <option value={8}>8" (default)</option>
-                    <option value={10}>10"</option>
-                    <option value={12}>12"</option>
-                  </select>
-                  <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Contractor call-out — no derivation. Picks the 440 board width; the material
-                    list prints the width on the line. Re-derives live.
-                  </p>
-                </div>
                 {/* BATTEN SPACING (ruled 2026-07-29): 12/16/24 o.c., default
                     12" — 8" retired. The batten line note names the delta
                     when spacing moves off default. */}

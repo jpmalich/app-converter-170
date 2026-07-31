@@ -2037,7 +2037,10 @@ _PROFILE_SKU_MAP: dict[tuple[str, str], tuple[str, str, float]] = {
     # ---- Vinyl tab — Charter Oak family ------------------------------
     ("lap",          "vinyl"):    ('Charter Oak Standard color Dutch Lap 4.5" .046', "SQ", 100.0),
     ("dutch_lap",    "vinyl"):    ('Charter Oak Standard color Dutch Lap 4.5" .046', "SQ", 100.0),
-    ("shake",        "vinyl"):    ('Pelican Bay Shakes 9"',                          "SQ", 100.0),
+    # R3 (Howard ruled 2026-07-31): Pelican Bay sells by the HALF SQUARE —
+    # 13 pcs per 1/2 SQ, one fixed exposure, no reveal choice. qty derives
+    # in half squares; whole-unit rounding lands on whole half squares.
+    ("shake",        "vinyl"):    ('Pelican Bay Shakes 9"',                          "1/2 SQ", 50.0),
     ("board_batten", "vinyl"):    ('vertical board and batten Standard color 7"',   "SQ", 100.0),
     ("vertical",     "vinyl"):    ('vertical board and batten Standard color 7"',   "SQ", 100.0),
     # ---- Ascend tab --------------------------------------------------
@@ -2255,6 +2258,9 @@ def _profile_siding_lines(measurements: dict) -> list[dict]:
             if qty <= 0:
                 continue
             _note = _composition_note(family, sqft)
+            if family == "shake" and tab == "vinyl":
+                _note += (" · 13 pcs per 1/2 SQ — ordered by the half square, "
+                          "whole half squares (R3 ruled 2026-07-31)")
             if _waste_src == "family default":
                 _note += f" · waste {_waste * 100:g}% (family default)"
             if tab == "lp_smart" and lp_formulas.is_enabled():
@@ -2699,9 +2705,16 @@ def _cut_prone_line(line: dict) -> bool:
         return True
     if section in ("lp smart siding", "lp smartside soffit"):
         return True
-    if section == "vinyl soffit with siding" and "charter oak soffit" in name:
+    # D8 (found by the e2e spec journey, 2026-07-31): the real row is
+    # "Soffit & fascia Charter Oak Standard Color" — the old
+    # "charter oak soffit" substring matched NOTHING and the sealed
+    # area-goods rule (soffit panels take field waste) never fired.
+    if (section == "vinyl soffit with siding" and "charter oak" in name
+            and "j-channel" not in name):
         return True
-    if name in ("house wrap", "raindrop house wrap"):
+    # D2 (parity audit 2026-07-31): the Ascend catalog row is named
+    # "RainDrop" — the fuller name never shipped. Keep all three.
+    if name in ("house wrap", "raindrop house wrap", "raindrop"):
         return True
     if name == '3/8" fan fold' or "fan fold" in name:
         return True
@@ -2847,7 +2860,10 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
                     l[k] = old[k]
             # Human-typed quantities survive the rebuild verbatim —
             # mixed-material jobs are human choices, never residue.
+            # "yours: X · derived: Y" (ruled 2026-07-31): the fresh derived
+            # value is stamped so the UI names both numbers.
             if (old.get("qty_src") or "") == "human":
+                l["derived_qty"] = l.get("qty")
                 l["qty"] = old.get("qty")
                 l["raw_qty"] = old.get("raw_qty")
                 l["qty_src"] = "human"
@@ -2940,6 +2956,87 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
             l["lab"] = 0.0
             l["lab_src"] = "pending" if key in MISC_LABOR_ROWS else None
     return tab_lines, scoped
+
+
+@router.post("/estimates/{est_id}/rederive")
+async def rederive_estimate(
+    est_id: str, payload: dict | None = None,
+    user: dict = Depends(get_current_user),
+):
+    """ONE SHARED REBUILD, EVERY FAMILY (Howard ruled 2026-07-31 — parity
+    audit). The SAME rebuild_lp_tab_lines that serves hover-lp-run and
+    lp-package/materialize now serves siding-kind (Vinyl + Ascend) off the
+    estimate's stored measurements. This is BOTH triggers: the automatic
+    one (spec saves) and the MANUAL one — a rule change landing after
+    import reaches stored estimates only through this door.
+    Coverage: Vinyl · Ascend · LP (LP path unchanged — same function).
+    Human-typed quantities survive absolutely; overridden lines carry
+    derived_qty for the "yours: X · derived: Y" surface."""
+    if db is None:
+        raise HTTPException(status_code=500, detail="Database unavailable")
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
+         "color_tier": 1, "shake_reveal_in": 1, "lp_colors": 1,
+         "batten_spacing_in": 1, "fascia_width_in": 1,
+         "panel_size": 1, "wrap_trim_width_in": 1,
+         "window_wrap_color": 1, "soffit_fascia_color": 1,
+         "lp_flag_checklist": 1, "hover_measurements": 1,
+         "waste_pct": 1, "default_siding_profile": 1, "lines": 1})
+    if est is None:
+        raise HTTPException(status_code=404, detail="Estimate not found")
+    kind = est.get("kind") or "siding"
+    if kind not in ("siding", "lp_smart"):
+        raise HTTPException(status_code=400,
+                            detail="Re-derive covers siding-kind (Vinyl/Ascend) and lp_smart-kind estimates")
+    base = est.get("hover_measurements") or {}
+    if not base:
+        raise HTTPException(status_code=409,
+                            detail="No stored measurements — import a HOVER/Blueprint first; re-derive replays the rules over the saved measurements")
+    # Live-value overrides (race guard): the client may pass the spec it
+    # just changed so the rebuild never reads a stale autosave.
+    for k in ("overhang_in", "porch_ceilings", "fascia_width_in",
+              "batten_spacing_in", "panel_size", "wrap_trim_width_in",
+              "shake_reveal_in", "color_tier", "waste_pct"):
+        if payload is not None and payload.get(k) is not None:
+            est[k] = payload[k]
+    profile = est.get("default_siding_profile") if kind == "lp_smart" else None
+    if kind == "lp_smart" and payload is not None and payload.get("profile"):
+        from routes.lp_package_routes import _DEFAULT_PROFILES
+        if payload["profile"] not in _DEFAULT_PROFILES:
+            raise HTTPException(status_code=422,
+                                detail=f"profile must be one of {_DEFAULT_PROFILES}")
+        profile = payload["profile"]
+    waste_field = float(est.get("waste_pct") or 0)
+    prev_lines = est.get("lines") or []
+    tab_lines, scoped = await rebuild_lp_tab_lines(
+        est_id=est_id, company_id=user["company_id"],
+        base_measurements=dict(base), est=est,
+        profile=profile, waste_field=waste_field)
+    if kind == "siding":
+        # Siding-kind door writes ONLY its own tabs; every other tab's rows
+        # carry verbatim. Hand-filled rows (blind rows, legacy pre-qty_src)
+        # with quantity survive verbatim — nothing hand-typed is ever lost.
+        derived_va = [l for l in tab_lines
+                      if (l.get("tab") or "vinyl") in ("vinyl", "ascend")]
+        keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in derived_va}
+        carry = [l for l in prev_lines
+                 if (l.get("tab"), l.get("section"), l.get("name")) not in keys
+                 and ((l.get("tab") or "vinyl") not in ("vinyl", "ascend")
+                      or (l.get("qty") or 0) > 0)]
+        tab_lines = derived_va + carry
+    await db.estimates.update_one(
+        {"id": est_id},
+        {"$set": {"lines": tab_lines, "hover_measurements": scoped}})
+    from estimate_events import log_estimate_event
+    await log_estimate_event(est_id, "estimate.rederived", {
+        "kind": kind, "profile": profile, "waste_pct": waste_field,
+        "by": user.get("email"), "trigger": (payload or {}).get("trigger") or "manual",
+    })
+    preserved = [l.get("name") for l in tab_lines
+                 if (l.get("qty_src") or "") == "human" and l.get("derived_qty") is not None]
+    return {"ok": True, "kind": kind, "lines": tab_lines,
+            "human_preserved": preserved}
 
 
 @router.post("/estimates/{est_id}/hover-lp-run")

@@ -1,50 +1,25 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 import { porchCeilingTotalSqft } from "@/components/estimate/PorchCeilingsCard";
 
-// Iter 78ai/78aj/78ak — Auto-recalculate soffit material qty + Porch
-// Ceiling labor rows when the contractor changes the Eave Overhang
-// field OR edits any porch ceiling dimension.
+// OVERHANG / PORCH RECALC — server-side (D4+D5 fixed, Howard ruled
+// 2026-07-31). The hook's own derivation math is RETIRED: the hard-coded
+// LP_WASTE = 1.10 was a second waste emitter and the qty writes ignored
+// qty_src. Overhang/porch changes now call the ONE shared rebuild
+// (POST /estimates/{id}/rederive) — the same emitter that serves import,
+// spec saves and the manual button, every family. Human-typed quantities
+// survive absolutely (server stamps derived_qty for the chip).
 //
-// Behaviour:
-//   • Fires only when overhang OR porch-ceiling-total actually changes.
-//   • Recomputes qty for 3 soffit rows (Charter Oak + LP Vented + LP
-//     Closed) using `eaves_lf` + `rakes_lf` cached on
-//     `est.hover_measurements` PLUS the live porch ceiling total.
-//   • Recomputes qty for 2 Porch Ceiling section rows:
-//       - "With or without siding Charter Oak"  (sqft)
-//       - "Wrap porch beam"  (LF = sum of length + 2 × width per porch)
-//     Lines are AUTO-ADDED to est.lines using catalog mat/lab when
-//     they don't exist yet and porchTotalSqft > 0. When porchTotal
-//     goes back to 0, qty is set to 0 (line stays so contractor can
-//     manually re-edit if they want).
-//   • If there's neither HOVER measurement data NOR porches, no-op.
-//   • Single toast summarising what was recalculated.
+// The two Porch Ceiling labor rows (Charter Oak White + beam wrap) are
+// NOT register-derived — they stay client-managed here, with the human
+// guard applied.
 
-const CHARTER_OAK_SOFFIT = "Soffit & fascia Charter Oak Standard Color";
-const LP_VENTED = "38 Series Soffit 16 x 16 Vented";
-const LP_CLOSED = "38 Series Soffit 16 x 16 Closed";
-
-// Iter 78ak — Porch Ceiling catalog row names (exact strings from
-// catalog_seed.py).
-// Iter 79 (Feb 2026): Howard restructured Porch Ceiling pricing —
-// renamed "With or without siding Charter Oak" (SQ FT, ~$2/sqft) to
-// "Charter Oak Soffit White" (PCS, ~$20/piece). qty is now PIECES
-// (porch_sqft ÷ 10) instead of raw sqft. Beam wrap stays in LF.
 const PORCH_CHARTER = "Charter Oak Soffit White";
 const PORCH_BEAM = "Wrap porch beam";
 const PORCH_SECTION = "Porch Ceiling";
+const CHARTER_OAK_SQFT_PER_PC = 10.0;
 
-// PDF coverage rates — must mirror `backend/lp_smartside_formulas.py`
-// and the legacy Vinyl/Ascend formulas in `backend/routes/hover.py`.
-const LP_SOFFIT_SQFT_PER_PC = 21.3;     // 16" Soffit panel (Howard's default)
-const LP_WASTE = 1.10;                   // 10% waste + ceil
-const CHARTER_OAK_SQFT_PER_PC = 10.0;    // 10" exposure × 12' panel
-
-// Iter 78ak — Beam wrap LF per porch. Convention: porch is rectangular
-// with the long side abutting the house wall (no beam), so beam wrap
-// covers the front edge (length) + the two short sides (2 × width).
-// Howard's typical 22'×10' porch → 22 + 2×10 = 42 LF of beam wrap.
 function porchBeamWrapLF(porches) {
   if (!Array.isArray(porches)) return 0;
   return porches.reduce((s, p) => {
@@ -55,7 +30,6 @@ function porchBeamWrapLF(porches) {
   }, 0);
 }
 
-// Look up a catalog item's price + unit so we can hydrate a new line.
 function findCatalogItem(catalog, sectionTitle, itemName) {
   for (const sec of catalog || []) {
     if (sec.title === sectionTitle || sec.section === sectionTitle) {
@@ -66,24 +40,45 @@ function findCatalogItem(catalog, sectionTitle, itemName) {
   return null;
 }
 
-function lpSoffitPcs(overhangIn, lf, extraSqft = 0) {
-  const area = (overhangIn / 12.0) * (lf || 0) + (extraSqft || 0);
-  if (area <= 0) return 0;
-  return Math.max(0, Math.ceil(area / LP_SOFFIT_SQFT_PER_PC * LP_WASTE - 1e-9));
-}
-
-function charterOakSoffitPcs(overhangIn, eavesLf, rakesLf, extraSqft = 0) {
-  const totalLf = (eavesLf || 0) + (rakesLf || 0);
-  const area = (overhangIn / 12.0) * totalLf + (extraSqft || 0);
-  if (area <= 0) return 0;
-  return Math.max(0, Math.ceil(area / CHARTER_OAK_SQFT_PER_PC - 1e-9));
+// Update/auto-add the two Porch Ceiling rows. Human-typed rows keep their
+// qty and get derived_qty stamped instead (R6 — human qty is absolute).
+function applyPorchRows(lines, targets, catalog, tab) {
+  let changed = 0;
+  let next = (lines || []).map((l) => {
+    if (!(l.name in targets)) return l;
+    const newQty = targets[l.name];
+    if (l.qty_src === "human") {
+      if (l.derived_qty === newQty) return l;
+      changed += 1;
+      return { ...l, derived_qty: newQty };
+    }
+    if (l.qty === newQty) return l;
+    changed += 1;
+    return { ...l, qty: newQty };
+  });
+  for (const name of [PORCH_CHARTER, PORCH_BEAM]) {
+    const exists = next.some((l) => l.section === PORCH_SECTION && l.name === name);
+    if (!exists && targets[name] > 0) {
+      const it = findCatalogItem(catalog, PORCH_SECTION, name);
+      if (it) {
+        next = [...next, {
+          tab,
+          section: PORCH_SECTION,
+          name,
+          unit: it.unit || (name === PORCH_BEAM ? "LF" : "PCS"),
+          mat: Number(it.mat || 0),
+          lab: Number(it.lab || 0),
+          qty: targets[name],
+        }];
+        changed += 1;
+      }
+    }
+  }
+  return { next, changed };
 }
 
 export default function useRecalcSoffitOnOverhang(est, update, catalog = []) {
-  // Track previous (overhang, porchTotal) tuple so we know when either
-  // changed and can decide what to mention in the toast.
   const prevRef = useRef(undefined);
-
   const porchTotal = porchCeilingTotalSqft(est?.porch_ceilings);
   const beamWrapLF = porchBeamWrapLF(est?.porch_ceilings);
 
@@ -93,116 +88,54 @@ export default function useRecalcSoffitOnOverhang(est, update, catalog = []) {
     const prev = prevRef.current;
     prevRef.current = { overhang: current, porchTotal };
 
-    // Skip initial mount — only react to actual changes.
     if (prev === undefined) return;
     if (prev.overhang === current && prev.porchTotal === porchTotal) return;
 
-    const m = est.hover_measurements;
-    const eavesLf = Number(m?.eaves_lf) || 0;
-    const rakesLf = Number(m?.rakes_lf) || 0;
-    const hasLf = eavesLf > 0 || rakesLf > 0;
-    const hasPorch = porchTotal > 0;
-
-    if (!hasLf && !hasPorch) {
-      const changes = [];
-      if (prev.overhang !== current) changes.push(`overhang ${prev.overhang}" → ${current}"`);
-      if (prev.porchTotal !== porchTotal)
-        changes.push(`porch ceilings ${prev.porchTotal} → ${porchTotal} sqft`);
-      toast.info(
-        `Updated ${changes.join(" + ")} — no measurements or porches yet, soffit qty will fill on next import.`
-      );
-      return;
-    }
-
-    // Soffit qty targets — porches go to the Vented (eave) row by
-    // convention since front porch ceilings sit under the main eave.
-    // Iter 79: PORCH_CHARTER unit is now PCS (was SQ FT). One piece of
-    // Charter Oak Soffit covers ~10 sqft (10" exposure × 12' panel), so
-    // qty_pcs = ceil(porch_sqft / 10).
-    const porchCharterPcs =
-      porchTotal > 0 ? Math.ceil(porchTotal / CHARTER_OAK_SQFT_PER_PC - 1e-9) : 0;
-    const targets = {
-      [CHARTER_OAK_SOFFIT]: charterOakSoffitPcs(current, eavesLf, rakesLf, porchTotal),
-      [LP_VENTED]: lpSoffitPcs(current, eavesLf, porchTotal),
-      [LP_CLOSED]: lpSoffitPcs(current, rakesLf),
-      // Iter 78ak / Iter 79 — Porch Ceiling labor rows (always in sync
-      // with porch dimensions). qty=0 just means "no porches right now".
-      [PORCH_CHARTER]: porchCharterPcs,
-      [PORCH_BEAM]: beamWrapLF,
-    };
-
-    let changed = 0;
-    let lines = (est.lines || []).map((l) => {
-      if (!(l.name in targets)) return l;
-      const newQty = targets[l.name];
-      if (l.qty === newQty) return l;
-      changed += 1;
-      return { ...l, qty: newQty };
-    });
-
-    // Iter 78ak — auto-add the 2 Porch Ceiling rows when porches just
-    // got typed in for the first time and they're not yet in est.lines.
-    const charterExists = lines.some(
-      (l) => l.section === PORCH_SECTION && l.name === PORCH_CHARTER
-    );
-    const beamExists = lines.some(
-      (l) => l.section === PORCH_SECTION && l.name === PORCH_BEAM
-    );
-    const tab = est.kind === "lp_smart" ? "lp_smart" : "vinyl";
-    const newRows = [];
-    if (!charterExists && porchTotal > 0) {
-      const it = findCatalogItem(catalog, PORCH_SECTION, PORCH_CHARTER);
-      if (it) {
-        newRows.push({
-          tab,
-          section: PORCH_SECTION,
-          name: PORCH_CHARTER,
-          unit: it.unit || "PCS",
-          mat: Number(it.mat || 0),
-          lab: Number(it.lab || 0),
-          qty: porchCharterPcs,
-        });
-      }
-    }
-    if (!beamExists && beamWrapLF > 0) {
-      const it = findCatalogItem(catalog, PORCH_SECTION, PORCH_BEAM);
-      if (it) {
-        newRows.push({
-          tab,
-          section: PORCH_SECTION,
-          name: PORCH_BEAM,
-          unit: it.unit || "LF",
-          mat: Number(it.mat || 0),
-          lab: Number(it.lab || 0),
-          qty: beamWrapLF,
-        });
-      }
-    }
-    if (newRows.length > 0) {
-      lines = [...lines, ...newRows];
-      changed += newRows.length;
-    }
-
-    // Compose toast message describing what triggered the recalc
     const reasons = [];
     if (prev.overhang !== current) reasons.push(`overhang ${prev.overhang}" → ${current}"`);
     if (prev.porchTotal !== porchTotal)
       reasons.push(`porch ceilings ${prev.porchTotal} → ${porchTotal} sqft`);
 
-    if (changed === 0) {
-      toast.info(
-        `Updated ${reasons.join(" + ")}. No matching rows to recalc — they'll fill on next HOVER/AI import.`
-      );
-      return;
-    }
+    const hasMeasurements =
+      est.hover_measurements && Object.keys(est.hover_measurements).length > 0;
+    const tab = est.kind === "lp_smart" ? "lp_smart" : "vinyl";
+    const porchTargets = {
+      [PORCH_CHARTER]: porchTotal > 0
+        ? Math.ceil(porchTotal / CHARTER_OAK_SQFT_PER_PC - 1e-9) : 0,
+      [PORCH_BEAM]: beamWrapLF,
+    };
 
-    update({ lines });
-    toast.success(
-      `${reasons.join(" + ")} — recalculated ${changed} row${changed === 1 ? "" : "s"}`
-    );
-    // ESLint disable next line — we intentionally only react to overhang
-    // or porch_total changes; including the full `est` would re-run on
-    // every keystroke in an unrelated field.
+    const run = async () => {
+      let baseLines = est.lines || [];
+      let derived = 0;
+      if (hasMeasurements) {
+        try {
+          const { data } = await api.post(`/estimates/${est.id}/rederive`, {
+            trigger: "overhang-porch",
+            overhang_in: current,
+            porch_ceilings: est.porch_ceilings || [],
+          });
+          if (Array.isArray(data?.lines)) {
+            baseLines = data.lines;
+            derived = 1;
+          }
+        } catch (e) {
+          toast.error(e?.response?.data?.detail || "Re-derive failed — soffit rows unchanged");
+        }
+      }
+      const { next, changed } = applyPorchRows(baseLines, porchTargets, catalog, tab);
+      if (!derived && changed === 0) {
+        toast.info(
+          `Updated ${reasons.join(" + ")} — no measurements or matching rows yet; qty fills on next import.`
+        );
+        return;
+      }
+      update({ lines: next });
+      toast.success(
+        `${reasons.join(" + ")} — re-derived server-side${changed ? ` + ${changed} porch row${changed === 1 ? "" : "s"}` : ""} (human-typed quantities preserved)`
+      );
+    };
+    run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [est?.overhang_in, porchTotal, beamWrapLF]);
 }

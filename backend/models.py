@@ -104,6 +104,10 @@ class EstimateLine(BaseModel):
     # recompute qty without re-running the import. Lines entered
     # manually leave this field as None.
     raw_qty: Optional[float] = None
+    # "yours: X · derived: Y" (Howard ruled 2026-07-31): when a human-typed
+    # qty survives a re-derive, the freshly derived value is stamped here so
+    # the UI can show both numbers. Never overwrites qty.
+    derived_qty: Optional[float] = None
     # PROFILE OWNS ITS FAMILY (ruled 2026-07-24): "human" marks a
     # hand-typed quantity — it survives profile rebuilds/restores verbatim.
     # Derived quantities leave this None and are owned by the derivation.

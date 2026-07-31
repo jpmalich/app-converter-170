@@ -262,6 +262,16 @@ export default function SectionAccordion({
                 human qty
               </span>
             )}
+            {l.qty_src === "human" && l.derived_qty != null &&
+              Number(l.derived_qty) !== Number(l.qty) && (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-violet-300 bg-violet-50 text-violet-800"
+                title="Your typed quantity survives every re-derive — the derivation's fresh number is shown for comparison"
+                data-testid={`yours-derived-${section.title}-${l.name}`}
+              >
+                yours: {l.qty} · derived: {l.derived_qty}
+              </span>
+            )}
             {l.lab_src === "pending" && (
               <span
                 className="inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-amber-400 bg-amber-50 text-amber-800"

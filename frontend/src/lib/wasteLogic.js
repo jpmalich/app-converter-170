@@ -45,10 +45,14 @@ export function isCutProneItem(line) {
   if (section === "lp smart siding") return true;
   if (section === "lp smartside soffit") return true;
 
-  // Soffit panels (Charter Oak) — area-counted (sqft ÷ 10/pc)
+  // Soffit panels (Charter Oak) — area-counted (sqft ÷ 10/pc).
+  // D8 (2026-07-31): the real row name is "Soffit & fascia Charter Oak
+  // Standard Color" — the old "charter oak soffit" substring matched
+  // nothing and the sealed area-goods waste never fired.
   if (
     section === "vinyl soffit with siding" &&
-    name.includes("charter oak soffit")
+    name.includes("charter oak") &&
+    !name.includes("j-channel")
   ) {
     return true;
   }
@@ -57,7 +61,10 @@ export function isCutProneItem(line) {
   // cut waste at every opening, seam, and corner. Howard's request: the
   // waste % should apply to House Wrap (regular + RainDrop) the same
   // way it applies to siding panels.
-  if (name === "house wrap" || name === "raindrop house wrap") return true;
+  // Siding-kind house wrap: Vinyl "House Wrap" + Ascend "RainDrop" —
+  // D2 (parity audit 2026-07-31): the Ascend row's real catalog name is
+  // "RainDrop"; the fuller name never shipped. Keep all three.
+  if (name === "house wrap" || name === "raindrop house wrap" || name === "raindrop") return true;
 
   // Iter 78m — Fan Fold (3/8") insulation board. Same install reality
   // as House Wrap: full-coverage, cut around openings + corners.

@@ -381,7 +381,8 @@ ITEM_META = {
     'Charter Oak Architectural color Dutch Lap 4.5" .046': ("SQ", 0),
     'vertical board and batten Standard color 7"': ("SQ", 0),
     'vertical board and batten Architectural color 7"': ("SQ", 0),
-    'Pelican Bay Shakes 9"': ("SQ", 0),
+    # R3 (Howard ruled 2026-07-31): shake sells by the HALF SQUARE (13 pcs).
+    'Pelican Bay Shakes 9"': ("1/2 SQ", 0),
     'Ascend Composite Lap Siding 7"': ("SQ", 0), 'Ascend Composite B&B 12"': ("SQ", 0),
     'Ascend 3.5" Outside Corner  - MATTE': ("PCS", 0), 'Ascend 5.5" Outside Corner  - MATTE': ("PCS", 0),
     "Inside Corners": ("PCS", 0), "Ascend - 5.5\" Trim  (16' length)": ("PCS", 0),
@@ -642,7 +643,8 @@ IDENTICAL_PRICES = {
     # four tiers — sheet-confirmed intentional (whole Pelican Bay section is
     # flat). Never clap Starter's 7.64.
     'Pelican Bay Shake Starter': 13.99,
-    'Pelican Bay Shakes 9"': 419.94,
+    # R3 ruled 2026-07-31: unit moved SQ → 1/2 SQ; price follows (419.94 ÷ 2).
+    'Pelican Bay Shakes 9"': 209.97,
     'RainDrop': 30.73,
     'Shutters (louvered, raised panel) standard sizes': 114.2225,
     'Starter': 7.64,

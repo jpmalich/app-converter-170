@@ -108,6 +108,7 @@ export default function useEstimate(id) {
                 // hand-typed quantity that survives profile rebuilds.
                 // Stripping these here silently killed both on save.
                 raw_qty: saved && saved.raw_qty != null ? saved.raw_qty : null,
+                derived_qty: saved && saved.derived_qty != null ? saved.derived_qty : null,
                 qty_src: (saved && saved.qty_src) || null,
                 lab_src: (saved && saved.lab_src) || null,
                 ami_part: it.ami_part || (saved ? saved.ami_part : null) || null,
@@ -441,6 +442,7 @@ export default function useEstimate(id) {
           unit: l.unit,
           qty: l.qty,
           raw_qty: l.raw_qty ?? null,
+          derived_qty: l.derived_qty ?? null,
           qty_src: l.qty_src || null,
           lab_src: l.lab_src || null,
           mat: l.mat,

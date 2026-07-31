@@ -861,6 +861,42 @@ async def evaluate_gates(est_id: str, user: dict) -> dict:
         pkg = await lp_package_preview(est_id, None, user)
     except HTTPException:
         pkg = None
+    # R5 (Howard ruled 2026-07-31): ORDER GATE ON SIDING-KIND — same
+    # machinery as LP (the SAME _hover_mapping_contract flag generator,
+    # the SAME tiers, the SAME /flag-checklist closes), MINUS battens
+    # (vinyl and Ascend have none — DIFFERENT-BY-NATURE, registered).
+    if pkg is None and (est.get("kind") or "siding") == "siding":
+        sid_doc = await db.estimates.find_one(
+            {"id": est_id},
+            {"_id": 0, "hover_measurements": 1, "lp_flag_checklist": 1})
+        hm = (sid_doc or {}).get("hover_measurements") or {}
+        if hm:
+            try:
+                _, sid_flags = _hover_mapping_contract(dict(hm), "lap")
+            except Exception:
+                sid_flags = []
+            checklist = (sid_doc or {}).get("lp_flag_checklist") or {}
+            for f in sid_flags:
+                code = f.get("code")
+                if code == "batten_wall_heights":
+                    continue  # R5: dropped — no battens on vinyl/Ascend
+                entry = checklist.get(code) or {}
+                status = ("closed" if entry.get("status") == "closed"
+                          else (f.get("status") or "open"))
+                try:
+                    tier = tier_for(code, "open_flag")
+                except KeyError:
+                    tier = "order"
+                item = {"code": code, "tier": tier,
+                        "blocking": tier == "order" and code in ORDER_BLOCKING
+                        and status != "closed",
+                        "status": status,
+                        "label": f.get("label"), "verify": f.get("verify"),
+                        **({"closed_by": entry.get("by"),
+                            "closed_at": entry.get("at"),
+                            "values": entry.get("values")}
+                           if status == "closed" else {})}
+                (order_items if tier == "order" else quote_items).append(item)
     if pkg:
         for f in pkg.get("hover_mapping_flags") or []:
             code = f.get("code")

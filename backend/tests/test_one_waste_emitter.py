@@ -43,6 +43,11 @@ RATIFIED = Path("/app/memory/ratified_money_emitters.txt")
 _P_PAREN = re.compile(r"\(\s*1(?:\.0)?\s+\+\s+")
 _P_FACTOR = re.compile(r"=\s*1\s*\+\s*max")
 _P_ADDON = re.compile(r"\(\s*wastePct\s*/\s*100")
+# D5 (parity audit 2026-07-31): a PRE-FOLDED constant (`* 1.10`,
+# `WASTE = 1.15`) evaded the signatures above while being exactly the
+# violation the rule seals — the recalc hook shipped LP_WASTE = 1.10 and
+# this detector passed. Constant-folding is now a signature.
+_P_PREFOLD = re.compile(r"[*=]\s*1\.\d+\b")
 
 
 def _ratified(scope: str) -> set[str]:
@@ -85,7 +90,7 @@ def _scan(root: Path, exts, pats, skip=()):
 def test_backend_waste_math_only_in_ratified_emitters():
     allowed = _ratified("backend-waste")
     assert allowed, "no ratified backend-waste entries — governance missing"
-    hits = _scan(BACKEND, {".py"}, [_P_PAREN, _P_FACTOR],
+    hits = _scan(BACKEND, {".py"}, [_P_PAREN, _P_FACTOR, _P_PREFOLD],
                  skip=("/tests",))
     rogue = {f: locs for f, locs in hits.items() if f not in allowed}
     assert not rogue, (
@@ -96,7 +101,7 @@ def test_backend_waste_math_only_in_ratified_emitters():
 def test_frontend_waste_math_only_in_ratified_emitters():
     allowed = _ratified("frontend-waste")
     assert allowed, "no ratified frontend-waste entries — governance missing"
-    hits = _scan(FRONTEND_SRC, {".js", ".jsx"}, [_P_PAREN, _P_FACTOR, _P_ADDON],
+    hits = _scan(FRONTEND_SRC, {".js", ".jsx"}, [_P_PAREN, _P_FACTOR, _P_ADDON, _P_PREFOLD],
                  skip=("node_modules", ".test."))
     rogue = {f: locs for f, locs in hits.items() if f not in allowed}
     assert not rogue, (
@@ -231,3 +236,37 @@ def test_family_waste_defaults_sealed_values():
     assert FAMILY_WASTE_DEFAULTS == {"lap": 10.0, "board_batten": 30.0,
                                      "shake": 15.0, "nickel_gap": 12.0}
     assert family_waste_default_pct(None) == 10.0   # vinyl/ascend lap family
+
+
+# ── D5 REGRESSION + SURFACE ASSERTION (Howard ruled 2026-07-31) ─────────
+def test_recalc_hook_carries_no_waste_constant():
+    """The overhang/porch hook's LP_WASTE = 1.10 was a SECOND WASTE
+    EMITTER this detector missed (pre-folded constant). The hook's own
+    derivation math is retired — it calls the shared rederive door."""
+    src = (FRONTEND_SRC / "lib" / "useRecalcSoffitOnOverhang.js").read_text()
+    code = "\n".join(l for l in src.splitlines()
+                     if not l.strip().startswith(("//", "*", "/*")))
+    assert "LP_WASTE" not in code
+    assert "lpSoffitPcs" not in code and "charterOakSoffitPcs" not in code
+    assert "/rederive" in code, "hook must compose through the ONE shared rebuild"
+
+
+def test_surface_golden_qty_per_family():
+    """SURFACE, not layer: the qty that lands on the LINE equals the field
+    formula for one golden row per family — a rogue emitter is caught by
+    its OUTPUT, not its spelling (detector audit 2026-07-31)."""
+    from routes.hover import _bake_tab_waste
+    rows = [
+        {"tab": "vinyl", "section": "Vinyl Siding",
+         "name": 'Charter Oak Standard color Dutch Lap 4.5" .046',
+         "unit": "SQ", "qty": 20.0},
+        {"tab": "ascend", "section": "Ascend Cladding/Accessories",
+         "name": "RainDrop", "unit": "SQ", "qty": 20.0},
+        {"tab": "lp_smart", "section": "LP Smart Siding",
+         "name": '38 Series Lap 3/8" x 8" x 16\'', "unit": "PCS", "qty": 20.0},
+    ]
+    out = {l["tab"]: l for l in _bake_tab_waste([dict(r) for r in rows], 10)}
+    for fam in ("vinyl", "ascend", "lp_smart"):
+        assert out[fam]["qty"] == 22.0 and out[fam]["raw_qty"] == 20.0, (
+            f"{fam}: line qty must equal ceil(raw × 1.10) — one rule, "
+            f"three families, got {out[fam]}")

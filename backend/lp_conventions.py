@@ -510,3 +510,58 @@ RETIRED_LABOR_DEFAULTS = {
     "cap single garage door": {100.0, 138.0},
     "clean up/ haul away job debris": {150.0, 334.0},
 }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# TRADE-SPEC FAMILY REGISTER (Howard ruled 2026-07-31 — parity audit).
+# ONE MECHANIC, THREE FAMILIES: every trade spec names the families it
+# governs. A family-specific spec is a DEFECT unless registered here as
+# DIFFERENT-BY-NATURE with the reason recorded. Pinned by
+# test_e2e_spec_journey_2026_07_31.py — an entry without families or a
+# nature-reason fails the suite.
+# ═══════════════════════════════════════════════════════════════════════
+TRADE_SPEC_FAMILY_REGISTER = {
+    "overhang_in": {
+        "families": ("vinyl", "ascend", "lp_smart"), "ruled": "2026-07-31",
+        "reason": "soffit depth term on every family's soffit derivation"},
+    "porch_ceilings": {
+        "families": ("vinyl", "ascend", "lp_smart"), "ruled": "2026-07-31",
+        "reason": "porch sqft folds into every family's soffit derivation"},
+    "fascia_width_in": {
+        "families": ("vinyl", "ascend", "lp_smart"), "ruled": "2026-07-31",
+        "reason": ("R1 — governs the .019 coil divisor on vinyl/Ascend "
+                   "(≤10\" → 24\" roll ripped = 100 LF/roll; >10\" → 50) and "
+                   "the 440-Series board width on LP")},
+    "batten_spacing_in": {
+        "families": ("lp_smart",), "ruled": "2026-07-31",
+        "different_by_nature": (
+            "Ascend Composite B&B is a panel with the batten look "
+            "integrated — no separate batten strip exists on an Ascend "
+            "(or vinyl) job, ever; the 190-Series strip is LP-only")},
+    "shake_reveal_in": {
+        "families": ("lp_smart",), "ruled": "2026-07-31",
+        "different_by_nature": (
+            "vinyl shake (Pelican Bay 9\") has ONE fixed exposure — no "
+            "reveal choice; it derives at 13 pcs per 1/2 SQ and orders by "
+            "the half square (R3)")},
+    "panel_size": {
+        "families": ("lp_smart",), "ruled": "2026-07-31",
+        "different_by_nature": (
+            "picks between 38-Series 4×10 / 4×8 sheet SKUs; vinyl and "
+            "Ascend siding is SQ-coverage, not sheet-picked (R4)")},
+    "wrap_trim_width_in": {
+        "families": ("lp_smart",), "ruled": "2026-07-31",
+        "different_by_nature": (
+            "picks the 540-Series board width; vinyl wraps openings with "
+            "coil, not boards (R4)")},
+    "lp_soffit_type": {
+        "families": ("lp_smart",), "ruled": "2026-07-31",
+        "different_by_nature": (
+            "steers the two-SKU LP soffit split (Vented/Closed); vinyl "
+            "soffit is a single Charter Oak row (R4)")},
+    "color_tier": {
+        "families": ("vinyl",), "ruled": "2026-07-28",
+        "different_by_nature": (
+            "price tiers exist for vinyl only (Howard ruled 2026-07-28); "
+            "Ascend and LP SmartSide have none")},
+}
