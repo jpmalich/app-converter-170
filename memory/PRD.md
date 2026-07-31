@@ -1,5 +1,55 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## WRAP ROLLS + TRANSPOSITION CATCH + BLIND ROW NOTES + SPANISH REPORT (2026-07-31, a75f50a+)
+- **WRAP ROLL CONVERSION LANDED (cross-corrected)**: Howard's price-page
+  entry landed TRANSPOSED (HW $336.13 / RD $119.11, stamped 11:57 UTC, all
+  4 tiers) — caught by his 31.5-SQ sanity check BEFORE converting; he ruled
+  CROSS-CORRECT AND GO. Landed: House Wrap ROLL 9.00 SQ/roll $119.11 ·
+  RainDrop ROLL 11.25 SQ/roll $336.13 (two divisors, constants in
+  hover.py); unit+price atomic per doc; mapping emits fractional rolls,
+  the ONE waste emitter ceils on the sales unit. 11 estimate lines
+  converted, ALL UP (+$1,341.51), one named qty+dollar delta per line.
+  **HELD + FLAGGED: est 786ff854 '3 degree rd' RainDrop 45 SQ = exactly
+  4.0 rolls moves −$38.33 (new roll price is −2.8%/SQ vs old) — held per
+  Howard's stop rule, awaiting his word.** Migration
+  migrate_2026_07_31_wrap_rolls.py receipted; pre-heal backups at
+  memory/backups/20260731_120500_*. Pins test_wrap_rolls_2026_07_31.py
+  (incl. the 31.5 SQ → 4 rolls $476.44 check + only-up-or-holds).
+  Print verified through the REAL builder: "House Wrap ROLL 3" /
+  "RainDrop ROLL 3" — never SQ.
+- **TRANSPOSITION GUARD SIZED (report only)**:
+  memory/price_transposition_guard_report_2026_07_31.md — diff-preview
+  magnitude gate (+% column, ×3 confirm-per-row) ~0.5d · crossed-pair
+  detector ~0.5d · single-cell tier-editor gate ~0.5d. Awaits ruling.
+- **BLIND ROW NOTES SHIPPED**: `contractor_note` on every line (declared
+  model field, 500-char bound) — the ~39 hand-filled rows' only
+  annotation. HUMAN-OWNED: survives every re-derive (rebuild inherits it
+  like mat/lab), prints on the material list under the row ("✎ … —
+  contractor note", EN+ES). UI: +NOTE chip on every row (SectionAccordion,
+  testids contractor-note-btn/-input/-block/-text). **FOUND + SEALED the
+  FRONTEND silent-strip halves while building: buildPayload's whitelist
+  AND the catalog merge were dropping note/_waste_included/qty_pending on
+  every browser autosave/reload.** Pins
+  test_blind_row_notes_2026_07_31.py (11). NOTE: LP-native printed list
+  composes from the derived package (one-surface rule) and never carried
+  hand-filled rows — notes print wherever est.lines print.
+- **SPANISH REPORT DELIVERED (report only)**:
+  memory/spanish_translation_report_2026_07_31.md — ~70% of the
+  contractor journey ES-ready; NOTHING stops an EN-only string today;
+  **the SKU-never-translates pin DOES NOT EXIST and the rule is breached
+  at render (ITEMS_ES translates 84 catalog row names incl. AMI-numbered
+  SKUs)** — ruling needed (verbatim-names vs EN-name+ES-descriptor);
+  total ~5–8 days contractor-facing.
+- Three-unit staleness (Howard's check): Fan Fold Bundle $22.12 ·
+  Downspout Stick $28.00 · Nails BOX $81.63 — all carry MIGRATION-IMPLIED
+  prices (old per-unit × pack), zero human price-page entries since
+  (stamps empty). FLAGGED: if the new price pages print different
+  bundle/stick/box dollars, these need entry — not converted over.
+- Guard: 2026-07-31 12:55 UTC · a75f50a · CLEAN · 1647 passed, 1 skipped.
+- QUEUE: Howard rules 786ff854 RainDrop hold → transposition guard build? →
+  SKU-translation ruling → ID-BASED CATALOG BINDING (back on his desk).
+
+
 ## BINDING AUDIT — HOWARD'S DEMAND CAUGHT A REAL CLASS (2026-07-30, 32a4b8b)
 - **THE BUG**: trade-spec fields were SILENTLY STRIPPED by the PUT model —
   EstimateIn lacked batten_spacing_in/fascia_width_in, so the UI "saved,"
