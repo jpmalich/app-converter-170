@@ -154,3 +154,7 @@
 - 2026-07-31 14:39 UTC · 18e7437 · GUARD-FAIL · FAILED tests/test_line_write_paths_register.py::test_w1_put_preserves_derivation_fields_verbatim
 - 2026-07-31 14:43 UTC · 8215042 · CLEAN · [tests] · 1678 passed, 1 skipped, 3 warnings in 146.05s (0:02:26)
 - 2026-07-31 15:18 UTC · 857cd6e · CLEAN · [tests] · 1693 passed, 1 skipped, 3 warnings in 216.55s (0:03:36)
+- 2026-07-31 15:40 UTC · 2228462 · GUARD-FAIL · ERROR tests/test_partial_put_clobber_class.py::test_lines_only_put_does_not_flip_kind
+- 2026-07-31 15:40 UTC · 2228462 · GUARD-FAIL · ERROR tests/test_partial_put_clobber_class.py::test_partial_put_clobbers_nothing_it_did_not_send
+- 2026-07-31 15:40 UTC · 2228462 · GUARD-FAIL · ERROR tests/test_partial_put_clobber_class.py::test_explicitly_sent_fields_still_write
+- 2026-07-31 15:40 UTC · 2228462 · GUARD-FAIL · ERROR tests/test_partial_put_clobber_class.py::test_kind_is_identity_immutable_on_update
