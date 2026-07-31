@@ -35,7 +35,14 @@ ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
 # the ONE production site allowed to SET the tag, and only off the name
 # convention. Runs remain governed by the 2026-07-18 ruling.
 _ALLOWED_REFS = {"run_archive.py", "routes/branding.py"}
-_ALLOWED_SETTERS = {"services.py"}
+# EXTENDED (Howard ruled 2026-07-31, purge pre-flight): TEST_-named
+# ESTIMATES tag at creation too — routes/estimates.py::create_estimate is
+# the one estimate-side setter, gated on the customer_name convention.
+_ALLOWED_SETTERS = {"services.py", "routes/estimates.py"}
+_SETTER_LINE = {
+    "services.py": 'company["test_artifact"] = True',
+    "routes/estimates.py": 'doc["test_artifact"] = True',
+}
 
 
 def _production_sources():
@@ -49,14 +56,14 @@ def _production_sources():
 def test_production_code_never_sets_the_tag():
     for rel, src in _production_sources():
         if rel in _ALLOWED_SETTERS:
-            # ruled 2026-07-31: the company-creation convention tag —
-            # exactly one setter, gated on the TEST name convention.
-            assert 'company["test_artifact"] = True' in src, rel
+            # ruled 2026-07-31: the creation convention tags — exactly one
+            # setter per file, gated on the TEST name convention.
+            assert _SETTER_LINE[rel] in src, rel
             _code = "\n".join(l for l in src.splitlines()
                               if not l.strip().startswith("#"))
             assert _code.count("test_artifact") == 1, (
-                f"{rel}: the tag may only be set in create_company off the "
-                "name convention — nowhere else")
+                f"{rel}: the tag may only be set at the creation "
+                "convention site — nowhere else")
             continue
         if rel in _ALLOWED_REFS:
             # even here: query/projection only — never a $set write.
