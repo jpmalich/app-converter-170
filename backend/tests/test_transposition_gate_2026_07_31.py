@@ -184,11 +184,52 @@ def test_tier_editor_refuses_unconfirmed_then_obeys(gate_tier):
     assert _mat(gate_tier["id"]) == 57.0
 
 
+# ═══════════ THE THIRD DOOR — bulk bump past 15% (ruled 2026-07-31) ═════
+class TestBumpDoor:
+    def test_threshold_is_fifteen(self):
+        from price_age import BUMP_CONFIRM_THRESHOLD_PCT
+        assert BUMP_CONFIRM_THRESHOLD_PCT == 15.0
+
+    def test_45_pct_bump_refuses_without_one_confirm(self, gate_tier):
+        # Howard's shape: 4.5% fat-fingered to 45% — every row is ×1.45,
+        # invisible to the ×3 row gate; the bump door catches the batch.
+        body = {"changes": [_change(gate_tier, 14.5)], "bump_pct": 45.0}
+        r = requests.post(f"{API}/admin/pricing/apply", json=body, headers=H)
+        assert r.status_code == 409, r.text
+        assert r.json()["detail"]["bump_gate"]["threshold"] == 15.0
+        assert _mat(gate_tier["id"]) == 10.0
+
+        body["bump_confirmed"] = True
+        r = requests.post(f"{API}/admin/pricing/apply", json=body, headers=H)
+        assert r.status_code == 200 and r.json()["applied"] == 1, r.text
+        assert _mat(gate_tier["id"]) == 14.5
+
+    def test_real_range_applies_clean(self, gate_tier):
+        # 3–13% is Howard's real market — no confirm asked at 13, nor at
+        # exactly 15.0 (the rule is OVER 15%).
+        for pct, new in ((13.0, 11.3), (15.0, 11.5)):
+            r = requests.post(f"{API}/admin/pricing/apply",
+                              json={"changes": [_change(gate_tier, new)], "bump_pct": pct},
+                              headers=H)
+            assert r.status_code == 200, f"{pct}% must apply clean: {r.text}"
+
+    def test_negative_bump_gates_too(self, gate_tier):
+        r = requests.post(f"{API}/admin/pricing/apply",
+                          json={"changes": [_change(gate_tier, 8.0)], "bump_pct": -20.0},
+                          headers=H)
+        assert r.status_code == 409, "a −20% bump is the same fat-finger shape"
+
+    def test_bump_banner_lives_in_the_ui(self):
+        js = Path("/app/frontend/src/components/admin/PricingUpdatePanel.jsx").read_text()
+        for needle in ("bump-gate-banner", "bump-gate-confirm", "bump_confirmed", "bump_pct"):
+            assert needle in js, f"bump door UI missing: {needle}"
+
+
 # ═══════════ SURFACES — the red row + confirm live in the UI ════════════
 def test_diff_preview_renders_the_gate():
     js = Path("/app/frontend/src/components/admin/PricingUpdatePanel.jsx").read_text()
     for needle in ("magnitude-gate-banner", "magnitude-confirm-", "magnitude_flag",
-                   "onApply(confirmed)", "transposition-pair-banner"):
+                   "onApply(confirmed, bumpOk)", "transposition-pair-banner"):
         assert needle in js, f"diff preview must carry the gate UI: {needle}"
 
 

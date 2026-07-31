@@ -58,6 +58,12 @@ def stamp_price_change(obj: dict, who: str = "supplier-admin") -> None:
 # transposition he catches before it saves. Either way he SEES it.
 MAGNITUDE_THRESHOLD = 3.0
 
+# THE THIRD DOOR (Howard ruled 2026-07-31): his real increases run 3–13%,
+# so a legitimate bulk bump never crosses 15% — anything past it is a
+# fat-finger (4.5% → 45% is ×1.45, invisible to the ×3 row gate).
+# ANY bump over 15% asks for ONE confirm; below applies clean.
+BUMP_CONFIRM_THRESHOLD_PCT = 15.0
+
 
 def magnitude_flag(old, new) -> bool:
     """True when a price write moves past the ×3 threshold, up or down."""

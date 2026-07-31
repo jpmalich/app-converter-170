@@ -68,3 +68,14 @@ def test_purge_and_census_cover_all_test_surfaces():
     # invitations tagged at insert
     assert 'endswith("@resend.dev")' in src, \
         "resend.dev invitations must be tagged test_artifact at insert"
+
+
+def test_suite_self_cleans_its_own_residue():
+    """SUITE SELF-CLEAN (Howard ruled 2026-07-31): every run used to leave
+    ~7 tagged TEST companies. The session-end fixture deletes the run's
+    own residue — companies, users, catalogs, invitations, TEST_
+    estimates — while protected/fixture docs stay untouchable."""
+    src = (BACKEND / "tests" / "conftest.py").read_text()
+    assert "def suite_self_clean" in src and "autouse=True" in src
+    for needle in ("test_artifact", "^Tester's Company", '"protected": {"$ne": True}'):
+        assert needle in src, f"self-clean must keep covering: {needle}"

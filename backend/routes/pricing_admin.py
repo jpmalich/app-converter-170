@@ -71,6 +71,10 @@ class PriceChange(BaseModel):
 
 class ApplyIn(BaseModel):
     changes: list[PriceChange]
+    # THE THIRD DOOR (ruled 2026-07-31): a bump preview carries its
+    # percentage here; past 15% the apply fails without one confirm.
+    bump_pct: Optional[float] = None
+    bump_confirmed: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -368,6 +372,19 @@ async def apply_changes(body: ApplyIn, request: Request):
     check_admin_token(request)
     if not body.changes:
         return {"applied": 0, "refused": []}
+    # THE THIRD DOOR (Howard ruled 2026-07-31): three doors, three failure
+    # shapes — ×3 row gate, crossed-pair detector, and this: a bulk bump
+    # past 15% (real increases run 3–13%) needs ONE explicit confirm.
+    from price_age import BUMP_CONFIRM_THRESHOLD_PCT
+    if body.bump_pct is not None and abs(body.bump_pct) > BUMP_CONFIRM_THRESHOLD_PCT \
+            and not body.bump_confirmed:
+        raise HTTPException(status_code=409, detail={
+            "bump_gate": {"pct": body.bump_pct,
+                          "threshold": BUMP_CONFIRM_THRESHOLD_PCT},
+            "message": f"A {body.bump_pct:+g}% bump exceeds the 15% line — real "
+                       "increases run 3–13%. Confirm once (bump_confirmed: true) "
+                       "or re-check the percentage.",
+        })
     applied, refused = await _apply_changes([c.model_dump() for c in body.changes])
     return {"applied": applied, "refused": refused}
 

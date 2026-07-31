@@ -15,6 +15,7 @@ export default function PricingUpdatePanel({ token }) {
   const [tab, setTab] = useState("bump");        // "bump" | "upload" | "export"
   const [tiers, setTiers] = useState([]);
   const [changes, setChanges] = useState(null);  // staged preview
+  const [bumpPct, setBumpPct] = useState(null);  // set when the staged preview came from Quick Bump
   const [unmatched, setUnmatched] = useState([]);
   const [busy, setBusy] = useState(false);
 
@@ -29,12 +30,13 @@ export default function PricingUpdatePanel({ token }) {
     })();
   }, [token]);
 
-  const applyChanges = useCallback(async (confirmedKeys) => {
+  const applyChanges = useCallback(async (confirmedKeys, bumpOk) => {
     if (!changes?.length) return;
     setBusy(true);
     try {
       // TRANSPOSITION GATE (ruled 2026-07-31): rows past ×3 carry the
       // human's explicit per-row confirm — the server re-checks live.
+      // THIRD DOOR: a bump past 15% carries its one confirm.
       const keyOf = (c) => `${c.tier_id}-${c.section}-${c.name}-${c.field}`;
       const payload = changes.map((c) => ({
         ...c,
@@ -42,7 +44,7 @@ export default function PricingUpdatePanel({ token }) {
       }));
       const { data } = await axios.post(
         `${API}/admin/pricing/apply`,
-        { changes: payload },
+        { changes: payload, bump_pct: bumpPct, bump_confirmed: bumpOk === true },
         { headers: { "X-Admin-Token": token } },
       );
       toast.success(`Applied ${data.applied} price ${data.applied === 1 ? "change" : "changes"}`);
@@ -52,13 +54,15 @@ export default function PricingUpdatePanel({ token }) {
       const d = e.response?.data?.detail;
       if (d?.magnitude_gate) {
         toast.error(`${d.magnitude_gate.length} row(s) move past ×3 — confirm each red row before applying`);
+      } else if (d?.bump_gate) {
+        toast.error(d.message || `A ${d.bump_gate.pct}% bump exceeds the 15% line — confirm it first`);
       } else {
         toast.error(typeof d === "string" ? d : e.message);
       }
     } finally {
       setBusy(false);
     }
-  }, [changes, token]);
+  }, [changes, token, bumpPct]);
 
   return (
     <div className="card p-6 mt-6" data-testid="pricing-update-panel">
@@ -94,10 +98,10 @@ export default function PricingUpdatePanel({ token }) {
       </div>
 
       {tab === "bump" && (
-        <BumpForm tiers={tiers} token={token} setChanges={setChanges} setUnmatched={setUnmatched} />
+        <BumpForm tiers={tiers} token={token} setChanges={setChanges} setUnmatched={setUnmatched} setBumpPct={setBumpPct} />
       )}
       {tab === "upload" && (
-        <UploadForm token={token} setChanges={setChanges} setUnmatched={setUnmatched} />
+        <UploadForm token={token} setChanges={setChanges} setUnmatched={setUnmatched} setBumpPct={setBumpPct} />
       )}
       {tab === "export" && <ExportPanel token={token} />}
 
@@ -106,7 +110,8 @@ export default function PricingUpdatePanel({ token }) {
         <DiffPreview
           changes={changes}
           unmatched={unmatched}
-          onCancel={() => { setChanges(null); setUnmatched([]); }}
+          bumpPct={bumpPct}
+          onCancel={() => { setChanges(null); setUnmatched([]); setBumpPct(null); }}
           onApply={applyChanges}
           busy={busy}
         />
@@ -118,7 +123,7 @@ export default function PricingUpdatePanel({ token }) {
 // ---------------------------------------------------------------------------
 // Quick Bump form
 // ---------------------------------------------------------------------------
-function BumpForm({ tiers, token, setChanges, setUnmatched }) {
+function BumpForm({ tiers, token, setChanges, setUnmatched, setBumpPct }) {
   const [percent, setPercent] = useState(4.5);
   const [target, setTarget] = useState("mat");
   const [tierIds, setTierIds] = useState([]);  // [] = all
@@ -146,6 +151,7 @@ function BumpForm({ tiers, token, setChanges, setUnmatched }) {
       );
       setChanges(data.changes || []);
       setUnmatched([]);
+      setBumpPct(Number(percent));
       if (!data.changes?.length) {
         toast("No changes — current prices already match.");
       }
@@ -243,13 +249,14 @@ function BumpForm({ tiers, token, setChanges, setUnmatched }) {
 // ---------------------------------------------------------------------------
 // Upload form
 // ---------------------------------------------------------------------------
-function UploadForm({ token, setChanges, setUnmatched }) {
+function UploadForm({ token, setChanges, setUnmatched, setBumpPct }) {
   const [busy, setBusy] = useState(false);
   const fileRef = React.useRef();
 
   const onFile = async (file) => {
     if (!file) return;
     setBusy(true);
+    setBumpPct(null); // upload door — the bump gate does not apply
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -350,7 +357,7 @@ function ExportPanel({ token }) {
 // ---------------------------------------------------------------------------
 // Diff preview (shared)
 // ---------------------------------------------------------------------------
-function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
+function DiffPreview({ changes, unmatched, bumpPct, onCancel, onApply, busy }) {
   const usd = (n) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
   const keyOf = (c) => `${c.tier_id}-${c.section}-${c.name}-${c.field}`;
   // TRANSPOSITION GATE (Howard ruled 2026-07-31): rows moving past ×3
@@ -387,6 +394,11 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
     }
   }
   const total = changes.length;
+  // THIRD DOOR (ruled 2026-07-31): a bump past 15% needs ONE confirm —
+  // real increases run 3–13%; 45% is a fat-finger, not a market.
+  const bumpGated = bumpPct != null && Math.abs(bumpPct) > 15;
+  const [bumpOk, setBumpOk] = React.useState(false);
+  const locked = unconfirmed > 0 || (bumpGated && !bumpOk);
   const increases = changes.filter((c) => c.new > c.old).length;
   const decreases = changes.filter((c) => c.new < c.old).length;
 
@@ -414,16 +426,29 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
           <button
             type="button"
             className="px-3 py-1.5 bg-[var(--bar-bg)] text-white border border-[var(--border-strong)] hover:bg-black text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
-            onClick={() => onApply(confirmed)}
-            disabled={busy || total === 0 || unconfirmed > 0}
-            title={unconfirmed > 0 ? `${unconfirmed} row(s) past ×3 still need their confirm` : undefined}
+            onClick={() => onApply(confirmed, bumpOk)}
+            disabled={busy || total === 0 || locked}
+            title={locked ? "Confirm the flagged items first" : undefined}
             data-testid="diff-apply-btn"
           >
-            <Check className="w-3.5 h-3.5" /> {busy ? "Applying…" : unconfirmed > 0 ? `Confirm ${unconfirmed} red row${unconfirmed === 1 ? "" : "s"} first` : `Apply ${total}`}
+            <Check className="w-3.5 h-3.5" /> {busy ? "Applying…" : unconfirmed > 0 ? `Confirm ${unconfirmed} red row${unconfirmed === 1 ? "" : "s"} first` : bumpGated && !bumpOk ? "Confirm the bump first" : `Apply ${total}`}
           </button>
         </div>
       </div>
 
+      {bumpGated && (
+        <div className="px-4 py-3 bg-amber-100 border-b-2 border-amber-500" data-testid="bump-gate-banner">
+          <label className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-amber-900 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={bumpOk}
+              onChange={(e) => setBumpOk(e.target.checked)}
+              data-testid="bump-gate-confirm"
+            />
+            ⚠ {bumpPct > 0 ? "+" : ""}{bumpPct}% bump exceeds the 15% line — real increases run 3–13%. Confirm this is intentional.
+          </label>
+        </div>
+      )}
       {pairs.length > 0 && (
         <div className="px-4 py-3 bg-red-200 border-b-2 border-red-500" data-testid="transposition-pair-banner">
           <div className="text-xs uppercase tracking-wider font-bold text-red-900">

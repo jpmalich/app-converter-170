@@ -34,6 +34,36 @@ def _naive_utc(value):
 
 
 @pytest.fixture(scope="session", autouse=True)
+def suite_self_clean():
+    """SUITE SELF-CLEAN (Howard ruled 2026-07-31): every full run used to
+    leave ~7 tagged TEST companies for the purge tool. A suite that
+    cleans up after itself is the permanent fix — at session end, every
+    test-convention company (with its users/catalogs/estimates), tagged
+    invitation, and TEST_ estimate is deleted. Protected and
+    fixture-import docs are untouchable, same as the purge endpoint."""
+    yield
+    from pymongo import MongoClient
+    client = MongoClient(os.environ["MONGO_URL"])
+    db = client[os.environ["DB_NAME"]]
+    co_q = {"$or": [{"test_artifact": True},
+                    {"name": {"$regex": "^TEST_"}},
+                    {"name": {"$regex": "^Tester's Company"}}]}
+    co_ids = [c["id"] for c in db.companies.find(co_q, {"id": 1})]
+    if co_ids:
+        db.users.delete_many({"company_id": {"$in": co_ids}})
+        db.catalogs.delete_many({"company_id": {"$in": co_ids}})
+        db.estimates.delete_many({"company_id": {"$in": co_ids}})
+        db.companies.delete_many({"id": {"$in": co_ids}})
+    db.invitations.delete_many({"$or": [{"test_artifact": True},
+                                        {"email": {"$regex": "@resend\\.dev$"}}]})
+    db.estimates.delete_many({
+        "$or": [{"customer_name": {"$regex": "^TEST_", "$options": "i"}},
+                {"test_artifact": True}],
+        "fixture_import": {"$ne": True}, "protected": {"$ne": True}})
+    client.close()
+
+
+@pytest.fixture(scope="session", autouse=True)
 def measure_run_pollution_tripwire():
     from pymongo import MongoClient
     start = datetime.now(timezone.utc).replace(tzinfo=None)
