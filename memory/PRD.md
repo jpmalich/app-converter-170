@@ -1,5 +1,39 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## RAINDROP RELEASED + TRANSPOSITION GATE BUILT (2026-07-31, 7aa238b)
+- **786ff854 RainDrop RELEASED** on Howard's GO: 45 SQ $1,382.85 → 4 ROLL
+  $1,344.52 (−$38.33 NAMED on the line note). Every other wrap line moved
+  UP (receipts) — the wrap conversion is fully landed, no SQ rows remain.
+- **TRANSPOSITION GATE SHIPPED (Howard ruled: build)**: a price write past
+  ×3 (up or down) without an explicit human confirm FAILS.
+  - Gate lives on the price-integrity surface: price_age.py
+    (MAGNITUDE_THRESHOLD=3.0, magnitude_flag/pct/annotate_magnitude).
+    $0-basis rows exempt; zeroing a live price flags.
+  - Bulk apply (`_apply_changes`): validates EVERY row against the LIVE
+    stored value before any write; 409 names the rows; per-row
+    `confirmed: true` required; nothing half-applies; commit=true upload
+    rides the same wall.
+  - Tier editor (`admin_update_tier`): 409 + `confirm_magnitude` resend
+    after the confirm dialog.
+  - Diff preview renders flagged rows RED with the % named
+    ("$92.19 → $460.95 (+400.0%)"), banner, per-row confirm checkbox,
+    Apply locked ("Confirm N red rows first") — screenshot-verified.
+  - Pins: test_transposition_gate_2026_07_31.py (16 — incl. the Howard
+    row 11.55→336.13 = +2810.2%, live-value re-derive, both surfaces
+    refuse-then-obey, UI testids magnitude-gate-banner/magnitude-confirm-).
+- **PURGE STILL HELD** (Howard's precondition): proof + sorted list are in
+  memory/purge_isolation_report_2026_07_31.md, re-presented for his
+  one-pass ruling. COUNT RECONCILED: 2,039 companies + 146 invitations
+  were purged in the earlier 2026-07-31 session (his "500" memory);
+  today's 77 are FRESH suite residue since (each full-suite run leaves
+  ~7 tagged TEST companies — tagged at create, purge-reachable).
+  3 DEGREE (all imports) + 261 HAUGH confirmed by name on KEEP.
+- Guard: 2026-07-31 13:52 UTC · 7aa238b · CLEAN · 1668 passed.
+- QUEUE: Howard rules the purge list → ID binding authorization (board
+  otherwise clear: wrap tail landed, gate landed, blind-row notes landed,
+  Spanish report delivered).
+
+
 ## PURGE PRE-FLIGHT: ISOLATION PINNED + RULED LIST DELIVERED (2026-07-31, 3075033)
 - **NOTHING DELETED — Howard rules the list first.** Full report:
   memory/purge_isolation_report_2026_07_31.md.
