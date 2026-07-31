@@ -96,8 +96,9 @@ export default function SettingsRow({ est, update, save }) {
             trigger: "spec-save", ...patch,
           });
           if (Array.isArray(data?.lines)) update({ lines: data.lines });
-        } catch {
-          /* no measurements yet — spec saved; derives on import */
+        } catch (e) {
+          /* 409 = no measurements yet — spec saved; derives on import */
+          if (e?.response?.status !== 409) console.warn("spec-save rederive failed", e);
         }
       }
     }
