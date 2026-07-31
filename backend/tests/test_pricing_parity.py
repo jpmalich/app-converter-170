@@ -33,8 +33,10 @@ EXPECTED = [
         {"whole-sale": 7.64, "Contractor": 7.64, "Builder-Dealer": 7.64, "one-opp": 7.64},
     ),
     (
+        # R3 (Howard ruled 2026-07-31, re-ratified): unit moved SQ → 1/2 SQ;
+        # price follows the order unit (419.94 per SQ ÷ 2).
         'Pelican Bay Shakes 9"',
-        {"whole-sale": 419.94, "Contractor": 419.94, "Builder-Dealer": 419.94, "one-opp": 419.94},
+        {"whole-sale": 209.97, "Contractor": 209.97, "Builder-Dealer": 209.97, "one-opp": 209.97},
     ),
     (
         "Tear-Off",

@@ -2709,8 +2709,7 @@ def _cut_prone_line(line: dict) -> bool:
     # "Soffit & fascia Charter Oak Standard Color" — the old
     # "charter oak soffit" substring matched NOTHING and the sealed
     # area-goods rule (soffit panels take field waste) never fired.
-    if (section == "vinyl soffit with siding" and "charter oak" in name
-            and "j-channel" not in name):
+    if section == "vinyl soffit with siding" and "soffit & fascia charter oak" in name:
         return True
     # D2 (parity audit 2026-07-31): the Ascend catalog row is named
     # "RainDrop" — the fuller name never shipped. Keep all three.

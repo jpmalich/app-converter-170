@@ -63,9 +63,10 @@ def test_multi_profile_emits_one_line_per_family_per_tab():
     # Per-elevation breakdown note format
     for l in vinyl:
         assert l["note"].startswith("Per-elevation breakdown:")
-    # Qty check — Pelican Bay should be 168/100 = 1.7 SQ
+    # Qty check — R3 (Howard ruled 2026-07-31): Pelican Bay orders by the
+    # HALF SQUARE (13 pcs per 1/2 SQ) — 168 sqft ÷ 50 = 3.4 half squares
     shake_line = next(l for l in vinyl if l["name"] == 'Pelican Bay Shakes 9"')
-    assert abs(shake_line["qty"] - 1.7) < 0.05
+    assert abs(shake_line["qty"] - 3.4) < 0.05
 
 
 def test_build_lines_skips_default_when_multi_profile():

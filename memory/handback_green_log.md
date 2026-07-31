@@ -132,3 +132,7 @@
 - 2026-07-30 13:13 UTC · 442e71e · GUARD-FAIL · ERROR tests/test_lp_waste_roundtrip.py::test_raw_qty_roundtrip - requests.exc...
 - 2026-07-30 13:13 UTC · 442e71e · GUARD-FAIL · ERROR tests/test_lp_waste_roundtrip.py::test_raw_qty_optional_omitted - reque...
 - 2026-07-30 13:19 UTC · 0b05f0c · CLEAN · [tests] · 1604 passed, 1 skipped, 3 warnings in 200.59s (0:03:20)
+- 2026-07-31 00:54 UTC · 676cab7 · GUARD-FAIL · FAILED tests/test_pricing_parity.py::test_spot_check_prices_unchanged[Pelican Bay Shakes 9"-prices2]
+- 2026-07-31 00:54 UTC · 676cab7 · GUARD-FAIL · FAILED tests/test_profile_siding_lines.py::test_multi_profile_emits_one_line_per_family_per_tab
+- 2026-07-31 00:54 UTC · 676cab7 · GUARD-FAIL · FAILED tests/test_shake_composition_iter71.py::test_clean_lines_note_shows_one_owner_per_surface
+- 2026-07-31 00:54 UTC · 676cab7 · GUARD-FAIL · FAILED tests/test_waste_area_goods_only_seal.py::test_frontend_classifier_mirror_area_goods_only

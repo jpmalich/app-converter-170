@@ -280,6 +280,7 @@ def test_clean_lines_note_shows_one_owner_per_surface():
     }
     lines = _profile_siding_lines(measurements)
     shake_vinyl = next(l for l in lines if l["tab"] == "vinyl" and "Pelican" in l["name"])
-    assert shake_vinyl["qty"] == pytest.approx((139.25 + 162.1) / 100.0, abs=0.1)
+    # R3 ruled 2026-07-31: half-square order unit — sqft ÷ 50
+    assert shake_vinyl["qty"] == pytest.approx((139.25 + 162.1) / 50.0, abs=0.1)
     assert "=" in shake_vinyl["note"]           # composition is itemized
     assert "left dormer" in shake_vinyl["note"]

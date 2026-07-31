@@ -51,8 +51,7 @@ export function isCutProneItem(line) {
   // nothing and the sealed area-goods waste never fired.
   if (
     section === "vinyl soffit with siding" &&
-    name.includes("charter oak") &&
-    !name.includes("j-channel")
+    name.includes("soffit & fascia charter oak")
   ) {
     return true;
   }
