@@ -1,5 +1,44 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## PURGE FIRED + SKU PIN + PAIR DETECTOR + ID PLAN (2026-07-31, 8215042)
+- **PURGE FIRED on Howard's "fire as listed"**: 8 estimates SOFT-deleted
+  (backup memory/backups/20260731_140500_purged_estimates.json, 30-day
+  trash) + 105 test companies / 150 users / 15 invitations purged.
+  Landing EXACT as predicted: **17 estimates / 4 companies** (keeps:
+  Pro-Quote, GusGear, Pappans, ZZ Fixture). Start-count drift (81→109)
+  named: 4 guard runs × ~7 tagged TEST companies. Post-purge isolation
+  suite re-run GREEN on the real board. NOTE: the demo route re-mints its
+  protected LP Photo Demo doc (aac77586 → 72283446, route-managed).
+  **STRUCTURAL: each guard run leaves ~7 tagged companies (14 residue at
+  handback) — tagged + purge-reachable; suite self-clean is a candidate
+  ruling.**
+- **SKU NAMES NEVER TRANSLATE (ruled, landed)**: ITEMS_ES retired from
+  catalogTranslations.js; tItem returns the canonical name VERBATIM in
+  every language (alias healing kept); sections/units/colors still
+  translate; ES help stays in itemDescriptions.
+  Pins: test_sku_names_never_translate_2026_07_31.py (5, incl. a sweep
+  that no frontend module reintroduces a name-translation map).
+- **CROSSED-PAIR DETECTOR folded into the gate (ruled: yes)**:
+  price_age.detect_transpositions — among magnitude-FLAGGED rows of one
+  preview (same tier+field), pairs whose price ORDER inverted are named.
+  Howard's exact upload pinned (HW/RD as-entered → pair; cross-corrected
+  → no pair; uniform bump → never). Served on bump + upload previews;
+  red pair banner in the diff (transposition-pair-banner). Gate file now
+  26 pins.
+- **BUMP-DOOR ANSWER (no build)**: Quick Bump rides the SAME gate — its
+  preview annotates and its apply crosses _apply_changes. HONEST LIMIT:
+  a 4.5%→45% fat-finger is ×1.45, UNDER the ×3 threshold — no door
+  catches it by the ruled threshold. Howard may rule a tighter
+  bump-specific threshold if wanted.
+- **ID BINDING: plan delivered** —
+  memory/id_binding_migration_plan_2026_07_31.md. Core: the migration
+  STAMPS item_id only, never derives; self-refusing diff (any non-item_id
+  change aborts the estimate's write); unresolved rows left alone +
+  named; literal IDs in seed; pin test_id_migration_never_moves_a_number.
+  Build starts on Howard's word after he reads the plan.
+- Guard: 2026-07-31 14:43 UTC · 8215042 · CLEAN · 1678 passed.
+
+
 ## RAINDROP RELEASED + TRANSPOSITION GATE BUILT (2026-07-31, 7aa238b)
 - **786ff854 RainDrop RELEASED** on Howard's GO: 45 SQ $1,382.85 → 4 ROLL
   $1,344.52 (−$38.33 NAMED on the line note). Every other wrap line moved
