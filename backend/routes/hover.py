@@ -2870,7 +2870,7 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     for l in tab_lines:
         old = prev_idx.get((l.get("tab"), l.get("section"), l.get("name")))
         if old:
-            for k in ("mat", "lab", "adders", "ami_part"):
+            for k in ("mat", "lab", "adders", "ami_part", "contractor_note"):
                 if old.get(k) is not None:
                     l[k] = old[k]
             # Human-typed quantities survive the rebuild verbatim —

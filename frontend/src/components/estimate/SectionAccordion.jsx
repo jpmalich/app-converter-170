@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2, Lightbulb } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, Trash2, Lightbulb, StickyNote } from "lucide-react";
 import ItemHelpButton from "./ItemHelpButton";
 import { porchMathHint } from "./PorchCeilingsCard";
 import { fmt } from "@/lib/api";
@@ -185,6 +185,16 @@ export default function SectionAccordion({
   // Keyed by `${l.tab}::${l.name}` so multiple lines with the same name
   // across tabs stay independent.
   const [openAdders, setOpenAdders] = useState(() => new Set());
+  // BLIND-ROW NOTES (ruled 2026-07-31): per-row contractor note editor
+  // open-state. The note is the ONLY annotation the hand-filled manual
+  // rows have — it prints on the material list.
+  const [openNotes, setOpenNotes] = useState(() => new Set());
+  const toggleNoteOpen = (key) =>
+    setOpenNotes((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
   const toggleAddersOpen = (key) =>
     setOpenAdders((prev) => {
       const next = new Set(prev);
@@ -214,6 +224,7 @@ export default function SectionAccordion({
     const showAdderUI = sectionAdders.length > 0 && (l.qty || 0) > 0;
     const adderKey = `${l.tab}::${l.name}`;
     const isAdderOpen = openAdders.has(adderKey);
+    const isNoteOpen = openNotes.has(adderKey);
     // Map of adder.name -> saved entry so we can read qty cheaply.
     const selectedByName = new Map(lineAdders.map((a) => [a.name, a]));
     return (
@@ -294,6 +305,20 @@ export default function SectionAccordion({
                 </span>
               );
             })()}
+            <button
+              type="button"
+              onClick={() => toggleNoteOpen(adderKey)}
+              className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border transition-colors ${
+                l.contractor_note
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                  : "border-[var(--border)] bg-[var(--bg-app)] text-[var(--muted)] hover:text-[var(--ink)]"
+              }`}
+              title={t("est.note.prints")}
+              data-testid={`contractor-note-btn-${section.title}-${l.name}`}
+            >
+              <StickyNote className="w-3 h-3" />
+              {l.contractor_note ? t("est.note.chip") : t("est.note.add")}
+            </button>
           </div>
         </div>
         <div className="col-span-3 md:col-span-1 text-xs text-[var(--muted)] uppercase tracking-wider">
@@ -414,6 +439,38 @@ export default function SectionAccordion({
           {fmt(total)}
         </div>
       </div>
+      {(isNoteOpen || (l.contractor_note || "").trim()) && (
+        <div
+          className="border-b border-[var(--border)] bg-[var(--bg-app)] px-4 md:px-5 py-2"
+          data-testid={`contractor-note-block-${section.title}-${l.name}`}
+        >
+          {isNoteOpen ? (
+            <div>
+              <textarea
+                className="input w-full text-sm leading-snug min-h-[54px] py-1.5"
+                maxLength={500}
+                placeholder={t("est.note.placeholder")}
+                value={l.contractor_note || ""}
+                onChange={(e) => onField(l.tab, l.section, l.name, "contractor_note", e.target.value)}
+                data-testid={`contractor-note-input-${section.title}-${l.name}`}
+              />
+              <div className="text-[10px] text-[var(--muted)] mt-0.5">
+                ✎ {t("est.note.prints")}
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => toggleNoteOpen(adderKey)}
+              className="text-left w-full text-[11px] text-[var(--ink-2)] leading-snug"
+              title={t("est.note.prints")}
+              data-testid={`contractor-note-text-${section.title}-${l.name}`}
+            >
+              ✎ {l.contractor_note}
+            </button>
+          )}
+        </div>
+      )}
       {showAdderUI && (
         <div className="border-b border-[var(--border)] bg-[var(--surface-muted)]" data-testid={`adder-block-${l.name}`}>
           <button

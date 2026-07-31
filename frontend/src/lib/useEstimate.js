@@ -111,6 +111,17 @@ export default function useEstimate(id) {
                 derived_qty: saved && saved.derived_qty != null ? saved.derived_qty : null,
                 qty_src: (saved && saved.qty_src) || null,
                 lab_src: (saved && saved.lab_src) || null,
+                // SILENT-STRIP CLASS, MERGE LAYER (sealed 2026-07-31):
+                // this merge rebuilt fresh objects and dropped the
+                // derivation note, waste flag, and contractor note on
+                // every reload — the next autosave then wrote the loss
+                // back to the server. Every provenance field rides.
+                note: (saved && saved.note) || null,
+                contractor_note: (saved && saved.contractor_note) || null,
+                _waste_included: saved && saved._waste_included != null ? saved._waste_included : null,
+                qty_pending: saved && saved.qty_pending != null ? saved.qty_pending : null,
+                pricing_source: (saved && saved.pricing_source) || null,
+                base_item: (saved && saved.base_item) || null,
                 ami_part: it.ami_part || (saved ? saved.ami_part : null) || null,
                 // Catalog defaults — used to flag overrides in the UI.
                 defaultMat: it.mat,
@@ -188,7 +199,9 @@ export default function useEstimate(id) {
         matchLine(l, tab, section, name)
           ? {
               ...l,
-              [field]: Number(value) || 0,
+              // contractor_note is TEXT (blind-row notes, ruled
+              // 2026-07-31) — everything else on this path is numeric.
+              [field]: field === "contractor_note" ? value : Number(value) || 0,
               // LABOR IS THE CONTRACTOR'S (ruled 2026-07-24): editing a
               // labor rate marks it human — it wins over pending/
               // company bindings through every rebuild.
@@ -433,8 +446,11 @@ export default function useEstimate(id) {
       lines: (source.lines || [])
         // qty-0 rows drop (they re-materialize from the catalog merge) —
         // EXCEPT human-typed zeros: a hand-entered 0 is a choice that
-        // survives (profile-owns-family rule, 2026-07-24).
-        .filter((l) => (l.qty || 0) > 0 || l.qty_src === "human")
+        // survives (profile-owns-family rule, 2026-07-24). A row carrying
+        // a contractor note also survives at qty 0 (blind-row notes,
+        // ruled 2026-07-31 — the note must not vanish before the qty).
+        .filter((l) => (l.qty || 0) > 0 || l.qty_src === "human"
+          || (l.contractor_note || "").trim())
         .map((l) => ({
           tab: l.tab || "vinyl",
           section: l.section,
@@ -448,6 +464,17 @@ export default function useEstimate(id) {
           mat: l.mat,
           lab: l.lab,
           ami_part: l.ami_part || null,
+          // SILENT-STRIP CLASS, FRONTEND HALF (sealed 2026-07-31): this
+          // whitelist was dropping the derivation-owned line fields on
+          // every browser autosave — the backend model round-trips them
+          // (EstimateLine, sealed 2026-07-29) but only if the client
+          // SENDS them. Every derivation/provenance field rides here.
+          note: l.note ?? null,
+          contractor_note: l.contractor_note ?? null,
+          _waste_included: l._waste_included ?? null,
+          qty_pending: l.qty_pending ?? null,
+          pricing_source: l.pricing_source ?? null,
+          base_item: l.base_item ?? null,
           // Iter 36: persist selected per-line adders (windows-tab only).
           adders: Array.isArray(l.adders)
             ? l.adders.map((a) => ({

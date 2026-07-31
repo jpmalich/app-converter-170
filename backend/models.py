@@ -1,6 +1,6 @@
 """All Pydantic request/response models live here."""
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class RegisterIn(BaseModel):
@@ -125,6 +125,13 @@ class EstimateLine(BaseModel):
     # labor" state (v3 zeroing, sealed 2026-07-24 — the provisional
     # guesses retired entirely; labor is the contractor's).
     lab_src: Optional[str] = None
+    # BLIND-ROW NOTES (Howard ruled 2026-07-31): contractor-typed note on
+    # any line — the ONLY annotation mechanism the ~39 hand-filled manual
+    # rows have (they are never emitted, so no derivation note can reach
+    # them). HUMAN-OWNED: survives every re-derive; prints on the
+    # material list under the row. Declared (not extra="allow") so the
+    # silent-strip class can never eat it.
+    contractor_note: Optional[str] = Field(default=None, max_length=500)
     ami_part: Optional[str] = None  # Snapshotted at quote time so re-runs are reproducible
     # Which "tab" (product-line option) in the estimator this line belongs to.
     # "vinyl" (default — backward compat), "ascend", "lp_smart", or "windows".

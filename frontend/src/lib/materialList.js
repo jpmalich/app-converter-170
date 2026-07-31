@@ -88,13 +88,19 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
       </td></tr>` +
       items
         .map((l) => {
+          // BLIND-ROW NOTES (ruled 2026-07-31): a contractor-typed note
+          // prints under its row — the hand-filled manual rows' only
+          // annotation. Machine derivation notes do NOT print here.
+          const noteRow = (l.contractor_note || "").trim()
+            ? `<tr class="note-row"><td></td><td colspan="4" class="cell-note">✎ ${esc(l.contractor_note)} — ${lang === "es" ? "nota del contratista" : "contractor note"}</td></tr>`
+            : "";
           return `<tr class="item-row">
             <td class="cell-ami">${l.ami_part ? esc(l.ami_part) : '<span class="dim">—</span>'}</td>
             <td class="cell-desc">${esc(tItem(l.name, lang))}</td>
             <td class="cell-unit">${esc(tUnit(l.unit, lang))}</td>
             <td class="cell-num">${rawOf(l)}</td>
             <td class="cell-num cell-order">${orderOf(l)}</td>
-          </tr>`;
+          </tr>${noteRow}`;
         })
         .join("") +
       `<tr class="section-total">
@@ -304,6 +310,16 @@ export function buildMaterialListHtml({ estimate, company, branding, lang = "en"
     text-align: center;
     color: ${C.muted};
     font-size: 11.5px;
+  }
+  .materials .note-row td {
+    padding: 0 8px 7px;
+    border-bottom: 1px solid ${C.line};
+  }
+  .materials .note-row .cell-note {
+    font-size: 11px;
+    font-style: italic;
+    color: ${C.muted};
+    word-wrap: break-word;
   }
   .materials .cell-num {
     text-align: right;
