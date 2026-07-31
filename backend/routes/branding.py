@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from urllib.parse import quote as urlquote
 
-from fastapi import APIRouter, HTTPException, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 
 from config import (
     SUPPLIER_NAME,
@@ -16,7 +16,7 @@ from config import (
     SENDER_EMAIL,
 )
 from db import db, logger
-from deps import check_admin_token
+from deps import check_admin_token, get_current_user
 from models import BrandingUpdate, InviteContractorIn
 from services import get_branding
 
@@ -54,6 +54,20 @@ async def admin_purge_test_artifacts(request: Request):
     deleted = await purge_test_artifact_runs()
     logger.info("admin purge: %d test-artifact fixture run(s) deleted", deleted)
     return {"deleted": deleted}
+
+
+@router.get("/admin/branding-admin-link")
+async def admin_branding_admin_link(user: dict = Depends(get_current_user)):
+    """Owner shortcut (Howard asked 2026-07-31): the seeded supplier admin
+    account gets the token-bearing Branding Admin link served
+    server-side — no fishing the token out of .env. Gated to ADMIN_EMAIL:
+    other tenants' owners never see the supplier token."""
+    from config import ADMIN_EMAIL, SUPPLIER_ADMIN_TOKEN
+    if (user.get("email") or "").lower() != ADMIN_EMAIL.lower():
+        raise HTTPException(status_code=403, detail="Supplier admin account only")
+    if not SUPPLIER_ADMIN_TOKEN:
+        raise HTTPException(status_code=503, detail="SUPPLIER_ADMIN_TOKEN not configured")
+    return {"url": f"/branding-admin?token={urlquote(SUPPLIER_ADMIN_TOKEN)}"}
 
 
 @router.put("/admin/branding")
