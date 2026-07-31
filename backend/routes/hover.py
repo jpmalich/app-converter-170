@@ -755,6 +755,12 @@ def _apply_color_tier(lines: list, tier: str | None) -> list:
     return lines
 
 
+# SALES UNIT (Howard ruled 2026-07-31, landed after his price pages):
+# wrap underlayment sells by the ROLL. TWO constants — RainDrop and House
+# Wrap cover different squares per roll; never a shared "wrap roll" number.
+HOUSE_WRAP_SQ_PER_ROLL = 9.00
+RAINDROP_SQ_PER_ROLL = 11.25
+
 HOVER_MAPPING_SPEC = [
     # =====================================================================
     # HEADLINE SIDING — one per tab. We use HOVER's "+ Openings < 20ft²
@@ -1205,23 +1211,30 @@ HOVER_MAPPING_SPEC = [
         "tabs": ["vinyl"],
         "section": "Siding Accessories",
         "item": "House Wrap",
-        "unit": "SQ",
+        "unit": "ROLL",
+        # Fractional rolls here; the ONE waste emitter (_bake_tab_waste /
+        # applyWasteQty) bakes the field waste then ceils — whole-unit
+        # rounding happens ONLY on the sales unit (the roll).
         "extract": lambda m: round(
-            ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0,
-            1,
+            ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0))
+            / 100.0 / HOUSE_WRAP_SQ_PER_ROLL,
+            2,
         ),
-        "note": "Matches HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'",
+        "note": "Sold by the roll — 9.00 SQ/roll (ruled 2026-07-31); "
+                "SQ from HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'",
     },
     {
         "tabs": ["ascend"],
         "section": "Siding Accessories",
         "item": "RainDrop",
-        "unit": "SQ",
+        "unit": "ROLL",
         "extract": lambda m: round(
-            ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0,
-            1,
+            ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0))
+            / 100.0 / RAINDROP_SQ_PER_ROLL,
+            2,
         ),
-        "note": "Ascend rainscreen underlayment — same SQ as siding",
+        "note": "Ascend rainscreen underlayment — sold by the roll, "
+                "11.25 SQ/roll (ruled 2026-07-31)",
     },
     # =====================================================================
     # NAILS — vinyl + ascend; LP uses different fasteners (manual entry).

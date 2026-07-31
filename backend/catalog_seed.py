@@ -407,7 +407,9 @@ ITEM_META = {
     # Priced 13.99 FLAT ×4 in IDENTICAL_PRICES (master-catalog apply,
     # Howard's go 2026-07-18).
     "Pelican Bay Shake Starter": ("PCS", 0),
-    "House Wrap": ("SQ", 0), "RainDrop": ("SQ", 0), '3/8" Fan Fold': ("Bundle", 0),
+    # SALES UNIT ruled 2026-07-31 (Howard's price pages): wrap sells by the
+    # ROLL — House Wrap 9.00 SQ/roll, RainDrop 11.25 SQ/roll (two divisors).
+    "House Wrap": ("ROLL", 0), "RainDrop": ("ROLL", 0), '3/8" Fan Fold': ("Bundle", 0),
     '2" Nails 30 lbs': ("BOX", 0), "Caulking (per color)": ("Each", 0),
     "J-blocks - Split Blocks (82A009)": ("Each", 0),
     "J-blocks - Light Blocks (82A010)": ("Each", 0),
@@ -631,7 +633,10 @@ IDENTICAL_PRICES = {
     'Gable vents (round,octagon)': 92.2875,
     'Gutter 6"': 3.25,
     'Gutter Guard (USA Shurflo)': 2.25,
-    'House Wrap': 11.55,
+    # SALES UNIT ruled 2026-07-31: SQ → ROLL (9.00 SQ/roll) — $119.11/roll
+    # from Howard's price pages (admin entry was transposed with RainDrop;
+    # cross-corrected per his 2026-07-31 ruling).
+    'House Wrap': 119.11,
     # 'Inside Corners' (Ascend) orphan price REMOVED with its emitter —
     # R4 Howard ruled 2026-07-30 (row was supplier-dropped Feb 2026).
     'J-blocks - Split Blocks (82A009)': 13.49,
@@ -648,7 +653,9 @@ IDENTICAL_PRICES = {
     'Pelican Bay Shakes 9"': 209.97,
     # SALES UNIT ruled 2026-07-31: SQ → Bundle (2 SQ per bundle); 11.06 × 2.
     '3/8" Fan Fold': 22.12,
-    'RainDrop': 30.73,
+    # SALES UNIT ruled 2026-07-31: SQ → ROLL (11.25 SQ/roll) — $336.13/roll
+    # from Howard's price pages (cross-corrected, see House Wrap note).
+    'RainDrop': 336.13,
     'Shutters (louvered, raised panel) standard sizes': 114.2225,
     'Starter': 7.64,
     'elbow': 2.69,

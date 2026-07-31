@@ -226,9 +226,14 @@ def test_raindrop_takes_field_waste_like_house_wrap(est_factory, s):
     rd = _row(lines, "ascend", "RainDrop")
     hw = _row(lines, "vinyl", "House Wrap")
     assert rd and hw
-    assert rd.get("raw_qty") == 20.0 and rd["qty"] == 22.0, \
+    # Repinned to the ROLL sales unit (ruled 2026-07-31): 20 SQ of wall →
+    # RD 20/11.25 = 1.78 rolls · HW 20/9 = 2.22 rolls; the field's 10%
+    # bakes on the raw roll count then ceils. raw_qty stamped == the row
+    # went through the cut-prone waste path (the D2 defect was it not).
+    assert rd["unit"] == "ROLL" and hw["unit"] == "ROLL"
+    assert rd.get("raw_qty") == 1.78 and rd["qty"] == math.ceil(1.78 * 1.1 - 1e-9), \
         f"Ascend RainDrop must bake 10% like vinyl House Wrap: {rd}"
-    assert hw.get("raw_qty") == 20.0 and hw["qty"] == 22.0
+    assert hw.get("raw_qty") == 2.22 and hw["qty"] == math.ceil(2.22 * 1.1 - 1e-9)
 
 
 # ═════════════ R3 — VINYL SHAKE ORDERS BY THE HALF SQUARE ═══════════════
