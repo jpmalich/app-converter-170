@@ -1,5 +1,42 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## THIRD DOOR + SELF-CLEAN + ID BINDING DAYS 1–2 (2026-07-31, 9564948)
+- **BUMP DOOR (ruled 15%)**: apply with |bump_pct|>15 → 409 without one
+  confirm; ≤15 applies clean; negative bumps gate too. Amber banner +
+  checkbox in DiffPreview (bump-gate-banner/-confirm); upload door sends
+  bump_pct null. BUMP_CONFIRM_THRESHOLD_PCT=15.0 in price_age.py. 5 pins.
+  Three doors live: ×3 row gate · crossed-pair detector · 15% bump line.
+- **SUITE SELF-CLEAN (ruled)**: session-end conftest fixture deletes the
+  run's own residue (companies/users/catalogs/invitations/TEST_
+  estimates; protected+fixture untouchable). 14 current folded in.
+  PROVEN LIVE: post-guard board stays 17 estimates / 4 companies. Pin in
+  hygiene file.
+- **ID BINDING DAYS 1–2 LANDED**:
+  - Day 1: catalog_ids.py — 226 literal permanent ids (mint_item_id for
+    new rows only); seed attaches item_id; migrate_2026_07_31_item_ids.py
+    STAMPS-NEVER-DERIVES (904 tier items + 506 lines, self-refusing diff,
+    idempotent); **17/17 material lists BYTE-IDENTICAL through the real
+    print builder** (Howard's required proof —
+    memory/id_binding_day1_receipt_2026_07_31.md); 2 legacy Casile rows
+    ([Seamless Gutter with Siding] Gutter/Downspout) left alone + named,
+    NEED A RULING; backups 20260731_150000_*.
+  - Day 2 (binding flip): derived lines BORN with item_id
+    (_stamp_item_ids in _build_lines); rebuild inherit + human-carry +
+    rederive-door carry keyed (tab,item_id)-first with name fallback and
+    consumed-dedupe; catalog price bind by id; resolved catalog serves
+    item_id; frontend merge + buildPayload + rebuild inherit carry
+    item_id (strip layers sealed). **RENAME-SAFETY PINNED: a renamed row
+    binds ONCE by id and cannot orphan a human qty/note.**
+    Pins: test_id_migration_never_moves_a_number.py (12).
+  - **REMAINING (days 3–4)**: LP package keyed on app ID; retire the
+    name-string classifiers/ghost guards (each retirement named, pins
+    rewritten against ids); AMI/BlueLinx formally metadata.
+- **NEXT AFTER ID BINDING**: Spanish buildout (5–8 days, approved) with
+  the price-parity delivery proof (run a Spanish estimate end-to-end,
+  every line binds+prices identical to EN; sweep pin stays green).
+- Guard: 2026-07-31 15:44 UTC · 9564948 · CLEAN · 1696 passed.
+
+
 ## PURGE FIRED + SKU PIN + PAIR DETECTOR + ID PLAN (2026-07-31, 8215042)
 - **PURGE FIRED on Howard's "fire as listed"**: 8 estimates SOFT-deleted
   (backup memory/backups/20260731_140500_purged_estimates.json, 30-day
