@@ -129,6 +129,10 @@ class EstimateLine(BaseModel):
     # labor" state (v3 zeroing, sealed 2026-07-24 — the provisional
     # guesses retired entirely; labor is the contractor's).
     lab_src: Optional[str] = None
+    # ID BINDING (Howard ruled 2026-07-31): the app-minted catalog
+    # identity (catalog_ids.py). Names/AMI are metadata; this is what
+    # binds. Stamped by migration, additive-only — never derived.
+    item_id: Optional[str] = None
     # BLIND-ROW NOTES (Howard ruled 2026-07-31): contractor-typed note on
     # any line — the ONLY annotation mechanism the ~39 hand-filled manual
     # rows have (they are never emitted, so no derivation note can reach

@@ -118,6 +118,9 @@ export default function useEstimate(id) {
                 // back to the server. Every provenance field rides.
                 note: (saved && saved.note) || null,
                 contractor_note: (saved && saved.contractor_note) || null,
+                // ID BINDING (ruled 2026-07-31): catalog id wins (it is
+                // the identity); saved keeps pre-reseed docs whole.
+                item_id: it.item_id || (saved && saved.item_id) || null,
                 _waste_included: saved && saved._waste_included != null ? saved._waste_included : null,
                 qty_pending: saved && saved.qty_pending != null ? saved.qty_pending : null,
                 pricing_source: (saved && saved.pricing_source) || null,
@@ -471,6 +474,7 @@ export default function useEstimate(id) {
           // SENDS them. Every derivation/provenance field rides here.
           note: l.note ?? null,
           contractor_note: l.contractor_note ?? null,
+          item_id: l.item_id ?? null,
           _waste_included: l._waste_included ?? null,
           qty_pending: l.qty_pending ?? null,
           pricing_source: l.pricing_source ?? null,

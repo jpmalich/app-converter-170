@@ -7,6 +7,7 @@ Tiers (cheapest → most expensive):
   - Contractor     (standard volume contractors)
   - whole-sale     (small / new accounts)
 """
+from catalog_ids import ITEM_IDS, mint_item_id
 
 # Section structure shared across all tiers (order + section titles)
 # Descriptions match Alside's "Vinyl Siding price page.xls" verbatim.
@@ -1155,6 +1156,9 @@ def build_tier_sections(tier_name: str) -> list:
         for n in item_names:
             unit, lab = ITEM_META.get(n, ("Each", 0))
             items.append({
+                # ID BINDING (ruled 2026-07-31): the app-minted id IS the
+                # identity; name/AMI are metadata (catalog_ids.py).
+                "item_id": ITEM_IDS.get((title, n)) or mint_item_id(title, n),
                 "name": n, "unit": unit,
                 "mat": float(prices.get(n, 0)),
                 "lab": float(lab),  # labor default — contractor can override
