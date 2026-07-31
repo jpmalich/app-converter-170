@@ -74,7 +74,8 @@ async def admin_test_data_census(request: Request):
         "estimates_in_test_companies": await db.estimates.count_documents({"company_id": {"$in": co_ids}}),
         "test_named_estimates_elsewhere": await db.estimates.count_documents(
             {"company_id": {"$nin": co_ids},
-             "customer_name": {"$regex": "^TEST_", "$options": "i"}}),
+             "$or": [{"customer_name": {"$regex": "^TEST_", "$options": "i"}},
+                     {"test_artifact": True}]}),
         "invitations": await db.invitations.count_documents(
             {"$or": [{"test_artifact": True}, {"email": {"$regex": "@resend\\.dev$", "$options": "i"}}]}),
     }
@@ -101,8 +102,10 @@ async def admin_test_data_purge(request: Request):
         "estimates_in_test_companies": (await db.estimates.delete_many(
             {"company_id": {"$in": co_ids}})).deleted_count,
         "test_named_estimates_elsewhere": (await db.estimates.delete_many(
-            {"customer_name": {"$regex": "^TEST_", "$options": "i"},
-             "fixture_import": {"$ne": True}})).deleted_count,
+            {"$or": [{"customer_name": {"$regex": "^TEST_", "$options": "i"}},
+                     {"test_artifact": True}],
+             "fixture_import": {"$ne": True},
+             "protected": {"$ne": True}})).deleted_count,
         "invitations": (await db.invitations.delete_many(
             {"$or": [{"test_artifact": True},
                      {"email": {"$regex": "@resend\\.dev$", "$options": "i"}}]})).deleted_count,

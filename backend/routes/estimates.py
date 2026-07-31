@@ -116,6 +116,11 @@ async def create_estimate(body: EstimateIn, user: dict = Depends(get_current_use
         "created_at": now,
         "updated_at": now,
     })
+    # TEST-DATA HYGIENE (Howard ruled 2026-07-31): a TEST_-named estimate
+    # tags at creation — same class as companies. A test path must never
+    # again create an untagged artifact the purge tool cannot reach.
+    if str(doc.get("customer_name") or "").strip().upper().startswith("TEST_"):
+        doc["test_artifact"] = True
     if doc.get("kind") == "lp_smart" and not doc.get("lp_pricing_tier"):
         # one estimate, one tier, one truth — seeded once from the company,
         # governed by the estimate itself from then on (ruled)
