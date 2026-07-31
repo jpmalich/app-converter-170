@@ -23,7 +23,13 @@ from dotenv import load_dotenv
 load_dotenv(BACKEND / ".env")
 
 from api_base import API
-from price_age import MAGNITUDE_THRESHOLD, annotate_magnitude, magnitude_flag, magnitude_pct
+from price_age import (
+    MAGNITUDE_THRESHOLD,
+    annotate_magnitude,
+    detect_transpositions,
+    magnitude_flag,
+    magnitude_pct,
+)
 
 ADMIN_TOKEN = os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
 H = {"X-Admin-Token": ADMIN_TOKEN}
@@ -56,6 +62,51 @@ class TestGateMath:
                                    {"old": 22.12, "new": 23.00}])
         assert rows[0]["magnitude_flag"] is True and rows[0]["pct"] == 2810.2
         assert rows[1]["magnitude_flag"] is False
+
+
+# ═══════════ CROSSED-PAIR DETECTOR — the shape that got Howard ══════════
+class TestPairDetector:
+    def _rows(self, hw_new, rd_new):
+        return annotate_magnitude([
+            {"tier_name": "contractor", "field": "mat", "name": "House Wrap",
+             "old": 11.55, "new": hw_new},
+            {"tier_name": "contractor", "field": "mat", "name": "RainDrop",
+             "old": 30.73, "new": rd_new},
+        ])
+
+    def test_the_howard_upload_is_named_as_a_pair(self):
+        # As-entered on 2026-07-31: each row carried the OTHER's roll
+        # dollar. Old order HW < RD; entered order HW > RD — inverted.
+        pairs = detect_transpositions(self._rows(336.13, 119.11))
+        assert len(pairs) == 1
+        names = {pairs[0]["a"]["name"], pairs[0]["b"]["name"]}
+        assert names == {"House Wrap", "RainDrop"}
+
+    def test_the_correct_entry_is_not_a_pair(self):
+        # Cross-corrected values keep the price order → no pair, even
+        # though both rows still breach ×3 (the legitimate roll flip).
+        assert detect_transpositions(self._rows(119.11, 336.13)) == []
+
+    def test_uniform_bump_never_pairs(self):
+        rows = annotate_magnitude([
+            {"tier_name": "contractor", "field": "mat", "name": "A", "old": 10.0, "new": 40.0},
+            {"tier_name": "contractor", "field": "mat", "name": "B", "old": 20.0, "new": 80.0},
+        ])
+        assert detect_transpositions(rows) == []
+
+    def test_different_tiers_never_pair(self):
+        rows = annotate_magnitude([
+            {"tier_name": "contractor", "field": "mat", "name": "A", "old": 10.0, "new": 90.0},
+            {"tier_name": "one-opp", "field": "mat", "name": "B", "old": 20.0, "new": 3.0},
+        ])
+        assert detect_transpositions(rows) == []
+
+    def test_unflagged_rows_never_pair(self):
+        rows = annotate_magnitude([
+            {"tier_name": "contractor", "field": "mat", "name": "A", "old": 10.0, "new": 12.0},
+            {"tier_name": "contractor", "field": "mat", "name": "B", "old": 20.0, "new": 11.0},
+        ])
+        assert detect_transpositions(rows) == []
 
 
 # ═══════════ THE JOURNEY — both write surfaces refuse, then obey ════════
@@ -137,7 +188,7 @@ def test_tier_editor_refuses_unconfirmed_then_obeys(gate_tier):
 def test_diff_preview_renders_the_gate():
     js = Path("/app/frontend/src/components/admin/PricingUpdatePanel.jsx").read_text()
     for needle in ("magnitude-gate-banner", "magnitude-confirm-", "magnitude_flag",
-                   "onApply(confirmed)"):
+                   "onApply(confirmed)", "transposition-pair-banner"):
         assert needle in js, f"diff preview must carry the gate UI: {needle}"
 
 

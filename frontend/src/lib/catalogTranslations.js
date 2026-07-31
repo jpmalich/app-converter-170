@@ -42,106 +42,9 @@ const SECTIONS_ES = {
 
 // Catalog item translations. Only translate generic descriptions; leave product
 // model numbers and brand-name profiles alone.
-const ITEMS_ES = {
-  "vertical board and batten": "tabla y listón vertical",
-  "Architectural color upcharge Vinyl": "Recargo por color arquitectónico (vinil)",
-  "Shakes and Scallops": "Tejas y escamas",
-  "Inside Corners": "Esquinas interiores",
-  // Iter 34: split Standard / Architectural color variants
-  "Outside corners Standard color": "Esquinas exteriores color estándar",
-  "Outside corners Architectural color": "Esquinas exteriores color arquitectónico",
-  "Inside Corners (Siding) Standard color": "Esquinas interiores (vinil) color estándar",
-  "Inside Corners (Siding) Architectural color": "Esquinas interiores (vinil) color arquitectónico",
-  '3/4" J-Channel Standard color': '3/4" J-Channel color estándar (2 por MC de vinil)',
-  '3/4" J-Channel Architectural color': '3/4" J-Channel color arquitectónico (2 por MC de vinil)',
-  "Finish Trim Standard color": "Moldura de acabado color estándar",
-  "Finish Trim Architectural color": "Moldura de acabado color arquitectónico",
-  'Soffit & fascia up to 13" wide Charter Oak Standard color': 'Plafón y fascia hasta 13" Charter Oak color estándar',
-  'Soffit & fascia up to 13" wide Charter Oak Architectural color': 'Plafón y fascia hasta 13" Charter Oak color arquitectónico',
-  'Soffit & fascia up to 13"-30" wide Charter Oak Standard color': 'Plafón y fascia 13"-30" Charter Oak color estándar',
-  'Soffit & fascia up to 13"-30" wide Charter Oak Architectural color': 'Plafón y fascia 13"-30" Charter Oak color arquitectónico',
-  '3/4" Soffit J-Channel (Charter Oak) Standard color': '3/4" Plafón J-Channel (Charter Oak) color estándar',
-  '3/4" Soffit J-Channel (Charter Oak) Architectural color': '3/4" Plafón J-Channel (Charter Oak) color arquitectónico',
-  // Legacy generic names (pre-Iter-34) — keep for old saved estimates.
-  "Outside corners": "Esquinas exteriores",
-  "Inside Corners (Siding)": "Esquinas interiores (vinil)",
-  "Finish Trim": "Moldura de acabado",
-  "Starter": "Tira de arranque",
-  "House Wrap": "Membrana para casa",
-  "Caulking (per color)": "Sellador (por color)",
-  "J-blocks, Dryer vents": "Bloques J, ventilas de secadora",
-  "Shutters (louvered, raised panel) standard sizes": "Contraventanas (persiana o panel) tamaños estándar",
-  "Gable vents (round, octagon)": "Ventilas de hastial (redondas, octagonales)",
-  "Tear-Off": "Demolición",
-  "Wood shake tear off (requires a dumpster)": "Demolición de teja de madera (requiere contenedor)",
-  "Clean up / haul away job debris": "Limpieza / retiro de escombros",
-  "Dumpster": "Contenedor",
-  "Cap porch band": "Forrar cinta del porche",
-  "Wrap porch beam": "Forrar viga del porche",
-  "Elbow": "Codo",
-  "Mitre": "Inglete",
-  "R&R gutter": "Quitar y reponer canalón",
-  "R&R downspout": "Quitar y reponer bajante",
-  "Cap window": "Forrar ventana",
-  "Cap windows with wide crown": "Forrar ventana con corona ancha",
-  "Capping general": "Forrado general",
-  "Cap window headers only": "Forrar solo cabeceras de ventana",
-  "Cap entry door": "Forrar puerta de entrada",
-  "Cap patio door": "Forrar puerta de patio",
-  "Cap single garage door": "Forrar puerta de cochera",
-  "Build out for windows w/ furring (includes capping)": "Engrosar ventanas con listones (incluye forrado)",
-  "R&R Gable louvers": "Quitar y reponer ventilas de hastial",
-  "Fascia Return": "Retorno de fascia",
-  "Bird box": "Caja de pájaros",
-  "Flashing": "Flashing / tapajuntas",
-  "Cap tops of bird boxes": "Forrar tapas de cajas de pájaros",
-  "Dormer upcharge": "Recargo por buhardilla",
-  "R&R Utilities": "Quitar y reponer instalaciones",
-  "Cut out 4x4 section of wall and insulate": "Cortar sección de pared 4x4 y aislar",
-
-  // Iter 38–40: Window Installation
-  "Window DH/Slider - Pocket Install": "Ventana DH/Corrediza – Instalación de bolsillo",
-  "Window - Full Fin Replacement": "Ventana – Reemplazo con aleta completa",
-  "Large Window - adder for windows 30 sq-ft or larger": "Ventana grande – recargo para ventanas de 30 pies² o más",
-  "Field Mull Assembly and/or Field Glaze (adder per each opening)": "Ensamble de mainel en sitio y/o vidriado en sitio (recargo por abertura)",
-  "Lead Safe Installation Practices For Window Installation": "Prácticas de instalación seguras contra plomo",
-  "Lead Safe - Test Fee (all homes 1978 and older are tested)": "Plomo seguro – tarifa de prueba (todas las casas de 1978 o anteriores)",
-  "Cap window (Windows)": "Forrar ventana (ventanas)",
-  "Job Measure Standard Fee 4 days+": "Medición estándar 4 días o más",
-  "Disposal Fee (Windows)": "Tarifa de disposición (ventanas)",
-  "Mullion Removal & Cut-Out of Non-Structural Framing Members": "Retiro de mainel y corte de elementos no estructurales",
-
-  // Sliding Glass Door Install
-  "Vinyl Sliding Glass Door (5' & 6' width)": "Puerta corrediza de vinil (5' y 6' de ancho)",
-  "Vinyl Sliding Glass Door (8' width -or- a sliding door that needs to be field assembled)": "Puerta corrediza de vinil (8' de ancho o que requiere ensamble en sitio)",
-  "Oversize Vinyl Door - (greater than 8' width)": "Puerta de vinil de gran tamaño (más de 8' de ancho)",
-
-  // Window Material List
-  "Windows - .019 Coil": "Ventanas – Bobina .019",
-  "Windows - PVC Trim Coil": "Ventanas – Bobina de PVC para moldura",
-  "Windows - Performance G8 Trim Coil": "Ventanas – Bobina G8 Performance",
-  "Windows - Caulking (per color)": "Ventanas – Sellador (por color)",
-
-  // Window Exterior Trim Work
-  "New Exterior Primed Stops or Snap Trim": "Topes o moldura exterior nueva imprimada",
-  "New Exterior Primed Wood Trim": "Moldura exterior de madera nueva imprimada",
-  "New Exterior Composite Trim": "Moldura exterior compuesta nueva",
-
-  // Window Interior Trim Work
-  "New Interior Stops or Flat Trim": "Topes o moldura plana interior nueva",
-  "New Interior Casing": "Marco interior nuevo (casing)",
-  "New Interior Jamb Extension": "Extensión de jamba interior nueva",
-  "New Interior Sill - create or replace interior window sill - QUOTE ONLY": "Antepecho interior nuevo – crear o reemplazar – SOLO COTIZACIÓN",
-
-  // Window Misc.
-  "Interior Blinds - Remove For Window Install & Reinstall": "Persianas interiores – retirar para la instalación y reinstalar",
-  "Shutters - Take Down & Put Up (REUSE EXISTING ONLY)": "Contraventanas – bajar y volver a colocar (REUSAR LAS EXISTENTES)",
-  "Storm Window Removal": "Retiro de ventana de tormenta",
-  "Second/Third/Clear Story Fee": "Tarifa por segundo / tercer piso o piso libre",
-  "Job Measure Rush Fee 3 days or less": "Medición urgente (3 días o menos)",
-  "Add New Channel on ALL, Close up opening to match master Front opening": "Agregar canal nuevo en TODAS, cerrar abertura para coincidir con la frontal principal",
-  "Minimum Job Charge For Window Installs": "Cargo mínimo por trabajo de ventanas",
-};
+// ITEMS_ES RETIRED (Howard ruled 2026-07-31): catalog item / SKU names
+// render VERBATIM in every language. Spanish help lives in
+// itemDescriptions.js (secondary text), never on the name.
 
 // Unit abbreviations. Construction trades in the US often keep English shorthand
 // even in Spanish work orders, but a few have clear translations.
@@ -193,9 +96,12 @@ export function canonicalItemName(name) {
 }
 
 export function tItem(name, lang) {
-  const canonical = ITEM_NAME_ALIASES[name] || name;
-  if (lang !== "es") return canonical;
-  return ITEMS_ES[canonical] || ITEMS_ES[name] || canonical;
+  // SKU NAMES NEVER TRANSLATE (Howard ruled 2026-07-31): the product name
+  // is the SAME string in every language — labels, headings and
+  // descriptors around it translate; the name itself never does. This is
+  // what protects price binding from the second language. Legacy-alias
+  // canonicalization stays (identity healing, not translation).
+  return ITEM_NAME_ALIASES[name] || name;
 }
 
 export function tUnit(unit, lang) {

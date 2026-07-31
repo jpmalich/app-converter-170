@@ -332,8 +332,9 @@ async def preview_bump(body: BumpIn, request: Request):
     check_admin_token(request)
     tiers = await _load_all_tiers()
     changes = _build_bump_changes(tiers, body)
-    from price_age import annotate_magnitude
-    return {"changes": annotate_magnitude(changes)}
+    from price_age import annotate_magnitude, detect_transpositions
+    annotate_magnitude(changes)
+    return {"changes": changes, "transposition_pairs": detect_transpositions(changes)}
 
 
 @router.post("/admin/pricing/upload")
@@ -348,14 +349,16 @@ async def upload_pricing(request: Request, file: UploadFile = File(...), commit:
     rows, _ = _parse_upload(file.filename or "", raw)
     tiers = await _load_all_tiers()
     changes, unmatched = _diff_upload(tiers, rows)
-    from price_age import annotate_magnitude
+    from price_age import annotate_magnitude, detect_transpositions
     annotate_magnitude(changes)
+    pairs = detect_transpositions(changes)
     applied = 0
     refused = []
     if commit.lower() == "true":
         # commit=true rides the SAME gate — a script cannot cross it blind.
         applied, refused = await _apply_changes(changes)
-    return {"changes": changes, "unmatched": unmatched, "applied": applied, "refused": refused}
+    return {"changes": changes, "unmatched": unmatched, "applied": applied,
+            "refused": refused, "transposition_pairs": pairs}
 
 
 @router.post("/admin/pricing/apply")

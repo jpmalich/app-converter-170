@@ -87,3 +87,30 @@ def annotate_magnitude(changes: list) -> list:
         c["magnitude_flag"] = magnitude_flag(c.get("old"), c.get("new"))
     return changes
 
+
+def detect_transpositions(changes: list) -> list:
+    """CROSSED-PAIR DETECTOR (Howard ruled 2026-07-31): the shape that got
+    him — two rows landed with each other's dollars. Signature: among the
+    magnitude-FLAGGED rows of one preview (same tier + field), a pair
+    whose price ORDER inverted (A was cheaper than B, now A is dearer).
+    His case: HW $11.55 < RD $30.73 old, but as-entered HW $336.13 >
+    RD $119.11 — inverted. A uniform bump preserves order → no pair.
+    Runs only on flagged rows, so clean uploads pay nothing."""
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for c in changes:
+        if c.get("magnitude_flag") and float(c.get("old") or 0) > 0:
+            groups[(c.get("tier_name"), c.get("field"))].append(c)
+    pairs = []
+    for (tier, field), rows in groups.items():
+        for i in range(len(rows)):
+            for j in range(i + 1, len(rows)):
+                a, b = rows[i], rows[j]
+                if (float(a["old"]) - float(b["old"])) * (float(a["new"]) - float(b["new"])) < 0:
+                    pairs.append({
+                        "tier_name": tier, "field": field,
+                        "a": {"name": a["name"], "old": a["old"], "new": a["new"]},
+                        "b": {"name": b["name"], "old": b["old"], "new": b["new"]},
+                    })
+    return pairs
+

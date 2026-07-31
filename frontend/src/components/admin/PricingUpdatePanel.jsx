@@ -367,6 +367,25 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
     });
   const flagged = changes.filter(isFlagged);
   const unconfirmed = flagged.filter((c) => !confirmed.has(keyOf(c))).length;
+  // CROSSED-PAIR DETECTOR (ruled 2026-07-31): among flagged rows of the
+  // same tier+field, a pair whose price ORDER inverted looks TRANSPOSED
+  // — the exact shape of the House Wrap ↔ RainDrop upload.
+  const pairs = [];
+  const byGroup = {};
+  for (const c of flagged) {
+    if (!(c.old > 0)) continue;
+    const g = `${c.tier_name}|${c.field}`;
+    (byGroup[g] = byGroup[g] || []).push(c);
+  }
+  for (const rows of Object.values(byGroup)) {
+    for (let i = 0; i < rows.length; i++) {
+      for (let j = i + 1; j < rows.length; j++) {
+        if ((rows[i].old - rows[j].old) * (rows[i].new - rows[j].new) < 0) {
+          pairs.push({ tier: rows[i].tier_name, a: rows[i].name, b: rows[j].name });
+        }
+      }
+    }
+  }
   const total = changes.length;
   const increases = changes.filter((c) => c.new > c.old).length;
   const decreases = changes.filter((c) => c.new < c.old).length;
@@ -405,6 +424,20 @@ function DiffPreview({ changes, unmatched, onCancel, onApply, busy }) {
         </div>
       </div>
 
+      {pairs.length > 0 && (
+        <div className="px-4 py-3 bg-red-200 border-b-2 border-red-500" data-testid="transposition-pair-banner">
+          <div className="text-xs uppercase tracking-wider font-bold text-red-900">
+            ⚠ These rows look CROSSED — their price order inverted:
+          </div>
+          <ul className="text-[11px] text-red-900 mt-1 font-bold">
+            {pairs.slice(0, 6).map((p, i) => (
+              <li key={i}>{p.a} ↔ {p.b} <span className="font-normal opacity-75">({p.tier})</span></li>
+            ))}
+            {pairs.length > 6 && <li>…and {pairs.length - 6} more</li>}
+          </ul>
+          <div className="text-[11px] text-red-900 mt-1">Check for a transposed entry before confirming.</div>
+        </div>
+      )}
       {flagged.length > 0 && (
         <div className="px-4 py-3 bg-red-100 border-b-2 border-red-400" data-testid="magnitude-gate-banner">
           <div className="text-xs uppercase tracking-wider font-bold text-red-800">
