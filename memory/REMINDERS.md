@@ -10,6 +10,8 @@
 - Database cleaned of all dev/test companies — only "Wolf and Son Renovations LLC" admin remains
 
 ## Pending follow-ups
+
+- **SEPTEMBER DEMO CHECKLIST — LP-NATIVE MODE IS CURRENTLY OFF** (Howard spotted 2026-07-31 on the branding-admin panel). The demo runs with it ON. Howard flips it himself before the demo — do NOT flip it for him; DO remind him if the demo nears and it is still off.
 1. **Upload Alside Supply logo** — `/branding-admin?token=...` → Upload Logo (placeholder "A" still showing on Login)
 2. **Rotate `SIGNUP_CODE`** in `backend/.env` once you've handed it out — Howard: doing this week (confirmed 2026-07-18)
 3. **Rotate the Anthropic Claude key** at https://console.anthropic.com/settings/keys (was exposed in chat) — Howard: doing this week (confirmed 2026-07-18).
