@@ -143,3 +143,5 @@
 - 2026-07-31 04:19 UTC · b10ee0b · GUARD-FAIL · FAILED tests/test_test_artifact_tagging.py::test_production_code_never_sets_the_tag
 - 2026-07-31 04:20 UTC · e75f8b9 · CLEAN · [tests] · 1625 passed, 1 skipped, 3 warnings in 142.59s (0:02:22)
 - 2026-07-31 12:21 UTC · 5d40133 · GUARD-FAIL · FAILED tests/test_hover_import_async.py::test_post_hover_import_rejects_non_pdf
+- 2026-07-31 12:29 UTC · e0ec7b6 · GUARD-FAIL · ERROR tests/test_letrick_item3_chase_ratification.py::test_app_ledger_key_bound_area_and_unified_lap
+- 2026-07-31 12:29 UTC · e0ec7b6 · GUARD-FAIL · ERROR tests/test_letrick_item3_chase_ratification.py::test_osc_unchanged_with_sealed_placement_rule
