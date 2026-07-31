@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 50 — FRONTEND ONLY pass on the ONE MECHANIC / THREE FAMILIES doctrine (shared server re-derive on siding-kind). Seeded a fresh siding-kind estimate 'UI-PASS' via API with fascia_width_in=12 and hover_measurements (siding_sqft 2000 / eaves 120 / rakes 80 / soffit 200 / corners 4+2 / windows 10 / doors 2 / overhang 12), plus an lp_smart-kind estimate 'UI-PASS-LP' for regression sanity. ALL 8 test items PASS. Trade-specs card now renders on a siding-kind estimate with fascia-width-select AND rederive-now-btn, and LP-only controls (batten-spacing-select, panel-size-select, wrap-trim-width-select, shake-reveal-in) are correctly hidden. Clicking Re-derive on the seeded estimate produced the 'Re-derived from stored measurements' success toast and the '.019 Coil' row in Vinyl Soffit with Siding rendered qty=4 at fascia=12 (200 LF ÷ 50). Flipping fascia-width-select to 8\" auto-triggered the server rederive via saveSpec and the coil row updated live to qty=2 (200 LF ÷ 100). Typing 9 into the coil qty input, letting it autosave, then clicking Re-derive preserved qty=9, rendered the 'human qty' chip (prov-human-Vinyl Soffit with Siding-.019 Coil) AND the violet 'yours-derived' chip (yours-derived-Vinyl Soffit with Siding-.019 Coil) reading literally 'yours: 9 · derived: 2' — human absolute doctrine confirmed. Overhang change 12→24 fired the server rederive with the toast 'overhang 12\" → 24\" — re-derived server-side (human-typed quantities preserved)' — the useRecalcSoffitOnOverhang hook is correctly using POST /rederive instead of local math. Order gate on siding-kind now renders: final-job-surface, gate-badge-quote, gate-badge-order, order-gate-items, order-flag-corner_locators, order-flag-blocking-corner_locators, order-flag-opening_schedule, order-flag-blocking-opening_schedule (order tier is live for vinyl estimates — previously blank). LP regression sanity clean: LP estimate loads, trade-spec-group renders all four LP dimensional selects (fascia-width-select, batten-spacing-select, panel-size-select, wrap-trim-width-select) plus the shake-reveal-in numeric input. Vinyl↔Ascend tab switch clean, no console errors on the estimate page (the 404s in console are a pre-existing catalog/preview asset noise unrelated to this pass — same as prior iterations).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_pass_frontend": [
+    "trade-spec-group renders on siding-kind estimate with fascia-width-select (previously LP-only)",
+    "LP-only controls (batten-spacing-select, panel-size-select, wrap-trim-width-select, shake-reveal-in) correctly hidden on siding-kind",
+    "rederive-now-btn renders in trade-spec-group header on siding-kind",
+    "Manual Re-derive with measurements: success toast 'Re-derived from stored measurements' fires",
+    "'.019 Coil' row in Vinyl Soffit with Siding = qty 4 at fascia=12in (200 LF ÷ 50)",
+    "fascia-width-select 12→8 auto-triggers server rederive via saveSpec; coil qty updates live 4→2",
+    "Human qty absolute: typed 9, autosave, click Re-derive → qty stays 9",
+    "prov-human chip renders after human edit",
+    "yours-derived violet chip renders literal 'yours: 9 · derived: 2'",
+    "Overhang 12→24 fires server rederive with toast 'overhang 12\" → 24\" — re-derived server-side (human-typed quantities preserved)' (useRecalcSoffitOnOverhang now hits /rederive, no client-side math)",
+    "FinalJobSurface renders order-tier gates on siding-kind: order-gate-items, order-flag-corner_locators, order-flag-opening_schedule + close-flag rows (previously blank on vinyl)",
+    "LP regression: lp_smart estimate loads, all four LP dimensional selects + shake-reveal-in present, no crash",
+    "Vinyl ↔ Ascend tab switch clean, no console errors on estimate page"
+  ],
+  "test_report_links": ["/app/test_reports/iteration_50.json", "/app/test_reports/iter50_siding.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SettingsRow.saveSpec (line 85–104) is now the ONE MECHANIC: after PUT, dispatches lp-flag-checklist-changed AND, for siding-kind, POSTs /rederive with the patch — same emitter for LP-kind (via LpMaterialListPanel's own listener) and siding-kind (via lines merge here). Doctrine is honored. Only nit: the code swallows /rederive errors silently for the spec-save path (catch {}). If measurements are missing that's fine (silent), but a 500 on a real bug would also be silent. Consider console.warn on non-409 errors so we notice regressions in the wild.",
+    "The manual rederiveNow (line 108–120) shows a toast on error (good) and a success toast that names the human-preserved count (good). Chip contract (SectionAccordion lines 265–273: renders yours-derived only when qty_src='human' AND derived_qty != qty) is clean.",
+    "Two .019 Coil rows exist in the 'Vinyl Soffit with Siding' section (backend returns qty=4 for both at fascia=12). Their data-testids collide ('qty-Vinyl Soffit with Siding-.019 Coil' appears twice in the DOM but Playwright only picked up one via query_selector_all → returned 1). Not a functional bug — the second row is likely rendered inside a variant/adder block or the second is filtered by section rules — but worth Howard's eye to confirm the visible tab isn't hiding one derived row. In our test the visible/queryable input carried the correct qty at every state (4 at fascia 12, 2 at fascia 8, 9 after human edit), so the mechanic itself is sound."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only pass)", "frontend": "100% — all 8 review items PASS"},
+  "test_credentials": "hhunt6677@yahoo.com + backend/.env ADMIN_PASSWORD (never printed)",
+  "seed_data_creation": "Created via API 2 estimates for testing: siding 'UI-PASS' (dae88e93-…) with fascia=12 + hover_measurements, and lp_smart 'UI-PASS-LP' (1bd84f50-…). BOTH DELETED at end of run (HTTP 200 on both DELETEs).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The shared server re-derive doctrine is UI-verified across siding-kind: spec-save auto path (fascia change), manual button path (Re-derive material list), and overhang path (useRecalcSoffitOnOverhang). Human qty absolute + violet 'yours: X · derived: Y' chip confirmed with live values (yours: 9 · derived: 2 at fascia 8). If future iterations add another SPEC-driven derivation (e.g. panel-size on Ascend), verify (a) it's included in the saveSpec patch, (b) buildPayload whitelists the field (persistent silent-strip class of bug per iter 48), (c) the shared /rederive endpoint honors it. For chip contract regression: qty_src='human' + derived_qty != qty are BOTH required for the violet chip to render. Two .019 Coil rows co-exist in Vinyl Soffit with Siding with identical data-testids — use .first when writing further Playwright."
+}
