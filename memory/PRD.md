@@ -5904,3 +5904,21 @@ Standing queue unchanged: B (drag-adjust) → model ledger → money map.
 - STANDING GAP NAMED: vinyl/ascend tabs have NO rebuild path — F2's doubled roll count is visible only on next import for stored vinyl estimates ("re-derive vinyl tab" action ~0.5–1d, NOT built, awaiting ruling).
 - Stamp: 2026-07-30 13:19 UTC · 0b05f0c · CLEAN · 1604 passed, 1 skipped (includes testing agent's 10 iteration_48 pins).
 - AWAITING HOWARD: vinyl-tab re-derive action ruling · ID-binding queue · his dealer-page Closed/Vertical check.
+
+## 2026-07-31 — PARITY RULINGS R1–R6 LANDED: ONE MECHANIC, THREE FAMILIES
+- PARITY AUDIT delivered (memory/parity_audit_2026_07_31.md): mechanics × Vinyl/Ascend/LP table; found D1–D7. RULED REPORTS delivered (memory/ruled_reports_2026_07_31.md): R2 reverse check CLEAN (no batten line can land on Ascend); sales-unit audit (flags: nails JOB→box, House Wrap/RainDrop SQ↔roll, Fan Fold, downspout sticks — AWAITING Howard's ruling); detector audit (LAYER vs SURFACE — why one-emitter missed D5: pre-folded constant evaded the regex); name-keyed classifier census (8 sites).
+- BUILT + ALL GREEN (1618 passed · stamps 747a694 + cb25e1a CLEAN):
+  · SHARED REDERIVE DOOR: POST /api/estimates/{id}/rederive — same rebuild_lp_tab_lines for siding-kind (vinyl+ascend tabs only; other tabs + hand-filled rows carry verbatim) AND lp_smart (optional payload profile). Automatic (spec saves) + MANUAL button (rederive-now-btn) — rule changes landing after import now reach stored estimates. Live-override payload keys prevent stale-autosave races. Closes the F2 standing gap + whole-unit repair for the 26 frozen fractional lines.
+  · R1/D1: fascia width in trade-spec box on siding-kind (fascia-width-select); governs vinyl/ascend .019 coil divisor (12"→÷50, ≤10"→÷100). Proven UI→PUT→rederive→qty.
+  · D2: RainDrop matches both waste classifiers (real catalog name).
+  · D3: re-import apply merge never clobbers human qty (stamps derived_qty).
+  · D4/D5: overhang/porch hook derivation math RETIRED — calls /rederive; LP_WASTE=1.10 gone; porch labor rows keep client auto-add with human guard. one-waste-emitter detector gained _P_PREFOLD signature + surface golden test + hook regression pin.
+  · D8 (found BY the journey test): charter-oak soffit classifier matched nothing ("charter oak soffit" vs real name "Soffit & fascia Charter Oak Standard Color") — vinyl/ascend soffit panels now take field waste per the sealed area-goods rule. Both mirrors fixed.
+  · R3: Pelican Bay Shakes 9" orders by the HALF SQUARE — unit 1/2 SQ, ÷50, price 209.97 (pins re-ratified: pricing_parity, profile_siding_lines, shake_composition). Note names 13 pcs per 1/2 SQ.
+  · R5: ORDER GATE on siding-kind — same _hover_mapping_contract flag generator, same tiers, same /flag-checklist closes; batten_wall_heights dropped (no battens on vinyl/Ascend). Verified: corner_locators + opening_schedule block, close clears.
+  · R2/R4 REGISTERED: TRADE_SPEC_FAMILY_REGISTER in lp_conventions.py — every spec names its families; LP-only ones carry DIFFERENT-BY-NATURE reasons; pinned.
+  · STEP 1 TEST: tests/test_e2e_spec_journey_2026_07_31.py — every spec field UI-payload→PUT→rederive→derived qty, per family (fascia vinyl+ascend+LP, overhang+porch, color tier, panel size, batten spacing, wrap trim, shake reveal, human-qty survival with derived_qty, RainDrop waste, half-square unit) + RENAME-COLLISION GUARD (width renames can't land on another register row) + register key uniqueness.
+  · "yours: X · derived: Y" violet chip (SectionAccordion) next to human-qty chip; derived_qty rides Line model + frontend merge + buildPayload (3 layers, no silent strip).
+- UI PASS (testing agent iteration 50, /app/test_reports/iteration_50.json): ALL 8 items PASS, 100%. Fascia on vinyl estimate, live 4→2 coil rederive on select change, human 9 preserved with literal "yours: 9 · derived: 2", overhang toast server-side, siding order gate renders, LP regression clean.
+- FAMILY COVERAGE: rederive/fascia/human-qty/waste = Vinyl · Ascend · LP. D2 = Ascend only (by nature). R3 = Vinyl only (by nature). R5 = siding-kind door (LP already had it). LP internals unchanged.
+- AWAITING HOWARD: sales-unit flag rulings (nails/wrap/fan-fold/downspout) · next steps 3 (blind row notes) + 4 (Spanish report) · ID binding still HELD (step 5).
