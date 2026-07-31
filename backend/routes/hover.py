@@ -2406,7 +2406,23 @@ def _build_lines(measurements: dict) -> list[dict]:
     # width call-out renames the 440 fascia SKU — the material list prints
     # the width on the line (wrong lumber on the truck is the risk; the
     # printed width is the protection). Default 8" applies silently.
-    return _order_whole_units(_apply_trade_spec_widths(out, measurements))
+    return _stamp_item_ids(_order_whole_units(_apply_trade_spec_widths(out, measurements)))
+
+
+def _stamp_item_ids(lines: list) -> list:
+    """ID BINDING (Howard ruled 2026-07-31): every derived line carries
+    its app-minted identity FROM BIRTH — resolved through the literal
+    register (catalog_ids.py), never guessed. Split/variant rows whose
+    display name is not a catalog row stay un-ID'd (their base_item
+    carries the lineage) and keep binding by the name fallback."""
+    from catalog_ids import ITEM_IDS, NAME_INDEX
+    for l in lines:
+        if not l.get("item_id"):
+            iid = ITEM_IDS.get((l.get("section"), l.get("name"))) \
+                or NAME_INDEX.get(l.get("name"))
+            if iid:
+                l["item_id"] = iid
+    return lines
 
 
 def _coil_color_note(m: dict, key: str, label: str) -> str:
@@ -2865,11 +2881,31 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
         waste_field)
     prev = await db.estimates.find_one(
         {"id": est_id}, {"_id": 0, "lines": 1, "lp_pricing_tier": 1})
+    prev_lines = (prev or {}).get("lines") or []
     prev_idx = {(l.get("tab"), l.get("section"), l.get("name")): l
-                for l in (prev or {}).get("lines") or []}
+                for l in prev_lines}
+    # ID BINDING (Howard ruled 2026-07-31): the rebuild inherits by the
+    # app-minted identity FIRST — a renamed row keeps its human qty,
+    # price and note. (tab, item_id) must be unique to bind; ambiguous
+    # ids (splits) fall back to the name key. Names are labels now.
+    id_idx = {}
+    for l in prev_lines:
+        if l.get("item_id"):
+            k = (l.get("tab"), l.get("item_id"))
+            id_idx[k] = None if k in id_idx else l
+
+    def _prev_for(l):
+        if l.get("item_id"):
+            hit = id_idx.get((l.get("tab"), l.get("item_id")))
+            if hit is not None:
+                return hit
+        return prev_idx.get((l.get("tab"), l.get("section"), l.get("name")))
+
+    consumed = set()
     for l in tab_lines:
-        old = prev_idx.get((l.get("tab"), l.get("section"), l.get("name")))
+        old = _prev_for(l)
         if old:
+            consumed.add(id(old))
             for k in ("mat", "lab", "adders", "ami_part", "contractor_note", "item_id"):
                 if old.get(k) is not None:
                     l[k] = old[k]
@@ -2892,10 +2928,16 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
             comp_doc, (prev or {}).get("lp_pricing_tier"))
         cat_idx = {(s["title"], it["name"]): it
                    for s in cat.get("sections") or [] for it in s.get("items") or []}
+        # ID BINDING: price binds by identity first — a renamed catalog
+        # row still prices its line.
+        cat_id_idx = {it["item_id"]: it
+                      for s in cat.get("sections") or []
+                      for it in s.get("items") or [] if it.get("item_id")}
         for l in tab_lines:
             if l.get("mat") is not None:
                 continue
-            it = cat_idx.get((l.get("section"), l.get("name")))
+            it = (cat_id_idx.get(l.get("item_id")) if l.get("item_id") else None) \
+                or cat_idx.get((l.get("section"), l.get("name")))
             if it and not it.get("pricing_pending"):
                 l["mat"] = it["mat"]
                 l["lab"] = it["lab"]
@@ -2925,7 +2967,7 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
         except Exception:
             continue
     for k, old in prev_idx.items():
-        if k in current_keys:
+        if k in current_keys or id(old) in consumed:
             continue
         if (old.get("qty_src") or "") == "human":
             tab_lines.append(dict(old))
@@ -3035,8 +3077,13 @@ async def rederive_estimate(
         derived_va = [l for l in tab_lines
                       if (l.get("tab") or "vinyl") in ("vinyl", "ascend")]
         keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in derived_va}
+        # ID BINDING (ruled 2026-07-31): a saved row whose IDENTITY was
+        # consumed by the rebuild (renamed label, same item_id) must not
+        # ride along as a duplicate.
+        id_keys = {(l.get("tab"), l.get("item_id")) for l in derived_va if l.get("item_id")}
         carry = [l for l in prev_lines
                  if (l.get("tab"), l.get("section"), l.get("name")) not in keys
+                 and not (l.get("item_id") and (l.get("tab"), l.get("item_id")) in id_keys)
                  and ((l.get("tab") or "vinyl") not in ("vinyl", "ascend")
                       or (l.get("qty") or 0) > 0)]
         tab_lines = derived_va + carry

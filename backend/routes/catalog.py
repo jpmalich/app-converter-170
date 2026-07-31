@@ -58,6 +58,9 @@ async def _resolve_catalog_for_company(company: dict, lp_tier_override: str | No
             k = _key(s["title"], it["name"])
             ov = overrides.get(k, {})
             row = {
+                # ID BINDING (ruled 2026-07-31): the identity rides the
+                # resolved catalog so every consumer binds by it.
+                "item_id": it.get("item_id"),
                 "name": it["name"], "unit": it["unit"],
                 "mat": float(ov["mat"]) if "mat" in ov else float(it["mat"]),
                 "lab": float(ov["lab"]) if "lab" in ov else float(it["lab"]),

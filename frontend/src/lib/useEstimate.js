@@ -79,10 +79,17 @@ export default function useEstimate(id) {
 
         // Index saved lines by (tab, section, name). Backfill tab for legacy
         // lines that pre-date this field so existing quotes load correctly.
+        // ID BINDING (ruled 2026-07-31): a second index by (tab, item_id)
+        // binds FIRST — a renamed catalog row still finds its saved line.
         const savedByKey = {};
+        const savedById = {};
         (e.data.lines || []).forEach((l) => {
           const tab = inferTab(l);
           savedByKey[lineKey(tab, l.section, l.name)] = { ...l, tab };
+          if (l.item_id) {
+            const idk = `${tab}|${l.item_id}`;
+            savedById[idk] = idk in savedById ? null : { ...l, tab };
+          }
         });
 
         // Build the merged line set: one entry per (tab, section, name) tuple
@@ -94,7 +101,7 @@ export default function useEstimate(id) {
           s.items.forEach((it) => {
             productLines.forEach((tab) => {
               const k = lineKey(tab, s.title, it.name);
-              const saved = savedByKey[k];
+              const saved = (it.item_id && savedById[`${tab}|${it.item_id}`]) || savedByKey[k];
               merged.push({
                 tab,
                 section: s.title,

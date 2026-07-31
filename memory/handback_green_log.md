@@ -153,3 +153,4 @@
 - 2026-07-31 13:52 UTC · 7aa238b · CLEAN · [tests] · 1668 passed, 1 skipped, 3 warnings in 165.91s (0:02:45)
 - 2026-07-31 14:39 UTC · 18e7437 · GUARD-FAIL · FAILED tests/test_line_write_paths_register.py::test_w1_put_preserves_derivation_fields_verbatim
 - 2026-07-31 14:43 UTC · 8215042 · CLEAN · [tests] · 1678 passed, 1 skipped, 3 warnings in 146.05s (0:02:26)
+- 2026-07-31 15:18 UTC · 857cd6e · CLEAN · [tests] · 1693 passed, 1 skipped, 3 warnings in 216.55s (0:03:36)

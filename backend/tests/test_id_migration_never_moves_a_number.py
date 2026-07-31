@@ -133,3 +133,84 @@ def test_rebuild_inherits_item_id():
     src = (BACKEND / "routes" / "hover.py").read_text()
     assert '"item_id"' in src.split('for k in ("mat", "lab", "adders", "ami_part"')[1][:60], \
         "rebuilt lines must inherit the stamped identity"
+
+
+# ═══════════ DAY 2 — THE BINDING FLIP (journeys) ════════════════════════
+import requests
+from dotenv import dotenv_values
+
+_ENV = dotenv_values("/app/backend/.env")
+_FE = dotenv_values("/app/frontend/.env")
+API = (os.environ.get("REACT_APP_BACKEND_URL")
+       or _FE.get("REACT_APP_BACKEND_URL", "")).rstrip("/") + "/api"
+
+MEAS = {"siding_sqft": 2000, "eaves_lf": 120, "rakes_lf": 80,
+        "soffit_sqft": 200, "outside_corner_count": 4,
+        "inside_corner_count": 2, "window_count": 10, "door_count": 2,
+        "overhang_in": 12}
+
+
+@pytest.fixture(scope="module")
+def s():
+    sess = requests.Session()
+    r = sess.post(f"{API}/auth/login",
+                  json={"email": "hhunt6677@yahoo.com",
+                        "password": _ENV.get("ADMIN_PASSWORD", "")})
+    assert r.status_code == 200, r.text
+    return sess
+
+
+@pytest.fixture()
+def journey_est(s):
+    r = s.post(f"{API}/estimates",
+               json={"customer_name": f"TEST_IDBIND-{uuid.uuid4().hex[:6]}",
+                     "kind": "siding"})
+    eid = r.json()["id"]
+    s.put(f"{API}/estimates/{eid}",
+          json={"hover_measurements": dict(MEAS), "waste_pct": 10})
+    yield eid
+    s.delete(f"{API}/estimates/{eid}")
+
+
+def _rederive(s, eid):
+    r = s.post(f"{API}/estimates/{eid}/rederive", json={"trigger": "test"})
+    assert r.status_code == 200, r.text
+    return r.json()["lines"]
+
+
+def test_derived_lines_carry_identity_from_birth(journey_est, s):
+    lines = _rederive(s, journey_est)
+    hw = [l for l in lines if l.get("name") == "House Wrap" and l.get("tab") == "vinyl"][0]
+    assert hw.get("item_id") == ITEM_IDS[("Siding Accessories", "House Wrap")], \
+        "a freshly derived line must be born with its app-minted identity"
+
+
+def test_rename_cannot_orphan_a_human_quantity(journey_est, s):
+    """THE CLASS THIS KILLS: line identity was the name string. A saved
+    line whose display name drifted (rename) but whose item_id matches
+    must still hand its human qty, price and note to the rebuild."""
+    lines = _rederive(s, journey_est)
+    hw = [l for l in lines if l.get("name") == "House Wrap" and l.get("tab") == "vinyl"][0]
+    hw["name"] = "House Wrap (2026 label)"   # the rename, simulated on the saved doc
+    hw["qty"] = 9.0
+    hw["qty_src"] = "human"
+    hw["contractor_note"] = "renamed but mine"
+    r = s.put(f"{API}/estimates/{journey_est}", json={"lines": lines})
+    assert r.status_code == 200, r.text
+    after = _rederive(s, journey_est)
+    hw2 = [l for l in after if l.get("item_id") == ITEM_IDS[("Siding Accessories", "House Wrap")]
+           and l.get("tab") == "vinyl"]
+    assert len(hw2) == 1, f"renamed line must bind ONCE by id, not duplicate: {len(hw2)}"
+    hw2 = hw2[0]
+    assert hw2["qty"] == 9.0 and hw2.get("qty_src") == "human", \
+        "the human quantity was orphaned by a rename — the id bind failed"
+    assert hw2.get("contractor_note") == "renamed but mine"
+
+
+def test_resolved_catalog_serves_the_identity(s):
+    r = s.get(f"{API}/catalog")
+    assert r.status_code == 200, r.text
+    items = [it for sec in r.json()["sections"] for it in sec["items"]]
+    with_id = [it for it in items if it.get("item_id")]
+    assert len(with_id) >= 200, \
+        f"resolved catalog must carry item_id on its rows ({len(with_id)}/{len(items)})"
