@@ -128,9 +128,9 @@ def test_photo_corner_counts_activate_per_corner_rules():
 
 def test_hover_wbw_entry_corrected_10e():
     entry = HOVER_FIELD_REGISTER["window_bottom_width_total_lf"]
-    assert entry["status"] == NOT_CONSUMED
-    assert "FINISH TRIM" in entry["reason"] and "step 3" in entry["reason"]
-    assert "starter deduction" not in str(entry.get("consumed_by", ""))
+    assert entry["status"] == CONSUMED
+    assert "FINISH TRIM" in str(entry["consumed_by"])
+    assert "FICTION" in str(entry["consumed_by"])  # the wrong-aim is on the record
 
 
 def test_registers_are_detection_only():

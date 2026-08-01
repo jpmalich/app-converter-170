@@ -90,7 +90,7 @@ def test_j_and_ft_context_split_with_region_colors():
     assert rg["qty"] == 6  # 69.6 ÷ 12.5 → 6
     assert "shake gable region" in rg["note"]
     assert "Finish Trim Standard color — eave run" in lines
-    assert "Finish Trim Standard color — window perimeter" in lines
+    assert "Finish Trim Standard color — window sills" in lines
 
 
 def test_single_profile_keeps_pooled_rows_regression():

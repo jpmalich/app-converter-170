@@ -36,9 +36,9 @@ _SHARED = {
         "batten stacked-wall-height term — KEY FIX landed build step 2 (named item, ruled "
         "2026-08-01): blueprint wrote _perimeter_lf while the reader reads footprint_perimeter_ft; "
         "writer-key == reader-key is pinned by test"]},
-    "window_bottom_width_total_lf": {"status": NOT_CONSUMED, "reason":
-        "10(e) ruled 2026-08-01: consumer = FINISH TRIM sill term (vinyl+Ascend) — formula "
-        "lands build step 3, flips to CONSUMED then"},
+    "window_bottom_width_total_lf": {"status": CONSUMED, "consumed_by": [
+        "FINISH TRIM sill term (vinyl+Ascend) — 10(e) ruled, landed build step 3 "
+        "(wbw primary, count × 3' fallback)"]},
     "vent_count": {"status": CONSUMED, "consumed_by": ["vent accessory rows"]},
     "shutter_count": {"status": CONSUMED, "consumed_by": ["shutter accessory rows"]},
 }

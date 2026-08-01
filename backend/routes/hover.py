@@ -92,6 +92,7 @@ ENTRY_DOOR_PERIM_LF = 19.0    # 6'8" × 3'0" → 2 × (6.67 + 3.0) ≈ 19.3
 GARAGE_DOOR_PERIM_LF = 32.0   # 9'0" × 7'0" → 2 × (9 + 7) = 32
 PATIO_DOOR_PERIM_LF = 22.0    # 6'0" × 6'8" → 2 × (6 + 6.67) ≈ 25.3 (use 22, panels share jambs)
 WINDOW_PERIM_LF_FALLBACK = 14.0  # 3'0" × 4'0" typical replacement window → 14 perim
+FINISH_TRIM_SILL_LF_FALLBACK = 3.0  # ruled 2026-08-01 (10e): typical 3' sill width
 
 
 def _window_perim_total_lf(m: dict) -> float:
@@ -122,26 +123,49 @@ RAKE_J_DOCTRINE = ("R1 ruled 2026-07-30: exactly 2 J passes per rake — "
                    "wall pass on the wall J-Channel line, ONE rake pass on Soffit J")
 
 
+def _finish_trim_sill_lf(m: dict) -> float:
+    """RULED 2026-08-01 (10e closing): finish trim's window term is the
+    SILL WIDTHS — undersill trim catches the cut panel edge under the sill;
+    the window sides/tops are the J-channel's work, billed separately.
+    Primary input = measured window_bottom_width_total_lf; else compute it
+    from per-window dims; else window_count × 3' (the old ×14 full-opening
+    constant is retired for this term)."""
+    wbw = float(m.get("window_bottom_width_total_lf") or 0)
+    if wbw > 0:
+        return wbw
+    windows = m.get("windows") or []
+    if windows:
+        computed = sum(float(w.get("width_in") or 0) for w in windows) / 12.0
+        if computed > 0:
+            return computed
+    return float(m.get("window_count") or 0) * FINISH_TRIM_SILL_LF_FALLBACK
+
+
 def _finish_trim_pcs(m: dict) -> int:
-    """Iter 78f — Finish Trim qty = ceil((Eaves + full window perimeter) ÷ 12.5).
+    """Finish Trim qty = ceil((Eaves top course + window SILL widths) ÷ 12.5)
+    — Howard ruled 2026-08-01 (10e): sills + top course; the Iter 78f full
+    window perimeter retired (it double-served edges the J already covers).
     Rakes are deliberately excluded: the rake's two passes are already
     carried by wall J-Channel (1) + Soffit J (1) — R1 ruled 2026-07-30
     (see RAKE_J_DOCTRINE); adding rake here would push it to 3."""
     eaves = float(m.get("eaves_lf") or 0)
-    win_perim = _window_perim_total_lf(m)
-    return max(0, math.ceil((eaves + win_perim) / 12.5 - 1e-9))
+    sills = _finish_trim_sill_lf(m)
+    return max(0, math.ceil((eaves + sills) / 12.5 - 1e-9))
 
 
 def _finish_trim_note(m: dict) -> str:
     eaves = float(m.get("eaves_lf") or 0)
-    win_perim = _window_perim_total_lf(m)
-    windows = m.get("windows") or []
-    src = (f"{len(windows)} windows individual dims"
-           if windows else
-           f"{int(m.get('window_count') or 0)} wins × {int(WINDOW_PERIM_LF_FALLBACK)} LF (fallback)")
-    total = eaves + win_perim
+    sills = _finish_trim_sill_lf(m)
+    if float(m.get("window_bottom_width_total_lf") or 0) > 0:
+        src = "measured sill widths"
+    elif m.get("windows"):
+        src = f"{len(m.get('windows') or [])} windows summed sill widths"
+    else:
+        src = (f"{int(m.get('window_count') or 0)} wins × "
+               f"{int(FINISH_TRIM_SILL_LF_FALLBACK)}' sill (fallback)")
+    total = eaves + sills
     pcs = max(0, math.ceil(total / 12.5 - 1e-9))
-    return (f"{eaves:.0f} eaves + {win_perim:.0f} LF window perim "
+    return (f"{eaves:.0f} eaves + {sills:.0f} LF window sills "
             f"({src}) = {total:.0f} LF ÷ 12.5 = {pcs} pcs")
 
 
@@ -502,11 +526,11 @@ def _region_context_lines(m: dict) -> list[dict]:
         qty = math.ceil(eaves / 12.5 - 1e-9)
         line("Finish Trim Standard color — eave run", _FT_SKU, qty,
              f"{eaves:.0f} LF eaves ÷ 12.5 = {qty}")
-    win_perim = _window_perim_total_lf(m)
-    if win_perim > 0:
-        qty = math.ceil(win_perim / 12.5 - 1e-9)
-        line("Finish Trim Standard color — window perimeter", _FT_SKU, qty,
-             f"{win_perim:.0f} LF window perimeter ÷ 12.5 = {qty}")
+    win_sills = _finish_trim_sill_lf(m)
+    if win_sills > 0:
+        qty = math.ceil(win_sills / 12.5 - 1e-9)
+        line("Finish Trim Standard color — window sills", _FT_SKU, qty,
+             f"{win_sills:.0f} LF window sills ÷ 12.5 = {qty}")
     return out
 
 

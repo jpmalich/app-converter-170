@@ -25,11 +25,11 @@ HOVER_FIELD_REGISTER = {
     "opening_count": {"status": CONSUMED, "consumed_by": ["opening-driven trim counts", "Class C attribution flag"]},
     "opening_perimeter_lf": {"status": CONSUMED, "consumed_by": ["vinyl J-channel driver (tops/sills/sides preferred, lump fallback)"]},
     "window_count": {"status": CONSUMED, "consumed_by": ["window wrap/trim counts", "J blocks", "caulk-per-opening (register #5)"]},
-    "window_bottom_width_total_lf": {"status": NOT_CONSUMED, "reason":
-        "10(e) RULED 2026-08-01: the old 'starter deduction at window sills' entry was FICTION "
-        "— no such consumer ever existed (starter deducts entry-door widths only). Real ruled "
-        "consumer = FINISH TRIM sill term (vinyl + Ascend; wbw primary, window_count × 3' "
-        "fallback) — the formula LANDS in build step 3 and this entry flips to CONSUMED then"},
+    "window_bottom_width_total_lf": {"status": CONSUMED, "consumed_by": [
+        "FINISH TRIM sill term (vinyl + Ascend) — 10(e) ruled 2026-08-01, landed build step 3: "
+        "sills + top course; wbw primary, per-window sum next, window_count × 3' fallback. "
+        "The old 'starter deduction at window sills' entry was FICTION (no such consumer ever "
+        "existed); the Iter 78f full-window-perimeter term retired with the ruling"]},
     "door_count": {"status": CONSUMED, "consumed_by": ["door trim counts", "J blocks", "caulk-per-opening"]},
     "entry_door_count": {"status": CONSUMED, "consumed_by": ["Cap entry door rows", "mini-splits scaling (register #2)"]},
     "patio_door_count": {"status": CONSUMED, "consumed_by": ["Cap patio door rows"]},
