@@ -44,3 +44,17 @@ Ruling 2 pending-flag → aggregator unification (absorbs rulings 1, 3, 6, 7 + f
 4. Photo → shared rebuild (HOLD existing, manual trigger) + starter unify + confidence gate (findings 4+9a).
 5. Pending-not-discarded flag, photo AND blueprint runs.
 6. Four photo fill-in boxes + eaves recompute + opening-basis unify.
+
+## STEP 2 — DONE (commit 857265d, RECORDED 2026-08-01 11:52 UTC · CLEAN, 1712 passed)
+- door_field_register.py: BLUEPRINT + PHOTO Class-B registers, shipped GREEN. Enforcement: tests/test_door_registers_2026_08_01.py (unregistered field FAILS, dropped field FAILS, detection-only rider).
+- LANDED: blueprint prompt schema + aggregator now capture soffit_sqft, level/sloped_frieze_lf, drip_edge_lf, total_trim_sqft, footprint_area_sqft, address, opening_facade_assignments (R6 strict), wbw (schedule sill sum). FOOTPRINT KEY FIX: blueprint+photo write footprint_perimeter_ft (writer-key==reader-key pinned by test).
+- PHOTO lands: outside/inside_corner_count from corner_locations (Q13 min-1-per-corner fires: 35LF/4 corners = 4 pcs not 3), footprint_perimeter_ft (wall-width sum), wbw.
+- Hover wbw register entry corrected per 10(e) (fiction on record).
+- BYTE-IDENTICAL: NONE moved (step2_after.json == step1_before.json shas).
+
+## STEP 3 — DONE (commit ba03709, RECORDED 2026-08-01 12:10 UTC · CLEAN, 1718 passed)
+- FINISH TRIM = sills + top course (vinyl+Ascend): wbw primary → per-window sill sum → count×3' fallback. FINISH_TRIM_SILL_LF_FALLBACK=3.0. J-channel UNCHANGED (full perimeter). Region-split context row renamed "window sills". Registers flipped CONSUMED.
+- NAMED DELTAS (only Finish Trim rows moved, both derivation layers, everything else byte-identical): 3 Degree ×3 LP estimates 59→33 (measured wbw); Casile 51→23; 261 Haugh round-two 51→23; Haugh photo-crop 54→20. 3 Degree vinyl EST-979583 stored 59 HOLDS (no stored measurements; updates on re-import/re-derive).
+- Seals: tests/test_finish_trim_sills_2026_08_01.py (named delta 59→32 pinned on vinyl-estimate figures; only-finish-trim-moved fence).
+
+## REMAINING: step 4 (photo shared rebuild + starter unify + confidence gate), step 5 (pending-not-discarded flags, photo AND blueprint), step 6 (4 photo fill-in boxes + eaves recompute + opening-basis unify).
