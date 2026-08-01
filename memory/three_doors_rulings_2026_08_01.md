@@ -27,3 +27,20 @@ Ruling 2 pending-flag → aggregator unification (absorbs rulings 1, 3, 6, 7 + f
 
 ## NEW DISCOVERY DURING MATRIX BUILD
 - BLUEPRINT FOOTPRINT-PERIMETER KEY MISMATCH: blueprint aggregator stores measured perimeter as `_perimeter_lf`; the batten stacked-wall-height machinery reads `footprint_perimeter_ft` (lp_package_routes.py:1255). Blueprint-sourced LP estimates silently lose the measured batten term — S-D cell in the matrix.
+
+## CLOSING RULINGS (all ten ruled, gates cleared)
+- F8 starter: blueprint rule extends to photo (perimeter + engine door deduction). FIX-IT.
+- F9: (a) substitute story-default + flag loudly via confidence gate.
+- F10 a–d: fix-its in unification; (d) pending-flag surfaces BLUEPRINT runs too.
+- 10e: option (ii) — wbw feeds FINISH TRIM, vinyl+Ascend only. Register corrects to real consumer.
+- FINISH-TRIM FALLBACK SILL WIDTH = 3' (window_count × 3', old ×14 full-opening constant retired for the sill term). Formula = sills + top course; J-channel UNCHANGED at full perimeter. NAMED DELTA: 3 Degree vinyl 59 → ~32 pcs.
+- FILL-IN BOXES: four, photo door only — soffit_sqft, drip_edge_lf, total_trim_sqft, frieze presence-toggle. All in trade-spec box. Hover/blueprint zero.
+- FOOTPRINT PERIMETER KEY MISMATCH: own fix item — writer's key must equal reader's key, pinned.
+
+## BUILD SEQUENCE (Howard, 2026-08-01) — report per step w/ byte-identical proof
+1. ✅ DONE (commit 5e38c42, 2026-08-01): ONE aggregation copy — measure_staging.py. Gable 0.70 all doors · shared walk + buckets · door_count lands (photo+blueprint) · ONE paired openings builder · full precision at intake · blueprint sanity recompute rewired (own 0.5 copy retired). SUITE: 1703 passed, 1 skipped (RECORDED 2026-08-01 11:02 UTC · 5e38c42 · CLEAN). BYTE-IDENTICAL: 7/7 ground-truth SHAs unmoved (/app/memory/evidence/step1_before.json = step1_after.json). Ruled test-pin updates: blueprint gable delta 7.5→10.5 (0.70), intake-round pins → full precision. New seals: tests/test_three_doors_step1_2026_08_01.py.
+2. NEXT: dropped-field register all 3 doors + land every S-D cell (blueprint 11, photo 5, hover wbw) incl. footprint key fix. Register ships GREEN.
+3. Finish trim sills+top course (wbw primary, count×3' fallback), named delta 3 Degree 59→~32.
+4. Photo → shared rebuild (HOLD existing, manual trigger) + starter unify + confidence gate (findings 4+9a).
+5. Pending-not-discarded flag, photo AND blueprint runs.
+6. Four photo fill-in boxes + eaves recompute + opening-basis unify.
