@@ -38,6 +38,9 @@ from pydantic import BaseModel
 
 from deps import get_current_user
 import lp_smartside_formulas as lp_formulas
+from measure_staging import (guess_vero_product_type as _staging_guess_vero,
+                             VERO_TO_MEZZO as _VERO_TO_MEZZO,
+                             build_paired_openings as _staging_build_paired_openings)
 
 # Iter 78q — Phase 3 Deep Verify uses MongoDB to cache rendered elevation
 # page PNGs. The TTL index purges entries 1 hour after creation so we
@@ -59,55 +62,8 @@ except Exception:  # pragma: no cover — defensive at import time
 # dimensions strongly indicate otherwise.
 # -----------------------------------------------------------------------------
 def _guess_vero_product_type(width_in: float, height_in: float) -> str:
-    """Heuristic to pick a Vero product type from rough opening dims.
-
-    Iter 78y (2026-02-13): Vero collapsed to 3 product types: Double Hung,
-    2-Lite Slider, Patio Door. Casement / 3-Lite Slider / Picture were
-    dropped — small narrow windows now classify as DH, wide windows as
-    2-Lite Slider. Patio Door is reserved for explicit door classification
-    upstream (HOVER labels), never inferred from dims here.
-    """
-    try:
-        w = float(width_in or 0)
-        h = float(height_in or 0)
-    except (TypeError, ValueError):
-        return "Vero Double Hung"
-    if w <= 0 or h <= 0:
-        return "Vero Double Hung"
-    # Wider than tall + at least 40" wide → 2-Lite Slider
-    if w >= 40 and w > h:
-        return "Vero 2-Lite Slider"
-    # Everything else defaults to DH (small, tall, or narrow)
-    return "Vero Double Hung"
-    w = float(width_in or 0)
-    h = float(height_in or 0)
-    if w <= 0 or h <= 0:
-        return "Vero Double Hung"
-
-    # Iter 78y — Casement product type removed. Tight small openings
-    # (kitchen above-sink, bath transom) now classify as DH per Howard's
-    # bias for replacements. 3-Lite Slider + Picture were also removed —
-    # very wide AND square landscape windows now route to 2-Lite Slider.
-    # 2-Lite slider (XO) = wide AND landscape orientation
-    if w >= 40 and w > h:
-        return "Vero 2-Lite Slider"
-    # Default everything else to DH (matches Howard's 99% bias for replacements)
-    return "Vero Double Hung"
-
-
-# Vero → Mezzo product type map. Iter 78y — Vero collapsed to 3 active
-# product types (DH / 2-Lite Slider / Patio Door). The historical
-# Casement/3-Lite/Picture keys remain here as a safety net so any saved
-# vero_opening carrying one of those legacy types gets mapped to a
-# still-valid Mezzo equivalent during snapshot reconcile.
-_VERO_TO_MEZZO = {
-    "Vero Double Hung":      "Mezzo Double Hung",
-    "Vero 2-Lite Slider":    "Mezzo 2-Lite Slider",
-    # Legacy fallbacks (Vero types no longer offered):
-    "Vero 3-Lite Slider":    "Mezzo 2-Lite Slider",
-    "Vero Picture":          "Mezzo Double Hung",
-    "Vero 1-Lite Casement":  "Mezzo Double Hung",
-}
+    """ONE COPY (ruled 2026-08-01): lives in measure_staging."""
+    return _staging_guess_vero(width_in, height_in)
 
 
 def _vero_to_mezzo_product_type(vero_type: str) -> str:
@@ -2479,62 +2435,13 @@ def _apply_trade_spec_widths(lines: list, m: dict) -> list:
 
 
 def _build_window_openings(measurements: dict) -> tuple[list[dict], list[dict]]:
-    """Turn the extracted `windows[]` list into BOTH Vero and Mezzo opening
-    rows so the contractor can quote both brands side-by-side on the
-    paired windows estimate. The two arrays are paired 1:1 — they share
-    UUIDs and the same HOVER id, with product_type derived from the SAME
-    W×H guess (`_vero_to_mezzo_product_type` maps the Vero guess to the
-    nearest Mezzo product since Mezzo has no Casement)."""
-    vero_out: list[dict] = []
-    mezzo_out: list[dict] = []
+    """Turn the extracted `windows[]` list into paired Vero + Mezzo opening
+    rows. ONE BUILDER (Howard ruled 2026-08-01, finding 10b): the math lives
+    in measure_staging.build_paired_openings — this is the dims-mode door."""
     raw = measurements.get("windows") or []
     if not isinstance(raw, list):
-        return vero_out, mezzo_out
-    for w in raw:
-        try:
-            wid = float(w.get("width_in") or 0)
-            hgt = float(w.get("height_in") or 0)
-        except (TypeError, ValueError):
-            continue
-        if wid <= 0 or hgt <= 0:
-            continue
-        hover_id = str(w.get("id") or "").strip()
-        vero_type = _guess_vero_product_type(wid, hgt)
-        mezzo_type = _vero_to_mezzo_product_type(vero_type)
-        # Share UUID + label across both brands so the FE preview can show
-        # one editable row that drives both, and so a contractor who skips
-        # one side can still identify the matching opening on the other.
-        opening_id = str(uuid.uuid4())
-        vero_out.append({
-            "id": opening_id,
-            "hover_id": hover_id,
-            "product_type": vero_type,
-            "label": hover_id,
-            "width": wid,
-            "height": hgt,
-            "qty": 1,
-            "sister_color": "White Interior/White Exterior",
-            "sizing": "ui_bucket",
-            "bucket_label": "",
-            "base_mat": 0,
-            # Iter 46: Vero uses Mezzo-style adders. The frontend
-            # auto-seeds "Climatech Plus" via VeroPanel's reconciliation
-            # hook on first render so we don't bake it in here.
-            "adders": [],
-        })
-        mezzo_out.append({
-            "id": opening_id,
-            "hover_id": hover_id,
-            "product_type": mezzo_type,
-            "label": hover_id,
-            "width": wid,
-            "height": hgt,
-            "qty": 1,
-            "bucket_label": "",
-            "base_mat": 0,
-            "adders": [],
-        })
-    return vero_out, mezzo_out
+        return [], []
+    return _staging_build_paired_openings(windows=raw)
 
 
 # -----------------------------------------------------------------------------

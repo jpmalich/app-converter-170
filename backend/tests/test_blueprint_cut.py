@@ -83,9 +83,11 @@ def test_gable_pitch_computed_over_drawing_scaled():
     assert len(prov) == 2
     assert prov[0]["computed_ft"] == 8.75    # (30/2) × 7/12 — the June finding
     assert prov[0]["scaled_ft"] == 8.5
-    # gable area uses the computed rise: 2 × 0.5×30×8.75 = 262.5
+    # gable area uses the computed rise at the SEALED 0.70 factor (Howard
+    # ruled 2026-08-01: one gable constant, all doors — pre-C4 0.5 retired):
+    # delta = 2 × 0.7×30×(8.75−8.5) = 10.5
     m_noptch = _agg(_base_raw())
-    assert m["siding_sqft"] - m_noptch["siding_sqft"] == pytest.approx(7.5, abs=0.2)
+    assert m["siding_sqft"] - m_noptch["siding_sqft"] == pytest.approx(10.5, abs=0.2)
 
 
 def test_starter_reports_raw_perimeter_engine_owns_deduction():

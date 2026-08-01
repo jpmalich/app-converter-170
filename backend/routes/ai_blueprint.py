@@ -53,6 +53,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from deps import get_current_user
 from db import db
 from routes.hover import _build_lines, _build_window_openings
+import measure_staging as staging
 
 logger = logging.getLogger(__name__)
 
@@ -501,33 +502,22 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         return printed_gh
 
     gable_pitch_provenance = []
-    siding_sqft = 0.0
-    gable_sqft = 0.0
-    dormer_sqft = 0.0
-    for w in walls:
-        width_ft = float(w.get("width_ft") or 0)
-        eave_h = float(w.get("height_ft") or 0)
-        gross = width_ft * eave_h
-        pct = float(w.get("siding_pct_this_wall") or 100.0)
-        # Same fraction-vs-percent defensiveness as the photo aggregator.
-        if 0 < pct < 1:
-            pct = pct * 100.0
-        if pct <= 0:
-            pct = 100.0
-        pct = min(pct, 100.0)
-        siding_sqft += gross * (pct / 100.0)
-        gh = float(w.get("gable_triangle_height_ft") or 0)
-        gh_eff = _gable_rise(width_ft, gh)
-        if gh_eff != gh:
+    # ONE WALL WALK (ruled 2026-08-01, step 1): shared math in
+    # measure_staging.walk_walls — GABLE FACTOR 0.70 sealed across doors
+    # (the pre-C4 0.5 true-triangle retired). Blueprint's source adapter
+    # keeps the pitch-computed rise (printed pitch beats drawing-scaled).
+    _walk = staging.walk_walls(walls, gable_rise_fn=_gable_rise)
+    siding_sqft = _walk["siding_sqft"]
+    gable_sqft = _walk["gable_sqft"]
+    dormer_sqft = _walk["dormer_sqft"]
+    for d in _walk["detail"]:
+        if d["rise_used"] != d["rise_read"]:
             gable_pitch_provenance.append({
-                "wall": (w.get("label") or "?"),
-                "scaled_ft": round(gh, 2),
-                "computed_ft": round(gh_eff, 2),
+                "wall": (d["label"] or "?"),
+                "scaled_ft": round(d["rise_read"], 2),
+                "computed_ft": round(d["rise_used"], 2),
                 "pitch": str(raw.get("roof_pitch") or ""),
             })
-        if gh_eff > 0 and width_ft > 0:
-            gable_sqft += 0.5 * width_ft * gh_eff
-        dormer_sqft += float(w.get("dormer_face_sqft") or 0)
     siding_sqft += gable_sqft + dormer_sqft
 
     # Shakedown fix (2026-07-14) — chase/appendage faces belong in the
@@ -546,20 +536,17 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                 f"{(ap.get('wall') or '?')} {(ap.get('kind') or 'appendage').replace('_', ' ')} ({fs:.0f} ft²)")
     siding_sqft += appendage_sqft
 
-    # Door type → opening-count bucket
-    counts = {"window": 0, "entry_door": 0, "patio_door": 0, "garage_door": 0}
-    opening_sqft = 0.0
-    perimeter_lf = 0.0
+    # ONE OPENING BUCKETING (ruled 2026-08-01, step 1): door adapter
+    # normalizes rows; the math (buckets, door_count TOTAL, ft², perimeter)
+    # is measure_staging.bucket_openings — one copy, all doors.
+    _rows = []
     for win in windows:
         try:
             qty = max(1, int(win.get("qty") or 1))
         except (TypeError, ValueError):
             qty = 1
-        counts["window"] += qty
-        w_in = float(win.get("width_in") or 0)
-        h_in = float(win.get("height_in") or 0)
-        opening_sqft += qty * (w_in * h_in) / 144.0
-        perimeter_lf += qty * 2 * ((w_in + h_in) / 12.0)
+        _rows.append({"type": "window", "count": qty,
+                      "width_in": win.get("width_in"), "height_in": win.get("height_in")})
     for d in doors:
         t = (d.get("type_hint") or "").lower()
         if "garage" in t:
@@ -572,11 +559,12 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             qty = max(1, int(d.get("qty") or 1))
         except (TypeError, ValueError):
             qty = 1
-        counts[bucket] += qty
-        w_in = float(d.get("width_in") or 0)
-        h_in = float(d.get("height_in") or 0)
-        opening_sqft += qty * (w_in * h_in) / 144.0
-        perimeter_lf += qty * 2 * ((w_in + h_in) / 12.0)
+        _rows.append({"type": bucket, "count": qty,
+                      "width_in": d.get("width_in"), "height_in": d.get("height_in")})
+    _bk = staging.bucket_openings(_rows)
+    counts = _bk["counts"]
+    opening_sqft = _bk["opening_sqft"]
+    perimeter_lf = _bk["opening_perimeter_lf"]
 
     # Expand schedule rows into a per-opening list (qty=1 each) so
     # _build_window_openings sees one row per physical window. Matches
@@ -647,23 +635,28 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         })
 
     measurements = {
-        "siding_sqft": round(siding_sqft, 1),
-        "siding_with_openings_sqft": round(siding_sqft, 1),
-        "opening_sqft": round(opening_sqft, 1),
-        "eaves_lf": round(float(raw.get("eaves_lf") or 0), 1),
-        "rakes_lf": round(float(raw.get("rakes_lf") or 0), 1),
-        "starter_lf": round(_starter_lf, 1),
-        "outside_corner_lf": round(float(
+        # RULING 7 (2026-08-01): full precision on the way in — no door
+        # rounds at intake; the ORDER layer is the one rounding point.
+        "siding_sqft": siding_sqft,
+        "siding_with_openings_sqft": siding_sqft,
+        "opening_sqft": opening_sqft,
+        "eaves_lf": float(raw.get("eaves_lf") or 0),
+        "rakes_lf": float(raw.get("rakes_lf") or 0),
+        "starter_lf": _starter_lf,
+        "outside_corner_lf": float(
             raw.get("outside_corner_lf")
             or 4 * float(raw.get("avg_wall_height_ft") or 0)
-        ), 1),
-        "inside_corner_lf": round(float(raw.get("inside_corner_lf") or 0), 1),
-        "opening_perimeter_lf": round(perimeter_lf, 1),
-        "opening_count": sum(counts.values()),
+        ),
+        "inside_corner_lf": float(raw.get("inside_corner_lf") or 0),
+        "opening_perimeter_lf": perimeter_lf,
+        "opening_count": _bk["opening_count"],
         "window_count": counts["window"],
         "entry_door_count": counts["entry_door"],
         "patio_door_count": counts["patio_door"],
         "garage_door_count": counts["garage_door"],
+        # Finding 6 (ruled 2026-08-01): door_count TOTAL lands on every
+        # door — caulk-per-color + J-blocks read it.
+        "door_count": _bk["door_count"],
         # Q7 (ruled 2026-07-27): vents/shutters wired on the blueprint door.
         "vent_count": int(raw.get("vent_count") or 0),
         "shutter_count": int(raw.get("shutter_count") or 0),
@@ -878,25 +871,14 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         for d in doors
     ]
 
-    # Iter 79j.34 — Sanity reconciliation. The 3D viewer computes its
-    # per-wall siding sqft from raw.walls[] using the SAME formula the
-    # aggregator uses for `siding_sqft`. If they ever diverge >2%,
-    # something drifted in one of the two calculators — surface a
-    # warning field the preview banner picks up.
-    threed_sqft = 0.0
-    for w in walls:
-        _wft = float(w.get("width_ft") or 0)
-        _eh = float(w.get("height_ft") or 0)
-        _pct = float(w.get("siding_pct_this_wall") or 100.0)
-        if 0 < _pct < 1:
-            _pct *= 100.0
-        _pct = min(max(_pct, 0.0), 100.0)
-        threed_sqft += _wft * _eh * (_pct / 100.0)
-        _gh = _gable_rise(_wft, float(w.get("gable_triangle_height_ft") or 0))
-        if _gh > 0 and _wft > 0:
-            threed_sqft += 0.5 * _wft * _gh
-        threed_sqft += float(w.get("dormer_face_sqft") or 0)
-    threed_sqft += appendage_sqft
+    # Iter 79j.34 sanity reconciliation — REWIRED (ruled 2026-08-01, step 1,
+    # no-fourth-copy): the old block re-walked walls[] with its OWN copy of
+    # the formula (0.5 gable, its own pct clamp) — the drift detector had
+    # itself drifted. It now recomputes through the ONE shared walk; a
+    # >2% delta can only mean someone forked the aggregation math again.
+    _sanity = staging.walk_walls(walls, gable_rise_fn=_gable_rise)
+    threed_sqft = (_sanity["siding_sqft"] + _sanity["gable_sqft"]
+                   + _sanity["dormer_sqft"] + appendage_sqft)
     if siding_sqft > 0:
         _delta_pct = 100.0 * abs(threed_sqft - siding_sqft) / siding_sqft
         if _delta_pct > 2.0:

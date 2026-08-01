@@ -147,8 +147,9 @@ class TestShortWallClamp:
             "story_count": 1,
         }
         m = _aggregate_to_hover_shape(raw)
-        # area math used the real 6.5, not the avg
-        assert m["siding_sqft"] == round(37 * 6.5, 1)
+        # area math used the real 6.5, not the avg — FULL PRECISION on the
+        # way in (Howard ruled 2026-08-01: round once, at the order layer)
+        assert m["siding_sqft"] == 37 * 6.5
         assert w["_height_flag"] == "below_typical_range"
         assert "verify with tape" in w["_reconciliation_note"]
 
@@ -157,7 +158,8 @@ class TestShortWallClamp:
         w = _wall("right", 7.1875, width=37)
         raw = {"walls": [w], "openings": [], "avg_wall_height_ft": 8.9, "story_count": 1}
         m = _aggregate_to_hover_shape(raw)
-        assert m["siding_sqft"] == round(37 * 7.1875, 1)
+        # full precision at intake (ruled 2026-08-01, round-once): 265.9375
+        assert m["siding_sqft"] == 37 * 7.1875
         assert "_height_flag" not in w
 
     def test_story_unit_junk_still_replaced(self):

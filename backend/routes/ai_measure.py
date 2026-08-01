@@ -47,6 +47,7 @@ from PIL import Image
 
 from deps import get_current_user
 from db import db
+import measure_staging as staging
 from routes.hover import _build_lines  # reuse the same measurement→line mapper
 from routes.hover import _vero_to_mezzo_product_type  # Q5 — Mezzo pairing
 
@@ -1006,41 +1007,13 @@ Return ONLY the JSON object. No explanation, no code fences."""
 # `Vero Picture` or `Vero 3-Lite Slider` (both frozen) now reroute to
 # `Vero Double Hung` so the estimator can hand-tag/upgrade them after
 # the fact, instead of landing in a hidden section.
-_STYLE_TO_VERO_PRODUCT_TYPE: dict[str, tuple[str, int]] = {
-    "Double Hung":        ("Vero Double Hung",     1),
-    "Single Hung":        ("Vero Double Hung",     1),
-    "Casement":           ("Vero 1-Lite Casement", 1),
-    "Twin Casement":      ("Vero 1-Lite Casement", 2),
-    "Awning":             ("Vero 1-Lite Casement", 1),
-    "Hopper":             ("Vero 1-Lite Casement", 1),
-    "2-Lite Slider":      ("Vero 2-Lite Slider",   1),
-    "3-Lite Slider":      ("Vero 2-Lite Slider",   1),  # frozen → reroute to 2-Lite
-    "Picture":            ("Vero Double Hung",     1),  # frozen → DH
-    "Twin Double Hung":   ("Vero Double Hung",     2),
-    "Twin Single Hung":   ("Vero Double Hung",     2),
-    "Triple Double Hung": ("Vero Double Hung",     3),
-    "Bay Window":         ("Vero Double Hung",     3),  # frozen → DH (3-pane)
-    "Bow Window":         ("Vero Double Hung",     5),  # frozen → DH (5-pane)
-    "Half-Round":         ("Vero Double Hung",     1),  # frozen → DH
-    "Quarter-Round":      ("Vero Double Hung",     1),  # frozen → DH
-    "Arch":               ("Vero Double Hung",     1),  # frozen → DH
-    "Octagon":            ("Vero Double Hung",     1),  # frozen → DH
-    "Hexagon":            ("Vero Double Hung",     1),  # frozen → DH
-    "Garden Window":      ("Vero Double Hung",     1),  # frozen → DH
-    "Other Shape":        ("Vero Double Hung",     1),  # frozen → DH
-}
+# ONE COPY (ruled 2026-08-01): style→Vero map + resolver live in
+# measure_staging; names kept for existing imports/tests.
+_STYLE_TO_VERO_PRODUCT_TYPE = staging.STYLE_TO_VERO_PRODUCT_TYPE
 
 
 def _vero_for_style(style: str, width_in: float, height_in: float) -> tuple[str, int]:
-    """Map an AI `style` string to (Vero product_type, qty_multiplier).
-    Falls back to the legacy W/H heuristic from hover.py when the style
-    is empty/unknown — preserves backwards-compatible behaviour for
-    legacy sessions that have no style field."""
-    style = (style or "").strip()
-    if style in _STYLE_TO_VERO_PRODUCT_TYPE:
-        return _STYLE_TO_VERO_PRODUCT_TYPE[style]
-    from .hover import _guess_vero_product_type  # local import avoids cycle
-    return (_guess_vero_product_type(width_in, height_in), 1)
+    return staging.vero_for_style(style, width_in, height_in)
 
 
 def apply_roof_type_material_math(raw: dict, walls: list, gable_sqft: float, dormer_sqft: float) -> tuple:
@@ -1152,75 +1125,12 @@ def apply_roof_type_material_math(raw: dict, walls: list, gable_sqft: float, dor
 
 
 def _build_vero_openings_from_ai(openings: list, schedule: list | None = None) -> list[dict]:
-    """Turn AI-detected windows into the `vero_openings[]` rows the
-    Windows workspace expects on Apply.
-
-    Iter 57i — primary source is `openings_schedule` (one row per
-    (wall, type, size, style) with `count: N`). Each schedule row
-    becomes `count × qty_multiplier` Vero rows. Falls back to the
-    deduped `openings[]` list when no schedule is present (legacy
-    sessions). The schedule path is correct when a wall has 3 distinct
-    identical DH windows — they appear as one schedule row with
-    count=3 and produce 3 Vero DH rows. The fallback path would
-    produce only 1 (under-count).
-
-    Non-window openings (doors / vents) are skipped — they belong to
-    the Siding workspace's accessory rows, not Windows."""
-    out: list[dict] = []
-    seen: set[str] = set()
-
-    def _emit(*, otype: str, w: float, h: float, wall: str, style: str, count: int = 1):
-        if otype != "window" or w <= 0 or h <= 0 or count <= 0:
-            return
-        product_type, qty_mult = _vero_for_style(style, w, h)
-        # `qty_mult` covers multi-unit styles (Twin DH=2, Bay=3, Bow=5);
-        # `count` covers physically-distinct identical windows.
-        total = count * qty_mult
-        label = f"AI · {wall} · {style or 'Window'} · {int(w)}×{int(h)}"
-        for _ in range(total):
-            out.append({
-                "id": str(uuid.uuid4()),
-                "hover_id": "",
-                "product_type": product_type,
-                "label": label,
-                "width": w,
-                "height": h,
-                "qty": 1,
-                "sister_color": "White Interior/White Exterior",
-                "sizing": "ui_bucket",
-                "bucket_label": "",
-                "base_mat": 0,
-                "adders": [],
-                "ai_style": style,
-            })
-
-    if schedule:
-        for o in schedule:
-            try:
-                w = float(o.get("width_in") or 0)
-                h = float(o.get("height_in") or 0)
-            except (TypeError, ValueError):
-                continue
-            otype = (o.get("type") or "").lower()
-            wall = (o.get("elevation") or o.get("wall") or "other").lower()
-            style = (o.get("style") or "").strip()
-            count = int(o.get("count") or 0)
-            seen.add(f"{wall}|{otype}|{int(w)}|{int(h)}|{style.lower()}")
-            _emit(otype=otype, w=w, h=h, wall=wall, style=style, count=count)
-        return out
-
-    # Legacy fallback — no schedule available, walk the deduped list.
-    for o in openings or []:
-        try:
-            w = float(o.get("width_in") or 0)
-            h = float(o.get("height_in") or 0)
-        except (TypeError, ValueError):
-            continue
-        otype = (o.get("type") or "").lower()
-        wall = (o.get("wall") or "other").lower()
-        style = (o.get("style") or "").strip()
-        _emit(otype=otype, w=w, h=h, wall=wall, style=style, count=1)
-    return out
+    """ONE BUILDER (ruled 2026-08-01, finding 10b): style-mode door of
+    measure_staging.build_paired_openings. Schedule preferred (count=N per
+    identical row); deduped openings[] fallback for legacy sessions.
+    Non-window openings skip — they belong to siding accessories."""
+    vero, _mezzo = staging.build_paired_openings(openings=openings, schedule=schedule)
+    return vero
 
 
 
@@ -1890,9 +1800,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             + prev_notes
         ).strip()
 
-    siding_sqft = 0.0
-    gable_sqft = 0.0
-    dormer_sqft = 0.0
+    # PHOTO SOURCE ADAPTER (defenses stay door-side; the WALK is shared):
+    # Iter 55 hard clamp, Iter 79j.64 amber band, junk-width skip.
+    adapted_walls = []
     for w in walls:
         width_ft = float(w.get("width_ft") or 0)
         eave_h = float(w.get("height_ft") or 0)
@@ -1901,11 +1811,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # (0.7 ft) which deflates the whole quote by 10–100×. Those junk
         # shapes are always < 4 ft. If we get one, fall back to the
         # global avg_wall_height_ft, then the story-default.
-        # Iter 79j.64 — the old threshold was 7 ft, which silently
-        # OVERWROTE genuinely short walls with the average (red-house
-        # right wall tapes 7.19 ft; stepped walls drop lower). 4–7 ft
-        # readings are now KEPT and amber-flagged instead: real
-        # observation > erased asymmetry.
+        # Iter 79j.64 — 4–7 ft readings are KEPT and amber-flagged:
+        # real observation > erased asymmetry.
         if 0 < eave_h < 4:
             avg = float(raw.get("avg_wall_height_ft") or 0)
             story = float(raw.get("story_count") or 1)
@@ -1925,35 +1832,16 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                 " walls exist; verify with tape before quoting]"
             ).strip()
         # Same defensive clamp for width — no real house wall is < 5 ft.
-        # Single-digit widths usually mean Claude returned a meaningless
-        # fraction. Skip the wall (don't try to guess a width).
         if 0 < width_ft < 5:
             width_ft = 0
-        gross = width_ft * eave_h
-        pct = float(w.get("siding_pct_this_wall") or 100.0)
-        # Defensive parsing: Claude sometimes returns 0.85 meaning "85%"
-        # (a fraction) and sometimes returns 85 meaning "85%". Without
-        # this clamp a 2000 ft² house can shrink to 17 ft² because 0.85
-        # gets read as 0.85%. Heuristic: anything strictly between 0 and
-        # 1 is a fraction — multiply by 100 to get a percent. Anything
-        # exactly 0 or above 1 is already a percent (or junk).
-        if 0 < pct < 1:
-            pct = pct * 100.0
-        if pct <= 0:
-            pct = 100.0
-        pct = min(pct, 100.0)
-        siding_sqft += gross * (pct / 100.0)
-        # Gable triangle (only when Claude flagged this wall as a gable
-        # end). The triangle is assumed 100% siding unless the
-        # contractor manually overrides on the line item later.
-        gable_h = float(w.get("gable_triangle_height_ft") or 0)
-        if gable_h > 0 and width_ft > 0:
-            # C4 (ruled 2026-07-13): gable area = 0.7 × width × triangle
-            # height — the ruled estimating convention (angle-cut
-            # coverage), NOT the true triangle ÷2.
-            gable_sqft += 0.7 * width_ft * gable_h
-        # Dormers — already in ft², no width math needed.
-        dormer_sqft += float(w.get("dormer_face_sqft") or 0)
+        adapted_walls.append({**w, "width_ft": width_ft, "height_ft": eave_h})
+    # ONE WALL WALK (ruled 2026-08-01, step 1): shared math in
+    # measure_staging.walk_walls — GABLE FACTOR 0.70 (C4 ruled 2026-07-13,
+    # sealed across all doors 2026-08-01).
+    _walk = staging.walk_walls(adapted_walls)
+    siding_sqft = _walk["siding_sqft"]
+    gable_sqft = _walk["gable_sqft"]
+    dormer_sqft = _walk["dormer_sqft"]
     # C4 (ruled 2026-07-13): perceived APPENDAGE faces (chimney chase
     # outer + sides) are ATTRIBUTED to siding area — perception without
     # attribution is the C3 disease at the composition layer.
@@ -1988,56 +1876,52 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # under-counts when a wall genuinely has 3 identical-but-distinct
     # windows. The schedule preserves these counts.
     schedule_for_counts = raw.get("openings_schedule") or []
-    counts = {"window": 0, "entry_door": 0, "patio_door": 0, "garage_door": 0}
-    perimeter_lf = 0.0
+    # ONE OPENING BUCKETING (ruled 2026-08-01, step 1): shared math in
+    # measure_staging.bucket_openings. opening ft² stays on the deduped
+    # list until the basis unifies (step 6 — ruled fix-it 10c).
     if schedule_for_counts:
-        for o in schedule_for_counts:
-            t = (o.get("type") or "other").lower()
-            cnt = int(o.get("count") or 0)
-            if t in counts:
-                counts[t] += cnt
-            perimeter_lf += cnt * 2 * (
-                (float(o.get("width_in") or 0) + float(o.get("height_in") or 0)) / 12.0
-            )
+        _bk = staging.bucket_openings(schedule_for_counts)
     else:
         # Legacy sessions without a schedule fall back to the dedupe
         # list — preserves backwards compatibility.
-        for o in openings:
-            t = o.get("type", "other")
-            if t in counts:
-                counts[t] += 1
-            perimeter_lf += 2 * (
-                (float(o.get("width_in") or 0) + float(o.get("height_in") or 0)) / 12.0
-            )
+        _bk = staging.bucket_openings([{**o, "count": 1} for o in openings])
+    counts = _bk["counts"]
+    perimeter_lf = _bk["opening_perimeter_lf"]
 
     measurements = {
-        "siding_sqft": round(siding_sqft, 1),
-        "siding_with_openings_sqft": round(siding_with_openings_sqft, 1),
-        "opening_sqft": round(opening_sqft, 1),
-        "eaves_lf": round(float(raw.get("eaves_lf") or 0), 1),
-        "rakes_lf": round(float(raw.get("rakes_lf") or 0), 1),
+        # RULING 7 (2026-08-01): full precision on the way in — no door
+        # rounds at intake; the ORDER layer is the one rounding point.
+        "siding_sqft": siding_sqft,
+        "siding_with_openings_sqft": siding_with_openings_sqft,
+        "opening_sqft": opening_sqft,
+        "eaves_lf": float(raw.get("eaves_lf") or 0),
+        "rakes_lf": float(raw.get("rakes_lf") or 0),
         # Starter strip: AI value if Claude gave one, otherwise fall back
         # to eaves_lf since the starter perimeter runs along the same base
         # course as the eaves on a basic 1-story rectangle. The contractor
         # can adjust on the line item if the house has porches / walk-outs.
-        "starter_lf": round(float(raw.get("starter_lf") or raw.get("eaves_lf") or 0), 1),
+        # (Basis unifies to perimeter+deduction in step 4 — finding 8 ruled.)
+        "starter_lf": float(raw.get("starter_lf") or raw.get("eaves_lf") or 0),
         # Corners — Iter 79j.64: computed per-corner from the reconciled
         # per-wall heights (corner posts stand at eave lines; on stepped
         # or asymmetric houses `4 × avg` over/under-counts by several
         # LF). Falls back to the AI estimate, then the legacy 4 × avg,
         # when any primary wall is unmeasured.
-        "outside_corner_lf": round(float(
+        "outside_corner_lf": float(
             _corner_lf_from_walls(walls)
             or raw.get("outside_corner_lf")
             or 4 * float(raw.get("avg_wall_height_ft") or 0)
-        ), 1),
-        "inside_corner_lf": round(float(raw.get("inside_corner_lf") or 0), 1),
-        "opening_perimeter_lf": round(perimeter_lf, 1),
-        "opening_count": sum(counts.values()),
+        ),
+        "inside_corner_lf": float(raw.get("inside_corner_lf") or 0),
+        "opening_perimeter_lf": perimeter_lf,
+        "opening_count": _bk["opening_count"],
         "window_count": counts["window"],
         "entry_door_count": counts["entry_door"],
         "patio_door_count": counts["patio_door"],
         "garage_door_count": counts["garage_door"],
+        # Finding 6 (ruled 2026-08-01): door_count TOTAL lands on every
+        # door — caulk-per-color + J-blocks read it.
+        "door_count": _bk["door_count"],
         # Q7 (ruled 2026-07-27): vents wired from the openings the photo
         # door already sees; shutters pass through when the AI reports them.
         "vent_count": (
@@ -6725,22 +6609,18 @@ async def _execute_ai_measure_worker(
         except Exception:
             warnings = []
 
+        _vero_rows, _mezzo_rows = staging.build_paired_openings(
+            openings=raw.get("openings") or [],
+            schedule=raw.get("openings_schedule") or [],
+        )
         result = {
             "measurements": measurements,
             "lines": lines,
-            "vero_openings": _build_vero_openings_from_ai(
-                raw.get("openings") or [],
-                raw.get("openings_schedule") or [],
-            ),
+            "vero_openings": _vero_rows,
             # Q5 (ruled 2026-07-27): photo door pairs Mezzo rows with the
-            # Vero rows it already spawns (same shape as the Hover door).
-            "mezzo_openings": [
-                {**v, "product_type": _vero_to_mezzo_product_type(v["product_type"])}
-                for v in _build_vero_openings_from_ai(
-                    raw.get("openings") or [],
-                    raw.get("openings_schedule") or [],
-                )
-            ],
+            # Vero rows it already spawns (ONE builder pairs them by
+            # shared UUID — ruled 2026-08-01, finding 10b).
+            "mezzo_openings": _mezzo_rows,
             "raw_ai": raw,
             "model": model_name,          # Iter 79j.15 — actual model used (may differ from MODEL_NAME default)
             "model_provider": model_provider,
