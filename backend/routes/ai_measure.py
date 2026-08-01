@@ -2060,6 +2060,33 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # sessions.
         measurements["_per_elevation_breakdown"] = []
         measurements["_per_profile_sqft"] = {}
+    # STEP 2 (Howard ruled 2026-08-01): SOURCE PROVIDES IT → ENGINE CONSUMES
+    # IT — the photo door's supplied-dropped cells land.
+    # Corner COUNTS from the corner-location machinery (finding 7 ruled:
+    # per-corner Q13/Q12 + never-average tall rule fire on the photo door).
+    _clocs = raw.get("corner_locations") or []
+    if _clocs:
+        _osc_n = sum(1 for c in _clocs if (c or {}).get("type") == "outside")
+        _isc_n = sum(1 for c in _clocs if (c or {}).get("type") == "inside")
+        if _osc_n > 0:
+            measurements["outside_corner_count"] = _osc_n
+        if _isc_n > 0:
+            measurements["inside_corner_count"] = _isc_n
+    # Footprint perimeter = sum of measured wall widths (junk widths were
+    # zeroed by the adapter). Writer-key == reader-key (batten machinery).
+    _fp = sum(float(w.get("width_ft") or 0) for w in adapted_walls)
+    if _fp > 0:
+        measurements["footprint_perimeter_ft"] = _fp
+    # wbw — measured sum of window bottom (sill) widths; schedule preferred.
+    if schedule_for_counts:
+        _wbw = sum(max(0, int(o.get("count") or 0)) * float(o.get("width_in") or 0) / 12.0
+                   for o in schedule_for_counts
+                   if (o.get("type") or "").lower() == "window")
+    else:
+        _wbw = sum(float(o.get("width_in") or 0) / 12.0
+                   for o in openings if (o.get("type") or "").lower() == "window")
+    if _wbw > 0:
+        measurements["window_bottom_width_total_lf"] = _wbw
     return measurements
 
 

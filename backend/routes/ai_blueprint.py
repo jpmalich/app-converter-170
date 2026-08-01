@@ -206,6 +206,15 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   "outside_corner_lf": number, // = outside_corner_count × avg_wall_height_ft. Each corner trim runs the full eave height.
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
   "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
+  "soffit_sqft": number | null,        // PRINTED soffit/overhang area if the plans state it (eave detail sections, "SOFFIT" callouts, roof plan overhang dims × eave run). null if not printed — do NOT estimate.
+  "level_frieze_lf": number | null,    // PRINTED level frieze-board run if the elevations/details call it out. null if not printed.
+  "sloped_frieze_lf": number | null,   // PRINTED sloped (rake) frieze-board run. null if not printed.
+  "drip_edge_lf": number | null,       // PRINTED drip-edge / roof-edge perimeter from the roof plan. null if not printed.
+  "total_trim_sqft": number | null,    // PRINTED trim area if a trim schedule/table states it. null if not printed.
+  "footprint_area_sqft": number | null, // PRINTED floor-plan footprint area (e.g. "1,842 SF"). null if not printed.
+  "address": "<project address from the title block, verbatim; empty string if none printed>",
+  "opening_facade_assignments": [      // ONLY if the plans EXPLICITLY assign an opening to a facade MATERIAL (e.g. a window drawn inside a hatched BRICK/STONE region with a material callout): {"id": "<mark>", "facade": "siding|stucco|brick|stone|metal|other"}. NEVER infer from elevation, type, or height — if the plans do not state it, return []. (Class C — R6 sealed 2026-07-28)
+  ],
   "notes": "<2-3 sentences flagging anything to verify — missing dims, illegible numbers, etc.>"
 }
 
@@ -682,10 +691,34 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     }
     # Shakedown provenance fields (2026-07-14)
     measurements["_starter_basis"] = _starter_basis
-    measurements["_perimeter_lf"] = round(_perimeter_lf, 1)
+    measurements["_perimeter_lf"] = _perimeter_lf
+    # STEP 2 (Howard ruled 2026-08-01): SOURCE PROVIDES IT → ENGINE CONSUMES
+    # IT. Every figure the plans PRINT lands under the key the engine reads.
+    # FOOTPRINT-PERIMETER KEY FIX (named item): the batten stacked-height
+    # machinery reads `footprint_perimeter_ft`; the old `_perimeter_lf`-only
+    # write was a silent key mismatch (writer-key == reader-key, pinned).
+    if _perimeter_lf > 0:
+        measurements["footprint_perimeter_ft"] = _perimeter_lf
+    for _k in ("soffit_sqft", "level_frieze_lf", "sloped_frieze_lf",
+               "drip_edge_lf", "total_trim_sqft", "footprint_area_sqft"):
+        try:
+            _v = float(raw.get(_k)) if raw.get(_k) is not None else None
+        except (TypeError, ValueError):
+            _v = None
+        if _v and _v > 0:
+            measurements[_k] = _v
+    if raw.get("address"):
+        measurements["address"] = str(raw["address"]).strip()[:200]
+    # Class C (R6 sealed): read from explicit assignment, never inferred.
+    measurements["opening_facade_assignments"] = raw.get("opening_facade_assignments") or []
+    # wbw — measured sum of window bottom (sill) widths off the schedule.
+    _wbw = sum(max(1, int(w.get("qty") or 1)) * float(w.get("width_in") or 0) / 12.0
+               for w in windows)
+    if _wbw > 0:
+        measurements["window_bottom_width_total_lf"] = _wbw
     measurements["outside_corner_count"] = int(raw.get("outside_corner_count") or 0)
     measurements["inside_corner_count"] = int(raw.get("inside_corner_count") or 0)
-    measurements["inside_corner_lf"] = round(float(raw.get("inside_corner_lf") or 0), 1)
+    measurements["inside_corner_lf"] = float(raw.get("inside_corner_lf") or 0)
     if _osc_features:
         measurements["_ai_osc_features"] = _osc_features
     if gable_pitch_provenance:
