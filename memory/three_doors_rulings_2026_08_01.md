@@ -67,3 +67,13 @@ Ruling 2 pending-flag → aggregator unification (absorbs rulings 1, 3, 6, 7 + f
 - Minor fix-its confirmed landed + sealed: 10a photo eaves recompute (non-gable walls only, shared eaves_from_walls) · 10c opening basis unified (schedule feeds counts AND ft²).
 - BYTE-IDENTICAL: 7/7 SHAs unmoved — /app/memory/evidence/step6_before.json == step6_after.json (261 Haugh both kinds, 3 Degree ×3, Casile). Additive fields verified inert until typed.
 - Seals: tests/test_photo_fillins_step6_2026_08_01.py (12 pins incl. photo-door-only, never-overrides, no-second-copy, PUT-strip, engine-consumes).
+
+## POST-STEP-6 RULINGS — GATE + PROVENANCE (Howard ruled 2026-08-02, DONE)
+RECORDED 2026-08-02 12:34 UTC · b73f643 · CLEAN · 1749 passed, 1 skipped (VERBATIM stamp).
+- PHOTO FILL-IN QUOTE GATE (not optional, not a nudge): photo_fillin_unset — an UNSET box on a photo estimate is SCOPE NOT SET, never $0; HARD-BLOCKS customer surfaces (verified E2E: email + PDF both 409 with the code; /gates carries it blocking). Explicit 0 is a decision and clears; a measured value makes the box inert. ONE set/unset copy: measure_staging.photo_fillins_unset. Frieze became tri-state yes/no (unset blocks; yes/no clears). Amber NOT-SET chips per box in the trade-spec UI (verified live: 4/4 → answer frieze No + type soffit → 2/4). QUOTE_BLOCKING pin updated per ruling (named in test_quote_order_gates.py).
+- FILL-IN PROVENANCE PRINT: material-list notes mark TYPED (contractor fill-in, photo door) vs MEASURED on the vinyl soffit line, both LP soffit split lines, and the 540 frieze fragment — the document does not hide how a number got there. Non-fill-in wording PINNED byte-identical (exact strings sealed).
+- BYTE-IDENTICAL: 7/7 SHAs unmoved through both builds (evidence/nudge_after.json == step6_after.json == step6_before.json) — 261 Haugh + 3 Degree are Hover-door; nothing here touched them.
+- Residue: dead session-model fill fields (abandoned pre-fork approach) removed; platform auto-commit d9dd5c9 ratified (carried the accepted step-6 work).
+- Seals: tests/test_photo_fillin_gate_2026_08_02.py (8 pins: registry, blocks, 0-clears, measured-inert, photo-door-only, partial names the open boxes, TYPED prints, MEASURED wording unmoved).
+
+## NEXT: SPANISH BUILDOUT (approved). Pinned rule: SKU/product names VERBATIM both languages; labels/sections/units/colors translate; the name never does. ACCEPTANCE: a Spanish estimate priced end to end, every line binding + pricing IDENTICAL to English — one unpriced SKU in Spanish = the name leaked into translation.

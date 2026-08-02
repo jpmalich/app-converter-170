@@ -37,6 +37,21 @@ memory/three_doors_rulings_2026_08_01.md) — ALL SIX LANDED:
   identically to EN, SKU names verbatim — a line that unprices in Spanish
   means the name leaked into translation).
 
+## PHOTO FILL-IN GATE + PROVENANCE PRINT (2026-08-02, b73f643 · CLEAN 1749)
+Ruled 2026-08-02 after step-6 acceptance — the soft spot the boxes created:
+- **photo_fillin_unset QUOTE BLOCKER** (hard, not a nudge): unset box on a
+  photo estimate = SCOPE NOT SET, never $0. Blocks email/PDF/freeze/QR via
+  assert_quote_gate (E2E: both 409 with the code). Explicit 0 = decision,
+  clears. Measured value = box inert. ONE copy:
+  measure_staging.photo_fillins_unset. Frieze → tri-state yes/no.
+  Amber "NOT SET — BLOCKS QUOTE" chips per box (SettingsRow), verified live.
+- **Provenance print**: notes mark TYPED (contractor fill-in, photo door)
+  vs MEASURED on vinyl soffit + LP soffit split + 540 frieze fragment;
+  non-fill-in wording pinned byte-identical (exact strings sealed).
+- Byte-identical 7/7 unmoved; guard stamp 2026-08-02 12:34 UTC · b73f643 ·
+  CLEAN · 1749 passed, 1 skipped. Seals:
+  test_photo_fillin_gate_2026_08_02.py (8) + QUOTE_BLOCKING pin updated.
+
 ## THIRD DOOR + SELF-CLEAN + ID BINDING DAYS 1–2 (2026-07-31, 9564948)
 - **BUMP DOOR (ruled 15%)**: apply with |bump_pct|>15 → 409 without one
   confirm; ≤15 applies clean; negative bumps gate too. Amber banner +
