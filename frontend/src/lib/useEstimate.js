@@ -565,6 +565,12 @@ export default function useEstimate(id) {
       wrap_trim_width_in: source.wrap_trim_width_in ?? undefined,
       color_tier: source.color_tier || undefined,
       lp_soffit_type: source.lp_soffit_type || undefined,
+      // STEP 4 (ruled 2026-08-01): door measurements ride the payload so
+      // an Apply that lands them isn't silently stripped (photo/blueprint
+      // apply store measurements + _source on the estimate — the shared
+      // rebuild door reads them). undefined when absent → PUT leaves the
+      // stored blob untouched.
+      hover_measurements: source.hover_measurements || undefined,
     };
   }, []);
 
