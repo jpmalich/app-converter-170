@@ -1410,7 +1410,7 @@ async def _execute_ai_blueprint_worker(
                 cost_usd = None
 
         result = {
-            "measurements": measurements,
+            "measurements": {**measurements, "_run_id": run_id},
             "lines": lines,
             "vero_openings": vero_openings,
             "mezzo_openings": mezzo_openings,

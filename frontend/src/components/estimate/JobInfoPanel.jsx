@@ -147,6 +147,17 @@ function SubHeader({ children, testid }) {
 }
 
 export default function JobInfoPanel({ est, update, save, setInstallMethod, setHomePre1978 }) {
+  // STEP 5 (ruled 2026-08-01): PENDING, NOT DISCARDED — unapplied measure
+  // runs (photo AND blueprint) flag visibly and never silently price.
+  const [pendingRuns, setPendingRuns] = useState([]);
+  React.useEffect(() => {
+    let dead = false;
+    if (!est?.id) return undefined;
+    api.get(`/estimates/${est.id}/pending-runs`)
+      .then((r) => { if (!dead) setPendingRuns(r.data?.pending || []); })
+      .catch(() => {});
+    return () => { dead = true; };
+  }, [est?.id, est?.hover_measurements?._run_id, est?.lp_source_run_id]);
   const t = useT();
   const { lang } = useLang();
   // Iter 78u — Compare Drawings modal state
@@ -253,6 +264,29 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
         )}
       </div>
 
+      {pendingRuns.length > 0 && (
+        <div
+          className="border-2 border-[#D97706] bg-amber-50 p-2.5 mb-2 text-xs"
+          data-testid="pending-runs-banner"
+        >
+          <div className="font-bold uppercase tracking-wider text-[#92400E] mb-1">
+            Pending — not applied yet ({pendingRuns.length})
+          </div>
+          <ul className="space-y-0.5 text-[#78350F]">
+            {pendingRuns.slice(0, 3).map((r) => (
+              <li key={r.run_id} data-testid="pending-run-row">
+                <b>{r.door === "blueprint" ? "Blueprint" : "Photo"}</b> run
+                {" "}{(r.created_at || "").slice(0, 10)}
+                {r.siding_sqft ? ` — ${Math.round(r.siding_sqft)} ft² siding` : ""}
+                {" "}— never prices until you review &amp; apply it
+              </li>
+            ))}
+            {pendingRuns.length > 3 && (
+              <li>…and {pendingRuns.length - 3} more</li>
+            )}
+          </ul>
+        </div>
+      )}
       {/* Iter 78z+++ — Measurement tools tile row. Three equal-width
           tiles so HOVER / Blueprints / AI Photo Measure look like the
           parallel choices they actually are. Each tile is a launcher

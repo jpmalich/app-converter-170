@@ -2868,6 +2868,7 @@ async def _execute_reconcile_only_worker(
         _apply_gable_demotion(final, extractions)
         _apply_corner_locations(final, extractions)
         measurements = _aggregate_to_hover_shape(final, annotations=[])
+        measurements["_run_id"] = run_id  # step 5: applied blob self-identifies
         result = {
             "raw_ai": final,
             "measurements": measurements,
@@ -6700,6 +6701,9 @@ async def _execute_ai_measure_worker(
             openings=raw.get("openings") or [],
             schedule=raw.get("openings_schedule") or [],
         )
+        # STEP 5 (finding 2 ruled): the applied blob self-identifies its run
+        # so the pending-runs surface knows what a human blessed.
+        measurements["_run_id"] = run_id
         result = {
             "measurements": measurements,
             "lines": lines,

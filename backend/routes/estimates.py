@@ -249,6 +249,48 @@ async def pair_estimate(est_id: str, user: dict = Depends(get_current_user)):
     return new_doc
 
 
+@router.get("/estimates/{est_id}/pending-runs")
+async def pending_runs(est_id: str, user=Depends(get_current_user)):
+    """STEP 5 (finding 2 + 10d, Howard ruled 2026-08-01): PENDING, NOT
+    DISCARDED. Every completed measure run (photo AND blueprint) that no
+    human applied sits VISIBLY FLAGGED — it never silently prices and
+    never vanishes; it reaches a dollar only when the contractor applies
+    it. Applied = the estimate's stored measurements' _run_id or its
+    governing lp_source_run_id. Runs older than the latest applied run
+    are superseded-by-a-human-choice, not pending."""
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "id": 1, "hover_measurements._run_id": 1, "lp_source_run_id": 1})
+    if est is None:
+        raise HTTPException(404, "Estimate not found")
+    applied_ids = set()
+    if (est.get("hover_measurements") or {}).get("_run_id"):
+        applied_ids.add(est["hover_measurements"]["_run_id"])
+    if est.get("lp_source_run_id"):
+        applied_ids.add(est["lp_source_run_id"])
+    runs = []
+    for coll, door in ((db.ai_measure_runs, "photo"), (db.ai_blueprint_runs, "blueprint")):
+        async for r in coll.find(
+                {"estimate_id": est_id, "status": "done"},
+                {"_id": 0, "run_id": 1, "created_at": 1,
+                 "result.measurements.siding_sqft": 1,
+                 "result.measurements.window_count": 1}):
+            m = ((r.get("result") or {}).get("measurements")) or {}
+            runs.append({
+                "run_id": r["run_id"], "door": door,
+                "created_at": str(r.get("created_at") or ""),
+                "siding_sqft": m.get("siding_sqft"),
+                "window_count": m.get("window_count"),
+                "applied": r["run_id"] in applied_ids,
+            })
+    runs.sort(key=lambda x: x["created_at"])
+    last_applied_ts = max((r["created_at"] for r in runs if r["applied"]), default=None)
+    pending = [r for r in runs if not r["applied"]
+               and (last_applied_ts is None or r["created_at"] > last_applied_ts)]
+    return {"pending": pending, "applied_run_ids": sorted(applied_ids),
+            "total_done_runs": len(runs)}
+
+
 @router.post("/estimates/{est_id}/pair-lp")
 async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
     """Spawn (or return existing) paired LP-kind estimate.
@@ -305,14 +347,13 @@ async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
     # HOVER apply takes after a real import.
     seeded_lines: list[dict] = []
     measurements = src.get("hover_measurements") or None
-    if not measurements:
-        # Iter 99 — $0-lines class fix: AI-measured estimates keep their
-        # measurements on the RUN, not the estimate doc. Seed from the
-        # latest completed run so the paired LP estimate opens populated.
-        latest_run = await db.ai_measure_runs.find_one(
-            {"estimate_id": est_id, "status": "done"}, sort=[("created_at", -1)])
-        if latest_run:
-            measurements = ((latest_run.get("result") or {}).get("measurements")) or None
+    # FINDING 2 (Howard ruled 2026-08-01): PENDING, NOT DISCARDED. The old
+    # Iter-99 branch silently seeded the pair from the LATEST completed
+    # photo run — applied or not — which put an unconfirmed number on
+    # priced lines. RETIRED: the pair seeds ONLY from measurements a human
+    # APPLIED (stored on the estimate). An unapplied run stays visible on
+    # the pending-runs surface (photo AND blueprint) and reaches a dollar
+    # only when the contractor applies it.
     if measurements:
         company = await db.companies.find_one(
             {"id": user["company_id"]}, {"_id": 0}
