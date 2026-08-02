@@ -1802,7 +1802,12 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
 
     # PHOTO SOURCE ADAPTER (defenses stay door-side; the WALK is shared):
     # Iter 55 hard clamp, Iter 79j.64 amber band, junk-width skip.
+    # STEP 4 (Howard ruled 2026-08-01, finding 9a): a substituted height is
+    # a ZERO-CONFIDENCE read — it is DISCLOSED (wall flag + gate entry) and
+    # the confidence gate blocks Apply until the contractor acknowledges.
+    # No silent 18-ft substitution ever again.
     adapted_walls = []
+    _gate_substituted = []
     for w in walls:
         width_ft = float(w.get("width_ft") or 0)
         eave_h = float(w.get("height_ft") or 0)
@@ -1814,6 +1819,7 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # Iter 79j.64 — 4–7 ft readings are KEPT and amber-flagged:
         # real observation > erased asymmetry.
         if 0 < eave_h < 4:
+            _read = eave_h
             avg = float(raw.get("avg_wall_height_ft") or 0)
             story = float(raw.get("story_count") or 1)
             if avg >= 7:
@@ -1824,6 +1830,17 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                 eave_h = 12.0
             else:
                 eave_h = 9.0
+            w["_height_flag"] = "substituted_story_default"
+            w["_reconciliation_note"] = (
+                (w.get("_reconciliation_note") or "")
+                + f" [backend: junk read {_read:g} ft REPLACED with {eave_h:g} ft"
+                " (story default/avg) — zero-confidence substitution, confirm"
+                " with tape before applying]"
+            ).strip()
+            _gate_substituted.append({
+                "label": w.get("label") or "?",
+                "read_ft": _read, "substituted_ft": eave_h,
+            })
         elif 4 <= eave_h < 7:
             w["_height_flag"] = "below_typical_range"
             w["_reconciliation_note"] = (
@@ -1888,6 +1905,25 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     counts = _bk["counts"]
     perimeter_lf = _bk["opening_perimeter_lf"]
 
+    # STEP 4 (finding 8 ruled 2026-08-01): starter basis unifies to the
+    # blueprint rule — wall PERIMETER with the engine's entry-door
+    # deduction downstream. Photo already reads the per-wall widths it
+    # needs. Ladder: perimeter → AI-read starter → eaves (legacy last
+    # resort), basis note always stamped.
+    _fp = sum(float(w.get("width_ft") or 0) for w in adapted_walls)
+    if _fp > 0:
+        _starter_lf = _fp
+        _starter_basis = (
+            f"perimeter {_fp:.0f} LF (wall-width sum) — engine deducts "
+            "entry-door widths downstream (finding 8 ruled 2026-08-01: "
+            "blueprint rule extended to photo)")
+    elif float(raw.get("starter_lf") or 0) > 0:
+        _starter_lf = float(raw.get("starter_lf") or 0)
+        _starter_basis = "AI-read starter_lf (no measured walls to sum)"
+    else:
+        _starter_lf = float(raw.get("eaves_lf") or 0)
+        _starter_basis = "eaves fallback (legacy last resort — no walls, no AI starter)"
+
     measurements = {
         # RULING 7 (2026-08-01): full precision on the way in — no door
         # rounds at intake; the ORDER layer is the one rounding point.
@@ -1896,12 +1932,7 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "opening_sqft": opening_sqft,
         "eaves_lf": float(raw.get("eaves_lf") or 0),
         "rakes_lf": float(raw.get("rakes_lf") or 0),
-        # Starter strip: AI value if Claude gave one, otherwise fall back
-        # to eaves_lf since the starter perimeter runs along the same base
-        # course as the eaves on a basic 1-story rectangle. The contractor
-        # can adjust on the line item if the house has porches / walk-outs.
-        # (Basis unifies to perimeter+deduction in step 4 — finding 8 ruled.)
-        "starter_lf": float(raw.get("starter_lf") or raw.get("eaves_lf") or 0),
+        "starter_lf": _starter_lf,
         # Corners — Iter 79j.64: computed per-corner from the reconciled
         # per-wall heights (corner posts stand at eave lines; on stepped
         # or asymmetric houses `4 × avg` over/under-counts by several
@@ -2072,11 +2103,40 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             measurements["outside_corner_count"] = _osc_n
         if _isc_n > 0:
             measurements["inside_corner_count"] = _isc_n
-    # Footprint perimeter = sum of measured wall widths (junk widths were
-    # zeroed by the adapter). Writer-key == reader-key (batten machinery).
-    _fp = sum(float(w.get("width_ft") or 0) for w in adapted_walls)
+    # Footprint perimeter = the same measured wall-width sum the starter
+    # basis uses. Writer-key == reader-key (batten machinery).
     if _fp > 0:
         measurements["footprint_perimeter_ft"] = _fp
+    measurements["_starter_basis"] = _starter_basis
+    # STEP 4 — CONFIDENCE GATE (findings 4 + 9a, ruled 2026-08-01): the
+    # code now KNOWS a photo read is a suggestion. Any substituted height,
+    # any wall the model itself marked <50 ("barely visible / inferred"),
+    # or a low scale read raises the gate — the preview flags loudly and
+    # Apply is blocked until the contractor acknowledges. A low-confidence
+    # read can never drive a dollar unseen.
+    _gate_low_walls = []
+    for w in walls:
+        _c = w.get("confidence")
+        if _c is not None:
+            try:
+                _cf = float(_c)
+            except (TypeError, ValueError):
+                continue
+            if _cf < 50:
+                _gate_low_walls.append({
+                    "label": w.get("label") or "?",
+                    "confidence": _cf,
+                    "reasoning": str(w.get("confidence_reasoning") or "")[:200],
+                })
+    _gate = {}
+    if _gate_substituted:
+        _gate["substituted_walls"] = _gate_substituted
+    if _gate_low_walls:
+        _gate["low_confidence_walls"] = _gate_low_walls
+    if str(raw.get("scale_confidence") or "").lower() == "low":
+        _gate["scale_confidence"] = "low"
+    if _gate:
+        measurements["_confidence_gate"] = _gate
     # wbw — measured sum of window bottom (sill) widths; schedule preferred.
     if schedule_for_counts:
         _wbw = sum(max(0, int(o.get("count") or 0)) * float(o.get("width_in") or 0) / 12.0

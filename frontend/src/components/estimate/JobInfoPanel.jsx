@@ -363,6 +363,15 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               // the estimate so the PDF / email can show "Materials
               // excluded: ..." under the siding row.
               const patch = { lines: next };
+              // STEP 4 (Howard ruled 2026-08-01): photo joins the shared
+              // rebuild — the applied run's measurements land on the
+              // estimate WITH door identity (_source: "photo"), opening
+              // the same manual Re-derive door hover/blueprint use.
+              // Never overwrites an existing measured blob (HOVER data
+              // outranks a photo read); existing estimates HOLD.
+              if (measurements && !est.hover_measurements) {
+                patch.hover_measurements = { ...measurements, _source: "photo" };
+              }
               if (measurements?._photo_zones_summary) {
                 patch.photo_zones_summary = measurements._photo_zones_summary;
                 patch.photo_zones_deducted_sqft = measurements._photo_zones_deducted_sqft || 0;

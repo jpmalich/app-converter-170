@@ -585,6 +585,8 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // estimateId we just skip persistence entirely (e.g. ISS new-quote
   // flow before the doc has been saved).
   const [sessionChecked, setSessionChecked] = useState(false);
+  // STEP 4 confidence gate — contractor acknowledgment (resets per run).
+  const [gateAck, setGateAck] = useState(false);
   useEffect(() => {
     if (!estimateId || !open || sessionChecked) return;
     let cancelled = false;
@@ -2277,9 +2279,15 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     // Resetting here means the next open always re-syncs against the
     // server — the DB is the source of truth for cross-open recovery.
     setSessionChecked(false);
+    setGateAck(false);
   };
 
   const conf = preview?.measurements?._ai_scale_confidence || "low";
+  // STEP 4 — CONFIDENCE GATE (findings 4 + 9a, ruled 2026-08-01): loud
+  // flag + explicit acknowledgment before Apply when any read is a
+  // suggestion (substituted height, wall confidence <50, low scale).
+  const confidenceGate = preview?.measurements?._confidence_gate || null;
+  const gateBlocked = !!confidenceGate && !gateAck;
   const confColor =
     conf === "high"
       ? "text-[var(--success)] border-[var(--success)] bg-green-50"
@@ -4773,10 +4781,45 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                     >
                       <Printer className="w-3.5 h-3.5" /> Print
                     </button>
+                    {confidenceGate && (
+                      <div
+                        className="w-full border-2 border-[#DC2626] bg-red-50 p-3 text-xs text-left"
+                        data-testid="confidence-gate-banner"
+                      >
+                        <div className="font-bold uppercase tracking-wider text-[#DC2626] flex items-center gap-1.5 mb-1">
+                          <AlertTriangle className="w-4 h-4" />
+                          Low-confidence reads — confirm before these drive the quote
+                        </div>
+                        <ul className="list-disc ml-5 space-y-0.5 text-[#7F1D1D]">
+                          {(confidenceGate.substituted_walls || []).map((s, i) => (
+                            <li key={`sub-${i}`} data-testid="gate-substituted-wall">
+                              <b>{s.label}</b>: junk read {s.read_ft} ft REPLACED with {s.substituted_ft} ft (story default) — tape this wall or accept the substitute
+                            </li>
+                          ))}
+                          {(confidenceGate.low_confidence_walls || []).map((s, i) => (
+                            <li key={`low-${i}`} data-testid="gate-low-confidence-wall">
+                              <b>{s.label}</b>: model confidence {Math.round(s.confidence)}/100 — {s.reasoning || "barely visible / inferred"}
+                            </li>
+                          ))}
+                          {confidenceGate.scale_confidence === "low" && (
+                            <li data-testid="gate-low-scale">Scale confidence LOW — every ft² above rides on an uncertain scale reference</li>
+                          )}
+                        </ul>
+                        <label className="flex items-center gap-2 mt-2 font-bold text-[#7F1D1D] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={gateAck}
+                            onChange={(e) => setGateAck(e.target.checked)}
+                            data-testid="confidence-gate-ack"
+                          />
+                          I reviewed the flagged reads — the siding, corner and starter rows they drive may be wrong until verified
+                        </label>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={apply}
-                      disabled={busy || (() => {
+                      disabled={busy || gateBlocked || (() => {
                         // Iter 79j.52 — Visually mirror the runtime
                         // hard-block in apply(). Signals live in
                         // raw_ai (walls/dormers/openings arrays) and

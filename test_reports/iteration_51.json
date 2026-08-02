@@ -1,0 +1,34 @@
+{
+  "summary": "Step 4 Confidence Gate — frontend UX all works (banner, sub/low-conf/low-scale chips, ack checkbox toggles Apply enabled). Applying populates estimate lines and closes modal. BUT the promised backend side-effect (persist hover_measurements with _source='photo' so rederive door opens for photo runs) IS BROKEN. Root cause: buildPayload() in /app/frontend/src/lib/useEstimate.js strips hover_measurements from the PUT payload, so save({...est, patch}) never sends it. Rederive still returns 409 'No stored measurements' after Apply. Verified backend PUT accepts hover_measurements when explicitly sent, and rederive returns 200 with lines once it's present.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/estimates/{id}/rederive", "issue": "Returns 409 'No stored measurements — import a HOVER/Blueprint first' after applying a photo run because hover_measurements is never persisted from the frontend (see frontend bug). If tested with hover_measurements manually PUT (any _source), the endpoint correctly returns 200 with lines — so the backend gate logic itself is fine.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "AI Photo Measure → Apply Measurements", "issue": "hover_measurements (and photo_zones_summary, photo_zones_deducted_sqft) are set into local state via update(patch) but the subsequent save({...est, ...patch}) uses buildPayload() which does NOT include hover_measurements or photo_zones_* in its whitelist, so the PUT never persists them. Verified via GET /api/estimates/{id} immediately after Apply: hover_measurements === null despite lines=50 being populated. This directly breaks the Step 4 promise: '_source:photo stored on estimate' AND blocks the newly-opened Rederive door for photo runs.", "affected_selectors": ["confidence-gate-ack", "Apply Measurements button"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add hover_measurements, photo_zones_summary, photo_zones_deducted_sqft to buildPayload() whitelist in /app/frontend/src/lib/useEstimate.js (around line 397-455). Otherwise JobInfoPanel.jsx onApply patch is invisible to backend and Step 4 rederive-for-photo feature is dead on arrival.",
+    "After fix, re-verify: (a) GET /api/estimates/{id} returns hover_measurements._source == 'photo', starter_lf == 160, _starter_basis mentions 'perimeter'; (b) POST /api/estimates/{id}/rederive returns 200 with lines (no 409)."
+  ],
+  "critical_code_review_comments": [
+    "useEstimate.buildPayload maintains an explicit field whitelist; any new estimate-level field added elsewhere (like Step 4's hover_measurements/_source and photo_zones_*) will silently fail to persist unless also added here. Consider either (a) documenting this file as the single source of truth for PUT payload fields, or (b) switching to server-side field validation with pass-through of unknown keys guarded by the pydantic model.",
+    "JobInfoPanel.onApply calls update(patch) then save({...est, ...patch}); the save closure uses `est` (stale) merged with patch — works, but a save() with no argument (relying on state) would double-fire against stale closure. The current pattern is correct but fragile.",
+    "AI Measure button label 'AI Measure (Resume)' only appears AFTER a run completes — before opening the modal the first time it just says 'AI Measure'. Task description said 'button label AI Measure (Resume)' would be present pre-open; this is not exactly the case, but the seeded session is correctly restored via a 'Resume' button inside the modal. Non-blocking, but the task description wording was slightly off."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "50% (rederive path proven when data is present; but real-world Apply flow leaves DB in state that fails rederive)", "frontend": "90% (gate UX perfect; persistence of measurements-blob missing)"},
+  "test_credentials": "hhunt6677@yahoo.com / ADMIN_PASSWORD from backend/.env",
+  "seed_data_creation": "None created; used existing seeded TEST-GATE4 estimate + ai_measure_sessions preview.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "TEST-GATE4 estimate has been soft-deleted (DELETE /api/estimates/{id} returned {ok:true, soft_deleted:true, retention_days:30}). If a re-test is needed, main agent must re-seed the estimate + ai_measure_sessions doc. The orphaned ai_measure_sessions doc for est id 4ae11c01-23ed-4fc4-a5aa-7aae03f163ac still exists (GET /api/measure/sessions/{id} returns 200 with preview) — harmless as instructed.",
+  "rca of the issue": "REPRO: 1) open estimate TEST-GATE4 in editor. 2) Click AI Measure → Resume. 3) Confidence gate banner appears with expected chips. 4) Check confidence-gate-ack. 5) Click Apply Measurements. 6) Modal closes, 50 lines populate ($5,297.73 Vinyl / $9,115.39 Ascend). 7) GET /api/estimates/{id} → hover_measurements: null. 8) POST /api/estimates/{id}/rederive → HTTP 409 'No stored measurements — import a HOVER/Blueprint first'.  ROOT CAUSE: /app/frontend/src/lib/useEstimate.js buildPayload() has an explicit whitelist of fields sent on PUT; hover_measurements, photo_zones_summary, photo_zones_deducted_sqft are NOT in the whitelist. JobInfoPanel.jsx onApply sets these into local state via update(patch) then calls save({...est, ...patch}) — save() then hands the merged object to buildPayload() which silently discards those keys. Backend PUT is fine (accepts hover_measurements when sent; Optional[Dict[str,Any]] on EstimateBase.model). MITIGATION: extend buildPayload whitelist to include hover_measurements (Optional[dict] pass-through), photo_zones_summary, photo_zones_deducted_sqft. After fix, rederive-for-photo works (backend already returns 200 with lines when hover_measurements is present regardless of _source value, as verified with a manual PUT during this test)."
+}
