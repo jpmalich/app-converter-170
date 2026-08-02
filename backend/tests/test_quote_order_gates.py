@@ -71,9 +71,14 @@ def test_tier_assignments_sealed():
     # labor_pending_contractor removed from blocking (re-ruled 2026-07-29):
     # labor is N/A or >$0 — anything else is UNDECIDED, one line, a count,
     # NEVER a block.
+    # photo_fillin_unset ADDED by ruling 2026-08-02: an unset photo
+    # fill-in box is SCOPE NOT SET, never $0 — hard quote block, the
+    # silent-zero class (a nudge you can click past is how the zero
+    # reaches a homeowner).
     assert QUOTE_BLOCKING == {
         "facade_scope_unresolved_zero", "area_conservation_breach",
-        "siding_family_conflict", "no_siding_on_siding_job"}
+        "siding_family_conflict", "no_siding_on_siding_job",
+        "photo_fillin_unset"}
     assert ORDER_BLOCKING == {
         "batten_wall_heights", "corner_locators", "opening_schedule",
         "opening_facade_attribution", "porch_ceiling_implied"}

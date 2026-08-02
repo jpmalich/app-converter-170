@@ -79,6 +79,43 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
             "dormer_sqft": dormer_sqft, "detail": detail}
 
 
+# (est_key, measurement_key, human label) — the four ruled boxes; frieze
+# is the toggle and rides its own check.
+PHOTO_FILLIN_BOXES = (("photo_soffit_sqft", "soffit_sqft", "soffit ft²"),
+                      ("photo_drip_edge_lf", "drip_edge_lf", "drip edge LF"),
+                      ("photo_total_trim_sqft", "total_trim_sqft", "total trim ft²"))
+
+
+def photo_fillins_unset(measurements: dict, est: dict) -> list[str]:
+    """QUOTE-GATE feeder (Howard ruled 2026-08-02): on a photo-sourced
+    estimate an UNSET fill-in box is SCOPE NOT SET — it blocks the quote
+    the way an open intake flag does; it never silently prices $0.
+    An explicit 0 is a decision and clears the box; a measured value in
+    the blob makes the box inert (source provides it → engine consumes
+    it). Frieze clears on an answered yes/no, not a number. ONE copy —
+    the gate reads set/unset from here only."""
+    if (measurements or {}).get("_source") != "photo":
+        return []
+    unset = []
+    for est_key, meas_key, label in PHOTO_FILLIN_BOXES:
+        if est.get(est_key) is None and not float(measurements.get(meas_key) or 0):
+            unset.append(label)
+    if est.get("photo_frieze_present") is None and not (
+            float(measurements.get("level_frieze_lf") or 0)
+            or float(measurements.get("sloped_frieze_lf") or 0)):
+        unset.append("frieze yes/no")
+    return unset
+
+
+def is_fillin(m: dict, key: str) -> bool:
+    """Provenance check for printed notes (Howard ruled 2026-08-02): the
+    document must not hide how a number got there — a line whose driver
+    came from a fill-in box prints TYPED, a measured one prints MEASURED.
+    Frieze uses key='frieze' (the toggle stamps _frieze_basis)."""
+    return bool(m.get(f"_{key}_basis")) if key != "frieze" \
+        else bool(m.get("_frieze_basis"))
+
+
 def fold_photo_fillins(measurements: dict, est: dict) -> dict:
     """PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors step 6):
     four boxes, PHOTO DOOR ONLY — soffit_sqft, drip_edge_lf,

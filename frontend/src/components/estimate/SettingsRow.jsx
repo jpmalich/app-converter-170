@@ -433,7 +433,8 @@ export default function SettingsRow({ est, update, save }) {
                   </div>
                   <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--muted)]">
                     Photo door only. A box fills the hole the photos leave — it never
-                    overrides a measured value. Re-derives live.
+                    overrides a measured value. An UNSET box BLOCKS the quote (scope
+                    not set — never $0). Type 0 if the house truly has none. Re-derives live.
                   </p>
                   {[
                     { key: "photo_soffit_sqft", label: "Soffit", unit: "ft²", tid: "photo-soffit-sqft" },
@@ -448,24 +449,50 @@ export default function SettingsRow({ est, update, save }) {
                         min="0"
                         step="1"
                         value={est[f.key] ?? ""}
-                        onChange={(e) => update({ [f.key]: e.target.value === "" ? 0 : Number(e.target.value) })}
-                        onBlur={() => saveSpec({ [f.key]: Number(est[f.key]) || 0 })}
+                        onChange={(e) => update({ [f.key]: e.target.value === "" ? null : Number(e.target.value) })}
+                        onBlur={() => { if (est[f.key] != null) saveSpec({ [f.key]: Number(est[f.key]) }); }}
                         data-testid={f.tid}
                       />
                       <span className="text-[var(--ink-2)] text-sm">{f.unit}</span>
+                      {est[f.key] == null && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider text-[#B45309] bg-[#FEF3C7] border border-[#F59E0B] px-1.5 py-0.5" data-testid={`${f.tid}-unset`}>
+                          Not set — blocks quote
+                        </span>
+                      )}
                     </div>
                   ))}
-                  <label className="flex items-center gap-2 mt-3 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={!!est.photo_frieze_present}
-                      onChange={(e) => saveSpec({ photo_frieze_present: e.target.checked })}
-                      data-testid="photo-frieze-toggle"
-                    />
-                    <span>House has frieze board</span>
-                  </label>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold w-24">Frieze board?</span>
+                    <div className="inline-flex border border-[var(--border)] overflow-hidden text-[11px] font-bold uppercase tracking-wider">
+                      <button
+                        type="button"
+                        className={`px-3 py-1.5 transition ${est.photo_frieze_present === true
+                          ? "bg-[var(--bar-bg)] text-white"
+                          : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"}`}
+                        onClick={() => saveSpec({ photo_frieze_present: true })}
+                        data-testid="photo-frieze-yes"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        className={`px-3 py-1.5 transition border-l border-[var(--border)] ${est.photo_frieze_present === false
+                          ? "bg-[var(--bar-bg)] text-white"
+                          : "bg-[var(--surface)] text-[var(--ink-2)] hover:bg-[var(--bg-app)]"}`}
+                        onClick={() => saveSpec({ photo_frieze_present: false })}
+                        data-testid="photo-frieze-no"
+                      >
+                        No
+                      </button>
+                    </div>
+                    {est.photo_frieze_present == null && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-[#B45309] bg-[#FEF3C7] border border-[#F59E0B] px-1.5 py-0.5" data-testid="photo-frieze-unset">
+                        Not set — blocks quote
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Toggle only — frieze LF derives from the measured runs
+                    Yes/No only — frieze LF derives from the measured runs
                     (level = eaves {eaves.toFixed(0)} LF · sloped = rakes {rakes.toFixed(0)} LF).
                     You never re-type a number the engine already has.
                   </p>

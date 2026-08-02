@@ -41,7 +41,8 @@ import lp_smartside_formulas as lp_formulas
 from measure_staging import (guess_vero_product_type as _staging_guess_vero,
                              VERO_TO_MEZZO as _VERO_TO_MEZZO,
                              build_paired_openings as _staging_build_paired_openings,
-                             fold_photo_fillins as _staging_fold_photo_fillins)
+                             fold_photo_fillins as _staging_fold_photo_fillins,
+                             is_fillin as _staging_is_fillin)
 
 # Iter 78q — Phase 3 Deep Verify uses MongoDB to cache rendered elevation
 # page PNGs. The TTL index purges entries 1 hour after creation so we
@@ -905,6 +906,8 @@ HOVER_MAPPING_SPEC = [
                 else "Window/entry/patio/garage perimeter wrap ÷ 16"
             )
             + (f" + frieze {float(m.get('level_frieze_lf') or 0):g}+{float(m.get('sloped_frieze_lf') or 0):g} LF per-segment = {_frieze_540_pcs(m)}"
+               + (" (TYPED toggle — frieze LF from measured eave/rake runs, photo door)"
+                  if _staging_is_fillin(m, "frieze") else "")
                if _frieze_540_pcs(m) else "")
             + (f" + ISC {int(m.get('inside_corner_count') or 0)} corner(s) per-corner round-up = {_isc_540_pcs(m)}"
                if _isc_540_pcs(m) else "")
@@ -1272,8 +1275,13 @@ HOVER_MAPPING_SPEC = [
             )
         ),
         "note": lambda m: (
-            (f"MEASURED soffit total {float(m.get('soffit_sqft') or 0):g} sqft ÷ 10 sqft/pc "
-             "(Q14a ruled 2026-07-27 — measured total governs); Standard color default")
+            # Provenance print (ruled 2026-08-02): TYPED vs MEASURED —
+            # the document must not hide how a number got there.
+            ((f"TYPED soffit total {float(m.get('soffit_sqft') or 0):g} sqft — CONTRACTOR "
+              "FILL-IN, photo door (not a measurement) ÷ 10 sqft/pc; Standard color default")
+             if _staging_is_fillin(m, "soffit_sqft") else
+             (f"MEASURED soffit total {float(m.get('soffit_sqft') or 0):g} sqft ÷ 10 sqft/pc "
+              "(Q14a ruled 2026-07-27 — measured total governs); Standard color default"))
             if (m.get("soffit_sqft") or 0) > 0
             else (
                 f"Pieces = ((Overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × (Eaves+Rakes) "
@@ -1444,8 +1452,11 @@ HOVER_MAPPING_SPEC = [
             f"Vented — MEASURED eave soffit {float(m.get('_soffit_vented_sqft') or 0):g} sqft ÷ 21.3 × 1.10 (report per-surface basis)"
             if (m.get("_soffit_vented_sqft") or 0) > 0
             else (
-                (f"Vented — measured soffit total governs: "
-                 f"eave share {_soffit_total_split(m)[0]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
+                ((f"Vented — TYPED soffit total governs (CONTRACTOR FILL-IN, photo door — not a measurement): "
+                  f"eave share {_soffit_total_split(m)[0]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
+                 if _staging_is_fillin(m, "soffit_sqft") else
+                 (f"Vented — measured soffit total governs: "
+                  f"eave share {_soffit_total_split(m)[0]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split"))
                 if _soffit_total_split(m)[0] > 0
                 else (
                     (
@@ -1491,8 +1502,11 @@ HOVER_MAPPING_SPEC = [
             )
             if (m.get("_soffit_closed_sqft") or 0) > 0
             else (
-                (f"Closed — measured soffit total governs: "
-                 f"rake share {_soffit_total_split(m)[1]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
+                ((f"Closed — TYPED soffit total governs (CONTRACTOR FILL-IN, photo door — not a measurement): "
+                  f"rake share {_soffit_total_split(m)[1]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split")
+                 if _staging_is_fillin(m, "soffit_sqft") else
+                 (f"Closed — measured soffit total governs: "
+                  f"rake share {_soffit_total_split(m)[1]:g} of {float(m.get('soffit_sqft') or 0):g} sqft ÷ 21.3 × 1.10 — verify venting split"))
                 if _soffit_total_split(m)[1] > 0
                 else (
                     f"Closed (rakes) — ceil( (overhang {float(m.get('overhang_in') or 12):g}\" ÷ 12) × rakes_LF ÷ 21.3 × 1.10 ) — PDF 16\" Soffit"

@@ -29,6 +29,10 @@ GATE_TIERS: dict[str, str] = {
     "siding_family_conflict": "quote",       # BLOCKING
     "no_siding_on_siding_job": "quote",      # BLOCKING
     "labor_pending_contractor": "quote",     # BLOCKING (ruling d)
+    "photo_fillin_unset": "quote",           # BLOCKING (ruled 2026-08-02):
+                                             # an unset photo fill-in box is
+                                             # SCOPE NOT SET, never $0 —
+                                             # blocks like an open intake flag
     "vision_zero_pages": "quote",            # informational, LOUD, never blocks —
                                              # silent-zero-verification class
                                              # (Howard 2026-07-29): a verification
@@ -57,6 +61,7 @@ KIND_TIERS: dict[str, str] = {
 QUOTE_BLOCKING = frozenset({
     "facade_scope_unresolved_zero", "area_conservation_breach",
     "siding_family_conflict", "no_siding_on_siding_job",
+    "photo_fillin_unset",  # ruled 2026-08-02 — silent-zero class, hard block
     # labor_pending_contractor REMOVED from blocking (Howard re-ruled
     # 2026-07-29): labor is N/A or >$0; anything else is UNDECIDED —
     # ONE line with a count, never a block.
@@ -168,4 +173,24 @@ def quote_gate_blockers(est: dict, measurements: dict | None = None) -> list[dic
                           f"{total - accounted:+.1f} ft² unaccounted. No ft² "
                           "disappears without an exclusion decision."),
             })
+
+    # photo_fillin_unset (Howard ruled 2026-08-02): a photo estimate with
+    # empty fill-in boxes at quote time would price soffit/drip edge on a
+    # guess or a silent zero. SCOPE NOT SET blocks — an explicit 0 is a
+    # decision and clears; the set/unset definition has ONE copy
+    # (measure_staging.photo_fillins_unset).
+    from measure_staging import photo_fillins_unset
+    hm = est.get("hover_measurements") or {}
+    blob = hm if hm.get("_source") == "photo" else (
+        m if (m or {}).get("_source") == "photo" else {})
+    unset = photo_fillins_unset(blob, est)
+    if unset:
+        items.append({
+            "code": "photo_fillin_unset", "tier": "quote", "blocking": True,
+            "label": (f"PHOTO FILL-INS NOT SET — {len(unset)} box(es) open: "
+                      f"{', '.join(unset)}. SCOPE NOT SET, never $0 — the photos "
+                      "cannot see these; type the value (0 is a decision) or "
+                      "answer the frieze yes/no before this quote reaches a "
+                      "customer."),
+        })
     return items

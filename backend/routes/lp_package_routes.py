@@ -855,7 +855,9 @@ async def evaluate_gates(est_id: str, user: dict) -> dict:
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "id": 1, "lines": 1, "kind": 1, "order_released": 1,
-         "customer_name": 1})
+         "customer_name": 1, "hover_measurements": 1,
+         "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
+         "photo_total_trim_sqft": 1, "photo_frieze_present": 1})
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
     measurements = None
