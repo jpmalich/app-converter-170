@@ -2,3 +2,4 @@
 # format: <hash> <optional note>
 dce8c1a rulings a-d accepted by Howard 2026-07-29 (AREA-GOODS-ONLY waste seal + detector, batten 0% pin, default-lap double-bake fix, QUOTE/ORDER gates + final-job surface) — platform auto-commit landed the ruled work
 f0b7c71  fork-landing auto-commit carrying the AUTHORIZED S1+S2 work (hover.py PDF persistence + elevation reader + pins) — ruled by Howard 2026-07-29, ratified alongside d98b89d
+a8d1f81 platform auto-commit that captured the RULED step-4 work mid-build (confidence gate + starter unify + photo shared rebuild — Howard's build order 2026-08-01); the ruled commit 335a471 carries the full message
