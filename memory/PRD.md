@@ -1,5 +1,42 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## THREE DOORS UNIFICATION COMPLETE — STEPS 1–6 (2026-08-01/02)
+Howard's 6-step build order (after the 3-doors accuracy audit + rulings,
+memory/three_doors_rulings_2026_08_01.md) — ALL SIX LANDED:
+1. ONE aggregation copy — measure_staging.py (gable 0.70 sealed all doors,
+   shared walk + buckets, door_count lands, ONE paired openings builder,
+   full precision at intake / round once at order layer). 7/7 byte-identical.
+2. Dropped-field registers, all 3 doors (door_field_register.py) + every
+   S-D cell landed + footprint-perimeter KEY FIX. Shipped GREEN.
+3. Finish Trim = sills + top course (wbw primary, count×3' fallback).
+   NAMED DELTAS: 3 Degree 59→33, Casile 51→23, Haugh 51→23 / 54→20.
+4. Photo door joins the shared rebuild (_source:"photo", existing HOLD,
+   manual re-derive) + starter unify + CONFIDENCE GATE (substituted
+   heights disclosed, low-confidence blocks Apply until acknowledged).
+5. PENDING-NOT-DISCARDED: unapplied runs (photo AND blueprint) surface in
+   an amber banner; silent LP-pair seeding retired.
+6. **FOUR PHOTO FILL-IN BOXES (2026-08-02)** — soffit ft² · drip edge LF ·
+   total trim ft² · frieze presence-toggle. PHOTO DOOR ONLY (gated on
+   hover_measurements._source === "photo"; verified live they do NOT
+   render on hover/blueprint). ONE copy: measure_staging.fold_photo_fillins
+   (fills-a-hole-only, never overrides measured); fold points
+   rebuild_lp_tab_lines + _apply_contractor_waste (tab/package parity).
+   Frieze toggle derives LF from measured runs (level=eaves, sloped=rakes),
+   no re-typing. PUT-strip sealed: EstimateIn fields + buildPayload +
+   projections. Fix-its 10a (photo eaves recompute) + 10c (opening basis
+   unified to schedule) sealed. UI in trade-spec box (SettingsRow),
+   data-testids photo-soffit-sqft / photo-drip-edge-lf /
+   photo-total-trim-sqft / photo-frieze-toggle / photo-fillins-group.
+   E2E verified: fill-in 250 ft² soffit → rederive → 25 pcs (was 18).
+   **BYTE-IDENTICAL: 7/7 SHAs unmoved (evidence/step6_before.json ==
+   step6_after.json)** — additive fields proven inert until typed.
+   Suite: 1741 passed, 1 skipped. Seals:
+   tests/test_photo_fillins_step6_2026_08_01.py (12 pins).
+- **NEXT: Spanish buildout (5–8 days, approved)** with the price-parity
+  delivery proof (Spanish estimate priced end-to-end, every line binds
+  identically to EN, SKU names verbatim — a line that unprices in Spanish
+  means the name leaked into translation).
+
 ## THIRD DOOR + SELF-CLEAN + ID BINDING DAYS 1–2 (2026-07-31, 9564948)
 - **BUMP DOOR (ruled 15%)**: apply with |bump_pct|>15 → 409 without one
   confirm; ≤15 applies clean; negative bumps gate too. Amber banner +

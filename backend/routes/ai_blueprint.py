@@ -602,13 +602,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # the gutter coil + downspout count + elbow count downstream.
     any_gable = any(float(w.get("gable_triangle_height_ft") or 0) > 0 for w in walls)
     if any_gable:
-        corrected_eaves = sum(
-            float(w.get("width_ft") or 0)
-            for w in walls
-            if float(w.get("gable_triangle_height_ft") or 0) <= 0
-        )
-        if corrected_eaves > 0:
-            raw["eaves_lf"] = corrected_eaves
+        # ONE COPY (step 6): the recompute lives in measure_staging.
+        raw["eaves_lf"] = staging.eaves_from_walls(walls, raw.get("eaves_lf"))
 
     # Shakedown fix (2026-07-14) — START-COURSE CONTRACT: the aggregator
     # reports the RAW floor-plan perimeter; the ENGINE owns the entry-door

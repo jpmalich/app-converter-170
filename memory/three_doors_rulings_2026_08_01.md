@@ -57,4 +57,13 @@ Ruling 2 pending-flag → aggregator unification (absorbs rulings 1, 3, 6, 7 + f
 - NAMED DELTAS (only Finish Trim rows moved, both derivation layers, everything else byte-identical): 3 Degree ×3 LP estimates 59→33 (measured wbw); Casile 51→23; 261 Haugh round-two 51→23; Haugh photo-crop 54→20. 3 Degree vinyl EST-979583 stored 59 HOLDS (no stored measurements; updates on re-import/re-derive).
 - Seals: tests/test_finish_trim_sills_2026_08_01.py (named delta 59→32 pinned on vinyl-estimate figures; only-finish-trim-moved fence).
 
-## REMAINING: step 4 (photo shared rebuild + starter unify + confidence gate), step 5 (pending-not-discarded flags, photo AND blueprint), step 6 (4 photo fill-in boxes + eaves recompute + opening-basis unify).
+## REMAINING: none — build order complete.
+
+## STEP 6 — DONE (RECORDED 2026-08-02 · CLEAN, 1739+2 passed 1 skipped)
+- FOUR PHOTO FILL-IN BOXES, photo door ONLY: soffit ft² · drip edge LF · total trim ft² · frieze presence-toggle. ONE copy: measure_staging.fold_photo_fillins — inert unless the blob's _source == "photo"; a box only FILLS A HOLE (never overrides a measured value). Frieze is a toggle: LF derives from the measured runs (level = eaves, sloped = rakes) — no number re-typing.
+- Fold points (both call the ONE copy, pinned): rebuild_lp_tab_lines (rederive/hover-lp-run/materialize) + _apply_contractor_waste (LP package path — tab/package parity).
+- PUT cannot silent-strip (F2 class): EstimateIn declares the four fields (Optional-None, partial PUTs never clobber, negatives rejected) + useEstimate buildPayload carries them; projections at rederive/_load_run/materialize include them.
+- UI: boxes live in the TRADE-SPEC BOX (SettingsRow), gated on est.hover_measurements._source === "photo". UI PASS verified live: render + values on a photo estimate; DO NOT render on hover (EST-853809 checked) — finding-6 re-typing defect impossible by construction. E2E: fill-ins survive PUT → rederive consumes (soffit 18 → 25 pcs on 250 ft² fill-in).
+- Minor fix-its confirmed landed + sealed: 10a photo eaves recompute (non-gable walls only, shared eaves_from_walls) · 10c opening basis unified (schedule feeds counts AND ft²).
+- BYTE-IDENTICAL: 7/7 SHAs unmoved — /app/memory/evidence/step6_before.json == step6_after.json (261 Haugh both kinds, 3 Degree ×3, Casile). Additive fields verified inert until typed.
+- Seals: tests/test_photo_fillins_step6_2026_08_01.py (12 pins incl. photo-door-only, never-overrides, no-second-copy, PUT-strip, engine-consumes).

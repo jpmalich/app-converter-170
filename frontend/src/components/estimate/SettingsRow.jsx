@@ -413,6 +413,65 @@ export default function SettingsRow({ est, update, save }) {
                 </div>
               </>
             )}
+            {/* PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors
+                step 6): four, PHOTO DOOR ONLY — soffit ft², drip edge LF,
+                total trim ft², frieze presence-toggle. Gated on the
+                applied blob's door identity: Hover measures these and
+                blueprints print them, so the boxes never render there
+                (finding 6 — never ask for a number the source gave).
+                A box only fills a hole; it never overrides a measured
+                value. Frieze is a toggle — its LF derives from the
+                measured eave/rake runs, no re-typing. */}
+            {est.hover_measurements?._source === "photo" && (() => {
+              const pm = est.hover_measurements || {};
+              const eaves = Number(pm.eaves_lf) || 0;
+              const rakes = Number(pm.rakes_lf) || 0;
+              return (
+                <div className="mt-4 pt-4 border-t border-[var(--border)]" data-testid="photo-fillins-group">
+                  <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
+                    Photo fill-ins — what the photos can't see
+                  </div>
+                  <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    Photo door only. A box fills the hole the photos leave — it never
+                    overrides a measured value. Re-derives live.
+                  </p>
+                  {[
+                    { key: "photo_soffit_sqft", label: "Soffit", unit: "ft²", tid: "photo-soffit-sqft" },
+                    { key: "photo_drip_edge_lf", label: "Drip edge", unit: "LF", tid: "photo-drip-edge-lf" },
+                    { key: "photo_total_trim_sqft", label: "Total trim", unit: "ft²", tid: "photo-total-trim-sqft" },
+                  ].map((f) => (
+                    <div key={f.key} className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold w-24">{f.label}</span>
+                      <input
+                        className="input num w-24 h-9"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={est[f.key] ?? ""}
+                        onChange={(e) => update({ [f.key]: e.target.value === "" ? 0 : Number(e.target.value) })}
+                        onBlur={() => saveSpec({ [f.key]: Number(est[f.key]) || 0 })}
+                        data-testid={f.tid}
+                      />
+                      <span className="text-[var(--ink-2)] text-sm">{f.unit}</span>
+                    </div>
+                  ))}
+                  <label className="flex items-center gap-2 mt-3 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={!!est.photo_frieze_present}
+                      onChange={(e) => saveSpec({ photo_frieze_present: e.target.checked })}
+                      data-testid="photo-frieze-toggle"
+                    />
+                    <span>House has frieze board</span>
+                  </label>
+                  <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    Toggle only — frieze LF derives from the measured runs
+                    (level = eaves {eaves.toFixed(0)} LF · sloped = rakes {rakes.toFixed(0)} LF).
+                    You never re-type a number the engine already has.
+                  </p>
+                </div>
+              );
+            })()}
             {/* Iter 78aj — Porch ceilings live in the trade-spec box; the
                 total sqft is summed into the same soffit formula. */}
             <PorchCeilingsCard

@@ -22,6 +22,23 @@ import uuid
 GABLE_FACTOR = 0.70
 
 
+def eaves_from_walls(walls: list, raw_eaves) -> float:
+    """THE defensive eaves rule (one copy — Iter 57w, extended to photo per
+    ruled fix-it 10a, 2026-08-01). Models historically return the full
+    floor-plan perimeter as eaves_lf — only correct for hip roofs. When any
+    wall is a gable end, gutters run the NON-gable walls only: recompute
+    eaves as the sum of non-gable wall widths. Falls back to the raw read
+    when no gables or no usable widths."""
+    any_gable = any(float(w.get("gable_triangle_height_ft") or 0) > 0 for w in walls)
+    if any_gable:
+        corrected = sum(
+            float(w.get("width_ft") or 0) for w in walls
+            if float(w.get("gable_triangle_height_ft") or 0) <= 0)
+        if corrected > 0:
+            return corrected
+    return float(raw_eaves or 0)
+
+
 def walk_walls(walls: list, gable_rise_fn=None) -> dict:
     """THE wall-area walk (one copy, ruled). For each wall:
     gross = width × eave height, credited at siding_pct (fraction/percent
@@ -60,6 +77,46 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
                        "gable_sqft": wall_gable})
     return {"siding_sqft": siding_sqft, "gable_sqft": gable_sqft,
             "dormer_sqft": dormer_sqft, "detail": detail}
+
+
+def fold_photo_fillins(measurements: dict, est: dict) -> dict:
+    """PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors step 6):
+    four boxes, PHOTO DOOR ONLY — soffit_sqft, drip_edge_lf,
+    total_trim_sqft, frieze presence-toggle. The photo genuinely cannot
+    see these; Hover measures them and blueprint prints them, so the
+    boxes are inert everywhere except a photo-sourced blob (finding 6:
+    never ask the contractor to re-type a number the source gave).
+    A box only FILLS A HOLE — it never overrides a measured value.
+    Frieze is a TOGGLE: its LF derives from the measured eave/rake runs
+    (level = eaves, sloped = rakes), no number re-typing. ONE copy —
+    both fold points (rebuild_lp_tab_lines + _apply_contractor_waste)
+    call here; a second copy anywhere is a regression."""
+    if (measurements or {}).get("_source") != "photo":
+        return measurements
+    out = measurements
+    for est_key, meas_key in (("photo_soffit_sqft", "soffit_sqft"),
+                              ("photo_drip_edge_lf", "drip_edge_lf"),
+                              ("photo_total_trim_sqft", "total_trim_sqft")):
+        try:
+            v = float(est.get(est_key) or 0)
+        except (TypeError, ValueError):
+            v = 0.0
+        if v > 0 and not float(out.get(meas_key) or 0):
+            out = {**out, meas_key: v,
+                   f"_{meas_key}_basis": "contractor fill-in (photo door — source cannot see it)"}
+    if est.get("photo_frieze_present") and not (
+            float(out.get("level_frieze_lf") or 0)
+            or float(out.get("sloped_frieze_lf") or 0)):
+        eaves = float(out.get("eaves_lf") or 0)
+        rakes = float(out.get("rakes_lf") or 0)
+        if eaves > 0 or rakes > 0:
+            out = {**out,
+                   **({"level_frieze_lf": eaves} if eaves > 0 else {}),
+                   **({"sloped_frieze_lf": rakes} if rakes > 0 else {}),
+                   "_frieze_basis": (
+                       f"presence toggle — LF derived from measured runs "
+                       f"(level = eaves {eaves:g} LF, sloped = rakes {rakes:g} LF)")}
+    return out
 
 
 _DOOR_BUCKETS = ("entry_door", "patio_door", "garage_door")

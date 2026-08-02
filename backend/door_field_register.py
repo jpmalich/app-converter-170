@@ -64,9 +64,10 @@ BLUEPRINT_FIELD_REGISTER = {
 # result — the register scopes to AGGREGATOR-emitted engine keys.)
 PHOTO_FIELD_REGISTER = {
     **_SHARED,
-    # Photo genuinely-cannot-see cells (N-S on the matrix) get the four
-    # ruled fill-in boxes in build step 6: soffit_sqft, drip_edge_lf,
-    # total_trim_sqft, frieze presence-toggle. They are NOT register
-    # entries here because the photo AGGREGATOR never emits them — the
-    # trade-spec box supplies them, human-typed.
+    # Photo genuinely-cannot-see cells (N-S on the matrix): the four
+    # ruled fill-in boxes LANDED build step 6 (soffit_sqft, drip_edge_lf,
+    # total_trim_sqft, frieze presence-toggle — measure_staging.
+    # fold_photo_fillins). They are NOT register entries here because the
+    # photo AGGREGATOR never emits them — the trade-spec box supplies
+    # them, human-typed, and the fold only ever fills a hole.
 }

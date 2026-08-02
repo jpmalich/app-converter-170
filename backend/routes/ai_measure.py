@@ -1879,6 +1879,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # gross wall area, so use the same value.
     siding_with_openings_sqft = siding_sqft
 
+    # STEP 6 (ruled fix-it 10a, 2026-08-01): the blueprint door's defensive
+    # eaves recompute extends to photo through the ONE shared rule — on a
+    # gabled house gutters run the non-gable walls only.
+    _eaves_lf = staging.eaves_from_walls(adapted_walls, raw.get("eaves_lf"))
+
     # Approximate opening areas to deduct (informational).
     opening_sqft = 0.0
     for o in openings:
@@ -1929,8 +1934,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # rounds at intake; the ORDER layer is the one rounding point.
         "siding_sqft": siding_sqft,
         "siding_with_openings_sqft": siding_with_openings_sqft,
-        "opening_sqft": opening_sqft,
-        "eaves_lf": float(raw.get("eaves_lf") or 0),
+        # STEP 6 (ruled fix-it 10c): ONE opening basis — the schedule
+        # (Claude's reconciled roll-up) feeds counts AND ft² when present;
+        # the deduped list serves legacy sessions only.
+        "opening_sqft": (_bk["opening_sqft"] if schedule_for_counts else opening_sqft),
+        "eaves_lf": _eaves_lf,
         "rakes_lf": float(raw.get("rakes_lf") or 0),
         "starter_lf": _starter_lf,
         # Corners — Iter 79j.64: computed per-corner from the reconciled

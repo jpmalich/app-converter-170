@@ -34,6 +34,8 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
                 "default_siding_profile": 1, "lp_flag_checklist": 1,
                 "shake_reveal_in": 1, "batten_spacing_in": 1, "fascia_width_in": 1,
                 "panel_size": 1, "wrap_trim_width_in": 1,
+                "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
+                "photo_total_trim_sqft": 1, "photo_frieze_present": 1,
                 "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
@@ -333,6 +335,11 @@ def _apply_contractor_waste(measurements, est):
         out = {**out, "_panel_size": str(est["panel_size"])}
     if out.get("_wrap_trim_width_in") is None and est.get("wrap_trim_width_in") is not None:
         out = {**out, "_wrap_trim_width_in": int(est["wrap_trim_width_in"])}
+    # PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors step 6):
+    # photo-door-only, fills-a-hole-only — ONE copy in measure_staging;
+    # this is the package-path fold point (tab/package parity).
+    from measure_staging import fold_photo_fillins
+    out = fold_photo_fillins(out, est)
     return out
 
 
@@ -632,7 +639,9 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
          "overhang_in": 1, "default_siding_profile": 1, "color_tier": 1,
          "shake_reveal_in": 1, "lp_colors": 1, "lp_flag_checklist": 1,
          "batten_spacing_in": 1, "fascia_width_in": 1,
-         "panel_size": 1, "wrap_trim_width_in": 1})
+         "panel_size": 1, "wrap_trim_width_in": 1,
+         "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
+         "photo_total_trim_sqft": 1, "photo_frieze_present": 1})
     if (full_est or {}).get("kind") != "lp_smart":
         raise HTTPException(status_code=400,
                             detail="LP materialize is lp_smart-kind only")

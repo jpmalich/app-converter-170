@@ -40,7 +40,8 @@ from deps import get_current_user
 import lp_smartside_formulas as lp_formulas
 from measure_staging import (guess_vero_product_type as _staging_guess_vero,
                              VERO_TO_MEZZO as _VERO_TO_MEZZO,
-                             build_paired_openings as _staging_build_paired_openings)
+                             build_paired_openings as _staging_build_paired_openings,
+                             fold_photo_fillins as _staging_fold_photo_fillins)
 
 # Iter 78q — Phase 3 Deep Verify uses MongoDB to cache rendered elevation
 # page PNGs. The TTL index purges entries 1 hour after creation so we
@@ -2749,6 +2750,10 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
         scoped["_panel_size"] = str(est["panel_size"])
     if est.get("wrap_trim_width_in") is not None:
         scoped["_wrap_trim_width_in"] = int(est["wrap_trim_width_in"])
+    # PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors step 6):
+    # photo-door-only fold — inert unless scoped._source == "photo" and
+    # only ever fills a hole (ONE copy in measure_staging).
+    scoped = dict(_staging_fold_photo_fillins(scoped, est))
     # R2 follow-on (GO 2026-07-30): coil lines carry the wrapped
     # component's colour from Job Info MATERIAL COLORS.
     if est.get("window_wrap_color"):
@@ -2970,6 +2975,8 @@ async def rederive_estimate(
          "panel_size": 1, "wrap_trim_width_in": 1,
          "window_wrap_color": 1, "soffit_fascia_color": 1,
          "lp_flag_checklist": 1, "hover_measurements": 1,
+         "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
+         "photo_total_trim_sqft": 1, "photo_frieze_present": 1,
          "waste_pct": 1, "default_siding_profile": 1, "lines": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
@@ -2985,7 +2992,9 @@ async def rederive_estimate(
     # just changed so the rebuild never reads a stale autosave.
     for k in ("overhang_in", "porch_ceilings", "fascia_width_in",
               "batten_spacing_in", "panel_size", "wrap_trim_width_in",
-              "shake_reveal_in", "color_tier", "waste_pct"):
+              "shake_reveal_in", "color_tier", "waste_pct",
+              "photo_soffit_sqft", "photo_drip_edge_lf",
+              "photo_total_trim_sqft", "photo_frieze_present"):
         if payload is not None and payload.get(k) is not None:
             est[k] = payload[k]
     profile = est.get("default_siding_profile") if kind == "lp_smart" else None

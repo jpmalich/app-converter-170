@@ -565,6 +565,13 @@ export default function useEstimate(id) {
       wrap_trim_width_in: source.wrap_trim_width_in ?? undefined,
       color_tier: source.color_tier || undefined,
       lp_soffit_type: source.lp_soffit_type || undefined,
+      // PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors step 6):
+      // photo-door-only specs — declared here so the PUT whitelist can
+      // never silent-strip them (F2 class).
+      photo_soffit_sqft: source.photo_soffit_sqft ?? undefined,
+      photo_drip_edge_lf: source.photo_drip_edge_lf ?? undefined,
+      photo_total_trim_sqft: source.photo_total_trim_sqft ?? undefined,
+      photo_frieze_present: source.photo_frieze_present ?? undefined,
       // STEP 4 (ruled 2026-08-01): door measurements ride the payload so
       // an Apply that lands them isn't silently stripped (photo/blueprint
       // apply store measurements + _source on the estimate — the shared

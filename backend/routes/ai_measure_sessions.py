@@ -39,6 +39,13 @@ class AIMeasureSessionIn(BaseModel):
     # exposure and course counting never fires.
     brick_course_in: Optional[float] = None
     siding_exposure_in: Optional[float] = None
+    # STEP 6 (Howard ruled 2026-08-01): the four photo fill-in boxes —
+    # what the source genuinely cannot see, human-typed in the trade-spec
+    # box. Photo door only.
+    soffit_sqft_fill: Optional[float] = None
+    drip_edge_lf_fill: Optional[float] = None
+    total_trim_sqft_fill: Optional[float] = None
+    frieze_present: Optional[bool] = None
     wall_height: Optional[str] = ""
     siding_pct: Optional[str] = ""
     overhang_in: Optional[float] = 12.0

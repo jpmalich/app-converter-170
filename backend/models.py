@@ -265,6 +265,26 @@ class EstimateIn(BaseModel):
     # silent-strip them (F2 class).
     panel_size: Optional[str] = None
     wrap_trim_width_in: Optional[int] = None
+    # PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors step 6):
+    # four, PHOTO DOOR ONLY — the photo genuinely cannot see them.
+    # Declared here so the PUT can never silent-strip them (F2 class).
+    # A box only FILLS a hole in a photo-sourced blob; the fold
+    # (measure_staging.fold_photo_fillins) is inert on hover/blueprint.
+    photo_soffit_sqft: Optional[float] = None
+    photo_drip_edge_lf: Optional[float] = None
+    photo_total_trim_sqft: Optional[float] = None
+    photo_frieze_present: Optional[bool] = None
+
+    @field_validator("photo_soffit_sqft", "photo_drip_edge_lf",
+                     "photo_total_trim_sqft")
+    @classmethod
+    def _photo_fillin_non_negative(cls, v):
+        if v is None:
+            return v
+        if float(v) < 0:
+            raise ValueError("photo fill-in values cannot be negative "
+                             "(Three Doors step 6, ruled 2026-08-01)")
+        return float(v)
 
     @field_validator("panel_size")
     @classmethod
