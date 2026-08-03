@@ -25,6 +25,7 @@ import ElevationSheetsPanel from "@/components/estimate/ElevationSheetsPanel";
 import SectionAccordion from "@/components/estimate/SectionAccordion";
 import TotalsSummary from "@/components/estimate/TotalsSummary";
 import CatalogSyncBanner from "@/components/estimate/CatalogSyncBanner";
+import PhotoFillinGateBanner from "@/components/estimate/PhotoFillinGateBanner";
 import EstimatorTabs from "@/components/estimate/EstimatorTabs";
 import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, SIDING_KIND_TAB_IDS } from "@/lib/tabsConfig";
 import QuoteModal from "@/components/QuoteModal";
@@ -388,6 +389,7 @@ export default function EstimateEditor() {
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24" data-testid="estimate-editor">
         <CatalogSyncBanner est={est} update={update} />
+        <PhotoFillinGateBanner est={est} />
         <JobInfoPanel
           est={est}
           update={update}

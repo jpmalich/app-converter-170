@@ -11,7 +11,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from routes.hover import (_build_lines, _soffit_total_split, _apply_color_tier,
+from routes.hover import (_build_lines, _soffit_total_split,
                           _isc_540_pcs, _osc_lp_pcs, _frieze_540_pcs)
 from lp_package import assemble_lp_package
 from lp_conventions import MISC_LABOR_ROWS
@@ -108,17 +108,22 @@ def test_q6_q7_photo_door_stories_and_vents():
 
 
 def test_q8_color_tier_relands_standard_rows():
+    """Q8 SUPERSEDED (Howard ruled 2026-08-02): tier derives PER ROW from
+    each row's own color picker — the estimate-wide swap is retired."""
+    from vinyl_color_tiers import apply_row_color_tiers
     lines = [
         {"tab": "vinyl", "name": "Outside corners Standard color", "note": "x"},
         {"tab": "vinyl", "name": "Soffit & fascia Charter Oak Standard Color", "note": "y"},
         {"tab": "lp_smart", "name": "Touch up kits", "note": "z"},
     ]
-    out = _apply_color_tier(copy.deepcopy(lines), "architectural")
+    out = apply_row_color_tiers(copy.deepcopy(lines), {
+        "outside_corner": "Storm", "soffit_fascia": "Black"})
     assert out[0]["name"] == "Outside corners Architectural color"
     assert out[1]["name"] == "Soffit & fascia Charter Oak Architectural color"
     assert "Architectural color tier" in out[0]["note"]  # wording de-doctrined 2026-07-29
     assert out[2]["name"] == "Touch up kits"  # LP tab untouched
-    same = _apply_color_tier(copy.deepcopy(lines), "standard")
+    same = apply_row_color_tiers(copy.deepcopy(lines), {
+        "outside_corner": "Glacier White", "soffit_fascia": "Glacier White"})
     assert same[0]["name"] == "Outside corners Standard color"
 
 

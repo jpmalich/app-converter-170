@@ -141,13 +141,24 @@ def test_overhang_and_porch_journey_vinyl_ascend(est_factory, s):
     assert sof["qty"] == 66.0, f"porch 200 sqft must fold into soffit (66), got {sof['qty']}"
 
 
-# ═════════════ COLOR TIER — VINYL (DIFFERENT-BY-RULING for others) ══════
+# ═════════════ COLOR TIER — DERIVES FROM THE COLOR, PER ROW ═════════════
 def test_color_tier_journey_vinyl(est_factory, s):
-    eid = est_factory("siding", color_tier="architectural")
+    """Superseded ruling 2026-08-02: the dropdown is retired — an
+    ARCHITECTURAL siding color re-lands the siding row while WHITE
+    (standard) accessories stay Standard on the SAME estimate (the
+    two-tone case the ruling exists for)."""
+    eid = est_factory("siding", siding_color="Storm",
+                      outside_corner_color="Glacier White",
+                      accessories_color="Glacier White",
+                      soffit_fascia_color="Glacier White")
     lines = _rederive(s, eid)
-    arch = [l for l in lines if l["tab"] == "vinyl" and "Architectural" in l["name"]
-            and (l.get("qty") or 0) > 0]
-    assert arch, "architectural tier must re-land vinyl derivations on Architectural rows"
+    arch_siding = [l for l in lines if l["tab"] == "vinyl"
+                   and "Charter Oak Architectural color" in l["name"]
+                   and (l.get("qty") or 0) > 0]
+    assert arch_siding, "architectural siding color must re-land the siding row"
+    corners = [l for l in lines if l["tab"] == "vinyl"
+               and l["name"] == "Outside corners Standard color"]
+    assert corners, "white corners stay Standard tier on the same estimate"
 
 
 # ═════════════ LP-ONLY SPECS — panel size · batten spacing · wrap trim ══
@@ -252,7 +263,9 @@ def test_trade_spec_family_register_complete():
     from lp_conventions import TRADE_SPEC_FAMILY_REGISTER as R
     expected = {"overhang_in", "porch_ceilings", "fascia_width_in",
                 "batten_spacing_in", "shake_reveal_in", "panel_size",
-                "wrap_trim_width_in", "lp_soffit_type", "color_tier"}
+                "wrap_trim_width_in", "lp_soffit_type"}
+    # "color_tier" REMOVED per ruling 2026-08-02 — the dropdown is
+    # retired; tier derives per row from the Material Colors pickers.
     assert set(R) == expected, "every trade spec is registered — no silent additions"
     for field, entry in R.items():
         fams = entry.get("families") or ()

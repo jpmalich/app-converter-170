@@ -2,7 +2,28 @@ import React from "react";
 import DOMPurify from "dompurify";
 import { useT, useLang } from "@/lib/i18n";
 import { tColor, tColorGroup } from "@/lib/catalogTranslations";
-import { vinylSidingColorGroupsForEstimate, accessoryColorGroupsForEstimate, ASCEND_COLORS, SHAKE_COLOR_GROUPS, BOARD_BATTEN_COLOR_GROUPS, SOFFIT_COLOR_GROUPS, GUTTER_COLORS, WINDOW_WRAP_COLORS, LP_SMARTSIDE_COLORS, MEZZO_EXTERIOR_COLOR_GROUPS, MEZZO_INTERIOR_COLOR_GROUPS, VERO_EXTERIOR_COLOR_GROUPS, VERO_INTERIOR_COLOR_GROUPS, VERO_LAMINATE_NAMES } from "@/lib/colorOptions";
+import { vinylSidingColorGroupsForEstimate, accessoryColorGroupsForEstimate, ASCEND_COLORS, SHAKE_COLOR_GROUPS, BOARD_BATTEN_COLOR_GROUPS, SOFFIT_COLOR_GROUPS, GUTTER_COLORS, WINDOW_WRAP_COLORS, LP_SMARTSIDE_COLORS, MEZZO_EXTERIOR_COLOR_GROUPS, MEZZO_INTERIOR_COLOR_GROUPS, VERO_EXTERIOR_COLOR_GROUPS, VERO_INTERIOR_COLOR_GROUPS, VERO_LAMINATE_NAMES, tierForPickerColor } from "@/lib/colorOptions";
+
+// Read-only derived color tier (Howard ruled 2026-08-02): the tier is
+// never asked — it derives from the color chosen in THIS picker and shows
+// here so the contractor can see how his row will price.
+const TierChip = ({ color, groups, testId }) => {
+  const tier = tierForPickerColor(color, groups);
+  if (!tier) return null;
+  const arch = tier === "architectural";
+  return (
+    <span
+      className={`inline-block mt-1 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border ${
+        arch
+          ? "text-[#92400E] bg-[#FEF3C7] border-[#F59E0B]"
+          : "text-[var(--muted)] border-[var(--border)]"
+      }`}
+      data-testid={testId}
+    >
+      {arch ? "Architectural tier — priced" : "Standard tier"}
+    </span>
+  );
+};
 import HoverImportButton from "@/components/estimate/HoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 // Iter 79j.19 — bake current waste_pct into AI-generated cut-prone
@@ -907,6 +928,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                       </optgroup>
                     ))}
               </select>
+              {!isLp && <TierChip color={est.siding_color} groups={vinylColorGroups} testId="tier-chip-siding" />}
             </div>
             {/* Iter 77 — LP SmartSiding doesn't use Ascend or Pelican Bay
                 shake palettes; Howard asked to hide those two selectors on
@@ -990,6 +1012,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                       </optgroup>
                     ))}
               </select>
+              {!isLp && <TierChip color={est.accessories_color} groups={accessoryColorGroups} testId="tier-chip-accessories" />}
             </div>
             <div>
               <label className="label">{t("est.color.outsideCorner")}</label>
@@ -1012,6 +1035,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                       </optgroup>
                     ))}
               </select>
+              {!isLp && <TierChip color={est.outside_corner_color} groups={accessoryColorGroups} testId="tier-chip-outside-corner" />}
             </div>
             <div>
               <label className="label">{t("est.color.soffitFascia")}</label>
@@ -1034,6 +1058,7 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
                       </optgroup>
                     ))}
               </select>
+              {!isLp && <TierChip color={est.soffit_fascia_color} groups={SOFFIT_COLOR_GROUPS} testId="tier-chip-soffit-fascia" />}
             </div>
             {/* Iter 77 — LP SmartSide doesn't quote window wrap (factory
                 trim handles window perimeters); hide the picker on LP. */}

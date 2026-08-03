@@ -38,6 +38,7 @@ from pydantic import BaseModel
 
 from deps import get_current_user
 import lp_smartside_formulas as lp_formulas
+from vinyl_color_tiers import apply_row_color_tiers as _apply_row_color_tiers
 from measure_staging import (guess_vero_product_type as _staging_guess_vero,
                              VERO_TO_MEZZO as _VERO_TO_MEZZO,
                              build_paired_openings as _staging_build_paired_openings,
@@ -718,23 +719,10 @@ def _batten_note(m: dict) -> str:
 
 # Q8 (ruled 2026-07-27): per-estimate COLOR-TIER selector re-lands
 # derivations — Standard-color rows swap to their Architectural twins.
-_COLOR_TIER_SWAPS = (("Standard color", "Architectural color"),
-                     ("Standard Color", "Architectural color"))
-
-
-def _apply_color_tier(lines: list, tier: str | None) -> list:
-    if (tier or "").lower() != "architectural":
-        return lines
-    for l in lines:
-        if (l.get("tab") or "vinyl") not in ("vinyl", "ascend"):
-            continue
-        name = l.get("name") or ""
-        for old, new in _COLOR_TIER_SWAPS:
-            if old in name:
-                l["name"] = name.replace(old, new)
-                l["note"] = (f"{l.get('note') or ''} — Architectural color tier").strip(" —")
-                break
-    return lines
+# RETIRED 2026-08-02: the single-tier `_apply_color_tier(lines, tier)`
+# swapped EVERY row to one estimate-wide tier. Howard ruled PER-ROW —
+# each row follows its own color picker (vinyl_color_tiers.
+# apply_row_color_tiers, ONE copy). The dropdown control is gone.
 
 
 # SALES UNIT (Howard ruled 2026-07-31, landed after his price pages):
@@ -2395,8 +2383,11 @@ def _build_lines(measurements: dict) -> list[dict]:
                 "note": note_val,
                 **({"qty_pending": True} if spec.get("always_emit") and qty <= 0 else {}),
             })
-    # Q8 (ruled 2026-07-27): per-estimate color tier re-lands derivations.
-    out = _apply_color_tier(out, measurements.get("_color_tier"))
+    # Q8 superseded 2026-08-02: tier DERIVES from the color, PER ROW —
+    # each row follows its own picker (siding / outside corner /
+    # accessories / soffit-fascia). Runs before ID stamping so the
+    # renamed row binds the Architectural item id and price.
+    out = _apply_row_color_tiers(out, measurements.get("_row_colors") or {})
     # FASCIA WIDTH TRADE SPEC (Howard ruled 2026-07-29): the contractor's
     # width call-out renames the 440 fascia SKU — the material list prints
     # the width on the line (wrong lumber on the truck is the risk; the
@@ -2745,9 +2736,16 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
         scoped["porch_ceiling_sqft"] = porch_sqft
     if est.get("overhang_in") is not None:
         scoped["overhang_in"] = est["overhang_in"]
-    # Q8 (ruled 2026-07-27): per-estimate color tier re-lands derivations.
-    if est.get("color_tier"):
-        scoped["_color_tier"] = est["color_tier"]
+    # COLOR TIER DERIVES FROM THE COLOR (Howard ruled 2026-08-02):
+    # per-row, each row follows its own Material Colors picker — the
+    # standalone dropdown is retired (one decision, one control).
+    _rc = {"siding": est.get("siding_color") or "",
+           "outside_corner": est.get("outside_corner_color") or "",
+           "accessories": est.get("accessories_color") or "",
+           "soffit_fascia": est.get("soffit_fascia_color") or "",
+           "board_batten": est.get("board_batten_color") or ""}
+    if any(_rc.values()):
+        scoped["_row_colors"] = _rc
     # SHAKE REVEAL (register #4 ruled 2026-07-28): the estimate field
     # rides the tab-line rebuild too — same fold as the package paths.
     if est.get("shake_reveal_in") is not None:
@@ -2984,7 +2982,8 @@ async def rederive_estimate(
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
-         "color_tier": 1, "shake_reveal_in": 1, "lp_colors": 1,
+         "siding_color": 1, "outside_corner_color": 1,
+         "accessories_color": 1, "shake_reveal_in": 1, "lp_colors": 1,
          "batten_spacing_in": 1, "fascia_width_in": 1,
          "panel_size": 1, "wrap_trim_width_in": 1,
          "window_wrap_color": 1, "soffit_fascia_color": 1,
@@ -3006,7 +3005,9 @@ async def rederive_estimate(
     # just changed so the rebuild never reads a stale autosave.
     for k in ("overhang_in", "porch_ceilings", "fascia_width_in",
               "batten_spacing_in", "panel_size", "wrap_trim_width_in",
-              "shake_reveal_in", "color_tier", "waste_pct",
+              "shake_reveal_in", "waste_pct",
+              "siding_color", "outside_corner_color",
+              "accessories_color", "soffit_fascia_color",
               "photo_soffit_sqft", "photo_drip_edge_lf",
               "photo_total_trim_sqft", "photo_frieze_present"):
         if payload is not None and payload.get(k) is not None:
@@ -3075,7 +3076,8 @@ async def hover_lp_run(
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"_id": 0, "kind": 1, "porch_ceilings": 1, "overhang_in": 1,
-         "color_tier": 1, "shake_reveal_in": 1, "lp_colors": 1,
+         "siding_color": 1, "outside_corner_color": 1,
+         "accessories_color": 1, "shake_reveal_in": 1, "lp_colors": 1,
          "batten_spacing_in": 1, "fascia_width_in": 1,
          "panel_size": 1, "wrap_trim_width_in": 1,
          "window_wrap_color": 1, "soffit_fascia_color": 1,

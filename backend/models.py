@@ -337,10 +337,10 @@ class EstimateIn(BaseModel):
                 "instructions (register #4 ruled 2026-07-28)")
         return float(v)
 
-    # Q8 (ruled 2026-07-27): per-estimate color-tier selector — "standard"
-    # (default) or "architectural"; re-lands vinyl/ascend derivations on
-    # the Architectural-color catalog twins. Manual swap stays for one-offs.
-    color_tier: str = "standard"
+    # COLOR TIER (per-estimate dropdown) RETIRED — Howard ruled
+    # 2026-08-02: the tier is a PRICE TERM that DERIVES per row from the
+    # Material Colors pickers (vinyl_color_tiers.apply_row_color_tiers).
+    # One decision, one control.
     # Iter 78 — LP SmartSide soffit steering. Controls how the
     # auto-imported soffit qty is split between Vented (eaves) and
     # Closed (rakes) on LP estimates only. Backend's HOVER spec

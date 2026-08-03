@@ -563,7 +563,7 @@ export default function useEstimate(id) {
       shake_reveal_in: source.shake_reveal_in ?? undefined,
       panel_size: source.panel_size || undefined,
       wrap_trim_width_in: source.wrap_trim_width_in ?? undefined,
-      color_tier: source.color_tier || undefined,
+      color_tier: undefined, // RETIRED 2026-08-02 — tier derives per row from the color pickers
       lp_soffit_type: source.lp_soffit_type || undefined,
       // PHOTO FILL-IN BOXES (Howard ruled 2026-08-01, Three Doors step 6):
       // photo-door-only specs — declared here so the PUT whitelist can

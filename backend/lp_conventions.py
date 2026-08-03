@@ -559,9 +559,9 @@ TRADE_SPEC_FAMILY_REGISTER = {
         "different_by_nature": (
             "steers the two-SKU LP soffit split (Vented/Closed); vinyl "
             "soffit is a single Charter Oak row (R4)")},
-    "color_tier": {
-        "families": ("vinyl",), "ruled": "2026-07-28",
-        "different_by_nature": (
-            "price tiers exist for vinyl only (Howard ruled 2026-07-28); "
-            "Ascend and LP SmartSide have none")},
+    # "color_tier" RETIRED (Howard ruled 2026-08-02): the dropdown was a
+    # second control for a decision made in Material Colors. Tier now
+    # DERIVES per row from each row's own color picker —
+    # vinyl_color_tiers.apply_row_color_tiers (vinyl/ascend rows only;
+    # LP still has no tiers, per the 2026-07-28 ruling).
 }

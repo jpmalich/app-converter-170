@@ -412,3 +412,20 @@ export const VERO_INTERIOR_COLORS = VERO_INTERIOR_COLOR_GROUPS.flatMap((g) => g.
 export const VERO_LAMINATE_NAMES = new Set([
   "Black Laminate", "Brown Laminate", "Cavalier Oak", "Colonial Cherry",
 ]);
+
+// COLOR TIER DERIVES FROM THE COLOR (Howard ruled 2026-08-02): the
+// standalone tier dropdown is retired — each row's tier follows its own
+// picker. This helper reads the tier off the optgroup LABEL of the
+// groups a picker renders ("…Architectural…" → architectural), so the
+// read-only chips can never disagree with the dropdown contents. The
+// backend pricing twin lives in /app/backend/vinyl_color_tiers.py — a
+// sync test pins the two files together.
+export function tierForPickerColor(color, groups) {
+  if (!color) return null;
+  for (const g of groups || []) {
+    if ((g.colors || []).includes(color)) {
+      return /architectural/i.test(g.label || "") ? "architectural" : "standard";
+    }
+  }
+  return "standard";
+}

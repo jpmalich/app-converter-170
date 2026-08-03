@@ -6801,9 +6801,10 @@ async def map_measurements_to_lines(
     the contractor produces measurements by tapping on a photo and we
     just need the same line mapping HOVER provides."""
     measurements = payload.get("measurements") or {}
-    # Q8 (ruled 2026-07-27): caller may name the estimate's color tier.
-    if payload.get("color_tier"):
-        measurements["_color_tier"] = payload["color_tier"]
+    # COLOR TIER (superseded 2026-08-02): tier derives from the colors,
+    # per row. Caller may pass the estimate's Material Colors picks.
+    if payload.get("row_colors"):
+        measurements["_row_colors"] = payload["row_colors"]
     # PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24 — Casile
     # lap-251 double-quote): the cached-measurement RESTORE path was
     # profile-blind and emitted the DEFAULT (lap) family beside the

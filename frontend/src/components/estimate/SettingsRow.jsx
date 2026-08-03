@@ -229,25 +229,10 @@ export default function SettingsRow({ est, update, save }) {
               <WallHeightTapeField est={est} />
             </div>
           )}
-          {/* COLOR TIER — VINYL ONLY (Howard ruled 2026-07-28): price
-              tiers exist for vinyl; Ascend and LP SmartSide have none.
-              Term kept, field hidden off the vinyl (siding) door. */}
-          {est?.kind === "siding" && (
-            <div className="mt-4 pt-4 border-t border-[var(--border)]">
-              <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                Color tier
-              </div>
-              <select
-                className="input h-9 text-sm"
-                value={est.color_tier || "standard"}
-                onChange={(e) => update({ color_tier: e.target.value })}
-                data-testid="color-tier-select"
-              >
-                <option value="standard">Standard color (default)</option>
-                <option value="architectural">Architectural color — derivations re-land on Architectural rows</option>
-              </select>
-            </div>
-          )}
+          {/* COLOR TIER dropdown REMOVED (Howard ruled 2026-08-02): the
+              tier now DERIVES per row from each row's own Material Colors
+              picker — one decision, one control. The derived tier shows
+              read-only next to each color picker in Job Info. */}
           {/* TRADE-SPEC GROUP (Howard ruled 2026-07-29): roofline + install
               specs the contractor supplies — eave overhang, fascia width,
               shake reveal, batten spacing, porch ceilings. SPECS, not
