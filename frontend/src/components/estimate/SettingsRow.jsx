@@ -411,6 +411,18 @@ export default function SettingsRow({ est, update, save }) {
               const pm = est.hover_measurements || {};
               const eaves = Number(pm.eaves_lf) || 0;
               const rakes = Number(pm.rakes_lf) || 0;
+              // FILL-IN HISTORY (read-only): latest server stamp per box —
+              // who set this number and when, answered next to the box.
+              const fillinHist = est.photo_fillin_history || [];
+              const lastFor = (key) => [...fillinHist].reverse().find((h) => h.field === key);
+              const provenanceChip = (key, tid) => {
+                const h = lastFor(key);
+                return h ? (
+                  <span className="text-[9px] text-[var(--muted)] whitespace-nowrap" data-testid={`${tid}-provenance`}>
+                    {t("pf.lastSet", { by: h.by, date: new Date(h.at).toLocaleDateString() })}
+                  </span>
+                ) : null;
+              };
               return (
                 <div className="mt-4 pt-4 border-t border-[var(--border)]" data-testid="photo-fillins-group">
                   <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
@@ -442,6 +454,7 @@ export default function SettingsRow({ est, update, save }) {
                           {t("pf.notSet")}
                         </span>
                       )}
+                      {provenanceChip(f.key, f.tid)}
                     </div>
                   ))}
                   <div className="flex items-center gap-2 mt-3">
@@ -473,6 +486,7 @@ export default function SettingsRow({ est, update, save }) {
                         {t("pf.notSet")}
                       </span>
                     )}
+                    {provenanceChip("photo_frieze_present", "photo-frieze")}
                   </div>
                   <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--muted)]">
                     {t("pf.friezeHint", { eaves: eaves.toFixed(0), rakes: rakes.toFixed(0) })}

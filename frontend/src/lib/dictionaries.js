@@ -520,6 +520,7 @@ export const dict = {
     "tier.architectural": "Architectural tier — priced",
     "tier.standard": "Standard tier",
     "pf.history": "Fill-in history",
+    "pf.lastSet": "Set by {by} · {date}",
     "pf.historyEmpty": "No fill-in changes recorded yet",
   },
 
@@ -1027,6 +1028,7 @@ export const dict = {
     "tier.architectural": "Nivel Architectural — así se cotiza",
     "tier.standard": "Nivel Standard",
     "pf.history": "Historial de datos",
+    "pf.lastSet": "Definido por {by} · {date}",
     "pf.historyEmpty": "Aún no hay cambios registrados",
   },
 };

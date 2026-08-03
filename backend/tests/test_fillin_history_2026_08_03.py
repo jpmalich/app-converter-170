@@ -86,3 +86,44 @@ def test_non_fillin_saves_append_nothing(est_factory, s, base_url):
     s.put(f"{base_url}/api/estimates/{eid}",
           json={"customer_name": "History Noise Check", "waste_pct": 10})
     assert _history(s, base_url, eid) == []
+
+
+# ---- FILL-IN HISTORY VIEW (Howard ruled 2026-08-03, second pass) ---------
+# The trail is VISIBLE on each fill-in box — read-only display of the
+# stored metadata; the view writes nothing and never touches the value.
+
+SR_PATH = "/app/frontend/src/components/estimate/SettingsRow.jsx"
+
+
+def test_history_view_renders_trail_and_per_box_stamp():
+    src = open(SR_PATH).read()
+    assert 'data-testid="photo-fillin-history"' in src, "trail view missing"
+    assert "provenanceChip" in src, "per-box who/when stamp missing"
+    assert '"pf.lastSet"' in src or "'pf.lastSet'" in src
+    for tid in ('provenanceChip(f.key, f.tid)',
+                'provenanceChip("photo_frieze_present", "photo-frieze")'):
+        assert tid in src, f"a fill-in box lost its provenance stamp: {tid}"
+
+
+def test_history_view_is_read_only():
+    """The view reads photo_fillin_history and writes NOTHING — no save,
+    update, or state mutation may originate from the history trail or
+    the per-box provenance chip."""
+    src = open(SR_PATH).read()
+    start = src.index('data-testid="photo-fillin-history"')
+    trail = src[start:src.index("</details>", start)]
+    chip_start = src.index("const provenanceChip")
+    chip = src[chip_start:src.index("};", chip_start)]
+    for name, block in (("trail", trail), ("provenance chip", chip)):
+        for writer in ("saveSpec(", "update(", "onChange", "onClick",
+                       "axios", "fetch(", ".put(", ".post("):
+            assert writer not in block, \
+                f"history {name} grew a write path: {writer}"
+
+
+def test_history_view_keys_exist_both_languages():
+    js = open("/app/frontend/src/lib/dictionaries.js").read()
+    en, es = js[js.index("en: {"):js.index("  es: {")], js[js.index("  es: {"):]
+    for key in ("pf.history", "pf.lastSet"):
+        assert f'"{key}":' in en, f"missing from en: {key}"
+        assert f'"{key}":' in es, f"missing from es: {key}"

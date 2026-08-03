@@ -4,6 +4,7 @@ import axios from "axios";
 import DOMPurify from "dompurify";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useLang, useT } from "@/lib/i18n";
+import { RENDER_3D_ENABLED } from "@/lib/featureFlags";
 import LangToggle from "@/components/LangToggle";
 import AcceptHouse3D from "@/components/AcceptHouse3D";
 import QRCode from "qrcode";
