@@ -37,6 +37,37 @@ memory/three_doors_rulings_2026_08_01.md) — ALL SIX LANDED:
   identically to EN, SKU names verbatim — a line that unprices in Spanish
   means the name leaked into translation).
 
+## COLOR TIER PER-ROW + GATE BANNER (2026-08-03, 2484155 · CLEAN 1758)
+Ruled 2026-08-02, built 2026-08-03. Guard stamp verbatim:
+`2026-08-03 12:30 UTC · 2484155 · CLEAN · 1758 passed, 1 skipped`.
+- **Dropdown RETIRED, tier DERIVES per row** — `vinyl_color_tiers.
+  apply_row_color_tiers` (ONE copy, runs before ID stamping so the arch
+  row binds the arch item_id+price). Each row follows ITS OWN picker:
+  siding→siding_color (brand-gated by row name) · outside corners→
+  outside_corner_color · inside corners+finish trim+J-channel→
+  accessories_color · soffit rows→soffit_fascia_color · B&B profile row→
+  board_batten_color (found in build — has its own picker + arch twin).
+- **Conquest STANDARD ONLY** (ruled). CATALOG PHANTOMS reported: 2
+  Architectural Conquest rows exist ('...Clap/Dutch lap 4.5" .040',
+  $113.94 whole-sale vs $102.15 Std), 0 estimates reference them —
+  awaiting Howard's delete-or-keep ruling.
+- Read-only tier chips beside the four pickers (label-derived from
+  colorOptions.js groups); backend sets sync-PINNED against the frontend
+  palette file (rot detector). Legacy est.color_tier field dead + pinned.
+- Two-tone verified E2E + UI: Storm siding → Architectural $174.90 while
+  white corners/accessories/soffit stay Standard on the SAME estimate.
+- BYTE-IDENTICAL 7/7 (tier_before==tier_after); zero stored estimates
+  carried arch tier/colors. Tier now unreachable-by-accident.
+- **GATE BANNER**: photo_fillin_unset renders amber at the TOP of the
+  estimate page (PhotoFillinGateBanner ← /gates, same one-copy gate that
+  409s email/PDF). Verified live with the full label.
+- Seals: test_color_tier_derivation_2026_08_02.py (9) + Q8/journey/
+  register tests updated per ruling.
+- **NEXT: SPANISH** (EN/ES switcher + i18n lib already exist in the
+  header/useT). Acceptance: EN/ES side-by-side, penny-identical pricing,
+  SKU names verbatim; provenance notes + gate chips/banner translated;
+  coverage stated; detector against new English-only strings.
+
 ## PHOTO FILL-IN GATE + PROVENANCE PRINT (2026-08-02, b73f643 · CLEAN 1749)
 Ruled 2026-08-02 after step-6 acceptance — the soft spot the boxes created:
 - **photo_fillin_unset QUOTE BLOCKER** (hard, not a nudge): unset box on a
