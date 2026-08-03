@@ -37,6 +37,39 @@ memory/three_doors_rulings_2026_08_01.md) — ALL SIX LANDED:
   identically to EN, SKU names verbatim — a line that unprices in Spanish
   means the name leaked into translation).
 
+## CONQUEST PHANTOMS RETIRED + SPANISH (2026-08-03, 1636a1e · CLEAN 1769)
+Guard stamp verbatim: `2026-08-03 14:34 UTC · 1636a1e · CLEAN · 1769
+passed, 1 skipped`.
+- **Conquest phantoms DELETED (soft)**: both Architectural Conquest rows
+  removed from every live surface; full recoverable records in
+  `catalog_retired.py`. Pins (test_conquest_phantom_retired_2026_08_03):
+  no phantom on any surface, no built tier carries them, no color can
+  swap a Conquest row (Standard only), backup intact. ID-count guard
+  226→224 + dimensioned-SKU register updated per ruling, named.
+- **SPANISH — ACCEPTANCE MET**: penny-parity proven live — 21/21 money
+  figures identical EN↔ES on one house (photo-source, two-tone, fill-ins);
+  SKU names verbatim on the ES page beside Spanish chrome (VINIL section,
+  ARTÍCULO/CANT headers, prices bound). Translated: fill-in boxes
+  (Plafón/Goterón/Moldura total), SIN DEFINIR chips, frieze ¿Sí/No?,
+  gate banner (composed client-side from new structured `unset` list on
+  the gate item — server stays one set/unset copy), tier chips (Nivel
+  Architectural — así se cotiza), provenance notes at print
+  (printTakeoff via currentLang) + provenance chips
+  (catalogTranslations.translateNote fragment map — notes only, never
+  names).
+- **ROT DETECTOR** (test_spanish_parity_2026_08_03): EN/ES dictionary key
+  parity (a new English-only string FAILS), SKU-leak detector (no catalog
+  name in es dict or note fragments), provenance-fragment coverage pin,
+  tItem-verbatim pin, pricing-path language-blind pin.
+- COVERAGE — still English-only, named: vinyl color NAMES in pickers
+  (Storm, Glacier White — stored values), machine formula notes beyond
+  the provenance fragments, printTakeoff table chrome, other gate codes'
+  server labels. SKU names + Standard/Architectural tier terms stay
+  verbatim BY RULING.
+- BYTE-IDENTICAL 7/7 (spanish_after == tier_after == tier_before).
+- QUEUED: fill-in history note (who typed what, when) — behind Spanish
+  per ruling; vinyl color-name translation if Howard wants it.
+
 ## COLOR TIER PER-ROW + GATE BANNER (2026-08-03, 2484155 · CLEAN 1758)
 Ruled 2026-08-02, built 2026-08-03. Guard stamp verbatim:
 `2026-08-03 12:30 UTC · 2484155 · CLEAN · 1758 passed, 1 skipped`.
