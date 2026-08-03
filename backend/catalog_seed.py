@@ -24,11 +24,11 @@ SECTION_LAYOUT = [
     # still reference them and continue to render correctly because lines
     # snapshot their own mat/lab at save time.
     ("Vinyl Siding", False, [
-        # Conquest (.040)
+        # Conquest (.040) — STANDARD ONLY (Howard ruled 2026-08-03).
+        # The two Architectural Conquest rows were phantoms — soft-deleted
+        # to catalog_retired.py with full records for recovery.
         'Conquest Standard color Clap 4.5" .040',
         'Conquest Standard color Dutch lap 4.5" .040',
-        'Conquest Architectural color Clap 4.5" .040',
-        'Conquest Architectural color Dutch lap 4.5" .040',
         # Coventry 4" (.042)
         'Coventry Standard color Clap 4" .042',
         'Coventry Standard color Dutch lap 4" .042',
@@ -358,8 +358,6 @@ ITEM_META = {
     # Iter 34: Standard color + Architectural color variants for each profile.
     'Conquest Standard color Clap 4.5" .040': ("SQ", 0),
     'Conquest Standard color Dutch lap 4.5" .040': ("SQ", 0),
-    'Conquest Architectural color Clap 4.5" .040': ("SQ", 0),
-    'Conquest Architectural color Dutch lap 4.5" .040': ("SQ", 0),
     'Coventry Standard color Clap 4" .042': ("SQ", 0),
     'Coventry Standard color Dutch lap 4" .042': ("SQ", 0),
     'Coventry Architectural color Clap 4" .042': ("SQ", 0),
@@ -713,8 +711,6 @@ PER_TIER_PRICES = {
     'Charter Oak Architectural color Dutch Lap 4.5" .046': {"whole-sale": 174.9, "Contractor": 151.97, "Builder-Dealer": 141.21, "one-opp": 123.4},
     'Charter Oak Standard color Clap 4.5" .046': {"whole-sale": 151.31, "Contractor": 136.22, "Builder-Dealer": 125.46, "one-opp": 113.57},
     'Charter Oak Standard color Dutch Lap 4.5" .046': {"whole-sale": 151.31, "Contractor": 136.22, "Builder-Dealer": 125.46, "one-opp": 113.57},
-    'Conquest Architectural color Clap 4.5" .040': {"whole-sale": 113.94, "Contractor": 108.24, "Builder-Dealer": 102.84, "one-opp": 75.71},
-    'Conquest Architectural color Dutch lap 4.5" .040': {"whole-sale": 113.94, "Contractor": 108.24, "Builder-Dealer": 102.84, "one-opp": 75.71},
     'Conquest Standard color Clap 4.5" .040': {"whole-sale": 102.15, "Contractor": 97.04, "Builder-Dealer": 92.19, "one-opp": 75.71},
     'Conquest Standard color Dutch lap 4.5" .040': {"whole-sale": 102.15, "Contractor": 97.04, "Builder-Dealer": 92.19, "one-opp": 75.71},
     'Coventry Architectural color Clap 4" .042': {"whole-sale": 117.09, "Contractor": 111.24, "Builder-Dealer": 105.68, "one-opp": 88.1},
@@ -1029,8 +1025,6 @@ ITEM_AMI = {
     # underlying SKU (color is a stocking variant, not a separate part).
     'Conquest Standard color Clap 4.5" .040': "015456",
     'Conquest Standard color Dutch lap 4.5" .040': "015457",
-    'Conquest Architectural color Clap 4.5" .040': "015456",
-    'Conquest Architectural color Dutch lap 4.5" .040': "015457",
     'Coventry Standard color Clap 4" .042': "016061",
     'Coventry Standard color Dutch lap 4" .042': "016062",
     'Coventry Architectural color Clap 4" .042': "016061",

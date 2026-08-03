@@ -414,17 +414,15 @@ export default function SettingsRow({ est, update, save }) {
               return (
                 <div className="mt-4 pt-4 border-t border-[var(--border)]" data-testid="photo-fillins-group">
                   <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
-                    Photo fill-ins — what the photos can't see
+                    {t("pf.title")}
                   </div>
                   <p className="mb-3 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Photo door only. A box fills the hole the photos leave — it never
-                    overrides a measured value. An UNSET box BLOCKS the quote (scope
-                    not set — never $0). Type 0 if the house truly has none. Re-derives live.
+                    {t("pf.hint")}
                   </p>
                   {[
-                    { key: "photo_soffit_sqft", label: "Soffit", unit: "ft²", tid: "photo-soffit-sqft" },
-                    { key: "photo_drip_edge_lf", label: "Drip edge", unit: "LF", tid: "photo-drip-edge-lf" },
-                    { key: "photo_total_trim_sqft", label: "Total trim", unit: "ft²", tid: "photo-total-trim-sqft" },
+                    { key: "photo_soffit_sqft", label: t("pf.soffit"), unit: "ft²", tid: "photo-soffit-sqft" },
+                    { key: "photo_drip_edge_lf", label: t("pf.dripEdge"), unit: "LF", tid: "photo-drip-edge-lf" },
+                    { key: "photo_total_trim_sqft", label: t("pf.totalTrim"), unit: "ft²", tid: "photo-total-trim-sqft" },
                   ].map((f) => (
                     <div key={f.key} className="flex items-center gap-2 mb-2">
                       <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold w-24">{f.label}</span>
@@ -441,13 +439,13 @@ export default function SettingsRow({ est, update, save }) {
                       <span className="text-[var(--ink-2)] text-sm">{f.unit}</span>
                       {est[f.key] == null && (
                         <span className="text-[9px] font-bold uppercase tracking-wider text-[#B45309] bg-[#FEF3C7] border border-[#F59E0B] px-1.5 py-0.5" data-testid={`${f.tid}-unset`}>
-                          Not set — blocks quote
+                          {t("pf.notSet")}
                         </span>
                       )}
                     </div>
                   ))}
                   <div className="flex items-center gap-2 mt-3">
-                    <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold w-24">Frieze board?</span>
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold w-24">{t("pf.friezeQ")}</span>
                     <div className="inline-flex border border-[var(--border)] overflow-hidden text-[11px] font-bold uppercase tracking-wider">
                       <button
                         type="button"
@@ -457,7 +455,7 @@ export default function SettingsRow({ est, update, save }) {
                         onClick={() => saveSpec({ photo_frieze_present: true })}
                         data-testid="photo-frieze-yes"
                       >
-                        Yes
+                        {t("pf.yes")}
                       </button>
                       <button
                         type="button"
@@ -467,19 +465,17 @@ export default function SettingsRow({ est, update, save }) {
                         onClick={() => saveSpec({ photo_frieze_present: false })}
                         data-testid="photo-frieze-no"
                       >
-                        No
+                        {t("pf.no")}
                       </button>
                     </div>
                     {est.photo_frieze_present == null && (
                       <span className="text-[9px] font-bold uppercase tracking-wider text-[#B45309] bg-[#FEF3C7] border border-[#F59E0B] px-1.5 py-0.5" data-testid="photo-frieze-unset">
-                        Not set — blocks quote
+                        {t("pf.notSet")}
                       </span>
                     )}
                   </div>
                   <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Yes/No only — frieze LF derives from the measured runs
-                    (level = eaves {eaves.toFixed(0)} LF · sloped = rakes {rakes.toFixed(0)} LF).
-                    You never re-type a number the engine already has.
+                    {t("pf.friezeHint", { eaves: eaves.toFixed(0), rakes: rakes.toFixed(0) })}
                   </p>
                 </div>
               );

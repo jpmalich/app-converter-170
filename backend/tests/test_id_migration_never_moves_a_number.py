@@ -26,8 +26,11 @@ from catalog_seed import SECTION_LAYOUT, build_tier_sections
 
 # ═══════════ THE REGISTER — literal, unique, total ══════════════════════
 def test_226_unique_literal_ids():
-    assert len(ITEM_IDS) == 226
-    assert len(set(ITEM_IDS.values())) == 226, "ids must never collide"
+    # 226 → 224 on 2026-08-03: the two Architectural Conquest phantoms
+    # were retired per Howard's ruling (Conquest is Standard only) — their
+    # ids live in catalog_retired.py, recoverable, never reused.
+    assert len(ITEM_IDS) == 224
+    assert len(set(ITEM_IDS.values())) == 224, "ids must never collide"
     src = (BACKEND / "catalog_ids.py").read_text()
     for iid in list(ITEM_IDS.values())[:5] + list(ITEM_IDS.values())[-5:]:
         assert f'"{iid}"' in src, "ids are LITERALS in the file, never runtime-minted"

@@ -693,8 +693,6 @@ async def ensure_tiers_seeded():
         # Vinyl Siding
         'Conquest Standard color Clap 4.5" .040',
         'Conquest Standard color Dutch lap 4.5" .040',
-        'Conquest Architectural color Clap 4.5" .040',
-        'Conquest Architectural color Dutch lap 4.5" .040',
         'Coventry Standard color Clap 4" .042',
         'Coventry Standard color Dutch lap 4" .042',
         'Coventry Architectural color Clap 4" .042',

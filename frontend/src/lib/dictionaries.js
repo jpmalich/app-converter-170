@@ -490,6 +490,32 @@ export const dict = {
     "tabLabel.lpSmart": "LP Smart",
     "tabLabel.windows": "Windows",
     "tabLabel.mezzo": "Mezzo",
+    "nav.brandingAdmin": "Branding Admin",
+
+    // --- Photo fill-in boxes (Three Doors step 6 + gate, ruled 2026-08-02) ---
+    "pf.title": "Photo fill-ins — what the photos can't see",
+    "pf.hint": "Photo door only. A box fills the hole the photos leave — it never overrides a measured value. An UNSET box BLOCKS the quote (scope not set — never $0). Type 0 if the house truly has none. Re-derives live.",
+    "pf.soffit": "Soffit",
+    "pf.dripEdge": "Drip edge",
+    "pf.totalTrim": "Total trim",
+    "pf.notSet": "Not set — blocks quote",
+    "pf.friezeQ": "Frieze board?",
+    "pf.yes": "Yes",
+    "pf.no": "No",
+    "pf.friezeHint": "Yes/No only — frieze LF derives from the measured runs (level = eaves {eaves} LF · sloped = rakes {rakes} LF). You never re-type a number the engine already has.",
+
+    // --- Photo fill-in gate banner ---
+    "gate.pf.title": "Photo fill-ins block this quote",
+    "gate.pf.body": "PHOTO FILL-INS NOT SET — {count} box(es) open: {boxes}. SCOPE NOT SET, never $0 — the photos cannot see these; type the value (0 is a decision) or answer the frieze yes/no before this quote reaches a customer.",
+    "gate.pf.hint": "Fill the boxes under Trade specs below — email, PDF and quote surfaces stay blocked until scope is set.",
+    "gate.pf.box.soffit": "soffit ft²",
+    "gate.pf.box.dripEdge": "drip edge LF",
+    "gate.pf.box.totalTrim": "total trim ft²",
+    "gate.pf.box.frieze": "frieze yes/no",
+
+    // --- Derived color-tier chips (ruled 2026-08-02; tier terms verbatim) ---
+    "tier.architectural": "Architectural tier — priced",
+    "tier.standard": "Standard tier",
   },
 
   es: {
@@ -966,5 +992,31 @@ export const dict = {
     "tabLabel.lpSmart": "LP Smart",
     "tabLabel.windows": "Ventanas",
     "tabLabel.mezzo": "Mezzo",
+
+    // --- Photo fill-in boxes (Three Doors step 6 + gate, ruled 2026-08-02) ---
+    "pf.title": "Datos de foto — lo que las fotos no pueden ver",
+    "pf.hint": "Solo la puerta de foto. La casilla llena el hueco que dejan las fotos — nunca reemplaza un valor medido. Una casilla SIN DEFINIR BLOQUEA la cotización (alcance sin definir — nunca $0). Escriba 0 si la casa de verdad no tiene. Se recalcula en vivo.",
+    "pf.soffit": "Plafón",
+    "pf.dripEdge": "Goterón",
+    "pf.totalTrim": "Moldura total",
+    "pf.notSet": "Sin definir — bloquea la cotización",
+    "pf.friezeQ": "¿Tabla de friso?",
+    "pf.yes": "Sí",
+    "pf.no": "No",
+    "pf.friezeHint": "Solo Sí/No — los LF del friso se derivan de las medidas (nivel = aleros {eaves} LF · inclinado = limatesas {rakes} LF). Nunca vuelve a escribir un número que el sistema ya tiene.",
+
+    // --- Photo fill-in gate banner ---
+    "gate.pf.title": "Los datos de foto bloquean esta cotización",
+    "gate.pf.body": "DATOS DE FOTO SIN DEFINIR — {count} casilla(s) abiertas: {boxes}. ALCANCE SIN DEFINIR, nunca $0 — las fotos no pueden ver esto; escriba el valor (0 es una decisión) o responda Sí/No al friso antes de que esta cotización llegue a un cliente.",
+    "gate.pf.hint": "Llene las casillas en Especificaciones de instalación abajo — el correo, el PDF y la cotización siguen bloqueados hasta definir el alcance.",
+    "gate.pf.box.soffit": "plafón ft²",
+    "gate.pf.box.dripEdge": "goterón LF",
+    "gate.pf.box.totalTrim": "moldura total ft²",
+    "gate.pf.box.frieze": "friso sí/no",
+
+    // --- Derived color-tier chips (tier terms Standard/Architectural stay
+    // verbatim — they are catalog price terms that appear inside SKU names) ---
+    "tier.architectural": "Nivel Architectural — así se cotiza",
+    "tier.standard": "Nivel Standard",
   },
 };

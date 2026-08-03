@@ -189,3 +189,40 @@ export function tColorGroup(label, lang) {
   if (lang !== "es" || !label) return label || "";
   return COLOR_GROUP_LABELS_ES[label] || label;
 }
+
+// ─────────────────── Derivation-note translations (ES) ───────────────────
+// PROVENANCE NOTES MUST READ IN SPANISH (Howard ruled 2026-08-03): a crew
+// on site is exactly who reads them. These are ORDERED fragment
+// replacements applied to line NOTES ONLY — never to l.name. SKU names
+// never translate (tItem ruling, 2026-07-31); tier terms
+// Standard/Architectural stay verbatim because they live inside SKU names.
+const NOTE_FRAGMENTS_ES = [
+  ["TYPED soffit total governs (CONTRACTOR FILL-IN, photo door — not a measurement)",
+   "el total de plafón ESCRITO gobierna (DATO DEL CONTRATISTA, puerta de foto — no es medición)"],
+  ["— CONTRACTOR FILL-IN, photo door (not a measurement)",
+   "— DATO DEL CONTRATISTA, puerta de foto (no es medición)"],
+  ["TYPED soffit total", "Plafón total ESCRITO"],
+  ["(TYPED toggle — frieze LF from measured eave/rake runs, photo door)",
+   "(interruptor ESCRITO — LF del friso derivado de aleros/limatesas medidos, puerta de foto)"],
+  ["MEASURED soffit total", "Plafón total MEDIDO"],
+  ["measured soffit total governs", "el total de plafón medido gobierna"],
+  ["measured total governs", "el total medido gobierna"],
+  ["Architectural color tier (derived from", "nivel de color Architectural (derivado de"],
+  ["eave share", "porción de alero"],
+  ["rake share", "porción de limatesa"],
+  ["verify venting split", "verifique la división de ventilación"],
+  ["Vented — ", "Ventilado — "],
+  ["Closed — ", "Cerrado — "],
+  ["Standard color default", "color Standard por defecto"],
+  ["contractor fill-in (photo door — source cannot see it)",
+   "dato del contratista (puerta de foto — la fuente no puede verlo)"],
+  ["presence toggle — LF derived from measured runs",
+   "interruptor de presencia — LF derivado de medidas"],
+];
+
+export function translateNote(note, lang) {
+  if (lang !== "es" || !note) return note;
+  let out = String(note);
+  for (const [en, es] of NOTE_FRAGMENTS_ES) out = out.split(en).join(es);
+  return out;
+}

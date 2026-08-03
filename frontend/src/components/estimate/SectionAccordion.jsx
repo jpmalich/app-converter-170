@@ -4,7 +4,7 @@ import ItemHelpButton from "./ItemHelpButton";
 import { porchMathHint } from "./PorchCeilingsCard";
 import { fmt } from "@/lib/api";
 import { useT, useLang } from "@/lib/i18n";
-import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
+import { tSection, tItem, tUnit, translateNote } from "@/lib/catalogTranslations";
 import { isCommonOnTab, unfilledCommonCount } from "@/lib/commonItems";
 import { groupLinesBySubCategory } from "@/lib/subCategories";
 
@@ -260,7 +260,7 @@ export default function SectionAccordion({
                   ⌁ derived
                 </summary>
                 <div className="text-[10px] text-[var(--muted)] mt-1 max-w-xl whitespace-pre-wrap font-normal normal-case tracking-normal">
-                  {provenance[l.name]}
+                  {translateNote(provenance[l.name], lang)}
                 </div>
               </details>
             )}

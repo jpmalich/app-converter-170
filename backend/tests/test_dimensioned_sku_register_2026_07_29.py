@@ -50,6 +50,10 @@ _VINYL_LAP_IDENTITY = {
     )
     for tier in ("Standard", "Architectural")
     for prof, dim in [d.split(" ", 1) for d in dims]
+    # Conquest is STANDARD ONLY (Howard ruled 2026-08-03): the two
+    # Architectural Conquest phantoms were retired to catalog_retired.py —
+    # a guard on a name that doesn't exist protects nothing.
+    if not (fam == "Conquest" and tier == "Architectural")
 }
 
 REGISTER: dict[str, tuple[str, str]] = {

@@ -8,6 +8,7 @@ import { vinylSidingColorGroupsForEstimate, accessoryColorGroupsForEstimate, ASC
 // never asked — it derives from the color chosen in THIS picker and shows
 // here so the contractor can see how his row will price.
 const TierChip = ({ color, groups, testId }) => {
+  const t = useT();
   const tier = tierForPickerColor(color, groups);
   if (!tier) return null;
   const arch = tier === "architectural";
@@ -20,7 +21,7 @@ const TierChip = ({ color, groups, testId }) => {
       }`}
       data-testid={testId}
     >
-      {arch ? "Architectural tier — priced" : "Standard tier"}
+      {arch ? t("tier.architectural") : t("tier.standard")}
     </span>
   );
 };

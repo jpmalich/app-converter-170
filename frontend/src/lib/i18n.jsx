@@ -25,6 +25,12 @@ function readInitial() {
   return "en";
 }
 
+// Non-hook accessor for plain-JS callers (print builders, etc.) that run
+// outside the React tree — reads the same persisted language.
+export function currentLang() {
+  return readInitial();
+}
+
 export function LangProvider({ children, initial }) {
   const [lang, setLangState] = useState(initial || readInitial);
 

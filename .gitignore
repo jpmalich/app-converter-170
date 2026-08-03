@@ -119,3 +119,4 @@ frontend/public/backups/pro-quote-backup-20260705-142625.zip
 backend/uploads/
 memory/bp_comparison_runs/*.log
 /yarn.lock
+frontend/build/backups/pro-quote-backup-20260705-142625.zip

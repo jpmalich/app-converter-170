@@ -187,6 +187,7 @@ def quote_gate_blockers(est: dict, measurements: dict | None = None) -> list[dic
     if unset:
         items.append({
             "code": "photo_fillin_unset", "tier": "quote", "blocking": True,
+            "unset": unset,
             "label": (f"PHOTO FILL-INS NOT SET — {len(unset)} box(es) open: "
                       f"{', '.join(unset)}. SCOPE NOT SET, never $0 — the photos "
                       "cannot see these; type the value (0 is a decision) or "

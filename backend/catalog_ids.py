@@ -18,8 +18,6 @@ ITEM_IDS = {
     # ── Vinyl Siding ──
     ('Vinyl Siding', 'Conquest Standard color Clap 4.5" .040'): "itm-137ff90e60",
     ('Vinyl Siding', 'Conquest Standard color Dutch lap 4.5" .040'): "itm-3a9a3766de",
-    ('Vinyl Siding', 'Conquest Architectural color Clap 4.5" .040'): "itm-b05e5088af",
-    ('Vinyl Siding', 'Conquest Architectural color Dutch lap 4.5" .040'): "itm-3bc02d5211",
     ('Vinyl Siding', 'Coventry Standard color Clap 4" .042'): "itm-d4231e8ad2",
     ('Vinyl Siding', 'Coventry Standard color Dutch lap 4" .042'): "itm-90b256e195",
     ('Vinyl Siding', 'Coventry Architectural color Clap 4" .042'): "itm-c7911179dd",

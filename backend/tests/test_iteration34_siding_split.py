@@ -106,7 +106,10 @@ class TestVinylSidingSection:
         names = {i["name"] for i in sec["items"]}
         expected = {
             'Conquest Standard color Clap 4.5" .040',
-            'Conquest Architectural color Dutch lap 4.5" .040',
+            # Architectural Conquest RETIRED (Howard ruled 2026-08-03):
+            # Conquest is Standard only — the phantoms live in
+            # catalog_retired.py, pinned absent by
+            # test_conquest_phantom_retired_2026_08_03.py.
             'Coventry Standard color Clap 4" .042',
             'Coventry Architectural color Dutch lap 5" .042',
             'Odyssey Standard color Clap 4" .044',

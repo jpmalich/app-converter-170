@@ -8,6 +8,11 @@
 // even if the contractor is offline once the preview modal is on
 // screen.
 
+// PROVENANCE NOTES READ IN SPANISH (Howard ruled 2026-08-03): a crew on
+// site is who reads them — notes translate at print; SKU names never do.
+import { currentLang } from "./i18n";
+import { translateNote } from "./catalogTranslations";
+
 const esc = (s) =>
   String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -109,7 +114,7 @@ function renderLinesHtml(lines, kind) {
                 <td class="muted">${esc(l.section || "")}</td>
                 <td>
                   <div>${esc(l.name || "")}</div>
-                  ${l.note ? `<div class="muted small">${esc(l.note)}</div>` : ""}
+                  ${l.note ? `<div class="muted small">${esc(translateNote(l.note, _lang))}</div>` : ""}
                 </td>
                 <td class="num bold">${esc(l.qty)}</td>
                 <td class="muted">${esc(l.unit || "")}</td>
@@ -150,7 +155,7 @@ function renderLinesHtml(lines, kind) {
                 <td class="muted">${esc(l.section || "")}</td>
                 <td>
                   <div>${esc(l.name || "")}</div>
-                  ${l.note ? `<div class="muted small">${esc(l.note)}</div>` : ""}
+                  ${l.note ? `<div class="muted small">${esc(translateNote(l.note, _lang))}</div>` : ""}
                 </td>
                 <td class="num bold">${esc(l.qty)}</td>
                 <td class="muted">${esc(l.unit || "")}</td>
@@ -222,6 +227,7 @@ export function printTakeoff({
   const address = est?.address || "—";
   const estNum = est?.estimate_number || "Draft";
   const now = new Date().toLocaleString();
+  const _lang = currentLang();
 
   const html = `<!doctype html>
 <html lang="en">
