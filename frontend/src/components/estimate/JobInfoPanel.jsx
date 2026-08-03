@@ -31,7 +31,6 @@ import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 // lines on Apply, same as HOVER Import does.
 import { bakeWasteIntoLines } from "@/lib/wasteLogic";
 import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
-import PairToLpButton from "@/components/estimate/PairToLpButton";
 // Iter 78u — Compare Drawings modal trigger
 import { useState } from "react";
 import { Upload, FileText, Sparkles, Layers, ChevronDown, ChevronUp, MoreHorizontal, Lightbulb } from "lucide-react";
@@ -109,7 +108,7 @@ function parseLegacyAddress(addr) {
 // Iter 78z+++ — Cleaner job-info header. Three equal-width "tool tiles"
 // for the measurement importers (HOVER · Blueprints · AI Photo), each
 // with a short label so contractors don't have to read button text to
-// tell them apart. PairToLp + Compare Drawings tuck into a "More tools"
+// tell them apart. Compare Drawings tucks into a "More tools"
 // row below the tiles since they're contextual / rare. Form fields
 // collapse to a 1-line summary once customer + address are filled so
 // the page stops scrolling past data the contractor doesn't need to
@@ -458,7 +457,6 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               Compare ({numDrawingSources})
             </button>
           )}
-          <PairToLpButton est={est} />
         </div>
       )}
 

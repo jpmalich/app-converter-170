@@ -3,10 +3,10 @@ ONLY FROM ITS OWN ESTIMATE'S DATA. Deleting estimate A must never change
 estimate B's list. The corner_locators flag once printed "261 Haugh" on
 3 Degree — the class is real, so the guarantee is pinned, not asserted.
 
-THE ONE NAMED EXCEPTION (by design, not a leak): the pair-lp flow — an LP
-estimate with an explicit paired_estimate_id stamp may read its SIBLING's
-AI-Measure runs (same house, deliberately paired). It fires only through
-that stamp; pairs therefore purge/keep TOGETHER.
+NO EXCEPTIONS (Howard ruled 2026-08-03): the former "one named exception"
+— the pair-lp sibling-run fallback — was REVOKED and severed. Estimates
+are self-contained; no estimate reads another estimate, ever. Cross-family
+fill is post-September.
 """
 import json
 import os
@@ -122,15 +122,15 @@ def test_lp_preview_never_borrows_another_estimates_run(est_factory, s):
         f"fresh LP estimate composed a package from someone else's run: {r.text[:200]}"
 
 
-def test_paired_read_requires_explicit_stamp():
-    """The ONE allowed cross-estimate read is gated on the pair stamp —
-    _load_run only consults a sibling via paired_lp_estimate_id/
-    paired_estimate_id, never a global latest-run scan."""
+def test_paired_read_is_severed():
+    """REVOKED EXCEPTION (Howard ruled 2026-08-03): _load_run reads ONLY
+    the requesting estimate's own runs — no paired-sibling fallback, no
+    paired-latest binding, no cross-estimate run borrow of any kind."""
     src = Path("/app/backend/routes/lp_package_routes.py").read_text()
-    i = src.index('paired_id = est.get("paired_lp_estimate_id") or est.get("paired_estimate_id")')
-    guard = src[i:i + 400]
-    assert "if run is None and paired_id" in guard, \
-        "paired fallback must fire only when the estimate has NO run of its own"
+    assert 'paired_id = est.get(' not in src, \
+        "the paired-sibling run fallback grew back into _load_run"
+    assert '"paired-latest"' not in src, \
+        "paired-latest binding label must stay retired"
     # and every run query in the loader is estimate-scoped
     assert '{"estimate_id": est_id, "status": "done"}' in src, \
         "run lookups must be scoped to the requesting estimate's id"

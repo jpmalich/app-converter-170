@@ -439,20 +439,6 @@ export default function Dashboard({ kind = "siding" }) {
                   <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] md:hidden">#</div>
                   <div className="flex items-center gap-1.5">
                     <span>{e.estimate_number || "—"}</span>
-                    {e.paired_estimate_id && (
-                      <button
-                        type="button"
-                        className="text-[var(--muted)] hover:text-[var(--brand-text)] p-0.5 -m-0.5"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          nav(`/estimate/${e.paired_estimate_id}`);
-                        }}
-                        title={`Paired: ${e.paired_estimate_number || "linked estimate"}`}
-                        data-testid={`paired-link-${e.id}`}
-                      >
-                        <Link2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
                   </div>
                 </div>
                 <div className="col-span-12 md:col-span-3">

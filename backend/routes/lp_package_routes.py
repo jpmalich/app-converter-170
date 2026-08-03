@@ -23,8 +23,9 @@ router = APIRouter()
 
 async def _load_run(est_id: str, company_id=None, run_id=None):
     """company_id=None is the supplier-admin path (token-checked upstream).
-    Falls back to the PAIRED estimate's runs — a paired LP estimate's AI
-    Measure run lives on its siding source (pair-lp flow)."""
+    SELF-CONTAINED (Howard ruled 2026-08-03): reads ONLY this estimate's
+    own runs — the paired-sibling fallback was severed as a purity
+    violation; cross-family fill is post-September."""
     q_est: dict = {"id": est_id}
     if company_id is not None:
         q_est["company_id"] = company_id
@@ -35,8 +36,7 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
                 "shake_reveal_in": 1, "batten_spacing_in": 1, "fascia_width_in": 1,
                 "panel_size": 1, "wrap_trim_width_in": 1,
                 "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
-                "photo_total_trim_sqft": 1, "photo_frieze_present": 1,
-                "paired_lp_estimate_id": 1, "paired_estimate_id": 1})
+                "photo_total_trim_sqft": 1, "photo_frieze_present": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Not found")
     q: dict = {"estimate_id": est_id, "status": "done"}
@@ -83,16 +83,9 @@ async def _load_run(est_id: str, company_id=None, run_id=None):
         binding = "applied-stamp"
     else:
         binding = "latest-run"
-    paired_id = est.get("paired_lp_estimate_id") or est.get("paired_estimate_id")
-    if run is None and paired_id and not run_id:
-        paired_q: dict = {"id": paired_id}
-        if company_id is not None:
-            paired_q["company_id"] = company_id
-        paired = await db.estimates.find_one(paired_q, {"_id": 0, "id": 1})
-        if paired:
-            run = await _find_run({"estimate_id": paired["id"], "status": "done"})
-            if run is not None:
-                binding = "paired-latest"
+    # NO ESTIMATE READS ANOTHER ESTIMATE (Howard ruled 2026-08-03): the
+    # paired-latest run fallback was severed — an estimate composes only
+    # from its OWN runs. Cross-family fill is post-September.
     if run is None:
         raise HTTPException(status_code=404, detail="No completed AI Measure run for this estimate")
     return est, run, binding
@@ -102,7 +95,6 @@ _BINDING_LABEL = {
     "applied-stamp": "pinned (applied)",
     "explicit-run": "explicit run",
     "latest-run": "latest run — unpinned",
-    "paired-latest": "paired estimate, latest run — unpinned",
 }
 
 # Profiles with a ruled LP composition (LP SmartSide only, slice 1).

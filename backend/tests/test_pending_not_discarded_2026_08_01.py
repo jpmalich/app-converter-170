@@ -100,30 +100,25 @@ def test_applied_run_is_not_pending(s, est_with_run):
 
 
 def test_lp_pair_never_seeds_from_unapplied_run(s, est_with_run):
-    """FINDING 2 (the one unconditional human-gate violation): pairing an
-    estimate whose run was never applied yields an EMPTY pair — the number
-    stays pending, it does not price."""
+    """FINDING 2, SUPERSEDED BY RETIREMENT (Howard ruled 2026-08-03):
+    the pair-lp door is GONE — doors are single-family and estimates are
+    self-contained; cross-family fill is post-September. The human-gate
+    guarantee this test pinned (an unapplied run must never price) now
+    holds by construction: there is no pairing path at all."""
     eid, rid = est_with_run("photo", applied=False)
     r = s.post(f"{API}/estimates/{eid}/pair-lp")
-    assert r.status_code == 200, r.text
-    pair_id = r.json().get("paired_estimate_id") or r.json().get("id")
-    pair = s.get(f"{API}/estimates/{pair_id}").json()
-    lp_lines = [l for l in (pair.get("lines") or []) if l.get("tab") == "lp_smart"]
-    assert lp_lines == [], "unapplied run reached priced lines — the retired Iter-99 path is back"
-    s.delete(f"{API}/estimates/{pair_id}")
+    assert r.status_code in (404, 405), \
+        f"the retired pair-lp route answered {r.status_code} — pairing is back"
 
 
 def test_lp_pair_still_seeds_from_APPLIED_measurements(s, est_with_run):
-    """The human-blessed path keeps working: applied measurements populate
-    the pair (the $0-lines class Iter 99 was actually about)."""
+    """SUPERSEDED BY RETIREMENT (Howard ruled 2026-08-03): even the
+    human-blessed pairing path is post-September — applied measurements
+    seed ONLY the estimate's own family through its own door."""
     eid, rid = est_with_run("photo", applied=True)
     r = s.post(f"{API}/estimates/{eid}/pair-lp")
-    assert r.status_code == 200, r.text
-    pair_id = r.json().get("paired_estimate_id") or r.json().get("id")
-    pair = s.get(f"{API}/estimates/{pair_id}").json()
-    assert [l for l in (pair.get("lines") or []) if l.get("tab") == "lp_smart"], \
-        "applied measurements must still seed the pair"
-    s.delete(f"{API}/estimates/{pair_id}")
+    assert r.status_code in (404, 405), \
+        f"the retired pair-lp route answered {r.status_code} — pairing is back"
 
 
 def test_silent_seeding_source_is_gone():

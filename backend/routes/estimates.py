@@ -46,20 +46,9 @@ async def list_estimates(
         q["$or"] = [{"kind": "siding"}, {"kind": {"$exists": False}}, {"kind": ""}]
     cursor = db.estimates.find(q, {"_id": 0}).sort("updated_at", -1)
     estimates = await cursor.to_list(500)
-    # Iter 41: surface the paired estimate's number on each row so the
-    # dashboard can render a one-click chain-link badge → paired estimate.
-    paired_ids = [e["paired_estimate_id"] for e in estimates if e.get("paired_estimate_id")]
-    if paired_ids:
-        paired_docs = await db.estimates.find(
-            {"id": {"$in": paired_ids}, "company_id": user["company_id"]},
-            {"_id": 0, "id": 1, "estimate_number": 1, "kind": 1},
-        ).to_list(500)
-        by_id = {p["id"]: p for p in paired_docs}
-        for e in estimates:
-            pid = e.get("paired_estimate_id")
-            if pid and pid in by_id:
-                e["paired_estimate_number"] = by_id[pid].get("estimate_number") or ""
-                e["paired_estimate_kind"] = by_id[pid].get("kind") or ""
+    # DOORS ARE SINGLE-FAMILY AND ESTIMATES ARE SELF-CONTAINED (Howard
+    # ruled 2026-08-03): cross-family fill is post-September. The Iter-41
+    # paired-number resolution died with the pairing mechanism.
     return estimates
 
 
@@ -169,84 +158,10 @@ async def duplicate_estimate(est_id: str, user: dict = Depends(get_current_user)
     return src
 
 
-@router.post("/estimates/{est_id}/pair")
-async def pair_estimate(est_id: str, user: dict = Depends(get_current_user)):
-    """Spawn (or return existing) paired estimate of the opposite kind.
-
-    Iter 41: when a contractor uploads HOVER on a siding estimate that
-    contains window measurements, the importer calls this to auto-create
-    a paired windows-kind estimate so the window scope doesn't get
-    stranded. Mirrored for windows → siding too.
-
-    Behavior:
-      - Idempotent: if the source already has a `paired_estimate_id`
-        pointing to a real doc, return that doc unchanged.
-      - EST# scheme: siding source `EST-788260` → paired `EST-788260-W`;
-        windows source `EST-788260-W` → strip suffix to `EST-788260`;
-        windows source `EST-788260` (no suffix) → paired `EST-788260-S`.
-      - Copies on creation only: customer_name, address, estimator,
-        estimate_date. Lines/openings start empty — the HOVER apply
-        flow on the FE writes the correct slice to each side.
-    """
-    src = await db.estimates.find_one(
-        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0}
-    )
-    if not src:
-        raise HTTPException(status_code=404, detail="Source estimate not found")
-
-    # Idempotent: re-use existing paired doc if still alive.
-    existing_id = src.get("paired_estimate_id")
-    if existing_id:
-        existing = await db.estimates.find_one(
-            {"id": existing_id, "company_id": user["company_id"]}, {"_id": 0}
-        )
-        if existing:
-            return existing
-        # Pointer was stale (paired estimate was deleted) — fall through
-        # to re-create.
-
-    src_kind = src.get("kind") or "siding"
-    new_kind = "windows" if src_kind == "siding" else "siding"
-    src_num = src.get("estimate_number") or ""
-    if new_kind == "windows":
-        new_num = f"{src_num}-W" if src_num else ""
-    else:
-        # Windows → siding. If src ends with -W, strip it; else append -S.
-        new_num = src_num[:-2] if src_num.endswith("-W") else (f"{src_num}-S" if src_num else "")
-
-    new_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    new_doc = {
-        "id": new_id,
-        "company_id": user["company_id"],
-        "created_by": user["id"],
-        "created_by_name": user.get("name"),
-        "created_at": now,
-        "updated_at": now,
-        "estimate_number": new_num,
-        "estimate_date": src.get("estimate_date") or now[:10],
-        # One-time copy of job info (Customer, Address, Estimator).
-        "customer_name": src.get("customer_name") or "",
-        "address": src.get("address") or "",
-        "estimator": src.get("estimator") or "",
-        "kind": new_kind,
-        "status_label": "draft",
-        "lines": [],
-        "misc_labor": [],
-        "misc_material": [],
-        "mezzo_openings": [],
-        "vero_openings": [],
-        "photos": [],
-        "paired_estimate_id": est_id,
-    }
-    await db.estimates.insert_one(new_doc)
-    # Stamp the source with a back-pointer.
-    await db.estimates.update_one(
-        {"id": est_id, "company_id": user["company_id"]},
-        {"$set": {"paired_estimate_id": new_id, "updated_at": now}},
-    )
-    new_doc.pop("_id", None)
-    return new_doc
+# RETIRED (Howard ruled 2026-08-03): POST /estimates/{id}/pair.
+# DOORS ARE SINGLE-FAMILY AND ESTIMATES ARE SELF-CONTAINED — no door seeds
+# another family's estimate, and no estimate-creation path reads from
+# another estimate. Cross-family fill is post-September scope.
 
 
 @router.get("/estimates/{est_id}/pending-runs")
@@ -291,151 +206,9 @@ async def pending_runs(est_id: str, user=Depends(get_current_user)):
             "total_done_runs": len(runs)}
 
 
-@router.post("/estimates/{est_id}/pair-lp")
-async def pair_lp_estimate(est_id: str, user: dict = Depends(get_current_user)):
-    """Spawn (or return existing) paired LP-kind estimate.
-
-    Iter 74: LP got its own workspace (Iter 73). When a contractor quotes
-    siding + LP on the same house, this endpoint creates a fresh lp_smart-
-    kind estimate carrying over customer / address / estimator / HOVER
-    measurements so they don't have to retype.
-
-    Behavior:
-      - Idempotent: if the source already has a `paired_lp_estimate_id`
-        pointing to a live doc, return it unchanged.
-      - EST# scheme: source `EST-788260` → paired `EST-788260-L`.
-        Source `EST-788260-W` (windows) → strip `-W`, append `-L` →
-        `EST-788260-L`.
-      - Independent of `paired_estimate_id` (siding↔windows pair) so a
-        single source can fan out to BOTH windows AND lp_smart pairs.
-      - Carries `hover_measurements` forward (Iter 71) so the LP HOVER
-        auto-fill formulas can run on the new estimate without re-uploading
-        the PDF.
-    """
-    src = await db.estimates.find_one(
-        {"id": est_id, "company_id": user["company_id"]}, {"_id": 0}
-    )
-    if not src:
-        raise HTTPException(status_code=404, detail="Source estimate not found")
-    if src.get("kind") == "lp_smart":
-        # Can't pair LP from an LP estimate — pair the other way.
-        raise HTTPException(
-            status_code=400,
-            detail="This is already an LP estimate. Pair from the siding or windows side.",
-        )
-
-    existing_id = src.get("paired_lp_estimate_id")
-    if existing_id:
-        existing = await db.estimates.find_one(
-            {"id": existing_id, "company_id": user["company_id"]}, {"_id": 0}
-        )
-        if existing:
-            return existing
-        # Pointer stale (LP estimate deleted) — fall through to re-create.
-
-    src_num = src.get("estimate_number") or ""
-    base_num = src_num[:-2] if src_num.endswith(("-W", "-S")) else src_num
-    new_num = f"{base_num}-L" if base_num else ""
-
-    new_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    # Iter 75 (2026-06-22): if the source has HOVER measurements, seed the
-    # LP-tab auto-fill lines server-side so the new estimate opens
-    # populated (38 Series Lap, End Caps, J blocks, Mini Splits, etc.)
-    # rather than empty. Uses _build_lines from the HOVER importer + the
-    # company's tier catalog for mat/lab — same merge path the frontend
-    # HOVER apply takes after a real import.
-    seeded_lines: list[dict] = []
-    measurements = src.get("hover_measurements") or None
-    # FINDING 2 (Howard ruled 2026-08-01): PENDING, NOT DISCARDED. The old
-    # Iter-99 branch silently seeded the pair from the LATEST completed
-    # photo run — applied or not — which put an unconfirmed number on
-    # priced lines. RETIRED: the pair seeds ONLY from measurements a human
-    # APPLIED (stored on the estimate). An unapplied run stays visible on
-    # the pending-runs surface (photo AND blueprint) and reaches a dollar
-    # only when the contractor applies it.
-    if measurements:
-        company = await db.companies.find_one(
-            {"id": user["company_id"]}, {"_id": 0}
-        )
-        catalog = await _resolve_catalog_for_company(company) if company else None
-        price_idx = {}
-        if catalog:
-            for sec in catalog.get("sections", []):
-                for it in sec.get("items", []):
-                    price_idx[(sec["title"], it["name"])] = {
-                        "mat": float(it.get("mat") or 0),
-                        "lab": float(it.get("lab") or 0),
-                        "unit": it.get("unit") or "",
-                        "ami_part": it.get("ami_part"),
-                        "pricing_pending": bool(it.get("pricing_pending")),
-                        "pricing_source": it.get("pricing_source"),
-                    }
-        # _build_lines emits lines for ALL tabs — we only want lp_smart on
-        # the LP-pair workspace. Map each spec to an EstimateLine doc.
-        for ln in _build_lines(dict(measurements)):
-            if ln.get("tab") != "lp_smart":
-                continue
-            qty = float(ln.get("qty") or 0)
-            if qty <= 0:
-                continue
-            cat_row = price_idx.get((ln.get("section"), ln.get("name")), {})
-            line_doc = {
-                "section": ln.get("section", ""),
-                "name": ln.get("name", ""),
-                "unit": ln.get("unit") or cat_row.get("unit", ""),
-                "qty": qty,
-                "mat": cat_row.get("mat", 0),
-                "lab": 0,  # Iter 69: siding tabs forced to $0 labor.
-                "ami_part": cat_row.get("ami_part"),
-                "tab": "lp_smart",
-                "adders": [],
-            }
-            # PINNED (iter97 cut): the old `cat_row.get("mat", 0)` was a
-            # silent unpriced fall-through. A line with no catalog price
-            # (or an engine-pending price) is flagged, never a quiet $0.
-            if not cat_row or cat_row.get("pricing_pending"):
-                line_doc["pricing_pending"] = True
-            if cat_row.get("pricing_source"):
-                line_doc["pricing_source"] = cat_row["pricing_source"]
-            seeded_lines.append(line_doc)
-
-    new_doc = {
-        "id": new_id,
-        "company_id": user["company_id"],
-        "created_by": user["id"],
-        "created_by_name": user.get("name"),
-        "created_at": now,
-        "updated_at": now,
-        # one estimate, one tier, one truth — seeded from the company (ruled)
-        "lp_pricing_tier": await _company_lp_tier(user["company_id"]),
-        "estimate_number": new_num,
-        "estimate_date": src.get("estimate_date") or now[:10],
-        # One-time copy of job info.
-        "customer_name": src.get("customer_name") or "",
-        "address": src.get("address") or "",
-        "estimator": src.get("estimator") or "",
-        # Iter 71: carry HOVER measurements forward so LP HOVER auto-fill
-        # specs (Iter 68) and per-elevation card can render on the LP side
-        # without re-uploading the PDF.
-        "hover_measurements": measurements,
-        "kind": "lp_smart",
-        "status_label": "draft",
-        "lines": seeded_lines,
-        "misc_labor": [],
-        "misc_material": [],
-        "mezzo_openings": [],
-        "vero_openings": [],
-        "photos": [],
-        "paired_lp_estimate_id": est_id,  # back-pointer (reciprocal)
-    }
-    await db.estimates.insert_one(new_doc)
-    await db.estimates.update_one(
-        {"id": est_id, "company_id": user["company_id"]},
-        {"$set": {"paired_lp_estimate_id": new_id, "updated_at": now}},
-    )
-    new_doc.pop("_id", None)
-    return new_doc
+# RETIRED (Howard ruled 2026-08-03): POST /estimates/{id}/pair-lp.
+# Same ruling — doors are single-family; estimates are self-contained;
+# cross-family fill is post-September.
 
 
 # ---------------------------------------------------------------------------

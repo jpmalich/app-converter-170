@@ -207,15 +207,10 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           .get(`/measure/ai-measure/latest-for-estimate/${estId}`)
           .catch(() => null);
         if (cancelled) return;
-        let r = latest?.data?.run;
-        // paired LP estimates: the AI run lives on the siding source
-        const pairedId = est?.paired_lp_estimate_id || est?.paired_estimate_id;
-        if (!(r?.status === "done" && r?.result?.raw_ai) && pairedId) {
-          const pairedLatest = await api
-            .get(`/measure/ai-measure/latest-for-estimate/${pairedId}`)
-            .catch(() => null);
-          r = pairedLatest?.data?.run;
-        }
+        // SELF-CONTAINED (Howard ruled 2026-08-03): this panel reads ONLY
+        // this estimate's own runs — the paired-sibling fallback was
+        // severed as a purity violation.
+        const r = latest?.data?.run;
         if (r?.status === "done" && r?.result?.raw_ai) setRun(r);
         await fetchPackage(colors, {});
       } finally {

@@ -11,7 +11,7 @@
 //
 // Apply behavior matches the HOVER importer's contract: siding lines
 // merge into the current estimate; the window schedule routes to the
-// paired Windows estimate (auto-created via /estimates/{id}/pair).
+// (pairing retired 2026-08-03 — doors are single-family).
 import React, { useRef, useState } from "react";
 import { FileText, Loader2, X, Check, AlertTriangle, Printer } from "lucide-react";
 import { toast } from "sonner";
@@ -462,46 +462,9 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         });
       }
 
-      // Route window schedule slice to paired Windows estimate.
-      let pairedMsg = "";
-      const hasPairedWork = pairedLines.length > 0 || pairedVero.length > 0;
-      if (hasPairedWork) {
-        const pair = (await api.post(`/estimates/${est.id}/pair`)).data;
-        const pExisting = pair.lines || [];
-        const pByKey = new Map(pExisting.map((l, i) => [keyOf(l), i]));
-        const pNext = [...pExisting];
-        for (const ln of wastedPaired) {
-          const idx = pByKey.get(keyOf(ln));
-          if (idx == null) {
-            pNext.push({
-              tab: ln.tab || "vinyl",
-              section: ln.section,
-              name: ln.name,
-              unit: ln.unit,
-              qty: ln.qty,
-              raw_qty: ln.raw_qty ?? null,
-              mat: 0, lab: 0,
-            });
-          } else {
-            pNext[idx] = {
-              ...pNext[idx],
-              qty: ln.qty,
-              raw_qty: ln.raw_qty ?? null,
-            };
-          }
-        }
-        const pNextVero  = [...(pair.vero_openings  || []), ...pairedVero];
-        const pNextMezzo = [...(pair.mezzo_openings || []), ...pairedMezzo.map((o) => ({ ...o }))];
-        await api.put(`/estimates/${pair.id}`, {
-          ...pair,
-          lines: pNext,
-          vero_openings: pNextVero,
-          mezzo_openings: pNextMezzo,
-        });
-        const pairedLabel = pair.kind === "windows" ? "Windows" : "Siding";
-        pairedMsg = ` · routed window schedule to paired ${pairedLabel} estimate ${pair.estimate_number || ""}`;
-      }
-
+      // DOORS ARE SINGLE-FAMILY (Howard ruled 2026-08-03): this door writes
+      // ONLY its own estimate. The paired-estimate routing was removed —
+      // cross-family fill is post-September.
       const winNote = sourceVero.length ? ` + ${sourceVero.length} windows` : "";
       if (srcKind === "lp_smart") {
         // Archive the blueprint run (24h TTL) — the LP panel now derives
@@ -513,12 +476,12 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         } catch { /* non-fatal — startup backfill also covers it */ }
         toast.success(
           `Read ${result.pages_processed || "blueprint"} page(s) — measurements applied. ` +
-          `Material List derives via the LP engine${winNote}${pairedMsg}`,
+          `Material List derives via the LP engine${winNote}`,
           { duration: 8000 }
         );
       } else {
         toast.success(
-          `Read ${result.pages_processed || "blueprint"} page(s): ${added} new + ${updated} updated${winNote}${pairedMsg}`
+          `Read ${result.pages_processed || "blueprint"} page(s): ${added} new + ${updated} updated${winNote}`
         );
       }
       setResult(null);

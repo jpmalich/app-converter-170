@@ -501,64 +501,16 @@ export default function HoverImportButton({ est, update, save }) {
         });
       }
 
-      // ─── Route paired-side slice to a paired estimate of opposite kind ──
-      let pairedMsg = "";
-      const hasPairedWork = pairedLines.length > 0 || pairedOpenings.length > 0;
-      if (hasPairedWork) {
-        const pair = (await api.post(`/estimates/${est.id}/pair`)).data;
-        // Build the paired estimate's merged lines from scratch — it's
-        // either brand-new (empty arrays) or already exists (merge by key).
-        const pExisting = pair.lines || [];
-        const pByKey = new Map(pExisting.map((l, i) => [keyOf(l), i]));
-        const pNext = [...pExisting];
-        for (const ln of wastedPaired) {
-          const idx = pByKey.get(keyOf(ln));
-          if (idx == null) {
-            const baseIdx = ln.base_item != null ? pByKey.get(`${ln.tab || "vinyl"}::${ln.section}::${ln.base_item}`) : null;
-            const baseRow = baseIdx != null ? pExisting[baseIdx] : null;
-            pNext.push({
-              tab: ln.tab || "vinyl",
-              section: ln.section,
-              name: ln.name,
-              unit: ln.unit,
-              qty: ln.qty,
-              raw_qty: ln.raw_qty ?? null,
-              mat: baseRow ? (baseRow.mat ?? 0) : 0,
-              lab: baseRow ? (baseRow.lab ?? 0) : 0,
-            });
-          } else {
-            pNext[idx] = {
-              ...pNext[idx],
-              qty: ln.qty,
-              raw_qty: ln.raw_qty ?? null,
-            };
-          }
-        }
-        const pNextOpenings = [
-          ...(pair.vero_openings || []),
-          ...pairedOpenings.map(({ hover_id, ...op }) => op),
-        ];
-        const pNextMezzoOpenings = [
-          ...(pair.mezzo_openings || []),
-          ...pairedMezzoOpenings,
-        ];
-        await api.put(`/estimates/${pair.id}`, {
-          ...pair,
-          lines: pNext,
-          vero_openings: pNextOpenings,
-          mezzo_openings: pNextMezzoOpenings,
-        });
-        const pairedKindLabel = pair.kind === "windows" ? "Windows" : "Siding";
-        pairedMsg = ` · Also created paired ${pairedKindLabel} estimate ${pair.estimate_number || ""}`;
-      }
-
+      // DOORS ARE SINGLE-FAMILY (Howard ruled 2026-08-03): this door writes
+      // ONLY its own estimate. The paired-estimate routing was removed —
+      // cross-family fill is post-September.
       const winNote = sourceOpenings.length ? ` + ${sourceOpenings.length} windows` : "";
       // The waste toast must state the value the field ACTUALLY carries —
       // on LP the pick's family default (B&B 30 · lap 10) is written
       // server-side and adopted below.
       let appliedWastePct = wastePct;
       toast.success(
-        `Imported HOVER: ${added} new + ${updated} updated${winNote} · saved${pairedMsg}`
+        `Imported HOVER: ${added} new + ${updated} updated${winNote} · saved`
       );
       // Slice 1 — Hover→LP engine bridge: materialize the import as an
       // LP-native run at the chosen profile (mapping contract governs;
