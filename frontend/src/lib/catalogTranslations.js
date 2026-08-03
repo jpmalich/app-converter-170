@@ -19,6 +19,9 @@ const SECTIONS_ES = {
   "Misc. Labor Only": "Mano de obra (varios)",
   "Misc. Labor & Material": "Mano de obra y material (varios)",
   "Misc.": "Varios",
+  // Tab-level headers on the quote preview (product families stay verbatim;
+  // "Windows" is a common word, not a product name)
+  "Windows": "Ventanas",
   // Iter 38–40: window catalog sections (shared by Vero + Mezzo tabs)
   "Window Installation": "Instalación de ventanas",
   "Sliding Glass Door Install": "Instalación de puerta corrediza",

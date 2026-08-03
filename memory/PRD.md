@@ -6240,3 +6240,15 @@ Standing queue unchanged: B (drag-adjust) → model ledger → money map.
 - All ten findings ruled (ledger: /app/memory/three_doors_rulings_2026_08_01.md). Matrix ruled (/app/memory/three_doors_field_matrix_2026_08_01.md). 10e: wbw→FINISH TRIM (vinyl/Ascend), sill fallback 3'.
 - STEP 1 DONE (5e38c42): measure_staging.py = ONE aggregation copy. Gable 0.70 sealed all doors; door_count lands photo+blueprint; ONE paired vero/mezzo builder; round-once (no intake rounds); blueprint sanity recompute collapsed to shared walk. 1703 passed. Byte-identical 7/7 (evidence/step1_*.json). capture_doors_baseline.py = per-step proof harness.
 - STEPS 2–6 QUEUED (see ledger). Spanish behind all of it.
+
+## 2026-08-03 — SPANISH QUOTE PRINT (PDF/EMAIL) SHIPPED · FILL-IN HISTORY SHIPPED · COLOR-NAME SPANISH RULED OFF
+- COLOR NAME SPANISH: RULED OFF THE BOARD (Howard, 2026-08-03) — never attempt. Color names are stored values feeding derivation/price binding; translating them puts a stored value one keystroke from unbinding.
+- SPANISH QUOTE PRINT DONE (both surfaces): buildEmailHtml (email + PDF, was already wired) and the QuoteModal on-screen print preview (chrome was hardcoded EN — now every customer-facing label routes tFor(sendLang,...): docSubtitle/preparedFor/estimator/billing/scopeOfWork/elevation card/jobPhotos/total/pendingNote/validity/signature+date/supplier footer). New dict keys quote.docSubtitle, quote.signature, quote.dateSigned (EN+ES, parity detector covers them). "Windows" tab header added to SECTIONS_ES ("Ventanas") — common word, not a product name.
+- PENNY-PARITY PROVEN AT RUNTIME (esbuild-bundled real buildEmailHtml + calcTotals, real fixtures):
+  · 261 Haugh (EST-523061, 83 lines): EN $95,526.18 = ES $95,526.18. All 83 SKUs verbatim in both HTMLs.
+  · 3 Degree (EST-853809, 54 lines): EN $105,902.82 = ES $105,902.82. Only token diffs in either doc = date punctuation ("Aug 22, 2026" vs "22 ago 2026").
+  · FINAL COST ONLY pinned: test_quote_shows_final_cost_only — the only totals property either quote surface may render is `sell` (no material/labor/tax split can slip back).
+- PINS: test_spanish_quote_print_2026_08_03.py (8) — tItem verbatim + hardcoded-EN detector + single money formatter on emailQuote.js AND QuoteModal.jsx; dict keys both languages; final-cost-only.
+- MODAL WALKED (screenshots): ES preview shows ESTIMADO · COTIZACIÓN / PREPARADO PARA / ESTIMADOR / Precio Total $95,526.18 / FIRMA DEL CLIENTE / FECHA / MATERIALES SUMINISTRADOS POR; SKUs stay English verbatim; units C/U / TRAB; zero EN bleed.
+- FILL-IN HISTORY DONE: _append_fillin_history in routes/estimates.py (PUT + PATCH) — server-stamped {field, value, prev, by=email, at=UTC ISO}, append-only to photo_fillin_history; only CHANGED values append (autosave replay = no entry); non-fillin saves append nothing. History is additive metadata — never touches the value or its provenance stamp. Pins: test_fillin_history_2026_08_03.py (3, live API, self-cleaning).
+- SUITE: 1780 passed, 1 skipped, 0 failed (was 1769 — 11 new). Byte-identical fixtures untouched.

@@ -340,6 +340,9 @@ export const dict = {
     "quote.emailNotConfigured": "Email service not configured. Add RESEND_API_KEY in backend/.env to enable sending.",
     "quote.langPicker": "Send in:",
     "quote.sentToast": "Email sent",
+    "quote.docSubtitle": "Estimate · Quote",
+    "quote.signature": "Customer Signature",
+    "quote.dateSigned": "Date",
 
     // --- Public Accept page ---
     "accept.loading": "Loading your estimate…",
@@ -516,6 +519,8 @@ export const dict = {
     // --- Derived color-tier chips (ruled 2026-08-02; tier terms verbatim) ---
     "tier.architectural": "Architectural tier — priced",
     "tier.standard": "Standard tier",
+    "pf.history": "Fill-in history",
+    "pf.historyEmpty": "No fill-in changes recorded yet",
   },
 
   es: {
@@ -845,6 +850,9 @@ export const dict = {
     "quote.emailNotConfigured": "Servicio de correo no configurado. Agregue RESEND_API_KEY en backend/.env para habilitarlo.",
     "quote.langPicker": "Enviar en:",
     "quote.sentToast": "Correo enviado",
+    "quote.docSubtitle": "Estimado · Cotización",
+    "quote.signature": "Firma del Cliente",
+    "quote.dateSigned": "Fecha",
 
     "accept.loading": "Cargando su estimado…",
     "accept.notFound.title": "Estimado No Encontrado",
@@ -1018,5 +1026,7 @@ export const dict = {
     // verbatim — they are catalog price terms that appear inside SKU names) ---
     "tier.architectural": "Nivel Architectural — así se cotiza",
     "tier.standard": "Nivel Standard",
+    "pf.history": "Historial de datos",
+    "pf.historyEmpty": "Aún no hay cambios registrados",
   },
 };

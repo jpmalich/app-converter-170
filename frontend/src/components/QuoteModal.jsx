@@ -3,7 +3,7 @@ import { fmt } from "@/lib/api";
 import { useCompany } from "@/lib/company";
 import { useBranding } from "@/lib/branding";
 import { useAuth } from "@/lib/auth";
-import { useLang, useT } from "@/lib/i18n";
+import { useLang, useT, tFor } from "@/lib/i18n";
 import CompanyLogo from "@/components/CompanyLogo";
 import { X, Printer, Send } from "lucide-react";
 import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/emailQuote";
@@ -334,7 +334,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                   {company?.name || "\u00A0"}
                 </div>
                 <div className="text-xs uppercase tracking-[0.25em] text-[#52525B]">
-                  Estimate · Quote
+                  {tFor(sendLang, "quote.docSubtitle")}
                 </div>
                 {derivedUnapplied && (
                   <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#92400E] bg-[#FFFBEB] border border-[#F59E0B] px-2 py-0.5 inline-block" data-testid="quote-not-ready">
@@ -344,7 +344,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               </div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] uppercase tracking-[0.25em] text-[#71717A]">Estimate</div>
+              <div className="text-[10px] uppercase tracking-[0.25em] text-[#71717A]">{tFor(sendLang, "email.estimate")}</div>
               <div className="font-mono-num text-lg text-[#09090B]">{estimate.estimate_number}</div>
               <div className="text-xs text-[#52525B]">{estimate.estimate_date}</div>
             </div>
@@ -353,7 +353,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           <div className="px-8 sm:px-12 py-6 grid grid-cols-2 gap-6 border-b border-[#E4E4E7]">
             <div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">
-                Prepared For
+                {tFor(sendLang, "email.preparedFor")}
               </div>
               {/* Iter 79j.47 — Company name (bold) sits above the
                   customer name when set; contact chip line below the
@@ -376,13 +376,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               )}
               {(estimate.billing_address || "").trim() && (
                 <div className="text-xs text-[#52525B] mt-1" data-testid="quote-prepared-billing">
-                  <span className="uppercase tracking-wider text-[10px] font-bold text-[#71717A]">Billing:</span> {estimate.billing_address}
+                  <span className="uppercase tracking-wider text-[10px] font-bold text-[#71717A]">{tFor(sendLang, "email.billing")}:</span> {estimate.billing_address}
                 </div>
               )}
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-1 font-bold">
-                Estimator
+                {tFor(sendLang, "email.estimator")}
               </div>
               <div className="font-semibold text-[#09090B]">{estimate.estimator || "—"}</div>
             </div>
@@ -391,7 +391,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           {estimate.notes && (
             <div className="px-8 sm:px-12 py-5 border-b border-[#E4E4E7]">
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-2 font-bold">
-                Scope of Work
+                {tFor(sendLang, "email.scopeOfWork")}
               </div>
               <div className="text-sm whitespace-pre-line text-[#09090B]">{estimate.notes}</div>
             </div>
@@ -407,11 +407,16 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             const entries = Object.entries(elev).filter(([, v]) => Number(v) > 0);
             if (entries.length === 0) return null;
             const total = entries.reduce((s, [, v]) => s + Number(v || 0), 0);
-            const labels = { front: "Front", back: "Back", left: "Left", right: "Right" };
+            const labels = {
+              front: tFor(sendLang, "email.elevationFront"),
+              back: tFor(sendLang, "email.elevationBack"),
+              left: tFor(sendLang, "email.elevationLeft"),
+              right: tFor(sendLang, "email.elevationRight"),
+            };
             return (
               <div className="px-8 sm:px-12 py-5 border-b border-[#E4E4E7]" data-testid="per-elevation-card">
                 <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
-                  Per-Elevation Siding Breakdown
+                  {tFor(sendLang, "email.elevationTitle")}
                 </div>
                 <table className="w-full text-sm">
                   <tbody>
@@ -433,7 +438,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                       );
                     })}
                     <tr>
-                      <td className="pt-3 text-[#52525B] font-semibold">Total Siding Area</td>
+                      <td className="pt-3 text-[#52525B] font-semibold">{tFor(sendLang, "email.elevationTotal")}</td>
                       <td></td>
                       <td className="pt-3 text-right text-[#09090B] font-bold font-mono-num whitespace-nowrap">
                         {Math.round(total).toLocaleString()} ft²
@@ -449,7 +454,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             {tabOrder.map((tabId) => (
               <div key={tabId} className="mb-6">
                 <div className="text-[10px] uppercase tracking-[0.25em] font-bold text-[#71717A] mb-2">
-                  {TAB_LABEL[tabId]}
+                  {tSection(TAB_LABEL[tabId], sendLang)}
                 </div>
                 {Object.entries(linesByTab[tabId]).map(([section, items]) => (
                   <div key={section} className="mb-4">
@@ -464,7 +469,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                             {l.qty} {tUnit(l.unit, sendLang)}
                             {l.pricing_pending && (
                               <span className="block text-[10px] uppercase tracking-wider font-bold text-[#B45309]" data-testid={`quote-line-pending-${l.name}`}>
-                                {sendLang === "es" ? "precio por confirmar" : "pricing to be confirmed"}
+                                {tFor(sendLang, "email.pricePending")}
                               </span>
                             )}
                           </span>
@@ -504,7 +509,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               return (
                 <div className="mb-6" data-testid="quote-windows-openings">
                   <div className="text-xs uppercase tracking-[0.18em] font-bold text-[#C2410C] border-b border-[#09090B] pb-1 mb-2">
-                    {sendLang === "es" ? "Ventanas" : "Windows"}
+                    {tFor(sendLang, "email.windowsOpenings")}
                   </div>
                   {ops.map((op) => (
                     <React.Fragment key={op.id || dispName(op)}>
@@ -535,7 +540,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           {(estimate.photos || []).length > 0 && (
             <div className="px-8 sm:px-12 py-4 border-t border-[#E4E4E7]">
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mb-3 font-bold">
-                Job Photos
+                {tFor(sendLang, "email.jobPhotos")}
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {estimate.photos.map((p, i) => (
@@ -552,20 +557,18 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
 
           <div className="px-8 sm:px-12 py-6 border-t-4 border-[#09090B] bg-[#FAFAFA]">
             <div className="flex justify-between items-baseline">
-              <div className="font-heading text-2xl text-[#09090B]">Total Price</div>
+              <div className="font-heading text-2xl text-[#09090B]">{tFor(sendLang, "email.total")}</div>
               <div className="font-mono-num text-4xl font-black text-[#09090B]">
                 {fmt(totals.sell)}
               </div>
             </div>
             {linesWithQty.some((l) => l.pricing_pending) && (
               <div className="text-xs text-[#B45309] mt-2" data-testid="quote-pending-note">
-                {sendLang === "es"
-                  ? 'Los artículos marcados "precio por confirmar" están pendientes de confirmación del proveedor y no se incluyen en el total. Se cotizarán antes de comenzar el trabajo.'
-                  : 'Items marked "pricing to be confirmed" are awaiting supplier price confirmation and are not included in the total. They will be quoted before work begins.'}
+                {tFor(sendLang, "email.pendingNote")}
               </div>
             )}
             <div className="text-xs text-[#52525B] mt-2">
-              Valid for 30 days from the date above. Final price may vary based on site conditions discovered after work begins.
+              {tFor(sendLang, "email.validityGeneric")}
             </div>
           </div>
 
@@ -573,13 +576,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             <div>
               <div className="border-b border-[#09090B] h-8" />
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mt-1 font-bold">
-                Customer Signature
+                {tFor(sendLang, "quote.signature")}
               </div>
             </div>
             <div>
               <div className="border-b border-[#09090B] h-8" />
               <div className="text-[10px] uppercase tracking-[0.2em] text-[#71717A] mt-1 font-bold">
-                Date
+                {tFor(sendLang, "quote.dateSigned")}
               </div>
             </div>
           </div>
@@ -589,7 +592,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               className="border-t border-[#E4E4E7] px-8 sm:px-12 py-3 text-[10px] uppercase tracking-[0.2em] text-[#71717A] text-center"
               data-testid="supplier-footer"
             >
-              Materials supplied by {branding.supplier_name} · Powered by Pro-Quote Estimating Tool
+              {tFor(sendLang, "email.materialsBy", { supplier: branding.supplier_name })} · {tFor(sendLang, "email.poweredBy")}
             </div>
           )}
         </div>

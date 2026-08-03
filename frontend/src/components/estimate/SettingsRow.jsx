@@ -477,6 +477,23 @@ export default function SettingsRow({ est, update, save }) {
                   <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--muted)]">
                     {t("pf.friezeHint", { eaves: eaves.toFixed(0), rakes: rakes.toFixed(0) })}
                   </p>
+                  {/* FILL-IN HISTORY (Howard ruled 2026-08-03): a disputed
+                      soffit number traces to a person and a date. Server-
+                      stamped on every changed PUT — read-only here. */}
+                  {(est.photo_fillin_history || []).length > 0 && (
+                    <details className="mt-3" data-testid="photo-fillin-history">
+                      <summary className="cursor-pointer text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
+                        {t("pf.history")} ({(est.photo_fillin_history || []).length})
+                      </summary>
+                      <div className="mt-1 space-y-0.5">
+                        {[...est.photo_fillin_history].slice(-8).reverse().map((h, i) => (
+                          <div key={i} className="text-[10px] text-[var(--muted)] font-mono-num" data-testid={`fillin-history-row-${i}`}>
+                            {h.field.replace("photo_", "").replaceAll("_", " ")}: {String(h.prev ?? "—")} → {String(h.value)} · {h.by} · {new Date(h.at).toLocaleString()}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  )}
                 </div>
               );
             })()}

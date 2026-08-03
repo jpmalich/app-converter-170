@@ -613,6 +613,34 @@ async def get_estimate(est_id: str, user: dict = Depends(get_current_user)):
     return doc
 
 
+_PHOTO_FILLIN_FIELDS = ("photo_soffit_sqft", "photo_drip_edge_lf",
+                        "photo_total_trim_sqft", "photo_frieze_present")
+
+
+async def _append_fillin_history(est_id: str, company_id: str,
+                                 update: dict, user: dict) -> None:
+    """FILL-IN HISTORY (Howard ruled 2026-08-03): who typed each fill-in
+    value and when — a disputed soffit number traces to a person and a
+    date. Server-stamped, append-only; only CHANGED values append (an
+    autosave replaying the same value is not a decision)."""
+    touched = [k for k in _PHOTO_FILLIN_FIELDS if k in update]
+    if not touched:
+        return
+    prev = await db.estimates.find_one(
+        {"id": est_id, "company_id": company_id},
+        {"_id": 0, **{k: 1 for k in touched}})
+    if prev is None:
+        return
+    entries = [{"field": k, "value": update[k], "prev": prev.get(k),
+                "by": user.get("email") or user.get("id") or "unknown",
+                "at": datetime.now(timezone.utc).isoformat()}
+               for k in touched if prev.get(k) != update[k]]
+    if entries:
+        await db.estimates.update_one(
+            {"id": est_id, "company_id": company_id},
+            {"$push": {"photo_fillin_history": {"$each": entries}}})
+
+
 @router.put("/estimates/{est_id}")
 async def update_estimate(est_id: str, body: EstimateIn, user: dict = Depends(get_current_user)):
     # exclude_none so PUTs that omit pricing_mode don't clobber the stored value
@@ -626,6 +654,7 @@ async def update_estimate(est_id: str, body: EstimateIn, user: dict = Depends(ge
     # lp_smart estimate): no update path may change kind post-create.
     update.pop("kind", None)
     update["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await _append_fillin_history(est_id, user["company_id"], update, user)
     res = await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]}, {"$set": update}
     )
@@ -649,6 +678,7 @@ async def patch_estimate(est_id: str, body: dict, user: dict = Depends(get_curre
     validated = EstimateIn.model_validate(body).model_dump(include=set(body.keys()))
     validated.pop("kind", None)  # kind is identity — immutable post-create (ruled 2026-07-24)
     validated["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await _append_fillin_history(est_id, user["company_id"], validated, user)
     res = await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]}, {"$set": validated}
     )
