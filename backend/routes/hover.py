@@ -2817,8 +2817,15 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     if _cdf.get("status") == "closed":
         _dup = float((_cdf.get("values") or {}).get("duplicate_sqft") or 0)
         if _dup > 0 and float(scoped.get("soffit_sqft") or 0) > 0:
-            scoped["_soffit_sqft_hover"] = float(scoped["soffit_sqft"])
-            scoped["soffit_sqft"] = max(float(scoped["soffit_sqft"]) - _dup, 0.0)
+            # IDEMPOTENT FOLD (Howard's frozen-waste audit 2026-08-03):
+            # /rederive persists scoped back into hover_measurements, so
+            # deducting from the live value compounded −duplicate_sqft on
+            # EVERY call (261 Haugh: 423→383→343→…). Deduct from the
+            # PRE-DEDUP base — same result no matter how often it runs.
+            _base_sof = float(scoped.get("_soffit_sqft_hover")
+                              or scoped["soffit_sqft"])
+            scoped["_soffit_sqft_hover"] = _base_sof
+            scoped["soffit_sqft"] = max(_base_sof - _dup, 0.0)
             scoped["_soffit_dedup_sqft"] = _dup
     # Family-defaulted waste flows INTO the derivation (sealed
     # 2026-07-24): profile siding rows derive with the resolved field.

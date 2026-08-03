@@ -124,9 +124,32 @@ export default function SettingsRow({ est, update, save }) {
   // Iter 78 — Waste % change recomputes line.qty for any cut-prone line
   // that carries a stored raw_qty (i.e. came from a HOVER/Blueprint
   // import). Lines entered manually are untouched.
-  const updateWastePct = (newPct) => {
+  // WASTE RE-DERIVES LIVE (Howard ruled 2026-08-03 — the EST-803966
+  // frozen panel: estimate said 138, yard list said 106). The waste
+  // field is a spec field: it rides the SAME shared-rebuild door as
+  // shake reveal / batten spacing / fascia width. The client recompute
+  // below only reaches rows carrying raw_qty; server-derived rows
+  // (raw_qty=null, _waste_included) can only move through /rederive.
+  // lp_smart is gated on derived rows already existing — a waste change
+  // must never materialize lines as a side effect (dollars on apply).
+  const updateWastePct = async (newPct) => {
     const lines = recomputeWasteQtys(est?.lines, newPct);
     update({ waste_pct: newPct, lines });
+    if (!save) return;
+    await save({ ...est, waste_pct: newPct, lines });
+    const hasLpDerived = (est?.lines || []).some((l) => (l.tab || "") === "lp_smart");
+    if (est.kind === "siding" || (est.kind === "lp_smart" && hasLpDerived)) {
+      try {
+        const { data } = await api.post(`/estimates/${est.id}/rederive`, {
+          trigger: "spec-save", waste_pct: newPct,
+        });
+        if (Array.isArray(data?.lines)) update({ lines: data.lines });
+        window.dispatchEvent(new Event("lp-flag-checklist-changed"));
+      } catch (e) {
+        /* 409 = no measurements yet — waste saved; derives on import */
+        if (e?.response?.status !== 409) console.warn("waste rederive failed", e);
+      }
+    }
   };
   // Iter 78b — Retroactive recompute for legacy estimates where lines
   // were stored before the cut-prone classifier was fixed. Treats every
