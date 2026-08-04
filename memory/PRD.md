@@ -6281,3 +6281,18 @@ Standing queue unchanged: B (drag-adjust) → model ledger → money map.
 - PHANTOM RECEIPT (hard-deleted via API): EST-523061-S, EST-562488-S, EST-109465-S, EST-630295-S, EST-803966-S (siding siblings seeded by LP jobs), EST-979583-W, EST-853809-W (windows siblings seeded by vinyl jobs). All: zero human rows, zero manual rows, unprotected, machine-only door output, no readers. Pair pointers unset on remaining docs (12).
 - LESSON PAID (recorded, memory/lessons_2026_08_03.md): first blank census swept 4 PROTECTED SEED FIXTURES (Letrick 8f95c9c2, red-house blank 673707d5, haugh-validation 48231310, round-two d78cd3b4 — run anchors with 0 lines, exported in backend/fixtures manifest, API delete refuses them 423). Raw-Mongo delete bypassed the guard; the suite (their reader) caught it. Restored verbatim via seed_runner apply — PROVISIONING GATE GREEN 57/0; test-slot company ids re-slotted to match live. RULE: never raw-delete estimates; use the API (protection guard) and check protected/fixture flags + tests/fixtures manifest first.
 - PROOF: 261 Haugh + 3 Degree byte-identical through everything. STAMP: "- 2026-08-03 23:48 UTC · f7865f7 · CLEAN · [tests] · 1798 passed, 1 skipped, 2 warnings in 172.53s (0:02:52)".
+
+## 2026-08-04 — STALE ROW SWEEP (guard proven) + DEMO DRY RUN (findings, nothing fixed per order)
+- SWEEP: spot check passed (waste held: Haugh 30, 3-Degree 10, 803966 10; humans 3/3 verbatim), batch ran at each estimate's OWN stored waste. 6 no-door estimates 409-skipped. REGRESSION CAUGHT ON THE ANCHOR: tier-renamed legacy machine row duplicated (Dutch Lap Standard 47 + Architectural 47) — TIER BINDING added to carry rule (machine rows only; humans untouchable); anchor now 1 row. 3 pins test_stale_row_sweep_2026_08_04.py. STAMP: "- 2026-08-04 00:20 UTC · b756f0f · CLEAN · [tests] · 1801 passed, 1 skipped".
+- CLOSED FLAGS: wrap $30.73/$38.73 per-SQ flag STALE-CLOSED (catalog holds $119.11/$336.13 ROLL, verified in preview too). LP-native ON in prod (Howard-confirmed) — REMINDERS updated, do not re-flag.
+- DRY RUN FINDINGS (DEMO-LETRICK, preview, LP-native flipped ON for walk then restored) — DARK LIST:
+  1. Quote step PRINT-BLOCKED (4): unpriced clean-up/haul-away, Cap window ×9, Cap entry door ×2 + open field-verify (ISC @ chimney chase). Blocks the quote in front of a BDM unless cleared/intentional.
+  2. Gate chips say QUOTE GATE — CLEAR while the quote modal is PRINT-BLOCKED — two surfaces disagree to a human.
+  3. Margin 0% → homeowner price = raw cost $11,732.08; summary shows literal "(UNDEFINED% MARGIN OF SALE)" — visible bug + no-profit demo story. (Margin tiers exist: Contractor 30 default.)
+  4. Waste Factor 0 on demo estimate (family default: B&B 30 / Lap 10).
+  5. Estimator "—" on quote header.
+  6. Tape check 92.2% with 2 RED walls (front +1.05, left +1.08).
+  7. "Re-derive material list" toasts "No stored measurements" until the pending photo run (staged 2026-08-04, by design) is reviewed & applied — the on-stage step 1.
+  8. REMINDERS still pending: supplier logo placeholder, SIGNUP_CODE rotation, Anthropic key rotation, PWA icons.
+  9. Credits/QR-from-prod: not verifiable from preview.
+- NOTHING was fixed during the dry run per Howard's order — findings only.

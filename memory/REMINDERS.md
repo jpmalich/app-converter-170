@@ -3,6 +3,8 @@
 > **Main agent: read this file at the start of every session and surface these to the user when relevant.**
 
 ## ✅ Completed
+- **LP-NATIVE MODE — CONFIRMED ON in PROD by Howard (2026-08-04, admin page). Do not re-flag.** (Preview env keeps its own flag; flipped ON only during the 2026-08-04 demo dry-run walk, then restored.)
+- **House Wrap $119.11/ROLL + RainDrop $336.13/ROLL confirmed correct by Howard (2026-08-04) — the old $30.73/$38.73 per-SQ flag is STALE and CLOSED.**
 - Per-customer labor overrides on every line item (with orange highlight + ↺ reset button)
 - 4 supplier-controlled price tiers (one-opp, Builder-Dealer, Contractor, whole-sale) seeded from your Excel sheet
 - Contractor's catalog: material price comes from their assigned tier (locked badge "Tier: X" visible), labor + per-line material overrides allowed
@@ -11,7 +13,6 @@
 
 ## Pending follow-ups
 
-- **SEPTEMBER DEMO CHECKLIST — LP-NATIVE MODE IS CURRENTLY OFF** (Howard spotted 2026-07-31 on the branding-admin panel). The demo runs with it ON. Howard flips it himself before the demo — do NOT flip it for him; DO remind him if the demo nears and it is still off.
 1. **Upload Alside Supply logo** — `/branding-admin?token=...` → Upload Logo (placeholder "A" still showing on Login)
 2. **Rotate `SIGNUP_CODE`** in `backend/.env` once you've handed it out — Howard: doing this week (confirmed 2026-07-18)
 3. **Rotate the Anthropic Claude key** at https://console.anthropic.com/settings/keys (was exposed in chat) — Howard: doing this week (confirmed 2026-07-18).
