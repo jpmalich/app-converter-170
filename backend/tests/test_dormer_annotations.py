@@ -309,7 +309,9 @@ class TestDormerCheeks:
         fvc = (FE / "components" / "estimate" / "FieldVerifyCard.jsx").read_text()
         assert "contractor-dormer-depth-input-" in fvc
         assert "contractor-dormer-cheeks-" in fvc
-        assert "(default depth)" in fvc  # blank resolves to the smart default
+        # blank resolves to the smart default (label keyed EN/ES since the
+        # 2026-08-04 Spanish sweep — the dictionary carries both languages)
+        assert "fv.defaultDepth" in fvc
         assert "/contractor-dormers/" in fvc  # PATCH write-back path
 
     def test_launch_payload_carries_depth(self):

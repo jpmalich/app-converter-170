@@ -191,3 +191,7 @@
 - 2026-08-04 04:01 UTC · b0b771c · GUARD-FAIL · FAILED tests/test_corner_relocation.py::test_chase_relocation_e2e - requests....
 - 2026-08-04 04:03 UTC · 4faa888 · CLEAN · [tests] · 1804 passed, 1 skipped, 2 warnings in 225.03s (0:03:45)
 - 2026-08-04 11:27 UTC · 6a48b11 · CLEAN · [tests] · 1804 passed, 1 skipped, 2 warnings in 222.41s (0:03:42)
+- 2026-08-04 13:26 UTC · ef1ceb3 · GUARD-FAIL · FAILED tests/test_3d_dark_all_audiences.py::test_pin5_source_view_entry_rides_the_card
+- 2026-08-04 13:26 UTC · ef1ceb3 · GUARD-FAIL · FAILED tests/test_dormer_annotations.py::TestDormerCheeks::test_field_verify_secondary_entry_syncs_same_field
+- 2026-08-04 13:26 UTC · ef1ceb3 · GUARD-FAIL · FAILED tests/test_gable_annotations.py::TestPipelinePins::test_field_verify_rows_and_ridge_warning
+- 2026-08-04 13:26 UTC · ef1ceb3 · GUARD-FAIL · FAILED tests/test_one_waste_emitter.py::test_frontend_waste_math_only_in_ratified_emitters

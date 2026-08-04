@@ -111,7 +111,9 @@ class TestPipelinePins:
     def test_field_verify_rows_and_ridge_warning(self):
         assert 'data-testid="field-verify-contractor-gables"' in FVC
         assert "contractor-gable-ridge-warning" in FVC
-        assert "not auto-injected into the estimate" in FVC
+        # "not auto-injected into the estimate" — keyed EN/ES since the
+        # 2026-08-04 Spanish sweep (fv.gables.sub in dictionaries.js)
+        assert "fv.gables.sub" in FVC
 
     def test_sheet_callout(self):
         assert 'data-testid="elevation-contractor-gable-callout"' in SHEET
