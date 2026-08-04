@@ -199,3 +199,4 @@
 - 2026-08-04 13:37 UTC · 23563ec · GUARD-FAIL · ERROR tests/test_quote_order_gates.py::test_gates_endpoint_and_quote_surfaces_block
 - 2026-08-04 13:37 UTC · 23563ec · GUARD-FAIL · ERROR tests/test_quote_order_gates.py::test_quote_clears_when_conflict_resolved
 - 2026-08-04 13:38 UTC · 3ea93e6 · CLEAN · [tests] · 1810 passed, 1 skipped, 2 warnings in 167.61s (0:02:47)
+- 2026-08-04 14:56 UTC · 0324df5 · GUARD-FAIL · FAILED tests/test_casile_closeout.py::TestLaborZeroedV3::test_contractor_edit_still_wins
