@@ -90,6 +90,26 @@ function renderMeasurementsHtml(measurements) {
   `;
 }
 
+// ONE FAMILY PER PRINT (Howard ruled 2026-08-04): which tabs each
+// estimate kind is allowed to put on paper. iss keeps its service tab.
+const PRINT_FAMILY_TABS = {
+  siding: ["vinyl", "ascend"],
+  lp_smart: ["lp_smart"],
+  windows: ["windows"],
+  iss: ["iss"],
+};
+
+export function scopePrintLines(lines, kind, est) {
+  const fam = new Set(PRINT_FAMILY_TABS[kind] || PRINT_FAMILY_TABS.siding);
+  if (kind === "lp_smart" && Array.isArray(est?.lines) && est.lines.length) {
+    // The estimate IS the LP source of truth (materialized server-side).
+    return est.lines.filter(
+      (l) => (l.tab || "vinyl") === "lp_smart" && (Number(l.qty) || 0) > 0
+    );
+  }
+  return (lines || []).filter((l) => fam.has(l.tab || "vinyl"));
+}
+
 // `lang` DEFAULTS TO EN (ruled 2026-08-04 — the _lang ReferenceError
 // crash): print must NEVER crash regardless of language state.
 function renderLinesHtml(lines, kind, _lang = "en") {
@@ -230,6 +250,19 @@ export function printTakeoff({
   const estNum = est?.estimate_number || "Draft";
   const now = new Date().toLocaleString();
   const _lang = currentLang();
+
+  // DOOR SEPARATION AT THE EMITTER (Howard ruled 2026-08-04, third
+  // lesson): the print is a FAMILY-SCOPED surface. The apply and the
+  // materialize were scoped but this print built from the raw all-family
+  // mapper output — an LP job printed a VINYL SIDING section. Scope HERE,
+  // at the one emitter, so no caller can ever print cross-family:
+  //   · lp_smart prints the ESTIMATE'S OWN LP lines (the server-rebuilt
+  //     list the estimate carries — the mapper's raw LP rows are the
+  //     default-profile variant, not the materialized one);
+  //   · every other kind prints only its family tabs from the passed set.
+  // Byte-identical on the in-family lines — this only removes rows that
+  // never belonged on the printout.
+  lines = scopePrintLines(lines, kind, est);
 
   const html = `<!doctype html>
 <html lang="en">

@@ -18,6 +18,8 @@ export function run(lang) {
       note: "waste 30% baked into qty" },
     { tab: "windows", section: "Window Installation", name: "Cap window (Windows)", qty: 32, unit: "EA", mat: 5,
       note: "install fee" },
+    { tab: "iss", section: "Gutter Service", name: "ISS Service Call", qty: 1, unit: "EA", mat: 20,
+      note: "service overlay" },
   ];
   const openings = [{ id: "o1", hover_id: "W-101", width: 36, height: 60, style: "Vero Double Hung" }];
   const measurements = { siding_sqft: 4239, eaves_lf: 210, window_count: 30 };
@@ -27,6 +29,16 @@ export function run(lang) {
   // printTakeoff drives the PRINT button on: the HOVER restore/import
   // modal (the crash site), the ISS Hover modal (kind iss), the
   // Blueprint modal and the AI Measure modal — all four kinds walked.
+  // DOOR SEPARATION ON PAPER (ruled 2026-08-04): the mixed all-family
+  // line set below is EXACTLY the raw mapper output that leaked a
+  // VINYL SIDING section onto EST-536665's LP printout — each kind's
+  // printout must carry ONLY its own family.
+  const FAMILY_MARKER = {
+    siding: { must: "Charter Oak", never: ["38 Series", "Cap window", "ISS Service Call"] },
+    lp_smart: { must: "38 Series", never: ["Charter Oak", "Ascend - Starter", "Cap window"] },
+    windows: { must: "Cap window", never: ["Charter Oak", "38 Series", "ISS Service Call"] },
+    iss: { must: "ISS Service Call", never: ["Charter Oak", "38 Series", "Cap window"] },
+  };
   for (const [surface, kind] of [
     ["hover-restore-modal", "siding"],
     ["hover-lp-modal", "lp_smart"],
@@ -36,7 +48,13 @@ export function run(lang) {
     globalThis.__printCapture = "";
     printTakeoff({ source: "HOVER", measurements, lines, openings, est, kind });
     if (!globalThis.__printCapture.includes("<html")) throw new Error(surface + ": no html written");
-    if (!globalThis.__printCapture.includes("Charter Oak")) throw new Error(surface + ": lines missing");
+    const m = FAMILY_MARKER[kind];
+    if (!globalThis.__printCapture.includes(m.must)) throw new Error(surface + ": own-family lines missing");
+    for (const alien of m.never) {
+      if (globalThis.__printCapture.includes(alien)) {
+        throw new Error(surface + `: CROSS-FAMILY LEAK on the printout — '${alien}' (kind ${kind})`);
+      }
+    }
     results.push(surface);
   }
 

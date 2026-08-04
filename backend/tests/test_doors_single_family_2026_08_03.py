@@ -121,6 +121,25 @@ def test_photo_door_scopes_families_at_the_merge():
     assert "lp-package/materialize" in src, "photo-door LP cut lost its engine door"
 
 
+def test_print_is_a_family_scoped_surface():
+    """THE THIRD LESSON (Howard, 2026-08-04): apply was scoped, then the
+    server rederive/materialize, and the PRINT still built from the raw
+    all-family mapper output — EST-536665's LP printout carried a VINYL
+    SIDING section while the estimate on screen was clean. The takeoff
+    printout is a door too: printTakeoff must scope AT THE EMITTER so no
+    caller can print cross-family, and lp_smart must print the ESTIMATE'S
+    own materialized lines, never the mapper's raw LP variant.
+    (Behavioral both-directions proof lives in test_print_smoke: an LP
+    print with a mixed payload carries zero vinyl/ascend/windows rows and
+    a siding print zero LP rows — executed in node, not just source.)"""
+    src = (FE / "lib" / "printTakeoff.js").read_text()
+    assert "PRINT_FAMILY_TABS" in src, "the print emitter lost its family map"
+    assert "lines = scopePrintLines(lines, kind, est);" in src, \
+        "printTakeoff no longer scopes at the emitter — raw mapper output can print"
+    assert '(l.tab || "vinyl") === "lp_smart" && (Number(l.qty) || 0) > 0' in src, \
+        "lp_smart print must read the estimate's own materialized LP lines"
+
+
 def test_lp_materialize_doors_scope_through_the_one_copy():
     """THE SECOND RE-CONTAMINATION PATH (found 2026-08-04, suite run):
     rebuild_lp_tab_lines emits EVERY tab; /rederive filtered but
