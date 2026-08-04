@@ -173,3 +173,17 @@
 - 2026-08-03 20:11 UTC · 5aceca6 · CLEAN · [tests] · 1790 passed, 1 skipped, 3 warnings in 237.68s (0:03:57)
 - 2026-08-03 21:42 UTC · c561c21 · CLEAN · [tests] · 1796 passed, 1 skipped, 3 warnings in 363.60s (0:06:03)
 - 2026-08-03 23:48 UTC · f7865f7 · CLEAN · [tests] · 1798 passed, 1 skipped, 2 warnings in 172.53s (0:02:52)
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_e2e_spec_journey_2026_07_31.py::test_human_qty_survives_rederive_with_derived_stamp
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_ai_measure_health_http.py::test_status_response_includes_error_kind
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_id_migration_never_moves_a_number.py::test_resolved_catalog_serves_the_identity
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestVinylSidingSection::test_section_present_and_item_count_matches_seed
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestVinylSidingSection::test_expected_variant_names_present
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestVinylSidingSection::test_siding_profile_lab_valid_and_mat_nonzero
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestSidingAccessoriesSection::test_item_count_matches_seed
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestSidingAccessoriesSection::test_new_color_variants_present
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestSidingAccessoriesSection::test_old_single_variant_names_removed
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestVinylSoffitSection::test_item_count_matches_seed
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestVinylSoffitSection::test_charter_oak_soffit_variants
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration34_siding_split.py::TestAMIPartNumbers::test_charter_oak_ami_present
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration5_supplier.py::TestAlsideDefaultCatalog::test_default_catalog_first_section_and_item
+- 2026-08-04 00:16 UTC · 6fb558d · GUARD-FAIL · FAILED tests/test_iteration5_supplier.py::TestAlsideDefaultCatalog::test_default_catalog_has_ascend_section
