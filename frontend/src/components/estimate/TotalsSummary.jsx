@@ -52,7 +52,7 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
         <Stat label={t("est.sum.tax", { pct: est.tax_enabled ? est.tax_rate : 0 })} val={fmt(totals.tax)} />
         <Stat label={t("est.sum.labor")} val={fmt(totals.subLab)} />
         <Stat label={t("est.sum.baseCost")} val={fmt(totals.base)} bold />
-        <Stat label={t("est.sum.sell", { pct: est.margin_pct, mode: modeLabel })} val={fmt(totals.sell)} orange />
+        <Stat label={t("est.sum.sell", { pct: est.margin_pct ?? 0, mode: modeLabel })} val={fmt(totals.sell)} orange />
       </div>
       <div className="flex flex-wrap gap-3">
         <button className="btn-primary" onClick={onSave} disabled={saving} data-testid="save-btn">

@@ -750,10 +750,24 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
     everything standing between the contractor and a real number —
     pending prices, open mapping flags, unentered field-verify items,
     unpriced money-surface rows. SOFT surface only (ruled): informational;
-    the Customer Quote button NEVER hard-blocks on it."""
+    the Customer Quote button NEVER hard-blocks on it.
+
+    ONE READINESS TRUTH (Howard ruled 2026-08-04): this list and the gate
+    chips derive from the SAME generator — they cannot diverge."""
+    items = await _readiness_items(est_id, user)
+    return {"estimate_id": est_id, "items": items,
+            "open_count": len(items), "ready": not items}
+
+
+async def _readiness_items(est_id: str, user: dict) -> list:
+    """THE one readiness truth — consumed by /readiness (quote modal) AND
+    evaluate_gates (gate chips). Howard ruled 2026-08-04: if the quote
+    modal says blocked, the chips say blocked, same reasons, same count."""
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
-        {"_id": 0, "id": 1, "lines": 1, "kind": 1})
+        {"_id": 0, "id": 1, "lines": 1, "kind": 1, "hover_measurements": 1,
+         "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
+         "photo_total_trim_sqft": 1, "photo_frieze_present": 1})
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
     items = []
@@ -833,8 +847,21 @@ async def estimate_readiness(est_id: str, user: dict = Depends(get_current_user)
                 items.append({"kind": "field_verify", "code": a.get("key"),
                               "label": (f"Field-verify open: {a.get('kind') or 'corner'} "
                                         f"@ {a.get('locator') or '?'}")})
-    return {"estimate_id": est_id, "items": items,
-            "open_count": len(items), "ready": not items}
+    # ONE READINESS TRUTH (Howard ruled 2026-08-04): the gates.py QUOTE
+    # blockers ride the SAME list, deduped by code — the modal shows what
+    # the chips block on, and vice versa.
+    from gates import quote_gate_blockers
+    measurements = None
+    try:
+        _, run, _ = await _load_run(est_id, user["company_id"])
+        measurements, _, _ = _extract(run)
+    except HTTPException:
+        pass
+    seen = {i.get("code") for i in items}
+    for g in quote_gate_blockers(est, measurements):
+        if g.get("code") not in seen:
+            items.append({"kind": g.get("kind") or "quote_gate", **g})
+    return items
 
 
 # ═══════════ QUOTE GATE vs ORDER GATE (Howard ruled 2026-07-29) ══════════
@@ -860,7 +887,13 @@ async def evaluate_gates(est_id: str, user: dict) -> dict:
         measurements, _, _ = _extract(run)
     except HTTPException:
         run = None
-    quote_items = quote_gate_blockers(est, measurements)
+    # ONE READINESS TRUTH (Howard ruled 2026-08-04): the QUOTE tier is the
+    # readiness list itself — chips and modal read one generator, same
+    # reasons, same count. labor_pending stays visible, never blocking
+    # (re-ruled 2026-07-29).
+    quote_items = [dict(i, tier="quote",
+                        blocking=i.get("kind") != "labor_pending")
+                   for i in await _readiness_items(est_id, user)]
     order_items: list[dict] = []
     try:
         pkg = await lp_package_preview(est_id, None, user)
@@ -901,7 +934,10 @@ async def evaluate_gates(est_id: str, user: dict) -> dict:
                             "closed_at": entry.get("at"),
                             "values": entry.get("values")}
                            if status == "closed" else {})}
-                (order_items if tier == "order" else quote_items).append(item)
+                if tier == "order":
+                    order_items.append(item)
+                elif item.get("code") not in {q.get("code") for q in quote_items}:
+                    quote_items.append(item)
     if pkg:
         for f in pkg.get("hover_mapping_flags") or []:
             code = f.get("code")
@@ -918,7 +954,10 @@ async def evaluate_gates(est_id: str, user: dict) -> dict:
                         "closed_at": f.get("closed_at"),
                         "values": f.get("values")}
                        if f.get("status") == "closed" else {})}
-            (order_items if tier == "order" else quote_items).append(item)
+            if tier == "order":
+                order_items.append(item)
+            elif item.get("code") not in {q.get("code") for q in quote_items}:
+                quote_items.append(item)
         for a in pkg.get("amber_items") or []:
             if (a.get("status") or "unverified") == "unverified":
                 order_items.append({
