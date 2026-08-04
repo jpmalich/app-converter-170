@@ -18,7 +18,14 @@ const SECTIONS_ES = {
   "Seamless Gutter": "Canalón sin uniones",
   "Misc. Labor Only": "Mano de obra (varios)",
   "Misc. Labor & Material": "Mano de obra y material (varios)",
+  "Misc. Labor and Material": "Mano de obra y material (varios)",
   "Misc.": "Varios",
+  // LP family sections (brand "LP SmartSide" stays verbatim — same rule as
+  // "Ascend Cladding" → "Revestimiento Ascend"; the generic noun translates)
+  "LP Smart Siding": "Revestimiento LP Smart",
+  "LP Siding Accessories": "Accesorios LP",
+  "LP SmartSide Soffit": "Plafón LP SmartSide",
+  "LP SmartSide Trim": "Moldura LP SmartSide",
   // Tab-level headers on the quote preview (product families stay verbatim;
   // "Windows" is a common word, not a product name)
   "Windows": "Ventanas",
@@ -62,6 +69,8 @@ const UNITS_ES = {
   "ROLL": "ROLLO",
   "PR": "PAR",      // pair → par
   "Box": "CAJA",
+  "Stick": "TRAMO",  // gutter/downspout stick → tramo
+  "Tube": "TUBO",
   "SQ FT": "PIE²",
   "ADD": "REC",     // surcharge / adder
 };

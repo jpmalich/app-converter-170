@@ -181,14 +181,14 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
         {blocked && (
           <div className="no-print w-full max-w-3xl mb-3 bg-[#FEF2F2] border border-[#DC2626] px-4 py-3" data-testid="quote-print-blocked-banner">
             <div className="text-xs font-bold text-[#991B1B] mb-1">
-              PRINT-BLOCKED: {blockingItems.length} item{blockingItems.length === 1 ? "" : "s"} — clear the readiness checklist before this quote reaches a homeowner.
+              {t("quote.printBlocked", { n: blockingItems.length })}
             </div>
             <ul className="space-y-0.5">
               {blockingItems.slice(0, 6).map((it, i) => (
                 <li key={i} className="text-[11px] text-[#991B1B]" data-testid="quote-readiness-item">• {it.label}</li>
               ))}
               {blockingItems.length > 6 && (
-                <li className="text-[11px] text-[#991B1B]">… and {blockingItems.length - 6} more (see Readiness on the estimate page)</li>
+                <li className="text-[11px] text-[#991B1B]">{t("quote.printBlockedMore", { n: blockingItems.length - 6 })}</li>
               )}
             </ul>
           </div>
@@ -220,7 +220,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
                 onClick={handleEmail}
                 disabled={!email || sending || !emailConfigured || emailInvalid || blocked}
                 data-testid="send-email-btn"
-                title={blocked ? "PRINT-BLOCKED — clear the readiness checklist first" : (!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : "")}
+                title={blocked ? t("quote.printBlockedTooltip") : (!emailConfigured ? "Add RESEND_API_KEY in backend/.env to enable" : "")}
               >
                 <Send className="w-4 h-4" /> {sending ? t("quote.sending") : t("quote.emailBtn")}
               </button>
@@ -260,7 +260,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
               onClick={handleDownloadPdf}
               disabled={sending || blocked}
               data-testid="download-pdf-btn"
-              title={blocked ? "PRINT-BLOCKED — clear the readiness checklist first" : t("quote.downloadPdf")}
+              title={blocked ? t("quote.printBlockedTooltip") : t("quote.downloadPdf")}
             >
               <Printer className="w-4 h-4" /> {sending ? "…" : t("quote.downloadPdf")}
             </button>

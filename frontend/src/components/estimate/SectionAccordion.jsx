@@ -257,7 +257,7 @@ export default function SectionAccordion({
             {provenance?.[l.name] && (
               <details className="inline-block align-middle" data-testid={`prov-chip-${section.title}-${l.name}`}>
                 <summary className="cursor-pointer list-none inline-flex items-center gap-1 px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-[var(--border)] bg-[var(--bg-app)] text-[var(--muted)]" title="Derivation provenance — click to expand">
-                  ⌁ derived
+                  ⌁ {t("est.derivedChip")}
                 </summary>
                 <div className="text-[10px] text-[var(--muted)] mt-1 max-w-xl whitespace-pre-wrap font-normal normal-case tracking-normal">
                   {translateNote(provenance[l.name], lang)}

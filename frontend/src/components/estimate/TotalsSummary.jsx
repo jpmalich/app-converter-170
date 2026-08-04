@@ -71,7 +71,7 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
           <Download className="w-4 h-4" /> {t("est.exportCsv")}
         </button>
         <button className="btn-secondary" onClick={() => setShowReadiness((v) => !v)} data-testid="readiness-btn">
-          <ListChecks className="w-4 h-4" /> Readiness
+          <ListChecks className="w-4 h-4" /> {t("est.readinessBtn")}
         </button>
       </div>
       {showReadiness && <ReadinessPanel estId={est.id} />}
