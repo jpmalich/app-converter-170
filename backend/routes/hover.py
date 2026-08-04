@@ -3043,9 +3043,26 @@ async def rederive_estimate(
         # consumed by the rebuild (renamed label, same item_id) must not
         # ride along as a duplicate.
         id_keys = {(l.get("tab"), l.get("item_id")) for l in derived_va if l.get("item_id")}
+        # TIER BINDING (stale-row sweep, 2026-08-04): Standard/Architectural
+        # variants are the SAME physical row — the color picks the tier at
+        # derive time. A MACHINE row whose name differs from an emitted row
+        # only by the tier token was consumed by the rebuild; carrying it
+        # doubles the siding count (found live: 3 Degree Dutch Lap 47+47).
+        # Human-typed rows are untouchable, tier collision or not.
+        def _tier_base(n):
+            return ((n or "").replace("Architectural color", "§tier§")
+                    .replace("Standard color", "§tier§"))
+        tier_keys = {(l.get("tab"), l.get("section"), _tier_base(l.get("name")))
+                     for l in derived_va if "color" in (l.get("name") or "")}
+        def _tier_consumed(l):
+            return ("color" in (l.get("name") or "")
+                    and (l.get("qty_src") or "") != "human"
+                    and not l.get("manual")
+                    and (l.get("tab"), l.get("section"), _tier_base(l.get("name"))) in tier_keys)
         carry = [l for l in prev_lines
                  if (l.get("tab"), l.get("section"), l.get("name")) not in keys
                  and not (l.get("item_id") and (l.get("tab"), l.get("item_id")) in id_keys)
+                 and not _tier_consumed(l)
                  and ((l.get("tab") or "vinyl") not in ("vinyl", "ascend")
                       or (l.get("qty") or 0) > 0)]
         tab_lines = derived_va + carry
