@@ -90,7 +90,9 @@ function renderMeasurementsHtml(measurements) {
   `;
 }
 
-function renderLinesHtml(lines, kind) {
+// `lang` DEFAULTS TO EN (ruled 2026-08-04 — the _lang ReferenceError
+// crash): print must NEVER crash regardless of language state.
+function renderLinesHtml(lines, kind, _lang = "en") {
   if (!lines || !lines.length) return "";
   if (kind === "iss") {
     // ISS: single flat table.
@@ -376,7 +378,7 @@ export function printTakeoff({
   </div>
 
   ${renderMeasurementsHtml(measurements)}
-  ${renderLinesHtml(lines, kind)}
+  ${renderLinesHtml(lines, kind, _lang)}
   ${renderOpeningsHtml(openings)}
 
   <div class="footer">
@@ -427,3 +429,4 @@ export function printTakeoff({
   w.document.write(html);
   w.document.close();
 }
+
