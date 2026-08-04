@@ -72,3 +72,80 @@ def test_ruling_is_registered():
     assert "cross-family fill is post-September" in src.lower() or \
         "Cross-family fill is post-September" in src, \
         "the 2026-08-03 registration comment was removed"
+
+
+# ─── LINE-SURFACE PINS (Howard ruled 2026-08-04) ─────────────────────────
+# "The single-family rule covers the LINE RESTORE, not just estimate
+# creation." The 2026-08-03 pins above watched creation while the Hover
+# door's restore sat one click from landing 87 cross-family lines on an
+# LP estimate — the whole-units lesson again. These pins live ON the
+# line surface: every door's apply filter, both directions, plus a live
+# DB invariant that fails if any cross-family restore ever lands.
+
+def _door(name):
+    return (FE / "components" / "estimate" / name).read_text()
+
+
+def test_hover_door_has_the_cut_and_single_family_tabs():
+    src = _door("HoverImportButton.jsx")
+    assert "applicableRestoreLines" in src, "hover apply lost the family filter"
+    assert 'if (k === "lp_smart") return [];' in src, \
+        "THE CUT left the hover door — lp_smart must merge no composition lines"
+    assert "SIDING_TABS" not in src, \
+        "hover door builds its own tab set again instead of the shared filter"
+
+
+def test_preview_and_apply_count_read_the_same_filter():
+    """The modal never advertises lines the apply must not land — the
+    '87 lines' over-count was the visible half of the bug."""
+    src = _door("HoverImportButton.jsx")
+    assert "Auto-generated Line Items ({applicableRestoreLines(" in src
+    assert "Apply ${applicableRestoreLines(" in src
+    assert "Apply ${result.lines?.length" not in src
+
+
+def test_blueprint_door_keeps_the_cut_and_sheds_pairing_residue():
+    src = _door("BlueprintMeasureButton.jsx")
+    assert 'srcKind === "lp_smart"' in src and "? []" in src, \
+        "blueprint door lost THE CUT"
+    for residue in ("wastedPaired", "pairedLines"):
+        assert residue not in src, f"retired pairing residue {residue} regrew"
+    assert "wastedPaired" not in _door("HoverImportButton.jsx").replace(
+        "residue (pairedLines/wastedPaired) is gone", "")
+
+
+def test_photo_door_scopes_families_at_the_merge():
+    src = (FE / "components" / "estimate" / "JobInfoPanel.jsx").read_text()
+    assert 'SIDING_TABS = new Set(["vinyl", "ascend"])' in src, \
+        "photo-door merge lost its family scoping"
+    assert "lp-package/materialize" in src, "photo-door LP cut lost its engine door"
+
+
+def test_no_estimate_carries_cross_family_lines():
+    """LIVE INVARIANT — the pin that would have been red while Howard
+    looked at the modal. Any restore that lands a wrong-family line on
+    any estimate turns this red: the siding families (vinyl/ascend/
+    lp_smart) and windows never cross kinds. The ISS gutter tab is a
+    SERVICE overlay, not a siding family — outside the 2026-08-04
+    ruling, so not scanned here."""
+    import os
+    from pymongo import MongoClient
+    from dotenv import dotenv_values
+    env = dotenv_values("/app/backend/.env")
+    db = MongoClient(env["MONGO_URL"])[env["DB_NAME"]]
+    offenders = []
+    for e in db.estimates.find({}, {"estimate_number": 1, "kind": 1, "lines": 1}):
+        kind = e.get("kind") or "siding"
+        for l in e.get("lines") or []:
+            tab = l.get("tab") or "vinyl"
+            if (l.get("qty") or 0) <= 0:
+                continue
+            bad = (
+                (kind == "lp_smart" and tab in ("vinyl", "ascend", "windows"))
+                or (kind == "windows" and tab in ("vinyl", "ascend", "lp_smart"))
+                or (kind == "siding" and tab == "lp_smart")
+            )
+            if bad:
+                offenders.append((e.get("estimate_number"), kind, tab, l.get("name")))
+    assert not offenders, \
+        f"cross-family lines landed on {len(offenders)} row(s): {offenders[:8]}"

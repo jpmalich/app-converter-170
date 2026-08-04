@@ -1,0 +1,1840 @@
+{
+ "at": "2026-08-04T14:50:33.673465+00:00",
+ "receipt": [
+  {
+   "estimate": "EST-510771",
+   "customer": "doug jones",
+   "removed_counts": {
+    "vinyl": 26,
+    "ascend": 25
+   },
+   "removed_rows": [
+    [
+     "vinyl",
+     "Charter Oak Standard color Dutch Lap 4.5\" .046",
+     16.0
+    ],
+    [
+     "ascend",
+     "Ascend Composite Lap Siding 7\"",
+     16.0
+    ],
+    [
+     "ascend",
+     "Ascend 5.5\" Outside Corner  - MATTE",
+     6.0
+    ],
+    [
+     "ascend",
+     "Ascend - J - Channel",
+     20.0
+    ],
+    [
+     "ascend",
+     "ASCEND Finish Trim",
+     19.0
+    ],
+    [
+     "ascend",
+     "Ascend - Starter",
+     13.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     2.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     2.0
+    ],
+    [
+     "vinyl",
+     "Outside corners Standard color",
+     6.0
+    ],
+    [
+     "vinyl",
+     "Inside Corners (Siding) Standard color",
+     4.0
+    ],
+    [
+     "vinyl",
+     "3/4\" J-Channel Standard color",
+     20.0
+    ],
+    [
+     "vinyl",
+     "Finish Trim Standard color",
+     19.0
+    ],
+    [
+     "vinyl",
+     "Starter",
+     13.0
+    ],
+    [
+     "vinyl",
+     "House Wrap",
+     2.0
+    ],
+    [
+     "ascend",
+     "RainDrop",
+     2.0
+    ],
+    [
+     "vinyl",
+     "2\" Nails 30 lbs",
+     1.0
+    ],
+    [
+     "ascend",
+     "2\" Nails 30 lbs",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Caulking (per color)",
+     2.0
+    ],
+    [
+     "ascend",
+     "Caulking (per color)",
+     2.0
+    ],
+    [
+     "vinyl",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "ascend",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "vinyl",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "ascend",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Soffit & fascia Charter Oak Standard Color",
+     18.0
+    ],
+    [
+     "ascend",
+     "Soffit & fascia Charter Oak Standard Color",
+     18.0
+    ],
+    [
+     "vinyl",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     20.0
+    ],
+    [
+     "ascend",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     20.0
+    ],
+    [
+     "vinyl",
+     "Fascia/rake or frieze",
+     171.0
+    ],
+    [
+     "ascend",
+     "Fascia/rake or frieze",
+     171.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     2.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     2.0
+    ],
+    [
+     "vinyl",
+     "Gutter 6\"",
+     100.0
+    ],
+    [
+     "ascend",
+     "Gutter 6\"",
+     100.0
+    ],
+    [
+     "vinyl",
+     "Downspout 6\"",
+     5
+    ],
+    [
+     "ascend",
+     "Downspout 6\"",
+     5
+    ],
+    [
+     "vinyl",
+     "elbow",
+     8.0
+    ],
+    [
+     "ascend",
+     "elbow",
+     8.0
+    ],
+    [
+     "vinyl",
+     "Mitre",
+     5.0
+    ],
+    [
+     "ascend",
+     "Mitre",
+     5.0
+    ],
+    [
+     "vinyl",
+     "End Cap",
+     8.0
+    ],
+    [
+     "ascend",
+     "End Cap",
+     8.0
+    ],
+    [
+     "vinyl",
+     "Gutter Sealant",
+     5.0
+    ],
+    [
+     "ascend",
+     "Gutter Sealant",
+     5.0
+    ],
+    [
+     "vinyl",
+     "Hangars with Screws",
+     54.0
+    ],
+    [
+     "ascend",
+     "Hangars with Screws",
+     54.0
+    ],
+    [
+     "vinyl",
+     "Pipe Clips",
+     8.0
+    ],
+    [
+     "ascend",
+     "Pipe Clips",
+     8.0
+    ],
+    [
+     "vinyl",
+     "Cap window",
+     9.0
+    ],
+    [
+     "ascend",
+     "Cap window",
+     9.0
+    ],
+    [
+     "vinyl",
+     "Cap entry door",
+     2.0
+    ],
+    [
+     "ascend",
+     "Cap entry door",
+     2.0
+    ]
+   ],
+   "flagged_human_rows_kept": [],
+   "lp_lines": 21,
+   "lp_total": 9560.87,
+   "lp_hash_before": "15524ec592a25c22",
+   "lp_hash_after": "15524ec592a25c22"
+  },
+  {
+   "estimate": "EST-523061",
+   "customer": "Jon Casile",
+   "removed_counts": {
+    "vinyl": 29,
+    "ascend": 28,
+    "windows": 6
+   },
+   "removed_rows": [
+    [
+     "vinyl",
+     "vertical board and batten Standard color 7\"",
+     27.0
+    ],
+    [
+     "ascend",
+     "Ascend Composite B&B 12\"",
+     27.0
+    ],
+    [
+     "vinyl",
+     "Outside corners Standard color",
+     12.0
+    ],
+    [
+     "ascend",
+     "Ascend 5.5\" Outside Corner  - MATTE",
+     12.0
+    ],
+    [
+     "vinyl",
+     "Inside Corners (Siding) Standard color",
+     3.0
+    ],
+    [
+     "vinyl",
+     "Finish Trim Standard color",
+     23.0
+    ],
+    [
+     "ascend",
+     "ASCEND Finish Trim",
+     23.0
+    ],
+    [
+     "vinyl",
+     "3/4\" J-Channel Standard color",
+     53.0
+    ],
+    [
+     "ascend",
+     "Ascend - J - Channel",
+     53.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "vinyl",
+     "House Wrap",
+     3.0
+    ],
+    [
+     "ascend",
+     "RainDrop",
+     3.0
+    ],
+    [
+     "vinyl",
+     "2\" Nails 30 lbs",
+     2.0
+    ],
+    [
+     "ascend",
+     "2\" Nails 30 lbs",
+     2.0
+    ],
+    [
+     "vinyl",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "ascend",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Soffit & fascia Charter Oak Standard Color",
+     56.0
+    ],
+    [
+     "ascend",
+     "Soffit & fascia Charter Oak Standard Color",
+     56.0
+    ],
+    [
+     "vinyl",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     26.0
+    ],
+    [
+     "ascend",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     26.0
+    ],
+    [
+     "vinyl",
+     "Fascia/rake or frieze",
+     321.0
+    ],
+    [
+     "ascend",
+     "Fascia/rake or frieze",
+     321.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     4.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     4.0
+    ],
+    [
+     "vinyl",
+     "Caulking (per color)",
+     39.0
+    ],
+    [
+     "ascend",
+     "Caulking (per color)",
+     39.0
+    ],
+    [
+     "windows",
+     "Second/Third/Clear Story Fee",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Gutter 6\"",
+     184.0
+    ],
+    [
+     "ascend",
+     "Gutter 6\"",
+     184.0
+    ],
+    [
+     "vinyl",
+     "Downspout 6\"",
+     10.0
+    ],
+    [
+     "ascend",
+     "Downspout 6\"",
+     10.0
+    ],
+    [
+     "vinyl",
+     "elbow",
+     16.0
+    ],
+    [
+     "ascend",
+     "elbow",
+     16.0
+    ],
+    [
+     "vinyl",
+     "End Cap",
+     14.0
+    ],
+    [
+     "ascend",
+     "End Cap",
+     14.0
+    ],
+    [
+     "vinyl",
+     "Hangars with Screws",
+     100.0
+    ],
+    [
+     "ascend",
+     "Hangars with Screws",
+     100.0
+    ],
+    [
+     "vinyl",
+     "Mitre",
+     20.0
+    ],
+    [
+     "ascend",
+     "Mitre",
+     20.0
+    ],
+    [
+     "vinyl",
+     "Pipe Clips",
+     16.0
+    ],
+    [
+     "ascend",
+     "Pipe Clips",
+     16.0
+    ],
+    [
+     "vinyl",
+     "Gutter Sealant",
+     11.0
+    ],
+    [
+     "ascend",
+     "Gutter Sealant",
+     11.0
+    ],
+    [
+     "vinyl",
+     "Cap window",
+     32.0
+    ],
+    [
+     "ascend",
+     "Cap window",
+     32.0
+    ],
+    [
+     "vinyl",
+     "Cap entry door",
+     3.0
+    ],
+    [
+     "ascend",
+     "Cap entry door",
+     3.0
+    ],
+    [
+     "vinyl",
+     "Cap patio door",
+     3.0
+    ],
+    [
+     "ascend",
+     "Cap patio door",
+     3.0
+    ],
+    [
+     "vinyl",
+     "Cap single garage door",
+     1.0
+    ],
+    [
+     "ascend",
+     "Cap single garage door",
+     1.0
+    ],
+    [
+     "windows",
+     "Window DH/Slider - Pocket Install",
+     32.0
+    ],
+    [
+     "windows",
+     "Vinyl Sliding Glass Door (5' & 6' width)",
+     3.0
+    ],
+    [
+     "windows",
+     "Cap window (Windows)",
+     32.0
+    ],
+    [
+     "windows",
+     "Job Measure Standard Fee 4 days+",
+     1.0
+    ],
+    [
+     "windows",
+     "Disposal Fee (Windows)",
+     1.0
+    ],
+    [
+     "vinyl",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "ascend",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Tear-Off",
+     0
+    ],
+    [
+     "ascend",
+     "Tear-Off",
+     0
+    ],
+    [
+     "vinyl",
+     "Dumpster",
+     0
+    ],
+    [
+     "ascend",
+     "Dumpster",
+     0
+    ]
+   ],
+   "flagged_human_rows_kept": [],
+   "lp_lines": 27,
+   "lp_total": 23642.04,
+   "lp_hash_before": "d9ea4d4e842c30b9",
+   "lp_hash_after": "d9ea4d4e842c30b9"
+  },
+  {
+   "estimate": "EST-562488",
+   "customer": "3 degree rd",
+   "removed_counts": {
+    "vinyl": 30,
+    "ascend": 29,
+    "windows": 5
+   },
+   "removed_rows": [
+    [
+     "vinyl",
+     "vertical board and batten Standard color 7\"",
+     50.0
+    ],
+    [
+     "ascend",
+     "Ascend Composite B&B 12\"",
+     50.0
+    ],
+    [
+     "vinyl",
+     "Outside corners Standard color",
+     15.0
+    ],
+    [
+     "ascend",
+     "Ascend 5.5\" Outside Corner  - MATTE",
+     15.0
+    ],
+    [
+     "vinyl",
+     "Inside Corners (Siding) Standard color",
+     14.0
+    ],
+    [
+     "vinyl",
+     "Finish Trim Standard color",
+     33.0
+    ],
+    [
+     "ascend",
+     "ASCEND Finish Trim",
+     33.0
+    ],
+    [
+     "vinyl",
+     "3/4\" J-Channel Standard color",
+     64.0
+    ],
+    [
+     "ascend",
+     "Ascend - J - Channel",
+     64.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "vinyl",
+     "House Wrap",
+     6.0
+    ],
+    [
+     "ascend",
+     "RainDrop",
+     5.0
+    ],
+    [
+     "vinyl",
+     "2\" Nails 30 lbs",
+     4.0
+    ],
+    [
+     "ascend",
+     "2\" Nails 30 lbs",
+     4.0
+    ],
+    [
+     "vinyl",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "ascend",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "ascend",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "vinyl",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "ascend",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "vinyl",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "ascend",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "vinyl",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "ascend",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "windows",
+     "Second/Third/Clear Story Fee",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "ascend",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "vinyl",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "ascend",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "vinyl",
+     "elbow",
+     26.0
+    ],
+    [
+     "ascend",
+     "elbow",
+     26.0
+    ],
+    [
+     "vinyl",
+     "End Cap",
+     22.0
+    ],
+    [
+     "ascend",
+     "End Cap",
+     22.0
+    ],
+    [
+     "vinyl",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "ascend",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "vinyl",
+     "Mitre",
+     38.0
+    ],
+    [
+     "ascend",
+     "Mitre",
+     38.0
+    ],
+    [
+     "vinyl",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "ascend",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "vinyl",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "ascend",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "vinyl",
+     "Cap window",
+     30.0
+    ],
+    [
+     "ascend",
+     "Cap window",
+     30.0
+    ],
+    [
+     "vinyl",
+     "Cap entry door",
+     3.0
+    ],
+    [
+     "ascend",
+     "Cap entry door",
+     3.0
+    ],
+    [
+     "vinyl",
+     "Cap single garage door",
+     2.0
+    ],
+    [
+     "ascend",
+     "Cap single garage door",
+     2.0
+    ],
+    [
+     "windows",
+     "Window DH/Slider - Pocket Install",
+     30.0
+    ],
+    [
+     "windows",
+     "Cap window (Windows)",
+     30.0
+    ],
+    [
+     "windows",
+     "Job Measure Standard Fee 4 days+",
+     1.0
+    ],
+    [
+     "windows",
+     "Disposal Fee (Windows)",
+     1.0
+    ],
+    [
+     "vinyl",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "ascend",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Tear-Off",
+     0
+    ],
+    [
+     "ascend",
+     "Tear-Off",
+     0
+    ],
+    [
+     "vinyl",
+     "Dumpster",
+     0
+    ],
+    [
+     "ascend",
+     "Dumpster",
+     0
+    ],
+    [
+     "vinyl",
+     "Charter Oak Standard color Dutch Lap 4.5\" .046",
+     0
+    ],
+    [
+     "ascend",
+     "Ascend Composite Lap Siding 7\"",
+     0
+    ],
+    [
+     "ascend",
+     "Ascend - Starter",
+     0
+    ],
+    [
+     "vinyl",
+     "Starter",
+     0
+    ]
+   ],
+   "flagged_human_rows_kept": [],
+   "lp_lines": 26,
+   "lp_total": 49958.89,
+   "lp_hash_before": "e5535f3c05bdf5e9",
+   "lp_hash_after": "e5535f3c05bdf5e9"
+  },
+  {
+   "estimate": "EST-109465",
+   "customer": "3 degree rd 7-28-26- 8am",
+   "removed_counts": {
+    "vinyl": 25,
+    "ascend": 24,
+    "windows": 5
+   },
+   "removed_rows": [
+    [
+     "vinyl",
+     "Outside corners Standard color",
+     15.0
+    ],
+    [
+     "ascend",
+     "Ascend 5.5\" Outside Corner  - MATTE",
+     15.0
+    ],
+    [
+     "vinyl",
+     "Inside Corners (Siding) Standard color",
+     14.0
+    ],
+    [
+     "vinyl",
+     "Finish Trim Standard color",
+     33.0
+    ],
+    [
+     "ascend",
+     "ASCEND Finish Trim",
+     33.0
+    ],
+    [
+     "vinyl",
+     "3/4\" J-Channel Standard color",
+     64.0
+    ],
+    [
+     "ascend",
+     "Ascend - J - Channel",
+     64.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "vinyl",
+     "2\" Nails 30 lbs",
+     1.0
+    ],
+    [
+     "ascend",
+     "2\" Nails 30 lbs",
+     1.0
+    ],
+    [
+     "vinyl",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "ascend",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "ascend",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "vinyl",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "ascend",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "vinyl",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "ascend",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "vinyl",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "ascend",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "windows",
+     "Second/Third/Clear Story Fee",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "ascend",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "vinyl",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "ascend",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "vinyl",
+     "elbow",
+     26.0
+    ],
+    [
+     "ascend",
+     "elbow",
+     26.0
+    ],
+    [
+     "vinyl",
+     "End Cap",
+     22.0
+    ],
+    [
+     "ascend",
+     "End Cap",
+     22.0
+    ],
+    [
+     "vinyl",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "ascend",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "vinyl",
+     "Mitre",
+     38.0
+    ],
+    [
+     "ascend",
+     "Mitre",
+     38.0
+    ],
+    [
+     "vinyl",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "ascend",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "vinyl",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "ascend",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "vinyl",
+     "Cap window",
+     30.0
+    ],
+    [
+     "ascend",
+     "Cap window",
+     30.0
+    ],
+    [
+     "vinyl",
+     "Cap entry door",
+     3.0
+    ],
+    [
+     "ascend",
+     "Cap entry door",
+     3.0
+    ],
+    [
+     "vinyl",
+     "Cap single garage door",
+     2.0
+    ],
+    [
+     "ascend",
+     "Cap single garage door",
+     2.0
+    ],
+    [
+     "windows",
+     "Window DH/Slider - Pocket Install",
+     30.0
+    ],
+    [
+     "windows",
+     "Cap window (Windows)",
+     30.0
+    ],
+    [
+     "windows",
+     "Job Measure Standard Fee 4 days+",
+     1.0
+    ],
+    [
+     "windows",
+     "Disposal Fee (Windows)",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Tear-Off",
+     0
+    ],
+    [
+     "ascend",
+     "Tear-Off",
+     0
+    ],
+    [
+     "vinyl",
+     "Dumpster",
+     0
+    ],
+    [
+     "ascend",
+     "Dumpster",
+     0
+    ]
+   ],
+   "flagged_human_rows_kept": [],
+   "lp_lines": 22,
+   "lp_total": 26958.97,
+   "lp_hash_before": "e10b288d03025e22",
+   "lp_hash_after": "e10b288d03025e22"
+  },
+  {
+   "estimate": "EST-630295",
+   "customer": "3 degree rd 7-28-26 1 pm",
+   "removed_counts": {
+    "vinyl": 28,
+    "ascend": 27,
+    "windows": 5
+   },
+   "removed_rows": [
+    [
+     "vinyl",
+     "vertical board and batten Standard color 7\"",
+     47.0
+    ],
+    [
+     "ascend",
+     "Ascend Composite B&B 12\"",
+     47.0
+    ],
+    [
+     "vinyl",
+     "Outside corners Standard color",
+     15.0
+    ],
+    [
+     "ascend",
+     "Ascend 5.5\" Outside Corner  - MATTE",
+     15.0
+    ],
+    [
+     "vinyl",
+     "Inside Corners (Siding) Standard color",
+     14.0
+    ],
+    [
+     "vinyl",
+     "Finish Trim Standard color",
+     33.0
+    ],
+    [
+     "ascend",
+     "ASCEND Finish Trim",
+     33.0
+    ],
+    [
+     "vinyl",
+     "3/4\" J-Channel Standard color",
+     63.0
+    ],
+    [
+     "ascend",
+     "Ascend - J - Channel",
+     63.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "vinyl",
+     "House Wrap",
+     6.0
+    ],
+    [
+     "ascend",
+     "RainDrop",
+     5.0
+    ],
+    [
+     "vinyl",
+     "2\" Nails 30 lbs",
+     3.0
+    ],
+    [
+     "ascend",
+     "2\" Nails 30 lbs",
+     3.0
+    ],
+    [
+     "vinyl",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "ascend",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "ascend",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "vinyl",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "ascend",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "vinyl",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "ascend",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     7.0
+    ],
+    [
+     "vinyl",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "ascend",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "windows",
+     "Second/Third/Clear Story Fee",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "ascend",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "vinyl",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "ascend",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "vinyl",
+     "elbow",
+     26.0
+    ],
+    [
+     "ascend",
+     "elbow",
+     26.0
+    ],
+    [
+     "vinyl",
+     "End Cap",
+     22.0
+    ],
+    [
+     "ascend",
+     "End Cap",
+     22.0
+    ],
+    [
+     "vinyl",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "ascend",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "vinyl",
+     "Mitre",
+     38.0
+    ],
+    [
+     "ascend",
+     "Mitre",
+     38.0
+    ],
+    [
+     "vinyl",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "ascend",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "vinyl",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "ascend",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "vinyl",
+     "Cap window",
+     30.0
+    ],
+    [
+     "ascend",
+     "Cap window",
+     30.0
+    ],
+    [
+     "vinyl",
+     "Cap entry door",
+     4.0
+    ],
+    [
+     "ascend",
+     "Cap entry door",
+     4.0
+    ],
+    [
+     "vinyl",
+     "Cap single garage door",
+     1.0
+    ],
+    [
+     "ascend",
+     "Cap single garage door",
+     1.0
+    ],
+    [
+     "windows",
+     "Window DH/Slider - Pocket Install",
+     30.0
+    ],
+    [
+     "windows",
+     "Cap window (Windows)",
+     30.0
+    ],
+    [
+     "windows",
+     "Job Measure Standard Fee 4 days+",
+     1.0
+    ],
+    [
+     "windows",
+     "Disposal Fee (Windows)",
+     1.0
+    ],
+    [
+     "vinyl",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "ascend",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Tear-Off",
+     0
+    ],
+    [
+     "ascend",
+     "Tear-Off",
+     0
+    ],
+    [
+     "vinyl",
+     "Dumpster",
+     0
+    ],
+    [
+     "ascend",
+     "Dumpster",
+     0
+    ]
+   ],
+   "flagged_human_rows_kept": [],
+   "lp_lines": 25,
+   "lp_total": 48679.36,
+   "lp_hash_before": "beaed9b1ffba7d81",
+   "lp_hash_after": "beaed9b1ffba7d81"
+  },
+  {
+   "estimate": "EST-803966",
+   "customer": "3 degree 8-3-26 5 pm",
+   "removed_counts": {
+    "vinyl": 26,
+    "ascend": 25,
+    "windows": 5
+   },
+   "removed_rows": [
+    [
+     "vinyl",
+     "vertical board and batten Standard color 7\"",
+     47.0
+    ],
+    [
+     "ascend",
+     "Ascend Composite B&B 12\"",
+     47.0
+    ],
+    [
+     "ascend",
+     "Ascend 5.5\" Outside Corner  - MATTE",
+     15.0
+    ],
+    [
+     "ascend",
+     "Ascend - J - Channel",
+     63.0
+    ],
+    [
+     "ascend",
+     "ASCEND Finish Trim",
+     33.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     6.0
+    ],
+    [
+     "vinyl",
+     "Outside corners Standard color",
+     15.0
+    ],
+    [
+     "vinyl",
+     "Inside Corners (Siding) Standard color",
+     14.0
+    ],
+    [
+     "vinyl",
+     "3/4\" J-Channel Standard color",
+     63.0
+    ],
+    [
+     "vinyl",
+     "Finish Trim Standard color",
+     33.0
+    ],
+    [
+     "vinyl",
+     "House Wrap",
+     6.0
+    ],
+    [
+     "ascend",
+     "RainDrop",
+     5.0
+    ],
+    [
+     "vinyl",
+     "2\" Nails 30 lbs",
+     3.0
+    ],
+    [
+     "ascend",
+     "2\" Nails 30 lbs",
+     3.0
+    ],
+    [
+     "vinyl",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "ascend",
+     "Caulking (per color)",
+     35.0
+    ],
+    [
+     "vinyl",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "ascend",
+     "1 1/4\" Trim Nails",
+     1.0
+    ],
+    [
+     "vinyl",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "ascend",
+     "clean up/ haul away job debris",
+     1.0
+    ],
+    [
+     "vinyl",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "ascend",
+     "Soffit & fascia Charter Oak Standard Color",
+     289.0
+    ],
+    [
+     "vinyl",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "ascend",
+     "3/4\" Soffit J-Channel (Charter Oak) Standard color",
+     51.0
+    ],
+    [
+     "vinyl",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "ascend",
+     "Fascia/rake or frieze",
+     628.0
+    ],
+    [
+     "vinyl",
+     ".019 Coil",
+     13.0
+    ],
+    [
+     "ascend",
+     ".019 Coil",
+     13.0
+    ],
+    [
+     "vinyl",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "ascend",
+     "Gutter 6\"",
+     308.0
+    ],
+    [
+     "vinyl",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "ascend",
+     "Downspout 6\"",
+     16.0
+    ],
+    [
+     "vinyl",
+     "elbow",
+     26.0
+    ],
+    [
+     "ascend",
+     "elbow",
+     26.0
+    ],
+    [
+     "vinyl",
+     "Mitre",
+     38.0
+    ],
+    [
+     "ascend",
+     "Mitre",
+     38.0
+    ],
+    [
+     "vinyl",
+     "End Cap",
+     22.0
+    ],
+    [
+     "ascend",
+     "End Cap",
+     22.0
+    ],
+    [
+     "vinyl",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "ascend",
+     "Gutter Sealant",
+     19.0
+    ],
+    [
+     "vinyl",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "ascend",
+     "Hangars with Screws",
+     166.0
+    ],
+    [
+     "vinyl",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "ascend",
+     "Pipe Clips",
+     26.0
+    ],
+    [
+     "vinyl",
+     "Cap window",
+     30.0
+    ],
+    [
+     "ascend",
+     "Cap window",
+     30.0
+    ],
+    [
+     "vinyl",
+     "Cap entry door",
+     4.0
+    ],
+    [
+     "ascend",
+     "Cap entry door",
+     4.0
+    ],
+    [
+     "vinyl",
+     "Cap single garage door",
+     1.0
+    ],
+    [
+     "ascend",
+     "Cap single garage door",
+     1.0
+    ],
+    [
+     "windows",
+     "Window DH/Slider - Pocket Install",
+     30.0
+    ],
+    [
+     "windows",
+     "Cap window (Windows)",
+     30.0
+    ],
+    [
+     "windows",
+     "Job Measure Standard Fee 4 days+",
+     1.0
+    ],
+    [
+     "windows",
+     "Disposal Fee (Windows)",
+     1.0
+    ],
+    [
+     "windows",
+     "Second/Third/Clear Story Fee",
+     1.0
+    ]
+   ],
+   "flagged_human_rows_kept": [],
+   "lp_lines": 23,
+   "lp_total": 49950.16,
+   "lp_hash_before": "93b25a910a298c8e",
+   "lp_hash_after": "93b25a910a298c8e"
+  }
+ ]
+}

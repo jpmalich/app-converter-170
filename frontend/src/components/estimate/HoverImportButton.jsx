@@ -43,6 +43,18 @@ const KEY_LABELS = {
   address: "Address",
 };
 
+// SINGLE FAMILY PER DOOR — LINE SURFACE (Howard ruled 2026-08-04): the tabs
+// a restore may land, by estimate kind. lp_smart merges NOTHING through the
+// frontend (THE CUT — the LP engine rebuilds server-side); the preview and
+// the Apply count read the SAME filter, so the modal never advertises
+// cross-family lines it must not land.
+export const applicableRestoreLines = (kind, lines) => {
+  const k = kind || "siding";
+  if (k === "lp_smart") return [];
+  const allowed = k === "windows" ? new Set(["windows"]) : new Set(["vinyl", "ascend"]);
+  return (lines || []).filter((l) => allowed.has(l.tab || "vinyl"));
+};
+
 const TAB_LABELS = {
   vinyl: "Vinyl",
   ascend: "Ascend",
@@ -329,15 +341,15 @@ export default function HoverImportButton({ est, update, save }) {
     // via the back-compat path in EstimateEditor.
     const srcKind = est.kind || "siding";
     const allLines = result?.lines || [];
-    const SIDING_TABS = new Set(srcKind === "siding"
-      ? ["vinyl", "ascend"]               // LP excluded on siding-kind imports
-      : ["vinyl", "ascend", "lp_smart"]); // lp_smart-kind needs LP rows
-    const WINDOWS_TABS = new Set(["windows"]);
-    const sidingLines = allLines.filter((l) => SIDING_TABS.has(l.tab || "vinyl"));
-    const windowsLines = allLines.filter((l) => WINDOWS_TABS.has(l.tab || "vinyl"));
-
-    const sourceLines = srcKind === "windows" ? windowsLines : sidingLines;
-    const pairedLines = srcKind === "windows" ? sidingLines : windowsLines;
+    // THE CUT — extended to the HOVER door (Howard ruled 2026-08-04: "an LP
+    // door restores LP lines ONLY... the single-family rule covers the LINE
+    // RESTORE, not just estimate creation"). lp_smart-kind estimates compose
+    // through the LP engine (hover-lp-run below rebuilds the LP list
+    // server-side) — this importer merges NO composition lines. siding-kind
+    // keeps vinyl+ascend (dual-brand by design); windows-kind keeps windows.
+    // Cross-family lines never merge, either direction; the retired pairing
+    // residue (pairedLines/wastedPaired) is gone.
+    const sourceLines = applicableRestoreLines(srcKind, allLines);
     // Vero openings always belong on a windows-kind estimate; Mezzo openings
     // mirror the same set so the contractor can quote both brands side-by-side.
     const sourceOpenings = srcKind === "windows" ? openings : [];
@@ -377,7 +389,6 @@ export default function HoverImportButton({ est, update, save }) {
     const wastePct = wasteFieldPrefill;
     const soffitType = est?.lp_soffit_type || "mix";
     const wastedSource = steerLpSoffit(bakeWasteIntoLines(sourceLines, wastePct), soffitType);
-    const wastedPaired = steerLpSoffit(bakeWasteIntoLines(pairedLines, 0), soffitType);
     const existing = est.lines || [];
     const keyOf = (l) => `${l.tab || "vinyl"}::${l.section}::${l.name}`;
     const byKey = new Map(existing.map((l, i) => [keyOf(l), i]));
@@ -998,11 +1009,16 @@ export default function HoverImportButton({ est, update, save }) {
                   glance what each option will look like. */}
               <div className="p-5">
                 <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-3">
-                  Auto-generated Line Items ({result.lines?.length || 0} across {Object.keys(TAB_LABELS).filter(t => (result.lines || []).some(l => (l.tab || "vinyl") === t)).length} tabs)
+                  Auto-generated Line Items ({applicableRestoreLines(est?.kind, result.lines).length} across {Object.keys(TAB_LABELS).filter(t => applicableRestoreLines(est?.kind, result.lines).some(l => (l.tab || "vinyl") === t)).length} tabs)
                 </div>
-                {result.lines?.length ? (
+                {est?.kind === "lp_smart" && (
+                  <div className="text-[11px] text-[var(--muted)] mb-3" data-testid="hover-lp-cut-note">
+                    {t("hov.cutNote")}
+                  </div>
+                )}
+                {applicableRestoreLines(est?.kind, result.lines).length ? (
                   ["vinyl", "ascend", "lp_smart", "windows"].map((tab) => {
-                    const tabLines = (result.lines || []).filter(
+                    const tabLines = applicableRestoreLines(est?.kind, result.lines).filter(
                       (l) => (l.tab || "vinyl") === tab
                     );
                     if (!tabLines.length) return null;
@@ -1112,7 +1128,7 @@ export default function HoverImportButton({ est, update, save }) {
                   type="button"
                   className="px-4 py-2 bg-[var(--brand)] text-[var(--on-brand)] border border-[var(--brand)] hover:bg-[var(--brand-hover)] text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
                   onClick={apply}
-                  disabled={(!result.lines?.length && !openings.length) || applying || (est?.kind === "lp_smart" && !profile)}
+                  disabled={(!applicableRestoreLines(est?.kind, result.lines).length && !openings.length && est?.kind !== "lp_smart") || applying || (est?.kind === "lp_smart" && !profile)}
                   title={est?.kind === "lp_smart" && !profile ? "Pick the siding profile first — no silent default" : undefined}
                   data-testid="hover-apply-btn"
                 >
@@ -1123,7 +1139,9 @@ export default function HoverImportButton({ est, update, save }) {
                   )}
                   {applying
                     ? "Saving…"
-                    : `Apply ${result.lines?.length || 0} Lines${openings.length ? ` + ${openings.length} Windows` : ""} & Save`}
+                    : est?.kind === "lp_smart"
+                    ? t("hov.applyLp")
+                    : `Apply ${applicableRestoreLines(est?.kind, result.lines).length} Lines${openings.length ? ` + ${openings.length} Windows` : ""} & Save`}
                 </button>
               </div>
             </div>

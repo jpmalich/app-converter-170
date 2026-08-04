@@ -356,7 +356,6 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
       // via /lp-package/preview; est.lines keeps service lines only.
       ? []
       : (srcKind === "windows" ? windowsLines : sidingLines);
-    const pairedLines  = srcKind === "windows" ? sidingLines  : windowsLines;
     const allVero  = result.vero_openings  || [];
     const allMezzo = result.mezzo_openings || [];
     const sourceVero   = srcKind === "windows" ? allVero  : [];
@@ -369,7 +368,6 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
     // items before merging so the line shows the order qty directly.
     const wastePct = Number(est?.waste_pct) || 0;
     const wastedSource = bakeWasteIntoLines(sourceLines, wastePct);
-    const wastedPaired = bakeWasteIntoLines(pairedLines, wastePct);
     const existing = est.lines || [];
     const keyOf = (l) => `${l.tab || "vinyl"}::${l.section}::${l.name}`;
     const byKey = new Map(existing.map((l, i) => [keyOf(l), i]));
