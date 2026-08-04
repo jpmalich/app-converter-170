@@ -63,13 +63,31 @@ def test_demo_reset_specified_state_and_isolation(admin_session, mongo_db):
         f"{API}/public/accuracy-report/{d['share_links']['accuracy_report'].split('/r/')[1]}",
         timeout=30).status_code == 200
 
-    # (2) SPECIFIED state: ambers unratified, substitution available,
-    # confirm-openings populated
-    assert len(d["ambers_unratified"]) >= 1
-    assert all(a["status"] == "unverified" for a in d["ambers_unratified"])
+    # (2) SPECIFIED state (amended 2026-08-04, Howard's rulings): the
+    # chimney ISC amber ships RATIFIED — presence confirmed twice over
+    # (both witness photos + his corner ledger's 2 ISC at chase); labor
+    # rows carry the demo contractor's rates; margin staged Contractor 30%
+    assert d["ambers_unratified"] == []
+    assert len(d["ambers_ratified"]) >= 1
+    assert all(a["status"] == "verified" and "Howard corner ledger" in a["note"]
+               for a in d["ambers_ratified"])
+    assert d["margin_pct"] == 30.0
     assert len(d["substitutable_lines"]) >= 1
     assert d["openings_review"]["items"] >= 1
     assert d["openings_review"]["unconfirmed"] == d["openings_review"]["items"]
+
+    # labor rows priced BY the demo contractor's rates — the quote gate
+    # clears for the RIGHT reason (never silenced), ruled 2026-08-04
+    demo_doc = mongo_db.estimates.find_one({"demo_key": "letrick_demo"})
+    rows = {str(l.get("name") or "").lower(): l for l in demo_doc["lines"]}
+    for nm, rate in d["demo_labor_rates"].items():
+        row = rows.get(nm)
+        assert row is not None, nm
+        assert row["lab"] == rate and row.get("lab_src") == "human", nm
+
+    # THE demo story: quote gate OPEN — chips green, modal unblocked
+    g = s.get(f"{API}/estimates/{d['estimate_id']}/gates", timeout=60).json()
+    assert g["quote"]["blocked"] is False, g["quote"]["blocking"]
 
     # (4) built to run with LP-native mode ON: the demo is pure lp_smart;
     # the GLOBAL mode switch is never mutated by reset (isolation) —
@@ -86,7 +104,8 @@ def test_demo_reset_specified_state_and_isolation(admin_session, mongo_db):
     # (5) idempotent: second click → same staged content, ONE demo estimate
     d2 = s.post(f"{API}/demo/reset", timeout=120).json()
     for k in ("estimate_number", "run_id", "lp_native_mode", "pricing_tier",
-              "colors", "ambers_unratified", "openings_review",
+              "colors", "ambers_unratified", "ambers_ratified", "margin_pct",
+              "demo_labor_rates", "openings_review",
               "substitutable_lines", "package_lines", "stored_lines_seeded"):
         assert d2[k] == d[k], k
     assert mongo_db.estimates.count_documents({"demo_key": "letrick_demo"}) == 1

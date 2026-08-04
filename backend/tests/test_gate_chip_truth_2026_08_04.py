@@ -16,7 +16,16 @@ BASE_URL = (os.environ.get("REACT_APP_BACKEND_URL")
             or _FE.get("REACT_APP_BACKEND_URL", "")).rstrip("/")
 API = f"{BASE_URL}/api"
 
-DEMO = "3445d092-47eb-476f-90ea-b0bf5ffea042"  # DEMO-LETRICK
+DEMO_KEY = "letrick_demo"  # id changes on every /demo/reset — resolve live
+
+
+@pytest.fixture(scope="module")
+def demo_id():
+    from pymongo import MongoClient
+    dbc = MongoClient(_ENV["MONGO_URL"])[_ENV["DB_NAME"]]
+    e = dbc.estimates.find_one({"demo_key": DEMO_KEY}, {"id": 1})
+    assert e, "demo fixture missing — run POST /api/demo/reset"
+    return e["id"]
 
 
 @pytest.fixture(scope="module")
@@ -36,12 +45,11 @@ def _chip_blockers(s, eid):
 
 def _modal_blockers(s, eid):
     r = s.get(f"{API}/estimates/{eid}/readiness").json()
-    return sorted(i["code"] for i in r["items"]
-                  if i.get("kind") != "labor_pending")
+    return sorted(i["code"] for i in r["items"] if i.get("blocking"))
 
 
-def test_chips_and_modal_agree_on_the_demo_fixture(s):
-    chips, modal = _chip_blockers(s, DEMO), _modal_blockers(s, DEMO)
+def test_chips_and_modal_agree_on_the_demo_fixture(s, demo_id):
+    chips, modal = _chip_blockers(s, demo_id), _modal_blockers(s, demo_id)
     assert chips == modal, \
         f"two surfaces disagree again — chips {chips} vs modal {modal}"
 

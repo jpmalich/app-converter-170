@@ -26,6 +26,20 @@ DEMO_COLORS = {
 }
 DEMO_TIER = "Contractor"
 
+# Howard ruled 2026-08-04: labor is the CONTRACTOR'S — the supplier never
+# defaults it. The DEMO fixture pre-fills the demo contractor's rates so
+# the quote gate clears BECAUSE the labor is priced, never by silencing.
+DEMO_LABOR_RATES = {
+    "clean up/ haul away job debris": 350.0,
+    "cap window": 65.0,
+    "cap entry door": 85.0,
+}
+# Chimney ISC amber — PRESENCE ratification (Howard ruled 2026-08-04):
+# his sealed corner ledger confirmed 2 ISC at the chase; both witness
+# photos detect it. A field-verify asking for a DIMENSION still gets a
+# real number or stays open — this one asks for presence.
+DEMO_FV_NOTE = "ratified per Howard corner ledger — 2 ISC at chase confirmed"
+
 # Letrick taped ground truth — FROZEN into code (Iter 112) after the
 # original EST-191890 source estimate was deleted from the dashboard;
 # the demo depends only on the cloned run + these truths now.
@@ -102,11 +116,18 @@ async def demo_reset(user: dict = Depends(get_current_user)):
         # Renamed per Howard's ruling 2026-07-20: the demo binds the frozen
         # Letrick PHOTO validation run — the name now matches the door.
         "customer_name": "Letrick Ranch — LP Photo Demo",
+        # governing-run stamp: the seeded lines DERIVE from the demo run —
+        # recording it marks the run APPLIED (pending-runs banner reads
+        # the truth; nothing is silently priced).
+        "lp_source_run_id": DEMO_RUN_ID,
         "address": "Letrick showcase fixture",
         "estimate_date": now[:10],
         "created_at": now, "updated_at": now,
         "created_by": user["id"], "created_by_name": user.get("name"),
         "status_label": "draft",
+        # Howard ruled 2026-08-04: the demo stages Contractor margin 30%
+        # (sell = base ÷ 0.70) — seeded so every reset rebuilds it.
+        "pricing_mode": "margin", "margin_pct": 30.0,
         "lines": [], "misc_labor": [], "misc_material": [],
         "lp_pricing_tier": DEMO_TIER,
         "lp_colors": dict(DEMO_COLORS),
@@ -153,6 +174,11 @@ async def demo_reset(user: dict = Depends(get_current_user)):
             doc["pricing_pending"] = True
         if cat_row.get("pricing_source"):
             doc["pricing_source"] = cat_row["pricing_source"]
+        # demo contractor's filled labor rate (Howard ruled 2026-08-04)
+        rate = DEMO_LABOR_RATES.get(" ".join(str(doc["name"]).lower().split()))
+        if rate is not None:
+            doc["lab"] = rate
+            doc["lab_src"] = "human"
         seeded.append(doc)
     await db.estimates.update_one({"id": est_id}, {"$set": {"lines": seeded}})
 
@@ -168,8 +194,32 @@ async def demo_reset(user: dict = Depends(get_current_user)):
     from routes.lp_admin import load_lp_native_mode
     native_on = await load_lp_native_mode()
 
-    # frozen QR links minted (material list + accuracy report)
+    # CHIMNEY AMBER — RATIFIED on every rebuild (Howard ruled 2026-08-04):
+    # presence confirmed twice over (both witness photos + his sealed
+    # corner ledger's 2 ISC at chase). Seeded BEFORE the QR freeze so the
+    # quote gate clears for the RIGHT reason.
+    from estimate_events import log_estimate_event
     from routes.lp_package_routes import lp_material_list_freeze, lp_package_preview
+    pkg = await lp_package_preview(est_id, {"run_id": DEMO_RUN_ID}, user)
+    ratified = []
+    fv_sets = {}
+    for a in pkg.get("amber_items") or []:
+        if "chimney chase left edge" not in str(a.get("locator") or ""):
+            continue
+        fv_sets[f"lp_field_verify.{a['key']}"] = {
+            "status": "verified", "at": now, "by": user.get("email"),
+            "note": DEMO_FV_NOTE}
+        ratified.append({"kind": a.get("kind"), "locator": a.get("locator"),
+                         "status": "verified", "note": DEMO_FV_NOTE})
+    if fv_sets:
+        await db.estimates.update_one({"id": est_id}, {"$set": fv_sets})
+        for k in fv_sets:
+            await log_estimate_event(
+                est_id, "corner.verified",
+                meta={"key": k.split(".", 1)[1], "by": user.get("email"),
+                      "note": DEMO_FV_NOTE})
+
+    # frozen QR links minted (material list + accuracy report)
     ml = await lp_material_list_freeze(
         est_id, {"run_id": DEMO_RUN_ID, "colors": dict(DEMO_COLORS)}, user)
     acc = await accuracy_report_freeze(est_id, user)
@@ -194,7 +244,11 @@ async def demo_reset(user: dict = Depends(get_current_user)):
         },
         "ambers_unratified": [
             {"kind": a.get("kind"), "locator": a.get("locator"),
-             "status": a.get("status")} for a in ambers],
+             "status": a.get("status")} for a in ambers
+            if (a.get("status") or "unverified") == "unverified"],
+        "ambers_ratified": ratified,
+        "margin_pct": 30.0,
+        "demo_labor_rates": dict(DEMO_LABOR_RATES),
         "openings_review": {
             "items": len(op.get("items") or []),
             "unconfirmed": sum(

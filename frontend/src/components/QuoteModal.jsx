@@ -17,9 +17,13 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
   const { user } = useAuth();
   const { readiness } = useReadiness(estimate?.id);
   // PRINT-BLOCKED (authorized 2026-07-28): hard gate on the homeowner surface.
-  // LABOR UNDECIDED never blocks (re-ruled 2026-07-29) — one line, a count.
+  // ONE TRUTH (Howard ruled 2026-08-04): the backend stamps every readiness
+  // item with its registry tier + blocking flag — the modal reads the SAME
+  // flag the gate chips read (quote-tier items block; order-tier items like
+  // field-verify ambers stay visible but never gate the quote; LABOR
+  // UNDECIDED never blocks, re-ruled 2026-07-29).
   const laborItem = (readiness?.items || []).find((i) => i.kind === "labor_pending");
-  const blockingItems = (readiness?.items || []).filter((i) => i.kind !== "labor_pending");
+  const blockingItems = (readiness?.items || []).filter((i) => i.blocking);
   const blocked = blockingItems.length > 0;
   const { lang: uiLang } = useLang();
   const t = useT();

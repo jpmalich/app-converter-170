@@ -21,7 +21,11 @@ function diffLines(lines) {
     if (l.defaultMat == null && l.defaultLab == null) continue;
     const matChanged =
       l.defaultMat != null && Math.abs((l.mat || 0) - l.defaultMat) > 0.005;
+    // HUMAN OVERRIDES ARE ABSOLUTE (Howard doctrine): a contractor-typed
+    // labor rate (lab_src "human") is never "stale" against the catalog —
+    // labor is the contractor's, the catalog only supplies defaults.
     const labChanged =
+      l.lab_src !== "human" &&
       l.defaultLab != null && Math.abs((l.lab || 0) - l.defaultLab) > 0.005;
     if (matChanged || labChanged) {
       out.push({
@@ -71,7 +75,8 @@ export default function CatalogSyncBanner({ est, update }) {
         return {
           ...l,
           ...(l.defaultMat != null ? { mat: l.defaultMat } : {}),
-          ...(l.defaultLab != null ? { lab: l.defaultLab } : {}),
+          // never overwrite a contractor-typed labor rate (human override)
+          ...(l.defaultLab != null && l.lab_src !== "human" ? { lab: l.defaultLab } : {}),
         };
       });
       // Build the same payload shape useEstimate.save() uses, but with the

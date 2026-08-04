@@ -794,13 +794,26 @@ async def _readiness_items(est_id: str, user: dict) -> list:
                       f"quantity on the money surface ({detail}). Profile owns its family: "
                       "re-derive before quoting."),
         })
+    from lp_conventions import MISC_LABOR_ROWS
+    from lp_costs import sheet_norm as _norm
     for l in est.get("lines") or []:
         if (l.get("qty") or 0) > 0 and not (l.get("mat") or 0) and not (l.get("lab") or 0):
-            items.append({
-                "kind": "unpriced_row", "code": l.get("name"),
-                "label": (f"Unpriced money-surface row: {l.get('name')} "
-                          f"({l.get('tab') or 'vinyl'} tab, qty {l.get('qty'):g})"),
-            })
+            if _norm(l.get("name")) in MISC_LABOR_ROWS:
+                # LABOR ROWS (Howard ruled 2026-08-04): clean-up / cap rows
+                # are the CONTRACTOR'S labor, never a supplier catalog gap —
+                # they read LABOR PENDING, stay visible on the quote surface,
+                # and still BLOCK a real customer quote until priced.
+                items.append({
+                    "kind": "labor_pending_row", "code": l.get("name"),
+                    "label": (f"LABOR PENDING — contractor to price: "
+                              f"{l.get('name')} (qty {l.get('qty'):g})"),
+                })
+            else:
+                items.append({
+                    "kind": "unpriced_row", "code": l.get("name"),
+                    "label": (f"Unpriced money-surface row: {l.get('name')} "
+                              f"({l.get('tab') or 'vinyl'} tab, qty {l.get('qty'):g})"),
+                })
     # Q1 (ruled 2026-07-27): Tear-Off + Dumpster quantity is the
     # contractor's — readiness panel shows them while unset.
     _q1_seen = set()
@@ -861,6 +874,21 @@ async def _readiness_items(est_id: str, user: dict) -> list:
     for g in quote_gate_blockers(est, measurements):
         if g.get("code") not in seen:
             items.append({"kind": g.get("kind") or "quote_gate", **g})
+    # ONE TRUTH STAMP (Howard ruled 2026-08-04): every item carries its
+    # registry tier + blocking flag — chips and modal read the SAME flags.
+    # QUOTE-tier items block the customer surface (unpriced / labor rows:
+    # "the PRINT-BLOCK working, not a bug"); ORDER-tier items (field-verify
+    # ambers, taped flags) stay VISIBLE but never gate the quote — amber is
+    # an offer, never a gate (sealed 2026-07-22).
+    from gates import tier_for
+    for it in items:
+        try:
+            tier = it.get("tier") or tier_for(it.get("code"), it.get("kind"))
+        except KeyError:
+            tier = "quote"
+        it["tier"] = tier
+        if "blocking" not in it:
+            it["blocking"] = tier == "quote" and it.get("kind") != "labor_pending"
     return items
 
 
@@ -889,11 +917,11 @@ async def evaluate_gates(est_id: str, user: dict) -> dict:
         run = None
     # ONE READINESS TRUTH (Howard ruled 2026-08-04): the QUOTE tier is the
     # readiness list itself — chips and modal read one generator, same
-    # reasons, same count. labor_pending stays visible, never blocking
-    # (re-ruled 2026-07-29).
-    quote_items = [dict(i, tier="quote",
-                        blocking=i.get("kind") != "labor_pending")
-                   for i in await _readiness_items(est_id, user)]
+    # reasons, same count. Items arrive PRE-STAMPED with tier + blocking:
+    # quote-tier items block, order-tier items (field-verify ambers, taped
+    # flags) ride visible but never gate the quote. labor_pending stays
+    # visible, never blocking (re-ruled 2026-07-29).
+    quote_items = [dict(i) for i in await _readiness_items(est_id, user)]
     order_items: list[dict] = []
     try:
         pkg = await lp_package_preview(est_id, None, user)

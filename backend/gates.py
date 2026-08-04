@@ -51,7 +51,15 @@ GATE_TIERS: dict[str, str] = {
 KIND_TIERS: dict[str, str] = {
     "family_conflict": "quote",
     "labor_pending": "quote",
-    "unpriced_row": "quote",      # informational — never blocks (readiness stays soft)
+    "unpriced_row": "quote",      # BLOCKING (Howard re-ruled 2026-08-04): an
+                                  # unpriced money-surface row must never reach
+                                  # a homeowner as $0 — "the PRINT-BLOCK
+                                  # working, not a bug. Keep the rule."
+    "labor_pending_row": "quote",  # BLOCKING (Howard ruled 2026-08-04): a labor
+                                   # row with NO price at all is the CONTRACTOR'S
+                                   # to fill — reads LABOR PENDING, stays visible,
+                                   # and blocks the customer quote until priced
+                                   # (never supplier-defaulted, never hidden)
     "qty_pending": "quote",       # informational (Q1 rows are the contractor's)
     "pending_price": "quote",     # informational
     "open_flag": "order",         # mapping-contract flags default ORDER unless coded
