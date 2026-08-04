@@ -339,14 +339,14 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         <div>
           <div className="section-tag">{t("lp.mat.title")}</div>
           <div className="text-[11px] text-[var(--muted)] font-mono-num">
-            run {String(pkg.run_id || "").slice(0, 8)} · {pkg.summary?.line_count} lines
+            {t("lpp.runLine", { id: String(pkg.run_id || "").slice(0, 8), n: pkg.summary?.line_count })}
             {pkg.source_label && (
               <span
                 className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[9px] uppercase tracking-wider font-bold border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
                 data-testid="lp-source-chip"
                 title={`Composition source: ${pkg.source_label}`}
               >
-                source: {pkg.source_label}
+                {t("lpp.source", { label: pkg.source_label })}
               </span>
             )}
             {pkg.summary?.waste_pct_applied != null && (
@@ -355,7 +355,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                 data-testid="lp-waste-applied-chip"
                 title="Waste actually applied — sourced from the estimate's visible Waste % field (unified 2026-07-20); the display always mirrors the application"
               >
-                waste: {Math.round(pkg.summary.waste_pct_applied * 100)}% — Waste % field
+                {t("lpp.waste", { n: Math.round(pkg.summary.waste_pct_applied * 100) })}
               </span>
             )}
           </div>
@@ -365,12 +365,12 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
               data-testid="lp-geometry-basis"
               title="Geometry-source naming: every derivation states the geometry it stands on"
             >
-              geometry: {pkg.geometry_basis.label}
+              {t("lpp.geometry", { label: pkg.geometry_basis.label })}
             </div>
           )}
           <div className="flex items-center gap-1.5 mt-1.5" data-testid="lp-default-profile-picker">
             <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--muted)]">
-              Default profile:
+              {t("lpp.defaultProfile")}
             </span>
             {[["lap", "Lap"], ["board_batten", "B&B"], ["shake", "Shake"], ["nickel_gap", "Nickel Gap"]].map(([val, lbl]) => (
               <button
@@ -401,7 +401,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                 disabled={savingProfile}
                 data-testid="lp-profile-revert"
               >
-                Revert
+                {t("lpp.revert")}
               </button>
             </div>
           )}
@@ -420,9 +420,9 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                     )}
                     {closed ? (
                       <span className="ml-1 text-[var(--muted)] no-underline">
-                        closed · {f.closed_by} ·
+                        {t("lpp.flag.closed")} · {f.closed_by} ·
                         <button type="button" className="ml-1 underline" onClick={() => actFlag(code, "reopen")} data-testid={`lp-flag-${code}-reopen`}>
-                          reopen
+                          {t("lpp.flag.reopen")}
                         </button>
                       </span>
                     ) : code === "batten_wall_heights" ? (
@@ -430,7 +430,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                         <span className="ml-1 inline-flex items-center gap-1">
                           <input
                             className="border border-[var(--border)] px-1 py-0.5 w-40 text-[9px] font-mono-num"
-                            placeholder="wall heights ft, e.g. 9, 9, 18.5, 9"
+                            placeholder={t("lpp.flag.placeholder")}
                             value={flagInput[code]}
                             onChange={(e) => setFlagInput((p) => ({ ...p, [code]: e.target.value }))}
                             data-testid={`lp-flag-${code}-input`}
@@ -445,17 +445,17 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
                             }}
                             data-testid={`lp-flag-${code}-save`}
                           >
-                            Save
+                            {t("lpp.flag.save")}
                           </button>
                         </span>
                       ) : (
                         <button type="button" className="ml-1 underline font-bold uppercase" onClick={() => setFlagInput((p) => ({ ...p, [code]: "" }))} data-testid={`lp-flag-${code}-verify`}>
-                          Field-verify
+                          {t("lpp.flag.fieldVerify")}
                         </button>
                       )
                     ) : (
                       <button type="button" className="ml-1 underline font-bold uppercase" onClick={() => actFlag(code, "close", { confirmed: true })} data-testid={`lp-flag-${code}-verify`}>
-                        Mark verified
+                        {t("lpp.flag.markVerified")}
                       </button>
                     )}
                     {!closed && f.verify && (
@@ -480,7 +480,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
             disabled={comparing}
             data-testid="lp-compare-toggle"
           >
-            {comparing ? "…" : compare ? "Hide compare" : "Compare Lap vs B&B"}
+            {comparing ? "…" : compare ? t("lpp.hideCompare") : t("lpp.compare")}
           </button>
         </div>
       </div>
@@ -509,12 +509,11 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
           on the estimate group tabs / summary. */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-[var(--border)] bg-[var(--surface-muted)]">
         <div className="text-[11px] text-[var(--muted)]" data-testid="lp-material-unpriced-note">
-          {pkg.summary?.line_count} derived line(s) — quantities &amp; provenance live on the
-          group tab lines below · colors on the Job Info MATERIAL COLORS block · pricing on the estimate tabs.
+          {t("lpp.derivedNote", { n: pkg.summary?.line_count })}
         </div>
         <div className="text-[11px] text-[var(--muted)]">
           {pricing.pending_lines > 0 && (
-            <span data-testid="lp-pending-count">{pricing.pending_lines} line(s) without a sheet price — escalated by name</span>
+            <span data-testid="lp-pending-count">{t("lpp.pendingCount", { n: pricing.pending_lines })}</span>
           )}
         </div>
         {colorErrors.length > 0 && (
@@ -524,7 +523,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         )}
         {colorCaveats.length > 0 && (
           <div className="text-[11px] text-[#B45309] w-full" data-testid="lp-color-caveats">
-            {colorCaveats.join(" · ")} — matrix informs, never forbids; verify with dealer.
+            {colorCaveats.join(" · ")} {t("lpp.matrixNote")}
           </div>
         )}
       </div>
@@ -533,7 +532,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
       {(pkg.appendage_dim_flags || []).length > 0 && (
         <div className="border-t border-[var(--border)] px-4 py-3 bg-[#FFFBEB]" data-testid="lp-dim-flags-card">
           <div className="text-[11px] font-bold uppercase tracking-wider text-[#92400E] mb-1 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" /> Dimension cross-check
+            <ShieldCheck className="w-3.5 h-3.5" /> {t("lpp.dimCrossCheck")}
           </div>
           {pkg.appendage_dim_flags.map((f, i) => (
             <div key={i} className="text-[11px] text-[#92400E]" data-testid={`lp-dim-flag-${i}`}>{f}</div>
@@ -678,7 +677,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
         <div className="border-t border-[var(--border)] p-3" data-testid="lp-material-3d">
           {pkg.geometry_basis?.label && (
             <div className="text-[10px] mb-2 font-mono-num text-[var(--muted)]" data-testid="lp-3d-geometry-basis">
-              geometry: {pkg.geometry_basis.label}
+              {t("lpp.geometry", { label: pkg.geometry_basis.label })}
             </div>
           )}
           <FieldVerifyCard
@@ -713,6 +712,7 @@ export default function LpMaterialListPanel({ est, update, onPackage }) {
 // Compare-profiles card (approved 2026-07-16): Lap vs Board & Batten
 // side-by-side — SAME named geometry, same engine, derived per request.
 function CompareProfilesCard({ compare }) {
+  const t = useT();
   const cur = compare.current || {};
   const alt = compare.alternative || {};
   const altLabel = compare.alt_profile === "board_batten" ? "Board & Batten" : "Lap";
@@ -732,18 +732,18 @@ function CompareProfilesCard({ compare }) {
   return (
     <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-muted)]" data-testid="lp-compare-card">
       <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
-        Compare profiles — same geometry, same engine
+        {t("lpp.cmp.title")}
       </div>
       {compare.geometry_basis?.label && (
         <div className="text-[10px] font-mono-num text-[var(--muted)] mt-0.5" data-testid="lp-compare-basis">
-          geometry: {compare.geometry_basis.label}
+          {t("lpp.geometry", { label: compare.geometry_basis.label })}
         </div>
       )}
       <table className="w-full text-xs mt-2">
         <thead>
           <tr className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
-            <th className="text-left py-1 w-[44%]">Line</th>
-            <th className="text-left py-1">Current — Lap</th>
+            <th className="text-left py-1 w-[44%]">{t("lpp.cmp.line")}</th>
+            <th className="text-left py-1">{t("lpp.cmp.current")}</th>
             <th className="text-left py-1">{altLabel}</th>
           </tr>
         </thead>
@@ -757,10 +757,10 @@ function CompareProfilesCard({ compare }) {
           ))}
           <tr className="border-t-2 border-[var(--ink)]">
             <td className="py-1.5 font-bold text-[var(--ink)]" colSpan={3}>
-              {changed.length} line{changed.length === 1 ? "" : "s"} differ by quantity
+              {t("lpp.cmp.differ", { n: changed.length })}
               {sameCount > 0 && (
                 <span className="font-normal text-[10px] text-[var(--muted)] ml-2">
-                  ({sameCount} shared line{sameCount === 1 ? "" : "s"} identical in both)
+                  {t("lpp.cmp.shared", { n: sameCount })}
                 </span>
               )}
             </td>
@@ -768,7 +768,7 @@ function CompareProfilesCard({ compare }) {
         </tbody>
       </table>
       <div className="text-[10px] text-[var(--muted)] mt-1.5">
-        Comparison view only — quantities &amp; derivations, nothing is saved or applied. Pricing lives on the estimate tabs.
+        {t("lpp.cmp.note")}
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { toast } from "sonner";
    tapes B&B wall heights straight into the batten_wall_heights checklist —
    closing it feeds the batten +height term and retires the standing flag. */
 function WallHeightTapeField({ est }) {
+  const t = useT();
   const entry = (est?.lp_flag_checklist || {})["batten_wall_heights"] || {};
   const [val, setVal] = React.useState("");
   const [state, setState] = React.useState(entry.status === "closed" ? "closed" : "open");
@@ -47,31 +48,31 @@ function WallHeightTapeField({ est }) {
   return (
     <div className="mt-4 pt-4 border-t border-[var(--border)]">
       <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-        B&amp;B wall heights (taped) — ORDER stage, not needed to quote
+        {t("sr.wallHeights.title")}
       </div>
       {state === "closed" ? (
         <div className="text-sm" data-testid="wall-height-closed">
-          <span className="text-[var(--ink-2)]">Taped — {savedTotal.toFixed(1)} ft total feeds the batten height term.</span>
+          <span className="text-[var(--ink-2)]">{t("sr.wallHeights.taped", { n: savedTotal.toFixed(1) })}</span>
           <button type="button" className="ml-2 underline text-[11px] uppercase font-bold" onClick={reopen} data-testid="wall-height-reopen">
-            Reopen
+            {t("sr.wallHeights.reopen")}
           </button>
         </div>
       ) : (
         <div className="flex items-center gap-2">
           <input
             className="input h-9 text-sm w-56"
-            placeholder="heights ft, e.g. 9, 9, 18.5, 9"
+            placeholder={t("sr.wallHeights.placeholder")}
             value={val}
             onChange={(e) => setVal(e.target.value)}
             data-testid="wall-height-input"
           />
           <button type="button" className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider border border-[var(--border)]" onClick={save} data-testid="wall-height-save">
-            Tape it
+            {t("sr.wallHeights.tapeIt")}
           </button>
         </div>
       )}
       <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-        Quote sells from the derived (HOVER-SCHEDULE) height — enter taped heights at the house before material order. Taped supersedes derived, reversible; battens re-derive live
+        {t("sr.wallHeights.note")}
       </p>
     </div>
   );
@@ -211,7 +212,7 @@ export default function SettingsRow({ est, update, save }) {
               corners + starter. Changing the % here recomputes those line
               qtys (raw × 1+waste). Manual lines are untouched. */}
           <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--success)] font-bold">
-            Baked into line qty on import — change % to recompute
+            {t("sr.wasteBaked")}
           </p>
           {/* Iter 78b — Retroactive recompute button for legacy lines.
               Useful on estimates created before the Iter 78a LP
@@ -225,7 +226,7 @@ export default function SettingsRow({ est, update, save }) {
             data-testid="recompute-all-waste-btn"
             title="Stamp raw_qty + recompute every cut-prone line at the current waste %"
           >
-            Recompute waste on existing lines
+            {t("sr.recomputeWaste")}
           </button>
           {/* Iter 78 — LP soffit steering (LP-only). Backend's HOVER spec
               splits LP soffit into Vented (eaves) + Closed (rakes) by
@@ -234,7 +235,7 @@ export default function SettingsRow({ est, update, save }) {
           {est.kind === "lp_smart" && (
             <div className="mt-4 pt-4 border-t border-[var(--border)]">
               <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                LP Soffit type
+                {t("sr.soffitType")}
               </div>
               <select
                 className="input h-9 text-sm"
@@ -242,12 +243,12 @@ export default function SettingsRow({ est, update, save }) {
                 onChange={(e) => update({ lp_soffit_type: e.target.value })}
                 data-testid="lp-soffit-type"
               >
-                <option value="mix">Mix — Vented on eaves, Closed on rakes (default)</option>
-                <option value="vented">Vented — all soffit qty as Vented (38 Series Vented)</option>
-                <option value="closed">Closed — all soffit qty as Closed (38 Series Closed)</option>
+                <option value="mix">{t("sr.soffit.mix")}</option>
+                <option value="vented">{t("sr.soffit.vented")}</option>
+                <option value="closed">{t("sr.soffit.closed")}</option>
               </select>
               <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                Applied on HOVER / Blueprint import — collapses or splits the two soffit lines automatically
+                {t("sr.soffit.note")}
               </p>
               <WallHeightTapeField est={est} />
             </div>
@@ -266,7 +267,7 @@ export default function SettingsRow({ est, update, save }) {
           <div className="mt-4 pt-4 border-t border-[var(--border)]" data-testid="trade-spec-group">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold">
-                Trade specs
+                {t("sr.tradeSpecs")}
               </div>
               <button
                 type="button"
@@ -275,7 +276,7 @@ export default function SettingsRow({ est, update, save }) {
                 data-testid="rederive-now-btn"
                 title="Replay the current derivation rules over the stored measurements — pulls in rule changes that landed after import. Hand-typed quantities always survive."
               >
-                Re-derive material list
+                {t("sr.rederive")}
               </button>
             </div>
             <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2 mt-3">
@@ -291,7 +292,7 @@ export default function SettingsRow({ est, update, save }) {
                 onChange={(e) => update({ overhang_in: Number(e.target.value) || 0 })}
                 data-testid="overhang-in"
               />
-              <span className="text-[var(--ink-2)]">in</span>
+              <span className="text-[var(--ink-2)]">{t("sr.in")}</span>
             </div>
             <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
               {t("est.overhangHint")}
@@ -304,7 +305,7 @@ export default function SettingsRow({ est, update, save }) {
                  50 LF. Same spec, every family. */
               <div className="mt-4 pt-4 border-t border-[var(--border)]">
                 <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                  {est.kind === "lp_smart" ? "Fascia width — 440 Series" : "Fascia width"}
+                  {est.kind === "lp_smart" ? t("sr.fasciaWidth440") : t("sr.fasciaWidth")}
                 </div>
                 <select
                   className="input h-9 text-sm"
@@ -314,14 +315,12 @@ export default function SettingsRow({ est, update, save }) {
                 >
                   <option value={4}>4"</option>
                   <option value={6}>6"</option>
-                  <option value={8}>8" (default)</option>
+                  <option value={8}>8" {t("sr.default")}</option>
                   <option value={10}>10"</option>
                   <option value={12}>12"</option>
                 </select>
                 <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                  {est.kind === "lp_smart"
-                    ? 'Contractor call-out — no derivation. Picks the 440 board width; the material list prints the width on the line. Re-derives live.'
-                    : 'Governs .019 coil coverage: ≤10" the 24" roll rips in half for 100 LF/roll; over 10" one roll covers 50 LF. Re-derives live.'}
+                  {est.kind === "lp_smart" ? t("sr.fascia.noteLp") : t("sr.fascia.noteCoil")}
                 </p>
               </div>
             )}
@@ -332,7 +331,7 @@ export default function SettingsRow({ est, update, save }) {
                     when spacing moves off default. */}
                 <div className="mt-4 pt-4 border-t border-[var(--border)]">
                   <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                    Batten spacing
+                    {t("sr.battenSpacing")}
                   </div>
                   <select
                     className="input h-9 text-sm"
@@ -340,20 +339,19 @@ export default function SettingsRow({ est, update, save }) {
                     onChange={(e) => saveSpec({ batten_spacing_in: Number(e.target.value) })}
                     data-testid="batten-spacing-select"
                   >
-                    <option value={12}>12" o.c. (default)</option>
+                    <option value={12}>12" o.c. {t("sr.default")}</option>
                     <option value={16}>16" o.c.</option>
                     <option value={24}>24" o.c.</option>
                   </select>
                   <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Every 48" seam lands on a batten. The 190 Series line note names the spacing
-                    and the piece delta vs the 12" default when it moves.
+                    {t("sr.batten.note")}
                   </p>
                 </div>
                 {/* PANEL SIZE (ruled 2026-07-30): 4×10 default (40 ft²) vs
                     4×8 (32 ft²) — changes COUNT and SKU. */}
                 <div className="mt-4 pt-4 border-t border-[var(--border)]">
                   <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                    Panel size — 38 Series B&B
+                    {t("sr.panelSize")}
                   </div>
                   <select
                     className="input h-9 text-sm"
@@ -361,18 +359,18 @@ export default function SettingsRow({ est, update, save }) {
                     onChange={(e) => saveSpec({ panel_size: e.target.value })}
                     data-testid="panel-size-select"
                   >
-                    <option value="4x10">4' × 10' (default, 40 ft²)</option>
-                    <option value="4x8">4' × 8' (32 ft²)</option>
+                    <option value="4x10">{t("sr.panel.opt410")}</option>
+                    <option value="4x8">{t("sr.panel.opt48")}</option>
                   </select>
                   <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Changes the panel COUNT and the SKU — 4×8 coverage is 32 ft². Re-derives live.
+                    {t("sr.panel.note")}
                   </p>
                 </div>
                 {/* WRAP TRIM WIDTH (ruled 2026-07-30): 540 Series width —
                     name-only, counts unchanged. */}
                 <div className="mt-4 pt-4 border-t border-[var(--border)]">
                   <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                    Wrap trim width — 540 Series
+                    {t("sr.wrapWidth")}
                   </div>
                   <select
                     className="input h-9 text-sm"
@@ -380,22 +378,21 @@ export default function SettingsRow({ est, update, save }) {
                     onChange={(e) => saveSpec({ wrap_trim_width_in: Number(e.target.value) })}
                     data-testid="wrap-trim-width-select"
                   >
-                    <option value={4}>4" (default)</option>
+                    <option value={4}>4" {t("sr.default")}</option>
                     <option value={6}>6"</option>
                     <option value={8}>8"</option>
                     <option value={10}>10"</option>
                     <option value={12}>12"</option>
                   </select>
                   <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Changes ONLY the 540 SKU name (wrap + ISC + frieze scope) — counts stay
-                    whole-stick ÷16. Re-derives live.
+                    {t("sr.wrap.note")}
                   </p>
                 </div>
                 {/* SHAKE REVEAL (register #4 ruled 2026-07-28): bounded
                     7"–10", default 7" — LP install instructions. */}
                 <div className="mt-4 pt-4 border-t border-[var(--border)]">
                   <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
-                    Shake reveal
+                    {t("sr.shakeReveal")}
                   </div>
                   <div className="flex items-baseline gap-2">
                     <input
@@ -411,12 +408,10 @@ export default function SettingsRow({ est, update, save }) {
                       }}
                       data-testid="shake-reveal-in"
                     />
-                    <span className="text-[var(--ink-2)]">in</span>
+                    <span className="text-[var(--ink-2)]">{t("sr.in")}</span>
                   </div>
                   <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    Bounded 7"–10", default 7" — LP install instructions: "540 Series Trim is recommended
-                    when the shake reveal selected ranges between a maximum of 10 inches to a minimum of
-                    7 inches". Coverage = 4' × reveal ÷ 12 (panel max 9-7/8"); sealed 15% shake waste applies on top.
+                    {t("sr.shake.note")}
                   </p>
                 </div>
               </>
@@ -628,14 +623,14 @@ export default function SettingsRow({ est, update, save }) {
         <div className="mt-2 text-[11px] text-[var(--muted)] font-mono-num">
           {isMargin ? (
             <>
-              Sell = Base ÷ (1 − {pct}%) ={" "}
+              {t("sr.sellMargin", { pct })}{" "}
               <span className="text-[var(--ink)] font-bold">
                 ×{effectiveMultiplier.toFixed(3)}
               </span>
             </>
           ) : (
             <>
-              Sell = Base × (1 + {pct}%) ={" "}
+              {t("sr.sellMarkup", { pct })}{" "}
               <span className="text-[var(--ink)] font-bold">
                 ×{effectiveMultiplier.toFixed(3)}
               </span>

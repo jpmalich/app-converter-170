@@ -11,6 +11,7 @@ import React, { useRef, useState } from "react";
 import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
 import { bakeWasteIntoLines, steerLpSoffit } from "@/lib/wasteLogic";
 // Iter 78t — same elevation drawing component as AI Measure, fed from
@@ -126,6 +127,7 @@ async function pollHoverImportStatus(runId, onStage) {
 }
 
 export default function HoverImportButton({ est, update, save }) {
+  const t = useT();
   const fileRef = useRef();
   const [busy, setBusy] = useState(false);
   // Iter 79d — async status messages while the polling loop runs. e.g.
@@ -601,7 +603,7 @@ export default function HoverImportButton({ est, update, save }) {
         title="Import a HOVER measurement report (.pdf)"
       >
         {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-        {busy ? (stage || "Reading…") : "Import HOVER"}
+        {busy ? (stage || t("intake.reading")) : t("intake.importHover")}
       </button>
       {/* Iter 78n — Restore HOVER lines. Only renders when this estimate has
           cached measurements from a previous import. Re-runs the mapper

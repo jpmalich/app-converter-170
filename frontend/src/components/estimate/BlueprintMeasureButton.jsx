@@ -16,6 +16,7 @@ import React, { useRef, useState } from "react";
 import { FileText, Loader2, X, Check, AlertTriangle, Printer } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 // Iter 78z+ — Profile annotator (Tag Shake / B&B / etc. on blueprint pages).
@@ -92,6 +93,7 @@ const KEY_LABEL = {
 };
 
 export default function BlueprintMeasureButton({ est, update, save, applyLines }) {
+  const t = useT();
   // ISS mode: when `applyLines` is provided we route through that callback
   // (mirroring ISSHoverImportButton's contract) and skip the pairing
   // logic entirely, since the ISS workspace has no separate Windows
@@ -579,7 +581,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
             : busyStage === "mapping" ? "Mapping to catalog…"
             : busyStage === "starting" ? "Uploading…"
             : "Reading plans…")
-          : "Read Blueprints"}
+          : t("intake.readBlueprints")}
       </button>
 
       {/* Iter 78z+ — Tag Profiles button. Appears whenever we have

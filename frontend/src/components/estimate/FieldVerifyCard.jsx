@@ -6,6 +6,7 @@
 // blueprint-path estimates only (live or CUT-archived run). Ships BEFORE the
 // 3D flag flips so the tape workflow is never dark.
 import React, { useEffect, useMemo, useState } from "react";
+import { useT } from "@/lib/i18n";
 import { Ruler, FileText, Camera, FileSpreadsheet, PencilRuler, Printer } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -14,6 +15,7 @@ import { buildHouseJson, DimEditRow } from "@/components/estimate/HouseModel3D";
 import { crossCheckRidges } from "@/lib/gableMath";
 
 export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved, dimsRefreshKey }) {
+  const t = useT();
   const [apDims, setApDims] = useState(() => estimate?.lp_appendage_dims || {});
   const [dimOffers, setDimOffers] = useState([]);
   const [bpRun, setBpRun] = useState(null);
@@ -95,9 +97,9 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
     : (aiRun && !isHoverRun && (aiRun.photo_paths || aiRun.result?.raw_ai) ? "photo"
       : (isHoverRun ? "hover" : null));
   const DOOR_LABEL = {
-    blueprint: "View Source Blueprints →",
-    photo: "View Source Photos →",
-    hover: "View Hover Report →",
+    blueprint: t("fv.door.blueprint"),
+    photo: t("fv.door.photo"),
+    hover: t("fv.door.hover"),
   };
   const DoorIcon = door === "photo" ? Camera : door === "hover" ? FileSpreadsheet : FileText;
 
@@ -116,7 +118,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
     <div className="space-y-3" data-testid="field-verify-card">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="text-[11px] font-bold uppercase tracking-wider text-[var(--ink-2)] flex items-center gap-2">
-          <Ruler className="w-3 h-3" /> Field Verify — per-wall takeoff · tape check · taped dims
+          <Ruler className="w-3 h-3" /> {t("fv.title")}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {door && (
@@ -144,7 +146,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
                   data-testid={`field-verify-elevation-sheet-link-${w}`}
                   title={`${SHEET_CODES[w]} — ${w} elevation sheet, drawn from the run this takeoff binds (live or CUT-archived). Opens in a new tab — the modal stays put.`}
                 >
-                  {SHEET_CODES[w]} {w}
+                  {SHEET_CODES[w]} {t(`fv.wall.${w}`)}
                 </a>
               ))}
               <a
@@ -155,7 +157,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
                 data-testid="field-verify-elevation-sheets-print-all"
                 title="One print flow — every renderable elevation sheet, one per page (leave-behind package). Opens in a new tab — the modal stays put."
               >
-                <Printer className="w-3 h-3" /> Print all
+                <Printer className="w-3 h-3" /> {t("fv.printAll")}
               </a>
             </span>
           ) : (
@@ -164,7 +166,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
               data-testid="field-verify-elevation-sheets-empty"
               title="Sheets bind to a completed AI measure run carrying walls — none exists for this estimate yet"
             >
-              Elevation sheets — no completed run with walls
+              {t("fv.sheetsEmpty")}
             </span>
           ))}
         </div>
@@ -173,16 +175,16 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
       {peb.length > 0 && (
         <div className="p-3 bg-[var(--surface)] border border-[var(--border)]" data-testid="field-verify-per-wall">
           <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1.5">
-            Per-wall takeoff <span className="text-[9px] italic font-normal">· AI-read, server-computed — SSOT</span>
+            {t("fv.perWall")} <span className="text-[9px] italic font-normal">{t("fv.perWall.sub")}</span>
           </div>
           <table className="w-full text-[11px]">
             <thead>
               <tr className="text-[9px] uppercase tracking-wider text-[var(--muted)]">
-                <th className="text-left py-0.5">Wall</th>
-                <th className="text-right py-0.5">Body ft²</th>
-                <th className="text-right py-0.5">Gable ft²</th>
-                <th className="text-right py-0.5">Dormer ft²</th>
-                <th className="text-right py-0.5">Total ft²</th>
+                <th className="text-left py-0.5">{t("fv.th.wall")}</th>
+                <th className="text-right py-0.5">{t("fv.th.body")}</th>
+                <th className="text-right py-0.5">{t("fv.th.gable")}</th>
+                <th className="text-right py-0.5">{t("fv.th.dormer")}</th>
+                <th className="text-right py-0.5">{t("fv.th.total")}</th>
               </tr>
             </thead>
             <tbody>
@@ -190,7 +192,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
                 const total = (r.wall_body_sqft || 0) + (r.gable_sqft || 0) + (r.dormer_sqft || 0);
                 return (
                   <tr key={i} className="border-t border-[var(--border)]" data-testid={`field-verify-wall-row-${i}`}>
-                    <td className="py-1 uppercase font-bold text-[var(--ink-2)]">{r.label}</td>
+                    <td className="py-1 uppercase font-bold text-[var(--ink-2)]">{t(`fv.wall.${String(r.label || "").toLowerCase()}`) || r.label}</td>
                     <td className="py-1 text-right font-mono-num">{Math.round(r.wall_body_sqft || 0)}</td>
                     <td className="py-1 text-right font-mono-num">{Math.round(r.gable_sqft || 0)}</td>
                     <td className="py-1 text-right font-mono-num">{Math.round(r.dormer_sqft || 0)}</td>
@@ -216,7 +218,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
         return (
           <div className="p-3 bg-[var(--surface)] border border-[#16A34A]/40 space-y-1" data-testid="field-verify-contractor-gables">
             <div className="text-[10px] uppercase tracking-wider text-[#15803D] font-bold mb-1">
-              Contractor gables — photo-taped, scale-anchored <span className="text-[9px] italic font-normal">· own waste factor assignable · not auto-injected into the estimate</span>
+              {t("fv.gables.title")} <span className="text-[9px] italic font-normal">{t("fv.gables.sub")}</span>
             </div>
             {gbs.map((g, i) => (
               <div key={i} className="flex items-center justify-between text-[11px] py-0.5 border-t border-[var(--border)] first:border-t-0" data-testid={`contractor-gable-row-${i}`}>
@@ -224,7 +226,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
                 <span className="font-mono-num">
                   {g.base_ft != null && g.rise_ft != null
                     ? `${g.base_ft} ft × ${g.rise_ft} ft = ${g.area_ft} ft²${g.pitch != null ? ` · ${g.pitch}/12` : ""}${g.masked_ft > 0 ? ` (−${g.masked_ft} ft² masks)` : ""}`
-                    : "marked — no scale ref on photo"}
+                    : t("fv.noScale")}
                 </span>
               </div>
             ))}
@@ -243,7 +245,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
       {(aiRun?.contractor_dormers || []).length > 0 && (
         <div className="p-3 bg-[var(--surface)] border border-[#16A34A]/40 space-y-1" data-testid="field-verify-contractor-dormers">
           <div className="text-[10px] uppercase tracking-wider text-[#15803D] font-bold mb-1">
-            Contractor dormers — photo-taped, scale-anchored <span className="text-[9px] italic font-normal">· own waste factor assignable · not auto-injected into the estimate</span>
+            {t("fv.dormers.title")} <span className="text-[9px] italic font-normal">{t("fv.gables.sub")}</span>
           </div>
           {aiRun.contractor_dormers.map((d, i) => (
             <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-0.5 border-t border-[var(--border)] first:border-t-0" data-testid={`contractor-dormer-row-${i}`}>
@@ -251,7 +253,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
               <span className="font-mono-num flex items-center gap-2 flex-wrap justify-end">
                 {d.width_ft != null && d.height_ft != null ? (
                   <span>
-                    Front face {d.width_ft} ft × {d.height_ft} ft = {d.area_ft} ft²{d.masked_ft > 0 ? ` (−${d.masked_ft} ft² masks)` : ""}
+                    {t("fv.frontFace")} {d.width_ft} ft × {d.height_ft} ft = {d.area_ft} ft²{d.masked_ft > 0 ? ` (−${d.masked_ft} ft² masks)` : ""}
                     {(() => {
                       // blank depth → 1.5 ft smart default (ruled 2026-07-26
                       // follow-up) — cheeks always calculate when height known
@@ -259,13 +261,13 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
                       const ch = d.cheeks_ft || Math.round(2 * d.height_ft * eff * 10) / 10;
                       return (
                         <span data-testid={`contractor-dormer-cheeks-${i}`}>
-                          {" "}+ cheeks 2 × {d.height_ft}×{eff} = {ch} ft²{d.depth_ft ? "" : " (default depth)"} (Total {Math.round(((d.area_ft || 0) + ch) * 10) / 10} ft²)
+                          {" "}{t("fv.cheeks")} 2 × {d.height_ft}×{eff} = {ch} ft²{d.depth_ft ? "" : ` ${t("fv.defaultDepth")}`} ({t("fv.total")} {Math.round(((d.area_ft || 0) + ch) * 10) / 10} ft²)
                         </span>
                       );
                     })()}
                   </span>
-                ) : "marked — no scale ref on photo"}
-                <label className="text-[10px] text-[var(--muted)]">depth (ft)</label>
+                ) : t("fv.noScale")}
+                <label className="text-[10px] text-[var(--muted)]">{t("fv.depthFt")}</label>
                 <input
                   key={`${i}-${d.depth_ft ?? ""}`}
                   type="number" min="0" step="0.1" inputMode="decimal"
@@ -283,33 +285,33 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
       {appendages.length > 0 && (
         <div className="p-3 bg-[var(--surface)] border border-[var(--border)] space-y-1" data-testid="field-verify-taped-dims">
           <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-1">
-            Taped dims — appendages <span className="text-[9px] italic font-normal">· user-measured dims re-derive the math; assumed dims never enter it</span>
+            {t("fv.tapedDims.title")} <span className="text-[9px] italic font-normal">{t("fv.tapedDims.sub")}</span>
           </div>
           {appendages.map((ap, i) => {
             const apKey = `appendage:${ap.originalWall || ap.wall}`;
             return (
               <div key={i} className="py-1 border-t border-[var(--border)] first:border-t-0">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--ink-2)]">
-                  {ap.kind || "Appendage"} — {ap.wall} wall
+                  {t("fv.wallRow", { kind: ap.kind || t("fv.appendage"), wall: t(`fv.wall.${String(ap.wall || "").toLowerCase()}`) || ap.wall })}
                 </div>
                 <DimEditRow
-                  label="Depth" field="depth_ft" apKey={apKey}
+                  label={t("fv.depth")} field="depth_ft" apKey={apKey}
                   entry={(apDims[apKey] || {}).depth_ft}
                   valueFt={ap.depthFt}
                   fallbackText={ap.depthSource === "printed"
-                    ? `${ap.depthFt.toFixed(1)} ft — printed on plans`
-                    : `~${ap.depthFt.toFixed(0)} ft — assumed, not measured`}
+                    ? t("fv.printedOnPlans", { v: ap.depthFt.toFixed(1) })
+                    : t("fv.assumedDepth", { v: ap.depthFt.toFixed(0) })}
                   offer={(dimOffers.find((o) => o.key === apKey) || {}).depth_ft}
                   onSave={saveDim}
                   testid={`field-verify-appendage-depth-${i}`}
                 />
                 <DimEditRow
-                  label="Height" field="height_ft" apKey={apKey}
+                  label={t("fv.height")} field="height_ft" apKey={apKey}
                   entry={(apDims[apKey] || {}).height_ft}
                   valueFt={ap.heightFt}
                   fallbackText={ap.heightSource === "printed"
-                    ? `${ap.heightFt.toFixed(1)} ft — printed on plans`
-                    : "above roofline — assumed, not measured"}
+                    ? t("fv.printedOnPlans", { v: ap.heightFt.toFixed(1) })
+                    : t("fv.assumedHeight")}
                   offer={(dimOffers.find((o) => o.key === apKey) || {}).height_ft}
                   onSave={saveDim}
                   testid={`field-verify-appendage-height-${i}`}

@@ -274,11 +274,11 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           >
             {collapsed ? (
               <>
-                <ChevronDown className="w-3 h-3" /> Edit
+                <ChevronDown className="w-3 h-3" /> {t("jip.edit")}
               </>
             ) : (
               <>
-                <ChevronUp className="w-3 h-3" /> Collapse
+                <ChevronUp className="w-3 h-3" /> {t("jip.collapse")}
               </>
             )}
           </button>
@@ -291,19 +291,20 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           data-testid="pending-runs-banner"
         >
           <div className="font-bold uppercase tracking-wider text-[#92400E] mb-1">
-            Pending — not applied yet ({pendingRuns.length})
+            {t("jip.pending.title", { n: pendingRuns.length })}
           </div>
           <ul className="space-y-0.5 text-[#78350F]">
             {pendingRuns.slice(0, 3).map((r) => (
               <li key={r.run_id} data-testid="pending-run-row">
-                <b>{r.door === "blueprint" ? "Blueprint" : "Photo"}</b> run
-                {" "}{(r.created_at || "").slice(0, 10)}
-                {r.siding_sqft ? ` — ${Math.round(r.siding_sqft)} ft² siding` : ""}
-                {" "}— never prices until you review &amp; apply it
+                {t("jip.pending.row", {
+                  door: r.door === "blueprint" ? t("jip.pending.blueprint") : t("jip.pending.photo"),
+                  date: (r.created_at || "").slice(0, 10),
+                  sqft: r.siding_sqft ? t("jip.pending.sqft", { n: Math.round(r.siding_sqft) }) : "",
+                })}
               </li>
             ))}
             {pendingRuns.length > 3 && (
-              <li>…and {pendingRuns.length - 3} more</li>
+              <li>{t("jip.pending.more", { n: pendingRuns.length - 3 })}</li>
             )}
           </ul>
         </div>
@@ -317,10 +318,10 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
         <ToolTile icon={Upload} label="HOVER PDF" accent="#09090B" testid="tool-tile-hover">
           <HoverImportButton est={est} update={update} save={save} />
         </ToolTile>
-        <ToolTile icon={FileText} label="Blueprints" accent="#7C3AED" testid="tool-tile-blueprint">
+        <ToolTile icon={FileText} label={t("jip.tile.blueprints")} accent="#7C3AED" testid="tool-tile-blueprint">
           <BlueprintMeasureButton est={est} update={update} save={save} />
         </ToolTile>
-        <ToolTile icon={Sparkles} label="AI Photo Measure" accent="#7C3AED" testid="tool-tile-ai">
+        <ToolTile icon={Sparkles} label={t("jip.tile.aiPhoto")} accent="#7C3AED" testid="tool-tile-ai">
           <AIMeasureButton
             kind={est.kind || "siding"}
             address={est?.address}

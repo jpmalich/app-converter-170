@@ -12,6 +12,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug, Lightbulb, ScanSearch, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
 import {
   inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges, dormerNetArea,
@@ -93,6 +94,7 @@ const unitOf = (k) =>
   k.endsWith("_sqft") ? "ft²" : k.endsWith("_lf") ? "LF" : "";
 
 export default function AIMeasureButton({ kind, onApply, address, overhangIn, estimateId, estimate }) {
+  const t = useT();
   const fileRef = useRef();
   // `files` is the locally-selected file objects (used for previews until
   // upload completes); `photoUrls` is the canonical server-side list that
@@ -2305,7 +2307,7 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         title={preview ? "Resume AI measure session — add more photos or refine" : "AI photo measure — upload 2-8 phone photos of the house (+ optional aerial)"}
       >
         <Sparkles className="w-3.5 h-3.5" />
-        {preview ? "AI Measure (Resume)" : "AI Measure"}
+        {preview ? t("intake.aiMeasureResume") : t("intake.aiMeasure")}
       </button>
 
       {open && (
