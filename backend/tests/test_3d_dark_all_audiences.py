@@ -84,8 +84,10 @@ def test_pin5_source_view_entry_rides_the_card():
     assert "/measure/ai-blueprint/latest-for-estimate/" in FVC
     assert "/measure/ai-measure/latest-for-estimate/" in FVC
     assert "source-view" in FVC
-    for label in ("View Source Blueprints →", "View Source Photos →", "View Hover Report →"):
-        assert label in FVC, f"missing adaptive label {label!r}"
+    # adaptive labels keyed EN/ES since the 2026-08-04 Spanish sweep —
+    # fv.door.* in dictionaries.js carries both languages
+    for label in ("fv.door.blueprint", "fv.door.photo", "fv.door.hover"):
+        assert label in FVC, f"missing adaptive label key {label!r}"
     assert "{door && (" in FVC  # no substrate on any door → no link
     # the entry lives on the card, nowhere else on app surfaces
     assert "source-view" not in (FE / "components" / "estimate" / "JobInfoPanel.jsx").read_text()
