@@ -196,3 +196,5 @@
 - 2026-08-04 13:26 UTC · ef1ceb3 · GUARD-FAIL · FAILED tests/test_gable_annotations.py::TestPipelinePins::test_field_verify_rows_and_ridge_warning
 - 2026-08-04 13:26 UTC · ef1ceb3 · GUARD-FAIL · FAILED tests/test_one_waste_emitter.py::test_frontend_waste_math_only_in_ratified_emitters
 - 2026-08-04 13:32 UTC · 3b9c4ac · GUARD-FAIL · FAILED tests/test_3d_dark_all_audiences.py::test_pin5_source_view_entry_rides_the_card
+- 2026-08-04 13:37 UTC · 23563ec · GUARD-FAIL · ERROR tests/test_quote_order_gates.py::test_gates_endpoint_and_quote_surfaces_block
+- 2026-08-04 13:37 UTC · 23563ec · GUARD-FAIL · ERROR tests/test_quote_order_gates.py::test_quote_clears_when_conflict_resolved
