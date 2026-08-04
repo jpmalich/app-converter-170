@@ -140,6 +140,11 @@ def test_no_estimate_carries_cross_family_lines():
             tab = l.get("tab") or "vinyl"
             if (l.get("qty") or 0) <= 0:
                 continue
+            if l.get("cross_family_flag"):
+                # typed-dollar survivors restored under Howard's guard
+                # ("flag it for me, do not silently delete it") — visible,
+                # awaiting his ruling, never a silent pass for new lines
+                continue
             bad = (
                 (kind == "lp_smart" and tab in ("vinyl", "ascend", "windows"))
                 or (kind == "windows" and tab in ("vinyl", "ascend", "lp_smart"))

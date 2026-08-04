@@ -3066,6 +3066,26 @@ async def rederive_estimate(
                  and ((l.get("tab") or "vinyl") not in ("vinyl", "ascend")
                       or (l.get("qty") or 0) > 0)]
         tab_lines = derived_va + carry
+    else:
+        # lp_smart-kind door writes ONLY the LP family (Howard ruled
+        # 2026-08-04: "an LP door restores LP lines ONLY" — the LINE
+        # surface, every door, both directions; this server-side rebuild
+        # is the door the Hover-modal fix alone could not close: a
+        # re-derive was re-landing vinyl/ascend rows on LP estimates).
+        # Non-family service tabs (iss gutter, etc.) carry verbatim;
+        # human-typed rows survive regardless of tab — flagged in the
+        # response, never silently dropped.
+        derived_lp = [l for l in tab_lines
+                      if (l.get("tab") or "vinyl") == "lp_smart"]
+        keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in derived_lp}
+        id_keys = {(l.get("tab"), l.get("item_id")) for l in derived_lp if l.get("item_id")}
+        carry = [l for l in prev_lines
+                 if (l.get("tab"), l.get("section"), l.get("name")) not in keys
+                 and not (l.get("item_id") and (l.get("tab"), l.get("item_id")) in id_keys)
+                 and ((l.get("tab") or "vinyl") not in ("vinyl", "ascend", "windows")
+                      or (l.get("qty_src") or "") == "human"
+                      or l.get("cross_family_flag"))]
+        tab_lines = derived_lp + carry
     await db.estimates.update_one(
         {"id": est_id},
         {"$set": {"lines": tab_lines, "hover_measurements": scoped}})
