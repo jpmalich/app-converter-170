@@ -635,7 +635,7 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
          "batten_spacing_in": 1, "fascia_width_in": 1,
          "panel_size": 1, "wrap_trim_width_in": 1,
          "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
-         "photo_total_trim_sqft": 1, "photo_frieze_present": 1})
+         "photo_total_trim_sqft": 1, "photo_frieze_present": 1, "lines": 1})
     if (full_est or {}).get("kind") != "lp_smart":
         raise HTTPException(status_code=400,
                             detail="LP materialize is lp_smart-kind only")
@@ -650,13 +650,17 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
     # WASTE IS THE CONTRACTOR'S (ruled 2026-07-19): the visible field is
     # the only waste applied — never a silent engine default.
     waste_field = float((full_est or {}).get("waste_pct") or 0)
-    from routes.hover import rebuild_lp_tab_lines
+    from routes.hover import rebuild_lp_tab_lines, scope_to_lp_family
     # profile=None: default-profile inheritance already applied above via
     # _apply_default_profile (annotations beat the default — pinned).
     tab_lines, _scoped = await rebuild_lp_tab_lines(
         est_id=est_id, company_id=user["company_id"],
         base_measurements=measurements, est=full_est or {},
         profile=None, waste_field=waste_field)
+    # LP DOOR WRITES LP ONLY (Howard ruled 2026-08-04): the rebuild emits
+    # every tab — scope before the write, same one-copy filter as
+    # /rederive and hover-lp-run.
+    tab_lines = scope_to_lp_family(tab_lines, (full_est or {}).get("lines") or [])
     est_set: dict = {"lines": tab_lines}
     rid = str(run.get("run_id") or "").strip() or None
     archived = await archive_run_for_artifact(

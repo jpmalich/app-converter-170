@@ -121,6 +121,25 @@ def test_photo_door_scopes_families_at_the_merge():
     assert "lp-package/materialize" in src, "photo-door LP cut lost its engine door"
 
 
+def test_lp_materialize_doors_scope_through_the_one_copy():
+    """THE SECOND RE-CONTAMINATION PATH (found 2026-08-04, suite run):
+    rebuild_lp_tab_lines emits EVERY tab; /rederive filtered but
+    hover-lp-run and lp-package/materialize wrote the rebuild WHOLESALE —
+    every materialize re-landed vinyl/ascend rows on the LP estimate
+    (Jon Casile, EST-536665 live). All three doors must scope through
+    the ONE COPY (scope_to_lp_family), never a wholesale write."""
+    hover_src = (BE / "hover.py").read_text()
+    assert "def scope_to_lp_family" in hover_src, "the one-copy scoping helper is gone"
+    assert hover_src.count("scope_to_lp_family(") >= 3, \
+        "hover.py must define + use the scoper at BOTH its doors (rederive, hover-lp-run)"
+    assert 'est_set["lines"] = rebuilt_lines' in hover_src and \
+        "scope_to_lp_family(rebuilt_lines" in hover_src, \
+        "hover-lp-run writes the rebuild wholesale again"
+    lp_src = (BE / "lp_package_routes.py").read_text()
+    assert "scope_to_lp_family(tab_lines" in lp_src, \
+        "lp-package/materialize writes the rebuild wholesale again"
+
+
 def test_no_estimate_carries_cross_family_lines():
     """LIVE INVARIANT — the pin that would have been red while Howard
     looked at the modal. Any restore that lands a wrong-family line on

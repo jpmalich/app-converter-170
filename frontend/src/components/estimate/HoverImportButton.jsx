@@ -8,7 +8,7 @@
 // them read-only above the line list so the contractor can sanity-check before
 // committing.
 import React, { useRef, useState } from "react";
-import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer } from "lucide-react";
+import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -155,6 +155,12 @@ export default function HoverImportButton({ est, update, save }) {
   const [hoverRunId, setHoverRunId] = useState(null);
   const [profile, setProfile] = useState(est?.default_siding_profile || null);
   const [showWarning, setShowWarning] = useState(false);
+  // Ruled 2026-08-04 — PRESENTATION ONLY collapse state for the two
+  // row-heavy modal sections (window openings + sanity warnings).
+  // Collapsed is the DEFAULT. These two booleans are never read by
+  // apply() — the applied payload is byte-identical open or closed.
+  const [openingsOpen, setOpeningsOpen] = useState(false);
+  const [warningsOpen, setWarningsOpen] = useState(false);
   // Iter 78n — when set, the preview modal was opened by "Restore HOVER
   // lines" (re-running the mapper against cached measurements) instead of
   // a fresh PDF read. Shown as a subtitle in the modal header so the
@@ -201,8 +207,16 @@ export default function HoverImportButton({ est, update, save }) {
   // Hover waste unification (ruled 2026-07-20): the ruled 10% default is
   // WRITTEN into the estimate's visible Waste % field on import — the
   // field governs; nothing applies silently inside formulas.
+  // RESTORE GUARD (ruled 2026-08-04 — race cleanup finding, EST-536665):
+  // a RESTORE reads no new report — the estimate's OWN field (family-
+  // defaulted by hover-lp-run, contractor-editable since) is the
+  // governing spec value. The import-time generic prefill persisted in
+  // cached measurements must never regress it (panels 138 → 117 was
+  // this clobber). Fresh imports keep the measurement prefill.
   const wasteFieldPrefill = Number(
-    result?.measurements?._waste_field_prefill_pct ?? 10
+    (restoredAt ? est?.waste_pct : null)
+    ?? result?.measurements?._waste_field_prefill_pct
+    ?? 10
   );
 
   const upload = async (f) => {
@@ -259,11 +273,15 @@ export default function HoverImportButton({ est, update, save }) {
         setHoverRunId(runId || null);
         setResult(final);
         setOpenings(final?.vero_openings || []);
+        setOpeningsOpen(false);
+        setWarningsOpen(false);
       } else {
         const final = await pollHoverImportStatus(runId, setStage);
         setHoverRunId(runId);
         setResult(final);
         setOpenings(final?.vero_openings || []);
+        setOpeningsOpen(false);
+        setWarningsOpen(false);
       }
     } catch (e) {
       const detail = e?.response?.data?.detail || e?.message || "Import failed";
@@ -304,6 +322,8 @@ export default function HoverImportButton({ est, update, save }) {
     setBusy(true);
     setResult(null);
     setOpenings([]);
+    setOpeningsOpen(false);
+    setWarningsOpen(false);
     setFacadeInclude({});
     try {
       const { data } = await api.post("/measure/map", {
@@ -386,6 +406,9 @@ export default function HoverImportButton({ est, update, save }) {
     // facade-composition the +Openings<20ft² figure no longer anchors, and
     // a Hover-supplied adder was never the contractor's field. Paired
     // (windows) lines never carry siding waste.
+    // ONE RULE, ALL FAMILIES (sealed 2026-07-28): a single family-
+    // defaulted prefill — on restores it resolves to the estimate's own
+    // field (see wasteFieldPrefill), never a per-kind branch here.
     const wastePct = wasteFieldPrefill;
     const soffitType = est?.lp_soffit_type || "mix";
     const wastedSource = steerLpSoffit(bakeWasteIntoLines(sourceLines, wastePct), soffitType);
@@ -722,19 +745,42 @@ export default function HoverImportButton({ est, update, save }) {
                   opening-perim consistency, door-count integrity, corner
                   plausibility). Empty array = report looks consistent
                   (banner hidden). */}
-              {Array.isArray(result.warnings) && result.warnings.length > 0 && (
+              {Array.isArray(result.warnings) && result.warnings.length > 0 && (() => {
+                // Fold rule (ruled 2026-08-04): info/warn heuristics fold
+                // behind the count; any FUTURE blocking level (anything not
+                // info/warn) stays visible even when collapsed — the fold
+                // must never bury a flag that should stop the contractor.
+                const blocking = result.warnings.filter(
+                  (w) => w.level && w.level !== "info" && w.level !== "warn"
+                );
+                const shown = warningsOpen ? result.warnings : blocking;
+                return (
                 <div
                   className="border-b border-[#FCD34D] bg-[#FFFBEB] px-5 py-3"
                   data-testid="hover-warnings-banner"
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setWarningsOpen((o) => !o)}
+                    className="w-full flex items-center gap-2 text-left"
+                    data-testid="hover-warnings-toggle"
+                  >
+                    {warningsOpen ? (
+                      <ChevronDown className="w-3.5 h-3.5 text-[var(--warning-text)] shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 text-[var(--warning-text)] shrink-0" />
+                    )}
                     <AlertTriangle className="w-4 h-4 text-[var(--warning-text)]" />
                     <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--warning-text)]">
                       Sanity check · {result.warnings.length} warning{result.warnings.length > 1 ? "s" : ""}
                     </span>
-                  </div>
-                  <div className="space-y-2">
-                    {result.warnings.map((w) => (
+                    {!warningsOpen && (
+                      <span className="text-[10px] text-[var(--warning-text)]">— tap to review</span>
+                    )}
+                  </button>
+                  {shown.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {shown.map((w) => (
                       <div
                         key={w.code}
                         className="text-[12px] text-[#78350F] leading-snug"
@@ -749,11 +795,15 @@ export default function HoverImportButton({ est, update, save }) {
                       </div>
                     ))}
                   </div>
+                  )}
+                  {warningsOpen && (
                   <div className="text-[10px] text-[var(--warning-text)] mt-2 italic">
                     These are heuristic checks — review the elevation drawings to confirm before applying.
                   </div>
+                  )}
                 </div>
-              )}
+                );
+              })()}
               {/* Measurements block */}
               {(() => {
                 const elevs = buildElevationsFromHoverVision(result.measurements || {});
@@ -931,16 +981,45 @@ export default function HoverImportButton({ est, update, save }) {
                   AI-guessed product type editable in a dropdown. Apply
                   appends these to est.vero_openings (VeroPanel resolves
                   bucket_label + price on next render). */}
-              {openings.length > 0 && (
+              {openings.length > 0 && (() => {
+                // "Needs review" = a row whose style guess didn't resolve to
+                // a known Vero product type. Surfaced on the collapsed header
+                // so the fold never hides a real problem.
+                const needsReview = openings.filter(
+                  (op) => !op.product_type || !VERO_PRODUCT_TYPES.includes(op.product_type)
+                ).length;
+                return (
                 <div className="p-5 border-b border-[var(--border)]">
-                  <div className="flex items-center gap-2 mb-3 pb-1 border-b border-[var(--border-strong)]">
+                  <button
+                    type="button"
+                    onClick={() => setOpeningsOpen((o) => !o)}
+                    className={`w-full flex items-center gap-2 text-left ${openingsOpen ? "mb-3 pb-1 border-b border-[var(--border-strong)]" : ""}`}
+                    data-testid="hover-openings-toggle"
+                  >
+                    {openingsOpen ? (
+                      <ChevronDown className="w-3.5 h-3.5 text-[var(--brand-text)] shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 text-[var(--brand-text)] shrink-0" />
+                    )}
                     <span className="text-xs uppercase tracking-[0.18em] font-bold text-[var(--brand-text)]">
                       Vero Window Openings — Style Guess
                     </span>
-                    <span className="text-[10px] text-[var(--muted)]">
-                      ({openings.length} {openings.length === 1 ? "opening" : "openings"} · edit any style before applying)
+                    <span className="text-[10px] text-[var(--muted)]" data-testid="hover-openings-count">
+                      {openingsOpen
+                        ? `(${openings.length} ${openings.length === 1 ? "opening" : "openings"} · edit any style before applying)`
+                        : `Window openings (${openings.length}) — tap to review styles`}
                     </span>
-                  </div>
+                    {needsReview > 0 && (
+                      <span
+                        className="text-[10px] font-bold text-[var(--warning-text)] bg-[#FFFBEB] border border-[#FCD34D] px-1.5 py-0.5"
+                        data-testid="hover-openings-needs-review"
+                      >
+                        {needsReview} need{needsReview === 1 ? "s" : ""} review
+                      </span>
+                    )}
+                  </button>
+                  {openingsOpen && (
+                  <>
                   <p className="text-[10px] text-[var(--ink-2)] leading-snug mb-2">
                     HOVER reports don&apos;t say if a window is double-hung, slider, casement, or picture — only the dimensions.
                     Each row below was auto-guessed from W × H. <strong>Confirm or change</strong> the style per opening; one pick fills <strong>both Mezzo and Vero</strong> tabs on the paired Windows estimate (Mezzo has no Casement, so Casement rows default to DH on the Mezzo side).
@@ -1002,8 +1081,11 @@ export default function HoverImportButton({ est, update, save }) {
                       ))}
                     </tbody>
                   </table>
+                  </>
+                  )}
                 </div>
-              )}
+                );
+              })()}
 
               {/* Lines block — grouped by tab so the contractor can see at a
                   glance what each option will look like. */}

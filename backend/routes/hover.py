@@ -2970,6 +2970,51 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     return tab_lines, scoped
 
 
+def scope_to_lp_family(tab_lines: list, prev_lines: list) -> list:
+    """ONE COPY of the lp_smart-kind family scoping (Howard ruled
+    2026-08-04: "an LP door restores LP lines ONLY" — every door, the
+    LINE surface). The rebuild emits every tab; an lp_smart estimate
+    keeps ONLY the LP family plus: non-family service tabs verbatim,
+    human-typed rows regardless of tab, and Howard-flagged survivors.
+    Shared by /rederive, hover-lp-run, and lp-package/materialize —
+    the wholesale writes at the two materialize doors were the
+    re-contamination path the /rederive fix alone could not close.
+
+    SPEC-RENAME BINDING (same class as the tier-binding sweep,
+    2026-08-04): a MACHINE lp_smart row whose name differs from an
+    emitted row only by its size digits (4' x 10' Panel → 4' x 8'
+    Panel, wrap trim widths, fascia widths) was CONSUMED by the
+    respec — carrying it doubles the panel surface. Human-typed and
+    flagged rows are untouchable, rename or not."""
+    import re
+    derived_lp = [l for l in tab_lines
+                  if (l.get("tab") or "vinyl") == "lp_smart"]
+    keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in derived_lp}
+    id_keys = {(l.get("tab"), l.get("item_id")) for l in derived_lp if l.get("item_id")}
+
+    def _size_base(n):
+        return re.sub(r"\d+(?:\.\d+)?", "§", n or "")
+
+    size_keys = {(l.get("tab"), l.get("section"), _size_base(l.get("name")))
+                 for l in derived_lp}
+
+    def _size_consumed(l):
+        return ((l.get("tab") or "vinyl") == "lp_smart"
+                and (l.get("qty_src") or "") != "human"
+                and not l.get("manual")
+                and not l.get("cross_family_flag")
+                and (l.get("tab"), l.get("section"), _size_base(l.get("name"))) in size_keys)
+
+    carry = [l for l in prev_lines
+             if (l.get("tab"), l.get("section"), l.get("name")) not in keys
+             and not (l.get("item_id") and (l.get("tab"), l.get("item_id")) in id_keys)
+             and not _size_consumed(l)
+             and ((l.get("tab") or "vinyl") not in ("vinyl", "ascend", "windows")
+                  or (l.get("qty_src") or "") == "human"
+                  or l.get("cross_family_flag"))]
+    return derived_lp + carry
+
+
 @router.post("/estimates/{est_id}/rederive")
 async def rederive_estimate(
     est_id: str, payload: dict | None = None,
@@ -3075,17 +3120,7 @@ async def rederive_estimate(
         # Non-family service tabs (iss gutter, etc.) carry verbatim;
         # human-typed rows survive regardless of tab — flagged in the
         # response, never silently dropped.
-        derived_lp = [l for l in tab_lines
-                      if (l.get("tab") or "vinyl") == "lp_smart"]
-        keys = {(l.get("tab"), l.get("section"), l.get("name")) for l in derived_lp}
-        id_keys = {(l.get("tab"), l.get("item_id")) for l in derived_lp if l.get("item_id")}
-        carry = [l for l in prev_lines
-                 if (l.get("tab"), l.get("section"), l.get("name")) not in keys
-                 and not (l.get("item_id") and (l.get("tab"), l.get("item_id")) in id_keys)
-                 and ((l.get("tab") or "vinyl") not in ("vinyl", "ascend", "windows")
-                      or (l.get("qty_src") or "") == "human"
-                      or l.get("cross_family_flag"))]
-        tab_lines = derived_lp + carry
+        tab_lines = scope_to_lp_family(tab_lines, prev_lines)
     await db.estimates.update_one(
         {"id": est_id},
         {"$set": {"lines": tab_lines, "hover_measurements": scoped}})
@@ -3125,7 +3160,7 @@ async def hover_lp_run(
          "batten_spacing_in": 1, "fascia_width_in": 1,
          "panel_size": 1, "wrap_trim_width_in": 1,
          "window_wrap_color": 1, "soffit_fascia_color": 1,
-         "lp_flag_checklist": 1})
+         "lp_flag_checklist": 1, "lines": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
     if est.get("kind") != "lp_smart":
@@ -3200,6 +3235,10 @@ async def hover_lp_run(
             est_id=est_id, company_id=user["company_id"],
             base_measurements=scoped_base, est=est,
             profile=profile, waste_field=waste_field)
+        # LP DOOR WRITES LP ONLY (Howard ruled 2026-08-04): the rebuild
+        # emits every tab — the wholesale write here was re-landing
+        # vinyl/ascend rows on LP estimates after the /rederive fix.
+        rebuilt_lines = scope_to_lp_family(rebuilt_lines, est.get("lines") or [])
         est_set["lines"] = rebuilt_lines
         # Porch-ceiling recompute basis (Casile set-back doorway item):
         # the classic import apply persists est.hover_measurements; the
