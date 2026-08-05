@@ -513,7 +513,8 @@ def _region_context_lines(m: dict) -> list[dict]:
                  "⚠ B&B base treatment = J-channel, NO starter (ruled) — B&B base LF unavailable on this run, verify by hand; carries the B&B region's product color")
 
     # ---- J-CHANNEL context split (no pooled J on multi-region — pinned) ----
-    pcs_open, br_open = _j_channel_compute(m, include_rakes=False)
+    pcs_open, br_open = _j_channel_compute(m, include_rakes=False,
+                                           include_eave_porch=False)
     if pcs_open > 0:
         line("3/4\" J-Channel Standard color — window/door", _J_SKU, pcs_open,
              f"{br_open} — {clap_label} body region color")
@@ -524,6 +525,12 @@ def _region_context_lines(m: dict) -> list[dict]:
                       if gable_lf else f" — {clap_label} body region color")
         line("3/4\" J-Channel Standard color — rake/gable", _J_SKU, qty,
              f"{rakes:.0f} LF rakes ÷ 12.5 = {qty}{gable_note}")
+    ep_lf, ep_br = _eave_porch_j_lf(m)
+    if ep_lf > 0:
+        qty = math.ceil(ep_lf / 12.5 - 1e-9)
+        line("3/4\" J-Channel Standard color — eave/porch soffit channel",
+             _J_SKU, qty,
+             f"{ep_br} = {ep_lf:.0f} LF ÷ 12.5 = {qty} — {clap_label} body region color")
 
     # ---- FINISH TRIM context split ----
     eaves = float(m.get("eaves_lf") or 0)
@@ -539,7 +546,44 @@ def _region_context_lines(m: dict) -> list[dict]:
     return out
 
 
-def _j_channel_compute(m: dict, include_rakes: bool = True) -> tuple[int, str]:
+def _eave_porch_j_lf(m: dict) -> tuple[float, str]:
+    """EAVE/PORCH-J (Howard ruled 2026-08-05, Boni): the eave soffit
+    panels tuck into a wall-side receiving channel, and the porch
+    ceiling carries its own 3-side channel. REAL material on every
+    VINYL/ASCEND soffit job — NEVER LP SmartSide (different soffit/trim
+    system; LP has no eave-J). Porch channel geometry: width from the
+    porch roof plane's eave when the plane read exists (Boni: 15 +
+    2 × (150/15) = 35 LF), square-porch fallback 3×√sqft otherwise."""
+    eaves = float(m.get("eaves_lf") or 0)
+    porch_sqft = float(m.get("porch_ceiling_sqft") or 0)
+    parts: list[str] = []
+    total = 0.0
+    if eaves > 0:
+        total += eaves
+        parts.append(f"{eaves:.0f} eave wall-channel")
+    if porch_sqft > 0:
+        porch_lf = 0.0
+        covered = 0.0
+        for p in (m.get("_roof_planes") or []):
+            if not (isinstance(p, dict) and p.get("is_porch")):
+                continue
+            sq = float(p.get("porch_ceiling_sqft") or 0)
+            w = float(p.get("eave_lf") or 0)
+            if sq > 0 and w > 0:
+                porch_lf += w + 2 * (sq / w)
+                covered += sq
+        rem = porch_sqft - covered
+        if rem > 1:
+            porch_lf += 3 * math.sqrt(rem)
+        total += porch_lf
+        parts.append(f"{porch_lf:.0f} porch ceiling channel (3 sides)")
+    if not parts:
+        return 0.0, ""
+    return total, " + ".join(parts) + " (eave/porch-J — ruled 2026-08-05, vinyl/Ascend only)"
+
+
+def _j_channel_compute(m: dict, include_rakes: bool = True,
+                       include_eave_porch: bool = True) -> tuple[int, str]:
     """Howard's J-channel formula (Iter 78 — eaves moved to Finish Trim):
 
         pcs = ceil( (window + patio + garage perimeter + rakes) / 12.5 )
@@ -617,11 +661,15 @@ def _j_channel_compute(m: dict, include_rakes: bool = True) -> tuple[int, str]:
         parts.append(f"{int(garage_n)} garage × {int(GARAGE_DOOR_PERIM_LF)}")
     if rakes:
         parts.append(f"{rakes:.0f} rakes")
+    ep_lf, ep_br = _eave_porch_j_lf(m) if include_eave_porch else (0.0, "")
+    if ep_br:
+        parts.append(ep_br)
 
     total_lf = (
         win_patio_perim
         + garage_n * GARAGE_DOOR_PERIM_LF
         + rakes
+        + ep_lf
     )
     if total_lf <= 0:
         return 0, "no openings + no rakes → 0 pcs"

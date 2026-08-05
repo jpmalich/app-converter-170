@@ -104,11 +104,47 @@ def test_integral_j_flag_touches_exactly_four_lines():
     assert "integral-J" in str(cap[0].get("note") or "")
     # wrap coil: window term gone
     assert _coil_019_rolls(m_on) < _coil_019_rolls(_boni_measurements(167, 150))
-    # wall-J: window perimeter out
+    # wall-J: window perimeter OUT + eave/porch channel IN → installed 30 EXACT
     pcs_on, br_on = _j_channel_compute(m_on)
     pcs_off, _ = _j_channel_compute(_boni_measurements(167, 150))
     assert pcs_on < pcs_off
+    assert pcs_on == 30, \
+        f"BONI ACCEPTANCE: wall-J must land installed 30 (got {pcs_on})"
     assert "integral-J" in br_on, "the J line must print its provenance"
+    assert "eave/porch-J" in br_on, "the J line must print the channel provenance"
+
+
+def test_eave_porch_j_is_family_scoped():
+    """RULED 2026-08-05: the eave/porch-J term (wall-side eave receiving
+    channel + porch ceiling channel) is REAL on vinyl and Ascend soffit
+    systems and NEVER on LP SmartSide. This pin fails if it ever appears
+    on an LP line or disappears from a vinyl/Ascend J line."""
+    m = _boni_measurements(167, 150)
+    lines = _build_lines(m)
+    for tab in ("vinyl", "ascend"):
+        j = [l for l in lines if l["tab"] == tab
+             and "j-channel" in str(l.get("name") or "").lower()
+             and "soffit" not in str(l.get("name") or "").lower()
+             or (tab == "ascend" and l["tab"] == tab
+                 and l.get("name") == "Ascend - J - Channel")]
+        assert j, f"{tab} wall-J line missing"
+        assert any("eave/porch-J" in str(l.get("note") or "") for l in j), \
+            f"{tab} wall-J lost the eave/porch channel term"
+    lp = [l for l in lines if l["tab"] == "lp_smart"]
+    assert lp, "LP tab produced no lines"
+    for l in lp:
+        blob = f"{l.get('name') or ''} {l.get('note') or ''}"
+        assert "eave/porch-J" not in blob, \
+            f"eave/porch-J bled onto LP line: {l.get('name')}"
+        assert "j-channel" not in str(l.get("name") or "").lower(), \
+            f"LP must carry no J-channel line at all: {l.get('name')}"
+    # exact plane geometry: porch plane 15 LF eave × 10 ft deep = 35 LF channel
+    pcs, br = _j_channel_compute({
+        **m, "_windows_integral_j": True,
+        "_roof_planes": [{"label": "porch", "is_porch": True,
+                          "eave_lf": 15, "porch_ceiling_sqft": 150}],
+    })
+    assert pcs == 30 and "35 porch ceiling channel" in br
 
 
 def test_hanger_formula_untouched():
