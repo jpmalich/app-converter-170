@@ -50,6 +50,43 @@ def test_plane_sum_beats_the_wall_rectangle():
         "the porch plane must carry its ceiling — one structure, two consequences"
 
 
+def test_garage_gable_rakes_ride_the_plane_sum():
+    """BONI SECOND SEND (Howard, 2026-08-05): the right elevation shows a
+    separate garage gable / intersecting double gable. When the plane read
+    returns its rake_lf, the plane sum overrides the wall-rectangle 82 —
+    and the gable-end census reports how many ends the read carries."""
+    planes = [
+        {"label": "main", "eave_lf": 116, "rake_lf": 82, "gable_ends": 2,
+         "is_porch": False, "porch_ceiling_sqft": 0},
+        {"label": "garage", "eave_lf": 36, "rake_lf": 42, "gable_ends": 1,
+         "is_porch": False, "porch_ceiling_sqft": 0},
+        {"label": "porch", "eave_lf": 15, "rake_lf": 0, "gable_ends": 0,
+         "is_porch": True, "porch_ceiling_sqft": 150},
+    ]
+    m = _aggregate_to_hover_shape(_boni_raw(planes))
+    assert m["rakes_lf"] == 124, "garage gable rakes must sum with the main pair"
+    assert m.get("_gable_ends_plane_read") == 3
+    # rake_lf 0 on the secondary planes keeps the wall-derived 82 (max guard)
+    m0 = _aggregate_to_hover_shape(_boni_raw(BONI_PLANES))
+    assert m0["rakes_lf"] == 82
+
+
+def test_outside_corner_lf_is_per_corner_summed_never_averaged():
+    """BONI SECOND SEND: installed OSC = 11 pcs. 6 main-body corners at
+    18 ft + 2 garage-wing corners at their OWN ~10 ft height = 128 LF →
+    ceil(128 / 12.5) = 11. The 261 Haugh never-average doctrine applies:
+    the aggregator passes the model's per-corner SUM straight through."""
+    raw = _boni_raw(BONI_PLANES)
+    raw["outside_corner_count"] = 8
+    raw["outside_corner_lf"] = 128  # 6 × 18 + 2 × 10, summed per corner
+    m = _aggregate_to_hover_shape(raw)
+    assert m["outside_corner_lf"] == 128
+    lines = _build_lines({**_boni_measurements(167, 150),
+                          "outside_corner_lf": 128})
+    assert _qty(lines, "Outside corners") == 11, \
+        "vinyl OSC pieces must land installed 11 from the per-corner LF sum"
+
+
 def test_57w_override_stands_down_only_when_planes_exist():
     # No planes -> the wall-derived defence still runs (58+58 = 116).
     m = _aggregate_to_hover_shape(_boni_raw([]))

@@ -186,7 +186,7 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
     }
   ],
   "eaves_lf": number,          // sum of widths of EAVE walls only (i.e. walls where gable_triangle_height_ft == 0). For a typical gable-roof house with gables on front + back, this = left wall width + right wall width — NOT the full perimeter. Only equals the full perimeter when the roof is a hip (every wall has gable_triangle_height_ft = 0).
-  "rakes_lf": number,          // sum of sloped roof edges = 2 × √((wall_width/2)² + gable_triangle_height_ft²) summed over each gable wall
+  "rakes_lf": number,          // sum of sloped roof edges = 2 × √((wall_width/2)² + gable_triangle_height_ft²) summed over each gable wall. This is the MAIN-BODY read only — secondary gabled planes (garage wing, cross-gables) carry their own rake_lf inside roof_planes[] and the app sums the planes when they exist.
   "roof_planes": [
     // EVERY roof plane that carries its own eave (gutter/fascia) line —
     // read the ROOF PLAN sheet FIRST, corroborate against the elevations.
@@ -195,15 +195,29 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
     // into one rectangle: a projecting garage or covered porch has eave
     // runs the four-wall model cannot see. Report [] ONLY when the roof
     // plan truly shows a single plane pair.
+    // SELF-CHECK before returning roof_planes: (1) Does the floor plan
+    // or area table show an ATTACHED GARAGE (e.g. "3 CAR GARAGE",
+    // "GARAGE 795 sq ft")? Does the ROOF PLAN show a second ridge /
+    // separate truss field over the garage block? Then roof_planes MUST
+    // contain a "garage" entry with its own eave_lf (the garage block's
+    // gutter-carrying sides) — and if any elevation shows the garage
+    // block ending in its own gable (an intersecting / double gable),
+    // its rake_lf and gable_ends must be non-zero. (2) Does any
+    // elevation/floor plan show a COVERED PORCH? Then a "porch" entry
+    // with is_porch=true and its ceiling ft² (prefer the PRINTED porch
+    // area from the area table; include EVERY porch, front and rear,
+    // not just the one in the table). A missing plane is a missing
+    // gutter run downstream — the four-wall rectangle CANNOT recover it.
     {"label": "main" | "garage" | "porch" | "<other, verbatim from plan>",
      "eave_lf": number,            // horizontal eave (gutter) run this plane contributes, all sides summed
-     "rake_lf": number,            // sloped rake edge on this plane (0 if none)
+     "rake_lf": number,            // TOTAL sloped rake edge on this plane. A plane with a GABLE END has rakes — NEVER 0 for a gabled plane. Per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × pitch_rise/12)²). READ THE ELEVATIONS: an attached garage wing with ITS OWN gable — including an intersecting / double gable where the garage roof meets the main roof — contributes rake edges the main-rectangle walk cannot see. If any elevation shows a separate garage gable, that plane's rake_lf MUST come back non-zero.
+     "gable_ends": number,          // how many gable ends (triangular end faces) this plane carries: 0 for a hip or shed plane, 1 per gable end. The app reports the total across planes.
      "is_porch": true | false,
      "porch_ceiling_sqft": number  // porch planes only: ceiling area under the roof (soffit material, read porch depth × length from the floor plan); 0 otherwise
     }
   ],
   "starter_lf": number,        // full floor-plan PERIMETER in LF — report the RAW perimeter; the app deducts entry-door widths downstream per convention (sliders/patio doors sit on the starter). NOT eaves-only.
-  "roof_pitch": "<printed roof pitch callout, e.g. '7/12' or '8/12'; empty string if no pitch is printed anywhere>",
+  "roof_pitch": "<the MAIN HOUSE BODY's printed pitch. PITCH-TRIANGLE NOTATION: the triangle marks print the RUN (always 12) on one leg and the RISE on the other — a triangle marked 12 and 7 means 7/12, NEVER 12/12 (only read 12/12 when BOTH legs print 12). Cross-gable houses print SEVERAL pitches (main body, garage/bonus wing, porch mono-truss shed) — report the pitch marked on the MAIN roof planes and name the others in notes. Corroborate against the drawn slope: a 12/12 draws at 45°, a 7/12 visibly shallower. Empty string if no pitch is printed anywhere>",
   "appendages": [
     // Siding-wrapped attached structures: chimney chases, bump-outs,
     // cantilevered boxes. Read from floor plan + elevations. These are
@@ -217,8 +231,8 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      "position_frac": number,           // 0..1 — the appendage's CENTER along its wall, measured from the wall's LEFT edge as drawn on that elevation; null if not resolvable
      "faces_sqft": number}            // TOTAL siding-wrapped face area: outer face + both side returns
   ],
-  "outside_corner_count": number, // INTEGER. Number of OUTSIDE corner locations on the floor plan. See "CORNER COUNTING" rule below.
-  "outside_corner_lf": number, // = outside_corner_count × avg_wall_height_ft. Each corner trim runs the full eave height.
+  "outside_corner_count": number, // INTEGER. Number of OUTSIDE corner locations on the FULL building outline. See "CORNER COUNTING" rule below.
+  "outside_corner_lf": number, // SUM over outside corners of EACH CORNER'S OWN trim height. A 1-story garage-wing corner runs the GARAGE eave height; a 2-story main-body corner runs the FULL height. NEVER count × average height — a material-governing dimension is never averaged (261 Haugh doctrine: the average hides tall corners AND inflates short ones).
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
   "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
   "soffit_sqft": number | null,        // PRINTED soffit/overhang area if the plans state it (eave detail sections, "SOFFIT" callouts, roof plan overhang dims × eave run). null if not printed — do NOT estimate.
@@ -267,6 +281,22 @@ DO NOT default inside_corner_count to 0 unless you have walked the
 perimeter and confirmed the footprint is a pure rectangle. Bump-outs,
 breakfast nooks, mudroom additions, garage bumpouts, and L-wings ALL
 create inside corners.
+
+THE WALK COVERS THE FULL BUILDING OUTLINE — not the main living-space
+rectangle. An ATTACHED GARAGE WING that projects from the body is part
+of the footprint: its projecting corners are OUTSIDE corners and the
+armpits where it returns to the body are INSIDE corners. A covered
+PORCH with siding-wrapped posts/corners on the dimensioned floor plan
+counts the same way. Trace the complete dimensioned outline off the
+floor plan (garage wing + porch projection included) — a walk that
+stops at the main rectangle under-counts every winged house.
+
+WALK SELF-CHECK: compare the printed footprint area against your main
+rectangle (front width × side width). If the footprint area is LARGER,
+the building has a projecting wing — and a walk returning only the
+rectangle's corner pattern missed it. Re-walk including the wing: a
+projecting garage adds 2 outside corners at the GARAGE's own wall
+height (armpit returns go to inside corners).
 
 CHASE / APPENDAGE EDGES: a siding-wrapped chimney chase or bump-out adds
 its own corner-trim edges. Report the chase itself via appendages[]
@@ -372,6 +402,7 @@ async def _claude_direct_blueprint(
     image_payloads: list[bytes],
     user_text: str,
     timeout_s: int = 240,
+    system_text: str | None = None,
 ) -> tuple[str, dict | None, str | None]:
     """One multi-image messages.create against api.anthropic.com. Mirrors
     the photo pipeline's direct transport (SDK max_retries=0, explicit
@@ -398,7 +429,7 @@ async def _claude_direct_blueprint(
         client.messages.create(
             model=model_name,
             max_tokens=16000,
-            system=SYSTEM_PROMPT,
+            system=system_text or SYSTEM_PROMPT,
             messages=[{"role": "user", "content": content}],
         ),
         timeout=timeout_s,
@@ -436,6 +467,143 @@ def _json_from_reply(text: str) -> dict:
         return json.loads(text[start : end + 1])
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {e}")
+
+
+# =========================================================================
+# ROOF GEOMETRY PASS (Boni second send, Howard 2026-08-05). The single
+# 11-sheet read repeatedly dropped the garage roof plane and the garage-
+# wing corners (3 consecutive reads) — attention dilution across dense
+# sheets. When the main read shows GARAGE EVIDENCE (garage doors) but no
+# garage plane, a SECOND focused call gets ONLY the roof plan +
+# elevations + floor plan and does exactly two jobs: the roof-plane
+# census and the full-outline corner walk. Merge is CONSERVATIVE and
+# pure (`_merge_roof_pass`, pinned): planes accepted only when they add
+# the garage entry; corners only when the walk invariant (out − in = 4)
+# holds and the count did not shrink; pitch only in N/12 form.
+# =========================================================================
+ROOF_PASS_PROMPT = """You are a construction-print ROOF & FOOTPRINT reader. You receive ONLY the roof plan, elevation, and floor-plan sheets of one house. IGNORE windows, doors, siding profiles — you have exactly two jobs.
+
+JOB 1 — ROOF PLANE CENSUS. List EVERY roof plane pair that carries its own eave (gutter/fascia) line: the MAIN roof, the ATTACHED GARAGE roof (the area table and a second ridge/truss field on the roof plan prove it exists — a "3 CAR GARAGE" on the floor plan ALWAYS has a roof over it), PORCH roofs (mono/shed count too), and any secondary cross-gable. A plane with a GABLE END has rake_lf — per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × rise/12)²). An attached garage ending in its own gable (including an intersecting/double gable where the garage roof meets the main roof) MUST come back with non-zero rake_lf and gable_ends.
+PITCH-TRIANGLE NOTATION: the triangle marks print the RUN (always 12) on one leg and the RISE on the other — a mark showing 12 and 7 means 7/12, NEVER 12/12 (only 12/12 when BOTH legs print 12). Report the MAIN body pitch in roof_pitch; name secondary pitches in notes.
+
+JOB 2 — FULL-OUTLINE CORNER WALK. Walk the COMPLETE dimensioned floor-plan outline clockwise — garage wing and porch projection INCLUDED, never just the main rectangle. At every direction change: OUTSIDE corner (turns away from interior) or INSIDE corner (notch/armpit). INVARIANT: outside − inside MUST equal 4; re-walk if not. outside_corner_lf = SUM of each corner's OWN trim height (1-story garage-wing corners run the garage eave height; 2-story corners the full height — NEVER count × average height).
+
+Return ONLY this JSON, no explanation:
+{
+  "roof_pitch": "<main body pitch, e.g. '7/12'>",
+  "roof_planes": [
+    {"label": "main" | "garage" | "porch" | "<other>",
+     "eave_lf": number, "rake_lf": number, "gable_ends": number,
+     "is_porch": true | false, "porch_ceiling_sqft": number}
+  ],
+  "outside_corner_count": number, "outside_corner_lf": number,
+  "inside_corner_count": number, "inside_corner_lf": number,
+  "notes": "<secondary pitches, anything illegible>"
+}"""
+
+_PITCH_RE = re.compile(r"^\d{1,2}(\.\d+)?/12$")
+
+
+def _merge_roof_pass(raw: dict, rp: dict) -> dict:
+    """Pure, conservative merge of the focused roof pass into the main
+    read. Mutates and returns `raw`. Provenance lands in raw['_roof_pass']."""
+    if not isinstance(rp, dict):
+        return raw
+    accepted: dict = {}
+    old_planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
+    new_planes = [p for p in (rp.get("roof_planes") or []) if isinstance(p, dict)]
+
+    def _garage_of(planes):
+        for p in planes:
+            if "garage" in str(p.get("label") or "").lower():
+                return p
+        return None
+
+    old_g, new_g = _garage_of(old_planes), _garage_of(new_planes)
+    if new_g and not old_g and old_planes:
+        # Whole plane missing → append it (a missing plane is a missing
+        # gutter run; the focused read is the only source).
+        raw["roof_planes"] = old_planes + [new_g]
+        accepted["garage_plane_appended"] = new_g
+    elif new_g and old_g and float(new_g.get("rake_lf") or 0) > 0 \
+            and float(old_g.get("rake_lf") or 0) == 0 \
+            and int(old_g.get("gable_ends") or 0) == 0:
+        # SURGICAL: the full-context read keeps its eave figure; the
+        # focused read (which actually looked at the gable) supplies
+        # ONLY the rake edges + gable-end census it missed.
+        old_g["rake_lf"] = float(new_g["rake_lf"])
+        old_g["gable_ends"] = int(new_g.get("gable_ends") or 0)
+        accepted["garage_rakes"] = {"rake_lf": old_g["rake_lf"],
+                                    "gable_ends": old_g["gable_ends"]}
+    pitch = str(rp.get("roof_pitch") or "").strip()
+    if pitch and _PITCH_RE.match(pitch) and pitch != str(raw.get("roof_pitch") or ""):
+        raw["roof_pitch"] = pitch
+        accepted["roof_pitch"] = pitch
+        # The schema's own formula, printed-pitch authority: a corrected
+        # pitch recomputes each gable wall's triangle (and with it the
+        # gable siding area downstream).
+        try:
+            rise = float(pitch.split("/")[0])
+            for w in raw.get("walls") or []:
+                if isinstance(w, dict) and float(w.get("gable_triangle_height_ft") or 0) > 0:
+                    w["gable_triangle_height_ft"] = round(
+                        (float(w.get("width_ft") or 0) / 2) * rise / 12, 2)
+        except (TypeError, ValueError):
+            pass
+    try:
+        oc = int(rp.get("outside_corner_count") or 0)
+        ic = int(rp.get("inside_corner_count") or 0)
+        oclf = float(rp.get("outside_corner_lf") or 0)
+        old_oc = int(raw.get("outside_corner_count") or 0)
+    except (TypeError, ValueError):
+        oc = ic = 0
+        oclf = 0.0
+        old_oc = 0
+    if oc > 0 and (oc - ic) == 4 and oc >= old_oc and oclf > 0:
+        raw["outside_corner_count"] = oc
+        raw["outside_corner_lf"] = oclf
+        raw["inside_corner_count"] = ic
+        if rp.get("inside_corner_lf"):
+            raw["inside_corner_lf"] = float(rp["inside_corner_lf"])
+        accepted["corners"] = {"outside": oc, "inside": ic, "outside_lf": oclf}
+    raw["_roof_pass"] = {"accepted": accepted, "notes": rp.get("notes") or ""}
+    return raw
+
+
+def _roof_pass_sheet_indexes(raw: dict, page_count: int) -> list[int]:
+    """Roof plan + elevations + floor plans from the main read's own sheet
+    census, capped at 5 images (roof sheets first)."""
+    picked: list[tuple[int, int]] = []  # (priority, index)
+    prio = {"roof": 0, "elevation": 1, "floor_plan": 2}
+    for s in raw.get("sheets_identified") or []:
+        if not isinstance(s, dict):
+            continue
+        use = str(s.get("useful_for") or "")
+        if use not in prio:
+            continue
+        idx = int(s.get("page") or 0) - 1
+        if 0 <= idx < page_count:
+            picked.append((prio[use], idx))
+    picked.sort()
+    return [i for _, i in picked[:5]]
+
+
+def _roof_pass_needed(raw: dict) -> bool:
+    planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
+    garage = [p for p in planes
+              if "garage" in str(p.get("label") or "").lower()]
+    garage_evidence = (
+        any(str(d.get("type_hint") or "") == "garage" for d in raw.get("doors") or [])
+        or any("garage" in str(w.get("label") or "").lower() for w in raw.get("walls") or [])
+    )
+    if not garage_evidence:
+        return False
+    if not garage:
+        return True
+    # Garage plane present but gable-blind (rake 0 AND no gable ends) —
+    # the focused read verifies the elevation's gable.
+    return all(float(p.get("rake_lf") or 0) == 0
+               and int(p.get("gable_ends") or 0) == 0 for p in garage)
 
 
 def _compress_for_claude(img_bytes: bytes, max_raw_bytes: int = 5_500_000) -> bytes:
@@ -632,6 +800,12 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         plane_rakes = sum(float(p.get("rake_lf") or 0) for p in planes)
         if plane_rakes > float(raw.get("rakes_lf") or 0):
             raw["rakes_lf"] = plane_rakes
+        # BONI SECOND SEND (Howard, 2026-08-05) — gable-end census for the
+        # multiple-gable report: how many triangular ends the plane read
+        # carries (the rectangle walk sees exactly the main pair).
+        gable_ends = sum(int(p.get("gable_ends") or 0) for p in planes)
+        if gable_ends > 0:
+            raw["_gable_ends_plane_read"] = gable_ends
         porch_sqft = sum(float(p.get("porch_ceiling_sqft") or 0)
                          for p in planes if p.get("is_porch"))
         if porch_sqft > 0 and not raw.get("porch_ceiling_sqft"):
@@ -689,6 +863,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
            if raw.get("porch_ceiling_sqft") else {}),
         **({"_eaves_plane_summed": True, "_roof_planes": raw.get("roof_planes")}
            if raw.get("_eaves_plane_summed") else {}),
+        **({"_gable_ends_plane_read": int(raw["_gable_ends_plane_read"])}
+           if raw.get("_gable_ends_plane_read") else {}),
         "starter_lf": _starter_lf,
         "outside_corner_lf": float(
             raw.get("outside_corner_lf")
@@ -1412,6 +1588,43 @@ async def _execute_ai_blueprint_worker(
 
         await _set_stage("aggregating")
         raw = _json_from_reply(reply_text or "")
+        # ROOF GEOMETRY PASS (Boni second send): fire the focused read
+        # only when garage evidence exists without a garage roof plane.
+        # Failure never sinks the run — the main read stands.
+        try:
+            if _roof_pass_needed(raw):
+                await _set_stage("roof_pass")
+                idxs = _roof_pass_sheet_indexes(raw, len(image_payloads))
+                pass_imgs = [image_payloads[i] for i in idxs] or image_payloads[:5]
+                if transport == "anthropic_direct":
+                    rp_text, rp_usage, _ = await _claude_direct_blueprint(
+                        api_key=api_key, model_name=model_name,
+                        image_payloads=pass_imgs,
+                        user_text="Run the roof plane census and the full-outline corner walk on these sheets. Return the JSON now.",
+                        timeout_s=180, system_text=ROOF_PASS_PROMPT,
+                    )
+                    if rp_usage and token_usage:
+                        token_usage = {
+                            "input_tokens": token_usage["input_tokens"] + rp_usage["input_tokens"],
+                            "output_tokens": token_usage["output_tokens"] + rp_usage["output_tokens"],
+                        }
+                else:
+                    rp_chat = LlmChat(
+                        api_key=api_key,
+                        session_id=f"{session_id}-roofpass",
+                        system_message=ROOF_PASS_PROMPT,
+                    ).with_model("anthropic", model_name)
+                    rp_imgs = [ImageContent(image_base64=base64.b64encode(p).decode("ascii"))
+                               for p in pass_imgs]
+                    rp_text = await asyncio.wait_for(
+                        rp_chat.send_message(UserMessage(
+                            text="Run the roof plane census and the full-outline corner walk on these sheets. Return the JSON now.",
+                            file_contents=rp_imgs)),
+                        timeout=180,
+                    )
+                raw = _merge_roof_pass(raw, _json_from_reply(rp_text or ""))
+        except Exception:
+            logger.exception("[ai-blueprint] roof pass failed — main read stands")
         # Annotations already loaded above — pass through to the
         # breakdown overlay so the catalog mapper emits per-profile lines.
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
