@@ -315,7 +315,7 @@ export default function SettingsRow({ est, update, save }) {
                 >
                   <option value={4}>4"</option>
                   <option value={6}>6"</option>
-                  <option value={8}>8" {t("sr.default")}</option>
+                  <option value={8}>{`8" ${t("sr.default")}`}</option>
                   <option value={10}>10"</option>
                   <option value={12}>12"</option>
                 </select>
@@ -339,7 +339,7 @@ export default function SettingsRow({ est, update, save }) {
                     onChange={(e) => saveSpec({ batten_spacing_in: Number(e.target.value) })}
                     data-testid="batten-spacing-select"
                   >
-                    <option value={12}>12" o.c. {t("sr.default")}</option>
+                    <option value={12}>{`12" o.c. ${t("sr.default")}`}</option>
                     <option value={16}>16" o.c.</option>
                     <option value={24}>24" o.c.</option>
                   </select>
@@ -378,7 +378,7 @@ export default function SettingsRow({ est, update, save }) {
                     onChange={(e) => saveSpec({ wrap_trim_width_in: Number(e.target.value) })}
                     data-testid="wrap-trim-width-select"
                   >
-                    <option value={4}>4" {t("sr.default")}</option>
+                    <option value={4}>{`4" ${t("sr.default")}`}</option>
                     <option value={6}>6"</option>
                     <option value={8}>8"</option>
                     <option value={10}>10"</option>

@@ -87,6 +87,26 @@ def test_no_sku_leaks_into_the_new_keys():
         assert f'"{name}"' not in es_block, f"SKU leaked into es dictionary: {name}"
 
 
+def test_hover_modal_chrome_routes_through_t():
+    """CLICK-SWEEP FINDING (2026-08-04, iteration 52): the Hover modal's
+    RESTORE / PRINT / CANCEL / I-AGREE buttons and the quantity-verify
+    modal were hard-coded English while the CTA next to them was Spanish.
+    Chrome translates; the keys exist in BOTH dictionaries."""
+    src = _src(f"{FE}/components/estimate/HoverImportButton.jsx")
+    for key in ("hov.restore", "hov.print", "hov.cancel", "hov.agree",
+                "hov.qtyVerifyTitle", "hov.qtyVerifyBody",
+                "hov.openingsTitle", "hov.openingsTap", "hov.openingsExpanded",
+                "hov.needsReview", "hov.sanity", "hov.tapToReview"):
+        assert f'"{key}"' in src, f"HoverImportButton no longer routes '{key}' through t()"
+    for literal in (">Print<", ">Cancel<", ">I Agree<", "Restore HOVER Lines<"):
+        assert literal not in src, f"hard-coded English button label back in the Hover modal: {literal}"
+    dicts = _src(f"{FE}/lib/dictionaries.js")
+    for key in ("hov.restore", "hov.print", "hov.cancel", "hov.agree",
+                "hov.qtyVerifyTitle", "hov.qtyVerifyBody", "hov.openingsTap",
+                "hov.needsReview", "hov.sanity"):
+        assert dicts.count(f'"{key}"') >= 2, f"'{key}' missing from one of the two dictionaries"
+
+
 def test_frozen_accuracy_body_stays_sealed():
     """The frozen report body renders verbatim (srcDoc={data.html}) — the
     ES page names the sealed-document framing instead of re-rendering a

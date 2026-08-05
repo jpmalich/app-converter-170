@@ -265,7 +265,7 @@ export function printTakeoff({
   lines = scopePrintLines(lines, kind, est);
 
   const html = `<!doctype html>
-<html lang="en">
+<html lang="${_lang === "es" ? "es" : "en"}">
 <head>
   <meta charset="utf-8" />
   <title>${esc(source)} Takeoff Preview — ${esc(customer)} (${esc(estNum)})</title>

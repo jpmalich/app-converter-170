@@ -652,7 +652,7 @@ export default function HoverImportButton({ est, update, save }) {
           title="Re-apply the auto-fills from the most recent HOVER import — no new upload needed"
         >
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
-          Restore HOVER Lines
+          {t("hov.restore")}
         </button>
       )}
 
@@ -669,11 +669,11 @@ export default function HoverImportButton({ est, update, save }) {
           >
             <div className="bg-[var(--brand)] text-[var(--on-brand)] px-5 py-4 flex items-center gap-3">
               <AlertTriangle className="w-6 h-6 flex-shrink-0" />
-              <div className="font-heading text-lg">Quantity Verification Required</div>
+              <div className="font-heading text-lg">{t("hov.qtyVerifyTitle")}</div>
             </div>
             <div className="p-5">
               <p className="text-sm text-[#3F3F46] leading-relaxed">
-                You are responsible for verifying all quantities before submitting this report.
+                {t("hov.qtyVerifyBody")}
               </p>
             </div>
             <div className="border-t border-[var(--border)] px-5 py-4 flex justify-end gap-2">
@@ -683,7 +683,7 @@ export default function HoverImportButton({ est, update, save }) {
                 onClick={() => setShowWarning(false)}
                 data-testid="hover-warning-cancel"
               >
-                Cancel
+                {t("hov.cancel")}
               </button>
               <button
                 type="button"
@@ -695,7 +695,7 @@ export default function HoverImportButton({ est, update, save }) {
                 data-testid="hover-warning-agree"
                 autoFocus
               >
-                I Agree
+                {t("hov.agree")}
               </button>
             </div>
           </div>
@@ -772,10 +772,10 @@ export default function HoverImportButton({ est, update, save }) {
                     )}
                     <AlertTriangle className="w-4 h-4 text-[var(--warning-text)]" />
                     <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--warning-text)]">
-                      Sanity check · {result.warnings.length} warning{result.warnings.length > 1 ? "s" : ""}
+                      {t("hov.sanity", { n: result.warnings.length })}
                     </span>
                     {!warningsOpen && (
-                      <span className="text-[10px] text-[var(--warning-text)]">— tap to review</span>
+                      <span className="text-[10px] text-[var(--warning-text)]">{t("hov.tapToReview")}</span>
                     )}
                   </button>
                   {shown.length > 0 && (
@@ -1002,19 +1002,19 @@ export default function HoverImportButton({ est, update, save }) {
                       <ChevronRight className="w-3.5 h-3.5 text-[var(--brand-text)] shrink-0" />
                     )}
                     <span className="text-xs uppercase tracking-[0.18em] font-bold text-[var(--brand-text)]">
-                      Vero Window Openings — Style Guess
+                      {t("hov.openingsTitle")}
                     </span>
                     <span className="text-[10px] text-[var(--muted)]" data-testid="hover-openings-count">
                       {openingsOpen
-                        ? `(${openings.length} ${openings.length === 1 ? "opening" : "openings"} · edit any style before applying)`
-                        : `Window openings (${openings.length}) — tap to review styles`}
+                        ? t("hov.openingsExpanded", { n: openings.length })
+                        : t("hov.openingsTap", { n: openings.length })}
                     </span>
                     {needsReview > 0 && (
                       <span
                         className="text-[10px] font-bold text-[var(--warning-text)] bg-[#FFFBEB] border border-[#FCD34D] px-1.5 py-0.5"
                         data-testid="hover-openings-needs-review"
                       >
-                        {needsReview} need{needsReview === 1 ? "s" : ""} review
+                        {t("hov.needsReview", { n: needsReview })}
                       </span>
                     )}
                   </button>
@@ -1196,7 +1196,7 @@ export default function HoverImportButton({ est, update, save }) {
                   data-testid="hover-print-btn"
                   title="Print this takeoff preview"
                 >
-                  <Printer className="w-3.5 h-3.5" /> Print
+                  <Printer className="w-3.5 h-3.5" /> {t("hov.print")}
                 </button>
                 <button
                   type="button"
@@ -1204,7 +1204,7 @@ export default function HoverImportButton({ est, update, save }) {
                   onClick={() => { setResult(null); setOpenings([]); }}
                   data-testid="hover-cancel-btn"
                 >
-                  Cancel
+                  {t("hov.cancel")}
                 </button>
                 <button
                   type="button"

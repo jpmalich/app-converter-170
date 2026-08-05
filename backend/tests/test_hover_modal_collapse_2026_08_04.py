@@ -31,8 +31,8 @@ def test_openings_section_collapsed_by_default():
         "window-openings section must default to COLLAPSED"
     assert 'data-testid="hover-openings-toggle"' in jsx, \
         "collapsed header must be a one-click toggle"
-    assert "tap to review styles" in jsx, \
-        "collapsed header must invite the contractor in"
+    assert 't("hov.openingsTap", { n: openings.length })' in jsx, \
+        "collapsed header must invite the contractor in (translated — 2026-08-04 ES sweep)"
 
 
 def test_warnings_banner_collapsed_by_default():
