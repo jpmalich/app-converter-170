@@ -6365,3 +6365,15 @@ HOWARD'S REPRO: EST-536665 clean LP-only on screen, but the printed HOVER Takeof
 3. **PINNED BOTH DIRECTIONS**: test_doors_single_family::test_print_is_a_family_scoped_surface (source pin) + print smoke now feeds a MIXED all-family payload and asserts per kind: LP print carries zero vinyl/ascend/windows rows, siding print zero LP rows, etc — EXECUTED in node, proven RED on the planted leak ("CROSS-FAMILY LEAK — '38 Series' (kind siding)") before sealing.
 4. **WALKED**: reprinted EST-536665 → "LP SMARTSIDE — 23 LINES" only, panel 138 matching the estimate; reprinted 261 Haugh (Jon Casile EST-523061) → "LP SMARTSIDE — 24 LINES" only, panel 68 (the 2064×1.3÷40 anchor). Zero leak strings on either printout — screenshot-proven.
 FULL SUITE: 1828 passed, 1 skipped.
+
+## SESSION 2026-08-05 (part 9) — CLICK-EVERYTHING SWEEP (Howard's order) — STAGE-HARD
+Two testing-agent iterations (52 + 53) clicked every reachable surface × button × language in a real browser. ZERO pageerrors across both runs. Full grid rendered + screenshot for Howard.
+FINDINGS AND FIXES:
+1. **Hover modal ES bleed (MEDIUM)**: RESTORE HOVER LINES / PRINT / CANCEL / I Agree / quantity-verify modal + the new collapse headers were hard-coded English. All routed through t() with new hov.* keys in BOTH dictionaries (RESTAURAR LÍNEAS HOVER / IMPRIMIR / CANCELAR...). Re-verified live in ES by iteration 53. PINNED: test_spanish_full_sweep::test_hover_modal_chrome_routes_through_t.
+2. **Dashboard delete flow (HIGH, iter53)**: unlinked-path delete used the native browser confirm — invisible to automation, inconsistent, English-only. Both paths now use the ONE guard dialog (warnings block renders only when linked); dialog chrome bilingual (dash.* keys). Re-verified live: dialog opens, confirm removes the row. PINNED: test_dashboard_delete_dialog_2026_08_04.py.
+3. **<option> hydration warning**: mixed text+expression children in SettingsRow selects merged to single template expressions — iteration 53 confirms 0 warnings.
+4. **printTakeoff <html lang>**: now carries the active language (es/en) instead of hardcoded en.
+5. Sweep coverage: Login, HomePicker, Dashboard (search/filters/new/duplicate/delete), Siding + LP editors, Hover modals (+ print family-scope regression re-checks), QuoteModal (send-lang picker, PDF download real file, no UNDEFINED%/NaN), SettingsRow spec saves + rederive on sandbox, Catalog, Team, BrandingAdmin, QR share pages ?lang=en/es, ISS dashboard, AI Measure modal. SKIPPED (fixture-state, named): accept-page token, ISS editor (no ISS estimates), Blueprint/Photo buttons (not rendered on demo est), live share tokens (minting would mutate protected fixture), email send submit.
+6. Ratified 3 mid-session platform auto-commits in memory/ratified_commits.txt (contents re-landed under the ruled commit).
+STILL HOWARD'S: Alside logo upload, 5 demo one-liners. Post-September: quote open receipts.
+FULL SUITE: 1831 passed, 1 skipped.

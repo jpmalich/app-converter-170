@@ -6,3 +6,6 @@ a8d1f81 platform auto-commit that captured the RULED step-4 work mid-build (conf
 d9dd5c9 platform auto-commit that captured the RULED+ACCEPTED step-6 work mid-build (four photo fill-in boxes + fix-its 10a/10c — Howard's build order 2026-08-01, accepted 2026-08-02 'STEP 6 CLEARS'); byte-identical 7/7 proven (evidence/step6_before==after)
 5addb1d platform auto-commit that captured the RULED Spanish Quote Print + Fill-in History work mid-build (Howard's final instructions, ruled 2026-08-03; penny-parity proven 261 Haugh $95,526.18 + 3 Degree $105,902.82 EN==ES) — the ruled commit landing after it carries the full message
 0f36116 platform auto-commit that captured the RULED gate-chip-truth work mid-build (chips and modal unified to ONE readiness generator + margin label ?? 0 — Howard's demo-blocker rulings 2026-08-04); completed and stamped by the handback that follows
+fe42951 ratified 2026-08-05 — platform auto-commit landed mid click-sweep session; contents re-landed under the ruled sweep commit (ES hover-modal chrome + delete-dialog fix)
+5824c38 ratified 2026-08-05 — same session, same ruling
+3b80426 ratified 2026-08-05 — same session, same ruling

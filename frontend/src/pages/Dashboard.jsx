@@ -155,8 +155,11 @@ export default function Dashboard({ kind = "siding" }) {
       setDelConfirm({ open: true, id, number: pre.estimate_number || "", warnings: pre.warnings || [] });
       return;
     }
-    if (!window.confirm(t("dash.confirmDelete"))) return;
-    await doDelete(id);
+    // Sweep finding (2026-08-04, iter53): the unlinked path used the
+    // native browser confirm — inconsistent with the guard dialog,
+    // invisible to automation, and auto-dismissed headlessly (looked
+    // like "confirm does nothing"). ONE dialog for both paths.
+    setDelConfirm({ open: true, id, number: pre?.estimate_number || "", warnings: [] });
   };
 
   const duplicate = async (id) => {
@@ -583,10 +586,13 @@ export default function Dashboard({ kind = "siding" }) {
         <AlertDialogContent data-testid="delete-guard-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Delete {delConfirm.number || "this estimate"}? It's linked.
+              {delConfirm.warnings.length > 0
+                ? `${t("dash.deleteTitle")} ${delConfirm.number || t("dash.thisEstimate")}? ${t("dash.itsLinked")}`
+                : `${t("dash.deleteTitle")} ${delConfirm.number || t("dash.thisEstimate")}?`}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2">
+                {delConfirm.warnings.length > 0 && (
                 <ul className="space-y-1 text-amber-700 bg-amber-50 border border-amber-300 px-3 py-2 text-sm font-medium" data-testid="delete-guard-warnings">
                   {delConfirm.warnings.map((w) => (
                     <li key={w} className="flex items-start gap-2">
@@ -595,16 +601,17 @@ export default function Dashboard({ kind = "siding" }) {
                     </li>
                   ))}
                 </ul>
+                )}
                 <p className="text-sm">
-                  Deleting moves it to trash — recoverable for 30 days via Undo.
+                  {t("dash.trashNote")}
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="delete-guard-cancel">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="delete-guard-cancel">{t("dash.cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={() => doDelete(delConfirm.id)} data-testid="delete-guard-confirm">
-              Delete anyway
+              {t("dash.deleteConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
