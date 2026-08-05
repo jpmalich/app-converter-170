@@ -187,6 +187,21 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   ],
   "eaves_lf": number,          // sum of widths of EAVE walls only (i.e. walls where gable_triangle_height_ft == 0). For a typical gable-roof house with gables on front + back, this = left wall width + right wall width — NOT the full perimeter. Only equals the full perimeter when the roof is a hip (every wall has gable_triangle_height_ft = 0).
   "rakes_lf": number,          // sum of sloped roof edges = 2 × √((wall_width/2)² + gable_triangle_height_ft²) summed over each gable wall
+  "roof_planes": [
+    // EVERY roof plane that carries its own eave (gutter/fascia) line —
+    // read the ROOF PLAN sheet FIRST, corroborate against the elevations.
+    // Include the MAIN roof, the ATTACHED GARAGE roof, PORCH / PORTICO
+    // roofs, and any secondary cross-gable. Do NOT collapse the house
+    // into one rectangle: a projecting garage or covered porch has eave
+    // runs the four-wall model cannot see. Report [] ONLY when the roof
+    // plan truly shows a single plane pair.
+    {"label": "main" | "garage" | "porch" | "<other, verbatim from plan>",
+     "eave_lf": number,            // horizontal eave (gutter) run this plane contributes, all sides summed
+     "rake_lf": number,            // sloped rake edge on this plane (0 if none)
+     "is_porch": true | false,
+     "porch_ceiling_sqft": number  // porch planes only: ceiling area under the roof (soffit material, read porch depth × length from the floor plan); 0 otherwise
+    }
+  ],
   "starter_lf": number,        // full floor-plan PERIMETER in LF — report the RAW perimeter; the app deducts entry-door widths downstream per convention (sliders/patio doors sit on the starter). NOT eaves-only.
   "roof_pitch": "<printed roof pitch callout, e.g. '7/12' or '8/12'; empty string if no pitch is printed anywhere>",
   "appendages": [
@@ -600,10 +615,31 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # gable (`gable_triangle_height_ft > 0`), recompute eaves_lf as the
     # sum of widths of NON-gable walls. This drops the gable ends from
     # the gutter coil + downspout count + elbow count downstream.
+    # BONI RULING 1 (Howard, 2026-08-05) — EAVES ACROSS ALL ROOF PLANES.
+    # The four-wall model reads the main rectangle only; a projecting
+    # garage or covered porch carries eave runs it cannot see (Boni:
+    # 116 read vs 167 installed). When the model returns roof_planes,
+    # the plane sum IS the eave figure and the Iter-57w wall-derived
+    # override STANDS DOWN. The porch plane rides the same read: its
+    # ceiling ft² feeds the soffit derivation (one structure, two
+    # consequences — the dropped porch hid both its eave and ceiling).
+    planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
+    plane_eaves = sum(float(p.get("eave_lf") or 0) for p in planes)
     any_gable = any(float(w.get("gable_triangle_height_ft") or 0) > 0 for w in walls)
-    if any_gable:
-        # ONE COPY (step 6): the recompute lives in measure_staging.
-        raw["eaves_lf"] = staging.eaves_from_walls(walls, raw.get("eaves_lf"))
+    if plane_eaves > 0:
+        raw["eaves_lf"] = plane_eaves
+        raw["_eaves_plane_summed"] = True
+        plane_rakes = sum(float(p.get("rake_lf") or 0) for p in planes)
+        if plane_rakes > float(raw.get("rakes_lf") or 0):
+            raw["rakes_lf"] = plane_rakes
+        porch_sqft = sum(float(p.get("porch_ceiling_sqft") or 0)
+                         for p in planes if p.get("is_porch"))
+        if porch_sqft > 0 and not raw.get("porch_ceiling_sqft"):
+            raw["porch_ceiling_sqft"] = porch_sqft
+    else:
+        if any_gable:
+            # ONE COPY (step 6): the recompute lives in measure_staging.
+            raw["eaves_lf"] = staging.eaves_from_walls(walls, raw.get("eaves_lf"))
 
     # Shakedown fix (2026-07-14) — START-COURSE CONTRACT: the aggregator
     # reports the RAW floor-plan perimeter; the ENGINE owns the entry-door
@@ -646,6 +682,13 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "opening_sqft": opening_sqft,
         "eaves_lf": float(raw.get("eaves_lf") or 0),
         "rakes_lf": float(raw.get("rakes_lf") or 0),
+        # Boni ruling 1: porch plane ceiling feeds soffit; plane marker
+        # tells the engine (and future overrides) the eave figure is a
+        # roof-plane sum, not a wall derivation.
+        **({"porch_ceiling_sqft": float(raw["porch_ceiling_sqft"])}
+           if raw.get("porch_ceiling_sqft") else {}),
+        **({"_eaves_plane_summed": True, "_roof_planes": raw.get("roof_planes")}
+           if raw.get("_eaves_plane_summed") else {}),
         "starter_lf": _starter_lf,
         "outside_corner_lf": float(
             raw.get("outside_corner_lf")

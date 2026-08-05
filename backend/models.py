@@ -247,6 +247,11 @@ class EstimateIn(BaseModel):
     mezzo_interior_color: str = ""
     mezzo_exterior_color: str = ""
     waste_pct: float = 0
+    # INTEGRAL-J WINDOWS (Howard ruled 2026-08-05, Boni ruling 3): per-job
+    # toggle — when True the windows carry their own J-channel, so the
+    # engine drops window perimeter from wall-J, caulk, wrap coil and
+    # zeroes Cap window. Default False: never silently under-order.
+    windows_integral_j: bool = False
     # SHAKE REVEAL (register #4 ruled 2026-07-28): contractor-selectable,
     # bounded 7"–10", default 7" — per LP install instructions ("540
     # Series Trim is recommended when the shake reveal selected ranges

@@ -178,7 +178,7 @@ def _finish_trim_note(m: dict) -> str:
 # for clean flashing transitions). Perimeter = windows + entry doors
 # + sliding glass / patio doors + garage doors. 1 ROLL covers 100 LF.
 def _coil_019_rolls(m: dict) -> float:
-    win = _window_perim_total_lf(m)
+    win = 0.0 if m.get("_windows_integral_j") else _window_perim_total_lf(m)
     entry = float(m.get("entry_door_count") or 0) * ENTRY_DOOR_PERIM_LF
     patio = float(m.get("patio_door_count") or 0) * PATIO_DOOR_PERIM_LF
     garage = float(m.get("garage_door_count") or 0) * GARAGE_DOOR_PERIM_LF
@@ -189,14 +189,16 @@ def _coil_019_rolls(m: dict) -> float:
 
 
 def _coil_019_breakdown(m: dict) -> str:
-    win = _window_perim_total_lf(m)
+    integral_j = bool(m.get("_windows_integral_j"))
+    win = 0.0 if integral_j else _window_perim_total_lf(m)
     entry_n = float(m.get("entry_door_count") or 0)
     patio_n = float(m.get("patio_door_count") or 0)
     garage_n = float(m.get("garage_door_count") or 0)
     entry_lf = entry_n * ENTRY_DOOR_PERIM_LF
     patio_lf = patio_n * PATIO_DOOR_PERIM_LF
     garage_lf = garage_n * GARAGE_DOOR_PERIM_LF
-    parts = [f"{win:.0f} LF windows"]
+    parts = ["0 LF windows (integral-J — ruled 2026-08-05, not wrapped)"
+             if integral_j else f"{win:.0f} LF windows"]
     if entry_n:
         parts.append(f"{int(entry_n)} entry × {int(ENTRY_DOOR_PERIM_LF)}")
     if patio_n:
@@ -569,9 +571,18 @@ def _j_channel_compute(m: dict, include_rakes: bool = True) -> tuple[int, str]:
     opening_perim = float(m.get("opening_perimeter_lf") or 0)
     windows = m.get("windows") or []
     rakes = (float(m.get("rakes_lf") or 0)) if include_rakes else 0.0
+    # INTEGRAL-J WINDOWS (Howard ruled 2026-08-05, Boni ruling 3): the
+    # windows carry their own J — their perimeter comes OUT of the wall-J
+    # math. Patio/garage openings still receive J.
+    integral_j = bool(m.get("_windows_integral_j"))
 
     parts: list[str] = []  # human-readable breakdown segments
-    if windows:
+    if integral_j:
+        win_patio_perim = patio_n * PATIO_DOOR_PERIM_LF
+        parts.append("windows = 0 LF (integral-J windows — ruled 2026-08-05, window perimeter excluded)")
+        if patio_n:
+            parts.append(f"{int(patio_n)} patio × {int(PATIO_DOOR_PERIM_LF)}")
+    elif windows:
         win_perim_in = sum(
             2 * (float(w.get("width_in") or 0) + float(w.get("height_in") or 0))
             for w in windows
@@ -1347,11 +1358,16 @@ HOVER_MAPPING_SPEC = [
         "section": "Siding Accessories",
         "item": "Caulking (per color)",
         "unit": "EA",
-        "extract": lambda m: max(1, int(m.get("window_count") or 0) + int(m.get("door_count") or 0)),
+        "extract": lambda m: max(1, (0 if m.get("_windows_integral_j")
+                                     else int(m.get("window_count") or 0))
+                                 + int(m.get("door_count") or 0)),
         "note": lambda m: (
             f"1 tube per opening — interlocking siding, caulk at openings only "
             f""
-            f"{int(m.get('window_count') or 0)} windows + {int(m.get('door_count') or 0)} doors"),
+            + ("0 windows (integral-J — ruled 2026-08-05, the J is the seal)"
+               if m.get("_windows_integral_j")
+               else f"{int(m.get('window_count') or 0)} windows")
+            + f" + {int(m.get('door_count') or 0)} doors"),
     },
     # Iter 70 (2026-06-22): wire HOVER fields previously left on the floor.
     # Gable Vents — auto-populate from HOVER's Accessories → Vents Qty.
@@ -1646,8 +1662,13 @@ HOVER_MAPPING_SPEC = [
         "section": "Misc. Labor and Material",
         "item": "Cap window",
         "unit": "Each",
-        "extract": lambda m: int(m.get("window_count") or 0),
-        "note": "1 per window from HOVER",
+        "always_emit": True,
+        "extract": lambda m: (0 if m.get("_windows_integral_j")
+                              else int(m.get("window_count") or 0)),
+        "note": lambda m: ("0 — integral-J windows (ruled 2026-08-05): "
+                           "factory-trimmed, no capping"
+                           if m.get("_windows_integral_j")
+                           else "1 per window from HOVER"),
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
@@ -2746,6 +2767,10 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
            "board_batten": est.get("board_batten_color") or ""}
     if any(_rc.values()):
         scoped["_row_colors"] = _rc
+    # INTEGRAL-J WINDOWS (Boni ruling 3, 2026-08-05): the per-job toggle
+    # rides the shared rebuild — every family, every trigger.
+    if est.get("windows_integral_j"):
+        scoped["_windows_integral_j"] = True
     # SHAKE REVEAL (register #4 ruled 2026-07-28): the estimate field
     # rides the tab-line rebuild too — same fold as the package paths.
     if est.get("shake_reveal_in") is not None:
@@ -3042,7 +3067,8 @@ async def rederive_estimate(
          "lp_flag_checklist": 1, "hover_measurements": 1,
          "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
          "photo_total_trim_sqft": 1, "photo_frieze_present": 1,
-         "waste_pct": 1, "default_siding_profile": 1, "lines": 1})
+         "waste_pct": 1, "default_siding_profile": 1, "lines": 1,
+         "windows_integral_j": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
     kind = est.get("kind") or "siding"
@@ -3160,7 +3186,7 @@ async def hover_lp_run(
          "batten_spacing_in": 1, "fascia_width_in": 1,
          "panel_size": 1, "wrap_trim_width_in": 1,
          "window_wrap_color": 1, "soffit_fascia_color": 1,
-         "lp_flag_checklist": 1, "lines": 1})
+         "lp_flag_checklist": 1, "lines": 1, "windows_integral_j": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
     if est.get("kind") != "lp_smart":

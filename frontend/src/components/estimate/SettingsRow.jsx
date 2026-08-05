@@ -324,6 +324,29 @@ export default function SettingsRow({ est, update, save }) {
                 </p>
               </div>
             )}
+            {est.kind === "siding" && (
+              /* INTEGRAL-J WINDOWS (Howard ruled 2026-08-05, Boni ruling 3):
+                 per-job toggle — YES drops window perimeter from wall-J,
+                 windows from caulk, the window term from wrap coil, and
+                 zeroes Cap window. Default NO: never silently under-order. */
+              <div className="mt-4 pt-4 border-t border-[var(--border)]">
+                <div className="text-[10px] uppercase tracking-wider text-[var(--muted)] font-bold mb-2">
+                  {t("sr.integralJ.title")}
+                </div>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!est.windows_integral_j}
+                    onChange={(e) => saveSpec({ windows_integral_j: e.target.checked })}
+                    data-testid="integral-j-toggle"
+                  />
+                  <span>{t("sr.integralJ.label")}</span>
+                </label>
+                <p className="mt-2 text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                  {t("sr.integralJ.note")}
+                </p>
+              </div>
+            )}
             {est.kind === "lp_smart" && (
               <>
                 {/* BATTEN SPACING (ruled 2026-07-29): 12/16/24 o.c., default

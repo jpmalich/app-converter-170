@@ -635,7 +635,8 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
          "batten_spacing_in": 1, "fascia_width_in": 1,
          "panel_size": 1, "wrap_trim_width_in": 1,
          "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
-         "photo_total_trim_sqft": 1, "photo_frieze_present": 1, "lines": 1})
+         "photo_total_trim_sqft": 1, "photo_frieze_present": 1, "lines": 1,
+         "windows_integral_j": 1})
     if (full_est or {}).get("kind") != "lp_smart":
         raise HTTPException(status_code=400,
                             detail="LP materialize is lp_smart-kind only")
