@@ -6397,3 +6397,9 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 
 ## POST-SEPTEMBER BACKLOG ADDITION (2026-08-06)
 - **Blueprint Verification Read-Back** — sized, report-only, captured in memory/proposals/blueprint_readback_proposal_2026_08_06.md. MVP = schematic Read-Back Card (plane census + corner ledger + porch tag + flag rail; size S, catches all three Boni miss classes); Phase 2 = EL-1..4 elevation engine fed by the blueprint run (size M, confirmed reusable via source switch); Phase 3 = per-corner heights schema slot (S). Schematic confirmed cheaper than PDF pixel-annotation. NOT BUILT — awaits Howard's post-demo authorization.
+
+## SESSION 2026-08-06 (part 12) — BLUEPRINT READ-BACK CARD MVP (first build off demo-lock)
+- Display-only verification card on the blueprint modal + print: roof-plane census (rake-0 LOUD flag, NO GARAGE PLANE banner via _roof_pass_needed), corner ledger (out−in=4 invariant PASS/FAIL, per-corner-vs-AVERAGED chip, footprint wing check), porch tag (PHANTOM = ceiling without plane), honesty-flag rail (pitch/scale/roof-pass provenance/notes).
+- Backend: pure build_blueprint_readback + _with_readback enrichment on status/latest endpoints (computed on read, never persisted, feeds no derivation). Frontend: BlueprintReadBackCard.jsx + print section in printTakeoff (takes _lang as param). EN+ES at parity.
+- ACCEPTANCE: reproduced the original Boni read on a scratch fixture — all three misses loud on one card; screenshotted EN + ES + print popup; scratch PURGED after. Pins: test_blueprint_readback_2026_08_06.py (6 tests incl. read-only immutability). Parity-parser gotcha: an EN string containing "notes: {" collided with the "es: {" block splitter — reworded; recorded here so it never recurs.
+- Stamp: 2026-08-06 01:56 UTC · 2029ff9 · CLEAN · 1853 passed, 1 skipped. Preview only — production/demo path untouched (no deploy).
