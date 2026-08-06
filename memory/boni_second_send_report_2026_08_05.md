@@ -27,3 +27,12 @@ Both mechanisms landed and pinned; the READ variance is named per run below.
 
 ## GUARD
 Anchors untouched (261 Haugh / 3 Degree / demo are LP/HOVER — blueprint read path only). Suite green.
+
+## RULINGS LANDED (Howard, 2026-08-05, second-send closure)
+1. **GARAGE RAKE IN WALL-J — RULED (b), STANDARD PRACTICE**: J runs on both wall AND rake; garage rake (+36) feeds the wall-J term. FIELD-ANOMALY FLAG (permanent until Howard's site visit): installed J 30 is BELOW the standard derivation. With the porch corrected to the printed 99 ft² (channel 28 LF, not 35), the method derives **32**, not the pre-correction 33 — derivation printed on the line, never bent toward 30 or 33.
+2. **CORNERS — per-corner heights ratified**: main ~19-21 ft, garage ~10 ft, summed = ~126 LF → OSC **11 = installed EXACT**. Blueprint-door geometry only; LP/HOVER anchors untouched.
+3. **REAR PORCH IS NOT REAL**: porch = FRONT 99 ft² only (16'6"×6', printed). Rear is a WALKOUT DECK (rear elevation: exposed foundation, deck landing, no roof). Phantom-150 killed. CONSEQUENCE SURFACED, not papered: soffit derives **39** vs installed 40 (the garage rakes supplied most of what the phantom porch propped; 1-pc residual REAL and pinned). Soffit-J 20→23 (rakes 118); residual vs installed 35 shrinks to 12 pcs — still open.
+4. **WALKOUT SIDING CHECK** (Howard's flag): the rear elevation prints VINYL down the walkout-exposed band — the walkout wall IS sided per the plans, running TALLER than the front. If anything the 4-wall read (18 ft uniform) slightly UNDER-counts the rear, so the walkout cannot explain installed 34 being LOWER than app 41.1. The 7-SQ gap remains the openings convention (gross-with-openings ~41 → net ~36) + field ordering.
+
+## FINAL BONI RULED FIXTURE (pinned in test_boni_rulings_2026_08_05.py)
+planes: main 116/82/2 ends · garage 36/36/2 ends · porch 15/0 + 99 ft² ceiling → eaves 167, rakes 118, gable ends 4, porch 99, oc_lf 126. Integral-J ON: J 32 (flagged vs installed 30), caulk 5, coil 2, Cap window 0-visible. Cascade: gutter 167, elbows 14, end caps 12, hangers 90, soffit 39, fascia 285, OSC 11, starter 16, IC 3, mitre 2.
