@@ -115,9 +115,14 @@ async def download_pdf(est_id: str, body: EmailQuoteIn, user: dict = Depends(get
     )
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
-    # QUOTE GATE (ruled 2026-07-29): the PDF is a customer surface.
-    from routes.lp_package_routes import assert_quote_gate
-    await assert_quote_gate(est_id, user)
+    # GATE SPLIT (ruled 2026-08-06): the QUOTE PDF is a customer surface
+    # (full quote gate); the MATERIAL LIST is a contractor surface —
+    # price/labor blockers are exempt there, scope/geometry still block.
+    from routes.lp_package_routes import assert_quote_gate, assert_material_list_gate
+    if (body.surface or "quote") == "material_list":
+        await assert_material_list_gate(est_id, user)
+    else:
+        await assert_quote_gate(est_id, user)
     try:
         pdf_bytes = await asyncio.to_thread(render_pdf, body.html_quote)
     except Exception as e:

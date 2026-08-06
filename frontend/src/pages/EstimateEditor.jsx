@@ -314,7 +314,7 @@ export default function EstimateEditor() {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ recipient_email: "noreply@noreply.com", html_quote: html }),
+          body: JSON.stringify({ recipient_email: "noreply@noreply.com", html_quote: html, surface: "material_list" }),
         }
       );
       if (!res.ok) throw new Error(await gateBlockMessage(res, t));
@@ -335,7 +335,7 @@ export default function EstimateEditor() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e) {
-      toast.error(`Could not generate material list: ${e.message}`);
+      toast.error(e.message);
     }
   };
 

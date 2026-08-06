@@ -4,6 +4,7 @@ import { useCompany } from "@/lib/company";
 import { useBranding } from "@/lib/branding";
 import { useAuth } from "@/lib/auth";
 import { useLang, useT, tFor } from "@/lib/i18n";
+import { gateBlockMessage } from "@/lib/gateMessages";
 import CompanyLogo from "@/components/CompanyLogo";
 import { X, Printer, Send } from "lucide-react";
 import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/emailQuote";
@@ -150,7 +151,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
           body: JSON.stringify({ recipient_email: "noreply@noreply.com", html_quote: html }),
         }
       );
-      if (!res.ok) throw new Error(`PDF request failed: ${res.status}`);
+      if (!res.ok) throw new Error(await gateBlockMessage(res, t));
       const blob = await res.blob();
       // Pull filename from Content-Disposition if present
       const dispo = res.headers.get("content-disposition") || "";
@@ -165,7 +166,7 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e) {
-      window.alert(`Could not generate PDF: ${e.message}`);
+      window.alert(e.message);
     } finally {
       setSending(false);
     }

@@ -1,12 +1,14 @@
-// GATE-BLOCK MESSAGES (Howard, 2026-08-06): when a gate 409s a surface,
-// the message must NAME the blockers — never a raw status code. The
-// backend already ships {gate, blocking:[{code,label}]} in the 409 body;
-// this helper turns it into a human line. Read-only display.
+// PLAIN-LANGUAGE GATE MESSAGES (Howard ruled 2026-08-06): no contractor
+// knows what a 409 is. Every user-facing block message says WHAT is wrong
+// and WHAT TO DO in plain words — the status code and gate name stay in
+// the console for debugging, never on screen.
 export async function gateBlockMessage(res, t) {
-  let msg = `PDF render failed: ${res.status}`;
+  let msg = t("err.pdf.generic");
   try {
     const err = await res.json();
     const d = err?.detail;
+    // developers keep the code; the human gets the meaning
+    console.warn("[pdf blocked]", res.status, d?.gate, d?.blocking || d);
     if (d?.gate && Array.isArray(d.blocking) && d.blocking.length) {
       const seen = new Set();
       const items = d.blocking.filter((b) => {
@@ -17,14 +19,19 @@ export async function gateBlockMessage(res, t) {
       });
       const names = items.slice(0, 3).map((b) => b.label || b.code).join(" · ");
       const more = items.length > 3
-        ? ` · ${t("ml.gate.more", { n: items.length - 3 })}`
+        ? ` · ${t("err.gate.more", { n: items.length - 3 })}`
         : "";
-      msg = t("ml.gate.blocked", { gate: d.gate.toUpperCase() }) + ` ${names}${more}`;
+      const intro = d.gate === "material_list"
+        ? t("err.gate.materials")
+        : d.gate === "order"
+        ? t("err.gate.order")
+        : t("err.gate.quote");
+      msg = `${intro} ${names}${more}. ${t("err.gate.action")}`;
     } else if (d?.gate) {
-      msg = t("ml.gate.blocked", { gate: d.gate.toUpperCase() });
+      msg = `${t("err.gate.quote")} ${t("err.gate.action")}`;
     }
   } catch {
-    /* non-JSON body — keep the status fallback */
+    /* non-JSON body — keep the plain generic message */
   }
   return msg;
 }

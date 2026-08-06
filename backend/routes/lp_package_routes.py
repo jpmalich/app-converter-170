@@ -1031,6 +1031,31 @@ async def assert_quote_gate(est_id: str, user: dict) -> None:
         })
 
 
+# MATERIAL-LIST GATE SPLIT (Howard ruled 2026-08-06): price/labor blockers
+# do NOT stop a materials print — a contractor ordering material doesn't
+# need his own prices set. Scope/geometry blockers still do (a wrong LIST
+# must not print). The full quote gate stays on every customer surface.
+MATERIAL_LIST_EXEMPT_KINDS = frozenset({
+    "unpriced_row", "labor_pending_row", "labor_pending",
+    "pending_price", "qty_pending",
+})
+
+
+async def assert_material_list_gate(est_id: str, user: dict) -> None:
+    gates = await evaluate_gates(est_id, user)
+    blocking = [i for i in gates["quote"]["blocking"]
+                if (i.get("kind") or "") not in MATERIAL_LIST_EXEMPT_KINDS]
+    if blocking:
+        raise HTTPException(status_code=409, detail={
+            "gate": "material_list",
+            "message": ("MATERIAL-LIST GATE — scope/geometry blockers must "
+                        "clear before a materials print (ruled 2026-08-06; "
+                        "price/labor items exempt on this surface)"),
+            "blocking": [{"code": i.get("code"), "label": i.get("label")}
+                         for i in blocking],
+        })
+
+
 @router.post("/estimates/{est_id}/order-release")
 async def order_release(est_id: str, payload: dict | None = None,
                         user: dict = Depends(get_current_user)):

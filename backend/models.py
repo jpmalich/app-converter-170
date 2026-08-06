@@ -514,6 +514,10 @@ class EmailQuoteIn(BaseModel):
     subject: Optional[str] = None
     message: Optional[str] = None
     html_quote: str
+    # PDF surface (Howard ruled 2026-08-06 gate-split): "quote" keeps the
+    # full quote gate; "material_list" exempts price/labor blockers — a
+    # contractor ordering material doesn't need his own prices set.
+    surface: Optional[str] = "quote"
     accept_token: Optional[str] = None  # client-generated UUID4 for the public accept link
     # ONE MONEY SURFACE (ruled 2026-07-23): the tab scope the quote was
     # composed from — the accept page derives its total from the SAME

@@ -155,7 +155,13 @@ export default function FinalJobSurface({ estId }) {
       setGates((g) => ({ ...g, order_released: data.order_released }));
     } catch (e) {
       const d = e?.response?.data?.detail;
-      toast.error(d?.message || "ORDER GATE blocked");
+      console.warn("[order release blocked]", e?.response?.status, d);
+      const names = Array.isArray(d?.blocking)
+        ? d.blocking.slice(0, 3).map((b) => b.label || b.code).join(" · ")
+        : "";
+      toast.error(names
+        ? `${t2("err.gate.order")} ${names}. ${t2("err.gate.action")}`
+        : `${t2("err.gate.order")} ${t2("err.gate.action")}`);
     } finally {
       setReleasing(false);
     }

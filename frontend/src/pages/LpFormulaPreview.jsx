@@ -46,8 +46,9 @@ export default function LpFormulaPreview() {
       );
       setData(r.data);
     } catch (e) {
-      setError("Preview failed: " + (e.response?.data?.detail || e.message));
-      toast.error("Preview failed");
+      console.warn("[lp formula preview]", e.response?.status, e.response?.data?.detail || e.message);
+      setError("Couldn't load this preview — try again.");
+      toast.error("Couldn't load this preview — try again.");
     } finally {
       setLoading(false);
     }
