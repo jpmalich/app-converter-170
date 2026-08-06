@@ -6414,3 +6414,11 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - (a) Boni's print 409 = QUOTE GATE, correctly blocking: LABOR PENDING (clean up/haul away, Cap window qty 20, entry/patio/garage caps) + unpriced Fascia/rake-or-frieze rows (vinyl + ascend). Real block, not false — Boni's stored estimate still carries un-priced labor rows (and pre-ruling quantities; rederive still pending).
 - (b) Defect was the FRONTEND discarding the 409 body (backend always named the blockers). Fix: lib/gateMessages.js → toast "Material list blocked — QUOTE GATE. Set these first: <top 3 blockers> · +n more" in both editors, EN+ES. Verified live on Boni. Pinned (frontend source pins + backend 409-body contract pin).
 - Stamp: 2026-08-06 11:28 UTC · cb8c018 · CLEAN · 1860 passed, 1 skipped. Preview only.
+
+## SESSION 2026-08-06 (part 15) — PLAIN-LANGUAGE ERRORS + MATERIAL-LIST GATE SPLIT
+- Sweep: all user-facing errors rewritten in contractor language (what's wrong + what to do), EN+ES; status codes/gate names console-only. Files: lib/gateMessages.js, both editors, QuoteModal, FinalJobSurface, LpFormulaPreview.
+- Gate split (ruled): /pdf surface="material_list" exempts money-class blockers (unpriced_row, labor_pending_row, labor_pending, pending_price, qty_pending); scope/geometry still block. Quote surface keeps the full gate. New assert_material_list_gate.
+- Live on Boni: material list prints 200; quote still blocked with plain message.
+- Pins: test_gate_block_message_2026_08_06 (no dev language in user strings incl. status-code regex; split behavior with monkeypatched gates). Lesson: use asyncio.run in pins, not get_event_loop (loop collisions under the full suite).
+- OPEN FLAG for Howard: readiness-panel badges still say "QUOTE GATE"/"ORDER GATE" (product vocabulary, not errors) — rename ruling pending if wanted.
+- Stamp: 2026-08-06 12:02 UTC · b691192 · CLEAN · 1864 passed, 1 skipped. Preview only.
