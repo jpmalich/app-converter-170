@@ -6387,3 +6387,10 @@ FULL SUITE: 1831 passed, 1 skipped.
 6. HANDBACK STAMP: 2026-08-05 20:58 UTC · 35afb75 · CLEAN · 1838 passed, 1 skipped.
 STILL OPEN (Howard's second send coming): MULTIPLE-GABLE catch — rakes still 82, garage gable NOT caught (garage/porch planes returned rake_lf 0; plane plumbing ready with per-plane rake_lf slot + max() override). OUTSIDE CORNERS 9 vs 11 — separate miss in the floor-plan footprint walk, not roof planes.
 STILL HOWARD'S: Alside logo upload, 5 demo one-liners. Post-September: quote open receipts, cross-family fill.
+
+## SESSION 2026-08-05/06 (part 11) — BONI SECOND SEND: THE GARAGE WING (rakes + corners) — CLOSED UNDER HOWARD'S RULINGS
+1. **READ MECHANISMS**: (a) pitch-triangle notation fix (12/12 misreads → 7/12; corrected pitch recomputes gable triangles, pinned); (b) ROOF GEOMETRY PASS — focused second call (roof plan + elevations + floor plan) fires on garage evidence without a garage plane; SURGICAL pure merge pinned in test_roof_geometry_pass_2026_08_05.py; (c) full-outline corner walk + per-corner OWN heights in prompt. Run-by-run scatter table in memory/boni_second_send_report_2026_08_05.md.
+2. **RULINGS**: garage rake feeds wall-J (standard practice — J on wall AND rake) → Boni rakes 118, J derives **32** with real porch channel 28 LF; installed 30 = FIELD ANOMALY flagged pending Howard's site visit (never chase). Corners per-corner heights → oc_lf 126 → OSC **11 = installed**. REAR PORCH KILLED: porch = front 99 ft² printed; soffit derives 39 vs installed 40 (1-pc real residual, pinned); soffit-J 23 vs installed 35 (12-pc residual OPEN). Walkout band is sided per prints — cannot explain installed 34 < 41.1 SQ (openings convention).
+3. Boni is now the vinyl/blueprint ground-truth anchor beside 3 Degree's LP. Stamps: 3d60fb7 (mechanisms) + 8f6f575 (rulings) both CLEAN 1847 passed.
+STILL OPEN: soffit-J residual 12 pcs vs installed 35; Boni ESTIMATE doc still carries the original read (Howard rederives/overrides in-app); windows reread scatter 22 vs 24 flagged.
+STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-September: quote open receipts, cross-family fill.
