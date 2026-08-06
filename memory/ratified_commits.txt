@@ -10,3 +10,4 @@ fe42951 ratified 2026-08-05 — platform auto-commit landed mid click-sweep sess
 5824c38 ratified 2026-08-05 — same session, same ruling
 3b80426 ratified 2026-08-05 — same session, same ruling
 1aa5850 ratified 2026-08-05 — platform auto-commit that captured the Boni rulings mid-build (eaves plane-sum + integral-J toggle); completed under the ruled 2026-08-05 session: eave/porch-J term (vinyl/Ascend only, never LP) landing Boni wall-J at installed 30
+0c7ce7f ratified 2026-08-06 — platform auto-commit captured the RULED badge rename ('Ready to quote?'/'Ready to order?'), the 'gate' banned-word pin, and done-run restore-never-expires (Howard's 2026-08-06 rulings); suite ran green 1868 passed before and after; stamped by the handback that follows

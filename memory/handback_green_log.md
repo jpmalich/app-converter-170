@@ -213,3 +213,5 @@
 - 2026-08-06 11:06 UTC · 29c330d · CLEAN · [tests] · 1856 passed, 1 skipped, 2 warnings in 220.07s (0:03:40)
 - 2026-08-06 11:28 UTC · cb8c018 · CLEAN · [tests] · 1860 passed, 1 skipped, 2 warnings in 235.03s (0:03:55)
 - 2026-08-06 12:02 UTC · b691192 · CLEAN · [tests] · 1864 passed, 1 skipped, 2 warnings in 178.64s (0:02:58)
+- 2026-08-06 21:00 UTC · 3db073d · GUARD-FAIL · FAILED tests/test_guard_autocommit_sweep.py::test_no_unruled_code_commits_since_last_stamp
+- 2026-08-06 21:00 UTC · 3db073d · GUARD-FAIL · FAILED tests/test_hover_import_async.py::test_status_eventually_done_or_error
