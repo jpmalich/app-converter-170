@@ -6403,3 +6403,9 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - Backend: pure build_blueprint_readback + _with_readback enrichment on status/latest endpoints (computed on read, never persisted, feeds no derivation). Frontend: BlueprintReadBackCard.jsx + print section in printTakeoff (takes _lang as param). EN+ES at parity.
 - ACCEPTANCE: reproduced the original Boni read on a scratch fixture — all three misses loud on one card; screenshotted EN + ES + print popup; scratch PURGED after. Pins: test_blueprint_readback_2026_08_06.py (6 tests incl. read-only immutability). Parity-parser gotcha: an EN string containing "notes: {" collided with the "es: {" block splitter — reworded; recorded here so it never recurs.
 - Stamp: 2026-08-06 01:56 UTC · 2029ff9 · CLEAN · 1853 passed, 1 skipped. Preview only — production/demo path untouched (no deploy).
+
+## SESSION 2026-08-06 (part 13) — BLUEPRINT RESTORE PARITY
+- Investigated Howard's "restore does nothing" report: restore was ALREADY wired to the full preview modal (traced + reproduced on Boni, both editors) — the real ask was VISUAL parity. Done runs now get the exact Hover-style button ("Restore Blueprint Read", sky-blue border, FileText icon, EN+ES, tooltip with pages/age) on the Blueprints tile instead of the tiny text line. Running/errored keep the compact status line. Display-only, no recompute.
+- Pinned in test_blueprint_restore_parity_2026_08_06.py (shared class string, i18n, testid, old text-line banned for done runs).
+- Stamp: 2026-08-06 11:06 UTC · 29c330d · CLEAN · 1856 passed, 1 skipped. Preview only.
+- NOTE for future: production/demo build (frozen) has neither the Read-Back Card nor this button until Howard authorizes a post-demo redeploy.
