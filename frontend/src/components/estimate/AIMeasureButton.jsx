@@ -653,9 +653,10 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         if (cancelled) return;
         const r = data?.run || null;
         if (!r) { setLastRun(null); return; }
-        // Only surface fresh runs (< 30 min) so we don't nag the
-        // contractor about ancient runs they already applied.
-        if (r.status === "running" || (r.age_seconds || 0) < 30 * 60) {
+        // Done runs never expire — a paid AI read stays restorable for
+        // the life of the estimate. Running runs always surface; only
+        // errored runs stay fresh (< 30 min) so old failures don't nag.
+        if (r.status === "done" || r.status === "running" || (r.age_seconds || 0) < 30 * 60) {
           setLastRun(r);
         } else {
           setLastRun(null);

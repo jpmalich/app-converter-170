@@ -65,6 +65,29 @@ def test_error_dictionary_is_plain_both_languages():
             assert bad not in val, f"developer word '{bad}' leaked: {val}"
 
 
+def test_the_word_gate_never_reaches_a_contractor():
+    """Howard ruled 2026-08-06: 'gate' is developer language. No
+    DICTIONARY VALUE (what the contractor reads on screen) may carry it
+    as a standalone word, in either language. Keys, internal code,
+    logs, and the backend 409 body keys may keep it. ES: 'puerta'
+    stays legal for real doors (door-knock, sliding doors, the Three
+    Doors metaphor) — only the gate-concept phrases are banned."""
+    for m in re.finditer(r'"[\w.]+":\s*"([^"]*)"', DICTS):
+        val = m.group(1)
+        assert not re.search(r"\bgates?\b", val, re.I), \
+            f"'gate' reaches the screen: {val[:90]}"
+        assert not re.search(
+            r"\bcompuerta\b|\bpuerta\s+de\s+(cotizaci\u00f3n|pedido)\b",
+            val, re.I), f"gate-concept Spanish reaches the screen: {val[:90]}"
+
+
+def test_readiness_badges_are_plain_questions():
+    assert DICTS.count('"gates.badge.quote": "Ready to quote?"') == 1
+    assert DICTS.count('"gates.badge.order": "Ready to order?"') == 1
+    assert DICTS.count('"gates.badge.quote": "\u00bfListo para cotizar?"') == 1
+    assert DICTS.count('"gates.badge.order": "\u00bfListo para ordenar?"') == 1
+
+
 def test_status_code_stays_in_the_console():
     assert "console.warn" in GATE_LIB and "res.status" in GATE_LIB, \
         "the code must still be logged for debugging — just never shown"

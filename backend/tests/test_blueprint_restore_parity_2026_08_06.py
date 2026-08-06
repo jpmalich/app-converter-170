@@ -36,3 +36,22 @@ def test_done_state_has_no_plain_text_banner():
     come back for done runs — done gets the button, only running/errored
     keep the compact status line."""
     assert "Previous read ·" not in BP
+
+
+def test_done_blueprint_reads_never_expire():
+    """Howard ruled 2026-08-06: a cached blueprint read the contractor
+    paid for does NOT expire — 31 minutes later it is exactly as good as
+    29. A page reload must never hide RESTORE / TAG PROFILES for a done
+    run. Only error/running recovery offers keep the 30-min freshness."""
+    assert 'run.status === "done" ||' in BP, \
+        "done runs must surface regardless of age"
+    assert "ageOk && restorable" not in BP, \
+        "the old 30-min hide for done runs came back"
+
+
+def test_done_photo_reads_never_expire_either():
+    """Same ruling applied to the photo door — AIMeasureButton had the
+    stale 30-min pattern the blueprint door inherited (Hover never did)."""
+    AIM = (FRONTEND / "components" / "estimate" / "AIMeasureButton.jsx").read_text()
+    assert 'r.status === "done" || r.status === "running"' in AIM, \
+        "done photo runs must surface regardless of age"

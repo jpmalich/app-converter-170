@@ -145,12 +145,15 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         );
         const run = resp?.data?.run;
         if (cancelled || !run) return;
-        // Only surface if recent (< 30 min) and final-ish (done/error). A
-        // still-running worker is fine too — frontend will poll its
-        // status when the user clicks "Restore".
-        const ageOk = (run.age_seconds ?? 99999) < 1800;
-        const restorable = ["done", "error", "running"].includes(run.status);
-        if (ageOk && restorable) {
+        // A finished read never expires — the contractor paid for that
+        // AI run and it stays restorable for the life of the estimate
+        // (backend serves TTL-reaped docs from the CUT archive). Only
+        // error/running recovery offers stay fresh (< 30 min) so we
+        // don't surface dead workers or stale failures.
+        const fresh = (run.age_seconds ?? 99999) < 1800;
+        const restorable = run.status === "done" ||
+          (["error", "running"].includes(run.status) && fresh);
+        if (restorable) {
           setResumeRun(run);
           // Iter 78z+ — pick up persisted page paths from the previous
           // run so Tag Profiles works without re-uploading the PDF.
