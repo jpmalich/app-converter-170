@@ -27,6 +27,7 @@ import ProfileAnnotator from "@/components/estimate/ProfileAnnotator";
 // so the 3D viewer + side panel + material math work without a fork.
 import HouseModel3D from "@/components/estimate/HouseModel3D";
 import FieldVerifyCard from "@/components/estimate/FieldVerifyCard";
+import BlueprintReadBackCard from "@/components/estimate/BlueprintReadBackCard";
 import { RENDER_3D_ENABLED } from "@/lib/featureFlags";
 import { printTakeoff } from "@/lib/printTakeoff";
 import { bakeWasteIntoLines, steerLpSoffit } from "@/lib/wasteLogic";
@@ -1029,6 +1030,9 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                 );
               })()}
 
+              {/* Read-back verification card (display-only, 2026-08-06) */}
+              <BlueprintReadBackCard readback={result.readback} />
+
               {/* Raw JSON expander (parity with AI Measure debug panel) */}
               <details
                 open={showRawJson}
@@ -1064,6 +1068,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                       ],
                       est,
                       kind: est?.kind || "siding",
+                      readback: result?.readback || null,
                     })
                   }
                   disabled={applying}

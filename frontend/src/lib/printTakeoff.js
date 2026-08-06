@@ -10,7 +10,7 @@
 
 // PROVENANCE NOTES READ IN SPANISH (Howard ruled 2026-08-03): a crew on
 // site is who reads them — notes translate at print; SKU names never do.
-import { currentLang } from "./i18n";
+import { currentLang, tFor } from "./i18n";
 import { translateNote } from "./catalogTranslations";
 
 const esc = (s) =>
@@ -61,6 +61,79 @@ const TAB_LABELS = {
   windows: "Windows",
   iss: "ISS Quote",
 };
+
+// BLUEPRINT READ-BACK (display-only, 2026-08-06): the verification card
+// on paper — the same server-built flags the modal shows. `_lang` is
+// passed in (never re-read here — the ReferenceError lesson, 2026-08-04).
+function renderReadBackHtml(readback, _lang = "en") {
+  if (!readback) return "";
+  const T = (k, vars) => tFor(_lang, k, vars);
+  const n = (v) => (v == null ? "—" : Math.round(v * 10) / 10);
+  const flag = (level, text) =>
+    `<div class="rb-flag rb-${level}">${esc(text)}</div>`;
+  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail } = readback;
+  let planesHtml = "";
+  if (garage_banner) planesHtml += flag("loud", T("bp.rb.noGarage"));
+  if (no_planes) {
+    planesHtml += flag("loud", T("bp.rb.noPlanes"));
+  } else {
+    planesHtml += `
+      <table class="rb-table">
+        <thead><tr>
+          <th>${esc(T("bp.rb.plane"))}</th><th class="num">${esc(T("bp.rb.eave"))}</th>
+          <th class="num">${esc(T("bp.rb.rake"))}</th><th class="num">${esc(T("bp.rb.gableEnds"))}</th>
+          <th class="num">${esc(T("bp.rb.porchSqft"))}</th>
+        </tr></thead>
+        <tbody>
+          ${planes.map((p) => `
+            <tr>
+              <td>${esc(p.label)}${p.is_porch ? " ⌂" : ""}</td>
+              <td class="num">${n(p.eave_lf)}</td>
+              <td class="num${p.gable_blind ? " rb-loud-cell" : ""}">${n(p.rake_lf)}</td>
+              <td class="num">${p.gable_ends}</td>
+              <td class="num">${p.is_porch ? n(p.porch_ceiling_sqft) : "—"}</td>
+            </tr>
+            ${p.gable_blind ? `<tr><td colspan="5">${flag("loud", T("bp.rb.gableBlind", { plane: p.label }))}</td></tr>` : ""}
+          `).join("")}
+          ${plane_totals ? `
+            <tr class="rb-totals">
+              <td>${esc(T("bp.rb.totals"))}</td>
+              <td class="num">${n(plane_totals.eaves_lf)}</td>
+              <td class="num">${n(plane_totals.rakes_lf)}</td>
+              <td class="num">${plane_totals.gable_ends}</td>
+              <td class="num">—</td>
+            </tr>` : ""}
+        </tbody>
+      </table>`;
+  }
+  let cornersHtml = `
+    <div>${esc(T("bp.rb.outside"))}: <b>${corners.outside}</b> (${n(corners.outside_lf)} LF) ·
+      ${esc(T("bp.rb.inside"))}: <b>${corners.inside}</b> (${n(corners.inside_lf)} LF)
+      ${corners.invariant_ok != null
+        ? ` · ${esc(T("bp.rb.invariant"))}: <b class="${corners.invariant_ok ? "rb-pass" : "rb-fail"}">${esc(corners.invariant_ok ? T("bp.rb.pass") : T("bp.rb.fail"))}</b>`
+        : ""}
+    </div>`;
+  if (corners.basis === "averaged") cornersHtml += flag("warn", T("bp.rb.basis.averaged"));
+  if (corners.basis === "per_corner") cornersHtml += flag("info", T("bp.rb.basis.per_corner"));
+  if (corners.basis === "missing") cornersHtml += flag("warn", T("bp.rb.basis.missing"));
+  if (wing_check?.flag) {
+    cornersHtml += flag("loud", T("bp.rb.wing", { fp: n(wing_check.footprint_area_sqft), rect: n(wing_check.rectangle_area_sqft) }));
+  }
+  const porchLevel = { plane_read: "info", plane_without_ceiling: "warn", phantom_ceiling: "loud", absent: "warn" }[porch.status] || "info";
+  const porchHtml = flag(porchLevel, T(`bp.rb.porch.${porch.status}`, { sqft: n(porch.ceiling_sqft) }));
+  const railHtml = (rail || []).map((f) => flag(f.level, T(`bp.rb.rail.${f.code}`, { text: f.text || "" }))).join("");
+  return `
+    <section class="block">
+      <div class="block-title">${esc(T("bp.rb.title"))} <span class="muted small">— ${esc(T("bp.rb.readonly"))}</span></div>
+      <div class="rb-sub">${esc(T("bp.rb.planes"))}</div>
+      ${planesHtml}
+      <div class="rb-sub">${esc(T("bp.rb.corners"))}</div>
+      ${cornersHtml}
+      <div class="rb-sub">${esc(T("bp.rb.porch"))}</div>
+      ${porchHtml}
+      ${railHtml ? `<div class="rb-sub">${esc(T("bp.rb.rail"))}</div>${railHtml}` : ""}
+    </section>`;
+}
 
 function renderMeasurementsHtml(measurements) {
   const entries = Object.entries(measurements || {}).filter(
@@ -244,6 +317,7 @@ export function printTakeoff({
   openings = [],
   est = {},
   kind = "siding",
+  readback = null,
 }) {
   const customer = est?.customer_name || "Untitled";
   const address = est?.address || "—";
@@ -321,6 +395,20 @@ export function printTakeoff({
       margin-bottom: 22px;
       page-break-inside: avoid;
     }
+    /* read-back verification card (grayscale-legible: borders differ too) */
+    .rb-sub { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #71717A; margin: 8px 0 3px; }
+    .rb-flag { border: 1px solid #E4E4E7; padding: 3px 6px; font-size: 10px; margin: 2px 0; }
+    .rb-loud { border: 2px solid #B91C1C; color: #B91C1C; font-weight: 700; background: #FEF2F2; }
+    .rb-warn { border: 1px dashed #92400E; color: #92400E; background: #FFFBEB; }
+    .rb-info { color: #52525B; }
+    .rb-table { border-collapse: collapse; width: 100%; font-size: 10.5px; margin: 2px 0; }
+    .rb-table th, .rb-table td { border-bottom: 1px solid #E4E4E7; padding: 2px 6px 2px 0; text-align: left; }
+    .rb-table .num { text-align: right; }
+    .rb-loud-cell { color: #B91C1C; font-weight: 700; }
+    .rb-totals td { font-weight: 700; border-top: 1.5px solid #09090B; }
+    .rb-pass { color: #15803D; }
+    .rb-fail { color: #B91C1C; text-decoration: underline; }
+
     .block-title {
       font-size: 10px;
       font-weight: 700;
@@ -411,6 +499,7 @@ export function printTakeoff({
   </div>
 
   ${renderMeasurementsHtml(measurements)}
+  ${renderReadBackHtml(readback, _lang)}
   ${renderLinesHtml(lines, kind, _lang)}
   ${renderOpeningsHtml(openings)}
 

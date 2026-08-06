@@ -606,6 +606,130 @@ def _roof_pass_needed(raw: dict) -> bool:
                and int(p.get("gable_ends") or 0) == 0 for p in garage)
 
 
+# =========================================================================
+# BLUEPRINT READ-BACK CARD (Howard authorized 2026-08-06 — first build off
+# demo-lock). DISPLAY-ONLY: this function reads the run's raw extraction
+# and returns visibility flags. It RECOMPUTES NOTHING about derivation,
+# WRITES NOTHING (computed on read in the status/latest endpoints, never
+# persisted), and touches no quantity, price, or money surface. Purpose:
+# every Boni geometry miss (dropped garage gable, phantom porch, missing
+# wing corners) was invisible in the material list — this card makes the
+# READ itself visible so Howard verifies geometry by looking.
+# =========================================================================
+def build_blueprint_readback(raw: dict | None) -> dict | None:
+    if not isinstance(raw, dict) or not raw:
+        return None
+    walls = [w for w in (raw.get("walls") or []) if isinstance(w, dict)]
+    planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
+    plane_rows = []
+    for p in planes:
+        rake = float(p.get("rake_lf") or 0)
+        is_porch = bool(p.get("is_porch"))
+        plane_rows.append({
+            "label": str(p.get("label") or "?"),
+            "eave_lf": float(p.get("eave_lf") or 0),
+            "rake_lf": rake,
+            "gable_ends": int(p.get("gable_ends") or 0),
+            "is_porch": is_porch,
+            "porch_ceiling_sqft": float(p.get("porch_ceiling_sqft") or 0),
+            # THE BONI CATCH: a non-porch plane reading rake 0 is exactly
+            # how the garage gable went invisible — flag LOUDLY.
+            "gable_blind": (not is_porch) and rake == 0,
+        })
+    garage_banner = _roof_pass_needed(raw)
+
+    # ---- corner ledger ----
+    oc = int(raw.get("outside_corner_count") or 0)
+    ic = int(raw.get("inside_corner_count") or 0)
+    oclf = float(raw.get("outside_corner_lf") or 0)
+    iclf = float(raw.get("inside_corner_lf") or 0)
+    avg_h = float(raw.get("avg_wall_height_ft") or 0)
+    if oc <= 0 or oclf <= 0:
+        basis = "missing"
+    elif avg_h > 0 and abs(oclf - oc * avg_h) <= max(1.0, 0.02 * oclf):
+        # count × avg height — the 261 Haugh smell: averaging blurs tall
+        # 2-story corners with short garage-wing corners.
+        basis = "averaged"
+    else:
+        basis = "per_corner"
+    widths = {str(w.get("label") or ""): float(w.get("width_ft") or 0) for w in walls}
+    rect = (max(widths.get("front", 0), widths.get("back", 0))
+            * max(widths.get("left", 0), widths.get("right", 0)))
+    fp = raw.get("footprint_area_sqft")
+    wing_flag = bool(fp and rect > 0 and float(fp) > rect * 1.02)
+
+    # ---- porch tag ----
+    porch_planes = [r for r in plane_rows if r["is_porch"]]
+    ceiling = sum(r["porch_ceiling_sqft"] for r in porch_planes)
+    top_ceiling = float(raw.get("porch_ceiling_sqft") or 0)
+    if porch_planes and ceiling > 0:
+        porch_status = "plane_read"
+    elif porch_planes:
+        porch_status = "plane_without_ceiling"
+    elif top_ceiling > 0:
+        # a ceiling figure with NO porch plane = a tag over nothing
+        porch_status = "phantom_ceiling"
+        ceiling = top_ceiling
+    else:
+        porch_status = "absent"
+
+    # ---- honesty-flag rail ----
+    rail: list[dict] = []
+    if not planes:
+        rail.append({"level": "loud", "code": "no_planes"})
+    pitch = str(raw.get("roof_pitch") or "").strip()
+    if pitch:
+        rail.append({"level": "info", "code": "pitch", "text": pitch})
+    else:
+        rail.append({"level": "warn", "code": "no_pitch"})
+    sc = str(raw.get("scale_confidence") or "")
+    if sc and sc != "high":
+        rail.append({"level": "warn", "code": "scale_confidence", "text": sc})
+    rp = raw.get("_roof_pass") or {}
+    for key in sorted((rp.get("accepted") or {}).keys()):
+        rail.append({"level": "info", "code": "roof_pass_merge", "text": key})
+    notes = str(raw.get("notes") or "").strip()
+    if notes:
+        rail.append({"level": "info", "code": "read_notes", "text": notes})
+
+    return {
+        "planes": plane_rows,
+        "no_planes": len(plane_rows) == 0,
+        "plane_totals": ({
+            "eaves_lf": sum(r["eave_lf"] for r in plane_rows),
+            "rakes_lf": sum(r["rake_lf"] for r in plane_rows),
+            "gable_ends": sum(r["gable_ends"] for r in plane_rows),
+        } if plane_rows else None),
+        "garage_banner": garage_banner,
+        "corners": {
+            "outside": oc, "inside": ic,
+            "outside_lf": oclf, "inside_lf": iclf,
+            "invariant_ok": (oc - ic) == 4 if (oc or ic) else None,
+            "basis": basis, "avg_wall_height_ft": avg_h,
+        },
+        "wing_check": {
+            "footprint_area_sqft": float(fp) if fp else None,
+            "rectangle_area_sqft": round(rect, 1) if rect else None,
+            "flag": wing_flag,
+        },
+        "porch": {"status": porch_status, "ceiling_sqft": ceiling,
+                  "planes": [r["label"] for r in porch_planes]},
+        "rail": rail,
+    }
+
+
+def _with_readback(result):
+    """Read-time enrichment for the status/latest responses — computed on
+    the fly, never persisted, never fed to any derivation."""
+    if isinstance(result, dict) and result.get("raw_ai"):
+        try:
+            return {**result, "readback": build_blueprint_readback(result["raw_ai"])}
+        except Exception:
+            logger.exception("[ai-blueprint] readback build failed — served without")
+    return result
+
+
+
 def _compress_for_claude(img_bytes: bytes, max_raw_bytes: int = 5_500_000) -> bytes:
     """Ensure a single image fits comfortably under Anthropic's 10 MB
     base64 limit. Anthropic measures the base64 string (~1.33× raw),
@@ -1438,7 +1562,7 @@ async def ai_blueprint_status(
         "run_id": run_id,
         "status": doc.get("status"),
         "stage": doc.get("stage"),
-        "result": strip_cost_keys(doc.get("result")),
+        "result": _with_readback(strip_cost_keys(doc.get("result"))),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
     }
@@ -1498,7 +1622,7 @@ async def ai_blueprint_latest_for_estimate(
             # Read-side provenance (ruled 2026-07-20): True when served
             # from the CUT archive after the live doc's 24h TTL reaped.
             "archived": archived,
-            "result": strip_cost_keys(doc.get("result")),
+            "result": _with_readback(strip_cost_keys(doc.get("result"))),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,
