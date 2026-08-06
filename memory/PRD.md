@@ -6394,3 +6394,6 @@ STILL HOWARD'S: Alside logo upload, 5 demo one-liners. Post-September: quote ope
 3. Boni is now the vinyl/blueprint ground-truth anchor beside 3 Degree's LP. Stamps: 3d60fb7 (mechanisms) + 8f6f575 (rulings) both CLEAN 1847 passed.
 STILL OPEN: soffit-J residual 12 pcs vs installed 35; Boni ESTIMATE doc still carries the original read (Howard rederives/overrides in-app); windows reread scatter 22 vs 24 flagged.
 STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-September: quote open receipts, cross-family fill.
+
+## POST-SEPTEMBER BACKLOG ADDITION (2026-08-06)
+- **Blueprint Verification Read-Back** — sized, report-only, captured in memory/proposals/blueprint_readback_proposal_2026_08_06.md. MVP = schematic Read-Back Card (plane census + corner ledger + porch tag + flag rail; size S, catches all three Boni miss classes); Phase 2 = EL-1..4 elevation engine fed by the blueprint run (size M, confirmed reusable via source switch); Phase 3 = per-corner heights schema slot (S). Schematic confirmed cheaper than PDF pixel-annotation. NOT BUILT — awaits Howard's post-demo authorization.
