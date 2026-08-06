@@ -11,7 +11,7 @@ const api = axios.create({
 export default api;
 
 export function formatApiError(detail) {
-  if (detail == null) return "Something went wrong.";
+  if (detail == null) return "That didn't go through — check your connection and try again.";
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail))
     return detail

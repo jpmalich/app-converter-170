@@ -3131,7 +3131,7 @@ async def rederive_estimate(
     # just changed so the rebuild never reads a stale autosave.
     for k in ("overhang_in", "porch_ceilings", "fascia_width_in",
               "batten_spacing_in", "panel_size", "wrap_trim_width_in",
-              "shake_reveal_in", "waste_pct",
+              "shake_reveal_in", "waste_pct", "windows_integral_j",
               "siding_color", "outside_corner_color",
               "accessories_color", "soffit_fascia_color",
               "photo_soffit_sqft", "photo_drip_edge_lf",

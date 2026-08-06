@@ -408,6 +408,7 @@ export const dict = {
     "err.gate.order": "Can't release these materials yet — finish the field checks first:",
     "err.gate.action": "Take care of these, then try again",
     "err.gate.more": "+{n} more",
+    "err.spec.lines": "Your setting saved, but the material lines didn't update — press RE-DERIVE to bring them current.",
     "hov.print": "Print",
     // ---- Blueprint Read-Back Card (verification, display-only) ----
     "bp.rb.title": "Read-Back — what the app read",
@@ -1153,6 +1154,7 @@ export const dict = {
     "err.gate.order": "Aún no se pueden liberar estos materiales — termine primero las verificaciones de campo:",
     "err.gate.action": "Resuelva esto e intente de nuevo",
     "err.gate.more": "+{n} más",
+    "err.spec.lines": "Su ajuste se guardó, pero las líneas de material no se actualizaron — presione RE-DERIVAR para ponerlas al día.",
     "hov.print": "Imprimir",
     // ---- Tarjeta de lectura de verificación del plano (solo lectura) ----
     "bp.rb.title": "Lectura de verificación — lo que leyó la app",

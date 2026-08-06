@@ -459,8 +459,11 @@ export default function useEstimate(id) {
         // survives (profile-owns-family rule, 2026-07-24). A row carrying
         // a contractor note also survives at qty 0 (blind-row notes,
         // ruled 2026-07-31 — the note must not vanish before the qty).
+        // Integral-J zeroed rows survive too (ruled 2026-08-05: Cap
+        // window stays VISIBLE at 0 with its provenance note).
         .filter((l) => (l.qty || 0) > 0 || l.qty_src === "human"
-          || (l.contractor_note || "").trim())
+          || (l.contractor_note || "").trim()
+          || /integral-J/.test(l.note || ""))
         .map((l) => ({
           tab: l.tab || "vinyl",
           section: l.section,
@@ -561,6 +564,9 @@ export default function useEstimate(id) {
       batten_spacing_in: source.batten_spacing_in ?? undefined,
       fascia_width_in: source.fascia_width_in ?? undefined,
       shake_reveal_in: source.shake_reveal_in ?? undefined,
+      // INTEGRAL-J WINDOWS (silent-strip fix 2026-08-06: the toggle's PUT
+      // was dropping this flag — the checkbox looked saved but never was).
+      windows_integral_j: source.windows_integral_j ?? undefined,
       panel_size: source.panel_size || undefined,
       wrap_trim_width_in: source.wrap_trim_width_in ?? undefined,
       color_tier: undefined, // RETIRED 2026-08-02 — tier derives per row from the color pickers
