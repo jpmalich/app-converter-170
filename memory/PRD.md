@@ -6409,3 +6409,8 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - Pinned in test_blueprint_restore_parity_2026_08_06.py (shared class string, i18n, testid, old text-line banned for done runs).
 - Stamp: 2026-08-06 11:06 UTC · 29c330d · CLEAN · 1856 passed, 1 skipped. Preview only.
 - NOTE for future: production/demo build (frozen) has neither the Read-Back Card nor this button until Howard authorizes a post-demo redeploy.
+
+## SESSION 2026-08-06 (part 14) — GATE 409 NAMED ON THE PRINT SURFACE
+- (a) Boni's print 409 = QUOTE GATE, correctly blocking: LABOR PENDING (clean up/haul away, Cap window qty 20, entry/patio/garage caps) + unpriced Fascia/rake-or-frieze rows (vinyl + ascend). Real block, not false — Boni's stored estimate still carries un-priced labor rows (and pre-ruling quantities; rederive still pending).
+- (b) Defect was the FRONTEND discarding the 409 body (backend always named the blockers). Fix: lib/gateMessages.js → toast "Material list blocked — QUOTE GATE. Set these first: <top 3 blockers> · +n more" in both editors, EN+ES. Verified live on Boni. Pinned (frontend source pins + backend 409-body contract pin).
+- Stamp: 2026-08-06 11:28 UTC · cb8c018 · CLEAN · 1860 passed, 1 skipped. Preview only.
