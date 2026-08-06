@@ -402,6 +402,8 @@ export const dict = {
     "hov.restore": "Restore HOVER Lines",
     "bp.restore": "Restore Blueprint Read",
     "bp.restoreTitle": "Re-open the most recent blueprint read — {pg} pages, {min} min ago. Display only, no new read.",
+    "ml.gate.blocked": "Material list blocked — {gate} GATE. Set these first:",
+    "ml.gate.more": "+{n} more",
     "hov.print": "Print",
     // ---- Blueprint Read-Back Card (verification, display-only) ----
     "bp.rb.title": "Read-Back — what the app read",
@@ -1141,6 +1143,8 @@ export const dict = {
     "hov.restore": "Restaurar líneas HOVER",
     "bp.restore": "Restaurar lectura del plano",
     "bp.restoreTitle": "Reabrir la lectura de planos más reciente — {pg} páginas, hace {min} min. Solo visualización, sin nueva lectura.",
+    "ml.gate.blocked": "Lista de materiales bloqueada — COMPUERTA {gate}. Resuelva esto primero:",
+    "ml.gate.more": "+{n} más",
     "hov.print": "Imprimir",
     // ---- Tarjeta de lectura de verificación del plano (solo lectura) ----
     "bp.rb.title": "Lectura de verificación — lo que leyó la app",

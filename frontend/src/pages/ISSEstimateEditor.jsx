@@ -24,6 +24,7 @@ import {
   WINDOW_WRAP_COLORS,
 } from "@/lib/colorOptions";
 import { buildMaterialListHtml, materialListFilename } from "@/lib/materialList";
+import { gateBlockMessage } from "@/lib/gateMessages";
 import { useCompany } from "@/lib/company";
 import { useBranding } from "@/lib/branding";
 import { useLang } from "@/lib/i18n";
@@ -325,7 +326,7 @@ export default function ISSEstimateEditor() {
           body: JSON.stringify({ recipient_email: "noreply@noreply.com", html_quote: html }),
         }
       );
-      if (!res.ok) throw new Error(`PDF render failed: ${res.status}`);
+      if (!res.ok) throw new Error(await gateBlockMessage(res, t));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");

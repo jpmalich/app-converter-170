@@ -11,6 +11,7 @@ import useReconcileWindowSnapshots from "@/lib/useReconcileWindowSnapshots";
 import useRecalcSoffitOnOverhang from "@/lib/useRecalcSoffitOnOverhang";
 import { calcTotals } from "@/lib/calc";
 import { buildMaterialListHtml, materialListFilename } from "@/lib/materialList";
+import { gateBlockMessage } from "@/lib/gateMessages";
 import { buildLpMaterialListHtml } from "@/lib/lpMaterialList";
 import QRCode from "qrcode";
 import StickyBar from "@/components/estimate/StickyBar";
@@ -316,7 +317,7 @@ export default function EstimateEditor() {
           body: JSON.stringify({ recipient_email: "noreply@noreply.com", html_quote: html }),
         }
       );
-      if (!res.ok) throw new Error(`PDF render failed: ${res.status}`);
+      if (!res.ok) throw new Error(await gateBlockMessage(res, t));
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
