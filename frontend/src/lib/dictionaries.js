@@ -400,6 +400,8 @@ export const dict = {
     "hov.cutNote": "LP estimate — composition lines derive through the LP engine on Apply (THE CUT). This door merges no vinyl/Ascend/windows lines.",
     "hov.applyLp": "Apply & Derive LP List",
     "hov.restore": "Restore HOVER Lines",
+    "bp.restore": "Restore Blueprint Read",
+    "bp.restoreTitle": "Re-open the most recent blueprint read — {pg} pages, {min} min ago. Display only, no new read.",
     "hov.print": "Print",
     // ---- Blueprint Read-Back Card (verification, display-only) ----
     "bp.rb.title": "Read-Back — what the app read",
@@ -1137,6 +1139,8 @@ export const dict = {
     "hov.cutNote": "Estimado LP — las líneas de composición se derivan por el motor LP al Aplicar (EL CORTE). Esta puerta no mezcla líneas de vinil/Ascend/ventanas.",
     "hov.applyLp": "Aplicar y derivar lista LP",
     "hov.restore": "Restaurar líneas HOVER",
+    "bp.restore": "Restaurar lectura del plano",
+    "bp.restoreTitle": "Reabrir la lectura de planos más reciente — {pg} páginas, hace {min} min. Solo visualización, sin nueva lectura.",
     "hov.print": "Imprimir",
     // ---- Tarjeta de lectura de verificación del plano (solo lectura) ----
     "bp.rb.title": "Lectura de verificación — lo que leyó la app",

@@ -617,16 +617,34 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
           received the run_id (typical Cloudflare 502 on slow upload).
           Iter 78z+++ — compact 1-line form so it fits inside the
           Blueprints tile without dominating the page. */}
-      {resumeRun && !busy && !result && (
+      {/* RESTORE PARITY (Howard, 2026-08-06): a done cached read gets the
+          SAME button treatment as Hover's "Restore HOVER Lines" — one
+          look across doors. Display-only: opens the cached read's review
+          modal (with the Read-Back Card), recomputes nothing. Running /
+          errored states keep the compact status line. */}
+      {resumeRun && !busy && !result && resumeRun.status === "done" && (
+        <button
+          type="button"
+          className="w-full justify-center px-3 py-1.5 bg-[var(--surface)] text-[#0369A1] border border-[#0EA5E9] hover:bg-[#F0F9FF] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 mt-2"
+          onClick={restoreResume}
+          data-testid="blueprint-resume-btn"
+          title={t("bp.restoreTitle", {
+            pg: resumeRun.page_count || "?",
+            min: Math.round((resumeRun.age_seconds || 0) / 60),
+          })}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          {t("bp.restore")}
+        </button>
+      )}
+      {resumeRun && !busy && !result && resumeRun.status !== "done" && (
         <div
           className="mt-1 text-[10px] text-[var(--warning-text)] flex items-center gap-1.5 leading-snug flex-wrap"
           data-testid="blueprint-resume-banner"
         >
           <AlertTriangle className="w-3 h-3 text-[var(--warning-text)] flex-shrink-0" />
           <span className="font-bold uppercase tracking-wider">
-            {resumeRun.status === "done"
-              ? `Previous read · ${resumeRun.page_count || "?"} pg · ${Math.round((resumeRun.age_seconds || 0) / 60)} min`
-              : resumeRun.status === "running"
+            {resumeRun.status === "running"
               ? "Processing in background"
               : "Previous read errored"}
           </span>
@@ -634,7 +652,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
             type="button"
             onClick={restoreResume}
             className="text-[var(--ai)] font-bold uppercase tracking-wider hover:underline"
-            data-testid="blueprint-resume-btn"
+            data-testid="blueprint-resume-status-btn"
           >
             Restore
           </button>
