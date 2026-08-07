@@ -35,6 +35,12 @@ logger = logging.getLogger(__name__)
 
 COLLECTION = "upload_blobs"
 
+# SOURCE-RETENTION RULING (Howard, 2026-08-07): "THE ORIGINAL UPLOAD IS
+# RETAINED. Always, every door, every file type. A derived artifact never
+# replaces its source." Originals can exceed Mongo's 16 MB doc cap
+# (blueprint PDFs run to 64 MB) — big blobs are split into parts.
+CHUNK_BYTES = 12 * 1024 * 1024
+
 
 async def save_blob(name: str, data: bytes, content_type: str = "application/octet-stream") -> bool:
     """Persist an upload's bytes into MongoDB so it survives disk loss.
@@ -51,12 +57,32 @@ async def save_blob(name: str, data: bytes, content_type: str = "application/oct
         existing = await db[COLLECTION].find_one({"name": name}, {"_id": 1})
         if existing:
             return True
+        now = datetime.now(timezone.utc).isoformat()
+        if len(data) <= CHUNK_BYTES:
+            await db[COLLECTION].insert_one({
+                "name": name,
+                "content_type": content_type or "application/octet-stream",
+                "size": len(data),
+                "data": data,
+                "created_at": now,
+            })
+            return True
+        # Chunked path — parent doc carries the manifest, parts carry bytes.
+        n_chunks = (len(data) + CHUNK_BYTES - 1) // CHUNK_BYTES
+        for i in range(n_chunks):
+            await db[COLLECTION].insert_one({
+                "name": f"{name}#part{i}",
+                "content_type": "application/octet-stream",
+                "size": len(data[i * CHUNK_BYTES:(i + 1) * CHUNK_BYTES]),
+                "data": data[i * CHUNK_BYTES:(i + 1) * CHUNK_BYTES],
+                "created_at": now,
+            })
         await db[COLLECTION].insert_one({
             "name": name,
             "content_type": content_type or "application/octet-stream",
             "size": len(data),
-            "data": data,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "chunks": n_chunks,
+            "created_at": now,
         })
         return True
     except Exception as e:  # noqa: BLE001 — never surface this to the user
@@ -74,7 +100,17 @@ async def load_blob(name: str) -> Optional[tuple[bytes, str]]:
         return None
     try:
         doc = await db[COLLECTION].find_one({"name": name})
-        if not doc or not doc.get("data"):
+        if not doc:
+            return None
+        if doc.get("chunks"):
+            parts: list[bytes] = []
+            for i in range(int(doc["chunks"])):
+                part = await db[COLLECTION].find_one({"name": f"{name}#part{i}"})
+                if not part or not part.get("data"):
+                    return None
+                parts.append(bytes(part["data"]))
+            return b"".join(parts), doc.get("content_type") or "application/octet-stream"
+        if not doc.get("data"):
             return None
         return bytes(doc["data"]), doc.get("content_type") or "application/octet-stream"
     except Exception as e:  # noqa: BLE001

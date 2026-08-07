@@ -433,6 +433,11 @@ async def _claude_direct_blueprint(
         client.messages.create(
             model=model_name,
             max_tokens=16000,
+            # Ruled 2026-08-07: temperature=0 pinned on extraction runs —
+            # cuts sampling noise. It does NOT satisfy the determinism
+            # gate and NEVER claims correctness: agreement between reads
+            # is not the same claim as matching a printed dimension.
+            temperature=0.0,
             system=system_text or SYSTEM_PROMPT,
             messages=[{"role": "user", "content": content}],
         ),
@@ -770,12 +775,16 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     }
 
 
-def _with_readback(result):
+def _with_readback(result, source_probe=None):
     """Read-time enrichment for the status/latest responses — computed on
     the fly, never persisted, never fed to any derivation."""
     if isinstance(result, dict) and result.get("raw_ai"):
         try:
-            return {**result, "readback": build_blueprint_readback(result["raw_ai"])}
+            rb = build_blueprint_readback(result["raw_ai"])
+            if rb is not None and source_probe:
+                rb["source"] = {k: source_probe.get(k) for k in
+                                ("kind", "text_pages", "page_count")}
+            return {**result, "readback": rb}
         except Exception:
             logger.exception("[ai-blueprint] readback build failed — served without")
     return result
@@ -847,6 +856,52 @@ def _render_pdf_to_pngs(raw_pdf: bytes, max_pages: int) -> list[bytes]:
             page.close()
     doc.close()
     return out
+
+
+def _probe_pdf_source(raw_pdf: bytes, max_pages: int = 40) -> tuple[dict, list[str]]:
+    """SOURCE-RETENTION RULING (Howard, 2026-08-07): a derived artifact
+    never replaces its source. Answers native-vs-scan from the PDF's own
+    text layer (pdfium textpage char census) — no vision involved. Returns
+    (probe_summary, per_page_text). Text is the extraction ground truth;
+    the vision read never overrules a printed character."""
+    pages: list[dict] = []
+    texts: list[str] = []
+    try:
+        doc = pdfium.PdfDocument(raw_pdf)
+    except Exception:
+        return {"kind": "unreadable", "pages": [], "text_pages": 0, "page_count": 0}, []
+    n = min(len(doc), max_pages)
+    for i in range(n):
+        page = doc[i]
+        txt = ""
+        try:
+            tp = page.get_textpage()
+            txt = (tp.get_text_range() or "").strip()
+            tp.close()
+        except Exception:
+            txt = ""
+        finally:
+            page.close()
+        pages.append({"index": i, "chars": len(txt)})
+        texts.append(txt[:20000])
+    doc.close()
+    # A true scan extracts ZERO characters — any real extractable text
+    # (≥20 chars) marks the page as carrying a native text layer.
+    text_pages_n = sum(1 for p in pages if p["chars"] >= 20)
+    if not pages:
+        kind = "unreadable"
+    elif text_pages_n == 0:
+        kind = "scan"
+    elif text_pages_n == len(pages):
+        kind = "native_text"
+    else:
+        kind = "mixed"
+    return {
+        "kind": kind,
+        "pages": pages,
+        "text_pages": text_pages_n,
+        "page_count": len(pages),
+    }, texts
 
 
 def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dict:
@@ -1380,6 +1435,25 @@ async def ai_blueprint(
     from config import UPLOAD_DIR  # local import to dodge cycle
     from upload_store import save_blob  # Iter 78z+++ — durable backing store
     page_paths: list[str] = []
+    # SOURCE-RETENTION RULING (Howard, 2026-08-07): the original upload is
+    # retained — always, every door, every file type. A derived artifact
+    # never replaces its source.
+    source_files: list[dict] = []
+    source_probe: dict | None = None
+    source_text_pages: list[str] = []
+
+    async def _retain_source(raw_bytes: bytes, ext: str, ctype: str,
+                             kind: str, uploaded_as: str) -> None:
+        src_name = f"bpsrc_{uuid.uuid4().hex}.{ext}"
+        try:
+            (UPLOAD_DIR / src_name).write_bytes(raw_bytes)
+        except Exception:
+            logger.exception("[ai-blueprint] source disk write failed for %s", src_name)
+        await save_blob(src_name, raw_bytes, ctype)
+        source_files.append({
+            "name": src_name, "kind": kind,
+            "bytes": len(raw_bytes), "uploaded_as": uploaded_as or "",
+        })
 
     async def _persist_page_image(img_bytes: bytes) -> str:
         # Sniff magic bytes to pick the correct extension. PDF pages
@@ -1411,6 +1485,8 @@ async def ai_blueprint(
             )
         if len(raw) > MAX_BYTES_PER_FILE * 4:
             raise HTTPException(status_code=413, detail="PDF exceeds 64 MB limit")
+        await _retain_source(raw, "pdf", "application/pdf", "pdf", file.filename)
+        source_probe, source_text_pages = _probe_pdf_source(raw)
         page_pngs = _render_pdf_to_pngs(raw, max_pages)
         for png in page_pngs:
             try:
@@ -1435,6 +1511,8 @@ async def ai_blueprint(
                 continue
             if len(raw) > MAX_BYTES_PER_FILE:
                 raise HTTPException(status_code=413, detail="Plan sheet exceeds 16 MB limit")
+            _img_ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(ctype, "bin")
+            await _retain_source(raw, _img_ext, ctype, "image", f.filename)
             # Same Anthropic 10 MB base64 cap — compress before queuing.
             compressed = _compress_for_claude(raw)
             image_payloads.append(compressed)
@@ -1451,6 +1529,11 @@ async def ai_blueprint(
             status_code=400,
             detail="Provide either a PDF blueprint (`file`) or one or more image scans (`files`)",
         )
+    if source_probe is None and any(s["kind"] == "image" for s in source_files):
+        source_probe = {
+            "kind": "image_scans", "pages": [], "text_pages": 0,
+            "page_count": sum(1 for s in source_files if s["kind"] == "image"),
+        }
     if len(image_payloads) > MAX_PAGES_HARD:
         # Already capped on the PDF side, but guard against image overflow too.
         image_payloads = image_payloads[:MAX_PAGES_HARD]
@@ -1478,6 +1561,10 @@ async def ai_blueprint(
         # for box-tagging. Order matches `image_payloads` (and therefore
         # photos[*].index in Claude's output).
         "page_paths": ",".join(p for p in page_paths if p),
+        # SOURCE-RETENTION RULING (2026-08-07) — originals + native-text probe.
+        "source_files": source_files,
+        "source_probe": source_probe,
+        "source_text_pages": source_text_pages,
         "address": address,
         "transport": transport,
         "created_at": now,
@@ -1505,6 +1592,7 @@ async def ai_blueprint(
         # frontend can hand them to the ProfileAnnotator immediately
         # (no need to wait for the worker to finish).
         "page_paths": ",".join(p for p in page_paths if p),
+        "source_probe": source_probe,
     }
 
 
@@ -1586,6 +1674,9 @@ async def ai_blueprint_rerun(
         "page_paths":  ",".join(new_page_paths),
         "address":     address,
         "rerun_of":    prev_run_id,
+        "source_files": prev.get("source_files") or [],
+        "source_probe": prev.get("source_probe"),
+        "source_text_pages": prev.get("source_text_pages") or [],
         "model_requested": model_name,
         "transport":   transport,
         "created_at":  now,
@@ -1643,9 +1734,12 @@ async def ai_blueprint_status(
         "run_id": run_id,
         "status": doc.get("status"),
         "stage": doc.get("stage"),
-        "result": _with_readback(strip_cost_keys(doc.get("result"))),
+        "result": _with_readback(strip_cost_keys(doc.get("result")),
+                                 source_probe=doc.get("source_probe")),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
+        "source_probe": doc.get("source_probe"),
+        "source_files": doc.get("source_files"),
     }
 
 
@@ -1703,10 +1797,13 @@ async def ai_blueprint_latest_for_estimate(
             # Read-side provenance (ruled 2026-07-20): True when served
             # from the CUT archive after the live doc's 24h TTL reaped.
             "archived": archived,
-            "result": _with_readback(strip_cost_keys(doc.get("result"))),
+            "result": _with_readback(strip_cost_keys(doc.get("result")),
+                                     source_probe=doc.get("source_probe")),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,
+            "source_probe": doc.get("source_probe"),
+            "source_files": doc.get("source_files"),
         },
     }
 

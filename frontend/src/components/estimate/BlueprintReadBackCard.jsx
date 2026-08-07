@@ -28,7 +28,7 @@ const Flag = ({ level, children, testid }) => {
 export default function BlueprintReadBackCard({ readback }) {
   const t = useT();
   if (!readback) return null;
-  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total } = readback;
+  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source } = readback;
 
   return (
     <div data-testid="bp-readback-card" className="border border-[var(--border)] mt-3">
@@ -36,6 +36,26 @@ export default function BlueprintReadBackCard({ readback }) {
         <span className="text-[11px] font-bold uppercase tracking-wider">{t("bp.rb.title")}</span>
         <span className="text-[10px] text-[var(--muted)]">{t("bp.rb.readonly")}</span>
       </div>
+
+      {/* 0 — source (retention ruling 2026-08-07: the original upload is kept;
+          the card says whether numbers stand on printed text or vision alone) */}
+      {source && (
+        <div className="px-3 py-2 border-b border-[var(--border)] space-y-1" data-testid="bp-rb-source">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">{t("bp.rb.source")}</div>
+          {source.kind === "native_text" && (
+            <Flag level="info" testid="bp-rb-source-native">{t("bp.rb.source.native", { n: source.text_pages, m: source.page_count })}</Flag>
+          )}
+          {source.kind === "mixed" && (
+            <Flag level="warn" testid="bp-rb-source-mixed">{t("bp.rb.source.mixed", { n: source.text_pages, m: source.page_count })}</Flag>
+          )}
+          {source.kind === "scan" && (
+            <Flag level="warn" testid="bp-rb-source-scan">{t("bp.rb.source.scan")}</Flag>
+          )}
+          {source.kind === "image_scans" && (
+            <Flag level="warn" testid="bp-rb-source-images">{t("bp.rb.source.images")}</Flag>
+          )}
+        </div>
+      )}
 
       {/* 1 — roof-plane census */}
       <div className="px-3 py-2 space-y-1.5">
