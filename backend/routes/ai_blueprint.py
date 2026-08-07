@@ -678,6 +678,34 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     fp = raw.get("footprint_area_sqft")
     wing_flag = bool(fp and rect > 0 and float(fp) > rect * 1.02)
 
+    # ---- per-corner heights (ruled 2026-08-06 — grade before apply) ----
+    hs_raw = raw.get("outside_corner_heights_ft")
+    heights = None
+    undim = 0
+    if isinstance(hs_raw, list) and hs_raw:
+        heights = []
+        for h in hs_raw:
+            try:
+                v = float(h) if h is not None else 0.0
+            except (TypeError, ValueError):
+                v = 0.0
+            heights.append(v if v > 0 else None)
+        undim = sum(1 for v in heights if not v)
+        if not any(v for v in heights if v):
+            heights, undim = None, 0
+
+    # ---- gutter run inventory (ruled 2026-08-06) ----
+    gutter_runs = []
+    for r in (raw.get("gutter_runs") or []):
+        if isinstance(r, dict):
+            try:
+                lf = float(r.get("lf") or 0)
+            except (TypeError, ValueError):
+                lf = 0.0
+            if lf > 0:
+                gutter_runs.append({"label": str(r.get("label") or "run"),
+                                    "lf": lf})
+
     # ---- porch tag ----
     porch_planes = [r for r in plane_rows if r["is_porch"]]
     ceiling = sum(r["porch_ceiling_sqft"] for r in porch_planes)
@@ -726,6 +754,7 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             "outside_lf": oclf, "inside_lf": iclf,
             "invariant_ok": (oc - ic) == 4 if (oc or ic) else None,
             "basis": basis, "avg_wall_height_ft": avg_h,
+            "heights_ft": heights, "undimensioned": undim,
         },
         "wing_check": {
             "footprint_area_sqft": float(fp) if fp else None,
@@ -734,6 +763,9 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         },
         "porch": {"status": porch_status, "ceiling_sqft": ceiling,
                   "planes": [r["label"] for r in porch_planes]},
+        "gutter_runs": gutter_runs or None,
+        "gutter_runs_total": (round(sum(r["lf"] for r in gutter_runs), 1)
+                              if gutter_runs else None),
         "rail": rail,
     }
 

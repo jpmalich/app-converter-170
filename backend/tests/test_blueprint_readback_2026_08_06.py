@@ -143,3 +143,38 @@ def test_roof_pass_provenance_rides_the_rail():
     rb = build_blueprint_readback(raw)
     merges = [f["text"] for f in rb["rail"] if f["code"] == "roof_pass_merge"]
     assert merges == ["corners", "garage_plane_appended"]
+
+
+def test_readback_surfaces_corner_heights_and_gutter_runs():
+    """Ruled 2026-08-07 (open item 4): the card grades a read BEFORE it
+    is applied — per-corner heights and the gutter run inventory must be
+    on it when the read carries them, and their absence must be named."""
+    raw = _original_boni_read()
+    raw["outside_corner_heights_ft"] = [9, 9, None, 14]
+    raw["gutter_runs"] = [{"label": "front", "lf": 40},
+                          {"label": "back", "lf": 40},
+                          {"label": "porch", "lf": 12}]
+    rb = build_blueprint_readback(raw)
+    assert rb["corners"]["heights_ft"] == [9.0, 9.0, None, 14.0]
+    assert rb["corners"]["undimensioned"] == 1
+    assert rb["gutter_runs"] == [{"label": "front", "lf": 40.0},
+                                 {"label": "back", "lf": 40.0},
+                                 {"label": "porch", "lf": 12.0}]
+    assert rb["gutter_runs_total"] == 92.0
+    # a read WITHOUT them names the absence (old runs stay honest)
+    rb0 = build_blueprint_readback(_original_boni_read())
+    assert rb0["corners"]["heights_ft"] is None
+    assert rb0["gutter_runs"] is None
+
+
+def test_readback_card_renders_heights_and_runs():
+    from pathlib import Path as _P
+    card = (_P(__file__).resolve().parents[2] / "frontend" / "src"
+            / "components" / "estimate" / "BlueprintReadBackCard.jsx").read_text()
+    for tid in ("bp-rb-corner-heights", "bp-rb-heights-undim",
+                "bp-rb-gutter-run-list", "bp-rb-gutter-runs-none"):
+        assert tid in card, f"read-back card lost {tid}"
+    dicts = (_P(__file__).resolve().parents[2] / "frontend" / "src"
+             / "lib" / "dictionaries.js").read_text()
+    for key in ('"bp.rb.gutterRuns"', '"bp.rb.heights.undim"'):
+        assert dicts.count(key) == 2, f"{key} must exist in en AND es"

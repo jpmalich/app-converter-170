@@ -28,7 +28,7 @@ const Flag = ({ level, children, testid }) => {
 export default function BlueprintReadBackCard({ readback }) {
   const t = useT();
   if (!readback) return null;
-  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail } = readback;
+  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total } = readback;
 
   return (
     <div data-testid="bp-readback-card" className="border border-[var(--border)] mt-3">
@@ -111,6 +111,20 @@ export default function BlueprintReadBackCard({ readback }) {
         {corners.basis === "missing" && (
           <Flag level="warn" testid="bp-rb-basis-missing">{t("bp.rb.basis.missing")}</Flag>
         )}
+        {corners.heights_ft && (
+          <>
+            <div className="text-[11px] font-mono-num" data-testid="bp-rb-corner-heights">
+              {t("bp.rb.cornerHeights")}:{" "}
+              {corners.heights_ft.map((h) => (h ? `${num(h)}'` : "?")).join(", ")}
+            </div>
+            <Flag level="info" testid="bp-rb-heights-read">{t("bp.rb.heights.read")}</Flag>
+            {corners.undimensioned > 0 && (
+              <Flag level="warn" testid="bp-rb-heights-undim">
+                {t("bp.rb.heights.undim", { n: corners.undimensioned })}
+              </Flag>
+            )}
+          </>
+        )}
         {wing_check?.flag && (
           <Flag level="loud" testid="bp-rb-wing-flag">
             {t("bp.rb.wing", { fp: num(wing_check.footprint_area_sqft), rect: num(wing_check.rectangle_area_sqft) })}
@@ -132,6 +146,21 @@ export default function BlueprintReadBackCard({ readback }) {
         )}
         {porch.status === "absent" && (
           <Flag level="warn" testid="bp-rb-porch-absent">{t("bp.rb.porch.absent")}</Flag>
+        )}
+      </div>
+
+      {/* 3.5 — gutter run inventory */}
+      <div className="px-3 py-2 space-y-1.5 border-t border-[var(--border)]" data-testid="bp-rb-gutter-runs-section">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">{t("bp.rb.gutterRuns")}</div>
+        {gutter_runs ? (
+          <>
+            <div className="text-[11px] font-mono-num" data-testid="bp-rb-gutter-run-list">
+              {gutter_runs.map((r) => `${r.label} ${num(r.lf)}'`).join(" + ")} = <b>{num(gutter_runs_total)} LF</b>
+            </div>
+            <Flag level="info" testid="bp-rb-gutter-governs">{t("bp.rb.gutterRuns.governs")}</Flag>
+          </>
+        ) : (
+          <Flag level="warn" testid="bp-rb-gutter-runs-none">{t("bp.rb.gutterRuns.none")}</Flag>
         )}
       </div>
 

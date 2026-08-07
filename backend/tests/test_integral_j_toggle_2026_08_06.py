@@ -91,6 +91,21 @@ def test_validation_reject_logs_field_and_layer_server_side():
     assert "waste_pct" in blob and "layer=pydantic-request" in blob
 
 
+def test_warning_evidence_survives_a_restart():
+    """Howard ruled 2026-08-07 (open item 2): the ring buffer is
+    in-memory — if the app restarts during a demo the R3 evidence is
+    gone. WARNING+ also lands on a disk sink that outlives the process."""
+    import logging as _logging
+    from pathlib import Path as _P
+    from server import WARN_LOG_PATH  # noqa: F401 — sink must exist
+    marker = "R3-PERSISTENCE-PIN survives-restart-check"
+    _logging.getLogger("pin").warning(marker)
+    for h in _logging.getLogger().handlers:
+        h.flush()
+    assert marker in _P(WARN_LOG_PATH).read_text(), \
+        "WARNING evidence is not reaching the disk sink"
+
+
 def test_zeroed_cap_window_survives_the_put_filter():
     """RULING 2 (2026-08-06) — THE QTY-0 FILTER DIES EVERYWHERE: any line
     a spec correctly drives to zero prints at 0 with its note (not a

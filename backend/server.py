@@ -34,6 +34,20 @@ LOG_RING.setFormatter(logging.Formatter(
     "%(asctime)s %(levelname)s %(name)s: %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%SZ",
 ))
+
+# R3 EVIDENCE SURVIVES RESTART (Howard ruled 2026-08-07): the ring is
+# in-memory — a restart during a demo would destroy exactly the evidence
+# R3 exists to keep. WARNING+ also lands on disk.
+from logging.handlers import RotatingFileHandler  # noqa: E402
+
+WARN_LOG_PATH = "/var/log/pro_quotes_warnings.log"
+_WARN_SINK = RotatingFileHandler(WARN_LOG_PATH, maxBytes=1_000_000,
+                                 backupCount=2)
+_WARN_SINK.setLevel(logging.WARNING)
+_WARN_SINK.setFormatter(logging.Formatter(
+    "%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%SZ",
+))
 # db.py calls logging.basicConfig(level=INFO) at import time, but
 # basicConfig is a no-op if handlers are already attached. Prime the
 # root logger BEFORE anything else imports so basicConfig doesn't
@@ -41,6 +55,7 @@ LOG_RING.setFormatter(logging.Formatter(
 _root_logger = logging.getLogger()
 _root_logger.setLevel(logging.INFO)
 _root_logger.addHandler(LOG_RING)
+_root_logger.addHandler(_WARN_SINK)
 
 from fastapi import FastAPI  # noqa: E402
 from starlette.middleware.cors import CORSMiddleware  # noqa: E402

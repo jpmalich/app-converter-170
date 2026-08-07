@@ -17,6 +17,34 @@ from pathlib import Path
 import pytest
 from dotenv import load_dotenv
 
+# SUITE TRAFFIC IS LOCAL (Howard ruled 2026-08-07, open item 3): live-HTTP
+# tests erroring through the preview ingress under full-suite load are
+# BROKEN TESTS, not a watch item. The suite talks to the server it sits
+# beside — deterministic, no ingress hop, no vote from someone else's
+# network. Export TEST_API_EXTERNAL=1 to deliberately point the suite at
+# the public URL (manual e2e verification only).
+if not os.environ.get("TEST_API_EXTERNAL"):
+    os.environ["REACT_APP_BACKEND_URL"] = "http://localhost:8001"
+
+# The auth cookie is Secure (samesite=none, production requirement).
+# Browsers treat localhost as a SECURE CONTEXT and send Secure cookies
+# to it — python's cookiejar predates that rule and drops them. Teach
+# the jar the browser rule so local suite traffic authenticates exactly
+# like a real client. Test process only; server cookie flags untouched.
+import http.cookiejar as _cj  # noqa: E402
+
+_orig_return_ok_secure = _cj.DefaultCookiePolicy.return_ok_secure
+
+
+def _return_ok_secure_localhost(self, cookie, request):
+    host = (getattr(request, "host", "") or "").split(":")[0]
+    if host in ("localhost", "127.0.0.1"):
+        return True
+    return _orig_return_ok_secure(self, cookie, request)
+
+
+_cj.DefaultCookiePolicy.return_ok_secure = _return_ok_secure_localhost
+
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
