@@ -60,10 +60,20 @@ def test_every_registered_spec_walks_the_whole_pipe():
         assert f'"{field}"' in OVERRIDES, \
             f"{field}: the /rederive live-override list ignores the value " \
             "the client just changed (stale-autosave race)"
-        assert (f"_{field}" in HOVER or f'"{field}"' in HOVER
-                or field in LP_PKG), \
-            f"{field}: no derivation consumer found — a spec nothing " \
-            "consumes is a dead control"
+        # A CONSUMER MUST EXIST (Howard ruled 2026-08-07): lp_soffit_type
+        # passed whitelist, model AND override — and was ignored on
+        # arrival. Transport is not consumption: the field must be READ
+        # by derivation-side code (est.get / a scoped _key), not merely
+        # appear in the projection dict or the override tuple.
+        consumed = (f'est.get("{field}"' in HOVER
+                    or f'est["{field}"' in HOVER
+                    or f'"_{field}"' in HOVER
+                    or f'"_{field}"' in LP_PKG
+                    or f'est.get("{field}"' in LP_PKG)
+        assert consumed, \
+            f"{field}: the value ARRIVES but nothing consumes it — a " \
+            "spec that transports and is ignored is the lp_soffit_type " \
+            "class (silent no-op)"
 
 
 def test_a_spec_control_that_is_not_registered_fails_the_suite():

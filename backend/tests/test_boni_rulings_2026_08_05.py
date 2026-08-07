@@ -160,15 +160,16 @@ def test_integral_j_flag_touches_exactly_four_lines():
     # wrap coil: window term gone
     assert _coil_019_rolls(m_on) < _coil_019_rolls(_boni_measurements(167, 99))
     # wall-J: window perimeter OUT, eave/porch channel + garage rake IN.
-    # STANDARD-PRACTICE derivation = 32 (Howard ruled 2026-08-05: J runs
+    # STANDARD-PRACTICE derivation = 33 (Howard ruled 2026-08-05: J runs
     # on both wall and rake — garage rake feeds the term; porch channel
-    # from the REAL printed 99 ft². Installed 30 is a FIELD ANOMALY,
-    # flagged for Howard's site visit — never chased).
+    # ruled FULL PERIMETER 2026-08-07: 4×√99 = 40, was 3-side 28.
+    # Installed 30 is a FIELD ANOMALY, flagged for Howard's site visit —
+    # never chased).
     pcs_on, br_on = _j_channel_compute(m_on)
     pcs_off, _ = _j_channel_compute(_boni_measurements(167, 99))
     assert pcs_on < pcs_off
-    assert pcs_on == 32, \
-        f"BONI standard-practice wall-J derives 32 (got {pcs_on}); installed 30 is the flagged field anomaly"
+    assert pcs_on == 33, \
+        f"BONI standard-practice wall-J derives 33 (got {pcs_on}); installed 30 is the flagged field anomaly"
     assert "integral-J" in br_on, "the J line must print its provenance"
     assert "eave/porch-J" in br_on, "the J line must print the channel provenance"
     assert "118 rakes" in br_on, "the garage rake must print inside the J term"
@@ -198,10 +199,12 @@ def test_eave_porch_j_is_family_scoped():
             f"eave/porch-J bled onto LP line: {l.get('name')}"
         assert "j-channel" not in str(l.get("name") or "").lower(), \
             f"LP must carry no J-channel line at all: {l.get('name')}"
-    # exact plane geometry: front porch 15 LF eave × 6.6 ft deep → 28 LF
-    # channel (house-wall side + two depth sides)
+    # FULL PERIMETER (ruled 2026-08-07, supersedes the 3-side 28):
+    # 4 × √99 = 40 LF porch channel, square-assumed, disclosed.
     pcs, br = _j_channel_compute({**m, "_windows_integral_j": True})
-    assert pcs == 32 and "28 porch ceiling channel" in br
+    assert pcs == 33 and "40 porch ceiling channel" in br
+    assert "FULL PERIMETER" in br and "fascia" in br, \
+        "the porch term must print its convention (guardrail 2)"
 
 
 def test_hanger_formula_untouched():

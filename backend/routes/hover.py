@@ -289,7 +289,7 @@ def _gutter_lf(m: dict) -> float:
 def _gutter_note(m: dict) -> str:
     runs = _gutter_run_list(m)
     if not runs:
-        return "Eaves LF (gutters run along eaves, not rakes)"
+        return "Eaves LF × 1 run (gutters run along eaves, not rakes)"
     lst = " + ".join(f"{r['label']} {r['lf']:g}'" for r in runs)
     return (f"Run inventory: {lst} = {_gutter_lf(m):g} LF — checkable against "
             "the house by eye; the eave plane-sum stays the soffit figure")
@@ -585,13 +585,19 @@ def _region_context_lines(m: dict) -> list[dict]:
 
 
 def _eave_porch_j_lf(m: dict) -> tuple[float, str]:
-    """EAVE/PORCH-J (Howard ruled 2026-08-05, Boni): the eave soffit
-    panels tuck into a wall-side receiving channel, and the porch
-    ceiling carries its own 3-side channel. REAL material on every
-    VINYL/ASCEND soffit job — NEVER LP SmartSide (different soffit/trim
-    system; LP has no eave-J). Porch channel geometry: width from the
-    porch roof plane's eave when the plane read exists (Boni: 15 +
-    2 × (150/15) = 35 LF), square-porch fallback 3×√sqft otherwise."""
+    """EAVE/PORCH-J (Howard ruled 2026-08-05; porch term ruled FULL
+    PERIMETER 2026-08-07): eave soffit panels tuck into a wall-side
+    receiving channel, and the porch ceiling carries J around its FULL
+    PERIMETER — the deliberate simplification of the trade rule (J at
+    walls, J at a beam, NO J at fascia where the wrap acts as the J).
+    Conservative and DISCLOSED — a generous rule is hidden padding
+    unless the note prints it. Derives from the ceiling AREA every door
+    already holds (square-assumed perimeter), identically on all three
+    doors. NEVER LP SmartSide (different soffit/trim system; no eave-J).
+    PORCH IDENTIFICATION is per-door and NEVER silent: blueprint = a
+    porch-flagged roof plane; human = contractor-entered porch ceilings;
+    a bare measured area applies WITH a verify note; a read with no
+    porch identified says so instead of silently skipping."""
     eaves = float(m.get("eaves_lf") or 0)
     porch_sqft = float(m.get("porch_ceiling_sqft") or 0)
     parts: list[str] = []
@@ -600,24 +606,28 @@ def _eave_porch_j_lf(m: dict) -> tuple[float, str]:
         total += eaves
         parts.append(f"{eaves:.0f} eave wall-channel")
     if porch_sqft > 0:
-        porch_lf = 0.0
-        covered = 0.0
-        for p in (m.get("_roof_planes") or []):
-            if not (isinstance(p, dict) and p.get("is_porch")):
-                continue
-            sq = float(p.get("porch_ceiling_sqft") or 0)
-            w = float(p.get("eave_lf") or 0)
-            if sq > 0 and w > 0:
-                porch_lf += w + 2 * (sq / w)
-                covered += sq
-        rem = porch_sqft - covered
-        if rem > 1:
-            porch_lf += 3 * math.sqrt(rem)
+        porch_lf = 4.0 * math.sqrt(porch_sqft)
         total += porch_lf
-        parts.append(f"{porch_lf:.0f} porch ceiling channel (3 sides)")
-    if not parts:
-        return 0.0, ""
-    return total, " + ".join(parts) + " (eave/porch-J — ruled 2026-08-05, vinyl/Ascend only)"
+        if any(isinstance(p, dict) and p.get("is_porch")
+               for p in (m.get("_roof_planes") or [])):
+            src = "porch-flagged roof plane (blueprint read)"
+        elif m.get("_porch_src") == "human":
+            src = "contractor-entered porch ceilings"
+        else:
+            src = ("measured area, UNLABELED — VERIFY it is a porch "
+                   "ceiling before ordering")
+        parts.append(
+            f"{porch_lf:.0f} porch ceiling channel — FULL PERIMETER, "
+            f"square-assumed 4×√{porch_sqft:g} sqft ({src}); "
+            "conservative: the fascia edge may not need it — the fascia "
+            "wrap acts as the J (ruled 2026-08-07)")
+    else:
+        parts.append(
+            "no porch ceiling identified on this read — if the house "
+            "has one, its perimeter J is NOT in this count (flag, "
+            "never silent)")
+    return total, " + ".join(parts) + \
+        " (eave/porch-J — ruled 2026-08-05, vinyl/Ascend only)"
 
 
 def _j_channel_compute(m: dict, include_rakes: bool = True,
@@ -920,7 +930,7 @@ HOVER_MAPPING_SPEC = [
             ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0,
             1,
         ),
-        "note": "Default Ascend profile — change via edit if needed",
+        "note": "Siding sqft ÷ 100 = SQ — default Ascend profile (change via edit)",
         "_is_default_siding": True,
     },
     {
@@ -1467,6 +1477,9 @@ HOVER_MAPPING_SPEC = [
         ),
         "note": lambda m: (
             f"(Eaves + Rakes) ÷ 12.5 LF/stick — {RAKE_J_DOCTRINE}"
+            + " — eave counts ONE run: the fascia side carries NO J, the "
+              "fascia wrap is the receiver (SEALED 2026-08-07 — was "
+              "accidental-right, now ruled)"
             + ((" — pre-ruling 2×rakes rule gave "
                 f"{max(0, math.ceil(((m.get('eaves_lf') or 0) + 2.0 * (m.get('rakes_lf') or 0)) / 12.5 - 1e-9))} pcs, "
                 f"now {max(0, math.ceil(((m.get('eaves_lf') or 0) + (m.get('rakes_lf') or 0)) / 12.5 - 1e-9))}")
@@ -1484,7 +1497,7 @@ HOVER_MAPPING_SPEC = [
         "item": 'Fascia/rake or frieze',
         "unit": "LF",
         "extract": lambda m: round((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)),
-        "note": "Eaves LF + Rakes LF (fascia wraps both eave runs and gable rakes)",
+        "note": "Eaves LF + Rakes LF × 1 wrap (fascia wraps both eave runs and gable rakes)",
     },
     # =====================================================================
     # .019 FASCIA COIL — 1 roll per 100 LF of soffit/fascia (per Howard).
@@ -1806,8 +1819,10 @@ HOVER_MAPPING_SPEC = [
         "section": "Seamless Gutter with Siding",
         "item": "Gutter",
         "unit": "LF",
-        "extract": lambda m: round(m.get("eaves_lf") or 0),
-        "note": "Eaves LF (gutters run along eaves, not rakes)",
+        # Same physical gutter as the vinyl line — the run inventory
+        # governs when a door read it (ruled 2026-08-06).
+        "extract": lambda m: round(_gutter_lf(m)),
+        "note": lambda m: _gutter_note(m),
     },
     {
         "tabs": ["iss"],
@@ -1871,7 +1886,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Window DH/Slider - Pocket Install",
         "unit": "Each",
         "extract": lambda m: int(m.get("window_count") or 0),
-        "note": "Default install method — swap to Full Fin per job",
+        "note": "1 install per window — default method (swap to Full Fin per job)",
     },
     {
         "tabs": ["windows"],
@@ -1898,7 +1913,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Job Measure Standard Fee 4 days+",
         "unit": "JOB",
         "extract": lambda m: 1 if (int(m.get("window_count") or 0) > 0 or int(m.get("patio_door_count") or 0) > 0) else 0,
-        "note": "Standard measure fee — one per job",
+        "note": "1 per job when any window/patio door derives — standard measure fee",
     },
     {
         "tabs": ["windows"],
@@ -1906,7 +1921,7 @@ HOVER_MAPPING_SPEC = [
         "item": "Disposal Fee (Windows)",
         "unit": "JOB",
         "extract": lambda m: 1 if (int(m.get("window_count") or 0) > 0 or int(m.get("patio_door_count") or 0) > 0) else 0,
-        "note": "Disposal fee — one per job",
+        "note": "1 per job when any window/patio door derives — disposal fee",
     },
     # Iter 47: auto-fill .019 Coil qty from total window perimeter.
     # Math per Howard: total perimeter LF ÷ 100 LF per roll = qty rolls
@@ -1950,7 +1965,7 @@ HOVER_MAPPING_SPEC = [
         "unit": "SQ",
         "always_emit": True,
         "extract": lambda m: 0,
-        "note": "Quantity contractor-entered — pending until set",
+        "note": "0 until the contractor enters it — human-owned count, no auto-derive",
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
@@ -1959,7 +1974,7 @@ HOVER_MAPPING_SPEC = [
         "unit": "Each",
         "always_emit": True,
         "extract": lambda m: 0,
-        "note": "Quantity contractor-entered — pending until set",
+        "note": "0 until the contractor enters it — human-owned count, no auto-derive",
     },
 ]
 
@@ -2578,7 +2593,45 @@ def _build_lines(measurements: dict) -> list[dict]:
     # width call-out renames the 440 fascia SKU — the material list prints
     # the width on the line (wrong lumber on the truck is the risk; the
     # printed width is the protection). Default 8" applies silently.
-    return _stamp_item_ids(_order_whole_units(_apply_trade_spec_widths(out, measurements)))
+    return _stamp_item_ids(_order_whole_units(_apply_trade_spec_widths(
+        _steer_lp_soffit(out, measurements), measurements)))
+
+
+_LP_VENTED_SOFFIT = "38 Series Soffit 16 x 16 Vented"
+_LP_CLOSED_SOFFIT = "38 Series Soffit 16 x 16 Closed"
+
+
+def _steer_lp_soffit(lines: list, m: dict) -> list:
+    """SOFFIT STEER LIVES BACKEND (Howard ruled 2026-08-07): the
+    contractor's vented/closed choice must survive every rebuild — a
+    steer living only in the frontend apply path dies on the next
+    rederive, the silent no-op class R1 exists to kill. "mix" = the
+    measured split, untouched. Mirrors wasteLogic.steerLpSoffit."""
+    stype = str(m.get("_lp_soffit_type") or "mix")
+    if stype not in ("vented", "closed"):
+        return lines
+    vented = closed = None
+    out = []
+    for l in lines:
+        if l.get("tab") == "lp_smart" and l.get("name") == _LP_VENTED_SOFFIT:
+            vented = l
+            continue
+        if l.get("tab") == "lp_smart" and l.get("name") == _LP_CLOSED_SOFFIT:
+            closed = l
+            continue
+        out.append(l)
+    if not (vented or closed):
+        return out
+    base = (vented if stype == "vented" else closed) or vented or closed
+    merged = dict(base)
+    merged["name"] = _LP_VENTED_SOFFIT if stype == "vented" else _LP_CLOSED_SOFFIT
+    merged["qty"] = ((float(vented.get("qty") or 0) if vented else 0.0)
+                     + (float(closed.get("qty") or 0) if closed else 0.0))
+    merged["note"] = (str(base.get("note") or "")
+                      + f" · steered ALL-{stype.upper()} by the contractor's "
+                        "soffit type (spec — survives rebuilds, ruled 2026-08-07)")
+    out.append(merged)
+    return out
 
 
 def _stamp_item_ids(lines: list) -> list:
@@ -2920,8 +2973,13 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
         for p in porches if isinstance(p, dict))
     if porch_sqft > 0:
         scoped["porch_ceiling_sqft"] = porch_sqft
+        scoped["_porch_src"] = "human"
     if est.get("overhang_in") is not None:
         scoped["overhang_in"] = est["overhang_in"]
+    # SOFFIT STEER LIVES BACKEND (Howard ruled 2026-08-07): the vented/
+    # closed choice rides the rebuild so it survives every rederive.
+    if est.get("lp_soffit_type"):
+        scoped["_lp_soffit_type"] = est["lp_soffit_type"]
     # COLOR TIER DERIVES FROM THE COLOR (Howard ruled 2026-08-02):
     # per-row, each row follows its own Material Colors picker — the
     # standalone dropdown is retired (one decision, one control).

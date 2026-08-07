@@ -36,3 +36,19 @@ fi
 echo "- ${TS} · ${HASH} · CLEAN · [${TARGETS}] · ${OUT}" >> /app/memory/handback_green_log.md
 echo "RECORDED: ${TS} · ${HASH} · CLEAN"
 echo "RESULT: ${OUT}"
+
+# INGRESS CADENCE (Howard ruled 2026-08-07): the external path a real
+# user travels runs before every handback stamp is REPORTED — local
+# green without ingress smoke is suite-green/browser-broken wearing a
+# performance win. Failure is recorded loudly; the local stamp above
+# stands but the handback must report the smoke result verbatim.
+SMOKE_LOG=/tmp/handback_external_smoke.log
+TEST_API_EXTERNAL=1 python3 -m pytest tests/test_external_smoke_2026_08_07.py -q 2>&1 > "${SMOKE_LOG}"
+SMOKE_OUT=$(tail -1 "${SMOKE_LOG}")
+if echo "${SMOKE_OUT}" | grep -qE "failed|error"; then
+  echo "INGRESS SMOKE FAIL: ${SMOKE_OUT}"
+  echo "- ${TS} · ${HASH} · INGRESS-SMOKE-FAIL · ${SMOKE_OUT}" >> /app/memory/handback_green_log.md
+  exit 2
+fi
+echo "- ${TS} · ${HASH} · INGRESS-SMOKE-CLEAN · ${SMOKE_OUT}" >> /app/memory/handback_green_log.md
+echo "INGRESS SMOKE: ${SMOKE_OUT}"

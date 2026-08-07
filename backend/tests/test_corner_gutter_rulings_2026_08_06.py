@@ -116,7 +116,7 @@ def test_gutter_consumes_the_run_inventory_and_discloses_it():
 def test_gutter_without_runs_is_byte_identical():
     row = _row(_build_lines(dict(BASE)), "vinyl", "Gutter 6")
     assert row["qty"] == 120
-    assert row["note"] == "Eaves LF (gutters run along eaves, not rakes)"
+    assert row["note"] == "Eaves LF × 1 run (gutters run along eaves, not rakes)"
 
 
 def test_soffit_keeps_the_eave_plane_sum_even_when_runs_exist():

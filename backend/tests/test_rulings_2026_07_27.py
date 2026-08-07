@@ -51,7 +51,7 @@ def test_q1_tearoff_dumpster_presence_rows():
             l = _find(lines, nm, tab)
             assert l is not None, f"{nm} missing on {tab}"
             assert l["qty"] == 0 and l.get("qty_pending") is True
-            assert "contractor-entered" in l["note"]  # wording de-doctrined 2026-07-29
+            assert "contractor enters" in l["note"]  # de-doctrined 2026-07-29; chip-styled for bar (d) 2026-08-07
     assert "tear-off" in MISC_LABOR_ROWS and "dumpster" in MISC_LABOR_ROWS
 
 
