@@ -263,7 +263,8 @@ def test_trade_spec_family_register_complete():
     from lp_conventions import TRADE_SPEC_FAMILY_REGISTER as R
     expected = {"overhang_in", "porch_ceilings", "fascia_width_in",
                 "batten_spacing_in", "shake_reveal_in", "panel_size",
-                "wrap_trim_width_in", "lp_soffit_type"}
+                "wrap_trim_width_in", "lp_soffit_type",
+                "windows_integral_j", "waste_pct"}
     # "color_tier" REMOVED per ruling 2026-08-02 — the dropdown is
     # retired; tier derives per row from the Material Colors pickers.
     assert set(R) == expected, "every trade spec is registered — no silent additions"

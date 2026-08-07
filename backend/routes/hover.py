@@ -257,6 +257,44 @@ def _downspout_breakdown(m: dict) -> str:
             f"→ {sticks} sticks (10' each, whole sticks — ruled 2026-07-31)")
 
 
+def _gutter_run_list(m: dict) -> list:
+    runs = m.get("_gutter_runs")
+    if not isinstance(runs, list):
+        return []
+    out = []
+    for r in runs:
+        if isinstance(r, dict):
+            try:
+                lf = float(r.get("lf") or 0)
+            except (TypeError, ValueError):
+                lf = 0.0
+            if lf > 0:
+                out.append({"label": str(r.get("label") or "run"), "lf": lf})
+    return out
+
+
+def _gutter_lf(m: dict) -> float:
+    """GUTTER CONSUMES THE RUN INVENTORY (Howard ruled 2026-08-06 — the
+    gutter over-count trace): plane-summed eaves stay the SOFFIT figure
+    (soffit exists under every eave), but gutter is per-FACADE-RUN — a
+    plane census can list a bump-out's eave beside the run it already
+    sits inside. When the door read gutter runs, their sum IS the gutter
+    figure; otherwise eaves LF (unchanged fallback)."""
+    runs = _gutter_run_list(m)
+    if runs:
+        return float(sum(r["lf"] for r in runs))
+    return float(m.get("eaves_lf") or 0)
+
+
+def _gutter_note(m: dict) -> str:
+    runs = _gutter_run_list(m)
+    if not runs:
+        return "Eaves LF (gutters run along eaves, not rakes)"
+    lst = " + ".join(f"{r['label']} {r['lf']:g}'" for r in runs)
+    return (f"Run inventory: {lst} = {_gutter_lf(m):g} LF — checkable against "
+            "the house by eye; the eave plane-sum stays the soffit figure")
+
+
 def _elbow_breakdown(m: dict) -> str:
     eaves = float(m.get("eaves_lf") or 0)
     if eaves <= 0:
@@ -699,6 +737,57 @@ def _isc_540_pcs(m: dict) -> int:
     return 0
 
 
+def _osc_corner_heights(m: dict):
+    """Per-corner trim heights when a door read them. None entries are
+    undimensioned corners that KEEP THEIR FLAG (ruled 2026-08-06) —
+    never averaged, never silently defaulted."""
+    hs = m.get("_osc_corner_heights_ft")
+    if not isinstance(hs, list) or not hs:
+        return None
+    out = []
+    for h in hs:
+        try:
+            v = float(h) if h is not None else 0.0
+        except (TypeError, ValueError):
+            v = 0.0
+        out.append(v if v > 0 else None)
+    return out if any(v for v in out if v) else None
+
+
+def _osc_per_corner_pcs(m: dict, stick_ft: float):
+    """STOP AVERAGING CORNER HEIGHTS (Howard ruled 2026-08-06): when a
+    door read per-corner dimensions, each corner takes ceil(its OWN trim
+    height / stick), min 1 — the stick length is the threshold at which
+    a corner needs a second piece. An undimensioned corner holds min 1
+    stick and keeps its flag in the note. Returns None when no
+    per-corner heights exist (pooled/count fallbacks apply unchanged)."""
+    hs = _osc_corner_heights(m)
+    if hs is None:
+        return None
+    return sum(max(1, math.ceil(h / stick_ft - 1e-9)) if h else 1 for h in hs)
+
+
+def _osc_heights_note(m: dict, stick_ft: float) -> str:
+    hs = _osc_corner_heights(m) or []
+    dim = [h for h in hs if h]
+    und = len(hs) - len(dim)
+    two_plus = sum(1 for h in dim if h > stick_ft + 1e-9)
+    src = {
+        "blueprint_dimensioned": "the dimensioned elevations (blueprint door)",
+        "hover_callout": "the drawn corner callouts (Hover door)",
+        "photo_ai": "photo AI ESTIMATE — VERIFY before ordering, never taped",
+    }.get(str(m.get("_osc_heights_source") or ""), "the door's per-corner read")
+    hs_txt = ", ".join((f"{h:g}'" if h else "?") for h in hs)
+    txt = (f"{len(hs)} corner(s), per-corner sticks off {src} [{hs_txt}] — "
+           f"each corner takes its TALLER wall, ceil(height ÷ {stick_ft:g}') "
+           f"min 1; {stick_ft:g}' stick is the threshold for a second piece"
+           + (f" — {two_plus} corner(s) take 2+" if two_plus else ""))
+    if und:
+        txt += (f" — {und} corner(s) UNDIMENSIONED: held at 1 stick, flag "
+                "stands (never averaged, never silently defaulted)")
+    return txt
+
+
 def _osc_lp_pcs(m: dict) -> int:
     """Q13 (ruled 2026-07-27): OSC per-corner whole-stick round-up, min 1
     pc per corner; pooled ÷16 only when the corner count is unavailable.
@@ -709,6 +798,12 @@ def _osc_lp_pcs(m: dict) -> int:
     oc = int(m.get("outside_corner_count") or 0)
     olf = float(m.get("outside_corner_lf") or 0)
     tall = [float(h) for h in (m.get("_osc_tall_corners_ft") or []) if h]
+    # PER-CORNER HEIGHTS (Howard ruled 2026-08-06): a door that read each
+    # corner's own dimension governs — taped heights (human) still win.
+    if not tall:
+        per = _osc_per_corner_pcs(m, 16.0)
+        if per is not None:
+            return per
     if oc > 0 and olf > 0:
         k = min(len(tall), oc)
         rest_cnt = oc - k
@@ -1077,8 +1172,17 @@ HOVER_MAPPING_SPEC = [
         # LENGTH-CUT (Howard ruled 2026-07-29): whole-stick count IS the
         # allowance — the waste field multiplies AREA GOODS only.
         "waste_included": True,
-        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9)),
-        "note": "Vinyl 12.5' outside-corner pieces (HOVER LF ÷ 12.5, round up)",
+        # PER-CORNER HEIGHTS govern when a door read them (ruled
+        # 2026-08-06 — stop averaging corner heights); pooled ÷12.5
+        # stays the unchanged fallback.
+        "extract": lambda m: (
+            _osc_per_corner_pcs(m, 12.5)
+            if _osc_per_corner_pcs(m, 12.5) is not None
+            else max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9))),
+        "note": lambda m: (
+            _osc_heights_note(m, 12.5)
+            if _osc_per_corner_pcs(m, 12.5) is not None
+            else "Vinyl 12.5' outside-corner pieces (HOVER LF ÷ 12.5, round up)"),
     },
     {
         "tabs": ["ascend"],
@@ -1086,8 +1190,14 @@ HOVER_MAPPING_SPEC = [
         "item": "Ascend 5.5\" Outside Corner  - MATTE",
         "unit": "PCS",
         "waste_included": True,
-        "extract": lambda m: max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9)),
-        "note": "Ascend 12.5' outside-corner pieces / corner LF",
+        "extract": lambda m: (
+            _osc_per_corner_pcs(m, 12.5)
+            if _osc_per_corner_pcs(m, 12.5) is not None
+            else max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9))),
+        "note": lambda m: (
+            _osc_heights_note(m, 12.5)
+            if _osc_per_corner_pcs(m, 12.5) is not None
+            else "Ascend 12.5' outside-corner pieces / corner LF"),
     },
     {
         "tabs": ["lp_smart"],
@@ -1102,6 +1212,10 @@ HOVER_MAPPING_SPEC = [
         # pc per corner — flat ÷16 pooling retired.
         "extract": lambda m: _osc_lp_pcs(m),
         "note": lambda m: (
+            _osc_heights_note(m, 16.0)
+            if (not m.get("_osc_tall_corners_ft")
+                and _osc_per_corner_pcs(m, 16.0) is not None)
+            else (
             (
                 f"OSC {int(m.get('outside_corner_count') or 0)} corner(s) × per-corner "
                 f"whole-stick round-up ({float(m.get('outside_corner_lf') or 0):g} LF total, "
@@ -1117,6 +1231,7 @@ HOVER_MAPPING_SPEC = [
             if int(m.get("outside_corner_count") or 0) > 0
             else (f"Outside-corner {float(m.get('outside_corner_lf') or 0):g} LF ÷ 16 — "
                   "POOLED (corner count unavailable; Q16 flag)")
+            )
         ),
     },
     # =====================================================================
@@ -1585,8 +1700,10 @@ HOVER_MAPPING_SPEC = [
         "section": "Seamless Gutter",
         "item": "Gutter 6\"",
         "unit": "LF",
-        "extract": lambda m: round(m.get("eaves_lf") or 0),
-        "note": "Eaves LF (gutters run along eaves, not rakes)",
+        # RUN INVENTORY governs when a door read it (ruled 2026-08-06);
+        # eaves LF stays the unchanged fallback.
+        "extract": lambda m: round(_gutter_lf(m)),
+        "note": lambda m: _gutter_note(m),
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
@@ -3116,6 +3233,7 @@ async def rederive_estimate(
          "photo_soffit_sqft": 1, "photo_drip_edge_lf": 1,
          "photo_total_trim_sqft": 1, "photo_frieze_present": 1,
          "waste_pct": 1, "default_siding_profile": 1, "lines": 1,
+         "lp_soffit_type": 1,
          "windows_integral_j": 1})
     if est is None:
         raise HTTPException(status_code=404, detail="Estimate not found")
@@ -3132,6 +3250,7 @@ async def rederive_estimate(
     for k in ("overhang_in", "porch_ceilings", "fascia_width_in",
               "batten_spacing_in", "panel_size", "wrap_trim_width_in",
               "shake_reveal_in", "waste_pct", "windows_integral_j",
+              "lp_soffit_type",
               "siding_color", "outside_corner_color",
               "accessories_color", "soffit_fascia_color",
               "photo_soffit_sqft", "photo_drip_edge_lf",

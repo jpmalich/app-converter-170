@@ -559,6 +559,18 @@ TRADE_SPEC_FAMILY_REGISTER = {
         "different_by_nature": (
             "steers the two-SKU LP soffit split (Vented/Closed); vinyl "
             "soffit is a single Charter Oak row (R4)")},
+    "windows_integral_j": {
+        "families": ("vinyl", "ascend"), "ruled": "2026-08-05",
+        "different_by_nature": (
+            "integral-J is a window J-channel/caulk/wrap/capping decision "
+            "on interlocking siding; LP wraps openings with 540-Series "
+            "boards — no separate window J-channel row exists on an LP "
+            "job (Boni ruling 3)")},
+    "waste_pct": {
+        "families": ("vinyl", "ascend", "lp_smart"), "ruled": "2026-08-03",
+        "reason": ("field waste multiplies AREA GOODS on every family "
+                   "(frozen-waste audit 2026-08-03); length-cut "
+                   "whole-stick rows carry their own allowance")},
     # "color_tier" RETIRED (Howard ruled 2026-08-02): the dropdown was a
     # second control for a decision made in Material Colors. Tier now
     # DERIVES per row from each row's own color picker —

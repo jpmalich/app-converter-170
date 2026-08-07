@@ -233,6 +233,10 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   ],
   "outside_corner_count": number, // INTEGER. Number of OUTSIDE corner locations on the FULL building outline. See "CORNER COUNTING" rule below.
   "outside_corner_lf": number, // SUM over outside corners of EACH CORNER'S OWN trim height. A 1-story garage-wing corner runs the GARAGE eave height; a 2-story main-body corner runs the FULL height. NEVER count × average height — a material-governing dimension is never averaged (261 Haugh doctrine: the average hides tall corners AND inflates short ones).
+  "outside_corner_heights_ft": [number | null], // PER-CORNER trim heights, ONE entry per outside corner in walk order (ruled 2026-08-06). A corner joins TWO walls — report the TALLER wall's height, run to the EAVE the corner trim dies into. On a GABLE END the corner runs to the EAVE — never an area÷width figure, which lands between eave and ridge. null for a corner no printed dimension resolves — NEVER average or guess it.
+  "gutter_runs": [ // GUTTER RUN INVENTORY (ruled 2026-08-06) — each CONTINUOUS eave run that carries gutter, walked along the FACADES. ONE entry per continuous run: where a lower roof's eave (garage bump-out) is flush and continuous with the run beside it, that is ONE run counted ONCE — never re-list a segment inside a run already listed. A porch lists only the eave sides that actually carry gutter. [] when the drawings don't resolve the runs — NEVER invent.
+    {"label": "<front|back|left|right|porch|...>", "lf": number}
+  ],
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
   "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
   "soffit_sqft": number | null,        // PRINTED soffit/overhang area if the plans state it (eave detail sections, "SOFFIT" callouts, roof plan overhang dims × eave run). null if not printed — do NOT estimate.
@@ -486,7 +490,9 @@ ROOF_PASS_PROMPT = """You are a construction-print ROOF & FOOTPRINT reader. You 
 JOB 1 — ROOF PLANE CENSUS. List EVERY roof plane pair that carries its own eave (gutter/fascia) line: the MAIN roof, the ATTACHED GARAGE roof (the area table and a second ridge/truss field on the roof plan prove it exists — a "3 CAR GARAGE" on the floor plan ALWAYS has a roof over it), PORCH roofs (mono/shed count too), and any secondary cross-gable. A plane with a GABLE END has rake_lf — per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × rise/12)²). An attached garage ending in its own gable (including an intersecting/double gable where the garage roof meets the main roof) MUST come back with non-zero rake_lf and gable_ends.
 PITCH-TRIANGLE NOTATION: the triangle marks print the RUN (always 12) on one leg and the RISE on the other — a mark showing 12 and 7 means 7/12, NEVER 12/12 (only 12/12 when BOTH legs print 12). Report the MAIN body pitch in roof_pitch; name secondary pitches in notes.
 
-JOB 2 — FULL-OUTLINE CORNER WALK. Walk the COMPLETE dimensioned floor-plan outline clockwise — garage wing and porch projection INCLUDED, never just the main rectangle. At every direction change: OUTSIDE corner (turns away from interior) or INSIDE corner (notch/armpit). INVARIANT: outside − inside MUST equal 4; re-walk if not. outside_corner_lf = SUM of each corner's OWN trim height (1-story garage-wing corners run the garage eave height; 2-story corners the full height — NEVER count × average height).
+JOB 2 — FULL-OUTLINE CORNER WALK. Walk the COMPLETE dimensioned floor-plan outline clockwise — garage wing and porch projection INCLUDED, never just the main rectangle. At every direction change: OUTSIDE corner (turns away from interior) or INSIDE corner (notch/armpit). INVARIANT: outside − inside MUST equal 4; re-walk if not. outside_corner_lf = SUM of each corner's OWN trim height (1-story garage-wing corners run the garage eave height; 2-story corners the full height — NEVER count × average height). ALSO return outside_corner_heights_ft: one entry PER corner in walk order — the corner joins TWO walls, report the TALLER wall's height, run to the EAVE the corner trim dies into (on a gable end the corner runs to the EAVE, never an area÷width figure); null when no printed dimension resolves that corner — never average or guess.
+
+JOB 3 — GUTTER RUN INVENTORY. List each CONTINUOUS eave run that carries gutter, walked along the FACADES (front/back/left/right/porch). ONE entry per continuous run: where a lower roof's eave (garage bump-out) is flush and continuous with the run beside it, that is ONE run counted ONCE — never re-list a segment inside a run already listed. A porch lists only the eave sides that actually carry gutter. [] when the drawings don't resolve the runs.
 
 Return ONLY this JSON, no explanation:
 {
@@ -497,7 +503,9 @@ Return ONLY this JSON, no explanation:
      "is_porch": true | false, "porch_ceiling_sqft": number}
   ],
   "outside_corner_count": number, "outside_corner_lf": number,
+  "outside_corner_heights_ft": [number | null],
   "inside_corner_count": number, "inside_corner_lf": number,
+  "gutter_runs": [{"label": "<front|back|left|right|porch|...>", "lf": number}],
   "notes": "<secondary pitches, anything illegible>"
 }"""
 
@@ -566,6 +574,18 @@ def _merge_roof_pass(raw: dict, rp: dict) -> dict:
         if rp.get("inside_corner_lf"):
             raw["inside_corner_lf"] = float(rp["inside_corner_lf"])
         accepted["corners"] = {"outside": oc, "inside": ic, "outside_lf": oclf}
+        # PER-CORNER HEIGHTS (ruled 2026-08-06): ride ONLY with an accepted
+        # walk and only when one entry per counted corner came back.
+        hs = rp.get("outside_corner_heights_ft")
+        if isinstance(hs, list) and len(hs) == oc:
+            raw["outside_corner_heights_ft"] = hs
+            accepted["corner_heights"] = hs
+    # GUTTER RUN INVENTORY (ruled 2026-08-06): conservative — only fills
+    # a read that has none.
+    runs = [r for r in (rp.get("gutter_runs") or []) if isinstance(r, dict)]
+    if runs and not raw.get("gutter_runs"):
+        raw["gutter_runs"] = runs
+        accepted["gutter_runs"] = runs
     raw["_roof_pass"] = {"accepted": accepted, "notes": rp.get("notes") or ""}
     return raw
 
@@ -972,6 +992,31 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             "lf": round(2 * _h + 2 * _above, 1),
         })
 
+    # PER-CORNER HEIGHTS + GUTTER RUNS (ruled 2026-08-06): scope the
+    # door's own reads through — nulls kept (an undimensioned corner
+    # keeps its flag downstream, never averaged or defaulted).
+    _osc_heights: list = []
+    _h_raw = raw.get("outside_corner_heights_ft")
+    if isinstance(_h_raw, list) and _h_raw:
+        for _h in _h_raw:
+            try:
+                _v = float(_h) if _h is not None else 0.0
+            except (TypeError, ValueError):
+                _v = 0.0
+            _osc_heights.append(_v if _v > 0 else None)
+        if not any(v for v in _osc_heights if v):
+            _osc_heights = []
+    _agg_gutter_runs: list = []
+    for _r in (raw.get("gutter_runs") or []):
+        if isinstance(_r, dict):
+            try:
+                _lf = float(_r.get("lf") or 0)
+            except (TypeError, ValueError):
+                _lf = 0.0
+            if _lf > 0:
+                _agg_gutter_runs.append(
+                    {"label": str(_r.get("label") or "run"), "lf": _lf})
+
     measurements = {
         # RULING 7 (2026-08-01): full precision on the way in — no door
         # rounds at intake; the ORDER layer is the one rounding point.
@@ -987,6 +1032,10 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
            if raw.get("porch_ceiling_sqft") else {}),
         **({"_eaves_plane_summed": True, "_roof_planes": raw.get("roof_planes")}
            if raw.get("_eaves_plane_summed") else {}),
+        **({"_osc_corner_heights_ft": _osc_heights,
+            "_osc_heights_source": "blueprint_dimensioned"}
+           if _osc_heights else {}),
+        **({"_gutter_runs": _agg_gutter_runs} if _agg_gutter_runs else {}),
         **({"_gable_ends_plane_read": int(raw["_gable_ends_plane_read"])}
            if raw.get("_gable_ends_plane_read") else {}),
         "starter_lf": _starter_lf,

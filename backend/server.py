@@ -54,6 +54,25 @@ from startup import run_startup  # noqa: E402
 app = FastAPI(title="Vinyl Siding Estimator API")
 app.include_router(api_router)
 
+# R3 (Howard ruled 2026-08-06): a failing request body names its field,
+# validation and layer SERVER-SIDE — log-only on failure, nothing
+# contractor-visible, response shape unchanged.
+from fastapi.exceptions import RequestValidationError  # noqa: E402
+from fastapi.exception_handlers import (  # noqa: E402
+    request_validation_exception_handler,
+)
+
+
+@app.exception_handler(RequestValidationError)
+async def _log_validation_reject(request, exc):
+    for e in exc.errors()[:10]:
+        logging.warning(
+            "VALIDATION REJECT %s %s — field=%s err=%s layer=pydantic-request",
+            request.method, request.url.path,
+            ".".join(str(p) for p in e.get("loc", ())), e.get("msg"))
+    return await request_validation_exception_handler(request, exc)
+
+
 # SEC-001 — Iter 78z+++: never combine `*` with credentials. The
 # Starlette CORS middleware reflects the request Origin when set to
 # `*` + credentials, which lets any 3rd-party site read tenant data

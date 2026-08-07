@@ -458,12 +458,14 @@ export default function useEstimate(id) {
         // EXCEPT human-typed zeros: a hand-entered 0 is a choice that
         // survives (profile-owns-family rule, 2026-07-24). A row carrying
         // a contractor note also survives at qty 0 (blind-row notes,
-        // ruled 2026-07-31 — the note must not vanish before the qty).
-        // Integral-J zeroed rows survive too (ruled 2026-08-05: Cap
-        // window stays VISIBLE at 0 with its provenance note).
+        // ruled 2026-07-31). THE QTY-0 FILTER DIES FOR NOTED ROWS
+        // (Howard ruled 2026-08-06): any line a spec correctly drives to
+        // zero prints at 0 with its note — a vanishing line is the exact
+        // Hover behaviour this product exists to correct. Only bare
+        // note-less catalog rows still drop (they re-materialize).
         .filter((l) => (l.qty || 0) > 0 || l.qty_src === "human"
           || (l.contractor_note || "").trim()
-          || /integral-J/.test(l.note || ""))
+          || (l.note || "").trim())
         .map((l) => ({
           tab: l.tab || "vinyl",
           section: l.section,

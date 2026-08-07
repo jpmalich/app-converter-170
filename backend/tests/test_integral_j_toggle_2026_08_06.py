@@ -55,13 +55,48 @@ def test_generic_fallback_is_actionable_not_vague():
     assert "check your connection" in API_LIB
 
 
+def test_validation_reject_logs_field_and_layer_server_side():
+    """RULING 3 (2026-08-06): better copy did not fix the blindness — a
+    failing PUT names which field, which validation, which layer, in the
+    SERVER log only. Nothing contractor-visible."""
+    import asyncio
+    from fastapi.exceptions import RequestValidationError
+    from server import _log_validation_reject
+
+    class _Url:
+        path = "/api/estimates/x"
+
+    class _Req:
+        method = "PUT"
+        url = _Url()
+
+    exc = RequestValidationError(
+        [{"loc": ("body", "waste_pct"), "msg": "Input should be a valid number"}])
+    import logging as _logging
+    records = []
+
+    class _Grab(_logging.Handler):
+        def emit(self, r):
+            records.append(self.format(r))
+
+    h = _Grab()
+    _logging.getLogger().addHandler(h)
+    try:
+        resp = asyncio.run(_log_validation_reject(_Req(), exc))
+    finally:
+        _logging.getLogger().removeHandler(h)
+    assert resp.status_code == 422, "response shape unchanged — log-only"
+    blob = "\n".join(records)
+    assert "VALIDATION REJECT" in blob
+    assert "waste_pct" in blob and "layer=pydantic-request" in blob
+
+
 def test_zeroed_cap_window_survives_the_put_filter():
-    """The PUT whitelist drops qty-0 machine rows (they re-materialize
-    from the catalog merge) — but the integral-J zeroed Cap window is a
-    RULING, visible at 0 with its provenance note. The filter must keep
-    rows whose note carries the integral-J provenance."""
-    assert re.search(r'integral-J.*\.test\(l\.note', USE_EST), \
-        "buildPayload's qty-0 filter eats the zeroed Cap window row"
+    """RULING 2 (2026-08-06) — THE QTY-0 FILTER DIES EVERYWHERE: any line
+    a spec correctly drives to zero prints at 0 with its note (not a
+    Cap-window exception). Only bare note-less catalog rows still drop."""
+    assert re.search(r'\(l\.note \|\| ""\)\.trim\(\)', USE_EST), \
+        "buildPayload's qty-0 filter eats zeroed rows that carry a note"
 
 
 def test_derivation_moves_the_four_ruled_lines():
