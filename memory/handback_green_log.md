@@ -243,3 +243,5 @@
 - 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_one_money_surface.py::test_contractor_preview_carries_no_dollars
 - 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_one_money_surface.py::test_frozen_qr_snapshot_carries_no_dollars
 - 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_one_money_surface.py::test_admin_cost_preview_keeps_full_pricing
+- 2026-08-07 12:48 UTC · 4a1d05a · GUARD-FAIL · FAILED tests/test_accuracy_report_share.py::test_bogus_token_404 - AssertionE...
+- 2026-08-07 12:48 UTC · 4a1d05a · GUARD-FAIL · ERROR tests/test_accuracy_report_share.py::test_report_pdf_embeds_frozen_qr
