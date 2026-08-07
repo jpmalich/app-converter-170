@@ -216,3 +216,30 @@
 - 2026-08-06 21:00 UTC · 3db073d · GUARD-FAIL · FAILED tests/test_guard_autocommit_sweep.py::test_no_unruled_code_commits_since_last_stamp
 - 2026-08-06 21:00 UTC · 3db073d · GUARD-FAIL · FAILED tests/test_hover_import_async.py::test_status_eventually_done_or_error
 - 2026-08-06 21:07 UTC · f37cdfb · CLEAN · [tests] · 1874 passed, 1 skipped, 2 warnings in 180.77s (0:03:00)
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · FAILED tests/test_corner_relocation.py::test_chase_relocation_e2e - requests....
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · FAILED tests/test_demo_reset.py::test_demo_reset_specified_state_and_isolation
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · FAILED tests/test_hover_import_async.py::test_post_hover_import_rejects_large_pdf
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · FAILED tests/test_hover_import_async.py::test_status_returns_expected_shape_running
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_ai_measure_session_data_loss_guard.py::test_session_put_get_byte_identical
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_ai_measure_session_data_loss_guard.py::test_refine_on_photo_no_op_roundtrip
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_ai_measure_session_data_loss_guard.py::test_idempotent_puts_produce_identical_docs
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_ai_measure_session_data_loss_guard.py::test_get_is_deterministic
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_ai_measure_session_data_loss_guard.py::test_empty_photos_with_preview_survives_roundtrip
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_ai_measure_session_data_loss_guard.py::test_ownership_enforced_on_session_endpoints
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestAuth::test_me_after_login
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestVinylSidingSection::test_section_present_and_item_count_matches_seed
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestVinylSidingSection::test_expected_variant_names_present
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestVinylSidingSection::test_siding_profile_lab_valid_and_mat_nonzero
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestSidingAccessoriesSection::test_item_count_matches_seed
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestSidingAccessoriesSection::test_new_color_variants_present
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestSidingAccessoriesSection::test_old_single_variant_names_removed
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestVinylSoffitSection::test_item_count_matches_seed
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestVinylSoffitSection::test_charter_oak_soffit_variants
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestUpchargeRemoved::test_no_arch_color_upcharge_anywhere
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestAMIPartNumbers::test_charter_oak_ami_present
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestEstimateRoundTrip::test_create_estimate_with_new_variant_item
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestEstimateRoundTrip::test_list_estimates_does_not_error_on_legacy_lines
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_iteration34_siding_split.py::TestHoverImporter::test_endpoint_accepts_file_upload
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_one_money_surface.py::test_contractor_preview_carries_no_dollars
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_one_money_surface.py::test_frozen_qr_snapshot_carries_no_dollars
+- 2026-08-07 12:38 UTC · 1d91228 · GUARD-FAIL · ERROR tests/test_one_money_surface.py::test_admin_cost_preview_keeps_full_pricing
