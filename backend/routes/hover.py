@@ -3117,10 +3117,27 @@ def _bake_tab_waste(lines: list, waste_pct) -> list:
         if _cut_prone_line(l):
             l["raw_qty"] = raw
             l["qty"] = float(math.ceil(raw * factor - 1e-9))
+            # BAR (d) — THE WASTE STEP PRINTS (Howard's grade 2026-08-07:
+            # soffit printed 48 while its chip derived 40; a quantity that
+            # doesn't explain its last step is a bar-(d) failure).
+            if l["qty"] != raw:
+                l["note"] = _with_waste_chip(l.get("note"), raw, l["qty"], waste_pct)
         elif raw != int(raw):
             l["qty"] = float(math.ceil(raw - 1e-9))
         out.append(l)
     return out
+
+
+_WASTE_CHIP_RE = re.compile(r" · ×[\d.]+ waste \([\d.]+%\): [\d.]+ → [\d.]+$")
+
+
+def _with_waste_chip(note, raw, qty, waste_pct) -> str:
+    """Idempotent waste chip — strip any prior chip, append the current
+    step. Mirrored in wasteLogic.js withWasteChip (format pinned)."""
+    base = _WASTE_CHIP_RE.sub("", str(note or ""))
+    factor = 1 + max(0.0, float(waste_pct or 0)) / 100.0
+    return (f"{base} · ×{factor:.2f} waste ({float(waste_pct or 0):g}%): "
+            f"{raw:g} → {qty:g}")
 
 
 async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,

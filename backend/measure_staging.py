@@ -39,6 +39,37 @@ def eaves_from_walls(walls: list, raw_eaves) -> float:
     return float(raw_eaves or 0)
 
 
+def wall_body_gross_sqft(w: dict) -> tuple[float, list]:
+    """PER-WALL HEIGHT VARIATION (Howard ruled 2026-08-07, top item): a
+    facade is SEGMENTS at their own eave heights — the garage half of a
+    front wall sides at ~10', never at the main body's height. Siding a
+    10-foot wall at 19 feet over-orders every low section on the house.
+    Valid height_segments (each w,h > 0; widths summing to the wall width
+    within tolerance) govern: gross = Σ(w×h). Otherwise the rectangle
+    width×height stands and the consistency checker names the segment
+    defect. ONE COPY — walk_walls and the profile breakdown both consume
+    this, so the siding line and the Field Verify table can never hold
+    different answers about the same wall."""
+    width = float(w.get("width_ft") or 0)
+    eave_h = float(w.get("height_ft") or 0)
+    valid: list[tuple[float, float]] = []
+    for s in (w.get("height_segments") or []):
+        if not isinstance(s, dict):
+            continue
+        try:
+            sw = float(s.get("width_ft") or 0)
+            sh = float(s.get("height_ft") or 0)
+        except (TypeError, ValueError):
+            continue
+        if sw > 0 and sh > 0:
+            valid.append((sw, sh))
+    if valid and width > 0:
+        total_w = sum(sw for sw, _ in valid)
+        if abs(total_w - width) <= max(0.5, 0.02 * width):
+            return sum(sw * sh for sw, sh in valid), valid
+    return width * eave_h, []
+
+
 def walk_walls(walls: list, gable_rise_fn=None) -> dict:
     """THE wall-area walk (one copy, ruled). For each wall:
     gross = width × eave height, credited at siding_pct (fraction/percent
@@ -55,7 +86,8 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
     for w in walls:
         width_ft = float(w.get("width_ft") or 0)
         eave_h = float(w.get("height_ft") or 0)
-        gross = width_ft * eave_h
+        # Per-wall height variation (ruled 2026-08-07): segments govern.
+        gross, segs_used = wall_body_gross_sqft(w)
         pct = float(w.get("siding_pct_this_wall") or 100.0)
         # Shared fraction-vs-percent defense: 0<x<1 is a fraction.
         if 0 < pct < 1:
@@ -73,6 +105,7 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
         dormer_sqft += float(w.get("dormer_face_sqft") or 0)
         detail.append({"label": w.get("label"), "width_ft": width_ft,
                        "eave_h": eave_h, "pct": pct,
+                       "segments": segs_used,
                        "rise_read": rise_read, "rise_used": rise,
                        "gable_sqft": wall_gable})
     return {"siding_sqft": siding_sqft, "gable_sqft": gable_sqft,

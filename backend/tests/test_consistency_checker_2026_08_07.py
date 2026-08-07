@@ -49,7 +49,7 @@ def _clean_raw():
         "outside_corner_heights_ft": [18, 18, 10.5, 10.5],
         "outside_corner_lf": 57,
         "inside_corner_count": 0,
-        "footprint_area_sqft": None,
+        "footprint_area_sqft": 58 * 39,
         "gutter_runs": [{"label": "front", "lf": 58},
                         {"label": "back", "lf": 58}],
     }

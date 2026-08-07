@@ -230,8 +230,12 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
             pct = 100.0
         pct = min(pct, 100.0)
 
-        # Wall body ft² (siding only — stone area excluded via pct)
-        gross = width * eave_h
+        # Wall body ft² (siding only — stone area excluded via pct).
+        # PER-WALL HEIGHT VARIATION (ruled 2026-08-07): the ONE shared
+        # gross — segments govern here exactly as on the siding walk, so
+        # this table can never disagree with the siding line.
+        from measure_staging import wall_body_gross_sqft
+        gross, _segs = wall_body_gross_sqft(w)
         wall_body_sqft = gross * (pct / 100.0)
         body_family = classify_profile(w.get("wall_body_profile_callout"))
         if not body_family or body_family == "unknown":

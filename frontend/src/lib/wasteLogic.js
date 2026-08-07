@@ -102,6 +102,18 @@ export function applyWasteQty(raw, wastePct) {
 //
 // Items that don't qualify (gutter, downspouts, end caps, elbows,
 // labor, etc.) are returned unchanged.
+// BAR (d) — THE WASTE STEP PRINTS (Howard's grade 2026-08-07: soffit
+// printed 48 while its chip derived 40). Idempotent: strip any prior
+// chip, append the current step. Mirrors _with_waste_chip in hover.py.
+const WASTE_CHIP_RE = / · ×[\d.]+ waste \([\d.]+%\): [\d.]+ → [\d.]+$/;
+export function withWasteChip(note, raw, qty, wastePct) {
+  const base = String(note || "").replace(WASTE_CHIP_RE, "");
+  const pct = Math.max(0, Number(wastePct) || 0);
+  const factor = (1 + pct / 100).toFixed(2);
+  const g = (n) => String(Number(Number(n).toPrecision(12)));
+  return `${base} · ×${factor} waste (${g(pct)}%): ${g(raw)} → ${g(qty)}`;
+}
+
 export function bakeWasteIntoLines(lines, wastePct) {
   const pct = Math.max(0, Number(wastePct) || 0);
   return (lines || []).map((l) => {
@@ -112,10 +124,12 @@ export function bakeWasteIntoLines(lines, wastePct) {
       // fractional non-cut-prone qty (e.g. coil 5.28 ROLL) rounds up.
       return Number.isInteger(raw) ? l : { ...l, qty: roundUpWhole(raw) };
     }
+    const qty = applyWasteQty(raw, pct);
     return {
       ...l,
       raw_qty: raw,
-      qty: applyWasteQty(raw, pct),
+      qty,
+      ...(qty !== raw ? { note: withWasteChip(l.note, raw, qty, pct) } : {}),
     };
   });
 }
@@ -131,7 +145,12 @@ export function recomputeWasteQtys(lines, wastePct) {
     // LENGTH-CUT rows carrying legacy baked waste snap BACK to the
     // whole-stick count (sealed 2026-07-29): the count IS the allowance.
     if (!isCutProneItem(l)) return { ...l, qty: roundUpWhole(raw) };
-    return { ...l, qty: applyWasteQty(raw, pct) };
+    const qty = applyWasteQty(raw, pct);
+    return {
+      ...l,
+      qty,
+      ...(qty !== raw ? { note: withWasteChip(l.note, raw, qty, pct) } : {}),
+    };
   });
 }
 
@@ -160,10 +179,12 @@ export function recomputeAllWaste(lines, wastePct) {
     const hasRaw = isFinite(stored) && stored > 0;
     const rawQty = hasRaw ? stored : (Number(l.qty) || 0);
     if (rawQty <= 0) return l;
+    const qty = applyWasteQty(rawQty, pct);
     return {
       ...l,
       raw_qty: rawQty,
-      qty: applyWasteQty(rawQty, pct),
+      qty,
+      ...(qty !== rawQty ? { note: withWasteChip(l.note, rawQty, qty, pct) } : {}),
     };
   });
 }

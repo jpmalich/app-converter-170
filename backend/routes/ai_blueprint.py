@@ -134,7 +134,20 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   "walls": [
     {"label": "front" | "back" | "left" | "right",
      "width_ft": number,                  // read from floor plan or elevation
-     "height_ft": number,                 // EAVE height (not roof peak)
+     "height_ft": number,                 // EAVE height of the TALLEST section (not roof peak). When the wall STEPS, the truth lives in height_segments below.
+     // PER-WALL HEIGHT VARIATION (ruled 2026-08-07):
+     // A HOUSE IS NOT A UNIFORM BOX. When an elevation shows the wall stepping between
+     // heights (2-story main body dropping to a 1-story garage wing or
+     // porch section), report EACH horizontal section at ITS OWN eave
+     // height. Segment widths MUST sum to width_ft. Siding a 10-foot
+     // garage wall at the main body's height over-orders every low
+     // section on the house. Return [] ONLY when the elevation truly
+     // shows one uniform eave height across the whole wall.
+     "height_segments": [
+       {"label": "<e.g. 'main body', 'garage wing', 'porch section'>",
+        "width_ft": number,
+        "height_ft": number}
+     ],
      "gable_triangle_height_ft": number,  // 0 unless this wall is a gable end. If a roof PITCH callout is printed (e.g. "7/12"), COMPUTE this as (width_ft ÷ 2) × (pitch_rise ÷ 12) — the printed pitch is the authority; scaling the drawing under-reads the rise.
      "dormer_face_sqft": number,          // 0 unless dormer shown on this elevation
      "siding_pct_this_wall": 100,         // INTEGER percent; default 100 unless plan notes brick/stone
@@ -660,21 +673,48 @@ def _roof_pass_needed(raw: dict) -> bool:
 # wing corners) was invisible in the material list — this card makes the
 # READ itself visible so Howard verifies geometry by looking.
 # =========================================================================
+def _parse_printed_size(s: str) -> tuple[float, float] | None:
+    """Parse a schedule size string to (w_in, h_in). Handles 3-0x5-0,
+    3050, 3'-0\" x 5'-0\", 2-4_5-4. Returns None when unparseable —
+    NEVER guesses (a bad parse is worse than no check)."""
+    txt = str(s or "").strip().upper()
+    if not txt:
+        return None
+    txt = re.sub(r"[A-Z]+", " ", txt).strip()
+    m = re.match(r"^(\d{2})(\d{2})$", txt.replace(" ", ""))
+    if m:
+        return (float(m.group(1)[0]) * 12 + float(m.group(1)[1]),
+                float(m.group(2)[0]) * 12 + float(m.group(2)[1]))
+    parts = [p for p in re.split(r"\s*[X×_]\s*|\s+", txt) if p]
+    if len(parts) != 2:
+        return None
+    dims = []
+    for p in parts:
+        pm = re.match(r"^\s*(\d+)\s*['\-]+\s*(\d+)", p)
+        if pm:
+            dims.append(float(pm.group(1)) * 12 + float(pm.group(2)))
+            continue
+        pm = re.match(r"^\s*(\d+(?:\.\d+)?)\s*$", p)
+        if pm:
+            v = float(pm.group(1))
+            dims.append(v * 12 if v < 12 else v)
+            continue
+        return None
+    return (dims[0], dims[1])
+
+
 def check_read_consistency(raw: dict) -> list[dict]:
     """INTERNAL CONSISTENCY CHECKER (Howard ruled 2026-08-07): the card
     arrives already clean — contradictions the app can catch itself never
-    reach the contractor's grade. Compares numbers against OTHER FACTS in
-    the same read, never against a target. Codes:
-      corner_taller_than_wall — a corner cannot exceed the tallest wall it
-        could join; the wall table already holds the right height.
-      corner_lf_not_sum — stated corner LF ≠ sum of its own per-corner
-        heights (a stated total must equal the sum of its parts).
-      gable_census_mismatch — roof-plane gable ends ≠ walls carrying a
-        gable triangle (the garage gable with no wall to live on).
-      box_model — elevations mirror EXACTLY while the footprint proves a
-        projecting wing: the wing's walls are missing from the SSOT.
-      run_exceeds_facade — a labeled gutter run longer than its facade.
-    """
+    reach the contractor's grade. A CHECKER TESTS CONSISTENCY, NOT
+    CORRECTNESS (Howard's condition, same as temperature=0 one layer up):
+    every flag NAMES both disagreeing sources and resolves toward
+    NEITHER — a taped or contractor-entered height outranks every read.
+    Compares numbers against OTHER FACTS in the same read, never a target.
+    Codes: corner_taller_than_wall · corner_lf_not_sum ·
+    gable_census_mismatch · box_model · footprint_missing (absence named)
+    · run_exceeds_facade · wall_segments_mismatch · porch_run_vs_width ·
+    porch_dims_vs_area · window_size_parse_mismatch."""
     flags: list[dict] = []
     if not isinstance(raw, dict):
         return flags
@@ -687,7 +727,25 @@ def check_read_consistency(raw: dict) -> list[dict]:
             return 0.0
 
     wall_heights = [_f(w.get("height_ft")) for w in walls if _f(w.get("height_ft")) > 0]
+    for w in walls:
+        for s in (w.get("height_segments") or []):
+            if isinstance(s, dict) and _f(s.get("height_ft")) > 0:
+                wall_heights.append(_f(s.get("height_ft")))
     tallest = max(wall_heights) if wall_heights else 0.0
+
+    # PER-WALL SEGMENTS (ruled 2026-08-07): segment widths must sum to
+    # the wall width — a mismatched walk is named, and the siding math
+    # falls back to the rectangle rather than consuming corrupt segments.
+    for w in walls:
+        segs = [s for s in (w.get("height_segments") or []) if isinstance(s, dict)]
+        sw = sum(_f(s.get("width_ft")) for s in segs
+                 if _f(s.get("width_ft")) > 0 and _f(s.get("height_ft")) > 0)
+        ww = _f(w.get("width_ft"))
+        if segs and sw > 0 and ww > 0 and abs(sw - ww) > max(0.5, 0.02 * ww):
+            flags.append({
+                "code": "wall_segments_mismatch", "level": "loud",
+                "vars": {"label": str(w.get("label") or "?"),
+                         "sum": f"{sw:g}", "width": f"{ww:g}"}})
 
     heights = [h for h in (raw.get("outside_corner_heights_ft") or [])
                if isinstance(h, (int, float)) and h and h > 0]
@@ -728,6 +786,55 @@ def check_read_consistency(raw: dict) -> list[dict]:
         rect = _f(fb.get("width_ft")) * _f(lr.get("width_ft"))
         if fp and rect > 0 and fp > rect * 1.02:
             flags.append({"code": "box_model", "level": "loud", "vars": {}})
+    # ABSENCE IS NAMED (Howard's grade 2026-08-07: "the footprint check
+    # is absent from this card — why did it stop firing?"): no printed
+    # footprint captured → the wing check CANNOT run, and the card says so.
+    if walls and not _f(raw.get("footprint_area_sqft")):
+        flags.append({"code": "footprint_missing", "level": "warn", "vars": {}})
+
+    # PORCH SELF-CONSISTENCY (ruled 2026-08-07): a porch's gutter run
+    # must equal its printed width; stated dims must reproduce the
+    # stated area (16×6 = 96 against a 99 table is a named delta).
+    porch_w = porch_d = porch_sqft = 0.0
+    for p in (raw.get("roof_planes") or []):
+        if isinstance(p, dict) and p.get("is_porch"):
+            porch_w = _f(p.get("porch_width_ft"))
+            porch_d = _f(p.get("porch_depth_ft"))
+            porch_sqft = _f(p.get("porch_ceiling_sqft"))
+            break
+    if porch_w > 0:
+        for r in (raw.get("gutter_runs") or []):
+            if isinstance(r, dict) and "porch" in str(r.get("label") or "").lower():
+                if abs(_f(r.get("lf")) - porch_w) > 1.0:
+                    flags.append({
+                        "code": "porch_run_vs_width", "level": "loud",
+                        "vars": {"run": f"{_f(r.get('lf')):g}",
+                                 "width": f"{porch_w:g}"}})
+                break
+    if porch_w > 0 and porch_d > 0 and porch_sqft > 0:
+        stated = porch_w * porch_d
+        if abs(stated - porch_sqft) > 0.05 * porch_sqft:
+            flags.append({
+                "code": "porch_dims_vs_area", "level": "loud",
+                "vars": {"w": f"{porch_w:g}", "d": f"{porch_d:g}",
+                         "product": f"{stated:g}", "area": f"{porch_sqft:g}"}})
+
+    # PRINTED-SIZE TRANSCRIPTION (window mark B class): the verbatim
+    # schedule string must reproduce the numeric parse the read carries.
+    for win in (raw.get("windows") or []):
+        if not isinstance(win, dict):
+            continue
+        parsed = _parse_printed_size(win.get("printed_size"))
+        if not parsed:
+            continue
+        pw, ph = parsed
+        if abs(pw - _f(win.get("width_in"))) >= 2 or abs(ph - _f(win.get("height_in"))) >= 2:
+            flags.append({
+                "code": "window_size_parse_mismatch", "level": "loud",
+                "vars": {"mark": str(win.get("id") or "?"),
+                         "printed": str(win.get("printed_size") or ""),
+                         "parsed": f"{pw:g}×{ph:g}",
+                         "carried": f"{_f(win.get('width_in')):g}×{_f(win.get('height_in')):g}"}})
 
     for r in (raw.get("gutter_runs") or []):
         if not isinstance(r, dict):
