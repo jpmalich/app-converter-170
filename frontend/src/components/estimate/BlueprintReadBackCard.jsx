@@ -28,7 +28,7 @@ const Flag = ({ level, children, testid }) => {
 export default function BlueprintReadBackCard({ readback }) {
   const t = useT();
   if (!readback) return null;
-  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source } = readback;
+  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency } = readback;
 
   return (
     <div data-testid="bp-readback-card" className="border border-[var(--border)] mt-3">
@@ -183,6 +183,26 @@ export default function BlueprintReadBackCard({ readback }) {
           <Flag level="warn" testid="bp-rb-gutter-runs-none">{t("bp.rb.gutterRuns.none")}</Flag>
         )}
       </div>
+
+      {/* 3.7 — internal consistency check (ruled 2026-08-07: the card
+          arrives already clean — contradictions are named HERE, before
+          anyone grades them) */}
+      {Array.isArray(consistency) && (
+        <div className="px-3 py-2 space-y-1 border-t border-[var(--border)]" data-testid="bp-rb-consistency">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">{t("bp.rb.consistency")}</div>
+          {consistency.length === 0 ? (
+            <div className="flex items-center gap-1.5 text-[11px] text-[#15803D]" data-testid="bp-rb-consistency-clean">
+              <CheckCircle2 className="w-3.5 h-3.5" /> {t("bp.rb.consistency.clean")}
+            </div>
+          ) : (
+            consistency.map((f, i) => (
+              <Flag key={i} level={f.level || "loud"} testid={`bp-rb-consistency-${f.code}`}>
+                {t(`bp.rb.consistency.${f.code}`, f.vars || {})}
+              </Flag>
+            ))
+          )}
+        </div>
+      )}
 
       {/* 4 — honesty-flag rail */}
       {rail?.length > 0 && (

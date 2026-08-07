@@ -169,27 +169,11 @@ const fmtSq = (v) => {
   return `${(n / 100).toFixed(1)} SQ`;
 };
 
-// Iter 78g — compute total window perimeter from HOVER measurements.
-// Mirrors backend `_window_perim_total_lf` in routes/hover.py so the
-// recon card and the takeoff mapper agree.
-const WINDOW_PERIM_LF_FALLBACK = 14.0;
-const windowPerimTotalLf = (m) => {
-  const wins = Array.isArray(m?.windows) ? m.windows : [];
-  if (wins.length) {
-    const perimIn = wins.reduce(
-      (s, w) => s + 2 * ((Number(w?.width_in) || 0) + (Number(w?.height_in) || 0)),
-      0,
-    );
-    return perimIn / 12;
-  }
-  return (Number(m?.window_count) || 0) * WINDOW_PERIM_LF_FALLBACK;
-};
-
-// Iter 78g — small horizontal stacked-bar coverage breakdown. Each
-// segment is colored, labeled with its LF value, and proportional to
-// its share of the total. Spot-checking aid for Howard to catch HOVER
-// mis-reads before sending a quote.
-function CoverageBar({ label, segments, totalLf, pcs, unit, formula }) {
+// BARS = CHIPS (Howard ruled 2026-08-07): each bar renders the emitted
+// line's own server-computed `viz` breakdown — the exact terms its formula
+// divided. The client recomputes NOTHING (the retired local copies drifted:
+// full-window-perim finish trim, 2×rakes soffit-J, eaves/30 runs).
+function CoverageBar({ label, segments, pcs, unit, formula, divisor }) {
   const total = segments.reduce((s, x) => s + (Number(x.lf) || 0), 0);
   if (total <= 0) return null;
   return (
@@ -197,7 +181,7 @@ function CoverageBar({ label, segments, totalLf, pcs, unit, formula }) {
       <div className="flex items-baseline justify-between mb-1">
         <span className="text-[11px] font-bold text-[var(--ink)]">{label}</span>
         <span className="text-[10px] font-mono-num text-[var(--ink-2)]">
-          {total.toFixed(0)} LF ÷ 12.5 = <span className="font-bold text-[var(--ink)]">{pcs} {unit}</span>
+          {total.toFixed(0)} LF ÷ {divisor} = <span className="font-bold text-[var(--ink)]">{pcs} {unit}</span>
         </span>
       </div>
       <div className="flex h-5 w-full border border-[var(--border)] overflow-hidden">
@@ -295,10 +279,9 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
 
   if (!rows.length) return null;
 
-  // Iter 78g — Coverage breakdown for Finish Trim + Soffit J-Channel.
-  // Vinyl/Ascend only — LP catalog doesn't use these item names. Computes
-  // the LF contribution of each surface and renders compact stacked bars
-  // so Howard can spot drift in the source measurements at a glance.
+  // BARS = CHIPS (ruled 2026-08-07): coverage bars render ONLY the
+  // server-computed `viz` a line carries. No viz → no bar (a missing bar
+  // is honest; a recomputed one launders a wrong number).
   const finishTrimLine = kind === "lp_smart" ? null : (
     byName("Finish Trim Standard color", "vinyl") ||
     byName("ASCEND Finish Trim", "ascend")
@@ -307,27 +290,24 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
     '3/4" Soffit J-Channel (Charter Oak) Standard color',
     "vinyl",
   );
-  const eavesLf = Number(measurements?.eaves_lf) || 0;
-  const rakesLf = Number(measurements?.rakes_lf) || 0;
-  const winPerim = windowPerimTotalLf(measurements);
-  const winSrc = (measurements?.windows?.length || 0) > 0
-    ? `${measurements.windows.length} dims`
-    : `${Number(measurements?.window_count) || 0} wins × 14 LF`;
+  const SEG_COLORS = ["#0EA5E9", "#A855F7", "#F97316", "#10B981"];
+  const vizSegments = (line) => (line?.viz?.segments || [])
+    .filter((s) => (Number(s.lf) || 0) > 0)
+    .map((s, i) => ({
+      label: s.label, lf: s.lf,
+      detail: `${Number(s.lf).toFixed(0)} LF`,
+      color: SEG_COLORS[i % SEG_COLORS.length],
+    }));
 
-  const showCoverage = finishTrimLine || soffitJLine;
+  const showCoverage = vizSegments(finishTrimLine).length > 0 || vizSegments(soffitJLine).length > 0;
 
-  // Iter 78j — Gutter assumptions chip. The same `runs = max(2, ceil(eaves/30))`
-  // value drives End Caps (× 2) and adds 1 to Hangars per run. Expose it
-  // here so contractors have ONE spot to spot-check the shared assumption
-  // — fix the eave LF or override the chip mentally, and 3 line counts
-  // reflow consistently in their head before sending the quote.
+  // Gutter-assumption chips read the SAME derivation the lines used —
+  // run inventory when a door read it (ruled 2026-08-07).
   const endCapLine = kind === "lp_smart" ? byName("End Cap", "lp_smart") : byName("End Cap", "vinyl");
   const hangersLine = byName("Hangars with Screws", kind === "lp_smart" ? "lp_smart" : "vinyl");
-  const downspoutLine = byName(kind === "lp_smart" ? 'Downspout 6"' : 'Downspout 6"',
-                               kind === "lp_smart" ? "lp_smart" : "vinyl");
-  const gutterRuns = eavesLf > 0 ? Math.max(2, Math.ceil(eavesLf / 30)) : 0;
-  const downspoutCount = eavesLf > 0 ? Math.max(2, Math.ceil(eavesLf / 25)) : 0;
-  const showGutterAssumptions = (endCapLine || hangersLine || downspoutLine) && eavesLf > 0;
+  const downspoutLine = byName('Downspout 6"', kind === "lp_smart" ? "lp_smart" : "vinyl");
+  const gutterViz = endCapLine?.viz || hangersLine?.viz || downspoutLine?.viz || null;
+  const showGutterAssumptions = !!gutterViz;
 
   return (
     <section
@@ -396,28 +376,24 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
             segment looks off vs the home, the underlying HOVER measurement
             (eaves / rakes / window dims) likely needs a second look.
           </p>
-          {finishTrimLine && (
+          {vizSegments(finishTrimLine).length > 0 && (
             <CoverageBar
               label="Finish Trim"
-              segments={[
-                { label: "Eaves run", lf: eavesLf, detail: `${eavesLf.toFixed(0)} LF`, color: "#0EA5E9" },
-                { label: "Window perimeter", lf: winPerim, detail: `${winPerim.toFixed(0)} LF · ${winSrc}`, color: "#A855F7" },
-              ]}
+              segments={vizSegments(finishTrimLine)}
               pcs={Number(finishTrimLine.qty) || 0}
               unit={finishTrimLine.unit || "PCS"}
-              formula="Formula: ceil((Eaves + Full Window Perim) ÷ 12.5)"
+              divisor={finishTrimLine.viz.divisor}
+              formula={`Formula: ${finishTrimLine.viz.formula || ""}`}
             />
           )}
-          {soffitJLine && (
+          {vizSegments(soffitJLine).length > 0 && (
             <CoverageBar
               label="Soffit J-Channel"
-              segments={[
-                { label: "Eaves run", lf: eavesLf, detail: `${eavesLf.toFixed(0)} LF`, color: "#0EA5E9" },
-                { label: "Rake @ 2 passes", lf: rakesLf * 2, detail: `2 × ${rakesLf.toFixed(0)} LF rake`, color: "#F97316" },
-              ]}
+              segments={vizSegments(soffitJLine)}
               pcs={Number(soffitJLine.qty) || 0}
               unit={soffitJLine.unit || "PCS"}
-              formula="Formula: ceil((Eaves + 2 × Rakes) ÷ 12.5) — 2 passes per rake (wall side + fascia return)"
+              divisor={soffitJLine.viz.divisor}
+              formula={`Formula: ${soffitJLine.viz.formula || ""}`}
             />
           )}
           {showGutterAssumptions && (
@@ -426,35 +402,37 @@ export default function TakeoffReconCard({ measurements, lines, wastePct = 0, ki
                 Gutter assumptions
               </div>
               <p className="text-[10px] text-[var(--muted)] leading-snug mb-2">
-                One shared run count drives End Caps (× 2) and the +1-per-run on Hangars. Downspouts use their own 25 LF spacing rule.
+                {gutterViz.basis === "run_inventory"
+                  ? "The door read the gutter runs — every accessory consumes that inventory."
+                  : "No run inventory on this read — runs estimated at ~1 per 30 LF (min 2)."}
               </p>
               <div className="flex flex-wrap gap-2">
                 <div className="inline-flex items-baseline gap-1.5 border border-[#0EA5E9] bg-[#F0F9FF] px-2 py-1" data-testid="chip-gutter-runs">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-[#0369A1]">Gutter runs</span>
-                  <span className="text-[13px] font-mono-num font-bold text-[#0C4A6E]">{gutterRuns}</span>
+                  <span className="text-[13px] font-mono-num font-bold text-[#0C4A6E]">{gutterViz.runs}</span>
                   <span className="text-[10px] font-mono-num text-[#0369A1]">
-                    ({eavesLf.toFixed(0)} LF ÷ 30{gutterRuns === 2 && eavesLf / 30 < 2 ? ", min 2" : ""})
+                    ({gutterViz.run_labels ? gutterViz.run_labels.join(" + ") : `${gutterViz.gutter_lf} LF ÷ 30, min 2`})
                   </span>
                 </div>
                 {endCapLine && (
                   <div className="inline-flex items-baseline gap-1.5 border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1" data-testid="chip-end-caps">
                     <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">End Caps</span>
                     <span className="text-[13px] font-mono-num font-bold text-[var(--ink)]">{Number(endCapLine.qty) || 0}</span>
-                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({gutterRuns} runs × 2)</span>
+                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({gutterViz.runs} runs × 2)</span>
                   </div>
                 )}
                 {hangersLine && (
                   <div className="inline-flex items-baseline gap-1.5 border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1" data-testid="chip-hangars">
                     <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">Hangars</span>
                     <span className="text-[13px] font-mono-num font-bold text-[var(--ink)]">{Number(hangersLine.qty) || 0}</span>
-                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({Math.ceil(eavesLf / 2)} + {gutterRuns} runs)</span>
+                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({gutterViz.hangers_spaced} + {gutterViz.runs} runs)</span>
                   </div>
                 )}
                 {downspoutLine && (
                   <div className="inline-flex items-baseline gap-1.5 border border-[var(--border)] bg-[var(--surface-muted)] px-2 py-1" data-testid="chip-downspouts">
                     <span className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">Downspouts</span>
-                    <span className="text-[13px] font-mono-num font-bold text-[var(--ink)]">{downspoutCount}</span>
-                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({eavesLf.toFixed(0)} LF ÷ 25{downspoutCount === 2 && eavesLf / 25 < 2 ? ", min 2" : ""})</span>
+                    <span className="text-[13px] font-mono-num font-bold text-[var(--ink)]">{gutterViz.downspouts}</span>
+                    <span className="text-[10px] font-mono-num text-[var(--muted)]">({gutterViz.gutter_lf} LF gutter ÷ 25, min 2)</span>
                   </div>
                 )}
               </div>

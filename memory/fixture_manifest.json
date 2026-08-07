@@ -4,9 +4,9 @@
    "ascend|.019 Coil": 3.0,
    "ascend|1 1/4\" Trim Nails": 1.0,
    "ascend|2\" Nails 30 lbs": 1.0,
-   "ascend|3/4\" Soffit J-Channel (Charter Oak) Standard color": 23.0,
+   "ascend|3/4\" Soffit J-Channel (Charter Oak) Standard color": 26.0,
    "ascend|ASCEND Finish Trim": 19.0,
-   "ascend|Ascend - J - Channel": 62.0,
+   "ascend|Ascend - J - Channel": 59.0,
    "ascend|Ascend 5.5\" Outside Corner  - MATTE": 1.0,
    "ascend|Ascend Composite Lap Siding 7\"": 41.1,
    "ascend|Cap patio door": 1.0,
@@ -52,8 +52,8 @@
    "vinyl|.019 Coil": 3.0,
    "vinyl|1 1/4\" Trim Nails": 1.0,
    "vinyl|2\" Nails 30 lbs": 1.0,
-   "vinyl|3/4\" J-Channel Standard color": 62.0,
-   "vinyl|3/4\" Soffit J-Channel (Charter Oak) Standard color": 23.0,
+   "vinyl|3/4\" J-Channel Standard color": 59.0,
+   "vinyl|3/4\" Soffit J-Channel (Charter Oak) Standard color": 26.0,
    "vinyl|Cap patio door": 1.0,
    "vinyl|Cap single garage door": 2.0,
    "vinyl|Cap window": 22.0,
@@ -80,16 +80,16 @@
    "windows|Window DH/Slider - Pocket Install": 22.0,
    "windows|Windows - .019 Coil": 4.0
   },
-  "sha256": "a717f6a088d6f1757cad282849b1c4ca5ca014f225b1b322f744021a5ff39845"
+  "sha256": "1caf62579efe94c1cc56cc0419fe6d4edbc193c4f2511be8339aed4cf0f22c12"
  },
  "boni_read_integral_j_on": {
   "lines": {
    "ascend|.019 Coil": 3.0,
    "ascend|1 1/4\" Trim Nails": 1.0,
    "ascend|2\" Nails 30 lbs": 1.0,
-   "ascend|3/4\" Soffit J-Channel (Charter Oak) Standard color": 23.0,
+   "ascend|3/4\" Soffit J-Channel (Charter Oak) Standard color": 26.0,
    "ascend|ASCEND Finish Trim": 19.0,
-   "ascend|Ascend - J - Channel": 33.0,
+   "ascend|Ascend - J - Channel": 31.0,
    "ascend|Ascend 5.5\" Outside Corner  - MATTE": 1.0,
    "ascend|Ascend Composite Lap Siding 7\"": 41.1,
    "ascend|Cap patio door": 1.0,
@@ -135,8 +135,8 @@
    "vinyl|.019 Coil": 3.0,
    "vinyl|1 1/4\" Trim Nails": 1.0,
    "vinyl|2\" Nails 30 lbs": 1.0,
-   "vinyl|3/4\" J-Channel Standard color": 33.0,
-   "vinyl|3/4\" Soffit J-Channel (Charter Oak) Standard color": 23.0,
+   "vinyl|3/4\" J-Channel Standard color": 31.0,
+   "vinyl|3/4\" Soffit J-Channel (Charter Oak) Standard color": 26.0,
    "vinyl|Cap patio door": 1.0,
    "vinyl|Cap single garage door": 2.0,
    "vinyl|Cap window": 0.0,
@@ -163,6 +163,6 @@
    "windows|Window DH/Slider - Pocket Install": 22.0,
    "windows|Windows - .019 Coil": 4.0
   },
-  "sha256": "f0d4a6dfc17647edec0a889cac2311364655dbc3348da4a86a524af2633661c3"
+  "sha256": "fbf5675df240773a84876ccd18787c7b59e7b9ec665325a9c6d8bc93abc360a2"
  }
 }

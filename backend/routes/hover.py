@@ -144,6 +144,63 @@ def _finish_trim_sill_lf(m: dict) -> float:
     return float(m.get("window_count") or 0) * FINISH_TRIM_SILL_LF_FALLBACK
 
 
+def _finish_trim_viz(m: dict) -> dict | None:
+    """BARS = CHIPS (Howard ruled 2026-08-07): the coverage bar renders
+    ONLY what the emitted line carries — one source, zero client-side
+    formula copies to go stale. 637-vs-279 died here."""
+    eaves = float(m.get("eaves_lf") or 0)
+    sills = _finish_trim_sill_lf(m)
+    if eaves <= 0 and sills <= 0:
+        return None
+    return {
+        "segments": [
+            {"label": "Eave top course", "lf": round(eaves, 1)},
+            {"label": "Window sills", "lf": round(sills, 1)},
+        ],
+        "divisor": 12.5,
+        "formula": ("ceil((Eave top course + Window sills) ÷ 12.5) — "
+                    "sills + top course (ruled 2026-08-01); rakes excluded "
+                    f"({RAKE_J_DOCTRINE})"),
+    }
+
+
+def _soffit_j_viz(m: dict) -> dict | None:
+    """Soffit-J bar segments — same terms the extract divides."""
+    eaves = float(m.get("eaves_lf") or 0)
+    rakes = float(m.get("rakes_lf") or 0)
+    porch, _ = _porch_soffit_j_lf(m)
+    if eaves <= 0 and rakes <= 0 and porch <= 0:
+        return None
+    return {
+        "segments": [
+            {"label": "Eaves run", "lf": round(eaves, 1)},
+            {"label": "Rakes × 1 pass", "lf": round(rakes, 1)},
+            {"label": "Porch ceiling channel", "lf": round(porch, 1)},
+        ],
+        "divisor": 12.5,
+        "formula": ("ceil((Eaves + Rakes + porch ceiling channel) ÷ 12.5) — "
+                    "ONE rake pass (R1 2026-07-30); porch FULL PERIMETER "
+                    "on this line (split ruled 2026-08-07)"),
+    }
+
+
+def _gutter_viz(m: dict) -> dict | None:
+    """Gutter-assumption chips read the SAME derivation the lines used —
+    run inventory when a door read it, never a client-side eaves/30 copy."""
+    glf = _gutter_lf(m)
+    if glf <= 0:
+        return None
+    runs = _gutter_run_list(m)
+    return {
+        "gutter_lf": round(glf, 1),
+        "runs": _gutter_run_count(m),
+        "run_labels": [r["label"] for r in runs] if runs else None,
+        "basis": "run_inventory" if runs else "eaves_estimate",
+        "downspouts": _downspout_count(m),
+        "hangers_spaced": math.ceil(glf / 2 - 1e-9),
+    }
+
+
 def _finish_trim_pcs(m: dict) -> int:
     """Finish Trim qty = ceil((Eaves top course + window SILL widths) ÷ 12.5)
     — Howard ruled 2026-08-01 (10e): sills + top course; the Iter 78f full
@@ -213,10 +270,13 @@ def _coil_019_breakdown(m: dict) -> str:
 # rows so the Takeoff Recon Card can surface the math (1/25 LF rule, min 2,
 # 10 LF/downspout, 2 elbows/downspout). Mirrors the J-channel pattern.
 def _downspout_count(m: dict) -> int:
-    eaves = float(m.get("eaves_lf") or 0)
-    if eaves <= 0:
+    # GUTTER ACCESSORIES CONSUME THE RUN INVENTORY (Howard ruled
+    # 2026-08-07): every accessory divides the GUTTER figure (run sum
+    # when a door read runs), never the discarded eave plane-sum.
+    glf = _gutter_lf(m)
+    if glf <= 0:
         return 0
-    return max(2, math.ceil(eaves / 25 - 1e-9))
+    return max(2, math.ceil(glf / 25 - 1e-9))
 
 
 # Iter 78z (P1.4) — Story-aware downspout drop length.
@@ -242,17 +302,22 @@ def _downspout_lf(m: dict) -> int:
     return int(round(n * _downspout_drop_ft(m)))
 
 
+def _gutter_basis(m: dict) -> str:
+    """Names the LF basis every gutter accessory divides (ruled 2026-08-07)."""
+    return "LF gutter (run inventory)" if _gutter_run_list(m) else "LF eaves"
+
+
 def _downspout_breakdown(m: dict) -> str:
-    eaves = float(m.get("eaves_lf") or 0)
-    if eaves <= 0:
-        return "No eaves → 0 downspouts"
-    raw = eaves / 25
+    glf = _gutter_lf(m)
+    if glf <= 0:
+        return "No gutter → 0 downspouts"
+    raw = glf / 25
     n = _downspout_count(m)
     drop = _downspout_drop_ft(m)
     total_lf = _downspout_lf(m)
     min_hit = " (min 2)" if n == 2 and raw < 2 else ""
     sticks = math.ceil(total_lf / 10 - 1e-9) if total_lf > 0 else 0
-    return (f"{eaves:.0f} LF eaves ÷ 25 = {raw:.1f} → ceil = "
+    return (f"{glf:.0f} {_gutter_basis(m)} ÷ 25 = {raw:.1f} → ceil = "
             f"{n} downspouts{min_hit} × {drop:.0f} LF drop = {total_lf} LF "
             f"→ {sticks} sticks (10' each, whole sticks — ruled 2026-07-31)")
 
@@ -296,19 +361,26 @@ def _gutter_note(m: dict) -> str:
 
 
 def _elbow_breakdown(m: dict) -> str:
-    eaves = float(m.get("eaves_lf") or 0)
-    if eaves <= 0:
-        return "No eaves → 0 elbows"
-    raw = eaves / 25
+    glf = _gutter_lf(m)
+    if glf <= 0:
+        return "No gutter → 0 elbows"
+    raw = glf / 25
     n = _downspout_count(m)
     min_hit = " (min 2)" if n == 2 and raw < 2 else ""
-    return (f"{eaves:.0f} LF eaves ÷ 25 = {raw:.1f} → {n} downspouts{min_hit} "
+    return (f"{glf:.0f} {_gutter_basis(m)} ÷ 25 = {raw:.1f} → {n} downspouts{min_hit} "
             f"× 2 elbows (top turn + kick-out) = {n * 2} elbows")
 
 
 # Iter 78i — Hangers with screws. Howard's install rule: 1 hanger per 2 ft
-# of gutter + 1 per gutter run (run count mirrors the End-Cap estimate).
+# of gutter + 1 per gutter run.
+# RUN COUNT (Howard ruled 2026-08-07): when a door read the run
+# inventory, its COUNT is the run count — the app never again invents 7
+# runs off a plane-sum the card correctly printed as 3. The ~1 run per
+# 30 LF estimate survives only as the no-inventory fallback.
 def _gutter_run_count(m: dict) -> int:
+    runs = _gutter_run_list(m)
+    if runs:
+        return len(runs)
     eaves = float(m.get("eaves_lf") or 0)
     if eaves <= 0:
         return 0
@@ -316,22 +388,23 @@ def _gutter_run_count(m: dict) -> int:
 
 
 def _hangers_count(m: dict) -> int:
-    eaves = float(m.get("eaves_lf") or 0)
-    if eaves <= 0:
+    glf = _gutter_lf(m)
+    if glf <= 0:
         return 0
-    spaced = math.ceil(eaves / 2 - 1e-9)
+    spaced = math.ceil(glf / 2 - 1e-9)
     runs = _gutter_run_count(m)
     return spaced + runs
 
 
 def _hangers_breakdown(m: dict) -> str:
-    eaves = float(m.get("eaves_lf") or 0)
-    if eaves <= 0:
-        return "No eaves → 0 hangers"
-    spaced = math.ceil(eaves / 2 - 1e-9)
+    glf = _gutter_lf(m)
+    if glf <= 0:
+        return "No gutter → 0 hangers"
+    spaced = math.ceil(glf / 2 - 1e-9)
     runs = _gutter_run_count(m)
-    return (f"{eaves:.0f} LF ÷ 2 ft spacing = {spaced} + {runs} runs "
-            f"(1 per run) = {spaced + runs} hangers")
+    run_src = "door-read run inventory" if _gutter_run_list(m) else "~1 run per 30 LF est."
+    return (f"{glf:.0f} {_gutter_basis(m)} ÷ 2 ft spacing = {spaced} + {runs} runs "
+            f"({run_src}, 1 per run) = {spaced + runs} hangers")
 
 
 # Iter 78z (P1.4) — Gutter geometry: mitres, pipe clips, sealant.
@@ -374,7 +447,7 @@ def _gutter_corner_count(m: dict) -> tuple[int, int]:
 
 
 def _mitre_count(m: dict) -> int:
-    if float(m.get("eaves_lf") or 0) <= 0:
+    if _gutter_lf(m) <= 0:
         return 0
     out_n, in_n = _gutter_corner_count(m)
     # Gable house: gutter doesn't wrap → 0 outside mitres. Inside
@@ -387,8 +460,8 @@ def _mitre_count(m: dict) -> int:
 
 
 def _mitre_breakdown(m: dict) -> str:
-    if float(m.get("eaves_lf") or 0) <= 0:
-        return "No eaves → 0 mitres"
+    if _gutter_lf(m) <= 0:
+        return "No gutter → 0 mitres"
     out_n, in_n = _gutter_corner_count(m)
     gable = _has_gable_wall(m)
     n = _mitre_count(m)
@@ -428,7 +501,7 @@ def _pipe_clips_breakdown(m: dict) -> str:
 # A standard 10 oz tube covers ~16-20 ft of joint, and each connection
 # uses ~4-5 ft. Howard's job-cost rule of thumb: 1 tube per 4 joints.
 def _sealant_count(m: dict) -> int:
-    if float(m.get("eaves_lf") or 0) <= 0:
+    if _gutter_lf(m) <= 0:
         return 0
     mitres = _mitre_count(m)
     runs = _gutter_run_count(m)
@@ -439,8 +512,8 @@ def _sealant_count(m: dict) -> int:
 
 
 def _sealant_breakdown(m: dict) -> str:
-    if float(m.get("eaves_lf") or 0) <= 0:
-        return "No eaves → 0 sealant tubes"
+    if _gutter_lf(m) <= 0:
+        return "No gutter → 0 sealant tubes"
     mitres = _mitre_count(m)
     runs = _gutter_run_count(m)
     end_caps = runs * 2
@@ -584,47 +657,121 @@ def _region_context_lines(m: dict) -> list[dict]:
     return out
 
 
+def _porch_geom(m: dict) -> dict:
+    """PORCH SHAPE DISCIPLINE (Howard ruled 2026-08-07): AN AREA DOES NOT
+    DETERMINE A SHAPE. Never back dimensions out of an area. Real dims
+    govern when a door holds them; otherwise FLAG and use the DISCLOSED
+    MINIMUM (square-assumed) — never fabricate a rectangle.
+    Sources, best first:
+      1. contractor-entered porch dims (Job-Info entries, width×length)
+      2. porch-flagged roof plane with eave+rake reads (eave = fascia
+         side, rakes = the two sides)
+      3. area only → square MINIMUM, flagged
+    Returns {sqft, perimeter_lf, wall_lf, basis, text}: perimeter is the
+    ceiling-receiving channel (Soffit-J line, full perimeter); wall_lf is
+    the wall-abutting length (wall-J line only)."""
+    sqft = float(m.get("porch_ceiling_sqft") or 0)
+    real = [(float(p.get("width_ft") or 0), float(p.get("length_ft") or 0))
+            for p in (m.get("_porch_dims") or []) if isinstance(p, dict)
+            and float(p.get("width_ft") or 0) > 0
+            and float(p.get("length_ft") or 0) > 0]
+    if real:
+        perim = sum(2.0 * (w + l) for w, l in real)
+        wall = sum(max(w, l) for w, l in real)
+        return {"sqft": sqft, "perimeter_lf": perim, "wall_lf": wall,
+                "basis": "real_dims",
+                "text": " + ".join(f"{max(w, l):g}'×{min(w, l):g}'"
+                                   for w, l in real)}
+    for p in (m.get("_roof_planes") or []):
+        if isinstance(p, dict) and p.get("is_porch"):
+            try:
+                pw = float(p.get("porch_width_ft") or 0)
+                pd = float(p.get("porch_depth_ft") or 0)
+            except (TypeError, ValueError):
+                pw = pd = 0.0
+            if pw > 0 and pd > 0:
+                # printed floor-plan dims — width runs along the house wall
+                return {"sqft": sqft, "perimeter_lf": 2.0 * (pw + pd),
+                        "wall_lf": pw, "basis": "porch_plane",
+                        "text": f"{pw:g}' along the wall × {pd:g}' deep (printed porch dims)"}
+            e = float(p.get("eave_lf") or 0)
+            r = float(p.get("rake_lf") or 0)
+            if e > 0 and r > 0:
+                d = r / 2.0
+                return {"sqft": sqft, "perimeter_lf": 2.0 * (e + d),
+                        "wall_lf": e, "basis": "porch_plane",
+                        "text": f"{e:g}' eave × {d:g}' side (porch roof plane)"}
+            break
+    if sqft > 0:
+        side = math.sqrt(sqft)
+        return {"sqft": sqft, "perimeter_lf": 4.0 * side, "wall_lf": side,
+                "basis": "square_minimum", "text": f"√{sqft:g}"}
+    return {"sqft": 0.0, "perimeter_lf": 0.0, "wall_lf": 0.0,
+            "basis": "none", "text": ""}
+
+
+def _porch_soffit_j_lf(m: dict) -> tuple[float, str]:
+    """PORCH-J ASSEMBLY SPLIT (Howard ruled 2026-08-07): the CEILING-
+    receiving channel prints on the SOFFIT-J line at FULL PERIMETER; the
+    wall J beneath prints on the WALL-J line at wall-abutting length only
+    (see _eave_porch_j_lf). Vinyl/Ascend only — LP carries neither."""
+    g = _porch_geom(m)
+    if g["perimeter_lf"] <= 0:
+        return 0.0, ""
+    if g["basis"] == "real_dims":
+        br = (f"{g['perimeter_lf']:.0f} porch ceiling channel — FULL "
+              f"PERIMETER 2×(w+d), real dims {g['text']}")
+    elif g["basis"] == "porch_plane":
+        br = (f"{g['perimeter_lf']:.0f} porch ceiling channel — FULL "
+              f"PERIMETER 2×(w+d), {g['text']}")
+    else:
+        br = (f"{g['perimeter_lf']:.0f} porch ceiling channel — FULL "
+              f"PERIMETER MINIMUM, square-assumed 4×{g['text']} — real "
+              "dims not held, FLAG: an area does not determine a shape "
+              "(ruled 2026-08-07)")
+    return g["perimeter_lf"], br + " (split ruled 2026-08-07: ceiling channel on the Soffit-J line)"
+
+
 def _eave_porch_j_lf(m: dict) -> tuple[float, str]:
-    """EAVE/PORCH-J (Howard ruled 2026-08-05; porch term ruled FULL
-    PERIMETER 2026-08-07): eave soffit panels tuck into a wall-side
-    receiving channel, and the porch ceiling carries J around its FULL
-    PERIMETER — the deliberate simplification of the trade rule (J at
-    walls, J at a beam, NO J at fascia where the wrap acts as the J).
-    Conservative and DISCLOSED — a generous rule is hidden padding
-    unless the note prints it. Derives from the ceiling AREA every door
-    already holds (square-assumed perimeter), identically on all three
-    doors. NEVER LP SmartSide (different soffit/trim system; no eave-J).
-    PORCH IDENTIFICATION is per-door and NEVER silent: blueprint = a
-    porch-flagged roof plane; human = contractor-entered porch ceilings;
-    a bare measured area applies WITH a verify note; a read with no
-    porch identified says so instead of silently skipping."""
+    """EAVE/PORCH-J, WALL-J SIDE (Howard ruled 2026-08-05; ASSEMBLY SPLIT
+    ruled 2026-08-07): eave soffit panels tuck into a wall-side receiving
+    channel, and the porch carries a wall J beneath its ceiling channel —
+    WALL-ABUTTING LENGTH ONLY on this line. The ceiling-receiving channel
+    itself moved to the SOFFIT-J line at full perimeter (see
+    _porch_soffit_j_lf). NEVER LP SmartSide (different soffit/trim
+    system; no eave-J). PORCH IDENTIFICATION is per-door and NEVER
+    silent: real dims when held; a square-assumed MINIMUM is flagged —
+    an area does not determine a shape (ruled 2026-08-07)."""
     eaves = float(m.get("eaves_lf") or 0)
-    porch_sqft = float(m.get("porch_ceiling_sqft") or 0)
+    g = _porch_geom(m)
     parts: list[str] = []
     total = 0.0
     if eaves > 0:
         total += eaves
         parts.append(f"{eaves:.0f} eave wall-channel")
-    if porch_sqft > 0:
-        porch_lf = 4.0 * math.sqrt(porch_sqft)
-        total += porch_lf
-        if any(isinstance(p, dict) and p.get("is_porch")
-               for p in (m.get("_roof_planes") or [])):
-            src = "porch-flagged roof plane (blueprint read)"
-        elif m.get("_porch_src") == "human":
-            src = "contractor-entered porch ceilings"
+    if g["wall_lf"] > 0:
+        total += g["wall_lf"]
+        if g["basis"] == "real_dims":
+            parts.append(
+                f"{g['wall_lf']:.0f} porch wall-J — wall-abutting side only "
+                f"(real dims {g['text']}, longer side taken as the wall "
+                "side — verify); ceiling channel moved to the Soffit-J "
+                "line (split ruled 2026-08-07)")
+        elif g["basis"] == "porch_plane":
+            parts.append(
+                f"{g['wall_lf']:.0f} porch wall-J — wall-abutting side only "
+                f"({g['text']}); ceiling channel moved to the Soffit-J "
+                "line (split ruled 2026-08-07)")
         else:
-            src = ("measured area, UNLABELED — VERIFY it is a porch "
-                   "ceiling before ordering")
-        parts.append(
-            f"{porch_lf:.0f} porch ceiling channel — FULL PERIMETER, "
-            f"square-assumed 4×√{porch_sqft:g} sqft ({src}); "
-            "conservative: the fascia edge may not need it — the fascia "
-            "wrap acts as the J (ruled 2026-08-07)")
+            parts.append(
+                f"{g['wall_lf']:.0f} porch wall-J MINIMUM — square-assumed "
+                f"{g['text']}; real dims not held, FLAG: verify the "
+                "wall-side length (an area does not determine a shape — "
+                "ruled 2026-08-07); ceiling channel moved to the Soffit-J line")
     else:
         parts.append(
             "no porch ceiling identified on this read — if the house "
-            "has one, its perimeter J is NOT in this count (flag, "
+            "has one, its wall-J is NOT in this count (flag, "
             "never silent)")
     return total, " + ".join(parts) + \
         " (eave/porch-J — ruled 2026-08-05, vinyl/Ascend only)"
@@ -1303,6 +1450,7 @@ HOVER_MAPPING_SPEC = [
         "waste_included": True,
         "extract": lambda m: 0 if _region_split_active(m) else _finish_trim_pcs(m),
         "note": lambda m: _finish_trim_note(m),
+        "viz": lambda m: _finish_trim_viz(m),
     },
     {
         "tabs": ["ascend"],
@@ -1312,6 +1460,7 @@ HOVER_MAPPING_SPEC = [
         "waste_included": True,
         "extract": lambda m: _finish_trim_pcs(m),
         "note": lambda m: _finish_trim_note(m),
+        "viz": lambda m: _finish_trim_viz(m),
     },
     # =====================================================================
     # J-CHANNEL — wraps window + patio + GARAGE door perimeters PLUS soffit
@@ -1469,14 +1618,19 @@ HOVER_MAPPING_SPEC = [
         "waste_included": True,
         # R1 ruled 2026-07-30: rakes counted ONCE (was 2× before the ruling —
         # 3 passes total with the wall-J rake term; see RAKE_J_DOCTRINE).
-        # The note NAMES the pre-ruling quantity so the change never arrives
-        # silently inside a rebuild.
+        # ASSEMBLY SPLIT (ruled 2026-08-07): the porch CEILING-receiving
+        # channel prints HERE at full perimeter (the wall J beneath stays
+        # on the wall-J line, wall-abutting only).
         "extract": lambda m: max(
             0,
-            math.ceil(((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)) / 12.5 - 1e-9),
+            math.ceil(((m.get("eaves_lf") or 0) + (m.get("rakes_lf") or 0)
+                       + _porch_soffit_j_lf(m)[0]) / 12.5 - 1e-9),
         ),
+        "viz": lambda m: _soffit_j_viz(m),
         "note": lambda m: (
-            f"(Eaves + Rakes) ÷ 12.5 LF/stick — {RAKE_J_DOCTRINE}"
+            f"(Eaves + Rakes"
+            + (f" + {_porch_soffit_j_lf(m)[1]}" if _porch_soffit_j_lf(m)[0] > 0 else "")
+            + f") ÷ 12.5 LF/stick — {RAKE_J_DOCTRINE}"
             + " — eave counts ONE run: the fascia side carries NO J, the "
               "fascia wrap is the receiver (SEALED 2026-08-07 — was "
               "accidental-right, now ruled)"
@@ -1728,18 +1882,16 @@ HOVER_MAPPING_SPEC = [
         "unit": "Stick",
         "extract": lambda m: math.ceil(_downspout_lf(m) / 10 - 1e-9) if _downspout_lf(m) > 0 else 0,
         "note": lambda m: _downspout_breakdown(m),
+        "viz": lambda m: _gutter_viz(m),
     },
     {
         "tabs": ["vinyl", "ascend", "lp_smart"],
         "section": "Seamless Gutter",
         "item": "elbow",
         "unit": "Each",
-        # 2 elbows per downspout (top turn + bottom kick-out). Same
-        # 1-per-25 LF rule as downspouts.
-        "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 25 - 1e-9)) * 2
-            if (m.get("eaves_lf") or 0) > 0 else 0
-        ),
+        # 2 elbows per downspout (top turn + bottom kick-out). Downspout
+        # count consumes the run-inventory gutter LF (ruled 2026-08-07).
+        "extract": lambda m: _downspout_count(m) * 2,
         "note": lambda m: _elbow_breakdown(m),
     },
     # Iter 65 — End Caps. Industry standard: 2 caps per continuous gutter
@@ -1753,11 +1905,19 @@ HOVER_MAPPING_SPEC = [
         "section": "Seamless Gutter",
         "item": "End Cap",
         "unit": "Each",
+        # RUN INVENTORY governs the run count when a door read it
+        # (ruled 2026-08-07); ~1 run per 30 LF stays the fallback.
         "extract": lambda m: (
-            max(2, math.ceil((m.get("eaves_lf") or 0) / 30 - 1e-9)) * 2
-            if (m.get("eaves_lf") or 0) > 0 else 0
+            _gutter_run_count(m) * 2 if _gutter_lf(m) > 0 else 0
         ),
-        "note": "2 end caps per gutter run (~1 run per 30 LF eaves, min 2 runs)",
+        "note": lambda m: (
+            f"2 end caps × {_gutter_run_count(m)} runs "
+            + ("(door-read run inventory: "
+               + " + ".join(r["label"] for r in _gutter_run_list(m)) + ")"
+               if _gutter_run_list(m)
+               else "(~1 run per 30 LF eaves, min 2 runs)")
+        ),
+        "viz": lambda m: _gutter_viz(m),
     },
     # Iter 78i — Hangars with Screws. Howard's install rule: 1 hanger every
     # 2 ft of gutter PLUS 1 extra per gutter run (for the end termination).
@@ -1772,6 +1932,7 @@ HOVER_MAPPING_SPEC = [
         "unit": "Each",
         "extract": lambda m: _hangers_count(m),
         "note": lambda m: _hangers_breakdown(m),
+        "viz": lambda m: _gutter_viz(m),
     },
     # Iter 78z (P1.4) — Mitre auto-fill. Inferred from roof type
     # (gable vs hip) + corner counts. Gable houses get 0 outside mitres
@@ -2565,6 +2726,15 @@ def _build_lines(measurements: dict) -> list[dict]:
                 note_val = note_val(measurements)
             except Exception:
                 note_val = ""
+        # BARS = CHIPS (ruled 2026-08-07): optional structured breakdown
+        # rides the line so UI coverage bars render the SAME source the
+        # formula divided — never a client-side formula copy.
+        viz_val = spec.get("viz")
+        if callable(viz_val):
+            try:
+                viz_val = viz_val(measurements)
+            except Exception:
+                viz_val = None
         for tab in spec["tabs"]:
             out.append({
                 "tab": tab,
@@ -2582,6 +2752,7 @@ def _build_lines(measurements: dict) -> list[dict]:
                                     if callable(spec.get("waste_included"))
                                     else bool(spec.get("waste_included"))),
                 "note": note_val,
+                **({"viz": viz_val} if isinstance(viz_val, dict) else {}),
                 **({"qty_pending": True} if spec.get("always_emit") and qty <= 0 else {}),
             })
     # Q8 superseded 2026-08-02: tier DERIVES from the color, PER ROW —
@@ -2974,6 +3145,14 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     if porch_sqft > 0:
         scoped["porch_ceiling_sqft"] = porch_sqft
         scoped["_porch_src"] = "human"
+        # REAL PORCH DIMS ride with the area (ruled 2026-08-07: an area
+        # does not determine a shape) — J math uses the real perimeter.
+        scoped["_porch_dims"] = [
+            {"width_ft": float(p.get("width_ft") or 0),
+             "length_ft": float(p.get("length_ft") or 0)}
+            for p in porches if isinstance(p, dict)
+            and float(p.get("width_ft") or 0) > 0
+            and float(p.get("length_ft") or 0) > 0]
     if est.get("overhang_in") is not None:
         scoped["overhang_in"] = est["overhang_in"]
     # SOFFIT STEER LIVES BACKEND (Howard ruled 2026-08-07): the vented/

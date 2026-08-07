@@ -159,17 +159,19 @@ def test_integral_j_flag_touches_exactly_four_lines():
     assert "integral-J" in str(cap[0].get("note") or "")
     # wrap coil: window term gone
     assert _coil_019_rolls(m_on) < _coil_019_rolls(_boni_measurements(167, 99))
-    # wall-J: window perimeter OUT, eave/porch channel + garage rake IN.
-    # STANDARD-PRACTICE derivation = 33 (Howard ruled 2026-08-05: J runs
-    # on both wall and rake — garage rake feeds the term; porch channel
-    # ruled FULL PERIMETER 2026-08-07: 4×√99 = 40, was 3-side 28.
-    # Installed 30 is a FIELD ANOMALY, flagged for Howard's site visit —
-    # never chased).
+    # wall-J: window perimeter OUT, eave channel + garage rake IN.
+    # ASSEMBLY SPLIT (Howard ruled 2026-08-07): the porch CEILING channel
+    # moved to the Soffit-J line at full perimeter; this line keeps only
+    # the porch WALL-J at wall-abutting length. Boni's porch holds no
+    # real dims (plane rake 0) → square MINIMUM √99 ≈ 10, FLAGGED.
+    # Pre-split this pin read 33 (porch full-perimeter 40 on the wall
+    # line); now 31 — delta NAMED, not hidden. Installed 30 stays the
+    # flagged field anomaly — never chased.
     pcs_on, br_on = _j_channel_compute(m_on)
     pcs_off, _ = _j_channel_compute(_boni_measurements(167, 99))
     assert pcs_on < pcs_off
-    assert pcs_on == 33, \
-        f"BONI standard-practice wall-J derives 33 (got {pcs_on}); installed 30 is the flagged field anomaly"
+    assert pcs_on == 31, \
+        f"BONI standard-practice wall-J derives 31 post-split (got {pcs_on}); installed 30 is the flagged field anomaly"
     assert "integral-J" in br_on, "the J line must print its provenance"
     assert "eave/porch-J" in br_on, "the J line must print the channel provenance"
     assert "118 rakes" in br_on, "the garage rake must print inside the J term"
@@ -199,12 +201,24 @@ def test_eave_porch_j_is_family_scoped():
             f"eave/porch-J bled onto LP line: {l.get('name')}"
         assert "j-channel" not in str(l.get("name") or "").lower(), \
             f"LP must carry no J-channel line at all: {l.get('name')}"
-    # FULL PERIMETER (ruled 2026-08-07, supersedes the 3-side 28):
-    # 4 × √99 = 40 LF porch channel, square-assumed, disclosed.
+    # ASSEMBLY SPLIT (ruled 2026-08-07, supersedes full-perimeter-on-wall):
+    # wall-J carries the porch WALL-ABUTTING length only — Boni holds no
+    # real porch dims → square MINIMUM √99 ≈ 10 LF, FLAGGED (an area does
+    # not determine a shape). The FULL-PERIMETER ceiling channel (40)
+    # prints on the Soffit-J line instead.
     pcs, br = _j_channel_compute({**m, "_windows_integral_j": True})
-    assert pcs == 33 and "40 porch ceiling channel" in br
-    assert "FULL PERIMETER" in br and "fascia" in br, \
-        "the porch term must print its convention (guardrail 2)"
+    assert pcs == 31 and "10 porch wall-J MINIMUM" in br
+    assert "wall-side length" in br and "does not determine a shape" in br, \
+        "the wall-J porch term must print the MINIMUM flag (ruled 2026-08-07)"
+    # Soffit-J line carries the ceiling channel at full perimeter.
+    soffit_j = [l for l in lines if l["tab"] == "vinyl"
+                and str(l.get("name") or "").startswith('3/4" Soffit J-Channel')]
+    assert soffit_j, "vinyl Soffit J-Channel line missing"
+    assert soffit_j[0]["qty"] == 26, \
+        f"soffit-J = (167+118+40 porch perimeter)/12.5 = 26, got {soffit_j[0]['qty']}"
+    s_note = str(soffit_j[0].get("note") or "")
+    assert "FULL PERIMETER" in s_note and "porch ceiling channel" in s_note, \
+        "the Soffit-J note must print the ceiling-channel convention"
 
 
 def test_hanger_formula_untouched():

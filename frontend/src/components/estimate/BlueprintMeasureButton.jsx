@@ -131,6 +131,27 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
   // the numbers first, then can flip to 3D for a spatial sanity check.
   const [previewTab, setPreviewTab] = useState("preview");
 
+  // FALSE-PROVENANCE FIX (Howard ruled 2026-08-07, the ladder): the tab
+  // chip asserts the ACTUAL tape state. It can only go green after a
+  // human taped something — nothing presents as TAPED that was not taped.
+  // (The retired chip was a hardcoded green VERIFIED decoration.)
+  const [tapedCount, setTapedCount] = useState(null);
+  React.useEffect(() => {
+    if (!est?.id || !result) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.get(`/estimates/${est.id}/tape-check`, { timeout: 8000 });
+        if (cancelled) return;
+        const walls = Object.values(data?.walls || {}).filter((v) => v != null).length;
+        setTapedCount(walls + (data?.dormers || []).length);
+      } catch {
+        if (!cancelled) setTapedCount(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [est?.id, result]);
+
   // Check for a recoverable run on mount + after the busy flag drops
   // (so a 502 immediately surfaces a recovery offer).
   React.useEffect(() => {
@@ -728,7 +749,11 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   data-testid="blueprint-3d-tab"
                 >
                   {RENDER_3D_ENABLED ? "3D Model" : "Field Verify"}
-                  <span className="text-[9px] px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] tracking-normal">VERIFIED</span>
+                  {tapedCount > 0 ? (
+                    <span data-testid="field-verify-tab-chip-taped" className="text-[9px] px-1.5 py-0.5 bg-[#DCFCE7] text-[#166534] tracking-normal">{t("fv.chip.taped", { n: tapedCount })}</span>
+                  ) : (
+                    <span data-testid="field-verify-tab-chip-nottaped" className="text-[9px] px-1.5 py-0.5 bg-[#FEF3C7] text-[#92400E] tracking-normal">{t("fv.chip.notTaped")}</span>
+                  )}
                 </button>
               </div>
 

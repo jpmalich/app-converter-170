@@ -166,22 +166,37 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   "windows": [
     // Each row in the Window Schedule (or each callout on the floor plan).
     // If both are present, prefer the schedule and dedupe by mark.
+    // PRINTED DIMENSIONS ARE SACRED (ruled 2026-08-07): parse the printed
+    // size string EXACTLY — 3-0x5-0 means 36×60, NEVER a "standard" catalog
+    // size like 38×54. NEVER snap a printed dimension to a catalog size.
+    // If the schedule separately prints a catalog/order size, report it in
+    // catalog_size — BOTH get printed downstream, never one replacing the
+    // other. TYPE ABBREVIATIONS: SH = single_hung, DH = double_hung —
+    // NEVER retype one as the other.
     {"id": "<mark like 'W1' or 'A' or blank>",
-     "width_in": number,                  // parse 3-6 → 42, 3050 → 36, etc.
+     "printed_size": "<the schedule's size string VERBATIM, e.g. '3-0x5-0' or '3050'; empty if only drawn>",
+     "catalog_size": "<a SEPARATELY-printed catalog/order size if the schedule prints one (e.g. '38x54'); empty otherwise — NEVER derived>",
+     "width_in": number,                  // exact parse of printed_size: 3-6 → 42, 3050 → 36×60, 3-0x5-0 → 36×60
      "height_in": number,
      "qty": 1,                            // increment if schedule shows multiple
-     "type_hint": "double_hung|casement|slider|picture|fixed|awning|unknown",
+     "type_hint": "single_hung|double_hung|casement|slider|picture|fixed|awning|unknown",
      "elevation": "front|back|left|right|unknown"  // WHICH elevation sheet shows this opening — match the schedule mark (W1, A…) to the elevation drawings. When qty > 1 spans multiple elevations, split into separate rows per elevation. "unknown" ONLY if the mark appears on no elevation.
     }
   ],
   "doors": [
-    // Same shape as windows, but for exterior doors only (front entry,
-    // patio sliders, garage). Interior doors are IGNORED.
+    // Same shape as windows, but for EXTERIOR doors only (front entry,
+    // patio sliders, garage). INTERIOR doors are NEVER returned — a
+    // 30-32" door deep inside the floor plan (bedroom/bath/closet) is
+    // interior even if it looks like an entry door. A door is EXTERIOR
+    // only when it appears on an ELEVATION drawing or its floor-plan
+    // wall sits on the building's outside line. Name your evidence —
+    // rows with exterior_evidence "none" are dropped and flagged.
     {"id": "<mark>",
      "width_in": number,
      "height_in": number,
      "qty": 1,
      "type_hint": "entry|patio_slider|patio_french|garage|unknown",
+     "exterior_evidence": "elevation|floor_plan_exterior_wall|none",
      "elevation": "front|back|left|right|unknown"  // which elevation sheet shows this door
     }
   ],
@@ -213,7 +228,9 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      "rake_lf": number,            // TOTAL sloped rake edge on this plane. A plane with a GABLE END has rakes — NEVER 0 for a gabled plane. Per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × pitch_rise/12)²). READ THE ELEVATIONS: an attached garage wing with ITS OWN gable — including an intersecting / double gable where the garage roof meets the main roof — contributes rake edges the main-rectangle walk cannot see. If any elevation shows a separate garage gable, that plane's rake_lf MUST come back non-zero.
      "gable_ends": number,          // how many gable ends (triangular end faces) this plane carries: 0 for a hip or shed plane, 1 per gable end. The app reports the total across planes.
      "is_porch": true | false,
-     "porch_ceiling_sqft": number  // porch planes only: ceiling area under the roof (soffit material, read porch depth × length from the floor plan); 0 otherwise
+     "porch_ceiling_sqft": number,  // porch planes only: ceiling area under the roof (soffit material, read porch depth × length from the floor plan); 0 otherwise
+     "porch_width_ft": number | null,  // porch planes only: the porch's PRINTED floor-plan width (the side along the house wall). null when not dimensioned — NEVER derived from the area (an area does not determine a shape, ruled 2026-08-07)
+     "porch_depth_ft": number | null   // porch planes only: PRINTED depth (out from the wall). null when not dimensioned — NEVER √area, never a guess
     }
   ],
   "starter_lf": number,        // full floor-plan PERIMETER in LF — report the RAW perimeter; the app deducts entry-door widths downstream per convention (sliders/patio doors sit on the starter). NOT eaves-only.
@@ -233,13 +250,15 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   ],
   "outside_corner_count": number, // INTEGER. Number of OUTSIDE corner locations on the FULL building outline. See "CORNER COUNTING" rule below.
   "outside_corner_lf": number, // SUM over outside corners of EACH CORNER'S OWN trim height. A 1-story garage-wing corner runs the GARAGE eave height; a 2-story main-body corner runs the FULL height. NEVER count × average height — a material-governing dimension is never averaged (261 Haugh doctrine: the average hides tall corners AND inflates short ones).
-  "outside_corner_heights_ft": [number | null], // PER-CORNER trim heights, ONE entry per outside corner in walk order (ruled 2026-08-06). A corner joins TWO walls — report the TALLER wall's height, run to the EAVE the corner trim dies into. On a GABLE END the corner runs to the EAVE — never an area÷width figure, which lands between eave and ridge. null for a corner no printed dimension resolves — NEVER average or guess it.
+  "outside_corner_heights_ft": [number | null], // PER-CORNER trim heights, ONE entry per outside corner in walk order (ruled 2026-08-06). A corner joins TWO walls — report the TALLER wall's height, run to the EAVE the corner trim dies into. READ A PRINTED DIMENSION (ruled 2026-08-07): NEVER derive a corner height by stacking ceiling heights + floor structure — if your only basis is a calculation rather than a printed dim, return null for that corner and say so in notes. On a GABLE END the corner runs to the EAVE — never an area÷width figure, which lands between eave and ridge. null for a corner no printed dimension resolves — NEVER average or guess it.
   "gutter_runs": [ // GUTTER RUN INVENTORY (ruled 2026-08-06) — each CONTINUOUS eave run that carries gutter, walked along the FACADES. ONE entry per continuous run: where a lower roof's eave (garage bump-out) is flush and continuous with the run beside it, that is ONE run counted ONCE — never re-list a segment inside a run already listed. A porch lists only the eave sides that actually carry gutter. [] when the drawings don't resolve the runs — NEVER invent.
     {"label": "<front|back|left|right|porch|...>", "lf": number}
   ],
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
   "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
   "soffit_sqft": number | null,        // PRINTED soffit/overhang area if the plans state it (eave detail sections, "SOFFIT" callouts, roof plan overhang dims × eave run). null if not printed — do NOT estimate.
+  "eave_overhang_in": number | null,   // PRINTED eave overhang depth (soffit width) in INCHES from an eave detail/section or roof plan dim (e.g. 16). null when the drawings don't dimension it — NEVER a guess, NEVER a typical value. The app flags an undimensioned overhang instead of silently defaulting (ruled 2026-08-07).
+  "fascia_width_in": number | null,    // PRINTED fascia board width in INCHES (e.g. a "1x6 FASCIA" callout → 6). null when not printed — same rule: flag, never default.
   "level_frieze_lf": number | null,    // PRINTED level frieze-board run if the elevations/details call it out. null if not printed.
   "sloped_frieze_lf": number | null,   // PRINTED sloped (rake) frieze-board run. null if not printed.
   "drip_edge_lf": number | null,       // PRINTED drip-edge / roof-edge perimeter from the roof plan. null if not printed.
@@ -641,6 +660,88 @@ def _roof_pass_needed(raw: dict) -> bool:
 # wing corners) was invisible in the material list — this card makes the
 # READ itself visible so Howard verifies geometry by looking.
 # =========================================================================
+def check_read_consistency(raw: dict) -> list[dict]:
+    """INTERNAL CONSISTENCY CHECKER (Howard ruled 2026-08-07): the card
+    arrives already clean — contradictions the app can catch itself never
+    reach the contractor's grade. Compares numbers against OTHER FACTS in
+    the same read, never against a target. Codes:
+      corner_taller_than_wall — a corner cannot exceed the tallest wall it
+        could join; the wall table already holds the right height.
+      corner_lf_not_sum — stated corner LF ≠ sum of its own per-corner
+        heights (a stated total must equal the sum of its parts).
+      gable_census_mismatch — roof-plane gable ends ≠ walls carrying a
+        gable triangle (the garage gable with no wall to live on).
+      box_model — elevations mirror EXACTLY while the footprint proves a
+        projecting wing: the wing's walls are missing from the SSOT.
+      run_exceeds_facade — a labeled gutter run longer than its facade.
+    """
+    flags: list[dict] = []
+    if not isinstance(raw, dict):
+        return flags
+    walls = [w for w in (raw.get("walls") or []) if isinstance(w, dict)]
+
+    def _f(v):
+        try:
+            return float(v or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    wall_heights = [_f(w.get("height_ft")) for w in walls if _f(w.get("height_ft")) > 0]
+    tallest = max(wall_heights) if wall_heights else 0.0
+
+    heights = [h for h in (raw.get("outside_corner_heights_ft") or [])
+               if isinstance(h, (int, float)) and h and h > 0]
+    if heights and tallest > 0:
+        over = [h for h in heights if h > tallest + 0.5]
+        if over:
+            flags.append({
+                "code": "corner_taller_than_wall", "level": "loud",
+                "vars": {"h": f"{max(over):g}", "wall": f"{tallest:g}",
+                         "n": len(over)}})
+
+    oclf = _f(raw.get("outside_corner_lf"))
+    if heights and oclf > 0:
+        hsum = sum(heights)
+        if abs(oclf - hsum) > max(2.0, 0.05 * oclf):
+            flags.append({
+                "code": "corner_lf_not_sum", "level": "loud",
+                "vars": {"lf": f"{oclf:g}", "sum": f"{hsum:g}"}})
+
+    planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
+    plane_gables = sum(int(p.get("gable_ends") or 0) for p in planes)
+    wall_gables = sum(1 for w in walls if _f(w.get("gable_triangle_height_ft")) > 0)
+    if planes and walls and plane_gables != wall_gables:
+        flags.append({
+            "code": "gable_census_mismatch", "level": "loud",
+            "vars": {"planes": plane_gables, "walls": wall_gables}})
+
+    by_label = {str(w.get("label") or "").lower(): w for w in walls}
+    fb, lr = by_label.get("front"), by_label.get("left")
+    bk, rt = by_label.get("back"), by_label.get("right")
+    mirrored = (fb and bk and lr and rt
+                and _f(fb.get("width_ft")) == _f(bk.get("width_ft"))
+                and _f(fb.get("height_ft")) == _f(bk.get("height_ft"))
+                and _f(lr.get("width_ft")) == _f(rt.get("width_ft"))
+                and _f(lr.get("height_ft")) == _f(rt.get("height_ft")))
+    if mirrored:
+        fp = _f(raw.get("footprint_area_sqft"))
+        rect = _f(fb.get("width_ft")) * _f(lr.get("width_ft"))
+        if fp and rect > 0 and fp > rect * 1.02:
+            flags.append({"code": "box_model", "level": "loud", "vars": {}})
+
+    for r in (raw.get("gutter_runs") or []):
+        if not isinstance(r, dict):
+            continue
+        label = str(r.get("label") or "").lower()
+        w = by_label.get(label)
+        if w and _f(w.get("width_ft")) > 0 and _f(r.get("lf")) > _f(w.get("width_ft")) + 1.0:
+            flags.append({
+                "code": "run_exceeds_facade", "level": "loud",
+                "vars": {"label": label, "run": f"{_f(r.get('lf')):g}",
+                         "wall": f"{_f(w.get('width_ft')):g}"}})
+    return flags
+
+
 def build_blueprint_readback(raw: dict | None) -> dict | None:
     if not isinstance(raw, dict) or not raw:
         return None
@@ -744,6 +845,27 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     notes = str(raw.get("notes") or "").strip()
     if notes:
         rail.append({"level": "info", "code": "read_notes", "text": notes})
+    # TRADE-SPEC FIELDS (ruled 2026-08-07): the read fills them or FLAGS
+    # them — a silently-held default never passes as a read value.
+    def _num(v):
+        try:
+            return float(v or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    _ov = _num(raw.get("eave_overhang_in"))
+    if _ov > 0:
+        rail.append({"level": "info", "code": "overhang_printed", "text": f"{_ov:g}"})
+    else:
+        rail.append({"level": "warn", "code": "overhang_default"})
+    _fw = _num(raw.get("fascia_width_in"))
+    if _fw > 0:
+        rail.append({"level": "info", "code": "fascia_printed", "text": f"{_fw:g}"})
+    else:
+        rail.append({"level": "warn", "code": "fascia_default"})
+    _idd = raw.get("_interior_doors_dropped")
+    if _idd:
+        rail.append({"level": "warn", "code": "interior_doors_dropped",
+                     "text": str(_idd)})
 
     return {
         "planes": plane_rows,
@@ -771,6 +893,9 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         "gutter_runs": gutter_runs or None,
         "gutter_runs_total": (round(sum(r["lf"] for r in gutter_runs), 1)
                               if gutter_runs else None),
+        # INTERNAL CONSISTENCY CHECKER (ruled 2026-08-07) — the card
+        # arrives already clean; contradictions are caught HERE.
+        "consistency": check_read_consistency(raw),
         "rail": rail,
     }
 
@@ -912,6 +1037,14 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     walls = raw.get("walls") or []
     windows = raw.get("windows") or []
     doors = raw.get("doors") or []
+    # INTERIOR-DOOR GUARD (Howard ruled 2026-08-07): a door with no
+    # exterior evidence never pollutes the entry-door count — doors drive
+    # J-channel and coil. Dropped rows are COUNTED and FLAGGED, never silent.
+    _interior = [d for d in doors if isinstance(d, dict)
+                 and str(d.get("exterior_evidence") or "").lower() == "none"]
+    if _interior:
+        doors = [d for d in doors if d not in _interior]
+        raw["_interior_doors_dropped"] = len(_interior)
 
     # Shakedown fix (2026-07-14) — pitch-computed gable rise. Printed
     # pitch is the authority; drawing-scaled reads under-state the rise
@@ -1123,6 +1256,15 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             "_osc_heights_source": "blueprint_dimensioned"}
            if _osc_heights else {}),
         **({"_gutter_runs": _agg_gutter_runs} if _agg_gutter_runs else {}),
+        # TRADE-SPEC FIELDS FROM THE READ (ruled 2026-08-07): printed
+        # values land; absent values are FLAGGED on the rail — the app
+        # never silently holds a default as if it were read.
+        **({"_overhang_in_printed": float(raw["eave_overhang_in"])}
+           if raw.get("eave_overhang_in") else {}),
+        **({"fascia_width_in": float(raw["fascia_width_in"]),
+            "_fascia_src": "printed"} if raw.get("fascia_width_in") else {}),
+        **({"_interior_doors_dropped": int(raw["_interior_doors_dropped"])}
+           if raw.get("_interior_doors_dropped") else {}),
         **({"_gable_ends_plane_read": int(raw["_gable_ends_plane_read"])}
            if raw.get("_gable_ends_plane_read") else {}),
         "starter_lf": _starter_lf,
@@ -1252,6 +1394,7 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # them in the AI Measure modal's wall dropdown. Style is derived
     # from `type_hint`.
     _hint_to_style = {
+        "single_hung":  "Single Hung",
         "double_hung": "Double Hung",
         "casement":    "Casement",
         "slider":      "2-Lite Slider",
@@ -1357,6 +1500,14 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         h_in = float(row.get("height_in") or 0)
         mark = str(row.get("id") or "").strip()
         elev = str(row.get("elevation") or "").strip().lower()
+        # PRINT BOTH (ruled 2026-08-07): the printed schedule string is
+        # the authority; a catalog size prints BESIDE it, never over it.
+        printed = str(row.get("printed_size") or "").strip()
+        catalog = str(row.get("catalog_size") or "").strip()
+        label = (f"{mark} · " if mark else "")
+        label += f"{printed} = {w_in:g}×{h_in:g} in" if printed else f"{w_in:g}×{h_in:g} in"
+        if catalog:
+            label += f" · catalog {catalog}"
         return {
             "elevation": elev if elev in _valid_walls else "unknown",
             "type": rtype,
@@ -1364,7 +1515,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             "width_in": w_in,
             "height_in": h_in,
             "count": qty,
-            "size_label": (f"{mark} · " if mark else "") + f"{w_in:g}×{h_in:g} in",
+            "size_label": label,
+            **({"printed_size": printed} if printed else {}),
+            **({"catalog_size": catalog} if catalog else {}),
             "locations": ([{"photo_idx": _sheet_idx, "bbox": None}] if _sheet_idx is not None else []),
             "mark": mark,
             "source": "blueprint_schedule",
@@ -1930,7 +2083,15 @@ async def _execute_ai_blueprint_worker(
         # Annotations already loaded above — pass through to the
         # breakdown overlay so the catalog mapper emits per-profile lines.
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
-        measurements["overhang_in"] = float(overhang_in)
+        # SPEC-FIELD PRECEDENCE (ruled 2026-08-07): a PRINTED overhang
+        # beats the form default; the source is named either way.
+        _printed_ov = measurements.get("_overhang_in_printed")
+        if _printed_ov:
+            measurements["overhang_in"] = float(_printed_ov)
+            measurements["_overhang_src"] = "printed"
+        else:
+            measurements["overhang_in"] = float(overhang_in)
+            measurements["_overhang_src"] = "form_default"
 
         await _set_stage("mapping")
         try:

@@ -66,3 +66,32 @@ def test_ingress_rederive_round_trip(ingress):
                json={"trigger": "ingress-smoke"}, timeout=60)
     assert r.status_code in (200, 409), \
         f"rederive through the ingress broke: {r.status_code}"
+
+
+def test_ingress_spec_field_put_round_trip(ingress):
+    """SPEC-FIELD PUT THROUGH THE PUBLIC URL (Howard ruled 2026-08-07):
+    the integral-J toggle failed EXACTLY here — a PUT that toasted Saved
+    while the ingress path silently stripped the field. This walks a
+    TRADE_SPEC_FAMILY_REGISTER field (overhang_in + fascia_width_in)
+    through create → PUT → re-GET on a THROWAWAY estimate, then deletes it."""
+    s, api = ingress
+    r = s.post(f"{api}/estimates",
+               json={"customer_name": "TEST_ingress_spec_put",
+                     "address": "TEST_ingress_spec_put"}, timeout=20)
+    assert r.status_code == 200, f"create through the ingress broke: {r.status_code}"
+    eid = r.json()["id"]
+    try:
+        r = s.put(f"{api}/estimates/{eid}",
+                  json={"overhang_in": 16, "fascia_width_in": 8},
+                  timeout=30)
+        assert r.status_code == 200, \
+            f"spec-field PUT through the ingress broke: {r.status_code} {r.text[:200]}"
+        got = s.get(f"{api}/estimates/{eid}", timeout=20)
+        assert got.status_code == 200
+        body = got.json()
+        assert float(body.get("overhang_in") or 0) == 16, \
+            "overhang_in did not persist through the public PUT — silent strip"
+        assert float(body.get("fascia_width_in") or 0) == 8, \
+            "fascia_width_in did not persist through the public PUT — silent strip"
+    finally:
+        s.delete(f"{api}/estimates/{eid}", timeout=20)
