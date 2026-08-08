@@ -72,6 +72,8 @@ export const VisualAuditPanel = ({ evidence, pagePaths = [] }) => {
                         className={`text-[10px] font-bold ${
                           s.precision === "exact"
                             ? "text-[#15803D]"
+                            : s.precision === "ocr"
+                            ? "text-[#1D4ED8]"
                             : s.precision === "approximate"
                             ? "text-[#92400E]"
                             : "text-[var(--muted)]"
@@ -80,6 +82,8 @@ export const VisualAuditPanel = ({ evidence, pagePaths = [] }) => {
                       >
                         {s.precision === "exact"
                           ? t("bp.va.exact")
+                          : s.precision === "ocr"
+                          ? t("bp.va.ocrloc")
                           : s.precision === "approximate"
                           ? t("bp.va.approx")
                           : t("bp.va.noloc")}

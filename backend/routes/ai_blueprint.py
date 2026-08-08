@@ -207,29 +207,60 @@ is as unrepresentable as a bare number.
     // PRINTED DIMENSIONS ARE SACRED (ruled 2026-08-07): parse the printed
     // size string EXACTLY — 3-0x5-0 means 36×60, NEVER a "standard" catalog
     // size like 38×54. NEVER snap a printed dimension to a catalog size.
+    // THE SIZE COLUMN GOVERNS (ruled 2026-08-08): when the schedule prints
+    // BOTH a product/unit code (e.g. "SH 3-0_5-0") AND a SIZE column
+    // (e.g. 2'-11 1/2" x 4'-11 1/2"), the SIZE column IS the dimension —
+    // width_in/height_in parse the SIZE column, NEVER the code. Units
+    // commonly print a half inch under the code's nominal; converting the
+    // code (36×60) while 35.5×59.5 sits in the next column violates
+    // printed-dims-sacred. The code is a FAMILY LABEL — use it to
+    // identify the unit, never to compute one. Only when NO size column
+    // exists may the code string be parsed as the size.
+    // SUM MARKS ACROSS SHEETS (ruled 2026-08-08): schedules repeat across
+    // floors (first-floor sheet AND second-floor sheet each carry one).
+    // Read EVERY schedule sheet. The SAME mark on multiple sheets is ONE
+    // mark — one row, counts SUMMED (A: 2 on one sheet + 7 on another =
+    // one row, qty 9), pages listed in schedule_pages. NEVER attach one
+    // mark's dimensions to another mark's letter — re-read the row's own
+    // SIZE cell on each sheet before summing.
     // If the schedule separately prints a catalog/order size, report it in
     // catalog_size — BOTH get printed downstream, never one replacing the
     // other. TYPE ABBREVIATIONS: SH = single_hung, DH = double_hung —
     // NEVER retype one as the other.
     {"id": "<mark like 'W1' or 'A' or blank>",
-     "printed_size": "<the schedule's size string VERBATIM, e.g. '3-0x5-0' or '3050'; empty if only drawn>",
+     "product_code": "<the schedule's product/unit CODE column VERBATIM (e.g. 'SH 3-0_5-0'); empty if none — a FAMILY LABEL, never a dimension source>",
+     "printed_size": "<the schedule's SIZE column VERBATIM (e.g. 2'-11 1/2\" x 4'-11 1/2\") when one exists; otherwise the code-style size string ('3-0x5-0'/'3050'); empty if only drawn>",
      "catalog_size": "<a SEPARATELY-printed catalog/order size if the schedule prints one (e.g. '38x54'); empty otherwise — NEVER derived>",
-     "width_in": number,                  // exact parse of printed_size: 3-6 → 42, 3050 → 36×60, 3-0x5-0 → 36×60
+     "width_in": number,                  // exact parse of printed_size: 2'-11 1/2" → 35.5; 3-6 → 42; 3050 → 36×60 — the SIZE column when printed, the code only when it is all there is
      "height_in": number,
-     "qty": 1,                            // increment if schedule shows multiple
+     "qty": 1,                            // TOTAL across ALL schedule sheets for this mark
+     "schedule_pages": [<1-based sheet numbers whose schedule lists this mark>],
      "type_hint": "single_hung|double_hung|casement|slider|picture|fixed|awning|unknown",
      "elevation": "front|back|left|right|unknown"  // WHICH elevation sheet shows this opening — match the schedule mark (W1, A…) to the elevation drawings. When qty > 1 spans multiple elevations, split into separate rows per elevation. "unknown" ONLY if the mark appears on no elevation.
     }
   ],
   "doors": [
     // Same shape as windows, but for EXTERIOR doors only (front entry,
-    // patio sliders, garage). INTERIOR doors are NEVER returned — a
-    // 30-32" door deep inside the floor plan (bedroom/bath/closet) is
-    // interior even if it looks like an entry door. A door is EXTERIOR
-    // only when it appears on an ELEVATION drawing or its floor-plan
-    // wall sits on the building's outside line. Name your evidence —
-    // rows with exterior_evidence "none" are dropped and flagged.
+    // patio sliders, garage). INTERIOR doors are NEVER returned.
+    // THE PRODUCT-CODE COLUMN IS THE EXCLUSION SIGNAL (ruled 2026-08-08):
+    // read the schedule's product/description column — "HOLLOW CORE",
+    // "H DWL CORE", "Garage to House", closet/bifold/pocket wording =
+    // INTERIOR, dropped, regardless of what the mark prefix looks like.
+    // NEVER infer interior/exterior from the mark alone. A door is
+    // EXTERIOR only when its row says an exterior product (entry/6-panel
+    // front, sliding glass, garage SONOMA…), it appears on an ELEVATION
+    // drawing, or its floor-plan wall sits on the building's outside
+    // line. Name your evidence — rows with exterior_evidence "none" are
+    // dropped and flagged.
+    // DOOR SIZES COME FROM PRINT (ruled 2026-08-08): transcribe the
+    // schedule's printed size VERBATIM into printed_size and parse it
+    // into width_in/height_in. "Appears to be 16x7" is an ADMISSION OF
+    // NO SOURCE — if no schedule row and no printed dim gives the size,
+    // set width_in/height_in null. A guessed door size must never reach
+    // the takeoff (garage doors print 8'-0" tall more often than the 7'
+    // a guess reaches for).
     {"id": "<mark>",
+     "printed_size": "<the door schedule's printed size VERBATIM (e.g. 16'-0\" x 8'-0\"); empty if the drawing prints none>",
      "width_in": number,
      "height_in": number,
      "qty": 1,
@@ -392,7 +423,10 @@ A. PREFER PRINTED DIMS OVER ESTIMATION. If the floor plan shows "32'-0\""
 B. WINDOW / DOOR SCHEDULE WINS. If a schedule sheet is present, the
    `windows` and `doors` arrays must reflect THE SCHEDULE exactly — same
    quantities, same RO sizes. The floor-plan callouts are only the
-   tie-breaker when the schedule omits a mark.
+   tie-breaker when the schedule omits a mark. Schedules SPAN SHEETS:
+   each floor's plan sheet may carry its own schedule — read them ALL
+   and sum counts BY MARK across sheets (one row per mark, total qty);
+   a per-sheet mark is not a distinct mark.
 
 C. PARSE "3-6 5-0" AS WIDTH-HEIGHT IN FEET-INCHES. The first pair is
    ALWAYS width, the second pair is ALWAYS height. Convert each pair to
@@ -715,30 +749,45 @@ def _roof_pass_needed(raw: dict) -> bool:
 # =========================================================================
 def _parse_printed_size(s: str) -> tuple[float, float] | None:
     """Parse a schedule size string to (w_in, h_in). Handles 3-0x5-0,
-    3050, 3'-0\" x 5'-0\", 2-4_5-4. Returns None when unparseable —
-    NEVER guesses (a bad parse is worse than no check)."""
+    3050, 3'-0\" x 5'-0\", 2-4_5-4 and SIZE-column feet-inch-fraction
+    strings (2'-11 1/2\" x 4'-11 1/2\" → 35.5×59.5 — ruled 2026-08-08:
+    the SIZE column governs, so its format must parse). Returns None
+    when unparseable — NEVER guesses (a bad parse is worse than no
+    check)."""
     txt = str(s or "").strip().upper()
     if not txt:
         return None
-    txt = re.sub(r"[A-Z]+", " ", txt).strip()
+    txt = txt.replace("×", "X")
+    # Strip letter runs (SH, DH prefixes) but KEEP the standalone X
+    # separator — stripping it first would shred "2'-11 1/2\" x 4'-11 1/2\"".
+    txt = re.sub(r"\b(?!X\b)[A-Z]+\b", " ", txt).strip()
     m = re.match(r"^(\d{2})(\d{2})$", txt.replace(" ", ""))
     if m:
         return (float(m.group(1)[0]) * 12 + float(m.group(1)[1]),
                 float(m.group(2)[0]) * 12 + float(m.group(2)[1]))
-    parts = [p for p in re.split(r"\s*[X×_]\s*|\s+", txt) if p]
-    if len(parts) != 2:
-        return None
-    dims = []
-    for p in parts:
-        pm = re.match(r"^\s*(\d+)\s*['\-]+\s*(\d+)", p)
+
+    def _part_to_inches(p: str) -> float | None:
+        pm = re.match(r"^\s*(\d+)\s*['\-]+\s*(\d+)(?:\s+(\d+)\s*/\s*(\d+))?\s*[\"”]?\s*$", p)
         if pm:
-            dims.append(float(pm.group(1)) * 12 + float(pm.group(2)))
-            continue
-        pm = re.match(r"^\s*(\d+(?:\.\d+)?)\s*$", p)
+            v = float(pm.group(1)) * 12 + float(pm.group(2))
+            if pm.group(3):
+                v += float(pm.group(3)) / float(pm.group(4))
+            return v
+        pm = re.match(r"^\s*(\d+(?:\.\d+)?)\s*[\"”]?\s*$", p)
         if pm:
             v = float(pm.group(1))
-            dims.append(v * 12 if v < 12 else v)
-            continue
+            return v * 12 if v < 12 else v
+        return None
+
+    # Explicit separators first — whitespace splitting would shred a
+    # fraction like 2'-11 1/2".
+    parts = [p for p in re.split(r"\s*[X_]\s*", txt) if p.strip()]
+    if len(parts) != 2:
+        parts = [p for p in re.split(r"\s+", txt) if p]
+    if len(parts) != 2:
+        return None
+    dims = [_part_to_inches(p) for p in parts]
+    if None in dims:
         return None
     return (dims[0], dims[1])
 
@@ -965,6 +1014,93 @@ def _exact_locate_evidence(evidence: dict, source_files: list,
                 continue
     finally:
         doc.close()
+
+
+_OCR_ENGINE = None
+
+
+def _get_ocr_engine():
+    global _OCR_ENGINE
+    if _OCR_ENGINE is None:
+        from rapidocr_onnxruntime import RapidOCR
+        _OCR_ENGINE = RapidOCR()
+    return _OCR_ENGINE
+
+
+def _ocr_norm(s: str) -> str:
+    """Print-vs-OCR glyph noise (58'-0\" reads back as 58-0°) dies under
+    alphanumeric-only normalisation."""
+    return re.sub(r"[^0-9A-Za-z]", "", str(s or "")).upper()
+
+
+def _ocr_index_page(img_bytes: bytes):
+    """Local OCR over one retained page raster → (w, h, [(norm, raw,
+    (x0,y0,x1,y1)), ...])."""
+    import numpy as np
+    with Image.open(io.BytesIO(img_bytes)) as im:
+        w, h = im.size
+        arr = np.array(im.convert("RGB"))
+    res, _elapse = _get_ocr_engine()(arr)
+    runs = []
+    for box, text, _score in (res or []):
+        xs = [p[0] for p in box]
+        ys = [p[1] for p in box]
+        nt = _ocr_norm(text)
+        if nt:
+            runs.append((nt, str(text), (min(xs), min(ys), max(xs), max(ys))))
+    return w, h, runs
+
+
+def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> None:
+    """OCR-FOR-COORDINATES (Howard ruled 2026-08-08, live-fire item 2
+    PARTIAL — 1 box in 22): local OCR over the retained page rasters,
+    every text run indexed with its box, the model's VERBATIM quote
+    matched to the OCR box. HARD SEPARATION, THE RULING: OCR SUPPLIES
+    LOCATION, NEVER VALUE. It is never promoted to ground truth (the
+    three-class probe rule stands); the model still does the reading —
+    this function touches loc/precision ONLY, never v or from.
+    FREE SECOND READ: a quote OCR cannot find on its page is a NAMED
+    contradiction (_ocr_quote_misses) — two independent reads of the
+    same pixels disagreeing, resolved toward neither."""
+    if not isinstance(evidence, dict) or not evidence:
+        return
+    wanted: dict[int, list] = {}
+    for path, ev in evidence.items():
+        if not isinstance(ev, dict):
+            continue
+        for s in (ev.get("srcs") or [ev]):
+            if not isinstance(s, dict) or s.get("precision") == "exact":
+                continue
+            page = s.get("page")
+            nq = _ocr_norm(s.get("from"))
+            if isinstance(page, int) and 1 <= page <= len(image_payloads) and len(nq) >= 3:
+                wanted.setdefault(page, []).append((path, s, nq))
+    if not wanted:
+        return
+    misses = []
+    for page, entries in wanted.items():
+        try:
+            w, h, runs = _ocr_index_page(image_payloads[page - 1])
+        except Exception:
+            logger.exception("[ai-blueprint] OCR failed on page %s — quote anchors stand", page)
+            continue
+        for path, s, nq in entries:
+            cands = [r for r in runs if r[0] == nq]
+            if not cands:
+                cands = [r for r in runs if nq in r[0] and len(r[0]) <= len(nq) + 6]
+            if cands:
+                cands.sort(key=lambda r: len(r[0]))
+                x0, y0, x1, y1 = cands[0][2]
+                s["loc"] = {"x_pct": round(x0 / w * 100, 2),
+                            "y_pct": round(y0 / h * 100, 2),
+                            "w_pct": round(max(x1 - x0, 1) / w * 100, 2),
+                            "h_pct": round(max(y1 - y0, 1) / h * 100, 2)}
+                s["precision"] = "ocr"
+            else:
+                misses.append({"path": path, "page": page,
+                               "from": str(s.get("from") or "")})
+    if misses:
+        raw["_ocr_quote_misses"] = misses
 
 
 def compute_read_stability(prev_raw: dict, raw: dict) -> dict:
@@ -1236,6 +1372,43 @@ def check_read_consistency(raw: dict) -> list[dict]:
                          "parsed": f"{pw:g}×{ph:g}",
                          "carried": f"{_f(win.get('width_in')):g}×{_f(win.get('height_in')):g}"}})
 
+    # CROSS-SHEET MARK MERGE (Howard's Mark B finding, 2026-08-08): the
+    # "SH 2-4_3-4 → 28×40" was D's dimensions attached to B's mark. The
+    # signature is one mark carrying two different printed sizes — the
+    # flag names it; a human resolves it against the schedule sheets.
+    _mark_sizes: dict[str, set] = {}
+    for win in (raw.get("windows") or []):
+        if not isinstance(win, dict):
+            continue
+        mk = str(win.get("id") or "").strip().upper()
+        ps = str(win.get("printed_size") or "").strip()
+        if mk and ps:
+            _mark_sizes.setdefault(mk, set()).add(ps)
+    for mk, sizes in sorted(_mark_sizes.items()):
+        if len(sizes) > 1:
+            flags.append({
+                "code": "mark_size_conflict", "level": "loud",
+                "vars": {"mark": mk, "sizes": " vs ".join(sorted(sizes))}})
+
+    # DOOR SIZES FROM PRINT (ruled 2026-08-08): "appears to be 16x7" is
+    # an admission of no source. When a door row quotes a printed size,
+    # the carried numbers must reproduce its parse — same discipline as
+    # windows.
+    for d in (raw.get("doors") or []):
+        if not isinstance(d, dict):
+            continue
+        parsed = _parse_printed_size(d.get("printed_size"))
+        if not parsed:
+            continue
+        pw, ph = parsed
+        if abs(pw - _f(d.get("width_in"))) >= 2 or abs(ph - _f(d.get("height_in"))) >= 2:
+            flags.append({
+                "code": "door_size_parse_mismatch", "level": "loud",
+                "vars": {"mark": str(d.get("id") or "?"),
+                         "printed": str(d.get("printed_size") or ""),
+                         "parsed": f"{pw:g}×{ph:g}",
+                         "carried": f"{_f(d.get('width_in')):g}×{_f(d.get('height_in')):g}"}})
+
     for r in (raw.get("gutter_runs") or []):
         if not isinstance(r, dict):
             continue
@@ -1385,6 +1558,18 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             _shown += f" +{len(_nulled) - 8} more"
         rail.append({"level": "loud", "code": "dims_nulled_no_evidence",
                      "text": _shown})
+    # OCR CONTRADICTION (ruled 2026-08-08 — the free second read): the
+    # model quotes a printed string; a machine text-read of the same
+    # page cannot find it. Two independent reads of the same pixels
+    # disagree — NAMED, resolved toward neither.
+    _om = raw.get("_ocr_quote_misses") or []
+    if _om:
+        _shown_om = "; ".join(f"\u201c{m.get('from')}\u201d (sheet {m.get('page')})"
+                              for m in _om[:8])
+        if len(_om) > 8:
+            _shown_om += f" (+{len(_om) - 8} more)"
+        rail.append({"level": "warn", "code": "ocr_quote_miss",
+                     "text": _shown_om})
     # SOFFIT FINISH IS STATED ON THE DRAWING (ruled 2026-08-08): the
     # vented-vs-solid steer reads or flags — never a silent default.
     _sf = raw.get("soffit_finish") or {}
@@ -2670,6 +2855,16 @@ async def _execute_ai_blueprint_worker(
                                    (run_meta or {}).get("source_probe"))
         except Exception:
             logger.exception("[ai-blueprint] exact-locate failed — approximate boxes stand")
+        # OCR-FOR-COORDINATES (ruled 2026-08-08): deterministic, local,
+        # no extra model call. LOCATION ONLY — never value. Runs off the
+        # event loop; failure never sinks the run.
+        try:
+            if raw.get("_dim_evidence"):
+                await asyncio.to_thread(_ocr_locate_evidence,
+                                        raw["_dim_evidence"],
+                                        image_payloads, raw)
+        except Exception:
+            logger.exception("[ai-blueprint] ocr-locate failed — quote-only anchors stand")
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
         # SPEC-FIELD PRECEDENCE (ruled 2026-08-07): a PRINTED overhang
         # beats the form default; the source is named either way.
