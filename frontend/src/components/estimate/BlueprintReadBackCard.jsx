@@ -6,6 +6,7 @@
 import React from "react";
 import { AlertTriangle, CheckCircle2, XCircle, Info } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import VisualAuditPanel from "@/components/estimate/VisualAuditPanel";
 
 const num = (v) => (v == null ? "—" : Math.round(v * 10) / 10);
 
@@ -86,6 +87,11 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
           {stability.abstained?.length > 0 && (
             <Flag level="warn" testid="bp-rb-stability-abstained">
               {t("bp.rb.stability.abstained", { text: stability.abstained.join(", ") })}
+            </Flag>
+          )}
+          {stability.evidenced_not_comparable && (
+            <Flag level="info" testid="bp-rb-stability-not-comparable">
+              {t("bp.rb.stability.notComparable")}
             </Flag>
           )}
         </div>

@@ -121,6 +121,25 @@ def test_evidenced_values_disagreeing_flag():
     e = next(x for x in s["evidenced"] if x["name"] == "walls.back.height_ft")
     assert e["within"] is False
     assert s["stable"] is False
+    assert s["evidenced_not_comparable"] is False
+
+
+def test_a_pre_register_read_is_named_not_miscounted_as_instability():
+    """LIVE-FIRE FINDING (2026-08-08, run 82bd3a5e vs a6e723af): the
+    earlier read predates the evidence register, so every per-path
+    compare came back (None, value) — 22 false 'disagreements' that were
+    schema vintage, not read drift. The gap is NAMED; counts and dims
+    still compare; the per-path table stays empty rather than lying."""
+    prev = _boni()                      # no register at all
+    curr = _walled({"v": 20.5, "page": 3, "from": "20'-6\""})
+    s = compute_read_stability(prev, curr)
+    assert s["evidenced"] == [], "no false per-path disagreements"
+    assert s["evidenced_not_comparable"] is True
+    assert any(c["name"] == "outside corners" for c in s["counts"]), \
+        "counts still compare across vintages"
+    strings = (Path(__file__).resolve().parents[2]
+               / "frontend/src/lib/dictionaries.js").read_text(encoding="utf-8")
+    assert strings.count('"bp.rb.stability.notComparable"') == 2, "EN+ES"
 
 
 # ---- wiring pins ----

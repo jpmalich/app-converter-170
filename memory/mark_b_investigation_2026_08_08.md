@@ -47,3 +47,53 @@ is BETWEEN runs, which only the two-read gate (now built) can catch.
 ## PURITY
 None of 28×48 / 28×64 / 28×40 was made a constant, default, or test
 target. The converter's pins use synthetic strings.
+
+---
+
+# RESOLUTION + PROVENANCE CORRECTION (Howard read sheet 6, 2026-08-08)
+
+## PROVENANCE CORRECTION (owned)
+This report's line "Howard reports the plan prints 28×48" was WRONG
+ATTRIBUTION. The 28×48 came off the app's own 4:06 PM read-back card
+(run e633ca8d era) — an app-generated number attributed to a human.
+It was never three sources disagreeing; it was THREE APP READS
+disagreeing with no human anywhere in it. RULED: never attribute a
+number to Howard that came out of the app. A figure whose origin cannot
+be named has no source.
+
+## MARK B RESOLVED FROM THE PRINTED SHEET (Howard's transcription)
+Sheet 6 window schedule:
+  A · SH 3-0_5-0 · SIZE 2'-11 1/2" x 4'-11 1/2" · count 2 · egress yes
+  B · SH 3-0_4-0 · SIZE 2'-11 1/2" x 3'-11 1/2" · count 1 · egress NO
+  C · SH 3-0_5-6 · SIZE 2'-11 1/2" x 5'-5 1/2" · count 5 · egress yes
+All Pella Encompass Single Hung. ALL THREE APP READS WERE WRONG on B
+(2-4_5-4 / 2-4_3-4 / 28x48 — none printed). Every read also missed the
+width glyph: all three marks are 3-0 wide. The converter was never the
+problem; the transcription was.
+
+## NEW RULING: THE SIZE COLUMN GOVERNS
+The schedule prints the real dimension BESIDE the code — every unit
+half an inch under nominal (35.5×59.5, 35.5×47.5, 35.5×65.5). The
+product code is a FAMILY LABEL, not a dimension. Read the SIZE column;
+use the code only to identify the unit. (Printed-dims-sacred was being
+violated by converting a label.)
+
+## SHEET 7 ANSWERED (agent vision transcription of the RETAINED page
+image bp_05f61f9d... — this is an AI read of a scan, named as such,
+not tape):
+  Sheet title: SECOND FLOOR PLAN. It carries its OWN schedules.
+  WINDOW SCHEDULE: A · SH 3-0_5-0 · 2'-11 1/2" x 4'-11 1/2" · count 7
+                   D · SH 2-4_3-6 · 2'-3 1/4" x 3'-5 1/2" · count 1
+  DOOR SCHEDULE: marks 5–15, ALL "H DWL CORE" (hollow core) interior.
+  → Two-sheet schedule total: 8 (first) + 8 (second) = 16 units.
+  → A mark D EXISTS that no app read ever carried; D is the only 2-4
+    family on the job — consistent with the reads' 2-4 glyph confusion
+    on B, reported as observation only.
+  → App reads reported 21–28 total: still ABOVE the 16 the schedules
+    hold. DISAGREEMENT REPORTED — needs Howard's eye on sheet 7 to
+    confirm my transcription before the count is treated as resolved.
+
+## PURITY
+SH 3-0_4-0 · 35.5×47.5 · 35.5×59.5 · 35.5×65.5 · 192×96 · 108×96 ·
+counts 2/1/5 · sheet-7 rows — evidence for rulings, never constants,
+defaults, or assertion targets.

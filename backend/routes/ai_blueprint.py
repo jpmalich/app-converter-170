@@ -1032,25 +1032,33 @@ def compute_read_stability(prev_raw: dict, raw: dict) -> dict:
 
     # Evidenced dims — the per-path register where the guesses used to
     # live. A path evidenced in one read and abstained in the other is a
-    # disagreement, never a silent drop.
+    # disagreement, never a silent drop. COMPARABILITY (live-fire finding
+    # 2026-08-08): a run from BEFORE the evidence register carries no
+    # per-path values at all — comparing against it would print dozens of
+    # false "disagreements" that are really schema vintage. That gap is
+    # NAMED, never miscounted as instability.
     ev_a = prev_raw.get("_dim_evidence") or {}
     ev_b = raw.get("_dim_evidence") or {}
+    un_a_l = (prev_raw.get("_dim_unread") or []) + (prev_raw.get("_nulled_no_evidence") or [])
+    un_b_l = (raw.get("_dim_unread") or []) + (raw.get("_nulled_no_evidence") or [])
+    prev_has_register = bool(ev_a or un_a_l)
+    curr_has_register = bool(ev_b or un_b_l)
     evidenced = []
-    for path in sorted(set(ev_a) | set(ev_b)):
-        a = (ev_a.get(path) or {}).get("v") if isinstance(ev_a.get(path), dict) else None
-        b = (ev_b.get(path) or {}).get("v") if isinstance(ev_b.get(path), dict) else None
-        if a is None and b is None:
-            continue
-        evidenced.append({"name": path, "a": a, "b": b,
-                          "within": (a is not None and b is not None
-                                     and _tol_ok(float(a), float(b)))})
-    # Stably abstained — both reads returned null on the same path.
-    un_a = set(prev_raw.get("_dim_unread") or []) | set(prev_raw.get("_nulled_no_evidence") or [])
-    un_b = set(raw.get("_dim_unread") or []) | set(raw.get("_nulled_no_evidence") or [])
-    abstained += sorted((un_a & un_b) - set(ev_a) - set(ev_b))
+    if prev_has_register and curr_has_register:
+        for path in sorted(set(ev_a) | set(ev_b)):
+            a = (ev_a.get(path) or {}).get("v") if isinstance(ev_a.get(path), dict) else None
+            b = (ev_b.get(path) or {}).get("v") if isinstance(ev_b.get(path), dict) else None
+            if a is None and b is None:
+                continue
+            evidenced.append({"name": path, "a": a, "b": b,
+                              "within": (a is not None and b is not None
+                                         and _tol_ok(float(a), float(b)))})
+        # Stably abstained — both reads returned null on the same path.
+        abstained += sorted((set(un_a_l) & set(un_b_l)) - set(ev_a) - set(ev_b))
 
     return {"counts": counts, "dims": dims, "evidenced": evidenced,
             "abstained": abstained,
+            "evidenced_not_comparable": not (prev_has_register and curr_has_register),
             "stable": (all(c["match"] for c in counts)
                        and all(d["within"] for d in dims)
                        and all(e["within"] for e in evidenced))}
