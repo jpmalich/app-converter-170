@@ -141,7 +141,10 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      // porch section), report EACH horizontal section at ITS OWN eave
      // height. Segment widths MUST sum to width_ft. Siding a 10-foot
      // garage wall at the main body's height over-orders every low
-     // section on the house. Return [] ONLY when the elevation truly
+     // section on the house. A section whose height is NOT dimensioned
+     // on the drawing returns "height_ft": null — FLAG, never a guess
+     // (first ruled on an undimensioned back garage wall, 2026-08-08).
+     // Return [] ONLY when the elevation truly
      // shows one uniform eave height across the whole wall.
      "height_segments": [
        {"label": "<e.g. 'main body', 'garage wing', 'porch section'>",
@@ -276,7 +279,22 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   "sloped_frieze_lf": number | null,   // PRINTED sloped (rake) frieze-board run. null if not printed.
   "drip_edge_lf": number | null,       // PRINTED drip-edge / roof-edge perimeter from the roof plan. null if not printed.
   "total_trim_sqft": number | null,    // PRINTED trim area if a trim schedule/table states it. null if not printed.
-  "footprint_area_sqft": number | null, // PRINTED floor-plan footprint area (e.g. "1,842 SF"). null if not printed.
+  "footprint_area_sqft": number | null, // GROUND-FLOOR FOOTPRINT ONLY: first-floor area + attached garage, read from the floor plan or the labelled area rows. NEVER the "TOTAL FINISHED" / living-area figure — that SUMS STOREYS and is not a footprint (category error ruled 2026-08-08). null if not printed.
+  "area_table": {                       // The printed AREA table, each row read AS LABELLED — never one quantity read as another (ruled 2026-08-08).
+    "total_finished_sqft": number | null,
+    "first_floor_sqft": number | null,
+    "second_floor_sqft": number | null,
+    "garage_sqft": number | null,
+    "porch_sqft": number | null
+  },
+  "soffit_finish": {                    // Soffit finish ANNOTATIONS (e.g. "VENTED SOFFIT (EAVES) (TYP)", "SOLID SOFFIT (RAKE) (TYP)"). This is the vented-vs-solid steer STATED ON THE DRAWING — read it, never default it (ruled 2026-08-08). null when the drawings don't state it.
+    "eaves": "vented" | "solid" | null,
+    "rakes": "vented" | "solid" | null,
+    "source_note": "<the annotation text verbatim; empty if none>"
+  },
+  "overhang_notes": [                   // Overhang is PER-LOCATION: report EVERY dimensioned overhang and every no-overhang annotation (e.g. 12 at the garage eave; "FASCIA ONLY NO OVERHANG" on an elevation → overhang_in 0). One default cannot cover a house that varies (ruled 2026-08-08).
+    {"where": "<elevation/section, e.g. 'garage eave'>", "overhang_in": number, "text": "<annotation verbatim>"}
+  ],
   "address": "<project address from the title block, verbatim; empty string if none printed>",
   "opening_facade_assignments": [      // ONLY if the plans EXPLICITLY assign an opening to a facade MATERIAL (e.g. a window drawn inside a hatched BRICK/STONE region with a material callout): {"id": "<mark>", "facade": "siding|stucco|brick|stone|metal|other"}. NEVER infer from elevation, type, or height — if the plans do not state it, return []. (Class C — R6 sealed 2026-07-28)
   ],
@@ -703,6 +721,25 @@ def _parse_printed_size(s: str) -> tuple[float, float] | None:
     return (dims[0], dims[1])
 
 
+def _read_footprint_sqft(raw: dict) -> float:
+    """CATEGORY DISCIPLINE (Howard's correction 3, ruled 2026-08-08): the
+    wing check compared 2351 — TOTAL FINISHED LIVING, storeys summed —
+    against a wall rectangle. Labelled quantities read as labelled:
+    footprint = first floor + attached garage when the area table holds
+    them; the flat footprint field only otherwise."""
+    at = raw.get("area_table") or {}
+
+    def _f(v):
+        try:
+            return float(v or 0)
+        except (TypeError, ValueError):
+            return 0.0
+    ff = _f(at.get("first_floor_sqft"))
+    if ff > 0:
+        return ff + _f(at.get("garage_sqft"))
+    return _f(raw.get("footprint_area_sqft"))
+
+
 def check_read_consistency(raw: dict) -> list[dict]:
     """INTERNAL CONSISTENCY CHECKER (Howard ruled 2026-08-07): the card
     arrives already clean — contradictions the app can catch itself never
@@ -736,8 +773,19 @@ def check_read_consistency(raw: dict) -> list[dict]:
     # PER-WALL SEGMENTS (ruled 2026-08-07): segment widths must sum to
     # the wall width — a mismatched walk is named, and the siding math
     # falls back to the rectangle rather than consuming corrupt segments.
+    # An UNDIMENSIONED section (height null — the drawing holds no
+    # number) is a FLAG, never a guess (ruled 2026-08-08).
     for w in walls:
         segs = [s for s in (w.get("height_segments") or []) if isinstance(s, dict)]
+        undim_segs = [s for s in segs
+                      if _f(s.get("width_ft")) > 0 and _f(s.get("height_ft")) <= 0]
+        if undim_segs:
+            flags.append({
+                "code": "wall_segment_undimensioned", "level": "warn",
+                "vars": {"label": str(w.get("label") or "?"),
+                         "section": str(undim_segs[0].get("label") or "?"),
+                         "n": len(undim_segs)}})
+            continue
         sw = sum(_f(s.get("width_ft")) for s in segs
                  if _f(s.get("width_ft")) > 0 and _f(s.get("height_ft")) > 0)
         ww = _f(w.get("width_ft"))
@@ -782,15 +830,24 @@ def check_read_consistency(raw: dict) -> list[dict]:
                 and _f(lr.get("width_ft")) == _f(rt.get("width_ft"))
                 and _f(lr.get("height_ft")) == _f(rt.get("height_ft")))
     if mirrored:
-        fp = _f(raw.get("footprint_area_sqft"))
+        fp = _read_footprint_sqft(raw)
         rect = _f(fb.get("width_ft")) * _f(lr.get("width_ft"))
         if fp and rect > 0 and fp > rect * 1.02:
             flags.append({"code": "box_model", "level": "loud", "vars": {}})
     # ABSENCE IS NAMED (Howard's grade 2026-08-07: "the footprint check
     # is absent from this card — why did it stop firing?"): no printed
     # footprint captured → the wing check CANNOT run, and the card says so.
-    if walls and not _f(raw.get("footprint_area_sqft")):
+    if walls and not _read_footprint_sqft(raw):
         flags.append({"code": "footprint_missing", "level": "warn", "vars": {}})
+    # CATEGORY SELF-CATCH (ruled 2026-08-08): a footprint equal to the
+    # TOTAL FINISHED figure while a second storey exists read storeys
+    # summed as ground area.
+    at = raw.get("area_table") or {}
+    tf, sf = _f(at.get("total_finished_sqft")), _f(at.get("second_floor_sqft"))
+    fp_flat = _f(raw.get("footprint_area_sqft"))
+    if fp_flat > 0 and tf > 0 and sf > 0 and abs(fp_flat - tf) < 1.0:
+        flags.append({"code": "footprint_is_total_finished", "level": "loud",
+                      "vars": {"fp": f"{fp_flat:g}", "tf": f"{tf:g}"}})
 
     # PORCH SELF-CONSISTENCY (ruled 2026-08-07): a porch's gutter run
     # must equal its printed width; stated dims must reproduce the
@@ -888,7 +945,10 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     widths = {str(w.get("label") or ""): float(w.get("width_ft") or 0) for w in walls}
     rect = (max(widths.get("front", 0), widths.get("back", 0))
             * max(widths.get("left", 0), widths.get("right", 0)))
-    fp = raw.get("footprint_area_sqft")
+    # Correction 3 (ruled 2026-08-08): labelled quantities read as
+    # labelled — the footprint is ground-floor + garage, never TOTAL
+    # FINISHED with storeys summed.
+    fp = _read_footprint_sqft(raw) or None
     wing_flag = bool(fp and rect > 0 and float(fp) > rect * 1.02)
 
     # ---- per-corner heights (ruled 2026-08-06 — grade before apply) ----
@@ -973,6 +1033,37 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     if _idd:
         rail.append({"level": "warn", "code": "interior_doors_dropped",
                      "text": str(_idd)})
+    # SOFFIT FINISH IS STATED ON THE DRAWING (ruled 2026-08-08): the
+    # vented-vs-solid steer reads or flags — never a silent default.
+    _sf = raw.get("soffit_finish") or {}
+    _sfe = str(_sf.get("eaves") or "").strip().lower()
+    _sfr = str(_sf.get("rakes") or "").strip().lower()
+    if _sfe or _sfr:
+        rail.append({"level": "info", "code": "soffit_finish_printed",
+                     "text": " · ".join(x for x in (
+                         f"eaves {_sfe}" if _sfe else "",
+                         f"rakes {_sfr}" if _sfr else "") if x)})
+    else:
+        rail.append({"level": "warn", "code": "soffit_finish_default"})
+    # OVERHANG IS PER-LOCATION (ruled 2026-08-08): distinct values —
+    # including a printed NO-OVERHANG — mean one default can't cover
+    # the house.
+    _onotes = [n for n in (raw.get("overhang_notes") or []) if isinstance(n, dict)]
+    _ovals = set()
+    for n in _onotes:
+        try:
+            _ovals.add(float(n.get("overhang_in") if n.get("overhang_in") is not None else -1))
+        except (TypeError, ValueError):
+            continue
+    _ovals.discard(-1.0)
+    if len(_ovals) > 1 or (_ovals and 0.0 in _ovals):
+        rail.append({"level": "warn", "code": "overhang_varies",
+                     "text": "; ".join(
+                         f"{str(n.get('where') or '?')}: "
+                         + (f"{float(n.get('overhang_in')):g}\""
+                            if n.get('overhang_in') not in (None, "") else "?")
+                         + (f" ({n.get('text')})" if n.get("text") else "")
+                         for n in _onotes)})
 
     return {
         "planes": plane_rows,

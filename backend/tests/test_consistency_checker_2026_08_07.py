@@ -6,8 +6,9 @@ after, I grade contradictions the app could have caught itself."
 The checker compares a read's numbers against OTHER FACTS IN THE SAME
 READ — never against a target, never against an installed list (purity
 rider). Pins one flag per Boni-graded contradiction class:
-  1. corner_taller_than_wall — the 20.5'-corner-vs-18'-wall class. The
-     app already held the right height in the wall table (1044/58 = 18).
+  1. corner_taller_than_wall — two reads disagreeing about one house
+     (CORRECTED 2026-08-08: the flag was right, the wall table was the
+     wrong side; the flag resolves toward NEITHER source).
   2. corner_lf_not_sum — the 188-vs-141 class.
   3. gable_census_mismatch — 3 plane gables vs 2 walls (the garage gable
      with no wall to live on).
@@ -60,6 +61,11 @@ def test_clean_read_raises_no_flags():
 
 
 def test_corner_cannot_exceed_the_tallest_wall():
+    """CORRECTED 2026-08-08 (Howard: the wall table's height was the
+    WRONG one; the corner ledger was right). The INCONSISTENCY flag was
+    correct — only resolution language was wrong. The flag names both
+    sources and resolves toward NEITHER; a taped or contractor-entered
+    height outranks every read."""
     raw = _clean_raw()
     raw["outside_corner_heights_ft"] = [20.5, 20.5, 20.5, 20.5]
     raw["outside_corner_lf"] = 82
@@ -68,7 +74,7 @@ def test_corner_cannot_exceed_the_tallest_wall():
     assert "corner_taller_than_wall" in codes
     f = next(x for x in flags if x["code"] == "corner_taller_than_wall")
     assert f["vars"]["wall"] == "18", \
-        "the flag must HAND OVER the wall table's height — the right answer is already inside"
+        "the flag must NAME the wall table's number beside the corner ledger's — resolving toward neither"
     assert f["level"] == "loud"
 
 
