@@ -2,6 +2,17 @@
 
 > **Main agent: read this file at the start of every session and surface these to the user when relevant.**
 
+## ⚖️ RULINGS REGISTER (handoff-proof — a ruling must survive a fork; transcripts do not)
+- **BUILD ORDER (ruled 2026-08-08, dependency not preference)**: 1) EVIDENCE-OR-NULL + VISUAL AUDIT (one build, one schema, one renderer), 2) DETERMINISM GATE, 3) Window Mark B — INVESTIGATE ONLY, 4) Charter Oak soffit — read the regression note first. The gate built pre-null certifies guesses.
+- **DETERMINISM GATE**: reports STABILITY, never correctness. "Two reads agreed" and "matches the printed dimension" must NEVER print as the same chip. Separates STABLY READ from STABLY ABSTAINED.
+- **VISUAL AUDIT design reqs**: (1) highlight APPROXIMATE on scans, EXACT only via native PDF text layer; (2) derived numbers carry MANY highlights + the arithmetic (srcs[]+calc); (3) NO SOURCE is a first-class rendered state.
+- **WINDOW MARK B (ruled 2026-08-08)**: SH 2-4_5-4 = 2'-4"×5'-4" = **28×64 — THE CONVERTER IS RIGHT. DO NOT CHANGE IT.** The suspect number is the 28×48 (different mark, schedule misread, or plan inconsistency). Report the disagreement; change nothing. Adjusting a correct converter to reproduce a misread is the tuning failure in miniature.
+- **PURITY RIDER**: every number Howard gives is EVIDENCE FOR A RULING — never a constant, default, fallback, or assertion target. If a read disagrees, REPORT THE DISAGREEMENT. Formulas are never tuned to hit a target.
+- **EVIDENCE-OR-NULL (structural)**: every DIM is {"v","page","from","loc"} or null. Bare numbers are unrepresentable. Abstention is schema-enforced, not model-chosen.
+- **SIDING OPENINGS**: NOT deducted from gross wall area (HOVER convention, ruled).
+- **EST-886440**: nothing applies to it. Integral-J stays ON.
+- **Taped/contractor entry outranks every read.** Checker flags name both sources and resolve toward neither.
+
 ## ✅ Completed
 - **LP-NATIVE MODE — CONFIRMED ON in PROD by Howard (2026-08-04, admin page). Do not re-flag.** (Preview env keeps its own flag; flipped ON only during the 2026-08-04 demo dry-run walk, then restored.)
 - **House Wrap $119.11/ROLL + RainDrop $336.13/ROLL confirmed correct by Howard (2026-08-04) — the old $30.73/$38.73 per-SQ flag is STALE and CLOSED.**

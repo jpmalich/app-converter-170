@@ -1077,7 +1077,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
               })()}
 
               {/* Read-back verification card (display-only, 2026-08-06) */}
-              <BlueprintReadBackCard readback={result.readback} />
+              <BlueprintReadBackCard readback={result.readback} pagePaths={pagePaths} />
 
               {/* Raw JSON expander (parity with AI Measure debug panel) */}
               <details

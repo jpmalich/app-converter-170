@@ -124,6 +124,28 @@ RESIDENTIAL PLAN NOTATION YOU MUST UNDERSTAND:
    dim strings, not on measuring pixels.
 
 EXTRACTION SCHEMA — return EXACTLY this shape:
+
+EVIDENCE-OR-NULL, STRUCTURAL (ruled 2026-08-08): every field marked DIM
+below is an OBJECT {"v": number, "page": <1-based sheet number>, "from":
+"<the printed dimension string VERBATIM you read it from>"} — or null.
+If you cannot QUOTE a printed string for a dimension, return null. A
+bare number, or an object without its "from" quote, is DROPPED BY THE
+PIPELINE and flagged — an unevidenced dimension is unrepresentable.
+"I do not know" is a first-class answer: null + the flag is CORRECT
+behaviour; a guessed number is the only wrong one.
+
+VISUAL AUDIT (same ruling, same schema): each DIM should ALSO carry
+"loc": {"x_pct": n, "y_pct": n, "w_pct": n, "h_pct": n} — the bounding
+box of the printed string ON THAT PAGE IMAGE, in PERCENT (0-100) of the
+page's width/height measured from the TOP-LEFT corner. Best effort — an
+honest approximate box beats an omitted one, but NEVER invent a "from"
+quote to justify a box. Omit "loc" when you cannot place the string.
+DERIVED VALUES: when a value stacks from SEVERAL printed dims (a corner
+height summed from plate dimensions; a footprint = first floor +
+garage), return {"v": number, "calc": "<the arithmetic with its inputs,
+verbatim>", "srcs": [{"page": n, "from": "<printed string>", "loc":
+{...}}, ...]} — one src per printed input. A derived value with no srcs
+is as unrepresentable as a bare number.
 {
   "sheets_identified": [
     {"page": 1, "sheet_title": "<best guess>", "useful_for": "elevation|floor_plan|schedule|roof|cover|other"}
@@ -133,8 +155,8 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   "avg_wall_height_ft": number,           // EAVE height, read from elevation
   "walls": [
     {"label": "front" | "back" | "left" | "right",
-     "width_ft": number,                  // read from floor plan or elevation
-     "height_ft": number,                 // EAVE height of the TALLEST section (not roof peak). When the wall STEPS, the truth lives in height_segments below.
+     "width_ft": DIM,                     // {"v","page","from"} — read from floor plan or elevation
+     "height_ft": DIM,                    // EAVE height of the TALLEST section (not roof peak). When the wall STEPS, the truth lives in height_segments below.
      // PER-WALL HEIGHT VARIATION (ruled 2026-08-07):
      // A HOUSE IS NOT A UNIFORM BOX. When an elevation shows the wall stepping between
      // heights (2-story main body dropping to a 1-story garage wing or
@@ -148,8 +170,8 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      // shows one uniform eave height across the whole wall.
      "height_segments": [
        {"label": "<e.g. 'main body', 'garage wing', 'porch section'>",
-        "width_ft": number,
-        "height_ft": number}
+        "width_ft": DIM,
+        "height_ft": DIM}                 // NO printed height for a section → "height_ft": null — FLAG, never a guess
      ],
      "gable_triangle_height_ft": number,  // 0 unless this wall is a gable end. If a roof PITCH callout is printed (e.g. "7/12"), COMPUTE this as (width_ft ÷ 2) × (pitch_rise ÷ 12) — the printed pitch is the authority; scaling the drawing under-reads the rise.
      "dormer_face_sqft": number,          // 0 unless dormer shown on this elevation
@@ -245,8 +267,8 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
      "gable_ends": number,          // how many gable ends (triangular end faces) this plane carries: 0 for a hip or shed plane, 1 per gable end. The app reports the total across planes.
      "is_porch": true | false,
      "porch_ceiling_sqft": number,  // porch planes only: ceiling area under the roof (soffit material, read porch depth × length from the floor plan); 0 otherwise
-     "porch_width_ft": number | null,  // porch planes only: the porch's PRINTED floor-plan width (the side along the house wall). null when not dimensioned — NEVER derived from the area (an area does not determine a shape, ruled 2026-08-07)
-     "porch_depth_ft": number | null   // porch planes only: PRINTED depth (out from the wall). null when not dimensioned — NEVER √area, never a guess
+     "porch_width_ft": DIM | null,     // porch planes only: {"v","page","from"} — the porch's PRINTED floor-plan width (the side along the house wall). null when not dimensioned — NEVER derived from the area (an area does not determine a shape, ruled 2026-08-07)
+     "porch_depth_ft": DIM | null      // porch planes only: {"v","page","from"} — PRINTED depth (out from the wall). null when not dimensioned — NEVER √area, never a guess
     }
   ],
   "starter_lf": number,        // full floor-plan PERIMETER in LF — report the RAW perimeter; the app deducts entry-door widths downstream per convention (sliders/patio doors sit on the starter). NOT eaves-only.
@@ -266,15 +288,15 @@ EXTRACTION SCHEMA — return EXACTLY this shape:
   ],
   "outside_corner_count": number, // INTEGER. Number of OUTSIDE corner locations on the FULL building outline. See "CORNER COUNTING" rule below.
   "outside_corner_lf": number, // SUM over outside corners of EACH CORNER'S OWN trim height. A 1-story garage-wing corner runs the GARAGE eave height; a 2-story main-body corner runs the FULL height. NEVER count × average height — a material-governing dimension is never averaged (261 Haugh doctrine: the average hides tall corners AND inflates short ones).
-  "outside_corner_heights_ft": [number | null], // PER-CORNER trim heights, ONE entry per outside corner in walk order (ruled 2026-08-06). A corner joins TWO walls — report the TALLER wall's height, run to the EAVE the corner trim dies into. READ A PRINTED DIMENSION (ruled 2026-08-07): NEVER derive a corner height by stacking ceiling heights + floor structure — if your only basis is a calculation rather than a printed dim, return null for that corner and say so in notes. On a GABLE END the corner runs to the EAVE — never an area÷width figure, which lands between eave and ridge. null for a corner no printed dimension resolves — NEVER average or guess it.
+  "outside_corner_heights_ft": [DIM | null], // PER-CORNER trim heights as EVIDENCED DIMS ({"v","page","from"} in FEET), ONE entry per outside corner in walk order (ruled 2026-08-06). A corner joins TWO walls — report the TALLER wall's height, run to the EAVE the corner trim dies into. READ A PRINTED DIMENSION (ruled 2026-08-07): NEVER derive a corner height by stacking ceiling heights + floor structure — if your only basis is a calculation rather than a printed dim, return null for that corner and say so in notes. On a GABLE END the corner runs to the EAVE — never an area÷width figure, which lands between eave and ridge. null for a corner no printed dimension resolves — NEVER average or guess it.
   "gutter_runs": [ // GUTTER RUN INVENTORY (ruled 2026-08-06) — each CONTINUOUS eave run that carries gutter, walked along the FACADES. ONE entry per continuous run: where a lower roof's eave (garage bump-out) is flush and continuous with the run beside it, that is ONE run counted ONCE — never re-list a segment inside a run already listed. A porch lists only the eave sides that actually carry gutter. [] when the drawings don't resolve the runs — NEVER invent.
     {"label": "<front|back|left|right|porch|...>", "lf": number}
   ],
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
   "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
   "soffit_sqft": number | null,        // PRINTED soffit/overhang area if the plans state it (eave detail sections, "SOFFIT" callouts, roof plan overhang dims × eave run). null if not printed — do NOT estimate.
-  "eave_overhang_in": number | null,   // PRINTED eave overhang depth (soffit width) in INCHES from an eave detail/section or roof plan dim (e.g. 16). null when the drawings don't dimension it — NEVER a guess, NEVER a typical value. The app flags an undimensioned overhang instead of silently defaulting (ruled 2026-08-07).
-  "fascia_width_in": number | null,    // PRINTED fascia board width in INCHES (e.g. a "1x6 FASCIA" callout → 6). null when not printed — same rule: flag, never default.
+  "eave_overhang_in": DIM | null,      // {"v","page","from"} — PRINTED eave overhang depth (soffit width) in INCHES from an eave detail/section or roof plan dim (e.g. 16). null when the drawings don't dimension it — NEVER a guess, NEVER a typical value. The app flags an undimensioned overhang instead of silently defaulting (ruled 2026-08-07).
+  "fascia_width_in": DIM | null,       // {"v","page","from"} — PRINTED fascia board width in INCHES (e.g. a "1x6 FASCIA" callout → 6). null when not printed — same rule: flag, never default.
   "level_frieze_lf": number | null,    // PRINTED level frieze-board run if the elevations/details call it out. null if not printed.
   "sloped_frieze_lf": number | null,   // PRINTED sloped (rake) frieze-board run. null if not printed.
   "drip_edge_lf": number | null,       // PRINTED drip-edge / roof-edge perimeter from the roof plan. null if not printed.
@@ -721,6 +743,319 @@ def _parse_printed_size(s: str) -> tuple[float, float] | None:
     return (dims[0], dims[1])
 
 
+# ---------------------------------------------------------------------------
+# EVIDENCE-OR-NULL (Howard ruled 2026-08-08, STRUCTURAL — top item):
+# "Abstention must not be something the model chooses. It must be
+# something the schema enforces." Every registered dimension arrives as
+# {"v": number, "page": n, "from": "<printed string verbatim>"}. A bare
+# number — or an object without a quoted source string — is NULL BY
+# CONSTRUCTION: the pipeline drops it, the flag fires, and the card says
+# the drawing does not dimension it. Same shape as source retention:
+# don't ask the model to behave, make the wrong behaviour unrepresentable.
+_EVIDENCE_SCALARS = ("eave_overhang_in", "fascia_width_in")
+
+
+def _norm_loc(loc):
+    """Validates a vision-returned percent box {x_pct,y_pct,w_pct,h_pct}
+    (top-left origin, 0-100). Junk never rides — an invalid box is None,
+    and a box NEVER rescues a missing quote."""
+    if not isinstance(loc, dict):
+        return None
+    out = {}
+    for k in ("x_pct", "y_pct", "w_pct", "h_pct"):
+        try:
+            v = float(loc.get(k))
+        except (TypeError, ValueError):
+            return None
+        if not (0 <= v <= 100):
+            return None
+        out[k] = round(v, 2)
+    if out["w_pct"] <= 0 or out["h_pct"] <= 0:
+        return None
+    return out
+
+
+def _ev_extract(x):
+    """Returns (value|None, evidence|None, had_unevidenced_number).
+    Single-source evidence: {"v","page","from","loc"}. Derived (Visual
+    Audit design req 2, ruled 2026-08-08 — many highlights plus the
+    arithmetic, never one box per number): {"v","calc","srcs":[...]}."""
+    if isinstance(x, dict):
+        v = x.get("v")
+        try:
+            v = float(v) if v is not None else None
+        except (TypeError, ValueError):
+            v = None
+        srcs_in = x.get("srcs")
+        if v is not None and isinstance(srcs_in, list):
+            srcs = []
+            for s in srcs_in:
+                if not isinstance(s, dict):
+                    continue
+                frm = str(s.get("from") or "").strip()
+                if not frm:
+                    continue
+                try:
+                    page = int(s.get("page")) if s.get("page") is not None else None
+                except (TypeError, ValueError):
+                    page = None
+                srcs.append({"page": page, "from": frm,
+                             "loc": _norm_loc(s.get("loc"))})
+            if srcs:
+                calc = str(x.get("calc") or "").strip() or None
+                return v, {"v": v, "calc": calc, "srcs": srcs}, False
+            return None, None, True
+        frm = str(x.get("from") or "").strip()
+        if v is not None and frm:
+            page = x.get("page")
+            try:
+                page = int(page) if page is not None else None
+            except (TypeError, ValueError):
+                page = None
+            return v, {"v": v, "page": page, "from": frm,
+                       "loc": _norm_loc(x.get("loc"))}, False
+        return None, None, v is not None
+    if isinstance(x, (int, float)) and not isinstance(x, bool):
+        return None, None, True
+    return None, None, False
+
+
+def _enforce_evidence_or_null(raw: dict) -> dict:
+    """Normalizes evidence-bearing dims back to plain numbers for the
+    whole downstream (aggregation, readback, checker untouched), stamps
+    `_dim_evidence` {path: {page, from}}, and NULLS anything that arrived
+    without a quoted printed string — recorded in `_nulled_no_evidence`."""
+    if not isinstance(raw, dict):
+        return raw
+    evidence: dict = {}
+    nulled: list[str] = []
+    unread: list[str] = []
+
+    def _norm(container, key, path):
+        if key not in container:
+            return
+        val, ev, bare = _ev_extract(container.get(key))
+        if ev:
+            evidence[path] = ev
+            container[key] = val
+        else:
+            container[key] = None
+            if bare:
+                nulled.append(path)
+            else:
+                unread.append(path)
+
+    for k in _EVIDENCE_SCALARS:
+        _norm(raw, k, k)
+    for i, w in enumerate(raw.get("walls") or []):
+        if not isinstance(w, dict):
+            continue
+        label = str(w.get("label") or i)
+        for k in ("width_ft", "height_ft"):
+            _norm(w, k, f"walls.{label}.{k}")
+        for j, s in enumerate(w.get("height_segments") or []):
+            if isinstance(s, dict):
+                seg = str(s.get("label") or j)
+                for k in ("width_ft", "height_ft"):
+                    _norm(s, k, f"walls.{label}.segments.{seg}.{k}")
+    for p in (raw.get("roof_planes") or []):
+        if isinstance(p, dict) and p.get("is_porch"):
+            for k in ("porch_width_ft", "porch_depth_ft"):
+                _norm(p, k, f"porch.{k}")
+    hs = raw.get("outside_corner_heights_ft")
+    if isinstance(hs, list):
+        out = []
+        for i, h in enumerate(hs):
+            val, ev, bare = _ev_extract(h)
+            if ev:
+                evidence[f"corner_heights.{i}"] = ev
+                out.append(val)
+            else:
+                out.append(None)
+                if bare:
+                    nulled.append(f"corner_heights.{i}")
+                else:
+                    unread.append(f"corner_heights.{i}")
+        raw["outside_corner_heights_ft"] = out
+    if evidence:
+        raw["_dim_evidence"] = evidence
+    if nulled:
+        raw["_nulled_no_evidence"] = nulled
+    if unread:
+        # NO-SOURCE IS A FIRST-CLASS STATE (Visual Audit design req 3,
+        # ruled 2026-08-08): dims the read abstained on are NAMED, not
+        # omitted — "no source on the drawing" renders as clearly as a
+        # highlight.
+        raw["_dim_unread"] = unread
+    return raw
+
+
+def _pdf_rect_to_pct(rect, page_w, page_h):
+    """PDF-space rect (l, b, r, t — bottom-left origin, points) → top-left
+    percent box matching the rendered page image."""
+    l, b, r, t = rect
+    if page_w <= 0 or page_h <= 0:
+        return None
+    return {"x_pct": round(l / page_w * 100, 2),
+            "y_pct": round((1 - t / page_h) * 100, 2),
+            "w_pct": round((r - l) / page_w * 100, 2),
+            "h_pct": round((t - b) / page_h * 100, 2)}
+
+
+def _exact_locate_evidence(evidence: dict, source_files: list,
+                           source_probe: dict | None) -> None:
+    """VISUAL AUDIT precision labelling (design req 1, ruled 2026-08-08):
+    on a scan the box is vision-returned pixels — APPROXIMATE, labelled
+    so; never a tight box implying precision we do not have. On a native
+    PDF the quoted string is searched in the text layer — a hit yields an
+    EXACT box. A miss never invents one; precision None = quote only."""
+    if not isinstance(evidence, dict) or not evidence:
+        return
+
+    def _entries():
+        for ev in evidence.values():
+            if not isinstance(ev, dict):
+                continue
+            for s in (ev.get("srcs") or [ev]):
+                if isinstance(s, dict):
+                    yield s
+
+    for s in _entries():
+        s["precision"] = "approximate" if s.get("loc") else None
+
+    kind = str((source_probe or {}).get("kind") or "")
+    if kind not in ("native_text", "mixed"):
+        return
+    pdf_name = next((f.get("name") for f in (source_files or [])
+                     if isinstance(f, dict) and f.get("kind") == "pdf"), None)
+    if not pdf_name:
+        return
+    from config import UPLOAD_DIR
+    target = UPLOAD_DIR / pdf_name
+    if not target.exists():
+        return
+    try:
+        doc = pdfium.PdfDocument(target.read_bytes())
+    except Exception:
+        return
+    try:
+        n_pages = len(doc)
+        for s in _entries():
+            frm = str(s.get("from") or "").strip()
+            page_no = s.get("page")
+            if not frm or not isinstance(page_no, int) or not (1 <= page_no <= n_pages):
+                continue
+            try:
+                page = doc[page_no - 1]
+                tp = page.get_textpage()
+                found = tp.search(frm, match_case=False).get_next()
+                if found is not None:
+                    idx, count = found
+                    boxes = [tp.get_charbox(i) for i in range(idx, idx + count)]
+                    rect = (min(b[0] for b in boxes), min(b[1] for b in boxes),
+                            max(b[2] for b in boxes), max(b[3] for b in boxes))
+                    w, h = page.get_size()
+                    loc = _pdf_rect_to_pct(rect, w, h)
+                    if loc:
+                        s["loc"] = loc
+                        s["precision"] = "exact"
+                tp.close()
+                page.close()
+            except Exception:
+                continue
+    finally:
+        doc.close()
+
+
+def compute_read_stability(prev_raw: dict, raw: dict) -> dict:
+    """DETERMINISM GATE (Howard ruled 2026-08-08): REPORTS STABILITY,
+    NEVER CORRECTNESS. Greedy sampling makes an error repeatable, not
+    right — on the Boni house this gate would flag the corner count
+    (10 → 6 at temperature 0) while passing a height that could still be
+    wrong. Counts must match EXACTLY; dims agree within tolerance
+    (0.5 or 2%). Under evidence-or-null the gate separates STABLY READ
+    from STABLY ABSTAINED: two nulls agree the drawing was not read
+    there — that is NOT agreement on a number and never prints as one;
+    a value meeting a null is a DISAGREEMENT. The card wording never
+    lets agreement print as a correctness claim."""
+    def _f(d, k):
+        v = d.get(k)
+        if v is None:
+            return None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    def _wins(d):
+        return sum(int(w.get("qty") or 1) for w in (d.get("windows") or [])
+                   if isinstance(w, dict))
+
+    def _doors(d):
+        return sum(int(x.get("qty") or 1) for x in (d.get("doors") or [])
+                   if isinstance(x, dict))
+
+    def _gables(d):
+        return sum(int(p.get("gable_ends") or 0)
+                   for p in (d.get("roof_planes") or []) if isinstance(p, dict))
+
+    counts = []
+    for name, fn in (
+        ("outside corners", lambda d: int(d.get("outside_corner_count") or 0)),
+        ("inside corners", lambda d: int(d.get("inside_corner_count") or 0)),
+        ("windows", _wins),
+        ("exterior doors", _doors),
+        ("roof planes", lambda d: len(d.get("roof_planes") or [])),
+        ("gable ends", _gables),
+        ("gutter runs", lambda d: len(d.get("gutter_runs") or [])),
+    ):
+        a, b = fn(prev_raw), fn(raw)
+        counts.append({"name": name, "a": a, "b": b, "match": a == b})
+
+    def _tol_ok(a, b):
+        tol = max(0.5, 0.02 * max(abs(a), abs(b)))
+        return abs(a - b) <= tol
+
+    dims = []
+    abstained: list[str] = []
+    for key, name in (("eaves_lf", "eaves LF"), ("rakes_lf", "rakes LF"),
+                      ("starter_lf", "starter LF"),
+                      ("outside_corner_lf", "corner LF"),
+                      ("avg_wall_height_ft", "avg wall height ft")):
+        a, b = _f(prev_raw, key), _f(raw, key)
+        if a is None and b is None:
+            abstained.append(name)
+            continue
+        dims.append({"name": name, "a": a, "b": b,
+                     "within": (a is not None and b is not None
+                                and _tol_ok(a, b))})
+
+    # Evidenced dims — the per-path register where the guesses used to
+    # live. A path evidenced in one read and abstained in the other is a
+    # disagreement, never a silent drop.
+    ev_a = prev_raw.get("_dim_evidence") or {}
+    ev_b = raw.get("_dim_evidence") or {}
+    evidenced = []
+    for path in sorted(set(ev_a) | set(ev_b)):
+        a = (ev_a.get(path) or {}).get("v") if isinstance(ev_a.get(path), dict) else None
+        b = (ev_b.get(path) or {}).get("v") if isinstance(ev_b.get(path), dict) else None
+        if a is None and b is None:
+            continue
+        evidenced.append({"name": path, "a": a, "b": b,
+                          "within": (a is not None and b is not None
+                                     and _tol_ok(float(a), float(b)))})
+    # Stably abstained — both reads returned null on the same path.
+    un_a = set(prev_raw.get("_dim_unread") or []) | set(prev_raw.get("_nulled_no_evidence") or [])
+    un_b = set(raw.get("_dim_unread") or []) | set(raw.get("_nulled_no_evidence") or [])
+    abstained += sorted((un_a & un_b) - set(ev_a) - set(ev_b))
+
+    return {"counts": counts, "dims": dims, "evidenced": evidenced,
+            "abstained": abstained,
+            "stable": (all(c["match"] for c in counts)
+                       and all(d["within"] for d in dims)
+                       and all(e["within"] for e in evidenced))}
+
+
 def _read_footprint_sqft(raw: dict) -> float:
     """CATEGORY DISCIPLINE (Howard's correction 3, ruled 2026-08-08): the
     wing check compared 2351 — TOTAL FINISHED LIVING, storeys summed —
@@ -1033,6 +1368,15 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     if _idd:
         rail.append({"level": "warn", "code": "interior_doors_dropped",
                      "text": str(_idd)})
+    # EVIDENCE-OR-NULL (ruled 2026-08-08): dims that arrived without a
+    # quoted printed string were NULLED BY CONSTRUCTION — named here.
+    _nulled = raw.get("_nulled_no_evidence") or []
+    if _nulled:
+        _shown = ", ".join(str(p) for p in _nulled[:8])
+        if len(_nulled) > 8:
+            _shown += f" +{len(_nulled) - 8} more"
+        rail.append({"level": "loud", "code": "dims_nulled_no_evidence",
+                     "text": _shown})
     # SOFFIT FINISH IS STATED ON THE DRAWING (ruled 2026-08-08): the
     # vented-vs-solid steer reads or flags — never a silent default.
     _sf = raw.get("soffit_finish") or {}
@@ -1094,11 +1438,20 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         # INTERNAL CONSISTENCY CHECKER (ruled 2026-08-07) — the card
         # arrives already clean; contradictions are caught HERE.
         "consistency": check_read_consistency(raw),
+        # VISUAL AUDIT (ruled 2026-08-08 — one schema, one renderer):
+        # every evidenced dim with its page/quote/box; dropped and unread
+        # paths are FIRST-CLASS no-source states, not omissions.
+        "evidence": {
+            "items": [{"path": p, **(v if isinstance(v, dict) else {})}
+                      for p, v in sorted((raw.get("_dim_evidence") or {}).items())],
+            "dropped": list(raw.get("_nulled_no_evidence") or []),
+            "unread": list(raw.get("_dim_unread") or []),
+        },
         "rail": rail,
     }
 
 
-def _with_readback(result, source_probe=None):
+def _with_readback(result, source_probe=None, stability=None):
     """Read-time enrichment for the status/latest responses — computed on
     the fly, never persisted, never fed to any derivation."""
     if isinstance(result, dict) and result.get("raw_ai"):
@@ -1107,6 +1460,11 @@ def _with_readback(result, source_probe=None):
             if rb is not None and source_probe:
                 rb["source"] = {k: source_probe.get(k) for k in
                                 ("kind", "text_pages", "page_count")}
+            # DETERMINISM GATE (ruled 2026-08-08): stability rides the
+            # readback so the card can chip agreement — as stability,
+            # never as correctness.
+            if rb is not None and stability is not None:
+                rb["stability"] = stability
             return {**result, "readback": rb}
         except Exception:
             logger.exception("[ai-blueprint] readback build failed — served without")
@@ -1439,7 +1797,13 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # RULING 7 (2026-08-01): full precision on the way in — no door
         # rounds at intake; the ORDER layer is the one rounding point.
         "siding_sqft": siding_sqft,
-        "siding_with_openings_sqft": siding_sqft,
+        # BASIS TRUTH (Howard's open question, answered 2026-08-08): a
+        # blueprint read has NO HOVER "+ Openings < 20ft² +10%" row —
+        # aliasing the gross area into this field made the Charter Oak
+        # note claim a +10% source that was never applied. The field
+        # stays None; the line falls back to siding_sqft (same number,
+        # ×1.0) and the note names the real basis.
+        "siding_with_openings_sqft": None,
         "opening_sqft": opening_sqft,
         "eaves_lf": float(raw.get("eaves_lf") or 0),
         "rakes_lf": float(raw.get("rakes_lf") or 0),
@@ -2086,7 +2450,8 @@ async def ai_blueprint_status(
         "status": doc.get("status"),
         "stage": doc.get("stage"),
         "result": _with_readback(strip_cost_keys(doc.get("result")),
-                                 source_probe=doc.get("source_probe")),
+                                 source_probe=doc.get("source_probe"),
+                                 stability=doc.get("stability")),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
         "source_probe": doc.get("source_probe"),
@@ -2149,7 +2514,8 @@ async def ai_blueprint_latest_for_estimate(
             # from the CUT archive after the live doc's 24h TTL reaped.
             "archived": archived,
             "result": _with_readback(strip_cost_keys(doc.get("result")),
-                                     source_probe=doc.get("source_probe")),
+                                     source_probe=doc.get("source_probe"),
+                                     stability=doc.get("stability")),
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,
@@ -2280,6 +2646,22 @@ async def _execute_ai_blueprint_worker(
             logger.exception("[ai-blueprint] roof pass failed — main read stands")
         # Annotations already loaded above — pass through to the
         # breakdown overlay so the catalog mapper emits per-profile lines.
+        # EVIDENCE-OR-NULL (ruled 2026-08-08, structural): enforced at the
+        # seam — nothing downstream ever sees an unevidenced dimension.
+        raw = _enforce_evidence_or_null(raw)
+        # VISUAL AUDIT (same ruling, same build — one schema, one
+        # renderer): precision labelling. Native text layer gives EXACT
+        # boxes; vision boxes stay APPROXIMATE; failure never sinks the run.
+        run_meta = None
+        try:
+            run_meta = await db.ai_blueprint_runs.find_one(
+                {"run_id": run_id},
+                {"_id": 0, "source_files": 1, "source_probe": 1, "rerun_of": 1})
+            _exact_locate_evidence(raw.get("_dim_evidence") or {},
+                                   (run_meta or {}).get("source_files") or [],
+                                   (run_meta or {}).get("source_probe"))
+        except Exception:
+            logger.exception("[ai-blueprint] exact-locate failed — approximate boxes stand")
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
         # SPEC-FIELD PRECEDENCE (ruled 2026-08-07): a PRINTED overhang
         # beats the form default; the source is named either way.
@@ -2343,11 +2725,28 @@ async def _execute_ai_blueprint_worker(
             "session_id": session_id,
             "pages_processed": len(image_payloads),
         }
+        # DETERMINISM GATE (ruled 2026-08-08): a rerun is compared to the
+        # run it re-read. STABILITY ONLY — agreement is never correctness,
+        # and a compare failure never sinks the run.
+        stability = None
+        try:
+            prev_id = (run_meta or {}).get("rerun_of")
+            if prev_id:
+                prev = await db.ai_blueprint_runs.find_one({"run_id": prev_id})
+                if not prev:
+                    from run_archive import find_archived_run
+                    prev = await find_archived_run({"run_id": prev_id})
+                prev_raw = ((prev or {}).get("result") or {}).get("raw_ai")
+                if isinstance(prev_raw, dict):
+                    stability = compute_read_stability(prev_raw, raw)
+        except Exception:
+            logger.exception("[ai-blueprint] stability compare failed — served without")
         await db.ai_blueprint_runs.update_one(
             {"run_id": run_id},
             {"$set": {
                 "status": "done",
                 "stage": "done",
+                "stability": stability,
                 "result": result,
                 "completed_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),

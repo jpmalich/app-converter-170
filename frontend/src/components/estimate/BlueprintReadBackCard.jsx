@@ -25,10 +25,17 @@ const Flag = ({ level, children, testid }) => {
   );
 };
 
-export default function BlueprintReadBackCard({ readback }) {
+export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
   const t = useT();
   if (!readback) return null;
-  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency } = readback;
+  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency, stability, evidence } = readback;
+  const mismatches = stability
+    ? [
+        ...(stability.counts || []).filter((c) => !c.match),
+        ...(stability.dims || []).filter((d) => !d.within),
+        ...(stability.evidenced || []).filter((e) => !e.within),
+      ]
+    : [];
 
   return (
     <div data-testid="bp-readback-card" className="border border-[var(--border)] mt-3">
@@ -53,6 +60,33 @@ export default function BlueprintReadBackCard({ readback }) {
           )}
           {source.kind === "image_scans" && (
             <Flag level="warn" testid="bp-rb-source-images">{t("bp.rb.source.images")}</Flag>
+          )}
+        </div>
+      )}
+
+      {/* 0.5 — determinism gate (ruled 2026-08-08): STABILITY, never
+          correctness. "Two reads agreed" and "matches the printed
+          dimension" must never print as the same chip. */}
+      {stability && (
+        <div className="px-3 py-2 border-b border-[var(--border)] space-y-1" data-testid="bp-rb-stability">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">{t("bp.rb.stability")}</div>
+          {stability.stable ? (
+            <Flag level="info" testid="bp-rb-stability-agreed">{t("bp.rb.stability.agreed")}</Flag>
+          ) : (
+            mismatches.map((m, i) => (
+              <Flag key={i} level="loud" testid={`bp-rb-stability-mismatch-${i}`}>
+                {t("bp.rb.stability.mismatch", {
+                  name: m.name,
+                  a: String(m.a ?? "—"),
+                  b: String(m.b ?? "—"),
+                })}
+              </Flag>
+            ))
+          )}
+          {stability.abstained?.length > 0 && (
+            <Flag level="warn" testid="bp-rb-stability-abstained">
+              {t("bp.rb.stability.abstained", { text: stability.abstained.join(", ") })}
+            </Flag>
           )}
         </div>
       )}
@@ -203,6 +237,9 @@ export default function BlueprintReadBackCard({ readback }) {
           )}
         </div>
       )}
+
+      {/* 3.8 — visual audit (ruled 2026-08-08: one schema, one renderer) */}
+      <VisualAuditPanel evidence={evidence} pagePaths={pagePaths} />
 
       {/* 4 — honesty-flag rail */}
       {rail?.length > 0 && (

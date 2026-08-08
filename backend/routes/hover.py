@@ -1065,7 +1065,15 @@ HOVER_MAPPING_SPEC = [
             ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0,
             1,
         ),
-        "note": "From HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'",
+        # BASIS NAMED ON EVERY NOTE (ruled): the +10% claim prints ONLY
+        # when the HOVER waste-totals row actually fed the number. A
+        # blueprint read carries no such row — its note says what the
+        # number is: gross area, openings kept, no waste inside.
+        "note": lambda m: (
+            "From HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'"
+            if (m.get("siding_with_openings_sqft") or 0) > 0
+            else "Gross wall area ÷ 100 = SQ — openings NOT deducted (ruled convention); no waste inside this number, the Waste % field is the only waste"
+        ),
         "_is_default_siding": True,
     },
     {
