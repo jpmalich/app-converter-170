@@ -6498,3 +6498,14 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - STILL OPEN: determinism gate build (counts must match across runs — agreement-only chips); bar (e) flag census; bar (g) gate truthfulness; bar (c) four-way fixture work (awaits Howard's typed lists); (h) partner script; Quote Open Receipts + cross-family fill (post-Sept).
 - LESSON (agent): parallel search_replace batches on ONE file can corrupt (garbage at EOF) — sequential edits per file; verify with ast.parse.
 - Stamp: 2026-08-07 19:44 UTC · 685a734 · CLEAN · 1948 passed, 5 skipped · INGRESS SMOKE 4 passed. Preview only.
+
+## SESSION 2026-08-08 (part 23) — THREE CORRECTIONS + PER-WALL SEGMENTS PROVEN ON THE RE-READ
+- CORRECTIONS RULED (Howard): (1) corners are ~20'-0¼" — his 18' was wrong, the 20.5' read essentially correct; corner read NOT touched; every finding built on 18 is VOID. (2) Checker flag was right, resolution language wrong — authoritative wording stripped ("already holds the right height" banned by pin); flags name both sources, resolve toward NEITHER, tape/contractor outranks. (3) CATEGORY ERROR: 2351 = TOTAL FINISHED (storeys summed), not a footprint; area_table read AS LABELLED; _read_footprint_sqft = first floor + garage; footprint==total_finished w/ 2nd storey self-caught (footprint_is_total_finished).
+- ALSO BUILT: wall_segment_undimensioned (FLAG never guess — back garage wall class); soffit_finish read-or-flag (VENTED EAVES / SOLID RAKE annotations = the lp_soffit_type steer stated on the drawing); overhang_notes per-location + overhang_varies (12" garage vs FASCIA ONLY NO OVERHANG). Stamp 2026-08-08 10:45 UTC · dbd9ed7 · CLEAN · 1972 passed.
+- SEGMENT RE-READ (run a6e723af, GO'd by Howard) RESULTS vs his 3 grade tests:
+  1. GARAGE SEGMENT: TOOK. front/back = main 34'×20.5' + garage 24'×10'; right even segmented a bonus room (30×20.5 + 9×8.5). Siding 4307→3986 gross. NOTE (arithmetic, not a change): 3986 gross − 567 openings ≈ 3419 ≈ his ~3400 hand takeoff — the opening-deduction ruling he owes is now decisive.
+  2. BACK GARAGE FLAG: DID NOT TAKE — model guessed 10.0' for the undimensioned back garage section instead of returning null; no wall_segment_undimensioned flag fired. Disagreement REPORTED (his derived ~14'-5", contractor-estimated). Read defect, not math.
+  3. CORNER LEDGER: still 20.5 ✓ (4×20.5+2×10, count 6 vs his 8); corner_lf_not_sum flags 82 vs 102 on-card.
+  Also: footprint 1827 ≈ his ~1814; area table exact (2351/1019/1332/795/99); porch 16.5×6 (six inches recovered); soffit finish read; overhang flags fire; 6 labeled gutter runs.
+- NOT APPLIED to EST-886440 (grade-before-apply stands). AWAITING: Howard's opening-deduction ruling; his grade of run a6e723af.
+- STILL OPEN: determinism gate (stability ≠ correctness wording); bar (c) four-way fixtures; bar (e) flag census; bar (g) gate truthfulness; (h) partner script.
