@@ -3,22 +3,24 @@
 > **Main agent: read this file at the start of every session and surface these to the user when relevant.**
 
 ## ⚖️ RULINGS REGISTER (handoff-proof — a ruling must survive a fork; transcripts do not)
-- **OCR SUPPLIES LOCATION, NEVER VALUE (ruled 2026-08-08)**: local OCR over retained page rasters locates the model's verbatim quotes — never promoted to ground truth (three-class probe rule stands); the model still does the reading. Quote-vs-OCR disagreement is a NAMED contradiction (`ocr_quote_miss`), resolved toward neither.
-- **FIRE GRADES (2026-08-08)**: item 1 PASS (null+flag — "empty and honest beats populated and invented. Do not soften it."), item 3 PASS (DISAGREE content is the news), item 2 PARTIAL → OCR build landed. Comparability gap ("pre-register read") must stay NAMED on the card permanently.
-- **PROVENANCE OF NUMBERS (ruled 2026-08-08)**: NEVER attribute a number to Howard that came out of the app. A figure whose origin cannot be named has no source.
-- **SIZE COLUMN GOVERNS (ruled 2026-08-08)**: a schedule's SIZE column is the dimension; the product code (SH 3-0_5-0) is a FAMILY LABEL only — units print ~½" under nominal (35.5×59.5 not 36×60). Converting the code violates printed-dims-sacred. Moves window perimeter on every J/coil/finish-trim line. BONI: 16 windows (A 9 = 2+7 · B 1 · C 5 · D 1), true window perimeter 252.0 LF vs carried 334.5–447.3. DO NOT TUNE TO 252 — read the column, let it fall out.
-- **MARK-SUMMING ACROSS SHEETS (ruled 2026-08-08)**: schedules span sheets (each floor its own). Same mark on multiple sheets = ONE mark, counts summed. The Mark-B bug was CROSS-SHEET MARK MERGING (D's dims on B's letter), not glyph misreading. `mark_size_conflict` flag pins the signature.
-- **DOOR-SCHEDULE EXCLUSION SIGNALS (ruled 2026-08-08)**: "HOLLOW CORE"/"H DWL CORE" and "Garage to House Door" in the product-code column are readable exclusion signals — exterior is E2, E3, G1, G2 and NOTHING else on Boni (sheet 7 doors 5–15 all hollow core). Garage doors print 8'-0" tall (16×8, 9×8); "appears" = admission of no source → null+flag (`door_size_parse_mismatch`).
-- **BAR (c) RECONCILIATION: HELD until Monday** — Howard pulling the full Alside invoice set (numbers+dates prove completeness). His own caveat: complete as to ALSIDE, not as to the JOB — non-Alside purchases won't appear.
-- **BUILD ORDER (2026-08-08 send 4)**: 1) OCR coordinates ✓, 2) size column + mark summing ✓, 3) door exclusions + print heights ✓, 4) FLAG CENSUS (bar e) ← NEXT, 5) GATE TRUTHFULNESS (bar g), 6) reconciliation — held.
-- **DETERMINISM GATE**: reports STABILITY, never correctness. "Two reads agreed" and "matches the printed dimension" must NEVER print as the same chip. Separates STABLY READ from STABLY ABSTAINED.
-- **VISUAL AUDIT design reqs**: (1) highlight APPROXIMATE on scans, EXACT only via native PDF text layer, OCR-located labelled as machine text-read; (2) derived numbers carry MANY highlights + the arithmetic; (3) NO SOURCE is a first-class rendered state.
-- **PURITY RIDER**: every number Howard gives is EVIDENCE FOR A RULING — never a constant, default, fallback, or assertion target. If a read disagrees, REPORT THE DISAGREEMENT. Formulas are never tuned to hit a target.
-- **EVIDENCE-OR-NULL (structural)**: every DIM is {"v","page","from","loc"} or null. Bare numbers are unrepresentable.
-- **SIDING OPENINGS**: NOT deducted from gross wall area (HOVER convention, ruled).
-- **EST-886440**: nothing applies to it. Integral-J stays ON.
-- **Taped/contractor entry outranks every read.** Checker flags name both sources and resolve toward neither.
-- **CODE LANDMINE**: EN dictionary strings must never contain the literal sequence "es: {" (e.g. "sizes: {sizes}") — it truncates the Spanish-parity block splitter.
+- **IF A VALUE IS COMPUTED, IT IS DERIVED (ruled 2026-08-08 send 5)**: stacked heights route through {v,calc,srcs[]}, each component carrying its own printed quote+location. A COMPUTED NUMBER WEARING A QUOTE IS A LIE WITH A CITATION. Verdict on the eleven: components locate rotated on the sheet; the 20'-0" total appears NOWHERE — the model fabricated the quote. Evidence-or-null proves the quote was PROVIDED, not that it is REAL; the OCR cross-check is what tests reality.
+- **OCR SUPPLIES LOCATION, NEVER VALUE (ruled 2026-08-08)**: local OCR (upright + 90°CCW + 90°CW, boxes mapped back) locates verbatim quotes — never promoted to ground truth. Unfindable quotes = NAMED contradiction (`ocr_quote_miss`, `rotations_checked` attested), resolved toward neither.
+- **FIRE GRADES (2026-08-08)**: item 1 PASS ("empty and honest beats populated and invented — do not soften"), item 3 PASS, item 2 accepted after OCR build. Comparability gap stays NAMED on the card permanently.
+- **PROVENANCE OF NUMBERS**: NEVER attribute an app number to Howard. A figure whose origin cannot be named has no source.
+- **SIZE COLUMN GOVERNS**: SIZE column is the dimension; product code = FAMILY LABEL. BONI truth (evidence, not targets): 16 windows (A 9=2+7 · B 1 · C 5 · D 1 — D is SH 2-4_3-6 · 2'-3½"×3'-5½"), window perimeter 252.0 LF. DO NOT TUNE — read the column.
+- **MARK-SUMMING ACROSS SHEETS**: same mark on multiple schedule sheets = ONE mark, counts summed. Mark-B bug was cross-sheet mark merging. `mark_size_conflict` pins the signature.
+- **OPEN AFTER RERUN 840b34e8 (waiting Howard's ruling)**: the COUNT column is still not read — rerun returned 23 (12/1/9/1) vs printed 16 (9/1/5/1); symbol-counting suspected. Also: an E1 exterior entry the sheet does not hold; G2 read 9'-2" vs printed 9'-0"; D drifted to a third variant. ALL REPORTED, NOTHING TUNED. Candidate ruling: "the COUNT column governs counts" — Howard's call.
+- **DOOR-SCHEDULE EXCLUSION SIGNALS**: HOLLOW CORE / H DWL CORE / Garage to House in the product-code column = interior; Boni exterior = E2, E3, G1, G2 ONLY. Garage doors print 8'-0"; "appears" = no source → null+flag.
+- **BAR (c) RECONCILIATION: HELD until Monday's invoices** (complete as to ALSIDE, not the JOB).
+- **BUILD ORDER (send 5)**: 1) rotated locator ✓ (verdict delivered), 2) derived form ✓ (ruled into contract), 3) schedule rerun ✓ (reported — did NOT land on 16), 4) FLAG CENSUS (bar e) ← NEXT, 5) GATE TRUTHFULNESS (bar g), 6) reconciliation held.
+- **SILENT-TRUNCATION CLASS (7 counted, scoping requested)**: anything that filters/splits/whitelists/projects/compresses must account for what it removed; a removal with no accounting fails. Scoping answer delivered 2026-08-08; build NOT ordered yet.
+- **DETERMINISM GATE**: stability, never correctness. STABLY READ ≠ STABLY ABSTAINED.
+- **VISUAL AUDIT**: approximate on scans / exact via text layer / ocr-located labelled as machine text-read; derived = many highlights + arithmetic; NO SOURCE is first-class.
+- **PURITY RIDER**: Howard's numbers are EVIDENCE FOR RULINGS — never constants, defaults, fallbacks, or assertion targets. Disagreements are REPORTED.
+- **EVIDENCE-OR-NULL (structural)**: every DIM is {"v","page","from","loc"} or null.
+- **SIDING OPENINGS**: NOT deducted (ruled). **EST-886440**: untouchable; Integral-J ON.
+- **Taped/contractor entry outranks every read.**
+- **CODE LANDMINE**: EN dictionary strings must never contain literal "es: {" — truncates the Spanish-parity splitter.
 
 ## ✅ Completed
 - **LP-NATIVE MODE — CONFIRMED ON in PROD by Howard (2026-08-04, admin page). Do not re-flag.** (Preview env keeps its own flag; flipped ON only during the 2026-08-04 demo dry-run walk, then restored.)
