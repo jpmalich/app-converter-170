@@ -91,8 +91,9 @@ def test_a_quote_ocr_cannot_find_is_a_named_contradiction(located):
         "a miss never invents a box"
     misses = raw.get("_ocr_quote_misses") or []
     assert any(m["path"] == "eave_overhang_in" for m in misses)
-    assert all(set(m) == {"path", "page", "from"} for m in misses), \
-        "the miss record carries provenance, never a value verdict"
+    assert all(set(m) == {"path", "page", "from", "rotations_checked"}
+               for m in misses), \
+        "the miss record carries provenance + the rotation audit, never a value verdict"
 
 
 def test_exact_text_layer_boxes_are_never_overwritten(located):

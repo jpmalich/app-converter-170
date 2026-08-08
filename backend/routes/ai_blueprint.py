@@ -146,6 +146,16 @@ garage), return {"v": number, "calc": "<the arithmetic with its inputs,
 verbatim>", "srcs": [{"page": n, "from": "<printed string>", "loc":
 {...}}, ...]} — one src per printed input. A derived value with no srcs
 is as unrepresentable as a bare number.
+IF A VALUE IS COMPUTED, IT IS DERIVED (ruled 2026-08-08): a wall or
+corner height you obtain by ADDING printed components (plate heights +
+floor thickness + upper plate, e.g. 9'-11 1/8" + 1'-0" + 8'-1 1/8" +
+11 1/2") MUST use the derived form above — each component carrying its
+own printed quote. NEVER present a computed total as a single read with
+a fabricated quote (e.g. "20'-0\"") when no such string is printed on
+the sheet: A COMPUTED NUMBER WEARING A QUOTE IS A LIE WITH A CITATION.
+"from" may only hold a string that is PRINTED AS SUCH on the page — a
+local text-read cross-checks every quote against the page pixels, and
+an unfindable quote is flagged as a contradiction.
 {
   "sheets_identified": [
     {"page": 1, "sheet_title": "<best guess>", "useful_for": "elevation|floor_plan|schedule|roof|cover|other"}
@@ -1033,13 +1043,9 @@ def _ocr_norm(s: str) -> str:
     return re.sub(r"[^0-9A-Za-z]", "", str(s or "")).upper()
 
 
-def _ocr_index_page(img_bytes: bytes):
-    """Local OCR over one retained page raster → (w, h, [(norm, raw,
-    (x0,y0,x1,y1)), ...])."""
-    import numpy as np
-    with Image.open(io.BytesIO(img_bytes)) as im:
-        w, h = im.size
-        arr = np.array(im.convert("RGB"))
+def _ocr_runs(arr):
+    """OCR one raster array → [(norm, raw, (x0,y0,x1,y1))] in that
+    array's own coordinates."""
     res, _elapse = _get_ocr_engine()(arr)
     runs = []
     for box, text, _score in (res or []):
@@ -1048,7 +1054,19 @@ def _ocr_index_page(img_bytes: bytes):
         nt = _ocr_norm(text)
         if nt:
             runs.append((nt, str(text), (min(xs), min(ys), max(xs), max(ys))))
-    return w, h, runs
+    return runs
+
+
+def _ocr_match(runs, nq):
+    """The model's normalised quote against the OCR run index. Exact
+    beats containment; the tightest run wins."""
+    cands = [r for r in runs if r[0] == nq]
+    if not cands:
+        cands = [r for r in runs if nq in r[0] and len(r[0]) <= len(nq) + 6]
+    if not cands:
+        return None
+    cands.sort(key=lambda r: len(r[0]))
+    return cands[0][2]
 
 
 def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> None:
@@ -1059,9 +1077,15 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
     LOCATION, NEVER VALUE. It is never promoted to ground truth (the
     three-class probe rule stands); the model still does the reading —
     this function touches loc/precision ONLY, never v or from.
-    FREE SECOND READ: a quote OCR cannot find on its page is a NAMED
-    contradiction (_ocr_quote_misses) — two independent reads of the
-    same pixels disagreeing, resolved toward neither."""
+    ROTATED PASS (ruled 2026-08-08 send 5): plan dims print vertically;
+    until rotation is covered, "OCR missed it" and "the model invented
+    it" are indistinguishable — and that distinction decides whether the
+    evidence layer can be trusted at all. Pages whose quotes miss the
+    upright pass are re-read at 90° CCW and CW with boxes mapped back to
+    upright page coordinates.
+    FREE SECOND READ: a quote no pass can find is a NAMED contradiction
+    (_ocr_quote_misses) — two independent reads of the same pixels
+    disagreeing, resolved toward neither."""
     if not isinstance(evidence, dict) or not evidence:
         return
     wanted: dict[int, list] = {}
@@ -1077,28 +1101,60 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                 wanted.setdefault(page, []).append((path, s, nq))
     if not wanted:
         return
+    import numpy as np
     misses = []
     for page, entries in wanted.items():
         try:
-            w, h, runs = _ocr_index_page(image_payloads[page - 1])
+            with Image.open(io.BytesIO(image_payloads[page - 1])) as im:
+                w, h = im.size
+                arr = np.array(im.convert("RGB"))
+            runs = _ocr_runs(arr)
         except Exception:
             logger.exception("[ai-blueprint] OCR failed on page %s — quote anchors stand", page)
             continue
+        pending = []
         for path, s, nq in entries:
-            cands = [r for r in runs if r[0] == nq]
-            if not cands:
-                cands = [r for r in runs if nq in r[0] and len(r[0]) <= len(nq) + 6]
-            if cands:
-                cands.sort(key=lambda r: len(r[0]))
-                x0, y0, x1, y1 = cands[0][2]
+            rect = _ocr_match(runs, nq)
+            if rect:
+                x0, y0, x1, y1 = rect
                 s["loc"] = {"x_pct": round(x0 / w * 100, 2),
                             "y_pct": round(y0 / h * 100, 2),
                             "w_pct": round(max(x1 - x0, 1) / w * 100, 2),
                             "h_pct": round(max(y1 - y0, 1) / h * 100, 2)}
                 s["precision"] = "ocr"
             else:
-                misses.append({"path": path, "page": page,
-                               "from": str(s.get("from") or "")})
+                pending.append((path, s, nq))
+        # Rotated passes — only when the upright pass left misses.
+        for k in (1, 3):
+            if not pending:
+                break
+            try:
+                rruns = _ocr_runs(np.rot90(arr, k))
+            except Exception:
+                continue
+            still = []
+            for path, s, nq in pending:
+                rect = _ocr_match(rruns, nq)
+                if rect:
+                    x0r, y0r, x1r, y1r = rect
+                    if k == 1:      # CCW: upright x = W-1-yr, y = xr
+                        x0, x1 = w - 1 - y1r, w - 1 - y0r
+                        y0, y1 = x0r, x1r
+                    else:           # CW:  upright x = yr, y = H-1-xr
+                        x0, x1 = y0r, y1r
+                        y0, y1 = h - 1 - x1r, h - 1 - x0r
+                    s["loc"] = {"x_pct": round(x0 / w * 100, 2),
+                                "y_pct": round(y0 / h * 100, 2),
+                                "w_pct": round(max(x1 - x0, 1) / w * 100, 2),
+                                "h_pct": round(max(y1 - y0, 1) / h * 100, 2)}
+                    s["precision"] = "ocr"
+                else:
+                    still.append((path, s, nq))
+            pending = still
+        for path, s, nq in pending:
+            misses.append({"path": path, "page": page,
+                           "from": str(s.get("from") or ""),
+                           "rotations_checked": True})
     if misses:
         raw["_ocr_quote_misses"] = misses
 
