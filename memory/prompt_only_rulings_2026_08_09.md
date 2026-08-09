@@ -71,3 +71,12 @@ b. Product-code column as the door-exclusion seam: OCR the code cell for the
 c. type_hint ↔ product_code prefix consistency check (SH/DH) — cheap flag.
 d. OCR-verify profile/accent callout quotes on their elevation sheets (same
    machinery as the mark locator).
+
+## KNOWN UNINSTRUMENTED GAP (Howard named it 2026-08-09 send 4 — logged, not ordered)
+GEOMETRIC OMISSION: roof planes and gutter runs now carry evidence for
+their VALUES (DIM-or-null, 2026-08-09), but nothing detects a plane or a
+run that simply NEVER GOT READ. They carry no printed marks, so the
+schedule omission instrument cannot reach them — omission there means a
+geometric eave-line census (a different instrument). The same
+one-directional blindness closed for schedules on 2026-08-09 remains
+open for geometry. The two lines that moved most all week live here.

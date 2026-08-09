@@ -278,6 +278,7 @@ an unfindable quote is flagged as a contradiction.
      "qty": 1,
      "count_by_page": {"<sheet>": n},     // same COUNT COLUMN rule as windows — the printed COUNT cell per schedule sheet, verbatim; qty must equal their sum. NEVER count door symbols on a floor plan.
      "schedule_pages": [<1-based sheet numbers whose schedule lists this mark>],
+ROW IDENTITY (ruled 2026-08-09): sibling schedule rows share a code prefix (SH 3-0_5-0 / SH 3-0_4-0 / SH 3-0_5-6) — the TRAILING digits ARE the row's identity. Transcribe each row's code, size and count from ITS OWN CELLS, glyph by glyph; NEVER reconstruct a row from its family and NEVER copy a sibling row's cells. Two marks NEVER share a product code on a real schedule — if your read gives two marks the same code, you have merged rows: go back and re-read the trailing digits of both.
      "type_hint": "entry|patio_slider|patio_french|garage|unknown",
      "exterior_evidence": "elevation|floor_plan_exterior_wall|none",
      "elevation": "front|back|left|right|unknown"  // which elevation sheet shows this door
@@ -1446,14 +1447,15 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
         pages = sorted(p for p in pages if 1 <= p <= n)
         return pages or list(range(1, n + 1))
 
-    def _found(norms, nq, mark_mode=False):
+    def _found(norms, nq, mark_mode=False, relax_cap=False):
         for run in norms:
             if run == nq:
                 return True
             if mark_mode:
                 if run.startswith(nq):
                     return True
-            elif len(nq) >= 3 and nq in run and len(run) <= len(nq) + 6:
+            elif len(nq) >= 3 and nq in run and (
+                    relax_cap or len(run) <= len(nq) + 6):
                 return True
         return False
 
@@ -1484,6 +1486,65 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
             read_marks.add(mk)
         if cd:
             read_codes.add(cd)
+    read_tokens = read_marks | read_codes
+
+    # MARK-MERGE DETECTION (Howard ruled 2026-08-09 send 4 — "three of
+    # your findings are one defect"): the model collapses sibling rows
+    # that share a code prefix, copying the survivor's trailing cells
+    # (C wore A's code, A's size, and once A's count; B and D before it).
+    # Two marks NEVER share a product code on a real schedule — sharers
+    # are SUSPECTED MERGES: flagged loud, and suspicion revokes the
+    # region-relaxed matching leniency below (a merged row's quote is
+    # its sibling's print — leniency would resurrect the wrong dims).
+    _by_code: dict[str, list[str]] = {}
+    for kind, r in rows:
+        cd = _ocr_norm(r.get("product_code"))
+        mk = str(r.get("id") or "").strip().upper()
+        if cd and mk:
+            _by_code.setdefault(cd, [])
+            if mk not in _by_code[cd]:
+                _by_code[cd].append(mk)
+    merge_suspects = {cd: mks for cd, mks in _by_code.items() if len(mks) > 1}
+    suspected_marks = {m for mks in merge_suspects.values() for m in mks}
+
+    # TABLE REGIONS (PROXIMITY RULE, ruled 2026-08-09 send 4 — "class
+    # over instance"): a schedule row's locating match must sit inside
+    # that schedule's table region. Anchored by the read's own located
+    # tokens; <2 anchors = no region = page-wide fallback, NAMED
+    # (upright-only coverage — schedule text is upright; a partial
+    # instrument that names its own blind spot beats none).
+    _regions: dict[int, tuple] = {}
+
+    def _region_for(page):
+        if page not in _regions:
+            got = _page_data(page)
+            reg = None
+            if got and got["boxed"]:
+                anchors = [b for nrm, b in got["boxed"] if nrm in read_tokens]
+                if len(anchors) >= 2:
+                    ax0 = min(b[0] for b in anchors)
+                    ay0 = min(b[1] for b in anchors)
+                    ax1 = max(b[2] for b in anchors)
+                    ay1 = max(b[3] for b in anchors)
+                    heights = sorted(b[3] - b[1] for b in anchors)
+                    row_h = max(1, heights[len(heights) // 2])
+                    reg = (ax0 - 0.5 * max(ax1 - ax0, 1) - 4 * row_h,
+                           ay0 - (ay1 - ay0) - 10 * row_h,
+                           ax1 + 0.5 * max(ax1 - ax0, 1) + 4 * row_h,
+                           ay1 + (ay1 - ay0) + 10 * row_h)
+            _regions[page] = reg
+        return _regions[page]
+
+    def _in_region(b, reg):
+        return (reg[0] <= b[0] and b[2] <= reg[2]
+                and reg[1] <= b[1] and b[3] <= reg[3])
+
+    def _overlaps_region(b, reg):
+        # Verification pool membership: a joined row run extends past
+        # the anchor-derived region — intersection is the right test.
+        # (Omission CANDIDATES stay fully-contained: short tokens.)
+        return not (b[2] < reg[0] or b[0] > reg[2]
+                    or b[3] < reg[1] or b[1] > reg[3])
 
     dropped, misses, interior_sig, skeletons = [], [], [], []
     for kind, r in rows:
@@ -1494,23 +1555,38 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
         pages = _pages_for(r)
         norms_all: list[str] = []
         ocr_ok = False
+        gated = False
         for p in pages:
             got = _page_data(p)
-            if got is not None:
-                ocr_ok = True
+            if got is None:
+                continue
+            ocr_ok = True
+            reg = _region_for(p)
+            if reg is not None:
+                # PROXIMITY: inside the table region only (upright).
+                norms_all.extend(nrm for nrm, b in got["boxed"]
+                                 if _overlaps_region(b, reg))
+                gated = True
+            else:
                 norms_all.extend(got["norms"])
         if not ocr_ok:
             continue  # engine failure is never evidence of fabrication
+        mark = str(r.get("id") or "").strip() or "?"
+        # Region-gated matching may relax the containment cap (the region
+        # is the constraint; joined schedule rows run long) — EXCEPT for
+        # suspected merge rows, whose quotes are their sibling's print.
+        relax = gated and mark.upper() not in suspected_marks
         for field, q, mm in quotes:
             nq = _ocr_norm(q)
             if not nq:
                 continue
-            ok = _found(norms_all, nq, mark_mode=mm)
+            ok = _found(norms_all, nq, mark_mode=mm, relax_cap=relax)
             skeleton = False
             if not ok and not mm:
                 for v in _quote_variants(q)[1:]:
                     nv = _ocr_norm(v)
-                    if len(nv) >= 3 and _found(norms_all, nv):
+                    if len(nv) >= 3 and _found(norms_all, nv,
+                                               relax_cap=relax):
                         ok = True
                         skeleton = True
                         skeletons.append({"kind": kind,
@@ -1520,7 +1596,6 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
             checks[field] = (ok, q, nq)
         if not checks:
             continue
-        mark = str(r.get("id") or "").strip() or "?"
         # SHORT-QUOTE VETO (Howard ruled 2026-08-09): a quote of two
         # characters or less carries NO SURVIVAL WEIGHT — E1 survived its
         # own fabrication because "3'-0\"" → "30" trivially matched a
@@ -1580,7 +1655,6 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
     # loud, named, resolved by a human. Fewer than two anchors on a page
     # leaves the region undecidable — skipped, never guessed.
     omissions: list[dict] = []
-    read_tokens = read_marks | read_codes
     # Door-mark omission candidates are restricted to the initial letters
     # the read's own door marks carry (E, G on a sheet reading E*/G*) —
     # grid bubbles and section tags (RR1, X17, K40) are not door rows.
@@ -1591,23 +1665,12 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
         got = _page_data(p)
         if not got or not got["boxed"]:
             continue
-        anchors = [b for nrm, b in got["boxed"] if nrm in read_tokens]
-        if len(anchors) < 2:
+        reg = _region_for(p)
+        if reg is None:
             continue
-        x0 = min(b[0] for b in anchors)
-        y0 = min(b[1] for b in anchors)
-        x1 = max(b[2] for b in anchors)
-        y1 = max(b[3] for b in anchors)
-        # The table extends past the anchors — omitted rows usually sit
-        # BELOW the rows we read. Pad by the anchor span plus row heights.
-        heights = sorted(b[3] - b[1] for b in anchors)
-        row_h = max(1, heights[len(heights) // 2])
-        pad_x = 0.5 * max(x1 - x0, 1) + 4 * row_h
-        pad_y = (y1 - y0) + 10 * row_h
         seen: set[str] = set()
         for nrm, b in got["boxed"]:
-            if not (x0 - pad_x <= b[0] and b[2] <= x1 + pad_x
-                    and y0 - pad_y <= b[1] and b[3] <= y1 + pad_y):
+            if not _in_region(b, reg):
                 continue
             if not (_SCHED_CODE_RE.match(nrm)
                     or (_DOOR_MARK_RE.match(nrm)
@@ -1619,6 +1682,72 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
                 continue  # one-glyph OCR drift of a row we DID read
             seen.add(nrm)
             omissions.append({"page": p, "token": nrm})
+
+    # MARK-MERGE register: name the sharers, and when an omitted code
+    # sits one glyph from the shared one, name the likely true row
+    # ("C duplicates A's SH3050 while SH3056 prints unread").
+    if merge_suspects:
+        def _sub1(a, b):
+            return (len(a) == len(b)
+                    and sum(1 for x, y in zip(a, b) if x != y) == 1)
+        reg_ent = []
+        for cd, mks in merge_suspects.items():
+            likely = [o["token"] for o in omissions
+                      if _sub1(o["token"], cd) or _del1(cd, o["token"])
+                      or _del1(o["token"], cd)]
+            reg_ent.append({"code": cd, "marks": mks,
+                            "likely_unread": likely})
+        raw["_mark_merge_suspected"] = reg_ent
+
+    # CALLOUT CENSUS (Howard ruled 2026-08-09 send 4): a real detector
+    # behind "one profile — but this house has gables". Profile keywords
+    # printed on the ELEVATION sheets with no counterpart family in the
+    # read flag LOUD. No elevation sheets identified = no census — named
+    # by absence, never guessed.
+    try:
+        from profile_callouts import classify_profile
+        elev_pages = sorted({int(s.get("page")) for s in
+                             (raw.get("sheets_identified") or [])
+                             if isinstance(s, dict)
+                             and str(s.get("useful_for")) == "elevation"
+                             and 1 <= int(s.get("page") or 0) <= n})
+        if elev_pages:
+            have: set[str] = set()
+            for w in raw.get("walls") or []:
+                if not isinstance(w, dict):
+                    continue
+                for f in ("wall_body_profile_callout",
+                          "gable_profile_callout",
+                          "dormer_profile_callout"):
+                    fam = classify_profile(w.get(f))
+                    if fam and fam != "unknown":
+                        have.add(fam)
+                for a in (w.get("accents") or []):
+                    if isinstance(a, dict):
+                        fam = classify_profile(a.get("profile_callout"))
+                        if fam and fam != "unknown":
+                            have.add(fam)
+            _KEYWORDS = (("SHAKE", "shake"),
+                         ("BATTEN", "board_and_batten"),
+                         ("DUTCHLAP", "dutch_lap"),
+                         ("SCALLOP", "scallop"))
+            cal: list[dict] = []
+            flagged: set[str] = set()
+            for p in elev_pages:
+                got = _page_data(p)
+                if not got:
+                    continue
+                for nrm in got["norms"]:
+                    for kw, fam in _KEYWORDS:
+                        if kw in nrm and fam not in have \
+                                and fam not in flagged:
+                            flagged.add(fam)
+                            cal.append({"family": fam, "page": p,
+                                        "run": nrm[:40]})
+            if cal:
+                raw["_callout_omissions"] = cal
+    except Exception:
+        logger.exception("[ai-blueprint] callout census failed — no census")
 
     for k in ("windows", "doors"):
         arr = raw.get(k)
@@ -2184,6 +2313,25 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
                      "text": "; ".join(
                          f"{s.get('mark')}.{s.get('field')} \u201c{s.get('from')}\u201d"
                          for s in _skm[:8])})
+    # MARK-MERGE (ruled 2026-08-09 send 4): two marks never share a code
+    # on a real schedule — sharers are a suspected row merge, named with
+    # the likely unread sibling.
+    _mms = raw.get("_mark_merge_suspected") or []
+    if _mms:
+        rail.append({"level": "loud", "code": "mark_merge_suspected",
+                     "text": "; ".join(
+                         f"{' + '.join(m.get('marks') or [])} share {m.get('code')}"
+                         + (f" while {'/'.join(m['likely_unread'])} prints unread"
+                            if m.get("likely_unread") else "")
+                         for m in _mms[:6])})
+    # CALLOUT CENSUS (ruled 2026-08-09 send 4): a profile printed on the
+    # elevations that the read never carried.
+    _cal = raw.get("_callout_omissions") or []
+    if _cal:
+        rail.append({"level": "loud", "code": "callout_omitted",
+                     "text": "; ".join(
+                         f"{c.get('family')} (sheet {c.get('page')}, \u201c{c.get('run')}\u201d)"
+                         for c in _cal[:6])})
     # EVIDENCE-OR-NULL (ruled 2026-08-08): dims that arrived without a
     # quoted printed string were NULLED BY CONSTRUCTION — named here.
     _nulled = raw.get("_nulled_no_evidence") or []
