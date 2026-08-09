@@ -33,6 +33,12 @@ SEAM_REGISTRY = {
     "lp_smart_lines_cut":
         "Engine-owned lp_smart rows cut from blueprint results (THE CUT, "
         "ruled 2026-07-14) — LP derives through assemble_lp_package.",
+    "client_build_stale":
+        "A loaded page older than the deployed build — a surface that "
+        "silently disagrees with its own backend. Detected client-side "
+        "against GET /api/version; the banner reports the client/server "
+        "version pair and prompts a refresh (ruled 2026-08-09 after the "
+        "stale-page false data-loss report).",
 }
 
 

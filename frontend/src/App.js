@@ -2,6 +2,7 @@ import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import BuildMismatchBanner from "@/components/BuildMismatchBanner";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { BrandingProvider } from "@/lib/branding";
 import { CompanyProvider } from "@/lib/company";
@@ -48,6 +49,9 @@ function App() {
             <CompanyProvider>
               <BrowserRouter>
                 <Toaster position="top-right" theme="light" />
+                {/* STALE PAGE DETECTION (ruled 2026-08-09): a page older
+                    than the deployed build says so — on every route. */}
+                <BuildMismatchBanner />
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   <Route path="/branding-admin" element={<BrandingAdmin />} />

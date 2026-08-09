@@ -33,6 +33,7 @@ import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
 import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
 import SidingProfileChip from "@/components/estimate/SidingProfileChip";
+import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 import FinalJobSurface from "@/components/estimate/FinalJobSurface";
 
 export default function EstimateEditor() {
@@ -476,6 +477,24 @@ export default function EstimateEditor() {
                 never gated behind a measurement run. */}
             {activeTab === "vinyl" && (
               <SidingProfileChip est={est} catalog={catalog} update={update} save={save} />
+            )}
+            {/* ACCENT INJECTION WORKS ON EVERY DOOR (ruled 2026-08-09):
+                manual accents are how a contractor CORRECTS the app —
+                blueprint, Hover, photo. Previously reachable ONLY inside
+                the two run dialogs; now mounted on the estimate itself. */}
+            {activeTab === "vinyl" && est.hover_measurements && (
+              <PerElevationBreakdownCard
+                measurements={est.hover_measurements}
+                runId={est.hover_measurements._run_id}
+                onUpdate={async ({ measurements: newMeas, lines: newLines }) => {
+                  const patch = {
+                    hover_measurements: newMeas,
+                    ...(newLines ? { lines: newLines } : {}),
+                  };
+                  update(patch);
+                  await save({ ...est, ...patch });
+                }}
+              />
             )}
             {visibleSections.map((s) => (
             <SectionAccordion

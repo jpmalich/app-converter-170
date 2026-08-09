@@ -12,6 +12,7 @@ import React, { useMemo, useState } from "react";
 import { Plus, X, AlertTriangle, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import CompositionTrace from "@/components/estimate/CompositionTrace";
 
 const PROFILE_LABELS = {
@@ -323,6 +324,7 @@ function AddAccentModal({ elevationLabel, onClose, onSubmit }) {
 }
 
 export default function PerElevationBreakdownCard({ measurements, onUpdate, runId }) {
+  const t = useT();
   const [accentElev, setAccentElev] = useState(null);
   // Iter 78z (Swap Profile) — currently-open swap target.
   // Shape: { elevIdx, role: "body"|"gable"|"dormer"|"accent", accentIdx? }
@@ -345,9 +347,20 @@ export default function PerElevationBreakdownCard({ measurements, onUpdate, runI
     }, 0);
   }, [perProfile]);
 
-  // Skip rendering when AI didn't produce a per-elevation breakdown
-  // (legacy / HOVER PDF runs).
-  if (!perElevation.length) return null;
+  // UNGATED ON EVERY DOOR (Howard ruled 2026-08-09): accent injection is
+  // how a contractor CORRECTS the app — it cannot vanish silently. When
+  // the measurement carries no per-elevation breakdown (legacy / HOVER
+  // PDF), the gate is NAMED instead of the card disappearing.
+  if (!perElevation.length) {
+    return (
+      <div
+        className="border border-[var(--border)] bg-[var(--surface-muted)] px-3 py-2 text-[11px] text-[var(--muted)] mb-3"
+        data-testid="per-elev-empty"
+      >
+        {t("pe.empty")}
+      </div>
+    );
+  }
 
   // Sum-check banner — fires when the breakdown doesn't match siding_sqft
   // by more than 10% (rough guardrail for stale data / Claude misses).

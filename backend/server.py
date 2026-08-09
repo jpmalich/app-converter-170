@@ -69,6 +69,18 @@ from startup import run_startup  # noqa: E402
 app = FastAPI(title="Vinyl Siding Estimator API")
 app.include_router(api_router)
 
+# STALE PAGE DETECTION (Howard ruled 2026-08-09): the client compares the
+# build it loaded with against this — a page older than the deployed
+# build tells the user plainly and prompts a refresh. No auth: the login
+# page is as capable of being stale as any other.
+from build_version import get_build_version  # noqa: E402
+
+
+@app.get("/api/version")
+async def api_version():
+    return {"version": get_build_version()}
+
+
 # R3 (Howard ruled 2026-08-06): a failing request body names its field,
 # validation and layer SERVER-SIDE — log-only on failure, nothing
 # contractor-visible, response shape unchanged.
