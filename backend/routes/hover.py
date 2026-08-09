@@ -1070,9 +1070,12 @@ HOVER_MAPPING_SPEC = [
         # blueprint read carries no such row — its note says what the
         # number is: gross area, openings kept, no waste inside.
         "note": lambda m: (
-            "From HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'"
-            if (m.get("siding_with_openings_sqft") or 0) > 0
-            else "Gross wall area ÷ 100 = SQ — openings NOT deducted (ruled convention); no waste inside this number, the Waste % field is the only waste"
+            ("From HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'"
+             if (m.get("siding_with_openings_sqft") or 0) > 0
+             else "Gross wall area ÷ 100 = SQ — openings NOT deducted (ruled convention); no waste inside this number, the Waste % field is the only waste")
+            # A DEFAULTED PROFILE PRINTS AS DEFAULTED (Howard ruled
+            # 2026-08-09): this row is the spec default, not a choice.
+            + " · PROFILE DEFAULTED — not a choice; pick the profile on the estimate"
         ),
         "_is_default_siding": True,
     },

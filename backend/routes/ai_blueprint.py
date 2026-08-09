@@ -52,6 +52,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from deps import get_current_user
 from db import db
+import seam_accounting
 from routes.hover import _build_lines, _build_window_openings
 import measure_staging as staging
 
@@ -243,7 +244,8 @@ an unfindable quote is flagged as a contradiction.
      "catalog_size": "<a SEPARATELY-printed catalog/order size if the schedule prints one (e.g. '38x54'); empty otherwise — NEVER derived>",
      "width_in": number,                  // exact parse of printed_size: 2'-11 1/2" → 35.5; 3-6 → 42; 3050 → 36×60 — the SIZE column when printed, the code only when it is all there is
      "height_in": number,
-     "qty": 1,                            // TOTAL across ALL schedule sheets for this mark
+     "qty": 1,                            // THE COUNT COLUMN GOVERNS COUNTS (ruled 2026-08-08): the schedule PRINTS a COUNT — read it. qty = the printed COUNT summed across every schedule sheet that lists this mark. NEVER count window symbols on a floor plan, NEVER infer quantity from elevations or anything else. If a sheet's schedule prints no count for a mark, that sheet contributes nothing — flag it, don't estimate.
+     "count_by_page": {"<sheet>": n},     // the COUNT column value per schedule sheet, verbatim (e.g. {"6": 2, "7": 7}) — qty must equal their sum
      "schedule_pages": [<1-based sheet numbers whose schedule lists this mark>],
      "type_hint": "single_hung|double_hung|casement|slider|picture|fixed|awning|unknown",
      "elevation": "front|back|left|right|unknown"  // WHICH elevation sheet shows this opening — match the schedule mark (W1, A…) to the elevation drawings. When qty > 1 spans multiple elevations, split into separate rows per elevation. "unknown" ONLY if the mark appears on no elevation.
@@ -274,6 +276,8 @@ an unfindable quote is flagged as a contradiction.
      "width_in": number,
      "height_in": number,
      "qty": 1,
+     "count_by_page": {"<sheet>": n},     // same COUNT COLUMN rule as windows — the printed COUNT cell per schedule sheet, verbatim; qty must equal their sum. NEVER count door symbols on a floor plan.
+     "schedule_pages": [<1-based sheet numbers whose schedule lists this mark>],
      "type_hint": "entry|patio_slider|patio_french|garage|unknown",
      "exterior_evidence": "elevation|floor_plan_exterior_wall|none",
      "elevation": "front|back|left|right|unknown"  // which elevation sheet shows this door
@@ -940,12 +944,139 @@ def _enforce_evidence_or_null(raw: dict) -> dict:
         raw["_dim_evidence"] = evidence
     if nulled:
         raw["_nulled_no_evidence"] = nulled
+        seam_accounting.account(raw, "dims_nulled_no_evidence", nulled)
     if unread:
         # NO-SOURCE IS A FIRST-CLASS STATE (Visual Audit design req 3,
         # ruled 2026-08-08): dims the read abstained on are NAMED, not
         # omitted — "no source on the drawing" renders as clearly as a
         # highlight.
         raw["_dim_unread"] = unread
+    return raw
+
+
+def _enforce_count_column(raw: dict) -> dict:
+    """THE COUNT COLUMN GOVERNS COUNTS (Howard ruled 2026-08-08, enforced
+    at the seam 2026-08-09 — the prompt rule alone left the rerun at 23
+    vs the printed 16). Both halves of the ruling, plainly:
+      DO NOT count symbols on floor plans, ever.
+      DO sum the printed COUNT COLUMN across sheets for the same mark
+      (A: 2 on sheet 6 + 7 on sheet 7 = 9 — a per-sheet mark row is not
+      a distinct mark).
+    A mark the schedule prints no count for CONTRIBUTES NOTHING — it is
+    flagged, never estimated. Nothing here invents a number: every qty
+    written is the sum of printed cells; every removal is accounted."""
+    if not isinstance(raw, dict):
+        return raw
+    governed: list[dict] = []
+    unread: list[dict] = []
+    conflicts: list[dict] = []
+    merges: list[str] = []
+    for coll in ("windows", "doors"):
+        rows = [r for r in (raw.get(coll) or []) if isinstance(r, dict)]
+        if not rows:
+            continue
+
+        def _cells(r):
+            c = r.get("count_by_page")
+            return c if isinstance(c, dict) and c else None
+
+        # ---- per-sheet mark rows merge into ONE mark (counts summed) ----
+        # Merge only when count cells exist for the mark — a same-mark
+        # split WITHOUT cells is the elevation split the prompt asks for
+        # and stays untouched. Rows whose printed sizes disagree are NOT
+        # merged (the Mark-B sin: one mark wearing another's dimensions);
+        # mark_size_conflict names them for a human.
+        by_mark: dict[str, dict] = {}
+        out: list[dict] = []
+        for r in rows:
+            mk = str(r.get("id") or "").strip().upper()
+            base = by_mark.get(mk) if mk else None
+            can_merge = (
+                base is not None
+                and (_cells(base) or _cells(r))
+                and not (str(base.get("printed_size") or "").strip()
+                         and str(r.get("printed_size") or "").strip()
+                         and str(base.get("printed_size")).strip()
+                         != str(r.get("printed_size")).strip()))
+            if not can_merge:
+                if mk and mk not in by_mark:
+                    by_mark[mk] = r
+                out.append(r)
+                continue
+            merges.append(f"{coll}:{mk}")
+            rc = _cells(r)
+            if rc:
+                bc = base.get("count_by_page")
+                if not isinstance(bc, dict):
+                    bc = {}
+                    base["count_by_page"] = bc
+                for k, v in rc.items():
+                    k = str(k)
+                    if k in bc and bc[k] != v:
+                        conflicts.append({"mark": mk, "sheet": k,
+                                          "cells": f"{bc[k]} vs {v}"})
+                    else:
+                        bc[k] = v
+            sp = {*(base.get("schedule_pages") or []),
+                  *(r.get("schedule_pages") or [])}
+            if sp:
+                base["schedule_pages"] = sorted(sp)
+            if not str(base.get("printed_size") or "").strip():
+                base["printed_size"] = r.get("printed_size")
+            try:
+                base["qty"] = int(base.get("qty") or 0) + int(r.get("qty") or 0)
+            except (TypeError, ValueError):
+                pass
+
+        # ---- the printed COUNT cells govern qty ----
+        any_cells = any(_cells(r) for r in out)
+        for r in out:
+            mk = str(r.get("id") or "").strip().upper() or "?"
+            cbp = _cells(r)
+            if cbp:
+                try:
+                    total = sum(int(v) for v in cbp.values())
+                except (TypeError, ValueError):
+                    unread.append({"kind": coll, "mark": mk})
+                    r["qty"] = 0
+                    r["_count_unread"] = True
+                    continue
+                try:
+                    carried = int(r.get("qty") or 0)
+                except (TypeError, ValueError):
+                    carried = 0
+                if carried != total:
+                    governed.append({
+                        "kind": coll, "mark": mk,
+                        "carried": carried, "governed": total,
+                        "cells": ", ".join(f"sheet {k}: {v}"
+                                           for k, v in sorted(cbp.items()))})
+                r["qty"] = total
+            elif any_cells:
+                # The schedule prints counts — a mark row with no cell
+                # contributes NOTHING (flagged, never estimated).
+                unread.append({"kind": coll, "mark": mk})
+                r["qty"] = 0
+                r["_count_unread"] = True
+        if coll == "windows" and out and not any_cells:
+            raw.setdefault("_count_column_absent", []).append(coll)
+        raw[coll] = out
+    if merges:
+        raw["_mark_rows_merged"] = merges
+        seam_accounting.account(raw, "mark_rows_merged", merges)
+    if governed:
+        raw["_count_column_governed"] = governed
+        seam_accounting.account(
+            raw, "count_column_governed",
+            [f"{g['kind']}:{g['mark']} {g['carried']}→{g['governed']}"
+             for g in governed])
+    if unread:
+        raw["_count_cells_unread"] = unread
+        seam_accounting.account(
+            raw, "count_cells_unread",
+            [f"{u['kind']}:{u['mark']}" for u in unread])
+    if conflicts:
+        raw["_count_cell_conflicts"] = conflicts
     return raw
 
 
@@ -1157,6 +1288,137 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                            "rotations_checked": True})
     if misses:
         raw["_ocr_quote_misses"] = misses
+
+
+def _ocr_verify_marks(raw: dict, image_payloads: list,
+                      runs_for_page=None) -> None:
+    """MARKS FACE THE LOCATOR TOO (Howard ruled 2026-08-08/09 — 'an E1
+    exterior entry appears that the sheet does not hold; G2 carries
+    9'-2" where the sheet prints 9'-0"'). Every schedule row's quotes —
+    the mark letter, the printed size, the product code — are searched
+    on the row's own schedule sheets, upright and both rotations.
+    A row NONE of whose quotes locate is a fabrication: DROPPED,
+    accounted, loud. A located row whose printed size cannot be found
+    has that quote KILLED — dims null, the parse of a fabricated quote
+    never reaches the takeoff. OCR supplies existence, never value
+    (the hard separation stands); an OCR engine failure changes
+    nothing — rows stand."""
+    rows = [(k, r) for k in ("windows", "doors")
+            for r in (raw.get(k) or []) if isinstance(r, dict)]
+    if not rows or not image_payloads:
+        return
+    n = len(image_payloads)
+    if runs_for_page is None:
+        import numpy as np
+        _cache: dict[int, list] = {}
+        _failed: set[int] = set()
+
+        def runs_for_page(page: int):
+            if page not in _cache:
+                norms: list[str] = []
+                try:
+                    with Image.open(io.BytesIO(image_payloads[page - 1])) as im:
+                        arr = np.array(im.convert("RGB"))
+                    for k_rot in (0, 1, 3):
+                        a = np.rot90(arr, k_rot) if k_rot else arr
+                        norms.extend(r[0] for r in _ocr_runs(a))
+                except Exception:
+                    logger.exception(
+                        "[ai-blueprint] mark OCR failed on page %s — rows stand", page)
+                    _failed.add(page)
+                _cache[page] = norms
+            return None if page in _failed else _cache[page]
+
+    def _pages_for(r):
+        pages = set()
+        for p in (r.get("schedule_pages") or []):
+            try:
+                pages.add(int(p))
+            except (TypeError, ValueError):
+                continue
+        cbp = r.get("count_by_page")
+        if isinstance(cbp, dict):
+            for p in cbp:
+                try:
+                    pages.add(int(p))
+                except (TypeError, ValueError):
+                    continue
+        pages = sorted(p for p in pages if 1 <= p <= n)
+        return pages or list(range(1, n + 1))
+
+    def _found(norms, nq, mark_mode=False):
+        for run in norms:
+            if run == nq:
+                return True
+            if mark_mode:
+                if run.startswith(nq):
+                    return True
+            elif len(nq) >= 3 and nq in run and len(run) <= len(nq) + 6:
+                return True
+        return False
+
+    dropped, misses = [], []
+    for kind, r in rows:
+        quotes = [("id", str(r.get("id") or "").strip(), True),
+                  ("printed_size", str(r.get("printed_size") or "").strip(), False),
+                  ("product_code", str(r.get("product_code") or "").strip(), False)]
+        checks = {}
+        pages = _pages_for(r)
+        norms_all: list[str] = []
+        ocr_ok = False
+        for p in pages:
+            got = runs_for_page(p)
+            if got is not None:
+                ocr_ok = True
+                norms_all.extend(got)
+        if not ocr_ok:
+            continue  # engine failure is never evidence of fabrication
+        for field, q, mm in quotes:
+            nq = _ocr_norm(q)
+            if not nq:
+                continue
+            checks[field] = (_found(norms_all, nq, mark_mode=mm), q)
+        if not checks:
+            continue
+        mark = str(r.get("id") or "").strip() or "?"
+        if not any(ok for ok, _ in checks.values()):
+            dropped.append({"kind": kind, "mark": mark,
+                            "quotes": [q for _, q in checks.values()],
+                            "pages": pages, "rotations_checked": True})
+            r["_drop_not_located"] = True
+            continue
+        for field, (ok, q) in checks.items():
+            if ok:
+                continue
+            misses.append({"kind": kind, "mark": mark, "field": field,
+                           "from": q, "pages": pages,
+                           "rotations_checked": True})
+            if field == "printed_size":
+                # The quote is killed — its parse never reaches the
+                # takeoff; the claimed string survives in the register.
+                r["printed_size_not_located"] = q
+                r["printed_size"] = ""
+                r["width_in"] = None
+                r["height_in"] = None
+    for k in ("windows", "doors"):
+        arr = raw.get(k)
+        if isinstance(arr, list):
+            kept = [r for r in arr
+                    if not (isinstance(r, dict) and r.get("_drop_not_located"))]
+            if len(kept) != len(arr):
+                raw[k] = kept
+    if dropped:
+        raw["_marks_dropped_not_located"] = dropped
+        seam_accounting.account(
+            raw, "marks_dropped_not_located",
+            [f"{d['kind']}:{d['mark']}" for d in dropped])
+    if misses:
+        raw["_mark_quote_misses"] = misses
+        _nulled_sizes = [f"{m['kind']}:{m['mark']}" for m in misses
+                         if m["field"] == "printed_size"]
+        if _nulled_sizes:
+            seam_accounting.account(raw, "mark_size_quotes_nulled",
+                                    _nulled_sizes)
 
 
 def compute_read_stability(prev_raw: dict, raw: dict) -> dict:
@@ -1446,6 +1708,27 @@ def check_read_consistency(raw: dict) -> list[dict]:
                 "code": "mark_size_conflict", "level": "loud",
                 "vars": {"mark": mk, "sizes": " vs ".join(sorted(sizes))}})
 
+    # THE COUNT COLUMN GOVERNS COUNTS (ruled 2026-08-08): when the read
+    # names per-sheet COUNT cells, the carried qty must be their sum —
+    # a qty that isn't is symbol-counting wearing a schedule's clothes.
+    for win in (raw.get("windows") or []):
+        if not isinstance(win, dict):
+            continue
+        cbp = win.get("count_by_page")
+        if not isinstance(cbp, dict) or not cbp:
+            continue
+        try:
+            summed = sum(int(v) for v in cbp.values())
+        except (TypeError, ValueError):
+            continue
+        if summed != int(win.get("qty") or 0):
+            flags.append({
+                "code": "count_column_mismatch", "level": "loud",
+                "vars": {"mark": str(win.get("id") or "?"),
+                         "cells": ", ".join(f"sheet {k}: {v}" for k, v in sorted(cbp.items())),
+                         "summed": str(summed),
+                         "carried": str(win.get("qty") or 0)}})
+
     # DOOR SIZES FROM PRINT (ruled 2026-08-08): "appears to be 16x7" is
     # an admission of no source. When a door row quotes a printed size,
     # the carried numbers must reproduce its parse — same discipline as
@@ -1605,6 +1888,46 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     if _idd:
         rail.append({"level": "warn", "code": "interior_doors_dropped",
                      "text": str(_idd)})
+    # THE COUNT COLUMN GOVERNS COUNTS (ruled 2026-08-08, enforced
+    # 2026-08-09): every rewrite, unread cell, conflict, and merge the
+    # enforcement pass performed is NAMED here — nothing silent.
+    _ccg = raw.get("_count_column_governed") or []
+    if _ccg:
+        rail.append({"level": "loud", "code": "count_column_governed",
+                     "text": "; ".join(
+                         f"{g.get('mark')}: carried {g.get('carried')} → "
+                         f"printed {g.get('governed')} ({g.get('cells')})"
+                         for g in _ccg[:8])})
+    _ccu = raw.get("_count_cells_unread") or []
+    if _ccu:
+        rail.append({"level": "loud", "code": "count_cells_unread",
+                     "text": ", ".join(str(u.get("mark")) for u in _ccu[:12])})
+    _ccc = raw.get("_count_cell_conflicts") or []
+    if _ccc:
+        rail.append({"level": "loud", "code": "count_cell_conflict",
+                     "text": "; ".join(
+                         f"{c.get('mark')} sheet {c.get('sheet')}: {c.get('cells')}"
+                         for c in _ccc[:8])})
+    if "windows" in (raw.get("_count_column_absent") or []):
+        rail.append({"level": "warn", "code": "count_column_absent"})
+    _mrm = raw.get("_mark_rows_merged") or []
+    if _mrm:
+        rail.append({"level": "info", "code": "mark_rows_merged",
+                     "text": ", ".join(_mrm[:12])})
+    # MARKS FACE THE LOCATOR TOO (ruled 2026-08-09): fabricated rows and
+    # killed size quotes are named, never silent.
+    _mdn = raw.get("_marks_dropped_not_located") or []
+    if _mdn:
+        rail.append({"level": "loud", "code": "mark_not_located",
+                     "text": "; ".join(
+                         f"{d.get('mark')} ({d.get('kind')})"
+                         for d in _mdn[:8])})
+    _mqm = raw.get("_mark_quote_misses") or []
+    if _mqm:
+        rail.append({"level": "loud", "code": "mark_quote_miss",
+                     "text": "; ".join(
+                         f"{m.get('mark')}.{m.get('field')} \u201c{m.get('from')}\u201d"
+                         for m in _mqm[:8])})
     # EVIDENCE-OR-NULL (ruled 2026-08-08): dims that arrived without a
     # quoted printed string were NULLED BY CONSTRUCTION — named here.
     _nulled = raw.get("_nulled_no_evidence") or []
@@ -1696,6 +2019,9 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             "dropped": list(raw.get("_nulled_no_evidence") or []),
             "unread": list(raw.get("_dim_unread") or []),
         },
+        # SEAM ACCOUNTING (ruled 2026-08-09): the ledger of everything
+        # any layer removed — visible, never silent.
+        "seams": raw.get("_seam_ledger") or None,
         "rail": rail,
     }
 
@@ -1850,6 +2176,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     if _interior:
         doors = [d for d in doors if d not in _interior]
         raw["_interior_doors_dropped"] = len(_interior)
+        seam_accounting.account(
+            raw, "interior_doors_dropped",
+            [str(d.get("id") or "?") for d in _interior])
 
     # Shakedown fix (2026-07-14) — pitch-computed gable rise. Printed
     # pitch is the authority; drawing-scaled reads under-state the rise
@@ -1902,6 +2231,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # is measure_staging.bucket_openings — one copy, all doors.
     _rows = []
     for win in windows:
+        if win.get("_count_unread"):
+            continue  # schedule printed no COUNT — contributes nothing (ruled)
         try:
             qty = max(1, int(win.get("qty") or 1))
         except (TypeError, ValueError):
@@ -1909,6 +2240,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         _rows.append({"type": "window", "count": qty,
                       "width_in": win.get("width_in"), "height_in": win.get("height_in")})
     for d in doors:
+        if d.get("_count_unread"):
+            continue  # schedule printed no COUNT — contributes nothing (ruled)
         t = (d.get("type_hint") or "").lower()
         if "garage" in t:
             bucket = "garage_door"
@@ -1932,6 +2265,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # the HOVER importer's contract.
     expanded_windows = []
     for win in windows:
+        if win.get("_count_unread"):
+            continue
         try:
             qty = max(1, int(win.get("qty") or 1))
         except (TypeError, ValueError):
@@ -2898,6 +3233,11 @@ async def _execute_ai_blueprint_worker(
         # EVIDENCE-OR-NULL (ruled 2026-08-08, structural): enforced at the
         # seam — nothing downstream ever sees an unevidenced dimension.
         raw = _enforce_evidence_or_null(raw)
+        # THE COUNT COLUMN GOVERNS COUNTS (ruled 2026-08-08, enforced
+        # 2026-08-09): the prompt rule alone left the rerun symbol-
+        # counting — now enforced at the seam. Per-sheet mark rows merge,
+        # printed COUNT cells sum, an unread count contributes nothing.
+        raw = _enforce_count_column(raw)
         # VISUAL AUDIT (same ruling, same build — one schema, one
         # renderer): precision labelling. Native text layer gives EXACT
         # boxes; vision boxes stay APPROXIMATE; failure never sinks the run.
@@ -2921,6 +3261,14 @@ async def _execute_ai_blueprint_worker(
                                         image_payloads, raw)
         except Exception:
             logger.exception("[ai-blueprint] ocr-locate failed — quote-only anchors stand")
+        # MARKS FACE THE LOCATOR TOO (ruled 2026-08-09): schedule-row
+        # quotes searched on their own sheets; a row no quote of which
+        # locates is dropped as fabricated; a fabricated size quote is
+        # killed. Failure never sinks the run.
+        try:
+            await asyncio.to_thread(_ocr_verify_marks, raw, image_payloads)
+        except Exception:
+            logger.exception("[ai-blueprint] mark-locate failed — rows stand")
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
         # SPEC-FIELD PRECEDENCE (ruled 2026-08-07): a PRINTED overhang
         # beats the form default; the source is named either way.
@@ -2939,8 +3287,16 @@ async def _execute_ai_blueprint_worker(
             # composition guard / per-system table / whole-piece rounding.
             # Blueprint results carry NO lp_smart lines; LP estimates
             # derive through assemble_lp_package via /lp-package/preview.
-            lines = [l for l in _build_lines(measurements)
+            _built = _build_lines(measurements)
+            lines = [l for l in _built
                      if (l.get("tab") or "vinyl") != "lp_smart"]
+            if len(lines) != len(_built):
+                # SEAM ACCOUNTING (ruled 2026-08-09): THE CUT accounts
+                # for what it removed.
+                seam_accounting.account(
+                    measurements, "lp_smart_lines_cut",
+                    [str(l.get("name") or "?") for l in _built
+                     if (l.get("tab") or "vinyl") == "lp_smart"])
         except Exception:
             lines = []
         try:

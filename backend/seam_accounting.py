@@ -1,0 +1,55 @@
+"""SEAM ACCOUNTING (Howard ruled 2026-08-09): any layer that filters,
+splits, projects, whitelists, or truncates data MUST account for what it
+removed. A removal with no accounting is the recurring failure class —
+the qty-0 filter that dropped rows, the 'es: {' splitter that truncated
+a dictionary — silent, green, wrong. The ledger names every seam and
+every removal; the detector test fails the build when a new filtering
+seam appears without registration."""
+from __future__ import annotations
+
+SEAM_REGISTRY = {
+    "interior_doors_dropped":
+        "Doors with exterior_evidence 'none' kept OFF the exterior count.",
+    "dims_nulled_no_evidence":
+        "Dims that arrived without a quoted printed string — nulled by "
+        "construction (evidence-or-null).",
+    "count_column_governed":
+        "Carried qtys replaced by the printed COUNT column's own sum "
+        "(the count column governs counts).",
+    "count_cells_unread":
+        "Marks the schedule prints no COUNT cell for — contribute "
+        "nothing, flagged, never estimated.",
+    "mark_rows_merged":
+        "Per-sheet schedule rows for the same mark merged into one "
+        "(counts summed across sheets — a per-sheet row is not a "
+        "distinct mark).",
+    "marks_dropped_not_located":
+        "Schedule rows none of whose quotes (mark, printed size, "
+        "product code) locate on their sheets under OCR — fabricated, "
+        "dropped.",
+    "mark_size_quotes_nulled":
+        "Printed-size quotes OCR cannot find on the row's sheets — the "
+        "quote is killed, its parse never reaches the takeoff.",
+    "lp_smart_lines_cut":
+        "Engine-owned lp_smart rows cut from blueprint results (THE CUT, "
+        "ruled 2026-07-14) — LP derives through assemble_lp_package.",
+}
+
+
+def account(carrier: dict, seam: str, removed, kept=None) -> dict:
+    """Record a removal against a REGISTERED seam. carrier is any dict
+    that persists (raw_ai, measurements); the ledger rides it as
+    _seam_ledger. An unregistered seam raises — register it or don't
+    remove data."""
+    if seam not in SEAM_REGISTRY:
+        raise KeyError(
+            f"unregistered seam '{seam}' — register it in "
+            f"seam_accounting.SEAM_REGISTRY before removing data")
+    led = carrier.setdefault("_seam_ledger", {})
+    entry = led.setdefault(seam, {"removed": 0, "items": []})
+    items = list(removed) if isinstance(removed, (list, tuple)) else [removed]
+    entry["removed"] += len(items)
+    entry["items"] = (entry["items"] + [str(i) for i in items])[:40]
+    if kept is not None:
+        entry["kept"] = kept
+    return carrier

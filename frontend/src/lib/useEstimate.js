@@ -453,6 +453,10 @@ export default function useEstimate(id) {
       tax_rate: source.tax_rate || 0,
       margin_pct: source.margin_pct || 0,
       pricing_mode: source.pricing_mode || "margin",
+      // PROFILE SELECTION WORKS ON EVERY DOOR (ruled 2026-08-09): the
+      // explicit profile choice rides every PUT so the projection seam
+      // can't silently drop it.
+      siding_profile_choice: source.siding_profile_choice || null,
       lines: (source.lines || [])
         // qty-0 rows drop (they re-materialize from the catalog merge) —
         // EXCEPT human-typed zeros: a hand-entered 0 is a choice that

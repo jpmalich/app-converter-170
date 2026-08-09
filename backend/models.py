@@ -190,6 +190,12 @@ class EstimateIn(BaseModel):
     # {"all": name} or {group: name}; names validated against the LP
     # palette by the package endpoint, stored verbatim here.
     lp_colors: Optional[dict] = None
+    # PROFILE SELECTION WORKS ON EVERY DOOR (Howard ruled 2026-08-09):
+    # the contractor's explicit siding-profile choice. None = the spec
+    # default was applied and the card must SAY so (a default is an
+    # unstated assumption; unstated assumptions are what this product
+    # exists to eliminate). Shape: {"name": str, "at": iso}.
+    siding_profile_choice: Optional[dict] = None
     # Iter 79j.47 — Customer contact + company + billing + lead source.
     # Every new field is Optional[str] with default None (NOT ""); the
     # PUT handler's model_dump(exclude_none=True) means a partial payload

@@ -32,6 +32,7 @@ import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, S
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
 import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
+import SidingProfileChip from "@/components/estimate/SidingProfileChip";
 import FinalJobSurface from "@/components/estimate/FinalJobSurface";
 
 export default function EstimateEditor() {
@@ -470,6 +471,11 @@ export default function EstimateEditor() {
           <>
             {isLpKind && activeTab === "lp_smart" && (
               <LpMaterialListPanel est={est} update={update} onPackage={setLpPkg} />
+            )}
+            {/* PROFILE SELECTION WORKS ON EVERY DOOR (ruled 2026-08-09):
+                never gated behind a measurement run. */}
+            {activeTab === "vinyl" && (
+              <SidingProfileChip est={est} catalog={catalog} update={update} save={save} />
             )}
             {visibleSections.map((s) => (
             <SectionAccordion
