@@ -69,6 +69,25 @@ class TestClientContract:
                 assert "{client}" in line and "{server}" in line
 
 
+class TestRunIdentityOnTheCard:
+    """Howard ruled 2026-08-09 send 6: reference runs by ESTIMATE NUMBER +
+    RUN TIMESTAMP, and the run id lives ON THE CARD — a walk instruction
+    must never cost a round trip."""
+
+    def test_status_payload_carries_run_identity(self):
+        src = (BACKEND / "routes" / "ai_blueprint.py").read_text()
+        assert 'result_payload["readback"]["run"]' in src
+
+    def test_card_prints_the_identity(self):
+        src = (FRONTEND / "components" / "estimate"
+               / "BlueprintReadBackCard.jsx").read_text()
+        assert "bp-rb-run-identity" in src
+
+    def test_identity_label_en_and_es(self):
+        d = (FRONTEND / "lib" / "dictionaries.js").read_text()
+        assert d.count('"bp.rb.run"') == 2
+
+
 class TestAccentUngated:
     def test_card_mounts_on_the_estimate_page(self):
         src = (FRONTEND / "pages" / "EstimateEditor.jsx").read_text()

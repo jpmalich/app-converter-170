@@ -3433,13 +3433,22 @@ async def ai_blueprint_status(
     if isinstance(created, datetime):
         ref = completed if isinstance(completed, datetime) else datetime.now(timezone.utc)
         elapsed_ms = int((ref - created).total_seconds() * 1000)
+    result_payload = _with_readback(strip_cost_keys(doc.get("result")),
+                                    source_probe=doc.get("source_probe"),
+                                    stability=doc.get("stability"))
+    # RUN IDENTITY ON THE CARD (Howard ruled 2026-08-09 send 6: "I cannot
+    # see a4cbce91 anywhere in the UI — every walk instruction costs a
+    # round trip"). The readback header prints run id + fired-at.
+    if isinstance(result_payload, dict) and isinstance(result_payload.get("readback"), dict):
+        result_payload["readback"]["run"] = {
+            "id": run_id,
+            "at": created.isoformat() if isinstance(created, datetime) else created,
+        }
     return {
         "run_id": run_id,
         "status": doc.get("status"),
         "stage": doc.get("stage"),
-        "result": _with_readback(strip_cost_keys(doc.get("result")),
-                                 source_probe=doc.get("source_probe"),
-                                 stability=doc.get("stability")),
+        "result": result_payload,
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
         "source_probe": doc.get("source_probe"),

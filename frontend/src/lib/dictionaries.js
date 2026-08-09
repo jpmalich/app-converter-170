@@ -413,6 +413,7 @@ export const dict = {
     // ---- Blueprint Read-Back Card (verification, display-only) ----
     "bp.rb.title": "Read-Back — what the app read",
     "bp.rb.readonly": "Display only — reads the run, changes nothing",
+    "bp.rb.run": "run",
     "bp.rb.planes": "Roof-plane census",
     "bp.rb.plane": "Plane",
     "bp.rb.eave": "Eave LF",
@@ -1235,6 +1236,7 @@ export const dict = {
     // ---- Tarjeta de lectura de verificación del plano (solo lectura) ----
     "bp.rb.title": "Lectura de verificación — lo que leyó la app",
     "bp.rb.readonly": "Solo visualización — lee la corrida, no cambia nada",
+    "bp.rb.run": "corrida",
     "bp.rb.planes": "Censo de planos de techo",
     "bp.rb.plane": "Plano",
     "bp.rb.eave": "Alero LF",

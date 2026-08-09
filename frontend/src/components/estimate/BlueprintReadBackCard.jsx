@@ -29,7 +29,7 @@ const Flag = ({ level, children, testid }) => {
 export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
   const t = useT();
   if (!readback) return null;
-  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency, stability, evidence } = readback;
+  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency, stability, evidence, run } = readback;
   const mismatches = stability
     ? [
         ...(stability.counts || []).filter((c) => !c.match),
@@ -42,7 +42,17 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
     <div data-testid="bp-readback-card" className="border border-[var(--border)] mt-3">
       <div className="px-3 py-2 border-b border-[var(--border)] flex items-center justify-between">
         <span className="text-[11px] font-bold uppercase tracking-wider">{t("bp.rb.title")}</span>
-        <span className="text-[10px] text-[var(--muted)]">{t("bp.rb.readonly")}</span>
+        <span className="flex items-center gap-3">
+          {/* RUN IDENTITY (ruled 2026-08-09): walks reference estimate
+              number + run timestamp — the id lives on the card itself. */}
+          {run?.id && (
+            <span className="text-[10px] font-mono-num text-[var(--muted)]" data-testid="bp-rb-run-identity">
+              {t("bp.rb.run")} {String(run.id).slice(0, 8)}
+              {run.at ? ` · ${String(run.at).slice(0, 16).replace("T", " ")} UTC` : ""}
+            </span>
+          )}
+          <span className="text-[10px] text-[var(--muted)]">{t("bp.rb.readonly")}</span>
+        </span>
       </div>
 
       {/* 0 — source (retention ruling 2026-08-07: the original upload is kept;
