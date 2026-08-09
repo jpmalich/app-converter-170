@@ -42,9 +42,10 @@ ALLOWLIST = {
     '[d for d in doors if d not in _interior]',
     # ACCOUNTED (lp_smart_lines_cut) — THE CUT.
     '[l for l in _built if (l.get("tab") or "vinyl") != "lp_smart"]',
-    # ACCOUNTED (marks_dropped_not_located) — fabricated rows leave.
+    # ACCOUNTED (marks_dropped_not_located + interior_signal_dropped) —
+    # fabricated rows and machine-read interior rows leave.
     '[r for r in arr if not (isinstance(r, dict) and '
-    'r.get("_drop_not_located"))]',
+    '(r.get("_drop_not_located") or r.get("_drop_interior_signal")))]',
     # INERT — the accounting arm of THE CUT: projects the removed rows'
     # names INTO the ledger, removes nothing itself.
     '[str(l.get("name") or "?") for l in _built '

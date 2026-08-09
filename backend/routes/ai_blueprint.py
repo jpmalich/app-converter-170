@@ -307,8 +307,8 @@ an unfindable quote is flagged as a contradiction.
     // not just the one in the table). A missing plane is a missing
     // gutter run downstream — the four-wall rectangle CANNOT recover it.
     {"label": "main" | "garage" | "porch" | "<other, verbatim from plan>",
-     "eave_lf": number,            // horizontal eave (gutter) run this plane contributes, all sides summed
-     "rake_lf": number,            // TOTAL sloped rake edge on this plane. A plane with a GABLE END has rakes — NEVER 0 for a gabled plane. Per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × pitch_rise/12)²). READ THE ELEVATIONS: an attached garage wing with ITS OWN gable — including an intersecting / double gable where the garage roof meets the main roof — contributes rake edges the main-rectangle walk cannot see. If any elevation shows a separate garage gable, that plane's rake_lf MUST come back non-zero.
+     "eave_lf": DIM | null,            // horizontal eave (gutter) run this plane contributes, all sides summed — EVIDENCED ({"v","page","from"} quoting the printed dim string(s); a figure SUMMED from several printed dims uses the derived form {"v","calc","srcs":[...]}). null when the roof plan prints no dimension for it — NEVER a guess (bare numbers are DROPPED by the pipeline, ruled 2026-08-09)
+     "rake_lf": DIM | null,            // TOTAL sloped rake edge on this plane — EVIDENCED the same way (derived form when computed from width + pitch: calc names the arithmetic, srcs quote the printed width and pitch). A plane with a GABLE END has rakes — NEVER 0 for a gabled plane. Per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × pitch_rise/12)²). READ THE ELEVATIONS: an attached garage wing with ITS OWN gable — including an intersecting / double gable where the garage roof meets the main roof — contributes rake edges the main-rectangle walk cannot see. If any elevation shows a separate garage gable, that plane's rake_lf MUST come back non-null.
      "gable_ends": number,          // how many gable ends (triangular end faces) this plane carries: 0 for a hip or shed plane, 1 per gable end. The app reports the total across planes.
      "is_porch": true | false,
      "porch_ceiling_sqft": number,  // porch planes only: ceiling area under the roof (soffit material, read porch depth × length from the floor plan); 0 otherwise
@@ -335,7 +335,7 @@ an unfindable quote is flagged as a contradiction.
   "outside_corner_lf": number, // SUM over outside corners of EACH CORNER'S OWN trim height. A 1-story garage-wing corner runs the GARAGE eave height; a 2-story main-body corner runs the FULL height. NEVER count × average height — a material-governing dimension is never averaged (261 Haugh doctrine: the average hides tall corners AND inflates short ones).
   "outside_corner_heights_ft": [DIM | null], // PER-CORNER trim heights as EVIDENCED DIMS ({"v","page","from"} in FEET), ONE entry per outside corner in walk order (ruled 2026-08-06). A corner joins TWO walls — report the TALLER wall's height, run to the EAVE the corner trim dies into. READ A PRINTED DIMENSION (ruled 2026-08-07): NEVER derive a corner height by stacking ceiling heights + floor structure — if your only basis is a calculation rather than a printed dim, return null for that corner and say so in notes. On a GABLE END the corner runs to the EAVE — never an area÷width figure, which lands between eave and ridge. null for a corner no printed dimension resolves — NEVER average or guess it.
   "gutter_runs": [ // GUTTER RUN INVENTORY (ruled 2026-08-06) — each CONTINUOUS eave run that carries gutter, walked along the FACADES. ONE entry per continuous run: where a lower roof's eave (garage bump-out) is flush and continuous with the run beside it, that is ONE run counted ONCE — never re-list a segment inside a run already listed. A porch lists only the eave sides that actually carry gutter. [] when the drawings don't resolve the runs — NEVER invent.
-    {"label": "<front|back|left|right|porch|...>", "lf": number}
+    {"label": "<front|back|left|right|porch|...>", "lf": DIM | null}  // EVIDENCED ({"v","page","from"} or the derived form when summed) — the run's length quotes the printed facade/eave dims it walks. null when no printed dim resolves it — NEVER a guess (ruled 2026-08-09)
   ],
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
   "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
@@ -624,17 +624,31 @@ Return ONLY this JSON, no explanation:
   "roof_pitch": "<main body pitch, e.g. '7/12'>",
   "roof_planes": [
     {"label": "main" | "garage" | "porch" | "<other>",
-     "eave_lf": number, "rake_lf": number, "gable_ends": number,
+     "eave_lf": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null,
+     "rake_lf": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null,  // derived form {"v","calc","srcs":[...]} when computed from width + pitch
+     "gable_ends": number,
      "is_porch": true | false, "porch_ceiling_sqft": number}
   ],
   "outside_corner_count": number, "outside_corner_lf": number,
   "outside_corner_heights_ft": [number | null],
   "inside_corner_count": number, "inside_corner_lf": number,
-  "gutter_runs": [{"label": "<front|back|left|right|porch|...>", "lf": number}],
+  "gutter_runs": [{"label": "<front|back|left|right|porch|...>", "lf": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null}],
   "notes": "<secondary pitches, anything illegible>"
 }"""
 
 _PITCH_RE = re.compile(r"^\d{1,2}(\.\d+)?/12$")
+
+
+def _dim_v(x) -> float:
+    """Numeric view of a value that may still be a DIM object ({'v',...})
+    — pre-enforcement code paths (roof-pass merge) compare magnitudes
+    without touching the evidence."""
+    if isinstance(x, dict):
+        x = x.get("v")
+    try:
+        return float(x or 0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _merge_roof_pass(raw: dict, rp: dict) -> dict:
@@ -658,15 +672,16 @@ def _merge_roof_pass(raw: dict, rp: dict) -> dict:
         # gutter run; the focused read is the only source).
         raw["roof_planes"] = old_planes + [new_g]
         accepted["garage_plane_appended"] = new_g
-    elif new_g and old_g and float(new_g.get("rake_lf") or 0) > 0 \
-            and float(old_g.get("rake_lf") or 0) == 0 \
+    elif new_g and old_g and _dim_v(new_g.get("rake_lf")) > 0 \
+            and _dim_v(old_g.get("rake_lf")) == 0 \
             and int(old_g.get("gable_ends") or 0) == 0:
         # SURGICAL: the full-context read keeps its eave figure; the
         # focused read (which actually looked at the gable) supplies
-        # ONLY the rake edges + gable-end census it missed.
-        old_g["rake_lf"] = float(new_g["rake_lf"])
+        # ONLY the rake edges + gable-end census it missed. The DIM
+        # object rides whole — evidence is never stripped in a merge.
+        old_g["rake_lf"] = new_g.get("rake_lf")
         old_g["gable_ends"] = int(new_g.get("gable_ends") or 0)
-        accepted["garage_rakes"] = {"rake_lf": old_g["rake_lf"],
+        accepted["garage_rakes"] = {"rake_lf": _dim_v(old_g["rake_lf"]),
                                     "gable_ends": old_g["gable_ends"]}
     pitch = str(rp.get("roof_pitch") or "").strip()
     if pitch and _PITCH_RE.match(pitch) and pitch != str(raw.get("roof_pitch") or ""):
@@ -747,7 +762,7 @@ def _roof_pass_needed(raw: dict) -> bool:
         return True
     # Garage plane present but gable-blind (rake 0 AND no gable ends) —
     # the focused read verifies the elevation's gable.
-    return all(float(p.get("rake_lf") or 0) == 0
+    return all(_dim_v(p.get("rake_lf")) == 0
                and int(p.get("gable_ends") or 0) == 0 for p in garage)
 
 
@@ -925,6 +940,18 @@ def _enforce_evidence_or_null(raw: dict) -> dict:
         if isinstance(p, dict) and p.get("is_porch"):
             for k in ("porch_width_ft", "porch_depth_ft"):
                 _norm(p, k, f"porch.{k}")
+    # BARE-NUMBER EVIDENCE (Howard ruled 2026-08-09): the instability
+    # that remained lived exactly in the unguarded family — roof-plane
+    # eave/rake figures and gutter runs join the evidence discipline.
+    for i, p in enumerate(raw.get("roof_planes") or []):
+        if not isinstance(p, dict):
+            continue
+        label = str(p.get("label") or i)
+        for k in ("eave_lf", "rake_lf"):
+            _norm(p, k, f"roof_planes.{label}.{k}")
+    for i, g in enumerate(raw.get("gutter_runs") or []):
+        if isinstance(g, dict):
+            _norm(g, "lf", f"gutter_runs.{str(g.get('label') or i)}.lf")
     hs = raw.get("outside_corner_heights_ft")
     if isinstance(hs, list):
         out = []
@@ -1174,6 +1201,29 @@ def _ocr_norm(s: str) -> str:
     return re.sub(r"[^0-9A-Za-z]", "", str(s or "")).upper()
 
 
+# OMISSION CHECK + DOOR SIGNAL vocab (Howard ruled 2026-08-09).
+_SCHED_CODE_RE = re.compile(r"^(SH|DH|CSMT|CS|AWN|SLD|SL)\d{3,4}$")
+_DOOR_MARK_RE = re.compile(r"^[A-Z]{1,2}\d{1,2}$")
+_INTERIOR_MARKERS = ("HOLLOWCORE", "HDWLCORE", "GARAGETOHOUSE")
+
+
+def _del1(a: str, b: str) -> bool:
+    """True when `a` is `b` with exactly one character deleted (the
+    SH340-vs-SH3040 OCR glyph-drop class)."""
+    if len(a) + 1 != len(b):
+        return False
+    i = j = skips = 0
+    while i < len(a) and j < len(b):
+        if a[i] == b[j]:
+            i += 1
+        else:
+            skips += 1
+            if skips > 1:
+                return False
+        j += 1
+    return True
+
+
 def _ocr_runs(arr):
     """OCR one raster array → [(norm, raw, (x0,y0,x1,y1))] in that
     array's own coordinates."""
@@ -1198,6 +1248,45 @@ def _ocr_match(runs, nq):
         return None
     cands.sort(key=lambda r: len(r[0]))
     return cands[0][2]
+
+
+def _join_adjacent_runs(runs, max_window=8):
+    """ADJACENT-RUN JOINING (Howard ruled 2026-08-09): OCR fragments
+    fraction-heavy cells — 2'-11 1/2" x 4'-11 1/2" comes back as separate
+    runs and a CORRECT quote was killed by tokenization ("an instrument
+    that kills good data is a defect, not a virtue"). Runs sharing a text
+    line join into synthetic runs (norms concatenated, boxes unioned) so
+    a multi-token quote can locate. Originals are never replaced."""
+    lines = []
+    for r in sorted(runs, key=lambda r: ((r[2][1] + r[2][3]) / 2, r[2][0])):
+        _, _, (x0, y0, x1, y1) = r
+        placed = False
+        for ln in lines:
+            ov = min(y1, ln["y1"]) - max(y0, ln["y0"])
+            if ov > 0.5 * max(1, min(y1 - y0, ln["y1"] - ln["y0"])):
+                ln["runs"].append(r)
+                ln["y0"], ln["y1"] = min(ln["y0"], y0), max(ln["y1"], y1)
+                placed = True
+                break
+        if not placed:
+            lines.append({"y0": y0, "y1": y1, "runs": [r]})
+    joined = []
+    for ln in lines:
+        rs = sorted(ln["runs"], key=lambda r: r[2][0])
+        for i in range(len(rs)):
+            norm, rawtxt = rs[i][0], rs[i][1]
+            x0, y0, x1, y1 = rs[i][2]
+            for j in range(i + 1, min(i + max_window, len(rs))):
+                jx0, jy0, jx1, jy1 = rs[j][2]
+                h = max(y1 - y0, jy1 - jy0, 1)
+                if jx0 - x1 > 3.0 * h:
+                    break
+                norm += rs[j][0]
+                rawtxt += " " + rs[j][1]
+                x1 = max(x1, jx1)
+                y0, y1 = min(y0, jy0), max(y1, jy1)
+                joined.append((norm, rawtxt, (x0, y0, x1, y1)))
+    return joined
 
 
 def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> None:
@@ -1240,6 +1329,7 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                 w, h = im.size
                 arr = np.array(im.convert("RGB"))
             runs = _ocr_runs(arr)
+            runs = runs + _join_adjacent_runs(runs)
         except Exception:
             logger.exception("[ai-blueprint] OCR failed on page %s — quote anchors stand", page)
             continue
@@ -1261,6 +1351,7 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                 break
             try:
                 rruns = _ocr_runs(np.rot90(arr, k))
+                rruns = rruns + _join_adjacent_runs(rruns)
             except Exception:
                 continue
             still = []
@@ -1310,24 +1401,33 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
     n = len(image_payloads)
     if runs_for_page is None:
         import numpy as np
-        _cache: dict[int, list] = {}
-        _failed: set[int] = set()
+        _cache: dict[int, object] = {}
 
         def runs_for_page(page: int):
             if page not in _cache:
-                norms: list[str] = []
                 try:
                     with Image.open(io.BytesIO(image_payloads[page - 1])) as im:
                         arr = np.array(im.convert("RGB"))
-                    for k_rot in (0, 1, 3):
-                        a = np.rot90(arr, k_rot) if k_rot else arr
-                        norms.extend(r[0] for r in _ocr_runs(a))
+                    up = _ocr_runs(arr)
+                    boxed = [(r[0], r[2]) for r in up + _join_adjacent_runs(up)]
+                    norms = [b[0] for b in boxed]
+                    for k_rot in (1, 3):
+                        rr = _ocr_runs(np.rot90(arr, k_rot))
+                        norms.extend(r[0] for r in rr + _join_adjacent_runs(rr))
+                    _cache[page] = {"norms": norms, "boxed": boxed}
                 except Exception:
                     logger.exception(
                         "[ai-blueprint] mark OCR failed on page %s — rows stand", page)
-                    _failed.add(page)
-                _cache[page] = norms
-            return None if page in _failed else _cache[page]
+                    _cache[page] = None
+            return _cache[page]
+
+    def _page_data(page):
+        got = runs_for_page(page)
+        if got is None:
+            return None
+        if isinstance(got, dict):
+            return got
+        return {"norms": list(got), "boxed": []}
 
     def _pages_for(r):
         pages = set()
@@ -1357,7 +1457,35 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
                 return True
         return False
 
-    dropped, misses = [], []
+    def _quote_variants(q: str) -> list[str]:
+        """FRACTION SKELETON (2026-08-09, from the live re-kill): the OCR
+        engine cannot read the stacked ½ glyphs at all — joining cannot
+        restore glyphs never read. A size quote also tries its
+        fraction-stripped skeleton (and the x-less digit skeleton); a
+        skeleton match LOCATES the quote and is NAMED as such. The
+        skeleton still kills a wrong quote — 5'-0 does not match a
+        printed 5'-5."""
+        out = [q]
+        stripped = re.sub(r"\s*\d/\d\s*\"?", "", q)
+        if stripped != q:
+            out.append(stripped)
+            out.append(re.sub(r"[xX\u00d7]", " ", stripped))
+        return out
+
+    all_sched_pages: set[int] = set()
+    read_marks: set[str] = set()
+    read_codes: set[str] = set()
+    for _, r in rows:
+        all_sched_pages.update(_pages_for(r) if (r.get("schedule_pages")
+                                                 or r.get("count_by_page")) else [])
+        mk = _ocr_norm(r.get("id"))
+        cd = _ocr_norm(r.get("product_code"))
+        if mk:
+            read_marks.add(mk)
+        if cd:
+            read_codes.add(cd)
+
+    dropped, misses, interior_sig, skeletons = [], [], [], []
     for kind, r in rows:
         quotes = [("id", str(r.get("id") or "").strip(), True),
                   ("printed_size", str(r.get("printed_size") or "").strip(), False),
@@ -1367,27 +1495,70 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
         norms_all: list[str] = []
         ocr_ok = False
         for p in pages:
-            got = runs_for_page(p)
+            got = _page_data(p)
             if got is not None:
                 ocr_ok = True
-                norms_all.extend(got)
+                norms_all.extend(got["norms"])
         if not ocr_ok:
             continue  # engine failure is never evidence of fabrication
         for field, q, mm in quotes:
             nq = _ocr_norm(q)
             if not nq:
                 continue
-            checks[field] = (_found(norms_all, nq, mark_mode=mm), q)
+            ok = _found(norms_all, nq, mark_mode=mm)
+            skeleton = False
+            if not ok and not mm:
+                for v in _quote_variants(q)[1:]:
+                    nv = _ocr_norm(v)
+                    if len(nv) >= 3 and _found(norms_all, nv):
+                        ok = True
+                        skeleton = True
+                        skeletons.append({"kind": kind,
+                                          "mark": str(r.get("id") or "?"),
+                                          "field": field, "from": q})
+                        break
+            checks[field] = (ok, q, nq)
         if not checks:
             continue
         mark = str(r.get("id") or "").strip() or "?"
-        if not any(ok for ok, _ in checks.values()):
+        # SHORT-QUOTE VETO (Howard ruled 2026-08-09): a quote of two
+        # characters or less carries NO SURVIVAL WEIGHT — E1 survived its
+        # own fabrication because "3'-0\"" → "30" trivially matched a
+        # dimension run elsewhere on the sheet. The mark (the row's
+        # identity, matched exact-or-prefix) keeps its weight.
+        survives = any(ok for field, (ok, q, nq) in checks.items()
+                       if ok and (field == "id" or len(nq) >= 3))
+        if not survives:
             dropped.append({"kind": kind, "mark": mark,
-                            "quotes": [q for _, q in checks.values()],
+                            "quotes": [q for _, q, _n in checks.values()],
                             "pages": pages, "rotations_checked": True})
             r["_drop_not_located"] = True
             continue
-        for field, (ok, q) in checks.items():
+        # INTERIOR SIGNAL BY MACHINE (Howard ruled 2026-08-09): the
+        # product-code column is read from the pixels — a schedule line
+        # carrying the row's mark AND an interior marker is INTERIOR,
+        # regardless of the model's own exterior label.
+        if kind == "doors":
+            mknorm = _ocr_norm(r.get("id"))
+            if mknorm:
+                for p in pages:
+                    got = _page_data(p)
+                    if not got:
+                        continue
+                    hit = next(
+                        (run for run in got["norms"]
+                         if run.startswith(mknorm)
+                         and any(m in run for m in _INTERIOR_MARKERS)), None)
+                    if hit:
+                        interior_sig.append({
+                            "mark": mark, "page": p,
+                            "marker": next(m for m in _INTERIOR_MARKERS
+                                           if m in hit)})
+                        r["_drop_interior_signal"] = True
+                        break
+            if r.get("_drop_interior_signal"):
+                continue
+        for field, (ok, q, nq) in checks.items():
             if ok:
                 continue
             misses.append({"kind": kind, "mark": mark, "field": field,
@@ -1400,11 +1571,62 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
                 r["printed_size"] = ""
                 r["width_in"] = None
                 r["height_in"] = None
+
+    # OMISSION CHECK (Howard ruled 2026-08-09): the evidence layer was
+    # ONE-DIRECTIONAL — it caught fabrication, never omission ("E2 DOES
+    # print and is absent from the read"). Schedule-code and door-mark
+    # tokens found INSIDE the schedule's table region (anchored by the
+    # rows we did read) with no counterpart in the read are OMISSIONS —
+    # loud, named, resolved by a human. Fewer than two anchors on a page
+    # leaves the region undecidable — skipped, never guessed.
+    omissions: list[dict] = []
+    read_tokens = read_marks | read_codes
+    # Door-mark omission candidates are restricted to the initial letters
+    # the read's own door marks carry (E, G on a sheet reading E*/G*) —
+    # grid bubbles and section tags (RR1, X17, K40) are not door rows.
+    # NAMED LIMIT: a door family whose letter never appears in the read
+    # at all is beyond this instrument — the human census owns it.
+    _door_letters = {m[0] for m in read_marks if _DOOR_MARK_RE.match(m)}
+    for p in sorted(all_sched_pages):
+        got = _page_data(p)
+        if not got or not got["boxed"]:
+            continue
+        anchors = [b for nrm, b in got["boxed"] if nrm in read_tokens]
+        if len(anchors) < 2:
+            continue
+        x0 = min(b[0] for b in anchors)
+        y0 = min(b[1] for b in anchors)
+        x1 = max(b[2] for b in anchors)
+        y1 = max(b[3] for b in anchors)
+        # The table extends past the anchors — omitted rows usually sit
+        # BELOW the rows we read. Pad by the anchor span plus row heights.
+        heights = sorted(b[3] - b[1] for b in anchors)
+        row_h = max(1, heights[len(heights) // 2])
+        pad_x = 0.5 * max(x1 - x0, 1) + 4 * row_h
+        pad_y = (y1 - y0) + 10 * row_h
+        seen: set[str] = set()
+        for nrm, b in got["boxed"]:
+            if not (x0 - pad_x <= b[0] and b[2] <= x1 + pad_x
+                    and y0 - pad_y <= b[1] and b[3] <= y1 + pad_y):
+                continue
+            if not (_SCHED_CODE_RE.match(nrm)
+                    or (_DOOR_MARK_RE.match(nrm)
+                        and nrm[0] in _door_letters)):
+                continue
+            if nrm in seen or nrm in read_tokens:
+                continue
+            if any(_del1(nrm, t) or _del1(t, nrm) for t in read_tokens):
+                continue  # one-glyph OCR drift of a row we DID read
+            seen.add(nrm)
+            omissions.append({"page": p, "token": nrm})
+
     for k in ("windows", "doors"):
         arr = raw.get(k)
         if isinstance(arr, list):
             kept = [r for r in arr
-                    if not (isinstance(r, dict) and r.get("_drop_not_located"))]
+                    if not (isinstance(r, dict)
+                            and (r.get("_drop_not_located")
+                                 or r.get("_drop_interior_signal")))]
             if len(kept) != len(arr):
                 raw[k] = kept
     if dropped:
@@ -1412,6 +1634,15 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
         seam_accounting.account(
             raw, "marks_dropped_not_located",
             [f"{d['kind']}:{d['mark']}" for d in dropped])
+    if interior_sig:
+        raw["_interior_signal_dropped"] = interior_sig
+        seam_accounting.account(
+            raw, "interior_signal_dropped",
+            [f"doors:{d['mark']}" for d in interior_sig])
+    if omissions:
+        raw["_schedule_omissions"] = omissions
+    if skeletons:
+        raw["_skeleton_matches"] = skeletons
     if misses:
         raw["_mark_quote_misses"] = misses
         _nulled_sizes = [f"{m['kind']}:{m['mark']}" for m in misses
@@ -1928,6 +2159,31 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
                      "text": "; ".join(
                          f"{m.get('mark')}.{m.get('field')} \u201c{m.get('from')}\u201d"
                          for m in _mqm[:8])})
+    # OMISSION CHECK (ruled 2026-08-09): rows the page prints that the
+    # read never carried — the one-directional evidence layer's blind
+    # side, now instrumented.
+    _som = raw.get("_schedule_omissions") or []
+    if _som:
+        rail.append({"level": "loud", "code": "schedule_row_omitted",
+                     "text": "; ".join(
+                         f"{o.get('token')} (sheet {o.get('page')})"
+                         for o in _som[:10])})
+    # INTERIOR SIGNAL BY MACHINE (ruled 2026-08-09): HOLLOW CORE cannot
+    # wear an exterior label.
+    _isd = raw.get("_interior_signal_dropped") or []
+    if _isd:
+        rail.append({"level": "loud", "code": "interior_signal_machine",
+                     "text": "; ".join(
+                         f"{d.get('mark')} ({d.get('marker')}, sheet {d.get('page')})"
+                         for d in _isd[:8])})
+    # FRACTION SKELETON (2026-08-09): the OCR engine cannot read stacked
+    # ½ glyphs — quotes located on their whole-inch skeleton are NAMED.
+    _skm = raw.get("_skeleton_matches") or []
+    if _skm:
+        rail.append({"level": "info", "code": "skeleton_match",
+                     "text": "; ".join(
+                         f"{s.get('mark')}.{s.get('field')} \u201c{s.get('from')}\u201d"
+                         for s in _skm[:8])})
     # EVIDENCE-OR-NULL (ruled 2026-08-08): dims that arrived without a
     # quoted printed string were NULLED BY CONSTRUCTION — named here.
     _nulled = raw.get("_nulled_no_evidence") or []

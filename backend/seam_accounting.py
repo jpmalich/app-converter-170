@@ -33,6 +33,10 @@ SEAM_REGISTRY = {
     "lp_smart_lines_cut":
         "Engine-owned lp_smart rows cut from blueprint results (THE CUT, "
         "ruled 2026-07-14) — LP derives through assemble_lp_package.",
+    "interior_signal_dropped":
+        "Door rows whose schedule line MACHINE-reads an interior product "
+        "marker (HOLLOW CORE / H DWL CORE / Garage to House) — dropped "
+        "regardless of the model's own exterior label (ruled 2026-08-09).",
     "client_build_stale":
         "A loaded page older than the deployed build — a surface that "
         "silently disagrees with its own backend. Detected client-side "
