@@ -6621,3 +6621,12 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - FOUR MONEY NUMBERS answered: eaves = plane sum when planes exist (evidenced since 8-9); rakes = max(bare top-level, plane sum) — WEAKEST; starter = evidenced wall perimeter; corner counts = bare + ratchet (heights now never-touch guarded).
 - Stamp verbatim: `2026-08-10 01:01 UTC · b09f173 · CLEAN · 2130 passed, 5 skipped, 6 warnings in 124.92s (0:02:04)` · INGRESS 4.
 - QUEUE UNCHANGED: Howard walks EST-886440 run 20:10 UTC → FLAG CENSUS (e) + GATE TRUTHFULNESS (g) → takeoff elevations Phase 1. Bar (c) HELD until Monday's invoices. EST-886440 now server-guarded, Integral-J ON.
+
+## SESSION 2026-08-10 (part 35) — SEND 8: BOTH RULINGS LANDED + MAX-WINS CENSUS + ORIENTATION INSTRUMENT
+- RULED+BUILT: CORNER AGREEMENT-OR-FLAG — max-wins acceptance dead; disagreeing roof-pass walk keeps the primary and fires loud `corner_walk_conflict` PRINTING BOTH NUMBERS (EN+ES); fill when primary empty; heights ride only agreed/filled walks under never-touch.
+- RULED+BUILT: RAKES — plane sum GOVERNS whenever planes carry rake figures (mirror of eaves, `_rakes_plane_summed`); larger-wins dead.
+- BUILT: EAVE/RAKE ORIENTATION CHECK (EST-040221 instrument) — eave figure matching the GABLE pair better than the eave pair flags loud `eave_rake_orientation` with all three numbers (EN+ES). Flip itself still unattributed (primary read / plane-append candidates).
+- MAX-WINS CENSUS delivered, nothing changed (memory/max_wins_census_2026_08_10.md): the two-source bigger-wins class lived only in the two ruled places; named relatives: box-model rect max (can suppress wing_flag), porch longer-dim wall assumption, ridge-check max (inert), dormer face pick (display). Floors are doctrine.
+- VENT/SHUTTER: schema asks, aggregator maps, lines consume (vents qty; shutters ceil/2 pairs); measurement-key census shows no other accessory family consumed-but-never-produced.
+- Stamp verbatim: `2026-08-10 11:21 UTC · fb6ab29 · CLEAN · 2140 passed, 5 skipped, 6 warnings in 128.40s (0:02:08)` · INGRESS 4.
+- QUEUE: next per Howard's build order → FLAG CENSUS (e) + GATE TRUTHFULNESS (g) → TAKEOFF ELEVATIONS Phase 1 → RECONCILIATION (c) HELD until invoices. EST-886440 guarded, Integral-J ON.
