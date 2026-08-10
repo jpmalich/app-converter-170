@@ -736,23 +736,36 @@ def _merge_roof_pass(raw: dict, rp: dict) -> dict:
         oclf = 0.0
         old_oc = old_ic = 0
         old_oclf = 0.0
-    if oc > 0 and (oc - ic) == 4 and oc >= old_oc and oclf > 0:
+    agree = oc > 0 and old_oc > 0 and (oc, ic) == (old_oc, old_ic)
+    filled = False
+    if oc > 0 and old_oc > 0 and not agree:
+        # AGREEMENT-OR-FLAG (Howard ruled 2026-08-10): disagreement KEEPS
+        # THE PRIMARY and fires a loud corner_walk_conflict PRINTING BOTH
+        # NUMBERS. Max-wins acceptance is dead — a bigger number winning
+        # by default systematically over-orders.
+        raw["_corner_walk_conflict"] = {
+            "primary": {"out": old_oc, "in": old_ic, "lf": old_oclf},
+            "roof_pass": {"out": oc, "in": ic, "lf": oclf}}
+        rejected["corners"] = (
+            f"walks disagree — primary read {old_oc} outside/{old_ic} "
+            f"inside, roof pass {oc} outside/{ic} inside; the primary "
+            "stands, neither is adopted as truth")
+    elif oc > 0 and old_oc <= 0 and (oc - ic) == 4 and oclf > 0:
+        # FILL — the primary read carried no corner walk at all.
         raw["outside_corner_count"] = oc
         raw["outside_corner_lf"] = oclf
         raw["inside_corner_count"] = ic
         if rp.get("inside_corner_lf"):
             raw["inside_corner_lf"] = float(rp["inside_corner_lf"])
         accepted["corners"] = {"outside": oc, "inside": ic, "outside_lf": oclf}
-        if (oc, ic) != (old_oc, old_ic) or oclf != old_oclf:
-            overwrites.append(
-                f"corners out {old_oc}→{oc} · in {old_ic}→{ic}"
-                f" · lf {old_oclf:g}→{oclf:g}")
-        # PER-CORNER HEIGHTS (ruled 2026-08-06): ride ONLY with an accepted
-        # walk and only when one entry per counted corner came back.
-        # NEVER-TOUCH RULE (ruled 2026-08-09 send 7): a primary read whose
-        # heights carry printed quotes is NEVER overwritten by a roof pass
-        # returning bare numbers — that replacement destroyed the evidence
-        # AND the value (enforcement nulls the bare replacements next).
+        filled = True
+    if agree or filled:
+        # PER-CORNER HEIGHTS (ruled 2026-08-06): ride ONLY with an agreed
+        # or filled walk and only when one entry per counted corner came
+        # back. NEVER-TOUCH RULE (ruled 2026-08-09 send 7): a primary read
+        # whose heights carry printed quotes is NEVER overwritten by a
+        # roof pass returning bare numbers — that replacement destroyed
+        # the evidence AND the value.
         hs = rp.get("outside_corner_heights_ft")
         if isinstance(hs, list) and len(hs) == oc:
             old_hs = raw.get("outside_corner_heights_ft")
@@ -2174,6 +2187,40 @@ def check_read_consistency(raw: dict) -> list[dict]:
                 "code": "run_exceeds_facade", "level": "loud",
                 "vars": {"label": label, "run": f"{_f(r.get('lf')):g}",
                          "wall": f"{_f(w.get('width_ft')):g}"}})
+
+    # CORNER WALK CONFLICT (Howard ruled 2026-08-10): when the primary
+    # read and the roof pass disagree on the corner walk, the primary
+    # STANDS and the card prints BOTH NUMBERS — one number teaches
+    # nothing; two show at a glance when neither is right.
+    _cwc = raw.get("_corner_walk_conflict")
+    if isinstance(_cwc, dict):
+        flags.append({
+            "code": "corner_walk_conflict", "level": "loud",
+            "vars": {"p_out": _cwc["primary"]["out"],
+                     "p_in": _cwc["primary"]["in"],
+                     "r_out": _cwc["roof_pass"]["out"],
+                     "r_in": _cwc["roof_pass"]["in"]}})
+
+    # EAVE/RAKE ORIENTATION (Howard ordered 2026-08-10, the EST-040221
+    # instrument): on a simple gable roof, eaves and rakes sit on
+    # OPPOSITE wall pairs, always. An eave figure that matches the GABLE
+    # pair better than the eave pair is a rotated house, not a wrong
+    # number.
+    g_sum = sum(_dim_v(w.get("width_ft")) for w in walls
+                if _dim_v(w.get("gable_triangle_height_ft")) > 0)
+    e_sum = sum(_dim_v(w.get("width_ft")) for w in walls
+                if _dim_v(w.get("gable_triangle_height_ft")) <= 0)
+    ev = sum(_dim_v(p.get("eave_lf"))
+             for p in (raw.get("roof_planes") or []) if isinstance(p, dict))
+    if ev <= 0:
+        ev = _dim_v(raw.get("eaves_lf"))
+    if (ev > 0 and g_sum > 0 and e_sum > 0
+            and abs(g_sum - e_sum) > 0.15 * max(g_sum, e_sum)
+            and abs(ev - g_sum) < abs(ev - e_sum)):
+        flags.append({
+            "code": "eave_rake_orientation", "level": "loud",
+            "vars": {"eaves": f"{ev:g}", "gsum": f"{g_sum:g}",
+                     "esum": f"{e_sum:g}"}})
     return flags
 
 
@@ -2775,9 +2822,6 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     if plane_eaves > 0:
         raw["eaves_lf"] = plane_eaves
         raw["_eaves_plane_summed"] = True
-        plane_rakes = sum(float(p.get("rake_lf") or 0) for p in planes)
-        if plane_rakes > float(raw.get("rakes_lf") or 0):
-            raw["rakes_lf"] = plane_rakes
         # BONI SECOND SEND (Howard, 2026-08-05) — gable-end census for the
         # multiple-gable report: how many triangular ends the plane read
         # carries (the rectangle walk sees exactly the main pair).
@@ -2788,6 +2832,14 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                          for p in planes if p.get("is_porch"))
         if porch_sqft > 0 and not raw.get("porch_ceiling_sqft"):
             raw["porch_ceiling_sqft"] = porch_sqft
+    # RAKES — THE PLANE SUM GOVERNS WHENEVER PLANES CARRY RAKE FIGURES
+    # (Howard ruled 2026-08-10, exact mirror of the eaves rule).
+    # Larger-wins is dead here: a bare top-level number must never beat
+    # evidenced planes.
+    plane_rakes = sum(float(p.get("rake_lf") or 0) for p in planes)
+    if plane_rakes > 0:
+        raw["rakes_lf"] = plane_rakes
+        raw["_rakes_plane_summed"] = True
     else:
         if any_gable:
             # ONE COPY (step 6): the recompute lives in measure_staging.

@@ -90,11 +90,18 @@ def test_merge_appends_the_missing_garage_plane_and_corner_walk():
     assert "garage" in labels
     # SURGICAL: main-read planes stay; only the missing plane is appended
     assert len(raw["roof_planes"]) == 3
-    assert raw["outside_corner_count"] == 8
-    assert raw["outside_corner_lf"] == 128
+    # AGREEMENT-OR-FLAG (Howard ruled 2026-08-10): the walks disagree
+    # (primary 6/2, roof pass 8/4) → THE PRIMARY STANDS and the conflict
+    # prints BOTH numbers. Max-wins acceptance is dead.
+    assert raw["outside_corner_count"] == 6
+    assert raw["outside_corner_lf"] == 92
+    cwc = raw["_corner_walk_conflict"]
+    assert cwc["primary"]["out"] == 6 and cwc["primary"]["in"] == 2
+    assert cwc["roof_pass"]["out"] == 8 and cwc["roof_pass"]["in"] == 4
     assert raw["roof_pitch"] == "7/12"
     acc = raw["_roof_pass"]["accepted"]
-    assert set(acc) == {"garage_plane_appended", "roof_pitch", "corners"}
+    assert set(acc) == {"garage_plane_appended", "roof_pitch"}
+    assert "corners" in raw["_roof_pass"]["rejected"]
 
 
 def test_merge_is_surgical_on_a_gable_blind_garage_plane():

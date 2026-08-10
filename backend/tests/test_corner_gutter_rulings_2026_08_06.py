@@ -142,19 +142,29 @@ def test_blueprint_prompts_ask_for_heights_and_runs():
 
 def test_roof_pass_merge_accepts_heights_and_runs_conservatively():
     from routes.ai_blueprint import _merge_roof_pass
+    # AGREEMENT-OR-FLAG (ruled 2026-08-10): heights ride only when the
+    # two walks AGREE (or the primary had none). Counts here agree (4/0).
     raw = {"roof_planes": [{"label": "main", "eave_lf": 50}],
            "outside_corner_count": 4}
-    rp = {"outside_corner_count": 6, "inside_corner_count": 2,
+    rp = {"outside_corner_count": 4, "inside_corner_count": 0,
           "outside_corner_lf": 60,
-          "outside_corner_heights_ft": [8, 8, 12, 12, 10, 10],
+          "outside_corner_heights_ft": [8, 8, 12, 12],
           "gutter_runs": [{"label": "front", "lf": 40}]}
     out = _merge_roof_pass(dict(raw), dict(rp))
-    assert out["outside_corner_heights_ft"] == [8, 8, 12, 12, 10, 10]
+    assert out["outside_corner_heights_ft"] == [8, 8, 12, 12]
     assert out["gutter_runs"] == [{"label": "front", "lf": 40}]
     # heights refused when the list doesn't cover the counted corners
     rp_bad = {**rp, "outside_corner_heights_ft": [8, 8]}
     out2 = _merge_roof_pass(dict(raw), dict(rp_bad))
     assert "outside_corner_heights_ft" not in out2
+    # a DISAGREEING walk keeps the primary and never carries its heights
+    rp_conflict = {**rp, "outside_corner_count": 6,
+                   "inside_corner_count": 2,
+                   "outside_corner_heights_ft": [8, 8, 12, 12, 10, 10]}
+    out3 = _merge_roof_pass(dict(raw), dict(rp_conflict))
+    assert out3["outside_corner_count"] == 4
+    assert "outside_corner_heights_ft" not in out3
+    assert out3["_corner_walk_conflict"]["roof_pass"]["out"] == 6
 
 
 # ═════════════ purity extension (rider #5) ══════════════════════════════

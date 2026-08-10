@@ -55,15 +55,12 @@ except corner heights, starter, area table, appendages.
   is closed at the source.
 - Pinned: tests/test_roof_pass_seam_2026_08_10.py.
 
-## OPEN — HOWARD'S CALL (reported, not changed)
-- The MAX-WINS corner acceptance (`oc >= old_oc`) still stands.
-  Candidate rule: AGREEMENT-OR-FLAG — when the two reads disagree on
-  the walk, keep the primary and flag `corner_walk_conflict` naming
-  both counts, instead of letting the higher read win.
-- rakes_lf top-level: the model's bare number vs the plane sum — the
-  LARGER wins (`if plane_rakes > rakes_lf`). Same max-wins shape on the
-  rake side. Candidate: plane sum governs whenever planes exist
-  (mirror of the eaves rule).
+## RULED 2026-08-10 (was OPEN)
+- The MAX-WINS corner acceptance is DEAD: AGREEMENT-OR-FLAG landed —
+  disagreement keeps the primary and fires `corner_walk_conflict`
+  printing BOTH numbers. Fill only when the primary carried no walk.
+- rakes_lf: THE PLANE SUM GOVERNS whenever planes carry rake figures
+  (exact mirror of the eaves rule). Larger-wins dead here too.
 
 ## THE FOUR NUMBERS THAT BUY MATERIAL (Howard's question, answered)
 - **eaves_lf** → soffit + fascia + gutter coil. When ANY plane carries

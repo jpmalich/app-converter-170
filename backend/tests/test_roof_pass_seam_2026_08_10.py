@@ -50,11 +50,11 @@ def _base_raw(**over):
 class TestNeverTouchRule:
     def test_evidenced_heights_never_replaced_by_bare_numbers(self):
         raw = _base_raw()
-        rp = {"outside_corner_count": 6, "inside_corner_count": 2,
+        # walks AGREE (4/0) — heights offered, but bare vs evidenced.
+        rp = {"outside_corner_count": 4, "inside_corner_count": 0,
               "outside_corner_lf": 55.0,
-              "outside_corner_heights_ft": [9, 9, 9, 20, 20, 9]}
+              "outside_corner_heights_ft": [9, 9, 20, 9]}
         _merge_roof_pass(raw, rp)
-        # counts may move (walk acceptance unchanged) — heights may NOT.
         assert raw["outside_corner_heights_ft"] == [EV, EV, EV, EV]
         rej = raw["_roof_pass"]["rejected"]
         assert "corner_heights" in rej
@@ -62,8 +62,8 @@ class TestNeverTouchRule:
 
     def test_evidenced_replacement_is_accepted_and_ledgered(self):
         raw = _base_raw()
-        new_hs = [dict(EV) for _ in range(6)]
-        rp = {"outside_corner_count": 6, "inside_corner_count": 2,
+        new_hs = [dict(EV) for _ in range(4)]
+        rp = {"outside_corner_count": 4, "inside_corner_count": 0,
               "outside_corner_lf": 55.0,
               "outside_corner_heights_ft": new_hs}
         _merge_roof_pass(raw, rp)
@@ -73,21 +73,39 @@ class TestNeverTouchRule:
 
     def test_bare_primary_heights_may_be_replaced(self):
         raw = _base_raw(outside_corner_heights_ft=[9, 9, 9, 9])
-        rp = {"outside_corner_count": 6, "inside_corner_count": 2,
+        rp = {"outside_corner_count": 4, "inside_corner_count": 0,
               "outside_corner_lf": 55.0,
-              "outside_corner_heights_ft": [9, 9, 9, 20, 20, 9]}
+              "outside_corner_heights_ft": [9, 9, 20, 9]}
         _merge_roof_pass(raw, rp)
-        assert raw["outside_corner_heights_ft"] == [9, 9, 9, 20, 20, 9]
+        assert raw["outside_corner_heights_ft"] == [9, 9, 20, 9]
         assert "corner_heights" not in raw["_roof_pass"]["rejected"]
 
-    def test_corner_and_pitch_overwrites_are_ledgered_old_to_new(self):
-        raw = _base_raw(outside_corner_heights_ft=[])
-        rp = {"outside_corner_count": 6, "inside_corner_count": 2,
-              "outside_corner_lf": 55.0, "roof_pitch": "9/12"}
+    def test_disagreeing_walk_keeps_primary_and_prints_both(self):
+        # AGREEMENT-OR-FLAG (Howard ruled 2026-08-10): max-wins is dead.
+        raw = _base_raw()
+        rp = {"outside_corner_count": 10, "inside_corner_count": 6,
+              "outside_corner_lf": 90.0, "roof_pitch": "9/12"}
         _merge_roof_pass(raw, rp)
+        assert raw["outside_corner_count"] == 4
+        assert raw["outside_corner_lf"] == 38.0
+        cwc = raw["_corner_walk_conflict"]
+        assert cwc["primary"]["out"] == 4 and cwc["roof_pass"]["out"] == 10
+        assert "primary read 4" in raw["_roof_pass"]["rejected"]["corners"]
+        # pitch still merges independently, ledgered old→new
         items = raw["_seam_ledger"]["roof_pass_overwrite"]["items"]
-        assert any("corners out 4→6" in i for i in items)
         assert any("roof_pitch 7/12→9/12" in i for i in items)
+
+    def test_empty_primary_walk_is_filled_not_flagged(self):
+        raw = _base_raw(outside_corner_count=0, inside_corner_count=0,
+                        outside_corner_lf=0,
+                        outside_corner_heights_ft=[])
+        rp = {"outside_corner_count": 6, "inside_corner_count": 2,
+              "outside_corner_lf": 60.0,
+              "outside_corner_heights_ft": [9, 9, 9, 9, 9, 9]}
+        _merge_roof_pass(raw, rp)
+        assert raw["outside_corner_count"] == 6
+        assert raw["outside_corner_heights_ft"] == [9, 9, 9, 9, 9, 9]
+        assert "_corner_walk_conflict" not in raw
 
     def test_registry_carries_the_new_seams(self):
         assert "roof_pass_overwrite" in seam_accounting.SEAM_REGISTRY

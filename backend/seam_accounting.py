@@ -45,10 +45,12 @@ SEAM_REGISTRY = {
         "stale-page false data-loss report).",
     "roof_pass_overwrite":
         "The conditional second AI read (roof pass) overwrote geometry "
-        "on the primary read — pitch, corner counts/LF, corner heights. "
-        "Every overwrite names old→new; an EVIDENCED value is NEVER "
-        "replaced by an unevidenced one (ruled 2026-08-09 send 7 after "
-        "the register audit found the merge unregistered).",
+        "on the primary read — pitch or (with an agreed walk) corner "
+        "heights. Every overwrite names old→new; an EVIDENCED value is "
+        "NEVER replaced by an unevidenced one (ruled 2026-08-09 send 7); "
+        "a disagreeing corner walk KEEPS THE PRIMARY and flags "
+        "corner_walk_conflict with both numbers (ruled 2026-08-10 — "
+        "max-wins acceptance is dead).",
     "pages_truncated":
         "Plan-set pages beyond the read cap were never rendered or read "
         "— invisible to the model, the locator, and every census. The "
