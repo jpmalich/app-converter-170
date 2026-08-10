@@ -43,6 +43,17 @@ SEAM_REGISTRY = {
         "against GET /api/version; the banner reports the client/server "
         "version pair and prompts a refresh (ruled 2026-08-09 after the "
         "stale-page false data-loss report).",
+    "roof_pass_overwrite":
+        "The conditional second AI read (roof pass) overwrote geometry "
+        "on the primary read — pitch, corner counts/LF, corner heights. "
+        "Every overwrite names old→new; an EVIDENCED value is NEVER "
+        "replaced by an unevidenced one (ruled 2026-08-09 send 7 after "
+        "the register audit found the merge unregistered).",
+    "pages_truncated":
+        "Plan-set pages beyond the read cap were never rendered or read "
+        "— invisible to the model, the locator, and every census. The "
+        "removal is counted and flagged LOUD on the card (ruled "
+        "2026-08-09 send 7: 'this plan set has N pages, the app read M').",
 }
 
 

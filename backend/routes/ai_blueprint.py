@@ -62,8 +62,8 @@ router = APIRouter(prefix="/measure", tags=["measure"])
 
 ACCEPTED_IMG_MIMES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
 ACCEPTED_PDF_MIMES = {"application/pdf"}
-MAX_PAGES_HARD = 20
-DEFAULT_MAX_PAGES = 12
+MAX_PAGES_HARD = 28   # raised 2026-08-09 (was 20) — construction sets run 15-30 sheets; a total-size budget below keeps the request under Anthropic's cap
+DEFAULT_MAX_PAGES = 20  # raised 2026-08-09 (was 12) — Boni is 11 sheets; the old default sat one page from silent truncation
 MAX_BYTES_PER_FILE = 16 * 1024 * 1024  # blueprints scan larger than photos
 PDF_RENDER_SCALE = 2.0  # pypdfium2 scale factor — ~144 DPI for an 8.5×11
 # ⚑ PROVENANCE (Iter 121): VALIDATED 2026-07-15 by the pre-registered
@@ -364,6 +364,8 @@ ROW IDENTITY (ruled 2026-08-09): sibling schedule rows share a code prefix (SH 3
     {"where": "<elevation/section, e.g. 'garage eave'>", "overhang_in": number, "text": "<annotation verbatim>"}
   ],
   "address": "<project address from the title block, verbatim; empty string if none printed>",
+  "vent_count": number,        // gable/roof VENTS the elevations show (louvre/gable vents); 0 when none are drawn — Q7 ruled 2026-07-27: vents ride the blueprint read
+  "shutter_count": number,     // window SHUTTERS the elevations show; 0 when none are drawn (same ruling)
   "opening_facade_assignments": [      // ONLY if the plans EXPLICITLY assign an opening to a facade MATERIAL (e.g. a window drawn inside a hatched BRICK/STONE region with a material callout): {"id": "<mark>", "facade": "siding|stucco|brick|stone|metal|other"}. NEVER infer from elevation, type, or height — if the plans do not state it, return []. (Class C — R6 sealed 2026-07-28)
   ],
   "notes": "<2-3 sentences flagging anything to verify — missing dims, illegible numbers, etc.>"
@@ -631,7 +633,7 @@ Return ONLY this JSON, no explanation:
      "is_porch": true | false, "porch_ceiling_sqft": number}
   ],
   "outside_corner_count": number, "outside_corner_lf": number,
-  "outside_corner_heights_ft": [number | null],
+  "outside_corner_heights_ft": [{"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null],  // ONE entry per outside corner in walk order — null when no printed dimension resolves that corner, NEVER a guess or an average (bare numbers are DROPPED by the pipeline)
   "inside_corner_count": number, "inside_corner_lf": number,
   "gutter_runs": [{"label": "<front|back|left|right|porch|...>", "lf": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null}],
   "notes": "<secondary pitches, anything illegible>"
@@ -652,12 +654,31 @@ def _dim_v(x) -> float:
         return 0.0
 
 
+def _carries_ev(x) -> bool:
+    """True when a value carries printed evidence (a 'from' quote, or a
+    derived form whose srcs quote print)."""
+    if not isinstance(x, dict):
+        return False
+    if str(x.get("from") or "").strip():
+        return True
+    srcs = x.get("srcs")
+    return isinstance(srcs, list) and any(
+        isinstance(s, dict) and str(s.get("from") or "").strip() for s in srcs)
+
+
 def _merge_roof_pass(raw: dict, rp: dict) -> dict:
     """Pure, conservative merge of the focused roof pass into the main
-    read. Mutates and returns `raw`. Provenance lands in raw['_roof_pass']."""
+    read. Mutates and returns `raw`. Provenance lands in raw['_roof_pass'].
+    REGISTERED SEAM (Howard ruled 2026-08-09 send 7, after the register
+    audit found this merge unregistered): every geometry overwrite is
+    ledgered old→new (roof_pass_overwrite), and the merge MAY NEVER
+    replace an EVIDENCED value with an unevidenced one — a rejected
+    overwrite is NAMED on the rail, never silent."""
     if not isinstance(rp, dict):
         return raw
     accepted: dict = {}
+    rejected: dict = {}
+    overwrites: list[str] = []
     old_planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
     new_planes = [p for p in (rp.get("roof_planes") or []) if isinstance(p, dict)]
 
@@ -685,9 +706,13 @@ def _merge_roof_pass(raw: dict, rp: dict) -> dict:
         accepted["garage_rakes"] = {"rake_lf": _dim_v(old_g["rake_lf"]),
                                     "gable_ends": old_g["gable_ends"]}
     pitch = str(rp.get("roof_pitch") or "").strip()
-    if pitch and _PITCH_RE.match(pitch) and pitch != str(raw.get("roof_pitch") or ""):
+    _old_pitch = str(raw.get("roof_pitch") or "").strip()
+    if pitch and _PITCH_RE.match(pitch) and pitch != _old_pitch:
         raw["roof_pitch"] = pitch
         accepted["roof_pitch"] = pitch
+        overwrites.append(
+            f"roof_pitch {_old_pitch or '(unread)'}→{pitch}"
+            " (+gable triangles recomputed at the new pitch)")
         # The schema's own formula, printed-pitch authority: a corrected
         # pitch recomputes each gable wall's triangle (and with it the
         # gable siding area downstream).
@@ -704,10 +729,13 @@ def _merge_roof_pass(raw: dict, rp: dict) -> dict:
         ic = int(rp.get("inside_corner_count") or 0)
         oclf = float(rp.get("outside_corner_lf") or 0)
         old_oc = int(raw.get("outside_corner_count") or 0)
+        old_ic = int(raw.get("inside_corner_count") or 0)
+        old_oclf = float(raw.get("outside_corner_lf") or 0)
     except (TypeError, ValueError):
         oc = ic = 0
         oclf = 0.0
-        old_oc = 0
+        old_oc = old_ic = 0
+        old_oclf = 0.0
     if oc > 0 and (oc - ic) == 4 and oc >= old_oc and oclf > 0:
         raw["outside_corner_count"] = oc
         raw["outside_corner_lf"] = oclf
@@ -715,19 +743,47 @@ def _merge_roof_pass(raw: dict, rp: dict) -> dict:
         if rp.get("inside_corner_lf"):
             raw["inside_corner_lf"] = float(rp["inside_corner_lf"])
         accepted["corners"] = {"outside": oc, "inside": ic, "outside_lf": oclf}
+        if (oc, ic) != (old_oc, old_ic) or oclf != old_oclf:
+            overwrites.append(
+                f"corners out {old_oc}→{oc} · in {old_ic}→{ic}"
+                f" · lf {old_oclf:g}→{oclf:g}")
         # PER-CORNER HEIGHTS (ruled 2026-08-06): ride ONLY with an accepted
         # walk and only when one entry per counted corner came back.
+        # NEVER-TOUCH RULE (ruled 2026-08-09 send 7): a primary read whose
+        # heights carry printed quotes is NEVER overwritten by a roof pass
+        # returning bare numbers — that replacement destroyed the evidence
+        # AND the value (enforcement nulls the bare replacements next).
         hs = rp.get("outside_corner_heights_ft")
         if isinstance(hs, list) and len(hs) == oc:
-            raw["outside_corner_heights_ft"] = hs
-            accepted["corner_heights"] = hs
+            old_hs = raw.get("outside_corner_heights_ft")
+            old_has_ev = isinstance(old_hs, list) and any(
+                _carries_ev(h) for h in old_hs)
+            new_has_ev = any(_carries_ev(h) for h in hs)
+            if old_has_ev and not new_has_ev:
+                rejected["corner_heights"] = (
+                    "primary heights carry printed quotes; the roof pass "
+                    "returned bare numbers — an evidenced value is never "
+                    "replaced by an unevidenced one")
+            else:
+                if isinstance(old_hs, list) and any(
+                        h is not None for h in old_hs):
+                    overwrites.append(
+                        f"corner_heights {len(old_hs)} entr"
+                        f"{'y' if len(old_hs) == 1 else 'ies'} replaced "
+                        f"({len(hs)} from the roof pass)")
+                raw["outside_corner_heights_ft"] = hs
+                accepted["corner_heights"] = [
+                    _dim_v(h) if h is not None else None for h in hs]
     # GUTTER RUN INVENTORY (ruled 2026-08-06): conservative — only fills
     # a read that has none.
     runs = [r for r in (rp.get("gutter_runs") or []) if isinstance(r, dict)]
     if runs and not raw.get("gutter_runs"):
         raw["gutter_runs"] = runs
         accepted["gutter_runs"] = runs
-    raw["_roof_pass"] = {"accepted": accepted, "notes": rp.get("notes") or ""}
+    raw["_roof_pass"] = {"accepted": accepted, "rejected": rejected,
+                         "notes": rp.get("notes") or ""}
+    if overwrites:
+        seam_accounting.account(raw, "roof_pass_overwrite", overwrites)
     return raw
 
 
@@ -1722,7 +1778,7 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
                     fam = classify_profile(w.get(f))
                     if fam and fam != "unknown":
                         have.add(fam)
-                for a in (w.get("accents") or []):
+                for a in (w.get("accent_profiles") or []):
                     if isinstance(a, dict):
                         fam = classify_profile(a.get("profile_callout"))
                         if fam and fam != "unknown":
@@ -2224,6 +2280,18 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     rp = raw.get("_roof_pass") or {}
     for key in sorted((rp.get("accepted") or {}).keys()):
         rail.append({"level": "info", "code": "roof_pass_merge", "text": key})
+    # NEVER-TOUCH RULE (ruled 2026-08-09 send 7): a refused overwrite is
+    # NAMED — the roof pass tried to replace an evidenced value with an
+    # unevidenced one and was stopped at the seam.
+    for key, why in sorted((rp.get("rejected") or {}).items()):
+        rail.append({"level": "warn", "code": "roof_pass_rejected",
+                     "text": f"{key}: {why}"})
+    # PAGE TRUNCATION SAYS SO (ruled 2026-08-09 send 7): dropped pages
+    # are invisible to the read, the locator, and every census — LOUD.
+    _pt = raw.get("_pages_truncated") or {}
+    if _pt:
+        rail.append({"level": "loud", "code": "pages_truncated",
+                     "text": f"{_pt.get('total')} → {_pt.get('read')}"})
     notes = str(raw.get("notes") or "").strip()
     if notes:
         rail.append({"level": "info", "code": "read_notes", "text": notes})
@@ -2492,16 +2560,18 @@ def _compress_for_claude(img_bytes: bytes, max_raw_bytes: int = 5_500_000) -> by
         return img_bytes
 
 
-def _render_pdf_to_pngs(raw_pdf: bytes, max_pages: int) -> list[bytes]:
+def _render_pdf_to_pngs(raw_pdf: bytes, max_pages: int) -> tuple[list[bytes], int]:
     """Rasterize a PDF into a list of PNG byte-strings, one per page,
-    capped at `max_pages`. Each page is rendered at PDF_RENDER_SCALE so
-    Claude can read printed dim text clearly."""
+    capped at `max_pages`. Returns (pages, total_page_count) — the caller
+    accounts for any page the cap removed (a removal with no accounting
+    is the recurring failure class, ruled 2026-08-09)."""
     out: list[bytes] = []
     try:
         doc = pdfium.PdfDocument(raw_pdf)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid PDF: {e}") from e
-    page_count = min(len(doc), max_pages)
+    total_pages = len(doc)
+    page_count = min(total_pages, max_pages)
     for i in range(page_count):
         page = doc[i]
         try:
@@ -2515,7 +2585,7 @@ def _render_pdf_to_pngs(raw_pdf: bytes, max_pages: int) -> list[bytes]:
         finally:
             page.close()
     doc.close()
-    return out
+    return out, total_pages
 
 
 def _probe_pdf_source(raw_pdf: bytes, max_pages: int = 40) -> tuple[dict, list[str]]:
@@ -3144,6 +3214,7 @@ async def ai_blueprint(
     source_files: list[dict] = []
     source_probe: dict | None = None
     source_text_pages: list[str] = []
+    _total_input_pages = 0  # every page the upload holds, pre-cap
 
     async def _retain_source(raw_bytes: bytes, ext: str, ctype: str,
                              kind: str, uploaded_as: str) -> None:
@@ -3190,7 +3261,8 @@ async def ai_blueprint(
             raise HTTPException(status_code=413, detail="PDF exceeds 64 MB limit")
         await _retain_source(raw, "pdf", "application/pdf", "pdf", file.filename)
         source_probe, source_text_pages = _probe_pdf_source(raw)
-        page_pngs = _render_pdf_to_pngs(raw, max_pages)
+        page_pngs, _pdf_total_pages = _render_pdf_to_pngs(raw, max_pages)
+        _total_input_pages += _pdf_total_pages
         for png in page_pngs:
             try:
                 page_paths.append(await _persist_page_image(png))
@@ -3216,6 +3288,7 @@ async def ai_blueprint(
                 raise HTTPException(status_code=413, detail="Plan sheet exceeds 16 MB limit")
             _img_ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(ctype, "bin")
             await _retain_source(raw, _img_ext, ctype, "image", f.filename)
+            _total_input_pages += 1
             # Same Anthropic 10 MB base64 cap — compress before queuing.
             compressed = _compress_for_claude(raw)
             image_payloads.append(compressed)
@@ -3240,6 +3313,26 @@ async def ai_blueprint(
     if len(image_payloads) > MAX_PAGES_HARD:
         # Already capped on the PDF side, but guard against image overflow too.
         image_payloads = image_payloads[:MAX_PAGES_HARD]
+    # PAGE TRUNCATION IS A REGISTERED SEAM (ruled 2026-08-09 send 7): any
+    # page the caps removed is COUNTED here and flagged LOUD on the card —
+    # a dropped page is invisible to the read, the locator, and the census.
+    if _total_input_pages > len(image_payloads):
+        if source_probe is None:
+            source_probe = {"kind": "unknown", "pages": [], "text_pages": 0,
+                            "page_count": len(image_payloads)}
+        source_probe["pages_truncated"] = {
+            "total": _total_input_pages, "read": len(image_payloads)}
+    # TOTAL-SIZE BUDGET (2026-08-09, with the raised page caps): keep the
+    # whole request under Anthropic's limit. Percent-based loc boxes are
+    # scale-invariant, so a tighter recompress never breaks the overlay.
+    _TOTAL_RAW_BUDGET = 24_000_000
+    _total_bytes = sum(len(b) for b in image_payloads)
+    if _total_bytes > _TOTAL_RAW_BUDGET:
+        _per = max(900_000, _TOTAL_RAW_BUDGET // max(len(image_payloads), 1))
+        logger.info("[ai-blueprint] recompressing %d pages (%d bytes) to ~%d/page",
+                    len(image_payloads), _total_bytes, _per)
+        image_payloads = [_compress_for_claude(b, max_raw_bytes=_per)
+                          for b in image_payloads]
 
     api_key, transport = _resolve_blueprint_key()
 
@@ -3664,6 +3757,19 @@ async def _execute_ai_blueprint_worker(
                                    (run_meta or {}).get("source_probe"))
         except Exception:
             logger.exception("[ai-blueprint] exact-locate failed — approximate boxes stand")
+        # PAGE TRUNCATION RIDES THE READ (ruled 2026-08-09 send 7): the
+        # endpoint counted what the caps removed; the ledger and the rail
+        # carry it — never silent.
+        try:
+            _pt = ((run_meta or {}).get("source_probe") or {}).get("pages_truncated")
+            if _pt and int(_pt.get("total") or 0) > int(_pt.get("read") or 0):
+                raw["_pages_truncated"] = _pt
+                seam_accounting.account(
+                    raw, "pages_truncated",
+                    [f"pages {int(_pt['read']) + 1}-{int(_pt['total'])} never rendered"],
+                    kept=int(_pt["read"]))
+        except Exception:
+            logger.exception("[ai-blueprint] page-truncation accounting failed")
         # OCR-FOR-COORDINATES (ruled 2026-08-08): deterministic, local,
         # no extra model call. LOCATION ONLY — never value. Runs off the
         # event loop; failure never sinks the run.

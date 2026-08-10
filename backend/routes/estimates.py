@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from db import db
 from deps import get_current_user
+from untouchable import refuse_untouchable
 from models import EstimateIn
 from services import calc_totals, get_branding
 from routes.catalog import _resolve_catalog_for_company
@@ -416,6 +417,7 @@ async def _append_fillin_history(est_id: str, company_id: str,
 
 @router.put("/estimates/{est_id}")
 async def update_estimate(est_id: str, body: EstimateIn, user: dict = Depends(get_current_user)):
+    await refuse_untouchable(est_id)
     # exclude_none so PUTs that omit pricing_mode don't clobber the stored value
     # CLOBBER-TRAP CLASS FIX (ruled 2026-07-24, Jon kind-flip): only write
     # fields EXPLICITLY sent in the request — model defaults (kind="siding",
@@ -442,6 +444,7 @@ async def patch_estimate(est_id: str, body: dict, user: dict = Depends(get_curre
     a partial PUT full-replaced a fixture): only fields PRESENT in the
     request body are written; everything else is untouched. Fields are
     validated against the EstimateIn schema."""
+    await refuse_untouchable(est_id)
     if not isinstance(body, dict) or not body:
         raise HTTPException(status_code=400, detail="empty patch")
     allowed = set(EstimateIn.model_fields.keys())
@@ -508,6 +511,7 @@ async def set_estimate_protection(
 ):
     """FIXTURE PROTECTION flip (ruled 2026-07-23) — its own deliberate
     action, separate from delete. Never callable as part of a delete."""
+    await refuse_untouchable(est_id)  # the flip is the delete's key — same lock
     protected = bool((payload or {}).get("protected"))
     res = await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]},
@@ -526,6 +530,7 @@ async def delete_estimate(est_id: str, user: dict = Depends(get_current_user)):
     deletion regardless of caller — UI, script, or future admin surface.
     Un-protecting is its own deliberate action (PUT /protected), never a
     bypass on the delete path."""
+    await refuse_untouchable(est_id)
     est = await db.estimates.find_one({"id": est_id, "company_id": user["company_id"]})
     if not est:
         raise HTTPException(status_code=404, detail="Not found")
@@ -579,6 +584,7 @@ class Model3DSnapshotIn(BaseModel):
 async def save_model3d_snapshot(
     est_id: str, body: Model3DSnapshotIn, user: dict = Depends(get_current_user)
 ):
+    await refuse_untouchable(est_id)
     url = (body.url or "").strip()
     if not url.startswith("/api/uploads/") or ".." in url or url.count("/") != 3:
         raise HTTPException(status_code=400, detail="Snapshot must be an uploaded file URL")

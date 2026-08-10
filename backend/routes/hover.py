@@ -3475,6 +3475,8 @@ async def rederive_estimate(
     est_id: str, payload: dict | None = None,
     user: dict = Depends(get_current_user),
 ):
+    from untouchable import refuse_untouchable
+    await refuse_untouchable(est_id)
     """ONE SHARED REBUILD, EVERY FAMILY (Howard ruled 2026-07-31 — parity
     audit). The SAME rebuild_lp_tab_lines that serves hover-lp-run and
     lp-package/materialize now serves siding-kind (Vinyl + Ascend) off the
@@ -3597,6 +3599,8 @@ async def rederive_estimate(
 async def hover_lp_run(
     est_id: str, payload: dict, user: dict = Depends(get_current_user),
 ):
+    from untouchable import refuse_untouchable
+    await refuse_untouchable(est_id)
     """Slice 1 — Hover→LP engine bridge. Materializes a Hover import as an
     LP-native derivation run so the LP Material List panel, Compare toggle,
     freeze/QR, and geometry-basis machinery all work UNCHANGED off Hover

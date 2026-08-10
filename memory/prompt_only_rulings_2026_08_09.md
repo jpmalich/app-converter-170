@@ -27,24 +27,28 @@ nothing catches a violation).
 ## PROMPT-ONLY (the list Howard asked for — longer than we thought)
 1. **BARE-NUMBER FAMILIES EXEMPT FROM EVIDENCE-OR-NULL** — the biggest hole.
    Only _EVIDENCE_SCALARS (overhang, fascia), wall width/height + segments,
-   porch dims, and corner heights are DIM objects. Everything else rides as
-   bare numbers on the model's word, no quote, no locator pass:
-   roof_planes eave_lf/rake_lf/gable_ends · gutter_runs lf · appendages
-   faces_sqft · dormer_face_sqft · gable_triangle_height_ft ·
+   porch dims, corner heights, and (closed 2026-08-09) roof-plane
+   eave_lf/rake_lf + gutter-run lf are DIM objects. Everything else rides
+   as bare numbers on the model's word, no quote, no locator pass:
+   appendages faces_sqft · dormer_face_sqft · gable_triangle_height_ft ·
    avg_wall_height_ft · story_count · windows/doors width_in/height_in
    (checked ONLY when a printed_size string survives) · accent approx_sqft ·
-   siding_pct_this_wall · opening elevations.
-2. **Door exclusion SIGNAL** (HOLLOW CORE / H DWL CORE / Garage-to-House =
-   interior): the seam trusts the model's exterior_evidence label; nothing
-   re-reads the product-code column the ruling names. A hollow-core door
-   labelled "elevation" sails through.
+   siding_pct_this_wall · opening elevations · top-level eaves/rakes/starter ·
+   corner COUNTS · vent_count/shutter_count.
+2. **Door exclusion SIGNAL** — HALF-CLOSED (2026-08-09): the machine now
+   OCRs the product-code column and drops HOLLOW CORE / H DWL CORE /
+   Garage-to-House rows regardless of the model's label
+   (interior_signal_dropped). RESIDUE: a row whose schedule line OCR
+   cannot join still rides the model's exterior_evidence label.
 3. **SH/DH never retyped**: type_hint is never cross-checked against the
    product_code prefix we now carry (SH 3-0_5-0 → type_hint must be
    single_hung — checkable, unchecked).
-4. **Profile callouts verbatim** (LAP/SHAKE/B&B, accents): no OCR
-   verification that the callout prints on the elevation — a fabricated
-   "SHAKE" quote would create accent lines. (Cross-check is a second AI
-   opinion, optional — not a guarantee.)
+4. **Profile callouts verbatim** (LAP/SHAKE/B&B, accents): the CALLOUT
+   CENSUS (2026-08-09) covers the OMISSION direction (a printed family
+   the read missed flags loud; accent leg FIXED 2026-08-09 send 7 —
+   was reading a dead key). The FABRICATION direction stays open: a
+   fabricated "SHAKE" quote still creates accent lines — NAMED GAP,
+   see below.
 5. **Gutter-run inventory discipline** ("one entry per continuous run, never
    re-list a segment, [] when unresolved"): only the width-vs-facade check
    exists; double-listed or invented runs are invisible (runs carry no
@@ -72,11 +76,17 @@ c. type_hint ↔ product_code prefix consistency check (SH/DH) — cheap flag.
 d. OCR-verify profile/accent callout quotes on their elevation sheets (same
    machinery as the mark locator).
 
-## KNOWN UNINSTRUMENTED GAP (Howard named it 2026-08-09 send 4 — logged, not ordered)
-GEOMETRIC OMISSION: roof planes and gutter runs now carry evidence for
-their VALUES (DIM-or-null, 2026-08-09), but nothing detects a plane or a
-run that simply NEVER GOT READ. They carry no printed marks, so the
-schedule omission instrument cannot reach them — omission there means a
-geometric eave-line census (a different instrument). The same
-one-directional blindness closed for schedules on 2026-08-09 remains
-open for geometry. The two lines that moved most all week live here.
+## KNOWN UNINSTRUMENTED GAPS (named, not ordered)
+1. GEOMETRIC OMISSION (Howard named it 2026-08-09 send 4): roof planes
+   and gutter runs carry evidence for their VALUES (DIM-or-null,
+   2026-08-09), but nothing detects a plane or a run that simply NEVER
+   GOT READ. They carry no printed marks, so the schedule omission
+   instrument cannot reach them — omission there means a geometric
+   eave-line census (a different instrument). The two lines that moved
+   most all week live here.
+2. CALLOUT FABRICATION (Howard named it 2026-08-09 send 7): the callout
+   census catches a printed family the read MISSED; nothing catches a
+   family the read INVENTED — a fabricated "SHAKE" quote still creates
+   accent lines. The same fabrication-vs-omission asymmetry closed on
+   the schedule side, still open on callouts. Logged so it is not
+   rediscovered in three weeks.

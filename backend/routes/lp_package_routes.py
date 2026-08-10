@@ -16,6 +16,7 @@ from lp_costs import price_package, redact_external
 from lp_package import assemble_lp_package
 from lp_truck_reconcile import reconcile_letrick_truck
 from routes.lp_admin import load_margin_cfg
+from untouchable import refuse_untouchable
 from run_archive import archive_run_for_artifact, find_archived_run
 
 router = APIRouter()
@@ -586,6 +587,7 @@ def _apply_openings_review(measurements, items):
 @router.post("/estimates/{est_id}/lp-package/blueprint-applied")
 async def lp_blueprint_applied(est_id: str, body: dict | None = None,
                                user: dict = Depends(get_current_user)):
+    await refuse_untouchable(est_id)
     """THE CUT (ruled 2026-07-14): applying a blueprint takeoff to an
     LP estimate makes the estimate a persistent artifact of that run —
     archive it (blueprint runs carry a 24h TTL that would otherwise
@@ -614,6 +616,7 @@ async def lp_blueprint_applied(est_id: str, body: dict | None = None,
 @router.post("/estimates/{est_id}/lp-package/materialize")
 async def lp_package_materialize(est_id: str, payload: dict | None = None,
                                  user: dict = Depends(get_current_user)):
+    await refuse_untouchable(est_id)
     """APPLY GATE for photo/blueprint-sourced LP estimates (ruled
     2026-07-25 — Apply Measurements regression). Materializes the derived
     LP composition into the group tab lines through the SAME rebuild
@@ -1059,6 +1062,7 @@ async def assert_material_list_gate(est_id: str, user: dict) -> None:
 @router.post("/estimates/{est_id}/order-release")
 async def order_release(est_id: str, payload: dict | None = None,
                         user: dict = Depends(get_current_user)):
+    await refuse_untouchable(est_id)
     """MATERIAL RELEASE — the ORDER gate's enforcement point (PO/truck
     surfaces hang off this stamp). Refused while any order-tier blocking
     flag is open; the stamp records the gate snapshot it cleared on."""
@@ -1387,6 +1391,7 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
 async def set_default_profile(
     est_id: str, payload: dict, user: dict = Depends(get_current_user),
 ):
+    await refuse_untouchable(est_id)
     """Set (or clear) the estimate-level default siding profile. Slice 1:
     records the choice + provenance (from→to, by/at); the full re-derive /
     color re-validation runs through the normal preview + apply gate."""

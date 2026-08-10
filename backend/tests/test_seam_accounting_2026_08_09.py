@@ -55,6 +55,54 @@ ALLOWLIST = {
 WATCHED = {"doors", "windows", "walls", "planes", "lines", "_built",
            "rows", "arr"}
 
+# ── DETECTOR WIDENED (Howard ruled 2026-08-09 send 7, after the register
+# audit): "a min() slice is a removing seam. So is a list slice. The
+# instrument cannot only see comprehensions or it will keep missing the
+# shapes that matter — that is twice now, counting the D5 constant-fold."
+# Slices over data-bearing collections and min(len(...)) caps are scanned;
+# every hit is reviewed here — ACCOUNTED or INERT, never silent.
+SLICE_WATCHED = {"image_payloads", "page_pngs", "picked", "pages",
+                 "planes", "rows", "doors", "windows", "walls", "runs",
+                 "lines", "out"}
+SLICE_ALLOWLIST = {
+    # NAMED LIMIT: the PDF render cap assigns len(doc) to total_pages
+    # before min() — indirection this AST scan cannot see. The render cap
+    # is ACCOUNTED at its call site (pages_truncated ledger + LOUD card
+    # flag) and pinned by test_roof_pass_seam_2026_08_10.
+    # ACCOUNTED (pages_truncated) — the image-payload hard cap, same seam.
+    "image_payloads[:MAX_PAGES_HARD]",
+    # INERT — the text-probe page cap (default 40) sits ABOVE the read
+    # caps; the probe census is informational, never the read itself.
+    "min(len(doc), max_pages)",
+    # INERT (NAMED LIMIT, registered 2026-08-09) — the roof SECOND pass
+    # reads at most 5 sheets; the primary read saw every retained page.
+    "picked[:5]",
+    "image_payloads[:5]",
+    # INERT — OCR run-join window bound; a loop bound, removes nothing.
+    "min(i + max_window, len(rs))",
+}
+
+
+def _removing_slices():
+    src = BP.read_text()
+    tree = ast.parse(src)
+    found = []
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Subscript)
+                and isinstance(node.value, ast.Name)
+                and node.value.id in SLICE_WATCHED
+                and isinstance(node.slice, ast.Slice)):
+            found.append((node.lineno,
+                          " ".join(ast.get_source_segment(src, node).split())))
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                and node.func.id == "min"
+                and any(isinstance(a, ast.Call)
+                        and isinstance(a.func, ast.Name)
+                        and a.func.id == "len" for a in node.args)):
+            found.append((node.lineno,
+                          " ".join(ast.get_source_segment(src, node).split())))
+    return found
+
 
 def _filtering_comps():
     src = BP.read_text()
@@ -87,6 +135,25 @@ class TestDetector:
         assert not dead, (
             "ALLOWLIST entries no longer in the source — remove them so "
             "the list stays a true register:\n" + "\n".join(sorted(dead)))
+
+    def test_every_removing_slice_and_min_cap_is_reviewed(self):
+        # The widened instrument (ruled 2026-08-09 send 7): slice/min caps
+        # over data collections must be ACCOUNTED or reviewed-INERT.
+        unreviewed = [(ln, seg) for ln, seg in _removing_slices()
+                      if seg not in SLICE_ALLOWLIST]
+        assert not unreviewed, (
+            "UNREVIEWED REMOVING SLICE/CAP — a slice or min(len()) cap "
+            "removes data without accounting. Route it through "
+            "seam_accounting.account() (or review it as inert) and add it "
+            "to SLICE_ALLOWLIST:\n" + "\n".join(
+                f"  line {ln}: {seg}" for ln, seg in unreviewed))
+
+    def test_slice_allowlist_carries_no_dead_entries(self):
+        live = {seg for _, seg in _removing_slices()}
+        dead = SLICE_ALLOWLIST - live
+        assert not dead, (
+            "SLICE_ALLOWLIST entries no longer in the source:\n"
+            + "\n".join(sorted(dead)))
 
 
 class TestRegistry:
