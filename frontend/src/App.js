@@ -14,6 +14,7 @@ import ContractorPicker from "@/pages/ContractorPicker";
 import Dashboard from "@/pages/Dashboard";
 import EstimateRouter from "@/pages/EstimateRouter";
 import ElevationSheet from "@/pages/ElevationSheet";
+import BlueprintElevationSheet from "@/pages/BlueprintElevationSheet";
 import ElevationSheetsPrint from "@/pages/ElevationSheetsPrint";
 import SourceSheets from "@/pages/SourceSheets";
 import Catalog from "@/pages/Catalog";
@@ -80,6 +81,7 @@ function App() {
                     <Route path="/dashboard" element={<Navigate to="/dashboard/siding" replace />} />
                     <Route path="/estimate/:id/elevation-sheets/print" element={<ElevationSheetsPrint />} />
                     <Route path="/estimate/:id/elevation-sheet/:which" element={<ElevationSheet />} />
+                    <Route path="/estimate/:id/blueprint-elevation/:which" element={<BlueprintElevationSheet />} />
                     {/* Source-view (generalized 2026-07-20): one surface for every
                         intake door — photos / blueprints / hover reference. The
                         original blueprint URL stays as an alias (accepted surface

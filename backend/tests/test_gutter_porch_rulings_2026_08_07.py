@@ -86,11 +86,22 @@ def test_no_inventory_fallback_is_byte_identical():
 
 # ----------------------------------------------------------- porch shape
 def test_real_dims_govern_the_porch_shape():
+    # WALL SIDE FROM GEOMETRY (ruled 2026-08-10 send 2): the porch
+    # plane's eave names the wall run — never "the longer side".
     g = _porch_geom(_m(porch_ceiling_sqft=99,
-                       _porch_dims=[{"width_ft": 6, "length_ft": 16.5}]))
+                       _porch_dims=[{"width_ft": 6, "length_ft": 16.5}],
+                       _roof_planes=[{"is_porch": True, "eave_lf": 16.5}]))
     assert g["basis"] == "real_dims"
     assert g["perimeter_lf"] == 45.0
-    assert g["wall_lf"] == 16.5, "the longer side is the wall side"
+    assert g["wall_lf"] == 16.5, "the eave-named side is the wall side"
+
+
+def test_no_geometry_flags_and_takes_the_disclosed_minimum():
+    g = _porch_geom(_m(porch_ceiling_sqft=99,
+                       _porch_dims=[{"width_ft": 6, "length_ft": 16.5}]))
+    assert g["basis"] == "real_dims_wall_undetermined"
+    assert g["wall_lf"] == 6.0
+    assert "UNDETERMINED" in g["text"]
 
 
 def test_porch_plane_reads_beat_the_square_assumption():
@@ -125,7 +136,8 @@ def test_ceiling_channel_prints_on_the_soffit_j_line():
 
 def test_wall_j_carries_only_the_wall_abutting_length():
     m = _m(porch_ceiling_sqft=99,
-           _porch_dims=[{"width_ft": 6, "length_ft": 16.5}])
+           _porch_dims=[{"width_ft": 6, "length_ft": 16.5}],
+           _roof_planes=[{"is_porch": True, "eave_lf": 16.5}])
     lf, br = _eave_porch_j_lf(m)
     assert lf == 120 + 16.5
     assert "wall-abutting side only" in br

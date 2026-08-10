@@ -364,8 +364,8 @@ ROW IDENTITY (ruled 2026-08-09): sibling schedule rows share a code prefix (SH 3
     {"where": "<elevation/section, e.g. 'garage eave'>", "overhang_in": number, "text": "<annotation verbatim>"}
   ],
   "address": "<project address from the title block, verbatim; empty string if none printed>",
-  "vent_count": number,        // gable/roof VENTS the elevations show (louvre/gable vents); 0 when none are drawn — Q7 ruled 2026-07-27: vents ride the blueprint read
-  "shutter_count": number,     // window SHUTTERS the elevations show; 0 when none are drawn (same ruling)
+  "vent_unit_count": number,      // individual gable/roof VENT UNITS drawn on the elevations (one louver = 1 unit); 0 when none are drawn — count UNITS, never windows, never pairs (Q7 ruled 2026-07-27: vents ride the blueprint read; renamed 2026-08-10 so the field cannot be read two ways)
+  "shutter_panel_count": number,  // individual shutter PANELS drawn on the elevations — a shuttered window carries 2 panels; count PANELS, never windows, never pairs; 0 when none are drawn (renamed 2026-08-10: the ordering unit is PAIRS and the app computes pairs = ceil(panels ÷ 2) — an ambiguous count here halves the order)
   "opening_facade_assignments": [      // ONLY if the plans EXPLICITLY assign an opening to a facade MATERIAL (e.g. a window drawn inside a hatched BRICK/STONE region with a material callout): {"id": "<mark>", "facade": "siding|stucco|brick|stone|metal|other"}. NEVER infer from elevation, type, or height — if the plans do not state it, return []. (Class C — R6 sealed 2026-07-28)
   ],
   "notes": "<2-3 sentences flagging anything to verify — missing dims, illegible numbers, etc.>"
@@ -1966,6 +1966,25 @@ def _read_footprint_sqft(raw: dict) -> float:
     return _f(raw.get("footprint_area_sqft"))
 
 
+def _opposing_pairs(widths: dict) -> tuple[float, float, list]:
+    """WING FLAG GUARD (Howard ruled 2026-08-10 send 2): opposing walls
+    that disagree FLAG LOUD, and the box-model rect takes the SHORTER of
+    the pair. A max() here could inflate the rect and silently SUPPRESS
+    the wing detector — a number too big costs money; a body that is
+    missing costs the job."""
+    disags: list = []
+
+    def _side(a_key: str, b_key: str) -> float:
+        a = float(widths.get(a_key) or 0)
+        b = float(widths.get(b_key) or 0)
+        if a > 0 and b > 0 and abs(a - b) > max(1.0, 0.02 * max(a, b)):
+            disags.append((f"{a_key}/{b_key}", a, b))
+            return min(a, b)
+        return max(a, b)
+
+    return _side("front", "back"), _side("left", "right"), disags
+
+
 def check_read_consistency(raw: dict) -> list[dict]:
     """INTERNAL CONSISTENCY CHECKER (Howard ruled 2026-08-07): the card
     arrives already clean — contradictions the app can catch itself never
@@ -2201,6 +2220,16 @@ def check_read_consistency(raw: dict) -> list[dict]:
                      "r_out": _cwc["roof_pass"]["out"],
                      "r_in": _cwc["roof_pass"]["in"]}})
 
+    # WING FLAG GUARD (Howard ruled 2026-08-10 send 2): opposing walls
+    # that disagree print BOTH widths — the rect stops silently
+    # absorbing the difference (it takes the shorter of the pair).
+    _w_widths = {str(w.get("label") or ""): _dim_v(w.get("width_ft"))
+                 for w in walls}
+    for _pair, _a, _b in _opposing_pairs(_w_widths)[2]:
+        flags.append({
+            "code": "opposing_walls_disagree", "level": "loud",
+            "vars": {"pair": _pair, "a": f"{_a:g}", "b": f"{_b:g}"}})
+
     # EAVE/RAKE ORIENTATION (Howard ordered 2026-08-10, the EST-040221
     # instrument): on a simple gable roof, eaves and rakes sit on
     # OPPOSITE wall pairs, always. An eave figure that matches the GABLE
@@ -2261,8 +2290,11 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     else:
         basis = "per_corner"
     widths = {str(w.get("label") or ""): float(w.get("width_ft") or 0) for w in walls}
-    rect = (max(widths.get("front", 0), widths.get("back", 0))
-            * max(widths.get("left", 0), widths.get("right", 0)))
+    # WING FLAG GUARD (ruled 2026-08-10 send 2): the rect takes the
+    # SHORTER of a disagreeing pair — max() could inflate it and
+    # silently suppress the wing flag below.
+    _fb, _lr, _wall_disags = _opposing_pairs(widths)
+    rect = _fb * _lr
     # Correction 3 (ruled 2026-08-08): labelled quantities read as
     # labelled — the footprint is ground-floor + garage, never TOTAL
     # FINISHED with storeys summed.
@@ -2955,8 +2987,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # door — caulk-per-color + J-blocks read it.
         "door_count": _bk["door_count"],
         # Q7 (ruled 2026-07-27): vents/shutters wired on the blueprint door.
-        "vent_count": int(raw.get("vent_count") or 0),
-        "shutter_count": int(raw.get("shutter_count") or 0),
+        "vent_count": int(raw.get("vent_unit_count") or 0),
+        "shutter_count": int(raw.get("shutter_panel_count") or 0),
         # Q6 (ruled 2026-07-27): story-fee key aligned across all doors.
         **({"stories": str(raw.get("story_count"))} if raw.get("story_count") else {}),
         # Feed the Windows-workspace populator. Same shape HOVER produces.

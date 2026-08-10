@@ -121,8 +121,14 @@ class TestSchemaConsumerKeys:
     def test_vent_and_shutter_counts_are_in_the_schema(self):
         # Second instance, caught by this detector's first run (Q7 ruled
         # them wired on the blueprint door; the schema never asked).
+        # RENAMED 2026-08-10 (Howard ruled: an ambiguous field name is a
+        # defect): units and panels named so the count can't be read two
+        # ways — pairs = ceil(panels ÷ 2) downstream.
         schema = _schema_keys()
-        assert "vent_count" in schema and "shutter_count" in schema
+        assert "vent_unit_count" in schema
+        assert "shutter_panel_count" in schema
+        assert "vent_count" not in schema
+        assert "shutter_count" not in schema
 
     def test_internal_allowlist_carries_no_dead_entries(self):
         live = {key for path, fns in FNS.items()

@@ -4,6 +4,7 @@
 // geometry misses (gable-blind planes, phantom porches, averaged corners)
 // are obvious at a glance instead of buried in the material list.
 import React from "react";
+import { Link, useParams } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, XCircle, Info } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import VisualAuditPanel from "@/components/estimate/VisualAuditPanel";
@@ -28,6 +29,7 @@ const Flag = ({ level, children, testid }) => {
 
 export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
   const t = useT();
+  const { id: estIdFromRoute } = useParams();
   if (!readback) return null;
   const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency, stability, evidence, run } = readback;
   const mismatches = stability
@@ -54,6 +56,19 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
           <span className="text-[10px] text-[var(--muted)]">{t("bp.rb.readonly")}</span>
         </span>
       </div>
+
+      {/* PHASE 1 (ruled 2026-08-10): synthetic elevations rendered from
+          the blueprint model — entry links; positions schematic. */}
+      {estIdFromRoute && (
+        <div className="px-3 py-1.5 border-b border-[var(--border)] flex items-center gap-3 flex-wrap" data-testid="bp-rb-elevation-links">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">{t("bp.rb.sheets")}</span>
+          {["front", "left", "back", "right"].map((s) => (
+            <Link key={s} to={`/estimate/${estIdFromRoute}/blueprint-elevation/${s}`}
+              className="text-[10px] underline" data-testid={`bp-rb-sheet-${s}`}>{s}</Link>
+          ))}
+          <span className="text-[9px] text-[var(--muted)]">{t("bp.rb.sheets.note")}</span>
+        </div>
+      )}
 
       {/* 0 — source (retention ruling 2026-08-07: the original upload is kept;
           the card says whether numbers stand on printed text or vision alone) */}

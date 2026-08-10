@@ -677,11 +677,43 @@ def _porch_geom(m: dict) -> dict:
             and float(p.get("length_ft") or 0) > 0]
     if real:
         perim = sum(2.0 * (w + l) for w, l in real)
-        wall = sum(max(w, l) for w, l in real)
+        # WALL SIDE FROM GEOMETRY (Howard ruled 2026-08-10 send 2): never
+        # assume the longer dim abuts the house — right on Boni
+        # (16'6"×6'0") BY LUCK, wrong on any deeper-than-wide porch. The
+        # porch roof plane's eave (the fascia side) names the wall run; a
+        # dim matching it (±1') is the wall side. UNDETERMINABLE → FLAG
+        # and take the DISCLOSED MINIMUM (shorter side), never a guess.
+        eave = 0.0
+        for p in (m.get("_roof_planes") or []):
+            if isinstance(p, dict) and p.get("is_porch"):
+                try:
+                    eave = float(p.get("eave_lf") or 0)
+                except (TypeError, ValueError):
+                    eave = 0.0
+                break
+        wall = 0.0
+        undetermined = False
+        parts_txt = []
+        for w, l in real:
+            if abs(w - l) <= 0.5:
+                side = w  # square-ish — either side is the wall side
+            elif eave > 0 and abs(w - eave) <= 1.0 and abs(l - eave) > 1.0:
+                side = w
+            elif eave > 0 and abs(l - eave) <= 1.0 and abs(w - eave) > 1.0:
+                side = l
+            else:
+                side = min(w, l)
+                undetermined = True
+            wall += side
+            parts_txt.append(f"{side:g}' wall × {w + l - side:g}' deep")
+        basis = "real_dims_wall_undetermined" if undetermined else "real_dims"
+        txt = " + ".join(parts_txt)
+        if undetermined:
+            txt += (" — WALL SIDE UNDETERMINED (no porch roof plane names "
+                    "the fascia run): shorter side taken as the disclosed "
+                    "minimum; mark the actual house-abutting side")
         return {"sqft": sqft, "perimeter_lf": perim, "wall_lf": wall,
-                "basis": "real_dims",
-                "text": " + ".join(f"{max(w, l):g}'×{min(w, l):g}'"
-                                   for w, l in real)}
+                "basis": basis, "text": txt}
     for p in (m.get("_roof_planes") or []):
         if isinstance(p, dict) and p.get("is_porch"):
             try:
