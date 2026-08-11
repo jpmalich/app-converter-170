@@ -32,6 +32,7 @@ import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 import { bakeWasteIntoLines } from "@/lib/wasteLogic";
 import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
 import BlueprintElevationEntry from "@/components/estimate/BlueprintElevationEntry";
+import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
 // Iter 78u — Compare Drawings modal trigger
 import { useState } from "react";
 import { Upload, FileText, Sparkles, Layers, ChevronDown, ChevronUp, MoreHorizontal, Lightbulb } from "lucide-react";
@@ -331,6 +332,14 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3" data-testid="measurement-tools-row">
         <ToolTile icon={Upload} label="HOVER PDF" accent="#09090B" testid="tool-tile-hover">
           <HoverImportButton est={est} update={update} save={save} />
+          {/* S3 — vinyl profile picker chip (Howard ruled 2026-08-11
+              send-4 item 2): the picker itself lives inside the HOVER
+              modal; the estimate page speaks its state + way out. */}
+          <SurfaceAccessChip
+            state="Vinyl profile picker — photo door only"
+            wayOut="this row's profile came from the schedule/import — the picker mounts inside the HOVER upload modal"
+            testid="s3-vinyl-profile-picker-chip"
+          />
         </ToolTile>
         <ToolTile icon={FileText} label={t("jip.tile.blueprints")} accent="#7C3AED" testid="tool-tile-blueprint">
           <BlueprintMeasureButton est={est} update={update} save={save} />
@@ -341,6 +350,15 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           {est?.id && (
             <BlueprintElevationEntry estId={est.id} where="blueprint-tile" />
           )}
+          {/* S4 — accent injection chip (send-4 item 2). The
+              PerElevationBreakdownCard's add-accent-modal mounts
+              inside the run dialog only; the estimate page speaks
+              the state + way out. */}
+          <SurfaceAccessChip
+            state="Accent injection — needs a completed measurement run"
+            wayOut="open the blueprint read dialog to inject an accent onto a specific elevation"
+            testid="s4-accent-injection-chip-blueprint"
+          />
         </ToolTile>
         <ToolTile icon={Sparkles} label={t("jip.tile.aiPhoto")} accent="#7C3AED" testid="tool-tile-ai">
           <AIMeasureButton
@@ -456,6 +474,12 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
               update(patch);
               if (save) await save({ ...est, ...patch });
             }}
+          />
+          {/* S4 — accent injection chip (send-4 item 2), photo mount. */}
+          <SurfaceAccessChip
+            state="Accent injection — needs a completed measurement run"
+            wayOut="open the AI photo measure dialog to inject an accent onto a specific elevation"
+            testid="s4-accent-injection-chip-photo"
           />
         </ToolTile>
       </div>
