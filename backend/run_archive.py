@@ -21,6 +21,7 @@ LP run and its SOURCE hover run the moment an estimate stamp is minted.
 Incident log: /app/memory/incident_2026-07-18_ttl_expiry_second_instance.md
 """
 import re
+from datetime import datetime, timedelta, timezone
 
 from db import db, logger
 
@@ -66,6 +67,69 @@ async def archive_run_for_artifact(estimate_id=None, run_id=None, reason=""):
         return run["run_id"]
     except Exception:
         logger.exception("run archive failed (reason=%s)", reason)
+        return None
+
+
+# ── TTL INCIDENT #3 (ruled 2026-08-11) — the class fix ────────────────
+# "Runs you acted on survive, runs you are evaluating die" is the
+# anti-pattern that reaped the EST-886440 grading chain. Windows below
+# mirror seam_accounting.TTL_REAPER_REGISTRY (census-pinned to the LIVE
+# database indexes).
+
+RUN_TTL_WINDOWS = {
+    "ai_measure_runs": 30 * 24 * 60 * 60,
+    "ai_blueprint_runs": 30 * 24 * 60 * 60,
+    "hover_import_runs": 24 * 60 * 60,
+}
+
+
+def reap_time_for(substrate, created_at, *, archived=False):
+    """ISO time mongod's TTL monitor will destroy the live doc — None when
+    archived (fixture_runs carries no TTL) or unknowable."""
+    if archived:
+        return None
+    window = RUN_TTL_WINDOWS.get(substrate)
+    if window is None or not isinstance(created_at, datetime):
+        return None
+    base = created_at if created_at.tzinfo else created_at.replace(tzinfo=timezone.utc)
+    return (base + timedelta(seconds=window)).isoformat()
+
+
+async def archive_run_on_view(doc, *, reason):
+    """ARCHIVE-ON-VIEW: a run a human has opened is a run someone is
+    evaluating — whichever door made it, it must not be reapable.
+    Terminal runs only (a running doc is still being written; its
+    terminal poll archives it). Usage probes are telemetry, not
+    evaluations. Returns the archived run_id or None."""
+    if not doc or not doc.get("run_id"):
+        return None
+    if doc.get("status") not in ("done", "error"):
+        return None
+    if doc.get("usage_probe") is True:
+        return None
+    return await archive_run_for_artifact(run_id=doc["run_id"], reason=reason)
+
+
+async def maybe_archive_protected(run_id, *, reason="protected-estimate:completion"):
+    """AUTO-ARCHIVE ON PROTECTED ESTIMATES: protection means unreapable,
+    applied or not. Never raises — run completion must not fail on
+    archival."""
+    try:
+        run = None
+        for coll_name in _RUN_SUBSTRATE_COLLS:
+            run = await db[coll_name].find_one(
+                {"run_id": run_id}, {"_id": 0, "estimate_id": 1})
+            if run is not None:
+                break
+        eid = (run or {}).get("estimate_id")
+        if not eid:
+            return None
+        est = await db.estimates.find_one({"id": eid}, {"_id": 0, "protected": 1})
+        if not est or not est.get("protected"):
+            return None
+        return await archive_run_for_artifact(run_id=run_id, reason=reason)
+    except Exception:
+        logger.exception("protected-estimate archive failed (run %s)", run_id)
         return None
 
 
@@ -159,6 +223,21 @@ async def backfill_artifact_referenced_runs():
                     logger.warning(
                         "run-archive backfill: hover source for stamp %s already reaped "
                         "(unrecoverable — re-upload the Hover PDF)", stamp)
+        # TTL incident #3 (ruled 2026-08-11): every run on a PROTECTED
+        # estimate archives at boot — protection means unreapable, applied
+        # or not (covers runs created before the completion hooks shipped).
+        async for est in db.estimates.find(
+            {"protected": True}, {"_id": 0, "id": 1},
+        ):
+            for coll_name in _RUN_SUBSTRATE_COLLS:
+                async for r in db[coll_name].find(
+                        {"estimate_id": est["id"]}, {"_id": 0, "run_id": 1}):
+                    if not r.get("run_id"):
+                        continue
+                    rid = await archive_run_for_artifact(
+                        run_id=r["run_id"], reason="backfill:protected-estimate")
+                    if rid:
+                        archived.add(rid)
         if archived:
             logger.info("run-archive backfill: %d artifact-referenced run(s) ensured in fixture_runs", len(archived))
     except Exception:

@@ -125,6 +125,23 @@ async def run_startup():
         keys="deleted_at", expire_after_seconds=30 * 24 * 60 * 60,
     )
 
+    # AUDIT FINDING A5 (ruled 2026-08-11): hover_page_cache was retired
+    # 2026-07-29 but its 1-hour TTL index OUTLIVED the code in the live
+    # database — a trap, not a policy: the next write to that name dies
+    # within the hour with zero code trace. Explicit ledgered drop;
+    # idempotent, and the index census pins that it stays gone.
+    try:
+        _hpc_info = await db.hover_page_cache.index_information()
+        for _iname, _ival in _hpc_info.items():
+            if "expireAfterSeconds" in _ival:
+                await db.hover_page_cache.drop_index(_iname)
+                logger.warning(
+                    "dropped ORPHANED TTL index hover_page_cache.%s "
+                    "(expireAfterSeconds=%s) — audit A5, ruled 2026-08-11",
+                    _iname, _ival["expireAfterSeconds"])
+    except Exception:
+        logger.exception("orphaned hover_page_cache TTL index drop failed")
+
     # Seed the 4 price tiers
     await ensure_tiers_seeded()
 
@@ -133,6 +150,13 @@ async def run_startup():
     # when possible. Import here to avoid a startup-time route import cycle.
     from routes.ai_measure import sweep_orphaned_runs
     await sweep_orphaned_runs()
+
+    # Audit finding B1 (ruled 2026-08-11): the blueprint side had NO
+    # dead-worker sweep — a dead worker's doc sat 'running' forever and
+    # the TTL then destroyed the evidence of the crash. The sweep flips
+    # AND ARCHIVES (a failed run is worth more than a successful one).
+    from routes.ai_blueprint import sweep_orphaned_blueprint_runs
+    await sweep_orphaned_blueprint_runs()
 
     # Ruled 2026-07-14 — no persistent artifact may reference a reapable
     # run: backfill-archive runs referenced by sent quotes / live QR
@@ -157,12 +181,21 @@ async def run_startup():
     from vero_catalog import VERO_PRODUCT_TYPES, VERO_TIER_NAMES
     OBSOLETE_VERO_PRODUCTS = ["Vero 3-Lite Slider", "Vero Picture"]
     OBSOLETE_VERO_TIERS = ["one-opp"]
-    await db.vero_prices.delete_many(
+    _n_prod = (await db.vero_prices.delete_many(
         {"product_type": {"$in": OBSOLETE_VERO_PRODUCTS}}
-    )
-    await db.vero_prices.delete_many(
+    )).deleted_count
+    _n_tier = (await db.vero_prices.delete_many(
         {"tier": {"$in": OBSOLETE_VERO_TIERS}}
-    )
+    )).deleted_count
+    # LEDGERED (ruled 2026-08-11): a per-boot removal is a seam like any
+    # other — counted when it removes, silent only when there was
+    # nothing to remove.
+    if _n_prod or _n_tier:
+        from seam_accounting import account
+        _boot_led = account(
+            {}, "vero_obsolete_boot_purge",
+            [f"products:{_n_prod}", f"tiers:{_n_tier}"])
+        logger.info("boot seam ledger: %s", _boot_led["_seam_ledger"])
     # Force overwrite the 3×3 active (tier, product) docs with the
     # canonical seed values so the new pricing lands immediately.
     await vero_prices.seed_vero_prices(force=True)

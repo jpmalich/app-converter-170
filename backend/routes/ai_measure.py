@@ -2896,6 +2896,9 @@ async def _execute_reconcile_only_worker(
                 "updated_at": datetime.now(timezone.utc),
             }},
         )
+        # AUTO-ARCHIVE ON PROTECTED ESTIMATES (ruled 2026-08-11)
+        from run_archive import maybe_archive_protected
+        await maybe_archive_protected(run_id)
         # Iter 79j.52 — Repoint the estimate's ai_measure_sessions doc
         # so the UI's Resume path surfaces the reconciled result. The
         # session preview is a client-persisted mirror of the last
@@ -3224,12 +3227,20 @@ async def ai_measure_status(
     if created is not None:
         ref = completed if completed is not None else datetime.now(timezone.utc)
         elapsed_ms = int((ref - created).total_seconds() * 1000)
+    # ARCHIVE-ON-VIEW (ruled 2026-08-11, TTL incident #3): a run a human
+    # has opened is a run someone is evaluating — it must not be reapable.
+    from run_archive import archive_run_on_view, reap_time_for
+    _archived = bool(await archive_run_on_view(
+        doc, reason="view:measure-status"))
     return {
         "run_id": run_id,
         "status": doc.get("status"),
         "stage": doc.get("stage"),
         "result": strip_cost_keys(doc.get("result")),
         "error": doc.get("error"),
+        "archived": _archived,
+        # Exact reap time (ruled 2026-08-11) — None once archived.
+        "reaped_at": reap_time_for("ai_measure_runs", created, archived=_archived),
         # Iter 79j.44 — Surface `error_kind` (exception class name) so
         # the frontend banner can render a "Kind: TimeoutError" hint
         # and the health-check UI can distinguish a per-run failure
@@ -3498,6 +3509,11 @@ async def ai_measure_latest_for_estimate(
         archived = doc is not None
     if not doc:
         return {"run": None}
+    # ARCHIVE-ON-VIEW (ruled 2026-08-11, TTL incident #3)
+    from run_archive import archive_run_on_view, reap_time_for
+    if not archived:
+        archived = bool(await archive_run_on_view(
+            doc, reason="view:measure-latest"))
     created = _as_aware_utc(doc.get("created_at"))
     completed = _as_aware_utc(doc.get("completed_at") or doc.get("updated_at"))
     now = datetime.now(timezone.utc)
@@ -3517,8 +3533,10 @@ async def ai_measure_latest_for_estimate(
             "photo_kinds": doc.get("photo_kinds"),
             "source": doc.get("source"),
             # Read-side provenance (ruled 2026-07-20): True when served
-            # from the CUT archive after the live doc's 30-day TTL reaped.
+            # from the CUT archive, or (2026-08-11) just archived on view.
             "archived": archived,
+            # Exact reap time (ruled 2026-08-11) — None once archived.
+            "reaped_at": reap_time_for("ai_measure_runs", created, archived=archived),
             "deep_dormer_scan": doc.get("deep_dormer_scan"),
             # Contractor-measured gables (ruled 2026-07-24) — Field
             # Verify rows + sheet callouts read these TAPED-class dims.
@@ -6771,6 +6789,9 @@ async def _execute_ai_measure_worker(
                 "updated_at": datetime.now(timezone.utc),
             }},
         )
+        # AUTO-ARCHIVE ON PROTECTED ESTIMATES (ruled 2026-08-11)
+        from run_archive import maybe_archive_protected
+        await maybe_archive_protected(run_id)
     except Exception as e:
         # Log & surface a friendly error to the polling client.
         logger.exception("[ai-measure] worker failed for run_id=%s", run_id)

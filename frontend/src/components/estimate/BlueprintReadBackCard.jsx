@@ -53,6 +53,18 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
               {run.at ? ` · ${String(run.at).slice(0, 16).replace("T", " ")} UTC` : ""}
             </span>
           )}
+          {/* EXPIRY ON THE CARD (ruled 2026-08-11, TTL incident #3): a
+              disappearing run must say so FIRST — the exact reap time,
+              or the archived guarantee. */}
+          {run?.archived ? (
+            <span className="text-[10px] text-[var(--muted)]" data-testid="bp-rb-run-archived">
+              {t("bp.rb.archived")}
+            </span>
+          ) : run?.reaped_at ? (
+            <span className="text-[10px] text-[#B91C1C]" data-testid="bp-rb-run-reap">
+              {t("bp.rb.reap", { when: `${String(run.reaped_at).slice(0, 16).replace("T", " ")} UTC` })}
+            </span>
+          ) : null}
           <span className="text-[10px] text-[var(--muted)]">{t("bp.rb.readonly")}</span>
         </span>
       </div>

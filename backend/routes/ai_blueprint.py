@@ -3594,15 +3594,24 @@ async def ai_blueprint_status(
     """Poll the status of an async blueprint-read run. Mirrors the
     `/measure/ai-measure/status/{run_id}` shape."""
     doc = await db.ai_blueprint_runs.find_one({"run_id": run_id})
+    _from_archive = False
     if not doc:
         # Artifact pin read-side: archived blueprint runs outlive the
-        # 24h TTL — serve them here too (fixture_runs, no TTL).
+        # TTL — serve them here too (fixture_runs, no TTL).
         from run_archive import find_archived_run
         doc = await find_archived_run({"run_id": run_id})
+        _from_archive = doc is not None
     if not doc:
         raise HTTPException(status_code=404, detail="Run not found")
     if doc.get("user_id") != user["id"]:
         raise HTTPException(status_code=403, detail="Not your run")
+    # ARCHIVE-ON-VIEW (ruled 2026-08-11, TTL incident #3): a run a human
+    # has opened is a run someone is evaluating — it must not be reapable.
+    from run_archive import archive_run_on_view, reap_time_for
+    archived = _from_archive
+    if not archived:
+        archived = bool(await archive_run_on_view(
+            doc, reason="view:blueprint-status"))
     from routes.ai_measure import strip_cost_keys
     created = doc.get("created_at")
     completed = doc.get("completed_at") or doc.get("updated_at")
@@ -3610,16 +3619,20 @@ async def ai_blueprint_status(
     if isinstance(created, datetime):
         ref = completed if isinstance(completed, datetime) else datetime.now(timezone.utc)
         elapsed_ms = int((ref - created).total_seconds() * 1000)
+    reaped_at = reap_time_for("ai_blueprint_runs", created, archived=archived)
     result_payload = _with_readback(strip_cost_keys(doc.get("result")),
                                     source_probe=doc.get("source_probe"),
                                     stability=doc.get("stability"))
     # RUN IDENTITY ON THE CARD (Howard ruled 2026-08-09 send 6: "I cannot
     # see a4cbce91 anywhere in the UI — every walk instruction costs a
-    # round trip"). The readback header prints run id + fired-at.
+    # round trip"). The readback header prints run id + fired-at, and
+    # (ruled 2026-08-11) the run's exact reap time unless archived.
     if isinstance(result_payload, dict) and isinstance(result_payload.get("readback"), dict):
         result_payload["readback"]["run"] = {
             "id": run_id,
             "at": created.isoformat() if isinstance(created, datetime) else created,
+            "archived": archived,
+            "reaped_at": reaped_at,
         }
     return {
         "run_id": run_id,
@@ -3628,6 +3641,8 @@ async def ai_blueprint_status(
         "result": result_payload,
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
+        "archived": archived,
+        "reaped_at": reaped_at,
         "source_probe": doc.get("source_probe"),
         "source_files": doc.get("source_files"),
     }
@@ -3658,6 +3673,12 @@ async def ai_blueprint_latest_for_estimate(
         archived = doc is not None
     if not doc:
         return {"run": None}
+    # ARCHIVE-ON-VIEW (ruled 2026-08-11, TTL incident #3): opening the
+    # estimate's latest run is a human view — archive it.
+    from run_archive import archive_run_on_view, reap_time_for
+    if not archived:
+        archived = bool(await archive_run_on_view(
+            doc, reason="view:blueprint-latest"))
     # Iter 57x — same offset-aware safety fix that ai_measure has.
     # Mongo returns naive datetimes by default which breaks the
     # subtraction against `datetime.now(timezone.utc)`.
@@ -3675,6 +3696,19 @@ async def ai_blueprint_latest_for_estimate(
         ref = completed if completed is not None else now
         elapsed_ms = int((ref - created).total_seconds() * 1000)
         age_seconds = int((now - created).total_seconds())
+    reaped_at = reap_time_for("ai_blueprint_runs", created, archived=archived)
+    result_payload = _with_readback(strip_cost_keys(doc.get("result")),
+                                    source_probe=doc.get("source_probe"),
+                                    stability=doc.get("stability"))
+    # Run identity + reap time on the resume payload too (ruled
+    # 2026-08-11) — the card must print expiry whichever door loaded it.
+    if isinstance(result_payload, dict) and isinstance(result_payload.get("readback"), dict):
+        result_payload["readback"]["run"] = {
+            "id": doc.get("run_id"),
+            "at": created.isoformat() if created is not None else None,
+            "archived": archived,
+            "reaped_at": reaped_at,
+        }
     return {
         "run": {
             "run_id": doc.get("run_id"),
@@ -3685,11 +3719,11 @@ async def ai_blueprint_latest_for_estimate(
             # render them in the ProfileAnnotator on a resume.
             "page_paths": doc.get("page_paths") or "",
             # Read-side provenance (ruled 2026-07-20): True when served
-            # from the CUT archive after the live doc's 24h TTL reaped.
+            # from the CUT archive, or (2026-08-11) just archived on view.
             "archived": archived,
-            "result": _with_readback(strip_cost_keys(doc.get("result")),
-                                     source_probe=doc.get("source_probe"),
-                                     stability=doc.get("stability")),
+            # Exact reap time (ruled 2026-08-11) — None once archived.
+            "reaped_at": reaped_at,
+            "result": result_payload,
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,
@@ -3697,6 +3731,40 @@ async def ai_blueprint_latest_for_estimate(
             "source_files": doc.get("source_files"),
         },
     }
+
+
+async def sweep_orphaned_blueprint_runs() -> dict:
+    """Boot-time dead-worker sweep (audit finding B1, ruled 2026-08-11).
+    asyncio workers never survive their process — a status='running' doc
+    at boot is a corpse. The old gap COMPOUNDED: the doc sat 'running'
+    forever and the TTL then destroyed the evidence of the crash. The
+    sweep flips to a class-5 error AND ARCHIVES the dead run into
+    fixture_runs — a failed run is worth more than a successful one."""
+    out = {"archived_dead": 0}
+    from run_archive import archive_run_for_artifact
+    async for doc in db.ai_blueprint_runs.find(
+            {"status": "running"}, {"_id": 0, "run_id": 1}):
+        now = datetime.now(timezone.utc)
+        await db.ai_blueprint_runs.update_one(
+            {"run_id": doc["run_id"]},
+            {"$set": {
+                "status": "error",
+                "stage": "dead-worker",
+                "error": ("The blueprint read worker died with the server "
+                          "process (restart/crash) before finishing — "
+                          "retry the run."),
+                "error_kind": "dead_worker_boot_sweep",
+                "completed_at": now,
+                "updated_at": now,
+            }})
+        await archive_run_for_artifact(
+            run_id=doc["run_id"], reason="dead-worker:boot-sweep")
+        out["archived_dead"] += 1
+    if out["archived_dead"]:
+        logger.warning(
+            "[ai-blueprint class-5] boot sweep flipped+archived %d dead run(s)",
+            out["archived_dead"])
+    return out
 
 
 async def _execute_ai_blueprint_worker(
@@ -3970,6 +4038,10 @@ async def _execute_ai_blueprint_worker(
                 "updated_at": datetime.now(timezone.utc),
             }},
         )
+        # AUTO-ARCHIVE ON PROTECTED ESTIMATES (ruled 2026-08-11, TTL
+        # incident #3): a run on a protected estimate is never reapable.
+        from run_archive import maybe_archive_protected
+        await maybe_archive_protected(run_id)
     except Exception as e:
         logger.exception("[ai-blueprint] worker failed for run_id=%s", run_id)
         await db.ai_blueprint_runs.update_one(
@@ -3982,3 +4054,7 @@ async def _execute_ai_blueprint_worker(
                 "updated_at": datetime.now(timezone.utc),
             }},
         )
+        # A FAILED run on a protected estimate is worth more than a
+        # successful one — archive it too (ruled 2026-08-11).
+        from run_archive import maybe_archive_protected
+        await maybe_archive_protected(run_id)

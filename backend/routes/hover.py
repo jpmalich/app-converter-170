@@ -3080,6 +3080,12 @@ async def hover_import_status(
     # Strict ownership check — only the user who launched the run can read it.
     if doc.get("user_id") != user["id"]:
         raise HTTPException(status_code=403, detail="Not your run")
+    # ARCHIVE-ON-VIEW (ruled 2026-08-11, TTL incident #3): hover runs
+    # carry the SHORTEST fuse in the DB (24h, audit A3) — a viewed run
+    # must not be reapable.
+    from run_archive import archive_run_on_view, reap_time_for
+    _archived = bool(await archive_run_on_view(
+        doc, reason="view:hover-status"))
     created = doc.get("created_at")
     completed = doc.get("completed_at") or doc.get("updated_at")
     elapsed_ms = None
@@ -3103,6 +3109,10 @@ async def hover_import_status(
         "result": doc.get("result"),
         "error": doc.get("error"),
         "elapsed_ms": elapsed_ms,
+        "archived": _archived,
+        # Exact reap time (ruled 2026-08-11) — None once archived.
+        "reaped_at": reap_time_for("hover_import_runs", doc.get("created_at"),
+                                   archived=_archived),
     }
 
 
@@ -3890,6 +3900,10 @@ async def _execute_hover_import_worker(
                 "updated_at": datetime.now(timezone.utc),
             }},
         )
+        # AUTO-ARCHIVE ON PROTECTED ESTIMATES (ruled 2026-08-11) — no-op
+        # when the run carries no estimate_id yet.
+        from run_archive import maybe_archive_protected
+        await maybe_archive_protected(run_id)
     except Exception as e:
         logger.exception("Iter 79d: hover_import worker failed: %s", e)
         if db is not None:

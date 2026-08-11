@@ -56,7 +56,62 @@ SEAM_REGISTRY = {
         "— invisible to the model, the locator, and every census. The "
         "removal is counted and flagged LOUD on the card (ruled "
         "2026-08-09 send 7: 'this plan set has N pages, the app read M').",
+    "ttl_reaper":
+        "mongod's TTL monitor destroys expired docs with NO code "
+        "executing — the removal no AST detector can see (TTL incident "
+        "#3, the EST-886440 grading chain). Every live expiring index is "
+        "named in TTL_REAPER_REGISTRY; the live-DB census "
+        "(tests/test_ttl_index_census.py) fails the build on an "
+        "unregistered one. Defusals: archive-on-view, protected-estimate "
+        "auto-archive, artifact events, dead-worker boot sweep, boot "
+        "backfill (ruled 2026-08-11).",
+    "vero_obsolete_boot_purge":
+        "Boot-time delete_many of retired Vero products/tiers before the "
+        "canonical force-reseed (Iter 78y) — ruled and harmless, but a "
+        "per-boot removal, and a ledger with a known hole teaches the "
+        "wrong habit (ruled 2026-08-11).",
 }
+
+
+# ── THE REAPER IN THE LEDGER, CLASS-WIDE (ruled 2026-08-11) ──────────
+# A TTL index removes data with no code executing, so the AST seam
+# detector is structurally blind to it. This registry is the mirror
+# instrument on the other substrate: every LIVE index carrying
+# expireAfterSeconds must appear here, and tests/test_ttl_index_census.py
+# walks the LIVE database (never this file alone) — failing the build on
+# any unregistered expiring index, any registry entry missing live, any
+# window mismatch, and any capped collection (silent oldest-doc eviction).
+TTL_REAPER_REGISTRY = {
+    ("ai_blueprint_runs", "created_at_1"): {
+        "expire_seconds": 30 * 24 * 60 * 60,
+        "why": "blueprint reads — raised 24h→30d 2026-08-11 (incident #3); "
+               "defused by archive-on-view / protected auto-archive / "
+               "artifact events / dead-worker boot sweep",
+    },
+    ("ai_measure_runs", "created_at_1"): {
+        "expire_seconds": 30 * 24 * 60 * 60,
+        "why": "photo reads — 30d since Iter 79j.62 (Red-House graduation "
+               "run reaped at 24h); same defusals as blueprint",
+    },
+    ("hover_import_runs", "created_at_1"): {
+        "expire_seconds": 24 * 60 * 60,
+        "why": "hover imports — 24h, SHORTEST FUSE in the DB (audit A3, "
+               "same anti-pattern as the incident); defused by "
+               "archive-on-view / protected auto-archive / "
+               "hover-lp-materialize (2nd-instance pin 2026-07-18)",
+    },
+    ("estimates_trash", "deleted_at_1"): {
+        "expire_seconds": 30 * 24 * 60 * 60,
+        "why": "ruled soft-delete retention (Iter 112) — 30-day undo "
+               "window, then the reaper empties the trash",
+    },
+}
+
+# Collections that must NEVER carry an expiring index or capped option.
+# hover_page_cache is the audit-A5 trap: its 1h TTL index outlived the
+# retired code by two weeks in the LIVE database — dropped 2026-08-11,
+# pinned to stay gone.
+TTL_FORBIDDEN = ("estimates", "fixture_runs", "upload_blobs", "hover_page_cache")
 
 
 def account(carrier: dict, seam: str, removed, kept=None) -> dict:
