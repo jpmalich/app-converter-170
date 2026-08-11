@@ -31,7 +31,7 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
   const t = useT();
   const { id: estIdFromRoute } = useParams();
   if (!readback) return null;
-  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency, stability, evidence, run } = readback;
+  const { planes, no_planes, plane_totals, garage_banner, corners, wing_check, porch, rail, gutter_runs, gutter_runs_total, source, consistency, stability, evidence, run, gable_attribution } = readback;
   const mismatches = stability
     ? [
         ...(stability.counts || []).filter((c) => !c.match),
@@ -183,6 +183,29 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
               )}
             </tbody>
           </table>
+        )}
+        {gable_attribution && gable_attribution.attributions && gable_attribution.attributions.length > 0 && (
+          <div className="space-y-1" data-testid="bp-rb-gable-attribution">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+              Gable attribution
+            </div>
+            <div className="text-[11px] font-mono-num">
+              {gable_attribution.plane_gables_total} plane gable ends ·{" "}
+              {gable_attribution.wall_gables_primary} primary ·{" "}
+              {gable_attribution.wall_gables_attributed - gable_attribution.wall_gables_primary} secondary attributed
+              {gable_attribution.census_reconciled ? " · reconciled" : " · UNRECONCILED"}
+            </div>
+            {gable_attribution.attributions.map((a, i) => (
+              <div key={i} className="text-[11px] text-[var(--ink-2)]" data-testid={`bp-rb-gable-attrib-${a.wall}-${i}`}>
+                <span className="font-bold uppercase">{a.wall}</span> — carries {a.count} secondary gable from plane <span className="font-mono-num">{a.plane}</span>
+              </div>
+            ))}
+            {gable_attribution.reason && (
+              <div className="text-[11px] text-[#B91C1C]" data-testid="bp-rb-gable-attrib-reason">
+                {gable_attribution.reason}
+              </div>
+            )}
+          </div>
         )}
       </div>
 

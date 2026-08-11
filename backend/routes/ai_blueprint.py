@@ -2061,10 +2061,19 @@ def check_read_consistency(raw: dict) -> list[dict]:
     planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
     plane_gables = sum(int(p.get("gable_ends") or 0) for p in planes)
     wall_gables = sum(1 for w in walls if _f(w.get("gable_triangle_height_ft")) > 0)
-    if planes and walls and plane_gables != wall_gables:
+    # ATTRIBUTION FOLD (Howard ruled 2026-08-11 send-3 item c): the wing
+    # plane's gable ends face the walls PERPENDICULAR to the primary
+    # gable axis. If we can attribute the extras safely, the census
+    # reconciles; otherwise the flag still fires loud with the count.
+    from gable_attribution import attribute_secondary_gables
+    _attrib = attribute_secondary_gables(walls, planes)
+    wall_gables_total = _attrib["wall_gables_attributed"]
+    if planes and walls and plane_gables != wall_gables_total:
         flags.append({
             "code": "gable_census_mismatch", "level": "loud",
-            "vars": {"planes": plane_gables, "walls": wall_gables}})
+            "vars": {"planes": plane_gables, "walls": wall_gables_total,
+                     "primary": wall_gables,
+                     "secondary": wall_gables_total - wall_gables}})
 
     by_label = {str(w.get("label") or "").lower(): w for w in walls}
     fb, lr = by_label.get("front"), by_label.get("left")
@@ -2555,6 +2564,13 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         },
         "porch": {"status": porch_status, "ceiling_sqft": ceiling,
                   "planes": [r["label"] for r in porch_planes]},
+        # GABLE ATTRIBUTION LEDGER (Howard ruled 2026-08-11 send-3 item c):
+        # every plane's gable ends attributed to a wall, so the front-
+        # facing wing gable is now visible on the readback (readback
+        # only — Phase 2 draws them onto the sheet).
+        "gable_attribution": (lambda w, p: __import__(
+            "gable_attribution").attribute_secondary_gables(w, p))(
+            walls, planes),
         "gutter_runs": gutter_runs or None,
         "gutter_runs_total": (round(sum(r["lf"] for r in gutter_runs), 1)
                               if gutter_runs else None),

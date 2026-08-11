@@ -47,6 +47,16 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
                  if str(w.get("label", "")).lower() == which), None)
     run_short = str(run.get("run_id", ""))[:8]
 
+    # WALL ATTRIBUTION (Howard ruled 2026-08-11 send-3 item c): the wing
+    # plane's gable ends attributed to the perpendicular walls. Phase 1
+    # only ANNOTATES here; Phase 2 renders wing gables from this list.
+    from gable_attribution import (
+        attribute_secondary_gables, secondary_gables_for_wall,
+    )
+    _attrib = attribute_secondary_gables(
+        raw.get("walls") or [], raw.get("roof_planes") or [])
+    secondary_gables = secondary_gables_for_wall(_attrib, which)
+
     width_ft = height_ft = None
     gable_ft = 0
     hatch = None
@@ -199,6 +209,15 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
                            if len(segs) > 1 else None)),
             "gable_triangle_ft": gable_ft,
             "gable_tag": "AI-READ ⚠",
+            # SECONDARY GABLE ATTRIBUTIONS (2026-08-11 item c):
+            # gable ends from a non-main plane whose ridge crosses this
+            # wall's axis. Phase 1 lists them as annotations; Phase 2
+            # will draw the wing gable(s) into the sheet.
+            "secondary_gables": secondary_gables,
+            "secondary_gables_note": (
+                "wing gable(s) attributed to this wall — Phase 1 lists "
+                "them; Phase 2 draws them onto the sheet"
+                if secondary_gables else None),
             "siding_pct": (wall or {}).get("siding_pct_this_wall"),
             "profile_callout": (wall or {}).get("wall_body_profile_callout") or "",
             "profile_key_item": "",
