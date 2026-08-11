@@ -30,6 +30,14 @@ SEAM_REGISTRY = {
     "mark_size_quotes_nulled":
         "Printed-size quotes OCR cannot find on the row's sheets — the "
         "quote is killed, its parse never reaches the takeoff.",
+    "mark_count_cells_nulled":
+        "COUNT-CELL claims OCR cannot find as an isolated integer "
+        "token in the mark's row-band on the claimed page — the claim "
+        "is preserved in count_by_page_not_located, the working count "
+        "is nulled, and qty follows the surviving pages. Same "
+        "instrument as mark_size_quotes_nulled, one field over: settles "
+        "count disagreements by the print instead of by the pixels "
+        "(ruled 2026-08-11 send-3 item d).",
     "lp_smart_lines_cut":
         "Engine-owned lp_smart rows cut from blueprint results (THE CUT, "
         "ruled 2026-07-14) — LP derives through assemble_lp_package.",

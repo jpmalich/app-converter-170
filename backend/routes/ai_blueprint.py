@@ -1849,6 +1849,114 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
             seam_accounting.account(raw, "mark_size_quotes_nulled",
                                     _nulled_sizes)
 
+    # COUNT-CELL LOCATOR (Howard ruled 2026-08-11 send-3 item d):
+    # "A COUNT-CELL QUOTE FACES THE LOCATOR LIKE A SIZE QUOTE. Located,
+    # or killed and the count nulled with the claim preserved."
+    # For every row carrying count_by_page {sheet: n}, we require the
+    # claimed integer to appear as an isolated numeric token inside the
+    # mark's row-band on that page. A misread cell — the exact class
+    # that landed 9 on Boni mark C when the print says 5 — cannot ride
+    # through the count-column seam because the seam trusts the read.
+    # The locator settles the disagreement by the print.
+    #
+    # Refuse-to-guess: unless the mark's location AND at least one
+    # boxed token band on the page are found, the check ABSTAINS on
+    # that page (no null) — the count survives on the seam. A partial
+    # instrument that names its blind spot beats one that hallucinates.
+    count_cell_misses: list[dict] = []
+    for kind, r in rows:
+        cbp = r.get("count_by_page")
+        if not isinstance(cbp, dict) or not cbp:
+            continue
+        if r.get("_drop_not_located") or r.get("_drop_interior_signal"):
+            continue
+        mark = str(r.get("id") or "").strip()
+        mknorm = _ocr_norm(mark)
+        if not mknorm:
+            continue
+        surviving: dict[str, int] = {}
+        for page_s, claimed in list(cbp.items()):
+            try:
+                page = int(page_s)
+                claim = int(claimed)
+            except (TypeError, ValueError):
+                continue
+            if claim <= 0:
+                # A zero count is not a claim — leave the row alone.
+                surviving[str(page)] = claim
+                continue
+            got = _page_data(page)
+            if not got or not got.get("boxed"):
+                # Abstain: no boxed data on this page, cannot check.
+                surviving[str(page)] = claim
+                continue
+            # Locate the mark box on this page (exact-or-prefix match,
+            # same rule the mark_mode locator uses).
+            mark_box = next(
+                (b for nrm, b in got["boxed"]
+                 if nrm == mknorm or nrm.startswith(mknorm)), None)
+            if mark_box is None:
+                # Abstain: mark itself not on this page → cannot check.
+                surviving[str(page)] = claim
+                continue
+            # Row-band: y-center of the mark ± half its height, generous
+            # by a row's worth on each side (schedule rows can be
+            # slightly staggered vertically vs the mark cell). x >= mark
+            # right edge (count column sits to the right of the mark).
+            mx0, my0, mx1, my1 = mark_box
+            row_h = max(4.0, my1 - my0)
+            y_band = (my0 - 0.6 * row_h, my1 + 0.6 * row_h)
+            claim_str = str(claim)
+            # An isolated integer token in the row-band, past the mark
+            # column. We look at every boxed token on the page and take
+            # the ones whose center-y sits inside the band and whose
+            # left edge sits past the mark's right edge.
+            hit = False
+            for nrm, b in got["boxed"]:
+                cy = 0.5 * (b[1] + b[3])
+                if not (y_band[0] <= cy <= y_band[1]):
+                    continue
+                if b[0] <= mx1:  # inside or left of the mark column
+                    continue
+                # nrm is OCR-normalized already; a lone integer token
+                # matches when the norm equals the claim string or when
+                # it prefixes/contains it in the count-column context.
+                # Isolate-or-equal keeps "19" from matching "9".
+                if nrm == claim_str:
+                    hit = True
+                    break
+            if hit:
+                surviving[str(page)] = claim
+            else:
+                count_cell_misses.append({
+                    "kind": kind, "mark": mark, "page": page,
+                    "claimed": claim,
+                    "reason": ("no isolated integer token equal to the "
+                               f"claimed count '{claim_str}' in the row-"
+                               f"band right of the mark on page {page}"),
+                })
+        if surviving != cbp:
+            # The claim survives in a separate register; the working
+            # count column carries only the survivors.
+            r["count_by_page_not_located"] = {
+                k: v for k, v in cbp.items() if k not in surviving
+            }
+            r["count_by_page"] = surviving
+            # qty follows the surviving count column (or is nulled
+            # entirely when nothing survives — the row still stands,
+            # just without a count claim).
+            new_qty = sum(surviving.values())
+            if new_qty > 0:
+                r["qty"] = new_qty
+            else:
+                r["qty"] = None
+    if count_cell_misses:
+        raw["_count_cell_not_located"] = count_cell_misses
+        seam_accounting.account(
+            raw, "mark_count_cells_nulled",
+            [f"{m['kind']}:{m['mark']}:p{m['page']}"
+             for m in count_cell_misses])
+
 
 def compute_read_stability(prev_raw: dict, raw: dict) -> dict:
     """DETERMINISM GATE (Howard ruled 2026-08-08): REPORTS STABILITY,

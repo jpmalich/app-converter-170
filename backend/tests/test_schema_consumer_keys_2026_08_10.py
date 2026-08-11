@@ -58,6 +58,9 @@ INTERNAL_KEYS = {
     # profile_callouts internals (the _dormer_composition stamp's child
     # keys + the annotation-echo tag)
     "face_sqft", "cheek_sqft", "openings_deducted", "from_annotation",
+    # OCR page-data internal shape (norms + boxed) — our own OCR layer,
+    # never model-produced (ruled 2026-08-11 count-cell locator).
+    "boxed",
 }
 
 
