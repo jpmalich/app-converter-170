@@ -137,7 +137,9 @@ def test_pin4_photo_mode_render_contract():
     assert "{photoKinds[i] ?" in JSX                   # which upload kind
     assert 'data-testid="source-photos-ai-summary"' in JSX
     assert "AI-READ · photo extraction run {pid8}" in JSX
-    assert "30 days" in JSX and "TTL" in JSX and "24h" in JSX  # boundaries named
+    # Boundaries named — both windows are 30 days since 2026-08-11
+    # (blueprint raised 24h -> 30d, TTL incident #3); stale "24h" banned.
+    assert "30 days" in JSX and "TTL" in JSX and "24h" not in JSX
     assert "elevation sheets" in JSX  # numbering matches the sheets' citations
 
 
