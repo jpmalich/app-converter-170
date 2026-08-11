@@ -288,3 +288,5 @@
 - 2026-08-11 12:19 UTC · 2b5477d · INGRESS-SMOKE-CLEAN · 4 passed in 1.39s
 - 2026-08-11 19:20 UTC · 7ad0174 · GUARD-FAIL · FAILED tests/test_blueprint_source_view_archived_readside.py::test_pin2_fresh_run_behavior_unchanged
 - 2026-08-11 19:20 UTC · 7ad0174 · GUARD-FAIL · FAILED tests/test_source_view_generalized.py::test_pin2_fresh_photo_run_unchanged_and_absent_none
+- 2026-08-11 19:22 UTC · c2b9ddb · CLEAN · [tests] · 2182 passed, 5 skipped, 6 warnings in 127.03s (0:02:07)
+- 2026-08-11 19:22 UTC · c2b9ddb · INGRESS-SMOKE-CLEAN · 4 passed in 1.72s
