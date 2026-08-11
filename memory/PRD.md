@@ -1,5 +1,63 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-11 SEND-3 — ENTRY LINKS, 4-VS-2 FIX, COUNT LOCATOR, EST-886440 PROTECTED
+Howard's send-3 build order, items (a)–(e) landed (item 6 P1 deferred,
+item 7 HELD per his ruling).
+
+**(a) Entry links + surface-gating audit + apply-gating ruling.**
+- Sheets render from ANY completed read, applied or not — ruled reversed
+  (backend `blueprint-elevation` already honored this; the bug was
+  reachability, not gating).
+- Two new persistent mounts of BlueprintElevationEntry: on the Blueprint
+  tile (moment BEFORE grading) and inside the Takeoff Preview (moment
+  WHILE grading). "Back to the takeoff" first link on the sheet page.
+- SurfaceAccessChip contract: NEVER invisible, names STATE + WAY OUT.
+- Memory doc `entry_link_surface_audit_2026-08-11.md` answers 3
+  questions: why the links verified as built (JSX-string tests own
+  presence not mount), 13-surface audit of gated surfaces, apply-gating
+  live-verified via curl → HTTP 423 (guard IS doing its job; the 8-11
+  apply's local-optimism made it look through; DB's updated_at 8-7 <
+  guard 8-9). Named gaps in guard coverage (report only).
+- Detectors: `test_entry_link_mount_2026_08_11.py` (9 pins),
+  `test_surface_access_chip_contract_2026_08_11.py` (6 pins),
+  `test_blueprint_latest_run_http.py` (4 pins).
+
+**(c) Wall attribution for the front-facing gable — the 4-vs-2 fix.**
+- New `gable_attribution.py` pure module distributes non-main plane
+  gable ends across the PERPENDICULAR wall pair (L+R primary → F+B
+  secondary, F+B → L+R). Refuses to guess (no primary axis, no non-main
+  plane, odd count). Never mutates inputs.
+- Wired into `check_read_consistency` (census now folds primary +
+  attributed secondary — Boni's 4==4 reconciles), `build_blueprint_readback`
+  (exposes attribution ledger), `build_blueprint_sheet` (front/back
+  sheets carry wall.secondary_gables; Phase 2 will draw them).
+- Detector: `test_gable_attribution_2026_08_11.py` (12 pins).
+
+**(d) Count cells face the locator.**
+- New locator inside `_ocr_verify_marks`: for each row carrying
+  count_by_page {sheet: n}, requires the claim as an isolated integer
+  token inside the mark's row-band on the claimed page. Not located →
+  count nulled, claim preserved in count_by_page_not_located, qty
+  recomputed from surviving pages. Isolate-or-equal (no substring
+  inflation). Refuses to guess when boxed OCR missing or mark not on
+  page. New seam class `mark_count_cells_nulled` in the registry.
+  Runs BEFORE `_enforce_count_column` so a null never rides the seam.
+- Detector: `test_count_cell_locator_2026_08_11.py` (8 pins).
+
+**(e) EST-886440 marked protected.**
+- `protect_est_886440.py` one-shot, pre-heal backup at
+  `memory/backups/20260811_est886440_protect_preheal.json`. Verified
+  live: protected=True, protected_at set, protected_reason names the
+  ruling. Auto-archive-on-birth is already wired
+  (`run_archive.maybe_archive_protected`).
+- INTEGRAL-J CONFIRMED: `windows_integral_j: True` unchanged since
+  8-7. Nothing has applied under the guard.
+
+Suite: 2221 passed, 5 skipped (was 2182 pre-session; +39 pins across
+5 detector modules).
+
+## 2026-08-11 SEND-2 — TIER A TTL CLASS + STORAGE AUDIT (PRE-SEND-3)
+
 ## THREE DOORS UNIFICATION COMPLETE — STEPS 1–6 (2026-08-01/02)
 Howard's 6-step build order (after the 3-doors accuracy audit + rulings,
 memory/three_doors_rulings_2026_08_01.md) — ALL SIX LANDED:
