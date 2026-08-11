@@ -226,4 +226,18 @@ now cross-referenced from the elevation mechanisms doc.
 **Not shipped in this commit (Howard rules next):**
 - Guard coverage over profile-annotations / tape-check / accuracy-report (report only, §3).
 - Reversing the optimism order on the Apply handler (report only, §3).
-- Marking EST-886440 `protected: true` — proposed as separate one-shot script under the pre-heal-backup rule (Iter 79j.63) since the untouchable guard refuses the flip route by design.
+
+**Shipped separately in the same session (see commit log):**
+- Marking EST-886440 `protected: true` — one-shot script
+  `backend/protect_est_886440.py`, ran once against the DB, pre-heal
+  backup at `memory/backups/20260811_est886440_protect_preheal.json`
+  (permanent rule Iter 79j.63). Verified live: `protected: True`,
+  `protected_reason` names the ruling. Auto-archive-on-birth for
+  future runs is already wired in `run_archive.maybe_archive_protected`
+  and fires when est.protected is True.
+- Integral-J confirmation (Howard asked to confirm, not assume): the
+  applied state on EST-886440 still carries `windows_integral_j: True`
+  and `hover_measurements._run_id` points at `bb3007113da…` — the
+  pre-8-9 applied run, unchanged since 8-7. Nothing new has applied
+  under the guard; the current grading run 80c10620 is separate and
+  archived (not applied). INTEGRAL-J HELD.
