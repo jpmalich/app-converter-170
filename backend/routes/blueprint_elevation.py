@@ -255,6 +255,10 @@ async def blueprint_elevation(est_id: str, which: str,
          "address": 1})
     if not est:
         raise HTTPException(status_code=404, detail="Estimate not found")
+    # RULED 2026-08-11 (Howard, send-3): the sheet renders from ANY
+    # COMPLETED READ, APPLIED OR NOT. Backend has always honored this
+    # ("status: done" is the only filter); the entry-link mount was the
+    # bug, not backend gating.
     run = await db.ai_blueprint_runs.find_one(
         {"estimate_id": est_id, "status": "done"},
         {"_id": 0}, sort=[("created_at", -1)])
@@ -263,3 +267,55 @@ async def blueprint_elevation(est_id: str, which: str,
             status_code=404,
             detail="No completed blueprint run for this estimate")
     return build_blueprint_sheet(est, run, which)
+
+
+@router.get("/estimates/{est_id}/blueprint-latest-run")
+async def blueprint_latest_run(
+    est_id: str, user: dict = Depends(get_current_user)
+):
+    """Return a summary of the latest blueprint run so the entry-link
+    surface can decide whether to render the EL-1..EL-4 links or a
+    SurfaceAccessChip that names the state and the way out. Ruled
+    2026-08-11 (send-3): the sheet renders from any completed read —
+    this endpoint powers the persistent link mount so the contractor
+    never has to type /blueprint-elevation/front to reach the sheets."""
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "id": 1, "hover_measurements": 1})
+    if not est:
+        raise HTTPException(status_code=404, detail="Estimate not found")
+    run = await db.ai_blueprint_runs.find_one(
+        {"estimate_id": est_id},
+        {"_id": 0, "run_id": 1, "status": 1, "created_at": 1,
+         "completed_at": 1, "result": 1},
+        sort=[("created_at", -1)])
+    if not run:
+        return {"available": False, "state": "no_run",
+                "message": "no blueprint run yet — start one from the "
+                           "Blueprints tile to enable the elevation sheets"}
+    status = run.get("status")
+    if status != "done":
+        return {"available": False, "state": status or "unknown",
+                "run_id": run.get("run_id"),
+                "message": f"blueprint run is {status} — the elevation "
+                           "sheets render once the read completes"}
+    raw = (run.get("result") or {}).get("raw_ai") or {}
+    walls = [str(w.get("label", "")).lower()
+             for w in (raw.get("walls") or [])
+             if str(w.get("label", "")).lower() in {"front", "left",
+                                                     "back", "right"}]
+    walls_available = [w for w in ("front", "left", "back", "right")
+                       if w in walls]
+    applied_run_id = ((est.get("hover_measurements") or {}).get("_run_id")
+                      or None)
+    return {
+        "available": True,
+        "state": "ready",
+        "run_id": run.get("run_id"),
+        "completed_at": (str(run.get("completed_at") or "")[:16]
+                         if run.get("completed_at") else None),
+        "walls": walls_available,
+        "applied": bool(applied_run_id
+                        and applied_run_id == run.get("run_id")),
+        "applied_run_id": applied_run_id,
+    }

@@ -37,6 +37,16 @@ export default function BlueprintElevationSheet() {
   return (
     <div className="min-h-screen bg-[#e8eaee] py-6 flex flex-col items-center" data-testid="bp-elevation-page">
       <div className="mb-3 flex items-center gap-4 print:hidden">
+        {/* Ruled 2026-08-11 send-3: "Back to takeoff" first — the sheet
+            is opened while grading a read; the takeoff is one level
+            back, the estimate two levels. */}
+        <Link
+          to={`/estimate/${id}?open=takeoff`}
+          className="text-xs underline font-bold"
+          data-testid="bp-elevation-back-to-takeoff"
+        >
+          ← Back to the takeoff
+        </Link>
         <Link to={`/estimate/${id}`} className="text-xs underline" data-testid="bp-elevation-back">← Back to estimate</Link>
         {SHEETS.map((s) => (
           <Link key={s} to={`/estimate/${id}/blueprint-elevation/${s}`}

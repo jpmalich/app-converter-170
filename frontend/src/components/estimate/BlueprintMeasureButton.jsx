@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
+import BlueprintElevationEntry from "@/components/estimate/BlueprintElevationEntry";
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 // Iter 78z+ — Profile annotator (Tag Shake / B&B / etc. on blueprint pages).
 import ProfileAnnotator from "@/components/estimate/ProfileAnnotator";
@@ -1075,6 +1076,16 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   </section>
                 );
               })()}
+
+              {/* Ruled 2026-08-11 (send-3): entry links inside the
+                  Takeoff Preview so the sheet is reachable WHILE
+                  grading a read. The other mount (Blueprint tile) is
+                  for the moment BEFORE grading. Same component, both
+                  moments — the friction of "close preview to hunt for
+                  the sheet" is retired. */}
+              {est?.id && (
+                <BlueprintElevationEntry estId={est.id} where="takeoff-preview" />
+              )}
 
               {/* Read-back verification card (display-only, 2026-08-06) */}
               <BlueprintReadBackCard readback={result.readback} pagePaths={pagePaths} />

@@ -31,6 +31,7 @@ import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 // lines on Apply, same as HOVER Import does.
 import { bakeWasteIntoLines } from "@/lib/wasteLogic";
 import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
+import BlueprintElevationEntry from "@/components/estimate/BlueprintElevationEntry";
 // Iter 78u — Compare Drawings modal trigger
 import { useState } from "react";
 import { Upload, FileText, Sparkles, Layers, ChevronDown, ChevronUp, MoreHorizontal, Lightbulb } from "lucide-react";
@@ -179,6 +180,19 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
       .catch(() => {});
     return () => { dead = true; };
   }, [est?.id, est?.hover_measurements?._run_id, est?.lp_source_run_id]);
+  // Ruled 2026-08-11 send-3: "Back to the takeoff" from a blueprint
+  // elevation sheet lands here with ?open=takeoff — scroll the
+  // measurement-tools row into view so the entry links + tile are
+  // immediately visible (no hunting).
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("open") !== "takeoff") return;
+    const row = document.querySelector('[data-testid="measurement-tools-row"]');
+    if (row && row.scrollIntoView) {
+      row.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
   const t = useT();
   const { lang } = useLang();
   // Iter 78u — Compare Drawings modal state
@@ -320,6 +334,13 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
         </ToolTile>
         <ToolTile icon={FileText} label={t("jip.tile.blueprints")} accent="#7C3AED" testid="tool-tile-blueprint">
           <BlueprintMeasureButton est={est} update={update} save={save} />
+          {/* Ruled 2026-08-11 (send-3): entry links live on the
+              Blueprint tile so the sheets are reachable BEFORE grading
+              a read. Renders a SurfaceAccessChip when no completed run
+              exists — the surface is never invisible. */}
+          {est?.id && (
+            <BlueprintElevationEntry estId={est.id} where="blueprint-tile" />
+          )}
         </ToolTile>
         <ToolTile icon={Sparkles} label={t("jip.tile.aiPhoto")} accent="#7C3AED" testid="tool-tile-ai">
           <AIMeasureButton

@@ -35,6 +35,7 @@ import QuoteModal from "@/components/QuoteModal";
 import ISSHoverImportButton from "@/components/estimate/ISSHoverImportButton";
 import AIMeasureButton from "@/components/estimate/AIMeasureButton";
 import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
+import BlueprintElevationEntry from "@/components/estimate/BlueprintElevationEntry";
 import { Printer, Download, ClipboardList } from "lucide-react";
 import { NO_AUTOFILL } from "@/lib/noAutofill";
 
@@ -442,6 +443,9 @@ export default function ISSEstimateEditor() {
             </ISSToolTile>
             <ISSToolTile icon={FileText} label="Blueprints" accent="#7C3AED" testid="iss-tile-blueprint">
               <BlueprintMeasureButton est={est} applyLines={applyHoverLines} />
+              {est?.id && (
+                <BlueprintElevationEntry estId={est.id} where="blueprint-tile" />
+              )}
             </ISSToolTile>
             <ISSToolTile icon={Sparkles} label="AI Photo Measure" accent="#7C3AED" testid="iss-tile-ai">
               <AIMeasureButton
