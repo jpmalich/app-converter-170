@@ -9,7 +9,7 @@ import api from "@/lib/api";
    surface never moves. Zero writes: GETs only (estimate + blueprint latest
    + photo/hover latest). Door precedence: blueprint → photo → hover.
    - Blueprint: the exact compressed sheets Claude analyzed (durable store),
-     per-sheet provenance, 24h run TTL defused by the CUT archive.
+     per-sheet provenance, 30-day run TTL defused by the CUT archive.
    - Photo: the exact photos the run consumed, numbered in consumption
      order (the SAME indices the elevation sheets' per-photo readings
      cite), 30-day run TTL defused by the CUT archive.
@@ -148,7 +148,7 @@ export default function SourceSheets() {
         <div className="card p-6 text-sm text-[var(--ink-2)]" data-testid="source-sheets-no-run">
           <div className="font-bold mb-2">No intake run on record for this estimate.</div>
           <p className="leading-snug">
-            Live run indexes expire on a TTL — 24h for blueprint runs, 30 days for photo
+            Live run indexes expire on a TTL — 30 days for blueprint runs, 30 days for photo
             runs. APPLIED takeoffs survive it: the CUT archives them and this view serves
             the archived index indefinitely. Neither a live nor an archived run exists on
             any door; a fresh import restores the view.
@@ -160,7 +160,7 @@ export default function SourceSheets() {
         <div className="card p-6 text-sm text-[var(--ink-2)]" data-testid="source-sheets-no-run">
           <div className="font-bold mb-2">No blueprint pages on record for this run.</div>
           <p className="leading-snug">
-            The live run index expires 24h after upload (TTL). APPLIED takeoffs survive
+            The live run index expires 30 days after upload (TTL). APPLIED takeoffs survive
             it — the CUT archives them and this viewer serves the archived index
             indefinitely. A fresh blueprint upload or re-run restores the view.
           </p>

@@ -94,14 +94,19 @@ async def run_startup():
     #     weeks while iterating on placement math, PDF export, and
     #     bbox routing. A 24h TTL ate the Feb 2026 Red-House graduation
     #     run mid-fork; never again.
-    #   • ai_blueprint_runs → 24 HOURS (unchanged). Plan-sheet takeoffs
-    #     are quoted same-day; keeping the older window here since these
-    #     docs carry heavier image payloads and stack up faster.
+    #   • ai_blueprint_runs → 30 DAYS (raised 2026-08-11, TTL incident #3).
+    #     The 24h window reaped the EST-886440 grading chain: runs under
+    #     human evaluation were never applied, so they never archived, and
+    #     mongod's TTL monitor destroyed them. The old rationale ("docs
+    #     carry heavier image payloads") was checked and is FALSE — image
+    #     bytes go to the worker in-memory; the doc stores page PATHS,
+    #     source-file metadata, and the JSON result only (sibling measure
+    #     docs average ~70 KB). 30 days matches ai_measure_runs.
     # The collMod fallback below force-updates the live TTL when the
     # index already exists but with the wrong expireAfterSeconds
     # (`create_index` alone raises IndexOptionsConflict).
     AI_MEASURE_TTL_SECONDS = 30 * 24 * 60 * 60  # 30 days
-    AI_BLUEPRINT_TTL_SECONDS = 24 * 60 * 60      # 24 hours
+    AI_BLUEPRINT_TTL_SECONDS = 30 * 24 * 60 * 60  # 30 days (was 24h pre-2026-08-11)
 
     await db.ai_measure_runs.create_index("run_id", unique=True)
     await _ensure_ttl(

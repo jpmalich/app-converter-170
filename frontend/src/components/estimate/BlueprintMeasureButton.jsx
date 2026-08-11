@@ -492,7 +492,7 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
       // cross-family fill is post-September.
       const winNote = sourceVero.length ? ` + ${sourceVero.length} windows` : "";
       if (srcKind === "lp_smart") {
-        // Archive the blueprint run (24h TTL) — the LP panel now derives
+        // Archive the blueprint run (30-day TTL) — the LP panel now derives
         // from it; a persistent takeoff must not reference a reapable run.
         try {
           await api.post(`/estimates/${est.id}/lp-package/blueprint-applied`, {

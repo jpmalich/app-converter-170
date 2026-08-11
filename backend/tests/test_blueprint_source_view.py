@@ -71,7 +71,10 @@ def test_pin4b_ai_summary_same_run_alongside():
 
 def test_pin5_ttl_boundary_named_on_empty_state():
     assert 'data-testid="source-sheets-no-run"' in JSX
-    assert "24h" in JSX and "TTL" in JSX
+    # Raised 24h -> 30 days on 2026-08-11 (TTL incident #3) — the named
+    # boundary in the UI must state the LIVE window, never a stale one.
+    assert "30 days" in JSX and "TTL" in JSX
+    assert "24h" not in JSX  # stale boundary text is a truthfulness defect
 
 
 def test_pin6_lightbox_zoom_contract():
