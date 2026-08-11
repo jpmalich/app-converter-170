@@ -19,6 +19,8 @@ import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
 import BlueprintElevationEntry from "@/components/estimate/BlueprintElevationEntry";
+import writeThrough from "@/lib/write_through";
+import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 // Iter 78z+ — Profile annotator (Tag Shake / B&B / etc. on blueprint pages).
 import ProfileAnnotator from "@/components/estimate/ProfileAnnotator";
@@ -131,6 +133,9 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
   // opens on Preview each new blueprint takeoff so contractors see
   // the numbers first, then can flip to 3D for a spatial sanity check.
   const [previewTab, setPreviewTab] = useState("preview");
+  // 2026-08-11 send-4: refusal chip painted when a write is refused.
+  // Never invisible — same contract as SurfaceAccessChip.
+  const [applyRefusal, setApplyRefusal] = useState(null);
 
   // FALSE-PROVENANCE FIX (Howard ruled 2026-08-07, the ladder): the tab
   // chip asserts the ACTUAL tape state. It can only go green after a
@@ -477,16 +482,44 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
 
     setApplying(true);
     try {
-      update({ lines: nextLines, vero_openings: nextVero, mezzo_openings: nextMezzo, hover_measurements: nextHoverMeasurements });
-      if (save) {
-        await save({
-          ...est,
+      // OPTIMISTIC-WRITE-ROUTED (Howard ruled 2026-08-11 send-4):
+      // No optimistic local state survives a non-2xx response. The
+      // 8-11 case: EST-886440 apply 423'd but the local update
+      // painted 'applied' — Howard ruled from a false state for two
+      // turns. Rollback captured explicitly below.
+      const prevLines = est.lines;
+      const prevVero = est.vero_openings;
+      const prevMezzo = est.mezzo_openings;
+      const prevHM = est.hover_measurements;
+      const applyResult = await writeThrough({
+        applyOptimistic: () => update({
           lines: nextLines,
           vero_openings: nextVero,
           mezzo_openings: nextMezzo,
           hover_measurements: nextHoverMeasurements,
-        });
-      }
+        }),
+        rollback: () => update({
+          lines: prevLines,
+          vero_openings: prevVero,
+          mezzo_openings: prevMezzo,
+          hover_measurements: prevHM,
+        }),
+        apiCall: async () => {
+          if (save) {
+            await save({
+              ...est,
+              lines: nextLines,
+              vero_openings: nextVero,
+              mezzo_openings: nextMezzo,
+              hover_measurements: nextHoverMeasurements,
+            });
+          }
+          return { data: null, status: 200 };
+        },
+        setRefusal: setApplyRefusal,
+        refusalTestid: "bp-apply-refusal-chip",
+      });
+      if (!applyResult.ok) return;
 
       // DOORS ARE SINGLE-FAMILY (Howard ruled 2026-08-03): this door writes
       // ONLY its own estimate. The paired-estimate routing was removed —
@@ -511,8 +544,6 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         );
       }
       setResult(null);
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || err?.message || "Apply failed");
     } finally {
       setApplying(false);
     }
@@ -1152,6 +1183,15 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
                   {applying ? "Applying…" : "Apply Takeoff"}
                 </button>
               </div>
+              {applyRefusal && (
+                <div className="mt-2">
+                  <SurfaceAccessChip
+                    state={applyRefusal.state}
+                    wayOut={applyRefusal.wayOut}
+                    testid={applyRefusal.testid}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

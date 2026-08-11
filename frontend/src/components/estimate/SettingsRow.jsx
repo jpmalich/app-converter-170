@@ -4,6 +4,7 @@ import { recomputeWasteQtys, recomputeAllWaste } from "@/lib/wasteLogic";
 import PorchCeilingsCard from "./PorchCeilingsCard";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import writeThrough from "@/lib/write_through";
 
 /* WALL-HEIGHT ONE-TAP (authorized 2026-07-27): estimate-page field that
    tapes B&B wall heights straight into the batten_wall_heights checklist —
@@ -137,10 +138,24 @@ export default function SettingsRow({ est, update, save }) {
   // lp_smart is gated on derived rows already existing — a waste change
   // must never materialize lines as a side effect (dollars on apply).
   const updateWastePct = async (newPct) => {
-    const lines = recomputeWasteQtys(est?.lines, newPct);
-    update({ waste_pct: newPct, lines });
-    if (!save) return;
-    await save({ ...est, waste_pct: newPct, lines });
+    // 2026-08-11 send-4: waste_pct + recomputed lines are painted
+    // optimistically because the recompute is fast and the contractor
+    // wants to see the numbers move. But a refused save (e.g., 423
+    // on a protected estimate) must not leave the wrong % + wrong
+    // qty on screen. writeThrough enforces the rollback.
+    const prevPct = est?.waste_pct;
+    const prevLines = est?.lines;
+    const nextLines = recomputeWasteQtys(est?.lines, newPct);
+    const result = await writeThrough({
+      applyOptimistic: () => update({ waste_pct: newPct, lines: nextLines }),
+      rollback: () => update({ waste_pct: prevPct, lines: prevLines }),
+      apiCall: async () => {
+        if (save) await save({ ...est, waste_pct: newPct, lines: nextLines });
+        return { data: null, status: 200 };
+      },
+      refusalTestid: "settings-waste-refusal-chip",
+    });
+    if (!result.ok || !save) return;
     const hasLpDerived = (est?.lines || []).some((l) => (l.tab || "") === "lp_smart");
     if (est.kind === "siding" || (est.kind === "lp_smart" && hasLpDerived)) {
       try {

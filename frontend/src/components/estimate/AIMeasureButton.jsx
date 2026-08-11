@@ -13,6 +13,7 @@ import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, Rota
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import writeThrough from "@/lib/write_through";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
 import {
   inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges, dormerNetArea,
@@ -1043,25 +1044,76 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   };
 
   const startOver = async () => {
-    setResumePrompt(false);
-    setPendingSessionMeta(null);
-    setPreview(null);
-    setPhotoUrls([]);
-    setFiles([]);
-    setRefDim("");
-    setWallHeight("");
-    setSidingPct("");
-    setWallsDirty(false);
-    setPhotoAnnotations({});
-    setAnnotDirtySinceRun(false);
-    delete window.__aiMeasurePendingSession;
-    if (estimateId) {
-      try {
-        await api.delete(`/measure/sessions/${estimateId}`);
-      } catch {
-        // ignore
-      }
+    // 2026-08-11 send-4: local session state is cleared optimistically
+    // so the UI resets fast. If the DELETE refuses, the session in
+    // the DB survives and the local state must too — otherwise the
+    // contractor sees a blank slate while a session ghost lives on.
+    const prev = {
+      resumePrompt,
+      pendingSessionMeta,
+      preview,
+      photoUrls,
+      files,
+      refDim,
+      wallHeight,
+      sidingPct,
+      wallsDirty,
+      photoAnnotations,
+      annotDirtySinceRun,
+      windowGhost: window.__aiMeasurePendingSession,
+    };
+    if (!estimateId) {
+      setResumePrompt(false);
+      setPendingSessionMeta(null);
+      setPreview(null);
+      setPhotoUrls([]);
+      setFiles([]);
+      setRefDim("");
+      setWallHeight("");
+      setSidingPct("");
+      setWallsDirty(false);
+      setPhotoAnnotations({});
+      setAnnotDirtySinceRun(false);
+      delete window.__aiMeasurePendingSession;
+      return;
     }
+    await writeThrough({
+      applyOptimistic: () => {
+        setResumePrompt(false);
+        setPendingSessionMeta(null);
+        setPreview(null);
+        setPhotoUrls([]);
+        setFiles([]);
+        setRefDim("");
+        setWallHeight("");
+        setSidingPct("");
+        setWallsDirty(false);
+        setPhotoAnnotations({});
+        setAnnotDirtySinceRun(false);
+        delete window.__aiMeasurePendingSession;
+      },
+      rollback: () => {
+        setResumePrompt(prev.resumePrompt);
+        setPendingSessionMeta(prev.pendingSessionMeta);
+        setPreview(prev.preview);
+        setPhotoUrls(prev.photoUrls);
+        setFiles(prev.files);
+        setRefDim(prev.refDim);
+        setWallHeight(prev.wallHeight);
+        setSidingPct(prev.sidingPct);
+        setWallsDirty(prev.wallsDirty);
+        setPhotoAnnotations(prev.photoAnnotations);
+        setAnnotDirtySinceRun(prev.annotDirtySinceRun);
+        if (prev.windowGhost !== undefined) {
+          window.__aiMeasurePendingSession = prev.windowGhost;
+        }
+      },
+      apiCall: async () => {
+        await api.delete(`/measure/sessions/${estimateId}`);
+        return { data: null, status: 200 };
+      },
+      refusalTestid: "ai-measure-session-refusal-chip",
+    });
   };
 
   // Iter 79j.52a — Dismiss handler for the run-error banner. Behavior

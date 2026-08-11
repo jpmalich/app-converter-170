@@ -12,6 +12,7 @@ import { Upload, FileText, Check, X, Loader2, AlertTriangle, Printer, ChevronDow
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import writeThrough from "@/lib/write_through";
 import TakeoffReconCard from "@/components/estimate/TakeoffReconCard";
 import { bakeWasteIntoLines, steerLpSoffit } from "@/lib/wasteLogic";
 // Iter 78t — same elevation drawing component as AI Measure, fed from
@@ -232,34 +233,36 @@ export default function HoverImportButton({ est, update, save }) {
     // saved default is no longer used for HOVER imports. The Blueprint
     // button keeps its own prompt-based UX since blueprint takeoffs
     // don't pre-bake waste.
-    if (typeof update === "function") {
-      const currentWaste = Number(est?.waste_pct ?? 0);
-      if (currentWaste !== 0) {
-        update({ waste_pct: 0 });
-      }
-    }
+    // 2026-08-11 send-4: the waste_pct=0 reset is optimistic — if the
+    // /hover-import POST refuses, the reset must not survive the
+    // refusal (otherwise the contractor sees waste=0 without an
+    // upload landing). writeThrough enforces the rollback.
+    const prevWaste = est?.waste_pct;
+    const needReset = typeof update === "function"
+      && Number(est?.waste_pct ?? 0) !== 0;
     setBusy(true);
     setResult(null);
     setOpenings([]);
     setFacadeInclude({});
     setStage("");
+    let startResp;
+    const wtResult = await writeThrough({
+      applyOptimistic: needReset ? () => update({ waste_pct: 0 }) : null,
+      rollback: needReset ? () => update({ waste_pct: prevWaste }) : () => {},
+      apiCall: async () => {
+        const fd = new FormData();
+        fd.append("file", f);
+        fd.append("overhang_in", String(est?.overhang_in ?? 12));
+        startResp = await api.post("/estimates/hover-import", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 30000,
+        });
+        return startResp;
+      },
+      refusalTestid: "hover-import-refusal-chip",
+    });
+    if (!wtResult.ok) { setBusy(false); return; }
     try {
-      const fd = new FormData();
-      fd.append("file", f);
-      fd.append("overhang_in", String(est?.overhang_in ?? 12));
-      // Iter 79d (Feb 2026) — Async polling launcher. POST returns a
-      // `run_id` immediately (sub-second); the heavy Claude pass + vision
-      // verify runs in a background worker so Cloudflare's ~100 s edge
-      // timeout never trips, even on big multi-page HOVERs. We then
-      // poll `/estimates/hover-import/status/{run_id}` every 2 s for
-      // up to 5 min until status flips to `done` (or `error`).
-      const startResp = await api.post("/estimates/hover-import", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-        // Initial POST is now sub-second — bound it tight so a stuck
-        // pre-claude validation (e.g. PDF text extract on a 19 MB file)
-        // can't hang the UI.
-        timeout: 30000,
-      });
       const { run_id: runId, status: startStatus, result: startResult } = startResp.data || {};
       // Defensive: if the backend ever falls back to the legacy sync
       // shape (e.g. during a partial deploy), treat the POST body as

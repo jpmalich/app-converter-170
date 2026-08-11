@@ -13,6 +13,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, ChevronDown, ChevronRight, Loader2, Lightbulb, Save, Upload, FileText, Sparkles } from "lucide-react";
 import api, { formatApiError } from "@/lib/api";
+import writeThrough from "@/lib/write_through";
 import {
   vinylSidingColorGroupsForEstimate,
   accessoryColorGroupsForEstimate,
@@ -252,12 +253,11 @@ export default function ISSEstimateEditor() {
       }
     }
     // Optimistic local update so the UI repaints immediately.
-    setEst((prev) => (prev ? { ...prev, lines } : prev));
-    setOpenSections((prev) => {
-      const next = { ...prev };
-      for (const r of rows) next[r.section] = true;
-      return next;
-    });
+    // 2026-08-11 send-4: routed through writeThrough so a refused PUT
+    // (e.g. 423 on a protected estimate) rolls back the local lines +
+    // section-open state, and surfaces the refusal in words.
+    const prevLines = current?.lines;
+    const prevOpenSections = openSections;
     // Immediate persist — bypass the debounced autosave so the data is
     // safe even if the contractor navigates away right after applying.
     setSaving(true);
@@ -270,14 +270,37 @@ export default function ISSEstimateEditor() {
       delete payload.company_id;
       delete payload.totals;
       delete payload.estimate_number;
-      const { data } = await api.put(`/estimates/${id}`, payload);
-      setEst((cur) => ({ ...(cur || {}), ...data, lines: data.lines || [] }));
-      // Mark autosave checkpoint so the debounced flush doesn't re-fire.
-      savedUpTo.current = userEdits.current;
+      let respData = null;
+      await writeThrough({
+        applyOptimistic: () => {
+          setEst((prev) => (prev ? { ...prev, lines } : prev));
+          setOpenSections((prev) => {
+            const next = { ...prev };
+            for (const r of rows) next[r.section] = true;
+            return next;
+          });
+        },
+        rollback: () => {
+          setEst((prev) => (prev ? { ...prev, lines: prevLines } : prev));
+          setOpenSections(prevOpenSections);
+        },
+        apiCall: async () => {
+          const resp = await api.put(`/estimates/${id}`, payload);
+          respData = resp.data;
+          return resp;
+        },
+        reconcileFrom: () => {
+          if (respData) {
+            setEst((cur) => ({ ...(cur || {}), ...respData, lines: respData.lines || [] }));
+            savedUpTo.current = userEdits.current;
+          }
+        },
+        refusalTestid: "iss-apply-refusal-chip",
+      });
     } finally {
       setSaving(false);
     }
-  }, [catalog, est, id]);
+  }, [catalog, est, id, openSections]);
 
   const totals = useMemo(() => {
     let subTotal = 0;
