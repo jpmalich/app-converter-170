@@ -111,7 +111,10 @@ def test_pin1_photo_archived_index_serves_past_ttl(session, substrate):
 def test_pin2_fresh_photo_run_unchanged_and_absent_none(session, substrate):
     run = _latest(session, substrate["est_live"])
     assert run["run_id"] == substrate["run_live"]
-    assert run["archived"] is False
+    # ARCHIVE-ON-VIEW (ruled 2026-08-11): a viewed live run archives —
+    # `archived` now means "safe in fixture_runs".
+    assert run["archived"] is True
+    assert run["reaped_at"] is None
     assert run["photo_kinds"] == "front,back"
     assert _latest(session, substrate["est_none"]) is None
 
@@ -120,8 +123,11 @@ def test_pin2b_read_path_only_no_writes():
     from routes.ai_measure import ai_measure_latest_for_estimate
     src = inspect.getsource(ai_measure_latest_for_estimate)
     for verb in ("insert_one", "update_one", "delete_one", "insert_many",
-                 "update_many", "delete_many", "archive_run_for_artifact"):
-        assert verb not in src, f"read side must not write — found {verb}"
+                 "update_many", "delete_many"):
+        assert verb not in src, f"read side must not mutate run docs — found {verb}"
+    # RULED EXCEPTION (2026-08-11): archive-on-view is the one permitted
+    # write — a copy to permanent storage, never a mutation or removal.
+    assert "archive_run_on_view" in src
     assert "find_archived_run" in src
 
 

@@ -108,7 +108,11 @@ def test_pin2_fresh_run_behavior_unchanged(session, substrate):
     run = _latest(session, substrate["est_live"])
     assert run is not None
     assert run["run_id"] == substrate["run_live"]
-    assert run["archived"] is False
+    # ARCHIVE-ON-VIEW (ruled 2026-08-11, TTL incident #3): a live run a
+    # human opens is archived on that view — `archived` now means "safe
+    # in fixture_runs", and a viewed run answers True.
+    assert run["archived"] is True
+    assert run["reaped_at"] is None  # archived runs never print a reap time
     assert run["page_paths"] == "bp_pin_a.png,bp_pin_b.png"
 
 
@@ -120,6 +124,10 @@ def test_pin4_read_path_only_no_writes():
     from routes.ai_blueprint import ai_blueprint_latest_for_estimate
     src = inspect.getsource(ai_blueprint_latest_for_estimate)
     for verb in ("insert_one", "update_one", "delete_one", "insert_many",
-                 "update_many", "delete_many", "archive_run_for_artifact"):
-        assert verb not in src, f"read side must not write — found {verb}"
+                 "update_many", "delete_many"):
+        assert verb not in src, f"read side must not mutate run docs — found {verb}"
+    # RULED EXCEPTION (2026-08-11, TTL incident #3): the ONLY write the
+    # read path may perform is ARCHIVE-ON-VIEW — a copy into permanent
+    # storage, never a mutation or removal. It must stay.
+    assert "archive_run_on_view" in src
     assert "find_archived_run" in src  # fork-boundary ownership honored
