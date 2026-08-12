@@ -98,6 +98,33 @@ The OCR locator picks up the load for scans, but:
    loud, per path.
 5. Re-run over the Boni raw, count.
 
-Purity: 9'-11 1/8" (Howard corrected the record from 9'-11 7/8"),
-9'-6" fabricated, four gable ends not six. All EVIDENCE. Nothing
-becomes a target. Nothing applies to EST-886440. Integral-J stays ON.
+## The locator re-run over the fresh Boni raw — the number Howard asked for
+
+Ran the fixed `_ocr_locate_evidence` (with the proximity gate + null-drop) over the fresh Boni raw (run `5df22e6d`).
+
+| Slice | Count |
+|---|---:|
+| Evidence sources total | **49** |
+| Located under the send-8 gate | **18** |
+| **Refused by the gate** | **29** |
+| — reason: no feature anchor on the claimed page | 13 |
+| — reason: matched but not within radius of any anchor | 13 |
+| — reason: quote norm not found in OCR at all | 3 |
+| Paths whose value nulled (evidence-or-null) | **19** |
+
+**Bottom line: 29 of 49 sources on this read (~59%) were false positives under the mainline locator.** They now null the values they claimed to dim, and the seam books it.
+
+Sample paths that nulled (their AI values are unverifiable and no longer flow to takeoff):
+- `walls.front.width_ft` (`58'-0"`)
+- `walls.right.width_ft`, `walls.back.width_ft`
+- `walls.front.segments.main body 2-story.width_ft`
+- `walls.front.segments.garage wing 1-story.width_ft`
+- `walls.back.segments.garage/bonus wing.width_ft`
+- `gutter_runs.back.lf`
+- `roof_planes.bonus room.rake_lf`
+
+The garage wall height 9'-6" that started this ruling: still fabricated. Now null on the raw. Rail's `wall_height_by_plane` won't fire for garage because the value nulled at the seam.
+
+## Purity
+
+9'-11 1/8" garage wall (Howard corrected the record), 9'-6" fabricated, four gable ends not six. All EVIDENCE. Nothing becomes a target. Nothing applies to EST-886440. Integral-J stays ON.
