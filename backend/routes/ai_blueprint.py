@@ -307,16 +307,34 @@ ROW IDENTITY (ruled 2026-08-09): sibling schedule rows share a code prefix (SH 3
     // area from the area table; include EVERY porch, front and rear,
     // not just the one in the table). A missing plane is a missing
     // gutter run downstream — the four-wall rectangle CANNOT recover it.
-    {"label": "main" | "garage" | "porch" | "<other, verbatim from plan>",
+    {"label": "main" | "garage" | "porch" | "entry" | "<other, verbatim from plan>",
      "eave_lf": DIM | null,            // horizontal eave (gutter) run this plane contributes, all sides summed — EVIDENCED ({"v","page","from"} quoting the printed dim string(s); a figure SUMMED from several printed dims uses the derived form {"v","calc","srcs":[...]}). null when the roof plan prints no dimension for it — NEVER a guess (bare numbers are DROPPED by the pipeline, ruled 2026-08-09)
      "rake_lf": DIM | null,            // TOTAL sloped rake edge on this plane — EVIDENCED the same way (derived form when computed from width + pitch: calc names the arithmetic, srcs quote the printed width and pitch). A plane with a GABLE END has rakes — NEVER 0 for a gabled plane. Per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × pitch_rise/12)²). READ THE ELEVATIONS: an attached garage wing with ITS OWN gable — including an intersecting / double gable where the garage roof meets the main roof — contributes rake edges the main-rectangle walk cannot see. If any elevation shows a separate garage gable, that plane's rake_lf MUST come back non-null.
-     "gable_ends": number,          // how many gable ends (triangular end faces) this plane carries: 0 for a hip or shed plane, 1 per gable end. The app reports the total across planes.
+     "gable_ends": number,          // how many gable ends (triangular end faces) this plane carries: 0 for a hip or shed plane, 1 per gable end. The app reports the total across planes. THIS IS AN OWN COUNT — never inflate a plane's gable_ends with a triangle that belongs to another plane. If a front-facing ENTRY GABLE sits above the front door, it is ITS OWN plane (label:"entry") with gable_ends:1 — NEVER lumped into the garage or main count.
+     "gable_end_faces": ["front"|"back"|"left"|"right"|"<other verbatim>"],  // REQUIRED when gable_ends > 0. List of length == gable_ends. Each entry names the ELEVATION FACE (front/back/left/right) the triangular gable end POINTS AT — i.e. the wall you see the triangle on when you look at that elevation sheet. The main body's two ends face L+R when the main gables are L+R; a garage wing that gables to the FRONT lists ["front"]; a garage that gables to BOTH front and back lists ["front","back"]. This is EVIDENCE for the app's attribution — an orphan gable end (no face named) is never silently distributed onto a wall (ruled 2026-08-11 send-6).
+     "pitch": "<n/12 or empty>",       // THIS PLANE'S own printed pitch, e.g. "10/12" on an entry gable, "7/12" on the main body. PITCH-TRIANGLE NOTATION: RUN always 12, RISE is the other leg. Empty string when this plane has no printed pitch — NEVER inherit the main body pitch (ruled 2026-08-11 send-6: a gable at 10/12 against a main at 7/12 computes the wrong rise if forced to share).
      "is_porch": true | false,
      "porch_ceiling_sqft": number,  // porch planes only: ceiling area under the roof (soffit material, read porch depth × length from the floor plan); 0 otherwise
      "porch_width_ft": DIM | null,     // porch planes only: {"v","page","from"} — the porch's PRINTED floor-plan width (the side along the house wall). null when not dimensioned — NEVER derived from the area (an area does not determine a shape, ruled 2026-08-07)
-     "porch_depth_ft": DIM | null      // porch planes only: {"v","page","from"} — PRINTED depth (out from the wall). null when not dimensioned — NEVER √area, never a guess
+     "porch_depth_ft": DIM | null,     // porch planes only: {"v","page","from"} — PRINTED depth (out from the wall). null when not dimensioned — NEVER √area, never a guess
+     "overhang_in": DIM | null,        // PER-PLANE printed eave overhang depth in inches — e.g. 12 at main eaves, 0 at "FASCIA ONLY NO OVERHANG". null when this plane's overhang is not dimensioned — NEVER inherit from another plane (ruled 2026-08-11 send-6: overhang is per-location, one default does not cover a house that varies).
+     "wall_height_ft": DIM | null      // OPTIONAL: printed wall (siding) height under this plane's eave — e.g. a garage wall printed 9'-11 7/8" is this plane's siding height. null when not dimensioned. The main-body wall heights ride walls[]; use this ONLY for planes whose walls are not in the four-wall list (garage/wing/porch faces).
     }
   ],
+  // SELF-CHECK before returning roof_planes: (S1) EMIT-ONE-PER-END —
+  // count every triangular gable end you can see across ALL elevations
+  // AND the roof plan; the sum of gable_ends across roof_planes MUST
+  // equal that count. If your count is 4 but only 3 planes are named
+  // (main, garage, porch), you are missing a plane — probably an
+  // ENTRY gable over the front door. Add it as its own plane with
+  // label:"entry" (or a verbatim label from the plan) rather than
+  // silently inflating garage.gable_ends. (S2) FACES-PER-END —
+  // every plane with gable_ends > 0 lists gable_end_faces of the
+  // same length; an orphan end (no face named) is refused by the
+  // app's attribution — the miss is loud, never silently misfiled.
+  // (S3) PITCH-PER-PLANE — a plane with printed pitch on its face
+  // fills pitch; a plane with no printed pitch leaves pitch empty
+  // (the app flags rather than inheriting).
   "starter_lf": number,        // full floor-plan PERIMETER in LF — report the RAW perimeter; the app deducts entry-door widths downstream per convention (sliders/patio doors sit on the starter). NOT eaves-only.
   "roof_pitch": "<the MAIN HOUSE BODY's printed pitch. PITCH-TRIANGLE NOTATION: the triangle marks print the RUN (always 12) on one leg and the RISE on the other — a triangle marked 12 and 7 means 7/12, NEVER 12/12 (only read 12/12 when BOTH legs print 12). Cross-gable houses print SEVERAL pitches (main body, garage/bonus wing, porch mono-truss shed) — report the pitch marked on the MAIN roof planes and name the others in notes. Corroborate against the drawn slope: a 12/12 draws at 45°, a 7/12 visibly shallower. Empty string if no pitch is printed anywhere>",
   "appendages": [
@@ -615,8 +633,8 @@ def _json_from_reply(text: str) -> dict:
 # =========================================================================
 ROOF_PASS_PROMPT = """You are a construction-print ROOF & FOOTPRINT reader. You receive ONLY the roof plan, elevation, and floor-plan sheets of one house. IGNORE windows, doors, siding profiles — you have exactly two jobs.
 
-JOB 1 — ROOF PLANE CENSUS. List EVERY roof plane pair that carries its own eave (gutter/fascia) line: the MAIN roof, the ATTACHED GARAGE roof (the area table and a second ridge/truss field on the roof plan prove it exists — a "3 CAR GARAGE" on the floor plan ALWAYS has a roof over it), PORCH roofs (mono/shed count too), and any secondary cross-gable. A plane with a GABLE END has rake_lf — per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × rise/12)²). An attached garage ending in its own gable (including an intersecting/double gable where the garage roof meets the main roof) MUST come back with non-zero rake_lf and gable_ends.
-PITCH-TRIANGLE NOTATION: the triangle marks print the RUN (always 12) on one leg and the RISE on the other — a mark showing 12 and 7 means 7/12, NEVER 12/12 (only 12/12 when BOTH legs print 12). Report the MAIN body pitch in roof_pitch; name secondary pitches in notes.
+JOB 1 — ROOF PLANE CENSUS. List EVERY roof plane pair that carries its own eave (gutter/fascia) line: the MAIN roof, the ATTACHED GARAGE roof (the area table and a second ridge/truss field on the roof plan prove it exists — a "3 CAR GARAGE" on the floor plan ALWAYS has a roof over it), the ENTRY / PORTICO gable if the front elevation shows a triangular gable over the front door (its own plane, its own rise), PORCH roofs (mono/shed count too), and any secondary cross-gable. A plane with a GABLE END has rake_lf — per gable end: 2 × √((gable_width/2)² + ((gable_width/2) × rise/12)²). An attached garage ending in its own gable (including an intersecting/double gable where the garage roof meets the main roof) MUST come back with non-zero rake_lf and gable_ends. EMIT-ONE-PER-END: sum of gable_ends across planes MUST equal the total number of triangular gable ends visible on the elevations — if you count 4 ends and only have 3 planes, you are missing a plane (probably ENTRY) — add it rather than lumping the end into garage.
+PITCH-TRIANGLE NOTATION: the triangle marks print the RUN (always 12) on one leg and the RISE on the other — a mark showing 12 and 7 means 7/12, NEVER 12/12 (only 12/12 when BOTH legs print 12). Report the MAIN body pitch in roof_pitch AND each plane's own pitch in its `pitch` field — a cross-gable house prints SEVERAL pitches (main 7/12, entry 10/12, garage its own) and the app flags rather than inheriting when a plane's pitch is not printed.
 
 JOB 2 — FULL-OUTLINE CORNER WALK. Walk the COMPLETE dimensioned floor-plan outline clockwise — garage wing and porch projection INCLUDED, never just the main rectangle. At every direction change: OUTSIDE corner (turns away from interior) or INSIDE corner (notch/armpit). INVARIANT: outside − inside MUST equal 4; re-walk if not. outside_corner_lf = SUM of each corner's OWN trim height (1-story garage-wing corners run the garage eave height; 2-story corners the full height — NEVER count × average height). ALSO return outside_corner_heights_ft: one entry PER corner in walk order — the corner joins TWO walls, report the TALLER wall's height, run to the EAVE the corner trim dies into (on a gable end the corner runs to the EAVE, never an area÷width figure); null when no printed dimension resolves that corner — never average or guess.
 
@@ -626,11 +644,15 @@ Return ONLY this JSON, no explanation:
 {
   "roof_pitch": "<main body pitch, e.g. '7/12'>",
   "roof_planes": [
-    {"label": "main" | "garage" | "porch" | "<other>",
+    {"label": "main" | "garage" | "porch" | "entry" | "<other>",
      "eave_lf": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null,
      "rake_lf": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null,  // derived form {"v","calc","srcs":[...]} when computed from width + pitch
      "gable_ends": number,
-     "is_porch": true | false, "porch_ceiling_sqft": number}
+     "gable_end_faces": ["front"|"back"|"left"|"right"|"<other>"],  // REQUIRED when gable_ends > 0; length == gable_ends; names the elevation face each triangle points at (the wall you see the triangle on)
+     "pitch": "<n/12 or empty>",  // THIS plane's own printed pitch; empty when not printed — NEVER inherit main
+     "is_porch": true | false, "porch_ceiling_sqft": number,
+     "overhang_in": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null,  // per-plane printed overhang, null when not dimensioned
+     "wall_height_ft": {"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null}  // printed wall height under this plane's eave when the wall is not in the four-wall main list (e.g. garage wing wall)
   ],
   "outside_corner_count": number, "outside_corner_lf": number,
   "outside_corner_heights_ft": [{"v": number, "page": n, "from": "<printed dim VERBATIM>"} | null],  // ONE entry per outside corner in walk order — null when no printed dimension resolves that corner, NEVER a guess or an average (bare numbers are DROPPED by the pipeline)
@@ -2169,19 +2191,27 @@ def check_read_consistency(raw: dict) -> list[dict]:
     planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
     plane_gables = sum(int(p.get("gable_ends") or 0) for p in planes)
     wall_gables = sum(1 for w in walls if _f(w.get("gable_triangle_height_ft")) > 0)
-    # ATTRIBUTION FOLD (Howard ruled 2026-08-11 send-3 item c): the wing
-    # plane's gable ends face the walls PERPENDICULAR to the primary
-    # gable axis. If we can attribute the extras safely, the census
-    # reconciles; otherwise the flag still fires loud with the count.
+    # ORPHAN GABLE GUARD (Howard ruled 2026-08-11 send-6): an orphan
+    # gable end is NEVER distributed onto an unrelated wall. The wing
+    # plane's ends attribute ONLY via its own `gable_end_faces` evidence
+    # (extraction fix). No faces → orphan → LOUD flag, unattributed.
     from gable_attribution import attribute_secondary_gables
     _attrib = attribute_secondary_gables(walls, planes)
     wall_gables_total = _attrib["wall_gables_attributed"]
-    if planes and walls and plane_gables != wall_gables_total:
+    _orphans = _attrib.get("orphans") or []
+    _orphan_count = sum(int(o.get("count") or 0) for o in _orphans)
+    if planes and walls and (
+            plane_gables != wall_gables_total or _orphan_count > 0):
+        _vars = {"planes": plane_gables, "walls": wall_gables_total,
+                 "primary": wall_gables,
+                 "secondary": wall_gables_total - wall_gables}
+        if _orphan_count > 0:
+            _vars["orphans"] = _orphan_count
+            _vars["orphan_planes"] = ", ".join(
+                f"{o.get('plane')}×{o.get('count')}" for o in _orphans)
         flags.append({
             "code": "gable_census_mismatch", "level": "loud",
-            "vars": {"planes": plane_gables, "walls": wall_gables_total,
-                     "primary": wall_gables,
-                     "secondary": wall_gables_total - wall_gables}})
+            "vars": _vars})
 
     by_label = {str(w.get("label") or "").lower(): w for w in walls}
     fb, lr = by_label.get("front"), by_label.get("left")
@@ -2386,6 +2416,31 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             "gable_ends": int(p.get("gable_ends") or 0),
             "is_porch": is_porch,
             "porch_ceiling_sqft": float(p.get("porch_ceiling_sqft") or 0),
+            # PER-PLANE pitch/overhang/wall-height (Howard ruled 2026-08-11
+            # send-6): each plane's own reads ride the readback so the
+            # rail names WHERE overhang is unread, WHERE pitch differs
+            # from the main, and WHERE a garage wall printed its own
+            # siding height. Values fall through when unread.
+            "pitch": str(p.get("pitch") or "").strip(),
+            "overhang_in": (float(p["overhang_in"]["v"])
+                            if isinstance(p.get("overhang_in"), dict)
+                            and p["overhang_in"].get("v") is not None
+                            else (float(p["overhang_in"])
+                                  if isinstance(p.get("overhang_in"),
+                                                (int, float))
+                                  and p.get("overhang_in") is not None
+                                  else None)),
+            "wall_height_ft": (float(p["wall_height_ft"]["v"])
+                               if isinstance(p.get("wall_height_ft"), dict)
+                               and p["wall_height_ft"].get("v") is not None
+                               else (float(p["wall_height_ft"])
+                                     if isinstance(p.get("wall_height_ft"),
+                                                   (int, float))
+                                     and p.get("wall_height_ft") is not None
+                                     else None)),
+            "gable_end_faces": [str(f) for f in (
+                p.get("gable_end_faces") or [])
+                if isinstance(f, str)],
             # THE BONI CATCH: a non-porch plane reading rake 0 is exactly
             # how the garage gable went invisible — flag LOUDLY.
             "gable_blind": (not is_porch) and rake == 0,
@@ -2470,6 +2525,21 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         rail.append({"level": "info", "code": "pitch", "text": pitch})
     else:
         rail.append({"level": "warn", "code": "no_pitch"})
+    # PITCH PER PLANE (Howard ruled 2026-08-11 send-6): a plane with no
+    # printed pitch FLAGS by name rather than inheriting the house
+    # value. Planes whose pitch DIFFERS from the main pitch are named
+    # (so a 10/12 entry gable against a 7/12 main is visible).
+    _no_pitch = [r["label"] for r in plane_rows if not r.get("pitch")]
+    _diff_pitch = [(r["label"], r["pitch"]) for r in plane_rows
+                   if r.get("pitch") and pitch
+                   and r["pitch"] != pitch]
+    if _no_pitch:
+        rail.append({"level": "warn", "code": "pitch_missing_on_planes",
+                     "text": ", ".join(_no_pitch)})
+    if _diff_pitch:
+        rail.append({"level": "info", "code": "pitch_varies_by_plane",
+                     "text": "; ".join(f"{lbl}={p}"
+                                        for lbl, p in _diff_pitch)})
     sc = str(raw.get("scale_confidence") or "")
     if sc and sc != "high":
         rail.append({"level": "warn", "code": "scale_confidence", "text": sc})
@@ -2503,6 +2573,32 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         rail.append({"level": "info", "code": "overhang_printed", "text": f"{_ov:g}"})
     else:
         rail.append({"level": "warn", "code": "overhang_default"})
+    # OVERHANG PER PLANE (Howard ruled 2026-08-11 send-6): the flag
+    # names WHERE overhang is unread — never a blanket "not dimensioned
+    # anywhere" when only some planes are missing it.
+    _plane_ov_read = [(r["label"], r["overhang_in"]) for r in plane_rows
+                      if r.get("overhang_in") is not None]
+    _plane_ov_miss = [r["label"] for r in plane_rows
+                      if r.get("overhang_in") is None
+                      and not r.get("is_porch")]
+    if _plane_ov_read:
+        rail.append({"level": "info", "code": "overhang_by_plane",
+                     "text": "; ".join(f"{lbl}={v:g}\""
+                                        for lbl, v in _plane_ov_read)})
+    if _plane_ov_miss:
+        rail.append({"level": "warn", "code": "overhang_missing_on_planes",
+                     "text": ", ".join(_plane_ov_miss)})
+    # WALL HEIGHT PER PLANE (Howard ruled 2026-08-11 send-6, garage wall
+    # unread class): a plane carrying a printed wall_height_ft (e.g. a
+    # garage wing where the 9'-11 7/8" is drawn) surfaces here so
+    # the sheet renderer can pull the printed value instead of
+    # silently tuning from the avg fallback.
+    _plane_wh = [(r["label"], r["wall_height_ft"]) for r in plane_rows
+                 if r.get("wall_height_ft") is not None]
+    if _plane_wh:
+        rail.append({"level": "info", "code": "wall_height_by_plane",
+                     "text": "; ".join(f"{lbl}={v:g} ft"
+                                        for lbl, v in _plane_wh)})
     _fw = _num(raw.get("fascia_width_in"))
     if _fw > 0:
         rail.append({"level": "info", "code": "fascia_printed", "text": f"{_fw:g}"})

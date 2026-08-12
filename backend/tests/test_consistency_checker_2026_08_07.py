@@ -88,43 +88,37 @@ def test_corner_lf_must_equal_the_sum_of_its_own_heights():
 
 
 def test_gable_census_must_match_the_walls():
-    """Ruled 2026-08-11 send-3 item c: the census now counts primary +
-    attributed secondary. A wing plane whose ends face the perpendicular
-    axis reconciles automatically (attribute_secondary_gables). This
-    test now covers the CASE WHERE ATTRIBUTION REFUSES — a wing plane
-    with an odd count that cannot be split cleanly onto both walls of
-    the perpendicular axis, OR a raw with no primary axis to identify.
-    A garage plane appended to _clean_raw() where L+R carry primary and
-    the wing carries 1 end still attributes (attribution allows partial
-    distribution), so the census reconciles. Use the raw with NO primary
-    axis to keep the mismatch pin firing."""
-    # Case A — attribution completes (wing 1 end lands on FRONT):
+    """Ruled 2026-08-11 send-3 item c, HARDENED send-6 item 1: the
+    attribution now requires plane-side `gable_end_faces` evidence.
+    Without evidence, wing ends orphan and the flag fires loudly."""
+    # Case A — attribution completes with faces evidence:
     raw = _clean_raw()
     raw["roof_planes"].append(
         {"label": "garage", "eave_lf": 24, "rake_lf": 26,
-         "gable_ends": 1, "is_porch": False})
+         "gable_ends": 1, "gable_end_faces": ["front"],
+         "is_porch": False})
     flags = check_read_consistency(raw)
     codes = [x["code"] for x in flags]
-    # Attribution now gives the garage's end a home on FRONT — census
-    # reconciles → no flag.
     assert "gable_census_mismatch" not in codes, (
         "attribution should reconcile the 1-end garage onto FRONT; "
         f"got flags: {codes}")
 
-    # Case B — attribution REFUSES (no primary axis) → flag still fires
-    # with the new vars including primary+secondary breakdown.
+    # Case B — no primary axis + no faces evidence → orphan surfaces,
+    # census fires loudly, orphan planes named.
     raw2 = _clean_raw()
     for w in raw2["walls"]:
-        w["gable_triangle_height_ft"] = 0  # kill the primary axis
+        w["gable_triangle_height_ft"] = 0
     raw2["roof_planes"].append(
         {"label": "garage", "eave_lf": 24, "rake_lf": 26,
          "gable_ends": 1, "is_porch": False})
     flags2 = check_read_consistency(raw2)
     f = next(x for x in flags2 if x["code"] == "gable_census_mismatch")
     assert f["vars"]["planes"] == 3
-    assert f["vars"]["walls"] == 0  # attribution refused; no primary axis
+    assert f["vars"]["walls"] == 0
     assert f["vars"]["primary"] == 0
     assert f["vars"]["secondary"] == 0
+    assert f["vars"].get("orphans") == 1
+    assert "garage" in f["vars"].get("orphan_planes", "")
 
 
 def test_mirrored_elevations_with_a_wing_flag_the_box_model():

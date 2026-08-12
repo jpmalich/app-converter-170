@@ -61,6 +61,10 @@ INTERNAL_KEYS = {
     # OCR page-data internal shape (norms + boxed) — our own OCR layer,
     # never model-produced (ruled 2026-08-11 count-cell locator).
     "boxed",
+    # gable_attribution internal shape (ruled 2026-08-11 send-6): the
+    # seam-guard result carries orphans[] with plane/count/reason —
+    # written by our own pipeline, never a model key.
+    "orphans", "plane", "count",
 }
 
 

@@ -1,5 +1,75 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-11 SEND-6 — WING GABLE MECHANISM + PITCH PER PLANE (Howard's ruling)
+Ruled 2026-08-11 send-6; full mechanism report at
+`memory/wing_gable_send6_ruling_2026-08-11.md`.
+
+**THE MECHANISM (Boni EST-886440, run 80c10620):** The AI counted 4
+gable ends across the elevations but emitted only 3 planes. The 4th
+(entry gable) got LUMPED into `garage/bonus.gable_ends = 2` for lack
+of a plane. The send-3 attribution heuristic then distributed both
+garage/bonus ends across F+B perpendicular walls — silently absorbing
+the orphan. **Not a missing gable triangle — a missing BODY (rake,
+soffit, fascia, siding area, all absent).**
+
+**PART 1 — THE READ FIX (extraction-side):** `SYSTEM_PROMPT` +
+`ROOF_PASS_PROMPT` now require:
+- `gable_end_faces: [face,...]` on every plane with gable_ends > 0
+  (list length == gable_ends); no faces → orphan → flag.
+- `pitch: "n/12"` per plane; empty when unread — the app **NEVER
+  inherits** the main body pitch (10/12 entry vs 7/12 main is the
+  live case).
+- `overhang_in` per plane (`FASCIA ONLY NO OVERHANG` rides here).
+- `wall_height_ft` per plane (garage 9'-11 7/8" siding height quoted
+  directly, additions to reach sided named separately).
+- S1/S2/S3 self-check block (EMIT-ONE-PER-END, FACES-PER-END,
+  PITCH-PER-PLANE) with the entry-plane example.
+
+**PART 2 — THE SEAM GUARD (attribution-side):** `gable_attribution.py`
+rewritten. Perpendicular-axis heuristic **retired**. Attribution is
+evidence-driven per `gable_end_faces`. Unmatched ends land in
+`orphans[]` — never on a wall. Renderer + rail surface orphans loud on
+every sheet ("UNATTRIBUTED WING GABLE(S) — NEEDS YOUR TAPE" red band).
+Consistency flag `gable_census_mismatch` names orphan planes.
+
+**PITCH PER PLANE (addendum):** `blueprint_elevation.build_blueprint_sheet`
+reads each wing plane's own pitch to compute rise = base/2 × pitch/12.
+Empty pitch → height stays null and the sheet says "plane pitch UNREAD,
+NEEDS YOUR TAPE — does not inherit main body pitch". Rail codes:
+`pitch_missing_on_planes`, `pitch_varies_by_plane`.
+
+**GARAGE WALL HEIGHT (Item 3):** Per-plane `wall_height_ft` surfaces on
+rail code `wall_height_by_plane`. The garage's printed 9'-11 7/8" is
+quoted verbatim; additions to reach the sided height (plates +
+foundation) are named separately, never tuned.
+
+**OVERHANG PRECISION (Item 4):** Per-plane `overhang_in`. Rail codes
+`overhang_by_plane` (info, lists every printed value) and
+`overhang_missing_on_planes` (warn, names planes with no printed
+overhang). No more blanket "not dimensioned anywhere" when only some
+planes are missing it.
+
+**gable_census_mismatch 3-DAY DELAY (P1 partly answered):** The flag
+was CORRECT for three days — it named THIS EXACT contradiction. Both
+Howard and prior agents let it ride because the card buried it among
+40+ equally-red flags. THIS IS A CARD-READABILITY FINDING, not a
+flag-quality one. The instrument worked; the surface didn't. The
+verdict-and-triage proposal must address ranking + top-level verdict
++ grouping (reconcile / contradict / unread). Not louder flags.
+
+**Purity unchanged.** Nothing applies to EST-886440. Integral-J stays ON.
+
+**Files changed:** `backend/routes/ai_blueprint.py`,
+`backend/gable_attribution.py`, `backend/routes/blueprint_elevation.py`,
+`frontend/src/lib/dictionaries.js`,
+`frontend/src/pages/BlueprintElevationSheet.jsx` (orphan red band),
+tests: gable_attribution + consistency + phase2 updated,
+`test_send6_wing_gable_and_pitch_per_plane_2026_08_11.py` **new** (11 pins).
+
+Suite: **2267 passed / 5 skipped** (was 2253; +14 send-6 pins).
+
+
+
 ## 2026-08-11 SEND-5 — BASELINE 53 REPORT, DIALOG CLASSIFICATION, ELEVATION PHASE 2
 Two reports (baseline burn-down + per-run/per-estimate dialog
 classification, in `memory/baseline_burn_down_and_dialog_classification_2026-08-11.md`) + Phase 2 built.

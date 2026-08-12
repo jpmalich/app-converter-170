@@ -47,15 +47,18 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
                  if str(w.get("label", "")).lower() == which), None)
     run_short = str(run.get("run_id", ""))[:8]
 
-    # WALL ATTRIBUTION (Howard ruled 2026-08-11 send-3 item c): the wing
-    # plane's gable ends attributed to the perpendicular walls. Phase 1
-    # only ANNOTATES here; Phase 2 renders wing gables from this list.
+    # WALL ATTRIBUTION (Howard ruled 2026-08-11 send-3 item c, hardened
+    # send-6): the wing plane's gable ends attributed via the plane's
+    # own `gable_end_faces` evidence. Orphans (unmatched ends) surface
+    # separately on the sheet — never silently landed on a wall.
     from gable_attribution import (
-        attribute_secondary_gables, secondary_gables_for_wall,
+        attribute_secondary_gables, orphan_gables,
+        secondary_gables_for_wall,
     )
     _attrib = attribute_secondary_gables(
         raw.get("walls") or [], raw.get("roof_planes") or [])
     secondary_gables = secondary_gables_for_wall(_attrib, which)
+    orphans_all = orphan_gables(_attrib)
 
     width_ft = height_ft = None
     gable_ft = 0
@@ -223,11 +226,31 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
     # Each wing gable's base width is the wing segment on this wall,
     # NOT the full wall width. When we cannot identify the wing base
     # cleanly, we abstain and disclose (evidence-or-null).
+    # PITCH PER PLANE (Howard ruled 2026-08-11 send-6): each plane
+    # carries its OWN printed pitch — a wing at 10/12 against a main
+    # at 7/12 must not inherit. If the plane's pitch is unread, the
+    # rise stays null and the sheet says so.
+    def _plane_by_label(lbl: str) -> dict | None:
+        want = str(lbl or "").strip().lower()
+        for p in (raw.get("roof_planes") or []):
+            if str(p.get("label") or "").strip().lower() == want:
+                return p
+        return None
+
+    def _pitch_rise(pitch: str | None) -> float | None:
+        s = str(pitch or "").strip()
+        if not s or "/" not in s:
+            return None
+        try:
+            return float(s.split("/")[0])
+        except (TypeError, ValueError):
+            return None
+
     wing_triangle_notes: list[dict] = []
     for sg in (secondary_gables or []):
         # Try to identify the wing segment on this wall by matching
         # the plane name against segment names (fuzzy: "garage",
-        # "wing", "bonus", etc.). Refuse to guess otherwise.
+        # "wing", "bonus", "entry" etc.). Refuse to guess otherwise.
         plane_lbl = str(sg.get("plane") or "").lower()
         matching_seg = None
         for s in segments_out or []:
@@ -236,31 +259,77 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
                 matching_seg = s
                 break
             # Also try the reverse: name keywords in the plane.
-            for kw in ("garage", "wing", "bonus"):
+            for kw in ("garage", "wing", "bonus", "entry", "portico"):
                 if kw in sn and kw in plane_lbl:
                     matching_seg = s
                     break
             if matching_seg:
                 break
+        # Per-plane pitch → rise. Empty/unread pitch on the plane
+        # leaves height null and the sheet flags rather than
+        # inheriting the main body pitch (Howard send-6 addendum).
+        plane_doc = _plane_by_label(sg.get("plane"))
+        plane_pitch = str((plane_doc or {}).get("pitch") or "").strip()
+        rise = _pitch_rise(plane_pitch)
+        base_ft = (matching_seg.get("width_ft")
+                    if matching_seg else None)
+        height_ft = None
+        height_source = "not read — pitch × base/2 unavailable"
+        if base_ft is not None and rise is not None:
+            height_ft = round(float(base_ft) / 2.0 * (rise / 12.0), 2)
+            height_source = (
+                f"derived from base {base_ft:g} ft × plane pitch "
+                f"{plane_pitch} (rise/2)")
+        elif base_ft is not None and not plane_pitch:
+            height_source = (
+                f"base {base_ft:g} ft identified — plane pitch "
+                "UNREAD; sheet does not inherit main body pitch")
+        area_sqft = None
+        if base_ft is not None and height_ft is not None:
+            area_sqft = round(0.5 * float(base_ft) * float(height_ft), 1)
         wing_note = {
             "plane": sg.get("plane"),
             "count": sg.get("count", 1),
-            "base_ft": matching_seg.get("width_ft")
-                        if matching_seg else None,
+            "base_ft": base_ft,
             "base_source": (f"segment {matching_seg.get('name')!r}"
                             if matching_seg else "unidentified"),
-            "height_ft": None,       # not read; disclosed
-            "height_source": "not read — pitch × base/2 unavailable",
-            "area_sqft": None,
-            "note": ("wing gable carried on this wall — base identified; "
-                     "height + area not derivable without pitch"
-                     if matching_seg
-                     else "wing gable carried on this wall — base "
-                          "segment not identifiable; NEEDS YOUR TAPE"),
+            "height_ft": height_ft,
+            "height_source": height_source,
+            "plane_pitch": plane_pitch or None,
+            "area_sqft": area_sqft,
+            "note": (
+                (f"wing gable at pitch {plane_pitch} — base {base_ft:g} ft, "
+                 f"height {height_ft:.2f} ft, area {area_sqft} sqft")
+                if height_ft is not None
+                else ("wing gable carried on this wall — base identified; "
+                      "plane pitch UNREAD, NEEDS YOUR TAPE"
+                      if matching_seg and not plane_pitch
+                      else "wing gable carried on this wall — base "
+                           "segment not identifiable; NEEDS YOUR TAPE")),
         }
         wing_triangle_notes.append(wing_note)
-        area_missing.append(
-            f"wing gable from plane {sg.get('plane')!r} — area not derivable")
+        if area_sqft is not None:
+            area_components.append({
+                "kind": "gable_triangle_secondary",
+                "name": f"wing gable ({sg.get('plane')})",
+                "sqft": area_sqft})
+            area = (area or 0.0) + area_sqft
+        else:
+            area_missing.append(
+                f"wing gable from plane {sg.get('plane')!r} — area not derivable")
+
+    # ORPHAN GABLES (Howard ruled 2026-08-11 send-6): plane read
+    # counted gable ends but the plane emitted no `gable_end_faces`
+    # evidence — the ends are LOUD on every sheet the wall might
+    # have carried, never silently misfiled. Rendering as a
+    # NEEDS YOUR TAPE band on the sheet header.
+    orphan_note = None
+    if orphans_all:
+        orphan_note = ("UNATTRIBUTED WING GABLE(S): "
+                       + "; ".join(f"{o.get('plane')} ×{o.get('count')} "
+                                    f"({o.get('reason')})"
+                                    for o in orphans_all)
+                       + " — NEEDS YOUR TAPE to place them")
 
     if area is None and not area_missing:
         area_note = "not derivable — wall not fully read"
@@ -320,6 +389,8 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
             # via segment match; height stays disclosed as unread.
             "secondary_gables": secondary_gables,
             "wing_triangle_notes": wing_triangle_notes,
+            "orphan_gables": orphans_all,
+            "orphan_note": orphan_note,
             "secondary_gables_note": (
                 f"{len(secondary_gables)} wing gable(s) attributed "
                 "to this wall — Phase 2 draws them at the segment base "

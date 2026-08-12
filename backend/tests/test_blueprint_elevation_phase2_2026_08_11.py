@@ -73,8 +73,10 @@ def _boni_raw() -> dict:
              ]},
         ],
         "roof_planes": [
-            {"label": "main", "gable_ends": 2, "is_porch": False},
-            {"label": "garage/bonus", "gable_ends": 2, "is_porch": False},
+            {"label": "main", "gable_ends": 2,
+             "gable_end_faces": ["left", "right"], "is_porch": False},
+            {"label": "garage/bonus", "gable_ends": 2,
+             "gable_end_faces": ["front", "back"], "is_porch": False},
             {"label": "porch", "gable_ends": 0, "is_porch": True,
              "porch_ceiling_sqft": 99.0},
         ],

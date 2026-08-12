@@ -128,6 +128,19 @@ export default function BlueprintElevationSheet() {
           )}
         </div>
       )}
+      {Array.isArray(data.wall?.orphan_gables) && data.wall.orphan_gables.length > 0 && (
+        <div className="mt-3 max-w-2xl w-full border-2 border-red-600 bg-red-50 text-red-900 p-4 text-xs" data-testid="bp-elevation-orphan-gables">
+          <div className="font-bold text-[12px] uppercase tracking-wider mb-2">Unattributed wing gable(s) — NEEDS YOUR TAPE</div>
+          <div className="text-[11px] mb-2">{data.wall.orphan_note}</div>
+          <ul className="space-y-1">
+            {data.wall.orphan_gables.map((o, i) => (
+              <li key={i} className="font-mono-num" data-testid={`bp-elevation-orphan-${i}`}>
+                <span className="font-bold">{o.plane}</span> × {o.count} — {o.reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {Array.isArray(data.wall?.wing_triangle_notes) && data.wall.wing_triangle_notes.length > 0 && (
         <div className="mt-3 max-w-2xl w-full border border-[#c9ced8] bg-white p-4 text-xs" data-testid="bp-elevation-wing-triangles">
           <div className="font-bold text-[11px] uppercase tracking-wider mb-2">Wing gables attributed to this wall</div>
