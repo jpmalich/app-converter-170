@@ -119,9 +119,20 @@ class TestBlueprintSheetContract:
             {"name": "wing", "width_ft": 18, "height_ft": None},
         ]
         s = build_blueprint_sheet(EST, _run(raw), "front")
+        # Phase 2 (send-5): stepped walls emit STRUCTURED segments +
+        # per-segment areas. The step_note keeps the human-readable
+        # summary. The wing's unread height marks the segment
+        # NEEDS-YOUR-TAPE (Phase 2 hatches it instead of dropping).
         assert "STEPPED WALL" in s["wall"]["step_note"]
-        assert "UNREAD" in s["wall"]["step_note"]
-        assert s["wall"]["area_sqft"] is None
+        # NEEDS YOUR TAPE marker appears somewhere in the payload
+        # for the unread wing.
+        assert (s["wall"]["segments"] is not None
+                and any(seg.get("needs_tape") for seg in s["wall"]["segments"]))
+        # Area is what we know (main: 40 * 9 = 360). The disclosure
+        # names the missing wing — evidence-or-null: report the
+        # known part + surface the missing part in area_missing.
+        assert s["wall"]["area_sqft"] == 360.0
+        assert any("wing" in m for m in s["wall"]["area_missing"])
 
     def test_roofline_binds_from_the_blueprint_raw(self):
         raw = _raw()

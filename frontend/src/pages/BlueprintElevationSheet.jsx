@@ -76,6 +76,81 @@ export default function BlueprintElevationSheet() {
           </div>
         </div>
       )}
+      {/* PHASE 2 disclosures (Howard ruled 2026-08-11 send-5 item 3):
+          renderer-only — the reads behind these were never wrong.
+          Every panel below is a disclosure of what the read carries
+          that the SVG cannot fit inside one drawing. */}
+      {(data.wall?.segments || data.wall?.step_note) && (
+        <div className="mt-3 max-w-2xl w-full border border-[#c9ced8] bg-white p-4 text-xs" data-testid="bp-elevation-segments-panel">
+          <div className="font-bold text-[11px] uppercase tracking-wider mb-2">Stepped wall — segments</div>
+          {data.wall.step_note && (
+            <div className="text-[11px] text-[#3a4453] mb-2">{data.wall.step_note}</div>
+          )}
+          {Array.isArray(data.wall.segments) && (
+            <ul className="space-y-1">
+              {data.wall.segments.map((seg, i) => (
+                <li key={i} className="flex items-baseline gap-2" data-testid={`bp-elevation-segment-${i}`}>
+                  <span className="font-mono-num font-bold w-40">{seg.name}</span>
+                  <span className="font-mono-num">{seg.width_label} × {seg.height_label}</span>
+                  {seg.needs_tape && (
+                    <span className="text-amber-800 font-bold text-[10px]">⚠ NEEDS YOUR TAPE</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {Array.isArray(data.wall?.area_components) && data.wall.area_components.length > 0 && (
+        <div className="mt-3 max-w-2xl w-full border border-[#c9ced8] bg-white p-4 text-xs" data-testid="bp-elevation-area-panel">
+          <div className="font-bold text-[11px] uppercase tracking-wider mb-2">Wall area — gable-honest</div>
+          <ul className="space-y-1">
+            {data.wall.area_components.map((c, i) => (
+              <li key={i} className="flex items-baseline gap-2 font-mono-num">
+                <span className="w-40">{c.name}</span>
+                <span>{c.sqft} sqft</span>
+                <span className="text-[10px] text-[#5a6472]">({c.kind})</span>
+              </li>
+            ))}
+          </ul>
+          {typeof data.wall.area_sqft === "number" && (
+            <div className="mt-2 font-bold font-mono-num" data-testid="bp-elevation-area-total">
+              total (known): {data.wall.area_sqft} sqft
+            </div>
+          )}
+          {Array.isArray(data.wall.area_missing) && data.wall.area_missing.length > 0 && (
+            <div className="mt-2 text-[11px] text-amber-800" data-testid="bp-elevation-area-missing">
+              <div className="font-bold uppercase tracking-wider">Missing (needs tape / not derivable):</div>
+              <ul className="list-disc pl-4">
+                {data.wall.area_missing.map((m, i) => (<li key={i}>{m}</li>))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+      {Array.isArray(data.wall?.wing_triangle_notes) && data.wall.wing_triangle_notes.length > 0 && (
+        <div className="mt-3 max-w-2xl w-full border border-[#c9ced8] bg-white p-4 text-xs" data-testid="bp-elevation-wing-triangles">
+          <div className="font-bold text-[11px] uppercase tracking-wider mb-2">Wing gables attributed to this wall</div>
+          <ul className="space-y-2">
+            {data.wall.wing_triangle_notes.map((w, i) => (
+              <li key={i} className="border-l-2 border-[#c9ced8] pl-2" data-testid={`bp-elevation-wing-triangle-${i}`}>
+                <div className="font-mono-num font-bold">plane: {w.plane} · count: {w.count}</div>
+                <div className="font-mono-num">base: {w.base_ft ? `${w.base_ft} ft` : "—"} · <span className="text-[10px]">source: {w.base_source}</span></div>
+                <div className="font-mono-num">height: <span className="text-amber-800">{w.height_source}</span></div>
+                <div className="text-[10px] text-[#5a6472]">{w.note}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {data.porch_note && (
+        <div className="mt-3 max-w-2xl w-full border border-[#c9ced8] bg-white p-4 text-xs" data-testid="bp-elevation-porch-note">
+          <div className="font-bold text-[11px] uppercase tracking-wider mb-2">Porch</div>
+          <div className="font-mono-num">ceiling: {data.porch_note.ceiling_sqft || "—"} sqft</div>
+          <div className="text-[11px] text-[#5a6472] mt-1">{data.porch_note.attachment_wall_source}</div>
+          <div className="text-[10px] text-amber-800 mt-1 italic">{data.porch_note.phase_1_status}</div>
+        </div>
+      )}
     </div>
   );
 }

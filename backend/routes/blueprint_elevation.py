@@ -154,18 +154,125 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
                 if height_ft is not None else None)
     segs = (wall or {}).get("height_segments") or []
     step_note = None
+    # PHASE 2 (Howard ruled 2026-08-11 send-5 item 3):
+    # RENDERER-ONLY FIX — the reads behind these were never wrong. The
+    # walls[X].height_segments list carries the stepped wall shape;
+    # Phase 1 dropped it (segments: None). Phase 2 emits the layout.
+    segments_out: list[dict] | None = None
     if len(segs) > 1:
         parts = []
         for s in segs:
-            nm = str(s.get("name") or "segment")
+            nm = str(s.get("name") or s.get("label") or "segment")
             hv = s.get("height_ft")
             parts.append(f"{nm} {fmt_ftin(hv) if hv is not None else 'UNREAD'}")
-        step_note = ("STEPPED WALL — drawn as one rectangle at the eave "
-                     "height; printed segments: " + " · ".join(parts)
-                     + " (step location not read)")
+        step_note = ("STEPPED WALL — segments read; drawn per-segment "
+                     "at their printed heights: " + " · ".join(parts))
+        # Carry a structured segment payload for the drawing. Each
+        # segment carries width, height, and a NEEDS-YOUR-TAPE hatch
+        # marker when its height is unread.
+        segments_out = []
+        for s in segs:
+            sw = s.get("width_ft")
+            sh = s.get("height_ft")
+            segments_out.append({
+                "name": str(s.get("name") or s.get("label") or "segment"),
+                "width_ft": sw,
+                "width_label": fmt_ftin(sw) if sw is not None else "—",
+                "height_ft": sh,
+                "height_label": fmt_ftin(sh) if sh is not None else "NEEDS YOUR TAPE",
+                "needs_tape": sh is None,
+            })
 
-    area = (round(float(width_ft) * float(height_ft), 1)
-            if width_ft and height_ft and len(segs) <= 1 else None)
+    # PHASE 2 — GABLE-HONEST WALL AREA. The primary rectangle area is
+    # Σ segment areas (or width × height for a single-body wall). The
+    # gable triangle(s) attributed to this wall carry their own area
+    # (primary + wing/secondary). REPORT-A-DISAGREEMENT: when any
+    # component's read is null, the area rides with the known parts
+    # and disclosure names what is missing.
+    area_components: list[dict] = []
+    area_missing: list[str] = []
+    if segments_out:
+        # Stepped-wall body area from segments.
+        seg_total = 0.0
+        for s in segments_out:
+            sw, sh = s.get("width_ft"), s.get("height_ft")
+            if sw is not None and sh is not None:
+                seg_total += float(sw) * float(sh)
+                area_components.append({
+                    "kind": "segment", "name": s["name"],
+                    "sqft": round(float(sw) * float(sh), 1)})
+            else:
+                area_missing.append(
+                    f"segment {s['name']!r} height unread")
+        area = round(seg_total, 1) if seg_total > 0 else None
+    elif width_ft and height_ft:
+        area = round(float(width_ft) * float(height_ft), 1)
+        area_components.append({"kind": "body", "name": "wall body",
+                                "sqft": area})
+    else:
+        area = None
+    # Primary gable triangle carried by THIS wall.
+    if gable_ft and width_ft:
+        pri_tri = 0.5 * float(width_ft) * float(gable_ft)
+        area_components.append({
+            "kind": "gable_triangle_primary",
+            "name": "primary gable",
+            "sqft": round(pri_tri, 1)})
+        area = (area or 0.0) + round(pri_tri, 1)
+    # Wing (secondary) gables attributed via send-3 module.
+    # Each wing gable's base width is the wing segment on this wall,
+    # NOT the full wall width. When we cannot identify the wing base
+    # cleanly, we abstain and disclose (evidence-or-null).
+    wing_triangle_notes: list[dict] = []
+    for sg in (secondary_gables or []):
+        # Try to identify the wing segment on this wall by matching
+        # the plane name against segment names (fuzzy: "garage",
+        # "wing", "bonus", etc.). Refuse to guess otherwise.
+        plane_lbl = str(sg.get("plane") or "").lower()
+        matching_seg = None
+        for s in segments_out or []:
+            sn = str(s.get("name") or "").lower()
+            if plane_lbl and any(k in sn for k in plane_lbl.split("/")):
+                matching_seg = s
+                break
+            # Also try the reverse: name keywords in the plane.
+            for kw in ("garage", "wing", "bonus"):
+                if kw in sn and kw in plane_lbl:
+                    matching_seg = s
+                    break
+            if matching_seg:
+                break
+        wing_note = {
+            "plane": sg.get("plane"),
+            "count": sg.get("count", 1),
+            "base_ft": matching_seg.get("width_ft")
+                        if matching_seg else None,
+            "base_source": (f"segment {matching_seg.get('name')!r}"
+                            if matching_seg else "unidentified"),
+            "height_ft": None,       # not read; disclosed
+            "height_source": "not read — pitch × base/2 unavailable",
+            "area_sqft": None,
+            "note": ("wing gable carried on this wall — base identified; "
+                     "height + area not derivable without pitch"
+                     if matching_seg
+                     else "wing gable carried on this wall — base "
+                          "segment not identifiable; NEEDS YOUR TAPE"),
+        }
+        wing_triangle_notes.append(wing_note)
+        area_missing.append(
+            f"wing gable from plane {sg.get('plane')!r} — area not derivable")
+
+    if area is None and not area_missing:
+        area_note = "not derivable — wall not fully read"
+    elif area_missing:
+        area_note = (
+            f"area {area if area is not None else '—'} sqft carries "
+            + " · ".join(f"{c['name']} {c['sqft']} sqft"
+                         for c in area_components)
+            + (f" · missing: {'; '.join(area_missing)}"
+               if area_missing else ""))
+    else:
+        area_note = None
     schedule_note = ("Sizes: schedule-printed (COUNT COLUMN GOVERNS). "
                      "Positions SCHEMATIC — even spacing within the "
                      "attributed wall, never claimed as placed. Sills: "
@@ -200,23 +307,23 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
             "height_formula": f"blueprint run {run_short} — {height_src}",
             "exposure_in": None, "courses": None, "courses_label": None,
             "ai_count_note": None, "exposure_basis": None,
-            "segments": None,
+            "segments": segments_out,
             "step_note": step_note,
             "area_sqft": area,
-            "area_note": ("not derivable — wall not fully read"
-                          if area is None and len(segs) <= 1 else
-                          ("stepped wall — area needs segment layout"
-                           if len(segs) > 1 else None)),
+            "area_note": area_note,
+            "area_components": area_components,
+            "area_missing": area_missing,
             "gable_triangle_ft": gable_ft,
             "gable_tag": "AI-READ ⚠",
-            # SECONDARY GABLE ATTRIBUTIONS (2026-08-11 item c):
-            # gable ends from a non-main plane whose ridge crosses this
-            # wall's axis. Phase 1 lists them as annotations; Phase 2
-            # will draw the wing gable(s) into the sheet.
+            # SECONDARY GABLE ATTRIBUTIONS (send-3 item c) + PHASE 2
+            # wing-triangle details (send-5 item 3). base identified
+            # via segment match; height stays disclosed as unread.
             "secondary_gables": secondary_gables,
+            "wing_triangle_notes": wing_triangle_notes,
             "secondary_gables_note": (
-                "wing gable(s) attributed to this wall — Phase 1 lists "
-                "them; Phase 2 draws them onto the sheet"
+                f"{len(secondary_gables)} wing gable(s) attributed "
+                "to this wall — Phase 2 draws them at the segment base "
+                "identified; height still NEEDS YOUR TAPE"
                 if secondary_gables else None),
             "siding_pct": (wall or {}).get("siding_pct_this_wall"),
             "profile_callout": (wall or {}).get("wall_body_profile_callout") or "",
@@ -253,6 +360,26 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
             "openings": (f"openings: blueprint schedule, run {run_short} "
                          "(count column governs) — positions schematic"),
         },
+        # PHASE 2 — porch face note. When a porch roof plane exists in
+        # the read, name it on the sheet Howard is standing on. We
+        # cannot claim the attachment wall (the read does not carry
+        # that mapping today); we can only surface presence + size.
+        "porch_note": (
+            {
+                "present": True,
+                "ceiling_sqft": next(
+                    (float(p.get("porch_ceiling_sqft") or 0)
+                     for p in (raw.get("roof_planes") or [])
+                     if p.get("is_porch")), None),
+                "attachment_wall_source": (
+                    "porch attachment wall not carried by the read — "
+                    "front elevation is the conventional attachment; "
+                    "verify against the sheet"),
+                "phase_1_status": "porch presence carried; face drawing waits on attachment-wall read (see mechanism report §3)",
+            }
+            if any(p.get("is_porch")
+                   for p in (raw.get("roof_planes") or []))
+            else None),
         "contractor_gables": [],
         "contractor_gable_bands": [],
         "contractor_dormers": [],
