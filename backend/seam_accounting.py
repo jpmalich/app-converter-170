@@ -13,6 +13,14 @@ SEAM_REGISTRY = {
     "dims_nulled_no_evidence":
         "Dims that arrived without a quoted printed string — nulled by "
         "construction (evidence-or-null).",
+    "dims_nulled_quote_unverified":
+        "Dims whose quoted printed string could NOT be located near the "
+        "feature it claimed to dimension — the quote was fabricated, "
+        "the value nulls (ruled 2026-08-12 send-8: 'a locating match "
+        "must sit near the feature it claims to dimension, not merely "
+        "somewhere on the same page'). Same instrument as "
+        "dims_nulled_no_evidence, one class further: 'no evidence' "
+        "vs 'evidence that could not be verified'.",
     "count_column_governed":
         "Carried qtys replaced by the printed COUNT column's own sum "
         "(the count column governs counts).",

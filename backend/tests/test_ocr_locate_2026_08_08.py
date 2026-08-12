@@ -50,7 +50,25 @@ def _page_with(text: str) -> bytes:
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48)
     except OSError:
         font = ImageFont.load_default()
+    # Draw ONLY the quote — legacy fixture; used by the gate-disabled test.
     d.text((100, 100), text, fill="black", font=font)
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    return buf.getvalue()
+
+
+def _page_with_anchor(quote: str, anchor: str, ax=100, ay=250) -> bytes:
+    """SEND-8 fixture: the anchor label sits on the same page as the
+    quote, within radius. The proximity gate accepts the locate."""
+    img = Image.new("RGB", (1000, 400), "white")
+    d = ImageDraw.Draw(img)
+    try:
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48)
+    except OSError:
+        font = ImageFont.load_default()
+    d.text((100, 100), quote, fill="black", font=font)
+    d.text((ax, ay), anchor, fill="black", font=font)
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
     return buf.getvalue()
@@ -59,8 +77,11 @@ def _page_with(text: str) -> bytes:
 @pytest.fixture(scope="module")
 def located():
     ev = {
+        # Send-8 gate: the walls.front.width_ft quote needs a FRONT
+        # anchor on the same page within radius.
         "walls.front.width_ft": {"v": 58.0, "page": 1, "from": "58'-0\"",
                                  "loc": None, "precision": None},
+        # A quote whose page carries no FRONT anchor — gate refuses.
         "eave_overhang_in": {"v": 12.0, "page": 1, "from": "99x77 NOWHERE",
                              "loc": None, "precision": None},
         "walls.back.width_ft": {"v": 34.0, "page": 1, "from": "34'-0\"",
@@ -69,7 +90,8 @@ def located():
                                 "precision": "exact"},
     }
     raw = {}
-    _ocr_locate_evidence(ev, [_page_with("58-0")], raw)
+    _ocr_locate_evidence(
+        ev, [_page_with_anchor("58-0", "FRONT")], raw)
     return ev, raw
 
 
@@ -91,9 +113,13 @@ def test_a_quote_ocr_cannot_find_is_a_named_contradiction(located):
         "a miss never invents a box"
     misses = raw.get("_ocr_quote_misses") or []
     assert any(m["path"] == "eave_overhang_in" for m in misses)
-    assert all(set(m) == {"path", "page", "from", "rotations_checked"}
-               for m in misses), \
-        "the miss record carries provenance + the rotation audit, never a value verdict"
+    # SEND-8 CONTRACT: the miss record carries a `reason` naming why
+    # the locate refused (quote not found on the page, or matched but
+    # not near the feature anchor). The pre-send-8 schema stays a
+    # subset — the shape did not shrink.
+    m = next(m for m in misses if m["path"] == "eave_overhang_in")
+    assert {"path", "page", "from", "rotations_checked", "reason"}.issubset(m)
+    assert isinstance(m["reason"], str) and m["reason"]
 
 
 def test_exact_text_layer_boxes_are_never_overwritten(located):

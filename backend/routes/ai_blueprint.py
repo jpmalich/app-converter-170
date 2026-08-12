@@ -1035,11 +1035,17 @@ def _enforce_evidence_or_null(raw: dict) -> dict:
     # BARE-NUMBER EVIDENCE (Howard ruled 2026-08-09): the instability
     # that remained lived exactly in the unguarded family — roof-plane
     # eave/rake figures and gutter runs join the evidence discipline.
+    # SEND-6 EXTENSION (Howard ruled 2026-08-12 send-8 mechanism report):
+    # the send-6 per-plane wall_height_ft and overhang_in joined the
+    # evidence discipline TOO — they were emitted as {v,page,from}
+    # dicts but bypassed _normalize_evidence, which meant the locator
+    # never saw them and a hallucinated "9'-6\" garage wall" reached
+    # the readback verbatim. Closed here.
     for i, p in enumerate(raw.get("roof_planes") or []):
         if not isinstance(p, dict):
             continue
         label = str(p.get("label") or i)
-        for k in ("eave_lf", "rake_lf"):
+        for k in ("eave_lf", "rake_lf", "overhang_in", "wall_height_ft"):
             _norm(p, k, f"roof_planes.{label}.{k}")
     for i, g in enumerate(raw.get("gutter_runs") or []):
         if isinstance(g, dict):
@@ -1342,6 +1348,103 @@ def _ocr_match(runs, nq):
     return cands[0][2]
 
 
+# --------- FEATURE-PROXIMITY GATE (Howard ruled 2026-08-12 send-8) ---------
+# "A LOCATING MATCH MUST SIT NEAR THE FEATURE IT CLAIMS TO DIMENSION,
+# not merely somewhere on the same page." The pre-send-8 OCR locator
+# accepted any run whose norm equalled/contained the quote's norm at
+# ANY pixel position — so a real "9'-6"" printed anywhere on the page
+# could satisfy a "garage wall" quote (the E1 "30" bug one field
+# over). This gate requires the located rect's centre to sit within
+# radius of a feature-anchor run's bbox on the same page. No feature
+# anchor visible ⇒ refuse the locate.
+
+# Path segments that are structural, not features (skipped for anchoring).
+_ANCHOR_SKIP = {
+    "walls", "segments", "roof_planes", "gutter_runs",
+    "corner_heights", "porch", "openings", "windows", "doors",
+    "outside_corner_heights_ft", "eave_lf", "rake_lf",
+    "width_ft", "height_ft", "porch_width_ft", "porch_depth_ft",
+    "overhang_in", "wall_height_ft", "lf",
+}
+
+
+def _feature_anchors_for_path(path: str) -> list[str]:
+    """Return normalised feature-anchor tokens derived from the
+    evidence path. Empty when the path names no locatable feature
+    (e.g. a bare scalar like `eave_overhang_in`)."""
+    if not path or "." not in path:
+        # Bare scalar top-level dim (eave_overhang_in, fascia_width_in,
+        # etc.) — no feature anchor. Gate does not apply; legacy
+        # locator decides.
+        return []
+    parts = [p for p in path.split(".")
+             if p and p.lower() not in _ANCHOR_SKIP]
+    if not parts:
+        return []
+    # Each part may contain spaces / slashes — split those too.
+    anchors = []
+    for p in parts:
+        for tok in re.split(r"[\s/]+", p):
+            n = _ocr_norm(tok)
+            if len(n) >= 3:
+                anchors.append(n)
+    return anchors
+
+
+def _rect_center(rect):
+    x0, y0, x1, y1 = rect
+    return ((x0 + x1) / 2.0, (y0 + y1) / 2.0)
+
+
+def _within_radius(rect_a, rect_b, radius: float) -> bool:
+    ax, ay = _rect_center(rect_a)
+    bx, by = _rect_center(rect_b)
+    return ((ax - bx) ** 2 + (ay - by) ** 2) ** 0.5 <= radius
+
+
+def _anchor_runs_on_page(runs, anchors: list[str]) -> list:
+    """Runs whose norm contains ANY anchor token. Long labels win
+    (a run of just 'GARAGE' anchors tighter than an area-table row
+    that includes 'GARAGE' among many words)."""
+    hits = []
+    for r in runs:
+        norm = r[0]
+        if any(a in norm for a in anchors):
+            hits.append(r)
+    hits.sort(key=lambda r: len(r[0]))
+    return hits
+
+
+def _proximity_ok(match_rect, anchor_runs, radius: float) -> bool:
+    if not anchor_runs:
+        return False
+    return any(_within_radius(match_rect, a[2], radius)
+               for a in anchor_runs)
+
+
+def _ocr_match_near_feature(runs, joined_runs, nq, anchors, radius):
+    """Same rule as _ocr_match — but every candidate must sit within
+    radius of a feature-anchor run on this page. Empty `anchors` ⇒
+    the gate does not apply and we fall back to _ocr_match."""
+    if not anchors:
+        return _ocr_match(runs + joined_runs, nq), None
+    anchor_hits = _anchor_runs_on_page(runs + joined_runs, anchors)
+    if not anchor_hits:
+        return None, f"no feature anchor {anchors!r} on page"
+    pool = runs + joined_runs
+    exact = [r for r in pool if r[0] == nq
+             and _proximity_ok(r[2], anchor_hits, radius)]
+    contain = [r for r in pool
+               if nq in r[0] and len(r[0]) <= len(nq) + 6
+               and _proximity_ok(r[2], anchor_hits, radius)]
+    cands = exact or contain
+    if not cands:
+        return None, (f"quote matched but no candidate within {int(radius)}px "
+                      f"of feature anchor {anchors!r}")
+    cands.sort(key=lambda r: len(r[0]))
+    return cands[0][2], None
+
+
 def _join_adjacent_runs(runs, max_window=8):
     """ADJACENT-RUN JOINING (Howard ruled 2026-08-09): OCR fragments
     fraction-heavy cells — 2'-11 1/2" x 4'-11 1/2" comes back as separate
@@ -1421,13 +1524,20 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                 w, h = im.size
                 arr = np.array(im.convert("RGB"))
             runs = _ocr_runs(arr)
-            runs = runs + _join_adjacent_runs(runs)
+            joined = _join_adjacent_runs(runs)
         except Exception:
             logger.exception("[ai-blueprint] OCR failed on page %s — quote anchors stand", page)
             continue
+        # FEATURE-PROXIMITY RADIUS (Howard ruled 2026-08-12 send-8):
+        # the located rect's centre must sit within this radius of a
+        # feature-anchor run on the same page. 30% of the longer page
+        # side allows a labelled section on a large plan sheet to fit
+        # without covering the whole page.
+        radius = 0.30 * max(w, h)
         pending = []
         for path, s, nq in entries:
-            rect = _ocr_match(runs, nq)
+            anchors = _feature_anchors_for_path(path)
+            rect, why = _ocr_match_near_feature(runs, joined, nq, anchors, radius)
             if rect:
                 x0, y0, x1, y1 = rect
                 s["loc"] = {"x_pct": round(x0 / w * 100, 2),
@@ -1436,6 +1546,7 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                             "h_pct": round(max(y1 - y0, 1) / h * 100, 2)}
                 s["precision"] = "ocr"
             else:
+                s["_gate_reason"] = why
                 pending.append((path, s, nq))
         # Rotated passes — only when the upright pass left misses.
         for k in (1, 3):
@@ -1443,12 +1554,14 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                 break
             try:
                 rruns = _ocr_runs(np.rot90(arr, k))
-                rruns = rruns + _join_adjacent_runs(rruns)
+                rjoined = _join_adjacent_runs(rruns)
             except Exception:
                 continue
             still = []
             for path, s, nq in pending:
-                rect = _ocr_match(rruns, nq)
+                anchors = _feature_anchors_for_path(path)
+                rect, why = _ocr_match_near_feature(
+                    rruns, rjoined, nq, anchors, radius)
                 if rect:
                     x0r, y0r, x1r, y1r = rect
                     if k == 1:      # CCW: upright x = W-1-yr, y = xr
@@ -1462,15 +1575,115 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                                 "w_pct": round(max(x1 - x0, 1) / w * 100, 2),
                                 "h_pct": round(max(y1 - y0, 1) / h * 100, 2)}
                     s["precision"] = "ocr"
+                    s.pop("_gate_reason", None)
                 else:
+                    s["_gate_reason"] = why or s.get("_gate_reason")
                     still.append((path, s, nq))
             pending = still
         for path, s, nq in pending:
             misses.append({"path": path, "page": page,
                            "from": str(s.get("from") or ""),
-                           "rotations_checked": True})
+                           "rotations_checked": True,
+                           "reason": s.get("_gate_reason")
+                                     or "quote not found on page"})
+            s.pop("_gate_reason", None)
     if misses:
         raw["_ocr_quote_misses"] = misses
+
+
+def _null_unverified_quotes(raw: dict) -> None:
+    """Walk `_ocr_quote_misses` and NULL every value whose evidence
+    has no locating source. A locate that could not find the quote
+    near its feature means the quote was fabricated — evidence-or-null
+    (ruled 2026-08-08, extended 2026-08-12 send-8). The seam accounts
+    for what it removed."""
+    misses = raw.get("_ocr_quote_misses") or []
+    if not misses:
+        return
+    ev = raw.get("_dim_evidence") or {}
+
+    # A path is fully unverified when EVERY src on its evidence has
+    # no `loc` after the locator ran. A path with even one located
+    # src stays — the value has partial evidence.
+    fully_unverified: list[str] = []
+    for path in {m.get("path") for m in misses if m.get("path")}:
+        entry = ev.get(path)
+        if not isinstance(entry, dict):
+            continue
+        srcs = entry.get("srcs") or [entry]
+        if all(not (isinstance(s, dict) and s.get("loc")) for s in srcs):
+            fully_unverified.append(path)
+
+    if not fully_unverified:
+        return
+
+    def _null_path(p: str) -> bool:
+        """Walk raw down the dotted path and set the leaf to None.
+        Handles paths like `walls.front.width_ft`,
+        `walls.front.segments.<seg>.height_ft`,
+        `roof_planes.<label>.wall_height_ft`, `porch.porch_width_ft`,
+        `corner_heights.<i>`, and bare scalars."""
+        parts = p.split(".")
+        # scalar top-level: e.g. eave_overhang_in
+        if len(parts) == 1 and parts[0] in raw:
+            raw[parts[0]] = None
+            ev.pop(p, None)
+            return True
+        if parts[0] == "walls" and len(parts) >= 3:
+            label = parts[1]
+            for w in (raw.get("walls") or []):
+                if str(w.get("label") or "") != label:
+                    continue
+                if len(parts) == 3:  # walls.<lbl>.<field>
+                    w[parts[2]] = None
+                    ev.pop(p, None)
+                    return True
+                if len(parts) >= 5 and parts[2] == "segments":
+                    seg_label = parts[3]
+                    for s in (w.get("height_segments") or []):
+                        if str(s.get("label") or "") == seg_label:
+                            s[parts[4]] = None
+                            ev.pop(p, None)
+                            return True
+            return False
+        if parts[0] == "roof_planes" and len(parts) >= 3:
+            label = parts[1]
+            for pl in (raw.get("roof_planes") or []):
+                if str(pl.get("label") or "") == label:
+                    pl[parts[2]] = None
+                    ev.pop(p, None)
+                    return True
+            return False
+        if parts[0] == "porch" and len(parts) == 2:
+            for pl in (raw.get("roof_planes") or []):
+                if pl.get("is_porch"):
+                    pl[parts[1]] = None
+                    ev.pop(p, None)
+                    return True
+            return False
+        if parts[0] == "gutter_runs" and len(parts) == 3:
+            for g in (raw.get("gutter_runs") or []):
+                if str(g.get("label") or "") == parts[1]:
+                    g[parts[2]] = None
+                    ev.pop(p, None)
+                    return True
+            return False
+        if parts[0] == "corner_heights" and len(parts) == 2:
+            try:
+                i = int(parts[1])
+                hs = raw.get("outside_corner_heights_ft")
+                if isinstance(hs, list) and 0 <= i < len(hs):
+                    hs[i] = None
+                    ev.pop(p, None)
+                    return True
+            except (TypeError, ValueError):
+                pass
+        return False
+
+    nulled = [p for p in fully_unverified if _null_path(p)]
+    if nulled:
+        raw.setdefault("_dim_unverified_nulled", []).extend(nulled)
+        seam_accounting.account(raw, "dims_nulled_quote_unverified", nulled)
 
 
 def _ocr_verify_marks(raw: dict, image_payloads: list,
@@ -4152,6 +4365,16 @@ async def _execute_ai_blueprint_worker(
                                         image_payloads, raw)
         except Exception:
             logger.exception("[ai-blueprint] ocr-locate failed — quote-only anchors stand")
+        # UNVERIFIED EVIDENCE NULLS THE VALUE (Howard ruled 2026-08-12
+        # send-8): "A LOCATING MATCH MUST SIT NEAR THE FEATURE IT CLAIMS
+        # TO DIMENSION." A quote no locator can find near its feature
+        # was FABRICATED — the value nulls. Evidence-or-null, extended
+        # from "the number without a quote" to "the number whose quote
+        # cannot locate near what it claims to dim." The seam books it.
+        try:
+            _null_unverified_quotes(raw)
+        except Exception:
+            logger.exception("[ai-blueprint] unverified-null pass failed")
         # MARKS FACE THE LOCATOR TOO (ruled 2026-08-09): schedule-row
         # quotes searched on their own sheets; a row no quote of which
         # locates is dropped as fabricated; a fabricated size quote is

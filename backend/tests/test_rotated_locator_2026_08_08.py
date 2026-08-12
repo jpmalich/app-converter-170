@@ -31,10 +31,12 @@ from routes.ai_blueprint import (  # noqa: E402
 )
 
 
-def _vertical_page(text: str) -> bytes:
+def _vertical_page(text: str, anchor: str | None = None) -> bytes:
     """Text drawn horizontally, then the whole canvas rotated 90° — the
     print is vertical on the page, the way plan height dims sit on an
-    elevation's dimension chain."""
+    elevation's dimension chain. SEND-8: optional anchor label at the
+    bottom of the pre-rotate canvas so the proximity gate can find it
+    on the rotated page."""
     img = Image.new("RGB", (1000, 400), "white")
     d = ImageDraw.Draw(img)
     try:
@@ -43,6 +45,8 @@ def _vertical_page(text: str) -> bytes:
     except OSError:
         font = ImageFont.load_default()
     d.text((100, 100), text, fill="black", font=font)
+    if anchor:
+        d.text((100, 250), anchor, fill="black", font=font)
     img = img.transpose(Image.ROTATE_90)   # 400 wide × 1000 tall, vertical text
     buf = io.BytesIO()
     img.save(buf, format="JPEG")
@@ -56,7 +60,10 @@ def rotated_located():
           "walls.back.height_ft": {"v": 20.0, "page": 1, "from": "20'-0\"",
                                    "loc": None, "precision": None}}
     raw = {}
-    _ocr_locate_evidence(ev, [_vertical_page("19-0")], raw)
+    # SEND-8: the LEFT anchor rides with the vertical quote so the
+    # gate accepts the rotated locate. The BACK quote has no BACK
+    # anchor on the page — refused with reason.
+    _ocr_locate_evidence(ev, [_vertical_page("19-0", "LEFT")], raw)
     return ev, raw
 
 
