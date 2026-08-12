@@ -1,5 +1,46 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-11 SEND-4 — REFUSED WRITES SAY SO, SURFACE REGISTRY, GUARD EXTENSION
+Howard's send-4 items (1), (2), (3) landed. Items (4) Elevation Phase 2
+and (5) verdict-and-triage carried to next session per his build order;
+(6) reconciliation HELD.
+
+**(1) A refused write must say so.** `frontend/src/lib/write_through.js`
+one-write-path helper. Every optimistic UI mutation now runs through
+`writeThrough({ applyOptimistic, rollback, apiCall, setRefusal })` —
+on non-2xx it runs the rollback and paints a persistent
+SurfaceAccessChip naming the STATE + WAY OUT. 5 sites retired
+(BlueprintMeasureButton.apply, SettingsRow.wastePct, HoverImportButton,
+AIMeasureButton.startOver, ISSEstimateEditor.applyHoverLines).
+`frontend/src/lib/optimistic_write_registry.js` declares every write;
+`tests/test_optimistic_write_detector_2026_08_11.py` (5 pins) fails
+the build on any new optimistic write that does not route through
+the helper or register itself. Class-inverse instrument: previous
+seams caught REMOVED or INVENTED; this catches a WRITE THAT DID NOT
+HAPPEN painted as success. Doc: `memory/optimistic_ui_audit_2026-08-11.md`.
+
+**(2) Surface registry + widened chip census.**
+`frontend/src/lib/surface_registry.js` — every conditionally-hidden
+surface declares { id, gate, way_out, class_before, chip_testid,
+chip_mount_component }. S3 (vinyl profile picker) + S4 (accent
+injection) chips landed on JobInfoPanel; S1 + S2 already carried.
+`tests/test_surface_registry_census_2026_08_11.py` (8 pins) scans
+BOTH shapes — conditional null-returns AND conditional mount sites —
+with a 53-entry BASELINE_NULL_RETURNS snapshot; any new null-return
+outside baseline fails the build unless a chip is nearby or the site
+is registered.
+
+**(3) Guard extension per Howard's ruling.**
+`untouchable.py` rewritten: derived writes guarded, human input
+(tape-check + profile-annotations) rides above the freeze, artifact
+operations (accuracy-report freeze/revoke) NOW GUARDED. Every human
+write to an untouchable estimate lands in the new
+`protected_estimate_ledger` collection with kind + actor + meta + at.
+New `GET /estimates/{est_id}/protected-ledger` endpoint. 8 pins.
+
+Suite: 2242 passed / 5 skipped (was 2182 pre-8-11; +60 pins across
+9 new detector/pin modules today).
+
 ## 2026-08-11 SEND-3 — ENTRY LINKS, 4-VS-2 FIX, COUNT LOCATOR, EST-886440 PROTECTED
 Howard's send-3 build order, items (a)–(e) landed (item 6 P1 deferred,
 item 7 HELD per his ruling).
