@@ -57,15 +57,34 @@ def test_ingress_estimate_read(ingress):
 
 
 def test_ingress_rederive_round_trip(ingress):
+    """DETERMINISTIC RE-DERIVE (Howard ruled 2026-08-11 send-7): the
+    prior version picked an arbitrary estimate off /estimates and
+    could hit any of {protected → 423, lines empty → skip, wrong kind
+    → skip}. A red test that carries a standing explanation stops
+    being looked at (the 3-day gable-census delay proved the class).
+
+    This creates a THROWAWAY vinyl estimate through the same public
+    path a contractor travels, walks rederive against it, and cleans
+    up. The fixture is unprotected by construction, the response
+    contract stands (200 = rederive completed, 409 = gate blocked
+    with reason), and the smoke fails only when the public path
+    genuinely broke."""
     s, api = ingress
-    ests = s.get(f"{api}/estimates", timeout=20).json()
-    sid = next((e["id"] for e in ests if e.get("kind") != "lp_smart"), None)
-    if sid is None:
-        pytest.skip("no siding estimate to rederive")
-    r = s.post(f"{api}/estimates/{sid}/rederive",
-               json={"trigger": "ingress-smoke"}, timeout=60)
-    assert r.status_code in (200, 409), \
-        f"rederive through the ingress broke: {r.status_code}"
+    r = s.post(f"{api}/estimates",
+               json={"customer_name": "TEST_ingress_rederive",
+                     "address": "TEST_ingress_rederive",
+                     "kind": "siding"}, timeout=20)
+    assert r.status_code == 200, (
+        f"create through the ingress broke: {r.status_code}")
+    eid = r.json()["id"]
+    try:
+        r = s.post(f"{api}/estimates/{eid}/rederive",
+                   json={"trigger": "ingress-smoke"}, timeout=60)
+        assert r.status_code in (200, 409), (
+            f"rederive through the ingress broke: {r.status_code} "
+            f"{r.text[:200]}")
+    finally:
+        s.delete(f"{api}/estimates/{eid}", timeout=20)
 
 
 def test_ingress_spec_field_put_round_trip(ingress):

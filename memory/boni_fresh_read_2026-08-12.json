@@ -1,0 +1,176 @@
+{
+  "run_id": "5df22e6d399c4401a959c83853d3dd04",
+  "prev_run_id": "80c10620d87641e4b275dd06ac4f2705",
+  "estimate_id": "1f8b8b60-4b19-48eb-b1b5-0371276c8645",
+  "status": "done",
+  "completed_at": "2026-08-12 20:01:22.470000",
+  "roof_planes": [
+    {
+      "label": "main",
+      "eave_lf": 116.0,
+      "rake_lf": 82.0,
+      "gable_ends": 2,
+      "gable_end_faces": [
+        "left",
+        "right"
+      ],
+      "pitch": "7/12",
+      "is_porch": false,
+      "porch_ceiling_sqft": 0,
+      "porch_width_ft": null,
+      "porch_depth_ft": null,
+      "overhang_in": null,
+      "wall_height_ft": null
+    },
+    {
+      "label": "bonus room",
+      "eave_lf": 48.0,
+      "rake_lf": 28.0,
+      "gable_ends": 2,
+      "gable_end_faces": [
+        "front",
+        "back"
+      ],
+      "pitch": "10/12",
+      "is_porch": false,
+      "porch_ceiling_sqft": 0,
+      "porch_width_ft": null,
+      "porch_depth_ft": null,
+      "overhang_in": null,
+      "wall_height_ft": null
+    },
+    {
+      "label": "porch",
+      "eave_lf": 50.0,
+      "rake_lf": null,
+      "gable_ends": 0,
+      "gable_end_faces": [],
+      "pitch": "",
+      "is_porch": true,
+      "porch_ceiling_sqft": 99,
+      "porch_width_ft": 32.5,
+      "porch_depth_ft": 6.0,
+      "overhang_in": null,
+      "wall_height_ft": null
+    },
+    {
+      "label": "garage",
+      "eave_lf": 70.0,
+      "rake_lf": null,
+      "gable_ends": 2,
+      "gable_end_faces": [
+        "front",
+        "back"
+      ],
+      "pitch": "10/12",
+      "is_porch": false,
+      "porch_ceiling_sqft": 0,
+      "overhang_in": {
+        "v": 12,
+        "page": 11,
+        "from": "1'-0\""
+      },
+      "wall_height_ft": {
+        "v": 9.5,
+        "page": 1,
+        "from": "9'-6\" garage wall"
+      }
+    }
+  ],
+  "walls_summary": [
+    {
+      "label": "front",
+      "width_ft": 58.0,
+      "height_ft": 20.0,
+      "gable_triangle_height_ft": 0,
+      "height_segments": [
+        {
+          "label": "main body 2-story",
+          "width_ft": 34.0,
+          "height_ft": 20.0
+        },
+        {
+          "label": "garage wing 1-story",
+          "width_ft": 24.0,
+          "height_ft": 10.0
+        }
+      ]
+    },
+    {
+      "label": "back",
+      "width_ft": 58.0,
+      "height_ft": 20.0,
+      "gable_triangle_height_ft": 0,
+      "height_segments": [
+        {
+          "label": "main body 2-story",
+          "width_ft": 34.0,
+          "height_ft": 20.0
+        },
+        {
+          "label": "garage/bonus wing",
+          "width_ft": 24.0,
+          "height_ft": null
+        }
+      ]
+    },
+    {
+      "label": "left",
+      "width_ft": 39.0,
+      "height_ft": 20.0,
+      "gable_triangle_height_ft": 11.4,
+      "height_segments": []
+    },
+    {
+      "label": "right",
+      "width_ft": 39.0,
+      "height_ft": 20.0,
+      "gable_triangle_height_ft": 11.4,
+      "height_segments": [
+        {
+          "label": "main body 2-story",
+          "width_ft": 30.0,
+          "height_ft": 20.0
+        },
+        {
+          "label": "bonus room over garage",
+          "width_ft": 9.0,
+          "height_ft": 20.0
+        }
+      ]
+    }
+  ],
+  "roof_pitch": "7/12",
+  "outside_corner_count": 8,
+  "outside_corner_lf": 140,
+  "outside_corner_heights_ft": [
+    20.0,
+    20.0,
+    20.0,
+    20.0,
+    10.0,
+    10.0,
+    20.0,
+    20.0
+  ],
+  "eave_overhang_in": null,
+  "overhang_notes": [
+    {
+      "where": "garage eave front",
+      "overhang_in": 0,
+      "text": "FASCIA ONLY NO OVERHANG"
+    },
+    {
+      "where": "main eaves",
+      "overhang_in": 12,
+      "text": "NO OVERHANG notation on some areas"
+    }
+  ],
+  "soffit_finish": {
+    "eaves": "vented",
+    "rakes": "solid",
+    "source_note": "VENTED SOFFIT (EAVES) (TYP), SOLID SOFFIT (RAKE) (TYP)"
+  },
+  "gable_ends_plane_sum": 6,
+  "notes": "Wall heights derived from stacked plate dimensions (9'-11 1/8\" first floor + floor structure + 8'-1 1/8\" second floor). Garage wing back wall height not explicitly dimensioned - flagged as null. Eave overhang not consistently dimensioned across all areas - some show 'FASCIA ONLY NO OVERHANG'. Bonus room over garage has separate 10/12 pitch roof. Chimney chase on left elevation extends above roofline. Window schedule spans sheets 6 and 7 - counts summed by mark."
+}
