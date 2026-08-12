@@ -1,5 +1,28 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-11 SEND-5 — BASELINE 53 REPORT, DIALOG CLASSIFICATION, ELEVATION PHASE 2
+Two reports (baseline burn-down + per-run/per-estimate dialog
+classification, in `memory/baseline_burn_down_and_dialog_classification_2026-08-11.md`) + Phase 2 built.
+
+**ELEVATION PHASE 2 (RENDERER-ONLY):**
+- Segments now emit as structured list on every wall (Phase 1 dropped
+  them). Per-segment width/height/label + needs_tape flag.
+- Gable-honest area: Σ segment areas + primary gable triangle. Wing
+  triangle base identified via segment name match (send-3 attribution
+  now drawn). area_components lists contributors; area_missing
+  discloses unread pieces. Evidence-or-null throughout.
+- Porch face: `porch_note` surfaces when any is_porch plane exists —
+  ceiling sqft + attachment-wall-as-convention (never claimed).
+- Frontend: 4 new disclosure panels on the sheet page (segments,
+  area, wing triangles, porch).
+
+**BONI EST-886440 FRONT SHEET verified live:**
+area = 932 sqft (main 680 + garage wing 252), wing gable base=24 ft
+identified, height disclosed as unread. Porch present, 99 sqft
+ceiling.
+
+Suite: 2253 passed / 5 skipped (was 2242; +11 Phase 2 pins).
+
 ## 2026-08-11 SEND-4 — REFUSED WRITES SAY SO, SURFACE REGISTRY, GUARD EXTENSION
 Howard's send-4 items (1), (2), (3) landed. Items (4) Elevation Phase 2
 and (5) verdict-and-triage carried to next session per his build order;
