@@ -505,6 +505,34 @@ async def estimate_delete_preflight(est_id: str, user: dict = Depends(get_curren
             "retention_days": 30}
 
 
+@router.get("/estimates/{est_id}/protected-ledger")
+async def protected_ledger(est_id: str,
+                           user: dict = Depends(get_current_user)):
+    """Read the protected_estimate_ledger for the untouchable estimate
+    Howard walked into. Every human write to a protected estimate
+    lands here so the chain records the touch (send-4 item 3).
+
+    Reads are open (untouchable's rule: reads and reruns stay open),
+    but this endpoint is scoped to estimates in the frozen set — a
+    general audit log lives elsewhere."""
+    from untouchable import is_untouchable
+    est = await db.estimates.find_one(
+        {"id": est_id, "company_id": user["company_id"]},
+        {"_id": 0, "id": 1, "estimate_number": 1})
+    if not est:
+        raise HTTPException(status_code=404, detail="Not found")
+    if not await is_untouchable(est_id):
+        return {"scope": "not_untouchable", "entries": []}
+    entries = []
+    async for row in db.protected_estimate_ledger.find(
+        {"estimate_id": est_id}, {"_id": 0}
+    ).sort("at", -1).limit(200):
+        row["at"] = str(row.get("at") or "")[:19]
+        entries.append(row)
+    return {"scope": "untouchable", "estimate_number": est["estimate_number"],
+            "entries": entries}
+
+
 @router.put("/estimates/{est_id}/protected")
 async def set_estimate_protection(
     est_id: str, payload: dict, user: dict = Depends(get_current_user),
@@ -669,6 +697,15 @@ async def set_profile_annotations(
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    # LEDGER human write (Howard ruled 2026-08-11 send-4 item 3):
+    # profile annotations are the contractor's hand. On an untouchable
+    # estimate they ride above the freeze, but the chain records it.
+    from untouchable import ledger_human_write
+    await ledger_human_write(
+        est_id, "profile_annotations",
+        actor_email=user.get("email", ""),
+        meta={"faces_touched": list(annotations.keys())},
+    )
     return {"ok": True, "annotations": annotations}
 
 
@@ -1140,7 +1177,15 @@ async def tape_check_report_pdf(est_id: str, request: Request,
 async def accuracy_report_freeze(est_id: str, user: dict = Depends(get_current_user)):
     """Shareable read-only accuracy report — same /m/ doctrine: freeze the
     EXACT report server-side, mint a tokenized expiring link. The public
-    view banners when newer scored runs exist — never a silent live view."""
+    view banners when newer scored runs exist — never a silent live view.
+
+    GUARD (Howard ruled 2026-08-11 send-4 item 3): freeze is an
+    ARTIFACT operation — it produces a shareable snapshot that outlives
+    the estimate's state, and Howard's ruling puts artifact ops behind
+    the guard on untouchable estimates. Human input rides above; this
+    does not."""
+    from untouchable import refuse_untouchable
+    await refuse_untouchable(est_id)
     html, est, content_hash = await _accuracy_report_data(est_id, user["company_id"])
     token, expires = await _freeze_accuracy_snapshot(
         est_id, user["company_id"], html, est, content_hash)
@@ -1179,6 +1224,9 @@ async def accuracy_report_public(token: str):
 async def accuracy_report_revoke(
     est_id: str, payload: dict, user: dict = Depends(get_current_user),
 ):
+    # GUARD (send-4 item 3): revoke is an artifact operation.
+    from untouchable import refuse_untouchable
+    await refuse_untouchable(est_id)
     res = await db.accuracy_report_snapshots.update_one(
         {"token": str(payload.get("token") or ""), "estimate_id": est_id,
          "company_id": user["company_id"]},
@@ -1247,6 +1295,16 @@ async def set_tape_check(
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    # LEDGER human write (send-4 item 3): tape values are Howard's own
+    # hand. On protected estimates they ride above the freeze; the
+    # chain records the touch.
+    from untouchable import ledger_human_write
+    await ledger_human_write(
+        est_id, "tape_check",
+        actor_email=user.get("email", ""),
+        meta={"walls": list(walls.keys()), "dormers": len(dormers),
+              "held_out": held_out},
+    )
     return {"ok": True, "walls": walls, "dormers": dormers, "held_out": held_out}
 
 
@@ -1450,5 +1508,14 @@ async def score_tape_check(
     await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"$push": {"tape_check.history": {"$each": [entry], "$slice": -50}}},
+    )
+    # LEDGER human write (send-4 item 3): scoring a new run against
+    # the tape appends to tape_check.history — the accuracy artifact.
+    from untouchable import ledger_human_write
+    await ledger_human_write(
+        est_id, "tape_check_score",
+        actor_email=user.get("email", ""),
+        meta={"run_id": entry.get("run_id"),
+              "accuracy_pct": entry.get("accuracy_pct")},
     )
     return {"ok": True, "entry": entry}
