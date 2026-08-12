@@ -290,3 +290,5 @@
 - 2026-08-11 19:20 UTC · 7ad0174 · GUARD-FAIL · FAILED tests/test_source_view_generalized.py::test_pin2_fresh_photo_run_unchanged_and_absent_none
 - 2026-08-11 19:22 UTC · c2b9ddb · CLEAN · [tests] · 2182 passed, 5 skipped, 6 warnings in 127.03s (0:02:07)
 - 2026-08-11 19:22 UTC · c2b9ddb · INGRESS-SMOKE-CLEAN · 4 passed in 1.72s
+- 2026-08-12 20:10 UTC · 633fe44 · CLEAN · [tests] · 2267 passed, 5 skipped, 6 warnings in 130.40s (0:02:10)
+- 2026-08-12 20:10 UTC · 633fe44 · INGRESS-SMOKE-CLEAN · 4 passed in 1.59s
