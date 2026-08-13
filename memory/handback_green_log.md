@@ -298,3 +298,5 @@
 - 2026-08-13 00:56 UTC · 84e628c · INGRESS-SMOKE-CLEAN · 4 passed in 1.25s
 - 2026-08-13 01:25 UTC · 8a986c7 · CLEAN · [tests] · 2306 passed, 5 skipped, 6 warnings in 150.20s (0:02:30)
 - 2026-08-13 01:25 UTC · 8a986c7 · INGRESS-SMOKE-CLEAN · 4 passed in 1.32s
+- 2026-08-13 01:55 UTC · 9d69202 · GUARD-FAIL · FAILED tests/test_guard_extension_2026_08_11.py::test_tape_check_write_lands_in_the_ledger
+- 2026-08-13 01:55 UTC · 9d69202 · GUARD-FAIL · FAILED tests/test_guard_extension_2026_08_11.py::test_profile_annotations_write_lands_in_the_ledger
