@@ -100,3 +100,63 @@ Human-entry classes in the ledger are: `tape_check`, `tape_check_score`,
   a deleted/blank tape reading. Worth a look.
 - `flag_checklist` — checklist entries are their own basis; low risk.
 Recommend a targeted audit of `profile_annotations` first. NOT a sweep.
+
+## ORPHAN AUDIT RESULT — profile_annotations (2026-08-13, read-only)
+
+VERDICT: **profile_annotations does NOT carry the permanent-orphan
+defect we just closed on polygons.** It has a lesser, different gap
+(run-staleness), described below.
+
+How the accent actually flows (traced in code):
+- `PUT /estimates/{id}/profile-annotations` (routes/estimates.py:714)
+  ONLY replaces the `profile_annotations` blob + ledgers. It does NOT
+  touch `est.lines` and does NOT re-run anything.
+- The box `sqft` lands on the materials list ONLY during an AI
+  Measure / Blueprint RUN, via `apply_annotations_to_breakdown` /
+  `_aggregate_to_hover_shape(raw, annotations)` (routes/ai_measure.py
+  ~1504–1755). The run REBUILDS the breakdown from `raw` + the CURRENT
+  blob every time ("re-aggregates _per_profile_sqft"; prompt at 1425
+  confirms boxes are "counted once downstream, straight from the boxes"
+  and the AI is told NOT to double-count).
+- `is_accent` exists NOWHERE in the backend except the new
+  pdf_overlay.py — there is no persisted human-authority accent line on
+  `est.lines` that a rebuild shields. The box-derived accent is a pure
+  function of the boxes AT RUN TIME.
+
+So, the two directions:
+- Delete a box → the blob shrinks. A SUBSEQUENT run rebuilds without it →
+  the accent disappears CLEANLY. No shield preserves it (unlike the
+  polygon human-chip line). ✅ No permanent orphan.
+- BUT between the box-delete and the next run, `est.lines` still shows
+  the PREVIOUS run's accent. That is ordinary RUN-STALENESS (every
+  measurement is stale until re-run), NOT an orphan wearing the
+  highest-authority chip that nothing downstream questions. The stale
+  value is a DERIVED run output, replaced wholesale by the next run.
+
+Risk: MEDIUM-LOW. A contractor who deletes a box expecting the
+materials list to drop the accent won't see it change until they re-run,
+and could quote stale. This is a UX honesty gap (the app knows the boxes
+changed but the takeoff doesn't say "re-run to apply") — not a
+data-integrity orphan.
+
+If tightened later (NOT ordered): the smallest honest move is to flag
+"profile boxes changed — re-run measure to apply" on the takeoff when the
+blob's updated_at is newer than the last run. A heavier option would be
+to retire box-derived accent lines immediately on blob PUT. Recommend
+the flag.
+
+## PARTIAL-COVERAGE SEMANTICS — named for later (Howard reply, not ordered)
+A polygon should replace ONLY the faces it covers; unzoned faces keep
+their derived contribution. This needs PER-FACE CONTRIBUTIONS in the
+takeoff, which do not exist today (one aggregate siding line). It is
+therefore STRUCTURAL, and BIGGER than segment-level faces:
+- Segment/gable faces (~1.5–2 sessions) add face GRANULARITY to the
+  vocabulary + AI read + one set of per-face rows.
+- Partial-coverage adds, on top of that, a CONTRIBUTION MODEL: each
+  face's derived ft² must be separately stored so a human zone can
+  supersede one face's contribution while the others stay derived and
+  the aggregate re-sums (derived faces + human faces). That touches the
+  derivation pipeline and the aggregate roll-up, not just the vocabulary.
+Estimate: partial-coverage is ~1 additional session ON TOP of
+segment/gable, i.e. they are TWO jobs, done in order (faces first, then
+contributions). Report only.
