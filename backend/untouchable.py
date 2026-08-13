@@ -14,6 +14,14 @@ GUARD EXTENSION (Howard ruled 2026-08-11 send-4 item 3):
   ACCURACY-REPORT FREEZE/REVOKE IS AN ARTIFACT OPERATION AND IS GUARDED.
   Every human write to a protected estimate GETS LEDGERED — the chain
   should record when I touched it, even though I am allowed to.
+GUARD EXTENSION (Howard ruled 2026-08-13 pro-quotes reply 5):
+  A DRAWN OR ADJUSTED ZONE IS HUMAN ENTRY. pdf_overlay_polygon
+  writes ride above the freeze on protected estimates and land in
+  the ledger like tape-check and profile-annotations — built in
+  from MUV birth so the walk is possible on EST-886440 (the one
+  estimate that carries the whole grading chain, source PDFs, and
+  a completed read). Same rule: derived writes still refused;
+  human entry outranks the freeze.
 
 The three functions this module exposes:
   refuse_untouchable(est_id)        — derived-write guard (existing).
@@ -74,8 +82,13 @@ async def ledger_human_write(
     to serve is a protection that fights itself.
 
     Ledgered writes: kind ∈ {"tape_check", "profile_annotations",
-    "flag_checklist", "tape_check_score"}. Free to extend; the point
-    is that the chain records when Howard touched it.
+    "flag_checklist", "tape_check_score", "pdf_overlay_polygon"}.
+    Free to extend; the point is that the chain records when Howard
+    touched it. Send-11 pro-quotes-reply-5 added pdf_overlay_polygon
+    as a human-entry class at MUV birth (not discovered later): a
+    drawn or adjusted zone is Howard's hand on the drawing, so it
+    rides above the freeze on EST-886440 and lands here on every
+    write.
 
     No-op on non-untouchable estimates (the ledger is scoped to the
     frozen set — a general audit log lives elsewhere)."""

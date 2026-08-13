@@ -58,6 +58,14 @@ LINE_WRITER_REGISTER = {
     "lp_admin.py",          # W4 admin tier reprice — NAMED, uncovered
     "demo.py",              # W6 demo seed — NAMED, demo only
     "services.py",          # W7 startup field-scoped migrations
+    "pdf_overlay.py",       # W8 MUV polygon overlay writes qty +
+                            # qty_src=human on matched lines
+                            # (send-11 pro-quotes reply 5, 2026-08-13).
+                            # Clobber coverage: only touches lines
+                            # whose (material_class, face_id) has a
+                            # polygon; every other line pass-through.
+                            # Rebuild survival delegated to hover.py's
+                            # existing qty_src=='human' shield.
 }
 
 _WRITE_PAT = re.compile(

@@ -46,6 +46,17 @@ SEAM_REGISTRY = {
         "fabrication (typo vs invention) even though both kill the "
         "value for money. `_dim_misread` carries value+quote+"
         "misread_of+reason so the card names the real printed string.",
+    "pdf_overlay_polygon_write":
+        "A pdf_overlay_polygons collection write (upsert/delete) on "
+        "any estimate. Ruled 2026-08-13 pro-quotes reply 5: a drawn "
+        "or adjusted zone is HUMAN ENTRY — it stamps qty_src=human "
+        "on the affected takeoff line and rides above the untouchable "
+        "freeze on EST-886440 (built in at MUV birth, not discovered "
+        "on the walk). Every write on a protected estimate lands in "
+        "protected_estimate_ledger via ledger_human_write. MUV walk-"
+        "bar item 5+6 (marked as MY entry, still there after a "
+        "rebuild) is delivered by the existing hover.py qty_src=='human' "
+        "shield — no new instrument needed for rebuild survival.",
     "protected_ledger_paginated":
         "The /api/estimates/{eid}/protected-ledger endpoint's response "
         "returned fewer entries than the ledger holds. Ruled 2026-08-13 "
