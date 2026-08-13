@@ -26,6 +26,16 @@ SEAM_REGISTRY = {
         "The value nulls and `_dim_fabricated` carries the killed "
         "value+quote+reason for the card (ruled 2026-08-12 send-9 "
         "item 3: fabricated is a different lie from unverified).",
+    "dims_demoted_quote_shared":
+        "Dims whose sole evidence source is a quote ALREADY consumed by "
+        "another path. Ruled 2026-08-12 send-10 item 1: a single "
+        "evidence source may not silently populate two distinct paths "
+        "(the box-model root cause under both side walls — two values "
+        "sourced from one quote cannot disagree, so the wing-flag "
+        "guard is structurally blind to a mirror). The alphabetically-"
+        "later consumer is nulled from raw and marked UNVERIFIED on "
+        "`_dim_unverified`; `_dim_shared_source` records the quote and "
+        "its full consumer list for the card.",
     "count_column_governed":
         "Carried qtys replaced by the printed COUNT column's own sum "
         "(the count column governs counts).",

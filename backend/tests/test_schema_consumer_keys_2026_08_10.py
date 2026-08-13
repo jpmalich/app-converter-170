@@ -73,6 +73,10 @@ INTERNAL_KEYS = {
     # is our own key (the schema declares `sheet_title`); useful_for
     # IS a schema key and does not need listing here.
     "title",
+    # SEND-10 (2026-08-12): one-source-one-path guard records —
+    # `_dim_shared_source` entries carry quote/consumers, both are
+    # internal pipeline shape and never model keys.
+    "quote", "consumers",
 }
 
 

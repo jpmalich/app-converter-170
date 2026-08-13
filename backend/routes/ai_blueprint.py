@@ -1849,6 +1849,130 @@ def _null_unverified_quotes(raw: dict) -> None:
             [r["path"] for r in nulled_unv])
 
 
+def _one_source_one_path_guard(raw: dict) -> None:
+    """ONE-SOURCE-ONE-PATH (Howard ruled 2026-08-12 send-10 item 1):
+    A single evidence source may not silently populate two distinct
+    paths. If one quote (same page + same 'from' string) is consumed
+    by more than one path, FLAG loud, name both paths, and the
+    ALPHABETICALLY-LATER consumer is treated as UNVERIFIED.
+
+    This is the box model still alive underneath every fix we have
+    made: two values sourced from ONE quote cannot disagree, so the
+    wing-flag guard is structurally blind to a mirror. The Boni case:
+    walls.left.width_ft AND walls.right.width_ft both fed from the
+    same 39'-0" quote — one dim applied to two opposing walls means
+    the right side was never read independently.
+
+    Same family as the seam ledger: a value that appears in two
+    places must account for how it got there.
+    """
+    ev = raw.get("_dim_evidence") or {}
+    if not ev:
+        return
+
+    # Index paths by (page, from). A quote fully identifies itself
+    # only when both page AND 'from' string match — a bare number
+    # can legitimately print twice on different pages and mean
+    # different things.
+    by_quote: dict[tuple, list[str]] = {}
+    for path, entry in ev.items():
+        if not isinstance(entry, dict):
+            continue
+        srcs = entry.get("srcs") or [entry]
+        for s in srcs:
+            if not isinstance(s, dict):
+                continue
+            page = s.get("page")
+            frm = s.get("from")
+            if page is None or not frm:
+                continue
+            key = (int(page), str(frm))
+            by_quote.setdefault(key, []).append(path)
+
+    # Dedupe path list per quote (a derived entry can have multiple
+    # srcs pointing at the same page/from — that's one consumer).
+    demoted: list[dict] = []
+    shared_records: list[dict] = []
+    for (page, frm), paths in by_quote.items():
+        unique_paths = sorted(set(paths))
+        if len(unique_paths) < 2:
+            continue
+        # FIRST alphabetical stays; the rest are demoted.
+        winner = unique_paths[0]
+        losers = unique_paths[1:]
+        shared_records.append({
+            "quote": frm, "page": page,
+            "consumers": unique_paths,
+            "kept": winner,
+            "demoted": losers,
+        })
+        for loser in losers:
+            entry = ev.get(loser)
+            if not isinstance(entry, dict):
+                continue
+            demoted.append({
+                "path": loser,
+                "value": entry.get("v"),
+                "quotes": [frm],
+                "reason": (f"quote {frm!r} on page {page} is already "
+                           f"consumed by {winner!r} — one source may "
+                           "not populate two distinct paths (send-10)"),
+            })
+
+    if not demoted:
+        return
+
+    # Null the demoted paths' values on raw AND record them on
+    # `_dim_unverified` (money-safe, card visible). Reuse the same
+    # walker as the unverified-null step so behaviour is uniform.
+    def _null_path(p: str) -> bool:
+        parts = p.split(".")
+        if len(parts) == 1 and parts[0] in raw:
+            raw[parts[0]] = None
+            ev.pop(p, None)
+            return True
+        if parts[0] == "walls" and len(parts) >= 3:
+            for w in (raw.get("walls") or []):
+                if str(w.get("label") or "") != parts[1]:
+                    continue
+                if len(parts) == 3:
+                    w[parts[2]] = None
+                    ev.pop(p, None)
+                    return True
+                if len(parts) >= 5 and parts[2] == "segments":
+                    for s in (w.get("height_segments") or []):
+                        if str(s.get("label") or "") == parts[3]:
+                            s[parts[4]] = None
+                            ev.pop(p, None)
+                            return True
+            return False
+        if parts[0] == "roof_planes" and len(parts) >= 3:
+            for pl in (raw.get("roof_planes") or []):
+                if str(pl.get("label") or "") == parts[1]:
+                    pl[parts[2]] = None
+                    ev.pop(p, None)
+                    return True
+        if parts[0] == "gutter_runs" and len(parts) == 3:
+            for g in (raw.get("gutter_runs") or []):
+                if str(g.get("label") or "") == parts[1]:
+                    g[parts[2]] = None
+                    ev.pop(p, None)
+                    return True
+        return False
+
+    nulled: list[dict] = []
+    for rec in demoted:
+        if _null_path(rec["path"]):
+            nulled.append(rec)
+
+    if nulled:
+        raw.setdefault("_dim_unverified", []).extend(nulled)
+        raw.setdefault("_dim_shared_source", []).extend(shared_records)
+        seam_accounting.account(
+            raw, "dims_demoted_quote_shared",
+            [r["path"] for r in nulled])
+
+
 def _ocr_verify_marks(raw: dict, image_payloads: list,
                       runs_for_page=None) -> None:
     """MARKS FACE THE LOCATOR TOO (Howard ruled 2026-08-08/09 — 'an E1
@@ -2521,11 +2645,58 @@ def check_read_consistency(raw: dict) -> list[dict]:
                 wall_heights.append(_f(s.get("height_ft")))
     tallest = max(wall_heights) if wall_heights else 0.0
 
-    # PER-WALL SEGMENTS (ruled 2026-08-07): segment widths must sum to
-    # the wall width — a mismatched walk is named, and the siding math
-    # falls back to the rectangle rather than consuming corrupt segments.
-    # An UNDIMENSIONED section (height null — the drawing holds no
-    # number) is a FLAG, never a guess (ruled 2026-08-08).
+    # OPENINGS SUM vs WALL WIDTH (Howard ruled 2026-08-12 send-10
+    # item 2): pure arithmetic. The sum of opening widths on a wall
+    # may not exceed that wall's printed width. Free, structural,
+    # would have caught the Boni case (two garage doors 16'+9' = 25
+    # feet placed on a 23'-8 1/2" wall — cannot fit; belong on the
+    # 33'-0" side wall). Depends on numbers we already hold.
+    windows = raw.get("windows") or []
+    doors = raw.get("doors") or []
+    for w in walls:
+        lbl = str(w.get("label") or "").strip().lower()
+        wall_w_ft = _f(w.get("width_ft"))
+        if wall_w_ft <= 0 or lbl not in {"front", "back", "left", "right"}:
+            continue
+        placed = []
+        for src, kind in ((windows, "window"), (doors, "door")):
+            for o in src:
+                if not isinstance(o, dict):
+                    continue
+                elev = str(o.get("elevation") or "").strip().lower()
+                if elev != lbl:
+                    continue
+                try:
+                    qty = max(1, int(o.get("qty") or 1))
+                except (TypeError, ValueError):
+                    qty = 1
+                width_in = _f(o.get("width_in"))
+                if width_in <= 0:
+                    continue
+                placed.append({
+                    "kind": kind,
+                    "code": o.get("mark") or o.get("code") or "",
+                    "type": o.get("type_hint") or "",
+                    "qty": qty,
+                    "width_in": width_in,
+                })
+        if not placed:
+            continue
+        sum_ft = sum(p["qty"] * p["width_in"] / 12.0 for p in placed)
+        if sum_ft > wall_w_ft + 0.01:
+            flags.append({
+                "code": "openings_exceed_wall_width", "level": "loud",
+                "vars": {
+                    "wall": lbl,
+                    "wall_width_ft": round(wall_w_ft, 3),
+                    "openings_sum_ft": round(sum_ft, 3),
+                    "excess_ft": round(sum_ft - wall_w_ft, 3),
+                    "openings": ", ".join(
+                        f"{p['code'] or p['type']}×{p['qty']}={p['width_in']:g}\""
+                        for p in placed),
+                }})
+
+
     for w in walls:
         segs = [s for s in (w.get("height_segments") or []) if isinstance(s, dict)]
         undim_segs = [s for s in segs
@@ -2988,6 +3159,16 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     if _fab:
         rail.append({"level": "loud", "code": "dims_fabricated",
                      "text": ", ".join(r.get("path", "?") for r in _fab)})
+    # SEND-10 (Howard ruled 2026-08-12): the one-source-one-path
+    # guard's demoted list rides its own rail code so the card can
+    # separate a shared-source demotion from a lonely unverified.
+    _shared = raw.get("_dim_shared_source") or []
+    if _shared:
+        rail.append({"level": "loud", "code": "dims_shared_source",
+                     "text": "; ".join(
+                         f"{r.get('quote')} p{r.get('page')} → "
+                         f"{','.join(r.get('consumers') or [])}"
+                         for r in _shared)})
     _fw = _num(raw.get("fascia_width_in"))
     if _fw > 0:
         rail.append({"level": "info", "code": "fascia_printed", "text": f"{_fw:g}"})
@@ -3189,6 +3370,7 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         # from the one we are fixing).
         "dim_unverified": list(raw.get("_dim_unverified") or []),
         "dim_fabricated": list(raw.get("_dim_fabricated") or []),
+        "dim_shared_source": list(raw.get("_dim_shared_source") or []),
         # SEAM ACCOUNTING (ruled 2026-08-09): the ledger of everything
         # any layer removed — visible, never silent.
         "seams": raw.get("_seam_ledger") or None,
@@ -4561,6 +4743,10 @@ async def _execute_ai_blueprint_worker(
             _null_unverified_quotes(raw)
         except Exception:
             logger.exception("[ai-blueprint] unverified-null pass failed")
+        try:
+            _one_source_one_path_guard(raw)
+        except Exception:
+            logger.exception("[ai-blueprint] one-source-one-path guard failed")
         # MARKS FACE THE LOCATOR TOO (ruled 2026-08-09): schedule-row
         # quotes searched on their own sheets; a row no quote of which
         # locates is dropped as fabricated; a fabricated size quote is
