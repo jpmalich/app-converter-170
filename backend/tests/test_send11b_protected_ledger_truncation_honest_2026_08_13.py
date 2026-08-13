@@ -41,10 +41,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest  # noqa: E402
 import requests  # noqa: E402
 
+from dotenv import load_dotenv  # noqa: E402
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
+from api_base import BASE_URL as BASE  # noqa: E402
+from creds_for_tests import TEST_PASSWORD  # noqa: E402
 from db import db  # noqa: E402
 from seam_accounting import SEAM_REGISTRY  # noqa: E402
 
-API = "http://127.0.0.1:8001/api"
+API = f"{BASE}/api"
+ADMIN_EMAIL = "hhunt6677@yahoo.com"
 
 
 # ---------- (A) seam registered --------------------------------------
@@ -63,14 +69,18 @@ def test_protected_ledger_paginated_seam_is_registered():
 
 @pytest.fixture(scope="module")
 def session():
+    """Same source-of-truth as test_guard_extension_2026_08_11 — the
+    hardcoded-host/hardcoded-password fixture that skipped the five
+    HTTP pins in the pro-quotes-2 handback is retired here, per
+    Howard's 'either it runs or it does not count' rule. The auth
+    layer sets a cookie on the session (no bearer token to grab);
+    subsequent requests reuse the session's cookie jar directly."""
     s = requests.Session()
-    # Live login shared with the guard-extension suite.
     r = s.post(f"{API}/auth/login",
-               json={"email": "hhunt6677@yahoo.com",
-                     "password": "Passw0rd!"}, timeout=15)
+               json={"email": ADMIN_EMAIL,
+                     "password": TEST_PASSWORD}, timeout=15)
     if r.status_code != 200:
         pytest.skip("live auth unavailable in this env")
-    s.headers.update({"Authorization": f"Bearer {r.json()['token']}"})
     return s
 
 
