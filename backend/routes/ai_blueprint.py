@@ -1357,6 +1357,18 @@ def _ocr_match(runs, nq):
 # over). This gate requires the located rect's centre to sit within
 # radius of a feature-anchor run's bbox on the same page. No feature
 # anchor visible ⇒ refuse the locate.
+#
+# SEND-9 CALIBRATION (Howard ruled 2026-08-12 send-9 item 1): a
+# WALL WIDTH has no printed text label — 58'-0" sits under the drawing
+# with no word nearby. Refusing "walls.front.width_ft" for lack of a
+# nearby FRONT token nulled a printed and true dimension. The right
+# anchor for a wall-direction path is the ELEVATION SHEET REGION IT
+# BELONGS TO, not a text token. When the page CARRIES a cardinal
+# direction word anywhere (in the sheet title or as an OCR run on the
+# page), the WHOLE PAGE is the feature — any match on that page
+# qualifies. Label-bound paths (GARAGE, PORCH, ENTRY, MAIN BODY, etc.)
+# keep the tighter proximity radius so a run somewhere else on the
+# page cannot masquerade as the labelled feature's dim.
 
 # Path segments that are structural, not features (skipped for anchoring).
 _ANCHOR_SKIP = {
@@ -1366,6 +1378,28 @@ _ANCHOR_SKIP = {
     "width_ft", "height_ft", "porch_width_ft", "porch_depth_ft",
     "overhang_in", "wall_height_ft", "lf",
 }
+
+# Cardinal wall-direction anchors: no printed text on the drawing
+# itself — the elevation SHEET is the feature.
+_CARDINAL_ANCHORS = {"FRONT", "BACK", "REAR", "LEFT", "RIGHT",
+                     "SIDE", "SOUTH", "NORTH", "EAST", "WEST"}
+
+# SEND-9 addendum: cardinal synonyms — plan sets commonly print
+# "REAR" where the app model asks for BACK, and either can name the
+# same elevation. Kept intentionally narrow; SIDE is NOT a synonym
+# for LEFT/RIGHT because "SIDE ELEVATION" is ambiguous.
+_CARDINAL_SYNONYMS = {
+    "BACK": {"BACK", "REAR"},
+    "REAR": {"BACK", "REAR"},
+    "FRONT": {"FRONT"},
+    "LEFT": {"LEFT"},
+    "RIGHT": {"RIGHT"},
+}
+
+# Sheet-class families that carry wall dimensions regardless of which
+# direction is named on the page. A floor plan shows ALL four walls
+# with no per-direction label — sheet TYPE is enough anchor.
+_WALL_DIM_SHEET_KINDS = {"elevation", "floor_plan"}
 
 
 def _feature_anchors_for_path(path: str) -> list[str]:
@@ -1389,6 +1423,19 @@ def _feature_anchors_for_path(path: str) -> list[str]:
             if len(n) >= 3:
                 anchors.append(n)
     return anchors
+
+
+def _path_is_sheet_scoped(path: str) -> bool:
+    """SEND-9: a wall-direction (cardinal) path with no non-cardinal
+    label is sheet-scoped — the ELEVATION SHEET IS THE FEATURE.
+    Examples: walls.front.width_ft, gutter_runs.back.lf. Segment
+    paths (walls.front.segments.<seg>.*) are NOT sheet-scoped: they
+    carry a labelled sub-feature and keep the tighter radius."""
+    anchors = _feature_anchors_for_path(path)
+    if not anchors:
+        return False
+    # Any non-cardinal anchor → labelled feature → tight radius.
+    return all(a in _CARDINAL_ANCHORS for a in anchors)
 
 
 def _rect_center(rect):
@@ -1422,16 +1469,48 @@ def _proximity_ok(match_rect, anchor_runs, radius: float) -> bool:
                for a in anchor_runs)
 
 
-def _ocr_match_near_feature(runs, joined_runs, nq, anchors, radius):
+def _ocr_match_near_feature(runs, joined_runs, nq, anchors, radius,
+                             *, sheet_scoped: bool = False,
+                             sheet_title: str = "",
+                             sheet_useful_for: str = ""):
     """Same rule as _ocr_match — but every candidate must sit within
     radius of a feature-anchor run on this page. Empty `anchors` ⇒
-    the gate does not apply and we fall back to _ocr_match."""
+    the gate does not apply and we fall back to _ocr_match.
+
+    SEND-9: when `sheet_scoped=True` (a wall-direction / cardinal
+    path), the whole page IS the feature when ANY of:
+      (a) OCR runs on the page carry the cardinal token (or its
+          synonym — BACK ↔ REAR)
+      (b) the sheet's own title carries the cardinal (or synonym)
+      (c) the sheet's `useful_for` is `elevation` or `floor_plan`
+          (floor plans show all four walls with no per-direction
+          label — sheet TYPE is enough anchor).
+    In that case ANY match on the page passes."""
     if not anchors:
         return _ocr_match(runs + joined_runs, nq), None
-    anchor_hits = _anchor_runs_on_page(runs + joined_runs, anchors)
+    pool = runs + joined_runs
+    if sheet_scoped:
+        # Expand each cardinal anchor with its synonyms.
+        expanded: set[str] = set()
+        for a in anchors:
+            expanded.update(_CARDINAL_SYNONYMS.get(a, {a}))
+        title_norm = _ocr_norm(sheet_title)
+        anchor_hits = _anchor_runs_on_page(pool, list(expanded))
+        title_has_it = any(a in title_norm for a in expanded)
+        sheet_kind_ok = sheet_useful_for in _WALL_DIM_SHEET_KINDS
+        if not anchor_hits and not title_has_it and not sheet_kind_ok:
+            return None, (f"cardinal anchor {sorted(expanded)!r} not on sheet "
+                          "(no OCR run, no sheet title match, sheet class "
+                          f"{sheet_useful_for!r} does not carry wall dims)")
+        # Sheet-scoped: legacy locator decides among candidates on this page.
+        rect = _ocr_match(pool, nq)
+        if rect is None:
+            return None, "quote norm not present in OCR on page"
+        return rect, None
+    # Label-bound: tighter radius rule stands.
+    anchor_hits = _anchor_runs_on_page(pool, anchors)
     if not anchor_hits:
         return None, f"no feature anchor {anchors!r} on page"
-    pool = runs + joined_runs
     exact = [r for r in pool if r[0] == nq
              and _proximity_ok(r[2], anchor_hits, radius)]
     contain = [r for r in pool
@@ -1503,6 +1582,18 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
     disagreeing, resolved toward neither."""
     if not isinstance(evidence, dict) or not evidence:
         return
+    # SEND-9: sheet-title AND useful_for lookup by page — for cardinal
+    # wall paths (walls.front.*, gutter_runs.back.lf) the sheet IS the
+    # feature. A page typed as elevation or floor_plan carries wall
+    # dimensions of any direction (floor plans show all four walls at
+    # once with no per-direction label).
+    _sheets_by_page: dict[int, dict] = {}
+    for _s in (raw.get("sheets_identified") or []):
+        if isinstance(_s, dict) and isinstance(_s.get("page"), int):
+            _sheets_by_page[_s["page"]] = {
+                "title": str(_s.get("sheet_title") or ""),
+                "useful_for": str(_s.get("useful_for") or ""),
+            }
     wanted: dict[int, list] = {}
     for path, ev in evidence.items():
         if not isinstance(ev, dict):
@@ -1534,10 +1625,17 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         # side allows a labelled section on a large plan sheet to fit
         # without covering the whole page.
         radius = 0.30 * max(w, h)
+        sheet = _sheets_by_page.get(page, {})
+        sheet_title = sheet.get("title", "")
+        sheet_useful_for = sheet.get("useful_for", "")
         pending = []
         for path, s, nq in entries:
             anchors = _feature_anchors_for_path(path)
-            rect, why = _ocr_match_near_feature(runs, joined, nq, anchors, radius)
+            sheet_scoped = _path_is_sheet_scoped(path)
+            rect, why = _ocr_match_near_feature(
+                runs, joined, nq, anchors, radius,
+                sheet_scoped=sheet_scoped, sheet_title=sheet_title,
+                sheet_useful_for=sheet_useful_for)
             if rect:
                 x0, y0, x1, y1 = rect
                 s["loc"] = {"x_pct": round(x0 / w * 100, 2),
@@ -1560,8 +1658,11 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
             still = []
             for path, s, nq in pending:
                 anchors = _feature_anchors_for_path(path)
+                sheet_scoped = _path_is_sheet_scoped(path)
                 rect, why = _ocr_match_near_feature(
-                    rruns, rjoined, nq, anchors, radius)
+                    rruns, rjoined, nq, anchors, radius,
+                    sheet_scoped=sheet_scoped, sheet_title=sheet_title,
+                    sheet_useful_for=sheet_useful_for)
                 if rect:
                     x0r, y0r, x1r, y1r = rect
                     if k == 1:      # CCW: upright x = W-1-yr, y = xr
@@ -1596,26 +1697,70 @@ def _null_unverified_quotes(raw: dict) -> None:
     has no locating source. A locate that could not find the quote
     near its feature means the quote was fabricated — evidence-or-null
     (ruled 2026-08-08, extended 2026-08-12 send-8). The seam accounts
-    for what it removed."""
+    for what it removed.
+
+    SEND-9 (Howard ruled 2026-08-12 send-9 item 3): REFUSED and
+    FABRICATED are DIFFERENT states and must reach the card
+    differently:
+      FABRICATED — the quote's normalised string does not appear in
+      OCR anywhere on the page. Kill it and say so.
+      REFUSED / UNVERIFIED — the string may be real but we could not
+      confirm it near its feature. Value nulls on the raw so it does
+      not feed money, but the value + quote + reason ride
+      `_dim_unverified` so the card shows the number MARKED unverified
+      instead of pretending we do not know.
+
+    'An instrument that kills good data is a defect, not a virtue' —
+    the same ruling that landed on the fraction skeleton (2026-08-09)
+    applies here: showing 58'-0" as absent when it is printed and
+    true is a different lie from the one we are fixing.
+    """
     misses = raw.get("_ocr_quote_misses") or []
     if not misses:
         return
     ev = raw.get("_dim_evidence") or {}
 
+    # Group miss reasons by path. A path can have multiple srcs; the
+    # reason names why the LAST src refused.
+    reasons_by_path: dict[str, list[str]] = {}
+    for m in misses:
+        p = m.get("path")
+        r = str(m.get("reason") or "").lower()
+        if p:
+            reasons_by_path.setdefault(p, []).append(r)
+
     # A path is fully unverified when EVERY src on its evidence has
     # no `loc` after the locator ran. A path with even one located
     # src stays — the value has partial evidence.
-    fully_unverified: list[str] = []
-    for path in {m.get("path") for m in misses if m.get("path")}:
+    fully_unverified: list[tuple[str, str]] = []  # (path, category)
+    for path in reasons_by_path.keys():
         entry = ev.get(path)
         if not isinstance(entry, dict):
             continue
         srcs = entry.get("srcs") or [entry]
         if all(not (isinstance(s, dict) and s.get("loc")) for s in srcs):
-            fully_unverified.append(path)
+            reasons = reasons_by_path[path]
+            # FABRICATED: every refusal reason is "quote not found /
+            # not present in OCR" — the string literally does not
+            # appear on the page's pixels in any orientation.
+            fabricated = all(
+                ("not found" in r or "not present" in r) for r in reasons)
+            fully_unverified.append(
+                (path, "fabricated" if fabricated else "unverified"))
 
     if not fully_unverified:
         return
+
+    def _read_value(p: str):
+        """Return the value+quote pair sitting at this path BEFORE
+        we null. Used to preserve the display side for UNVERIFIED
+        paths (Howard's send-9: show the number marked unverified,
+        never as absent)."""
+        entry = ev.get(p) or {}
+        srcs = entry.get("srcs") or [entry]
+        quotes = [s.get("from") for s in srcs
+                  if isinstance(s, dict) and s.get("from")]
+        return entry.get("v"), quotes
 
     def _null_path(p: str) -> bool:
         """Walk raw down the dotted path and set the leaf to None.
@@ -1624,7 +1769,6 @@ def _null_unverified_quotes(raw: dict) -> None:
         `roof_planes.<label>.wall_height_ft`, `porch.porch_width_ft`,
         `corner_heights.<i>`, and bare scalars."""
         parts = p.split(".")
-        # scalar top-level: e.g. eave_overhang_in
         if len(parts) == 1 and parts[0] in raw:
             raw[parts[0]] = None
             ev.pop(p, None)
@@ -1634,7 +1778,7 @@ def _null_unverified_quotes(raw: dict) -> None:
             for w in (raw.get("walls") or []):
                 if str(w.get("label") or "") != label:
                     continue
-                if len(parts) == 3:  # walls.<lbl>.<field>
+                if len(parts) == 3:
                     w[parts[2]] = None
                     ev.pop(p, None)
                     return True
@@ -1680,10 +1824,29 @@ def _null_unverified_quotes(raw: dict) -> None:
                 pass
         return False
 
-    nulled = [p for p in fully_unverified if _null_path(p)]
-    if nulled:
-        raw.setdefault("_dim_unverified_nulled", []).extend(nulled)
-        seam_accounting.account(raw, "dims_nulled_quote_unverified", nulled)
+    nulled_fab: list[dict] = []
+    nulled_unv: list[dict] = []
+    for path, category in fully_unverified:
+        value, quotes = _read_value(path)
+        reason = reasons_by_path[path][-1] if reasons_by_path.get(path) else ""
+        if _null_path(path):
+            record = {"path": path, "value": value,
+                      "quotes": quotes, "reason": reason}
+            if category == "fabricated":
+                nulled_fab.append(record)
+            else:
+                nulled_unv.append(record)
+
+    if nulled_fab:
+        raw.setdefault("_dim_fabricated", []).extend(nulled_fab)
+        seam_accounting.account(
+            raw, "dims_nulled_quote_fabricated",
+            [r["path"] for r in nulled_fab])
+    if nulled_unv:
+        raw.setdefault("_dim_unverified", []).extend(nulled_unv)
+        seam_accounting.account(
+            raw, "dims_nulled_quote_unverified",
+            [r["path"] for r in nulled_unv])
 
 
 def _ocr_verify_marks(raw: dict, image_payloads: list,
@@ -2812,6 +2975,19 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         rail.append({"level": "info", "code": "wall_height_by_plane",
                      "text": "; ".join(f"{lbl}={v:g} ft"
                                         for lbl, v in _plane_wh)})
+    # SEND-9 (Howard ruled 2026-08-12): unverified and fabricated
+    # dims surface on the rail as distinct claims — an unverified
+    # dim MAY be real (kept for the card, marked); a fabricated dim
+    # is a lie (killed). "Refused is not fabricated, and the card
+    # must say which."
+    _unv = raw.get("_dim_unverified") or []
+    _fab = raw.get("_dim_fabricated") or []
+    if _unv:
+        rail.append({"level": "warn", "code": "dims_unverified",
+                     "text": ", ".join(r.get("path", "?") for r in _unv)})
+    if _fab:
+        rail.append({"level": "loud", "code": "dims_fabricated",
+                     "text": ", ".join(r.get("path", "?") for r in _fab)})
     _fw = _num(raw.get("fascia_width_in"))
     if _fw > 0:
         rail.append({"level": "info", "code": "fascia_printed", "text": f"{_fw:g}"})
@@ -3003,6 +3179,16 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             "dropped": list(raw.get("_nulled_no_evidence") or []),
             "unread": list(raw.get("_dim_unread") or []),
         },
+        # SEND-9: FABRICATED vs UNVERIFIED are DIFFERENT states — the
+        # card must show WHICH. Fabricated (quote norm not present in
+        # OCR anywhere) rides `dim_fabricated`. Unverified (real string
+        # unconfirmed near its feature) rides `dim_unverified`. Money
+        # never sees either (the values are nulled on raw); the card
+        # shows both with distinct badges (ruled 2026-08-12 send-9
+        # item 3: showing a printed dim as absent is a different lie
+        # from the one we are fixing).
+        "dim_unverified": list(raw.get("_dim_unverified") or []),
+        "dim_fabricated": list(raw.get("_dim_fabricated") or []),
         # SEAM ACCOUNTING (ruled 2026-08-09): the ledger of everything
         # any layer removed — visible, never silent.
         "seams": raw.get("_seam_ledger") or None,

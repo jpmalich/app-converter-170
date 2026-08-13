@@ -65,6 +65,14 @@ INTERNAL_KEYS = {
     # seam-guard result carries orphans[] with plane/count/reason —
     # written by our own pipeline, never a model key.
     "orphans", "plane", "count",
+    # SEND-9 (2026-08-12): dim_unverified / dim_fabricated records
+    # written by our own pipeline (never model keys).
+    "path",
+    # SEND-9 sheet-scope: internal _sheets_by_page cache stores
+    # {title, useful_for} for cardinal wall-path anchoring. `title`
+    # is our own key (the schema declares `sheet_title`); useful_for
+    # IS a schema key and does not need listing here.
+    "title",
 }
 
 

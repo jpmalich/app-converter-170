@@ -1,0 +1,136 @@
+{
+  "run_id": "5df22e6d399c4401a959c83853d3dd04",
+  "counts": {
+    "total_srcs": 49,
+    "located": 22,
+    "refused": 25,
+    "fabricated": 5,
+    "unverified": 10
+  },
+  "fabricated": [
+    {
+      "path": "walls.left.width_ft",
+      "value": 39.0,
+      "quotes": [
+        "39'-0\""
+      ],
+      "reason": "quote norm not present in ocr on page"
+    },
+    {
+      "path": "walls.right.width_ft",
+      "value": 39.0,
+      "quotes": [
+        "39'-0\""
+      ],
+      "reason": "quote norm not present in ocr on page"
+    },
+    {
+      "path": "porch.porch_width_ft",
+      "value": 32.5,
+      "quotes": [
+        "32'-5 1/2\""
+      ],
+      "reason": "quote not found on page"
+    },
+    {
+      "path": "roof_planes.porch.eave_lf",
+      "value": 50.0,
+      "quotes": [
+        "32'-5 1/2\""
+      ],
+      "reason": "quote not found on page"
+    },
+    {
+      "path": "gutter_runs.porch.lf",
+      "value": 32.5,
+      "quotes": [
+        "32'-5 1/2\""
+      ],
+      "reason": "quote not found on page"
+    }
+  ],
+  "unverified": [
+    {
+      "path": "roof_planes.main.rake_lf",
+      "value": 82.0,
+      "quotes": [
+        "39'-0\"",
+        "7/12"
+      ],
+      "reason": "no feature anchor ['main'] on page"
+    },
+    {
+      "path": "roof_planes.bonus room.rake_lf",
+      "value": 28.0,
+      "quotes": [
+        "10/12"
+      ],
+      "reason": "quote matched but no candidate within 1036px of feature anchor ['bonus', 'room']"
+    },
+    {
+      "path": "roof_planes.garage.eave_lf",
+      "value": 70.0,
+      "quotes": [
+        "35'-0\" x 2 (front and back garage eaves)"
+      ],
+      "reason": "quote matched but no candidate within 1036px of feature anchor ['garage']"
+    },
+    {
+      "path": "walls.front.segments.main body 2-story.width_ft",
+      "value": 34.0,
+      "quotes": [
+        "34'-0\""
+      ],
+      "reason": "quote matched but no candidate within 1036px of feature anchor ['front', 'main', 'body', '2story']"
+    },
+    {
+      "path": "walls.front.segments.garage wing 1-story.width_ft",
+      "value": 24.0,
+      "quotes": [
+        "24'-0 1/2\""
+      ],
+      "reason": "quote matched but no candidate within 1036px of feature anchor ['front', 'garage', 'wing', '1story']"
+    },
+    {
+      "path": "walls.back.segments.garage/bonus wing.width_ft",
+      "value": 24.0,
+      "quotes": [
+        "24'-0 1/2\""
+      ],
+      "reason": "quote matched but no candidate within 1036px of feature anchor ['back', 'garage', 'bonus', 'wing']"
+    },
+    {
+      "path": "roof_planes.main.eave_lf",
+      "value": 116.0,
+      "quotes": [
+        "58'-0\"",
+        "58'-0\""
+      ],
+      "reason": "no feature anchor ['main'] on page"
+    },
+    {
+      "path": "roof_planes.bonus room.eave_lf",
+      "value": 48.0,
+      "quotes": [
+        "24'-0 1/2\""
+      ],
+      "reason": "quote matched but no candidate within 1036px of feature anchor ['bonus', 'room']"
+    },
+    {
+      "path": "walls.back.segments.main body 2-story.width_ft",
+      "value": 34.0,
+      "quotes": [
+        "34'-0\""
+      ],
+      "reason": "no feature anchor ['back', 'main', 'body', '2story'] on page"
+    },
+    {
+      "path": "walls.right.segments.main body 2-story.width_ft",
+      "value": 30.0,
+      "quotes": [
+        "30'-0\""
+      ],
+      "reason": "no feature anchor ['right', 'main', 'body', '2story'] on page"
+    }
+  ]
+}

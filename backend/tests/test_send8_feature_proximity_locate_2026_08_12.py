@@ -131,25 +131,27 @@ def test_gate_refuses_quote_when_no_anchor_on_page(
 
 def test_gate_refuses_quote_matched_far_from_anchor():
     """Anchor present on page BUT the quote's match sits outside the
-    proximity radius → refused with a gate reason."""
+    proximity radius → refused with a gate reason. Uses a LABELLED
+    feature path (roof_planes.garage.*) — send-9 relaxes cardinal
+    wall paths to sheet-scope, but labelled features keep the tight
+    radius the send-8 gate installed."""
     ev = {
-        "walls.front.width_ft": {"v": 58.0, "page": 1, "from": "58'-0\"",
-                                 "loc": None, "precision": None},
+        "roof_planes.garage.wall_height_ft": {
+            "v": 9.9, "page": 1, "from": "9'-11 1-8\"",
+            "loc": None, "precision": None},
     }
     raw = {}
-    # Radius = 30% of max(w,h) = 600 pixels here. FRONT anchor at
-    # (100,100); the 58-0 quote at (1800,1900) — >2400px away, well
-    # outside radius but within a reasonable-page fixture.
-    page = _page([(100, 100, "FRONT"), (1800, 1900, "58-0")],
+    # Radius = 30% of max(w,h) = 600 pixels here. GARAGE anchor at
+    # (100,100); the quote at (1800,1900) — >2400px away, outside
+    # radius; refuses.
+    page = _page([(100, 100, "GARAGE"), (1800, 1900, "9-11 1-8")],
                  size=(2000, 2000))
     _ocr_locate_evidence(ev, [page], raw)
-    e = ev["walls.front.width_ft"]
+    e = ev["roof_planes.garage.wall_height_ft"]
     assert e["loc"] is None and e["precision"] is None
     misses = raw["_ocr_quote_misses"]
-    m = next(m for m in misses if m["path"] == "walls.front.width_ft")
-    # Reason is either 'not within radius of feature anchor …' or
-    # 'no feature anchor on page' — both are gate refusals; the
-    # locate stayed None, which is what matters.
+    m = next(m for m in misses
+             if m["path"] == "roof_planes.garage.wall_height_ft")
     assert m["reason"], "gate refusal must name a reason"
 
 
@@ -173,8 +175,11 @@ def test_gate_disabled_for_bare_scalar_paths():
 # ---------- (C) unverified-null propagation ----------
 
 def test_null_unverified_wall_width():
-    """A wall-width path whose only src refused the gate → the
-    wall's `width_ft` on the raw becomes None + seam accounted."""
+    """A wall-width path whose only src refused the gate (no anchor) →
+    the wall's `width_ft` on the raw becomes None + value/quote/reason
+    preserved on `_dim_unverified` so the card can show it MARKED
+    unverified (send-9 item 3: showing 58'-0" as absent when it is
+    printed and true is a different lie from the one we are fixing)."""
     raw = {
         "walls": [{"label": "front", "width_ft": 58.0}],
         "_dim_evidence": {
@@ -184,18 +189,52 @@ def test_null_unverified_wall_width():
         "_ocr_quote_misses": [{
             "path": "walls.front.width_ft", "page": 1,
             "from": "58'-0\"", "rotations_checked": True,
-            "reason": "no feature anchor on page",
+            "reason": "no feature anchor ['FRONT'] on page",
         }],
     }
     _null_unverified_quotes(raw)
     assert raw["walls"][0]["width_ft"] is None
-    assert "walls.front.width_ft" in raw["_dim_unverified_nulled"]
+    unv = raw.get("_dim_unverified") or []
+    rec = next(r for r in unv if r["path"] == "walls.front.width_ft")
+    assert rec["value"] == 58.0
+    assert "58'-0\"" in rec["quotes"]
+    assert "no feature anchor" in rec["reason"]
     assert "walls.front.width_ft" not in raw["_dim_evidence"]
 
 
+def test_null_fabricated_quote_lands_in_dim_fabricated():
+    """A quote whose norm is not present in OCR anywhere on the page —
+    the string does not exist on the set. Fabricated. Killed. Value
+    on the raw nulls, `_dim_fabricated` carries the killed record."""
+    raw = {
+        "roof_planes": [{"label": "garage", "wall_height_ft": 9.5}],
+        "_dim_evidence": {
+            "roof_planes.garage.wall_height_ft": {
+                "v": 9.5, "page": 1,
+                "from": "9'-6\" garage wall"}
+        },
+        "_ocr_quote_misses": [{
+            "path": "roof_planes.garage.wall_height_ft", "page": 1,
+            "from": "9'-6\" garage wall", "rotations_checked": True,
+            "reason": "quote norm not present in OCR on page",
+        }],
+    }
+    _null_unverified_quotes(raw)
+    assert raw["roof_planes"][0]["wall_height_ft"] is None
+    fab = raw.get("_dim_fabricated") or []
+    rec = next(r for r in fab
+               if r["path"] == "roof_planes.garage.wall_height_ft")
+    assert rec["value"] == 9.5
+    assert "9'-6\" garage wall" in rec["quotes"]
+    # Under this branch _dim_unverified is untouched.
+    assert not raw.get("_dim_unverified")
+
+
 def test_null_unverified_roof_plane_wall_height():
-    """The Boni class: wall_height_ft on a roof plane refused → the
-    plane's `wall_height_ft` becomes None."""
+    """The Boni class: wall_height_ft on a roof plane refused (matched
+    but out of radius) → the plane's `wall_height_ft` becomes None
+    and the record rides `_dim_unverified` (real string, unconfirmed
+    near feature)."""
     raw = {
         "roof_planes": [
             {"label": "garage", "wall_height_ft": 9.5,
@@ -215,6 +254,9 @@ def test_null_unverified_roof_plane_wall_height():
     }
     _null_unverified_quotes(raw)
     assert raw["roof_planes"][0]["wall_height_ft"] is None
+    unv = raw.get("_dim_unverified") or []
+    assert any(r["path"] == "roof_planes.garage.wall_height_ft"
+               for r in unv)
 
 
 def test_null_unverified_leaves_located_srcs_alone():

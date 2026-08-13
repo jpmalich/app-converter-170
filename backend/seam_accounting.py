@@ -15,12 +15,17 @@ SEAM_REGISTRY = {
         "construction (evidence-or-null).",
     "dims_nulled_quote_unverified":
         "Dims whose quoted printed string could NOT be located near the "
-        "feature it claimed to dimension — the quote was fabricated, "
-        "the value nulls (ruled 2026-08-12 send-8: 'a locating match "
-        "must sit near the feature it claims to dimension, not merely "
-        "somewhere on the same page'). Same instrument as "
-        "dims_nulled_no_evidence, one class further: 'no evidence' "
-        "vs 'evidence that could not be verified'.",
+        "feature it claimed to dimension — the string MAY be real but "
+        "we could not confirm it near its feature. The value nulls on "
+        "the raw so it does not feed money, but `_dim_unverified` "
+        "carries value+quote+reason so the card shows the number "
+        "MARKED unverified (ruled 2026-08-12 send-9 item 3).",
+    "dims_nulled_quote_fabricated":
+        "Dims whose quoted printed string does NOT appear on the "
+        "page's pixels in any orientation — the quote was fabricated. "
+        "The value nulls and `_dim_fabricated` carries the killed "
+        "value+quote+reason for the card (ruled 2026-08-12 send-9 "
+        "item 3: fabricated is a different lie from unverified).",
     "count_column_governed":
         "Carried qtys replaced by the printed COUNT column's own sum "
         "(the count column governs counts).",
