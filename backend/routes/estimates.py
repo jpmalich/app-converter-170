@@ -507,6 +507,8 @@ async def estimate_delete_preflight(est_id: str, user: dict = Depends(get_curren
 
 @router.get("/estimates/{est_id}/protected-ledger")
 async def protected_ledger(est_id: str,
+                           page: int = 1,
+                           page_size: int = 200,
                            user: dict = Depends(get_current_user)):
     """Read the protected_estimate_ledger for the untouchable estimate
     Howard walked into. Every human write to a protected estimate
@@ -514,7 +516,22 @@ async def protected_ledger(est_id: str,
 
     Reads are open (untouchable's rule: reads and reruns stay open),
     but this endpoint is scoped to estimates in the frozen set — a
-    general audit log lives elsewhere."""
+    general audit log lives elsewhere.
+
+    SEND-11 CORRECTION (Howard ruled 2026-08-13): the previous shape
+    read with `.limit(200)` and returned only `entries` — silently
+    dropping the 201st entry onward the moment the ledger grew past
+    200. That defeat lived INSIDE the very instrument built to make
+    every human write to a sealed estimate visible. Per the seam
+    rule (any layer that truncates must account for what it removed):
+      • `total` is the honest count (count_documents on the query).
+      • `truncated` flips true when total > showing.
+      • `truncation_notice` says plainly "showing N of M" so no
+        consumer can miss it — API surface, UI, or test.
+      • Pagination via ?page= and ?page_size= (page_size hard-capped
+        at 1000 so a bad client can't request the whole database at
+        once, but callers who need the whole thing can walk pages).
+    """
     from untouchable import is_untouchable
     est = await db.estimates.find_one(
         {"id": est_id, "company_id": user["company_id"]},
@@ -522,15 +539,34 @@ async def protected_ledger(est_id: str,
     if not est:
         raise HTTPException(status_code=404, detail="Not found")
     if not await is_untouchable(est_id):
-        return {"scope": "not_untouchable", "entries": []}
-    entries = []
-    async for row in db.protected_estimate_ledger.find(
-        {"estimate_id": est_id}, {"_id": 0}
-    ).sort("at", -1).limit(200):
+        return {"scope": "not_untouchable", "entries": [],
+                "total": 0, "showing": 0, "page": 1, "page_size": 0,
+                "truncated": False, "truncation_notice": None}
+    # Clamp inputs (defensive, never silent).
+    page = max(1, int(page or 1))
+    page_size = max(1, min(1000, int(page_size or 200)))
+    query = {"estimate_id": est_id}
+    total = await db.protected_estimate_ledger.count_documents(query)
+    skip = (page - 1) * page_size
+    entries: list = []
+    async for row in (db.protected_estimate_ledger.find(query, {"_id": 0})
+                      .sort("at", -1).skip(skip).limit(page_size)):
         row["at"] = str(row.get("at") or "")[:19]
         entries.append(row)
-    return {"scope": "untouchable", "estimate_number": est["estimate_number"],
-            "entries": entries}
+    showing = len(entries)
+    truncated = total > showing
+    notice = (f"showing {showing} of {total} — page {page} of "
+              f"{max(1, (total + page_size - 1) // page_size)} "
+              f"(page_size={page_size})") if truncated else None
+    return {"scope": "untouchable",
+            "estimate_number": est["estimate_number"],
+            "entries": entries,
+            "total": total,
+            "showing": showing,
+            "page": page,
+            "page_size": page_size,
+            "truncated": truncated,
+            "truncation_notice": notice}
 
 
 @router.put("/estimates/{est_id}/protected")

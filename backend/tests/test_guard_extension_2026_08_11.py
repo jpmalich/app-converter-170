@@ -135,14 +135,20 @@ def test_profile_annotations_ride_above_freeze(session):
 
 def test_tape_check_write_lands_in_the_ledger(session):
     """A tape-check PUT on EST-886440 must add an entry to
-    protected_estimate_ledger. Ledgered kind: 'tape_check'."""
+    protected_estimate_ledger. Ledgered kind: 'tape_check'.
+
+    SEND-11 AMEND (2026-08-13): observes `total` (honest count),
+    not `len(entries)` — the endpoint's response is now paginated
+    with a truncation notice, so a saturated 200-cap must not hide
+    the write behind a silent .limit()."""
     eid = _est_886440_id(session)
     # Snapshot ledger before.
     r = session.get(f"{API}/estimates/{eid}/protected-ledger", timeout=15)
     assert r.status_code == 200
     before = r.json()
     assert before["scope"] == "untouchable"
-    n_before = len(before["entries"])
+    assert "total" in before, "response must name the honest total"
+    n_before = before["total"]
     # Do a benign tape-check PUT.
     prev_r = session.get(f"{API}/estimates/{eid}/tape-check", timeout=15)
     prev = prev_r.json()
@@ -154,8 +160,7 @@ def test_tape_check_write_lands_in_the_ledger(session):
     # Read ledger after.
     r2 = session.get(f"{API}/estimates/{eid}/protected-ledger", timeout=15)
     after = r2.json()
-    n_after = len(after["entries"])
-    assert n_after == n_before + 1
+    assert after["total"] == n_before + 1
     latest = after["entries"][0]
     assert latest["kind"] == "tape_check"
     assert latest["actor_email"]  # not empty
@@ -169,10 +174,12 @@ def test_tape_check_write_lands_in_the_ledger(session):
 
 def test_profile_annotations_write_lands_in_the_ledger(session):
     """A profile-annotations PUT on EST-886440 must add an entry with
-    kind 'profile_annotations'."""
+    kind 'profile_annotations'.
+
+    SEND-11 AMEND (2026-08-13): observes `total`, same reasoning."""
     eid = _est_886440_id(session)
     r = session.get(f"{API}/estimates/{eid}/protected-ledger", timeout=15)
-    n_before = len(r.json()["entries"])
+    n_before = r.json()["total"]
     # Snapshot then write.
     est_r = session.get(f"{API}/estimates/{eid}", timeout=15)
     prev = (est_r.json() or {}).get("profile_annotations") or {}
@@ -181,9 +188,9 @@ def test_profile_annotations_write_lands_in_the_ledger(session):
         json={"annotations": {**prev,
                               "_test_ledger_pin": True}}, timeout=15)
     r2 = session.get(f"{API}/estimates/{eid}/protected-ledger", timeout=15)
-    entries = r2.json()["entries"]
-    assert len(entries) == n_before + 1
-    assert entries[0]["kind"] == "profile_annotations"
+    body = r2.json()
+    assert body["total"] == n_before + 1
+    assert body["entries"][0]["kind"] == "profile_annotations"
     # Restore.
     session.put(f"{API}/estimates/{eid}/profile-annotations",
                 json={"annotations": prev}, timeout=15)

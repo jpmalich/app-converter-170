@@ -46,6 +46,19 @@ SEAM_REGISTRY = {
         "fabrication (typo vs invention) even though both kill the "
         "value for money. `_dim_misread` carries value+quote+"
         "misread_of+reason so the card names the real printed string.",
+    "protected_ledger_paginated":
+        "The /api/estimates/{eid}/protected-ledger endpoint's response "
+        "returned fewer entries than the ledger holds. Ruled 2026-08-13 "
+        "send-11 item 1 correction: the previous shape read with a "
+        "hardcoded .limit(200) and returned ONLY `entries` — the moment "
+        "the live ledger grew past 200 it silently dropped the 201st "
+        "entry onward, INSIDE the instrument built to make every human "
+        "write to a sealed estimate visible. Per the seam rule, any "
+        "layer that truncates accounts for what it removed: `total` is "
+        "the honest count, `truncated` flips true, `truncation_notice` "
+        "says plainly 'showing N of M', pagination via ?page= and "
+        "?page_size= (hard cap 1000). The .limit() shape is now a "
+        "REPORTED truncation, never a silent one.",
     "count_column_governed":
         "Carried qtys replaced by the printed COUNT column's own sum "
         "(the count column governs counts).",
