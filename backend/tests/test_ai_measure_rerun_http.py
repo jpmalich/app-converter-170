@@ -52,7 +52,7 @@ def test_rerun_400_when_run_has_no_cached_photos(session):
     mongo_url = os.environ.get("MONGO_URL")
     db_name = os.environ.get("DB_NAME")
     if not mongo_url or not db_name:
-        pytest.skip("MONGO_URL/DB_NAME missing")
+        pytest.skip("env:mongo: MONGO_URL/DB_NAME missing")
 
     # Look up the admin user_id once so we own the seeded run.
     me = session.get(f"{API}/auth/me", timeout=10)

@@ -55,7 +55,7 @@ def test_est_886440_latest_run_returns_available(session):
     target = next((e for e in ests
                    if e.get("estimate_number") == "EST-886440"), None)
     if not target:
-        pytest.skip("EST-886440 not on this session's account — fixture-only test")
+        pytest.skip("env:fixture_estimate: EST-886440 not on this session's account — fixture-only test")
     eid = target["id"]
     r = session.get(
         f"{API}/estimates/{eid}/blueprint-latest-run", timeout=10)
@@ -111,7 +111,7 @@ def test_apply_takeoff_guard_still_refuses_est_886440(session):
     target = next((e for e in ests
                    if e.get("estimate_number") == "EST-886440"), None)
     if not target:
-        pytest.skip("EST-886440 not on this session's account")
+        pytest.skip("env:fixture_estimate: EST-886440 not on this session's account")
     eid = target["id"]
     # Attempt a benign PUT.
     r = session.put(f"{API}/estimates/{eid}",

@@ -57,7 +57,7 @@ def _est_886440_id(session) -> str:
     target = next((e for e in ests
                    if e.get("estimate_number") == "EST-886440"), None)
     if not target:
-        pytest.skip("EST-886440 not on this session's account")
+        pytest.skip("env:fixture_estimate: EST-886440 not on this session's account")
     return target["id"]
 
 
@@ -205,7 +205,7 @@ def test_ledger_scoped_to_untouchable_only(session):
     other = next((e for e in ests
                   if e.get("estimate_number") != "EST-886440"), None)
     if not other:
-        pytest.skip("no non-untouchable estimate on this account")
+        pytest.skip("env:fixture_estimate: no non-untouchable estimate on this account")
     r = session.get(
         f"{API}/estimates/{other['id']}/protected-ledger", timeout=15)
     assert r.status_code == 200

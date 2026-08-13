@@ -30,7 +30,7 @@ def auth_session():
         timeout=20,
     )
     if r.status_code != 200:
-        pytest.skip(f"Auth failed: {r.status_code} {r.text[:200]}")
+        pytest.skip(f"env:live_auth: Auth failed: {r.status_code} {r.text[:200]}")
     return s
 
 

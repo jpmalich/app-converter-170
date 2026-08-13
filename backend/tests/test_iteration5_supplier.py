@@ -38,7 +38,7 @@ ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADM
 
 if not SIGNUP_CODE or not ADMIN_TOKEN:
     pytest.skip(
-        "Test secrets missing: export SIGNUP_CODE and SUPPLIER_ADMIN_TOKEN "
+        "env:signup_code: Test secrets missing: export SIGNUP_CODE and SUPPLIER_ADMIN_TOKEN "
         "(or TEST_SIGNUP_CODE / TEST_ADMIN_TOKEN) before running.",
         allow_module_level=True,
     )

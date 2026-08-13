@@ -75,7 +75,7 @@ def hover_measurements(mongo_db):
         # fixture_runs (no TTL), same fallback the apply endpoint uses.
         run = mongo_db.fixture_runs.find_one({"run_id": HOVER_RUN}, {"_id": 0})
     if not run or not (run.get("result") or {}).get("measurements"):
-        pytest.skip("3 Degree hover run expired from substrate — re-import to re-arm")
+        pytest.skip("env:fixture_data: 3 Degree hover run expired from substrate — re-import to re-arm")
     return dict(run["result"]["measurements"])
 
 

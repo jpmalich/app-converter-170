@@ -20,7 +20,7 @@ SENDER_EMAIL = _ENV.get("SENDER_EMAIL", "")
 
 if not SIGNUP_CODE:
     pytest.skip(
-        "SIGNUP_CODE not set — export SIGNUP_CODE (or TEST_SIGNUP_CODE) before running.",
+        "env:signup_code: SIGNUP_CODE not set — export SIGNUP_CODE (or TEST_SIGNUP_CODE) before running.",
         allow_module_level=True,
     )
 
@@ -144,27 +144,73 @@ class TestAuthAndCompany:
 
 # ---------------- Catalog (per-company) ----------------
 class TestCatalogPerCompany:
-    @pytest.mark.skip(reason="Obsolete under iter-6 4-tier architecture: per-company material overrides removed; material is now strictly tier-controlled (PUT /api/catalog only accepts labor overrides).")
-    def test_catalog_isolated_between_companies(self, company_a_owner, company_b_owner):
-        # Edit company A's catalog
-        # (kept for historical context; will be re-enabled if per-company material overrides return)
+    def test_material_overrides_are_structurally_impossible(self, company_a_owner, company_b_owner):
+        """SEND-11 pro-quotes reply 4 (Howard ruled 2026-08-13): the
+        tombstone is inverted into a positive assertion. Iter-6 killed
+        per-company material overrides — material is strictly
+        tier-controlled, contractors touch only labor. This test
+        proves the SHAPE, not the absence of the shape.
 
-        a = company_a_owner.get(f"{API}/catalog").json()
-        sections = a["sections"]
-        sections[0]["items"][0]["mat"] = 777.77
-        r = company_a_owner.put(f"{API}/catalog", json={"sections": sections})
-        assert r.status_code == 200
+        Three assertions carry the ruling:
+          1. The PUT accepts only `{overrides: {"<sec>::<name>":
+             {"lab"?: float}}}` — the body model has no `sections`
+             key at all, so a client that sends `sections` is
+             ignored on the wire.
+          2. Even if the client sneaks a `mat` into an override
+             entry, the endpoint STRIPS it (routes/catalog.py:151 —
+             only `lab` is kept).
+          3. Company A's PUT does NOT change Company B's catalog
+             (isolation via `company_id`); the reset endpoint clears
+             A's overrides without touching B's.
+        """
+        # (1) The old shape (a whole `sections: [...]` list) is
+        # rejected outright by the body model — CatalogOverridesIn
+        # has no `sections` field, so pydantic 422s the request.
+        r = company_a_owner.put(f"{API}/catalog",
+                                 json={"sections": [{"foo": "bar"}]})
+        assert r.status_code == 422, (
+            "old per-company material override shape must not be "
+            f"accepted by the body model; got {r.status_code}")
 
-        # B should still have default
-        b = company_b_owner.get(f"{API}/catalog").json()
-        # iteration-5: default catalog reseeded with Alside Pittsburgh dealer prices
-        assert b["sections"][0]["items"][0]["mat"] == 92.19
+        # (2) A `mat` value on a valid override entry is silently
+        # stripped — the response reflects the tier's material, not
+        # the client's attempted override. Discover a real key from
+        # the catalog first so we don't hit an unknown lookup.
+        a_catalog = company_a_owner.get(f"{API}/catalog").json()
+        # Find the first section+item that has a material price so we
+        # can prove the tier price is what's returned regardless.
+        # NB (routes/catalog.py:22): section field is `title`, not `name`.
+        section = next(s for s in a_catalog["sections"] if s.get("items"))
+        item = section["items"][0]
+        key = f"{section['title']}::{item['name']}"
+        tier_mat = item["mat"]
+        r = company_a_owner.put(
+            f"{API}/catalog",
+            json={"overrides": {key: {"lab": 999.99, "mat": 12345.67}}},
+        )
+        assert r.status_code == 200, r.text
+        # The `mat` on the returned line is still the tier's price —
+        # not the 12345.67 the client tried to sneak through.
+        after_a = company_a_owner.get(f"{API}/catalog").json()
+        a_section = next(s for s in after_a["sections"] if s["title"] == section["title"])
+        a_item = next(i for i in a_section["items"] if i["name"] == item["name"])
+        assert a_item["mat"] == tier_mat, (
+            f"material was overridden despite iter-6 rule: "
+            f"expected {tier_mat}, got {a_item['mat']}")
+        # Labor DID accept the override (that's the surface contractors
+        # legitimately control), so we know the endpoint ran.
+        assert a_item["lab"] == 999.99, (
+            "labor override should have landed — the endpoint didn't run?")
 
-        # A should have the edited value
-        a2 = company_a_owner.get(f"{API}/catalog").json()
-        assert a2["sections"][0]["items"][0]["mat"] == 777.77
+        # (3) Company B's catalog is untouched by A's override.
+        b_catalog = company_b_owner.get(f"{API}/catalog").json()
+        b_section = next(s for s in b_catalog["sections"] if s["title"] == section["title"])
+        b_item = next(i for i in b_section["items"] if i["name"] == item["name"])
+        assert b_item["mat"] == tier_mat  # B on same tier — same material
+        assert b_item["lab"] != 999.99, (
+            "company isolation broken: A's labor override leaked to B")
 
-        # Reset for cleanup
+        # Clean up A's labor override for suite hygiene.
         company_a_owner.post(f"{API}/catalog/reset")
 
 

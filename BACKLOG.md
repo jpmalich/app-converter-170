@@ -16,23 +16,31 @@ is wasted" if the interaction model is wrong). Every demotion or
 combination happened in a PLAN SUMMARY, never in the register
 itself. This file is the closed loop.
 
-## CURRENT ORDER (Howard 2026-08-13 pro-quotes reply 3)
- 1. **P0 chips (five) + the three misfiled surfaces onto
-    JobInfoPanel** — HALF LANDED 2026-08-13:
-    - **Five P0 chips ✓ LANDED** in `SidingProfileChip`,
-      `PhotoFillinGateBanner`, `OpeningsReviewCard`,
-      `CompositionTrace`, `FinalJobSurface`. Each renders a
-      `SurfaceAccessChip` (state + wayOut) in the branch that used
-      to `return null` silently. Baseline null-return census
-      updated (5 entries struck; new lines annotated with the
-      pro-quotes-reply-3 ruling).
-    - **Three misfiled-surface moves — WALK-READY SCOPED,
-      not started**:
-      `memory/three_misfiled_surfaces_move_scope_2026-08-13.md`.
-      Move A (Run history chip, ~45 min), Move B (Profile picker
-      relocation, ~2 h), Move C (Accent injection relocation,
-      ~2 h). ~5 h combined ≈ one focused session.
-    STATUS: 5/8 landed; 3 walk-ready.
+## CURRENT ORDER (Howard 2026-08-13 pro-quotes reply 4)
+ 1. **P0 chips (five) + tombstone inversion + skip-reason lint
+    pin + the three misfiled surface moves** — ✓ LANDED
+    2026-08-13:
+    - **Five P0 chips ✓ LANDED** (pro-quotes reply 3).
+    - **Tombstone inversion ✓ LANDED**
+      (`test_material_overrides_are_structurally_impossible`).
+    - **Skip-reason-class lint pin ✓ LANDED** (registry +
+      AST-walking census; every skip in the suite carries a
+      registered class tag).
+    - **Three misfiled surface moves ✓ COMPLETE**:
+        - Move A (Run comparison history → tile-chip) ✓ LANDED
+          this session — `RunComparisonChip.jsx` on JobInfoPanel
+          Blueprint tile.
+        - Move B (Vinyl profile picker → JobInfoPanel spec area)
+          already accomplished 2026-08-09 (SidingProfileChip
+          mounts at estimate scope in EstimateEditor.jsx:479 with
+          its own picker dialog); chip copy updated this session
+          to name the true way out.
+        - Move C (Accent injection → JobInfoPanel accents panel)
+          already accomplished 2026-08-09
+          (PerElevationBreakdownCard mounts at estimate scope in
+          EstimateEditor.jsx:485 when hover_measurements exist);
+          chip copy updated this session to name the true way out.
+    STATUS: **✓ COMPLETE**.
  2. **MATERIAL ZONE LAYER — MUV. Then Howard walks it.** — ~4
     sessions. Original elevation PDF pages as canvas;
     user-adjustable polygons updating the SAME structured takeoff;
@@ -79,6 +87,12 @@ itself. This file is the closed loop.
     invoice sets. STATUS: HELD.
 
 ## LANDED, IN ORDER OF SHIP
+ - **Position 1 COMPLETE (send-11 pro-quotes reply 4)** — five
+   P0 chips, tombstone inversion into positive shape assertion,
+   skip-reason-class lint pin (registry + AST census), Move A
+   (RunComparisonChip.jsx on JobInfoPanel Blueprint tile). Moves B
+   and C already accomplished 2026-08-09 (chip copy updated to
+   name the correct way out). LANDED 2026-08-13.
  - **Five P0 chips (position 1 half-1)** — `SidingProfileChip`,
    `PhotoFillinGateBanner`, `OpeningsReviewCard`,
    `CompositionTrace`, `FinalJobSurface` each render a

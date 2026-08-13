@@ -72,7 +72,7 @@ def test_lp_lines_explain_themselves():
     lp = [l for l in lines if l.get("tab") == "lp_smart"]
     if not lp:
         import pytest
-        pytest.skip("LP rows not emitted for this fixture — LP notes "
+        pytest.skip("env:fixture_data: LP rows not emitted for this fixture — LP notes "
                     "guarded by the 261 Haugh pins")
     bad = [l["name"] for l in lp if not _explains(str(l.get("note") or ""))]
     assert not bad, f"LP lines without an explanation: {bad}"

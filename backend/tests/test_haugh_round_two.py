@@ -52,7 +52,7 @@ def pkg(session):
         # Haugh substrate expires between sessions. Pins stand; substrate
         # restores by re-uploading the 261 Haugh Hover PDF.
         session.delete(f"{API}/estimates/{temp}", timeout=15)
-        pytest.skip("Haugh hover run TTL-expired (hover_import_runs 24h TTL) — re-upload the 261 Haugh Hover PDF to restore the pin substrate")
+        pytest.skip("env:fixture_data: Haugh hover run TTL-expired (hover_import_runs 24h TTL) — re-upload the 261 Haugh Hover PDF to restore the pin substrate")
     assert rr.status_code == 200, rr.text
     p = session.post(f"{API}/estimates/{temp}/lp-package/preview", json={}, timeout=60).json()
     yield p

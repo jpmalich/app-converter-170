@@ -80,7 +80,7 @@ def session():
                json={"email": ADMIN_EMAIL,
                      "password": TEST_PASSWORD}, timeout=15)
     if r.status_code != 200:
-        pytest.skip("live auth unavailable in this env")
+        pytest.skip("env:live_auth: live auth unavailable in this env")
     return s
 
 
@@ -89,7 +89,7 @@ def _est_886440_id(session):
     for e in r.json():
         if e.get("estimate_number") == "EST-886440":
             return e["id"]
-    pytest.skip("EST-886440 not present on this account")
+    pytest.skip("env:fixture_estimate: EST-886440 not present on this account")
 
 
 def test_endpoint_returns_total_showing_and_truncated_flag(session):
@@ -135,7 +135,7 @@ def test_pagination_returns_a_disjoint_next_page(session):
         timeout=15)
     b1 = r1.json()
     if b1["total"] < 6:
-        pytest.skip("ledger too small to walk a second page")
+        pytest.skip("env:fixture_ledger: ledger too small to walk a second page")
     r2 = session.get(
         f"{API}/estimates/{eid}/protected-ledger?page=2&page_size=5",
         timeout=15)
@@ -172,7 +172,7 @@ def test_can_walk_the_full_ledger_via_pagination(session):
         timeout=15)
     total = r0.json()["total"]
     if total == 0:
-        pytest.skip("ledger empty on this account")
+        pytest.skip("env:fixture_ledger: ledger empty on this account")
     seen: set[str] = set()
     page = 1
     while True:

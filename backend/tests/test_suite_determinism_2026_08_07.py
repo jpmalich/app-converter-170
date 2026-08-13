@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 def test_suite_traffic_is_local_and_deterministic():
     if os.environ.get("TEST_API_EXTERNAL"):
-        pytest.skip("deliberate external run")
+        pytest.skip("cadence:external: deliberate external run")
     import api_base
     assert ("localhost" in api_base.BASE_URL
             or "127.0.0.1" in api_base.BASE_URL), (

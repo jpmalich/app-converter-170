@@ -157,7 +157,7 @@ def test_sec006_admin_header_still_works():
 # --------------------------------------------------------------------------- #
 # SEC-007 — runs owned by "anon" can no longer be touched by any user.
 # --------------------------------------------------------------------------- #
-@pytest.mark.skipif(not MONGO_URL or not DB_NAME, reason="MONGO_URL/DB_NAME missing")
+@pytest.mark.skipif(not MONGO_URL or not DB_NAME, reason="env:mongo: MONGO_URL/DB_NAME missing")
 def test_sec007_ai_measure_rerun_anon_run_returns_403():
     """Seed an AI measure run with user_id='anon' and assert that the
     authenticated admin gets 403 (no longer allowlisted)."""
@@ -218,7 +218,7 @@ def test_sec007_ai_measure_rerun_anon_run_returns_403():
         asyncio.run(cleanup())
 
 
-@pytest.mark.skipif(not MONGO_URL or not DB_NAME, reason="MONGO_URL/DB_NAME missing")
+@pytest.mark.skipif(not MONGO_URL or not DB_NAME, reason="env:mongo: MONGO_URL/DB_NAME missing")
 def test_sec007_ai_blueprint_rerun_anon_run_returns_403():
     """Same as above but for the blueprint pipeline."""
     import uuid

@@ -36,7 +36,7 @@ def auth_session():
         timeout=15,
     )
     if r.status_code != 200:
-        pytest.skip(f"Admin login failed: {r.status_code} {r.text[:200]}")
+        pytest.skip(f"env:live_auth: Admin login failed: {r.status_code} {r.text[:200]}")
     return s
 
 

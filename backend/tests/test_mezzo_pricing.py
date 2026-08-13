@@ -128,7 +128,7 @@ def auth_session():
     s = requests.Session()
     r = s.post(f"{BASE_URL}/api/auth/login", json={"email": LOGIN_EMAIL, "password": LOGIN_PASSWORD})
     if r.status_code != 200:
-        pytest.skip(f"login failed: {r.status_code} {r.text}")
+        pytest.skip(f"env:live_auth: login failed: {r.status_code} {r.text}")
     token = r.json().get("access_token") or r.json().get("token")
     if token:
         s.headers.update({"Authorization": f"Bearer {token}"})

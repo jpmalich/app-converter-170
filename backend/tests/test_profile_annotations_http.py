@@ -35,7 +35,7 @@ ADMIN_PASS = TEST_PASSWORD
 @pytest.fixture(scope="module")
 def admin_session():
     if not BASE_URL:
-        pytest.skip("REACT_APP_BACKEND_URL not found")
+        pytest.skip("env:backend_url: REACT_APP_BACKEND_URL not found")
     s = requests.Session()
     r = s.post(
         f"{BASE_URL}/api/auth/login",
@@ -43,7 +43,7 @@ def admin_session():
         timeout=15,
     )
     if r.status_code != 200:
-        pytest.skip(f"Admin login failed: {r.status_code} {r.text}")
+        pytest.skip(f"env:live_auth: Admin login failed: {r.status_code} {r.text}")
     return s
 
 

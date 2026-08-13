@@ -38,7 +38,7 @@ ADMIN_TOKEN = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADM
 
 if not SIGNUP_CODE or not ADMIN_TOKEN:
     pytest.skip(
-        "SIGNUP_CODE and SUPPLIER_ADMIN_TOKEN must be set in env to run iteration-6 tests.",
+        "env:signup_code: SIGNUP_CODE and SUPPLIER_ADMIN_TOKEN must be set in env to run iteration-6 tests.",
         allow_module_level=True,
     )
 

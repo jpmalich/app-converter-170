@@ -86,7 +86,7 @@ def test_preflight_names_linkages(admin_session, mongo_db):
 def test_preflight_flags_demo_fixture(admin_session, mongo_db):
     demo = mongo_db.estimates.find_one({"demo_key": "letrick_demo"}, {"id": 1})
     if not demo:
-        pytest.skip("demo not staged")
+        pytest.skip("env:fixture_data: demo not staged")
     pre = admin_session.get(
         f"{API}/estimates/{demo['id']}/delete-preflight", timeout=15).json()
     assert pre["linked"] is True

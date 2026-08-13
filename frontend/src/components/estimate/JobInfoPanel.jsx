@@ -33,6 +33,7 @@ import { bakeWasteIntoLines } from "@/lib/wasteLogic";
 import BlueprintMeasureButton from "@/components/estimate/BlueprintMeasureButton";
 import BlueprintElevationEntry from "@/components/estimate/BlueprintElevationEntry";
 import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
+import RunComparisonChip from "@/components/estimate/RunComparisonChip";
 // Iter 78u — Compare Drawings modal trigger
 import { useState } from "react";
 import { Upload, FileText, Sparkles, Layers, ChevronDown, ChevronUp, MoreHorizontal, Lightbulb } from "lucide-react";
@@ -333,11 +334,13 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
         <ToolTile icon={Upload} label="HOVER PDF" accent="#09090B" testid="tool-tile-hover">
           <HoverImportButton est={est} update={update} save={save} />
           {/* S3 — vinyl profile picker chip (Howard ruled 2026-08-11
-              send-4 item 2): the picker itself lives inside the HOVER
-              modal; the estimate page speaks its state + way out. */}
+              send-4 item 2). AMENDED 2026-08-13 pro-quotes reply 3
+              Move B: the picker moved out of the HOVER modal to the
+              vinyl tab of the estimate itself (EstimateEditor.jsx:479,
+              ruled 2026-08-09). Chip now names the true way out. */}
           <SurfaceAccessChip
-            state="Vinyl profile picker — photo door only"
-            wayOut="this row's profile came from the schedule/import — the picker mounts inside the HOVER upload modal"
+            state="Vinyl profile picker — on the estimate's Vinyl tab"
+            wayOut="switch to the Vinyl tab (this estimate page) — the picker chip is at the top; click it to swap profiles"
             testid="s3-vinyl-profile-picker-chip"
           />
         </ToolTile>
@@ -350,15 +353,23 @@ export default function JobInfoPanel({ est, update, save, setInstallMethod, setH
           {est?.id && (
             <BlueprintElevationEntry estId={est.id} where="blueprint-tile" />
           )}
-          {/* S4 — accent injection chip (send-4 item 2). The
-              PerElevationBreakdownCard's add-accent-modal mounts
-              inside the run dialog only; the estimate page speaks
-              the state + way out. */}
+          {/* S4 — accent injection chip (send-4 item 2). AMENDED
+              2026-08-13 pro-quotes reply 3 Move C: the accent
+              injection UI (PerElevationBreakdownCard) mounts on the
+              estimate's vinyl tab when hover_measurements exist
+              (EstimateEditor.jsx:485, ruled 2026-08-09). Chip now
+              names the true way out. */}
           <SurfaceAccessChip
-            state="Accent injection — needs a completed measurement run"
-            wayOut="open the blueprint read dialog to inject an accent onto a specific elevation"
+            state="Accent injection — on the estimate's Vinyl tab (needs a completed measurement run)"
+            wayOut="switch to the Vinyl tab; when a run's measurements are applied, the Per-Elevation Breakdown card shows the accent controls per wall"
             testid="s4-accent-injection-chip-blueprint"
           />
+          {/* Move A (Howard ruled 2026-08-13 pro-quotes reply 3):
+              run comparison history is per-ESTIMATE, was misfiled
+              inside the run dialog. Chip stands at estimate scope. */}
+          {est?.id && (
+            <RunComparisonChip estId={est.id} kind={est?.kind} />
+          )}
         </ToolTile>
         <ToolTile icon={Sparkles} label={t("jip.tile.aiPhoto")} accent="#7C3AED" testid="tool-tile-ai">
           <AIMeasureButton
