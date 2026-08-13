@@ -16,13 +16,23 @@ is wasted" if the interaction model is wrong). Every demotion or
 combination happened in a PLAN SUMMARY, never in the register
 itself. This file is the closed loop.
 
-## CURRENT ORDER (Howard 2026-08-13 pro-quotes reply 2)
+## CURRENT ORDER (Howard 2026-08-13 pro-quotes reply 3)
  1. **P0 chips (five) + the three misfiled surfaces onto
-    JobInfoPanel** — add `SurfaceAccessChip` to the five existing
-    conditional surfaces from the baseline burn-down report;
-    relocate the three misfiled dialogs (vinyl profile picker,
-    accent injection, model comparison history) out of run
-    dialogs onto `JobInfoPanel`. STATUS: NOT STARTED.
+    JobInfoPanel** — HALF LANDED 2026-08-13:
+    - **Five P0 chips ✓ LANDED** in `SidingProfileChip`,
+      `PhotoFillinGateBanner`, `OpeningsReviewCard`,
+      `CompositionTrace`, `FinalJobSurface`. Each renders a
+      `SurfaceAccessChip` (state + wayOut) in the branch that used
+      to `return null` silently. Baseline null-return census
+      updated (5 entries struck; new lines annotated with the
+      pro-quotes-reply-3 ruling).
+    - **Three misfiled-surface moves — WALK-READY SCOPED,
+      not started**:
+      `memory/three_misfiled_surfaces_move_scope_2026-08-13.md`.
+      Move A (Run history chip, ~45 min), Move B (Profile picker
+      relocation, ~2 h), Move C (Accent injection relocation,
+      ~2 h). ~5 h combined ≈ one focused session.
+    STATUS: 5/8 landed; 3 walk-ready.
  2. **MATERIAL ZONE LAYER — MUV. Then Howard walks it.** — ~4
     sessions. Original elevation PDF pages as canvas;
     user-adjustable polygons updating the SAME structured takeoff;
@@ -40,7 +50,10 @@ itself. This file is the closed loop.
     increment starts.
  3. **LINEAR EDGES + TWO-KEY LEGEND + HONESTY LAYER** — scoped
     NOW so it starts the DAY the MUV walk ends. ~4 sessions.
-    Scope document: `memory/linear_edges_walk_ready_scope_2026-08-13.md`.
+    Scope document: `memory/linear_edges_walk_ready_scope_2026-08-13.md`
+    (AMENDED 2026-08-13 pro-quotes reply 3: `render_status` beside
+    every legend quantity moves INTO S3; S4 is now on-drawing
+    hatching only. A legend with bare numbers is refused.).
     Session-by-session plan is walk-ready; no scoping gap.
     STATUS: SCOPED, WAITING FOR MUV WALK TO END.
  4. **ENVELOPE[T] PROTOTYPE on the ledger endpoint** — Howard
@@ -66,6 +79,11 @@ itself. This file is the closed loop.
     invoice sets. STATUS: HELD.
 
 ## LANDED, IN ORDER OF SHIP
+ - **Five P0 chips (position 1 half-1)** — `SidingProfileChip`,
+   `PhotoFillinGateBanner`, `OpeningsReviewCard`,
+   `CompositionTrace`, `FinalJobSurface` each render a
+   `SurfaceAccessChip` in the branch that used to `return null`
+   silently. LANDED 2026-08-13 (SEND-11 pro-quotes reply 3).
  - **Demote-All on shared-source quotes** — `_one_source_one_path_guard`
    demotes every consumer of a shared (page,from) quote.
    LANDED 2026-08-13 (SEND-11 item 1).
@@ -89,8 +107,18 @@ itself. This file is the closed loop.
    it does not count").
 
 ## REPORT ONLY, AWAITING RULINGS (no build)
- - **Linear-edges + two-key legend + honesty layer — session-by-
-   session walk-ready scope**:
+ - **Baseline five skips named** —
+   `memory/baseline_five_skips_named_2026-08-13.md`. One
+   tombstone (iter-6 obsolete pin) + four cadence-gated ingress
+   smoke tests. Recommendations report-only: invert the
+   tombstone into an assertion, and add a `skip-reason-class` pin
+   requiring every `pytest.skip` reason to name its class.
+ - **Three misfiled-surface moves scope** —
+   `memory/three_misfiled_surfaces_move_scope_2026-08-13.md`.
+   Position 1 second-half; walk-ready.
+ - **Linear-edges + two-key legend + honesty layer —
+   session-by-session walk-ready scope** (AMENDED per
+   pro-quotes reply 3):
    `memory/linear_edges_walk_ready_scope_2026-08-13.md`. Starts
    the day the MUV walk ends.
 

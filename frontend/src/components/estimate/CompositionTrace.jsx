@@ -6,6 +6,7 @@
 // measurements only covers the original AI output).
 import React, { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, AlertTriangle, ListTree } from "lucide-react";
+import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
 
 const OWNER_LABELS = {
   geometry: "AI geometry",
@@ -56,7 +57,22 @@ export default function CompositionTrace({ perElevation, conflicts, sidingFamili
   }, [perElevation, sidingFamilies]);
 
   const familyEntries = Object.entries(families);
-  if (!familyEntries.length) return null;
+  // P0 chip (Howard ruled 2026-08-13 pro-quotes reply 3): on an
+  // lp_smart estimate whose engine has NOT yet produced a per-elevation
+  // composition, the trace used to disappear silently — a state the
+  // contractor should never see on a smart estimate. Chip stands in
+  // and names it so the state is visible instead of hidden.
+  if (!familyEntries.length) {
+    if (!perElevation || !perElevation.length) return null;  // pre-derivation, silent OK
+    return (
+      <SurfaceAccessChip
+        state="Composition trace — no owned surface fed a siding family"
+        wayOut="check per-elevation profile assignment or add an accent; if this is a smart-engine estimate, the trace should never be empty"
+        testid="composition-trace-chip-empty"
+        className="mb-3"
+      />
+    );
+  }
   const conflictList = Array.isArray(conflicts) ? conflicts : [];
 
   return (

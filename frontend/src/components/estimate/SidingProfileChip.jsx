@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { Layers, AlertTriangle, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useT } from "@/lib/i18n";
+import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
 
 const SECTION = "Vinyl Siding";
 const DEFAULT_NAME = 'Charter Oak Standard color Dutch Lap 4.5" .046';
@@ -17,6 +18,8 @@ const DEFAULT_NAME = 'Charter Oak Standard color Dutch Lap 4.5" .046';
 export const SidingProfileChip = ({ est, catalog, update, save }) => {
   const t = useT();
   const [open, setOpen] = useState(false);
+  // Non-siding estimates: the profile control does not apply here (the
+  // whole kind uses a different picker). Not a gate to explain.
   if (!est || (est.kind || "siding") !== "siding") return null;
   const lines = (est.lines || []).filter(
     (l) => (l.tab || "vinyl") === "vinyl" && l.section === SECTION
@@ -25,7 +28,19 @@ export const SidingProfileChip = ({ est, catalog, update, save }) => {
   const chosenLine = choice ? lines.find((l) => l.name === choice.name) : null;
   const defaultLine = lines.find((l) => l.name === DEFAULT_NAME);
   const carrier = lines.find((l) => (l.qty || 0) > 0) || defaultLine;
-  if (!carrier) return null;
+  // P0 chip (Howard ruled 2026-08-13 pro-quotes reply 3): a SurfaceAccessChip
+  // stands in when no carrier line exists (blueprint/HOVER-sourced estimates
+  // without a vinyl-siding takeoff yet). Names the state and the way out.
+  if (!carrier) {
+    return (
+      <SurfaceAccessChip
+        state="Siding profile — needs a takeoff with vinyl-siding rows"
+        wayOut="apply a takeoff that carries a vinyl-siding row, then choose the profile here"
+        testid="sp-chip-no-carrier"
+        className="mb-2"
+      />
+    );
+  }
   const stale = !!(choice && (!chosenLine || (chosenLine.qty || 0) === 0) && carrier && carrier.name !== choice.name);
   const defaulted = !choice && carrier.name === DEFAULT_NAME && (carrier.qty || 0) > 0;
 

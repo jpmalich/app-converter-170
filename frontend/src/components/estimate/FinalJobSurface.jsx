@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
 
 // FINAL-JOB SURFACE (Howard ruled 2026-07-29) — where the ORDER gate
 // clears. QUOTE gate blocks customer surfaces (email / Accept / PDF /
@@ -167,7 +168,20 @@ export default function FinalJobSurface({ estId }) {
     }
   };
 
-  if (!gates) return null;
+  // P0 chip (Howard ruled 2026-08-13 pro-quotes reply 3): the whole
+  // final-job gate panel used to vanish when `gates` was null (still
+  // loading, or the fetch failed). Chip stands in so the operator sees
+  // that gating is being resolved instead of "no gate panel here."
+  if (!gates) {
+    return (
+      <SurfaceAccessChip
+        state="Final-job gates — loading"
+        wayOut="quote and order eligibility will appear once gate check completes"
+        testid="final-job-surface-chip-loading"
+        className="mt-4"
+      />
+    );
+  }
   const q = gates.quote || {};
   const o = gates.order || {};
   return (

@@ -77,12 +77,16 @@ BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
     ("components/estimate/AIMeasureButton.jsx", "if (totalLocs === 0 || photoUrls.length === 0) return null;"),
     ("components/estimate/BulkApplyConfirm.jsx", "if (!open) return null;"),
     ("components/estimate/CatalogSyncBanner.jsx", "if (!isDraft || changes.length === 0 || dismissed) return null;"),
-    ("components/estimate/CompositionTrace.jsx", "if (!familyEntries.length) return null;"),
+    # SEND-11 pro-quotes reply 3 (2026-08-13) — the P0 chips landed:
+    #   CompositionTrace.jsx, FinalJobSurface.jsx, OpeningsReviewCard.jsx,
+    #   PhotoFillinGateBanner.jsx, SidingProfileChip.jsx
+    # each render a SurfaceAccessChip in the null branch (option (a) of
+    # this file's rule). Struck from the baseline; the census future-pin
+    # keeps them honest going forward.
     ("components/estimate/ElevationCompareModal.jsx", "if (!open) return null;"),
     ("components/estimate/ElevationCompareModal.jsx", "if (!sourceKeys.length) return null;"),
     ("components/estimate/ElevationDrawing.jsx", "if (!showRoof) return null;"),
     ("components/estimate/ElevationDrawing.jsx", "if (count <= 0 || ftPerPx <= 0) return null;"),
-    ("components/estimate/FinalJobSurface.jsx", "if (!gates) return null;"),
     ("components/estimate/GuidedCaptureWizard.jsx", "if (!raw) return null;"),
     ("components/estimate/GuidedCaptureWizard.jsx", "if (!parsed?.captured || !parsed.ts) return null;"),
     ("components/estimate/GuidedCaptureWizard.jsx", "if (!open) return null;"),
@@ -98,11 +102,9 @@ BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
     ("components/estimate/ItemHelpButton.jsx", "if (!text) return null;"),
     ("components/estimate/MezzoPanel.jsx", "if (!otherDef) return null;"),
     ("components/estimate/MezzoPanel.jsx", "if (rowAdders.length === 0) return null;"),
-    ("components/estimate/OpeningsReviewCard.jsx", "if (!review || !review.total) return null;"),
     ("components/estimate/PhotoAnnotateModal.jsx", "if (!guidedFlow) return null;"),
     ("components/estimate/PhotoAnnotateModal.jsx", "if (!open) return null;"),
     ("components/estimate/PhotoAnnotateModal.jsx", "if (!photo) return null;"),
-    ("components/estimate/PhotoFillinGateBanner.jsx", "if (!item) return null;"),
     ("components/estimate/PhotoMeasureButton.jsx", "if (!photo) return null;"),
     ("components/estimate/ProfileAnnotator.jsx", "if (!scaleRef || !scaleRef.px_height || !scaleRef.real_ft || !imgPx?.h) return null;"),
     ("components/estimate/ProfileAnnotator.jsx", 'if (!raw || typeof raw !== "object") return null;'),
@@ -110,7 +112,6 @@ BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
     ("components/estimate/ProfileAnnotator.jsx", "if (!scaleRef || !scaleRef.px_height || !scaleRef.real_ft) return null;"),
     ("components/estimate/ProfileAnnotator.jsx", "if (areaPx <= 0) return null;"),
     ("components/estimate/SectionAccordion.jsx", "if (!cc) return null;"),
-    ("components/estimate/SidingProfileChip.jsx", "if (!carrier) return null;"),
     ("components/estimate/StickyBar.jsx", "if (!tt) return null;"),
     ("components/estimate/TapeCheckPanel.jsx", "if (!verdict) return null;"),
     ("components/estimate/TapeCheckPanel.jsx", "if (!history || history.length < 3) return null;"),

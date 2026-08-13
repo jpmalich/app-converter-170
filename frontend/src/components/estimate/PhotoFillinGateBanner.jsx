@@ -11,6 +11,7 @@ import React, { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
 
 // server unset labels (canonical EN) → dictionary keys
 const BOX_KEYS = {
@@ -23,14 +24,17 @@ const BOX_KEYS = {
 export default function PhotoFillinGateBanner({ est }) {
   const t = useT();
   const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(false);
   const src = est?.hover_measurements?._source;
 
   useEffect(() => {
     let alive = true;
     if (!est?.id || src !== "photo") {
       setItem(null);
+      setLoading(false);
       return undefined;
     }
+    setLoading(true);
     (async () => {
       try {
         const { data } = await api.get(`/estimates/${est.id}/gates`);
@@ -40,6 +44,8 @@ export default function PhotoFillinGateBanner({ est }) {
         if (alive) setItem(hit || null);
       } catch {
         if (alive) setItem(null);
+      } finally {
+        if (alive) setLoading(false);
       }
     })();
     return () => {
@@ -54,7 +60,22 @@ export default function PhotoFillinGateBanner({ est }) {
     est?.photo_frieze_present,
   ]);
 
-  if (!item) return null;
+  if (!item) {
+    // P0 chip (Howard ruled 2026-08-13 pro-quotes reply 3): during the
+    // in-flight fetch on a photo estimate, the banner used to vanish and
+    // the contractor never saw "we're checking" — now the chip stands in.
+    if (loading && est?.id && src === "photo") {
+      return (
+        <SurfaceAccessChip
+          state="Photo fill-in gate — checking"
+          wayOut="the banner appears if any box is unset"
+          testid="photo-fillin-gate-chip-loading"
+          className="mb-4"
+        />
+      );
+    }
+    return null;
+  }
   const unset = item.unset || [];
   const body = unset.length
     ? t("gate.pf.body", {

@@ -88,15 +88,32 @@ whose evidence was killed by the send-11 tiers.
   front elevation; watch the fascia LF row change; refresh; edge
   survives; row still shows the new LF.
 
-### SESSION 3 — LegendPanel: two-key, click-to-highlight
+### SESSION 3 — LegendPanel: two-key, click-to-highlight, STATUS ON EVERY QUANTITY
+**Howard ruled 2026-08-13 pro-quotes reply 3**: render_status moves
+INTO S3. A legend with bare numbers refuses the whole promise of
+the drawing-IS-the-takeoff-summary. If the full HonestyOverlay
+(on-drawing hatching) is expensive, only the STATUS on legend
+quantities lands in S3; the hatching stays in S4.
 - **New component `LegendPanel.jsx`** — pinned right side of the
   editor and the BlueprintReadBackCard. Two columns:
     - **Left**: filled swatches + area quantities (from
       `pdf_overlay_polygons` + existing extraction sqft).
-      Format: `Siding 3,986 ft²`.
+      Format: `Siding 3,986 ft²` **with a status badge**:
+      `✓ verified` (evidence intact) / `⚠ unverified` (send-9
+      demoted) / `✎ your entry` (`qty_src == "human"`) / `— unread`
+      (null on raw — send-11 fabricated/misread killed the value).
     - **Right**: edge swatches + LF/count quantities (from
       `pdf_overlay_edges` + existing extraction LF/counts).
-      Format: `Starter 194 LF`, `Outside corners 6`.
+      Format: `Starter 194 LF` **with the same status badge**.
+      `Outside corners 6 ✎ your entry`.
+- **`render_status` field** derived at read time from existing
+  send-9/-10/-11 evidence (no new writes needed for S3):
+    - `known` → evidence intact.
+    - `needs_tape` → path in `_dim_unverified` or `_dim_misread`
+      or `_dim_fabricated` (any tier that nulled the value).
+    - `human_entered` → `qty_src == "human"` (overlay-derived).
+    - `unread` → path in `_dim_unread` (never carried an evidence
+      quote to begin with).
 - **Every legend row is clickable**: click → editor highlights
   every polygon/polyline of that class (dashes their strokes,
   fades the rest). Second click clears the filter.
@@ -107,9 +124,15 @@ whose evidence was killed by the send-11 tiers.
 - **Print view**: `LegendPanel.jsx` composes onto the print stylesheet
   the same way the existing sheet renderers do; when Howard prints
   the sheet, the legend prints with it. The drawing on paper IS the
-  takeoff summary.
+  takeoff summary — status badge and all.
+- **S3 pin**: `test_legend_status_never_lies` — asserts every quantity
+  the legend renders carries a status matching the tier that killed
+  or blessed it. A legend row rendering a number without a status
+  fails this pin. Ships in S3, not S4.
 
-### SESSION 4 — Honesty layer + full regression walk
+### SESSION 4 — On-drawing HonestyOverlay + full regression walk
+**Note**: S4 is now ON-DRAWING hatching only (status-on-quantities
+landed in S3 per the pro-quotes-reply-3 amendment).
 - **`render_status` field** on every face row: `known |
   needs_tape | flagged`.
     - `known` — evidence is intact.

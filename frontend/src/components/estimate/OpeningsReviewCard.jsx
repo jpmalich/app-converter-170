@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { DoorOpen, Eye } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import SurfaceAccessChip from "@/components/estimate/SurfaceAccessChip";
 
 const TYPE_LABELS = {
   window: "Window", entry_door: "Entry door", patio_door: "Patio slider",
@@ -18,7 +19,21 @@ export function OpeningsReviewCard({ review, estId, onChanged, t }) {
   const [correcting, setCorrecting] = useState(null); // key being corrected
   const [removing, setRemoving] = useState(null); // key pending delete-guard confirm
   const [collapsed, setCollapsed] = useState(false);
-  if (!review || !review.total) return null;
+  // P0 chip (Howard ruled 2026-08-13 pro-quotes reply 3): the card
+  // used to vanish silently when the review was not yet computed. Now
+  // it stands in with the state named and the way out named — same
+  // instrument as the other five P0 chips.
+  if (!review) {
+    return (
+      <SurfaceAccessChip
+        state="Openings review — computing"
+        wayOut="ratify the detected openings when this card fills in"
+        testid="lp-openings-review-chip-loading"
+        className="mx-4 my-2"
+      />
+    );
+  }
+  if (!review.total) return null;  // truly nothing to review — silent OK
   const items = review.items || [];
 
   const act = async (item, action, correctedType) => {
