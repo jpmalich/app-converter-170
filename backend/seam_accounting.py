@@ -28,14 +28,24 @@ SEAM_REGISTRY = {
         "item 3: fabricated is a different lie from unverified).",
     "dims_demoted_quote_shared":
         "Dims whose sole evidence source is a quote ALREADY consumed by "
-        "another path. Ruled 2026-08-12 send-10 item 1: a single "
-        "evidence source may not silently populate two distinct paths "
-        "(the box-model root cause under both side walls — two values "
-        "sourced from one quote cannot disagree, so the wing-flag "
-        "guard is structurally blind to a mirror). The alphabetically-"
-        "later consumer is nulled from raw and marked UNVERIFIED on "
-        "`_dim_unverified`; `_dim_shared_source` records the quote and "
-        "its full consumer list for the card.",
+        "another path. Ruled 2026-08-12 send-10 item 1, AMENDED "
+        "2026-08-13 send-11 item 1: a single evidence source may not "
+        "silently populate two distinct paths, and if it does, EVERY "
+        "consumer is demoted — never crown the alphabetically-first "
+        "on a coin flip (Boni: both side walls shared a 39'-0\" quote; "
+        "keeping left was as arbitrary as keeping right). ALL "
+        "consumers null on raw and land on `_dim_unverified`; "
+        "`_dim_shared_source` records the quote and its full consumer "
+        "list with kept=None.",
+    "dims_misread":
+        "Dims whose quoted printed string does NOT appear on the page's "
+        "pixels in any orientation, BUT a real OCR run on that page "
+        "sits within ONE character-edit of the quote — the class where "
+        "the AI transcribed 33'-5 1/2\" as 32'-5 1/2\". Ruled 2026-08-13 "
+        "send-11 item 2: a misread is diagnostically distinct from a "
+        "fabrication (typo vs invention) even though both kill the "
+        "value for money. `_dim_misread` carries value+quote+"
+        "misread_of+reason so the card names the real printed string.",
     "count_column_governed":
         "Carried qtys replaced by the printed COUNT column's own sum "
         "(the count column governs counts).",

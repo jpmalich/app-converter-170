@@ -77,6 +77,11 @@ INTERNAL_KEYS = {
     # `_dim_shared_source` entries carry quote/consumers, both are
     # internal pipeline shape and never model keys.
     "quote", "consumers",
+    # SEND-11 (2026-08-13): fabricated/misread record shape — our
+    # own pipeline writes these onto `_dim_fabricated`, `_dim_misread`,
+    # and `_dim_unverified` (evidence_strength/misread_of/quotes).
+    # None of them is a model-produced key.
+    "evidence_strength", "misread_of", "quotes",
 }
 
 

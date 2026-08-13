@@ -1609,6 +1609,18 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         return
     import numpy as np
     misses = []
+    # SEND-11 item 3: page-level OCR-coverage tracking. When a quote
+    # miss lands, the page's total OCR character count decides whether
+    # a fabrication verdict is STRONG evidence (a densely-read page
+    # with no hit ⇒ the string genuinely is not there) or WEAK evidence
+    # (a page OCR barely read — stacked-fraction cells, low contrast —
+    # ⇒ "not found" may be OCR's fault, not the model's).
+    page_ocr_chars: dict[int, int] = {}
+    # SEND-11 item 2: rotated + upright OCR norms per page fuel the
+    # MISREAD scanner — a quote no pass could locate, but sitting one
+    # character-edit from a real run on the same page's pixels, is a
+    # TRANSCRIPTION error, not a fabrication.
+    page_run_norms: dict[int, list[str]] = {}
     for page, entries in wanted.items():
         try:
             with Image.open(io.BytesIO(image_payloads[page - 1])) as im:
@@ -1619,6 +1631,12 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         except Exception:
             logger.exception("[ai-blueprint] OCR failed on page %s — quote anchors stand", page)
             continue
+        # Coverage = summed length of every distinct normalised token
+        # (upright + joined + rotated 90°/270°). Rotated passes are
+        # added below when they run; seed with upright now so a page
+        # whose miss set is empty (no rotations triggered) still has
+        # a coverage number for downstream tuning if needed.
+        _norms_seen: set[str] = {r[0] for r in runs} | {j[0] for j in joined}
         # FEATURE-PROXIMITY RADIUS (Howard ruled 2026-08-12 send-8):
         # the located rect's centre must sit within this radius of a
         # feature-anchor run on the same page. 30% of the longer page
@@ -1655,6 +1673,8 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                 rjoined = _join_adjacent_runs(rruns)
             except Exception:
                 continue
+            _norms_seen.update(r[0] for r in rruns)
+            _norms_seen.update(j[0] for j in rjoined)
             still = []
             for path, s, nq in pending:
                 anchors = _feature_anchors_for_path(path)
@@ -1681,15 +1701,49 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                     s["_gate_reason"] = why or s.get("_gate_reason")
                     still.append((path, s, nq))
             pending = still
+        # SEND-11 items 2+3: finalise coverage on this page and
+        # scan every remaining miss for a MISREAD neighbour — an
+        # OCR run one character-edit away from the quoted string.
+        # The scan uses the same _del1 helper that pins the SH340-vs-
+        # SH3040 glyph-drop class; _sub1 catches single-char substs
+        # (32'-5 1/2" vs 33'-5 1/2"). A hit tags the miss with
+        # `misread_of` and downstream nulling lands it on `_dim_misread`
+        # instead of `_dim_fabricated`. Coverage rides on every miss
+        # so the fabricated-vs-weak distinction can be made downstream.
+        _page_chars = sum(len(n) for n in _norms_seen)
+        page_ocr_chars[page] = _page_chars
+        page_run_norms[page] = sorted(_norms_seen)
+
+        def _sub1(a: str, b: str) -> bool:
+            if len(a) != len(b) or len(a) < 2:
+                return False
+            diffs = sum(1 for x, y in zip(a, b) if x != y)
+            return diffs == 1
+
         for path, s, nq in pending:
-            misses.append({"path": path, "page": page,
-                           "from": str(s.get("from") or ""),
-                           "rotations_checked": True,
-                           "reason": s.get("_gate_reason")
-                                     or "quote not found on page"})
+            misread_of = None
+            for rn in _norms_seen:
+                if not rn or abs(len(rn) - len(nq)) > 1:
+                    continue
+                if rn == nq:  # shouldn't happen (we're in miss branch) but guard
+                    continue
+                if _del1(nq, rn) or _del1(rn, nq) or _sub1(nq, rn):
+                    misread_of = rn
+                    break
+            miss_rec = {"path": path, "page": page,
+                        "from": str(s.get("from") or ""),
+                        "rotations_checked": True,
+                        "page_ocr_chars": _page_chars,
+                        "reason": s.get("_gate_reason")
+                                  or "quote not found on page"}
+            if misread_of is not None:
+                miss_rec["misread_of"] = misread_of
+            misses.append(miss_rec)
             s.pop("_gate_reason", None)
     if misses:
         raw["_ocr_quote_misses"] = misses
+    if page_ocr_chars:
+        raw["_ocr_page_coverage_chars"] = dict(page_ocr_chars)
 
 
 def _null_unverified_quotes(raw: dict) -> None:
@@ -1720,14 +1774,30 @@ def _null_unverified_quotes(raw: dict) -> None:
         return
     ev = raw.get("_dim_evidence") or {}
 
-    # Group miss reasons by path. A path can have multiple srcs; the
-    # reason names why the LAST src refused.
+    # Group miss reasons by path AND collect misread_of / coverage
+    # metadata for the SEND-11 tiers. `misread_of` on any miss for a
+    # path routes that path to `_dim_misread` instead of
+    # `_dim_fabricated`; `page_ocr_chars` seeds fabricated evidence
+    # strength (SEND-11 item 3).
     reasons_by_path: dict[str, list[str]] = {}
+    misread_by_path: dict[str, str] = {}
+    page_by_path: dict[str, int] = {}
+    coverage_by_path: dict[str, int] = {}
     for m in misses:
         p = m.get("path")
         r = str(m.get("reason") or "").lower()
-        if p:
-            reasons_by_path.setdefault(p, []).append(r)
+        if not p:
+            continue
+        reasons_by_path.setdefault(p, []).append(r)
+        _mo = m.get("misread_of")
+        if _mo and p not in misread_by_path:
+            misread_by_path[p] = str(_mo)
+        _pg = m.get("page")
+        if isinstance(_pg, int) and p not in page_by_path:
+            page_by_path[p] = _pg
+        _cov = m.get("page_ocr_chars")
+        if isinstance(_cov, int) and p not in coverage_by_path:
+            coverage_by_path[p] = _cov
 
     # A path is fully unverified when EVERY src on its evidence has
     # no `loc` after the locator ran. A path with even one located
@@ -1740,13 +1810,22 @@ def _null_unverified_quotes(raw: dict) -> None:
         srcs = entry.get("srcs") or [entry]
         if all(not (isinstance(s, dict) and s.get("loc")) for s in srcs):
             reasons = reasons_by_path[path]
-            # FABRICATED: every refusal reason is "quote not found /
-            # not present in OCR" — the string literally does not
-            # appear on the page's pixels in any orientation.
+            # FABRICATED base class: every refusal reason is "quote
+            # not found / not present in OCR" — the string literally
+            # does not appear on the page's pixels in any orientation.
             fabricated = all(
                 ("not found" in r or "not present" in r) for r in reasons)
-            fully_unverified.append(
-                (path, "fabricated" if fabricated else "unverified"))
+            if fabricated and path in misread_by_path:
+                # SEND-11 item 2: MISREAD is a third tier — the quote
+                # is absent BUT a real OCR run sits one character-edit
+                # away. Diagnose as a transcription typo, not an
+                # invention. Value still nulls for money.
+                category = "misread"
+            elif fabricated:
+                category = "fabricated"
+            else:
+                category = "unverified"
+            fully_unverified.append((path, category))
 
     if not fully_unverified:
         return
@@ -1824,8 +1903,21 @@ def _null_unverified_quotes(raw: dict) -> None:
                 pass
         return False
 
+    # SEND-11 item 3: fabricated evidence strength — a densely-read
+    # page with no hit is STRONG evidence of fabrication; a barely-read
+    # page (low OCR coverage — stacked fractions, poor contrast) is
+    # WEAK evidence and the card must say so. Threshold is deliberately
+    # generous: only ~<300 char-normalised tokens on the whole page is
+    # "weak" (a typical plan sheet OCR yields thousands of chars).
+    _WEAK_COVERAGE_MAX = 300
+
+    def _strength_for(p: str) -> tuple[str, int]:
+        cov = coverage_by_path.get(p, 0)
+        return ("strong" if cov > _WEAK_COVERAGE_MAX else "weak"), cov
+
     nulled_fab: list[dict] = []
     nulled_unv: list[dict] = []
+    nulled_misread: list[dict] = []
     for path, category in fully_unverified:
         value, quotes = _read_value(path)
         reason = reasons_by_path[path][-1] if reasons_by_path.get(path) else ""
@@ -1833,7 +1925,16 @@ def _null_unverified_quotes(raw: dict) -> None:
             record = {"path": path, "value": value,
                       "quotes": quotes, "reason": reason}
             if category == "fabricated":
+                strength, cov = _strength_for(path)
+                record["evidence_strength"] = strength
+                record["page_ocr_chars"] = cov
                 nulled_fab.append(record)
+            elif category == "misread":
+                strength, cov = _strength_for(path)
+                record["misread_of"] = misread_by_path.get(path)
+                record["evidence_strength"] = strength
+                record["page_ocr_chars"] = cov
+                nulled_misread.append(record)
             else:
                 nulled_unv.append(record)
 
@@ -1842,6 +1943,11 @@ def _null_unverified_quotes(raw: dict) -> None:
         seam_accounting.account(
             raw, "dims_nulled_quote_fabricated",
             [r["path"] for r in nulled_fab])
+    if nulled_misread:
+        raw.setdefault("_dim_misread", []).extend(nulled_misread)
+        seam_accounting.account(
+            raw, "dims_misread",
+            [r["path"] for r in nulled_misread])
     if nulled_unv:
         raw.setdefault("_dim_unverified", []).extend(nulled_unv)
         seam_accounting.account(
@@ -1850,21 +1956,22 @@ def _null_unverified_quotes(raw: dict) -> None:
 
 
 def _one_source_one_path_guard(raw: dict) -> None:
-    """ONE-SOURCE-ONE-PATH (Howard ruled 2026-08-12 send-10 item 1):
-    A single evidence source may not silently populate two distinct
-    paths. If one quote (same page + same 'from' string) is consumed
-    by more than one path, FLAG loud, name both paths, and the
-    ALPHABETICALLY-LATER consumer is treated as UNVERIFIED.
+    """ONE-SOURCE-ONE-PATH (Howard ruled 2026-08-12 send-10 item 1,
+    AMENDED 2026-08-13 send-11 item 1 to DEMOTE-ALL): A single evidence
+    source may not silently populate two distinct paths. If one quote
+    (same page + same 'from' string) is consumed by more than one path,
+    FLAG loud, name all paths, and DEMOTE EVERY CONSUMER to UNVERIFIED.
 
-    This is the box model still alive underneath every fix we have
-    made: two values sourced from ONE quote cannot disagree, so the
-    wing-flag guard is structurally blind to a mirror. The Boni case:
-    walls.left.width_ft AND walls.right.width_ft both fed from the
-    same 39'-0" quote — one dim applied to two opposing walls means
-    the right side was never read independently.
+    Send-10 kept the alphabetically-first consumer and demoted the rest.
+    Send-11 killed that: crowning left over right on the coin flip of a
+    dotted string is as arbitrary as crowning right over left. When two
+    walls draw depth from ONE quote, neither wall was read
+    independently, so neither wall's value has evidence — both null.
+    If one must survive it lands UNVERIFIED on the card, never AI-READ.
 
     Same family as the seam ledger: a value that appears in two
-    places must account for how it got there.
+    places must account for how it got there — and when the account
+    says 'the same source fed both', neither counterparty is right.
     """
     ev = raw.get("_dim_evidence") or {}
     if not ev:
@@ -1897,16 +2004,15 @@ def _one_source_one_path_guard(raw: dict) -> None:
         unique_paths = sorted(set(paths))
         if len(unique_paths) < 2:
             continue
-        # FIRST alphabetical stays; the rest are demoted.
-        winner = unique_paths[0]
-        losers = unique_paths[1:]
+        # SEND-11 item 1: ALL consumers are demoted. No winner.
         shared_records.append({
             "quote": frm, "page": page,
             "consumers": unique_paths,
-            "kept": winner,
-            "demoted": losers,
+            "kept": None,
+            "demoted": list(unique_paths),
         })
-        for loser in losers:
+        others = ", ".join(repr(p) for p in unique_paths)
+        for loser in unique_paths:
             entry = ev.get(loser)
             if not isinstance(entry, dict):
                 continue
@@ -1914,9 +2020,10 @@ def _one_source_one_path_guard(raw: dict) -> None:
                 "path": loser,
                 "value": entry.get("v"),
                 "quotes": [frm],
-                "reason": (f"quote {frm!r} on page {page} is already "
-                           f"consumed by {winner!r} — one source may "
-                           "not populate two distinct paths (send-10)"),
+                "reason": (f"quote {frm!r} on page {page} is shared "
+                           f"across {len(unique_paths)} consumers "
+                           f"({others}) — one source may not populate "
+                           "distinct paths (send-11 demote-all)"),
             })
 
     if not demoted:
@@ -3153,12 +3260,28 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     # must say which."
     _unv = raw.get("_dim_unverified") or []
     _fab = raw.get("_dim_fabricated") or []
+    _misread = raw.get("_dim_misread") or []
     if _unv:
         rail.append({"level": "warn", "code": "dims_unverified",
                      "text": ", ".join(r.get("path", "?") for r in _unv)})
     if _fab:
+        # SEND-11 item 3: fabricated rail names each path with its
+        # evidence-strength badge. `strong` = densely-read page, no
+        # hit ⇒ real fabrication. `weak` = poorly-read page ⇒ the
+        # miss may be OCR's fault, treat with lower confidence.
         rail.append({"level": "loud", "code": "dims_fabricated",
-                     "text": ", ".join(r.get("path", "?") for r in _fab)})
+                     "text": ", ".join(
+                         f"{r.get('path','?')}[{r.get('evidence_strength','?')}]"
+                         for r in _fab)})
+    if _misread:
+        # SEND-11 item 2: MISREAD is diagnostically distinct from
+        # fabrication — the quote is absent but a real OCR run sits
+        # one character-edit away. Card names the real printed string.
+        rail.append({"level": "loud", "code": "dims_misread",
+                     "text": "; ".join(
+                         f"{r.get('path','?')} said {r.get('quotes') or '?'} "
+                         f"→ OCR has {r.get('misread_of')!r}"
+                         for r in _misread)})
     # SEND-10 (Howard ruled 2026-08-12): the one-source-one-path
     # guard's demoted list rides its own rail code so the card can
     # separate a shared-source demotion from a lonely unverified.
@@ -3370,6 +3493,7 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         # from the one we are fixing).
         "dim_unverified": list(raw.get("_dim_unverified") or []),
         "dim_fabricated": list(raw.get("_dim_fabricated") or []),
+        "dim_misread": list(raw.get("_dim_misread") or []),
         "dim_shared_source": list(raw.get("_dim_shared_source") or []),
         # SEAM ACCOUNTING (ruled 2026-08-09): the ledger of everything
         # any layer removed — visible, never silent.

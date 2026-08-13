@@ -55,31 +55,38 @@ def _mirror_raw():
     }
 
 
-def test_shared_quote_demotes_second_consumer_to_unverified():
+def test_shared_quote_demotes_ALL_consumers_send11():
+    """SEND-11 item 1 AMENDMENT: no alphabetical winner. Both walls
+    fed from the same 39'-0" quote are demoted — crowning `left` over
+    `right` on a coin flip is as arbitrary as crowning `right` over
+    `left`. Both null on raw; both land on `_dim_unverified`."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
-    # Alphabetical order: "walls.left..." precedes "walls.right...".
-    # Left keeps evidence; RIGHT is demoted (nulled + unverified).
     walls = {w["label"]: w for w in raw["walls"]}
-    assert walls["left"]["width_ft"] == 39.0
+    assert walls["left"]["width_ft"] is None
     assert walls["right"]["width_ft"] is None
     unv = raw.get("_dim_unverified") or []
-    demoted = next(r for r in unv
-                   if r["path"] == "walls.right.width_ft")
-    assert demoted["value"] == 39.0
-    assert "walls.left.width_ft" in demoted["reason"]
-    assert "already consumed" in demoted["reason"]
+    paths = {r["path"] for r in unv}
+    assert "walls.left.width_ft" in paths
+    assert "walls.right.width_ft" in paths
+    left_rec = next(r for r in unv if r["path"] == "walls.left.width_ft")
+    assert left_rec["value"] == 39.0
+    assert "shared" in left_rec["reason"] or "send-11" in left_rec["reason"]
 
 
-def test_shared_source_ledger_names_all_consumers():
+def test_shared_source_ledger_names_all_consumers_and_none_kept():
+    """SEND-11: shared-source ledger records `kept=None` and every
+    consumer on `demoted`. The card can then present the quote as
+    a shared ambiguity, not as one wall's evidence."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     shared = raw.get("_dim_shared_source") or []
     r = next(s for s in shared if s["quote"] == "39'-0\"")
     assert set(r["consumers"]) == {"walls.left.width_ft",
                                    "walls.right.width_ft"}
-    assert r["kept"] == "walls.left.width_ft"
-    assert r["demoted"] == ["walls.right.width_ft"]
+    assert r["kept"] is None
+    assert set(r["demoted"]) == {"walls.left.width_ft",
+                                 "walls.right.width_ft"}
 
 
 def test_singleton_quote_leaves_evidence_alone():
