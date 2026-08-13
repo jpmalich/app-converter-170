@@ -302,3 +302,5 @@
 - 2026-08-13 01:55 UTC · 9d69202 · GUARD-FAIL · FAILED tests/test_guard_extension_2026_08_11.py::test_profile_annotations_write_lands_in_the_ledger
 - 2026-08-13 02:23 UTC · 5d51fa5 · CLEAN · [tests] · 2322 passed, 10 skipped, 6 warnings in 144.49s (0:02:24)
 - 2026-08-13 02:23 UTC · 5d51fa5 · INGRESS-SMOKE-CLEAN · 4 passed in 1.64s
+- 2026-08-13 08:28 UTC · c8adc41 · CLEAN · [tests] · 2327 passed, 5 skipped, 6 warnings in 149.84s (0:02:29)
+- 2026-08-13 08:28 UTC · c8adc41 · INGRESS-SMOKE-CLEAN · 4 passed in 1.51s
