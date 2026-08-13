@@ -49,7 +49,18 @@ itself. This file is the closed loop.
     view. MUV excludes snapping / PDF export / multi-user
     (correct per Howard).
     Cost report: `memory/material_zone_layer_cost_2026-08-13.md`.
-    STATUS: SCOPED + APPROVED, NOT STARTED.
+    STATUS: SCOPED + APPROVED. **S2 (PdfOverlayEditor) LANDED
+    2026-08-13** (pro-quotes reply 6/7): the three laws built + pinned —
+    (A) REPLACE + superseded stays visible, (B) human value is a
+    function of its polygons (retire-on-last-delete, pinned both
+    directions), (C) scale read from the sheet per view, refused where
+    unreadable (3/16" constant DELETED). Discovered limit named on the
+    surface: takeoff has no per-face lines → polygons bind to the
+    AGGREGATE siding line (ft²→SQ), face is metadata. Report-only
+    answers (scale auto-region cost, segment/gable face cost,
+    orphan-survival list) in `memory/muv_s2_handback_2026-08-13.md`.
+    Howard walks the SIX-point bar at S4 (draw→sqft→line changes→marked
+    mine→survives rebuild→DELETE restores the app's number).
     **THE 5-POINT WALK BAR** (Howard's words): "I open a real
     elevation page. I draw or drag a polygon over a wall. The
     square footage changes. The material line changes with it.

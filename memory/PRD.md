@@ -6903,3 +6903,11 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - MUV WALK BAR (Howard's five, verbatim): open a real elevation page · draw or drag a polygon over a wall · sqft changes · material line changes with it · marked as MY entry not the app's · still there after a rebuild. All five require the frontend session 2+3 to land. Backend contract is complete.
 - QUEUE (Howard 2026-08-13 pro-quotes reply 5, unchanged): 1. MATERIAL ZONE LAYER MUV (Session 1/4 ✓; Sessions 2-4 next) · 2. Linear edges + legend + honesty (S3 with status) · 3. Envelope[T] prototype · 4. Verdict-and-Triage card · 5. Ledger UI on Blueprint card · 6. EST-040221 orientation flip · 7. Reconciliation HELD.
 - PURITY STILL HELD (do not prompt harder): gable over-count 6 vs 4, porch 195 vs 99, corners 12/8 vs 8/4. Nothing applies to EST-886440 — and a drawn zone is Howard's entry, which is not the app applying anything. Integral-J stays ON.
+
+
+## 2026-08-13 — MUV S2: Material Zone Editor (PdfOverlayEditor) LANDED
+- New: draw polygons on the REAL rasterised elevation page; each zone REPLACES the app's derived siding sqft (never adds); app number kept + shown superseded; delete last zone restores the app number (retirement ledgered).
+- Scale READ FROM THE SHEET per view (OCR printed dimension or traced calibration); hardcoded 3/16" constant DELETED; unreadable scale => area REFUSED, never defaulted.
+- Discovered limit (named on surface): takeoff has no per-face lines; polygons bind to the aggregate siding line (ft2->SQ), face is metadata.
+- Backend: /api/estimates/{id}/pdf-overlay GET/PUT/DELETE (routes/pdf_overlay.py). Verified via curl on EST-886440 + full suite 2356 passed.
+- Report-only (pending Howard rulings): memory/muv_s2_handback_2026-08-13.md — scale auto-region cost, segment/gable face cost (~1.5-2 sessions, belongs in linear-edges), orphan-survival audit list (profile_annotations flagged).

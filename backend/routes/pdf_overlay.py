@@ -1,41 +1,66 @@
-"""MATERIAL ZONE LAYER — MUV SESSION 1 (Howard ruled 2026-08-13
-pro-quotes reply 5).
+"""MATERIAL ZONE LAYER — MUV SESSION 2 (Howard ruled 2026-08-13
+pro-quotes replies 5, 6, 7).
 
-The user draws polygons over the original elevation PDF pages;
-each polygon carries a material class + face_id + page-normalised
-vertices. This module owns the persistence + math + guard for
-those polygons.
+The user draws polygons over the ORIGINAL elevation PDF pages; each
+polygon carries a material class + face_id + page-normalised vertices
++ an EVIDENCE-GROUNDED scale for the VIEW it sits in. This module owns
+the persistence + area math + guard for those polygons.
 
-Contract (verbatim from Howard, walk-bar for MUV):
+Contract (verbatim from Howard — the SEVEN-point walk-bar for MUV):
   1. Open a real elevation page.
   2. Draw or drag a polygon over a wall.
   3. The square footage changes.
   4. The material line changes with it.
   5. It is marked as MY entry, not the app's.
   6. It is still there after a rebuild.
+  7. When I DELETE it, the app's own number comes back.
 
-The polygon→sqft math is deterministic at 3/16" = 1'-0" (unless the
-sheet's own calibration overrides). Every polygon write updates the
-matching line's `qty` in-place and stamps `qty_src = "human"` so the
-existing hover.py rebuild guard preserves it verbatim (send-hover
-line 3500 pattern).
+RULED (pro-quotes replies 6/7) — three laws this module enforces:
+
+  A. REPLACE, NEVER ADD + the superseded derived value STAYS VISIBLE
+     and MARKED SUPERSEDED. A human zone SUPERSEDES the derived value
+     for its (material_class, face_id); it does not stack on it. The
+     app's original number is kept on `superseded_qty` +
+     `overlay_superseded=True` so the reader sees what the app thought
+     and what the human replaced it with, side by side.
+
+  B. A HUMAN VALUE IS A FUNCTION OF ITS POLYGONS. Delete one of several
+     → the sum RECOMPUTES from what remains. Delete the LAST polygon on
+     a (face_id, material_class) → the override RETIRES, the derived
+     value RETURNS, and the retirement is LEDGERED. There is NEVER a
+     human value with zero polygons behind it.
+
+  C. THE SCALE IS READ FROM THE SHEET, NEVER DEFAULTED. The hardcoded
+     3/16" = 1'-0" constant is GONE (purity rider). Every conversion
+     needs an explicit, evidence-grounded scale for the VIEW the polygon
+     sits in (an OCR read of the printed dimension, or a human
+     calibration line traced over one). Where the scale cannot be read,
+     we REFUSE: the polygon holds its pixel geometry, `sqft` is None,
+     the line is flagged `overlay_scale_unreadable`, and the derived
+     value is untouched — a wrong-scale area LOOKS RIGHT and is invisible.
+
+DURABILITY NOTE (why the DERIVED BASELINE lives on the polygon, not the
+line): the estimate editor's load/save merge rebuilds line objects and
+STRIPS unknown fields (the sealed "silent-strip class"). If the app's
+original number lived only on the line, an autosave would erase it and
+the retirement in Law B would have nothing to restore. So each polygon
+carries `derived_baseline_qty` — captured ONCE from the pristine line
+when the first polygon of a (face_id, material_class) is drawn — and
+the pdf_overlay_polygons collection is never touched by the editor.
 
 PROTECTED-ESTIMATE HUMAN-ENTRY (Howard ruled 2026-08-13 pro-quotes
-reply 5): a drawn or adjusted zone is Howard's hand on the drawing,
-so it RIDES ABOVE the untouchable freeze on EST-886440 — built in at
-MUV birth, not discovered on the walk. Every polygon write on a
-protected estimate lands in `protected_estimate_ledger` via
-`ledger_human_write(est_id, "pdf_overlay_polygon", ...)`.
+reply 5): a drawn / adjusted / deleted zone is Howard's hand on the
+drawing, so it RIDES ABOVE the untouchable freeze on EST-886440 and
+lands in `protected_estimate_ledger` via `ledger_human_write`.
 
 SEAM (registered in `seam_accounting.SEAM_REGISTRY`):
-  pdf_overlay_polygon_write — a polygon write on any estimate is
-  ledgered via seam_accounting for the same reason every other
-  boundary-crossing removal or overwrite is: the drawing is a
-  new class of surface and every touch must account for itself.
+  pdf_overlay_polygon_write — every write/delete/retirement is a
+  boundary crossing (drawing → structured takeoff → protected ledger).
 """
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from math import hypot
 from typing import Optional
 import uuid
 
@@ -50,17 +75,22 @@ router = APIRouter(tags=["pdf-overlay"])
 
 
 # ---------------------------------------------------------------------
-# MODELS — kept small; MUV includes only what the walk-bar needs
+# MODELS
 # ---------------------------------------------------------------------
 
-# Material classes the MUV recognises. Additions are one-line entries
-# that require a new tests_pin — see the seam registry rule.
 MATERIAL_CLASSES = {"siding", "soffit", "accent", "trim"}
 
-# Face ids the MUV recognises. `dormer:<label>` is a dynamic form
-# (any label) so this set names ONLY the fixed cardinal faces plus
-# the dormer prefix; validation is `id in _FIXED or id.startswith("dormer:")`.
+# KNOWN LIMIT (Howard ruled 2026-08-13 pro-quotes reply 7, named on the
+# editor surface): these cardinals have NO face for the front-facing
+# ENTRY GABLE (it is not a dormer), and "front"/"back" COLLAPSE stepped
+# / multi-height segments (main body + garage wing) into ONE number.
+# Segment-level (`front:main`) and gable-level (`gable:entry`) faces are
+# a scoped-but-unbuilt increment; the editor names the limit and the
+# takeoff flags `overlay_merged` when >1 polygon feeds one number.
 _FIXED_FACES = {"front", "back", "left", "right"}
+
+# Takeoff line units a polygon area can bind to (Law-C conversion below).
+_AREA_UNITS = {"sq", "square", "squares", "sf", "sqft", "ft2", "ft²"}
 
 
 def _face_ok(face_id: str) -> bool:
@@ -71,9 +101,19 @@ def _face_ok(face_id: str) -> bool:
     return face_id.startswith("dormer:") and len(face_id) > len("dormer:")
 
 
+class ScaleRefIn(BaseModel):
+    """Evidence-grounded calibration for the VIEW a polygon sits in: two
+    page-normalised endpoints tracing a printed dimension + its real-world
+    length in feet + the source of the reading. NO default — absence
+    means the scale could not be read and the area is REFUSED (Law C)."""
+    p1: list[float]
+    p2: list[float]
+    real_ft: float
+    source: str = "calibration"     # "ocr" | "calibration"
+    from_quote: str = ""
+
+
 class PolygonWriteIn(BaseModel):
-    """One polygon upsert. `id` may be omitted on create — the server
-    mints a UUID."""
     id: Optional[str] = None
     page: int
     face_id: str
@@ -81,131 +121,211 @@ class PolygonWriteIn(BaseModel):
     vertices_pct: list[list[float]] = Field(
         ..., description="[[x_pct, y_pct], ...] page-normalised [0,1]",
     )
+    scale_ref: Optional[ScaleRefIn] = None
+    page_w_px: Optional[float] = None
+    page_h_px: Optional[float] = None
 
 
 # ---------------------------------------------------------------------
-# MATH — polygon area (shoelace) in ft² at 3/16" = 1'-0"
+# MATH — polygon area (shoelace) in ft² from an EVIDENCE-GROUNDED scale.
+# No baked constant. Returns None when the scale is absent/degenerate —
+# a REFUSAL, never a defaulted number (Law C).
 # ---------------------------------------------------------------------
 
-# Architectural scale 3/16" = 1'-0":
-#   1 foot of real geometry prints as 3/16 inch on the sheet.
-#   A US-letter sheet at 8.5" × 11" therefore represents
-#   8.5 / (3/16) = 45.33 ft in the LONGER dimension of a portrait page.
-# The vertex payload uses PAGE-NORMALISED coordinates ([0,1] × [0,1]),
-# so translating to feet requires knowing the sheet's rendered inch
-# dimensions. For MUV we take them from the page raster the frontend
-# already serves (image_payloads pipeline emits pixel dims); the
-# sheet's inch-dims are stored on `estimates.sheets_identified[i]`
-# as `page_width_in` / `page_height_in` when present. Absent that,
-# MUV falls back to US-letter portrait (8.5" × 11").
-DEFAULT_SHEET_WIDTH_IN = 8.5
-DEFAULT_SHEET_HEIGHT_IN = 11.0
-INCHES_PER_FT_AT_3_16 = 3.0 / 16.0  # 0.1875 in/ft
-
-
-def polygon_sqft(
+def polygon_sqft_from_scale(
     vertices_pct: list[list[float]],
-    sheet_width_in: float = DEFAULT_SHEET_WIDTH_IN,
-    sheet_height_in: float = DEFAULT_SHEET_HEIGHT_IN,
-) -> float:
-    """Compute polygon area in ft² given page-normalised vertices and
-    the sheet's rendered inch dimensions, at 3/16" = 1'-0".
-
-    Uses the shoelace formula. Vertices are [0,1] × [0,1]; multiply
-    by (sheet_dim_in / INCHES_PER_FT_AT_3_16) to reach feet.
-    Not sensitive to winding order — abs value returned.
-    """
+    scale_ref: Optional[dict],
+    page_w_px: Optional[float],
+    page_h_px: Optional[float],
+) -> Optional[float]:
     if not vertices_pct or len(vertices_pct) < 3:
-        return 0.0
-    ft_per_x = sheet_width_in / INCHES_PER_FT_AT_3_16
-    ft_per_y = sheet_height_in / INCHES_PER_FT_AT_3_16
-    # Shoelace in ft directly (scale each axis independently).
-    total = 0.0
+        return None
+    if not scale_ref or not page_w_px or not page_h_px:
+        return None
+    p1 = scale_ref.get("p1")
+    p2 = scale_ref.get("p2")
+    real_ft = scale_ref.get("real_ft")
+    if not (isinstance(p1, (list, tuple)) and len(p1) == 2
+            and isinstance(p2, (list, tuple)) and len(p2) == 2):
+        return None
+    try:
+        real_ft = float(real_ft)
+    except (TypeError, ValueError):
+        return None
+    if real_ft <= 0:
+        return None
+    calib_px = hypot((float(p2[0]) - float(p1[0])) * page_w_px,
+                     (float(p2[1]) - float(p1[1])) * page_h_px)
+    if calib_px <= 0:
+        return None
+    ft_per_px = real_ft / calib_px
     n = len(vertices_pct)
+    area_px = 0.0
     for i in range(n):
-        x1, y1 = vertices_pct[i]
-        x2, y2 = vertices_pct[(i + 1) % n]
-        total += (x1 * ft_per_x) * (y2 * ft_per_y)
-        total -= (x2 * ft_per_x) * (y1 * ft_per_y)
-    return abs(total) / 2.0
+        x1 = float(vertices_pct[i][0]) * page_w_px
+        y1 = float(vertices_pct[i][1]) * page_h_px
+        x2 = float(vertices_pct[(i + 1) % n][0]) * page_w_px
+        y2 = float(vertices_pct[(i + 1) % n][1]) * page_h_px
+        area_px += x1 * y2 - x2 * y1
+    area_px = abs(area_px) / 2.0
+    return round(area_px * ft_per_px * ft_per_px, 2)
 
 
 # ---------------------------------------------------------------------
-# LINE APPLICATION — polygon → takeoff row
+# LINE APPLICATION — polygon → takeoff row (REPLACE / SUPERSEDE / RETIRE)
 # ---------------------------------------------------------------------
 
-def _line_matches(line: dict, material_class: str, face_id: str) -> bool:
-    """Match a takeoff line to a polygon's (material_class, face_id).
+def _line_matches(line: dict, material_class: str) -> bool:
+    """Match a takeoff line to a polygon's material_class.
 
-    MUV keeps this deliberately narrow: siding polygons feed the
-    per-face siding line (the line whose `face_id == face_id` and
-    tab ∈ {vinyl, lp_smart, ...} carrying the section for that class).
-    A future refactor can widen the mapping; MUV ships with siding
-    only because that's the walk-bar shape."""
+    REALITY (discovered on EST-886440, 2026-08-13): the takeoff has NO
+    per-face lines — siding is ONE aggregate body line in SQUARES, not
+    ft² per wall. So a polygon binds to the AGGREGATE line for its class
+    (area-unit, on the vinyl tab, excluding the accessories section);
+    `face_id` is carried as metadata for the future per-face increment.
+    This is exactly the KNOWN LIMIT Howard named (front/back collapse
+    every segment into one number) — the aggregate line flags
+    `overlay_merged` + the zone count so the surface never hides it."""
+    tab = (line.get("tab") or "vinyl")
+    if tab != "vinyl":
+        return False
+    section = (line.get("section") or "").lower()
+    unit = (line.get("unit") or "").strip().lower()
+    if unit not in _AREA_UNITS:
+        return False
     if material_class == "siding":
-        return (line.get("face_id") == face_id
-                and "siding" in (line.get("section") or "").lower())
+        return "siding" in section and "accessor" not in section
     if material_class == "soffit":
-        return (line.get("face_id") == face_id
-                and "soffit" in (line.get("section") or "").lower())
+        return "soffit" in section
     if material_class == "accent":
-        return (line.get("face_id") == face_id
-                and (line.get("is_accent")
-                     or "accent" in (line.get("section") or "").lower()))
+        return bool(line.get("is_accent")) or "accent" in section
     if material_class == "trim":
-        return (line.get("face_id") == face_id
-                and "trim" in (line.get("section") or "").lower())
+        return "trim" in section and "accessor" not in section
     return False
+
+
+def _sqft_to_line_qty(total_sqft: float, unit: str) -> Optional[float]:
+    """Convert a polygon area (always ft²) into the takeoff line's unit.
+    SQUARES ÷100; area units pass through; anything else can't hold an
+    area → None (the caller refuses the bind)."""
+    u = (unit or "").strip().lower()
+    if u in {"sq", "square", "squares"}:
+        return round(total_sqft / 100.0, 2)
+    if u in {"sf", "sqft", "ft2", "ft²"}:
+        return round(total_sqft, 2)
+    return None
+
+
+def _overlay_note(line: dict, total: float) -> str:
+    base = (line.get("note") or "").split(" · PDF-OVERLAY")[0]
+    return (base + f" · PDF-OVERLAY zone ({total:.1f} ft²)").strip(" ·")
+
+
+def _retire_override(line: dict) -> bool:
+    """Retire an overlay override IN PLACE: restore the superseded derived
+    value and strip every overlay marker. Returns True when a retirement
+    actually happened. A retirement that does not restore the derived
+    value is a bug the suite refuses to ship (Law B)."""
+    if not line.get("overlay_superseded"):
+        line.pop("overlay_scale_unreadable", None)
+        line.pop("overlay_polygon_count", None)
+        line.pop("overlay_merged", None)
+        line.pop("overlay_sqft", None)
+        return False
+    if "superseded_qty" in line:
+        line["qty"] = line.pop("superseded_qty")
+    line["raw_qty"] = line.pop("superseded_raw_qty", line.get("qty"))
+    line["qty_src"] = line.pop("superseded_qty_src", "derived")
+    line.pop("overlay_superseded", None)
+    line.pop("overlay_polygon_count", None)
+    line.pop("overlay_merged", None)
+    line.pop("overlay_sqft", None)
+    line.pop("overlay_scale_unreadable", None)
+    if line.get("note"):
+        cleaned = line["note"].split("PDF-OVERLAY")[0].strip(" ·")
+        if cleaned:
+            line["note"] = cleaned
+        else:
+            line.pop("note", None)
+    return True
+
+
+def _group_baseline(polys: list[dict], line: dict) -> float:
+    """The pristine derived value (in the LINE's unit) for a material
+    class. Prefer the baseline captured on the polygons (durable — the
+    editor never touches that collection); fall back to the line's
+    superseded snapshot, then the line's current qty."""
+    for p in polys:
+        b = p.get("derived_baseline_qty")
+        if b is not None:
+            return b
+    if line.get("superseded_qty") is not None:
+        return line["superseded_qty"]
+    return line.get("qty")
 
 
 def apply_overlay_to_takeoff(
     lines: list[dict],
     polygons: list[dict],
-    sheet_dims_by_page: dict[int, tuple[float, float]] | None = None,
 ) -> list[dict]:
-    """Update `lines` in-place shape (returns a NEW list) so each
-    line whose (material_class, face_id) has one or more polygons
-    carries the summed polygon sqft on `qty`, with `qty_src="human"`.
+    """Return a NEW list of takeoff lines with the overlay applied per
+    Howard's three laws. Polygons bind by MATERIAL CLASS to the aggregate
+    takeoff line (the takeoff has no per-face lines — see `_line_matches`);
+    each polygon carries a pre-computed `sqft` (None ⇒ scale refused) and a
+    `derived_baseline_qty` (the app's original number in the line's unit)."""
+    by_class: dict[str, list[dict]] = {}
+    for p in polygons or []:
+        by_class.setdefault(p.get("material_class") or "", []).append(p)
 
-    Rebuild survival is delegated to hover.py's existing shield:
-    every line stamped `qty_src="human"` survives the next
-    rebuild verbatim. That's the walk-bar item 5+6 in one shot.
-    """
-    if not polygons:
-        return list(lines or [])
-    # Sum sqft per (material_class, face_id) key.
-    sums: dict[tuple[str, str], float] = {}
-    dims_by_page = sheet_dims_by_page or {}
-    for p in polygons:
-        page = int(p.get("page") or 1)
-        w_in, h_in = dims_by_page.get(
-            page, (DEFAULT_SHEET_WIDTH_IN, DEFAULT_SHEET_HEIGHT_IN))
-        sqft = polygon_sqft(p.get("vertices_pct") or [], w_in, h_in)
-        key = (p.get("material_class") or "", p.get("face_id") or "")
-        sums[key] = sums.get(key, 0.0) + sqft
-    # Apply to matching lines. A line with no matching polygon is left
-    # untouched. A polygon with no matching line is dropped on the floor
-    # this session — MUV punts adding new lines to session 3 (LegendPanel).
-    out = []
+    out: list[dict] = []
     for line in (lines or []):
-        matched_key = next(
-            ((k, v) for k, v in sums.items()
-             if _line_matches(line, k[0], k[1])),
+        new = dict(line)
+        matched = next(
+            (c for c in by_class if _line_matches(new, c)),
             None,
         )
-        if matched_key is None:
-            out.append(line)
+        if matched is None:
+            _retire_override(new)
+            out.append(new)
             continue
-        (_klass, _face), qty = matched_key
-        new_line = dict(line)
-        new_line["qty"] = round(qty, 2)
-        new_line["raw_qty"] = round(qty, 2)
-        new_line["qty_src"] = "human"
-        new_line["note"] = (
-            (line.get("note") or "").split(" · PDF-OVERLAY")[0]
-            + f" · PDF-OVERLAY zone ({qty:.1f} ft²)"
-        ).strip(" ·")
-        out.append(new_line)
+
+        polys = by_class[matched]
+        baseline = _group_baseline(polys, new)
+        convertible = [p for p in polys if p.get("sqft") is not None]
+        if not convertible:
+            _retire_override(new)
+            if baseline is not None:
+                new["qty"] = baseline
+                new["raw_qty"] = baseline
+                new["qty_src"] = "derived"
+            new["overlay_scale_unreadable"] = True
+            new["overlay_polygon_count"] = len(polys)
+            out.append(new)
+            continue
+
+        total_sqft = round(sum(float(p["sqft"]) for p in convertible), 2)
+        line_qty = _sqft_to_line_qty(total_sqft, new.get("unit") or "")
+        if line_qty is None:
+            # An area cannot bind to this line's unit (e.g. LF) — refuse.
+            _retire_override(new)
+            new["overlay_scale_unreadable"] = True
+            new["overlay_polygon_count"] = len(convertible)
+            out.append(new)
+            continue
+
+        new["superseded_qty"] = baseline
+        new["superseded_raw_qty"] = baseline
+        new["superseded_qty_src"] = "derived"
+        new["overlay_superseded"] = True
+        new["qty"] = line_qty
+        new["raw_qty"] = line_qty
+        new["qty_src"] = "human"
+        new["overlay_sqft"] = total_sqft
+        new["overlay_polygon_count"] = len(convertible)
+        new["overlay_merged"] = len(convertible) > 1
+        new.pop("overlay_scale_unreadable", None)
+        new["note"] = _overlay_note(line, total_sqft)
+        out.append(new)
     return out
 
 
@@ -258,8 +378,7 @@ def _validate_polygon(p: PolygonWriteIn) -> None:
 async def get_pdf_overlay(
     est_id: str, user: dict = Depends(get_current_user),
 ):
-    """List all polygons on this estimate (open read; reads never
-    fail on protected estimates)."""
+    """List all polygons on this estimate (open read)."""
     await _est_or_404(est_id, user)
     polys: list[dict] = []
     async for row in db.pdf_overlay_polygons.find(
@@ -269,26 +388,51 @@ async def get_pdf_overlay(
     return {"polygons": polys, "total": len(polys)}
 
 
+async def _current_baseline_for_class(
+    est: dict, est_id: str, material_class: str, exclude_id: str,
+) -> Optional[float]:
+    """The pristine derived value (line unit) for a material class. If any
+    OTHER polygon of the class already captured it, reuse that (so the
+    baseline never drifts to the human override). Otherwise read it from
+    the current matching aggregate line — pristine, because this is the
+    first polygon of the class."""
+    async for row in db.pdf_overlay_polygons.find(
+        {"estimate_id": est_id, "material_class": material_class,
+         "id": {"$ne": exclude_id}},
+        {"_id": 0, "derived_baseline_qty": 1},
+    ):
+        if row.get("derived_baseline_qty") is not None:
+            return row["derived_baseline_qty"]
+    for line in est.get("lines") or []:
+        if _line_matches(line, material_class):
+            return line.get("qty")
+    return None
+
+
 @router.put("/estimates/{est_id}/pdf-overlay")
 async def upsert_pdf_overlay(
     est_id: str,
     payload: PolygonWriteIn,
     user: dict = Depends(get_current_user),
 ):
-    """Upsert one polygon. Recomputes affected takeoff lines' qty
-    with `qty_src="human"` so rebuild-survival rides through the
-    existing hover.py shield.
+    """Upsert one polygon. Computes ft² from the evidence-grounded scale
+    (or REFUSES). Recomputes the affected line: REPLACE + SUPERSEDE.
 
-    HUMAN-ENTRY on protected estimates (Howard ruled 2026-08-13
-    pro-quotes reply 5): NO derived-write guard here. A drawn zone
-    is human entry — it rides above the freeze on EST-886440 and
-    lands in `protected_estimate_ledger` like tape-check and
-    profile-annotations.
-    """
+    HUMAN-ENTRY on protected estimates (ruled 2026-08-13 reply 5): NO
+    derived-write guard — a drawn zone rides above the freeze on
+    EST-886440 and lands in `protected_estimate_ledger`."""
     _validate_polygon(payload)
     est = await _est_or_404(est_id, user)
     pid = payload.id or str(uuid.uuid4())
     now = datetime.now(timezone.utc)
+
+    scale_ref = payload.scale_ref.dict() if payload.scale_ref else None
+    sqft = polygon_sqft_from_scale(
+        [[float(x), float(y)] for x, y in payload.vertices_pct],
+        scale_ref, payload.page_w_px, payload.page_h_px,
+    )
+    baseline = await _current_baseline_for_class(
+        est, est_id, payload.material_class, pid)
     doc = {
         "id": pid,
         "estimate_id": est_id,
@@ -297,6 +441,11 @@ async def upsert_pdf_overlay(
         "material_class": payload.material_class,
         "vertices_pct": [[float(x), float(y)]
                          for x, y in payload.vertices_pct],
+        "scale_ref": scale_ref,
+        "page_w_px": payload.page_w_px,
+        "page_h_px": payload.page_h_px,
+        "sqft": sqft,                       # None ⇒ scale refused
+        "derived_baseline_qty": baseline,   # the app's original number
         "qty_src": "human",
         "author_id": user.get("id") or "",
         "author_email": user.get("email") or "",
@@ -305,39 +454,30 @@ async def upsert_pdf_overlay(
     existing = await db.pdf_overlay_polygons.find_one({"id": pid})
     if existing:
         doc["created_at"] = existing.get("created_at") or now
+        # Preserve the group's original baseline across edits of an
+        # existing polygon (never re-capture from a now-overridden line).
+        if existing.get("derived_baseline_qty") is not None:
+            doc["derived_baseline_qty"] = existing["derived_baseline_qty"]
         await db.pdf_overlay_polygons.replace_one({"id": pid}, doc)
     else:
         doc["created_at"] = now
         await db.pdf_overlay_polygons.insert_one(doc)
 
-    # Recompute lines with all polygons on this estimate.
-    all_polys: list[dict] = []
-    async for row in db.pdf_overlay_polygons.find(
-        {"estimate_id": est_id}, {"_id": 0}
-    ):
-        all_polys.append(row)
-    new_lines = apply_overlay_to_takeoff(
-        est.get("lines") or [], all_polys,
-    )
-    await db.estimates.update_one(
-        {"id": est_id, "company_id": user["company_id"]},
-        {"$set": {"lines": new_lines, "updated_at": now}},
-    )
-    # Ledger the human write on protected estimates.
+    await _recompute_and_store(est_id, user, est.get("lines") or [])
+
     if await is_untouchable(est_id):
         await ledger_human_write(
             est_id, "pdf_overlay_polygon",
             actor_email=user.get("email", ""),
             meta={"polygon_id": pid, "page": doc["page"],
                   "face_id": doc["face_id"],
-                  "material_class": doc["material_class"]},
+                  "material_class": doc["material_class"],
+                  "sqft": sqft, "scale_read": sqft is not None},
         )
-    # Return a JSON-safe view (strip motor's inserted _id and coerce
-    # datetimes to iso strings on the timestamps).
     safe = {k: v for k, v in doc.items() if k != "_id"}
     safe["created_at"] = str(safe.get("created_at") or "")
     safe["updated_at"] = str(safe.get("updated_at") or "")
-    return {"ok": True, "polygon": safe}
+    return {"ok": True, "polygon": safe, "scale_read": sqft is not None}
 
 
 @router.delete("/estimates/{est_id}/pdf-overlay/{polygon_id}")
@@ -345,30 +485,72 @@ async def delete_pdf_overlay(
     est_id: str, polygon_id: str,
     user: dict = Depends(get_current_user),
 ):
-    """Delete one polygon. Recomputes lines. Same human-entry rule
-    as PUT — deleting a zone is still Howard's hand."""
+    """Delete one polygon and recompute (Law B). Deleting the LAST
+    polygon of a material_class RETIRES the override and RESTORES the
+    derived value — the retirement is LEDGERED. (Binding is per-class,
+    not per-face, because the takeoff has no per-face lines — the named
+    known limit; see `_line_matches`.)"""
     est = await _est_or_404(est_id, user)
-    res = await db.pdf_overlay_polygons.delete_one(
-        {"id": polygon_id, "estimate_id": est_id})
-    if res.deleted_count == 0:
+    victim = await db.pdf_overlay_polygons.find_one(
+        {"id": polygon_id, "estimate_id": est_id}, {"_id": 0})
+    if not victim:
         raise HTTPException(status_code=404, detail="Polygon not found")
+    await db.pdf_overlay_polygons.delete_one(
+        {"id": polygon_id, "estimate_id": est_id})
+
+    remaining = await db.pdf_overlay_polygons.count_documents(
+        {"estimate_id": est_id,
+         "material_class": victim.get("material_class")})
+    retired = remaining == 0
+
+    # Law B: when the last polygon of a class is gone, apply() no longer
+    # sees that class and leaves the (human-overridden) line as-is — so we
+    # RESTORE it to the polygon-captured baseline BEFORE recompute. This
+    # works even if the editor stripped the line's overlay markers.
+    lines = list(est.get("lines") or [])
+    if retired:
+        baseline = victim.get("derived_baseline_qty")
+        restored = []
+        for line in lines:
+            nl = dict(line)
+            if _line_matches(nl, victim.get("material_class")):
+                if baseline is not None:
+                    nl["qty"] = baseline
+                    nl["raw_qty"] = baseline
+                nl["qty_src"] = "derived"
+                _retire_override(nl)
+            restored.append(nl)
+        lines = restored
+
+    await _recompute_and_store(est_id, user, lines)
+
+    if await is_untouchable(est_id):
+        meta = {"deleted": polygon_id,
+                "face_id": victim.get("face_id"),
+                "material_class": victim.get("material_class")}
+        if retired:
+            meta["retired_override"] = True
+            meta["restored_derived"] = victim.get("derived_baseline_qty")
+        await ledger_human_write(
+            est_id, "pdf_overlay_polygon",
+            actor_email=user.get("email", ""), meta=meta)
+    return {"ok": True, "deleted": polygon_id, "retired_override": retired}
+
+
+async def _recompute_and_store(
+    est_id: str, user: dict, lines: list[dict],
+) -> None:
+    """Recompute the takeoff lines from ALL polygons on the estimate and
+    persist. Single source of truth for PUT and DELETE so the
+    REPLACE/SUPERSEDE/RETIRE laws never diverge between them."""
     all_polys: list[dict] = []
     async for row in db.pdf_overlay_polygons.find(
         {"estimate_id": est_id}, {"_id": 0}
     ):
         all_polys.append(row)
-    new_lines = apply_overlay_to_takeoff(
-        est.get("lines") or [], all_polys,
-    )
+    new_lines = apply_overlay_to_takeoff(lines, all_polys)
     await db.estimates.update_one(
         {"id": est_id, "company_id": user["company_id"]},
         {"$set": {"lines": new_lines,
                   "updated_at": datetime.now(timezone.utc)}},
     )
-    if await is_untouchable(est_id):
-        await ledger_human_write(
-            est_id, "pdf_overlay_polygon",
-            actor_email=user.get("email", ""),
-            meta={"deleted": polygon_id},
-        )
-    return {"ok": True, "deleted": polygon_id}

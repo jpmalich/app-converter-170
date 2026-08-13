@@ -7340,6 +7340,18 @@ async def ocr_scale(
         real_ft = 0.0
 
     found = bool(parsed.get("found")) and px_height > 0 and real_ft > 0
+    # Compressed-image pixel dims so callers can NORMALISE the endpoints
+    # (Claude returns them in the compressed coordinate system). Additive
+    # field — existing consumers ignore it. MUV's PdfOverlayEditor uses
+    # it to attach a per-view calibration to a drawn polygon.
+    img_w = img_h = 0
+    try:
+        from PIL import Image
+        import io as _io
+        with Image.open(_io.BytesIO(img_bytes)) as _im:
+            img_w, img_h = _im.size
+    except Exception:
+        img_w = img_h = 0
     return {
         "found":      found,
         "method":     parsed.get("method") or ("none" if not found else "dimension_line"),
@@ -7348,5 +7360,7 @@ async def ocr_scale(
         "source":     parsed.get("source") or "",
         "confidence": parsed.get("confidence") or "low",
         "endpoints":  endpoints,
+        "img_w":      img_w,
+        "img_h":      img_h,
         "notes":      parsed.get("notes") or "",
     }

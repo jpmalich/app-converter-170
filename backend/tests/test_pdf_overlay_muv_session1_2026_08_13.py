@@ -1,27 +1,22 @@
-"""MATERIAL ZONE LAYER — MUV SESSION 1 (Howard ruled 2026-08-13
-pro-quotes reply 5).
+"""MATERIAL ZONE LAYER — MUV SESSION 2 (Howard ruled 2026-08-13
+pro-quotes replies 5, 6, 7).
 
-Session 1 pins:
-  - Polygon area math (shoelace @ 3/16" = 1'-0") is deterministic
-    and correct for a known reference.
-  - `apply_overlay_to_takeoff` writes qty + qty_src=human on the
-    matching line and only that line (rebuild-survival delegated to
-    hover.py's existing shield; the fact that qty_src=human lands
-    is the contract).
-  - Seam `pdf_overlay_polygon_write` is registered in
-    seam_accounting.SEAM_REGISTRY.
-  - Face-id validation admits the cardinals + `dormer:<label>` and
-    rejects everything else.
-  - Material-class validation admits {siding, soffit, accent, trim}
-    only.
+Session 2 pins the THREE LAWS Howard ruled before S2 could ship:
 
-The HTTP surface (GET/PUT/DELETE) is exercised via a fastapi
-TestClient because a live-auth path would double the mock burden
-for a MUV; the client uses an authenticated stub user via the same
-dependency-override pattern the test_estimates_multi_tenant tests
-use elsewhere. Rebuild-survival IS the qty_src=human contract; a
-separate test file for the hover-rebuild round-trip will land in
-session 4 alongside the honesty layer regression.
+  A. REPLACE, NEVER ADD + the superseded derived value STAYS VISIBLE
+     and MARKED SUPERSEDED.
+  B. A human value is a FUNCTION of its polygons — delete one → the sum
+     recomputes; delete the last on a (face_id, material_class) → the
+     override RETIRES and the derived value RETURNS. PINNED BOTH
+     DIRECTIONS: a delete leaving an override standing fails the build,
+     and a retirement that does not restore the derived value fails the
+     build.
+  C. The scale is READ FROM THE SHEET, never defaulted. The 3/16"
+     constant is GONE. No scale for a polygon's view → area REFUSED
+     (sqft None), line flagged `overlay_scale_unreadable`, derived value
+     untouched.
+
+Plus the unchanged Session-1 contracts (seam registered, validation).
 """
 from __future__ import annotations
 
@@ -35,14 +30,21 @@ import pytest  # noqa: E402
 from seam_accounting import SEAM_REGISTRY  # noqa: E402
 from routes.pdf_overlay import (  # noqa: E402
     apply_overlay_to_takeoff,
-    polygon_sqft,
+    polygon_sqft_from_scale,
     _face_ok,
     _validate_polygon,
     MATERIAL_CLASSES,
-    DEFAULT_SHEET_WIDTH_IN,
-    DEFAULT_SHEET_HEIGHT_IN,
     PolygonWriteIn,
 )
+
+
+# A calibration that maps the FULL page width (normalised 0→1) to a
+# known real length. With page_w_px == page_h_px == 1000 and real_ft
+# spanning the whole width, feet-per-pixel is deterministic and every
+# area below is exact — NO baked scale constant anywhere.
+FULL_WIDTH_SCALE = {"p1": [0.0, 0.0], "p2": [1.0, 0.0],
+                    "real_ft": 40.0, "source": "calibration"}
+PAGE_PX = (1000.0, 1000.0)  # (w, h)
 
 
 # ---------- (A) SEAM registered --------------------------------------
@@ -57,112 +59,202 @@ def test_pdf_overlay_polygon_write_seam_is_registered():
     assert "protected_estimate_ledger" in text
 
 
-# ---------- (B) polygon area math ------------------------------------
+# ---------- (C) scale math is evidence-grounded, never constant ------
 
-def test_polygon_sqft_full_page_matches_scale_arithmetic():
-    """A polygon covering the ENTIRE US-letter portrait sheet at
-    3/16" = 1'-0" spans 8.5/(3/16) = 45.33 ft wide × 11/(3/16) =
-    58.67 ft tall. Area = 2661 ft² (± 1 for rounding)."""
+def test_area_is_computed_from_the_calibration_not_a_constant():
+    """A polygon spanning the full page under a 40ft-wide calibration on
+    a square 1000×1000 page is 40ft × 40ft = 1600 ft². The number falls
+    out of the EVIDENCE (the calibration), not a baked 3/16" scale."""
     full = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]
-    area = polygon_sqft(full,
-                        DEFAULT_SHEET_WIDTH_IN, DEFAULT_SHEET_HEIGHT_IN)
-    # 8.5 / (3/16) = 45.3333 ft; 11 / (3/16) = 58.6667 ft.
-    # 45.3333 × 58.6667 = 2659.55...
-    assert 2658 <= area <= 2661, f"got {area}"
+    area = polygon_sqft_from_scale(full, FULL_WIDTH_SCALE, *PAGE_PX)
+    assert area is not None
+    assert abs(area - 1600.0) < 1.0, f"got {area}"
 
 
-def test_polygon_sqft_quarter_page_is_quarter_area():
-    """Half-width × half-height polygon = ¼ of the full-page area."""
-    full_area = polygon_sqft(
-        [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]])
-    quarter = polygon_sqft(
-        [[0.0, 0.0], [0.5, 0.0], [0.5, 0.5], [0.0, 0.5]])
-    assert abs(quarter * 4 - full_area) < 0.1
+def test_area_scales_with_the_calibration_length():
+    """Halving the real_ft on the SAME calibration span quarters the
+    area — proof the number tracks the evidence, not a constant."""
+    full = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]
+    big = polygon_sqft_from_scale(full, FULL_WIDTH_SCALE, *PAGE_PX)
+    half_scale = {**FULL_WIDTH_SCALE, "real_ft": 20.0}
+    small = polygon_sqft_from_scale(full, half_scale, *PAGE_PX)
+    assert abs(small * 4 - big) < 0.1
 
 
-def test_polygon_sqft_ignores_winding_order():
-    """A CW polygon and a CCW polygon over the same vertices produce
-    the same absolute area."""
+def test_area_ignores_winding_order():
     ccw = [[0.1, 0.1], [0.3, 0.1], [0.3, 0.3], [0.1, 0.3]]
     cw = list(reversed(ccw))
-    assert abs(polygon_sqft(ccw) - polygon_sqft(cw)) < 1e-9
+    a = polygon_sqft_from_scale(ccw, FULL_WIDTH_SCALE, *PAGE_PX)
+    b = polygon_sqft_from_scale(cw, FULL_WIDTH_SCALE, *PAGE_PX)
+    assert a is not None and b is not None
+    assert abs(a - b) < 1e-6
 
 
-def test_polygon_sqft_degenerate_returns_zero():
-    """Fewer than 3 vertices ⇒ zero (no polygon)."""
-    assert polygon_sqft([]) == 0.0
-    assert polygon_sqft([[0.1, 0.1]]) == 0.0
-    assert polygon_sqft([[0.1, 0.1], [0.2, 0.2]]) == 0.0
+def test_no_scale_refuses_conversion_returns_none():
+    """Law C: no scale for the view → REFUSE. Never a defaulted number."""
+    full = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]
+    assert polygon_sqft_from_scale(full, None, *PAGE_PX) is None
+    assert polygon_sqft_from_scale(full, FULL_WIDTH_SCALE, None, None) is None
+    bad = {"p1": [0, 0], "p2": [0, 0], "real_ft": 40.0}  # zero-length span
+    assert polygon_sqft_from_scale(full, bad, *PAGE_PX) is None
+    zero_ft = {"p1": [0, 0], "p2": [1, 0], "real_ft": 0.0}
+    assert polygon_sqft_from_scale(full, zero_ft, *PAGE_PX) is None
 
 
-# ---------- (C) apply_overlay_to_takeoff -----------------------------
+def test_degenerate_polygon_returns_none():
+    assert polygon_sqft_from_scale([], FULL_WIDTH_SCALE, *PAGE_PX) is None
+    assert polygon_sqft_from_scale([[0.1, 0.1]], FULL_WIDTH_SCALE, *PAGE_PX) is None
+
+
+# ---------- (A) apply: REPLACE + SUPERSEDE ---------------------------
 
 def _base_lines():
+    # The REAL takeoff shape (EST-886440): ONE aggregate siding body line
+    # in SQUARES, plus accessory (LF, excluded) and an ascend-tab line
+    # (excluded — MUV binds the vinyl tab).
     return [
         {"tab": "vinyl", "section": "Vinyl Siding",
-         "name": "Charter Oak", "unit": "SQ", "face_id": "front",
-         "qty": 5.0, "qty_src": "derived"},
-        {"tab": "vinyl", "section": "Vinyl Siding",
-         "name": "Charter Oak", "unit": "SQ", "face_id": "back",
-         "qty": 5.0, "qty_src": "derived"},
-        {"tab": "vinyl", "section": "Trim", "name": "J-channel",
-         "unit": "LF", "face_id": "front",
-         "qty": 12.0, "qty_src": "derived"},
+         "name": "Charter Oak", "unit": "SQ",
+         "qty": 44.0, "raw_qty": 44.0, "qty_src": "derived"},
+        {"tab": "vinyl", "section": "Siding Accessories",
+         "name": "J-channel", "unit": "LF",
+         "qty": 133.0, "raw_qty": 133.0, "qty_src": "derived"},
+        {"tab": "ascend", "section": "Vinyl Siding",
+         "name": "Ascend", "unit": "SQ",
+         "qty": 40.0, "raw_qty": 40.0, "qty_src": "derived"},
     ]
 
 
-def test_apply_stamps_qty_src_human_on_the_matched_line():
-    """A siding polygon on the front face updates ONLY the front
-    siding line's qty and stamps qty_src=human. Rebuild survival is
-    then delivered by hover.py's existing shield on 'human'."""
-    polys = [{
-        "page": 1, "face_id": "front", "material_class": "siding",
-        "vertices_pct": [[0.0, 0.0], [0.5, 0.0], [0.5, 0.5], [0.0, 0.5]],
-    }]
-    out = apply_overlay_to_takeoff(_base_lines(), polys)
-    front = next(l for l in out
-                 if l["face_id"] == "front" and l["section"] == "Vinyl Siding")
-    back = next(l for l in out
-                if l["face_id"] == "back" and l["section"] == "Vinyl Siding")
-    trim = next(l for l in out if l["section"] == "Trim")
-    assert front["qty_src"] == "human"
-    assert front["qty"] > 0
-    assert "PDF-OVERLAY" in front.get("note", "")
-    # Untouched lines keep their derived source.
-    assert back["qty_src"] == "derived"
-    assert trim["qty_src"] == "derived"
+def _siding_line(out):
+    return next(l for l in out
+                if l["tab"] == "vinyl" and l["section"] == "Vinyl Siding")
 
 
-def test_apply_sums_multiple_polygons_on_same_face():
-    """Two polygons on the front siding line sum their sqft."""
-    polys = [
-        {"page": 1, "face_id": "front", "material_class": "siding",
-         "vertices_pct": [[0.0, 0.0], [0.25, 0.0], [0.25, 0.25], [0.0, 0.25]]},
-        {"page": 1, "face_id": "front", "material_class": "siding",
-         "vertices_pct": [[0.5, 0.5], [0.75, 0.5], [0.75, 0.75], [0.5, 0.75]]},
-    ]
-    out = apply_overlay_to_takeoff(_base_lines(), polys)
-    front = next(l for l in out
-                 if l["face_id"] == "front" and l["section"] == "Vinyl Siding")
-    expected = polygon_sqft(polys[0]["vertices_pct"]) + \
-               polygon_sqft(polys[1]["vertices_pct"])
-    assert abs(front["qty"] - round(expected, 2)) < 0.01
+def _poly(face, klass, sqft, pid="p1", baseline=44.0):
+    return {"id": pid, "page": 1, "face_id": face, "material_class": klass,
+            "vertices_pct": [[0.0, 0.0], [0.5, 0.0], [0.5, 0.5], [0.0, 0.5]],
+            "sqft": sqft, "derived_baseline_qty": baseline}
+
+
+def test_apply_replaces_and_marks_superseded():
+    """Law A: a siding polygon REPLACES the aggregate siding qty (does
+    NOT add), converts ft²→SQUARES (900 ft² = 9 SQ), stamps
+    qty_src=human, and KEEPS the app's number on `superseded_qty`."""
+    out = apply_overlay_to_takeoff(
+        _base_lines(), [_poly("front", "siding", 900.0)])
+    sid = _siding_line(out)
+    assert sid["qty_src"] == "human"
+    assert sid["qty"] == 9.0                      # 900 ft² / 100 = 9 SQ; REPLACED
+    assert sid["overlay_superseded"] is True
+    assert sid["superseded_qty"] == 44.0          # app's number kept
+    assert sid["overlay_sqft"] == 900.0
+    assert "PDF-OVERLAY" in sid.get("note", "")
+    # Accessory (LF) + ascend-tab lines are NOT touched.
+    for l in out:
+        if l is sid:
+            continue
+        assert l["qty_src"] == "derived"
+
+
+def test_apply_sums_multiple_polygons_and_flags_merged():
+    """Two zones on the class SUM their ft² and the line flags
+    `overlay_merged` so the sheet says the numbers were merged."""
+    out = apply_overlay_to_takeoff(
+        _base_lines(),
+        [_poly("front", "siding", 300.0, "a"),
+         _poly("front", "siding", 200.0, "b")])
+    sid = _siding_line(out)
+    assert sid["overlay_sqft"] == 500.0
+    assert sid["qty"] == 5.0
+    assert sid["overlay_merged"] is True
+    assert sid["overlay_polygon_count"] == 2
+
+
+def test_delete_last_polygon_retires_override_and_restores_derived():
+    """Law B forward: with NO polygons left, the override RETIRES and the
+    app's number RETURNS — walk-bar item 7."""
+    superseded = apply_overlay_to_takeoff(
+        _base_lines(), [_poly("front", "siding", 900.0)])
+    retired = apply_overlay_to_takeoff(superseded, [])
+    sid = _siding_line(retired)
+    assert sid["qty"] == 44.0
+    assert sid["qty_src"] == "derived"
+    assert "overlay_superseded" not in sid
+    assert "superseded_qty" not in sid
+    assert "PDF-OVERLAY" not in (sid.get("note") or "")
+
+
+def test_no_line_keeps_an_override_after_its_polygons_are_gone():
+    """Law B failing-build pin: NO line may wear qty_src=human or carry
+    `overlay_superseded` once its polygons are gone."""
+    superseded = apply_overlay_to_takeoff(
+        _base_lines(), [_poly("front", "siding", 900.0)])
+    retired = apply_overlay_to_takeoff(superseded, [])
+    for l in retired:
+        assert "overlay_superseded" not in l, l
+    assert _siding_line(retired)["qty_src"] == "derived"
+
+
+def test_retirement_restores_the_exact_derived_value_not_a_default():
+    """Law B other-direction pin: retirement restores the EXACT baseline,
+    never a default/zero."""
+    original = _base_lines()
+    superseded = apply_overlay_to_takeoff(original, [_poly("front", "siding", 99900.0)])
+    retired = apply_overlay_to_takeoff(superseded, [])
+    assert _siding_line(retired)["qty"] == _siding_line(original)["qty"]
+    assert _siding_line(retired)["qty_src"] == "derived"
+
+
+def test_delete_one_of_several_recomputes_the_sum():
+    """Law B middle: with one of two polygons removed, the override stays
+    but the sum RECOMPUTES from what remains."""
+    two = apply_overlay_to_takeoff(
+        _base_lines(),
+        [_poly("front", "siding", 300.0, "a"),
+         _poly("back", "siding", 200.0, "b")])
+    assert _siding_line(two)["overlay_sqft"] == 500.0
+    one = apply_overlay_to_takeoff(two, [_poly("front", "siding", 300.0, "a")])
+    sid = _siding_line(one)
+    assert sid["overlay_sqft"] == 300.0
+    assert sid["qty"] == 3.0
+    assert sid["qty_src"] == "human"
+    assert sid.get("overlay_merged") is False
+
+
+def test_unconvertible_polygon_refuses_and_flags_the_line():
+    """A polygon whose scale could not be read (sqft None) does NOT
+    override the line — it keeps the derived value and flags
+    `overlay_scale_unreadable`."""
+    out = apply_overlay_to_takeoff(
+        _base_lines(), [_poly("front", "siding", None)])
+    sid = _siding_line(out)
+    assert sid["qty"] == 44.0
+    assert sid["qty_src"] == "derived"
+    assert sid["overlay_scale_unreadable"] is True
+    assert "overlay_superseded" not in sid
+
+
+def test_losing_scale_retires_a_prior_override():
+    superseded = apply_overlay_to_takeoff(
+        _base_lines(), [_poly("front", "siding", 900.0)])
+    lost = apply_overlay_to_takeoff(superseded, [_poly("front", "siding", None)])
+    sid = _siding_line(lost)
+    assert sid["qty"] == 44.0
+    assert sid["qty_src"] == "derived"
+    assert sid["overlay_scale_unreadable"] is True
 
 
 def test_apply_polygon_without_matching_line_is_dropped():
-    """A polygon whose (material_class, face_id) has no line is
-    dropped on the floor in Session 1 — Session 3 (LegendPanel)
-    handles new-row synthesis."""
-    polys = [{
-        "page": 1, "face_id": "left", "material_class": "siding",
-        "vertices_pct": [[0.0, 0.0], [0.2, 0.0], [0.2, 0.2], [0.0, 0.2]],
-    }]
-    out = apply_overlay_to_takeoff(_base_lines(), polys)
-    # Every original line survives untouched.
-    assert len(out) == 3
-    for orig, new in zip(_base_lines(), out):
-        assert orig["qty"] == new["qty"]
-        assert new.get("qty_src") != "human"
+    """A polygon whose class has no matching aggregate line leaves every
+    line untouched."""
+    lines = [
+        {"tab": "vinyl", "section": "Siding Accessories",
+         "name": "J-channel", "unit": "LF", "qty": 133.0, "qty_src": "derived"},
+    ]
+    out = apply_overlay_to_takeoff(lines, [_poly("front", "siding", 900.0)])
+    assert len(out) == 1
+    assert out[0]["qty"] == 133.0
+    assert out[0].get("qty_src") != "human"
 
 
 # ---------- (D) validation -------------------------------------------
@@ -176,14 +268,12 @@ def test_face_ok_accepts_cardinals_and_dormer_labels():
 
 def test_face_ok_rejects_bad_ids():
     assert not _face_ok("")
-    assert not _face_ok("garage")  # not a cardinal
-    assert not _face_ok("dormer:")  # empty label
-    assert not _face_ok("front_dormer")  # doesn't match prefix
+    assert not _face_ok("garage")
+    assert not _face_ok("dormer:")
+    assert not _face_ok("front_dormer")
 
 
 def test_material_classes_are_the_four_muv_classes():
-    """MUV ships four material classes. Additions are one-line
-    registry edits — deliberately tight to keep the walk-bar honest."""
     assert MATERIAL_CLASSES == {"siding", "soffit", "accent", "trim"}
 
 
@@ -222,10 +312,6 @@ def test_validate_polygon_rejects_out_of_range_vertex():
 # ---------- (E) protected-estimate human-entry rule ------------------
 
 def test_untouchable_names_pdf_overlay_polygon_as_human_entry():
-    """The untouchable module's docstring names pdf_overlay_polygon
-    in the human-entry list — the walk on EST-886440 depends on
-    this class being on the ledger's write set (built in at MUV
-    birth per pro-quotes reply 5, not discovered on the walk)."""
     from untouchable import ledger_human_write
     doc = ledger_human_write.__doc__ or ""
     assert "pdf_overlay_polygon" in doc

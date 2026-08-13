@@ -33,6 +33,7 @@ import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
 import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
 import SidingProfileChip from "@/components/estimate/SidingProfileChip";
+import PdfOverlayEditor from "@/components/estimate/PdfOverlayEditor";
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
 import FinalJobSurface from "@/components/estimate/FinalJobSurface";
 
@@ -43,7 +44,7 @@ export default function EstimateEditor() {
   const { lang } = useLang();
   const { company } = useCompany();
   const branding = useBranding();
-  const { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, toggleLineAdder, updateAdderQty, setInstallMethod, setHomePre1978, save } = useEstimate(id);
+  const { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, toggleLineAdder, updateAdderQty, setInstallMethod, setHomePre1978, save, reload } = useEstimate(id);
   // Reconcile window-opening price snapshots once per estimate load — fixes
   // the $0 totals on freshly HOVER-imported windows estimates whose openings
   // arrive with base_mat: 0. No-op for estimates without window openings.
@@ -477,6 +478,9 @@ export default function EstimateEditor() {
                 never gated behind a measurement run. */}
             {activeTab === "vinyl" && (
               <SidingProfileChip est={est} catalog={catalog} update={update} save={save} />
+            )}
+            {activeTab === "vinyl" && (
+              <PdfOverlayEditor est={est} onChanged={reload} />
             )}
             {/* ACCENT INJECTION WORKS ON EVERY DOOR (ruled 2026-08-09):
                 manual accents are how a contractor CORRECTS the app —

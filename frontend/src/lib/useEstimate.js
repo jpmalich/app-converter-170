@@ -49,6 +49,10 @@ export default function useEstimate(id) {
   const [catalog, setCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [emailStatus, setEmailStatus] = useState({ configured: false });
+  // MUV (2026-08-13) — bump to re-run the loader so a PDF-overlay
+  // write (which mutates est.lines server-side) reflects in the takeoff
+  // without a full page reload.
+  const [reloadNonce, setReloadNonce] = useState(0);
   // User-edit counter — bumped on every user mutation (update, qty, field,
   // reset). The autosave effect watches this so it can fire ONLY for real
   // user edits, never for the initial load or for est updates triggered
@@ -177,7 +181,9 @@ export default function useEstimate(id) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, reloadNonce]);
+
+  const reload = useCallback(() => setReloadNonce((n) => n + 1), []);
 
   const update = useCallback((patch) => {
     setEst((e) => ({ ...e, ...patch }));
@@ -719,5 +725,5 @@ export default function useEstimate(id) {
     };
   }, [id, userEdits, buildPayload]);
 
-  return { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, toggleLineAdder, updateAdderQty, setInstallMethod, setHomePre1978, totalWindowQty, save };
+  return { est, catalog, loading, emailStatus, update, updateLineQty, updateLineField, resetLineToDefault, toggleLineAdder, updateAdderQty, setInstallMethod, setHomePre1978, totalWindowQty, save, reload };
 }

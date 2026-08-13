@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only E2E test of PdfOverlayEditor (Material Zone Layer / MUV Session 2) on protected estimate EST-886440. All 10 required flows exercised end-to-end in real browser against public REACT_APP_BACKEND_URL. 9/10 pass cleanly; 1 minor test-id mismatch found in the superseded impact card.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "PdfOverlayEditor > Superseded side-by-side card",
+        "issue": "Impact row for the vinyl siding aggregate does render (visible in DOM as 'Vinyl Siding · app 44 → you 2.27 SQ' after drawing a siding+front zone) but its data-testid is NOT `pdf-overlay-impact-front` as the spec required. In code the testid is built as `pdf-overlay-impact-${im.face}` where im.face = line.face_id. The aggregate siding line coming back from /estimates/:id has an empty/null face_id (front/back aggregate line), so the emitted testid is `pdf-overlay-impact-` (empty suffix). Automation querying `pdf-overlay-impact-front` returns not-visible even though the UI is correct. Also, the visible header shows only 'Vinyl Siding · ' with no face token, confirming face_id is missing on that line.",
+        "selector": "[data-testid='pdf-overlay-impact-front']",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "In PdfOverlayEditor.jsx impacts useMemo, when line.face_id is falsy for the aggregate siding line, fall back to a stable token derived from the drawn polygon's face_id (or default to 'front') so data-testid `pdf-overlay-impact-front` is produced as the spec requires; alternatively update the surface to show the face label 'front' next to 'Vinyl Siding'. This affects automation-visibility only; the human-visible behavior (strikethrough + you N SQ) already works."
+  ],
+  "critical_code_review_comments": [
+    "PdfOverlayEditor.jsx impacts row (line ~555) constructs testid from im.face which is derived directly from backend line.face_id — brittle when backend returns null/empty for aggregate faces. Prefer normalizing to 'front' or the polygon's face for aggregate siding.",
+    "polygonSqft is a duplicate of backend logic (documented intentionally as a live mirror); consider centralizing into a small helper module so backend/frontend can be diff-audited."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "90% (9/10 flows pass; impact-front testid is the only miss)"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (owner) — worked",
+  "seed_data_creation": "None persisted. Every zone drawn during the test was deleted (delete restores app number verified). No residual state on EST-886440.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "PdfOverlayEditor works end-to-end: 11 rasterised pages render in the strip, canvas image loads (3456x2592), trace-scale flow completes with 30ft OK badge, polygon draw yields '227.1 ft²' zone, toast 'Zone saved · 227.1 ft²' fires, impact card shows 'app 44 → you 2.27 SQ' with strikethrough, delete removes the zone and clears the impact row, and drawing on page 11 (no scale) intentionally produces a 'no scale' badge (Law C refusal). Only the impact card's data-testid uses an empty face suffix instead of 'front' for the aggregate siding line.",
+  "rca of the issue": "impacts array is built from est.lines filtered by overlay_superseded/overlay_scale_unreadable. The aggregate vinyl siding line returned from /estimates/:id keeps face_id null/empty because it is a whole-material aggregate. The JSX interpolates im.face into both the visible header AND the data-testid, producing `pdf-overlay-impact-` (empty). Mitigation: coerce im.face to 'front' (or derive from the underlying polygon's face_id when the aggregate line has none) before rendering."
+}

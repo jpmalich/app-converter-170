@@ -60,12 +60,18 @@ LOCAL_WRITE_RX = re.compile(
 # leaves optimistic state behind). Each entry named + explained. Adding
 # a new entry requires a comment saying WHY it is safe.
 UNCONDITIONAL_SAFE: dict[str, str] = {
-    # (No sites listed. SettingsRow.jsx has ONE Class-Beta write
-    # (saveSpec's post-response update) AND ONE Class-Alpha write
-    # (updateWastePct's optimistic + rederive) — it therefore routes
-    # through writeThrough. The Class-Beta write is safe by
-    # construction; the import is what retires the file for the
-    # detector.)
+    # MUV S2 (2026-08-13, pro-quotes reply 6/7) — PdfOverlayEditor is
+    # Class-Beta by construction: every persisted-state update
+    # (setPolygons after PUT/DELETE) runs INSIDE the response block from
+    # the server's returned polygon, never optimistically before the
+    # await. The only pre-await local writes are `setDraft(null)` (clears
+    # the in-progress drawing draft — not server state, nothing to roll
+    # back) and `setOcrBusy(true)` (a UI busy flag reset in `finally`).
+    # A thrown await leaves no optimistic persisted state behind.
+    "components/estimate/PdfOverlayEditor.jsx":
+        "Class-Beta: setPolygons runs post-response from the server's "
+        "returned doc; the only pre-await writes are draft-clear + a UI "
+        "busy flag, neither of which is rollback-bearing server state.",
 }
 
 

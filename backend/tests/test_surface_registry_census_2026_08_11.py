@@ -127,6 +127,17 @@ BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
     ("pages/EstimateEditor.jsx", "if (!isLpKind || !lpPkg) return null;"),
     ("pages/ISSEstimateEditor.jsx", "if (!est) return null;"),
     ("pages/SourceSheets.jsx", "if (rows.length === 0) return null;"),
+    # MUV S2 (2026-08-13, pro-quotes reply 6/7) — PdfOverlayEditor's
+    # `polygonSqft` is a pure MATH helper, not a render surface. Its
+    # null-returns ARE Law C (scale read from the sheet, never defaulted):
+    # a null means "the scale for this view could not be read, REFUSE the
+    # area." The refusal is spoken loudly on the surface (the zone badge
+    # reads "no scale", the impact panel reads "scale not read — cannot
+    # convert", and a warning toast fires) — this is evidence-or-null, the
+    # opposite of a silent conditional.
+    ("components/estimate/PdfOverlayEditor.jsx", "if (!vertices || vertices.length < 3 || !scaleRef || !wpx || !hpx) return null;"),
+    ("components/estimate/PdfOverlayEditor.jsx", "if (!p1 || !p2 || !real_ft || real_ft <= 0) return null;"),
+    ("components/estimate/PdfOverlayEditor.jsx", "if (calibPx <= 0) return null;"),
     # BlueprintReadBackCard: null when no readback yet — this card is
     # rendered inside the run dialog modal; the persistent Blueprint
     # Elevation Entry (registry S1) speaks the state on the estimate
