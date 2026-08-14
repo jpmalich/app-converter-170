@@ -1,5 +1,46 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 SEND-14 — CONFLICT RAIL NARROWED (Ruling D) + REGISTER DISCIPLINE SEALED (Ruling C) + 4 CENSUSES
+Suite 2393→**2400 passed / 5 skipped**.
+
+**RULING D (CODE) — conflict rail = PHYSICAL IMPOSSIBILITY, not field-name
+collision.** `_shared_attribution_conflict` rewritten: fires the louder
+`dims_shared_source_conflict` ONLY when (a) a VERTICAL span (height/rise)
+shares a quote with a HORIZONTAL span (width/LF), or (b) ≥2 VERTICAL spans
+on DIFFERENT features share it. Opposing-facade overall widths (58'-0"
+front+back) → PLAIN `dims_shared_source`. `_leaf_is_vertical` classifies
+leaves. NAMED PIN for the 58'-0" front/back → plain rail:
+`test_rulings_2026_08_14_send14.py::test_ruling_D_58ft_front_back_share_lands_on_the_PLAIN_rail`.
+Send-13 width-collision pins updated to the D predicate; new conflict pins
+(width vs height, two walls' heights) added.
+
+**RULING C (SEALED) — register discipline permanent.** One register file
+per send, ruling WORDS verbatim in docstrings, held rulings as visible
+named skips. New skip class `ruling:held` registered in the skip-reason
+registry. Register files: test_rulings_2026_08_14_send13.py (+held skip),
+test_rulings_2026_08_14_send14.py.
+
+**REPORTS (report-only findings for Howard):**
+- R1 Surface census: shared-source flag renders ONLY on the read-back card
+  (BlueprintReadBackCard.jsx rail map). Elevation SHEET = NOT BUILT.
+  Money-LINE NOTE = NOT BUILT. (Send-13 claimed 3 surfaces; 2/3 unbuilt.)
+- R2 Consumer census: only the 2 wall_body_gross_sqft call sites got subset
+  treatment. Siblings reading top-level width/height WITHOUT it: walk_walls
+  gable (silent 0, no disclosure), eaves_from_walls, base_starter_course_lf,
+  corners/OSC/ISC via avg wall height. breakdown gable DOES disclose.
+- R3 No-fallback pin EXISTS: test_segment_partial_derivability::
+  test_no_fallback_to_top_level_rectangle (seeds a top-level rectangle,
+  asserts it is NOT returned).
+- R4 Retro-registration: last six sends (8–13) all carry pins; the one
+  vanished ruling (segment-partial) is now built+pinned; R1/R2 surface two
+  NEW partial gaps (shared-source surfaces, sibling consumers) — reported,
+  NOT built this pass.
+
+**NEXT:** Howard re-fires EST-713272 and reports the four faces (that
+report, not the green suite, stamps A/B built). Then Law B · Linear Edges S3.
+
+
+
 ## 2026-08-14 SEND-13 — SHARED-SOURCE FLAG (not kill) + SEGMENT-LEVEL PARTIAL DERIVABILITY + REGISTER FIX
 Report on the 3rd EST-713272 re-fire (run 68872f8c) proved rulings 2 & 3
 FIRED (24'-0 1/2" located via skeleton ×3; page-9 30'-0" located on

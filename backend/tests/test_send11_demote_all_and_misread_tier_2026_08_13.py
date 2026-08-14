@@ -77,8 +77,9 @@ def test_shared_quote_no_longer_nulls_its_consumers():
 
 def test_shared_source_ledger_keeps_all_consumers():
     """The ledger names the quote and ALL consumers; nothing demoted,
-    kept == consumers. Two walls' widths from one quote is an ATTRIBUTION
-    CONFLICT — flagged louder, still not a kill."""
+    kept == consumers. Two walls' WIDTHS from one overall quote is the
+    LEGITIMATE opposing-facade share (send-14 D) — PLAIN rail, not a
+    conflict."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     shared = raw.get("_dim_shared_source") or []
@@ -88,13 +89,14 @@ def test_shared_source_ledger_keeps_all_consumers():
                                    "walls.right.width_ft"}
     assert set(r["kept"]) == set(r["consumers"])
     assert r["demoted"] == []
-    assert r["conflicting"] is True
+    assert r["conflicting"] is False
 
 
 def test_shared_across_different_kinds_is_not_a_conflict():
-    """A width quote also feeding a same-wall gutter/eave LF shares a
-    value legitimately (different leaf fields) — flagged, but NOT the
-    louder attribution-conflict variant."""
+    """A width quote also feeding a same-wall gutter LF shares a value
+    legitimately (both HORIZONTAL spans) — flagged, but NOT the louder
+    attribution-conflict variant (send-14 D: horizontal+horizontal is
+    physically possible)."""
     raw = {
         "gutter_runs": [{"label": "front garage", "lf": 24.0}],
         "walls": [{"label": "front", "width_ft": 24.0,
@@ -111,6 +113,38 @@ def test_shared_across_different_kinds_is_not_a_conflict():
     r = (raw.get("_dim_shared_source") or [])[0]
     assert r["conflicting"] is False
     assert r["demoted"] == []
+
+
+def test_width_and_height_sharing_one_quote_is_a_conflict():
+    """PHYSICAL IMPOSSIBILITY (send-14 D): a width and a height cannot be
+    the same measurement — louder conflict rail, still not a kill."""
+    raw = {
+        "walls": [{"label": "front", "width_ft": 20.0, "height_ft": 20.0}],
+        "_dim_evidence": {
+            "walls.front.width_ft": {"v": 20.0, "page": 6, "from": "20'-0\""},
+            "walls.front.height_ft": {"v": 20.0, "page": 6, "from": "20'-0\""},
+        },
+    }
+    _one_source_one_path_guard(raw)
+    r = (raw.get("_dim_shared_source") or [])[0]
+    assert r["conflicting"] is True
+    assert r["demoted"] == []
+
+
+def test_two_walls_heights_sharing_one_quote_is_a_conflict():
+    """PHYSICAL IMPOSSIBILITY (send-14 D): two distinct walls' heights
+    cannot be assumed equal — louder conflict rail."""
+    raw = {
+        "walls": [{"label": "front", "height_ft": 9.9},
+                  {"label": "back", "height_ft": 9.9}],
+        "_dim_evidence": {
+            "walls.front.height_ft": {"v": 9.9, "page": 6, "from": "9'-11\""},
+            "walls.back.height_ft": {"v": 9.9, "page": 6, "from": "9'-11\""},
+        },
+    }
+    _one_source_one_path_guard(raw)
+    r = (raw.get("_dim_shared_source") or [])[0]
+    assert r["conflicting"] is True
 
 
 def test_three_way_share_flags_all_three_and_keeps_them():
@@ -133,7 +167,8 @@ def test_three_way_share_flags_all_three_and_keeps_them():
     assert set(shared["kept"]) == set(shared["consumers"])
     assert len(shared["kept"]) == 3
     assert shared["demoted"] == []
-    assert shared["conflicting"] is True
+    # three walls' WIDTHS are horizontal opposing/adjacent facades — plain.
+    assert shared["conflicting"] is False
 
 
 def test_fabricated_quote_still_dies_at_existence_not_here():

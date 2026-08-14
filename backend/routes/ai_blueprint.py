@@ -2150,16 +2150,45 @@ def _null_unverified_quotes(raw: dict) -> None:
             [r["path"] for r in nulled_unv])
 
 
+_VERTICAL_LEAF_EXACT = {"rise", "rise_ft", "plate", "plate_ft", "plate_height",
+                        "plate_height_ft"}
+
+
+def _leaf_is_vertical(leaf: str) -> bool:
+    """A leaf field that measures a VERTICAL span (a height / rise)."""
+    l = str(leaf or "").lower()
+    return l.endswith("height_ft") or l.endswith("_height") or \
+        l in _VERTICAL_LEAF_EXACT
+
+
 def _shared_attribution_conflict(paths) -> bool:
-    """True when the shared consumers include the SAME leaf field on TWO
-    DIFFERENT named features (two walls' width_ft, two planes' eave_lf) —
-    an attribution claim that cannot be independently verified. The flag
-    is LOUDER in that case, never a kill."""
-    by_leaf: dict[str, set] = {}
+    """PHYSICAL IMPOSSIBILITY (Howard ruled 2026-08-14 send-14 D). The
+    louder conflict rail fires ONLY when the shared consumers CANNOT both
+    hold the value:
+      * a VERTICAL span (a height) shares a quote with a HORIZONTAL span
+        (a width / length / LF) — a width is not a height; OR
+      * two or more VERTICAL spans on DIFFERENT named features share it —
+        two walls' heights, or a wall's and a dormer's height, cannot be
+        assumed equal.
+    An overall HORIZONTAL dimension serving two opposing facades
+    (58'-0" front + back width) is NOT impossible — it IS the house — so
+    it stays on the PLAIN rail with its consumers named. The old
+    field-name-collision trigger fired on exactly that legitimate share;
+    a rail that cries wolf on the commonest correct case is the same
+    defect class as a rail that never fires."""
+    vertical_features = set()
+    horizontal = False
+    vertical = False
     for p in paths:
-        parts = p.split(".")
-        by_leaf.setdefault(parts[-1], set()).add(".".join(parts[:-1]))
-    return any(len(feats) >= 2 for feats in by_leaf.values())
+        parts = str(p).split(".")
+        if _leaf_is_vertical(parts[-1]):
+            vertical = True
+            vertical_features.add(".".join(parts[:-1]))
+        else:
+            horizontal = True
+    if vertical and horizontal:
+        return True
+    return len(vertical_features) >= 2
 
 
 def _one_source_one_path_guard(raw: dict) -> None:

@@ -93,6 +93,13 @@ SKIP_REASON_CLASSES = {
         "the same external URL the frontend does. Skipped when the "
         "env is missing; the fix is to source frontend/.env, not to "
         "write the test differently.",
+    "ruling:held":
+        "A RULING that is on the record but NOT YET BUILD-ABLE (Ruling C, "
+        "sealed 2026-08-14 send-14: 'a ruling that is HELD enters as a "
+        "VISIBLE NAMED SKIP stating why it is held and what would unhold "
+        "it. It shows in every run as on-the-record-and-unbuilt.'). The "
+        "skip reason MUST state what would unhold it. This is how a held "
+        "ruling can never silently vanish between sends.",
 }
 
 

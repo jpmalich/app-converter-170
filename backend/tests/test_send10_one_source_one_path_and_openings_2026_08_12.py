@@ -59,7 +59,8 @@ def test_shared_quote_survives_and_flags_all_consumers_send13():
     """SEND-13 AMENDMENT: shared-source is a loud flag, not a kill. Both
     walls fed from the same 39'-0" quote KEEP their value (fabrication is
     handled at EXISTENCE, not here); the sharing is flagged with all
-    consumers, and two walls' widths is an attribution CONFLICT."""
+    consumers. Two walls' WIDTHS is the legitimate opposing-facade share
+    (send-14 D) — PLAIN, not a conflict."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     walls = {w["label"]: w for w in raw["walls"]}
@@ -70,7 +71,7 @@ def test_shared_quote_survives_and_flags_all_consumers_send13():
              if s["quote"] == "39'-0\"")
     assert set(r["consumers"]) == {"walls.left.width_ft",
                                    "walls.right.width_ft"}
-    assert r["conflicting"] is True
+    assert r["conflicting"] is False
 
 
 def test_shared_source_ledger_keeps_all_consumers():
@@ -125,37 +126,35 @@ def test_different_quotes_do_not_share_source():
 
 def test_shared_source_lands_on_readback_and_rail():
     """The readback carries `dim_shared_source` for the card. Two walls'
-    widths from one quote is an ATTRIBUTION CONFLICT → the LOUDER rail
-    `dims_shared_source_conflict` fires."""
+    WIDTHS from one overall quote is the legitimate opposing-facade share
+    (send-14 D) → the PLAIN `dims_shared_source` rail, value kept, no
+    conflict."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     rb = build_blueprint_readback(raw)
     assert rb.get("dim_shared_source")
     codes = {r["code"]: r for r in rb["rail"]}
-    assert "dims_shared_source_conflict" in codes
-    assert codes["dims_shared_source_conflict"]["level"] == "loud"
-    assert "ATTRIBUTION CONFLICT" in codes["dims_shared_source_conflict"]["text"]
-
-
-def test_non_conflicting_share_fires_plain_shared_rail():
-    """A width quote also feeding a same-wall gutter LF shares a value
-    legitimately (different leaf fields) → the plain `dims_shared_source`
-    rail, value kept."""
-    raw = {
-        "gutter_runs": [{"label": "front", "lf": 58.0}],
-        "walls": [{"label": "front", "width_ft": 58.0}],
-        "_dim_evidence": {
-            "gutter_runs.front.lf": {"v": 58.0, "page": 6, "from": "58'-0\""},
-            "walls.front.width_ft": {"v": 58.0, "page": 6, "from": "58'-0\""},
-        },
-    }
-    _one_source_one_path_guard(raw)
-    assert raw["walls"][0]["width_ft"] == 58.0     # value kept
-    rb = build_blueprint_readback(raw)
-    codes = {r["code"]: r for r in rb["rail"]}
     assert "dims_shared_source" in codes
     assert codes["dims_shared_source"]["level"] == "loud"
     assert "dims_shared_source_conflict" not in codes
+
+
+def test_physically_impossible_share_fires_conflict_rail():
+    """A width and a height sharing one quote is physically impossible
+    (send-14 D) → the LOUDER `dims_shared_source_conflict` rail."""
+    raw = {
+        "walls": [{"label": "front", "width_ft": 20.0, "height_ft": 20.0}],
+        "_dim_evidence": {
+            "walls.front.width_ft": {"v": 20.0, "page": 6, "from": "20'-0\""},
+            "walls.front.height_ft": {"v": 20.0, "page": 6, "from": "20'-0\""},
+        },
+    }
+    _one_source_one_path_guard(raw)
+    rb = build_blueprint_readback(raw)
+    codes = {r["code"]: r for r in rb["rail"]}
+    assert "dims_shared_source_conflict" in codes
+    assert codes["dims_shared_source_conflict"]["level"] == "loud"
+    assert "ATTRIBUTION CONFLICT" in codes["dims_shared_source_conflict"]["text"]
 
 
 # ---------- (B) OPENINGS SUM vs WALL WIDTH ----------

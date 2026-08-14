@@ -34,9 +34,10 @@ from measure_staging import wall_body_gross_sqft  # noqa: E402
 def test_ruling_1_shared_source_is_a_flag_not_a_kill():
     """RULING (send-13 §1): a shared printed quote is a REAL located
     dimension and OFTEN correct; it SURVIVES and feeds money, carrying a
-    loud flag naming all consumers, louder on an attribution conflict.
-    Enforced in depth by test_send10/11; registered here so the ruling
-    itself is on the record."""
+    loud flag naming all consumers. AMENDED send-14 D: the front+back
+    overall width is the legitimate opposing-facade share → PLAIN rail,
+    not a conflict. Enforced in depth by test_send10/11; registered here
+    so the ruling itself is on the record."""
     raw = {
         "walls": [{"label": "front", "width_ft": 58.0},
                   {"label": "back", "width_ft": 58.0}],
@@ -48,7 +49,7 @@ def test_ruling_1_shared_source_is_a_flag_not_a_kill():
     ab._one_source_one_path_guard(raw)
     assert raw["walls"][0]["width_ft"] == 58.0      # survives
     assert not raw.get("_dim_unverified")           # not a kill
-    assert (raw["_dim_shared_source"][0]["conflicting"]) is True
+    assert (raw["_dim_shared_source"][0]["conflicting"]) is False
 
 
 def test_ruling_2_segment_level_partial_derivability_is_built():
@@ -69,14 +70,14 @@ def test_ruling_2_segment_level_partial_derivability_is_built():
 
 
 @pytest.mark.skip(reason=(
-    "HELD RULING (send-13 §3 part 2, ON THE RECORD, NOT YET BUILT): a page "
-    "mistyped schedule/cover that actually carries drawn geometry must be "
-    "re-checked against its own feet-inch dimension-token count and treated "
-    "as a drawing. HELD because a non-invented threshold needs a REAL plan "
-    "set with genuine schedule/cover pages (Boni has none). The signal and "
-    "a report exist: ab._feet_inch_dim_tokens + "
-    "scripts/drawn_geometry_token_report.py. Un-skip and pin the threshold "
-    "when the real plan set arrives. This skip is the register refusing to "
-    "let a held ruling vanish."))
+    "ruling:held: HELD RULING (send-13 §3 part 2, ON THE RECORD, NOT YET "
+    "BUILT): a page mistyped schedule/cover that actually carries drawn "
+    "geometry must be re-checked against its own feet-inch dimension-token "
+    "count and treated as a drawing. WHAT WOULD UNHOLD IT: a REAL plan set "
+    "with genuine schedule/cover pages to pick a non-invented threshold "
+    "(Boni has none). The signal and a report already exist: "
+    "ab._feet_inch_dim_tokens + scripts/drawn_geometry_token_report.py. "
+    "Un-skip and pin the threshold when the real plan set arrives. This "
+    "skip is the register refusing to let a held ruling vanish."))
 def test_ruling_3_schedule_cover_content_override():
     raise AssertionError("held — see skip reason")
