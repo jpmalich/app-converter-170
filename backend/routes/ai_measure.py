@@ -7364,3 +7364,143 @@ async def ocr_scale(
         "img_h":      img_h,
         "notes":      parsed.get("notes") or "",
     }
+
+
+
+# ---------------------------------------------------------------------
+# MUV S2 (Howard ruled 2026-08-13 walk report) — READ THE PRINTED SCALE
+# FRACTION. Law C's PRIMARY path: read the "SCALE: 3/16\" = 1'-0\"" block
+# as TEXT (reliable) and parse the fraction DETERMINISTICALLY (no vision
+# pixel coordinates — the old dimension-line endpoint path was ~3.6x
+# short because Claude cannot return precise arrowhead pixels, squaring to
+# a ~13x area error). Combined with the page's recorded render DPI this
+# gives an EXACT feet-per-pixel with nothing tuned.
+# ---------------------------------------------------------------------
+
+_SCALE_FRACTION_RE = re.compile(
+    r"""(?P<num>\d+(?:\.\d+)?)         # numerator or whole (e.g. 3, 1)
+        (?:\s*/\s*(?P<den>\d+))?       # optional /16, /4, /8
+        \s*(?:\"|in|inch|inches|'')?   # paper-inch unit
+        \s*=\s*
+        (?P<feet>\d+(?:\.\d+)?)        # feet value
+        \s*(?:'|ft|foot|feet|'-0\"|'-0)  # feet unit
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def parse_scale_fraction(text: str):
+    """Parse a printed architectural scale like `3/16" = 1'-0"` into
+    PAPER INCHES PER FOOT (0.1875 here). Returns None when no fraction is
+    present — a REFUSAL, never a default (Law C). Deterministic; no model
+    judgement past reading the characters."""
+    if not text:
+        return None
+    m = _SCALE_FRACTION_RE.search(text.replace("’", "'").replace("“", '"').replace("”", '"'))
+    if not m:
+        return None
+    try:
+        num = float(m.group("num"))
+        den = float(m.group("den")) if m.group("den") else 1.0
+        feet = float(m.group("feet"))
+    except (TypeError, ValueError):
+        return None
+    if den <= 0 or feet <= 0:
+        return None
+    paper_inches = num / den
+    if paper_inches <= 0:
+        return None
+    return round(paper_inches / feet, 6)   # paper inches per foot
+
+
+READ_PAGE_SCALE_PROMPT = """\
+You are reading the SCALE NOTE printed on a construction drawing. Find
+the scale block for the view — text like `SCALE: 3/16" = 1'-0"` or
+`1/4" = 1'-0"` or `SCALE: AS NOTED` (in which case find the per-view
+scale printed under the view title, e.g. `FRONT ELEVATION  3/16" = 1'-0"`).
+
+Return JSON ONLY (no prose, no fences):
+{
+  "found":      true | false,
+  "scale_text": "<verbatim scale fraction exactly as printed, e.g. '3/16\\" = 1'-0\\"'; empty if none>",
+  "view_title": "<the view title this scale sits under, e.g. 'FRONT ELEVATION'; empty if none>",
+  "notes":      "<one sentence; if AS NOTED and no per-view fraction is legible, say so>"
+}
+Report ONLY the fraction you can actually read. If none is legible, return found=false. Never invent one.
+"""
+
+
+@router.post("/read-page-scale")
+async def read_page_scale(
+    payload: dict,
+    user: dict = Depends(get_current_user),
+):
+    """MUV S2 — read the printed scale FRACTION off a blueprint page.
+
+    Body: `{"upload_name": "bp_xxxx.png", "render_dpi": 144}`. Returns
+    the parsed paper-inches-per-foot + feet-per-pixel (when render_dpi is
+    known). No pixel endpoints, no tuning. REFUSES (found=false) when no
+    fraction is legible."""
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="payload must be an object")
+    upload_name = (payload.get("upload_name") or "").strip()
+    if not upload_name:
+        raise HTTPException(status_code=400, detail="missing 'upload_name'")
+    if "/" in upload_name or ".." in upload_name:
+        raise HTTPException(status_code=400, detail="invalid upload_name")
+    render_dpi = payload.get("render_dpi")
+    try:
+        render_dpi = float(render_dpi) if render_dpi else None
+    except (TypeError, ValueError):
+        render_dpi = None
+
+    from config import UPLOAD_DIR
+    from upload_store import rehydrate_to_disk
+    target = UPLOAD_DIR / upload_name
+    if not target.exists():
+        restored = await rehydrate_to_disk(upload_name, UPLOAD_DIR)
+        if not (restored and restored.exists()):
+            raise HTTPException(status_code=404, detail="upload not found on disk")
+        target = restored
+    raw = target.read_bytes()
+    if not raw:
+        raise HTTPException(status_code=400, detail="upload is empty")
+
+    api_key, _src = _pick_llm_api_key("anthropic")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="No LLM API key on the server.")
+
+    img_bytes = _compress_for_claude(raw)
+    session_id = f"ai-read-scale-{user['id']}-{uuid.uuid4().hex[:8]}"
+    chat = LlmChat(api_key=api_key, session_id=session_id,
+                   system_message=READ_PAGE_SCALE_PROMPT).with_model("anthropic", MODEL_NAME)
+    image_contents = [ImageContent(image_base64=base64.b64encode(img_bytes).decode("ascii"))]
+    try:
+        reply_text = await _send_message_nonblocking(
+            chat,
+            UserMessage(text="Read the printed scale note and return your JSON.",
+                        file_contents=image_contents),
+        )
+        parsed = _json_from_reply(reply_text or "")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("[read-page-scale] Claude call failed for %s", upload_name)
+        raise HTTPException(status_code=502, detail=f"Read-scale pass failed: {e}") from e
+
+    scale_text = (parsed.get("scale_text") or "").strip()
+    in_per_ft = parse_scale_fraction(scale_text)
+    found = bool(parsed.get("found")) and in_per_ft is not None
+    ft_per_px = None
+    if found and render_dpi and render_dpi > 0:
+        # feet per paper inch = 1 / in_per_ft ; pixels per paper inch = DPI
+        ft_per_px = round(1.0 / (in_per_ft * render_dpi), 8)
+    return {
+        "found":      found,
+        "scale_text": scale_text,
+        "view_title": (parsed.get("view_title") or "").strip(),
+        "in_per_ft":  in_per_ft,
+        "render_dpi": render_dpi,
+        "ft_per_px":  ft_per_px,
+        "notes":      parsed.get("notes") or "",
+    }

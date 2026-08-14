@@ -36,16 +36,25 @@ function classColor(mc) {
   return (MATERIAL_CLASSES.find((m) => m.value === mc) || MATERIAL_CLASSES[0]).color;
 }
 
-// Live ft² — identical math to the backend polygon_sqft_from_scale:
-// shoelace in NATURAL PIXEL space, converted by the calibration's
-// feet-per-pixel. Returns null (REFUSED) when the scale is absent.
+// Live ft² — mirrors backend polygon_sqft_from_scale exactly (two modes:
+// printed_scale = fraction+DPI, trace = human calibration line). Returns
+// null (REFUSED) when the scale can't be resolved.
 function polygonSqft(vertices, scaleRef, wpx, hpx) {
   if (!vertices || vertices.length < 3 || !scaleRef || !wpx || !hpx) return null;
-  const { p1, p2, real_ft } = scaleRef;
-  if (!p1 || !p2 || !real_ft || real_ft <= 0) return null;
-  const calibPx = Math.hypot((p2[0] - p1[0]) * wpx, (p2[1] - p1[1]) * hpx);
-  if (calibPx <= 0) return null;
-  const ftPerPx = real_ft / calibPx;
+  const mode = scaleRef.mode || (scaleRef.in_per_ft ? "printed_scale" : "trace");
+  let ftPerPx = null;
+  if (mode === "printed_scale") {
+    const { in_per_ft, dpi } = scaleRef;
+    if (!in_per_ft || !dpi || in_per_ft <= 0 || dpi <= 0) return null;
+    ftPerPx = 1 / (in_per_ft * dpi);
+  } else {
+    const { p1, p2, real_ft } = scaleRef;
+    if (!p1 || !p2 || !real_ft || real_ft <= 0) return null;
+    const calibPx = Math.hypot((p2[0] - p1[0]) * wpx, (p2[1] - p1[1]) * hpx);
+    if (calibPx <= 0) return null;
+    ftPerPx = real_ft / calibPx;
+  }
+  if (!ftPerPx || ftPerPx <= 0) return null;
   let a = 0;
   const n = vertices.length;
   for (let i = 0; i < n; i++) {
@@ -56,10 +65,27 @@ function polygonSqft(vertices, scaleRef, wpx, hpx) {
   return Math.round((Math.abs(a / 2) * ftPerPx * ftPerPx) * 100) / 100;
 }
 
+// Derive the elevation face from the page's identified title. NEVER
+// defaults (Howard ruled 2026-08-13). Returns a face ONLY when the title
+// names EXACTLY ONE face — a page titled "FRONT & REAR ELEVATIONS" names
+// two, so it is AMBIGUOUS and returns "" to force the user to pick (that
+// two-face page is exactly why the rear zone got mislabelled "front").
+function faceFromTitle(title) {
+  const t = (title || "").toLowerCase();
+  const hits = [];
+  if (/\bfront\b/.test(t)) hits.push("front");
+  if (/\b(rear|back)\b/.test(t)) hits.push("back");
+  if (/\bleft\b/.test(t)) hits.push("left");
+  if (/\bright\b/.test(t)) hits.push("right");
+  return hits.length === 1 ? hits[0] : ""; // 0 or >1 → user must pick
+}
+
 export default function PdfOverlayEditor({ est, onChanged }) {
   const [open, setOpen] = useState(false);
-  const [pages, setPages] = useState([]);       // [{name,url,idx,label}]
+  const [pages, setPages] = useState([]);       // [{name,url,idx,label,face,faceKnown}]
   const [polygons, setPolygons] = useState([]); // backend polygons
+  const [renderDpi, setRenderDpi] = useState(null); // recorded page render DPI (null ⇒ scan)
+  const [perWall, setPerWall] = useState([]);       // app's internal per-wall areas (display only)
   const [loadErr, setLoadErr] = useState("");
 
   // Probe the latest blueprint run for rasterised elevation pages + the
@@ -73,21 +99,25 @@ export default function PdfOverlayEditor({ est, onChanged }) {
       ]);
       const run = runResp?.run;
       const names = (run?.page_paths || "").split(",").map((s) => s.trim()).filter(Boolean);
-      const sheets = run?.result?.sheets_identified
-        || run?.result?.readback?.sheets_identified || [];
-      const labelFor = (i1) => {
-        const s = sheets.find((x) => Number(x.page) === i1);
-        if (!s) return `Page ${i1}`;
-        const t = s.sheet_title || s.useful_for || "";
-        return t ? `${i1}· ${t}` : `Page ${i1}`;
-      };
-      setPages(names.map((name, i) => ({
-        name,
-        url: `${BACKEND}/api/uploads/${name}`,
-        idx: i + 1,
-        label: labelFor(i + 1),
-        elevation: (sheets.find((x) => Number(x.page) === i + 1)?.useful_for || "") === "elevation",
-      })));
+      const res = run?.result || {};
+      const sheets = res.raw_ai?.sheets_identified
+        || res.measurements?._blueprint_sheets
+        || res.sheets_identified || [];
+      setRenderDpi(run?.render_dpi != null ? Number(run.render_dpi) : null);
+      setPerWall(res.measurements?._per_elevation_breakdown
+        || res.raw_ai?._per_elevation_breakdown || []);
+      const sheetFor = (i1) => sheets.find((x) => Number(x.page) === i1) || null;
+      setPages(names.map((name, i) => {
+        const s = sheetFor(i + 1);
+        const title = s ? (s.sheet_title || s.useful_for || "") : "";
+        const isElev = (s?.useful_for || "") === "elevation";
+        const face = isElev ? faceFromTitle(title) : "";
+        return {
+          name, url: `${BACKEND}/api/uploads/${name}`, idx: i + 1,
+          label: title ? `${i + 1}· ${title}` : `Page ${i + 1}`,
+          elevation: isElev, face, faceKnown: !!face,
+        };
+      }));
       setPolygons(ovl?.polygons || []);
       setLoadErr(names.length ? "" : "no-pages");
     } catch {
@@ -136,6 +166,8 @@ export default function PdfOverlayEditor({ est, onChanged }) {
           est={est}
           pages={pages}
           polygons={polygons}
+          renderDpi={renderDpi}
+          perWall={perWall}
           onClose={() => setOpen(false)}
           onMutated={async () => { await probe(); onChanged?.(); }}
         />
@@ -144,12 +176,13 @@ export default function PdfOverlayEditor({ est, onChanged }) {
   );
 }
 
-function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }) {
+function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, onClose, onMutated }) {
   const [polygons, setPolygons] = useState(initialPolys || []);
   const [activePage, setActivePage] = useState(
     (pages.find((p) => p.elevation) || pages[0])?.idx || 1);
   const [material, setMaterial] = useState("siding");
-  const [face, setFace] = useState("front");
+  const [face, setFace] = useState("");           // NEVER defaults — derived from the page
+  const [faceAuto, setFaceAuto] = useState(false); // true when face came from the page title
   const [dormerLabel, setDormerLabel] = useState("");
   const [scaleByPage, setScaleByPage] = useState({}); // {pageIdx: scaleRef}
   const [draft, setDraft] = useState(null);           // {points:[[x,y]], cx, cy}
@@ -166,6 +199,15 @@ function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }
   const page = pages.find((p) => p.idx === activePage);
   const pageScale = scaleByPage[activePage] || null;
   const faceId = face === "dormer" ? `dormer:${(dormerLabel || "").trim() || "1"}` : face;
+
+  // FACE FROM PAGE (Howard ruled 2026-08-13): derive the face from the
+  // page's identified elevation; where unknown, leave it EMPTY so the
+  // user must pick. Never default to "front".
+  useEffect(() => {
+    if (page && page.faceKnown) { setFace(page.face); setFaceAuto(true); }
+    else { setFace(""); setFaceAuto(false); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePage]);
 
   // Seed per-page scale from any polygon already drawn on that page
   // (the calibration travels with the polygon → per-view by construction).
@@ -254,10 +296,16 @@ function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }
 
   const finalizeDraft = async (points) => {
     if (!points || points.length < 3) return;
+    if (!faceId) {
+      // FACE FROM PAGE (Howard ruled): refuse rather than default.
+      // Clear the draft so the next attempt (after picking a face)
+      // starts clean and can close by proximity to its own first vertex.
+      setDraft(null);
+      toast.error("Pick a face for this view first — the page didn't identify one, so it won't be guessed");
+      return;
+    }
     setDraft(null);
     if (!pageScale) {
-      // Draw it anyway (Law C: the polygon holds its pixel geometry) but
-      // the area is REFUSED until this view's scale is read.
       toast.warning("Scale not read on this view — the zone saves but cannot be priced yet");
     }
     await persistPolygon({
@@ -317,31 +365,47 @@ function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }
     if (!ft || ft <= 0) { toast.error("Enter a positive length in feet"); return; }
     setScaleByPage((cur) => ({
       ...cur,
-      [activePage]: { p1: scaleInput.p1, p2: scaleInput.p2, real_ft: ft, source: "calibration", from_quote: "" },
+      [activePage]: {
+        mode: "trace", p1: scaleInput.p1, p2: scaleInput.p2, real_ft: ft,
+        source: `TRACE · you calibrated ${ft} ft`, from_quote: "",
+      },
     }));
     setScaleInput(null);
-    toast.success(`Scale set for this view · ${ft} ft traced`);
+    toast.success(`Scale traced for this view · ${ft} ft`);
   };
 
-  const autoDetectScale = async () => {
+  // READ (AI): the PRIMARY Law-C path — read the printed scale FRACTION
+  // (e.g. 3/16"=1'-0") as text and combine with the page's RECORDED
+  // render DPI. No vision pixel coords (those were ~3.6x short → ~13x
+  // area). Refuses when the fraction can't be read or the page has no
+  // known DPI (a scan) — the user then TRACES.
+  const readPrintedScale = async () => {
     if (!page?.name) return;
+    if (!renderDpi) {
+      toast.error("This page has no recorded render DPI (a scan) — trace the scale by hand instead");
+      return;
+    }
     setOcrBusy(true);
     try {
-      const { data } = await api.post("/measure/ocr-scale", { upload_name: page.name });
-      if (!data?.found || !data.endpoints || data.endpoints.length !== 2 || !data.img_w) {
-        toast.error(data?.notes ? `No scale found · ${data.notes}` : "No printed dimension found — trace one instead");
+      const { data } = await api.post("/measure/read-page-scale", {
+        upload_name: page.name, render_dpi: renderDpi,
+      });
+      if (!data?.found || !data.in_per_ft) {
+        toast.error(data?.notes
+          ? `Printed scale not read · ${data.notes} — trace it instead`
+          : "Couldn't read the printed scale — trace it instead");
         return;
       }
-      const [e1, e2] = data.endpoints;
-      const p1 = [e1.x / data.img_w, e1.y / data.img_h];
-      const p2 = [e2.x / data.img_w, e2.y / data.img_h];
       setScaleByPage((cur) => ({
         ...cur,
-        [activePage]: { p1, p2, real_ft: data.real_ft, source: "ocr", from_quote: data.source || "" },
+        [activePage]: {
+          mode: "printed_scale", in_per_ft: data.in_per_ft, dpi: renderDpi,
+          source: `READ · ${data.scale_text}`, from_quote: data.scale_text || "",
+        },
       }));
-      toast.success(`Scale read from the sheet · ${data.real_ft} ft (${data.source || "AI"})`);
+      toast.success(`Printed scale read · ${data.scale_text}`);
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "OCR scale failed");
+      toast.error(e?.response?.data?.detail || "Read-scale failed");
     } finally {
       setOcrBusy(false);
     }
@@ -472,7 +536,7 @@ function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }
               <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">Scale for this view</div>
               {pageScale ? (
                 <div className="text-[11px] text-[var(--success)] font-bold" data-testid="pdf-overlay-scale-ok">
-                  ✓ {pageScale.real_ft} ft traced · {pageScale.source === "ocr" ? "read from sheet" : "calibrated"}
+                  ✓ {pageScale.source || (pageScale.mode === "printed_scale" ? "READ" : "TRACE")}
                 </div>
               ) : (
                 <div className="text-[11px] text-[var(--warning-text)] font-bold flex items-center gap-1" data-testid="pdf-overlay-scale-missing">
@@ -485,7 +549,7 @@ function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }
                   data-testid="pdf-overlay-set-scale">
                   <Ruler size={12} /> {scaleDraft?.active ? "Trace a length…" : "Trace scale"}
                 </button>
-                <button type="button" onClick={autoDetectScale} disabled={ocrBusy}
+                <button type="button" onClick={readPrintedScale} disabled={ocrBusy}
                   className="flex-1 text-[10px] uppercase font-bold px-2 py-1.5 border border-[var(--ai)] text-[var(--ai)] hover:bg-[var(--ai-soft)] flex items-center justify-center gap-1 disabled:opacity-50"
                   data-testid="pdf-overlay-read-scale">
                   {ocrBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} Read (AI)
@@ -515,10 +579,14 @@ function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }
                     data-testid={`pdf-overlay-material-${m.value}`}>{m.label}</button>
                 ))}
               </div>
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">Face</div>
-              <div className="grid grid-cols-3 gap-1">
+              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">
+                Face {faceAuto
+                  ? <span className="text-[var(--success)]">· from page “{page?.label}”</span>
+                  : <span className="text-[var(--warning-text)]">· page didn’t identify one — pick it</span>}
+              </div>
+              <div className="grid grid-cols-3 gap-1" data-testid="pdf-overlay-face-picker">
                 {[...FIXED_FACES, "dormer"].map((f) => (
-                  <button key={f} type="button" onClick={() => setFace(f)}
+                  <button key={f} type="button" onClick={() => { setFace(f); setFaceAuto(false); }}
                     className={`text-[10px] uppercase font-bold px-1.5 py-1.5 border ${face === f ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
                     data-testid={`pdf-overlay-face-${f}`}>{f}</button>
                 ))}
@@ -575,6 +643,33 @@ function OverlayModal({ est, pages, polygons: initialPolys, onClose, onMutated }
                 </div>
               ))}
             </div>
+
+            {/* App's internal per-wall breakdown (DISPLAY ONLY — the
+                aggregate line is what binds; this shows the pieces so a
+                correction can be judged against the app's own faces). */}
+            {perWall && perWall.length > 0 && (
+              <div className="p-3 border-t border-[var(--border)]" data-testid="pdf-overlay-perwall">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">
+                  App&apos;s per-wall siding (read-only, not bound)
+                </div>
+                {perWall.map((w, i) => {
+                  const body = Number(w.wall_body_sqft || 0);
+                  const gable = Number(w.gable_sqft || 0);
+                  const dormer = Number(w.dormer_sqft || 0);
+                  const tot = body + gable + dormer;
+                  return (
+                    <div key={i} className="flex justify-between text-[11px] border-b border-[var(--border)] py-0.5" data-testid={`pdf-overlay-perwall-${w.label}`}>
+                      <span className="font-bold uppercase">{w.label}</span>
+                      <span className="text-[var(--muted)]">
+                        {tot.toFixed(0)} ft²
+                        {(gable || dormer) ? <span className="ml-1 text-[9px]">(wall {body.toFixed(0)}{gable ? ` · gable ${gable.toFixed(0)}` : ""}{dormer ? ` · dormer ${dormer.toFixed(0)}` : ""})</span> : null}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div className="text-[9px] text-[var(--muted)] mt-1 italic">These are the app&apos;s internal faces; MUV still binds one aggregate line until per-face binding lands.</div>
+              </div>
+            )}
           </div>
         </div>
       </div>

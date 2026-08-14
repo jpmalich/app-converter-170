@@ -106,6 +106,41 @@ def test_degenerate_polygon_returns_none():
     assert polygon_sqft_from_scale([[0.1, 0.1]], FULL_WIDTH_SCALE, *PAGE_PX) is None
 
 
+def test_printed_scale_pins_howard_rear_wall_to_1160_sqft():
+    """PIN (Howard walk 2026-08-13): his rear wall is 58'-0" x 20'-0" =
+    1,160 ft². At the printed 3/16"=1'-0" (in_per_ft=0.1875) on a page
+    rendered at 144 DPI, ft_per_px = 1/(0.1875·144) = 1/27. A polygon of
+    that wall's pixel extent MUST come back at ~1,160 ft² — printed
+    geometry, a CHECK not a target. This is the chain that replaced the
+    unreliable AI-endpoint calibration that read ~13x high."""
+    dpi = 144.0
+    in_per_ft = 3.0 / 16.0
+    ft_per_px = 1.0 / (in_per_ft * dpi)          # 0.037037 ft/px
+    w_px = 58.0 / ft_per_px                        # 1566 px
+    h_px = 20.0 / ft_per_px                        # 540 px
+    page_w, page_h = 3456.0, 2592.0
+    x0, y0 = 0.1, 0.1
+    x1 = x0 + w_px / page_w
+    y1 = y0 + h_px / page_h
+    verts = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
+    scale = {"mode": "printed_scale", "in_per_ft": in_per_ft, "dpi": dpi}
+    area = polygon_sqft_from_scale(verts, scale, page_w, page_h)
+    assert area is not None
+    assert abs(area - 1160.0) < 5.0, f"expected ~1160, got {area}"
+
+
+def test_printed_scale_refuses_without_dpi():
+    """No recorded render DPI (a scan) → the printed-scale path REFUSES,
+    it does not guess a DPI (Law C — a wrong DPI is invisible)."""
+    verts = [[0.1, 0.1], [0.5, 0.1], [0.5, 0.5], [0.1, 0.5]]
+    assert polygon_sqft_from_scale(
+        verts, {"mode": "printed_scale", "in_per_ft": 0.1875, "dpi": None},
+        3456.0, 2592.0) is None
+    assert polygon_sqft_from_scale(
+        verts, {"mode": "printed_scale", "in_per_ft": None, "dpi": 144.0},
+        3456.0, 2592.0) is None
+
+
 # ---------- (A) apply: REPLACE + SUPERSEDE ---------------------------
 
 def _base_lines():

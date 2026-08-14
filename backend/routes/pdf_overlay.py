@@ -102,14 +102,28 @@ def _face_ok(face_id: str) -> bool:
 
 
 class ScaleRefIn(BaseModel):
-    """Evidence-grounded calibration for the VIEW a polygon sits in: two
-    page-normalised endpoints tracing a printed dimension + its real-world
-    length in feet + the source of the reading. NO default — absence
-    means the scale could not be read and the area is REFUSED (Law C)."""
-    p1: list[float]
-    p2: list[float]
-    real_ft: float
-    source: str = "calibration"     # "ocr" | "calibration"
+    """Evidence-grounded scale for the VIEW a polygon sits in. TWO honest
+    modes, NO baked constant (Law C):
+
+    - mode="printed_scale": the printed fraction (e.g. 3/16"=1'-0") read
+      off the sheet → `in_per_ft` (paper inches per foot) + `dpi` (the
+      page's RECORDED render DPI). feet-per-pixel = 1/(in_per_ft × dpi).
+      This is the PRIMARY path — deterministic, no vision pixel coords.
+    - mode="trace": a human calibration line (`p1`,`p2` page-normalised)
+      over a printed dimension of `real_ft`. feet-per-pixel from the
+      traced span. The human places the endpoints, so it is precise.
+
+    Absence of a usable scale → the area is REFUSED (sqft None)."""
+    mode: str = "trace"                     # "printed_scale" | "trace"
+    # printed_scale fields:
+    in_per_ft: Optional[float] = None       # paper inches per foot
+    dpi: Optional[float] = None             # recorded page render DPI
+    # trace fields:
+    p1: Optional[list[float]] = None
+    p2: Optional[list[float]] = None
+    real_ft: Optional[float] = None
+    # provenance (names the path that ACTUALLY ran — Howard ruled):
+    source: str = ""                        # "READ" | "TRACE" text
     from_quote: str = ""
 
 
@@ -138,27 +152,54 @@ def polygon_sqft_from_scale(
     page_w_px: Optional[float],
     page_h_px: Optional[float],
 ) -> Optional[float]:
+    """ft² of a page-normalised polygon under an evidence-grounded scale,
+    or None (REFUSED) when the scale cannot be resolved.
+
+    Two modes (see ScaleRefIn). Both resolve a feet-per-pixel in the
+    page's NATURAL raster px space; the polygon is shoelaced in that same
+    px space (square pixels ⇒ isotropic) and multiplied by
+    (ft/px)². Winding-order insensitive."""
     if not vertices_pct or len(vertices_pct) < 3:
         return None
     if not scale_ref or not page_w_px or not page_h_px:
         return None
-    p1 = scale_ref.get("p1")
-    p2 = scale_ref.get("p2")
-    real_ft = scale_ref.get("real_ft")
-    if not (isinstance(p1, (list, tuple)) and len(p1) == 2
-            and isinstance(p2, (list, tuple)) and len(p2) == 2):
+
+    mode = scale_ref.get("mode")
+    if not mode:
+        mode = "printed_scale" if scale_ref.get("in_per_ft") else "trace"
+
+    ft_per_px: Optional[float] = None
+    if mode == "printed_scale":
+        try:
+            in_per_ft = float(scale_ref.get("in_per_ft"))
+            dpi = float(scale_ref.get("dpi"))
+        except (TypeError, ValueError):
+            return None
+        if in_per_ft <= 0 or dpi <= 0:
+            return None
+        # feet per paper inch = 1/in_per_ft ; pixels per paper inch = dpi
+        ft_per_px = 1.0 / (in_per_ft * dpi)
+    else:  # trace
+        p1 = scale_ref.get("p1")
+        p2 = scale_ref.get("p2")
+        real_ft = scale_ref.get("real_ft")
+        if not (isinstance(p1, (list, tuple)) and len(p1) == 2
+                and isinstance(p2, (list, tuple)) and len(p2) == 2):
+            return None
+        try:
+            real_ft = float(real_ft)
+        except (TypeError, ValueError):
+            return None
+        if real_ft <= 0:
+            return None
+        calib_px = hypot((float(p2[0]) - float(p1[0])) * page_w_px,
+                         (float(p2[1]) - float(p1[1])) * page_h_px)
+        if calib_px <= 0:
+            return None
+        ft_per_px = real_ft / calib_px
+
+    if not ft_per_px or ft_per_px <= 0:
         return None
-    try:
-        real_ft = float(real_ft)
-    except (TypeError, ValueError):
-        return None
-    if real_ft <= 0:
-        return None
-    calib_px = hypot((float(p2[0]) - float(p1[0])) * page_w_px,
-                     (float(p2[1]) - float(p1[1])) * page_h_px)
-    if calib_px <= 0:
-        return None
-    ft_per_px = real_ft / calib_px
     n = len(vertices_pct)
     area_px = 0.0
     for i in range(n):

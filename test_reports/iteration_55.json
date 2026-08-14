@@ -1,0 +1,35 @@
+{
+  "summary": "RE-TEST of Howard's walk fixes on EST-886440 (image-scan blueprint). All 8 required flows verified end-to-end in real browser against the public URL. Results: login OK, modal opens; page 1 'FRONT & REAR ELEVATIONS' is correctly AMBIGUOUS — no face preselected and picker shows 'PAGE DIDN'T IDENTIFY ONE — PICK IT'; drawing a polygon with NO face raises the exact refusal toast \"Pick a face for this view first — the page didn't identify one, so it won't be guessed\" and no zone is created; Read (AI) refuses on this scan with toast 'This page has no recorded render DPI (a scan) — trace the scale by hand instead' and scale-missing stays visible; Trace scale (24 ft) confirms and the scale-ok label reads exactly '✓ TRACE · you calibrated 24 ft' (no 'read from sheet' text); Draw+Convert produces zone 'siding · back · 60.42 ft²' and impact row 'Vinyl Siding · 1 ZONE · app 44 → you 0.6 SQ (60.42 ft²)'; per-wall panel visible listing FRONT 920 / BACK 1160 / LEFT 1091 (wall 780 · gable 311) / RIGHT 1091 (wall 780 · gable 311); delete removes the zone with toast \"Zone deleted — the app's own number is back\". Estimate left clean. Backend not tested per request. All four fixed behaviors (a-d) are working correctly.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "PdfOverlayEditor > OverlayModal (finalizeDraft)",
+        "issue": "When a polygon draw is refused because no face is picked, the draft points are NOT cleared. If the user then picks a face and clicks 4 new corners, those points are APPENDED to the stale draft (now 8 vertices) and the 'click near first vertex' close no longer works because the first vertex is the stale one from the refused attempt. Reproduced deterministically in the first automated run — required an Escape key press between attempts to get a clean draw. Human-facing effect: after seeing the 'pick a face' toast, the user's next polygon silently fails to close.",
+        "selector": "[data-testid='pdf-overlay-canvas-img']",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "In PdfOverlayEditor.jsx finalizeDraft: also call setDraft(null) on the refusal branch (missing faceId), so a subsequent draw starts with an empty draft after the user picks a face. Same for the pageScale-missing warning path (currently only shows a warning toast but still saves — that's fine). Two-line fix: add `setDraft(null);` before the `return` inside `if (!faceId)`."
+  ],
+  "critical_code_review_comments": [
+    "finalizeDraft refusal path leaks state — the returned-early branch keeps the previous points in `draft`, coupling the refusal UX to a keyboard shortcut (Escape) that isn't advertised.",
+    "faceFromTitle correctly returns '' on 0 or >1 hits (verified live on page 1 'FRONT & REAR ELEVATIONS' and page 2 'LEFT & RIGHT ELEVATIONS') — good.",
+    "readPrintedScale guards on `!renderDpi` and shows the correct scan-instead-trace toast — good.",
+    "confirmScale sets `source: 'TRACE · you calibrated N ft'` and scale-ok reads exactly that — matches spec 'label contains TRACE (NOT read from sheet)'.",
+    "per-wall panel is rendered read-only from `perWall` prop with a clear 'not bound' note — good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% of the 8 required flows pass; 1 medium bug found (stale draft after face-refusal) that does NOT block any of the required assertions."},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (owner) — worked",
+  "seed_data_creation": "None persisted. The single zone drawn (siding/back on page 1) was deleted; delete toast confirmed the app's number is back. Estimate 1f8b8b60-4b19-48eb-b1b5-0371276c8645 is clean.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All four Howard-walk fixes verified on EST-886440: (1) face is NOT auto-defaulted on the two-face 'FRONT & REAR ELEVATIONS' page and drawing is refused with a clear toast; (2) READ(AI) refuses on this scan (no render_dpi) telling the user to trace; (3) after tracing 24 ft the scale label reads '✓ TRACE · you calibrated 24 ft' — the word 'TRACE' appears and 'read from sheet' does not; (4) per-wall panel is visible with front/back/left/right areas (BACK=1160 ft² matches the 1,160 ft² rear-wall pin from the pytest suite). One MEDIUM bug worth fixing next iteration: refused draws leave stale points in the draft, so subsequent draws after picking a face won't close via 'click near first' unless Escape is pressed first.",
+  "rca of the issue": "finalizeDraft returns early on `!faceId` without clearing `draft.points`. Next mouseDown events append to the stale array; the polygon's 'close by proximity to points[0]' compares new clicks against the OLD first vertex (from the refused attempt) which is far from the new draw region. Mitigation: `setDraft(null)` inside the refusal branch."
+}

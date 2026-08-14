@@ -136,8 +136,10 @@ BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
     # convert", and a warning toast fires) — this is evidence-or-null, the
     # opposite of a silent conditional.
     ("components/estimate/PdfOverlayEditor.jsx", "if (!vertices || vertices.length < 3 || !scaleRef || !wpx || !hpx) return null;"),
+    ("components/estimate/PdfOverlayEditor.jsx", "if (!in_per_ft || !dpi || in_per_ft <= 0 || dpi <= 0) return null;"),
     ("components/estimate/PdfOverlayEditor.jsx", "if (!p1 || !p2 || !real_ft || real_ft <= 0) return null;"),
     ("components/estimate/PdfOverlayEditor.jsx", "if (calibPx <= 0) return null;"),
+    ("components/estimate/PdfOverlayEditor.jsx", "if (!ftPerPx || ftPerPx <= 0) return null;"),
     # BlueprintReadBackCard: null when no readback yet — this card is
     # rendered inside the run dialog modal; the persistent Blueprint
     # Elevation Entry (registry S1) speaks the state on the estimate

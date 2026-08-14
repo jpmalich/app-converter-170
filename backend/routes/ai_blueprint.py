@@ -4217,6 +4217,13 @@ async def ai_blueprint(
     from config import UPLOAD_DIR  # local import to dodge cycle
     from upload_store import save_blob  # Iter 78z+++ — durable backing store
     page_paths: list[str] = []
+    # MUV S2 (2026-08-13) — record the render DPI as EVIDENCE, not an
+    # assumption. PDF pages are rasterised at PDF_RENDER_SCALE × 72 DPI
+    # (deterministic); image scans have no knowable DPI. The Material
+    # Zone editor reads this to convert a printed scale fraction
+    # (3/16"=1'-0") to feet-per-pixel; when it is None the printed-scale
+    # path REFUSES and the user must trace a calibration by hand.
+    _render_dpi: Optional[int] = None
     # SOURCE-RETENTION RULING (Howard, 2026-08-07): the original upload is
     # retained — always, every door, every file type. A derived artifact
     # never replaces its source.
@@ -4271,6 +4278,7 @@ async def ai_blueprint(
         await _retain_source(raw, "pdf", "application/pdf", "pdf", file.filename)
         source_probe, source_text_pages = _probe_pdf_source(raw)
         page_pngs, _pdf_total_pages = _render_pdf_to_pngs(raw, max_pages)
+        _render_dpi = round(72 * PDF_RENDER_SCALE)
         _total_input_pages += _pdf_total_pages
         for png in page_pngs:
             try:
@@ -4366,6 +4374,7 @@ async def ai_blueprint(
         # for box-tagging. Order matches `image_payloads` (and therefore
         # photos[*].index in Claude's output).
         "page_paths": ",".join(p for p in page_paths if p),
+        "render_dpi": _render_dpi,
         # SOURCE-RETENTION RULING (2026-08-07) — originals + native-text probe.
         "source_files": source_files,
         "source_probe": source_probe,
@@ -4477,6 +4486,7 @@ async def ai_blueprint_rerun(
         "stage":       "starting",
         "page_count":  len(image_payloads),
         "page_paths":  ",".join(new_page_paths),
+        "render_dpi":  prev.get("render_dpi"),
         "address":     address,
         "rerun_of":    prev_run_id,
         "source_files": prev.get("source_files") or [],
@@ -4643,6 +4653,10 @@ async def ai_blueprint_latest_for_estimate(
             # Iter 78z+ — persisted page filenames so the frontend can
             # render them in the ProfileAnnotator on a resume.
             "page_paths": doc.get("page_paths") or "",
+            # MUV S2 (2026-08-13) — render DPI evidence for the Material
+            # Zone editor's printed-scale conversion (None ⇒ scan, no
+            # knowable DPI ⇒ printed-scale path refuses, user traces).
+            "render_dpi": doc.get("render_dpi"),
             # Read-side provenance (ruled 2026-07-20): True when served
             # from the CUT archive, or (2026-08-11) just archived on view.
             "archived": archived,
