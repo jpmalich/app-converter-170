@@ -60,17 +60,14 @@ def test_ruling_J_money_reflects_a_not_derivable_quantity():
 
 # ---- RULINGS ON THE RECORD BUT NOT FULLY BUILT THIS SEND ----
 
-@pytest.mark.skip(reason=(
-    "ruling:held: RULING G (send-15) corner never-average refusal — the "
-    "CENSUS is delivered in the handback (every priced averaging site: "
-    "lp_package _corner_height_ft/OSC/ISC, ai_blueprint corner ledger "
-    "basis='averaged', inside_corner_lf = count x avg, and the avg_wall_"
-    "height_ft fallbacks with a hardcoded 9.5). Howard ruled 'I want the "
-    "list before anything is changed' for averaging wider than corners; "
-    "the corner refusal build is therefore gated on his review of that "
-    "census. WHAT WOULD UNHOLD IT: his go-ahead after reading the census."))
 def test_ruling_G_corner_reports_not_derivable_over_unheighted_wall():
-    raise AssertionError("held pending census review — see skip reason")
+    # BUILT send-18 (Ruling R/Q): a corner/OSC over a wall with no verified
+    # height is NOT DERIVABLE — never the min(), never the average. Full
+    # synthetic coverage in test_ruling_qr_corner_refusal_2026_08_14_send18.
+    from lp_package import _corner_height_ft
+    q_ = _corner_height_ft({"type": "outside", "walls": ["back"]}, {"front": 9.0})
+    assert q_.status == "NOT_DERIVABLE" and q_.value is None
+    assert "back" in " ".join(q_.excluded)
 
 
 @pytest.mark.skip(reason=(
@@ -87,15 +84,33 @@ def test_ruling_F_money_line_and_sheet_surfaces():
     raise AssertionError("held/superseded — see skip reason")
 
 
-@pytest.mark.skip(reason=(
-    "ruling:held: RULING H remaining siblings (base course, batten +1 run) "
-    "and the PREFERRED 'only-obtainable' shape. FEASIBILITY (reported): the "
-    "true 'only-obtainable' shape (a caller cannot reach a raw width_ft / "
-    "height_ft) is NOT reachable without breaking JSON/Mongo serialization "
-    "of the wall dicts and dozens of readers; the reachable shape is the "
-    "one-copy accessor (built) that every priced reader MUST call, enforced "
-    "by a census pin. WHAT WOULD UNHOLD IT: Howard's go-ahead to wire base "
-    "course + batten to the accessor and add the 'no raw width/height read "
-    "in a priced path' census pin. gable + eaves are already wired."))
 def test_ruling_H_all_five_siblings_wired_and_census_pinned():
-    raise AssertionError("partially built — see skip reason")
+    # BUILT send-18 (Ruling Q + P): base course routes through
+    # wall_width_for_pricing (killed width ⇒ NOT DERIVABLE face, no silent
+    # area); the batten +1-run term is PARTIAL when the wall height is
+    # unconfirmed (never a folded silent 0); the census pin (Ruling P)
+    # scans all priced modules and no in-scan reader remains
+    # PENDING_CONVERSION. gable + eaves were already wired (send-15).
+    from lp_smartside_formulas import board_batten_batten_pieces_status
+    from profile_callouts import breakdown_walls_by_profile
+    bd = breakdown_walls_by_profile([{"label": "l", "width_ft": None,
+                                      "height_ft": 9.0,
+                                      "wall_body_profile_callout": "lap"}])
+    assert any(f.get("surface") == "body" for f in bd["faces_not_derivable"])
+    assert bd["per_profile_sqft"].get("lap", 0) == 0
+    assert board_batten_batten_pieces_status(1000.0, 12, 0).status == "PARTIAL"
+    baseline = (Path(__file__).parent / "_raw_wall_dim_baseline.txt").read_text()
+    pending = [ln for ln in baseline.splitlines()
+               if ln.strip() and not ln.strip().startswith("#")
+               and "PENDING_CONVERSION" in _class_above(baseline, ln)]
+    assert not pending, f"a reader is still PENDING_CONVERSION: {pending}"
+
+
+def _class_above(text: str, line: str) -> str:
+    cls = ""
+    for ln in text.splitlines():
+        if ln.strip().startswith("# ["):
+            cls = ln.strip()[3:ln.strip().index("]")]
+        if ln == line:
+            return cls
+    return cls

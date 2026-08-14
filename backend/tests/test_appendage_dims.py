@@ -81,8 +81,13 @@ def test_user_measured_height_targets_chase_osc_only():
 def test_corner_height_honors_override():
     from lp_package import _corner_height_ft
     loc = {**CHASE_OSC, "height_override_ft": 18.9}
-    assert _corner_height_ft(loc, {"right": 8.6}, 8.6) == 18.9
-    assert _corner_height_ft(CHASE_OSC, {"right": 8.6}, 8.6) == 8.6
+    # RULING R (send-18): _corner_height_ft now returns a status-carrying
+    # Quantity. Override → DERIVED at the override; a single verified
+    # touching wall → DERIVED at that height (no average).
+    ov = _corner_height_ft(loc, {"right": 8.6}, 8.6)
+    assert ov.value == 18.9 and ov.status == "DERIVED"
+    live = _corner_height_ft(CHASE_OSC, {"right": 8.6}, 8.6)
+    assert live.value == 8.6 and live.status == "DERIVED"
 
 
 def test_disagreement_flagged_never_averaged():

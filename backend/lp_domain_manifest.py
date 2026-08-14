@@ -9,6 +9,7 @@ Audit of record: /app/memory/forkability_audit_2026-07-13.md
 # Pure domain core — may import ONLY stdlib + each other.
 LP_CORE_MODULES = [
     "lp_conventions.py",
+    "quantity.py",  # Ruling J/K/L status wrapper (send-16); pure stdlib, wired into the LP takeoff first — revisit the boundary if it goes app-wide
     "lp_package.py",
     "lp_costs.py",
     "lp_colors.py",

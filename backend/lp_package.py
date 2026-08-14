@@ -15,6 +15,8 @@ Deterministic engine per Howard's rulings (2026-07-11):
 import math
 import re
 
+from quantity import (DERIVED, NOT_DERIVABLE, PARTIAL, derived, not_derivable,
+                      partial, propagate)
 from lp_conventions import (
     FASCIA_RAKE_ITEM, ISC_TRIM_ITEM, PENDING_CONFIRMATIONS, TRIM_STICK_LEN_FT,
     WRAP_TRIM_ITEM, fascia_rake_takeoff, line_math, lp_composition_bugs,
@@ -86,31 +88,59 @@ def _lp_product_table() -> dict:
             "trim": [i for i in LP_TRIM_SKUS if "Series Trim" in i]}
 
 
-def _corner_height_ft(loc: dict, wall_heights: dict, avg_h) -> float:
-    # Dimension-editing ruling (2026-07-15): a user-measured/blueprint-
-    # confirmed appendage height overrides the wall-height default. The
-    # override field is ONLY ever set by the tag-gated overlay — assumed
-    # dims never reach here (render-only pin unchanged).
+def _corner_height_ft(loc: dict, wall_heights: dict, avg_h=None):
+    """RULING R (Howard sealed 2026-08-14 send-18): a corner's height is
+    DERIVED only from VERIFIED touching-wall heights, and returns a
+    `Quantity` so a killed height can never be priced as a silent
+    substitute. The average (`_ai_avg_wall_height_ft`) is RETIRED (Ruling
+    Q) — `avg_h` is accepted for positional back-compat and NEVER read.
+
+      - user/blueprint override present            → DERIVED at the override
+      - all touching walls verified, heights AGREE  → DERIVED
+      - all verified but heights DISAGREE           → MAX, PARTIAL, naming
+        both walls and both heights (worst-case, per the P3 gable
+        precedent; min() was a lower bound wearing a real read's costume —
+        a silent under-count — and is gone)
+      - ANY touching wall height-dead, or no wall   → NOT DERIVABLE, naming
+        the dead wall (drop the stick, block the gate, never average)
+
+    OPEN against Ruling R (later send, NOT built here): where a tall wall
+    meets a short wing, those may be two physically separate corners rather
+    than one corner needing a height — split vs pick-a-height is undecided.
+    """
     try:
         ov = float(loc.get("height_override_ft") or 0)
     except (TypeError, ValueError):
-        ov = 0
+        ov = 0.0
     if ov > 0:
-        return ov
-    hs = []
-    for w in loc.get("walls") or []:
+        return derived(ov, "user/blueprint-confirmed appendage height")
+    walls = [w for w in (loc.get("walls") or [])]
+    if not walls:
+        return not_derivable(
+            "corner has no touching wall recorded — height not derivable",
+            "corner")
+    pairs, dead = [], []
+    for w in walls:
         try:
             h = float(wall_heights.get(w) or 0)
         except (TypeError, ValueError):
-            h = 0
+            h = 0.0
         if h > 0:
-            hs.append(h)
-    if hs:
-        return min(hs)
-    try:
-        return float(avg_h or 0)
-    except (TypeError, ValueError):
-        return 0.0
+            pairs.append((str(w), h))
+        else:
+            dead.append(str(w))
+    if dead:
+        return not_derivable(
+            "corner touches a wall with no verified height — height not "
+            "derivable (Ruling R: never averaged)", ", ".join(dead))
+    heights = [h for _w, h in pairs]
+    if len({round(h, 3) for h in heights}) == 1:
+        return derived(heights[0], "touching walls agree")
+    hi = max(heights)
+    detail = ", ".join(f"{w}={h:g}'" for w, h in pairs)
+    return partial(hi, [detail],
+                   f"touching-wall heights disagree ({detail}) — worst-case "
+                   f"{hi:g}', flagged not averaged (Ruling R)")
 
 
 APPENDAGE_MARKERS = ("chase", "chimney", "bump", "cantilever", "appendage")
@@ -156,10 +186,18 @@ def corner_sticks_for_length(heights: list, stick_len_ft: float) -> int:
 
 def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
     features = _corner_features(locs)
-    feature_heights = [
-        [_corner_height_ft(l, wall_heights, avg_height_ft) for l in f] for f in features
-    ]
+    feat_qtys = [[_corner_height_ft(l, wall_heights) for l in f] for f in features]
+    all_q = [q for fq in feat_qtys for q in fq]
+    # Stick math runs ONLY over DERIVABLE corner heights — a NOT DERIVABLE
+    # corner contributes no silent stick (Ruling R). Worst-status wins for
+    # the takeoff as a whole (Ruling J propagation).
+    feature_heights = [[q.value for q in fq if q.value is not None]
+                       for fq in feat_qtys]
     heights = [h for fh in feature_heights for h in fh]
+    dead_walls = sorted({d for q in all_q if q.status == NOT_DERIVABLE
+                         for d in (q.excluded or ()) if d})
+    disagreements = [q.reason for q in all_q if q.status == PARTIAL]
+    status = propagate(all_q).status if all_q else NOT_DERIVABLE
     amber = sum(1 for l in locs if l.get("tier") != "confirmed")
     elevated = sum(1 for l in locs if l.get("elevated"))
     user_measured = sum(1 for l in locs if l.get("height_override_ft"))
@@ -167,21 +205,35 @@ def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
         "heights": [round(h, 2) for h in heights],
         "feature_heights": [[round(h, 2) for h in fh] for fh in feature_heights],
         "feature_count": len(features),
-        "sticks": sum(corner_sticks_for_length(fh, stick_len) for fh in feature_heights),
+        "sticks": sum(corner_sticks_for_length(fh, stick_len)
+                      for fh in feature_heights),
         "total_lf": round(sum(heights), 1),
         "amber": amber,
         "elevated": elevated,
         "user_measured": user_measured,
         "over_stick": any(h > stick_len for h in heights),
+        "status": status,
+        "dead_walls": dead_walls,
+        "disagreements": disagreements,
     }
 
 
-def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft,
+def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft=None,
                               stick_len: float = 16.0):
     oscs = [l for l in corner_locations or [] if str(l.get("type")) == "outside"]
     if not oscs:
         return None
-    t = _corner_takeoff(oscs, wall_heights, avg_height_ft, stick_len)
+    t = _corner_takeoff(oscs, wall_heights, None, stick_len)
+    if t["status"] == NOT_DERIVABLE:
+        dead = ", ".join(t["dead_walls"]) or "corner height"
+        note = (f"NOT DERIVABLE — {len(oscs)} OSC location(s); corner height not "
+                f"derivable (dead wall(s): {dead}). Ruling R/Q: no average, no "
+                f"silent stick count — field-measure the corner height.")
+        return {"qty": None, "status": NOT_DERIVABLE, "blocks_gate": True,
+                "note": note, "osc_count": len(oscs), "dead_walls": t["dead_walls"],
+                "amber": t["amber"], "elevated": t["elevated"], "total_lf": t["total_lf"],
+                "heights": t["heights"], "feature_heights": t["feature_heights"],
+                "flags": []}
     note_bits = [
         f"C3/C4: {len(oscs)} OSC locations in {t['feature_count']} feature(s), "
         f"feature-pooled sticks = {t['sticks']} "
@@ -191,6 +243,9 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     if t["over_stick"]:
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
         note_bits.append(OSC_PLACEMENT_RULE)
+    if t["status"] == PARTIAL:
+        note_bits.append("corner height(s) from DISAGREEING walls — worst-case, "
+                         "PARTIAL (never averaged): " + "; ".join(t["disagreements"]))
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     if t["user_measured"]:
@@ -198,26 +253,40 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     if t["elevated"]:
         note_bits.append(
             f"{t['elevated']} elevated post(s) priced at full wall height — trim to post height in field")
-    return {"qty": t["sticks"], "note": "; ".join(note_bits), "osc_count": len(oscs),
+    return {"qty": t["sticks"], "status": t["status"], "blocks_gate": False,
+            "note": "; ".join(note_bits), "osc_count": len(oscs),
             "amber": t["amber"], "elevated": t["elevated"], "total_lf": t["total_lf"],
             "heights": t["heights"], "feature_heights": t["feature_heights"],
             "flags": flags}
 
 
-def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft,
+def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft=None,
                               stick_len: float = TRIM_STICK_LEN_FT):
     iscs = [l for l in corner_locations or [] if str(l.get("type")) == "inside"]
     if not iscs:
         return None
-    t = _corner_takeoff(iscs, wall_heights, avg_height_ft, stick_len)
+    t = _corner_takeoff(iscs, wall_heights, None, stick_len)
+    if t["status"] == NOT_DERIVABLE:
+        dead = ", ".join(t["dead_walls"]) or "corner height"
+        note = (f"NOT DERIVABLE — {len(iscs)} ISC location(s); corner height not "
+                f"derivable (dead wall(s): {dead}). Ruling R/Q: no average — "
+                f"field-measure the corner height.")
+        return {"qty": None, "status": NOT_DERIVABLE, "blocks_gate": True,
+                "note": note, "isc_count": len(iscs), "dead_walls": t["dead_walls"],
+                "amber": t["amber"], "total_lf": t["total_lf"], "heights": t["heights"],
+                "feature_heights": t["feature_heights"], "flags": []}
     note_bits = [f"C3/C4: {len(iscs)} ISC locations in {t['feature_count']} feature(s), feature-pooled sticks = {t['sticks']} ({t['total_lf']} LF)"]
     flags = []
     if t["over_stick"]:
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
         note_bits.append(OSC_PLACEMENT_RULE)
+    if t["status"] == PARTIAL:
+        note_bits.append("corner height(s) from DISAGREEING walls — worst-case, "
+                         "PARTIAL (never averaged): " + "; ".join(t["disagreements"]))
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
-    return {"qty": t["sticks"], "note": "; ".join(note_bits), "isc_count": len(iscs),
+    return {"qty": t["sticks"], "status": t["status"], "blocks_gate": False,
+            "note": "; ".join(note_bits), "isc_count": len(iscs),
             "amber": t["amber"], "total_lf": t["total_lf"], "heights": t["heights"],
             "feature_heights": t["feature_heights"], "flags": flags}
 
@@ -358,7 +427,9 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         lines.append(new)
         return new
 
-    avg_h = measurements.get("_ai_avg_wall_height_ft")
+    # RULING Q (send-18): the corner/OSC average is retired. Corner heights
+    # derive ONLY from verified touching-wall heights (see _corner_height_ft);
+    # a killed height is NOT DERIVABLE, never `_ai_avg_wall_height_ft`.
 
     # WRAP TRIM WIDTH trade spec (ruled 2026-07-30): SKU name derived
     # UP-FRONT like fascia so seed-assign matches; name-only, counts stay.
@@ -374,14 +445,23 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
 
     # ── OSC: Howard's default width 5/4"×6" — spec-emitted OSC rows superseded
     lines[:] = [l for l in lines if "540 Series OSC" not in l["name"]]
-    osc = osc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
+    osc = osc_from_corner_locations(corner_locations, wall_heights or {})
     if osc:
-        _set_line(OSC_ITEM, "LP Siding Accessories", osc["qty"], osc["note"],
-                  _derivation={"kind": "osc", "heights": osc["heights"],
-                               "feature_heights": osc["feature_heights"]})
-        if osc["amber"]:
+        _oscl = _set_line(OSC_ITEM, "LP Siding Accessories", osc["qty"], osc["note"],
+                          _derivation={"kind": "osc", "heights": osc["heights"],
+                                       "feature_heights": osc["feature_heights"]})
+        if osc.get("status"):
+            _oscl["status"] = osc["status"]
+        if osc.get("blocks_gate"):
+            _oscl["blocks_gate"] = True
+            _oscl["price"] = None
+            flags.append(
+                "OSC NOT DERIVABLE — corner height not read for wall(s): "
+                f"{', '.join(osc.get('dead_walls') or []) or 'unknown'}; quote "
+                "blocked (Ruling K/R — no average, no silent stick count)")
+        if osc.get("amber"):
             flags.append(f"{osc['amber']} amber corner location(s) included per presence guarantee — field verify before ordering")
-        if osc["elevated"]:
+        if osc.get("elevated"):
             flags.append(f"{osc['elevated']} elevated post(s) priced at full wall height")
     else:
         try:
@@ -429,10 +509,21 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             bits = []
             q = 0
             if cnt > 0:
-                per_h = (lf / cnt) if lf > 0 else float(measurements.get("avg_wall_height_ft") or 9.5)
-                house_q = cnt * max(1, math.ceil(per_h / 16.0 - 1e-9))
+                if lf > 0:
+                    per_h = lf / cnt
+                    house_q = cnt * max(1, math.ceil(per_h / 16.0 - 1e-9))
+                    bits.append(f"house {cnt} location(s) × whole-stick ({per_h:g}' each) = {house_q}")
+                else:
+                    # RULING Q (send-18): no `avg_wall_height_ft` substitute
+                    # for a corner with no length evidence. 1 stick/corner is
+                    # the structurally-guaranteed floor; taller corners are
+                    # named for field verify, never averaged up silently.
+                    house_q = cnt
+                    bits.append(f"house {cnt} location(s) × 1 stick/corner floor "
+                                "(corner length not read — Ruling Q: no average height)")
+                    flags.append("OSC corner length not read — 1 stick/corner "
+                                 "floor; field-verify tall corners (Ruling Q)")
                 q += house_q
-                bits.append(f"house {cnt} location(s) × whole-stick ({per_h:g}' each) = {house_q}")
             elif lf > 0:
                 house_q = max(1, math.ceil(lf / 16.0 - 1e-9))
                 q += house_q
@@ -461,17 +552,28 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
     # same SKU as the wrap line; merged into it after the wrap block so
     # one consolidated 540-4" row carries both scopes. 440 4/4"×4"
     # demoted to substitution option.)
-    isc = isc_from_corner_locations(corner_locations, wall_heights or {}, avg_h)
+    isc = isc_from_corner_locations(corner_locations, wall_heights or {})
     isc_qty = 0
     isc_note = ""
     isc_deriv = None
+    isc_blocked = False
     if isc:
-        isc_qty = isc["qty"]
-        isc_note = isc["note"]
-        isc_deriv = {"kind": "isc", "heights": isc["heights"],
-                     "feature_heights": isc["feature_heights"]}
-        if isc["amber"]:
-            flags.append(f"{isc['amber']} amber inside-corner location(s) included — field verify")
+        if isc.get("status") == NOT_DERIVABLE:
+            isc_blocked = True
+            isc_qty = 0
+            isc_note = isc["note"]
+            flags.append(
+                "ISC NOT DERIVABLE — corner height not read for wall(s): "
+                f"{', '.join(isc.get('dead_walls') or []) or 'unknown'}; the "
+                "ISC scope on the 540 line is refused, quote blocked "
+                "(Ruling K/R — no average, no silent stick count)")
+        else:
+            isc_qty = isc["qty"]
+            isc_note = isc["note"]
+            isc_deriv = {"kind": "isc", "heights": isc["heights"],
+                         "feature_heights": isc["feature_heights"]}
+            if isc["amber"]:
+                flags.append(f"{isc['amber']} amber inside-corner location(s) included — field verify")
     else:
         ic = int(measurements.get("inside_corner_count") or 0)
         if ic > 0:
@@ -479,15 +581,19 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                 ilf = float(measurements.get("inside_corner_lf") or 0)
             except (TypeError, ValueError):
                 ilf = 0.0
-            per_h = (ilf / ic) if ilf > 0 else (avg_h or 9.5)
-            # Q13 (ruled 2026-07-27): PER-CORNER whole-stick round-up,
-            # min 1 pc per corner — Hover measured-LF cut-stock pooling
-            # RETIRED (splice-optimism; cut-reuse only with PROVEN cut
-            # tracking, never assumed). Corner-walk was already per-corner.
-            isc_qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
-            isc_note = (f"ISC {ic} corner(s) × per-corner whole-stick round-up "
-                        f"({per_h:g}' each, min 1 pc/corner — Q13 ruled 2026-07-27; "
-                        "pooled splice-optimism retired)")
+            if ilf > 0:
+                per_h = ilf / ic
+                isc_qty = ic * max(1, math.ceil(per_h / TRIM_STICK_LEN_FT - 1e-9))
+                isc_note = (f"ISC {ic} corner(s) × per-corner whole-stick round-up "
+                            f"({per_h:g}' each, min 1 pc/corner — Q13 ruled 2026-07-27; "
+                            "pooled splice-optimism retired)")
+            else:
+                # RULING Q: no avg substitute — 1 stick/corner floor.
+                isc_qty = ic
+                isc_note = (f"ISC {ic} corner(s) × 1 stick/corner floor (corner "
+                            "length not read — Ruling Q: no average height)")
+                flags.append("ISC corner length not read — 1 stick/corner floor "
+                             "(Ruling Q)")
             isc_deriv = {"kind": "isc_corner_walk", "count": ic, "lf": ilf}
 
     # ── 440 4/4"×8": fascia + rake boards (+ dormer fascia pooled — Q4)
@@ -598,6 +704,17 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
                           "name": _wrap_name, "unit": "PCS", "qty": add_q,
                           "note": add_notes + _wrap_spec_note,
                           **({"_derivation": isc_deriv} if isc_deriv else {})})
+
+    # RULING K/R (send-18): the ISC scope is NOT DERIVABLE (a corner's
+    # height died). The derivable wrap+frieze components still render, but
+    # the shared 540 line discloses the refused ISC scope and blocks the
+    # gate — never a silent 0 stick count folded into the count.
+    if isc_blocked:
+        target = next((l for l in lines if l["name"] == _wrap_name), None)
+        if target is not None:
+            target["note"] = f"{(target.get('note') or '').strip('; ')}; {isc_note}".strip("; ")
+            target["blocks_gate"] = True
+            target["isc_status"] = NOT_DERIVABLE
 
     # WRAP TRIM WIDTH trade spec (Howard ruled 2026-07-30): changes ONLY
     # the 540 SKU name — the whole Q12 scope (wrap + ISC + frieze) carries
@@ -767,7 +884,9 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
             "waste_pct_applied": (float(measurements.get("_waste_pct"))
                                   if measurements.get("_waste_pct") is not None
                                   else 0.0),
-            "total_pieces": sum(l["qty"] for l in lines if l.get("unit") == "PCS"),
+            "total_pieces": sum(l["qty"] for l in lines
+                                if l.get("unit") == "PCS"
+                                and isinstance(l.get("qty"), (int, float))),
             "osc_source": "c3_corner_locations" if osc else "outside_corner_lf",
             **({"area_basis": measurements["_area_basis"]}
                if measurements.get("_area_basis") else {}),

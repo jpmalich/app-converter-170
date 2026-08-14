@@ -21,7 +21,7 @@ HASH=$(git rev-parse --short HEAD)
 TS=$(date -u +"%Y-%m-%d %H:%M UTC")
 cd /app/backend
 FULL_LOG=/tmp/handback_green_pytest.log
-python3 -m pytest ${TARGETS} -q 2>&1 > "${FULL_LOG}"
+python3 -m pytest ${TARGETS} -q -rs 2>&1 > "${FULL_LOG}"
 OUT=$(tail -1 "${FULL_LOG}")
 if echo "${OUT}" | grep -qE "failed|error" || ! echo "${OUT}" | grep -qE "^[0-9]+ passed"; then
   echo "GUARD HARD-FAIL: SUITE NOT GREEN — nothing stamped, nothing logged."
@@ -36,6 +36,18 @@ fi
 echo "- ${TS} · ${HASH} · CLEAN · [${TARGETS}] · ${OUT}" >> /app/memory/handback_green_log.md
 echo "RECORDED: ${TS} · ${HASH} · CLEAN"
 echo "RESULT: ${OUT}"
+
+# CENSUS PIN STATUS (Ruling P — green must not read as clean).
+if [ -f /app/memory/census_pin_status.txt ]; then
+  echo "CENSUS: $(cat /app/memory/census_pin_status.txt)"
+fi
+
+# SKIP ROSTER (Ruling O sealed 2026-08-14 send-18): every skip, its ruling
+# text, and its age in sends; anything older than three sends names its
+# blocker and who owes the unblock. A held ruling must not die unread.
+echo "----------------------------------------------------------------------"
+python3 scripts/skip_roster.py "${FULL_LOG}"
+echo "----------------------------------------------------------------------"
 
 # INGRESS CADENCE (Howard ruled 2026-08-07): the external path a real
 # user travels runs before every handback stamp is REPORTED — local

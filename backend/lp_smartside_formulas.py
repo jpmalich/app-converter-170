@@ -323,6 +323,42 @@ def board_batten_batten_pieces(
     return bb_batten_pieces(bb_batten_lf(wall_area_sqft, spacing_in, wall_height_ft))
 
 
+def board_batten_batten_pieces_status(
+    wall_area_sqft: float,
+    spacing_in: int = DEFAULT_BATTEN_SPACING_IN,
+    wall_height_ft: float = 0.0,
+):
+    """RULING Q (Howard sealed 2026-08-14 send-18) — the batten's honest
+    status. The `+1 run × wall_height` term was silently dropped to 0 when
+    the batten wall height was unconfirmed (the fifth silent sibling wearing
+    a "good enough to sell" flag). It is now EXPLICIT:
+
+      - wall_height_ft > 0            → DERIVED (field panels + run term)
+      - wall_area > 0, height absent  → PARTIAL: the field-panel pieces ARE
+        derivable and render, but the +1-run-per-wall term is a DISCLOSED
+        SUBSET (excluded, named) — never a silent 0 folded into a complete
+        count. Tape the wall heights (batten_wall_heights flag) to derive it.
+      - no wall area                  → DERIVED 0 (no B&B present)
+
+    NOTE (out-of-scan reader, send-18): the batten height rides
+    `_bb_wall_height_ft` — a human checklist scalar, not a per-wall AI dim —
+    so wall_height_for_pricing (a wall-dict accessor) does not apply
+    verbatim; the honesty is enforced here at the formula boundary instead.
+    Returns a `Quantity`."""
+    from quantity import derived, partial
+    if wall_area_sqft <= 0:
+        return derived(0, "no board-and-batten field area")
+    if float(wall_height_ft or 0) > 0:
+        return derived(board_batten_batten_pieces(wall_area_sqft, spacing_in,
+                                                  wall_height_ft),
+                       "field panels + run term (wall height confirmed)")
+    field_only = board_batten_batten_pieces(wall_area_sqft, spacing_in, 0.0)
+    return partial(field_only,
+                   ["+1 run × wall height per wall — batten wall height "
+                    "unconfirmed (tape it; do not fold a silent 0)"],
+                   "field-panel pieces only — run term NOT DERIVABLE")
+
+
 # ── HARD BATTEN FORMULA (Howard SEALED 2026-07-28 — not yet the live
 # emitter: spacing becomes a job input 12/16/24 and stick length / story
 # heights ride queue item d's diagnosis before this wires in).

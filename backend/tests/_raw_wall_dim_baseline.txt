@@ -1,0 +1,39 @@
+# RULING N/P/S BASELINE — raw wall-dimension reads in priced paths, keyed
+# module::function::symbol (line numbers DELIBERATELY excluded, send-18 P#2).
+#
+# ============================================================================
+# THE RATCHET TURNS ONE WAY (send-18 P#1). Entries may be REMOVED, never
+# ADDED. If you hit the census pin with a NEW read, DO NOT append it here to
+# go green — that is the failure mode this file exists to stop. Route the
+# read through wall_width_for_pricing / wall_height_for_pricing instead.
+# ADDING an entry requires an explicit ruling in a send, not a passing test.
+# ============================================================================
+#
+# Discriminator for the class is "does this read feed a PRICED quantity",
+# never "is it a wall dim" (send-18 S). Each entry carries a one-line reason.
+#
+# NOTED OUT-OF-SCAN FINDING (send-18) — the BATTEN reader (third
+# PENDING_CONVERSION Howard names) does not appear below: its height is the
+# human checklist scalar `_bb_wall_height_ft`, summed in
+# lp_package_routes._apply_flag_checklist and consumed in routes/hover.py
+# (_bb_batten_sticks), outside the four scanned modules; bb_batten_lf reads
+# it as a PARAMETER. Its silent zero is the `... or 0` on an unset checklist.
+# Converted at the bb_batten_lf boundary under Ruling Q; awaiting a ruling on
+# whether hover.py joins PRICED_MODULES.
+
+# [PENDING_CONVERSION]
+# CONVERTED under Ruling Q/R (send-18) — all in-scan money-bearing readers converted:
+#   lp_package::assemble_lp_package::_ai_avg_wall_height_ft  — REMOVED, corner heights derive via _corner_height_ft (verified touching walls, NOT DERIVABLE when dead)
+#   lp_package::assemble_lp_package::avg_wall_height_ft      — REMOVED, no-C3 fallback uses a 1-stick/corner floor, no average
+#   profile_callouts::breakdown_walls_by_profile::width_ft   — REMOVED, base-course/gable width now routes through wall_width_for_pricing (killed width ⇒ NOT DERIVABLE)
+# The BATTEN (third reader Howard names) is the NOTED OUT-OF-SCAN finding in
+# the header — converted at the bb_batten_lf boundary (Ruling Q), tracked
+# there because it is not visible to this 4-module scan.
+
+# [OUT_OF_SCOPE_N_BUT_PRICED]
+lp_package::assemble_lp_package::width_ft | dormer fascia LF (d.get("width_ft")) — PRICED (feeds the 440 8" fascia line) but a dormer dimension, not a wall dim; candidate for a follow-on ruling
+measure_staging::walk_walls::width_ft | walk_walls raw width — feeds the gable PITCH-RISE input and provenance detail; the gable AREA itself already routes through wall_width_for_pricing
+
+# [AUDITED_SAFE]
+measure_staging::walk_walls::height_ft | walk_walls eave_h — provenance detail only; wall body area derives via wall_body_gross_sqft, gable via gable_triangle_height_ft
+profile_callouts::breakdown_walls_by_profile::height_ft | breakdown eave_h / raw_h — disclosure + provenance only; body area via wall_body_gross_sqft, gable via gable_triangle_height_ft

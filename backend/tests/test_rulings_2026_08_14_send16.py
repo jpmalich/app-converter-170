@@ -70,23 +70,18 @@ def test_ruling_E_and_I_carried_from_send15_still_hold():
             / "rulings_archive" / "send16.md").exists()
 
 
-@pytest.mark.skip(reason=(
-    "ruling:held: RULINGS G + H WIRING through the live takeoff. The J "
-    "PLUMBING (quantity.py: Quantity + propagate + render_line + "
-    "rollup_total) is BUILT and pinned, and the send-15 wall accessors "
-    "already refuse silent zeros for gable + eaves. NOT YET wired end to "
-    "end: the corner/OSC average (G) and base-course + batten readers (H) "
-    "must return Quantity and let propagate() carry status into their line "
-    "items and totals. REPORT — which siblings J fixes by construction: "
-    "any reader that routes its wall dimension through propagate() cannot "
-    "emit a silent number; the ones that still need a hand are the readers "
-    "that today read a raw float directly (lp_package _ai_avg_wall_height_ft "
-    "corner path, base_starter, lp_smartside batten). WHAT WOULD UNHOLD IT: "
-    "Howard's go-ahead to convert those readers to Quantity and add the "
-    "'no raw width/height in a priced path' census pin, plus the four-face "
-    "re-fire that stamps the derivation is honest before money is wired."))
 def test_rulings_G_H_wired_end_to_end_through_quantity():
-    raise AssertionError("J plumbing built; live wiring staged — see reason")
+    # BUILT send-18 (Ruling Q/R): the corner/OSC average, base-course, and
+    # batten readers now carry status, and propagate() flows a NOT DERIVABLE
+    # input into the line (blocks the gate) rather than a silent number.
+    # REMAINING OWNER (send-18 acceptance): Howard's EST-713272 four-face
+    # re-fire stamps that the derivation is honest before money is wired
+    # onto the surface — that is Howard's side, not a build here.
+    from lp_package import osc_from_corner_locations
+    osc = osc_from_corner_locations(
+        [{"type": "outside", "walls": ["ghost"], "tier": "confirmed"}], {})
+    assert osc["status"] == q.NOT_DERIVABLE and osc["blocks_gate"] is True
+    assert "ghost" in osc["dead_walls"]
 
 
 @pytest.mark.skip(reason=(

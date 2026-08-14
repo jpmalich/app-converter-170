@@ -220,7 +220,12 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
 
     for w in walls or []:
         label = str(w.get("label") or "").lower() or "unknown"
-        width = _safe_float(w.get("width_ft"))
+        # RULING Q (send-18): base-course width (and the gable width below)
+        # route through the status-carrying gateway wall_width_for_pricing —
+        # a killed width returns (0.0, False) so it can never be priced as a
+        # silent 0. eave_h stays a provenance read (AUDITED_SAFE).
+        from measure_staging import wall_width_for_pricing
+        width, width_derivable, _w_subset, _w_missing = wall_width_for_pricing(w)
         eave_h = _safe_float(w.get("height_ft"))
         gable_h = _safe_float(w.get("gable_triangle_height_ft"))
         pct = _safe_float(w.get("siding_pct_this_wall"), 100.0)
@@ -243,9 +248,8 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
         # same disease as a vanishing line). The face is NULL-and-NAMED
         # and the aggregate discloses the missing face. Evidence-or-null:
         # a derived value dies with its source.
-        raw_w = w.get("width_ft")
         raw_h = w.get("height_ft")
-        width_readable = raw_w is not None and width > 0
+        width_readable = width_derivable and width > 0
         from measure_staging import wall_body_gross_sqft
         gross, segs_used, deriv = wall_body_gross_sqft(w)
         body_family = classify_profile(w.get("wall_body_profile_callout"))
