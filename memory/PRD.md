@@ -1,5 +1,48 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 OVER-KILL FIXED — SEND-9 sheet-scoping completed for segment dims
+Fresh read on EST-713272 read all four faces NOT DERIVABLE. MUV itself PASSED
+(rebuild survival + all seven bar points). The over-kill was the locator.
+
+**COVERAGE CHECK FIRST (Howard's order).** `_ocr_page_coverage_chars` on the
+run: {'1':54520,'2':62403,'6':50276,'7':20584,'9':26163,'11':4540} — HEALTHY.
+OCR read the sheets fine, so this is the KILL over-firing on LOCATED quotes,
+not blank-page storage.
+
+**MECHANISM.** SEND-9 ruled the SHEET is the feature on an elevation/floor-plan
+(any match on the page passes) but applied it only to CARDINAL top-level paths
+(walls.front.width_ft). SEGMENT paths (walls.front.segments.main body
+2-story.width_ft) stayed LABEL-BOUND — the located 34'-0" had to sit within
+30% of a text run reading 'MAIN BODY 2-STORY'. A drawing prints dimensions as
+geometry, never beside that label, so every genuinely-printed segment
+dimension was rejected ("quote matched but no candidate within 1036px of
+feature anchor") and the faces collapsed to NOT DERIVABLE. This is the same
+tradeoff over-corrected a third time (fraction skeleton → anchor gate → this).
+
+**FIX.** `_sheet_scoped_for(path, sheet_useful_for)`: on a DRAWING sheet, any
+wall/gutter dim carrying a CARDINAL component is sheet-scoped; presence-on-page
+still decides. The tight label-bound radius survives for SCHEDULE/TABLE sheets.
+
+**SURVIVAL EVIDENCE (from the run's own recorded miss reasons).** Of 10 dims
+OCR found but the gate wrongly rejected, the fix spares 9 — every width/height
+feeding the four faces plus the gutter runs. The 6 genuinely-absent quotes
+still die correctly (the fabricated 39'-0" sides Howard confirmed are wrong,
+plus bad top-level heights). RESIDUAL: `roof_planes.garage/bonus.eave_lf`
+(no cardinal in its path) stays label-bound — it feeds a roof eave LF, not a
+face area, so the four faces derive. Open question for Howard: sheet-scope the
+WHOLE drawing sheet (presence-only for every dim on it) vs cardinal-only?
+
+**PINS (4, calibration held both ways):** `test_sheet_scoped_segment_overkill_
+2026_08_14.py` — segment dim on an elevation with no label LOCATES; the same
+on a schedule stays gated; an absent quote still dies; a non-cardinal window
+row is never loosened. Suite: 2372 passed / 4 skipped (+4).
+
+**S3** no longer held on principle — sequenced after over-kill (now fixed).
+Next: (2) Locator Survival Report ruling, (3) Law B invariant enforced wherever
+lines are written, (4) Linear Edges S3.
+
+
+
 ## 2026-08-14 INT-PAGE-KEY PERSIST REGRESSION FIXED + inherited read confirmed walkable
 Fresh read on EST-713272 errored: "documents must have only string keys, key was 11".
 

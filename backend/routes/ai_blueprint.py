@@ -1438,6 +1438,28 @@ def _path_is_sheet_scoped(path: str) -> bool:
     return all(a in _CARDINAL_ANCHORS for a in anchors)
 
 
+def _sheet_scoped_for(path: str, sheet_useful_for: str) -> bool:
+    """SEND-9 COMPLETION (Howard over-kill fix 2026-08-14). SEND-9 ruled
+    that on an elevation / floor-plan sheet the SHEET is the feature —
+    any match on the page passes — but applied it only to CARDINAL
+    top-level paths (walls.front.width_ft). SEGMENT paths
+    (walls.front.segments.main body 2-story.width_ft) stayed label-bound,
+    demanding a text run 'MAIN BODY 2-STORY' within 30% of the dimension.
+    A DRAWING SHEET PRINTS DIMENSIONS AS GEOMETRY, never beside such a
+    label — so every located segment dimension on an elevation was killed
+    and all four faces read NOT DERIVABLE. The label-bound tight radius
+    only fits SCHEDULE / TABLE sheets (where a row label sits with its
+    number). On a drawing sheet, any wall/gutter dim carrying a cardinal
+    component is sheet-scoped; presence-on-page (anti-fabrication) still
+    decides, so a genuinely absent quote (the fabricated 39s) still dies."""
+    if _path_is_sheet_scoped(path):
+        return True
+    if sheet_useful_for in _WALL_DIM_SHEET_KINDS:
+        return any(a in _CARDINAL_ANCHORS
+                   for a in _feature_anchors_for_path(path))
+    return False
+
+
 def _rect_center(rect):
     x0, y0, x1, y1 = rect
     return ((x0 + x1) / 2.0, (y0 + y1) / 2.0)
@@ -1649,7 +1671,7 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         pending = []
         for path, s, nq in entries:
             anchors = _feature_anchors_for_path(path)
-            sheet_scoped = _path_is_sheet_scoped(path)
+            sheet_scoped = _sheet_scoped_for(path, sheet_useful_for)
             rect, why = _ocr_match_near_feature(
                 runs, joined, nq, anchors, radius,
                 sheet_scoped=sheet_scoped, sheet_title=sheet_title,
@@ -1678,7 +1700,7 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
             still = []
             for path, s, nq in pending:
                 anchors = _feature_anchors_for_path(path)
-                sheet_scoped = _path_is_sheet_scoped(path)
+                sheet_scoped = _sheet_scoped_for(path, sheet_useful_for)
                 rect, why = _ocr_match_near_feature(
                     rruns, rjoined, nq, anchors, radius,
                     sheet_scoped=sheet_scoped, sheet_title=sheet_title,
