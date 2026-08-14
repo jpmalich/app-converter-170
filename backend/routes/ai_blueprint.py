@@ -3687,6 +3687,18 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                 "pitch": str(raw.get("roof_pitch") or ""),
             })
     siding_sqft += gable_sqft + dormer_sqft
+    # DERIVE-OR-DISCLOSE (Howard ruled 2026-08-14): the aggregate never
+    # silently sums a subset — a wall whose width/height was killed or
+    # never read is NAMED on the run so the card and the seam ledger
+    # both disclose the missing face. Evidence-or-null: a derived value
+    # dies with its source, and the total says which face it lost.
+    _walk_faces_nd = _walk.get("faces_not_derivable") or []
+    if _walk_faces_nd:
+        raw["_faces_not_derivable"] = _walk_faces_nd
+        seam_accounting.account(
+            raw, "wall_area_not_derivable",
+            [f"{(f.get('label') or '?')} {(f.get('surface') or 'body')} — {f.get('reason')}"
+             for f in _walk_faces_nd])
 
     # Shakedown fix (2026-07-14) — chase/appendage faces belong in the
     # siding area (C4-fix analogue of the photo path's attributed faces).
@@ -4186,9 +4198,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         breakdown = apply_annotations_to_breakdown(breakdown, annotations)
         measurements["_per_elevation_breakdown"] = breakdown["per_elevation"]
         measurements["_per_profile_sqft"] = breakdown["per_profile_sqft"]
+        measurements["_faces_not_derivable"] = breakdown.get("faces_not_derivable") or []
     except Exception:
         measurements["_per_elevation_breakdown"] = []
         measurements["_per_profile_sqft"] = {}
+        measurements["_faces_not_derivable"] = []
     return measurements
 
 

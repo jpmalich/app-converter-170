@@ -83,11 +83,28 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
     gable_sqft = 0.0
     dormer_sqft = 0.0
     detail = []
+    faces_not_derivable = []
     for w in walls:
-        width_ft = float(w.get("width_ft") or 0)
+        raw_w = w.get("width_ft")
+        width_ft = float(raw_w or 0)
         eave_h = float(w.get("height_ft") or 0)
         # Per-wall height variation (ruled 2026-08-07): segments govern.
         gross, segs_used = wall_body_gross_sqft(w)
+        # DERIVE-OR-DISCLOSE (Howard ruled 2026-08-14): a wall whose
+        # width was killed/unread has UNKNOWN body area, never a silent
+        # 0 that shrinks the house. The money walk still sums the
+        # derivable faces, but the aggregate NAMES the missing one — a
+        # total assembled from a subset of walls must say so. Scoped to
+        # the KILLED WIDTH (the orphan class): the width DIM is None
+        # because its quote was fabricated/unlocatable or never read.
+        # Height-absent partial fixtures are not the orphan and are left
+        # to the per-elevation breakdown's fuller check.
+        width_readable = raw_w is not None and width_ft > 0
+        if not width_readable:
+            faces_not_derivable.append({
+                "label": w.get("label"), "surface": "body",
+                "reason": "wall width not read — area not derivable",
+            })
         pct = float(w.get("siding_pct_this_wall") or 100.0)
         # Shared fraction-vs-percent defense: 0<x<1 is a fraction.
         if 0 < pct < 1:
@@ -109,7 +126,8 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
                        "rise_read": rise_read, "rise_used": rise,
                        "gable_sqft": wall_gable})
     return {"siding_sqft": siding_sqft, "gable_sqft": gable_sqft,
-            "dormer_sqft": dormer_sqft, "detail": detail}
+            "dormer_sqft": dormer_sqft, "detail": detail,
+            "faces_not_derivable": faces_not_derivable}
 
 
 # (est_key, measurement_key, human label) — the four ruled boxes; frieze

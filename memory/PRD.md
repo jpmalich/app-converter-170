@@ -1,5 +1,61 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 GEOMETRY ORPHAN CLOSED (derived value dies with its source) + EST-886440 DUPLICATED
+Howard's send: report the 780 ft² orphan mechanism FIRST, fix + pin both
+directions, duplicate EST-886440 for the rebuild-survival walk. S3 stays HELD.
+
+**MECHANISM (evidence, not a guess).** On the frozen run 5df22e6d
+(EST-886440, 2026-08-12 19:57 UTC) the AI emitted `walls.left.width_ft = 39`
+and `walls.right.width_ft = 39`, each backed by the quote "39'-0"" that NO
+OCR pass could locate near the wall (`loc: null` → recorded as an OCR miss).
+So 39×20 = 780 ft² body + 0.70×39×gable rode into `_per_elevation_breakdown`
+for LEFT and RIGHT. The kill that nulls an unlocatable-quote wall width
+(`_null_unverified_quotes`, commit SEND-8) shipped 2026-08-12 21:11 UTC — 74
+min AFTER the run. So the orphan was FROZEN, pre-fix data on a PROTECTED
+estimate (writes refused 423, can never be re-derived in place). Proven by
+re-running current code on the exact stored raw: current kill nulls left/right
+width; the residual defect was one surface UP — `breakdown_walls_by_profile`
+/ `walk_walls` turned the nulled width into a SILENT ZERO (shrinking the
+house) instead of NOT DERIVABLE.
+
+**FIX (Howard's refinement 2: unreadable width is UNKNOWN, not zero).**
+`breakdown_walls_by_profile` + `walk_walls`: a wall whose width (or, in the
+breakdown, height) was killed/unread → the body AND gable are NULL-and-NAMED
+(`wall_body_sqft: None`, `wall_body_derivable: False`), the face is listed in
+`faces_not_derivable`, the killed area NEVER reaches per_profile, and the money
+walk NAMES the missing face (seam `wall_area_not_derivable`) — a total from a
+subset of walls says which face it lost. Frontend MUV per-wall panel renders
+"NOT DERIVABLE — width not read, NEEDS TAPE" instead of a silent number.
+
+**PINS (relationships, never house numbers — Howard's purity rider).**
+`tests/test_derived_dies_with_source_2026_08_14.py` (6): (a) killed width →
+body & gable None (not 0), named in faces_not_derivable, killed area never in
+per_profile; (b) a LOCATED width kept — body == width×height read from the
+fixture's own inputs; (c) the aggregate is the derivable subset AND discloses
+the missing face. Suite: **2364 passed / 4 skipped** (was 2358; +6).
+
+**DUPLICATE — EST-713272** (id 65bcb89d-8291-4b84-920c-7b503273f332), name
+"Boni — MUV rebuild test". Four checks met: (1) carries the completed
+blueprint read + 11 source pages (latest done run copied, re-pointed);
+(2) does NOT inherit protected_estimate_ledger (0 entries); unprotected
+(protected fields null); (3) duplication logged on EST-886440's ledger
+(kind "duplicated"); (4) distinct name. EST-886440 untouched, still protected.
+Duplicate route also hardened to strip protected/ledger on every copy.
+
+**OPEN / FLAGGED for Howard.** The sealed EST-886440 display still shows the
+frozen 780 (it is protected and cannot be re-derived) — to SEE sides as NOT
+DERIVABLE end-to-end, fire a FRESH blueprint read on the unprotected duplicate
+(a fresh read runs current OCR incl. the SEND-9 fraction skeleton, so the front
+garage's "24'-0 1/2"" locates and the fabricated 39 sides return NOT
+DERIVABLE). NOTE: applying the STALE frozen misses would over-kill the front
+garage ½" (a locator false-negative) → the ruled rectangle fallback inflates
+front — so the kill was NOT retro-applied to the sealed read.
+
+**S3 (Linear Edges) — HELD** until Howard walks per-wall (fresh read) + rebuild
+survival (EST-713272).
+
+
+
 ## 2026-08-11 SEND-6 — WING GABLE MECHANISM + PITCH PER PLANE (Howard's ruling)
 Ruled 2026-08-11 send-6; full mechanism report at
 `memory/wing_gable_send6_ruling_2026-08-11.md`.

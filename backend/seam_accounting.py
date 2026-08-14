@@ -10,6 +10,13 @@ from __future__ import annotations
 SEAM_REGISTRY = {
     "interior_doors_dropped":
         "Doors with exterior_evidence 'none' kept OFF the exterior count.",
+    "wall_area_not_derivable":
+        "A wall whose width was killed or never read has UNKNOWN body "
+        "area, never a silent 0 that shrinks the house. The money walk "
+        "sums only the derivable faces and NAMES the missing one here — "
+        "a total assembled from a subset of walls says which face it "
+        "lost (Howard ruled 2026-08-14: unreadable width is unknown, "
+        "not zero; a derived value dies with its source).",
     "dims_nulled_no_evidence":
         "Dims that arrived without a quoted printed string — nulled by "
         "construction (evidence-or-null).",

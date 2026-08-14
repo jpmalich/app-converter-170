@@ -209,6 +209,7 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
     base_lf: dict[str, float] = {}
     gable_break_lf: dict[str, float] = {}
     conflicts: list[dict] = []
+    faces_not_derivable: list[dict] = []
     skipped_echo = 0
     malformed = 0
 
@@ -234,27 +235,60 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
         # PER-WALL HEIGHT VARIATION (ruled 2026-08-07): the ONE shared
         # gross — segments govern here exactly as on the siding walk, so
         # this table can never disagree with the siding line.
+        #
+        # DERIVE-OR-DISCLOSE (Howard ruled 2026-08-14): a wall whose
+        # width (or height) was KILLED or never read does NOT have zero
+        # area — it has UNKNOWN area. Crediting 0 would silently shrink
+        # the house instead of flagging it (the silent-omission class,
+        # same disease as a vanishing line). The face is NULL-and-NAMED
+        # and the aggregate discloses the missing face. Evidence-or-null:
+        # a derived value dies with its source.
+        raw_w = w.get("width_ft")
+        raw_h = w.get("height_ft")
+        width_readable = raw_w is not None and width > 0
         from measure_staging import wall_body_gross_sqft
         gross, _segs = wall_body_gross_sqft(w)
-        wall_body_sqft = gross * (pct / 100.0)
         body_family = classify_profile(w.get("wall_body_profile_callout"))
         if not body_family or body_family == "unknown":
             body_family = default_body_profile
-        _add(body_family, wall_body_sqft)
-        # Vinyl-conventions batch (3+4+5), ruled 2026-07-18: the body
-        # family owns the base course — per-region base LF drives the
-        # starter / base-J split downstream (gables never have base).
-        if width > 0 and wall_body_sqft > 0:
-            base_lf[body_family] = base_lf.get(body_family, 0.0) + width
+        body_derivable = bool(width_readable and gross > 0)
+        if body_derivable:
+            wall_body_sqft = gross * (pct / 100.0)
+            _add(body_family, wall_body_sqft)
+            # Vinyl-conventions batch (3+4+5), ruled 2026-07-18: the body
+            # family owns the base course — per-region base LF drives the
+            # starter / base-J split downstream (gables never have base).
+            if wall_body_sqft > 0:
+                base_lf[body_family] = base_lf.get(body_family, 0.0) + width
+            # Stone area = gross × (1 - pct/100). Surfaced for
+            # traceability; NEVER counted as siding.
+            stone_sqft = gross * (1.0 - pct / 100.0)
+        else:
+            # NOT DERIVABLE — null the face, name it, disclose it.
+            wall_body_sqft = None
+            stone_sqft = 0.0
+            reason = ("wall width not read — area not derivable"
+                      if not width_readable
+                      else "wall height not read — area not derivable")
+            faces_not_derivable.append({
+                "elevation": label, "surface": "body",
+                "profile": body_family, "reason": reason,
+            })
 
-        # Stone area = gross × (1 - pct/100). Surfaced for traceability;
-        # NEVER counted as siding.
-        stone_sqft = gross * (1.0 - pct / 100.0)
-
-        # Gable triangle
+        # Gable triangle — dies with its width too. A gable height with
+        # no readable width is NOT DERIVABLE (never silently 0), same
+        # rule one surface up.
         gable_sqft = 0.0
         gable_family = ""
-        if gable_h > 0 and width > 0:
+        if gable_h > 0 and not width_readable:
+            gable_sqft = None
+            gable_family = classify_profile(w.get("gable_profile_callout")) or body_family
+            faces_not_derivable.append({
+                "elevation": label, "surface": "gable",
+                "profile": gable_family,
+                "reason": "wall width not read — gable area not derivable",
+            })
+        elif gable_h > 0 and width_readable:
             # C4 (ruled 2026-07-13; d667 reconciliation 2026-07-16): gable
             # area = 0.7 × width × triangle height — the ruled estimating
             # convention (angle-cut coverage), matching
@@ -333,10 +367,13 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
 
         per_elevation.append({
             "label":              label,
-            "wall_body_sqft":     round(wall_body_sqft, 1),
+            "wall_body_sqft":     (round(wall_body_sqft, 1)
+                                   if wall_body_sqft is not None else None),
+            "wall_body_derivable": body_derivable,
             "wall_body_profile":  body_family,
             "wall_body_callout":  w.get("wall_body_profile_callout") or "",
-            "gable_sqft":         round(gable_sqft, 1),
+            "gable_sqft":         (round(gable_sqft, 1)
+                                   if gable_sqft is not None else None),
             "gable_profile":      gable_family,
             "gable_callout":      w.get("gable_profile_callout") or "",
             "dormer_sqft":        round(dormer_sqft, 1),
@@ -354,6 +391,7 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
         "per_elevation":         per_elevation,
         "per_profile_sqft":      per_profile_rounded,
         "conflicts":             conflicts,
+        "faces_not_derivable":   faces_not_derivable,
         "skipped_echo_accents":  skipped_echo,
         "malformed_accents":     malformed,
     }
@@ -645,6 +683,7 @@ def _finalize_breakdown(breakdown: dict, conflicts: list[dict]) -> dict:
         "per_profile_sqft":     per_profile,
         "composition":          composition,
         "conflicts":            conflicts,
+        "faces_not_derivable":  breakdown.get("faces_not_derivable") or [],
         "skipped_echo_accents": breakdown.get("skipped_echo_accents", 0),
         "malformed_accents":    breakdown.get("malformed_accents", 0),
     }

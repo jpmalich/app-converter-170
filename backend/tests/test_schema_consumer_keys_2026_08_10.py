@@ -82,6 +82,11 @@ INTERNAL_KEYS = {
     # and `_dim_unverified` (evidence_strength/misread_of/quotes).
     # None of them is a model-produced key.
     "evidence_strength", "misread_of", "quotes",
+    # DERIVE-OR-DISCLOSE (2026-08-14): walk_walls / breakdown write the
+    # `faces_not_derivable` disclosure list — each row is {label, surface,
+    # reason} — when a wall's width/height was killed or never read. Our
+    # own pipeline shape, never a model-produced key.
+    "faces_not_derivable", "surface", "reason",
 }
 
 

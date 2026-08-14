@@ -134,11 +134,21 @@ async def duplicate_estimate(est_id: str, user: dict = Depends(get_current_user)
     new_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     # Strip everything that's customer-specific or post-send state.
+    # A DUPLICATE IS ALWAYS A FRESH DRAFT (Howard ruled 2026-08-14):
+    # protection is a property of the estimate that was sealed, not of
+    # its contents — a copy is not that estimate, so the seal never
+    # carries. Same for the sealed-chain audit ledger (those touches
+    # happened to the ORIGINAL; a fresh draft with a borrowed audit
+    # trail is a lie about its own history — the ledger lives in its own
+    # collection and is keyed by est_id, so it is never copied here, but
+    # any inline mirror is stripped defensively).
     for key in (
         "id", "_id",
         "customer_name", "address",
         "accept_token", "accepted_at", "accepted_ip", "accepted_note",
         "last_sent_at", "recipient_email",
+        "protected", "protected_at", "protected_reason",
+        "protected_estimate_ledger",
     ):
         src.pop(key, None)
 

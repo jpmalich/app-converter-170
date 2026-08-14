@@ -660,17 +660,27 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                   App&apos;s per-wall siding (read-only, not bound)
                 </div>
                 {perWall.map((w, i) => {
+                  const bodyND = w.wall_body_sqft === null || w.wall_body_sqft === undefined;
+                  const gableND = w.gable_sqft === null || w.gable_sqft === undefined;
                   const body = Number(w.wall_body_sqft || 0);
                   const gable = Number(w.gable_sqft || 0);
                   const dormer = Number(w.dormer_sqft || 0);
                   const tot = body + gable + dormer;
+                  const notDerivable = bodyND || gableND;
                   return (
                     <div key={i} className="flex justify-between text-[11px] border-b border-[var(--border)] py-0.5" data-testid={`pdf-overlay-perwall-${w.label}`}>
                       <span className="font-bold uppercase">{w.label}</span>
-                      <span className="text-[var(--muted)]">
-                        {tot.toFixed(0)} ft²
-                        {(gable || dormer) ? <span className="ml-1 text-[9px]">(wall {body.toFixed(0)}{gable ? ` · gable ${gable.toFixed(0)}` : ""}{dormer ? ` · dormer ${dormer.toFixed(0)}` : ""})</span> : null}
-                      </span>
+                      {notDerivable ? (
+                        <span className="text-amber-600 font-semibold text-[10px]" data-testid={`pdf-overlay-perwall-nd-${w.label}`}>
+                          NOT DERIVABLE — width not read, NEEDS TAPE
+                          {!bodyND ? <span className="ml-1 text-[9px] text-[var(--muted)]">(wall {body.toFixed(0)})</span> : null}
+                        </span>
+                      ) : (
+                        <span className="text-[var(--muted)]">
+                          {tot.toFixed(0)} ft²
+                          {(gable || dormer) ? <span className="ml-1 text-[9px]">(wall {body.toFixed(0)}{gable ? ` · gable ${gable.toFixed(0)}` : ""}{dormer ? ` · dormer ${dormer.toFixed(0)}` : ""})</span> : null}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
