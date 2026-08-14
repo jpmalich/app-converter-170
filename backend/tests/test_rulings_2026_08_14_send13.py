@@ -70,6 +70,28 @@ def test_ruling_2_segment_level_partial_derivability_is_built():
 
 
 @pytest.mark.skip(reason=(
+    "ruling:held: NOT BUILT, recorded retroactively per Ruling F (send-15). "
+    "Send-13 ordered the shared-source flag onto THREE surfaces (elevation "
+    "sheet, read-back card, money-line note); only the READ-BACK CARD was "
+    "built. The ELEVATION SHEET surface was ORDERED AND MISSED — a "
+    "prose-said-done gap. WHAT WOULD UNHOLD IT: build the rail onto the "
+    "elevation sheet with a render pin (see send-15 Ruling F)."))
+def test_send13_elevation_sheet_shared_source_surface():
+    raise AssertionError("NOT BUILT — ordered send-13, recorded send-15")
+
+
+@pytest.mark.skip(reason=(
+    "ruling:held: NOT BUILT, recorded retroactively per Ruling F (send-15). "
+    "Send-13 ordered a money-line note for the shared-source flag; it was "
+    "never built. SUPERSEDED by Ruling J (send-15): money reflects the "
+    "quantity's status via the honest takeoff, not bespoke money-line note "
+    "logic. WHAT WOULD UNHOLD IT: Howard reconciling F's money-line note "
+    "with J's 'no special money-line logic'."))
+def test_send13_money_line_shared_source_note():
+    raise AssertionError("NOT BUILT — ordered send-13, superseded by J")
+
+
+@pytest.mark.skip(reason=(
     "ruling:held: HELD RULING (send-13 §3 part 2, ON THE RECORD, NOT YET "
     "BUILT): a page mistyped schedule/cover that actually carries drawn "
     "geometry must be re-checked against its own feet-inch dimension-token "

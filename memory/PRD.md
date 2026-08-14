@@ -1,5 +1,50 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 SEND-16 — STANDING PRINCIPLE SEALED + RULING J/K/L PLUMBING (status-carrying quantities)
+Suite 2418→**2431 passed / 12 skipped**.
+
+**STANDING PRINCIPLE (sealed, supersedes all conflicting earlier money-line
+instruction):** money is derived from material quantities; measure → honest
+material list (every quantity carries its real status) → line items → money.
+No special money-line logic, averages, or silent zeros. Registered verbatim
+at top of `tests/test_rulings_2026_08_14_send16.py`; archived
+`rulings_archive/send16.md`.
+
+**RULING F RETIRED** (send-16 supersedes send-15 F): no money-line flagging
+logic — status travels with the quantity, the money surface renders what
+arrived. Registered as a named skip.
+
+**RULING J STRUCTURAL REPORT (report-first, delivered):** status CANNOT ride
+the existing raw-float dicts; a WRAPPER is required. The true
+"only-obtainable" shape is NOT reachable without breaking JSON/Mongo
+serialization + dozens of readers. Reachable shape (BUILT): `quantity.py` —
+`Quantity(value,status,reason,excluded)` that cannot be constructed without a
+status; `derived/partial/not_derivable` constructors; `propagate()` (worst
+status wins — any NOT_DERIVABLE poisons, any PARTIAL caps); `render_line()`
+(Ruling K) and `rollup_total()` (Ruling L). Pins:
+`test_quantity_status_2026_08_14_send16.py`.
+
+**RULING K/L BUILT + pinned:** NOT DERIVABLE line = present, names dead input,
+EMPTY price (not $0), blocks gate. Total over a refused line = INCOMPLETE,
+states refused count, never a price; PARTIAL propagates.
+
+**RULINGS G/H — J makes them impossible-by-construction ONLY for readers
+routed through `propagate()`.** Which J does NOT fix by construction: the
+readers that still read a raw float directly — lp_package corner/OSC via
+`_ai_avg_wall_height_ft`, base-course starter, lp_smartside batten. These
+need conversion to return `Quantity`. STAGED (named skip), gated on Howard's
+go-ahead + the four-face re-fire (derivation honest before money is wired).
+gable + eaves already refuse silent zeros (send-15).
+
+**E, I** carried from send-15 unchanged; archive now covers sends 13–16
+verbatim, 8–12 AWAITING PASTE (audit gates completeness).
+
+**NEXT:** Howard re-fires EST-713272 (four faces) → convert the raw-float
+readers (G/H) to Quantity + add the "no raw width/height in a priced path"
+census pin → wire line items/totals to render status → then Law B / S3.
+
+
+
 ## 2026-08-14 SEND-14 — CONFLICT RAIL NARROWED (Ruling D) + REGISTER DISCIPLINE SEALED (Ruling C) + 4 CENSUSES
 Suite 2393→**2400 passed / 5 skipped**.
 

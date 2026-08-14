@@ -2150,38 +2150,67 @@ def _null_unverified_quotes(raw: dict) -> None:
             [r["path"] for r in nulled_unv])
 
 
-_VERTICAL_LEAF_EXACT = {"rise", "rise_ft", "plate", "plate_ft", "plate_height",
-                        "plate_height_ft"}
+# AXIS DECLARATION CATALOG (Howard ruled 2026-08-14 send-15 E — INVERTED
+# from the enumerated `_leaf_is_vertical` predicate). Every dimension leaf
+# DECLARES its axis; a leaf NOT in this catalog is UNKNOWN, never inferred
+# from its name. A share touching an UNKNOWN-axis leaf fires the conflict
+# rail so the next added field announces itself the first time it is
+# shared — a quiet mis-classification here is invisible forever.
+_LEAF_AXIS = {
+    # HORIZONTAL — a span along the ground or across a surface run
+    "width_ft": "H", "porch_width_ft": "H", "depth_ft": "H",
+    "length_ft": "H", "lf": "H", "eave_lf": "H", "rake_lf": "H",
+    "perimeter_ft": "H", "run_ft": "H", "offset_x_ft": "H",
+    "outside_corner_lf": "H", "inside_corner_lf": "H",
+    # VERTICAL — a height or a rise
+    "height_ft": "V", "wall_height_ft": "V", "knee_wall_height_ft": "V",
+    "gable_triangle_height_ft": "V", "eave_height_ft": "V",
+    "plate_height_ft": "V", "rise_ft": "V", "story_height_ft": "V",
+    "dormer_height_ft": "V",
+}
 
 
-def _leaf_is_vertical(leaf: str) -> bool:
-    """A leaf field that measures a VERTICAL span (a height / rise)."""
-    l = str(leaf or "").lower()
-    return l.endswith("height_ft") or l.endswith("_height") or \
-        l in _VERTICAL_LEAF_EXACT
+def _leaf_axis(leaf: str) -> str:
+    """VERTICAL 'V' / HORIZONTAL 'H' / UNKNOWN 'U'. Undeclared is U — the
+    field name is NEVER used to infer an axis (send-15 E)."""
+    return _LEAF_AXIS.get(str(leaf or ""), "U")
+
+
+def _unknown_axis_leaves(paths) -> list[str]:
+    """The leaves in a share whose axis is undeclared — named on the
+    conflict rail so a new field announces itself the first time it is
+    shared."""
+    out = []
+    for p in paths:
+        leaf = str(p).split(".")[-1]
+        if _leaf_axis(leaf) == "U":
+            out.append(leaf)
+    return out
 
 
 def _shared_attribution_conflict(paths) -> bool:
-    """PHYSICAL IMPOSSIBILITY (Howard ruled 2026-08-14 send-14 D). The
-    louder conflict rail fires ONLY when the shared consumers CANNOT both
-    hold the value:
-      * a VERTICAL span (a height) shares a quote with a HORIZONTAL span
-        (a width / length / LF) — a width is not a height; OR
+    """PHYSICAL IMPOSSIBILITY (Howard ruled 2026-08-14 send-14 D;
+    axis-declared send-15 E). The louder conflict rail fires when the
+    shared consumers CANNOT both hold the value:
+      * an UNKNOWN-axis leaf is present — fail loud, we cannot prove the
+        share is possible (send-15 E); OR
+      * a VERTICAL span (a height) shares with a HORIZONTAL span (a width
+        / length / LF) — a width is not a height; OR
       * two or more VERTICAL spans on DIFFERENT named features share it —
         two walls' heights, or a wall's and a dormer's height, cannot be
         assumed equal.
     An overall HORIZONTAL dimension serving two opposing facades
     (58'-0" front + back width) is NOT impossible — it IS the house — so
-    it stays on the PLAIN rail with its consumers named. The old
-    field-name-collision trigger fired on exactly that legitimate share;
-    a rail that cries wolf on the commonest correct case is the same
-    defect class as a rail that never fires."""
+    it stays on the PLAIN rail with its consumers named."""
     vertical_features = set()
     horizontal = False
     vertical = False
     for p in paths:
         parts = str(p).split(".")
-        if _leaf_is_vertical(parts[-1]):
+        ax = _leaf_axis(parts[-1])
+        if ax == "U":
+            return True
+        if ax == "V":
             vertical = True
             vertical_features.add(".".join(parts[:-1]))
         else:
@@ -3470,6 +3499,10 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
                          "— attribution unverified, value kept)"
                          for r in _shared_plain)})
     if _shared_conf:
+        _unk = sorted({lf for r in _shared_conf
+                       for lf in _unknown_axis_leaves(r.get("consumers") or [])})
+        _unk_note = (f" [undeclared-axis leaf: {', '.join(_unk)}]"
+                     if _unk else "")
         rail.append({"level": "loud", "code": "dims_shared_source_conflict",
                      "text": "ATTRIBUTION CONFLICT — one quote feeds the "
                              "same field on two named features; cannot tell "
@@ -3477,7 +3510,7 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
                              "resolved: " + "; ".join(
                                  f"{r.get('quote')} p{r.get('page')} → "
                                  f"{','.join(r.get('consumers') or [])}"
-                                 for r in _shared_conf)})
+                                 for r in _shared_conf) + _unk_note})
     _fw = _num(raw.get("fascia_width_in"))
     if _fw > 0:
         rail.append({"level": "info", "code": "fascia_printed", "text": f"{_fw:g}"})

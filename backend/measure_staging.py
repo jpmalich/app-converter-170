@@ -28,12 +28,21 @@ def eaves_from_walls(walls: list, raw_eaves) -> float:
     floor-plan perimeter as eaves_lf — only correct for hip roofs. When any
     wall is a gable end, gutters run the NON-gable walls only: recompute
     eaves as the sum of non-gable wall widths. Falls back to the raw read
-    when no gables or no usable widths."""
+    when no gables or no usable widths.
+
+    SUBSET-AWARE (Howard ruled 2026-08-14 send-15 H): a NON-gable wall
+    whose width was killed cannot silently drop out of the sum — that is
+    the silent under-count Report 2 named. If any contributing width is
+    NOT derivable, the correction is refused and the raw read stands (the
+    honest fallback), never a silently-short corrected number."""
     any_gable = any(float(w.get("gable_triangle_height_ft") or 0) > 0 for w in walls)
     if any_gable:
-        corrected = sum(
-            float(w.get("width_ft") or 0) for w in walls
-            if float(w.get("gable_triangle_height_ft") or 0) <= 0)
+        contributors = [w for w in walls
+                        if float(w.get("gable_triangle_height_ft") or 0) <= 0]
+        widths = [wall_width_for_pricing(w) for w in contributors]
+        if any(not ok for (_v, ok, _s, _m) in widths):
+            return float(raw_eaves or 0)   # a killed width — refuse to short
+        corrected = sum(v for (v, _ok, _s, _m) in widths)
         if corrected > 0:
             return corrected
     return float(raw_eaves or 0)
@@ -101,6 +110,47 @@ def wall_body_gross_sqft(w: dict) -> tuple[float, list, dict]:
         "not_derivable": [{"label": w.get("label"), "reason": reason}]}
 
 
+def wall_width_for_pricing(w: dict):
+    """THE subset-aware wall footprint width for any priced reader
+    (Howard ruled 2026-08-14 send-15 H). Segments govern: width = Σ
+    DERIVABLE segment widths; else the top-level width. Returns
+    (width, derivable, subset, missing) — a killed width returns
+    (0.0, False, ...) so a caller can NEVER read a silent 0 and price it.
+    ONE COPY so eaves / base / gable / batten cannot each re-derive a
+    silent zero (the five-hats defect, Report 2)."""
+    segs = [s for s in (w.get("height_segments") or []) if isinstance(s, dict)]
+    if segs:
+        widths, missing = [], []
+        for s in segs:
+            try:
+                sw = float(s.get("width_ft") or 0)
+            except (TypeError, ValueError):
+                sw = 0.0
+            if sw > 0:
+                widths.append(sw)
+            else:
+                missing.append(s.get("label"))
+        return (sum(widths), len(widths) > 0, bool(missing and widths),
+                missing)
+    try:
+        width = float(w.get("width_ft") or 0)
+    except (TypeError, ValueError):
+        width = 0.0
+    return (width, width > 0, False,
+            [] if width > 0 else [w.get("label")])
+
+
+def wall_height_for_pricing(w: dict):
+    """THE subset-aware wall eave height for any priced reader (send-15 H).
+    Returns (height, derivable). A killed height returns (0.0, False) so a
+    reader (batten run, corner) cannot silently price a substitute."""
+    try:
+        h = float(w.get("height_ft") or 0)
+    except (TypeError, ValueError):
+        h = 0.0
+    return h, h > 0
+
+
 def walk_walls(walls: list, gable_rise_fn=None) -> dict:
     """THE wall-area walk (one copy, ruled). For each wall:
     gross = width × eave height, credited at siding_pct (fraction/percent
@@ -152,9 +202,21 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
         rise_read = float(w.get("gable_triangle_height_ft") or 0)
         rise = gable_rise_fn(width_ft, rise_read) if gable_rise_fn else rise_read
         wall_gable = 0.0
-        if rise > 0 and width_ft > 0:
-            wall_gable = GABLE_FACTOR * width_ft * rise
+        # GABLE — subset-aware (send-15 H). A gable triangle spans the
+        # WHOLE wall width, so a killed/unread width makes the gable NOT
+        # DERIVABLE — never a silent 0. Canonical honesty matches
+        # profile_callouts' gable (that disagreement is now resolved: the
+        # DISCLOSING path is canonical). rise>0 with no derivable width is
+        # named, not zeroed.
+        g_width, g_width_ok, _g_subset, _g_missing = wall_width_for_pricing(w)
+        if rise > 0 and g_width_ok:
+            wall_gable = GABLE_FACTOR * g_width * rise
             gable_sqft += wall_gable
+        elif rise > 0 and not g_width_ok:
+            faces_not_derivable.append({
+                "label": w.get("label"), "surface": "gable",
+                "reason": "wall width not read — gable area not derivable"})
+            wall_gable = None
         dormer_sqft += float(w.get("dormer_face_sqft") or 0)
         detail.append({"label": w.get("label"), "width_ft": width_ft,
                        "eave_h": eave_h, "pct": pct,
