@@ -82,6 +82,19 @@ new_run.update({
 })
 db.ai_blueprint_runs.insert_one(dict(new_run))
 
+# --- carry the MUV overlay polygons too, so Law B holds on the copy ---
+# The estimate's superseded/human LINES came across with the estimate
+# doc; without their backing polygons a human value would not be a
+# function of any polygon (Law B) — an orphaned human value, the exact
+# class we police. Re-point each polygon at the new estimate id.
+poly_copied = 0
+for p in db.pdf_overlay_polygons.find({"estimate_id": orig_id}):
+    np = {k: v for k, v in p.items() if k not in ("_id", "id")}
+    np.update({"id": str(uuid.uuid4()), "estimate_id": new_id,
+               "created_at": now, "updated_at": now})
+    db.pdf_overlay_polygons.insert_one(np)
+    poly_copied += 1
+
 # --- log the duplication on the ORIGINAL's ledger (check 3) ---
 db.protected_estimate_ledger.insert_one({
     "estimate_id": orig_id,

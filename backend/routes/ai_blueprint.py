@@ -1743,7 +1743,13 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
     if misses:
         raw["_ocr_quote_misses"] = misses
     if page_ocr_chars:
-        raw["_ocr_page_coverage_chars"] = dict(page_ocr_chars)
+        # MONGO KEYS MUST BE STRINGS (regression fix 2026-08-14): this
+        # per-page coverage breadcrumb is keyed by page NUMBER. Left as
+        # ints it fails the run's persist write ("documents must have
+        # only string keys, key was N") on ANY multi-page read — the
+        # SEND-11 coverage work never crossed the persistence boundary
+        # in a test, so it shipped broken. Stringify at the write edge.
+        raw["_ocr_page_coverage_chars"] = {str(p): n for p, n in page_ocr_chars.items()}
 
 
 def _null_unverified_quotes(raw: dict) -> None:

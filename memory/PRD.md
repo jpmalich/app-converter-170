@@ -1,5 +1,56 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 INT-PAGE-KEY PERSIST REGRESSION FIXED + inherited read confirmed walkable
+Fresh read on EST-713272 errored: "documents must have only string keys, key was 11".
+
+**MECHANISM (confirmed, where Howard pointed).** SEND-11 item 3 (the recent
+per-page OCR-coverage work) added `page_ocr_chars` in `_ocr_locate_evidence`
+keyed by page NUMBER (int, ai_blueprint.py ~L1618/1714) and wrote it to
+`raw["_ocr_page_coverage_chars"]` (L1746). That raw rides inside the run
+`result`; the run's final persist write (`ai_blueprint_runs.update_one($set=
+{result})`, L4997) hands Mongo a doc with int key 11 → the worker's except →
+status "error". It fails on ANY multi-page read, not just eleven. Confirmed
+empirically: failed run 8d674996 carries that exact error and NO result.
+
+**FIX.** Stringify the keys at the write edge (L1746:
+`{str(p): n for p, n in page_ocr_chars.items()}`). The breadcrumb is written
+but never read anywhere, so stringifying is safe.
+
+**PIN (persists).** `test_int_page_key_persist_regression_2026_08_14.py` (4):
+runs the ACTUAL `_ocr_locate_evidence` over an 11-page synthetic raster set
+(so key `11` is really produced) then `bson.encode`s the run result exactly as
+the persist write does — RED before fix, GREEN after — plus a "boundary has
+teeth" pin proving an int key raises the production error. Suite: 2368 passed
+/ 4 skipped (+10 across today's two fixes; one unrelated hover test is a flaky
+ReadTimeout that passes in isolation).
+
+**PERSISTENCE-TEST GAP (Howard's real question).** ANSWER: NO test ran a full
+blueprint read THROUGH the persist boundary — OCR-locate structures are only
+built against real rasters and the persist is a real Mongo write; nothing fed
+a raw carrying the int-keyed dict to a real encode. SEND-11 shipped unverified
+at exactly the failing point (same shape as the drag-vs-click gap). The new
+pin closes it: it exercises the real function AND bson-encodes the persisted
+result, so any future non-string key fails the pin.
+
+**THE 4,461 ft² PENDING RUN.** It is a PRIOR SUCCESSFUL read that came across
+with the duplicate — the inherited copy of frozen 5df22e6d (status done,
+complete result, siding 4461.075). NOT a partially-persisted failed run. The
+fresh read is a SEPARATE run (8d674996) that errored with NO result — the
+write failed atomically, so no partial numbers were persisted. Two distinct
+runs, not one partial state shown as whole.
+
+**REBUILD-SURVIVAL WALKABLE NOW on the inherited read.** The done read carries
+the pages; the estimate carries its derived siding line. Fixed an
+inconsistency I'd created in the duplication: the copy had a human/superseded
+siding line (2.48 SQ) but its backing polygon had not been carried (Law B
+violated — a human value not a function of any polygon). Carried the polygon
+across; Law B now holds (1 polygon backs the human line). Duplication script
+updated to copy polygons on every run.
+
+**S3 (Linear Edges) — still HELD.**
+
+
+
 ## 2026-08-14 GEOMETRY ORPHAN CLOSED (derived value dies with its source) + EST-886440 DUPLICATED
 Howard's send: report the 780 ft² orphan mechanism FIRST, fix + pin both
 directions, duplicate EST-886440 for the rebuild-survival walk. S3 stays HELD.
