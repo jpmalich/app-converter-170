@@ -1348,6 +1348,55 @@ def _ocr_match(runs, nq):
     return cands[0][2]
 
 
+# FRACTION SKELETON (Howard ruled 2026-08-09, lifted to module level and
+# INTO the EXISTENCE test 2026-08-14 send-12). The OCR engine cannot read
+# the stacked ½ / ¼ glyphs at all, so a printed-and-true 24'-0 1/2" misses
+# on its full norm and dies at existence though it is on the page. Its
+# fraction-STRIPPED skeleton (24'-0") is tried as a fallback: "the
+# fractions rest on the read's transcription".
+#
+# HARD BOUND (ruled, pinned — never a comment alone): the strip removes
+# ONLY a fraction-of-an-inch token (\d+/\d+, optional trailing "), NEVER a
+# whole digit. So 24'-0" carries no fraction ⇒ produces NO skeleton ⇒ can
+# never skeleton-match 2'-0" (a 12× error wearing a located chip). The
+# stripped part is always a fraction of an inch, so the magnitude risk
+# stays bounded.
+_FRACTION_TOKEN_RE = re.compile(r"\s*\d+/\d+\s*\"?")
+
+
+def _fraction_skeleton(q: str):
+    """The quote with every fraction-of-an-inch token stripped, or None
+    when the quote carries NO fraction (nothing to strip — a whole-inch
+    quote produces no skeleton and can never skeleton-match anything)."""
+    s = str(q or "")
+    stripped = _FRACTION_TOKEN_RE.sub("", s)
+    if stripped == s:
+        return None
+    return stripped
+
+
+def _skeleton_locate_unique(pool, skel_nq):
+    """Locate a fraction skeleton in the OCR run pool, REFUSING an
+    ambiguous hit (Howard ruled 2026-08-14 send-12: an ambiguous skeleton
+    never locates). Returns (rect, ambiguous):
+      * exactly one DISTINCT run rect matches → (rect, False)
+      * more than one distinct run rect matches → (None, True)
+        (24'-0 1/2" and 24'-0 1/4" both skeleton to 24'-0"; a hit against
+        two printed 24'-0" runs cannot tell which it found)
+      * no match → (None, False)."""
+    cands = [r for r in pool if r[0] == skel_nq]
+    if not cands:
+        cands = [r for r in pool
+                 if skel_nq in r[0] and len(r[0]) <= len(skel_nq) + 6]
+    if not cands:
+        return None, False
+    distinct = {tuple(round(c, 1) for c in r[2]) for r in cands}
+    if len(distinct) > 1:
+        return None, True
+    cands.sort(key=lambda r: len(r[0]))
+    return cands[0][2], False
+
+
 # --------- FEATURE-PROXIMITY GATE (Howard ruled 2026-08-12 send-8) ---------
 # "A LOCATING MATCH MUST SIT NEAR THE FEATURE IT CLAIMS TO DIMENSION,
 # not merely somewhere on the same page." The pre-send-8 OCR locator
@@ -1396,10 +1445,57 @@ _CARDINAL_SYNONYMS = {
     "RIGHT": {"RIGHT"},
 }
 
-# Sheet-class families that carry wall dimensions regardless of which
-# direction is named on the page. A floor plan shows ALL four walls
-# with no per-direction label — sheet TYPE is enough anchor.
-_WALL_DIM_SHEET_KINDS = {"elevation", "floor_plan"}
+# DRAWN-GEOMETRY CLASSIFICATION (Howard ruled 2026-08-14 send-12).
+# A sheet that carries drawn geometry prints its dimensions AS geometry,
+# never beside a text label — so the tight label-bound proximity radius is
+# a BROKEN INSTRUMENT on it and presence-only must apply. The four drawing
+# kinds the model emits are elevation, floor_plan, roof and OTHER: a joist
+# plan / detail / mech / elec page types as "other" (never a named drawing
+# kind), and page 9's genuinely-printed dims died at existence precisely
+# because "other" was excluded by the old enumerated {elevation,
+# floor_plan} list. Only SCHEDULE (table) and COVER (title page) keep the
+# tight radius. An UNCLASSIFIED sheet ("" — the model omitted the field)
+# also stays strict rather than loosen an unknown that might be a mistyped
+# table; the model's enum always emits one of the six on a real read.
+#
+# NOTE (override HELD — ruling 3 part 2): a page mistyped as schedule/cover
+# that actually carries drawn geometry would still over-kill through a
+# different door. The content-based override (re-check schedule/cover pages
+# against their own feet-inch dimension-token count) is NOT wired: it needs
+# a REAL plan set with schedule/cover pages to pick a non-invented
+# threshold, and Boni carries no such page. See
+# scripts/drawn_geometry_token_report.py.
+_DRAWING_SHEET_KINDS = {"elevation", "floor_plan", "roof", "other"}
+# Back-compat alias (kept for any external reference).
+_WALL_DIM_SHEET_KINDS = _DRAWING_SHEET_KINDS
+
+
+def _sheet_carries_geometry(useful_for: str) -> bool:
+    """True when the sheet carries drawn geometry (presence-only applies)."""
+    return useful_for in _DRAWING_SHEET_KINDS
+
+
+# PROPOSED drawn-geometry SIGNAL for the schedule/cover content override
+# (Howard ruled 2026-08-14 send-12, ruling 3 part 2 — THRESHOLD HELD).
+# A page mistyped schedule/cover but actually carrying geometry would
+# over-kill through a different door; the fix is to re-check such a page
+# against its own feet-inch dimension-token count. This counter is the
+# ONE definition of that signal, shared by the report; it is NOT wired to
+# the live gate because a non-invented threshold needs a REAL plan set
+# with schedule/cover pages, and Boni carries none. See
+# scripts/drawn_geometry_token_report.py.
+_FEET_INCH_RE = re.compile(r"\d+\s*['\u2019]\s*-?\s*\d+|\d+\s*-\s*\d+")
+
+
+def _feet_inch_dim_tokens(runs) -> int:
+    """Count OCR runs whose RAW text reads as a feet-inch dimension
+    (24'-0, 24-0, 12' 6). Report-only proposed signal; never a live gate."""
+    n = 0
+    for r in runs:
+        raw = r[1] if len(r) > 1 else ""
+        if _FEET_INCH_RE.search(str(raw)):
+            n += 1
+    return n
 
 
 def _feature_anchors_for_path(path: str) -> list[str]:
@@ -1457,7 +1553,7 @@ def _sheet_scoped_for(path: str, sheet_useful_for: str) -> bool:
     match came off a schedule, not an elevation)."""
     if _path_is_sheet_scoped(path):
         return True
-    return sheet_useful_for in _WALL_DIM_SHEET_KINDS
+    return _sheet_carries_geometry(sheet_useful_for)
 
 
 def _rect_center(rect):
@@ -1519,7 +1615,7 @@ def _ocr_match_near_feature(runs, joined_runs, nq, anchors, radius,
         title_norm = _ocr_norm(sheet_title)
         anchor_hits = _anchor_runs_on_page(pool, list(expanded))
         title_has_it = any(a in title_norm for a in expanded)
-        sheet_kind_ok = sheet_useful_for in _WALL_DIM_SHEET_KINDS
+        sheet_kind_ok = _sheet_carries_geometry(sheet_useful_for)
         if not anchor_hits and not title_has_it and not sheet_kind_ok:
             return None, (f"cardinal anchor {sorted(expanded)!r} not on sheet "
                           "(no OCR run, no sheet title match, sheet class "
@@ -1631,6 +1727,10 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         return
     import numpy as np
     misses = []
+    # FRACTION-SKELETON LOCATES (2026-08-14 send-12): quotes rescued at
+    # the existence test by their fraction-stripped skeleton — NAMED, not
+    # counted as located-clean and never as fabricated/unverified.
+    _skeleton_located: list[dict] = []
     # SEND-11 item 3: page-level OCR-coverage tracking. When a quote
     # miss lands, the page's total OCR character count decides whether
     # a fabrication verdict is STRONG evidence (a densely-read page
@@ -1668,6 +1768,48 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         sheet = _sheets_by_page.get(page, {})
         sheet_title = sheet.get("title", "")
         sheet_useful_for = sheet.get("useful_for", "")
+        # FRACTION-SKELETON AMBIGUITY GUARD (Howard ruled 2026-08-14
+        # send-12): a skeleton is only usable when it is UNSHARED on this
+        # page. If two DISTINCT full quotes strip to the same skeleton
+        # (24'-0 1/2" and 24'-0 1/4" → 24'-0"), a skeleton hit cannot tell
+        # which it found, so NEITHER may locate by skeleton. Map
+        # skeleton-norm → the set of distinct full-quote norms carrying it.
+        skel_owners: dict[str, set] = {}
+        for _p2, _s2, _nq2 in entries:
+            _sk2 = _fraction_skeleton(str(_s2.get("from") or ""))
+            if _sk2:
+                _skn2 = _ocr_norm(_sk2)
+                if len(_skn2) >= 3:
+                    skel_owners.setdefault(_skn2, set()).add(_nq2)
+
+        def _try_skeleton(pool, s, sheet_scoped, anchors):
+            """Rescue a MISSED quote by its fraction skeleton, or None.
+            Refuses a shared skeleton (page ambiguity) and an ambiguous
+            run match (multiple distinct rects). Respects the same
+            feature gate as the primary locate. Returns (rect, skel_norm)."""
+            sk = _fraction_skeleton(str(s.get("from") or ""))
+            if not sk:
+                return None
+            skn = _ocr_norm(sk)
+            if len(skn) < 3:
+                return None
+            if len(skel_owners.get(skn, set())) > 1:
+                return None  # shared skeleton on this page — cannot crown one
+            if sheet_scoped:
+                cand_pool = pool
+            elif anchors:
+                anchor_hits = _anchor_runs_on_page(pool, anchors)
+                if not anchor_hits:
+                    return None
+                cand_pool = [r for r in pool
+                             if _proximity_ok(r[2], anchor_hits, radius)]
+            else:
+                cand_pool = pool
+            rect, _ambig = _skeleton_locate_unique(cand_pool, skn)
+            if rect is None:
+                return None  # absent OR ambiguous — never a locate
+            return rect, skn
+
         pending = []
         for path, s, nq in entries:
             anchors = _feature_anchors_for_path(path)
@@ -1676,6 +1818,11 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                 runs, joined, nq, anchors, radius,
                 sheet_scoped=sheet_scoped, sheet_title=sheet_title,
                 sheet_useful_for=sheet_useful_for)
+            via_skel_norm = None
+            if not rect:
+                _skres = _try_skeleton(runs + joined, s, sheet_scoped, anchors)
+                if _skres:
+                    rect, via_skel_norm = _skres
             if rect:
                 x0, y0, x1, y1 = rect
                 s["loc"] = {"x_pct": round(x0 / w * 100, 2),
@@ -1683,6 +1830,12 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                             "w_pct": round(max(x1 - x0, 1) / w * 100, 2),
                             "h_pct": round(max(y1 - y0, 1) / h * 100, 2)}
                 s["precision"] = "ocr"
+                if via_skel_norm is not None:
+                    s["located_via"] = "fraction_skeleton"
+                    _skeleton_located.append(
+                        {"path": path, "page": page,
+                         "from": str(s.get("from") or ""),
+                         "skeleton": via_skel_norm})
             else:
                 s["_gate_reason"] = why
                 pending.append((path, s, nq))
@@ -1705,6 +1858,12 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                     rruns, rjoined, nq, anchors, radius,
                     sheet_scoped=sheet_scoped, sheet_title=sheet_title,
                     sheet_useful_for=sheet_useful_for)
+                via_skel_norm = None
+                if not rect:
+                    _skres = _try_skeleton(rruns + rjoined, s, sheet_scoped,
+                                           anchors)
+                    if _skres:
+                        rect, via_skel_norm = _skres
                 if rect:
                     x0r, y0r, x1r, y1r = rect
                     if k == 1:      # CCW: upright x = W-1-yr, y = xr
@@ -1719,6 +1878,12 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                                 "h_pct": round(max(y1 - y0, 1) / h * 100, 2)}
                     s["precision"] = "ocr"
                     s.pop("_gate_reason", None)
+                    if via_skel_norm is not None:
+                        s["located_via"] = "fraction_skeleton"
+                        _skeleton_located.append(
+                            {"path": path, "page": page,
+                             "from": str(s.get("from") or ""),
+                             "skeleton": via_skel_norm})
                 else:
                     s["_gate_reason"] = why or s.get("_gate_reason")
                     still.append((path, s, nq))
@@ -1764,6 +1929,8 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
             s.pop("_gate_reason", None)
     if misses:
         raw["_ocr_quote_misses"] = misses
+    if _skeleton_located:
+        raw["_skeleton_located"] = _skeleton_located
     if page_ocr_chars:
         # MONGO KEYS MUST BE STRINGS (regression fix 2026-08-14): this
         # per-page coverage breadcrumb is keyed by page NUMBER. Left as
@@ -3394,6 +3561,18 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
                      "text": "; ".join(
                          f"{s.get('mark')}.{s.get('field')} \u201c{s.get('from')}\u201d"
                          for s in _skm[:8])})
+    # DIM LOCATED BY SKELETON (2026-08-14 send-12): a wall/segment
+    # dimension whose stacked fraction OCR could not read located on its
+    # fraction-stripped skeleton — "the fractions rest on the read's
+    # transcription". NAMED so the card shows the leniency, never silent.
+    _skl = raw.get("_skeleton_located") or []
+    if _skl:
+        rail.append({"level": "info", "code": "dim_located_by_skeleton",
+                     "text": "the fractions rest on the read's transcription: "
+                             + "; ".join(
+                                 f"{d.get('path')} \u201c{d.get('from')}\u201d "
+                                 f"(sheet {d.get('page')})"
+                                 for d in _skl[:8])})
     # MARK-MERGE (ruled 2026-08-09 send 4): two marks never share a code
     # on a real schedule — sharers are a suspected row merge, named with
     # the likely unread sibling.

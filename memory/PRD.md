@@ -1,5 +1,49 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 SEND-12 — FRACTION SKELETON INTO EXISTENCE + DRAWN-GEOMETRY CLASSIFICATION
+Howard's rulings 2 & 3 landed. Read over-kill was two mechanisms: dims
+died at the EXISTENCE step (unreadable stacked fractions) and on pages
+typed "other" (excluded by an enumerated drawing list). Both fixed;
+suite 2372→**2384 passed / 4 skipped** (+12 pins). S3 STILL HELD — Howard
+re-fires EST-713272 and reports the four faces before Law B / S3.
+
+**RULING 2 — fraction skeleton into the EXISTENCE test.** The skeleton
+fallback (was schedule-only) now runs in `_ocr_locate_evidence`. A missed
+size quote tries its fraction-STRIPPED skeleton; a hit sets
+`precision="ocr"`, `located_via="fraction_skeleton"`, rides the
+`_skeleton_located` breadcrumb + the NAMED info rail
+`dim_located_by_skeleton` ("the fractions rest on the read's
+transcription"), and is NEVER counted fabricated/unverified. Module-level
+`_fraction_skeleton` + `_skeleton_locate_unique`. TWO HARD GUARDS PINNED:
+(a) FRACTIONS-ONLY strip — `\d+/\d+"?` only, never a whole digit, so
+24'-0" carries no skeleton and can never skeleton-match 2'-0" (12× error
+barred); (b) AMBIGUOUS SKELETON NEVER LOCATES — a skeleton shared by two
+distinct full quotes on the page (24'-0 1/2" & 24'-0 1/4"→24'-0") OR
+matching multiple distinct runs locates NEITHER. Pins:
+`test_fraction_skeleton_existence_2026_08_14.py` (9).
+
+**RULING 3 — drawn-geometry classification (core landed, override HELD).**
+`_WALL_DIM_SHEET_KINDS {elevation,floor_plan}` → `_DRAWING_SHEET_KINDS
+{elevation,floor_plan,roof,other}` + `_sheet_carries_geometry()`. A
+joist/detail/mech/elec page types as "other" and now reads presence-only
+(page 9's dims rescued). Only SCHEDULE (table) + COVER (title) keep the
+tight radius; UNCLASSIFIED "" stays strict (never loosen an unknown).
+Pins: `test_drawn_geometry_classification_2026_08_14.py` (5).
+OVERRIDE HELD (ruling 3 part 2): content re-check of a mistyped
+schedule/cover page uses `_feet_inch_dim_tokens` — REPORT built
+(`scripts/drawn_geometry_token_report.py`). Synthetic preview separates
+(tables/cover=0, drawings=6-7, MISTYPED floor-plan-as-schedule=5, i.e.
+indistinguishable from a drawing). NOT WIRED: a real window schedule may
+print rough-opening sizes (3'-0"×5'-0") that trip the counter, so the
+threshold cannot be picked without a REAL plan set with genuine
+schedule/cover pages. Ship the plain deny-list; override awaits real data.
+
+**NEXT (unchanged order, HELD):** Howard re-fires EST-713272 → reports the
+four faces → (then) Law B invariant enforcement everywhere lines are
+written → Linear Edges S3.
+
+
+
 ## 2026-08-14 (later) RULING 1 widened to whole drawing sheet + RULING 2 Survival Report built
 
 **RULING 1 — sheet-scoping widened.** `_sheet_scoped_for` now returns True for
