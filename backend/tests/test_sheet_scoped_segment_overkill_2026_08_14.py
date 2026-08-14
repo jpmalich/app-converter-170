@@ -45,16 +45,23 @@ WINDOW = "windows.A.width_in"
 
 
 def test_sheet_scoped_truth_table():
-    # A segment path on a DRAWING sheet is now sheet-scoped...
+    # RULING (widened 2026-08-14): presence-only for EVERY dim on a
+    # DRAWING sheet — cardinal or not — because text-label proximity is a
+    # broken instrument for the whole drawing.
     assert ab._sheet_scoped_for(SEG, "elevation") is True
     assert ab._sheet_scoped_for(SEG, "floor_plan") is True
-    # ...but on a SCHEDULE/TABLE sheet it stays label-bound (strict).
+    # A non-cardinal roof-plane dim on a drawing is scoped too (the
+    # residual that cardinal-only would have left gated).
+    assert ab._sheet_scoped_for("roof_planes.garage/bonus.eave_lf", "elevation") is True
+    # Even a window dim on a drawing is presence-only on that sheet.
+    assert ab._sheet_scoped_for(WINDOW, "elevation") is True
+    # ...but SCHEDULE / TABLE sheets stay label-bound (strict) — that is
+    # where labels are real and proximity earns its keep.
     assert ab._sheet_scoped_for(SEG, "schedule") is False
+    assert ab._sheet_scoped_for(WINDOW, "schedule") is False
     assert ab._sheet_scoped_for(SEG, "") is False
     # Cardinal top-level paths were already sheet-scoped (SEND-9) — unchanged.
     assert ab._sheet_scoped_for(CARDINAL, "schedule") is True
-    # A path carrying NO cardinal is never loosened by the drawing rule.
-    assert ab._sheet_scoped_for(WINDOW, "elevation") is False
 
 
 def _dim_run(norm, x, y):

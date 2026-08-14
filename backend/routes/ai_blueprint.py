@@ -1439,25 +1439,25 @@ def _path_is_sheet_scoped(path: str) -> bool:
 
 
 def _sheet_scoped_for(path: str, sheet_useful_for: str) -> bool:
-    """SEND-9 COMPLETION (Howard over-kill fix 2026-08-14). SEND-9 ruled
-    that on an elevation / floor-plan sheet the SHEET is the feature —
-    any match on the page passes — but applied it only to CARDINAL
-    top-level paths (walls.front.width_ft). SEGMENT paths
-    (walls.front.segments.main body 2-story.width_ft) stayed label-bound,
-    demanding a text run 'MAIN BODY 2-STORY' within 30% of the dimension.
-    A DRAWING SHEET PRINTS DIMENSIONS AS GEOMETRY, never beside such a
-    label — so every located segment dimension on an elevation was killed
-    and all four faces read NOT DERIVABLE. The label-bound tight radius
-    only fits SCHEDULE / TABLE sheets (where a row label sits with its
-    number). On a drawing sheet, any wall/gutter dim carrying a cardinal
-    component is sheet-scoped; presence-on-page (anti-fabrication) still
-    decides, so a genuinely absent quote (the fabricated 39s) still dies."""
+    """SEND-9 COMPLETION (Howard ruled 2026-08-14, widened same day).
+
+    The locator gate runs two tests: does the quote EXIST in OCR (catches
+    FABRICATION), and does it sit NEAR its feature (catches
+    MISATTRIBUTION). On a DRAWING sheet (elevation / floor plan) the
+    second test is a BROKEN INSTRUMENT for EVERY dimension on the page —
+    a drawing prints dimensions as geometry, never beside a text label
+    reading 'MAIN BODY 2-STORY'. Cardinal-vs-non-cardinal is an accident
+    of path naming, not a property of the sheet, so the loosening applies
+    to the WHOLE drawing sheet: presence-only for every dim on it. The
+    existence test still stands, so fabricated quotes (the 39'-0" sides,
+    absent from OCR) still die.
+
+    The tight label-bound radius survives ONLY on SCHEDULE / TABLE sheets,
+    where text labels are real and proximity earns its keep (the E1 '30'
+    match came off a schedule, not an elevation)."""
     if _path_is_sheet_scoped(path):
         return True
-    if sheet_useful_for in _WALL_DIM_SHEET_KINDS:
-        return any(a in _CARDINAL_ANCHORS
-                   for a in _feature_anchors_for_path(path))
-    return False
+    return sheet_useful_for in _WALL_DIM_SHEET_KINDS
 
 
 def _rect_center(rect):

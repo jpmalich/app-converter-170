@@ -1,5 +1,37 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 (later) RULING 1 widened to whole drawing sheet + RULING 2 Survival Report built
+
+**RULING 1 — sheet-scoping widened.** `_sheet_scoped_for` now returns True for
+EVERY dim on a DRAWING sheet (elevation/floor_plan), not just cardinal paths —
+text-label proximity is a broken instrument for the whole drawing, and
+cardinal-vs-non-cardinal is an accident of path naming, not a property of the
+sheet. Fabrication still caught by the existence test (the 39s die on absence,
+not proximity). Tight label-bound radius kept for SCHEDULE/TABLE sheets only.
+This also spares the earlier residual (roof_planes.garage/bonus.eave_lf). Pins
+in test_sheet_scoped_segment_overkill_2026_08_14.py updated: window dim on an
+elevation is now presence-only; on a schedule stays strict.
+
+**RULING 2 — Locator Survival Report built** (`scripts/locator_survival_report.py`).
+Report-only, no pass/fail, always exits 0, standalone (not pytest), never tunes
+a threshold. Runs the REAL locator over a COMMITTED SYNTHETIC non-Boni
+reference set (deterministic PIL-rendered sheets; pre-kill evidence inherent):
+a front-elevation (presence-only) and a window-schedule (label-bound). Current
+output: TOTAL SURVIVORS 4/4 known-printed dims located; CONTROLS HELD 2/2
+(a fabrication absent from the elevation and an unlabelled number on the
+schedule both stay killed). It catches a drawing over-kill (elevation
+survivors drop), a schedule-proximity break (kitchen drops), or a fabrication
+leak (controls fail). HARD RULE recorded in the script: no radius/skeleton
+threshold is ever nudged to raise the count; find the principle instead. Not
+Boni-only by construction; a real house may be added later only with its
+pre-kill evidence captured deliberately.
+
+Order remaining: (3) Law B invariant enforced wherever estimate lines are
+written; (4) Linear Edges S3; (5) Envelope[T]/Verdict-Triage/Ledger UI/
+EST-040221 flip; (6) Reconciliation held.
+
+
+
 ## 2026-08-14 OVER-KILL FIXED — SEND-9 sheet-scoping completed for segment dims
 Fresh read on EST-713272 read all four faces NOT DERIVABLE. MUV itself PASSED
 (rebuild survival + all seven bar points). The over-kill was the locator.
