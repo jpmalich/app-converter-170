@@ -110,9 +110,13 @@ def test_undimensioned_section_is_flagged_never_guessed():
     assert "garage" in f["vars"]["section"]
     assert not any(x["code"] == "wall_segments_mismatch" for x in flags), \
         "an undimensioned section is its own flag — not a broken-walk accusation"
-    gross, segs = wall_body_gross_sqft(raw["walls"][1])
-    assert gross == 58 * 20 and segs == [], \
-        "the math holds the rectangle — it never guesses the missing height"
+    gross, segs, deriv = wall_body_gross_sqft(raw["walls"][1])
+    # SEND-13: reports the derivable main body, NAMES the garage as the
+    # missing piece — never holds the full 58×20 rectangle over a
+    # segment whose height was never read.
+    assert gross == 34 * 20 and segs == [(34.0, 20.0)], \
+        "the math reports the subset — it never guesses the missing height"
+    assert deriv["subset"] is True
 
 
 # --------------------------------------------- readable specs: soffit

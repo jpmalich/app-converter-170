@@ -55,38 +55,36 @@ def _mirror_raw():
     }
 
 
-def test_shared_quote_demotes_ALL_consumers_send11():
-    """SEND-11 item 1 AMENDMENT: no alphabetical winner. Both walls
-    fed from the same 39'-0" quote are demoted — crowning `left` over
-    `right` on a coin flip is as arbitrary as crowning `right` over
-    `left`. Both null on raw; both land on `_dim_unverified`."""
+def test_shared_quote_survives_and_flags_all_consumers_send13():
+    """SEND-13 AMENDMENT: shared-source is a loud flag, not a kill. Both
+    walls fed from the same 39'-0" quote KEEP their value (fabrication is
+    handled at EXISTENCE, not here); the sharing is flagged with all
+    consumers, and two walls' widths is an attribution CONFLICT."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     walls = {w["label"]: w for w in raw["walls"]}
-    assert walls["left"]["width_ft"] is None
-    assert walls["right"]["width_ft"] is None
-    unv = raw.get("_dim_unverified") or []
-    paths = {r["path"] for r in unv}
-    assert "walls.left.width_ft" in paths
-    assert "walls.right.width_ft" in paths
-    left_rec = next(r for r in unv if r["path"] == "walls.left.width_ft")
-    assert left_rec["value"] == 39.0
-    assert "shared" in left_rec["reason"] or "send-11" in left_rec["reason"]
+    assert walls["left"]["width_ft"] == 39.0
+    assert walls["right"]["width_ft"] == 39.0
+    assert not raw.get("_dim_unverified")
+    r = next(s for s in (raw.get("_dim_shared_source") or [])
+             if s["quote"] == "39'-0\"")
+    assert set(r["consumers"]) == {"walls.left.width_ft",
+                                   "walls.right.width_ft"}
+    assert r["conflicting"] is True
 
 
-def test_shared_source_ledger_names_all_consumers_and_none_kept():
-    """SEND-11: shared-source ledger records `kept=None` and every
-    consumer on `demoted`. The card can then present the quote as
-    a shared ambiguity, not as one wall's evidence."""
+def test_shared_source_ledger_keeps_all_consumers():
+    """SEND-13: shared-source ledger records kept == consumers and
+    demoted == [] — the card presents a shared ambiguity, the value
+    survives."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     shared = raw.get("_dim_shared_source") or []
     r = next(s for s in shared if s["quote"] == "39'-0\"")
     assert set(r["consumers"]) == {"walls.left.width_ft",
                                    "walls.right.width_ft"}
-    assert r["kept"] is None
-    assert set(r["demoted"]) == {"walls.left.width_ft",
-                                 "walls.right.width_ft"}
+    assert set(r["kept"]) == set(r["consumers"])
+    assert r["demoted"] == []
 
 
 def test_singleton_quote_leaves_evidence_alone():
@@ -126,15 +124,38 @@ def test_different_quotes_do_not_share_source():
 
 
 def test_shared_source_lands_on_readback_and_rail():
-    """The readback carries `dim_shared_source` for the card; the
-    rail fires `dims_shared_source` LOUD."""
+    """The readback carries `dim_shared_source` for the card. Two walls'
+    widths from one quote is an ATTRIBUTION CONFLICT → the LOUDER rail
+    `dims_shared_source_conflict` fires."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     rb = build_blueprint_readback(raw)
     assert rb.get("dim_shared_source")
     codes = {r["code"]: r for r in rb["rail"]}
+    assert "dims_shared_source_conflict" in codes
+    assert codes["dims_shared_source_conflict"]["level"] == "loud"
+    assert "ATTRIBUTION CONFLICT" in codes["dims_shared_source_conflict"]["text"]
+
+
+def test_non_conflicting_share_fires_plain_shared_rail():
+    """A width quote also feeding a same-wall gutter LF shares a value
+    legitimately (different leaf fields) → the plain `dims_shared_source`
+    rail, value kept."""
+    raw = {
+        "gutter_runs": [{"label": "front", "lf": 58.0}],
+        "walls": [{"label": "front", "width_ft": 58.0}],
+        "_dim_evidence": {
+            "gutter_runs.front.lf": {"v": 58.0, "page": 6, "from": "58'-0\""},
+            "walls.front.width_ft": {"v": 58.0, "page": 6, "from": "58'-0\""},
+        },
+    }
+    _one_source_one_path_guard(raw)
+    assert raw["walls"][0]["width_ft"] == 58.0     # value kept
+    rb = build_blueprint_readback(raw)
+    codes = {r["code"]: r for r in rb["rail"]}
     assert "dims_shared_source" in codes
     assert codes["dims_shared_source"]["level"] == "loud"
+    assert "dims_shared_source_conflict" not in codes
 
 
 # ---------- (B) OPENINGS SUM vs WALL WIDTH ----------

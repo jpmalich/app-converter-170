@@ -2150,23 +2150,40 @@ def _null_unverified_quotes(raw: dict) -> None:
             [r["path"] for r in nulled_unv])
 
 
+def _shared_attribution_conflict(paths) -> bool:
+    """True when the shared consumers include the SAME leaf field on TWO
+    DIFFERENT named features (two walls' width_ft, two planes' eave_lf) —
+    an attribution claim that cannot be independently verified. The flag
+    is LOUDER in that case, never a kill."""
+    by_leaf: dict[str, set] = {}
+    for p in paths:
+        parts = p.split(".")
+        by_leaf.setdefault(parts[-1], set()).add(".".join(parts[:-1]))
+    return any(len(feats) >= 2 for feats in by_leaf.values())
+
+
 def _one_source_one_path_guard(raw: dict) -> None:
-    """ONE-SOURCE-ONE-PATH (Howard ruled 2026-08-12 send-10 item 1,
-    AMENDED 2026-08-13 send-11 item 1 to DEMOTE-ALL): A single evidence
-    source may not silently populate two distinct paths. If one quote
-    (same page + same 'from' string) is consumed by more than one path,
-    FLAG loud, name all paths, and DEMOTE EVERY CONSUMER to UNVERIFIED.
+    """SHARED-SOURCE IS A LOUD FLAG, NOT A KILL (Howard ruled 2026-08-14
+    send-13, AMENDING the send-10/11 demote-all).
 
-    Send-10 kept the alphabetically-first consumer and demoted the rest.
-    Send-11 killed that: crowning left over right on the coin flip of a
-    dotted string is as arbitrary as crowning right over left. When two
-    walls draw depth from ONE quote, neither wall was read
-    independently, so neither wall's value has evidence — both null.
-    If one must survive it lands UNVERIFIED on the card, never AI-READ.
+    A quote consumed by more than one path (same page + same 'from') is a
+    REAL, LOCATED quote — EXISTENCE already passed — and the sharing is
+    OFTEN CORRECT: a printed 58'-0" overall genuinely IS the front width
+    AND the back width; the model citing it four times is the model being
+    right four times. The uncertainty is about ATTRIBUTION, which is
+    WEAKER evidence than existence. Demote-all treated it as stronger and
+    destroyed legitimately-shared printed dimensions; it never caught a
+    real defect — the fabricated 39s die at EXISTENCE (misread_of), not
+    here.
 
-    Same family as the seam ledger: a value that appears in two
-    places must account for how it got there — and when the account
-    says 'the same source fed both', neither counterparty is right.
+    SO: the value SURVIVES and feeds money. Every shared quote lands a
+    LOUD flag on `_dim_shared_source` naming the quote, page and all
+    consumers. When two paths that CANNOT independently share a value —
+    the same leaf field on two different named features, e.g. two walls'
+    width_ft — draw from one quote, the flag is LOUDER (attribution
+    conflict): still NOT a kill, because we cannot tell which consumer is
+    wrong and the standing rule is to REPORT the disagreement, not resolve
+    it. Keep the ledger, keep the rail. Drop the null.
     """
     ev = raw.get("_dim_evidence") or {}
     if not ev:
@@ -2180,99 +2197,31 @@ def _one_source_one_path_guard(raw: dict) -> None:
     for path, entry in ev.items():
         if not isinstance(entry, dict):
             continue
-        srcs = entry.get("srcs") or [entry]
-        for s in srcs:
+        for s in (entry.get("srcs") or [entry]):
             if not isinstance(s, dict):
                 continue
             page = s.get("page")
             frm = s.get("from")
             if page is None or not frm:
                 continue
-            key = (int(page), str(frm))
-            by_quote.setdefault(key, []).append(path)
+            by_quote.setdefault((int(page), str(frm)), []).append(path)
 
-    # Dedupe path list per quote (a derived entry can have multiple
-    # srcs pointing at the same page/from — that's one consumer).
-    demoted: list[dict] = []
     shared_records: list[dict] = []
     for (page, frm), paths in by_quote.items():
         unique_paths = sorted(set(paths))
         if len(unique_paths) < 2:
             continue
-        # SEND-11 item 1: ALL consumers are demoted. No winner.
         shared_records.append({
             "quote": frm, "page": page,
             "consumers": unique_paths,
-            "kept": None,
-            "demoted": list(unique_paths),
+            "conflicting": _shared_attribution_conflict(unique_paths),
+            # The value SURVIVES and feeds money — NOTHING demoted.
+            "kept": list(unique_paths),
+            "demoted": [],
         })
-        others = ", ".join(repr(p) for p in unique_paths)
-        for loser in unique_paths:
-            entry = ev.get(loser)
-            if not isinstance(entry, dict):
-                continue
-            demoted.append({
-                "path": loser,
-                "value": entry.get("v"),
-                "quotes": [frm],
-                "reason": (f"quote {frm!r} on page {page} is shared "
-                           f"across {len(unique_paths)} consumers "
-                           f"({others}) — one source may not populate "
-                           "distinct paths (send-11 demote-all)"),
-            })
 
-    if not demoted:
-        return
-
-    # Null the demoted paths' values on raw AND record them on
-    # `_dim_unverified` (money-safe, card visible). Reuse the same
-    # walker as the unverified-null step so behaviour is uniform.
-    def _null_path(p: str) -> bool:
-        parts = p.split(".")
-        if len(parts) == 1 and parts[0] in raw:
-            raw[parts[0]] = None
-            ev.pop(p, None)
-            return True
-        if parts[0] == "walls" and len(parts) >= 3:
-            for w in (raw.get("walls") or []):
-                if str(w.get("label") or "") != parts[1]:
-                    continue
-                if len(parts) == 3:
-                    w[parts[2]] = None
-                    ev.pop(p, None)
-                    return True
-                if len(parts) >= 5 and parts[2] == "segments":
-                    for s in (w.get("height_segments") or []):
-                        if str(s.get("label") or "") == parts[3]:
-                            s[parts[4]] = None
-                            ev.pop(p, None)
-                            return True
-            return False
-        if parts[0] == "roof_planes" and len(parts) >= 3:
-            for pl in (raw.get("roof_planes") or []):
-                if str(pl.get("label") or "") == parts[1]:
-                    pl[parts[2]] = None
-                    ev.pop(p, None)
-                    return True
-        if parts[0] == "gutter_runs" and len(parts) == 3:
-            for g in (raw.get("gutter_runs") or []):
-                if str(g.get("label") or "") == parts[1]:
-                    g[parts[2]] = None
-                    ev.pop(p, None)
-                    return True
-        return False
-
-    nulled: list[dict] = []
-    for rec in demoted:
-        if _null_path(rec["path"]):
-            nulled.append(rec)
-
-    if nulled:
-        raw.setdefault("_dim_unverified", []).extend(nulled)
+    if shared_records:
         raw.setdefault("_dim_shared_source", []).extend(shared_records)
-        seam_accounting.account(
-            raw, "dims_demoted_quote_shared",
-            [r["path"] for r in nulled])
 
 
 def _ocr_verify_marks(raw: dict, image_payloads: list,
@@ -3481,12 +3430,25 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     # guard's demoted list rides its own rail code so the card can
     # separate a shared-source demotion from a lonely unverified.
     _shared = raw.get("_dim_shared_source") or []
-    if _shared:
+    _shared_plain = [r for r in _shared if not r.get("conflicting")]
+    _shared_conf = [r for r in _shared if r.get("conflicting")]
+    if _shared_plain:
         rail.append({"level": "loud", "code": "dims_shared_source",
                      "text": "; ".join(
                          f"{r.get('quote')} p{r.get('page')} → "
-                         f"{','.join(r.get('consumers') or [])}"
-                         for r in _shared)})
+                         f"{','.join(r.get('consumers') or [])} "
+                         f"(cited for {len(r.get('consumers') or [])} paths "
+                         "— attribution unverified, value kept)"
+                         for r in _shared_plain)})
+    if _shared_conf:
+        rail.append({"level": "loud", "code": "dims_shared_source_conflict",
+                     "text": "ATTRIBUTION CONFLICT — one quote feeds the "
+                             "same field on two named features; cannot tell "
+                             "which is wrong, value kept, reported not "
+                             "resolved: " + "; ".join(
+                                 f"{r.get('quote')} p{r.get('page')} → "
+                                 f"{','.join(r.get('consumers') or [])}"
+                                 for r in _shared_conf)})
     _fw = _num(raw.get("fascia_width_in"))
     if _fw > 0:
         rail.append({"level": "info", "code": "fascia_printed", "text": f"{_fw:g}"})

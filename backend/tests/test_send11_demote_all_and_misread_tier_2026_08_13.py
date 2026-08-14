@@ -41,7 +41,12 @@ from routes.ai_blueprint import (  # noqa: E402
 )
 
 
-# ---------- (A) DEMOTE-ALL on shared-source quotes ------------------
+# ---------- (A) SHARED-SOURCE IS A LOUD FLAG, NOT A KILL --------------
+# AMENDED 2026-08-14 send-13: demote-all destroyed legitimately-shared
+# printed dims (58'-0" genuinely IS both front and back width) and never
+# caught a real defect — the fabricated 39s die at EXISTENCE (misread_of),
+# not here. So the value SURVIVES and feeds money; the sharing is a loud
+# flag naming all consumers, louder when it is an attribution conflict.
 
 def _mirror_raw():
     return {
@@ -58,46 +63,57 @@ def _mirror_raw():
     }
 
 
-def test_demote_all_nulls_every_consumer():
-    """Both consumers null on raw. Neither may claim AI-READ ✓."""
+def test_shared_quote_no_longer_nulls_its_consumers():
+    """SEND-13: the value SURVIVES on raw. The shared flag does not kill;
+    a genuinely fabricated quote dies at EXISTENCE (proven separately)."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     walls = {w["label"]: w for w in raw["walls"]}
-    assert walls["left"]["width_ft"] is None
-    assert walls["right"]["width_ft"] is None
+    assert walls["left"]["width_ft"] == 39.0
+    assert walls["right"]["width_ft"] == 39.0
+    # No demotion to unverified from sharing anymore.
+    assert not raw.get("_dim_unverified")
 
 
-def test_demote_all_records_kept_as_none():
-    """The shared-source ledger MUST carry `kept=None`. A consumer
-    surviving as 'the kept one' would recreate the coin-flip send-11
-    ruled out."""
+def test_shared_source_ledger_keeps_all_consumers():
+    """The ledger names the quote and ALL consumers; nothing demoted,
+    kept == consumers. Two walls' widths from one quote is an ATTRIBUTION
+    CONFLICT — flagged louder, still not a kill."""
     raw = _mirror_raw()
     _one_source_one_path_guard(raw)
     shared = raw.get("_dim_shared_source") or []
     assert len(shared) == 1
     r = shared[0]
-    assert r["kept"] is None
-    assert set(r["demoted"]) == {"walls.left.width_ft",
-                                 "walls.right.width_ft"}
     assert set(r["consumers"]) == {"walls.left.width_ft",
                                    "walls.right.width_ft"}
+    assert set(r["kept"]) == set(r["consumers"])
+    assert r["demoted"] == []
+    assert r["conflicting"] is True
 
 
-def test_demote_all_both_land_on_unverified_ledger():
-    raw = _mirror_raw()
+def test_shared_across_different_kinds_is_not_a_conflict():
+    """A width quote also feeding a same-wall gutter/eave LF shares a
+    value legitimately (different leaf fields) — flagged, but NOT the
+    louder attribution-conflict variant."""
+    raw = {
+        "gutter_runs": [{"label": "front garage", "lf": 24.0}],
+        "walls": [{"label": "front", "width_ft": 24.0,
+                   "segments": [{"label": "garage wing 1-story",
+                                 "width_ft": 24.0}]}],
+        "_dim_evidence": {
+            "gutter_runs.front garage.lf": {
+                "v": 24.0, "page": 6, "from": "24'-0 1/2\""},
+            "walls.front.segments.garage wing 1-story.width_ft": {
+                "v": 24.0, "page": 6, "from": "24'-0 1/2\""},
+        },
+    }
     _one_source_one_path_guard(raw)
-    unv = raw.get("_dim_unverified") or []
-    paths = {r["path"] for r in unv}
-    assert paths == {"walls.left.width_ft", "walls.right.width_ft"}
-    for r in unv:
-        assert r["value"] == 39.0
-        assert "shared" in r["reason"]
-        assert "send-11" in r["reason"]
+    r = (raw.get("_dim_shared_source") or [])[0]
+    assert r["conflicting"] is False
+    assert r["demoted"] == []
 
 
-def test_demote_all_three_way_share_demotes_all_three():
-    """A quote consumed by three paths demotes all three (there is
-    no 'first two demote, third keep' compromise)."""
+def test_three_way_share_flags_all_three_and_keeps_them():
     raw = {
         "walls": [
             {"label": "back", "width_ft": 39.0},
@@ -112,10 +128,37 @@ def test_demote_all_three_way_share_demotes_all_three():
     }
     _one_source_one_path_guard(raw)
     for w in raw["walls"]:
-        assert w["width_ft"] is None
+        assert w["width_ft"] == 39.0        # all survive
     shared = raw["_dim_shared_source"][0]
-    assert shared["kept"] is None
-    assert len(shared["demoted"]) == 3
+    assert set(shared["kept"]) == set(shared["consumers"])
+    assert len(shared["kept"]) == 3
+    assert shared["demoted"] == []
+    assert shared["conflicting"] is True
+
+
+def test_fabricated_quote_still_dies_at_existence_not_here():
+    """The case demote-all was invented for: a fabricated quote absent
+    from the page still dies — at the EXISTENCE gate
+    (`_null_unverified_quotes`), NOT via the shared-source flag."""
+    raw = {
+        "walls": [{"label": "left", "width_ft": 39.0}],
+        "_dim_evidence": {
+            "walls.left.width_ft": {"v": 39.0, "page": 6, "from": "39'-0\""},
+        },
+        "_ocr_quote_misses": [{
+            "path": "walls.left.width_ft", "page": 6, "from": "39'-0\"",
+            "rotations_checked": True, "page_ocr_chars": 50276,
+            "reason": "quote norm not present in OCR on page",
+            "misread_of": "90",
+        }],
+    }
+    # shared-source flag does not kill…
+    _one_source_one_path_guard(raw)
+    assert raw["walls"][0]["width_ft"] == 39.0
+    # …but existence does.
+    _null_unverified_quotes(raw)
+    assert raw["walls"][0]["width_ft"] is None
+    assert (raw.get("_dim_misread") or [])[0]["path"] == "walls.left.width_ft"
 
 
 def test_singleton_quote_still_untouched():

@@ -1,5 +1,50 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 SEND-13 — SHARED-SOURCE FLAG (not kill) + SEGMENT-LEVEL PARTIAL DERIVABILITY + REGISTER FIX
+Report on the 3rd EST-713272 re-fire (run 68872f8c) proved rulings 2 & 3
+FIRED (24'-0 1/2" located via skeleton ×3; page-9 30'-0" located on
+"other"), but send-11 **shared-source demote-all** then nulled every width
+AND every height (9'-11" cited ×9, 58'-0" ×4, 8'-1½ ×4) → no wall had a
+height → all four faces dead. Howard OWNED the cause and amended. Suite
+2384→**2393 passed / 5 skipped**.
+
+**RULING 1 — shared-source is a LOUD FLAG, not a kill.** `_one_source_one_path_guard`
+no longer nulls or writes `_dim_unverified`. A shared quote SURVIVES and
+feeds money; every shared quote lands on `_dim_shared_source` (kept==all
+consumers, demoted==[]) with a `conflicting` flag. `_shared_attribution_conflict`
+= same leaf field on ≥2 different named features (two walls' width_ft) →
+LOUDER rail `dims_shared_source_conflict`; else plain `dims_shared_source`.
+Fabricated quotes still die at EXISTENCE (misread), not here. Seam
+`dims_demoted_quote_shared` RETIRED (registry note kept). Pins rewritten:
+test_send10 / test_send11 (A).
+
+**RULING 2 — segment-level partial derivability BUILT** (ruled earlier as
+a clause of the front-segment answer; never built — the item that vanished
+3 sends running). `wall_body_gross_sqft` returns `(gross, segs_used, deriv)`;
+a wall with segments sums ONLY derivable segments, NAMES each killed one,
+sets `subset`, and NEVER falls back to the top-level rectangle (the silent
+inflation). Callers updated: `walk_walls` (money) + `breakdown_walls_by_profile`
+(adds `wall_body_subset`, per-segment `faces_not_derivable` w/ `partial:true`;
+base_lf uses Σ derivable seg widths when top-level width killed). Pins:
+`test_segment_partial_derivability_2026_08_14.py` (7); stale rectangle-fallback
+assertions in test_per_wall_heights / test_evidence_or_null / test_corrections
+rewritten to the no-fallback/subset truth.
+
+**PROCESS FIX — why the register lost 3 rulings.** The suite IS the
+register, but it only reliably captured rulings that ARRIVED AS EXPLICIT
+ITEMS; a ruling stated mid-paragraph (segment-partial) got no pin, so
+nothing failed when it wasn't built and handoffs carried it as "done".
+Fix demonstrated: `test_rulings_2026_08_14_send13.py` registers all three
+send-13 rulings the moment they were made, carrying the ruling WORDS in
+docstrings, and the HELD schedule/cover override enters as a VISIBLE
+`skip` naming why — a held ruling can no longer silently vanish.
+
+**NEXT (Howard's order):** he re-fires EST-713272 and reports the four
+faces (widths + heights should now survive; BACK/RIGHT should derive from
+located segments) → THEN Law B invariant → Linear Edges S3.
+
+
+
 ## 2026-08-14 SEND-12 — FRACTION SKELETON INTO EXISTENCE + DRAWN-GEOMETRY CLASSIFICATION
 Howard's rulings 2 & 3 landed. Read over-kill was two mechanisms: dims
 died at the EXISTENCE step (unreadable stacked fractions) and on pages

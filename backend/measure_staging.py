@@ -39,35 +39,66 @@ def eaves_from_walls(walls: list, raw_eaves) -> float:
     return float(raw_eaves or 0)
 
 
-def wall_body_gross_sqft(w: dict) -> tuple[float, list]:
-    """PER-WALL HEIGHT VARIATION (Howard ruled 2026-08-07, top item): a
-    facade is SEGMENTS at their own eave heights — the garage half of a
-    front wall sides at ~10', never at the main body's height. Siding a
-    10-foot wall at 19 feet over-orders every low section on the house.
-    Valid height_segments (each w,h > 0; widths summing to the wall width
-    within tolerance) govern: gross = Σ(w×h). Otherwise the rectangle
-    width×height stands and the consistency checker names the segment
-    defect. ONE COPY — walk_walls and the profile breakdown both consume
-    this, so the siding line and the Field Verify table can never hold
-    different answers about the same wall."""
+def wall_body_gross_sqft(w: dict) -> tuple[float, list, dict]:
+    """PER-WALL HEIGHT VARIATION + SEGMENT-LEVEL PARTIAL DERIVABILITY
+    (Howard ruled 2026-08-07; partial-derivability ruled earlier and
+    BUILT 2026-08-14 send-13).
+
+    A facade is SEGMENTS at their own eave heights — the garage half of a
+    front wall sides at ~10', never at the main body's height. When a wall
+    carries height_segments, EACH segment derives on its OWN width×height:
+      * derivable segments (w>0 AND h>0) sum into the gross;
+      * a KILLED segment is NAMED not-derivable and its area is simply
+        ABSENT. It is NEVER covered by falling back to the top-level
+        width×height rectangle — that fallback is the silent inflation
+        Howard ruled against on the front-segment question (it would
+        credit a dead segment's area at the full wall width). The wall
+        total becomes a SUBSET and says so.
+    A wall with NO segments derives from its own width×height — there the
+    rectangle is the PRIMARY measurement, not a fallback.
+
+    Returns (gross, segs_used, deriv):
+      deriv = {has_segments, derivable, subset, not_derivable:[{label,
+      reason}]}. ONE COPY — walk_walls and the profile breakdown both
+      consume this, so the siding line and the Field Verify table can
+      never hold different answers about the same wall."""
     width = float(w.get("width_ft") or 0)
     eave_h = float(w.get("height_ft") or 0)
-    valid: list[tuple[float, float]] = []
-    for s in (w.get("height_segments") or []):
-        if not isinstance(s, dict):
-            continue
-        try:
-            sw = float(s.get("width_ft") or 0)
-            sh = float(s.get("height_ft") or 0)
-        except (TypeError, ValueError):
-            continue
-        if sw > 0 and sh > 0:
-            valid.append((sw, sh))
-    if valid and width > 0:
-        total_w = sum(sw for sw, _ in valid)
-        if abs(total_w - width) <= max(0.5, 0.02 * width):
-            return sum(sw * sh for sw, sh in valid), valid
-    return width * eave_h, []
+    segs = [s for s in (w.get("height_segments") or []) if isinstance(s, dict)]
+    if segs:
+        gross = 0.0
+        used: list[tuple[float, float]] = []
+        not_deriv: list[dict] = []
+        for s in segs:
+            try:
+                sw = float(s.get("width_ft") or 0)
+                sh = float(s.get("height_ft") or 0)
+            except (TypeError, ValueError):
+                sw = sh = 0.0
+            if sw > 0 and sh > 0:
+                gross += sw * sh
+                used.append((sw, sh))
+            else:
+                reason = ("segment width not read — area not derivable"
+                          if not sw > 0
+                          else "segment height not read — area not derivable")
+                not_deriv.append({"label": s.get("label"), "reason": reason})
+        derivable = len(used) > 0
+        return gross, used, {
+            "has_segments": True, "derivable": derivable,
+            "subset": derivable and bool(not_deriv),
+            "not_derivable": not_deriv,
+        }
+    # No segments — the top-level rectangle is the PRIMARY measurement.
+    if width > 0 and eave_h > 0:
+        return width * eave_h, [], {
+            "has_segments": False, "derivable": True,
+            "subset": False, "not_derivable": []}
+    reason = ("wall width not read — area not derivable" if not width > 0
+              else "wall height not read — area not derivable")
+    return 0.0, [], {
+        "has_segments": False, "derivable": False, "subset": False,
+        "not_derivable": [{"label": w.get("label"), "reason": reason}]}
 
 
 def walk_walls(walls: list, gable_rise_fn=None) -> dict:
@@ -88,23 +119,28 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
         raw_w = w.get("width_ft")
         width_ft = float(raw_w or 0)
         eave_h = float(w.get("height_ft") or 0)
-        # Per-wall height variation (ruled 2026-08-07): segments govern.
-        gross, segs_used = wall_body_gross_sqft(w)
-        # DERIVE-OR-DISCLOSE (Howard ruled 2026-08-14): a wall whose
-        # width was killed/unread has UNKNOWN body area, never a silent
-        # 0 that shrinks the house. The money walk still sums the
-        # derivable faces, but the aggregate NAMES the missing one — a
-        # total assembled from a subset of walls must say so. Scoped to
-        # the KILLED WIDTH (the orphan class): the width DIM is None
-        # because its quote was fabricated/unlocatable or never read.
-        # Height-absent partial fixtures are not the orphan and are left
-        # to the per-elevation breakdown's fuller check.
-        width_readable = raw_w is not None and width_ft > 0
-        if not width_readable:
-            faces_not_derivable.append({
-                "label": w.get("label"), "surface": "body",
-                "reason": "wall width not read — area not derivable",
-            })
+        # Per-wall height variation + SEGMENT-LEVEL PARTIAL (send-13):
+        # segments govern; a killed segment is named, its area absent,
+        # never covered by the top-level rectangle. The walk sums the
+        # DERIVABLE gross (a subset when a segment is killed) and NAMES
+        # the missing piece so a total from a subset says so.
+        gross, segs_used, deriv = wall_body_gross_sqft(w)
+        if not deriv["derivable"]:
+            _nd = deriv["not_derivable"] or [{
+                "label": w.get("label"),
+                "reason": "wall width not read — area not derivable"}]
+            for nd in _nd:
+                faces_not_derivable.append({
+                    "label": w.get("label"), "surface": "body",
+                    "segment": (nd.get("label") if deriv["has_segments"]
+                                else None),
+                    "reason": nd.get("reason")})
+        elif deriv["subset"]:
+            for nd in deriv["not_derivable"]:
+                faces_not_derivable.append({
+                    "label": w.get("label"), "surface": "body_segment",
+                    "segment": nd.get("label"), "reason": nd.get("reason"),
+                    "partial": True})
         pct = float(w.get("siding_pct_this_wall") or 100.0)
         # Shared fraction-vs-percent defense: 0<x<1 is a fraction.
         if 0 < pct < 1:

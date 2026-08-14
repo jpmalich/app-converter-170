@@ -109,8 +109,14 @@ def test_the_back_garage_case_cascades_to_the_flag():
     flags = check_read_consistency(out)
     f = next(x for x in flags if x["code"] == "wall_segment_undimensioned")
     assert f["vars"]["section"] == "garage wing"
-    gross, segs = wall_body_gross_sqft(out["walls"][0])
-    assert gross == 58 * 20.5 and segs == [], "the math never guesses"
+    gross, segs, deriv = wall_body_gross_sqft(out["walls"][0])
+    # SEND-13: the math reports the DERIVABLE segment (main body) and
+    # names the garage wing not-derivable — it never inflates to the
+    # full 58×20.5 rectangle to cover the missing height.
+    assert gross == 34 * 20.5 and segs == [(34.0, 20.5)], \
+        "the math reports the subset, never guesses"
+    assert deriv["subset"] is True
+    assert deriv["not_derivable"][0]["label"] == "garage wing"
 
 
 def test_the_card_names_every_dropped_path():

@@ -34,16 +34,14 @@ SEAM_REGISTRY = {
         "value+quote+reason for the card (ruled 2026-08-12 send-9 "
         "item 3: fabricated is a different lie from unverified).",
     "dims_demoted_quote_shared":
-        "Dims whose sole evidence source is a quote ALREADY consumed by "
-        "another path. Ruled 2026-08-12 send-10 item 1, AMENDED "
-        "2026-08-13 send-11 item 1: a single evidence source may not "
-        "silently populate two distinct paths, and if it does, EVERY "
-        "consumer is demoted — never crown the alphabetically-first "
-        "on a coin flip (Boni: both side walls shared a 39'-0\" quote; "
-        "keeping left was as arbitrary as keeping right). ALL "
-        "consumers null on raw and land on `_dim_unverified`; "
-        "`_dim_shared_source` records the quote and its full consumer "
-        "list with kept=None.",
+        "RETIRED (Howard ruled 2026-08-14 send-13): shared-source is now "
+        "a LOUD FLAG, not a kill — the value survives and feeds money, "
+        "the sharing rides `_dim_shared_source` (attribution unverified, "
+        "conflicting cases flagged louder). This seam no longer fires; "
+        "demote-all destroyed legitimately-shared printed dims (58'-0\" "
+        "genuinely IS both front and back width) and never caught a real "
+        "defect — the fabricated 39s die at EXISTENCE, not here. Kept "
+        "registered so any stray firing still names its layer.",
     "dims_misread":
         "Dims whose quoted printed string does NOT appear on the page's "
         "pixels in any orientation, BUT a real OCR run on that page "

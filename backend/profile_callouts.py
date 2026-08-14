@@ -247,33 +247,60 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
         raw_h = w.get("height_ft")
         width_readable = raw_w is not None and width > 0
         from measure_staging import wall_body_gross_sqft
-        gross, _segs = wall_body_gross_sqft(w)
+        gross, segs_used, deriv = wall_body_gross_sqft(w)
         body_family = classify_profile(w.get("wall_body_profile_callout"))
         if not body_family or body_family == "unknown":
             body_family = default_body_profile
-        body_derivable = bool(width_readable and gross > 0)
+        body_derivable = bool(deriv["derivable"] and gross > 0)
+        # Base course LF = the wall footprint width. When segments govern
+        # (send-13), the top-level width may be killed while segments
+        # survive — use the SUM OF DERIVABLE SEGMENT widths; else the
+        # top-level width.
+        if deriv["has_segments"]:
+            body_width_lf = sum(sw for sw, _sh in segs_used)
+        else:
+            body_width_lf = width if width_readable else 0.0
         if body_derivable:
             wall_body_sqft = gross * (pct / 100.0)
             _add(body_family, wall_body_sqft)
             # Vinyl-conventions batch (3+4+5), ruled 2026-07-18: the body
             # family owns the base course — per-region base LF drives the
             # starter / base-J split downstream (gables never have base).
-            if wall_body_sqft > 0:
-                base_lf[body_family] = base_lf.get(body_family, 0.0) + width
+            if wall_body_sqft > 0 and body_width_lf > 0:
+                base_lf[body_family] = base_lf.get(body_family, 0.0) + body_width_lf
             # Stone area = gross × (1 - pct/100). Surfaced for
             # traceability; NEVER counted as siding.
             stone_sqft = gross * (1.0 - pct / 100.0)
+            # SUBSET DISCLOSURE (send-13): a partial wall reports the
+            # known segment(s) here AND names the killed one — the total
+            # says it is a subset.
+            for nd in deriv["not_derivable"]:
+                faces_not_derivable.append({
+                    "elevation": label, "surface": "body_segment",
+                    "segment": nd.get("label"), "profile": body_family,
+                    "reason": nd.get("reason"), "partial": True,
+                })
         else:
-            # NOT DERIVABLE — null the face, name it, disclose it.
+            # NOT DERIVABLE — null the face, name it, disclose it. When
+            # segments exist, name each killed segment; otherwise the
+            # whole-wall width/height miss.
             wall_body_sqft = None
             stone_sqft = 0.0
-            reason = ("wall width not read — area not derivable"
-                      if not width_readable
-                      else "wall height not read — area not derivable")
-            faces_not_derivable.append({
-                "elevation": label, "surface": "body",
-                "profile": body_family, "reason": reason,
-            })
+            if deriv["has_segments"] and deriv["not_derivable"]:
+                for nd in deriv["not_derivable"]:
+                    faces_not_derivable.append({
+                        "elevation": label, "surface": "body_segment",
+                        "segment": nd.get("label"), "profile": body_family,
+                        "reason": nd.get("reason"),
+                    })
+            else:
+                reason = ("wall width not read — area not derivable"
+                          if not width_readable
+                          else "wall height not read — area not derivable")
+                faces_not_derivable.append({
+                    "elevation": label, "surface": "body",
+                    "profile": body_family, "reason": reason,
+                })
 
         # Gable triangle — dies with its width too. A gable height with
         # no readable width is NOT DERIVABLE (never silently 0), same
@@ -370,6 +397,7 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
             "wall_body_sqft":     (round(wall_body_sqft, 1)
                                    if wall_body_sqft is not None else None),
             "wall_body_derivable": body_derivable,
+            "wall_body_subset":   bool(deriv["subset"]),
             "wall_body_profile":  body_family,
             "wall_body_callout":  w.get("wall_body_profile_callout") or "",
             "gable_sqft":         (round(gable_sqft, 1)

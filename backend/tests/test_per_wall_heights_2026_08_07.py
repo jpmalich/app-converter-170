@@ -49,22 +49,30 @@ SEGMENTED_WALL = {
 
 # ------------------------------------------------------------- geometry
 def test_segments_govern_the_wall_gross():
-    gross, segs = wall_body_gross_sqft(SEGMENTED_WALL)
+    gross, segs, deriv = wall_body_gross_sqft(SEGMENTED_WALL)
     assert gross == 30 * 19 + 28 * 10  # 850, not 58×19 = 1102
     assert len(segs) == 2
+    assert deriv["derivable"] is True and deriv["subset"] is False
 
 
-def test_broken_segment_walk_falls_back_to_the_rectangle():
+def test_broken_segment_no_longer_falls_back_to_the_rectangle():
+    """SEND-13 AMENDMENT: the all-or-nothing rectangle fallback was the
+    silent inflation Howard ruled against. A wall carrying segments
+    derives per-segment; a listed segment governs its own area and the
+    dead/absent remainder is NEVER covered by the full width×height."""
     w = {**SEGMENTED_WALL, "height_segments": [
-        {"label": "main", "width_ft": 30, "height_ft": 19}]}  # sums to 30 ≠ 58
-    gross, segs = wall_body_gross_sqft(w)
-    assert gross == 58 * 19 and segs == []
+        {"label": "main", "width_ft": 30, "height_ft": 19}]}  # 30 of 58
+    gross, segs, deriv = wall_body_gross_sqft(w)
+    assert gross == 30 * 19          # 570 — NOT 58×19 = 1102
+    assert deriv["has_segments"] is True
+    assert deriv["derivable"] is True
 
 
 def test_no_segments_keeps_the_rectangle_byte_identical():
-    gross, segs = wall_body_gross_sqft(
+    gross, segs, deriv = wall_body_gross_sqft(
         {"label": "back", "width_ft": 58, "height_ft": 19})
     assert gross == 58 * 19 and segs == []
+    assert deriv["has_segments"] is False
 
 
 def test_walk_walls_and_profile_breakdown_hold_one_answer():

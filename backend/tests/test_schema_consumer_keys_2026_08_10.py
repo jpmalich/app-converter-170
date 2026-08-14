@@ -75,8 +75,9 @@ INTERNAL_KEYS = {
     "title",
     # SEND-10 (2026-08-12): one-source-one-path guard records —
     # `_dim_shared_source` entries carry quote/consumers, both are
-    # internal pipeline shape and never model keys.
-    "quote", "consumers",
+    # internal pipeline shape and never model keys. SEND-13 (2026-08-14):
+    # `conflicting` marks the louder attribution-conflict variant.
+    "quote", "consumers", "conflicting",
     # SEND-11 (2026-08-13): fabricated/misread record shape — our
     # own pipeline writes these onto `_dim_fabricated`, `_dim_misread`,
     # and `_dim_unverified` (evidence_strength/misread_of/quotes).
