@@ -14,7 +14,7 @@
 // The polygon math + persistence is authoritative on the backend
 // (/api/estimates/:id/pdf-overlay); this editor mirrors the ft² live so
 // the readout tracks the drawing.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   X, Trash2, Ruler, Sparkles, Loader2, AlertTriangle, PencilRuler,
   ZoomIn, ZoomOut, MousePointer2,
@@ -195,6 +195,8 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   const [ocrBusy, setOcrBusy] = useState(false);
   const [estLines, setEstLines] = useState(est?.lines || []);
   const imgRef = useRef(null);
+  const scrollRef = useRef(null);      // the scrolling canvas viewport
+  const wheelAnchor = useRef(null);    // {fx,fy,ox,oy} to keep the cursor point fixed across a wheel-zoom
 
   const page = pages.find((p) => p.idx === activePage);
   const pageScale = scaleByPage[activePage] || null;
@@ -437,6 +439,40 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
 
   const bumpZoom = (f) => setZoom((z) => Math.max(0.5, Math.min(6, z * f)));
 
+  // SCROLL-WHEEL ZOOM (Howard 2026-08-14 UX): scrolling over the drawing
+  // zooms in/out — the normal expectation for a tracing tool — anchored
+  // to the cursor so the point under the pointer stays put. Native
+  // non-passive listener so we can preventDefault the page scroll.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const ox = e.clientX - rect.left;   // cursor offset inside the viewport
+      const oy = e.clientY - rect.top;
+      // fraction of the CONTENT currently under the cursor
+      const fx = el.scrollWidth ? (el.scrollLeft + ox) / el.scrollWidth : 0.5;
+      const fy = el.scrollHeight ? (el.scrollTop + oy) / el.scrollHeight : 0.5;
+      wheelAnchor.current = { fx, fy, ox, oy };
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      setZoom((z) => Math.max(0.5, Math.min(6, z * factor)));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // After a wheel-zoom re-layout, re-place the scroll so the same content
+  // fraction sits back under the cursor.
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    const a = wheelAnchor.current;
+    if (!el || !a) return;
+    el.scrollLeft = a.fx * el.scrollWidth - a.ox;
+    el.scrollTop = a.fy * el.scrollHeight - a.oy;
+    wheelAnchor.current = null;
+  }, [zoom]);
+
   return (
     <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-3"
       data-testid="pdf-overlay-modal" onClick={onClose}>
@@ -477,12 +513,8 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
           </div>
 
           {/* Canvas */}
-          <div className="flex-1 overflow-auto bg-[#27272A] relative">
-            <div className="sticky top-2 z-20 flex flex-col gap-1 ml-auto mr-2 mt-2 w-fit">
-              <button type="button" onClick={() => bumpZoom(1.25)} className="w-8 h-8 bg-white/95 border border-[#27272A] flex items-center justify-center" data-testid="pdf-overlay-zoom-in"><ZoomIn className="w-4 h-4" /></button>
-              <button type="button" onClick={() => setZoom(1)} className="px-1 h-8 bg-white/95 border border-[#27272A] text-[9px] font-bold" data-testid="pdf-overlay-zoom-reset">{Math.round(zoom * 100)}%</button>
-              <button type="button" onClick={() => bumpZoom(1 / 1.25)} className="w-8 h-8 bg-white/95 border border-[#27272A] flex items-center justify-center" data-testid="pdf-overlay-zoom-out"><ZoomOut className="w-4 h-4" /></button>
-            </div>
+          <div className="flex-1 relative min-w-0">
+            <div ref={scrollRef} className="absolute inset-0 overflow-auto bg-[#27272A]">
             {page ? (
               <div className="p-4">
                 <div className="relative" style={{ width: `${zoom * 100}%`, lineHeight: 0 }}>
@@ -534,6 +566,15 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                 </div>
               </div>
             ) : <div className="text-white p-4 text-sm">No elevation page</div>}
+            </div>
+            {/* Floating zoom controls — anchored to the pane so they never
+                scroll away when you pan down to a dimension line. Scroll
+                the wheel over the drawing to zoom (cursor-anchored). */}
+            <div className="absolute top-2 right-2 z-30 flex flex-col gap-1 w-fit">
+              <button type="button" onClick={() => bumpZoom(1.25)} className="w-8 h-8 bg-white/95 border border-[#27272A] flex items-center justify-center shadow-md" title="Zoom in (or scroll up)" data-testid="pdf-overlay-zoom-in"><ZoomIn className="w-4 h-4" /></button>
+              <button type="button" onClick={() => setZoom(1)} className="px-1 h-8 bg-white/95 border border-[#27272A] text-[9px] font-bold shadow-md" title="Reset zoom" data-testid="pdf-overlay-zoom-reset">{Math.round(zoom * 100)}%</button>
+              <button type="button" onClick={() => bumpZoom(1 / 1.25)} className="w-8 h-8 bg-white/95 border border-[#27272A] flex items-center justify-center shadow-md" title="Zoom out (or scroll down)" data-testid="pdf-overlay-zoom-out"><ZoomOut className="w-4 h-4" /></button>
+            </div>
           </div>
 
           {/* Right panel */}
