@@ -91,3 +91,47 @@ DPI → the READ-printed-scale path reads the fraction but REFUSES to
 convert (honest) and directs Howard to TRACE. TRACE gives correct,
 1,160-pinned areas on scans. A PDF-sourced blueprint would let READ
 convert end-to-end deterministically.
+
+## RE-WALK BLOCKER — TRACE SCALE (fixed 2026-08-13)
+
+BUG: TRACE was a DRAG gesture (mousedown→move→mouseup). A human CLICK has
+identical down/up coords → distance 0 → "too short" fired on the first
+click, so the second point could never be placed.
+
+FIX: TRACE is now TWO CLICKS, matching the polygon tool. First mousedown
+stores p1 only (NO distance check); second mousedown sets p2 and ONLY
+THEN measures (8px min guard, keeps p1 on a misclick). mouseup no longer
+evaluates scale. Button label walks "Trace scale" → "Click one end…" →
+"Click the far end…". Verified (iteration_56) with two DISCRETE clicks:
+first click shows no error and no feet input; second click opens the feet
+input; label reads "✓ TRACE · you calibrated 58 ft".
+
+## THE BROWSER-TEST QUESTION — answered
+
+Did the re-test (iteration_55) exercise TRACE? YES — but via a DRAG
+(button held, moved, released), which the old code accepted because a
+drag yields two distinct points. It ran on EST-886440 (the scan), so
+TRACE *was* the path under test — but the test drove it with a gesture no
+human uses and one inconsistent with the click-to-draw polygon tool. So
+the test verified "a drag yields a scale," not "the click interaction a
+user performs yields a scale." Same shape as 1,874-green-while-Integral-J-
+dead: it verified something other than what a user does.
+
+FIX (same shape as the bar-(h) rule): the browser test now drives TRACE
+with two SEPARATE discrete clicks — the interaction a human performs — on
+the estimate where TRACE is the only available path (the scan). Pinned in
+iteration_56.
+
+## REBUILD SURVIVAL (walk point 6) — confirmed by code
+hover.py:3368-3372: on every rebuild, a line whose previous version had
+qty_src=="human" keeps its human qty verbatim and stamps the fresh
+derived value into derived_qty. The MUV overlay sets qty_src=human on the
+aggregate siding line, so it rides the SAME shield that preserves every
+human-typed qty. No new instrument needed.
+
+## PER-WALL NUMBERS "a little high" (Howard note)
+The panel DISPLAYS the app's own `_per_elevation_breakdown` verbatim
+(front 920, left/right 1,091 = wall 780 + gable 311, back 1,160). BACK is
+correct (58×20). If front/left/right read high, that is the app's
+DERIVATION to interrogate — the MUV display did not compute them, it
+surfaced them (which is the point). Separate item, not ordered.

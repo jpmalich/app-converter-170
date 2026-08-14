@@ -1,0 +1,23 @@
+{
+  "summary": "RE-TEST of Howard's blocker on EST-886440 (image-scan blueprint): TRACE scale as TWO discrete clicks (not a drag). Driven with two separate page.mouse.click() calls at well-separated coordinates (25% and 65% of image width). Result: ALL required assertions PASS. (1) After ONLY the first click there is NO 'too short' toast and the feet input (pdf-overlay-scale-ft) is NOT shown — tool correctly waits for the second click. (2) After the second discrete click the feet input appears; entering 58 and clicking OK yields scale-ok label EXACTLY '✓ TRACE · you calibrated 58 ft' (contains 'TRACE'). (3) With face=back picked, a 4-click rectangle + close-by-first-vertex produces zone row 'siding · back · 979.6 ft²' (numeric, no 'no scale') and toast 'Zone saved · 979.6 ft²'. (4) Delete emits toast \"Zone deleted — the app's own number is back\" and the zone row disappears. (5) A fresh draw immediately after delete closes cleanly (no leftover stale points) — the iteration_55 stale-draft bug is not exercised on the happy path here. Estimate left clean (0 zones remaining). Backend not tested per request. READ(AI) refusal on this scan and face-pick requirement remain intended behaviors.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PdfOverlayEditor.jsx onMouseDown (lines 251-281) correctly implements TWO-CLICK trace: first click stores p1 only (no distance check), second click sets p2 and only THEN measures distPx with an 8px min-distance guard that keeps p1 if user misclicks. onMouseUp no longer evaluates scale — good. This matches the polygon tool's two-click UX exactly and closes the drag-vs-click hole from iteration_55.",
+    "Button label at line 557 correctly reflects state: 'Trace scale' → 'Click one end…' → 'Click the far end…' — good hint copy for the user."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (all 6 required flows pass)"},
+  "test_credentials": "hhunt6677@yahoo.com / Admin123! (owner) — worked",
+  "seed_data_creation": "None persisted. All zones drawn during test were deleted. EST-886440 (1f8b8b60-4b19-48eb-b1b5-0371276c8645) left clean (0 zones on page 1).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The two-click TRACE fix is verified against real human-style discrete clicks (two separate page.mouse.click calls, not a drag). First click never fires 'too short' and never shows the feet input; second click triggers the feet input which accepts numeric ft; OK produces '✓ TRACE · you calibrated N ft'. On EST-886440 with 58 ft trace at 25%→65% of image width, a back-face rectangle produces 979.6 ft². Iteration_55's stale-draft bug (refused draw leaves points) was NOT re-tested here because it requires attempting a draw with NO face selected first — main agent should still consider that MEDIUM fix (setDraft(null) inside the !faceId refusal branch); the current code at line 310 already calls setDraft(null) in the refusal path, so that bug may also already be fixed — worth a targeted regression next round.",
+  "rca of the issue": "Previous implementation used mousedown/mouseup as a drag gesture; a human single click has identical down/up coordinates so distance == 0 → 'too short' toast fired immediately. Fix: on scaleDraft.active, first mousedown sets p1 only; second mousedown sets p2 and evaluates distance; mouseup no longer measures. Verified with two discrete page.mouse.click calls at 25% and 65% of canvas width — feet input only appears after the second click and scale-ok reads '✓ TRACE · you calibrated 58 ft'."
+}

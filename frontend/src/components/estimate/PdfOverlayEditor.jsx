@@ -252,7 +252,22 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
     if (!imgRef.current) return;
     const [x, y] = normFromEvent(e);
     if (scaleDraft?.active) {
-      setScaleDraft({ active: true, dragging: true, p1: [x, y], p2: [x, y] });
+      // TWO-CLICK trace (matches the polygon tool): first click sets the
+      // start, second click sets the end and only THEN measures. Never
+      // evaluate length until two DISTINCT points exist.
+      if (!scaleDraft.p1) {
+        setScaleDraft({ active: true, p1: [x, y], p2: [x, y] });
+        return;
+      }
+      const p1 = scaleDraft.p1;
+      const p2 = [x, y];
+      const distPx = Math.hypot((p2[0] - p1[0]) * imgNat.w, (p2[1] - p1[1]) * imgNat.h);
+      if (distPx < 8) {
+        toast.error("Second point too close — click the other end of the dimension");
+        return; // keep p1; let the user click the far end
+      }
+      setScaleDraft(null);
+      setScaleInput({ p1, p2, ft: "" });
       return;
     }
     if (dragVertex) return; // vertex handle owns the drag
@@ -268,7 +283,7 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   const onMouseMove = (e) => {
     if (!imgRef.current) return;
     const [x, y] = normFromEvent(e);
-    if (scaleDraft?.dragging) { setScaleDraft({ ...scaleDraft, p2: [x, y] }); return; }
+    if (scaleDraft?.active && scaleDraft.p1) { setScaleDraft({ ...scaleDraft, p2: [x, y] }); return; }
     if (dragVertex) {
       setPolygons((cur) => cur.map((p) => p.id === dragVertex.polyId
         ? { ...p, vertices_pct: p.vertices_pct.map((v, i) => i === dragVertex.index ? [x, y] : v) }
@@ -279,14 +294,6 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   };
 
   const onMouseUp = async () => {
-    if (scaleDraft?.dragging) {
-      const { p1, p2 } = scaleDraft;
-      const distPx = Math.hypot((p2[0] - p1[0]) * imgNat.w, (p2[1] - p1[1]) * imgNat.h);
-      setScaleDraft(null);
-      if (distPx < 8) { toast.error("Calibration line too short — try again"); return; }
-      setScaleInput({ p1, p2, ft: "" });
-      return;
-    }
     if (dragVertex) {
       const poly = polygons.find((p) => p.id === dragVertex.polyId);
       setDragVertex(null);
@@ -547,7 +554,7 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                 <button type="button" onClick={() => setScaleDraft({ active: true })}
                   className={`flex-1 text-[10px] uppercase font-bold px-2 py-1.5 border flex items-center justify-center gap-1 ${scaleDraft?.active ? "bg-[var(--success)] text-white" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
                   data-testid="pdf-overlay-set-scale">
-                  <Ruler size={12} /> {scaleDraft?.active ? "Trace a length…" : "Trace scale"}
+                  <Ruler size={12} /> {scaleDraft?.active ? (scaleDraft?.p1 ? "Click the far end…" : "Click one end…") : "Trace scale"}
                 </button>
                 <button type="button" onClick={readPrintedScale} disabled={ocrBusy}
                   className="flex-1 text-[10px] uppercase font-bold px-2 py-1.5 border border-[var(--ai)] text-[var(--ai)] hover:bg-[var(--ai-soft)] flex items-center justify-center gap-1 disabled:opacity-50"
