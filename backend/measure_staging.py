@@ -20,6 +20,13 @@ _order_whole_units).
 import uuid
 
 GABLE_FACTOR = 0.70
+# RULING X (Howard sealed send-23): 0.70 is a TRADE CONVENTION (≈1.4× the
+# geometric ½·width·rise — it encodes an allowance), NOT an invented
+# constant. It stays for a DERIVED gable and must be LABELLED wherever it is
+# applied so a reader can tell an allowanced gable from a measured one. A
+# DRAWN/traced gable replaces it entirely (Law A) — that binding is a build,
+# see the send-23 report.
+GABLE_CONVENTION_LABEL = "0.70 gable convention (trade allowance, ≈1.4× geometric ½·width·rise)"
 
 
 def eaves_from_walls(walls: list, raw_eaves) -> float:
@@ -209,9 +216,37 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
         # DISCLOSING path is canonical). rise>0 with no derivable width is
         # named, not zeroed.
         g_width, g_width_ok, _g_subset, _g_missing = wall_width_for_pricing(w)
+        # RULING Y (Howard sealed send-23): gable width gates on WIDTH
+        # derivability, NOT height. A segment with a real horizontal width
+        # contributes to the gable even if its HEIGHT is dead — the gable
+        # above it physically exists, and shrinking the gable for a height
+        # reason would exclude a real width and improve the number by
+        # accident (tuning, forbidden). Instead: the gable and body each
+        # report which segments they span; where they DIFFER, BOTH go
+        # PARTIAL and the difference is NAMED. The gable stays as wide as
+        # its real widths — a high right gable STAYS high.
+        _segs = [s for s in (w.get("height_segments") or []) if isinstance(s, dict)]
+        _body_span = [str(s.get("label") or "segment") for s in _segs
+                      if float(s.get("width_ft") or 0) > 0
+                      and float(s.get("height_ft") or 0) > 0]
+        _gable_span = [str(s.get("label") or "segment") for s in _segs
+                       if float(s.get("width_ft") or 0) > 0]
         if rise > 0 and g_width_ok:
             wall_gable = GABLE_FACTOR * g_width * rise
             gable_sqft += wall_gable
+            if _segs and set(_gable_span) != set(_body_span):
+                _only_gable = [n for n in _gable_span if n not in _body_span]
+                faces_not_derivable.append({
+                    "label": w.get("label"), "surface": "gable_segment",
+                    "partial": True,
+                    "gable_spans": _gable_span, "body_spans": _body_span,
+                    "convention": GABLE_CONVENTION_LABEL,
+                    "reason": ("gable spans " + " + ".join(_gable_span)
+                               + "; body spans " + " + ".join(_body_span)
+                               + " — " + ", ".join(_only_gable)
+                               + " height not read (gable width gates on "
+                               "WIDTH not height — Ruling Y; gable NOT shrunk "
+                               "to match)")})
         elif rise > 0 and not g_width_ok:
             faces_not_derivable.append({
                 "label": w.get("label"), "surface": "gable",
@@ -222,7 +257,9 @@ def walk_walls(walls: list, gable_rise_fn=None) -> dict:
                        "eave_h": eave_h, "pct": pct,
                        "segments": segs_used,
                        "rise_read": rise_read, "rise_used": rise,
-                       "gable_sqft": wall_gable})
+                       "gable_sqft": wall_gable,
+                       "gable_convention": (GABLE_CONVENTION_LABEL
+                                            if wall_gable else None)})
     return {"siding_sqft": siding_sqft, "gable_sqft": gable_sqft,
             "dormer_sqft": dormer_sqft, "detail": detail,
             "faces_not_derivable": faces_not_derivable}
