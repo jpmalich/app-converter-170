@@ -1,1 +1,1 @@
-census pin GREEN — 4 baselined reads, 0 PENDING_CONVERSION (none)
+census pin GREEN — 8 baselined reads, 2 PENDING_CONVERSION (hover::_downspout_drop_ft::_ai_avg_wall_height_ft, hover::_gutter_corner_count::_ai_avg_wall_height_ft); 6 removal(s) logged (see baseline REMOVAL_LOG)

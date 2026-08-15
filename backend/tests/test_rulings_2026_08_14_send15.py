@@ -100,10 +100,15 @@ def test_ruling_H_all_five_siblings_wired_and_census_pinned():
     assert bd["per_profile_sqft"].get("lap", 0) == 0
     assert board_batten_batten_pieces_status(1000.0, 12, 0).status == "PARTIAL"
     baseline = (Path(__file__).parent / "_raw_wall_dim_baseline.txt").read_text()
-    pending = [ln for ln in baseline.splitlines()
-               if ln.strip() and not ln.strip().startswith("#")
-               and "PENDING_CONVERSION" in _class_above(baseline, ln)]
-    assert not pending, f"a reader is still PENDING_CONVERSION: {pending}"
+    # The three send-18 in-scan readers are CONVERTED — they appear only in
+    # the REMOVAL_LOG (commented), never as active PENDING_CONVERSION lines.
+    active = [ln.split("|")[0].strip() for ln in baseline.splitlines()
+              if ln.strip() and not ln.strip().startswith("#")
+              and "PENDING_CONVERSION" in _class_above(baseline, ln)]
+    for converted in ("lp_package::assemble_lp_package::_ai_avg_wall_height_ft",
+                      "lp_package::assemble_lp_package::avg_wall_height_ft",
+                      "profile_callouts::breakdown_walls_by_profile::width_ft"):
+        assert converted not in active, f"{converted} should be converted, not PENDING"
 
 
 def _class_above(text: str, line: str) -> str:

@@ -59,7 +59,8 @@ from pathlib import Path
 BACKEND = Path(__file__).resolve().parents[1]
 
 PRICED_MODULES = ["lp_package.py", "lp_smartside_formulas.py",
-                  "measure_staging.py", "profile_callouts.py"]
+                  "measure_staging.py", "profile_callouts.py",
+                  "routes/hover.py"]  # RULING W (send-19): hover.py assembles money
 
 # Raw reads INSIDE these functions are sanctioned — they ARE the
 # status-carrying accessors every other priced reader must route through.
@@ -81,7 +82,7 @@ def _scan(path: Path) -> set[str]:
 
     def _label(node, fname):
         for ch in ast.iter_child_nodes(node):
-            if isinstance(ch, ast.FunctionDef):
+            if isinstance(ch, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 for n in ast.walk(ch):
                     func_of[getattr(n, "lineno", -1)] = ch.name
                 _label(ch, ch.name)
@@ -134,6 +135,24 @@ def _load_baseline() -> dict[str, str]:
     return entries
 
 
+def _baseline_removal_count() -> int:
+    """RULING U (send-19): count the entries in the baseline's REMOVAL_LOG —
+    each is a removal that cited a reason (conversion / re-key merge / etc)."""
+    if not BASELINE_FILE.exists():
+        return 0
+    n, in_log = 0, False
+    for ln in BASELINE_FILE.read_text().splitlines():
+        s = ln.strip()
+        if s.startswith("# [") and "REMOVAL_LOG" in s:
+            in_log = True
+            continue
+        if s.startswith("# ["):
+            in_log = False
+        if in_log and s.startswith("#") and "::" in s:
+            n += 1
+    return n
+
+
 def test_no_new_raw_wall_dim_read_appears_in_a_priced_path():
     current = _all_offenders()
     baseline = _load_baseline()
@@ -151,6 +170,11 @@ def test_no_new_raw_wall_dim_read_appears_in_a_priced_path():
     n = len(current & set(baseline))
     summary = (f"census pin GREEN — {n} baselined reads, {len(pend)} "
                f"PENDING_CONVERSION ({', '.join(pend) or 'none'})")
+    # RULING U (send-19): every removal cites a reason; the pin surfaces the
+    # removal log so a quiet shrink can never pass unread.
+    n_removed = _baseline_removal_count()
+    if n_removed:
+        summary += f"; {n_removed} removal(s) logged (see baseline REMOVAL_LOG)"
     print("\n" + summary)
     (BACKEND / "../memory/census_pin_status.txt").resolve().write_text(summary + "\n")
     warnings.warn(summary, stacklevel=1)

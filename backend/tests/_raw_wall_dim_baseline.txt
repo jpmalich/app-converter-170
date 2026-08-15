@@ -1,5 +1,5 @@
-# RULING N/P/S BASELINE — raw wall-dimension reads in priced paths, keyed
-# module::function::symbol (line numbers DELIBERATELY excluded, send-18 P#2).
+# RULING N/P/S/U/V/W BASELINE — raw wall-dimension reads in priced paths,
+# keyed module::function::symbol (line numbers DELIBERATELY excluded, P#2).
 #
 # ============================================================================
 # THE RATCHET TURNS ONE WAY (send-18 P#1). Entries may be REMOVED, never
@@ -7,33 +7,51 @@
 # go green — that is the failure mode this file exists to stop. Route the
 # read through wall_width_for_pricing / wall_height_for_pricing instead.
 # ADDING an entry requires an explicit ruling in a send, not a passing test.
+# Every REMOVAL cites a reason in the REMOVAL_LOG below (Ruling U send-19).
 # ============================================================================
 #
 # Discriminator for the class is "does this read feed a PRICED quantity",
 # never "is it a wall dim" (send-18 S). Each entry carries a one-line reason.
 #
-# NOTED OUT-OF-SCAN FINDING (send-18) — the BATTEN reader (third
-# PENDING_CONVERSION Howard names) does not appear below: its height is the
-# human checklist scalar `_bb_wall_height_ft`, summed in
-# lp_package_routes._apply_flag_checklist and consumed in routes/hover.py
-# (_bb_batten_sticks), outside the four scanned modules; bb_batten_lf reads
-# it as a PARAMETER. Its silent zero is the `... or 0` on an unset checklist.
-# Converted at the bb_batten_lf boundary under Ruling Q; awaiting a ruling on
-# whether hover.py joins PRICED_MODULES.
+# SCOPE: lp_package, lp_smartside_formulas, measure_staging, profile_callouts,
+# and routes/hover.py (added Ruling W send-19 — hover.py assembles money).
+#
+# BATTEN, Ruling W answer (send-19): the batten height `_bb_wall_height_ft`
+# is set ONLY from a CLOSED `batten_wall_heights` checklist (taped human
+# values, summed in lp_package_routes._apply_flag_checklist and hover.py) —
+# there is NO silent fallback to an AI dim, a default, or a prior value. It
+# is AUDITED_SAFE ("human-confirmed, no fallback"). It is not a scanned
+# WALL_DIM_SOURCES symbol; the honesty of its unset case (the +1-run term)
+# is enforced at the bb_batten_lf boundary (board_batten_batten_pieces_status,
+# PARTIAL), not here.
 
 # [PENDING_CONVERSION]
-# CONVERTED under Ruling Q/R (send-18) — all in-scan money-bearing readers converted:
-#   lp_package::assemble_lp_package::_ai_avg_wall_height_ft  — REMOVED, corner heights derive via _corner_height_ft (verified touching walls, NOT DERIVABLE when dead)
-#   lp_package::assemble_lp_package::avg_wall_height_ft      — REMOVED, no-C3 fallback uses a 1-stick/corner floor, no average
-#   profile_callouts::breakdown_walls_by_profile::width_ft   — REMOVED, base-course/gable width now routes through wall_width_for_pricing (killed width ⇒ NOT DERIVABLE)
-# The BATTEN (third reader Howard names) is the NOTED OUT-OF-SCAN finding in
-# the header — converted at the bb_batten_lf boundary (Ruling Q), tracked
-# there because it is not visible to this 4-module scan.
+# RULING V (send-19): both hover.py `_ai_avg_wall_height_ft` reads REACH the
+# material list, so they are catalogued here as owed conversions (like the
+# corner/OSC reader was its own pass). Full Q-conversion (routing height as a
+# status-carrying Quantity through the gutter/downspout/mitre line builders)
+# is the next focused pass — NOT half-done, to avoid a new silent zero.
+hover::_downspout_drop_ft::_ai_avg_wall_height_ft | downspout DROP length → _downspout_lf coil (material, sold by the stick). Silent substitutes to kill on conversion: `_ai_story_count or 1` (defaults missing story to 1) and the hardcoded 9' single-story baseline
+hover::_gutter_corner_count::_ai_avg_wall_height_ft | divides corner LF by avg wall height to back out corner COUNT → _mitre_count (material). Silent substitute to kill: the hardcoded h=9.0 fallback
 
 # [OUT_OF_SCOPE_N_BUT_PRICED]
 lp_package::assemble_lp_package::width_ft | dormer fascia LF (d.get("width_ft")) — PRICED (feeds the 440 8" fascia line) but a dormer dimension, not a wall dim; candidate for a follow-on ruling
 measure_staging::walk_walls::width_ft | walk_walls raw width — feeds the gable PITCH-RISE input and provenance detail; the gable AREA itself already routes through wall_width_for_pricing
+hover::_porch_geom::width_ft | porch dimension from `_porch_dims[].width_ft` (human-entered Job-Info) — PRICED (feeds porch-J / ceiling channel) but a porch dim, not a wall dim
+hover::rebuild_lp_tab_lines::width_ft | porch dimension from est.porch_ceilings[].width_ft (human-entered) — PRICED (porch ceiling sqft / J) but a porch dim, not a wall dim
 
 # [AUDITED_SAFE]
 measure_staging::walk_walls::height_ft | walk_walls eave_h — provenance detail only; wall body area derives via wall_body_gross_sqft, gable via gable_triangle_height_ft
 profile_callouts::breakdown_walls_by_profile::height_ft | breakdown eave_h / raw_h — disclosure + provenance only; body area via wall_body_gross_sqft, gable via gable_triangle_height_ft
+
+# [REMOVAL_LOG]
+# RULING U (send-19): the baseline went 10 line-numbered reads → 4 after the
+# send-18 landing. All six removals, itemised — three re-key merges (the
+# file-plus-function-plus-symbol key naturally collapses duplicate line entries at
+# one site) and three Ruling-Q conversions.
+#   measure_staging::walk_walls::width_ft @L221            — RE-KEY MERGE into the L169 walk_walls::width_ft entry (same file/function/symbol)
+#   profile_callouts::breakdown_walls_by_profile::width_ft @L246  — RE-KEY MERGE into the L223 entry (same site)
+#   profile_callouts::breakdown_walls_by_profile::height_ft @L247 — RE-KEY MERGE into the L224 entry (same site)
+#   lp_package::assemble_lp_package::_ai_avg_wall_height_ft @L361 — RULING Q CONVERSION: corner/OSC average retired; _corner_height_ft derives from verified touching walls (NOT DERIVABLE when dead)
+#   lp_package::assemble_lp_package::avg_wall_height_ft @L432     — RULING Q CONVERSION: no-C3 corner-walk fallback now a 1-stick/corner floor, no average
+#   profile_callouts::breakdown_walls_by_profile::width_ft @L223  — RULING Q CONVERSION: base-course/gable width routes through wall_width_for_pricing (killed width ⇒ NOT DERIVABLE)

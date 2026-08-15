@@ -47,13 +47,36 @@ def test_corner_walls_agree_is_derived():
     assert q.status == DERIVED and q.value == 9.0
 
 
-def test_corner_walls_disagree_is_partial_worst_case_max_naming_both():
-    # Ruling R: disagree → MAX (never min, never average), PARTIAL, names
-    # both walls and both heights. 18' two-story meeting a 9' wing → 18'.
+def test_corner_walls_disagree_diff_count_is_derived_max_naming_both():
+    # Ruling T (send-19): two verified walls that DISAGREE are a complete
+    # derivation, not a subset — status DERIVED at MAX (never PARTIAL,
+    # never averaged). 18' vs 9' → 18'. The stick-count decision is made
+    # at the line (see the takeoff test), not here.
     q = _corner_height_ft({"type": "outside", "walls": ["front", "wing"]},
                           {"front": 18.0, "wing": 9.0})
-    assert q.status == PARTIAL and q.value == 18.0
+    assert q.status == DERIVED and q.value == 18.0
     assert "front=18" in q.reason and "wing=9" in q.reason
+
+
+def test_corner_disagreement_same_stick_count_no_line_annotation():
+    # Ruling T: 8.5 vs 8.3 → same stick count → DERIVED, disagreement on
+    # the read-back only, NO line annotation, NO gate effect.
+    osc = osc_from_corner_locations(
+        [{"type": "outside", "walls": ["front", "left"], "tier": "confirmed"}],
+        {"front": 8.5, "left": 8.3})
+    assert osc["status"] == DERIVED and osc["blocks_gate"] is False
+    assert "CHANGED the count" not in osc["note"]
+    assert osc.get("readback") and "disagree" in osc["readback"]
+
+
+def test_corner_disagreement_that_changes_count_annotates_the_line():
+    # Ruling T: 18' vs 9' over a 16' OSC stick → 1 vs 2 sticks → the
+    # disagreement CHANGED the count → annotated ON the line, both counts.
+    osc = osc_from_corner_locations(
+        [{"type": "outside", "walls": ["front", "wing"], "tier": "confirmed"}],
+        {"front": 18.0, "wing": 9.0})
+    assert osc["status"] == DERIVED and osc["qty"] == 2
+    assert "CHANGED the count" in osc["note"] and "front=18" in osc["note"]
 
 
 # ── OSC / ISC line refusal + gate block ──

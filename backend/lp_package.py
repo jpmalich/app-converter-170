@@ -15,8 +15,7 @@ Deterministic engine per Howard's rulings (2026-07-11):
 import math
 import re
 
-from quantity import (DERIVED, NOT_DERIVABLE, PARTIAL, derived, not_derivable,
-                      partial, propagate)
+from quantity import DERIVED, NOT_DERIVABLE, derived, not_derivable
 from lp_conventions import (
     FASCIA_RAKE_ITEM, ISC_TRIM_ITEM, PENDING_CONFIRMATIONS, TRIM_STICK_LEN_FT,
     WRAP_TRIM_ITEM, fascia_rake_takeoff, line_math, lp_composition_bugs,
@@ -88,37 +87,20 @@ def _lp_product_table() -> dict:
             "trim": [i for i in LP_TRIM_SKUS if "Series Trim" in i]}
 
 
-def _corner_height_ft(loc: dict, wall_heights: dict, avg_h=None):
-    """RULING R (Howard sealed 2026-08-14 send-18): a corner's height is
-    DERIVED only from VERIFIED touching-wall heights, and returns a
-    `Quantity` so a killed height can never be priced as a silent
-    substitute. The average (`_ai_avg_wall_height_ft`) is RETIRED (Ruling
-    Q) — `avg_h` is accepted for positional back-compat and NEVER read.
-
-      - user/blueprint override present            → DERIVED at the override
-      - all touching walls verified, heights AGREE  → DERIVED
-      - all verified but heights DISAGREE           → MAX, PARTIAL, naming
-        both walls and both heights (worst-case, per the P3 gable
-        precedent; min() was a lower bound wearing a real read's costume —
-        a silent under-count — and is gone)
-      - ANY touching wall height-dead, or no wall   → NOT DERIVABLE, naming
-        the dead wall (drop the stick, block the gate, never average)
-
-    OPEN against Ruling R (later send, NOT built here): where a tall wall
-    meets a short wing, those may be two physically separate corners rather
-    than one corner needing a height — split vs pick-a-height is undecided.
-    """
+def _corner_bounds(loc: dict, wall_heights: dict):
+    """RULING T (Howard sealed 2026-08-14 send-19) foundation. Returns
+    (status, min_h, max_h, detail, dead). The min/max spread lets the
+    caller ask Ruling T's real question — does the disagreement CHANGE THE
+    STICK COUNT — instead of flagging every decimal mismatch."""
     try:
         ov = float(loc.get("height_override_ft") or 0)
     except (TypeError, ValueError):
         ov = 0.0
     if ov > 0:
-        return derived(ov, "user/blueprint-confirmed appendage height")
+        return ("DERIVED", ov, ov, "override", [])
     walls = [w for w in (loc.get("walls") or [])]
     if not walls:
-        return not_derivable(
-            "corner has no touching wall recorded — height not derivable",
-            "corner")
+        return ("NOT_DERIVABLE", None, None, "no touching wall", ["corner"])
     pairs, dead = [], []
     for w in walls:
         try:
@@ -130,17 +112,42 @@ def _corner_height_ft(loc: dict, wall_heights: dict, avg_h=None):
         else:
             dead.append(str(w))
     if dead:
+        return ("NOT_DERIVABLE", None, None, "dead wall", dead)
+    heights = [h for _w, h in pairs]
+    detail = ", ".join(f"{w}={h:g}'" for w, h in pairs)
+    return ("DERIVED", min(heights), max(heights), detail, [])
+
+
+def _corner_height_ft(loc: dict, wall_heights: dict, avg_h=None):
+    """RULING R as CORRECTED by RULING T (Howard, 2026-08-14 send-19): a
+    corner's height is DERIVED only from VERIFIED touching-wall heights,
+    returned as a status-carrying `Quantity`. The average is retired
+    (Ruling Q); `avg_h` is accepted for positional back-compat, NEVER read.
+
+      - override / all walls agree              → DERIVED
+      - all verified but DISAGREE               → DERIVED at MAX (worst case,
+        P3 gable precedent), disagreement recorded in the reason naming both
+        walls+heights. NOT PARTIAL — PARTIAL means a disclosed SUBSET, and
+        two full reads that disagree exclude nothing (send-18's PARTIAL was
+        my error, corrected here). Whether the disagreement earns a LINE
+        annotation or only a read-back note is decided at the takeoff, by
+        whether it changes the stick count.
+      - ANY touching wall dead / no wall        → NOT DERIVABLE, naming the
+        dead wall (drop the stick, block the gate, never average).
+
+    OPEN against Ruling R (later send): a tall wall meeting a short wing may
+    be two separate corners rather than one — split vs pick-a-height unbuilt.
+    """
+    status, lo, hi, detail, dead = _corner_bounds(loc, wall_heights)
+    if status == "NOT_DERIVABLE":
         return not_derivable(
             "corner touches a wall with no verified height — height not "
-            "derivable (Ruling R: never averaged)", ", ".join(dead))
-    heights = [h for _w, h in pairs]
-    if len({round(h, 3) for h in heights}) == 1:
-        return derived(heights[0], "touching walls agree")
-    hi = max(heights)
-    detail = ", ".join(f"{w}={h:g}'" for w, h in pairs)
-    return partial(hi, [detail],
-                   f"touching-wall heights disagree ({detail}) — worst-case "
-                   f"{hi:g}', flagged not averaged (Ruling R)")
+            "derivable (Ruling R/T: never averaged)", ", ".join(dead))
+    if lo == hi:
+        return derived(hi, "user/blueprint-confirmed appendage height"
+                       if detail == "override" else "touching walls agree")
+    return derived(hi, f"touching-wall heights disagree ({detail}) — worst-"
+                   f"case {hi:g}', recorded (Ruling T: max, never averaged)")
 
 
 APPENDAGE_MARKERS = ("chase", "chimney", "bump", "cantilever", "appendage")
@@ -186,27 +193,31 @@ def corner_sticks_for_length(heights: list, stick_len_ft: float) -> int:
 
 def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
     features = _corner_features(locs)
-    feat_qtys = [[_corner_height_ft(l, wall_heights) for l in f] for f in features]
-    all_q = [q for fq in feat_qtys for q in fq]
-    # Stick math runs ONLY over DERIVABLE corner heights — a NOT DERIVABLE
-    # corner contributes no silent stick (Ruling R). Worst-status wins for
-    # the takeoff as a whole (Ruling J propagation).
-    feature_heights = [[q.value for q in fq if q.value is not None]
-                       for fq in feat_qtys]
-    heights = [h for fh in feature_heights for h in fh]
-    dead_walls = sorted({d for q in all_q if q.status == NOT_DERIVABLE
-                         for d in (q.excluded or ()) if d})
-    disagreements = [q.reason for q in all_q if q.status == PARTIAL]
-    status = propagate(all_q).status if all_q else NOT_DERIVABLE
+    bounds = [[_corner_bounds(l, wall_heights) for l in f] for f in features]
+    all_b = [b for fb in bounds for b in fb]
+    # RULING T: sticks at MAX ship; sticks at MIN answer "does the
+    # disagreement change the count?". Only DERIVED corners contribute —
+    # a NOT DERIVABLE corner adds no silent stick.
+    feat_hi = [[hi for (st, lo, hi, d, dd) in fb if st == "DERIVED"] for fb in bounds]
+    feat_lo = [[lo for (st, lo, hi, d, dd) in fb if st == "DERIVED"] for fb in bounds]
+    heights = [h for fh in feat_hi for h in fh]
+    sticks_hi = sum(corner_sticks_for_length(fh, stick_len) for fh in feat_hi)
+    sticks_lo = sum(corner_sticks_for_length(fh, stick_len) for fh in feat_lo)
+    dead_walls = sorted({d for (st, lo, hi, det, dd) in all_b
+                         if st == "NOT_DERIVABLE" for d in dd if d})
+    disagreements = [det for (st, lo, hi, det, dd) in all_b
+                     if st == "DERIVED" and lo != hi]
+    status = NOT_DERIVABLE if dead_walls else DERIVED
     amber = sum(1 for l in locs if l.get("tier") != "confirmed")
     elevated = sum(1 for l in locs if l.get("elevated"))
     user_measured = sum(1 for l in locs if l.get("height_override_ft"))
     return {
         "heights": [round(h, 2) for h in heights],
-        "feature_heights": [[round(h, 2) for h in fh] for fh in feature_heights],
+        "feature_heights": [[round(h, 2) for h in fh] for fh in feat_hi],
         "feature_count": len(features),
-        "sticks": sum(corner_sticks_for_length(fh, stick_len)
-                      for fh in feature_heights),
+        "sticks": sticks_hi,
+        "sticks_min": sticks_lo,
+        "count_changed": sticks_lo != sticks_hi,
         "total_lf": round(sum(heights), 1),
         "amber": amber,
         "elevated": elevated,
@@ -216,6 +227,21 @@ def _corner_takeoff(locs, wall_heights: dict, avg_height_ft, stick_len: float):
         "dead_walls": dead_walls,
         "disagreements": disagreements,
     }
+
+
+def _corner_disagreement_bits(t):
+    """RULING T (send-19): a disagreement that CHANGES the stick count
+    annotates the LINE (a decision was made, and what it cost); one that
+    does not is recorded for the READ-BACK card only — no line annotation,
+    no gate effect."""
+    if t["disagreements"] and t["count_changed"]:
+        return ("corner height disagreement CHANGED the count "
+                f"(sticks {t['sticks_min']}→{t['sticks']}, worst-case taken, "
+                "never averaged): " + "; ".join(t["disagreements"])), None
+    if t["disagreements"]:
+        return None, ("corner heights disagree, same stick count — recorded, "
+                      "no line/gate effect (Ruling T): " + "; ".join(t["disagreements"]))
+    return None, None
 
 
 def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft=None,
@@ -243,9 +269,9 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     if t["over_stick"]:
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
         note_bits.append(OSC_PLACEMENT_RULE)
-    if t["status"] == PARTIAL:
-        note_bits.append("corner height(s) from DISAGREEING walls — worst-case, "
-                         "PARTIAL (never averaged): " + "; ".join(t["disagreements"]))
+    line_note, readback = _corner_disagreement_bits(t)
+    if line_note:
+        note_bits.append(line_note)
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     if t["user_measured"]:
@@ -257,7 +283,7 @@ def osc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
             "note": "; ".join(note_bits), "osc_count": len(oscs),
             "amber": t["amber"], "elevated": t["elevated"], "total_lf": t["total_lf"],
             "heights": t["heights"], "feature_heights": t["feature_heights"],
-            "flags": flags}
+            "readback": readback, "flags": flags}
 
 
 def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_ft=None,
@@ -280,15 +306,15 @@ def isc_from_corner_locations(corner_locations, wall_heights: dict, avg_height_f
     if t["over_stick"]:
         note_bits.append("run(s) over stick length — splice-and-round-up, tails pooled (ruled)")
         note_bits.append(OSC_PLACEMENT_RULE)
-    if t["status"] == PARTIAL:
-        note_bits.append("corner height(s) from DISAGREEING walls — worst-case, "
-                         "PARTIAL (never averaged): " + "; ".join(t["disagreements"]))
+    line_note, readback = _corner_disagreement_bits(t)
+    if line_note:
+        note_bits.append(line_note)
     if t["amber"]:
         note_bits.append(f"includes {t['amber']} unconfirmed (amber) location(s) — field verify")
     return {"qty": t["sticks"], "status": t["status"], "blocks_gate": False,
             "note": "; ".join(note_bits), "isc_count": len(iscs),
             "amber": t["amber"], "total_lf": t["total_lf"], "heights": t["heights"],
-            "feature_heights": t["feature_heights"], "flags": flags}
+            "feature_heights": t["feature_heights"], "readback": readback, "flags": flags}
 
 
 def _conserve_per_profile(m: dict) -> dict:
