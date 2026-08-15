@@ -4434,6 +4434,20 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         measurements["_per_elevation_breakdown"] = []
         measurements["_per_profile_sqft"] = {}
         measurements["_faces_not_derivable"] = []
+    # RULINGS CC + DD (send-24): garage-side contradiction detector and
+    # footprint closure — surfaced report fields. They refuse/flag; the
+    # live NOT-DERIVABLE enforcement off DD is the follow-on wiring step.
+    try:
+        from footprint_checks import garage_side_verdict, footprint_closure
+        _fp_src = {"walls": raw.get("walls") or [],
+                   "doors": raw.get("doors") or [],
+                   "roof_planes": raw.get("roof_planes") or [],
+                   "elevation_labels": raw.get("sheets_identified") or []}
+        measurements["_garage_side_verdict"] = garage_side_verdict(_fp_src)
+        measurements["_footprint_closure"] = footprint_closure(_fp_src)
+    except Exception:
+        measurements["_garage_side_verdict"] = None
+        measurements["_footprint_closure"] = None
     return measurements
 
 
