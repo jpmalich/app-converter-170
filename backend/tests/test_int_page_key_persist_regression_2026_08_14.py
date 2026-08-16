@@ -79,7 +79,9 @@ def test_the_bug_is_not_eleven_specific_any_page_number_is_persisted_as_a_string
     early page must persist as a string too."""
     raw = _locate_with_pages(2, 2)
     cov = raw.get("_ocr_page_coverage_chars")
-    assert cov and set(cov) == {"2"}, f"expected string key '2', got {cov}"
+    # SEND-30 (2026-08-16): OCR reads EVERY page now, so coverage carries
+    # both pages — the pin's point is unchanged: keys are STRINGS.
+    assert cov and set(cov) == {"1", "2"}, f"expected string keys, got {cov}"
     bson.encode({"result": {"raw_ai": raw}})
 
 
