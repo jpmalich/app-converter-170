@@ -462,3 +462,94 @@ p5 '0-00' x3; p7 '0-00' x2; p8 '0-00' x1.
 RULING LL: NOT BUILT — owed; no sum-closure report available.
 Howard compares his sealed depths; no match or mismatch is claimed.
 Full machine report: /app/memory/send34_letrick_dryrun_report.json
+
+================================================================
+SEND-36 OUTCOMES (2026-08-16, appended — prediction file unrevised)
+BUILT: Ruling MM (position merge is the FIRST operation — parameter-
+free same-location test, most-complete reading survives, conflicting
+complete readings marked and barred from dimension paths, chain mates
+established after merge), Ruling NN (zero total length refused; 0-6
+stays real), Ruling LL instrument (aligned-chain sum closure on merged
+strings, exact, residuals reported). 12 new pinned tests; suite GREEN
+2529. NO BIND anywhere.
+
+ITEM 1 — THIRD CONFIRMATION: Letrick p5 rails read 54'-0" TOP and
+54'-0" BOTTOM — the rail path, independent of the depth path, matches
+Howard's sealed 54'-0". p7 top rail 54'-0*. NAMED RESIDUAL (JJ's
+family, third appearance): p7 bottom rail resolved to a size-pair
+note ("2'-11%2\"× 4'-11/\"") because OCR rendered its second foot
+mark as PRIME (U+2032), outside the recognized foot-mark glyph set,
+so it counted as ONE token. Fix would be glyph normalization (add
+prime marks to the foot-mark class so JJ counts two tokens) — a
+transcription-noise item, not a rule change; awaiting the ruling.
+
+OWED x-POSITIONS: p5 LEFT x=19.41 vs RIGHT x=90.17; p7 LEFT x=25.48
+vs RIGHT x=89.82 — four DISTINCT physical strings; no winner was the
+same string selected twice.
+
+OWED GARAGE CHECK: EST-655664 material list and run lines contain NO
+garage-derived items. Note-text consumers in code: (1) the garage-
+side door signal reads model type_hint text (already ruled
+unreliable, CC); (2) a provenance validator for printed notes
+(validates, never quantifies); all quantity consumers key on the
+structured garage_door_count field, not note text.
+
+MM CENSUS: readings -> strings roughly 2.2-3.1x reduction everywhere
+(Boni p6 465->272; Letrick p7 914->408). Conflicted strings: 0-3 per
+page, all barred from dimension paths.
+AXIS CUTS RE-VERIFIED ON MERGED DATA (as ordered): Boni p6 merged =
+72 dim strings, verticals 0.0407-0.1143, horizontals 0.212-0.4328,
+ZERO indeterminate. GAP HOLDS but is THINNER than triplicated data
+suggested: vertical max 0.1143 sits 0.006 under the 0.12 cut. Stated,
+not moved.
+
+LL CLOSURE REPORT (exact, merged): ~100 aligned chains across both
+houses' plan pages — 1 CLOSES, rest FAIL. The failures are dominated
+by (a) chain totals printing on OUTER RAILS, not on the segment line,
+and (b) OCR fraction loss (residuals of ±1in on 1'-11½ vs 2'-0
+pairs). RESULT, NOT FAILURE: LL as "aligned line clusters must sum"
+does not match how chains print. The closure that matches the sheets
+is DD's (segments vs the side total across the footprint), which
+exists. LL-as-built stays a reporting instrument; NAMED for a ruling
+on its definition before it gates anything.
+
+BONI p8/p9 PROBE (precondition set aside, as owed): p8 L 30'-0*
+(x=14.06) / R 30'-0" (x=58.17); p9 L 30'-0° / R 30'-0*. Rails on p8:
+33'-11% top AND bottom — the INTERIOR width as both rails. Joist
+sheets dimension interior spans; their confident wrong answers are
+exactly what the room-label precondition excludes.
+
+ITEM 2 — CHIMNEY: 2'-7" found on Letrick p7 (x=68, y=16.6, axis
+INDETERMINATE) and p8 (x=41-51, y=13, VERTICAL, rot passes) — all at
+the TOP of the sheet, consistent with the back-wall chimney. NEVER
+CHOSEN as a depth (mid-sheet x → smallest distance from mid; the
+outermost rule kept it out). NAMED: nothing in the rule KNOWS it is a
+chimney — it entered vertical-exterior candidacy on p8 and lost on
+position. A projection-vs-face concept does not exist yet.
+
+ITEM 3 — IMMATERIAL ATTRIBUTION (report only, not built):
+  - Pair identification WITHOUT attribution: the two per-side winners
+    of the positional rule on an established plan page are the pair
+    BY CONSTRUCTION (the side split is geometric — envelope mid-line —
+    not semantic). Equality tested on parsed feet+inches after merge.
+  - Three or more candidates: the rule still returns ONE winner per
+    side (outermost); extras are contenders. A side with NO candidate
+    means no pair — refusal stands. Unequal winners -> attribution
+    MATERIAL -> anchor required or face refuses.
+  - Equal but footprint does not close: equality makes attribution
+    immaterial, it cannot make an unclosable footprint close — EE
+    still blocks; the ruling must never override closure.
+  - LETRICK WOULD DERIVE FULLY under this ruling with no anchor:
+    LEFT 30'-0" = RIGHT 30'-0" (equal pair, attribution immaterial),
+    FRONT 54'-0", BACK 54'-0" from the rails. Four faces named.
+    UNVALIDATED as a ruling until Howard adopts it; nothing bound.
+
+DRY RUNS RE-RUN ON MERGED SUBSTRATE (both houses):
+  Letrick p8 LEFT now returns 30'-0" — THE CONFIRMED ERROR IS DEAD,
+  killed structurally at the merge, not by a value patch. All '0-00'
+  HH admissions gone. p5/p7 unchanged and correct. Boni unchanged
+  where correct: p4 L 30-2 (the 0.08 photo finish vs 5'10° REMAINS,
+  still named, still unpatched), R 33-0*; p6/p7 unchanged. Letrick p1
+  RIGHT changed 9-1%* -> 19'-11: the send-34 p1 photo finish was
+  itself a same-string artifact that merge resolved (elevation stays
+  excluded by precondition regardless).

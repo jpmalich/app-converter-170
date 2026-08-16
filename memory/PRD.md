@@ -7513,3 +7513,24 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   record vs EST-653665 in send (name matches exactly).
 - AWAITING HOWARD: sealed-depth comparison; rulings on feet=0 bare forms and
   same-location dedup; then LL, zone binding, Ruling V.
+
+## 2026-08-16 — SEND-36 (MM + NN + LL built; owed reports delivered; dry runs re-run on merged substrate)
+- MM: merge_positions() is now the first operation inside every geometry
+  entry point; conflicting complete readings barred. NN: zero total length
+  refused in HH. LL: chain_sum_closure() instrument (exact, residuals
+  reported). 12 tests; suite GREEN 2529.
+- Third confirmation: Letrick p5 rails = 54'-0" top+bottom. x-positions
+  distinct (no double-selection). No garage items on Letrick estimate.
+- Axis cuts re-verified on merged data: gap holds, thinner (v-max 0.1143 vs
+  0.12 cut). LL-as-aligned-clusters fails ~99% — definition mismatch NAMED
+  (totals print on rails; DD is the matching closure); awaiting ruling.
+- Chimney 2'-7" found top-of-sheet, never chosen; projection-vs-face concept
+  absent — NAMED. Immaterial-attribution report delivered: Letrick would
+  derive fully (30/30/54/54) with no anchor — not built, awaiting adoption.
+- Letrick p8 LEFT confirmed error DEAD via merge. Boni p4 0.08 photo finish
+  remains named. NAMED RESIDUAL: PRIME-glyph foot mark lets a size pair
+  count one token (p7 Letrick bottom rail).
+- Files: ocr_geometry.py (MM/NN/LL), tests/test_rulings_2026_08_16_send36.py,
+  scripts/send36_report.py, /app/memory/send36_report.json.
+- AWAITING: rulings on LL definition, PRIME glyph, immaterial attribution
+  adoption, projection concept; then zone binding (critical path), Ruling V.
