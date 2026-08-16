@@ -7429,3 +7429,19 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - **RULING AA report — YES, per-string bounding boxes ARE available.** `_ocr_runs()` (ai_blueprint L1325) returns `[(norm, raw, (x0,y0,x1,y1))]` per RapidOCR run, and `_ocr_match_near_feature` already does radius/anchor position matching. The boxes are computed then discarded; only `_ocr_page_coverage_chars` (per-page char count) persists. So the anchor substrate exists — the AA build is "persist what's already computed with page+position." Not blocked. AA build (persist), face-disambiguation proper, per-surface zone binding, int-key guard remain queued in order.
 - Schema-consumer pin kept green (sourced elevation labels from the real `sheets_identified` key, not an invented `elevation_labels`).
 - **Suite: 2464 passed / 9 skipped / 0 failed**, no fixture drift. Ruling V stays PENDING_CONVERSION; split-corner/E/I parked. EST-886440 untouched, Integral-J ON, purity pin holds — nothing tunes toward 712/725 or any zone figure.
+
+## 2026-08-16 — SEND-29 (report only, no build)
+- CHECK-FIRST CONFIRMED: persisted OCR is upright-only via 3 stacked filters
+  (page filter: only quote-carrying pages OCR'd — foundation plan p4 never read;
+  persistence filter: only upright runs persisted, rotated discarded;
+  trigger filter: rotated passes only run on quote-miss pages).
+- Item 1: axis classes reported for p6; axis filter alone kills both wrong
+  anchor candidates (33'-5½", 33'-11½" both HORIZONTAL).
+- Item 2: NO footprint outline / interior-exterior test exists anywhere today.
+- Item 3: positional rule on persisted data returns 14'-2" (wrong) — 33'-0"
+  never captured. Rule sound, substrate missing.
+- Item 4: 30'-2" ABSENT from OCR entirely (no misread neighbour either).
+- Outcomes appended to /app/memory/ruling_ff_anchor_design_2026-08-14_send25.md.
+- Anchor build STAYS BLOCKED. Implied fix order (awaiting Howard's ruling):
+  persist rotated runs w/ axis tag → OCR all plan/elevation sheets →
+  axis filter → rail-envelope interior/exterior → re-probe rule → anchor.

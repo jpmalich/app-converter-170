@@ -208,3 +208,59 @@ EE ON THIS RUN (the SEND-27 finding): RIGHT refused via footprint_closure
 not read — right cannot be closed"); LEFT is a genuine width-not-read (no
 width at all — NOT an EE refusal); BACK segment height not read. EE fired
 correctly in the backend; the rendered surface was the defect (fixed).
+
+================================================================
+SEND-29 OUTCOMES (2026-08-16, appended — prediction file unrevised)
+Run probed: run_id c54633996e7a49e48432cf66a61efaf7 (latest done,
+est 65bcb89d), 11 pages, persisted OCR pages {1,2,6,7,9,11}.
+
+CHECK-FIRST — UPRIGHT-ONLY FILTER: CONFIRMED, three layers deep
+(routes/ai_blueprint.py):
+  L1 PAGE FILTER (~line 1802-1813): OCR runs ONLY on pages carrying
+     an inexact model quote ("wanted"). Pages 3,4,5,8,10 never read.
+     Page 4 is the FOUNDATION PLAN — never OCR'd at all.
+  L2 PERSISTENCE FILTER (line 1852-1863): _ocr_text_by_page keeps
+     ONLY the upright pass runs. Rotated (norm,raw,bbox) discarded
+     after locate use — never persisted.
+  L3 TRIGGER FILTER (line 1951-1953): rotated passes run only when
+     the upright pass left quote-misses on that page. This run:
+     pages 1 and 2 only.
+CONSEQUENCE: every rotated (depth) dimension is systematically
+absent from the persisted OCR unless the upright engine happens to
+read the vertical glyph stack (it did for 14'-2", 3'-10", title
+block; it did NOT for 33'-0" or 30'-2").
+
+ITEM 1 — AXIS CLASS (p6, ratio w/h; ≥1.5 H, ≤0.667 V, else IND):
+  21 dimension-like runs → 7 HORIZONTAL, 4 VERTICAL, 10 INDETERMINATE.
+  Key strings: 33-11½ (45.87,20.01,1.92x0.93) HORIZONTAL;
+  33-5½ (45.77,68.68,1.71x1.0) HORIZONTAL; 58-0 top (55.54,18.15,
+  1.31x0.93) INDETERMINATE(1.41); 58-0 bottom (55.49,70.15,1.46x1.2)
+  INDETERMINATE(1.22). VERTICAL survivors: 3'-10 (54.28), 3'-1
+  (45.82), 3'-0 (59.53), 14'-2 (61.54).
+  AXIS FILTER ALONE KILLS BOTH WRONG ANCHOR CANDIDATES (both class
+  HORIZONTAL). Short strings at this DPI ride near ratio 1 —
+  INDETERMINATE is real and populated.
+
+ITEM 2 — INTERIOR/EXTERIOR: NO footprint outline is established
+anywhere in the pipeline today. footprint_checks.py (DD/EE) is
+arithmetic-only — no geometry, no outline, no inside/outside test
+exists. When it cannot be established the answer must be
+INDETERMINATE, never default-to-exterior. (33-11½ sits at y=20.01
+between the two 58-0 rails at y=18.15 and y=70.15 — an outline
+test would class it INTERIOR; no such test runs.)
+
+ITEM 3 — POSITIONAL RULE APPLIED ON p6: garage label '3 CAR GARAGE'
+at (66.18,44.02) → right half. Outermost VERTICAL dim on that side
+in the persisted store: 14'-2" at x=61.54 — THE WRONG ANSWER.
+Nearly returned: 3'-0" at x=59.53. It cannot return 33'-0" because
+33'-0" WAS NEVER CAPTURED (L2/L3 filters). The rule is sound; the
+substrate is missing its target.
+
+ITEM 4 — 30'-2": ABSENT from the persisted OCR on every persisted
+page; no one-edit misread neighbour exists either. Worse: the
+FOUNDATION PLAN (p4) — one of the two sheets that records it — was
+NEVER OCR'd (L1 page filter). The anchor cannot bind what was never
+captured. Root causes ranked: L1 (foundation plan unread) + L2/L3
+(rotated runs never persisted) ahead of resolution.
+
+ANCHOR: STAYS BLOCKED. No build performed in SEND-29.
