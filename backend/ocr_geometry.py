@@ -88,9 +88,110 @@ def parse_bare_form(raw):
 
 def is_rail_candidate(raw) -> bool:
     """RULING II: a rail candidate is dimension-like AND carries no
-    alphabetic characters beyond the foot and inch marks."""
+    alphabetic characters beyond the foot and inch marks.
+    RULING JJ (SEND-32): AND carries EXACTLY ONE dimension token — a
+    size pair (2-11½ × 3-11½) is an annotation, not a chain dimension.
+    Same shape as II: one structural property, no catalog of note
+    forms or glyphs."""
     s = str(raw or "")
-    return is_dimension_like(s) and not _ALPHA_RE.search(s)
+    return (is_dimension_like(s) and not _ALPHA_RE.search(s)
+            and dimension_token_count(s) == 1)
+
+
+def dimension_token_count(raw) -> int:
+    return len(_DIM_RE.findall(str(raw or "")))
+
+
+# RULING KK (SEND-32, Howard ruled): the p4/p6 2" difference is a
+# REFERENCE-PLANE difference, not a disagreement. Foundation plans
+# dimension to the outside of the FOUNDATION WALL; floor plans to the
+# outside of FRAMING/SHEATHING. Siding wraps the framing, so the
+# first-floor dimension governs siding; the foundation figure stays
+# VISIBLE ALONGSIDE — not hidden, not discarded, not a conflict.
+# HOW THE CODE TELLS A PLANE DIFFERENCE FROM A GENUINE CONTRADICTION
+# (the whole ruling): readings are grouped BY PLANE. Two readings on
+# the SAME plane that disagree are a GENUINE CONTRADICTION and report
+# as one. Readings on DIFFERENT planes that differ are two planes,
+# both correct — the material names which governs. When a plane cannot
+# be attributed, the two cases CANNOT be told apart and the verdict is
+# INDETERMINATE — reported unresolved, never defaulted. There is no
+# magnitude threshold anywhere: "prefer the later sheet" and "small
+# difference = plane offset" are the heuristics this rule exists to
+# avoid.
+PLANE_FOUNDATION = "foundation"
+PLANE_FRAMING = "framing"
+_MATERIAL_GOVERNING_PLANE = {"siding": PLANE_FRAMING}
+
+
+def plane_for_sheet_title(title):
+    """Plane attribution rides on the sheet's OWN title-block text —
+    'FOUNDATION' names the foundation plane, a floor plan dimensions
+    framing. Unrecognized → None (plane unknown, never guessed)."""
+    t = str(title or "").upper()
+    if "FOUNDATION" in t:
+        return PLANE_FOUNDATION
+    if "FLOOR PLAN" in t:
+        return PLANE_FRAMING
+    return None
+
+
+def reference_plane_verdict(readings: list, material: str = "siding") -> dict:
+    """RULING KK. readings: [{"value", "page", "plane"}]. Returns
+    status ∈ CONTRADICTION / REFERENCE_PLANES / AGREE / INDETERMINATE
+    with the governing reading for the material and the other plane's
+    reading visible alongside."""
+    def _digits(v):
+        return re.sub(r"\D", "", str(v or ""))
+    readings = [r for r in (readings or []) if isinstance(r, dict)]
+    known = [r for r in readings
+             if r.get("plane") in (PLANE_FOUNDATION, PLANE_FRAMING)
+             and r.get("value")]
+    unknown = [r for r in readings if r not in known]
+    out = {"material": material, "status": None, "governs": None,
+           "alongside": [], "why": None, "readings": readings}
+    by_plane: dict = {}
+    for r in known:
+        by_plane.setdefault(r["plane"], []).append(r)
+    # SAME-plane disagreement = a genuine cross-sheet conflict. It must
+    # still report as one — this check is what keeps KK from being
+    # "prefer the later sheet" wearing a ruling's name.
+    for plane, rs in by_plane.items():
+        if len({_digits(r["value"]) for r in rs}) > 1:
+            out["status"] = "CONTRADICTION"
+            out["why"] = (f"two readings on the SAME reference plane "
+                          f"({plane}) disagree — a genuine cross-sheet "
+                          f"conflict, not a plane difference")
+            return out
+    if unknown or not known:
+        out["status"] = INDETERMINATE
+        out["why"] = ("reference plane unknown for at least one reading — "
+                      "plane difference and contradiction cannot be told "
+                      "apart; reported unresolved, no default")
+        return out
+    gov_plane = _MATERIAL_GOVERNING_PLANE.get(str(material or "").lower())
+    if gov_plane is None:
+        out["status"] = INDETERMINATE
+        out["why"] = (f"no governing plane is ruled for material "
+                      f"{material!r} — no default")
+        return out
+    if gov_plane not in by_plane:
+        out["status"] = INDETERMINATE
+        out["why"] = (f"the governing plane ({gov_plane}) was not read — "
+                      f"the other plane never substitutes")
+        return out
+    gov = by_plane[gov_plane][0]
+    out["governs"] = {"plane": gov_plane, "value": gov["value"],
+                      "page": gov.get("page"),
+                      "why": "siding wraps the framing — the first-floor "
+                             "dimension applies to the material"}
+    out["alongside"] = [
+        {"plane": p, "value": rs[0]["value"], "page": rs[0].get("page"),
+         "note": "the other reference plane — visible alongside, "
+                 "not a conflict"}
+        for p, rs in by_plane.items() if p != gov_plane]
+    vals = {_digits(rs[0]["value"]) for rs in by_plane.values()}
+    out["status"] = "AGREE" if len(vals) <= 1 else "REFERENCE_PLANES"
+    return out
 
 
 def is_dimension_like(raw) -> bool:

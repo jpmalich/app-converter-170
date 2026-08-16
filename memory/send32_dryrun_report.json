@@ -1,0 +1,931 @@
+{
+ "run_id": "c54633996e7a49e48432cf66a61efaf7",
+ "unvalidated": true,
+ "rails_after_jj": {
+  "1": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "24-0\u00b0",
+    "bottom": "10'-0\u00b0",
+    "left": "29'-1",
+    "right": "13-0*"
+   },
+   "bounds": {
+    "x_lo": 5.94,
+    "x_hi": 90.57,
+    "y_lo": 80.26,
+    "y_hi": 87.3
+   }
+  },
+  "2": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "3": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "4": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "58'-0*",
+    "bottom": "58-0\u00b0",
+    "left": "5'10\u00b0",
+    "right": "33-0*"
+   },
+   "bounds": {
+    "x_lo": 20.96,
+    "x_hi": 78.98,
+    "y_lo": 25.07,
+    "y_hi": 76.2
+   }
+  },
+  "5": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two vertical dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "6": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "58-0\u00b0",
+    "bottom": "58-0\u00b0",
+    "left": "30-0*",
+    "right": "33'-0'"
+   },
+   "bounds": {
+    "x_lo": 29.5,
+    "x_hi": 81.91,
+    "y_lo": 19.08,
+    "y_hi": 70.15
+   }
+  },
+  "7": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "58'-0\u00b0",
+    "bottom": "24'-0*",
+    "left": "30'-0\u00b0",
+    "right": "33\u20190*"
+   },
+   "bounds": {
+    "x_lo": 26.810000000000002,
+    "x_hi": 82.06,
+    "y_lo": 19.68,
+    "y_hi": 63.9
+   }
+  },
+  "8": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "33'-11%",
+    "bottom": "33-11%\"",
+    "left": "30'-0*",
+    "right": "30'-0\""
+   },
+   "bounds": {
+    "x_lo": 14.82,
+    "x_hi": 58.17,
+    "y_lo": 11.2,
+    "y_hi": 62.37
+   }
+  },
+  "9": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "34'-0\"",
+    "bottom": "34'-0\"",
+    "left": "30'-0\u00b0",
+    "right": "30'-0*"
+   },
+   "bounds": {
+    "x_lo": 23.77,
+    "x_hi": 65.52,
+    "y_lo": 10.44,
+    "y_hi": 59.91
+   }
+  },
+  "10": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "11": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  }
+ },
+ "rail_status_changes": {
+  "6": {
+   "before": {
+    "status": "ESTABLISHED",
+    "rails": {
+     "top": "58-0\u00b0",
+     "bottom": "2-11%\u00b0 \u00d7 3-119\u00b0",
+     "left": "30-0*",
+     "right": "33'-0'"
+    }
+   },
+   "after": {
+    "status": "ESTABLISHED",
+    "rails": {
+     "top": "58-0\u00b0",
+     "bottom": "58-0\u00b0",
+     "left": "30-0*",
+     "right": "33'-0'"
+    }
+   }
+  }
+ },
+ "item3_structural": {
+  "1": {
+   "sheet_title": "FRONT & REAR ELEVATIONS",
+   "garage_runs": 13,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 34,
+   "vertical": 23,
+   "horizontal": 7,
+   "v_to_h": 3.29,
+   "envelope": "ESTABLISHED"
+  },
+  "2": {
+   "sheet_title": "LEFT & RIGHT ELEVATIONS",
+   "garage_runs": 14,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 18,
+   "vertical": 14,
+   "horizontal": 4,
+   "v_to_h": 3.5,
+   "envelope": "INDETERMINATE"
+  },
+  "3": {
+   "sheet_title": "DETAIL PAGE",
+   "garage_runs": 12,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 4,
+   "vertical": 0,
+   "horizontal": 4,
+   "v_to_h": 0.0,
+   "envelope": "INDETERMINATE"
+  },
+  "4": {
+   "sheet_title": "FOUNDATION PLAN",
+   "garage_runs": 6,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 42,
+   "vertical": 21,
+   "horizontal": 21,
+   "v_to_h": 1.0,
+   "envelope": "ESTABLISHED"
+  },
+  "5": {
+   "sheet_title": "FOUNDATION MECH",
+   "garage_runs": 3,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 5,
+   "vertical": 0,
+   "horizontal": 5,
+   "v_to_h": 0.0,
+   "envelope": "INDETERMINATE"
+  },
+  "6": {
+   "sheet_title": "FIRST FLOOR PLAN",
+   "garage_runs": 11,
+   "garage_room_labels_inside_envelope": [
+    "3 CAR GARAGE",
+    "3 CAR GARAGE"
+   ],
+   "dim_like": 90,
+   "vertical": 32,
+   "horizontal": 57,
+   "v_to_h": 0.56,
+   "envelope": "ESTABLISHED"
+  },
+  "7": {
+   "sheet_title": "SECOND FLOOR PLAN",
+   "garage_runs": 3,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 59,
+   "vertical": 26,
+   "horizontal": 32,
+   "v_to_h": 0.81,
+   "envelope": "ESTABLISHED"
+  },
+  "8": {
+   "sheet_title": "FIRST FLOOR JOIST PLAN",
+   "garage_runs": 3,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 63,
+   "vertical": 30,
+   "horizontal": 32,
+   "v_to_h": 0.94,
+   "envelope": "ESTABLISHED"
+  },
+  "9": {
+   "sheet_title": "SECOND FLOOR JOIST PLAN",
+   "garage_runs": 3,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 36,
+   "vertical": 20,
+   "horizontal": 16,
+   "v_to_h": 1.25,
+   "envelope": "ESTABLISHED"
+  },
+  "10": {
+   "sheet_title": "1ST & 2ND FLOOR ELEC PLAN",
+   "garage_runs": 3,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 0,
+   "vertical": 0,
+   "horizontal": 0,
+   "v_to_h": null,
+   "envelope": "INDETERMINATE"
+  },
+  "11": {
+   "sheet_title": "ROOF PLAN",
+   "garage_runs": 3,
+   "garage_room_labels_inside_envelope": [],
+   "dim_like": 2,
+   "vertical": 0,
+   "horizontal": 2,
+   "v_to_h": 0.0,
+   "envelope": "INDETERMINATE"
+  }
+ },
+ "dry_run": {
+  "1": {
+   "UNVALIDATED": true,
+   "sheet_title": "FRONT & REAR ELEVATIONS",
+   "envelope": "ESTABLISHED",
+   "garage_label_sides": {
+    "right": [
+     "TOP OF GARAGE FOOTER",
+     "GARAGE",
+     "GARAGE",
+     "_TOP OF GARAGE FOOTER",
+     "GARAGEFOTER",
+     "TOP OF GARAGE FOOTER",
+     "GARAGE WALL",
+     "GARAGE"
+    ],
+    "left": [
+     "TOP OF GARAGE FOOTER",
+     "GARAGE WALL",
+     "TOP OF GARAGE FOOTER",
+     "GARAGE WALL",
+     "GARAGE STEP FOOT"
+    ]
+   },
+   "gated_bare_admitted": [],
+   "left": {
+    "chosen": "29'-1",
+    "chosen_loc": {
+     "x_pct": 5.54,
+     "y_pct": 19.11,
+     "w_pct": 0.4,
+     "h_pct": 1.2
+    },
+    "contenders": [
+     {
+      "raw": "29'-1",
+      "loc": {
+       "x_pct": 5.54,
+       "y_pct": 19.11,
+       "w_pct": 0.4,
+       "h_pct": 1.2
+      },
+      "dist_from_mid_pct": 42.51
+     },
+     {
+      "raw": "9'-1%",
+      "loc": {
+       "x_pct": 6.93,
+       "y_pct": 27.66,
+       "w_pct": 0.71,
+       "h_pct": 1.73
+      },
+      "dist_from_mid_pct": 40.97
+     },
+     {
+      "raw": "8'-1%",
+      "loc": {
+       "x_pct": 7.11,
+       "y_pct": 17.89,
+       "w_pct": 0.5,
+       "h_pct": 1.6
+      },
+      "dist_from_mid_pct": 40.89
+     },
+     {
+      "raw": "9'-1%\"",
+      "loc": {
+       "x_pct": 7.11,
+       "y_pct": 27.66,
+       "w_pct": 0.55,
+       "h_pct": 1.66
+      },
+      "dist_from_mid_pct": 40.87
+     },
+     {
+      "raw": "9'-1%",
+      "loc": {
+       "x_pct": 7.11,
+       "y_pct": 27.69,
+       "w_pct": 0.55,
+       "h_pct": 1.46
+      },
+      "dist_from_mid_pct": 40.87
+     },
+     {
+      "raw": "4'-0\u00b0",
+      "loc": {
+       "x_pct": 8.09,
+       "y_pct": 35.7,
+       "w_pct": 0.6,
+       "h_pct": 1.2
+      },
+      "dist_from_mid_pct": 39.86
+     }
+    ],
+    "distinct_runner_up": "9'-1%",
+    "margin_pct": 1.54,
+    "had_it_gone_the_other_way": "9'-1%"
+   },
+   "right": {
+    "chosen": "13-0*",
+    "chosen_loc": {
+     "x_pct": 90.57,
+     "y_pct": 83.61,
+     "w_pct": 0.76,
+     "h_pct": 1.6
+    },
+    "contenders": [
+     {
+      "raw": "13-0*",
+      "loc": {
+       "x_pct": 90.57,
+       "y_pct": 83.61,
+       "w_pct": 0.76,
+       "h_pct": 1.6
+      },
+      "dist_from_mid_pct": 42.69
+     },
+     {
+      "raw": "9-1%*",
+      "loc": {
+       "x_pct": 88.76,
+       "y_pct": 71.17,
+       "w_pct": 0.76,
+       "h_pct": 1.66
+      },
+      "dist_from_mid_pct": 40.89
+     },
+     {
+      "raw": "8-1%*",
+      "loc": {
+       "x_pct": 88.76,
+       "y_pct": 61.2,
+       "w_pct": 0.76,
+       "h_pct": 1.8
+      },
+      "dist_from_mid_pct": 40.89
+     },
+     {
+      "raw": "9'-1%",
+      "loc": {
+       "x_pct": 88.73,
+       "y_pct": 71.28,
+       "w_pct": 0.55,
+       "h_pct": 1.6
+      },
+      "dist_from_mid_pct": 40.75
+     },
+     {
+      "raw": "2'-0\u00b0",
+      "loc": {
+       "x_pct": 77.42,
+       "y_pct": 90.52,
+       "w_pct": 0.4,
+       "h_pct": 1.06
+      },
+      "dist_from_mid_pct": 29.37
+     },
+     {
+      "raw": "9-11%",
+      "loc": {
+       "x_pct": 68.35,
+       "y_pct": 27.62,
+       "w_pct": 0.71,
+       "h_pct": 2.33
+      },
+      "dist_from_mid_pct": 20.45
+     }
+    ],
+    "distinct_runner_up": "9-1%*",
+    "margin_pct": 1.8,
+    "had_it_gone_the_other_way": "9-1%*"
+   }
+  },
+  "2": {
+   "UNVALIDATED": true,
+   "sheet_title": "LEFT & RIGHT ELEVATIONS",
+   "envelope": "INDETERMINATE",
+   "result": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails"
+  },
+  "3": {
+   "UNVALIDATED": true,
+   "sheet_title": "DETAIL PAGE",
+   "envelope": "INDETERMINATE",
+   "result": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails"
+  },
+  "4": {
+   "UNVALIDATED": true,
+   "sheet_title": "FOUNDATION PLAN",
+   "envelope": "ESTABLISHED",
+   "garage_label_sides": {
+    "left": [
+     "ONBACKSIDEOFGARAGE",
+     "ONBACKSIDEOFGARAGE",
+     "ONBACKSIDEOFGARAGE"
+    ],
+    "right": [
+     "GARAGE",
+     "GARAGE",
+     "GARAGE"
+    ]
+   },
+   "gated_bare_admitted": [
+    "30-2",
+    "30-2"
+   ],
+   "left": {
+    "chosen": "30-2",
+    "chosen_loc": {
+     "x_pct": 20.33,
+     "y_pct": 49.6,
+     "w_pct": 0.55,
+     "h_pct": 1.53
+    },
+    "contenders": [
+     {
+      "raw": "30-2",
+      "loc": {
+       "x_pct": 20.33,
+       "y_pct": 49.6,
+       "w_pct": 0.55,
+       "h_pct": 1.53
+      },
+      "dist_from_mid_pct": 29.33
+     },
+     {
+      "raw": "5'10\u00b0",
+      "loc": {
+       "x_pct": 20.41,
+       "y_pct": 68.38,
+       "w_pct": 0.55,
+       "h_pct": 1.4
+      },
+      "dist_from_mid_pct": 29.25
+     },
+     {
+      "raw": "30-2",
+      "loc": {
+       "x_pct": 20.41,
+       "y_pct": 49.5,
+       "w_pct": 0.55,
+       "h_pct": 1.46
+      },
+      "dist_from_mid_pct": 29.25
+     }
+    ],
+    "distinct_runner_up": "5'10\u00b0",
+    "margin_pct": 0.08,
+    "had_it_gone_the_other_way": "5'10\u00b0"
+   },
+   "right": {
+    "chosen": "33-0*",
+    "chosen_loc": {
+     "x_pct": 78.98,
+     "y_pct": 50.89,
+     "w_pct": 0.71,
+     "h_pct": 1.73
+    },
+    "contenders": [
+     {
+      "raw": "33-0*",
+      "loc": {
+       "x_pct": 78.98,
+       "y_pct": 50.89,
+       "w_pct": 0.71,
+       "h_pct": 1.73
+      },
+      "dist_from_mid_pct": 29.41
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole candidate \u2014 wins by default, which proves least"
+   }
+  },
+  "5": {
+   "UNVALIDATED": true,
+   "sheet_title": "FOUNDATION MECH",
+   "envelope": "INDETERMINATE",
+   "result": "INDETERMINATE",
+   "reason": "fewer than two vertical dimension rails"
+  },
+  "6": {
+   "UNVALIDATED": true,
+   "sheet_title": "FIRST FLOOR PLAN",
+   "envelope": "ESTABLISHED",
+   "garage_label_sides": {
+    "right": [
+     "3 CAR GARAGE",
+     "GARAGE",
+     "GARAGE",
+     "3 CAR GARAGE",
+     "GARAGE"
+    ],
+    "left": [
+     "ADD BLOCKING FOR GARAGE DOOR TRACKS",
+     "Garage to House Door",
+     "GARAGE",
+     "GARAGE",
+     "ADD BLOCKING FOR GARAGE DOOR TRACKS",
+     "ADD BLOCKING FOR GARAGE DOOR TRACKS"
+    ]
+   },
+   "gated_bare_admitted": [],
+   "left": {
+    "chosen": "30-0*",
+    "chosen_loc": {
+     "x_pct": 28.95,
+     "y_pct": 41.29,
+     "w_pct": 0.55,
+     "h_pct": 1.46
+    },
+    "contenders": [
+     {
+      "raw": "30-0*",
+      "loc": {
+       "x_pct": 28.95,
+       "y_pct": 41.29,
+       "w_pct": 0.55,
+       "h_pct": 1.46
+      },
+      "dist_from_mid_pct": 26.48
+     },
+     {
+      "raw": "30-0*",
+      "loc": {
+       "x_pct": 28.98,
+       "y_pct": 41.12,
+       "w_pct": 0.71,
+       "h_pct": 1.66
+      },
+      "dist_from_mid_pct": 26.37
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   },
+   "right": {
+    "chosen": "33'-0'",
+    "chosen_loc": {
+     "x_pct": 81.91,
+     "y_pct": 39.66,
+     "w_pct": 0.55,
+     "h_pct": 1.46
+    },
+    "contenders": [
+     {
+      "raw": "33'-0'",
+      "loc": {
+       "x_pct": 81.91,
+       "y_pct": 39.66,
+       "w_pct": 0.55,
+       "h_pct": 1.46
+      },
+      "dist_from_mid_pct": 26.48
+     },
+     {
+      "raw": "33'-0\"",
+      "loc": {
+       "x_pct": 81.83,
+       "y_pct": 39.69,
+       "w_pct": 0.55,
+       "h_pct": 1.46
+      },
+      "dist_from_mid_pct": 26.4
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   }
+  },
+  "7": {
+   "UNVALIDATED": true,
+   "sheet_title": "SECOND FLOOR PLAN",
+   "envelope": "ESTABLISHED",
+   "garage_label_sides": {
+    "right": [
+     "GARAGE",
+     "GARAGE",
+     "GARAGE"
+    ]
+   },
+   "gated_bare_admitted": [
+    "2-8",
+    "2-8"
+   ],
+   "left": {
+    "chosen": "30'-0\u00b0",
+    "chosen_loc": {
+     "x_pct": 26.26,
+     "y_pct": 41.25,
+     "w_pct": 0.55,
+     "h_pct": 1.46
+    },
+    "contenders": [
+     {
+      "raw": "30'-0\u00b0",
+      "loc": {
+       "x_pct": 26.26,
+       "y_pct": 41.25,
+       "w_pct": 0.55,
+       "h_pct": 1.46
+      },
+      "dist_from_mid_pct": 27.9
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole candidate \u2014 wins by default, which proves least"
+   },
+   "right": {
+    "chosen": "33\u20190*",
+    "chosen_loc": {
+     "x_pct": 82.06,
+     "y_pct": 42.71,
+     "w_pct": 0.71,
+     "h_pct": 1.66
+    },
+    "contenders": [
+     {
+      "raw": "33\u20190*",
+      "loc": {
+       "x_pct": 82.06,
+       "y_pct": 42.71,
+       "w_pct": 0.71,
+       "h_pct": 1.66
+      },
+      "dist_from_mid_pct": 27.98
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole candidate \u2014 wins by default, which proves least"
+   }
+  },
+  "8": {
+   "UNVALIDATED": true,
+   "sheet_title": "FIRST FLOOR JOIST PLAN",
+   "envelope": "ESTABLISHED",
+   "garage_label_sides": {
+    "right": [
+     "GARAGE",
+     "GARAGE",
+     "GARAGE"
+    ]
+   },
+   "gated_bare_admitted": [],
+   "left": {
+    "chosen": "30'-0*",
+    "chosen_loc": {
+     "x_pct": 14.06,
+     "y_pct": 36.93,
+     "w_pct": 0.76,
+     "h_pct": 2.06
+    },
+    "contenders": [
+     {
+      "raw": "30'-0*",
+      "loc": {
+       "x_pct": 14.06,
+       "y_pct": 36.93,
+       "w_pct": 0.76,
+       "h_pct": 2.06
+      },
+      "dist_from_mid_pct": 22.06
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole candidate \u2014 wins by default, which proves least"
+   },
+   "right": {
+    "chosen": "30'-0\"",
+    "chosen_loc": {
+     "x_pct": 58.17,
+     "y_pct": 39.56,
+     "w_pct": 0.71,
+     "h_pct": 2.13
+    },
+    "contenders": [
+     {
+      "raw": "30'-0\"",
+      "loc": {
+       "x_pct": 58.17,
+       "y_pct": 39.56,
+       "w_pct": 0.71,
+       "h_pct": 2.13
+      },
+      "dist_from_mid_pct": 22.03
+     },
+     {
+      "raw": "30'-0\"",
+      "loc": {
+       "x_pct": 58.11,
+       "y_pct": 39.39,
+       "w_pct": 0.76,
+       "h_pct": 2.13
+      },
+      "dist_from_mid_pct": 21.99
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   }
+  },
+  "9": {
+   "UNVALIDATED": true,
+   "sheet_title": "SECOND FLOOR JOIST PLAN",
+   "envelope": "ESTABLISHED",
+   "garage_label_sides": {
+    "right": [
+     "GARAGE",
+     "GARAGE",
+     "GARAGE"
+    ]
+   },
+   "gated_bare_admitted": [],
+   "left": {
+    "chosen": "30'-0\u00b0",
+    "chosen_loc": {
+     "x_pct": 23.06,
+     "y_pct": 34.71,
+     "w_pct": 0.71,
+     "h_pct": 1.99
+    },
+    "contenders": [
+     {
+      "raw": "30'-0\u00b0",
+      "loc": {
+       "x_pct": 23.06,
+       "y_pct": 34.71,
+       "w_pct": 0.71,
+       "h_pct": 1.99
+      },
+      "dist_from_mid_pct": 21.23
+     },
+     {
+      "raw": "30'-0*",
+      "loc": {
+       "x_pct": 23.19,
+       "y_pct": 34.54,
+       "w_pct": 0.71,
+       "h_pct": 2.06
+      },
+      "dist_from_mid_pct": 21.1
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   },
+   "right": {
+    "chosen": "30'-0*",
+    "chosen_loc": {
+     "x_pct": 65.52,
+     "y_pct": 30.41,
+     "w_pct": 0.5,
+     "h_pct": 1.73
+    },
+    "contenders": [
+     {
+      "raw": "30'-0*",
+      "loc": {
+       "x_pct": 65.52,
+       "y_pct": 30.41,
+       "w_pct": 0.5,
+       "h_pct": 1.73
+      },
+      "dist_from_mid_pct": 21.12
+     },
+     {
+      "raw": "30'-0",
+      "loc": {
+       "x_pct": 65.44,
+       "y_pct": 30.52,
+       "w_pct": 0.55,
+       "h_pct": 1.86
+      },
+      "dist_from_mid_pct": 21.07
+     }
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   }
+  },
+  "10": {
+   "UNVALIDATED": true,
+   "sheet_title": "1ST & 2ND FLOOR ELEC PLAN",
+   "envelope": "INDETERMINATE",
+   "result": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails"
+  },
+  "11": {
+   "UNVALIDATED": true,
+   "sheet_title": "ROOF PLAN",
+   "envelope": "INDETERMINATE",
+   "result": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails"
+  }
+ },
+ "kk_left_depth": {
+  "material": "siding",
+  "status": "REFERENCE_PLANES",
+  "governs": {
+   "plane": "framing",
+   "value": "30-0*",
+   "page": 6,
+   "why": "siding wraps the framing \u2014 the first-floor dimension applies to the material"
+  },
+  "alongside": [
+   {
+    "plane": "foundation",
+    "value": "30-2",
+    "page": 4,
+    "note": "the other reference plane \u2014 visible alongside, not a conflict"
+   }
+  ],
+  "why": null,
+  "readings": [
+   {
+    "value": "30-2",
+    "page": 4,
+    "plane": "foundation"
+   },
+   {
+    "value": "30-0*",
+    "page": 6,
+    "plane": "framing"
+   }
+  ]
+ }
+}
