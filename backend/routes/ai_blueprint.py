@@ -4967,6 +4967,35 @@ async def ai_blueprint_status(
     }
 
 
+@router.get("/ai-blueprint/diagnostics/{run_id}")
+async def ai_blueprint_diagnostics(
+    run_id: str,
+    user: dict = Depends(get_current_user),
+):
+    """SEND-27 Item 3 — the plain diagnostic (GG / FF inputs / EE reasons)
+    so Howard can verify in the browser without a database view. READ ONLY."""
+    doc = await db.ai_blueprint_runs.find_one({"run_id": run_id})
+    if not doc:
+        from run_archive import find_archived_run
+        doc = await find_archived_run({"run_id": run_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if doc.get("user_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Not your run")
+    result = doc.get("result") or {}
+    # OCR may have moved off the run doc (Ruling GG size guard).
+    ocr_by_page = None
+    ref = ((result.get("raw_ai") or {}).get("_ocr_text_ref") or {})
+    if ref.get("where") == "ai_blueprint_ocr":
+        ocr = await db.ai_blueprint_ocr.find_one({"run_id": run_id}, {"_id": 0})
+        ocr_by_page = (ocr or {}).get("by_page")
+    from blueprint_diagnostics import build_blueprint_diagnostics, render_plain
+    diag = build_blueprint_diagnostics(result, ocr_by_page)
+    return {"run_id": run_id, "diagnostics": diag,
+            "plain_text": render_plain(diag)}
+
+
+
 @router.get("/ai-blueprint/latest-for-estimate/{estimate_id}")
 async def ai_blueprint_latest_for_estimate(
     estimate_id: str,

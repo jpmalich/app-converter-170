@@ -140,6 +140,12 @@ BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
     ("components/estimate/PdfOverlayEditor.jsx", "if (!p1 || !p2 || !real_ft || real_ft <= 0) return null;"),
     ("components/estimate/PdfOverlayEditor.jsx", "if (calibPx <= 0) return null;"),
     ("components/estimate/PdfOverlayEditor.jsx", "if (!ftPerPx || ftPerPx <= 0) return null;"),
+    # SEND-27 (2026-08-14) — BlueprintDiagnosticsPanel: read-only diagnostic
+    # mounted inside the Material Zone Editor modal. When there is no run id
+    # there is nothing to diagnose, so the panel does not mount. It is
+    # diagnostic-only (surfaces GG/FF/EE), reaches no money and gates no
+    # flow; the modal that hosts it already speaks the run's state.
+    ("components/estimate/PdfOverlayEditor.jsx", "if (!runId) return null;"),
     # BlueprintReadBackCard: null when no readback yet — this card is
     # rendered inside the run dialog modal; the persistent Blueprint
     # Elevation Entry (registry S1) speaks the state on the estimate

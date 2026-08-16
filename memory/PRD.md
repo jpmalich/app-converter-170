@@ -1,5 +1,58 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 SEND-27 — EE SURFACE DEFECT FIXED + DIAGNOSTIC PANEL (accuracy only)
+Suite **2481 passed / 9 skipped** (+7 send-27 pins,
+`tests/test_rulings_2026_08_14_send27.py`). **Verified against the RENDERED
+surface** (browser screenshot), per Item 4.
+
+**FINDING (ledger query on the fresh EST-713272 read, run
+c54633996e7a49e48432cf66a61efaf7).** The SEND-25 surface-claim was
+contradicted. Three hypotheses separated by the ledger:
+- (a) EE inert? NO — `footprint_closure` fired: `closes=False`,
+  `refused_faces={right: "footprint does not close: …"}`.
+- (b) EE backend-only? **YES for RIGHT** — the backend refusal reason was
+  correct but the RENDERER (`PdfOverlayEditor.jsx:716`) emitted a HARDCODED
+  "width not read, NEEDS TAPE", ignoring the reason. **This was the defect**
+  — two sources of refusal text; the backend was updated by EE, its frontend
+  sibling was not.
+- (c) EE never got the chance? Applies to **LEFT only** — LEFT has no width
+  read at all, so "wall width not read" is the CORRECT message for LEFT (not
+  an EE refusal). RIGHT had segment depths 30+9=39 to close against with LEFT
+  unread, so EE correctly refused it.
+
+**Item 2 fix (the surface):** `PdfOverlayEditor` now renders the BACKEND
+reason per face — `refused_reason` on the per-wall row, else the matching
+`_faces_not_derivable` reason — never a hardcoded string. Rendered surface
+confirmed in-browser: RIGHT reads "footprint does not close: right depth 39
+present but opposing left depth not read — right cannot be closed"; LEFT
+reads "wall width not read — area not derivable".
+
+**Item 3 diagnostic panel:** new read-only module `blueprint_diagnostics.py`
++ endpoint `GET /api/measure/ai-blueprint/diagnostics/{run_id}` +
+`BlueprintDiagnosticsPanel` in the Material Zone Editor modal. Surfaces GG
+(runs/page, where stored, truncation, int-key fires), FF INPUTS (garage
+label, LEFT/RIGHT elevation title blocks, depth string nearest the garage —
+raw string + page + percent box, or ABSENT), and EE per-face reasons.
+Selects no value / reaches no money. Verified HTTP 200 end-to-end.
+
+**FF INPUTS CONFIRMED PRESENT (unblocks the anchor-build gate condition —
+build NOT started, accuracy-only send):** garage label "3 CAR GARAGE" p6
+x≈66% (RIGHT half), "LEFTELEVATION"/"RIGHTELEVATION" p2, depth strings
+"33-11"/"33-5" p6. GG: 871 runs, pages 1/2/6/7/9/11, run_doc, no truncation,
+no coercions. Outcomes appended beneath the FF prediction file (prediction
+unrevised).
+
+**Item 4 / Ruling C discipline (registered):** a handback claim about what
+the surface says MUST be verified against the RENDERED surface, never model
+output. From here, any "what the user sees" sentence is backed by the
+rendered surface or written "the field is set; not verified in the UI."
+
+**Files:** blueprint_diagnostics.py (new), routes/ai_blueprint.py (endpoint),
+frontend PdfOverlayEditor.jsx (reason render + diagnostic panel);
+census baseline updated for the panel's `if (!runId) return null`.
+Anchor/face-disambiguation stays BLOCKED (build not authorized).
+
+
 ## 2026-08-14 SEND-25 — DD WIRED (Ruling EE) + OCR PERSISTED (Ruling GG) + INT-KEY GUARD + FF DESIGN REPORT
 Suite **2475 passed / 9 skipped** (+11 send-25 pins, register test
 `tests/test_rulings_2026_08_14_send25.py`). Order followed exactly:

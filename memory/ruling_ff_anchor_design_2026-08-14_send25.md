@@ -169,3 +169,42 @@ its inputs never captured.
 - Axis derivation from the front/back overall-width string pair.
 Face disambiguation proper (the wiring that writes the anchored depth onto
 the wall record) stays BLOCKED pending Howard's approval of this report.
+
+--------------------------------------------------------------------------
+# SEND-27 OUTCOMES — appended below the prediction (prediction UNREVISED)
+Observed on the fresh EST-713272 read, run c54633996e7a49e48432cf66a61efaf7
+(READ-ONLY ledger + OCR probe; confirmed live through the diagnostics
+endpoint, HTTP 200).
+
+FF INPUTS — the send-25 prediction said the anchor's inputs only exist from
+GG forward and would be UNVERIFIED on the frozen pre-GG run 6. This is a
+FRESH read WITH GG, and the inputs are now OBSERVED PRESENT:
+  - garage label: PRESENT — "3 CAR GARAGE" on page 6 at x≈66% (RIGHT half of
+    the width axis), plus stray "GARAGE" tokens. (Signal A plan-side → RIGHT.)
+  - LEFT/RIGHT elevation title blocks: PRESENT — "LEFTELEVATION" and
+    "RIGHTELEVATION" on page 2 (OCR concatenates the words). (Signal B, the
+    primary, is available and is printed text as predicted.)
+  - depth string nearest the garage block: PRESENT — feet-inch strings
+    "33-11", "33-5" on page 6 near the garage label; "9'-5" on page 9.
+    (Signal C substrate exists.)
+  GG persistence: 871 runs across pages 1,2,6,7,9,11; stored on the run doc;
+  no truncation; no int-key coercions.
+
+CONSEQUENCE FOR THE BLOCK: the FF inputs are now CONFIRMED PRESENT in the
+persisted OCR (the condition Howard set for lifting the anchor-build block).
+The build is NOT started in this send — SEND-27 is accuracy only and the
+mandate scoped the anchor as still blocked pending this confirmation. This
+entry records the confirmation; it does not authorize the build.
+
+WHAT THE PREDICTION GOT RIGHT / WRONG:
+  - RIGHT: prediction said a fresh read would reach RIGHT via title block +
+    plan-half, and it is borne out — garage label sits in the RIGHT half and
+    a "RIGHTELEVATION" title exists. NOT YET TESTED end-to-end (anchor unbuilt).
+  - The prediction's "frozen run 6 → UNVERIFIED" is not contradicted: this is
+    a different, fresh run that DID persist the substrate.
+
+EE ON THIS RUN (the SEND-27 finding): RIGHT refused via footprint_closure
+("footprint does not close: right depth 39 present but opposing left depth
+not read — right cannot be closed"); LEFT is a genuine width-not-read (no
+width at all — NOT an EE refusal); BACK segment height not read. EE fired
+correctly in the backend; the rendered surface was the defect (fixed).

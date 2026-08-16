@@ -86,6 +86,8 @@ export default function PdfOverlayEditor({ est, onChanged }) {
   const [polygons, setPolygons] = useState([]); // backend polygons
   const [renderDpi, setRenderDpi] = useState(null); // recorded page render DPI (null ⇒ scan)
   const [perWall, setPerWall] = useState([]);       // app's internal per-wall areas (display only)
+  const [facesND, setFacesND] = useState([]);       // per-face NOT DERIVABLE reasons (backend truth)
+  const [runId, setRunId] = useState(null);         // latest run id (for the diagnostic panel)
   const [loadErr, setLoadErr] = useState("");
 
   // Probe the latest blueprint run for rasterised elevation pages + the
@@ -106,6 +108,9 @@ export default function PdfOverlayEditor({ est, onChanged }) {
       setRenderDpi(run?.render_dpi != null ? Number(run.render_dpi) : null);
       setPerWall(res.measurements?._per_elevation_breakdown
         || res.raw_ai?._per_elevation_breakdown || []);
+      setFacesND(res.measurements?._faces_not_derivable
+        || res.raw_ai?._faces_not_derivable || []);
+      setRunId(run?.run_id || res.measurements?._run_id || null);
       const sheetFor = (i1) => sheets.find((x) => Number(x.page) === i1) || null;
       setPages(names.map((name, i) => {
         const s = sheetFor(i + 1);
@@ -168,6 +173,8 @@ export default function PdfOverlayEditor({ est, onChanged }) {
           polygons={polygons}
           renderDpi={renderDpi}
           perWall={perWall}
+          facesND={facesND}
+          runId={runId}
           onClose={() => setOpen(false)}
           onMutated={async () => { await probe(); onChanged?.(); }}
         />
@@ -176,7 +183,7 @@ export default function PdfOverlayEditor({ est, onChanged }) {
   );
 }
 
-function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, onClose, onMutated }) {
+function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, facesND, runId, onClose, onMutated }) {
   const [polygons, setPolygons] = useState(initialPolys || []);
   const [activePage, setActivePage] = useState(
     (pages.find((p) => p.elevation) || pages[0])?.idx || 1);
@@ -708,12 +715,27 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                   const dormer = Number(w.dormer_sqft || 0);
                   const tot = body + gable + dormer;
                   const notDerivable = bodyND || gableND;
+                  // RULING EE surface fix (send-27): the refusal reason is
+                  // BACKEND TRUTH — never a hardcoded string. A footprint-
+                  // closure refusal carries refused_reason on the row; other
+                  // NOT DERIVABLE faces name their reason in _faces_not_derivable.
+                  // "does not close" and "width not read" are DIFFERENT
+                  // sentences; the surface must say which one actually fired.
+                  const ndReasons = (facesND || [])
+                    .filter((f) => String(f.elevation || f.label || "").toLowerCase()
+                      === String(w.label || "").toLowerCase())
+                    .map((f) => f.reason)
+                    .filter(Boolean);
+                  const reason = w.refused_reason
+                    || ndReasons.find((r) => r.startsWith("footprint does not close"))
+                    || ndReasons[0]
+                    || "not derivable — reason not recorded";
                   return (
                     <div key={i} className="flex justify-between text-[11px] border-b border-[var(--border)] py-0.5" data-testid={`pdf-overlay-perwall-${w.label}`}>
                       <span className="font-bold uppercase">{w.label}</span>
                       {notDerivable ? (
-                        <span className="text-amber-600 font-semibold text-[10px]" data-testid={`pdf-overlay-perwall-nd-${w.label}`}>
-                          NOT DERIVABLE — width not read, NEEDS TAPE
+                        <span className="text-amber-600 font-semibold text-[10px] text-right max-w-[70%]" data-testid={`pdf-overlay-perwall-nd-${w.label}`}>
+                          NOT DERIVABLE — {reason}
                           {!bodyND ? <span className="ml-1 text-[9px] text-[var(--muted)]">(wall {body.toFixed(0)})</span> : null}
                         </span>
                       ) : (
@@ -728,9 +750,84 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                 <div className="text-[9px] text-[var(--muted)] mt-1 italic">These are the app&apos;s internal faces; MUV still binds one aggregate line until per-face binding lands.</div>
               </div>
             )}
+            <BlueprintDiagnosticsPanel runId={runId} />
+
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+// SEND-27 Item 3 — the plain diagnostic panel. Howard verifies GG / FF
+// inputs / EE reasons IN THE BROWSER, no database view. Read-only.
+function BlueprintDiagnosticsPanel({ runId }) {
+  const [diag, setDiag] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    if (!open || !runId || diag) return;
+    let live = true;
+    api.get(`/measure/ai-blueprint/diagnostics/${runId}`, { timeout: 12000 })
+      .then(({ data }) => { if (live) setDiag(data?.diagnostics || null); })
+      .catch((e) => { if (live) setErr(e?.response?.data?.detail || "diagnostics unavailable"); });
+    return () => { live = false; };
+  }, [open, runId, diag]);
+  if (!runId) return null;
+  const gg = diag?.gg || {};
+  const ff = diag?.ff_inputs || {};
+  const ee = diag?.ee || [];
+  const renderHits = (v) => (v === "ABSENT" || !v)
+    ? <span className="text-red-600 font-bold">ABSENT</span>
+    : (Array.isArray(v) ? v : [v]).map((h, i) => (
+        <div key={i} className="pl-2 font-mono-num text-[10px]">
+          {JSON.stringify(h.raw)} · p{h.page} · {h.loc ? `x${h.loc.x_pct} y${h.loc.y_pct} w${h.loc.w_pct} h${h.loc.h_pct}` : "no box"}
+        </div>));
+  return (
+    <div className="p-3 border-t border-[var(--border)]" data-testid="pdf-overlay-diagnostics">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] hover:text-[var(--fg)]"
+        data-testid="pdf-overlay-diagnostics-toggle"
+      >
+        {open ? "▾" : "▸"} Blueprint read diagnostics (GG · FF inputs · EE) — read-only
+      </button>
+      {open && (
+        <div className="mt-2 text-[11px] space-y-3" data-testid="pdf-overlay-diagnostics-body">
+          {err && <div className="text-red-600">{err}</div>}
+          {!diag && !err && <div className="text-[var(--muted)]">loading…</div>}
+          {diag && (
+            <>
+              <div data-testid="diag-gg">
+                <div className="font-bold uppercase text-[10px] tracking-wider">GG — OCR persistence</div>
+                <div className="font-mono-num text-[10px]">
+                  stored: {String(gg.where)} · total runs: {gg.total_runs} · truncated: {String(gg.truncated)} · int-key coercions: {String(gg.int_key_coercions)}
+                </div>
+                <div className="font-mono-num text-[10px]">runs/page: {JSON.stringify(gg.pages || {})}</div>
+              </div>
+              <div data-testid="diag-ff">
+                <div className="font-bold uppercase text-[10px] tracking-wider">FF inputs (probes)</div>
+                <div>garage label: {renderHits(ff.garage_label)}</div>
+                <div>left elevation title: {renderHits(ff.left_elevation_title)}</div>
+                <div>right elevation title: {renderHits(ff.right_elevation_title)}</div>
+                <div>depth near garage: {renderHits(ff.depth_near_garage)}</div>
+              </div>
+              <div data-testid="diag-ee">
+                <div className="font-bold uppercase text-[10px] tracking-wider">EE — per-face refusal</div>
+                {ee.length === 0 && <div className="text-[var(--muted)]">no refused faces</div>}
+                {ee.map((e, i) => (
+                  <div key={i} className="pl-2 mb-1" data-testid={`diag-ee-${e.face}`}>
+                    <span className="font-bold uppercase">{e.face}</span>: {e.refusal_reason}
+                    <div className="text-[9px] text-[var(--muted)]">produced by: {e.produced_by}</div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
