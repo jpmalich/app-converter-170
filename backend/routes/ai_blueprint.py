@@ -55,6 +55,7 @@ from db import db
 import seam_accounting
 from routes.hover import _build_lines, _build_window_openings
 import measure_staging as staging
+import ocr_geometry
 
 logger = logging.getLogger(__name__)
 
@@ -1423,6 +1424,15 @@ def _ocr_runs(arr):
     return runs
 
 
+def _map_rot_box(rect, k, w, h):
+    """Map a box from np.rot90(arr, k) coordinates back to upright page
+    coordinates (w, h are the UPRIGHT page dims)."""
+    x0r, y0r, x1r, y1r = rect
+    if k == 1:      # CCW: upright x = W-1-yr, y = xr
+        return (w - 1 - y1r, x0r, w - 1 - y0r, x1r)
+    return (y0r, h - 1 - x1r, y1r, h - 1 - x0r)  # k == 3, CW
+
+
 def _ocr_match(runs, nq):
     """The model's normalised quote against the OCR run index. Exact
     beats containment; the tightest run wins."""
@@ -1785,7 +1795,14 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
     FREE SECOND READ: a quote no pass can find is a NAMED contradiction
     (_ocr_quote_misses) — two independent reads of the same pixels
     disagreeing, resolved toward neither."""
-    if not isinstance(evidence, dict) or not evidence:
+    if not isinstance(evidence, dict):
+        # SEND-30 item 2 (Howard sealed 2026-08-16): OCR is COVERAGE now,
+        # not just quote-location. It reads EVERY page — not "every plan
+        # and elevation page" decided by a classifier, every page — even
+        # when the model quoted nothing. Which pages get OCR'd must never
+        # again be a function of what the model happened to say.
+        evidence = {}
+    if not image_payloads:
         return
     # SEND-9: sheet-title AND useful_for lookup by page — for cardinal
     # wall paths (walls.front.*, gutter_runs.back.lf) the sheet IS the
@@ -1810,8 +1827,6 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
             nq = _ocr_norm(s.get("from"))
             if isinstance(page, int) and 1 <= page <= len(image_payloads) and len(nq) >= 3:
                 wanted.setdefault(page, []).append((path, s, nq))
-    if not wanted:
-        return
     import numpy as np
     misses = []
     # FRACTION-SKELETON LOCATES (2026-08-14 send-12): quotes rescued at
@@ -1839,7 +1854,8 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
     # highlight renders back. raw is what a contractor sees printed and is
     # the only version worth quoting; norm is what matching uses — both persist.
     ocr_text_by_page: dict[str, dict] = {}
-    for page, entries in wanted.items():
+    for page in range(1, len(image_payloads) + 1):
+        entries = wanted.get(page, [])
         try:
             with Image.open(io.BytesIO(image_payloads[page - 1])) as im:
                 w, h = im.size
@@ -1849,25 +1865,53 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         except Exception:
             logger.exception("[ai-blueprint] OCR failed on page %s — quote anchors stand", page)
             continue
-        # RULING GG: persist every upright run on this page with its
-        # percent-box + the page's own dims. (norm, raw, bbox) all ride.
+        # SEND-30 item 1 (Howard sealed 2026-08-16): rotated passes run on
+        # EVERY page. Depth dimensions are rotated by definition; the old
+        # trigger filter (rotate only on quote-misses) plus upright-only
+        # persistence made every depth on every plan sheet structurally
+        # invisible to the persisted store — side faces were never able to
+        # derive on any house.
+        rot_passes: dict[int, tuple] = {}
+        for _k in (1, 3):
+            try:
+                _rr = _ocr_runs(np.rot90(arr, _k))
+                rot_passes[_k] = (_rr, _join_adjacent_runs(_rr))
+            except Exception:
+                logger.exception("[ai-blueprint] rotated OCR (k=%s) failed on page %s", _k, page)
+        # RULING GG + SEND-30: persist EVERY run from EVERY pass with its
+        # percent-box, the pass that read it (src) and its glyph-normalized
+        # axis class. Rotated boxes map back to upright page coordinates.
         _pw, _ph = max(w, 1), max(h, 1)
+
+        def _run_doc(_r, _src, _rect):
+            _loc = {"x_pct": round(_rect[0] / _pw * 100, 2),
+                    "y_pct": round(_rect[1] / _ph * 100, 2),
+                    "w_pct": round(max(_rect[2] - _rect[0], 1) / _pw * 100, 2),
+                    "h_pct": round(max(_rect[3] - _rect[1], 1) / _ph * 100, 2)}
+            return {"norm": _r[0], "raw": _r[1], "loc": _loc, "src": _src,
+                    "axis": ocr_geometry.axis_class(
+                        _loc, ocr_geometry.glyph_count(_r[1]))}
+
+        _persisted = [_run_doc(_r, "upright", _r[2]) for _r in runs]
+        for _k, (_rr, _rj) in rot_passes.items():
+            _src = "rot90" if _k == 1 else "rot270"
+            _persisted.extend(
+                _run_doc(_r, _src, _map_rot_box(_r[2], _k, w, h))
+                for _r in _rr)
         ocr_text_by_page[str(page)] = {
-            "page_w": int(w), "page_h": int(h),
-            "runs": [{
-                "norm": _r[0], "raw": _r[1],
-                "loc": {"x_pct": round(_r[2][0] / _pw * 100, 2),
-                        "y_pct": round(_r[2][1] / _ph * 100, 2),
-                        "w_pct": round(max(_r[2][2] - _r[2][0], 1) / _pw * 100, 2),
-                        "h_pct": round(max(_r[2][3] - _r[2][1], 1) / _ph * 100, 2)},
-            } for _r in runs],
+            "page_w": int(w), "page_h": int(h), "runs": _persisted,
         }
         # Coverage = summed length of every distinct normalised token
-        # (upright + joined + rotated 90°/270°). Rotated passes are
-        # added below when they run; seed with upright now so a page
-        # whose miss set is empty (no rotations triggered) still has
-        # a coverage number for downstream tuning if needed.
+        # across ALL passes (upright + joined + rotated 90°/270°) —
+        # recorded for every page so the coverage is visible.
         _norms_seen: set[str] = {r[0] for r in runs} | {j[0] for j in joined}
+        for _rr, _rj in rot_passes.values():
+            _norms_seen.update(r[0] for r in _rr)
+            _norms_seen.update(j[0] for j in _rj)
+        page_ocr_chars[page] = sum(len(n) for n in _norms_seen)
+        page_run_norms[page] = sorted(_norms_seen)
+        if not entries:
+            continue
         # FEATURE-PROXIMITY RADIUS (Howard ruled 2026-08-12 send-8):
         # the located rect's centre must sit within this radius of a
         # feature-anchor run on the same page. 30% of the longer page
@@ -1948,17 +1992,15 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
             else:
                 s["_gate_reason"] = why
                 pending.append((path, s, nq))
-        # Rotated passes — only when the upright pass left misses.
+        # Rotated passes for LOCATES — the reads themselves already ran on
+        # every page above (SEND-30); here they only locate the quotes the
+        # upright pass missed.
         for k in (1, 3):
             if not pending:
                 break
-            try:
-                rruns = _ocr_runs(np.rot90(arr, k))
-                rjoined = _join_adjacent_runs(rruns)
-            except Exception:
+            if k not in rot_passes:
                 continue
-            _norms_seen.update(r[0] for r in rruns)
-            _norms_seen.update(j[0] for j in rjoined)
+            rruns, rjoined = rot_passes[k]
             still = []
             for path, s, nq in pending:
                 anchors = _feature_anchors_for_path(path)
@@ -1974,13 +2016,7 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
                     if _skres:
                         rect, via_skel_norm = _skres
                 if rect:
-                    x0r, y0r, x1r, y1r = rect
-                    if k == 1:      # CCW: upright x = W-1-yr, y = xr
-                        x0, x1 = w - 1 - y1r, w - 1 - y0r
-                        y0, y1 = x0r, x1r
-                    else:           # CW:  upright x = yr, y = H-1-xr
-                        x0, x1 = y0r, y1r
-                        y0, y1 = h - 1 - x1r, h - 1 - x0r
+                    x0, y0, x1, y1 = _map_rot_box(rect, k, w, h)
                     s["loc"] = {"x_pct": round(x0 / w * 100, 2),
                                 "y_pct": round(y0 / h * 100, 2),
                                 "w_pct": round(max(x1 - x0, 1) / w * 100, 2),
@@ -2006,9 +2042,7 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         # `misread_of` and downstream nulling lands it on `_dim_misread`
         # instead of `_dim_fabricated`. Coverage rides on every miss
         # so the fabricated-vs-weak distinction can be made downstream.
-        _page_chars = sum(len(n) for n in _norms_seen)
-        page_ocr_chars[page] = _page_chars
-        page_run_norms[page] = sorted(_norms_seen)
+        _page_chars = page_ocr_chars[page]
 
         def _sub1(a: str, b: str) -> bool:
             if len(a) != len(b) or len(a) < 2:
