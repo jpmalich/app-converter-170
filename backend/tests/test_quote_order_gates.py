@@ -75,10 +75,14 @@ def test_tier_assignments_sealed():
     # fill-in box is SCOPE NOT SET, never $0 — hard quote block, the
     # silent-zero class (a nudge you can click past is how the zero
     # reaches a homeowner).
+    # footprint_does_not_close ADDED by Ruling EE 2026-08-14 send-25: a
+    # face that fails DD footprint closure is NOT DERIVABLE and hard-blocks
+    # the quote — pricing a face against a check that says it cannot be
+    # closed is the exact silent number EE exists to stop.
     assert QUOTE_BLOCKING == {
         "facade_scope_unresolved_zero", "area_conservation_breach",
         "siding_family_conflict", "no_siding_on_siding_job",
-        "photo_fillin_unset"}
+        "photo_fillin_unset", "footprint_does_not_close"}
     assert ORDER_BLOCKING == {
         "batten_wall_heights", "corner_locators", "opening_schedule",
         "opening_facade_attribution", "porch_ceiling_implied"}

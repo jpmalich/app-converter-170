@@ -166,8 +166,16 @@ def _safe_float(v, default=0.0):
         return default
 
 
-def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -> dict:
+def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap",
+                               refused_faces=None) -> dict:
     """Aggregate Claude's per-wall callouts into a structured rollup.
+
+    RULING EE (send-25): `refused_faces` {label(lower) → reason} forces a
+    face that FAILED footprint closure to NOT DERIVABLE — it contributes
+    nothing to per_profile and is NAMED on faces_not_derivable with the
+    failing relation verbatim. The wall's read width is NOT nulled (the
+    value stays on the record as the failing input; "does not close" is a
+    different sentence from "width not read").
 
     Returns a dict with top-level keys:
         per_elevation: [{label, wall_body_sqft, wall_body_profile,
@@ -212,6 +220,7 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
     faces_not_derivable: list[dict] = []
     skipped_echo = 0
     malformed = 0
+    refused_faces = {str(k).lower(): v for k, v in (refused_faces or {}).items()}
 
     def _add(family: str, sqft: float):
         if sqft <= 0 or family in ("", "unknown") or is_non_siding_family(family):
@@ -220,6 +229,21 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap") -
 
     for w in walls or []:
         label = str(w.get("label") or "").lower() or "unknown"
+        if label in refused_faces:
+            # RULING EE: footprint closure refuses this face. NOT DERIVABLE,
+            # named with the failing relation; no area rides into per_profile.
+            faces_not_derivable.append({
+                "elevation": label, "surface": "footprint_closure",
+                "reason": refused_faces[label]})
+            per_elevation.append({
+                "label": label, "wall_body_sqft": None,
+                "wall_body_derivable": False, "wall_body_subset": False,
+                "wall_body_profile": "", "wall_body_callout": "",
+                "gable_sqft": None, "gable_profile": "", "gable_callout": "",
+                "dormer_sqft": 0.0, "dormer_profile": "", "dormer_callout": "",
+                "accents": [], "stone_sqft": 0.0, "stone_callout": "",
+                "refused": True, "refused_reason": refused_faces[label]})
+            continue
         # RULING Q (send-18): base-course width (and the gable width below)
         # route through the status-carrying gateway wall_width_for_pricing —
         # a killed width returns (0.0, False) so it can never be priced as a

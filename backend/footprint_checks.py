@@ -135,8 +135,24 @@ def footprint_closure(m: dict) -> dict:
       2. SEGMENTS sum to their face width,
       3. opposing DEPTHS: a side whose opposite is unread cannot be closed →
          its depending face is UNVERIFIED (never confirmed from one end).
-    Returns {closes, checks, failing_relations, unverified_faces}."""
+
+    RULING EE (Howard sealed 2026-08-14 send-25): a face that fails closure
+    is NOT DERIVABLE and blocks the gate — but the width IS NOT NULLED at
+    source (that conflates "width not read" with "read, does not close" and
+    erases the failing relation's own evidence). Instead every failing
+    relation is mapped to the face(s) it implicates in `refused_faces`
+    {face → "footprint does not close: <failing relation verbatim>"}. The
+    derivation refuses that face's quantity through the Ruling J status path
+    naming this reason, retaining the read value as the failing input.
+
+    Returns {closes, checks, failing_relations, unverified_faces,
+    refused_faces}."""
     checks, failing, unverified = [], [], []
+    # RULING EE: per-face failing-relation reasons (relation verbatim).
+    face_reasons: dict[str, list] = {}
+
+    def _refuse(face, relation):
+        face_reasons.setdefault(str(face), []).append(relation)
 
     def _width(face):
         w = _wall_by_label(m, face)
@@ -150,7 +166,10 @@ def footprint_closure(m: dict) -> dict:
         checks.append({"relation": "front.width == back.width",
                        "values": [fw, bw], "ok": ok})
         if not ok:
-            failing.append(f"front width {fw:g} != back width {bw:g} — footprint does not close on width")
+            rel = f"front width {fw:g} != back width {bw:g} — footprint does not close on width"
+            failing.append(rel)
+            _refuse("front", rel)
+            _refuse("back", rel)
 
     # 2. segments sum to their face width.
     for w in (m.get("walls") or []):
@@ -158,9 +177,10 @@ def footprint_closure(m: dict) -> dict:
         sw = sum(_f(s.get("width_ft")) for s in segs)
         tw = _f(w.get("width_ft"))
         if segs and sw > 0 and tw > 0 and abs(sw - tw) >= 0.5:
-            failing.append(
-                f"{w.get('label')} segments sum to {sw:g} but the face width is "
-                f"{tw:g} — segments do not close to the face")
+            rel = (f"{w.get('label')} segments sum to {sw:g} but the face width is "
+                   f"{tw:g} — segments do not close to the face")
+            failing.append(rel)
+            _refuse(w.get("label"), rel)
             checks.append({"relation": f"{w.get('label')} Σsegments == width",
                            "values": [sw, tw], "ok": False})
 
@@ -177,17 +197,29 @@ def footprint_closure(m: dict) -> dict:
         db = db or _seg_depth(wb)
         if da > 0 and db <= 0:
             unverified.append(a)
-            failing.append(f"{a} depth {da:g} present but opposing {b} depth not read — {a} cannot be closed")
+            rel = f"{a} depth {da:g} present but opposing {b} depth not read — {a} cannot be closed"
+            failing.append(rel)
+            _refuse(a, rel)
         elif db > 0 and da <= 0:
             unverified.append(b)
-            failing.append(f"{b} depth {db:g} present but opposing {a} depth not read — {b} cannot be closed")
+            rel = f"{b} depth {db:g} present but opposing {a} depth not read — {b} cannot be closed"
+            failing.append(rel)
+            _refuse(b, rel)
         elif da > 0 and db > 0 and abs(da - db) >= 0.5:
             # allowed only if a named wing explains it; otherwise flag.
-            failing.append(f"{a} depth {da:g} != {b} depth {db:g} — footprint sides do not close (unexplained)")
+            rel = f"{a} depth {da:g} != {b} depth {db:g} — footprint sides do not close (unexplained)"
+            failing.append(rel)
+            _refuse(a, rel)
+            _refuse(b, rel)
 
+    refused_faces = {
+        f: "footprint does not close: " + "; ".join(rs)
+        for f, rs in face_reasons.items()
+    }
     return {
         "closes": not failing,
         "checks": checks,
         "failing_relations": failing,
         "unverified_faces": sorted(set(unverified)),
+        "refused_faces": refused_faces,
     }

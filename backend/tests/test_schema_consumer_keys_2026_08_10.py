@@ -88,6 +88,10 @@ INTERNAL_KEYS = {
     # reason} — when a wall's width/height was killed or never read. Our
     # own pipeline shape, never a model-produced key.
     "faces_not_derivable", "surface", "reason",
+    # RULING EE (2026-08-14 send-25): footprint_closure writes
+    # `refused_faces` {face → failing relation} — our own pipeline shape
+    # (DD instrument output), never a model-produced key.
+    "refused_faces", "refused",
 }
 
 

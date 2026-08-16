@@ -33,6 +33,11 @@ GATE_TIERS: dict[str, str] = {
                                              # an unset photo fill-in box is
                                              # SCOPE NOT SET, never $0 —
                                              # blocks like an open intake flag
+    "footprint_does_not_close": "quote",     # BLOCKING (Ruling EE, 2026-08-14
+                                             # send-25): a face that fails DD
+                                             # footprint closure is NOT
+                                             # DERIVABLE — never priced against
+                                             # a check that says it cannot close
     "vision_zero_pages": "quote",            # informational, LOUD, never blocks —
                                              # silent-zero-verification class
                                              # (Howard 2026-07-29): a verification
@@ -70,6 +75,7 @@ QUOTE_BLOCKING = frozenset({
     "facade_scope_unresolved_zero", "area_conservation_breach",
     "siding_family_conflict", "no_siding_on_siding_job",
     "photo_fillin_unset",  # ruled 2026-08-02 — silent-zero class, hard block
+    "footprint_does_not_close",  # Ruling EE 2026-08-14 send-25 — hard block
     # labor_pending_contractor REMOVED from blocking (Howard re-ruled
     # 2026-07-29): labor is N/A or >$0; anything else is UNDECIDED —
     # ONE line with a count, never a block.
@@ -181,6 +187,29 @@ def quote_gate_blockers(est: dict, measurements: dict | None = None) -> list[dic
                           f"{total - accounted:+.1f} ft² unaccounted. No ft² "
                           "disappears without an exclusion decision."),
             })
+
+    # footprint_does_not_close (Ruling EE, Howard sealed 2026-08-14 send-25):
+    # DD proves a footprint that cannot close. A face that fails closure is
+    # NOT DERIVABLE and the quote is BLOCKED — pricing a face against a
+    # check that says it cannot be closed is the exact silent number EE
+    # exists to stop. The failing relations print verbatim; the surface
+    # says "footprint does not close", NEVER "wall width not read".
+    fc = m.get("_footprint_closure")
+    if isinstance(fc, dict) and fc.get("closes") is False:
+        rels = [str(r) for r in (fc.get("failing_relations") or [])]
+        refused = list((fc.get("refused_faces") or {}).keys())
+        items.append({
+            "code": "footprint_does_not_close", "tier": "quote", "blocking": True,
+            "failing_relations": rels,
+            "refused_faces": refused,
+            "label": ("FOOTPRINT DOES NOT CLOSE — "
+                      + (f"{len(refused)} face(s) refused ({', '.join(refused)}); "
+                         if refused else "")
+                      + "; ".join(rels)
+                      + ". A face that fails closure is NOT DERIVABLE — resolve "
+                      "the relation before quoting (do not price a face that "
+                      "cannot be closed)."),
+        })
 
     # photo_fillin_unset (Howard ruled 2026-08-02): a photo estimate with
     # empty fill-in boxes at quote time would price soffit/drip edge on a

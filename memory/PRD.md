@@ -1,5 +1,65 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-14 SEND-25 — DD WIRED (Ruling EE) + OCR PERSISTED (Ruling GG) + INT-KEY GUARD + FF DESIGN REPORT
+Suite **2475 passed / 9 skipped** (+11 send-25 pins, register test
+`tests/test_rulings_2026_08_14_send25.py`). Order followed exactly:
+EE → GG → int-key guard → FF (report only, NOT built).
+
+**RULING EE — footprint closure WIRED into the live derivation.** A face
+that fails DD closure is NOT DERIVABLE and BLOCKS the quote gate — but the
+width is **NOT nulled at source** (that conflates "width not read" with
+"read, does not close" and erases the failing relation's own evidence).
+Instead `footprint_closure` (footprint_checks.py) now returns
+`refused_faces` {face → "footprint does not close: <failing relation
+verbatim>"}. `_aggregate_to_hover_shape` computes closure BEFORE the walk
+and threads `refused_faces` into `walk_walls`, the sanity walk, and
+`breakdown_walls_by_profile` (all gained a `refused_faces` param): the
+refused face contributes NO body/gable area and is named on
+`faces_not_derivable` with surface `footprint_closure`. New QUOTE-blocker
+`footprint_does_not_close` in gates.py (registered in GATE_TIERS +
+QUOTE_BLOCKING; sealed pin updated). **CONSEQUENCE, stated plainly: a fresh
+EST-713272 read now MOSTLY REFUSES** — RIGHT reads "footprint does not
+close: right depth 39 present but opposing left depth not read — right
+cannot be closed", NEVER "wall width not read". Boni accuracy was NOT
+touched (per mandate).
+
+**RULING GG — OCR text persisted with page + per-string position.**
+`_ocr_locate_evidence` now keeps every upright `_ocr_runs` tuple (norm, raw,
+bbox) per page as `raw["_ocr_text_by_page"] = {str(page): {page_w, page_h,
+runs:[{norm, raw, loc:{x/y/w/h_pct}}]}}` — ALL runs, no per-page cap,
+positions as PERCENT-of-page (resolution-independent) with page dims
+alongside; both norm and raw persist. `_persist_ocr_text` keeps it on the
+run doc by default; when the blob would push the run doc toward BSON's
+ceiling (>8MB) it moves to its own collection `ai_blueprint_ocr` keyed by
+run_id with a pointer `_ocr_text_ref`. Truncation is LAST RESORT only
+(single doc > 15MB), loud + specific (page → dropped count) so a lookup that
+could have hit a dropped run resolves UNVERIFIED not NOT LOCATED.
+
+**INT-KEY WRITE GUARD (mandatory now, not "if free").** `_coerce_bson_keys`
+recursively coerces every non-string dict key to str at THE single run-doc
+write boundary and RECORDS each fire on the doc (`_int_key_coercions`) so an
+int-keyed source stays visible. Replaces the field-by-field str() the class
+survived once. Boundary-has-teeth pin included.
+
+**RULING FF — Anchor design report (NOT built).**
+`memory/ruling_ff_anchor_design_2026-08-14_send25.md`. Splits the question:
+Q1 which depth belongs to the garage block, Q2 which side elevation shows
+the garage's outboard wall (primary signal = printed title block, grounded
+on a garage feature). Orientation DERIVED (width vs depth axis), never
+assumed. Required UNVERIFIED paths incl. U4 "house on both sides → no
+outboard wall". CC conflict handling unchanged. Closure verifies whatever
+the anchor assigns. On frozen EST-713272 run 6 the anchor MOST LIKELY
+returns UNVERIFIED (run 6 predates GG — the title/depth boxes it needs were
+discarded); on a fresh read it reaches RIGHT=33'-0", LEFT=30'-2" and closes.
+Face-disambiguation proper stays BLOCKED pending Howard's approval.
+
+**Files changed:** backend/footprint_checks.py, measure_staging.py,
+profile_callouts.py, gates.py, routes/ai_blueprint.py; register test +
+detector allowlists updated (seam_accounting SLICE_ALLOWLIST `runs[:keep]`,
+schema_consumer_keys INTERNAL_KEYS `refused_faces`/`refused`,
+test_quote_order_gates QUOTE_BLOCKING).
+
+
 ## 2026-08-14 SEND-16 — STANDING PRINCIPLE SEALED + RULING J/K/L PLUMBING (status-carrying quantities)
 Suite 2418→**2431 passed / 12 skipped**.
 

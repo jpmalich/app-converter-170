@@ -619,6 +619,93 @@ def _json_from_reply(text: str) -> dict:
         raise HTTPException(status_code=502, detail=f"AI returned invalid JSON: {e}")
 
 
+# ---------------------------------------------------------------------------
+# INT-KEY WRITE GUARD (Howard sealed 2026-08-14 send-25). A non-string dict
+# key reaching a BSON write crashed a whole read once (run 2, page-index key
+# 11). The str() fix for _ocr_page_coverage_chars was FIELD-BY-FIELD and the
+# class survived it — Ruling GG adds another page-indexed dict, so the guard
+# is now mandatory and lives at THE single write boundary, recursively.
+# RIDER: it RECORDS every fire on the doc (_int_key_coercions) so the
+# upstream source stays visible rather than being laundered at the boundary.
+_OCR_ONDOC_MAX_BYTES = 8 * 1024 * 1024   # >8MB OCR blob ⇒ move off the run doc
+_OCR_HARD_MAX_BYTES = 15 * 1024 * 1024   # a single OCR doc must clear BSON's ceiling
+
+
+def _coerce_bson_keys(obj, path, fired):
+    """Recursively coerce every non-string dict key to str at the write
+    boundary. Appends '<path>.<key>' to `fired` for each coercion so the
+    int-keyed source is named, never silently normalised. Lists/scalars
+    pass through; only dict keys are touched."""
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            ck = k if isinstance(k, str) else str(k)
+            if ck is not k and not isinstance(k, str):
+                fired.append(f"{path}.{ck}")
+            out[ck] = _coerce_bson_keys(v, f"{path}.{ck}", fired)
+        return out
+    if isinstance(obj, list):
+        return [_coerce_bson_keys(v, f"{path}[{i}]", fired)
+                for i, v in enumerate(obj)]
+    return obj
+
+
+def _bson_len(doc) -> int:
+    try:
+        import bson
+        return len(bson.BSON.encode(doc))
+    except Exception:
+        return 0
+
+
+async def _persist_ocr_text(run_id, raw) -> None:
+    """RULING GG (send-25): persist the per-page OCR. DEFAULT is onto the run
+    doc; when the blob would push the run doc toward BSON's ceiling it moves
+    to its OWN collection (ai_blueprint_ocr) keyed by run_id — Howard's escape
+    hatch over truncation. `_ocr_text_ref` ALWAYS names where the OCR lives so
+    a lookup can find it. Truncation fires only if even a standalone OCR doc
+    would bust the hard ceiling; it is loud and specific (page → dropped
+    count) so a later lookup that could have hit a dropped run resolves to
+    UNVERIFIED, never NOT LOCATED."""
+    blob = raw.get("_ocr_text_by_page")
+    if not blob:
+        return
+    size = _bson_len({"by_page": blob})
+    if size <= _OCR_ONDOC_MAX_BYTES:
+        raw["_ocr_text_ref"] = {"where": "run_doc", "approx_bytes": size,
+                                "pages": sorted(blob.keys())}
+        return
+    # Move off the run doc into its own collection.
+    raw.pop("_ocr_text_by_page", None)
+    truncated: dict = {}
+    if size > _OCR_HARD_MAX_BYTES:
+        # LAST RESORT: halve the largest run lists until under the ceiling,
+        # recording exactly which pages lost how many runs.
+        for pg in sorted(blob, key=lambda p: -len(blob[p].get("runs") or [])):
+            runs = blob[pg].get("runs") or []
+            keep = max(1, len(runs) // 2)
+            if keep >= len(runs):
+                continue
+            truncated[pg] = len(runs) - keep
+            blob[pg]["runs"] = runs[:keep]
+            blob[pg]["_truncated_dropped"] = len(runs) - keep
+            if _bson_len({"by_page": blob}) <= _OCR_HARD_MAX_BYTES:
+                break
+    fired: list = []
+    doc = _coerce_bson_keys(
+        {"run_id": run_id, "by_page": blob, "truncated": truncated or None},
+        "ocr", fired)
+    doc["_int_key_coercions"] = fired
+    if truncated:
+        logger.warning("[ai-blueprint] OCR truncation (LAST RESORT) run=%s dropped=%s",
+                       run_id, truncated)
+    await db.ai_blueprint_ocr.replace_one({"run_id": run_id}, doc, upsert=True)
+    raw["_ocr_text_ref"] = {"where": "ai_blueprint_ocr", "run_id": run_id,
+                            "approx_bytes": size, "pages": sorted(blob.keys()),
+                            "truncated": truncated or None}
+
+
+
 # =========================================================================
 # ROOF GEOMETRY PASS (Boni second send, Howard 2026-08-05). The single
 # 11-sheet read repeatedly dropped the garage roof plane and the garage-
@@ -1743,6 +1830,15 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
     # character-edit from a real run on the same page's pixels, is a
     # TRANSCRIPTION error, not a fabrication.
     page_run_norms: dict[int, list[str]] = {}
+    # RULING GG (Howard sealed 2026-08-14 send-25): PERSIST the OCR text
+    # with page + per-string position. The (norm, raw, bbox) tuple already
+    # computed for matching is discarded today; keep ALL of it (no per-page
+    # cap — an arbitrary N drops the one dimension that matters). Positions
+    # are PERCENT-of-page (resolution-independent — absolute pixels die on a
+    # re-raster at a different DPI); the page's own dims ride alongside so a
+    # highlight renders back. raw is what a contractor sees printed and is
+    # the only version worth quoting; norm is what matching uses — both persist.
+    ocr_text_by_page: dict[str, dict] = {}
     for page, entries in wanted.items():
         try:
             with Image.open(io.BytesIO(image_payloads[page - 1])) as im:
@@ -1753,6 +1849,19 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         except Exception:
             logger.exception("[ai-blueprint] OCR failed on page %s — quote anchors stand", page)
             continue
+        # RULING GG: persist every upright run on this page with its
+        # percent-box + the page's own dims. (norm, raw, bbox) all ride.
+        _pw, _ph = max(w, 1), max(h, 1)
+        ocr_text_by_page[str(page)] = {
+            "page_w": int(w), "page_h": int(h),
+            "runs": [{
+                "norm": _r[0], "raw": _r[1],
+                "loc": {"x_pct": round(_r[2][0] / _pw * 100, 2),
+                        "y_pct": round(_r[2][1] / _ph * 100, 2),
+                        "w_pct": round(max(_r[2][2] - _r[2][0], 1) / _pw * 100, 2),
+                        "h_pct": round(max(_r[2][3] - _r[2][1], 1) / _ph * 100, 2)},
+            } for _r in runs],
+        }
         # Coverage = summed length of every distinct normalised token
         # (upright + joined + rotated 90°/270°). Rotated passes are
         # added below when they run; seed with upright now so a page
@@ -1939,6 +2048,11 @@ def _ocr_locate_evidence(evidence: dict, image_payloads: list, raw: dict) -> Non
         # SEND-11 coverage work never crossed the persistence boundary
         # in a test, so it shipped broken. Stringify at the write edge.
         raw["_ocr_page_coverage_chars"] = {str(p): n for p, n in page_ocr_chars.items()}
+    if ocr_text_by_page:
+        # RULING GG: hand the per-page OCR to the worker. Whether it rides
+        # on the run doc or moves to its own collection (size guard) is
+        # decided at the persist boundary — never truncated silently here.
+        raw["_ocr_text_by_page"] = ocr_text_by_page
 
 
 def _null_unverified_quotes(raw: dict) -> None:
@@ -3901,15 +4015,33 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         return printed_gh
 
     gable_pitch_provenance = []
+    # RULINGS CC + DD + EE (send-24/25): compute footprint closure BEFORE
+    # the walk so a face that fails closure is refused THROUGH the
+    # derivation (Ruling EE) — NOT DERIVABLE, blocking the gate — while its
+    # read width stays on the record as the failing input. `refused_faces`
+    # maps face → "footprint does not close: <failing relation verbatim>".
+    try:
+        from footprint_checks import garage_side_verdict, footprint_closure
+        _fp_src = {"walls": walls, "doors": doors,
+                   "roof_planes": raw.get("roof_planes") or [],
+                   "elevation_labels": raw.get("sheets_identified") or []}
+        _garage_verdict = garage_side_verdict(_fp_src)
+        _closure = footprint_closure(_fp_src)
+        _refused_faces = _closure.get("refused_faces") or {}
+    except Exception:
+        _garage_verdict, _closure, _refused_faces = None, None, {}
     # ONE WALL WALK (ruled 2026-08-01, step 1): shared math in
     # measure_staging.walk_walls — GABLE FACTOR 0.70 sealed across doors
     # (the pre-C4 0.5 true-triangle retired). Blueprint's source adapter
     # keeps the pitch-computed rise (printed pitch beats drawing-scaled).
-    _walk = staging.walk_walls(walls, gable_rise_fn=_gable_rise)
+    _walk = staging.walk_walls(walls, gable_rise_fn=_gable_rise,
+                               refused_faces=_refused_faces)
     siding_sqft = _walk["siding_sqft"]
     gable_sqft = _walk["gable_sqft"]
     dormer_sqft = _walk["dormer_sqft"]
     for d in _walk["detail"]:
+        if d.get("refused"):
+            continue  # RULING EE: a closure-refused face carries no rise
         if d["rise_used"] != d["rise_read"]:
             gable_pitch_provenance.append({
                 "wall": (d["label"] or "?"),
@@ -4408,7 +4540,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # the formula (0.5 gable, its own pct clamp) — the drift detector had
     # itself drifted. It now recomputes through the ONE shared walk; a
     # >2% delta can only mean someone forked the aggregation math again.
-    _sanity = staging.walk_walls(walls, gable_rise_fn=_gable_rise)
+    _sanity = staging.walk_walls(walls, gable_rise_fn=_gable_rise,
+                                 refused_faces=_refused_faces)
     threed_sqft = (_sanity["siding_sqft"] + _sanity["gable_sqft"]
                    + _sanity["dormer_sqft"] + appendage_sqft)
     if siding_sqft > 0:
@@ -4425,7 +4558,7 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # AI Measure aggregator (see routes/ai_measure.py).
     try:
         from profile_callouts import breakdown_walls_by_profile, apply_annotations_to_breakdown
-        breakdown = breakdown_walls_by_profile(walls)
+        breakdown = breakdown_walls_by_profile(walls, refused_faces=_refused_faces)
         breakdown = apply_annotations_to_breakdown(breakdown, annotations)
         measurements["_per_elevation_breakdown"] = breakdown["per_elevation"]
         measurements["_per_profile_sqft"] = breakdown["per_profile_sqft"]
@@ -4434,20 +4567,12 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         measurements["_per_elevation_breakdown"] = []
         measurements["_per_profile_sqft"] = {}
         measurements["_faces_not_derivable"] = []
-    # RULINGS CC + DD (send-24): garage-side contradiction detector and
-    # footprint closure — surfaced report fields. They refuse/flag; the
-    # live NOT-DERIVABLE enforcement off DD is the follow-on wiring step.
-    try:
-        from footprint_checks import garage_side_verdict, footprint_closure
-        _fp_src = {"walls": raw.get("walls") or [],
-                   "doors": raw.get("doors") or [],
-                   "roof_planes": raw.get("roof_planes") or [],
-                   "elevation_labels": raw.get("sheets_identified") or []}
-        measurements["_garage_side_verdict"] = garage_side_verdict(_fp_src)
-        measurements["_footprint_closure"] = footprint_closure(_fp_src)
-    except Exception:
-        measurements["_garage_side_verdict"] = None
-        measurements["_footprint_closure"] = None
+    # RULINGS CC + DD + EE (send-24/25): garage-side contradiction detector
+    # and footprint closure. DD now WIRED — refused faces above go NOT
+    # DERIVABLE through the derivation and the report field drives the
+    # quote-gate blocker (gates.footprint_does_not_close).
+    measurements["_garage_side_verdict"] = _garage_verdict
+    measurements["_footprint_closure"] = _closure
     return measurements
 
 
@@ -5239,6 +5364,27 @@ async def _execute_ai_blueprint_worker(
                     stability = compute_read_stability(prev_raw, raw)
         except Exception:
             logger.exception("[ai-blueprint] stability compare failed — served without")
+        # RULING GG (send-25) — persist OCR text. Default: onto the run doc.
+        # SIZE GUARD (Howard: separate collection over truncation): when the
+        # OCR blob would push the run doc toward BSON's 16MB ceiling it moves
+        # to its own collection keyed by run_id; a pointer stays on the run
+        # doc. Truncation is a LAST RESORT — loud and specific (names pages +
+        # dropped counts) so a later lookup that could have hit a dropped run
+        # returns UNVERIFIED, never NOT LOCATED ("not stored" ≠ "not on the
+        # sheet").
+        try:
+            await _persist_ocr_text(run_id, raw)
+        except Exception:
+            logger.exception("[ai-blueprint] OCR-text persist failed — read stands without it")
+        # INT-KEY WRITE GUARD (send-25): recursive key coercion at THE single
+        # write boundary; every fire recorded on the doc so an int-keyed
+        # source stays visible instead of being laundered.
+        _key_fired: list = []
+        result = _coerce_bson_keys(result, "result", _key_fired)
+        if _key_fired:
+            result.setdefault("measurements", {})["_int_key_coercions"] = _key_fired
+            logger.warning("[ai-blueprint] int-key coercion fired at write boundary: %s",
+                           _key_fired)
         await db.ai_blueprint_runs.update_one(
             {"run_id": run_id},
             {"$set": {

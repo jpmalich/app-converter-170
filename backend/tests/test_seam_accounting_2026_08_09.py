@@ -80,6 +80,13 @@ SLICE_ALLOWLIST = {
     "image_payloads[:5]",
     # INERT — OCR run-join window bound; a loop bound, removes nothing.
     "min(i + max_window, len(rs))",
+    # ACCOUNTED (Ruling GG, 2026-08-14 send-25) — OCR-text LAST-RESORT
+    # truncation in _persist_ocr_text. It fires only if a standalone OCR
+    # doc would bust the BSON hard ceiling; the drop is recorded on the doc
+    # (truncated: {page → dropped count} + _ocr_text_ref.truncated) and
+    # logged LOUD, so a later lookup that could have hit a dropped run
+    # returns UNVERIFIED, never NOT LOCATED.
+    "runs[:keep]",
 }
 
 

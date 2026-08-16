@@ -1,0 +1,171 @@
+# RULING FF — GARAGE ANCHOR DESIGN REPORT (report only, NOT built)
+Howard sealed 2026-08-14 send-25. This is a DESIGN, not a build. Nothing in
+the derivation is wired to it. It answers the corrected question and states
+what it would do on the one house with confirmed ground truth (EST-713272
+run 6) before anyone authorizes the build.
+
+The defect it targets: face attribution cross-wires — a LEFT dimension is
+read onto RIGHT (and vice-versa), so the wrong depth prices the wrong side.
+DD (Ruling EE) now REFUSES a face that cannot be closed; the anchor is what
+would let a refused face DERIVE again by binding a depth to the correct side
+with evidence instead of a coin-flip.
+
+--------------------------------------------------------------------------
+## 1. SPLIT THE QUESTION IN TWO (Howard's instruction)
+They have different evidence and different failure modes and MUST be able to
+fail independently:
+
+  Q1  WHICH DEPTH belongs to the garage block?   (a dimension)
+  Q2  WHICH SIDE ELEVATION shows the garage's outboard wall?  (a face)
+
+- Answering Q2 without Q1 gives a side with no dimension.
+- Answering Q1 without Q2 gives a dimension with no face.
+Both are required; the anchor returns a RESULT only when BOTH resolve and
+AGREE. Either one UNVERIFIED ⇒ the whole anchor is UNVERIFIED (no default).
+
+--------------------------------------------------------------------------
+## 2. CANDIDATE SIGNALS — assessed, with the choice named
+
+### A. PLAN-SIDE — garage label bbox along the footprint's WIDTH axis
+Read the garage LABEL's box (now persisted by Ruling GG) and ask: does it sit
+in the left half or the right half of the footprint's WIDTH extent?
+- Requires: (i) locating the footprint extent on the floor-plan sheet, and
+  (ii) knowing which drawn axis is WIDTH and which is DEPTH.
+- STRENGTH: independent of the elevation sheets; uses the label we already
+  have a box for.
+- WEAKNESS: needs the footprint extent, which the OCR substrate does not give
+  directly — it gives text boxes, not the building outline. Usable as a
+  SECONDARY/corroborating signal, not the primary.
+- USE: yes, as the plan-side half of a CONFLICT check against B — never alone.
+
+### B. ELEVATION-SIDE — the side-elevation title block  ← PRIMARY
+The side-elevation sheet whose TITLE BLOCK reads "LEFT ELEVATION" or "RIGHT
+ELEVATION" and which DEPICTS GARAGE FEATURES.
+- Why it beats the label path: the title block is PRINTED TEXT, not a model
+  inference. The crossed dimension came from inferring a face; a printed
+  "RIGHT ELEVATION" string is read, not inferred. This is the whole reason it
+  is the primary.
+- "Depicts garage features" must be GROUNDED, never eyeballed. Acceptable
+  grounding, in priority order:
+    1. a printed "GARAGE" annotation whose box sits on that sheet (GG box),
+    2. a garage door on that elevation (door row with elevation == that face),
+    3. a distinct LOWER wall height on that sheet (garage wing sides lower
+       than the 2-story body) — corroborating only, never sole grounding.
+- USE: PRIMARY for Q2. The face is whatever the title block says, gated on at
+  least one grounded garage feature on that same sheet.
+
+### C. DEPTH BINDING — depth string nearest the garage block's outboard edge
+For Q1: among the persisted plan-sheet strings, the depth dimension nearest
+the garage block's OUTBOARD edge. This is exactly what the per-string boxes
+(Ruling GG) were persisted for.
+- Requires the outboard edge location, which follows from Q2 (the outboard
+  side is the side named by the title block) + the footprint extent.
+- USE: PRIMARY for Q1, but ONLY after Q2 has named the outboard side.
+
+### ORIENTATION — DERIVE IT, DO NOT ASSUME IT
+Front-at-the-bottom is a CONVENTION, not a guarantee; a wrong orientation
+assumption fails silently and looks exactly like a correct one. The anchor
+does NOT need FRONT-vs-BACK — it needs WIDTH-axis vs DEPTH-axis, which is a
+smaller and more reliable problem:
+- The WIDTH axis is the one the FRONT/BACK overall widths run along
+  (front width == back width, a DD closure input). The DEPTH axis is
+  perpendicular. Establish the axis from the printed overall-dimension
+  strings and their boxes (which pair of parallel strings are the equal
+  front/back widths). If the axis cannot be established from the sheet, the
+  result is UNVERIFIED — never a default orientation.
+
+--------------------------------------------------------------------------
+## 3. REQUIRED UNVERIFIED PATHS (Ruling FF: "an anchor that always answers
+is a coin flip with better manners"). Each returns UNVERIFIED with a NAMED
+reason — never a guess:
+
+  U1  no garage label found                 → Q2 unverified: "no garage label"
+  U2  label found but no depth string binds  → Q1 unverified: "no depth bound
+                                               to the garage block"
+  U3  plan orientation cannot be derived     → both unverified: "width/depth
+                                               axis not established"
+  U4  GARAGE HAS HOUSE ON BOTH SIDES         → NO OUTBOARD WALL EXISTS. This
+      is Howard's "almost always" exception. The design must DETECT it, not
+      answer anyway: when the garage block's left AND right neighbours are
+      both interior (house continues on both sides on the plan / no outboard
+      elevation names the garage), return NO_OUTBOARD_WALL, distinct from
+      UNVERIFIED. A side-entry garage (Boni) has exactly one outboard side;
+      a front-entry garage tucked between wings has none.
+
+--------------------------------------------------------------------------
+## 4. CONFLICT HANDLING (Ruling CC applies unchanged)
+Signals A and B disagreeing ⇒ CONFLICT: both sides REFUSE. No majority, no
+winner, no "prefer the stronger signal." Name which signal said what
+(e.g. "plan label → left half; title block → RIGHT ELEVATION"). The garage
+side stays refused until the conflict is resolved by evidence, exactly as
+garage_side_verdict already does for the CC signals today.
+
+--------------------------------------------------------------------------
+## 5. WHERE CLOSURE SITS IN THE SEQUENCE
+The anchor ASSIGNS; footprint_closure (DD) CHECKS; where they disagree the
+face REFUSES. Sequence:
+
+  read → GG OCR substrate persisted
+       → anchor: Q2 (title block) then Q1 (depth binding) → (face, depth)
+       → write that depth onto the assigned side's wall record
+       → footprint_closure runs on the assembled walls (unchanged)
+       → if closure fails for that side, EE refuses it (as it does now)
+
+So the anchor never overrides DD. A wrong assignment that breaks closure is
+caught by the check that is already wired, and the face goes NOT DERIVABLE
+with the failing relation named — the anchor cannot smuggle a bad depth past
+DD.
+
+--------------------------------------------------------------------------
+## 6. WHAT THE ANCHOR WOULD PRODUCE ON EST-713272 RUN 6 — signal by signal
+Confirmed ground truth (Howard): RIGHT side-entry garage; RIGHT = 33'-0",
+LEFT = 30'-2". A design that cannot say what it would do on the one house
+with ground truth is not ready to build.
+
+  Q2 (face):
+   - Signal B (title block): if run 6's side-elevation sheets carry printed
+     "RIGHT ELEVATION" + a grounded garage feature (garage door / GARAGE
+     annotation / lower wall height on that sheet) → Q2 = RIGHT.
+   - Signal A (plan label half): garage label in the RIGHT half of the width
+     axis → RIGHT. Corroborates B → no conflict → Q2 = RIGHT (VERIFIED-side).
+   - IF run 6's OCR did NOT capture a "RIGHT/LEFT ELEVATION" title box (the
+     read that produced the crossed dimension may not have persisted the
+     title strings — GG did not exist then) → Q2 = UNVERIFIED "no title box".
+     HONEST STATE: on the frozen run 6 the anchor MOST LIKELY returns
+     UNVERIFIED for Q2, because run 6 predates GG and the title/label boxes
+     it needs were discarded. It would resolve to RIGHT only on a FRESH read
+     that persists the substrate.
+
+  Q1 (depth):
+   - With Q2 = RIGHT, the depth string nearest the RIGHT outboard edge is the
+     30'-2" + garage-return that sums to the RIGHT depth. Whether the anchor
+     reaches RIGHT = 33'-0" depends on which depth strings run 6 persisted;
+     pre-GG it did not, so Q1 = UNVERIFIED "no depth bound" on the frozen run.
+
+  CLOSURE cross-check:
+   - Today (post-EE, pre-anchor) the frozen run: RIGHT has segment depth
+     30+9=39 with LEFT unread → DD refuses RIGHT ("footprint does not close:
+     right depth 39 present but opposing left depth not read"). The anchor,
+     once built and fed a FRESH read, would bind LEFT = 30'-2" and RIGHT =
+     33'-0" so both depths are present and close within tolerance — turning
+     the refusal into a DERIVED pair. On the FROZEN run it cannot, and it
+     correctly says so (UNVERIFIED), rather than manufacturing the answer.
+
+CONCLUSION for the build decision: the anchor's PRIMARY signal (title-block
+face) and its depth binding BOTH depend on the GG substrate that only exists
+from send-25 forward. On a fresh EST-713272 read it would return RIGHT /
+33'-0" and LEFT / 30'-2" and close; on the frozen run 6 it honestly returns
+UNVERIFIED. That is the correct behaviour — it does not pretend to know what
+its inputs never captured.
+
+--------------------------------------------------------------------------
+## 7. BUILD DEPENDENCIES (for Howard's go/no-go)
+- GG substrate persisted (DONE this send) — required by A, B, C.
+- Title-block string capture: GG persists page OCR only for pages that carry
+  model quotes today. Binding B reliably needs the side-elevation TITLE boxes
+  even on pages with no dimension quote → a small extension to OCR the
+  elevation/floor-plan sheets for title + GARAGE strings would be part of the
+  FF build (named here, NOT built).
+- Axis derivation from the front/back overall-width string pair.
+Face disambiguation proper (the wiring that writes the anchored depth onto
+the wall record) stays BLOCKED pending Howard's approval of this report.
