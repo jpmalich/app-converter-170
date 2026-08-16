@@ -353,3 +353,61 @@ STANDING: anchor stays BLOCKED; when lifted, first pass is a
 REPORT-ONLY DRY RUN and any working-anchor handback says UNVALIDATED
 until a second plan set runs. Variance observation pending fresh reads.
 Full machine report: /app/memory/send31_reprobe_report.json
+
+================================================================
+SEND-32 OUTCOMES (2026-08-16, appended — prediction file unrevised)
+BUILT: Ruling JJ (a rail candidate carries EXACTLY ONE dimension
+token) and Ruling KK (reference-plane verdict with the contradiction
+distinguisher). 10 new pinned tests; suite GREEN 2519.
+
+JJ RE-REPORT: exactly ONE change across 11 pages — p6 bottom rail
+recovered to the true 58-0° (y_hi 73.34 -> 70.15; the '×' size pair is
+out). NO page moved ESTABLISHED -> INDETERMINATE.
+
+KK DISTINGUISHER (as built and pinned): readings group BY PLANE.
+Same-plane disagreement -> CONTRADICTION (still reported as one).
+Cross-plane difference -> REFERENCE_PLANES (both correct; the material
+names which governs — siding wraps framing). Plane unknown ->
+INDETERMINATE ("cannot be told apart"), governing plane unread ->
+INDETERMINATE ("the other plane never substitutes"), unruled material
+-> INDETERMINATE ("no default"). NO magnitude threshold anywhere.
+Left depth verdict: REFERENCE_PLANES — framing 30'-0" (p6) GOVERNS
+siding; foundation 30'-2" (p4) visible alongside. UNVALIDATED.
+
+ITEM 3 — WHAT SEPARATES p1 STRUCTURALLY (from the persisted data):
+  1. GARAGE ROOM LABEL INSIDE THE ESTABLISHED ENVELOPE: p6 has exactly
+     two ('3 CAR GARAGE' x2, both RIGHT half); p1 has ZERO (its 13
+     garage-word runs are notes/title-block, all OUTSIDE its rail
+     box). ON THIS SET, POSITION ALONE SEPARATES — every garage note
+     on p6 (door schedule, blocking note, title block) sits outside
+     the envelope; only the room label sits inside. (A glyph-length
+     guard I probed with never fired — dropped from consideration,
+     not proposed.)
+  2. Also observed, reported not prescribed: V/H dim ratio — p1/p2
+     elevations 3.3-3.5, plan sheets 0.56-1.25.
+  The precondition also excludes p4, p7, p8, p9 (no room label inside
+  their envelopes) — the anchor's answer would come from p6 alone,
+  with p4/p7 as corroboration via their own probes.
+
+ANCHOR DRY RUN (report only, NO BIND — UNVALIDATED ON EVERY LINE):
+  p1 elevation: LEFT 29'-1, RIGHT 13-0* — an elevation's rail box is
+    NOT a footprint; the room-label precondition excludes it. UNVALIDATED.
+  p4 foundation: LEFT 30-2 (margin 0.08 over 5'10°), RIGHT 33-0*
+    (sole candidate). UNVALIDATED.
+  p6 first floor: LEFT 30-0*, RIGHT 33'-0' (each sole distinct;
+    garage room label RIGHT). UNVALIDATED.
+  p7 second floor: LEFT 30'-0°, RIGHT 33'0* (sole candidates). UNVALIDATED.
+  p8/p9 joist plans: BOTH faces return 30'-0" variants — RIGHT would
+    CROSS-WIRE 30'-0" onto the garage side (the original disease).
+    The room-label precondition excludes both sheets structurally. UNVALIDATED.
+  p2,p3,p5,p10,p11: INDETERMINATE, named reasons.
+  THE PHOTO FINISH (Howard's item): unique to p4 LEFT — 30-2 beats
+  its own chain mate 5'10° by 0.08pct of page width. HAD IT GONE THE
+  OTHER WAY the left depth would read 5'10" — wrong by ~24 feet, and
+  nothing in the rule would have flagged it. Every other plan-sheet
+  face wins as SOLE candidate (proves least). The rule as stated has
+  no notion of a chain's TOTAL vs its SEGMENTS — 5'10° is a segment
+  on the same chain as 30-2. NAMED, not patched: segment-vs-total
+  needs a ruling before any bind.
+STANDING: NO BIND into derivation. UNVALIDATED until a second plan
+set runs. Full machine report: /app/memory/send32_dryrun_report.json

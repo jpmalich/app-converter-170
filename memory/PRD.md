@@ -7479,3 +7479,21 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - ORDER AHEAD: anchor dry run (when Howard lifts block, report-only,
   UNVALIDATED until second plan set) -> per-surface zone binding (critical
   path) -> Ruling V conversion (2 PENDING_CONVERSION visible in census).
+
+## 2026-08-16 — SEND-32 (JJ + KK built; item-3 report; anchor DRY RUN — no bind)
+- JJ: single-dimension-token rails; one change (p6 bottom rail recovered), no
+  page lost ESTABLISHED. KK: reference_plane_verdict() in ocr_geometry with
+  same-plane=CONTRADICTION / cross-plane=REFERENCE_PLANES / unknown=
+  INDETERMINATE distinguisher; left depth: framing 30'-0" governs siding,
+  foundation 30'-2" alongside. 10 new tests; suite GREEN 2519.
+- Item 3: garage ROOM label inside envelope separates p1 (0) from p6 (2);
+  position alone suffices on this set. V/H ratio observed (elevations 3.3+).
+- Dry run (UNVALIDATED, no bind): p4/p6/p7 agree RIGHT=33'-0"; joist sheets
+  p8/p9 would cross-wire 30'-0" onto RIGHT — excluded by room-label
+  precondition. PHOTO FINISH named: p4 LEFT margin 0.08 over chain-mate
+  5'10° — segment-vs-chain-total needs a ruling before bind.
+- Files: ocr_geometry.py (JJ/KK), tests/test_rulings_2026_08_16_send32.py,
+  scripts/send32_dryrun.py, /app/memory/send32_dryrun_report.json.
+- NEXT (order): per-surface zone binding (critical path) -> Ruling V
+  conversion (2 PENDING_CONVERSION visible). Anchor bind awaits Howard after
+  dry-run read + second plan set.
