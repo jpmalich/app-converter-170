@@ -161,7 +161,7 @@ def test_correction2_missing_rail_means_indeterminate_never_a_default():
 def test_correction2_crossing_rails_refuse_the_envelope():
     runs = [
         _run("10'-0\"", 50.0, 40.0, 1.5, 1.0, og.HORIZONTAL),
-        _run("12'-0\"", 50.0, 40.5, 1.5, 1.0, og.HORIZONTAL),
+        _run("12'-0\"", 50.0, 41.6, 1.5, 1.0, og.HORIZONTAL),
         _run("8'-0\"", 40.0, 30.0, 0.6, 1.6, og.VERTICAL),
         _run("9'-0\"", 40.2, 50.0, 0.6, 1.6, og.VERTICAL),
     ]

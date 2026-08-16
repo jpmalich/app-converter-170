@@ -1,0 +1,1239 @@
+{
+ "UNVALIDATED": true,
+ "no_bind": true,
+ "item1_rails": {
+  "5": {
+   "status": "ESTABLISHED",
+   "rails": {
+    "top": "54'-0\"",
+    "bottom": "54'-0\"",
+    "left": "30'-0*",
+    "right": "30'-0*"
+   }
+  },
+  "7": {
+   "status": "ESTABLISHED",
+   "rails": {
+    "top": "54'-0*",
+    "bottom": "2'-11%2\"\u00d7 4\u2032-11/\"",
+    "left": "30'-0\"",
+    "right": "30'-0\""
+   }
+  }
+ },
+ "item2_xpos": {
+  "5": {
+   "left": {
+    "chosen": "30'-0*",
+    "x": 19.41
+   },
+   "right": {
+    "chosen": "30'-0*",
+    "x": 90.17
+   }
+  },
+  "7": {
+   "left": {
+    "chosen": "30'-0\"",
+    "x": 25.48
+   },
+   "right": {
+    "chosen": "30'-0\"",
+    "x": 89.82
+   }
+  }
+ },
+ "item2_garage_items": {
+  "estimate_lines_matching": [],
+  "run_result_lines_matching": []
+ },
+ "mm_census": {
+  "boni": {
+   "1": {
+    "readings": 387,
+    "strings": 179,
+    "conflicted": 2
+   },
+   "2": {
+    "readings": 380,
+    "strings": 172,
+    "conflicted": 0
+   },
+   "3": {
+    "readings": 749,
+    "strings": 240,
+    "conflicted": 0
+   },
+   "4": {
+    "readings": 323,
+    "strings": 169,
+    "conflicted": 0
+   },
+   "5": {
+    "readings": 159,
+    "strings": 81,
+    "conflicted": 0
+   },
+   "6": {
+    "readings": 465,
+    "strings": 272,
+    "conflicted": 0
+   },
+   "7": {
+    "readings": 331,
+    "strings": 204,
+    "conflicted": 0
+   },
+   "8": {
+    "readings": 339,
+    "strings": 148,
+    "conflicted": 3
+   },
+   "9": {
+    "readings": 225,
+    "strings": 96,
+    "conflicted": 1
+   },
+   "10": {
+    "readings": 139,
+    "strings": 74,
+    "conflicted": 0
+   },
+   "11": {
+    "readings": 201,
+    "strings": 86,
+    "conflicted": 0
+   }
+  },
+  "letrick": {
+   "1": {
+    "readings": 275,
+    "strings": 124,
+    "conflicted": 1
+   },
+   "2": {
+    "readings": 270,
+    "strings": 125,
+    "conflicted": 0
+   },
+   "3": {
+    "readings": 413,
+    "strings": 127,
+    "conflicted": 1
+   },
+   "4": {
+    "readings": 178,
+    "strings": 61,
+    "conflicted": 0
+   },
+   "5": {
+    "readings": 428,
+    "strings": 181,
+    "conflicted": 1
+   },
+   "6": {
+    "readings": 189,
+    "strings": 93,
+    "conflicted": 0
+   },
+   "7": {
+    "readings": 914,
+    "strings": 408,
+    "conflicted": 2
+   },
+   "8": {
+    "readings": 315,
+    "strings": 128,
+    "conflicted": 3
+   },
+   "9": {
+    "readings": 287,
+    "strings": 143,
+    "conflicted": 0
+   },
+   "10": {
+    "readings": 268,
+    "strings": 100,
+    "conflicted": 2
+   }
+  }
+ },
+ "axis_reverify_boni_p6_merged": {
+  "strings": 72,
+  "vertical": {
+   "n": 23,
+   "min": 0.0407,
+   "max": 0.1143
+  },
+  "horizontal": {
+   "n": 49,
+   "min": 0.212,
+   "max": 0.4328
+  },
+  "indeterminate": [],
+  "gap_holds": true
+ },
+ "ll_closure": {
+  "boni": {
+   "4": {
+    "chains": 9,
+    "closes": 0,
+    "fails": 9,
+    "unparseable": 0,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "13'-6\u00b0",
+       "14'-10\u201d"
+      ],
+      "residual_in": -16
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "14'-7*",
+       "4'-6*"
+      ],
+      "residual_in": -121
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "16'-1%\"",
+       "2'-5%",
+       "2'-5%*",
+       "9-1%"
+      ],
+      "residual_in": -26
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "15'-0*",
+       "8'-0\u00b0"
+      ],
+      "residual_in": -84
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "34-3%",
+       "23-8%"
+      ],
+      "residual_in": -127
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "6-3%",
+       "4-0\u00b0"
+      ],
+      "residual_in": -27
+     }
+    ]
+   },
+   "6": {
+    "chains": 19,
+    "closes": 1,
+    "fails": 18,
+    "unparseable": 0,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "5'-0\u00b0",
+       "19-9*"
+      ],
+      "residual_in": -177
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "13'-6%\"",
+       "15'-0\u00b0"
+      ],
+      "residual_in": -18
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "5'-7%\"",
+       "11'-0%",
+       "3'-0\u00b0",
+       "3'-11"
+      ],
+      "residual_in": 18
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "9-11%*",
+       "16'-7%",
+       "5'-5\u00b0"
+      ],
+      "residual_in": -15
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "58-0\u00b0",
+       "MIN.9'-11/8\"CEILINGHEIGHTONFIRSTFLOOR"
+      ],
+      "residual_in": -577
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "MIN.8'-11/8\"CEILINGHEIGHTONSECONDFLOOR",
+       "33-11%",
+       "24-0%"
+      ],
+      "residual_in": -12
+     }
+    ]
+   },
+   "7": {
+    "chains": 14,
+    "closes": 0,
+    "fails": 13,
+    "unparseable": 1,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "6-8%",
+       "8'-2%*"
+      ],
+      "residual_in": -18
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "13'-0*",
+       "3'-5*"
+      ],
+      "residual_in": -115
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "7'-3\u00b0",
+       "5'-6%"
+      ],
+      "residual_in": -21
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "5'-10*",
+       "5'-0\u00b0"
+      ],
+      "residual_in": -10
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "11-0\u00b0",
+       "14'-3*"
+      ],
+      "residual_in": -39
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "5'5%",
+       "16'-0*"
+      ],
+      "residual_in": -127
+     }
+    ]
+   },
+   "8": {
+    "chains": 9,
+    "closes": 0,
+    "fails": 8,
+    "unparseable": 1,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "5'-0\"",
+       "19'-9*",
+       "5'-3\""
+      ],
+      "residual_in": -114
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "1-4\"1-4\"",
+       "2'-0\u201c",
+       "1-11%",
+       "1-8\u00b02-4%"
+      ],
+      "residual_in": 35
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "6'6%\"",
+       "15'-11%"
+      ],
+      "residual_in": -113
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "1'-11%",
+       "2'-0*"
+      ],
+      "residual_in": -1
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "5'-9%\"",
+       "23'-11%\"",
+       "4'-3\""
+      ],
+      "residual_in": -167
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "9'-7%*",
+       "8'-3%"
+      ],
+      "residual_in": -16
+     }
+    ]
+   },
+   "9": {
+    "chains": 7,
+    "closes": 0,
+    "fails": 6,
+    "unparseable": 1,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "2'-0*",
+       "1'-11%"
+      ],
+      "residual_in": -1
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "3'-6\"",
+       "3'-1%\""
+      ],
+      "residual_in": -5
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "2'-0\u00b0",
+       "1'-11"
+      ],
+      "residual_in": -1
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "34'-0\"",
+       "1'-0%",
+       "1-1%",
+       "-1-2%",
+       "1'-4\"",
+       "1'-4\""
+      ],
+      "residual_in": -337
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "7'-5*",
+       "1-6%"
+      ],
+      "residual_in": -71
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "1'-1%\"",
+       "34'-0\""
+      ],
+      "residual_in": -395
+     }
+    ]
+   }
+  },
+  "letrick": {
+   "5": {
+    "chains": 8,
+    "closes": 0,
+    "fails": 7,
+    "unparseable": 1,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "15-11*",
+       "14'-1\""
+      ],
+      "residual_in": -22
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "15'-1\"",
+       "13'-3*"
+      ],
+      "residual_in": -22
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "13'-3*",
+       "15'-1\""
+      ],
+      "residual_in": -22
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "14'-1\"",
+       "15'-11*"
+      ],
+      "residual_in": -22
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "13-11%",
+       "20'-6%",
+       "1'-4\u00b0",
+       "16'-6*"
+      ],
+      "residual_in": 135
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "32-3%",
+       "16'-4\"",
+       "3'-1%"
+      ],
+      "residual_in": -154
+     }
+    ]
+   },
+   "7": {
+    "chains": 17,
+    "closes": 0,
+    "fails": 17,
+    "unparseable": 0,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "21'-9\"",
+       "8'-3\""
+      ],
+      "residual_in": -162
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "15'-2",
+       "5'-11%*"
+      ],
+      "residual_in": -111
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "7'-0\"",
+       "6'-3\u201d"
+      ],
+      "residual_in": -9
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "5'-1\u00b0",
+       "4'-7%\"",
+       "13'-6%\""
+      ],
+      "residual_in": -46
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "7'-0%\"",
+       "3'-6\"",
+       "4'-0\"",
+       "5'-8%\"",
+       "12'-4\""
+      ],
+      "residual_in": 94
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "29'-8%\"",
+       "18'-11%"
+      ],
+      "residual_in": -129
+     }
+    ]
+   },
+   "8": {
+    "chains": 8,
+    "closes": 0,
+    "fails": 8,
+    "unparseable": 0,
+    "failing": [
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "1-11%4\"",
+       "2'-0\"",
+       "11'-6%\"",
+       "1'-0\"",
+       "7'-9\""
+      ],
+      "residual_in": 14
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "12'-7*",
+       "16'-1\""
+      ],
+      "residual_in": -42
+     },
+     {
+      "axis": "VERTICAL",
+      "members": [
+       "2'-0\"",
+       "1'-11%\"",
+       "11'-0\""
+      ],
+      "residual_in": -85
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "29'-8%\u201d",
+       "5'-4\"",
+       "18'-11%*"
+      ],
+      "residual_in": -65
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "1'-8\"",
+       "1'-4\""
+      ],
+      "residual_in": -4
+     },
+     {
+      "axis": "HORIZONTAL",
+      "members": [
+       "18'-7%\"",
+       "2'-11\""
+      ],
+      "residual_in": -188
+     }
+    ]
+   }
+  }
+ },
+ "boni_p8_p9_probe_precondition_set_aside": {
+  "8": {
+   "envelope": "ESTABLISHED",
+   "rails": {
+    "top": "33'-11%\"",
+    "bottom": "33-11%\"",
+    "left": "30'-0*",
+    "right": "30'-0\""
+   },
+   "hh": [],
+   "left": {
+    "chosen": "30'-0*",
+    "x": 14.06,
+    "contenders": [
+     [
+      "30'-0*",
+      22.06
+     ]
+    ],
+    "distinct_runner_up": null,
+    "margin": null
+   },
+   "right": {
+    "chosen": "30'-0\"",
+    "x": 58.17,
+    "contenders": [
+     [
+      "30'-0\"",
+      22.03
+     ]
+    ],
+    "distinct_runner_up": null,
+    "margin": null
+   }
+  },
+  "9": {
+   "envelope": "ESTABLISHED",
+   "rails": {
+    "top": "34'-0\"",
+    "bottom": "34'-0\"",
+    "left": "30'-0\u00b0",
+    "right": "30'-0*"
+   },
+   "hh": [],
+   "left": {
+    "chosen": "30'-0\u00b0",
+    "x": 23.06,
+    "contenders": [
+     [
+      "30'-0\u00b0",
+      21.23
+     ]
+    ],
+    "distinct_runner_up": null,
+    "margin": null
+   },
+   "right": {
+    "chosen": "30'-0*",
+    "x": 65.52,
+    "contenders": [
+     [
+      "30'-0*",
+      21.12
+     ]
+    ],
+    "distinct_runner_up": null,
+    "margin": null
+   }
+  }
+ },
+ "item5_chimney_hits": [
+  {
+   "page": "7",
+   "raw": "2'-7",
+   "src": "rot270",
+   "axis": "INDETERMINATE",
+   "loc": {
+    "x_pct": 68.04,
+    "y_pct": 16.65,
+    "w_pct": 0.96,
+    "h_pct": 1.8
+   }
+  },
+  {
+   "page": "8",
+   "raw": "2'-7*",
+   "src": "rot90",
+   "axis": "VERTICAL",
+   "loc": {
+    "x_pct": 51.03,
+    "y_pct": 13.23,
+    "w_pct": 0.71,
+    "h_pct": 1.66
+   }
+  },
+  {
+   "page": "8",
+   "raw": "2'-7*",
+   "src": "rot270",
+   "axis": "VERTICAL",
+   "loc": {
+    "x_pct": 41.38,
+    "y_pct": 12.99,
+    "w_pct": 0.71,
+    "h_pct": 1.73
+   }
+  },
+  {
+   "page": "8",
+   "raw": "2'-7*",
+   "src": "rot270",
+   "axis": "VERTICAL",
+   "loc": {
+    "x_pct": 51.11,
+    "y_pct": 12.99,
+    "w_pct": 0.71,
+    "h_pct": 1.73
+   }
+  }
+ ],
+ "dryrun_merged": {
+  "boni": {
+   "1": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "24-0\u00b0",
+     "bottom": "10'-0\u00b0",
+     "left": "29'-1",
+     "right": "13-0*"
+    },
+    "hh": [],
+    "left": {
+     "chosen": "29'-1",
+     "x": 5.54,
+     "contenders": [
+      [
+       "29'-1",
+       42.51
+      ],
+      [
+       "8'-1%",
+       40.89
+      ],
+      [
+       "9'-1%\"",
+       40.87
+      ],
+      [
+       "4'-0\u00b0",
+       39.81
+      ],
+      [
+       "5'-0",
+       4.05
+      ]
+     ],
+     "distinct_runner_up": "8'-1%",
+     "margin": 1.62
+    },
+    "right": {
+     "chosen": "13-0*",
+     "x": 90.57,
+     "contenders": [
+      [
+       "13-0*",
+       42.69
+      ],
+      [
+       "8-1%*",
+       40.89
+      ],
+      [
+       "9'-1%",
+       40.75
+      ],
+      [
+       "2'-0\u00b0",
+       29.37
+      ],
+      [
+       "9-11%",
+       20.32
+      ]
+     ],
+     "distinct_runner_up": "8-1%*",
+     "margin": 1.8
+    }
+   },
+   "4": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "58'-0*",
+     "bottom": "58-0\u00b0",
+     "left": "30-2",
+     "right": "33-0*"
+    },
+    "hh": [
+     "30-2"
+    ],
+    "left": {
+     "chosen": "30-2",
+     "x": 20.33,
+     "contenders": [
+      [
+       "30-2",
+       29.33
+      ],
+      [
+       "5'10\u00b0",
+       29.25
+      ]
+     ],
+     "distinct_runner_up": "5'10\u00b0",
+     "margin": 0.08
+    },
+    "right": {
+     "chosen": "33-0*",
+     "x": 78.98,
+     "contenders": [
+      [
+       "33-0*",
+       29.41
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "6": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "58-0\u00b0",
+     "bottom": "58-0\u00b0",
+     "left": "30-0*",
+     "right": "33'-0\""
+    },
+    "hh": [],
+    "left": {
+     "chosen": "30-0*",
+     "x": 28.95,
+     "contenders": [
+      [
+       "30-0*",
+       26.44
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "33'-0\"",
+     "x": 81.83,
+     "contenders": [
+      [
+       "33'-0\"",
+       26.44
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "7": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "58'-0\u00b0",
+     "bottom": "24'-0*",
+     "left": "30'-0\u00b0",
+     "right": "33\u20190*"
+    },
+    "hh": [
+     "2-8",
+     "2-8"
+    ],
+    "left": {
+     "chosen": "30'-0\u00b0",
+     "x": 26.26,
+     "contenders": [
+      [
+       "30'-0\u00b0",
+       27.9
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "33\u20190*",
+     "x": 82.06,
+     "contenders": [
+      [
+       "33\u20190*",
+       27.98
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "8": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "33'-11%\"",
+     "bottom": "33-11%\"",
+     "left": "30'-0*",
+     "right": "30'-0\""
+    },
+    "hh": [],
+    "left": {
+     "chosen": "30'-0*",
+     "x": 14.06,
+     "contenders": [
+      [
+       "30'-0*",
+       22.06
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "30'-0\"",
+     "x": 58.17,
+     "contenders": [
+      [
+       "30'-0\"",
+       22.03
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "9": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "34'-0\"",
+     "bottom": "34'-0\"",
+     "left": "30'-0\u00b0",
+     "right": "30'-0*"
+    },
+    "hh": [],
+    "left": {
+     "chosen": "30'-0\u00b0",
+     "x": 23.06,
+     "contenders": [
+      [
+       "30'-0\u00b0",
+       21.23
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "30'-0*",
+     "x": 65.52,
+     "contenders": [
+      [
+       "30'-0*",
+       21.12
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   }
+  },
+  "letrick": {
+   "1": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "1'-0\u00b0",
+     "bottom": "1'-0\u00b0",
+     "left": "9-1%*",
+     "right": "9'-11*"
+    },
+    "hh": [],
+    "left": {
+     "chosen": "9-1%*",
+     "x": 6.55,
+     "contenders": [
+      [
+       "9-1%*",
+       40.29
+      ],
+      [
+       "9-1%",
+       16.19
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "19'-11",
+     "x": 63.93,
+     "contenders": [
+      [
+       "19'-11",
+       17.01
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "5": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "54'-0\"",
+     "bottom": "54'-0\"",
+     "left": "30'-0*",
+     "right": "30'-0*"
+    },
+    "hh": [],
+    "left": {
+     "chosen": "30'-0*",
+     "x": 19.41,
+     "contenders": [
+      [
+       "30'-0*",
+       35.38
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "30'-0*",
+     "x": 90.17,
+     "contenders": [
+      [
+       "30'-0*",
+       35.38
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "6": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "26'-6\"",
+     "bottom": "5-1%",
+     "left": "12'-6\"",
+     "right": "13'-7*"
+    },
+    "hh": [],
+    "left": {
+     "chosen": "12'-6\"",
+     "x": 54.23,
+     "contenders": [
+      [
+       "12'-6\"",
+       9.19
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "13'-7*",
+     "x": 72.6,
+     "contenders": [
+      [
+       "13'-7*",
+       9.21
+      ],
+      [
+       "11'-0*",
+       2.94
+      ]
+     ],
+     "distinct_runner_up": "11'-0*",
+     "margin": 6.27
+    }
+   },
+   "7": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "54'-0*",
+     "bottom": "2'-11%2\"\u00d7 4\u2032-11/\"",
+     "left": "30'-0\"",
+     "right": "30'-0\""
+    },
+    "hh": [],
+    "left": {
+     "chosen": "30'-0\"",
+     "x": 25.48,
+     "contenders": [
+      [
+       "30'-0\"",
+       32.17
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "30'-0\"",
+     "x": 89.82,
+     "contenders": [
+      [
+       "30'-0\"",
+       32.14
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "8": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "54'-0\"",
+     "bottom": "54'-0\"",
+     "left": "30'-0\"",
+     "right": "30'-0\""
+    },
+    "hh": [],
+    "left": {
+     "chosen": "30'-0\"",
+     "x": 8.72,
+     "contenders": [
+      [
+       "30'-0\"",
+       31.89
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "30'-0\"",
+     "x": 72.5,
+     "contenders": [
+      [
+       "30'-0\"",
+       31.89
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   },
+   "10": {
+    "envelope": "ESTABLISHED",
+    "rails": {
+     "top": "1'-0\"",
+     "bottom": "1'-0\u00b0",
+     "left": "1'-0*",
+     "right": "1'-0\""
+    },
+    "hh": [],
+    "left": {
+     "chosen": "1'-0*",
+     "x": 4.69,
+     "contenders": [
+      [
+       "1'-0*",
+       28.68
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    },
+    "right": {
+     "chosen": "1'-0\"",
+     "x": 62.05,
+     "contenders": [
+      [
+       "1'-0\"",
+       28.6
+      ]
+     ],
+     "distinct_runner_up": null,
+     "margin": null
+    }
+   }
+  }
+ }
+}

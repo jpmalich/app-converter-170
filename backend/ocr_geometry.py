@@ -224,6 +224,89 @@ def _cy(r: dict) -> float:
     return float(r["loc"]["y_pct"]) + float(r["loc"]["h_pct"]) / 2
 
 
+# RULING MM (SEND-36): POSITION MERGE is the FIRST operation on the
+# store. Three passes reading the same pixels produce up to three
+# "readings" of ONE physical string ('30-0*', '0-00', '0-.00' at one
+# spot on Letrick p5); treating them as independent strings triplicated
+# every census and let a fragment outrun its own true reading (p8 LEFT,
+# confirmed error). Readings whose boxes overlap are ONE string —
+# same-location test is parameter-free: either center inside the other's
+# box. Prefer the most completely parsed reading (fully-marked > bare
+# form > other; glyph count breaks ties). TWO COMPLETE READINGS
+# DISAGREEING IN VALUE (first two numeric groups) is INDETERMINATE —
+# the merged string is marked conflicted and never enters a dimension
+# path. A chain mate must be a DIFFERENT physical string, established
+# AFTER merge.
+_NUM_RE = re.compile(r"\d+")
+
+
+def _first_two_groups(raw):
+    g = _NUM_RE.findall(str(raw or ""))
+    return tuple(int(x) for x in g[:2]) if g else None
+
+
+def _same_location(a: dict, b: dict) -> bool:
+    la, lb = a["loc"], b["loc"]
+    def _inside(cx, cy, l):
+        return (l["x_pct"] <= cx <= l["x_pct"] + l["w_pct"]
+                and l["y_pct"] <= cy <= l["y_pct"] + l["h_pct"])
+    return (_inside(_cx(a), _cy(a), lb) or _inside(_cx(b), _cy(b), la))
+
+
+def _parse_rank(raw):
+    """Completeness of a reading: fully-marked beats bare form beats
+    anything else; glyph count breaks ties."""
+    s = str(raw or "")
+    if is_dimension_like(s):
+        tier = 2
+    elif parse_bare_form(s):
+        tier = 1
+    else:
+        tier = 0
+    return (tier, glyph_count(s))
+
+
+def merge_positions(runs: list) -> list:
+    """RULING MM. Collapse same-location readings into one string each.
+    Idempotent on already-merged data (the survivor keeps its own box)."""
+    items = [r for r in (runs or []) if isinstance(r, dict) and r.get("loc")]
+    n = len(items)
+    parent = list(range(n))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            if _same_location(items[i], items[j]):
+                pi, pj = find(i), find(j)
+                if pi != pj:
+                    parent[pj] = pi
+    groups: dict = {}
+    for i in range(n):
+        groups.setdefault(find(i), []).append(items[i])
+    merged = []
+    for members in groups.values():
+        members.sort(key=lambda r: _parse_rank(r.get("raw")), reverse=True)
+        best = dict(members[0])
+        best["merge_count"] = len(members)
+        best["merged_srcs"] = sorted({m.get("src") or "?" for m in members})
+        best["merged_raws"] = [m.get("raw") for m in members]
+        complete = [m for m in members if is_dimension_like(m.get("raw"))]
+        vals = {_first_two_groups(m.get("raw")) for m in complete}
+        best["merge_conflict"] = len(vals) > 1
+        merged.append(best)
+    return merged
+
+
+def _is_clean_dim(r: dict) -> bool:
+    return (is_dimension_like(r.get("raw"))
+            and not r.get("merge_conflict"))
+
+
 def rail_envelope(runs: list, extra_dim_runs: list | None = None) -> dict:
     """Footprint envelope from the outermost dimension rails: y-bounds
     from the top/bottom HORIZONTAL width rails, x-bounds from the
@@ -233,9 +316,10 @@ def rail_envelope(runs: list, extra_dim_runs: list | None = None) -> dict:
     default."""
     out = {"status": INDETERMINATE, "reason": None, "x_lo": None,
            "x_hi": None, "y_lo": None, "y_hi": None, "rails": None}
-    dims = [r for r in (runs or [])
-            if isinstance(r, dict) and r.get("loc")
-            and is_rail_candidate(r.get("raw"))]
+    runs = merge_positions(runs)  # RULING MM: merge is the first operation
+    dims = [r for r in runs
+            if r.get("loc") and is_rail_candidate(r.get("raw"))
+            and not r.get("merge_conflict")]
     dims += [r for r in (extra_dim_runs or [])
              if isinstance(r, dict) and r.get("loc")]
     horiz = [r for r in dims if r.get("axis") == HORIZONTAL]
@@ -298,11 +382,14 @@ def gated_bare_form_admissions(runs: list) -> dict:
     """RULING HH — admit a bare digits-hyphen-digits string ONLY when
     position already supports it: axis VERTICAL/HORIZONTAL, EXTERIOR by
     the marked-dims envelope, chain-aligned with a marked dimension of
-    the same axis, and inch component <= 11. Envelope not established →
-    NOTHING admitted (never a default)."""
+    the same axis, and inch component <= 11. RULING NN: zero total
+    length is refused. RULING MM runs first — a fragment overlapping its
+    own true reading is the SAME string, never a chain mate. Envelope
+    not established → NOTHING admitted (never a default)."""
+    runs = merge_positions(runs)
     marked = [r for r in (runs or [])
               if isinstance(r, dict) and r.get("loc")
-              and is_dimension_like(r.get("raw"))]
+              and _is_clean_dim(r)]
     env = rail_envelope(runs)
     out = {"envelope_status": env["status"], "admitted": []}
     if env["status"] != "ESTABLISHED":
@@ -317,6 +404,10 @@ def gated_bare_form_admissions(runs: list) -> dict:
             continue
         feet, inches = pf
         if inches > 11:
+            continue
+        # RULING NN (SEND-36): zero TOTAL LENGTH is not a dimension.
+        # A 6" dimension (0-6) is real; 0-0 dimensions nothing.
+        if feet * 12 + inches == 0:
             continue
         if r.get("axis") not in (VERTICAL, HORIZONTAL):
             continue
@@ -335,7 +426,9 @@ def positional_rule_probe(runs: list, gated_bare: bool = True) -> dict:
     the outermost VERTICAL EXTERIOR dimension on the same side of the
     footprint as the garage label. Reports what it returns, what it
     nearly returned, and what classed INDETERMINATE. RULING HH: gated
-    bare forms are admitted (and reported) before the rule applies."""
+    bare forms are admitted (and reported) before the rule applies.
+    RULING MM: position merge is the first operation on the store."""
+    runs = merge_positions(runs)
     adm = (gated_bare_form_admissions(runs)
            if gated_bare else {"admitted": []})
     admitted_runs = [a["run"] for a in adm["admitted"]]
@@ -367,7 +460,7 @@ def positional_rule_probe(runs: list, gated_bare: bool = True) -> dict:
                  "side": "right" if _cx(lb) >= mid_x else "left"})
     vert_dims = [r for r in (runs or [])
                  if isinstance(r, dict) and r.get("loc")
-                 and is_dimension_like(r.get("raw"))
+                 and _is_clean_dim(r)
                  and r.get("axis") == VERTICAL]
     vert_dims += [r for r in admitted_runs if r.get("axis") == VERTICAL]
     for side in ("left", "right"):
@@ -387,4 +480,75 @@ def positional_rule_probe(runs: list, gated_bare: bool = True) -> dict:
             "excluded_interior": [{"raw": r["raw"], "loc": r["loc"]}
                                   for r in side_dims if r not in cands],
         }
+    return report
+
+
+# RULING LL (SEND-36): SUM CLOSURE, computed against MERGED strings —
+# a chain holding three readings of one member cannot be summed. A
+# chain is the set of dimension strings aligned on one line (same
+# column for vertical, same row for horizontal, within one box-width —
+# the same geometry as the HH chain gate). The largest member is the
+# TOTAL CANDIDATE; the chain CLOSES when the rest sum to it exactly
+# (in inches, first-two-numeric-groups parse). Fractions the OCR
+# cannot read make honest residuals — they are REPORTED, never
+# tolerated away with a picked threshold.
+
+def _member_inches(raw):
+    g = _first_two_groups(raw)
+    if not g:
+        return None
+    feet = g[0]
+    inches = g[1] if len(g) > 1 else 0
+    if inches > 11:
+        return None
+    return feet * 12 + inches
+
+
+def chain_clusters(runs: list) -> list:
+    """Merged dimension strings grouped into chains by axis+alignment."""
+    runs = merge_positions(runs)
+    out = []
+    for axis, coord in ((VERTICAL, _cx), (HORIZONTAL, _cy)):
+        dims = [r for r in runs if r.get("loc") and _is_clean_dim(r)
+                and r.get("axis") == axis]
+        dims.sort(key=coord)
+        chain: list = []
+        for r in dims:
+            if chain:
+                prev = chain[-1]
+                span_key = "w_pct" if axis == VERTICAL else "h_pct"
+                tol = max(prev["loc"][span_key], r["loc"][span_key])
+                if abs(coord(r) - coord(prev)) > tol:
+                    out.append({"axis": axis, "members": chain})
+                    chain = []
+            chain.append(r)
+        if chain:
+            out.append({"axis": axis, "members": chain})
+    return [c for c in out if len(c["members"]) >= 2]
+
+
+def chain_sum_closure(runs: list) -> list:
+    """RULING LL report: per chain — members, total candidate, segment
+    sum, and CLOSES / FAILS(residual) / UNPARSEABLE."""
+    report = []
+    for c in chain_clusters(runs):
+        vals = [(r["raw"], _member_inches(r["raw"])) for r in c["members"]]
+        entry = {"axis": c["axis"],
+                 "members": [{"raw": r["raw"], "loc": r["loc"]}
+                             for r in c["members"]],
+                 "values_in": vals}
+        if any(v is None for _, v in vals):
+            entry["status"] = "UNPARSEABLE"
+            entry["why"] = "a member's value could not be parsed"
+        else:
+            total = max(v for _, v in vals)
+            rest = sum(v for _, v in vals) - total
+            entry["total_candidate_in"] = total
+            entry["segment_sum_in"] = rest
+            if rest == total:
+                entry["status"] = "CLOSES"
+            else:
+                entry["status"] = "FAILS"
+                entry["residual_in"] = rest - total
+        report.append(entry)
     return report
