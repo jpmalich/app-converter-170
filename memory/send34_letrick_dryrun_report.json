@@ -1,0 +1,712 @@
+{
+ "run_id": "725f8326fd6e48aca8448c22f2454100",
+ "estimate": "EST-655664 (letrick 8-16-26 4 pm)",
+ "UNVALIDATED": true,
+ "no_bind": true,
+ "no_ground_truth_claimed": true,
+ "ruling_ll": "NOT BUILT \u2014 owed; no sum-closure report available",
+ "pages": {
+  "1": {
+   "sheet_title": "FRONT & REAR ELEVATIONS",
+   "rail_status": "ESTABLISHED",
+   "rail_reason": null,
+   "rails": {
+    "top": "1'-0\u00b0",
+    "bottom": "1'-0\u00b0",
+    "left": "9-1%*",
+    "right": "9-1%*"
+   },
+   "axis_counts": {
+    "HORIZONTAL": 6,
+    "VERTICAL": 6,
+    "INDETERMINATE": 2
+   },
+   "hh_admitted": [
+    {
+     "raw": "19-11",
+     "src": "rot270",
+     "feet": 19,
+     "inches": 11,
+     "chain_mate": "19'-11",
+     "loc": {
+      "x_pct": 63.91,
+      "y_pct": 19.91,
+      "w_pct": 0.76,
+      "h_pct": 1.8
+     }
+    }
+   ],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "no garage-word run inside the established envelope"
+   },
+   "left": {
+    "anchor_returns": "9-1%*",
+    "loc": {
+     "x_pct": 6.55,
+     "y_pct": 24.7,
+     "w_pct": 0.71,
+     "h_pct": 1.66
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "9-1%*",
+      40.27,
+      null
+     ],
+     [
+      "9-1%",
+      16.18,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "3'-10%\u00b0"
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   },
+   "right": {
+    "anchor_returns": "9-1%*",
+    "loc": {
+     "x_pct": 87.1,
+     "y_pct": 70.17,
+     "w_pct": 0.76,
+     "h_pct": 1.66
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "9-1%*",
+      40.3,
+      null
+     ],
+     [
+      "9'-11*",
+      40.22,
+      null
+     ],
+     [
+      "19-11",
+      17.11,
+      null
+     ],
+     [
+      "19'-11",
+      17.02,
+      null
+     ]
+    ],
+    "excluded_interior": [],
+    "distinct_runner_up": "9'-11*",
+    "margin_pct": 0.08
+   }
+  },
+  "2": {
+   "sheet_title": "LEFT & RIGHT ELEVATIONS",
+   "rail_status": "INDETERMINATE",
+   "rail_reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "axis_counts": {
+    "HORIZONTAL": 5,
+    "VERTICAL": 6,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "envelope not established \u2014 fewer than two horizontal dimension rails"
+   }
+  },
+  "3": {
+   "sheet_title": "DETAIL PAGE",
+   "rail_status": "INDETERMINATE",
+   "rail_reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "axis_counts": {
+    "HORIZONTAL": 3,
+    "VERTICAL": 0,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "envelope not established \u2014 fewer than two horizontal dimension rails"
+   }
+  },
+  "4": {
+   "sheet_title": "REINFORCED FOOTER DETAIL",
+   "rail_status": "INDETERMINATE",
+   "rail_reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "axis_counts": {
+    "HORIZONTAL": 2,
+    "VERTICAL": 0,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "envelope not established \u2014 fewer than two horizontal dimension rails"
+   }
+  },
+  "5": {
+   "sheet_title": "FOUNDATION PLAN",
+   "rail_status": "ESTABLISHED",
+   "rail_reason": null,
+   "rails": {
+    "top": "54'-0\"",
+    "bottom": "54'-0\"",
+    "left": "30'-0*",
+    "right": "30'-0*"
+   },
+   "axis_counts": {
+    "HORIZONTAL": 39,
+    "VERTICAL": 30,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [
+    {
+     "raw": "0-00",
+     "src": "upright",
+     "feet": 0,
+     "inches": 0,
+     "chain_mate": "30'-0*",
+     "loc": {
+      "x_pct": 19.46,
+      "y_pct": 53.32,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     }
+    },
+    {
+     "raw": "0-00",
+     "src": "upright",
+     "feet": 0,
+     "inches": 0,
+     "chain_mate": "30'-0*",
+     "loc": {
+      "x_pct": 90.17,
+      "y_pct": 53.32,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     }
+    },
+    {
+     "raw": "0-00",
+     "src": "rot90",
+     "feet": 0,
+     "inches": 0,
+     "chain_mate": "30'-0*",
+     "loc": {
+      "x_pct": 90.04,
+      "y_pct": 53.39,
+      "w_pct": 0.76,
+      "h_pct": 2.06
+     }
+    }
+   ],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "no garage-word run inside the established envelope"
+   },
+   "left": {
+    "anchor_returns": "30'-0*",
+    "loc": {
+     "x_pct": 19.41,
+     "y_pct": 53.29,
+     "w_pct": 0.76,
+     "h_pct": 2.06
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "30'-0*",
+      35.38,
+      null
+     ],
+     [
+      "0-00",
+      35.36,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "15-11*",
+     "15'-1\"",
+     "14'-1\"",
+     "3'-10\u00b0",
+     "3'-10",
+     "15'-1\"",
+     "13'-3",
+     "15-11*",
+     "14'-1*",
+     "14'-1\""
+    ],
+    "distinct_runner_up": "0-00",
+    "margin_pct": 0.02
+   },
+   "right": {
+    "anchor_returns": "30'-0*",
+    "loc": {
+     "x_pct": 90.17,
+     "y_pct": 53.29,
+     "w_pct": 0.76,
+     "h_pct": 2.13
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "30'-0*",
+      35.38,
+      null
+     ],
+     [
+      "0-00",
+      35.36,
+      null
+     ],
+     [
+      "0-00",
+      35.25,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "15'-1\"",
+     "14'-1\"",
+     "4'-10%",
+     "1'-2",
+     "6'-0\"",
+     "15'-1\"",
+     "13'-3*",
+     "13'-3*",
+     "15'-1\"",
+     "14'-1"
+    ],
+    "distinct_runner_up": "0-00",
+    "margin_pct": 0.02
+   }
+  },
+  "6": {
+   "sheet_title": "FOUNDATION MECH",
+   "rail_status": "ESTABLISHED",
+   "rail_reason": null,
+   "rails": {
+    "top": "26'-6\"",
+    "bottom": "5-1%",
+    "left": "12'-6",
+    "right": "13'-7*"
+   },
+   "axis_counts": {
+    "HORIZONTAL": 8,
+    "VERTICAL": 8,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "no garage-word run inside the established envelope"
+   },
+   "left": {
+    "anchor_returns": "12'-6",
+    "loc": {
+     "x_pct": 54.15,
+     "y_pct": 38.76,
+     "w_pct": 0.71,
+     "h_pct": 1.93
+    },
+    "src": "rot90",
+    "contenders": [
+     [
+      "12'-6",
+      9.27,
+      null
+     ],
+     [
+      "12'-6\"",
+      9.19,
+      null
+     ],
+     [
+      "12'-6\"",
+      9.16,
+      null
+     ]
+    ],
+    "excluded_interior": [],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   },
+   "right": {
+    "anchor_returns": "13'-7*",
+    "loc": {
+     "x_pct": 72.68,
+     "y_pct": 34.67,
+     "w_pct": 0.76,
+     "h_pct": 1.86
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "13'-7*",
+      9.29,
+      null
+     ],
+     [
+      "13'-7*",
+      9.21,
+      null
+     ],
+     [
+      "11'-0*",
+      2.94,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "12'-1",
+     "12'-1*"
+    ],
+    "distinct_runner_up": "11'-0*",
+    "margin_pct": 6.35
+   }
+  },
+  "7": {
+   "sheet_title": "FIRST FLOOR PLAN",
+   "rail_status": "ESTABLISHED",
+   "rail_reason": null,
+   "rails": {
+    "top": "54'-0*",
+    "bottom": "2-3\u201d\u00d73\u2032-11%",
+    "left": "30'-0\"",
+    "right": "30'-0\""
+   },
+   "axis_counts": {
+    "HORIZONTAL": 192,
+    "VERTICAL": 57,
+    "INDETERMINATE": 4
+   },
+   "hh_admitted": [
+    {
+     "raw": "0-00",
+     "src": "upright",
+     "feet": 0,
+     "inches": 0,
+     "chain_mate": "30'-0\"",
+     "loc": {
+      "x_pct": 25.6,
+      "y_pct": 39.36,
+      "w_pct": 0.71,
+      "h_pct": 1.99
+     }
+    },
+    {
+     "raw": "0-00",
+     "src": "rot90",
+     "feet": 0,
+     "inches": 0,
+     "chain_mate": "30'-0\"",
+     "loc": {
+      "x_pct": 89.69,
+      "y_pct": 39.3,
+      "w_pct": 0.76,
+      "h_pct": 2.06
+     }
+    }
+   ],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "no garage-word run inside the established envelope"
+   },
+   "left": {
+    "anchor_returns": "30'-0\"",
+    "loc": {
+     "x_pct": 25.48,
+     "y_pct": 39.23,
+     "w_pct": 0.76,
+     "h_pct": 2.13
+    },
+    "src": "rot90",
+    "contenders": [
+     [
+      "30'-0\"",
+      32.17,
+      null
+     ],
+     [
+      "0-00",
+      32.08,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "15'-2",
+     "21-9\"",
+     "4'-7%\"",
+     "2'-4\"",
+     "8'-11%\"",
+     "13'-6%\"",
+     "5'-11%",
+     "4'-3%\u201d",
+     "4'-7%\"",
+     "13-6%\""
+    ],
+    "distinct_runner_up": "0-00",
+    "margin_pct": 0.09
+   },
+   "right": {
+    "anchor_returns": "30'-0\"",
+    "loc": {
+     "x_pct": 89.82,
+     "y_pct": 39.12,
+     "w_pct": 0.71,
+     "h_pct": 2.06
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "30'-0\"",
+      32.14,
+      null
+     ],
+     [
+      "0-00",
+      32.04,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "15'-2",
+     "13'-6%",
+     "7'-0%\"",
+     "12'-4",
+     "4'-0\"",
+     "7'-0%\"",
+     "2'-0\"",
+     "13'-6%",
+     "15'-2",
+     "6'-0\""
+    ],
+    "distinct_runner_up": "0-00",
+    "margin_pct": 0.1
+   }
+  },
+  "8": {
+   "sheet_title": "FIRST FLOOR JOIST PLAN",
+   "rail_status": "ESTABLISHED",
+   "rail_reason": null,
+   "rails": {
+    "top": "54'-0\"",
+    "bottom": "54'-0\"",
+    "left": "0-00",
+    "right": "30'-0\""
+   },
+   "axis_counts": {
+    "HORIZONTAL": 39,
+    "VERTICAL": 31,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [
+    {
+     "raw": "0-00",
+     "src": "rot90",
+     "feet": 0,
+     "inches": 0,
+     "chain_mate": "30'-0\"",
+     "loc": {
+      "x_pct": 8.64,
+      "y_pct": 35.57,
+      "w_pct": 0.71,
+      "h_pct": 2.13
+     }
+    }
+   ],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "no garage-word run inside the established envelope"
+   },
+   "left": {
+    "anchor_returns": "0-00",
+    "loc": {
+     "x_pct": 8.64,
+     "y_pct": 35.57,
+     "w_pct": 0.71,
+     "h_pct": 2.13
+    },
+    "src": "rot90",
+    "contenders": [
+     [
+      "0-00",
+      31.97,
+      null
+     ],
+     [
+      "30'-0\"",
+      31.87,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "1-11%",
+     "2'-0\"",
+     "12'-0%",
+     "11'-6%\"",
+     "12'-7*",
+     "12'-0%\"",
+     "1'-0",
+     "1-11%4\"",
+     "2'-0\"",
+     "11'-6%\""
+    ],
+    "distinct_runner_up": "30'-0\"",
+    "margin_pct": 0.1
+   },
+   "right": {
+    "anchor_returns": "30'-0\"",
+    "loc": {
+     "x_pct": 72.58,
+     "y_pct": 35.47,
+     "w_pct": 0.76,
+     "h_pct": 2.13
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "30'-0\"",
+      31.99,
+      null
+     ],
+     [
+      "30'-0\"",
+      31.91,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "11-0\u201d",
+     "1'-11%\"",
+     "2'-0\"",
+     "2'-7*",
+     "2'-7*",
+     "2'-7*",
+     "12'-2%\"",
+     "2'-0\"",
+     "1-11%\"",
+     "11'-0\""
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   }
+  },
+  "9": {
+   "sheet_title": "1ST FLOOR ELEC PLAN",
+   "rail_status": "INDETERMINATE",
+   "rail_reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "axis_counts": {
+    "HORIZONTAL": 0,
+    "VERTICAL": 0,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "envelope not established \u2014 fewer than two horizontal dimension rails"
+   }
+  },
+  "10": {
+   "sheet_title": "ROOF PLAN",
+   "rail_status": "ESTABLISHED",
+   "rail_reason": null,
+   "rails": {
+    "top": "1'-0\"",
+    "bottom": "1'-0\u00b0",
+    "left": "1'-0",
+    "right": "1'-0\""
+   },
+   "axis_counts": {
+    "HORIZONTAL": 17,
+    "VERTICAL": 8,
+    "INDETERMINATE": 0
+   },
+   "hh_admitted": [],
+   "ruling_ll": "NOT BUILT \u2014 owed",
+   "room_label_precondition": {
+    "met": false,
+    "why": "no garage-word run inside the established envelope"
+   },
+   "left": {
+    "anchor_returns": "1'-0",
+    "loc": {
+     "x_pct": 4.71,
+     "y_pct": 38.36,
+     "w_pct": 0.6,
+     "h_pct": 1.26
+    },
+    "src": "rot90",
+    "contenders": [
+     [
+      "1'-0",
+      28.67,
+      null
+     ],
+     [
+      "1'-0*",
+      28.61,
+      null
+     ]
+    ],
+    "excluded_interior": [
+     "14'-4*",
+     "14'-4*",
+     "15'-2*",
+     "7'-7*",
+     "7'-7\""
+    ],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   },
+   "right": {
+    "anchor_returns": "1'-0\"",
+    "loc": {
+     "x_pct": 62.05,
+     "y_pct": 35.53,
+     "w_pct": 0.6,
+     "h_pct": 1.33
+    },
+    "src": "rot270",
+    "contenders": [
+     [
+      "1'-0\"",
+      28.67,
+      null
+     ]
+    ],
+    "excluded_interior": [],
+    "distinct_runner_up": null,
+    "margin_pct": null,
+    "note": "sole distinct candidate \u2014 wins by default, which proves least"
+   }
+  }
+ },
+ "position": {
+  "state": "UNVALIDATED AND UNAVAILABLE on this set",
+  "precondition_pages": [],
+  "note": "no page met the room-label precondition \u2014 a different and worse position than unvalidated alone."
+ }
+}

@@ -411,3 +411,54 @@ ANCHOR DRY RUN (report only, NO BIND — UNVALIDATED ON EVERY LINE):
   needs a ruling before any bind.
 STANDING: NO BIND into derivation. UNVALIDATED until a second plan
 set runs. Full machine report: /app/memory/send32_dryrun_report.json
+
+================================================================
+SEND-34 OUTCOMES (2026-08-16, appended — prediction file unrevised)
+SECOND PLAN SET DRY RUN — Letrick (run 725f8326, 10 pages). REPORT
+ONLY, NO BIND, NO GROUND TRUTH CLAIMED, NOTHING TUNED AGAINST THE SET.
+Estimate number on record is EST-655664 (send said EST-653665);
+customer name matches exactly ("letrick 8-16-26 4 pm").
+
+POSITION: UNVALIDATED AND UNAVAILABLE ON THIS SET.
+No page met the room-label precondition. Letrick HAS a garage (notes:
+"ON BACK SIDE OF GARAGE" p5, "ADD BLOCKING FOR GARAGE DOOR TRACKS"
+p7) but NO GARAGE ROOM LABEL was captured anywhere, any pass. The
+send-32 availability question now reads: precondition available on
+1 of 2 houses.
+
+RAILS: ESTABLISHED p1,p5,p6,p7,p8,p10; INDETERMINATE p2,p3,p4,p9
+(all "fewer than two horizontal dimension rails"). p1 is an elevation
+and answers anyway (9-1%* both sides — height dims); the precondition
+correctly excludes it, consistent with Boni.
+
+PER-SIDE RETURNS ON PLAN SHEETS (substrate report; the ANCHOR itself
+returns NOTHING — no garage side):
+  p5 foundation: LEFT 30'-0* (rot270, margin 0.02 over '0-00'),
+                 RIGHT 30'-0* (rot270, margin 0.02 over '0-00')
+  p7 first floor: LEFT 30'-0" (rot90, margin 0.09 over '0-00'),
+                  RIGHT 30'-0" (rot270, margin 0.10 over '0-00')
+  p8 joist plan: LEFT returned '0-00' — A WRONG STRING, reported
+                 exactly as returned (beat 30'-0" by 0.10);
+                 RIGHT 30'-0" (sole distinct)
+  p6 foundation-mech: LEFT 12'-6, RIGHT 13'-7* (small local dims —
+                 its "envelope" is not a footprint)
+  p10 roof plan: LEFT 1'-0, RIGHT 1'-0" (overhang dims — same)
+
+TWO RULES EXPOSED — NAMED AND STOPPED, NOT PATCHED:
+  1. HH ADMITS ZERO-FEET FRAGMENTS. '0-00' (feet=0, in=0) passed
+     every gate 6 times across p5/p7/p8 — chain mate was 30'-0*, ITS
+     OWN TRUE READING: three passes on the same pixels produced
+     "30'-0*" (rot270), "0-00" (upright), "0-.00" (rot90) at the
+     same location. Candidate rulings for Howard (not built):
+     (a) feet=0 dimensions nothing — notation-derived like the
+     11-inch bound; (b) a bare form whose box overlaps a fully-marked
+     run is the SAME physical string, not a separate dimension —
+     positions disambiguate, again.
+  2. NO SAME-LOCATION DEDUP ACROSS PASSES. The p8 LEFT flip is the
+     send-30 "wins by default after dedup" caveat turned active: a
+     degraded pass-read of the same string OUTRAN the true read.
+HH admissions listed individually: p1 '19-11' (rot270, mate 19'-11);
+p5 '0-00' x3; p7 '0-00' x2; p8 '0-00' x1.
+RULING LL: NOT BUILT — owed; no sum-closure report available.
+Howard compares his sealed depths; no match or mismatch is claimed.
+Full machine report: /app/memory/send34_letrick_dryrun_report.json

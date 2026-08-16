@@ -7497,3 +7497,19 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - NEXT (order): per-surface zone binding (critical path) -> Ruling V
   conversion (2 PENDING_CONVERSION visible). Anchor bind awaits Howard after
   dry-run read + second plan set.
+
+## 2026-08-16 — SEND-34 (Letrick second-set dry run — report only, no bind)
+- POSITION: UNVALIDATED AND UNAVAILABLE — no garage room label captured
+  anywhere on Letrick (house HAS a garage per notes); precondition available
+  on 1 of 2 houses.
+- Per-side returns reported (no ground truth claimed): p5/p7 both sides
+  30'-0" variants; p8 LEFT returned '0-00' — wrong string, reported as-is.
+- TWO RULES EXPOSED, named not patched: HH admits zero-feet fragments
+  ('0-00' x6, chain mate = its own true reading 30'-0*); no same-location
+  dedup across passes (degraded read outran true read by 0.10).
+- Ruling LL still owed. No code changed; nothing tuned against Letrick.
+- Report: /app/memory/send34_letrick_dryrun_report.json. Script:
+  scripts/send34_letrick_dryrun.py. Estimate number note: EST-655664 on
+  record vs EST-653665 in send (name matches exactly).
+- AWAITING HOWARD: sealed-depth comparison; rulings on feet=0 bare forms and
+  same-location dedup; then LL, zone binding, Ruling V.
