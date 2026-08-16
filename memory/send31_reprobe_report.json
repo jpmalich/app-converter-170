@@ -1,0 +1,415 @@
+{
+ "run_id": "c54633996e7a49e48432cf66a61efaf7",
+ "rails_by_page": {
+  "1": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "24-0\u00b0",
+    "bottom": "10'-0\u00b0",
+    "left": "29'-1",
+    "right": "13-0*"
+   },
+   "bounds": {
+    "x_lo": 5.94,
+    "x_hi": 90.57,
+    "y_lo": 80.26,
+    "y_hi": 87.3
+   }
+  },
+  "2": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "3": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "4": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "58'-0*",
+    "bottom": "58-0\u00b0",
+    "left": "5'10\u00b0",
+    "right": "33-0*"
+   },
+   "bounds": {
+    "x_lo": 20.96,
+    "x_hi": 78.98,
+    "y_lo": 25.07,
+    "y_hi": 76.2
+   }
+  },
+  "5": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two vertical dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "6": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "58-0\u00b0",
+    "bottom": "2-11%\u00b0 \u00d7 3-119\u00b0",
+    "left": "30-0*",
+    "right": "33'-0'"
+   },
+   "bounds": {
+    "x_lo": 29.5,
+    "x_hi": 81.91,
+    "y_lo": 19.08,
+    "y_hi": 73.34
+   }
+  },
+  "7": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "58'-0\u00b0",
+    "bottom": "24'-0*",
+    "left": "30'-0\u00b0",
+    "right": "33\u20190*"
+   },
+   "bounds": {
+    "x_lo": 26.810000000000002,
+    "x_hi": 82.06,
+    "y_lo": 19.68,
+    "y_hi": 63.9
+   }
+  },
+  "8": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "33'-11%",
+    "bottom": "33-11%\"",
+    "left": "30'-0*",
+    "right": "30'-0\""
+   },
+   "bounds": {
+    "x_lo": 14.82,
+    "x_hi": 58.17,
+    "y_lo": 11.2,
+    "y_hi": 62.37
+   }
+  },
+  "9": {
+   "status": "ESTABLISHED",
+   "reason": null,
+   "rails": {
+    "top": "34'-0\"",
+    "bottom": "34'-0\"",
+    "left": "30'-0\u00b0",
+    "right": "30'-0*"
+   },
+   "bounds": {
+    "x_lo": 23.77,
+    "x_hi": 65.52,
+    "y_lo": 10.44,
+    "y_hi": 59.91
+   }
+  },
+  "10": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  },
+  "11": {
+   "status": "INDETERMINATE",
+   "reason": "fewer than two horizontal dimension rails",
+   "rails": null,
+   "bounds": {
+    "x_lo": null,
+    "x_hi": null,
+    "y_lo": null,
+    "y_hi": null
+   }
+  }
+ },
+ "admissions_by_page": {
+  "1": [],
+  "2": [],
+  "3": [],
+  "4": [
+   {
+    "raw": "30-2",
+    "src": "rot90",
+    "axis": "VERTICAL",
+    "loc": {
+     "x_pct": 20.33,
+     "y_pct": 49.6,
+     "w_pct": 0.55,
+     "h_pct": 1.53
+    },
+    "feet": 30,
+    "inches": 2,
+    "chain_mate": "5'10\u00b0"
+   },
+   {
+    "raw": "30-2",
+    "src": "rot270",
+    "axis": "VERTICAL",
+    "loc": {
+     "x_pct": 20.41,
+     "y_pct": 49.5,
+     "w_pct": 0.55,
+     "h_pct": 1.46
+    },
+    "feet": 30,
+    "inches": 2,
+    "chain_mate": "5'10\u00b0"
+   }
+  ],
+  "5": [],
+  "6": [],
+  "7": [
+   {
+    "raw": "2-8",
+    "src": "upright",
+    "axis": "HORIZONTAL",
+    "loc": {
+     "x_pct": 19.15,
+     "y_pct": 62.43,
+     "w_pct": 0.86,
+     "h_pct": 0.8
+    },
+    "feet": 2,
+    "inches": 8,
+    "chain_mate": "3'9\u00b0"
+   },
+   {
+    "raw": "2-8",
+    "src": "upright",
+    "axis": "HORIZONTAL",
+    "loc": {
+     "x_pct": 19.15,
+     "y_pct": 63.16,
+     "w_pct": 0.86,
+     "h_pct": 0.8
+    },
+    "feet": 2,
+    "inches": 8,
+    "chain_mate": "34-0\u00b0"
+   }
+  ],
+  "8": [],
+  "9": [],
+  "10": [],
+  "11": []
+ },
+ "admissions_total": 4,
+ "probe_p4": {
+  "envelope_status": "ESTABLISHED",
+  "rails": {
+   "top": "58'-0*",
+   "bottom": "58-0\u00b0",
+   "left": "30-2",
+   "right": "33-0*"
+  },
+  "gated_bare_admitted": [
+   {
+    "raw": "30-2",
+    "loc": {
+     "x_pct": 20.33,
+     "y_pct": 49.6,
+     "w_pct": 0.55,
+     "h_pct": 1.53
+    },
+    "src": "rot90",
+    "feet": 30,
+    "inches": 2,
+    "chain_mate": "5'10\u00b0"
+   },
+   {
+    "raw": "30-2",
+    "loc": {
+     "x_pct": 20.41,
+     "y_pct": 49.5,
+     "w_pct": 0.55,
+     "h_pct": 1.46
+    },
+    "src": "rot270",
+    "feet": 30,
+    "inches": 2,
+    "chain_mate": "5'10\u00b0"
+   }
+  ],
+  "sides": {
+   "left": {
+    "chosen": {
+     "raw": "30-2",
+     "loc": {
+      "x_pct": 20.33,
+      "y_pct": 49.6,
+      "w_pct": 0.55,
+      "h_pct": 1.53
+     }
+    },
+    "contenders": [
+     [
+      "30-2",
+      29.33
+     ],
+     [
+      "5'10\u00b0",
+      29.25
+     ],
+     [
+      "30-2",
+      29.25
+     ]
+    ],
+    "excluded_interior": [
+     "3'-0'",
+     "14-6\u00b0",
+     "3'-0\u00b0"
+    ]
+   },
+   "right": {
+    "chosen": {
+     "raw": "33-0*",
+     "loc": {
+      "x_pct": 78.98,
+      "y_pct": 50.89,
+      "w_pct": 0.71,
+      "h_pct": 1.73
+     }
+    },
+    "contenders": [
+     [
+      "33-0*",
+      29.41
+     ]
+    ],
+    "excluded_interior": [
+     "15'-0*",
+     "2'-5%",
+     "16'-1%\"",
+     "2'-5%*",
+     "30'-0",
+     "14'-7*",
+     "14'-10",
+     "13'-6\u00b0",
+     "14'-10\u201d",
+     "14'-7*",
+     "4'-6*",
+     "16'-1%\""
+    ]
+   }
+  }
+ },
+ "probe_p6": {
+  "envelope_status": "ESTABLISHED",
+  "rails": {
+   "top": "58-0\u00b0",
+   "bottom": "2-11%\u00b0 \u00d7 3-119\u00b0",
+   "left": "30-0*",
+   "right": "33'-0'"
+  },
+  "gated_bare_admitted": [],
+  "sides": {
+   "left": {
+    "chosen": {
+     "raw": "30-0*",
+     "loc": {
+      "x_pct": 28.95,
+      "y_pct": 41.29,
+      "w_pct": 0.55,
+      "h_pct": 1.46
+     }
+    },
+    "contenders": [
+     [
+      "30-0*",
+      26.48
+     ],
+     [
+      "30-0*",
+      26.37
+     ]
+    ],
+    "excluded_interior": [
+     "3'-10",
+     "3'-1%",
+     "3'-1%",
+     "3-1%",
+     "15'-0\u00b0",
+     "5'-0\u00b0",
+     "19-9*",
+     "5'-0*",
+     "13'-6%\"",
+     "15'-0",
+     "6'-0*",
+     "5'-9%"
+    ]
+   },
+   "right": {
+    "chosen": {
+     "raw": "33'-0'",
+     "loc": {
+      "x_pct": 81.91,
+      "y_pct": 39.66,
+      "w_pct": 0.55,
+      "h_pct": 1.46
+     }
+    },
+    "contenders": [
+     [
+      "33'-0'",
+      26.48
+     ],
+     [
+      "33'-0\"",
+      26.4
+     ]
+    ],
+    "excluded_interior": [
+     "3'-0*",
+     "14'-2*",
+     "16-0\u00b0",
+     "9-11%*",
+     "16'-7%",
+     "14'-2",
+     "11'-0%",
+     "3'-11",
+     "5'-7%\"",
+     "3'-0\u00b0",
+     "11-0%",
+     "14'-2*"
+    ]
+   }
+  }
+ },
+ "left_depth_cross_sheet": {
+  "p4_foundation": "30-2",
+  "p6_first_floor": "30-0*",
+  "verdict": "DISAGREE \u2014 reported, not resolved; never averaged, no sheet preferred"
+ }
+}

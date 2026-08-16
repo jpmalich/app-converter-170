@@ -23,6 +23,25 @@ established the answer is INDETERMINATE — never default-to-exterior,
 never default-to-interior.
 
 POSITIONAL RULE PROBE (item 5): REPORT ONLY. It never binds the anchor.
+
+RULING HH (SEND-31): BARE FORM, GATED ON POSITION NOT VALUE. The true
+30'-2" transcribed as bare "30-2" (foot and inch marks lost) and the
+text filter rightly refuses digits-hyphen-digits globally (it swallows
+dates). The bare form is admitted ONLY when the positional substrate
+already supports it: axis class VERTICAL or HORIZONTAL (never
+INDETERMINATE), EXTERIOR by the 2D envelope, sitting on a dimension
+chain (aligned with a fully-marked dimension of the same axis within
+one box-width — geometry, not a picked number), AND inch component
+<= 11 (feet-and-inches notation cannot carry 12 or more inches — a
+bound from the notation itself). A date is never a rotated vertical
+string on an exterior dimension rail. POSITIONS DISAMBIGUATE, VALUES
+DO NOT. No envelope -> nothing admitted, never a default.
+
+RULING II (SEND-31): SCALE NOTES OUT OF RAIL CANDIDACY. A rail
+candidate contains NO ALPHABETIC CHARACTERS beyond the foot and inch
+marks. SCALE:3/16"=1'-0" fails on "SCALE" alone. Deliberately NOT a
+blocklist of note types — one structural property generalizing to
+every note without naming any.
 """
 from __future__ import annotations
 
@@ -50,6 +69,28 @@ _DIM_RE = re.compile(
 
 def glyph_count(raw) -> int:
     return len(re.sub(r"\s", "", str(raw or "")))
+
+
+_ALPHA_RE = re.compile(r"[A-Za-z]")
+
+# RULING HH: the bare form — digits-hyphen-digits and NOTHING else.
+_BARE_FORM_RE = re.compile(r"^\s*(\d{1,3})\s*-\s*(\d{1,2})\s*$")
+
+
+def parse_bare_form(raw):
+    """(feet, inches) for a bare digits-hyphen-digits string, else None.
+    A two-hyphen date (03-26-26) never parses."""
+    m = _BARE_FORM_RE.match(str(raw or ""))
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2))
+
+
+def is_rail_candidate(raw) -> bool:
+    """RULING II: a rail candidate is dimension-like AND carries no
+    alphabetic characters beyond the foot and inch marks."""
+    s = str(raw or "")
+    return is_dimension_like(s) and not _ALPHA_RE.search(s)
 
 
 def is_dimension_like(raw) -> bool:
@@ -82,16 +123,20 @@ def _cy(r: dict) -> float:
     return float(r["loc"]["y_pct"]) + float(r["loc"]["h_pct"]) / 2
 
 
-def rail_envelope(runs: list) -> dict:
+def rail_envelope(runs: list, extra_dim_runs: list | None = None) -> dict:
     """Footprint envelope from the outermost dimension rails: y-bounds
     from the top/bottom HORIZONTAL width rails, x-bounds from the
-    left/right VERTICAL depth rails. INDETERMINATE (with a named reason)
-    when it cannot be established — never a default."""
+    left/right VERTICAL depth rails. RULING II: rail candidates carry no
+    alphabetic characters (a SCALE note is never a rail). INDETERMINATE
+    (with a named reason) when it cannot be established — never a
+    default."""
     out = {"status": INDETERMINATE, "reason": None, "x_lo": None,
            "x_hi": None, "y_lo": None, "y_hi": None, "rails": None}
     dims = [r for r in (runs or [])
             if isinstance(r, dict) and r.get("loc")
-            and is_dimension_like(r.get("raw"))]
+            and is_rail_candidate(r.get("raw"))]
+    dims += [r for r in (extra_dim_runs or [])
+             if isinstance(r, dict) and r.get("loc")]
     horiz = [r for r in dims if r.get("axis") == HORIZONTAL]
     vert = [r for r in dims if r.get("axis") == VERTICAL]
     if len(horiz) < 2:
@@ -129,15 +174,79 @@ def interior_exterior(run: dict, envelope: dict) -> str:
     return INTERIOR if (inside_x and inside_y) else EXTERIOR
 
 
-def positional_rule_probe(runs: list) -> dict:
+def _chain_aligned(run: dict, marked_dims: list):
+    """RULING HH chain gate: the bare form must sit on a dimension chain
+    — aligned with a fully-marked dimension of the SAME axis within one
+    box-width (the tolerance comes from the boxes themselves)."""
+    axis = run.get("axis")
+    for m in marked_dims:
+        if m is run or m.get("axis") != axis:
+            continue
+        if axis == VERTICAL:
+            if abs(_cx(run) - _cx(m)) <= max(run["loc"]["w_pct"],
+                                             m["loc"]["w_pct"]):
+                return m
+        else:
+            if abs(_cy(run) - _cy(m)) <= max(run["loc"]["h_pct"],
+                                             m["loc"]["h_pct"]):
+                return m
+    return None
+
+
+def gated_bare_form_admissions(runs: list) -> dict:
+    """RULING HH — admit a bare digits-hyphen-digits string ONLY when
+    position already supports it: axis VERTICAL/HORIZONTAL, EXTERIOR by
+    the marked-dims envelope, chain-aligned with a marked dimension of
+    the same axis, and inch component <= 11. Envelope not established →
+    NOTHING admitted (never a default)."""
+    marked = [r for r in (runs or [])
+              if isinstance(r, dict) and r.get("loc")
+              and is_dimension_like(r.get("raw"))]
+    env = rail_envelope(runs)
+    out = {"envelope_status": env["status"], "admitted": []}
+    if env["status"] != "ESTABLISHED":
+        return out
+    for r in (runs or []):
+        if not isinstance(r, dict) or not r.get("loc"):
+            continue
+        if is_dimension_like(r.get("raw")):
+            continue
+        pf = parse_bare_form(r.get("raw"))
+        if not pf:
+            continue
+        feet, inches = pf
+        if inches > 11:
+            continue
+        if r.get("axis") not in (VERTICAL, HORIZONTAL):
+            continue
+        if interior_exterior(r, env) != EXTERIOR:
+            continue
+        mate = _chain_aligned(r, marked)
+        if mate is None:
+            continue
+        out["admitted"].append({"run": r, "feet": feet, "inches": inches,
+                                "chain_mate": mate["raw"]})
+    return out
+
+
+def positional_rule_probe(runs: list, gated_bare: bool = True) -> dict:
     """SEND-30 item 5 — the rule, applied and REPORTED, never bound:
     the outermost VERTICAL EXTERIOR dimension on the same side of the
     footprint as the garage label. Reports what it returns, what it
-    nearly returned, and what classed INDETERMINATE."""
-    env = rail_envelope(runs or [])
+    nearly returned, and what classed INDETERMINATE. RULING HH: gated
+    bare forms are admitted (and reported) before the rule applies."""
+    adm = (gated_bare_form_admissions(runs)
+           if gated_bare else {"admitted": []})
+    admitted_runs = [a["run"] for a in adm["admitted"]]
+    env = rail_envelope(runs or [], extra_dim_runs=admitted_runs)
     report = {"rule": "outermost VERTICAL EXTERIOR dimension on the same "
                       "side of the footprint as the garage label",
               "envelope": env, "labels": [], "sides": {}, "binds": False,
+              "gated_bare_admitted": [
+                  {"raw": a["run"]["raw"], "loc": a["run"]["loc"],
+                   "src": a["run"].get("src"), "feet": a["feet"],
+                   "inches": a["inches"], "chain_mate": a["chain_mate"]}
+                  for a in adm["admitted"]],
               "indeterminate_axis": [
                   {"raw": r["raw"], "loc": r["loc"]}
                   for r in (runs or [])
@@ -159,6 +268,7 @@ def positional_rule_probe(runs: list) -> dict:
                  if isinstance(r, dict) and r.get("loc")
                  and is_dimension_like(r.get("raw"))
                  and r.get("axis") == VERTICAL]
+    vert_dims += [r for r in admitted_runs if r.get("axis") == VERTICAL]
     for side in ("left", "right"):
         side_dims = [r for r in vert_dims
                      if (_cx(r) >= mid_x) == (side == "right")]
