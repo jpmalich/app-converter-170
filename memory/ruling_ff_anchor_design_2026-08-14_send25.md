@@ -310,3 +310,46 @@ RE-PROBE RESULTS (run c5463399, REPORT ONLY — ANCHOR NOT BOUND):
     pending observation for the next fresh reads. NOT claimed.
 ANCHOR: STAYS BLOCKED until Howard reads this re-probe.
 Full machine report: /app/memory/send30_reprobe_report.json
+
+================================================================
+SEND-31 OUTCOMES (2026-08-16, appended — prediction file unrevised)
+BUILT: Ruling HH (bare form gated on position: axis V/H + EXTERIOR by
+2D envelope + chain-aligned within one box-width + inches <= 11;
+no envelope -> nothing admitted) and Ruling II (rail candidate carries
+NO alphabetic characters). 12 new pinned tests; suite GREEN 2509.
+
+HH ADMISSIONS across all 11 pages: 4 total — NO FLOOD.
+  p4: "30-2" x2 (rot90/rot270 reads of the same string) — THE target;
+      chain mate 5'10°.
+  p7: "2-8" x2 (upright, HORIZONTAL, chain mates 3'9° / 34-0°) — a
+      genuinely mark-stripped small dim on the second floor plan.
+
+II RAIL REPORT (all 11 pages, marked-only):
+  p4 bottom rail RECOVERED: 58-0° at y=75 (was SCALE at y=81.65).
+  p6 bottom rail: SCALE gone, but "2-11%° × 3-119°" (a size-pair note
+    using the '×' GLYPH — not alphabetic) slipped candidacy at y=73.3
+    vs the true 58-0° at y=70.2. NAMED RESIDUAL, ~2pct y_hi inflation,
+    changed no outcome. Not patched — extending II is a ruling (the
+    structural property that excludes it without a catalog would be
+    "a rail candidate carries exactly ONE dimension token").
+  p7 ESTABLISHED (58'-0° / 24'-0* / 30'-0° / 33'0*), p8, p9 (joist
+    plans) ESTABLISHED; p1 ESTABLISHED but it is an ELEVATION — its
+    "envelope" is not a footprint and the anchor must not treat it as
+    one; p2, p3, p5, p10, p11 INDETERMINATE with named reasons
+    (never a default).
+
+PROBE AFTER REPAIRS (report only, anchor NOT bound):
+  p4: LEFT -> 30-2 (admitted; 5'10° visible in contention),
+      RIGHT -> 33-0*.
+  p6: LEFT -> 30-0* (Howard confirms p6 genuinely prints 30'-0";
+      the 3'-0" garage step-back is real and printed),
+      RIGHT -> 33'-0'.
+
+LEFT-DEPTH CROSS-SHEET (ITEM 3, as ruled): p4 Foundation reads 30'-2",
+p6 First Floor reads 30'-0". THE SHEETS DISAGREE BY 2" ON ONE WALL.
+REPORTED — not averaged, no sheet preferred, not resolved from OCR.
+
+STANDING: anchor stays BLOCKED; when lifted, first pass is a
+REPORT-ONLY DRY RUN and any working-anchor handback says UNVALIDATED
+until a second plan set runs. Variance observation pending fresh reads.
+Full machine report: /app/memory/send31_reprobe_report.json

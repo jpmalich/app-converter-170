@@ -7463,3 +7463,19 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - Old store archived at result.raw_ai._send30_backfill on run c5463399.
 - AWAITING HOWARD: read re-probe → rule on bare-form dims, scale-note rail
   pollution, p6-LEFT ambiguity → then (maybe) unblock anchor build.
+
+## 2026-08-16 — SEND-31 (Rulings HH + II built; re-probe reported; anchor still BLOCKED)
+- HH: bare digits-hyphen-digits admitted only on position (axis + exterior +
+  chain-aligned + inches<=11). 4 admissions across 11 pages (no flood):
+  p4 "30-2" (the target) and p7 "2-8".
+- II: rail candidates carry no alphabetic chars — SCALE notes out; p4 bottom
+  rail recovered. NAMED RESIDUAL: '×' size-pair note slips candidacy on p6
+  (not alphabetic) — awaiting ruling, not patched.
+- Probe: p4 LEFT -> 30-2, RIGHT -> 33-0*; p6 LEFT -> 30-0*, RIGHT -> 33'-0'.
+- CROSS-SHEET DISAGREEMENT REPORTED: p4 30'-2" vs p6 30'-0" left depth (2").
+  Not averaged, not resolved. Howard confirms 3'-0" garage step-back is real.
+- Files: ocr_geometry.py (HH/II), tests/test_rulings_2026_08_16_send31.py (12
+  tests), scripts/send31_reprobe.py. Suite GREEN 2509.
+- ORDER AHEAD: anchor dry run (when Howard lifts block, report-only,
+  UNVALIDATED until second plan set) -> per-surface zone binding (critical
+  path) -> Ruling V conversion (2 PENDING_CONVERSION visible in census).
