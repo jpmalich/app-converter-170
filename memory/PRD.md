@@ -7445,3 +7445,21 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - Anchor build STAYS BLOCKED. Implied fix order (awaiting Howard's ruling):
   persist rotated runs w/ axis tag → OCR all plan/elevation sheets →
   axis filter → rail-envelope interior/exterior → re-probe rule → anchor.
+
+## 2026-08-16 — SEND-30 (BUILT items 1-4 + re-probe report; anchor NOT bound)
+- Coverage: rotated OCR passes on EVERY page, all runs persisted with src+axis
+  (boxes mapped to upright); page filter dead — all 11 pages read.
+- Correction 1: glyph-normalized axis classifier (cuts 0.12/0.18 pinned inside
+  verified gap; zero overlap on p6 set; p6 census 57H/32V/1IND).
+- Correction 2: 2D rail envelope + interior/exterior in ocr_geometry.py
+  (INDETERMINATE when rails missing/crossing, never a default).
+- Re-probe: 30'-2" FOUND (p4, rotated, vertical, left); 33'-0" FOUND (p4/p6/p7,
+  rotated, vertical, right). Rule returns 33'-0" RIGHT on p4+p6. NAMED GAPS:
+  bare "30-2" form refused by dim filter (p4-LEFT wrong → 5'10°); SCALE note
+  polluted bottom rail on p4/p6; p6-LEFT "30-0*" vs 30'-2" unresolved.
+- Files: backend/ocr_geometry.py (new), routes/ai_blueprint.py (coverage
+  rewrite in _ocr_locate_evidence + _map_rot_box), scripts/send30_reprobe.py,
+  tests/test_rulings_2026_08_16_send30.py (16 tests). Suite GREEN 2497.
+- Old store archived at result.raw_ai._send30_backfill on run c5463399.
+- AWAITING HOWARD: read re-probe → rule on bare-form dims, scale-note rail
+  pollution, p6-LEFT ambiguity → then (maybe) unblock anchor build.

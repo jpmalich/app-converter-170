@@ -310,3 +310,5 @@
 - 2026-08-13 09:22 UTC · 18ecb73 · INGRESS-SMOKE-CLEAN · 4 passed in 1.29s
 - 2026-08-13 11:36 UTC · d1b1aea · CLEAN · [tests] · 2349 passed, 4 skipped, 6 warnings in 147.67s (0:02:27)
 - 2026-08-13 11:36 UTC · d1b1aea · INGRESS-SMOKE-CLEAN · 4 passed in 1.42s
+- 2026-08-16 15:21 UTC · c2fbfb2 · CLEAN · [tests] · 2497 passed, 9 skipped, 7 warnings in 190.28s (0:03:10)
+- 2026-08-16 15:21 UTC · c2fbfb2 · INGRESS-SMOKE-CLEAN · 4 passed in 1.94s

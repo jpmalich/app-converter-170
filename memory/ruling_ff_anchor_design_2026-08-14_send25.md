@@ -264,3 +264,49 @@ captured. Root causes ranked: L1 (foundation plan unread) + L2/L3
 (rotated runs never persisted) ahead of resolution.
 
 ANCHOR: STAYS BLOCKED. No build performed in SEND-29.
+
+================================================================
+SEND-30 OUTCOMES (2026-08-16, appended — prediction file unrevised)
+BUILT (items 1-4, sealed order): rotated passes on EVERY page with all
+runs persisted (src + axis tags, boxes mapped to upright); page filter
+dead (OCR reads every page, incl. title sheets); glyph-normalized axis
+classifier (verified separation FIRST: verticals 0.058-0.087,
+horizontals 0.212-0.396, zero overlap on the full p6 set — cuts pinned
+inside the gap at 0.12/0.18); 2D rail envelope (interior = inside on
+BOTH axes; INDETERMINATE when rails missing/crossing, never a default).
+Suite GREEN 2497 passed. Old upright-only store ARCHIVED on the run doc
+(_send30_backfill), new store backfilled from the retained rasters.
+
+RE-PROBE RESULTS (run c5463399, REPORT ONLY — ANCHOR NOT BOUND):
+  30'-2" — FOUND. Foundation Plan p4, rotated passes only, VERTICAL,
+    x=20.33 (left side). It was never absent from the page; it was
+    never read. ALSO: raw came back as bare "30-2" (foot AND inch
+    marks lost), which the dimension-like filter refuses (bare
+    digits-hyphen-digits would swallow dates) — so the positional rule
+    on p4-LEFT returned 5'10° instead. NAMED GAP, not tuned away.
+  33'-0" — FOUND on p4 (x=78.98), p6 (x=81.9), p7 (x=82.1); VERTICAL,
+    rotated passes only, exactly where Howard read it.
+  POSITIONAL RULE p6: RIGHT → 33'-0" (x=81.91). Contention: only the
+    duplicate reads of the same string from the two rotated passes
+    (rot90/rot270 both hit it) — wins by default after dedup, which
+    per Howard proves less than it appears. LEFT → "30-0*" (x=28.95);
+    whether that is a real 30'-0" or a misread of 30'-2" cannot be
+    resolved from OCR alone — OPEN.
+  POSITIONAL RULE p4: RIGHT → 33'-0" (x=78.98). LEFT → 5'10° (wrong;
+    the true 30'-2" excluded by the bare-form filter gap above).
+  AXIS CENSUS p6 (all passes, dim-like): 57 H / 32 V / 1 INDETERMINATE
+    (nr=0.130, in the gap band) — rare, not impossible, as ruled.
+  ENVELOPE POLLUTION (named): the bottom rail on p4 AND p6 resolved to
+    the SCALE note (SCALE:3/16"=1'-0", y=80) below the true bottom
+    58'-0" rail (y=70) — y_hi inflated ~10pct. Did not change any
+    probe outcome here; needs a ruling (exclude scale-notes vs live
+    with it), NOT a silent filter.
+  RUN COUNTS/page (total: upright/rot90/rot270): p1 387:147/107/133,
+    p2 380:147/100/133, p3 749:290/213/246, p4 323:137/90/96,
+    p5 159:69/42/48, p6 465:243/101/121, p7 331:166/81/84,
+    p8 339:115/114/110, p9 225:84/67/74, p10 139:69/34/36,
+    p11 201:84/56/61. Previously-unread pages 3,4,5,8,10 now covered.
+  VARIANCE (item 3): cannot be measured from one run; noted as a
+    pending observation for the next fresh reads. NOT claimed.
+ANCHOR: STAYS BLOCKED until Howard reads this re-probe.
+Full machine report: /app/memory/send30_reprobe_report.json
