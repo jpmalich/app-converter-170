@@ -727,3 +727,21 @@ def tt_closure(runs: list) -> list:
                                   "residual_in": ssum - total})
                 report.append(entry)
     return report
+
+
+# THE REGISTER (SEND-44). Ruled out stays ruled out; named opens stay
+# visible so they never quietly become assumptions.
+RULINGS_REGISTER = {
+    "ruled_out": [
+        "multi-structure support inside one estimate — detached garage / "
+        "outbuilding is its OWN estimate (Howard, SEND-44). Do not build, "
+        "do not design.",
+    ],
+    "named_open": [
+        "segment-vs-total on one line (blocking Boni p4 LEFT)",
+        "different depths + no garage (refuses today — correct)",
+        "room-label precondition is the ONLY thing excluding joist sheets",
+        "two footprints drawn on one sheet (separate estimates keep "
+        "takeoffs apart, not drawings apart) — report-only, no build",
+    ],
+}

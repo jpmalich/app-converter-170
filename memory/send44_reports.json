@@ -1,0 +1,1426 @@
+{
+ "tie_audit": {
+  "ties": [
+   {
+    "house": "boni",
+    "page": "4",
+    "side": "left",
+    "tied": [
+     "5\u2032-10\u00b0",
+     "30-2"
+    ],
+    "list_order_would_have_chosen": "5\u2032-10\u00b0"
+   }
+  ],
+  "rendered_note": "no probe output has ever been bound into derivation (no-bind standing); rendered values come from the model path (raw_ai.walls) only"
+ },
+ "p4_right_closing_chain": [
+  {
+   "axis": "VERTICAL",
+   "half": "high",
+   "total_raw": "30\u2032-0\"",
+   "segments": [
+    "14'-7*",
+    "10\u2032-11\u00b0",
+    "4'-6*"
+   ],
+   "declared_fraction_uncertainty": [],
+   "total_in": 360,
+   "segment_sum_in": 360,
+   "status": "CLOSES",
+   "residual_in": 0
+  }
+ ],
+ "height_census": {
+  "boni": {
+   "walls": [
+    {
+     "label": "front",
+     "width_ft": 58.0,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "back",
+     "width_ft": 58.0,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "left",
+     "width_ft": null,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 11.4
+    },
+    {
+     "label": "right",
+     "width_ft": null,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 11.4
+    }
+   ],
+   "avg_wall_height_ft": 20.0,
+   "height_evidence": [
+    {
+     "path": "corner_heights.0",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.0",
+     "from": "8'-1 1/2\"",
+     "page": 1,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "corner_heights.1",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.1",
+     "from": "8'-1 1/2\"",
+     "page": 1,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "corner_heights.2",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.2",
+     "from": "8'-1 1/2\"",
+     "page": 2,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "corner_heights.3",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.3",
+     "from": "8'-1 1/2\"",
+     "page": 2,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "corner_heights.4",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.5",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.6",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.7",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "roof_planes.garage.wall_height_ft",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.back.height_ft",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.back.height_ft",
+     "from": "8'-1 1/2\"",
+     "page": 1,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "walls.back.segments.main body 2-story.height_ft",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.back.segments.main body 2-story.height_ft",
+     "from": "8'-1 1/2\"",
+     "page": 1,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "walls.front.height_ft",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.front.height_ft",
+     "from": "8'-1 1/2\"",
+     "page": 1,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "walls.front.segments.garage wing 1-story.height_ft",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.front.segments.main body 2-story.height_ft",
+     "from": "9'-11\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 68.22,
+      "y_pct": 27.79,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.front.segments.main body 2-story.height_ft",
+     "from": "8'-1 1/2\"",
+     "page": 1,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "walls.left.height_ft",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.left.height_ft",
+     "from": "8'-1 1/2\"",
+     "page": 2,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "walls.right.height_ft",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.right.height_ft",
+     "from": "8'-1 1/2\"",
+     "page": 2,
+     "loc": null,
+     "precision": null
+    },
+    {
+     "path": "walls.right.segments.bonus room section.height_ft",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.right.segments.main body 2-story.height_ft",
+     "from": "9'-11\"",
+     "page": 2,
+     "loc": {
+      "x_pct": 43.65,
+      "y_pct": 69.38,
+      "w_pct": 0.71,
+      "h_pct": 2.26
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.right.segments.main body 2-story.height_ft",
+     "from": "8'-1 1/2\"",
+     "page": 2,
+     "loc": null,
+     "precision": null
+    }
+   ],
+   "distributed_sources": {
+    "9'-11\" (p1)": [
+     "corner_heights.0",
+     "corner_heights.1",
+     "corner_heights.4",
+     "corner_heights.5",
+     "roof_planes.garage.wall_height_ft",
+     "walls.back.height_ft",
+     "walls.back.segments.main body 2-story.height_ft",
+     "walls.front.height_ft",
+     "walls.front.segments.garage wing 1-story.height_ft",
+     "walls.front.segments.main body 2-story.height_ft"
+    ],
+    "8'-1 1/2\" (p1)": [
+     "corner_heights.0",
+     "corner_heights.1",
+     "walls.back.height_ft",
+     "walls.back.segments.main body 2-story.height_ft",
+     "walls.front.height_ft",
+     "walls.front.segments.main body 2-story.height_ft"
+    ],
+    "9'-11\" (p2)": [
+     "corner_heights.2",
+     "corner_heights.3",
+     "corner_heights.6",
+     "corner_heights.7",
+     "walls.left.height_ft",
+     "walls.right.height_ft",
+     "walls.right.segments.bonus room section.height_ft",
+     "walls.right.segments.main body 2-story.height_ft"
+    ],
+    "8'-1 1/2\" (p2)": [
+     "corner_heights.2",
+     "corner_heights.3",
+     "walls.left.height_ft",
+     "walls.right.height_ft",
+     "walls.right.segments.main body 2-story.height_ft"
+    ]
+   }
+  },
+  "letrick": {
+   "walls": [
+    {
+     "label": "front",
+     "width_ft": 54.0,
+     "height_ft": 9.9,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "back",
+     "width_ft": 54.0,
+     "height_ft": 9.9,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "left",
+     "width_ft": 30.0,
+     "height_ft": null,
+     "gable_triangle_height_ft": 8.75
+    },
+    {
+     "label": "right",
+     "width_ft": 30.0,
+     "height_ft": null,
+     "gable_triangle_height_ft": 8.75
+    }
+   ],
+   "avg_wall_height_ft": 9.9,
+   "height_evidence": [
+    {
+     "path": "corner_heights.0",
+     "from": "9'-11 1/8\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 87.12,
+      "y_pct": 70.35,
+      "w_pct": 0.55,
+      "h_pct": 1.53
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.1",
+     "from": "9'-11 1/8\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 87.12,
+      "y_pct": 70.35,
+      "w_pct": 0.55,
+      "h_pct": 1.53
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.2",
+     "from": "9'-11 1/8\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 87.12,
+      "y_pct": 70.35,
+      "w_pct": 0.55,
+      "h_pct": 1.53
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "corner_heights.3",
+     "from": "9'-11 1/8\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 87.12,
+      "y_pct": 70.35,
+      "w_pct": 0.55,
+      "h_pct": 1.53
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.back.height_ft",
+     "from": "9'-11 1/8\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 87.12,
+      "y_pct": 70.35,
+      "w_pct": 0.55,
+      "h_pct": 1.53
+     },
+     "precision": "ocr"
+    },
+    {
+     "path": "walls.front.height_ft",
+     "from": "9'-11 1/8\"",
+     "page": 1,
+     "loc": {
+      "x_pct": 87.12,
+      "y_pct": 70.35,
+      "w_pct": 0.55,
+      "h_pct": 1.53
+     },
+     "precision": "ocr"
+    }
+   ],
+   "distributed_sources": {
+    "9'-11 1/8\" (p1)": [
+     "corner_heights.0",
+     "corner_heights.1",
+     "corner_heights.2",
+     "corner_heights.3",
+     "walls.back.height_ft",
+     "walls.front.height_ft"
+    ]
+   }
+  }
+ },
+ "elevation_read": {
+  "boni": {
+   "1": {
+    "title": "FRONT & REAR ELEVATIONS",
+    "strings": 179,
+    "content_y_gaps_gt8pct": [],
+    "vertical_dim_count": 17,
+    "vertical_dim_y_centers": [
+     17.7,
+     19.1,
+     27.7,
+     27.8,
+     35.7,
+     41.3,
+     61.2,
+     71.3,
+     71.5,
+     80.7,
+     82.3,
+     82.5,
+     82.8,
+     83.6,
+     83.7,
+     87.3,
+     90.5
+    ],
+    "story_labels": [
+     "1ST&2NDFLOORELECPLAN10",
+     "FIRST FLOOR",
+     "FIRSTFLOOR",
+     "FIRSTFLOORJOISTPLAN",
+     "FIRSTFLOORPLAN_",
+     "MIN. 8\u2032-1 1/8* CEILING HEIGHT ON SECOND FLOOR",
+     "MIN. 9-1 1/8* CEILING HEIGHT ON FIRST FLOOR",
+     "P.T. PLATE"
+    ]
+   },
+   "2": {
+    "title": "LEFT & RIGHT ELEVATIONS",
+    "strings": 172,
+    "content_y_gaps_gt8pct": [],
+    "vertical_dim_count": 16,
+    "vertical_dim_y_centers": [
+     17.7,
+     27.6,
+     27.7,
+     29.4,
+     35.5,
+     36.2,
+     39.2,
+     41.0,
+     59.3,
+     59.5,
+     69.4,
+     77.2,
+     77.4,
+     78.2,
+     79.8,
+     82.9
+    ],
+    "story_labels": [
+     ".TOP OF PLATE",
+     "FIRST FLOOR",
+     "FIRSTFLOOR",
+     "MIN. 8\u2032-1 1/8\u00b0 CEILING HEIGHT ON SECOND FLOOR",
+     "MIN. 9-1 1/8\u00b0 CEILING HEIGHT ON FIRST FLOOR",
+     "SECOND FLOOR",
+     "SECONDFLOOR",
+     "TOP OF PLATE"
+    ]
+   }
+  },
+  "letrick": {
+   "1": {
+    "title": "FRONT & REAR ELEVATIONS",
+    "strings": 124,
+    "content_y_gaps_gt8pct": [],
+    "vertical_dim_count": 5,
+    "vertical_dim_y_centers": [
+     20.2,
+     24.7,
+     32.2,
+     70.3,
+     70.3
+    ],
+    "story_labels": [
+     "1STFLOORELECPLAN_",
+     "FIRST FLOOR",
+     "FIRSTFLOOR",
+     "FIRSTFLOORJOISTPLAN",
+     "FIRSTFLOORPLAN_",
+     "MIN. 9-1 1/8\u00b0 CEILING HEIGHT ON FIRST FLOOR",
+     "MIN.8\u2032-1 1/8 CEILING HEIGHT ON SECOND FLOOR",
+     "TOP OF PLATE"
+    ]
+   },
+   "2": {
+    "title": "LEFT & RIGHT ELEVATIONS",
+    "strings": 125,
+    "content_y_gaps_gt8pct": [],
+    "vertical_dim_count": 5,
+    "vertical_dim_y_centers": [
+     21.0,
+     25.6,
+     65.1,
+     65.9,
+     76.4
+    ],
+    "story_labels": [
+     "ER (TYP TOP OF PLATE",
+     "FIRST FLOOR",
+     "FIRSTFLOOR",
+     "MIN. 9-1 1/8\u00b0 CEILING HEIGHT ON FIRST FLOOR",
+     "OP OF PLATE",
+     "TOP OF PLATE"
+    ]
+   }
+  }
+ },
+ "grade_read": {
+  "boni": [
+   {
+    "page": "1",
+    "raw": "GRADE @",
+    "loc": {
+     "x_pct": 2.62,
+     "y_pct": 33.38,
+     "w_pct": 2.27,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "FINAL GRADE TO BE DETERMINED ON SITE;",
+    "loc": {
+     "x_pct": 5.85,
+     "y_pct": 57.85,
+     "w_pct": 8.92,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 5.85,
+     "y_pct": 60.57,
+     "w_pct": 4.23,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "MOVING TO ACHIEVE GRADES SHOWN ON PRINT.",
+    "loc": {
+     "x_pct": 5.85,
+     "y_pct": 64.56,
+     "w_pct": 9.98,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "ACHIEVETHESEGRADES,HOWEVEROWNERISRESPONS",
+    "loc": {
+     "x_pct": 5.95,
+     "y_pct": 66.42,
+     "w_pct": 14.36,
+     "h_pct": 0.86
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "TOP OF WALKOUT FOOTER",
+    "loc": {
+     "x_pct": 83.42,
+     "y_pct": 90.43,
+     "w_pct": 5.54,
+     "h_pct": 0.86
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 5.87,
+     "y_pct": 60.57,
+     "w_pct": 4.18,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "GRADENOTES",
+    "loc": {
+     "x_pct": 5.95,
+     "y_pct": 60.47,
+     "w_pct": 4.13,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "TOP OF WALKOUT FOOTER",
+    "loc": {
+     "x_pct": 28.53,
+     "y_pct": 90.32,
+     "w_pct": 5.95,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "WALKOUTFOOTER",
+    "loc": {
+     "x_pct": 64.72,
+     "y_pct": 90.85,
+     "w_pct": 4.28,
+     "h_pct": 1.33
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "TOP OF WALKOUT FOOTER",
+    "loc": {
+     "x_pct": 83.22,
+     "y_pct": 90.25,
+     "w_pct": 5.9,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 24.24,
+     "y_pct": 52.93,
+     "w_pct": 4.18,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "HOUSEGRADESAREDRAWN SOLEYFOR BUILDERTOBU",
+    "loc": {
+     "x_pct": 24.19,
+     "y_pct": 53.86,
+     "w_pct": 15.02,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "MOVING TO ACHIEVE GRADES SHOWN ON PRINT.",
+    "loc": {
+     "x_pct": 24.24,
+     "y_pct": 56.91,
+     "w_pct": 9.98,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "FINAL GRADE TO BE DETERMINED ON SITE:",
+    "loc": {
+     "x_pct": 11.9,
+     "y_pct": 58.64,
+     "w_pct": 8.87,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "ACHIEVETHESEGRADESHOWEVEROWNERISRESPONSI",
+    "loc": {
+     "x_pct": 24.24,
+     "y_pct": 58.71,
+     "w_pct": 14.52,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 24.22,
+     "y_pct": 52.93,
+     "w_pct": 4.18,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "HOUSE GRADES ARE DRAWN",
+    "loc": {
+     "x_pct": 24.45,
+     "y_pct": 54.08,
+     "w_pct": 5.8,
+     "h_pct": 0.66
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 24.19,
+     "y_pct": 52.75,
+     "w_pct": 4.28,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 44.56,
+     "y_pct": 26.8,
+     "w_pct": 3.78,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 17.89,
+     "y_pct": 30.72,
+     "w_pct": 3.68,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "ALLSTEELMEMBERSARETO BE ASTMA992GRADE50S",
+    "loc": {
+     "x_pct": 63.81,
+     "y_pct": 31.58,
+     "w_pct": 15.62,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "ALLFOOTINGTOBEARBELOWFROSTLINE(MINIMUM36",
+    "loc": {
+     "x_pct": 63.81,
+     "y_pct": 55.59,
+     "w_pct": 21.02,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 17.74,
+     "y_pct": 63.3,
+     "w_pct": 3.73,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 43.97,
+     "y_pct": 26.66,
+     "w_pct": 4.49,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 17.71,
+     "y_pct": 30.72,
+     "w_pct": 4.03,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 17.46,
+     "y_pct": 63.23,
+     "w_pct": 4.13,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 17.74,
+     "y_pct": 63.13,
+     "w_pct": 4.03,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 17.74,
+     "y_pct": 30.55,
+     "w_pct": 3.98,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISH GRADE",
+    "loc": {
+     "x_pct": 44.41,
+     "y_pct": 26.49,
+     "w_pct": 4.18,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "6",
+    "raw": "STANDARDS AND FINAL GRADE ",
+    "loc": {
+     "x_pct": 15.22,
+     "y_pct": 38.56,
+     "w_pct": 6.45,
+     "h_pct": 0.86
+    },
+    "axis": "HORIZONTAL"
+   }
+  ],
+  "letrick": [
+   {
+    "page": "1",
+    "raw": "APPROX GRADE",
+    "loc": {
+     "x_pct": 58.97,
+     "y_pct": 31.25,
+     "w_pct": 4.23,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "FINAL GRADE TO BE DETERMINED ON SITE;",
+    "loc": {
+     "x_pct": 7.36,
+     "y_pct": 51.0,
+     "w_pct": 8.77,
+     "h_pct": 0.86
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 7.16,
+     "y_pct": 52.53,
+     "w_pct": 4.18,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "HOUSE GRADES ARE DRAWN SOLEYFOR BUILDER ",
+    "loc": {
+     "x_pct": 7.11,
+     "y_pct": 53.52,
+     "w_pct": 15.07,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "MOVING TO ACHIEVE GRADES SHOWN ON PRINT.",
+    "loc": {
+     "x_pct": 7.16,
+     "y_pct": 56.65,
+     "w_pct": 9.93,
+     "h_pct": 0.86
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "ACHIEVETHESE GRADESHOWEVEROWNERIS RESPON",
+    "loc": {
+     "x_pct": 7.21,
+     "y_pct": 58.44,
+     "w_pct": 14.42,
+     "h_pct": 0.86
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "APPROX GRADE",
+    "loc": {
+     "x_pct": 58.84,
+     "y_pct": 30.92,
+     "w_pct": 4.59,
+     "h_pct": 1.46
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 7.13,
+     "y_pct": 52.46,
+     "w_pct": 4.39,
+     "h_pct": 1.2
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "GRADENOTES",
+    "loc": {
+     "x_pct": 7.26,
+     "y_pct": 52.36,
+     "w_pct": 4.28,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "1",
+    "raw": "APPROX GRADE",
+    "loc": {
+     "x_pct": 58.92,
+     "y_pct": 31.08,
+     "w_pct": 4.33,
+     "h_pct": 0.93
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "FINALGRADE TOBEDETERMINED ON SITE:",
+    "loc": {
+     "x_pct": 54.69,
+     "y_pct": 15.69,
+     "w_pct": 8.97,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 54.64,
+     "y_pct": 18.02,
+     "w_pct": 4.28,
+     "h_pct": 1.26
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "HOUSEGRADES ARE DRAWN SOLEYFOR BUILDERTO",
+    "loc": {
+     "x_pct": 54.69,
+     "y_pct": 19.15,
+     "w_pct": 15.07,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "MOVING TO ACHIEVE GRADES SHOWN ON PRINT.",
+    "loc": {
+     "x_pct": 54.74,
+     "y_pct": 22.27,
+     "w_pct": 9.88,
+     "h_pct": 0.86
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "ACHIEVETHESEGRADESOWEVEROWNERISRESPONSIB",
+    "loc": {
+     "x_pct": 54.74,
+     "y_pct": 24.0,
+     "w_pct": 14.52,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "APPROXGRADE",
+    "loc": {
+     "x_pct": 46.12,
+     "y_pct": 31.85,
+     "w_pct": 4.44,
+     "h_pct": 1.4
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "APPROXGRADE",
+    "loc": {
+     "x_pct": 46.82,
+     "y_pct": 72.01,
+     "w_pct": 4.44,
+     "h_pct": 1.33
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "GRADE NOTES",
+    "loc": {
+     "x_pct": 54.71,
+     "y_pct": 18.02,
+     "w_pct": 4.33,
+     "h_pct": 1.26
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "PROXGRADE",
+    "loc": {
+     "x_pct": 46.88,
+     "y_pct": 31.74,
+     "w_pct": 3.83,
+     "h_pct": 1.33
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "2",
+    "raw": "GRADENOTES",
+    "loc": {
+     "x_pct": 54.79,
+     "y_pct": 17.98,
+     "w_pct": 4.23,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "ALLSTEELMEMBERSARETOBEASTMA992GRADE50STE",
+    "loc": {
+     "x_pct": 68.85,
+     "y_pct": 33.11,
+     "w_pct": 15.73,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISHGRADE",
+    "loc": {
+     "x_pct": 36.64,
+     "y_pct": 36.44,
+     "w_pct": 5.39,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "SEEGRADEBEAMDETAILSHEET4",
+    "loc": {
+     "x_pct": 36.64,
+     "y_pct": 49.34,
+     "w_pct": 12.75,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "ALLFOOTINGTOBEARBELOWFROSTLINE(MINIMUM36",
+    "loc": {
+     "x_pct": 68.75,
+     "y_pct": 57.05,
+     "w_pct": 21.17,
+     "h_pct": 1.2
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "-SEEGRADEBEAMDETAILSHEET4",
+    "loc": {
+     "x_pct": 36.31,
+     "y_pct": 49.14,
+     "w_pct": 13.21,
+     "h_pct": 1.53
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISHGRADE",
+    "loc": {
+     "x_pct": 36.41,
+     "y_pct": 36.3,
+     "w_pct": 5.8,
+     "h_pct": 1.46
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "SEEGRADEBEAMDETAILSHEET4",
+    "loc": {
+     "x_pct": 36.39,
+     "y_pct": 48.96,
+     "w_pct": 13.16,
+     "h_pct": 1.53
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "3",
+    "raw": "FINISHGRADE",
+    "loc": {
+     "x_pct": 36.49,
+     "y_pct": 36.33,
+     "w_pct": 5.65,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "4",
+    "raw": "GRADE BEAM SECTION",
+    "loc": {
+     "x_pct": 47.48,
+     "y_pct": 76.46,
+     "w_pct": 14.31,
+     "h_pct": 1.66
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "4",
+    "raw": "GRADE BEAM SECTION",
+    "loc": {
+     "x_pct": 47.4,
+     "y_pct": 76.46,
+     "w_pct": 14.36,
+     "h_pct": 1.8
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "4",
+    "raw": "GRADE BEAM SECTION",
+    "loc": {
+     "x_pct": 47.43,
+     "y_pct": 76.22,
+     "w_pct": 14.36,
+     "h_pct": 1.99
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "5",
+    "raw": "GRADE BEAM (SEE DETAIL SHEET 4)",
+    "loc": {
+     "x_pct": 50.15,
+     "y_pct": 59.51,
+     "w_pct": 9.78,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "5",
+    "raw": "GRADE BEAM (SEE DETAIL SHEET 4)",
+    "loc": {
+     "x_pct": 49.92,
+     "y_pct": 59.51,
+     "w_pct": 9.98,
+     "h_pct": 1.13
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "5",
+    "raw": "GRADE BEAM (SEE DETAIL SHEET 4)",
+    "loc": {
+     "x_pct": 49.9,
+     "y_pct": 59.2,
+     "w_pct": 10.03,
+     "h_pct": 1.4
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "7",
+    "raw": "STANDARDS AND FINAL GRADE",
+    "loc": {
+     "x_pct": 4.64,
+     "y_pct": 37.3,
+     "w_pct": 8.67,
+     "h_pct": 1.2
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "7",
+    "raw": "STANDARDS AND FINAL GRADE",
+    "loc": {
+     "x_pct": 4.61,
+     "y_pct": 37.37,
+     "w_pct": 8.72,
+     "h_pct": 1.06
+    },
+    "axis": "HORIZONTAL"
+   },
+   {
+    "page": "7",
+    "raw": "STANDARDSANDFINALGRADE",
+    "loc": {
+     "x_pct": 4.69,
+     "y_pct": 37.06,
+     "w_pct": 8.77,
+     "h_pct": 1.33
+    },
+    "axis": "HORIZONTAL"
+   }
+  ]
+ },
+ "second_footprint": {
+  "boni": {
+   "4": {
+    "dim_x_gaps_gt15pct": [],
+    "dim_x_span": [
+     20.6,
+     79.3
+    ]
+   },
+   "6": {
+    "dim_x_gaps_gt15pct": [],
+    "dim_x_span": [
+     16.8,
+     82.1
+    ]
+   },
+   "7": {
+    "dim_x_gaps_gt15pct": [],
+    "dim_x_span": [
+     26.5,
+     82.4
+    ]
+   }
+  },
+  "letrick": {
+   "5": {
+    "dim_x_gaps_gt15pct": [],
+    "dim_x_span": [
+     19.8,
+     90.5
+    ]
+   },
+   "7": {
+    "dim_x_gaps_gt15pct": [],
+    "dim_x_span": [
+     11.7,
+     90.2
+    ]
+   }
+  }
+ }
+}

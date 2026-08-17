@@ -1,5 +1,47 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-16 SEND-45 — SEND-44 REPORT WALK + HEIGHT BUILD DRAFT (NOT WIRED)
+Read-only send per mandate: walked the six SEND-44 reports in consequence
+order, then drafted the Height Build mechanism WITHOUT wiring. Zero
+derivation code touched; suite untouched (SEND-44 pins re-verified green).
+
+**Most consequential finding (Height Census):** Boni's 20.0-ft heights on
+all four faces descend from ONE stack-up whose second term (`8'-1 1/2"`)
+was NEVER LOCATED on any sheet and whose sum (18.04) cannot reconstruct
+20.0 — the model invented ~2 ft. Letrick's single height string is fanned
+by the model across faces on OTHER pages (a model-side cross-face copy).
+Model heights therefore DEMOTED to hypothesis in the draft; height must
+derive from each face's own elevation drawing or refuse.
+
+**Draft mechanism** (full text `memory/send45_height_build_draft.md`,
+executable spec `memory/send45_height_dryrun.py`, outcomes
+`memory/send45_height_dryrun.json`): face→band via per-face sub-titles
+(Letrick prints them token-reversed: "ELEVATION FRONT"); datum LINES from
+merged corner labels with parameter-free TITLE-BLOCK-FURNITURE exclusion
+(identical string + overlapping box on a non-elevation page); vertical
+rails bind to the adjacent datum pair STRICTLY containing their glyph box
+(one value per gap = Ruling JJ vertical analog); face height = sum of
+consecutive BOUND gaps bottom-datum→topmost plate; any contested/
+undimensioned gap on the path refuses with the gap NAMED. Grade verdicts
+per face: FLAT only positively (grade label box on a datum line), SLOPE =
+½·base·drop needs two-end evidence (fires nowhere today), STEP awaits the
+walkout ruling, UNKNOWN refuses extra area. Grade module separated from
+the 0.70 gable path by pinned fields/labels at wiring time.
+
+**Computed resolutions (dry run, not guessed):** Letrick front/left/right
+ESTABLISH 9'-1⅛" from their own drawings (side-body refusals CURED
+structurally); Letrick rear refuses on a real both-ends conflict
+(9'-11 vs 9'-1⅛, named); all Boni faces refuse with specific named gaps —
+the systematic one being the UNDIMENSIONED joist band (SECOND FLOOR →
+first TOP OF PLATE never carries a rail on Boni).
+
+**Decision points sent to Howard (DP-1..DP-5):** bottom siding datum
+(FIRST FLOOR→plate recommended), same-gap conflict handling, off-column
+segment rails (Boni front garage vs main), STEP admission from walkout
+footers, and the joist band (refuse / labeled-zero / sealed convention).
+NOTHING WIRED until ruled.
+
+
 ## 2026-08-14 SEND-27 — EE SURFACE DEFECT FIXED + DIAGNOSTIC PANEL (accuracy only)
 Suite **2481 passed / 9 skipped** (+7 send-27 pins,
 `tests/test_rulings_2026_08_14_send27.py`). **Verified against the RENDERED
