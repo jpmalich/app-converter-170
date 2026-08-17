@@ -553,3 +553,68 @@ DRY RUNS RE-RUN ON MERGED SUBSTRATE (both houses):
   RIGHT changed 9-1%* -> 19'-11: the send-34 p1 photo finish was
   itself a same-string artifact that merge resolved (elevation stays
   excluded by precondition regardless).
+
+================================================================
+SEND-38 OUTCOMES (2026-08-16, appended — prediction file unrevised)
+BUILT: Ruling XX (ADOPTED — attribution_verdict with the explicit
+closure pin on every verdict), TT (line-pair sum closure instrument,
+reports never gates, fraction loss declared), UU (band = observed gap
+on merged data: 0.1143/0.212), VV (Unicode confusable-class mark
+normalization), WW (depth candidates must lie on the side's rail
+line). 15 new pinned tests; suite GREEN 2544.
+
+NAMED OPEN registered in code (XX_NAMED_OPEN): different depths + no
+garage REFUSES today — correct until ruled otherwise. Not designed,
+not prototyped. Register note: the anchor is not garage-specific in
+MECHANISM ("a labelled interior volume whose outboard wall lands on
+one side elevation") — the garage is one reliable instance.
+
+XX VERDICTS (real stores): Letrick p5 IMMATERIAL 30'-0", p7
+IMMATERIAL 30'-0" — fires exactly as adopted. Boni p6 MATERIAL
+(30-0* vs 33'-0'), p7 MATERIAL — anchor still required; nothing
+about XX touched Boni's verdicts on the room-label sheets.
+
+BONI p4 MOVED, AND THE MOVE IS THE FINDING: after MM merge, the
+5'-10 string's surviving box lands at the SAME x as 30-2 — the 0.08
+photo finish was CROSS-PASS BOX NOISE, NOT SIGNAL. The probe had been
+breaking that tie by LIST ORDER — a silent coin flip. FIXED
+STRUCTURALLY: an exact positional tie between distinct values is now
+named ("tie") with chosen=None; XX reports INDETERMINATE naming the
+tie and the missing segment-vs-total ruling. p4 LEFT is now honestly
+UNRESOLVED instead of accidentally right.
+
+FACES AS THEY ACTUALLY RENDER (no bind anywhere, model path):
+  LETRICK: front 54'x9.9' and back 54'x9.9' derive; left/right WIDTHS
+  read 30.0 each; left/right BODY faces refuse on "wall height not
+  read" (heights null from the model) — a HEIGHT gate, orthogonal to
+  attribution, which XX correctly does not override; both side GABLE
+  triangles derive (8.75'). Aggregate siding_sqft 1532.7. So: XX
+  resolves Letrick's attribution completely (no anchor needed), and
+  the remaining side-face refusal is a different, pre-existing read
+  gap — stated, not worked around.
+  BONI: unchanged in every rendered value. No bind occurred.
+
+UU CENSUS: INDETERMINATE dim strings after the band reset — Boni
+7/289, Letrick 5/259 (~2.4%): rare, not impossible.
+
+WW: on the real plan sheets it excluded nothing that was in
+contention (chosen answers all sat on rail lines already); its
+structural exclusion of the mid-sheet chimney is pinned in tests.
+The Letrick p8 chimney runs class INTERIOR there (inside envelope) —
+excluded by the 2D test, visible in excluded_interior.
+
+TT AGAINST BONI p4 (LEFT FIRST, AS ORDERED): TT CANNOT PAIR
+30-2 <-> 5'-10 on p4 LEFT — after merge they sit on the SAME line, and
+TT's form (inner line sums to next rail out) requires two lines. The
+drafting on p4 LEFT does not fit TT's line-adjacency. On p4 RIGHT
+(high half) TT found one EXACT closure: 30'-0" = 14'-7 + 10'-11 +
+4'-6 (residual 0) — the instrument works where the drafting matches.
+Other line pairs FAIL with large residuals because adjacent columns
+are frequently unrelated chains — TT's adjacency assumption is the
+limit, reported not patched.
+
+p8/p9 QUESTION ANSWERED: NO — the interior-width-as-rails failure
+does NOT fail on its own under WW + TT. p8/p9 still answer
+confidently (rails ESTABLISHED, candidates on rail lines, TT noise
+inconclusive). The room-label precondition remains the only thing
+excluding them.

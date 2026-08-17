@@ -7534,3 +7534,21 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   scripts/send36_report.py, /app/memory/send36_report.json.
 - AWAITING: rulings on LL definition, PRIME glyph, immaterial attribution
   adoption, projection concept; then zone binding (critical path), Ruling V.
+
+## 2026-08-16 — SEND-38 (XX adopted+built; TT/UU/VV/WW; tie coin-flip removed)
+- XX: attribution_verdict() with explicit closure pin + named open
+  (different depths + no garage refuses). Letrick p5/p7 IMMATERIAL 30'-0";
+  Boni p6/p7 MATERIAL unchanged. 15 tests; suite GREEN 2544.
+- FINDING: Boni p4 0.08 photo finish was cross-pass box noise — merge
+  collapsed it to an exact tie; probe was coin-flipping by list order.
+  Fixed: ties named, chosen=None, XX INDETERMINATE. p4 LEFT honestly
+  unresolved pending segment-vs-total ruling.
+- Render truth: Letrick front/back derive; side WIDTHS 30.0 read; side body
+  faces refuse on "wall height not read" (height gate, orthogonal to XX,
+  correctly not overridden); gables derive; siding 1532.7 sqft. Boni
+  unchanged everywhere. NO BIND.
+- TT: works where drafting matches (p4 RIGHT closes 30'-0" exactly); cannot
+  pair same-line total/segment (p4 LEFT). p8/p9 do NOT self-fail under
+  WW+TT — room-label precondition remains their only exclusion.
+- NEXT: per-surface zone binding (critical path), Ruling V conversion,
+  segment-vs-total ruling awaited.
