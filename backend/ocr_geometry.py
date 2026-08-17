@@ -53,10 +53,24 @@ INDETERMINATE = "INDETERMINATE"
 INTERIOR = "INTERIOR"
 EXTERIOR = "EXTERIOR"
 
-# Cuts pinned INSIDE the observed separation gap (max vertical 0.087,
-# min horizontal 0.212 on the verified set).
-AXIS_VERTICAL_MAX = 0.12
-AXIS_HORIZONTAL_MIN = 0.18
+# RULING UU (SEND-38): the INDETERMINATE band IS the observed gap on
+# MERGED data (Boni p6 merged: vertical max 0.1143, horizontal min
+# 0.212). Set to the boundaries themselves — not chosen, observed.
+AXIS_VERTICAL_MAX = 0.1143
+AXIS_HORIZONTAL_MIN = 0.212
+
+# RULING VV (SEND-38): foot and inch marks normalize by UNICODE
+# CONFUSABLE CLASS — not by appending U+2032 to a list. Third
+# appearance of the glyph family ends it; a list invites a fourth.
+_FOOT_CONFUSABLES = "\u2018\u2019\u0060\u00b4\u2032"   # ‘ ’ ` ´ ′
+_INCH_CONFUSABLES = "\u201c\u201d\u2033\u02dd"          # “ ” ″ ˝
+_MARK_TRANS = str.maketrans(
+    {c: "'" for c in _FOOT_CONFUSABLES} | {c: '"' for c in _INCH_CONFUSABLES})
+
+
+def normalize_marks(s) -> str:
+    return str(s or "").translate(_MARK_TRANS)
+
 
 # Dimension-like: a foot-mark chain (3'-10, 15'-0*) OR the glyph-noise
 # form OCR returns for the big rails (58-0°, 33-11%) where the foot mark
@@ -99,7 +113,7 @@ def is_rail_candidate(raw) -> bool:
 
 
 def dimension_token_count(raw) -> int:
-    return len(_DIM_RE.findall(str(raw or "")))
+    return len(_DIM_RE.findall(normalize_marks(raw)))
 
 
 # RULING KK (SEND-32, Howard ruled): the p4/p6 2" difference is a
@@ -195,7 +209,7 @@ def reference_plane_verdict(readings: list, material: str = "siding") -> dict:
 
 
 def is_dimension_like(raw) -> bool:
-    return bool(_DIM_RE.search(str(raw or "")))
+    return bool(_DIM_RE.search(normalize_marks(raw)))
 
 
 def axis_class(loc: dict, glyphs: int) -> str:
@@ -344,7 +358,9 @@ def rail_envelope(runs: list, extra_dim_runs: list | None = None) -> dict:
     out.update({"status": "ESTABLISHED", "x_lo": x_lo, "x_hi": x_hi,
                 "y_lo": y_lo, "y_hi": y_hi,
                 "rails": {"top": top["raw"], "bottom": bottom["raw"],
-                          "left": left["raw"], "right": right["raw"]}})
+                          "left": left["raw"], "right": right["raw"]},
+                "_rail_runs": {"top": top, "bottom": bottom,
+                               "left": left, "right": right}})
     return out
 
 
@@ -466,19 +482,50 @@ def positional_rule_probe(runs: list, gated_bare: bool = True) -> dict:
     for side in ("left", "right"):
         side_dims = [r for r in vert_dims
                      if (_cx(r) >= mid_x) == (side == "right")]
-        cands = [r for r in side_dims
-                 if interior_exterior(r, env) == EXTERIOR]
+        ext = [r for r in side_dims
+               if interior_exterior(r, env) == EXTERIOR]
+        # RULING WW (SEND-38): a depth candidate must LIE ON THE SIDE'S
+        # ESTABLISHED RAIL LINE — vertical and exterior is not enough.
+        # This excludes a mid-sheet projection (the chimney) structurally
+        # rather than by position luck.
+        rail_run = (env.get("_rail_runs") or {}).get(side)
+        if rail_run is not None:
+            cands = [r for r in ext
+                     if abs(_cx(r) - _cx(rail_run))
+                     <= max(r["loc"]["w_pct"], rail_run["loc"]["w_pct"])]
+            off_rail = [r for r in ext if r not in cands]
+        else:
+            cands, off_rail = list(ext), []
         cands.sort(key=lambda r: abs(_cx(r) - mid_x), reverse=True)
+        # An EXACT positional tie between distinct values for the
+        # outermost slot is INDETERMINATE — named, never a silent
+        # list-order coin flip. (Boni p4 LEFT: merge collapsed the 0.08
+        # photo finish into this tie — the margin was cross-pass box
+        # noise, not signal. Segment-vs-total still needs its ruling.)
+        tie = None
+        if len(cands) >= 2:
+            d0 = abs(_cx(cands[0]) - mid_x)
+            tied = [r for r in cands if abs(_cx(r) - mid_x) == d0]
+            vals = {_first_two_groups(normalize_marks(r["raw"]))
+                    for r in tied}
+            if len(tied) > 1 and len(vals) > 1:
+                tie = [r["raw"] for r in tied]
         report["sides"][side] = {
-            "chosen": ({"raw": cands[0]["raw"], "loc": cands[0]["loc"]}
-                       if cands else None),
+            "chosen": (None if tie else
+                       ({"raw": cands[0]["raw"], "loc": cands[0]["loc"]}
+                        if cands else None)),
+            "tie": tie,
             "contenders": [{"raw": r["raw"], "loc": r["loc"],
                             "dist_from_mid_pct": round(abs(_cx(r) - mid_x), 2)}
                            for r in cands],
+            # WW exclusions stay VISIBLE, never silent.
+            "excluded_off_rail": [{"raw": r["raw"], "loc": r["loc"]}
+                                  for r in off_rail],
             # Visible, not silent: vertical dims on this side the 2D test
             # classed INTERIOR — what the rule NEARLY returned.
             "excluded_interior": [{"raw": r["raw"], "loc": r["loc"]}
-                                  for r in side_dims if r not in cands],
+                                  for r in side_dims
+                                  if r not in cands and r not in off_rail],
         }
     return report
 
@@ -551,4 +598,132 @@ def chain_sum_closure(runs: list) -> list:
                 entry["status"] = "FAILS"
                 entry["residual_in"] = rest - total
         report.append(entry)
+    return report
+
+
+# RULING XX (SEND-38, ADOPTED — Howard's words): "Equal left/right
+# depths make attribution immaterial. It never overrides closure.
+# Unequal depths still require the anchor or a refusal. This does not
+# close the 'different depths + no garage' case — that stays open for
+# a later ruling."
+XX_CLOSURE_PIN = ("EQUALITY NEVER OVERRIDES CLOSURE — EE still blocks an "
+                  "unclosable footprint, and this verdict carries NO "
+                  "derivability claim of any kind. It answers attribution "
+                  "and nothing else.")
+
+# NAMED OPEN ITEM (registered, not designed): DIFFERENT DEPTHS + NO
+# GARAGE refuses today and that is correct until ruled otherwise.
+# Observation for the register only: the anchor is not garage-specific
+# in MECHANISM ("a labelled interior volume whose outboard wall lands
+# on one side elevation") — the garage is one reliably-identifiable
+# instance.
+XX_NAMED_OPEN = "different depths + no garage: REFUSES — open for a later ruling"
+
+
+def attribution_verdict(runs: list) -> dict:
+    """RULING XX. The side pair is GEOMETRIC (envelope mid-line), no
+    attribution presupposed. Equality tested on parsed feet+inches
+    AFTER merge. Returns IMMATERIAL / MATERIAL / NO_PAIR /
+    INDETERMINATE — and never a quantity."""
+    probe = positional_rule_probe(runs)
+    out = {"closure_pin": XX_CLOSURE_PIN, "named_open": XX_NAMED_OPEN,
+           "probe_envelope": probe["envelope"]["status"], "pair": None,
+           "status": None, "why": None, "depth": None}
+    if probe["envelope"]["status"] != "ESTABLISHED":
+        out["status"] = INDETERMINATE
+        out["why"] = probe["envelope"].get("reason")
+        return out
+    pair = {}
+    for side in ("left", "right"):
+        s = probe["sides"][side]
+        if s.get("tie"):
+            out["status"] = INDETERMINATE
+            out["why"] = (f"{side} winner is an exact positional tie "
+                          f"{s['tie']} — the outermost rule cannot order "
+                          f"them; segment-vs-total needs its ruling")
+            return out
+        ch = s["chosen"]
+        pair[side] = None if not ch else {
+            "raw": ch["raw"], "loc": ch["loc"],
+            "parsed": _first_two_groups(normalize_marks(ch["raw"]))}
+    out["pair"] = pair
+    if not pair["left"] or not pair["right"]:
+        out["status"] = "NO_PAIR"
+        out["why"] = "no candidate on a side — refusal stands"
+        return out
+    lv, rv = pair["left"]["parsed"], pair["right"]["parsed"]
+    if lv is None or rv is None:
+        out["status"] = INDETERMINATE
+        out["why"] = "a winner's value could not be parsed"
+        return out
+    if lv == rv:
+        out["status"] = "IMMATERIAL"
+        out["why"] = ("equal side depths — crossing them is harmless; "
+                      "both faces may derive WITHOUT an anchor, subject to "
+                      "every other gate (closure included)")
+        out["depth"] = {"feet": lv[0],
+                        "inches": lv[1] if len(lv) > 1 else 0}
+    else:
+        out["status"] = "MATERIAL"
+        out["why"] = ("unequal side depths — attribution requires the "
+                      "anchor, or the faces refuse")
+    return out
+
+
+def _fraction_uncertain(raw) -> bool:
+    s = normalize_marks(raw)
+    return bool(re.search(r"[%/\u00bc\u00bd\u00be]", s))
+
+
+def tt_closure(runs: list) -> list:
+    """RULING TT (SEND-37): corrected LL — segments on the INNER line
+    sum to the total on the NEXT RAIL OUT. Fraction loss is DECLARED
+    per member, never a tolerance. REPORTS, NEVER GATES."""
+    runs = merge_positions(runs)
+    report = []
+    for axis, coord, span in ((VERTICAL, _cx, "w_pct"),
+                              (HORIZONTAL, _cy, "h_pct")):
+        dims = [r for r in runs if r.get("loc") and _is_clean_dim(r)
+                and r.get("axis") == axis]
+        if len(dims) < 2:
+            continue
+        dims.sort(key=coord)
+        lines, cur = [], []
+        for r in dims:
+            if cur and abs(coord(r) - coord(cur[-1])) > max(
+                    cur[-1]["loc"][span], r["loc"][span]):
+                lines.append(cur)
+                cur = []
+            cur.append(r)
+        if cur:
+            lines.append(cur)
+        if len(lines) < 2:
+            continue
+        mid = (coord(lines[0][0]) + coord(lines[-1][-1])) / 2
+        halves = {"low": [l for l in lines if coord(l[0]) < mid],
+                  "high": [l for l in lines if coord(l[0]) >= mid]}
+        for half, hl in halves.items():
+            # inner -> outer: outward is AWAY from mid.
+            hl = sorted(hl, key=lambda l: abs(coord(l[0]) - mid))
+            for i in range(len(hl) - 1):
+                inner, outer = hl[i], hl[i + 1]
+                if len(outer) != 1:
+                    continue  # the next rail out is not a single total
+                total = _member_inches(outer[0]["raw"])
+                segs = [(_member_inches(r["raw"]), r["raw"]) for r in inner]
+                entry = {"axis": axis, "half": half,
+                         "total_raw": outer[0]["raw"],
+                         "segments": [s for _, s in segs],
+                         "declared_fraction_uncertainty": sorted(
+                             {r["raw"] for r in inner + outer
+                              if _fraction_uncertain(r["raw"])})}
+                if total is None or any(v is None for v, _ in segs):
+                    entry["status"] = "UNPARSEABLE"
+                else:
+                    ssum = sum(v for v, _ in segs)
+                    entry.update({"total_in": total, "segment_sum_in": ssum,
+                                  "status": ("CLOSES" if ssum == total
+                                             else "FAILS"),
+                                  "residual_in": ssum - total})
+                report.append(entry)
     return report

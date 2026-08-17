@@ -89,9 +89,11 @@ def test_correction1_axis_filter_alone_kills_both_wrong_anchor_candidates():
 
 
 def test_correction1_cuts_sit_inside_the_observed_gap():
-    # Verticals top out at 0.087, horizontals start at 0.212 on the
-    # verified set; the pinned cuts sit strictly inside that gap.
-    assert 0.087 < og.AXIS_VERTICAL_MAX < og.AXIS_HORIZONTAL_MIN < 0.212
+    # RULING UU (SEND-38) reset the band to the observed gap boundaries
+    # on MERGED data: vertical max 0.1143, horizontal min 0.212.
+    assert og.AXIS_VERTICAL_MAX == 0.1143
+    assert og.AXIS_HORIZONTAL_MIN == 0.212
+    assert og.AXIS_VERTICAL_MAX < og.AXIS_HORIZONTAL_MIN
 
 
 def test_correction1_indeterminate_stays_first_class():

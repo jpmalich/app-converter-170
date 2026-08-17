@@ -1,0 +1,631 @@
+{
+ "xx": {
+  "boni": {
+   "4": {
+    "status": "INDETERMINATE",
+    "why": "left winner is an exact positional tie ['5\u2032-10\u00b0', '30-2'] \u2014 the outermost rule cannot order them; segment-vs-total needs its ruling",
+    "depth": null,
+    "pair": {}
+   },
+   "6": {
+    "status": "MATERIAL",
+    "why": "unequal side depths \u2014 attribution requires the anchor, or the faces refuse",
+    "depth": null,
+    "pair": {
+     "left": "30-0*",
+     "right": "33'-0\""
+    }
+   },
+   "7": {
+    "status": "MATERIAL",
+    "why": "unequal side depths \u2014 attribution requires the anchor, or the faces refuse",
+    "depth": null,
+    "pair": {
+     "left": "30'-0\u00b0",
+     "right": "33\u20190*"
+    }
+   }
+  },
+  "letrick": {
+   "5": {
+    "status": "IMMATERIAL",
+    "why": "equal side depths \u2014 crossing them is harmless; both faces may derive WITHOUT an anchor, subject to every other gate (closure included)",
+    "depth": {
+     "feet": 30,
+     "inches": 0
+    },
+    "pair": {
+     "left": "30'-0*",
+     "right": "30'-0*"
+    }
+   },
+   "7": {
+    "status": "IMMATERIAL",
+    "why": "equal side depths \u2014 crossing them is harmless; both faces may derive WITHOUT an anchor, subject to every other gate (closure included)",
+    "depth": {
+     "feet": 30,
+     "inches": 0
+    },
+    "pair": {
+     "left": "30'-0\"",
+     "right": "30'-0\""
+    }
+   }
+  }
+ },
+ "render": {
+  "boni": {
+   "faces": [
+    {
+     "label": "front",
+     "width_ft": 58.0,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "back",
+     "width_ft": 58.0,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "left",
+     "width_ft": null,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 11.4
+    },
+    {
+     "label": "right",
+     "width_ft": null,
+     "height_ft": 20.0,
+     "gable_triangle_height_ft": 11.4
+    }
+   ],
+   "faces_not_derivable": [
+    {
+     "elevation": "back",
+     "surface": "body_segment",
+     "segment": "garage wing 1-story",
+     "profile": "lap",
+     "reason": "segment height not read \u2014 area not derivable",
+     "partial": true
+    },
+    {
+     "elevation": "left",
+     "surface": "body",
+     "profile": "lap",
+     "reason": "wall width not read \u2014 area not derivable"
+    },
+    {
+     "elevation": "left",
+     "surface": "gable",
+     "profile": "shake",
+     "reason": "wall width not read \u2014 gable area not derivable"
+    },
+    {
+     "elevation": "right",
+     "surface": "footprint_closure",
+     "reason": "footprint does not close: right depth 39 present but opposing left depth not read \u2014 right cannot be closed"
+    }
+   ],
+   "siding_sqft": 1750.0
+  },
+  "letrick": {
+   "faces": [
+    {
+     "label": "front",
+     "width_ft": 54.0,
+     "height_ft": 9.9,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "back",
+     "width_ft": 54.0,
+     "height_ft": 9.9,
+     "gable_triangle_height_ft": 0
+    },
+    {
+     "label": "left",
+     "width_ft": 30.0,
+     "height_ft": null,
+     "gable_triangle_height_ft": 8.75
+    },
+    {
+     "label": "right",
+     "width_ft": 30.0,
+     "height_ft": null,
+     "gable_triangle_height_ft": 8.75
+    }
+   ],
+   "faces_not_derivable": [
+    {
+     "elevation": "left",
+     "surface": "body",
+     "profile": "lap",
+     "reason": "wall height not read \u2014 area not derivable"
+    },
+    {
+     "elevation": "right",
+     "surface": "body",
+     "profile": "lap",
+     "reason": "wall height not read \u2014 area not derivable"
+    }
+   ],
+   "siding_sqft": 1532.7
+  }
+ },
+ "uu_indeterminate": {
+  "boni": {
+   "dim_strings": 289,
+   "indeterminate": 7,
+   "list": [
+    [
+     "1",
+     "6\u20320\u00b0"
+    ],
+    [
+     "1",
+     "9-0*"
+    ],
+    [
+     "1",
+     "4-0\u00b0"
+    ],
+    [
+     "1",
+     "2-8\u00b0"
+    ],
+    [
+     "1",
+     "2-0\u00b0"
+    ],
+    [
+     "7",
+     "4'4"
+    ],
+    [
+     "8",
+     "3'-1"
+    ]
+   ]
+  },
+  "letrick": {
+   "dim_strings": 259,
+   "indeterminate": 5,
+   "list": [
+    [
+     "1",
+     "9-0*"
+    ],
+    [
+     "1",
+     "9-0*"
+    ],
+    [
+     "7",
+     "3-6*"
+    ],
+    [
+     "7",
+     "1-8\""
+    ],
+    [
+     "7",
+     "2'-7"
+    ]
+   ]
+  }
+ },
+ "ww_excluded": {
+  "boni": {
+   "4": {
+    "chosen": {
+     "left": null,
+     "right": "33-0*"
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   },
+   "6": {
+    "chosen": {
+     "left": "30-0*",
+     "right": "33'-0\""
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   },
+   "7": {
+    "chosen": {
+     "left": "30'-0\u00b0",
+     "right": "33\u20190*"
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   },
+   "8": {
+    "chosen": {
+     "left": "30'-0*",
+     "right": "30'-0\""
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   },
+   "9": {
+    "chosen": {
+     "left": "30'-0\u00b0",
+     "right": "30'-0*"
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   }
+  },
+  "letrick": {
+   "5": {
+    "chosen": {
+     "left": "30'-0*",
+     "right": "30'-0*"
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   },
+   "7": {
+    "chosen": {
+     "left": "30'-0\"",
+     "right": "30'-0\""
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   },
+   "8": {
+    "chosen": {
+     "left": "30'-0\"",
+     "right": "30'-0\""
+    },
+    "excluded": {
+     "left": [],
+     "right": []
+    }
+   }
+  }
+ },
+ "tt_boni_p4": [
+  {
+   "axis": "VERTICAL",
+   "half": "low",
+   "total_raw": "14-6\u00b0",
+   "segments": [
+    "4\u2032-10",
+    "3'-0'"
+   ],
+   "declared_fraction_uncertainty": [],
+   "total_in": 174,
+   "segment_sum_in": 94,
+   "status": "FAILS",
+   "residual_in": -80
+  },
+  {
+   "axis": "VERTICAL",
+   "half": "low",
+   "total_raw": "5\u2032-10\u00b0",
+   "segments": [
+    "14-6\u00b0"
+   ],
+   "declared_fraction_uncertainty": [],
+   "total_in": 70,
+   "segment_sum_in": 174,
+   "status": "FAILS",
+   "residual_in": 104
+  },
+  {
+   "axis": "VERTICAL",
+   "half": "high",
+   "total_raw": "30\u2032-0\"",
+   "segments": [
+    "14'-7*",
+    "10\u2032-11\u00b0",
+    "4'-6*"
+   ],
+   "declared_fraction_uncertainty": [],
+   "total_in": 360,
+   "segment_sum_in": 360,
+   "status": "CLOSES",
+   "residual_in": 0
+  },
+  {
+   "axis": "VERTICAL",
+   "half": "high",
+   "total_raw": "33-0*",
+   "segments": [
+    "15'-0*",
+    "8'-0\u00b0"
+   ],
+   "declared_fraction_uncertainty": [],
+   "total_in": 396,
+   "segment_sum_in": 276,
+   "status": "FAILS",
+   "residual_in": -120
+  },
+  {
+   "axis": "HORIZONTAL",
+   "half": "low",
+   "total_raw": "4'-0",
+   "segments": [
+    "6-6*",
+    "6'-5*"
+   ],
+   "declared_fraction_uncertainty": [],
+   "total_in": 48,
+   "segment_sum_in": 155,
+   "status": "FAILS",
+   "residual_in": 107
+  },
+  {
+   "axis": "HORIZONTAL",
+   "half": "low",
+   "total_raw": "6'-0",
+   "segments": [
+    "4'-0"
+   ],
+   "declared_fraction_uncertainty": [],
+   "total_in": 72,
+   "segment_sum_in": 48,
+   "status": "FAILS",
+   "residual_in": -24
+  },
+  {
+   "axis": "HORIZONTAL",
+   "half": "low",
+   "total_raw": "16'-7%\"",
+   "segments": [
+    "6'-0"
+   ],
+   "declared_fraction_uncertainty": [
+    "16'-7%\""
+   ],
+   "total_in": 199,
+   "segment_sum_in": 72,
+   "status": "FAILS",
+   "residual_in": -127
+  },
+  {
+   "axis": "HORIZONTAL",
+   "half": "low",
+   "total_raw": "58'-0*",
+   "segments": [
+    "34-3%",
+    "23-8%"
+   ],
+   "declared_fraction_uncertainty": [
+    "23-8%",
+    "34-3%"
+   ],
+   "total_in": 696,
+   "segment_sum_in": 695,
+   "status": "FAILS",
+   "residual_in": -1
+  },
+  {
+   "axis": "HORIZONTAL",
+   "half": "high",
+   "total_raw": "22-10%",
+   "segments": [
+    "4-0\u00b0"
+   ],
+   "declared_fraction_uncertainty": [
+    "22-10%"
+   ],
+   "total_in": 274,
+   "segment_sum_in": 48,
+   "status": "FAILS",
+   "residual_in": -226
+  },
+  {
+   "axis": "HORIZONTAL",
+   "half": "high",
+   "total_raw": "58-0\u00b0",
+   "segments": [
+    "33-5%*",
+    "24'-6%"
+   ],
+   "declared_fraction_uncertainty": [
+    "24'-6%",
+    "33-5%*"
+   ],
+   "total_in": 696,
+   "segment_sum_in": 695,
+   "status": "FAILS",
+   "residual_in": -1
+  },
+  {
+   "axis": "HORIZONTAL",
+   "half": "high",
+   "total_raw": "SCALE:3/16\"=1'-0\"",
+   "segments": [
+    "58-0\u00b0"
+   ],
+   "declared_fraction_uncertainty": [
+    "SCALE:3/16\"=1'-0\""
+   ],
+   "status": "UNPARSEABLE"
+  }
+ ],
+ "tt_boni_p8_p9": {
+  "8": [
+   {
+    "axis": "VERTICAL",
+    "half": "low",
+    "total_raw": "30'-0*",
+    "segments": [
+     "5'-0\"",
+     "19'-9*",
+     "5'-3\""
+    ],
+    "declared_fraction_uncertainty": [],
+    "total_in": 360,
+    "segment_sum_in": 360,
+    "status": "CLOSES",
+    "residual_in": 0
+   },
+   {
+    "axis": "VERTICAL",
+    "half": "high",
+    "total_raw": "30'-0\"",
+    "segments": [
+     "1'-11%",
+     "2'-0*"
+    ],
+    "declared_fraction_uncertainty": [
+     "1'-11%"
+    ],
+    "total_in": 360,
+    "segment_sum_in": 47,
+    "status": "FAILS",
+    "residual_in": -313
+   },
+   {
+    "axis": "HORIZONTAL",
+    "half": "low",
+    "total_raw": "1-8\"",
+    "segments": [
+     "9'-7%*",
+     "8'-3%"
+    ],
+    "declared_fraction_uncertainty": [
+     "8'-3%",
+     "9'-7%*"
+    ],
+    "total_in": 20,
+    "segment_sum_in": 214,
+    "status": "FAILS",
+    "residual_in": 194
+   },
+   {
+    "axis": "HORIZONTAL",
+    "half": "low",
+    "total_raw": "3'-9%",
+    "segments": [
+     "7\u201d-521-4\"",
+     "2'-0\""
+    ],
+    "declared_fraction_uncertainty": [
+     "3'-9%"
+    ],
+    "status": "UNPARSEABLE"
+   },
+   {
+    "axis": "HORIZONTAL",
+    "half": "low",
+    "total_raw": "33'-11%\"",
+    "segments": [
+     "3'-9%"
+    ],
+    "declared_fraction_uncertainty": [
+     "3'-9%",
+     "33'-11%\""
+    ],
+    "total_in": 407,
+    "segment_sum_in": 45,
+    "status": "FAILS",
+    "residual_in": -362
+   },
+   {
+    "axis": "HORIZONTAL",
+    "half": "high",
+    "total_raw": "SCALE:1/4\"=1'-0\"",
+    "segments": [
+     "2'-0\"",
+     "1'-4",
+     "1'-2%\"",
+     "33-11%\""
+    ],
+    "declared_fraction_uncertainty": [
+     "1'-2%\"",
+     "33-11%\"",
+     "SCALE:1/4\"=1'-0\""
+    ],
+    "total_in": 16,
+    "segment_sum_in": 461,
+    "status": "FAILS",
+    "residual_in": 445
+   },
+   {
+    "axis": "HORIZONTAL",
+    "half": "high",
+    "total_raw": "7'0.9t ",
+    "segments": [
+     "SCALE:1/4\"=1'-0\""
+    ],
+    "declared_fraction_uncertainty": [
+     "SCALE:1/4\"=1'-0\""
+    ],
+    "total_in": 84,
+    "segment_sum_in": 16,
+    "status": "FAILS",
+    "residual_in": -68
+   }
+  ],
+  "9": [
+   {
+    "axis": "VERTICAL",
+    "half": "low",
+    "total_raw": "30'-0\u00b0",
+    "segments": [
+     "2'-0*",
+     "1'-11%"
+    ],
+    "declared_fraction_uncertainty": [
+     "1'-11%"
+    ],
+    "total_in": 360,
+    "segment_sum_in": 47,
+    "status": "FAILS",
+    "residual_in": -313
+   },
+   {
+    "axis": "VERTICAL",
+    "half": "high",
+    "total_raw": "30'-0*",
+    "segments": [
+     "2'-0\u00b0",
+     "1'-11"
+    ],
+    "declared_fraction_uncertainty": [],
+    "total_in": 360,
+    "segment_sum_in": 47,
+    "status": "FAILS",
+    "residual_in": -313
+   },
+   {
+    "axis": "HORIZONTAL",
+    "half": "high",
+    "total_raw": "SCALE:1/4\"=1'-0\"",
+    "segments": [
+     "1'-1%\"",
+     "34'-0\""
+    ],
+    "declared_fraction_uncertainty": [
+     "1'-1%\"",
+     "SCALE:1/4\"=1'-0\""
+    ],
+    "total_in": 16,
+    "segment_sum_in": 421,
+    "status": "FAILS",
+    "residual_in": 405
+   }
+  ]
+ }
+}
