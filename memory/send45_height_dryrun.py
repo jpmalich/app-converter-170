@@ -223,41 +223,48 @@ def grade_verdict(runs, lines, y0, y1):
 
 
 PAGE_FACES = {'1': ('front', 'rear'), '2': ('left', 'right')}
-out = {}
-for house, eid in HOUSES.items():
-    run_id, ot = load(eid)
-    hrep = {'run_id': run_id, 'faces': {}}
-    furn_idx = furniture_index(ot, set(PAGE_FACES))
-    for pg, pf in PAGE_FACES.items():
-        raw_runs = ot[pg]['runs']
-        runs = merge_positions(raw_runs)
-        bands = face_bands(raw_runs, pf)
-        for face in pf:
-            if face not in bands:
-                hrep['faces'][face] = {
-                    'page': pg, 'status': 'REFUSED',
-                    'refusal': f'no {face} elevation drawing located — '
-                               f'height not established — area not derivable'}
-                continue
-            y0, y1 = bands[face]
-            lines = datum_lines(raw_runs, y0, y1, furn_idx)
-            rails = vertical_rails(runs, y0, y1)
-            gaps = gap_bind(lines, rails)
-            frep = {'page': pg, 'band': [round(y0, 1), round(y1, 1)],
-                    'datum_lines': [f"{L['name']}@{L['y']}" for L in lines],
-                    'gaps': [{k: g[k] for k in ('from', 'to', 'status', 'value_in', 'rails')}
-                             for g in gaps],
-                    'height_A_first_floor_to_plate': height_path(lines, gaps, 'FIRST_FLOOR'),
-                    'height_B_foundation_to_plate': height_path(lines, gaps, 'TOP_OF_FOUNDATION'),
-                    'grade': grade_verdict(raw_runs, lines, y0, y1)}
-            for opt in ('height_A_first_floor_to_plate', 'height_B_foundation_to_plate'):
-                h = frep[opt]
-                if h['status'] == 'REFUSED':
-                    h['refusal_surface'] = (f"wall height not established from {face} "
-                                            f"elevation — {h['reason']} — area not derivable")
-            hrep['faces'][face] = frep
-    out[house] = hrep
 
-with open('/app/memory/send45_height_dryrun.json', 'w') as f:
-    json.dump(out, f, indent=1)
-print(json.dumps(out, indent=1))
+
+def main():
+    out = {}
+    for house, eid in HOUSES.items():
+        run_id, ot = load(eid)
+        hrep = {'run_id': run_id, 'faces': {}}
+        furn_idx = furniture_index(ot, set(PAGE_FACES))
+        for pg, pf in PAGE_FACES.items():
+            raw_runs = ot[pg]['runs']
+            runs = merge_positions(raw_runs)
+            bands = face_bands(raw_runs, pf)
+            for face in pf:
+                if face not in bands:
+                    hrep['faces'][face] = {
+                        'page': pg, 'status': 'REFUSED',
+                        'refusal': f'no {face} elevation drawing located — '
+                                   f'height not established — area not derivable'}
+                    continue
+                y0, y1 = bands[face]
+                lines = datum_lines(raw_runs, y0, y1, furn_idx)
+                rails = vertical_rails(runs, y0, y1)
+                gaps = gap_bind(lines, rails)
+                frep = {'page': pg, 'band': [round(y0, 1), round(y1, 1)],
+                        'datum_lines': [f"{L['name']}@{L['y']}" for L in lines],
+                        'gaps': [{k: g[k] for k in ('from', 'to', 'status', 'value_in', 'rails')}
+                                 for g in gaps],
+                        'height_A_first_floor_to_plate': height_path(lines, gaps, 'FIRST_FLOOR'),
+                        'height_B_foundation_to_plate': height_path(lines, gaps, 'TOP_OF_FOUNDATION'),
+                        'grade': grade_verdict(raw_runs, lines, y0, y1)}
+                for opt in ('height_A_first_floor_to_plate', 'height_B_foundation_to_plate'):
+                    h = frep[opt]
+                    if h['status'] == 'REFUSED':
+                        h['refusal_surface'] = (f"wall height not established from {face} "
+                                                f"elevation — {h['reason']} — area not derivable")
+                hrep['faces'][face] = frep
+        out[house] = hrep
+
+    with open('/app/memory/send45_height_dryrun.json', 'w') as f:
+        json.dump(out, f, indent=1)
+    print(json.dumps(out, indent=1))
+
+
+if __name__ == '__main__':
+    main()

@@ -743,5 +743,41 @@ RULINGS_REGISTER = {
         "room-label precondition is the ONLY thing excluding joist sheets",
         "two footprints drawn on one sheet (separate estimates keep "
         "takeoffs apart, not drawings apart) — report-only, no build",
+        "elevation segment x-extents (SEND-46: DP-2 and DP-3 are ONE "
+        "problem — two rails at different x on the same gap is a face "
+        "that is not a single column, not a value conflict; refuse both, "
+        "no tiebreak, until segment x-extents on the elevation exist)",
+        "the joist band where no overall rail closes it (SEND-46 DP-5: "
+        "refuse; do not invent a convention for the joist band)",
+    ],
+    # SEND-46: registered findings and sealed field rulings.
+    "findings": [
+        "CENSUS FINDING (SEND-46, qualifies every Boni accuracy claim "
+        "from SEND-19 forward): Boni's model height 20.0 ft is "
+        "UNRECONSTRUCTABLE from its own cited evidence — 9'-11\" + "
+        "8'-1 1/2\" = 18.04 ft, and the 8'-1 1/2\" string was NEVER "
+        "LOCATED on any sheet (the sheets print 8'-1 1/8\", a ceiling "
+        "note). Letrick's model fans ONE string (9'-11 1/8\", p1) "
+        "across all four faces including two faces that live on p2. "
+        "Model heights are DEMOTED TO HYPOTHESIS: a model height may "
+        "be shown as an unverified hypothesis; it may NEVER feed a "
+        "quantity. Height derives from each face's own elevation "
+        "drawing or the face refuses.",
+    ],
+    "sealed": [
+        "DP-1 (SEND-46, Howard field ruling): siding band = FIRST "
+        "FLOOR (subfloor line) up to plate/soffit — the band the "
+        "elevations actually dimension. A face that establishes this "
+        "band is DERIVED. The foundation → first-floor / rim-joist "
+        "strip is BELOW the siding measurement and does not need "
+        "resolving for height.",
+        "DP-4 (SEND-46): a walkout footer is a foundation reference, "
+        "not a grade line — it may only create SUSPICION of STEP, "
+        "never establish the extent of a siding step.",
+        "DP-5 (SEND-46): the joist band is SIDED — zero-for-siding is "
+        "incorrect. Close by subtraction only: overall vertical rail "
+        "minus the sum of bound sub-gaps, strict closure, residual 0 "
+        "required when all gaps are bound. If no overall rail exists, "
+        "REFUSE and leave the band a named open.",
     ],
 }

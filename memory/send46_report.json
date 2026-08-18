@@ -1,0 +1,343 @@
+{
+ "boni": {
+  "run_id": "c54633996e7a49e48432cf66a61efaf7",
+  "faces": {
+   "front": {
+    "overall_rail_census": {
+     "span": "TOP_OF_PLATE@13.9 \u2192 FIRST_FLOOR@32.8",
+     "bound_sum_in": 0,
+     "bound_gaps": [],
+     "unbound_gaps": [
+      "TOP_OF_PLATE@13.9\u2192SECOND_FLOOR@22.3 [CONTESTED]",
+      "SECOND_FLOOR@22.3\u2192TOP_OF_PLATE@23.1 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@23.1\u2192TOP_OF_PLATE@26.5 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.8 [CONTESTED]"
+     ],
+     "dp5_conclusion": "SUBTRACTION BLOCKED \u2014 contested gap(s) present; blocked on the elevation segment x-extents named open, not on DP-5",
+     "candidates": [
+      {
+       "raw": "8\u2032-1%\u201d",
+       "in": 97,
+       "x": 7.4,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 97\"",
+       "note": "contestant in TOP_OF_PLATE@13.9\u2192SECOND_FLOOR@22.3"
+      },
+      {
+       "raw": "29'-1",
+       "in": 349,
+       "x": 5.7,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 349\"",
+       "note": "contestant in TOP_OF_PLATE@13.9\u2192SECOND_FLOOR@22.3"
+      },
+      {
+       "raw": "9'-1%\"",
+       "in": 109,
+       "x": 7.4,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 109\"",
+       "note": "contestant in TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.8"
+      },
+      {
+       "raw": "9-11%",
+       "in": 119,
+       "x": 68.6,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 119\"",
+       "note": "contestant in TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.8"
+      }
+     ]
+    },
+    "dp1": {
+     "status": "REFUSED",
+     "named_strips": [
+      "TOP_OF_PLATE@13.9\u2192SECOND_FLOOR@22.3 [CONTESTED]",
+      "SECOND_FLOOR@22.3\u2192TOP_OF_PLATE@23.1 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@23.1\u2192TOP_OF_PLATE@26.5 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.8 [CONTESTED]"
+     ],
+     "surface": "wall height not established \u2014 gap TOP_OF_PLATE@13.9 \u2192 SECOND_FLOOR@22.3 CONTESTED \u2014 rails: 8\u2032-1%\u201d(97\"), 29'-1(349\") \u2014 area not derivable"
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   },
+   "rear": {
+    "overall_rail_census": {
+     "span": "TOP_OF_PLATE@57.7 \u2192 FIRST_FLOOR@76.3",
+     "bound_sum_in": 206,
+     "bound_gaps": [
+      "TOP_OF_PLATE@57.7\u2192SECOND_FLOOR@66.0 = 97\"",
+      "TOP_OF_PLATE@70.0\u2192FIRST_FLOOR@76.3 = 109\""
+     ],
+     "unbound_gaps": [
+      "SECOND_FLOOR@66.0\u2192TOP_OF_PLATE@66.8 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@66.8\u2192TOP_OF_PLATE@70.0 [UNDIMENSIONED]"
+     ],
+     "dp5_conclusion": "NO OVERALL RAIL EXISTS \u2014 DP-5 sealed outcome: refuse; joist band stays a named open",
+     "candidates": [
+      {
+       "raw": "8-1%*",
+       "in": 97,
+       "x": 89.1,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@57.7\u2192SECOND_FLOOR@66.0 \u2014 consumed, not overall"
+      },
+      {
+       "raw": "9'-1%",
+       "in": 109,
+       "x": 89.0,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@70.0\u2192FIRST_FLOOR@76.3 \u2014 consumed, not overall"
+      },
+      {
+       "raw": "9'-1116\"",
+       "in": null,
+       "x": 28.9,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@70.0\u2192FIRST_FLOOR@76.3 \u2014 consumed, not overall"
+      }
+     ]
+    },
+    "dp1": {
+     "status": "REFUSED",
+     "named_strips": [
+      "SECOND_FLOOR@66.0\u2192TOP_OF_PLATE@66.8 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@66.8\u2192TOP_OF_PLATE@70.0 [UNDIMENSIONED]"
+     ],
+     "surface": "wall height not established \u2014 gap SECOND_FLOOR@66.0 \u2192 TOP_OF_PLATE@66.8 UNDIMENSIONED \u2014 rails: none \u2014 area not derivable"
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   },
+   "left": {
+    "overall_rail_census": {
+     "span": "TOP_OF_PLATE@13.9 \u2192 FIRST_FLOOR@32.7",
+     "bound_sum_in": 97,
+     "bound_gaps": [
+      "TOP_OF_PLATE@13.9\u2192SECOND_FLOOR@22.3 = 97\""
+     ],
+     "unbound_gaps": [
+      "SECOND_FLOOR@22.3\u2192TOP_OF_PLATE@23.1 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@23.1\u2192TOP_OF_PLATE@26.5 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.7 [CONTESTED]"
+     ],
+     "dp5_conclusion": "SUBTRACTION BLOCKED \u2014 contested gap(s) present; blocked on the elevation segment x-extents named open, not on DP-5",
+     "candidates": [
+      {
+       "raw": "9\u2032-1%\"",
+       "in": 109,
+       "x": 4.5,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 12\"",
+       "note": "contestant in TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.7"
+      },
+      {
+       "raw": "9'-1%",
+       "in": 109,
+       "x": 46.7,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 12\"",
+       "note": "contestant in TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.7"
+      },
+      {
+       "raw": "6\u2032-0\u00b0",
+       "in": 72,
+       "x": 5.1,
+       "verdict": "NOT OVERALL (value 72\" < bound sum 97\")",
+       "note": "contestant in TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.7"
+      },
+      {
+       "raw": "8\u2032-1%*",
+       "in": 97,
+       "x": 4.5,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@13.9\u2192SECOND_FLOOR@22.3 \u2014 consumed, not overall"
+      }
+     ]
+    },
+    "dp1": {
+     "status": "REFUSED",
+     "named_strips": [
+      "SECOND_FLOOR@22.3\u2192TOP_OF_PLATE@23.1 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@23.1\u2192TOP_OF_PLATE@26.5 [UNDIMENSIONED]",
+      "TOP_OF_PLATE@26.5\u2192FIRST_FLOOR@32.7 [CONTESTED]"
+     ],
+     "surface": "wall height not established \u2014 gap SECOND_FLOOR@22.3 \u2192 TOP_OF_PLATE@23.1 UNDIMENSIONED \u2014 rails: none \u2014 area not derivable"
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   },
+   "right": {
+    "dp1": {
+     "status": "REFUSED",
+     "reason": "no FIRST FLOOR datum located",
+     "surface": "wall height not established \u2014 no FIRST FLOOR datum located \u2014 area not derivable"
+    },
+    "overall_rail_census": {
+     "span": null,
+     "candidates": [
+      {
+       "raw": "4'-0*",
+       "in": 48,
+       "x": 45.2
+      },
+      {
+       "raw": "4'-0\u00b0",
+       "in": 48,
+       "x": 86.9
+      },
+      {
+       "raw": "9'-0\u00b0",
+       "in": 108,
+       "x": 89.9
+      },
+      {
+       "raw": "6'-0\u00b0",
+       "in": 72,
+       "x": 88.3
+      },
+      {
+       "raw": "8'-1%\u00b0",
+       "in": 97,
+       "x": 87.4
+      },
+      {
+       "raw": "8\u2032-1%\u201d",
+       "in": 97,
+       "x": 44.0
+      },
+      {
+       "raw": "9-11%",
+       "in": 119,
+       "x": 44.0
+      },
+      {
+       "raw": "5'-0*",
+       "in": 60,
+       "x": 54.7
+      }
+     ]
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   }
+  }
+ },
+ "letrick": {
+  "run_id": "725f8326fd6e48aca8448c22f2454100",
+  "faces": {
+   "front": {
+    "overall_rail_census": {
+     "span": "TOP_OF_PLATE@20.4 \u2192 FIRST_FLOOR@29.8",
+     "bound_sum_in": 109,
+     "bound_gaps": [
+      "TOP_OF_PLATE@20.4\u2192FIRST_FLOOR@29.8 = 109\""
+     ],
+     "unbound_gaps": [],
+     "dp5_conclusion": "no overall rail needed \u2014 every gap on the span is BOUND",
+     "candidates": [
+      {
+       "raw": "9-1%*",
+       "in": 109,
+       "x": 6.9,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@20.4\u2192FIRST_FLOOR@29.8 \u2014 consumed, not overall"
+      }
+     ]
+    },
+    "dp1": {
+     "status": "DERIVED",
+     "inches": 109,
+     "ft": 9.08,
+     "chain": [
+      "TOP_OF_PLATE@20.4 \u2192 FIRST_FLOOR@29.8 = 109\""
+     ]
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   },
+   "rear": {
+    "overall_rail_census": {
+     "span": "TOP_OF_PLATE@65.9 \u2192 FIRST_FLOOR@75.3",
+     "bound_sum_in": 0,
+     "bound_gaps": [],
+     "unbound_gaps": [
+      "TOP_OF_PLATE@65.9\u2192FIRST_FLOOR@75.3 [CONTESTED]"
+     ],
+     "dp5_conclusion": "SUBTRACTION BLOCKED \u2014 contested gap(s) present; blocked on the elevation segment x-extents named open, not on DP-5",
+     "candidates": [
+      {
+       "raw": "9'-11*",
+       "in": 119,
+       "x": 87.4,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 119\"",
+       "note": "contestant in TOP_OF_PLATE@65.9\u2192FIRST_FLOOR@75.3"
+      },
+      {
+       "raw": "9-1%",
+       "in": 109,
+       "x": 31.0,
+       "verdict": "SUBTRACTION BLOCKED \u2014 contested gap(s) in span (elevation segment x-extents named open); residual for the record: 109\"",
+       "note": "contestant in TOP_OF_PLATE@65.9\u2192FIRST_FLOOR@75.3"
+      }
+     ]
+    },
+    "dp1": {
+     "status": "REFUSED",
+     "named_strips": [
+      "TOP_OF_PLATE@65.9\u2192FIRST_FLOOR@75.3 [CONTESTED]"
+     ],
+     "surface": "wall height not established \u2014 gap TOP_OF_PLATE@65.9 \u2192 FIRST_FLOOR@75.3 CONTESTED \u2014 rails: 9'-11*(119\"), 9-1%(109\") \u2014 area not derivable"
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   },
+   "left": {
+    "overall_rail_census": {
+     "span": "TOP_OF_PLATE@21.3 \u2192 FIRST_FLOOR@30.9",
+     "bound_sum_in": 109,
+     "bound_gaps": [
+      "TOP_OF_PLATE@21.3\u2192FIRST_FLOOR@30.9 = 109\""
+     ],
+     "unbound_gaps": [],
+     "dp5_conclusion": "no overall rail needed \u2014 every gap on the span is BOUND",
+     "candidates": [
+      {
+       "raw": "9-1%*",
+       "in": 109,
+       "x": 11.2,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@21.3\u2192FIRST_FLOOR@30.9 \u2014 consumed, not overall"
+      }
+     ]
+    },
+    "dp1": {
+     "status": "DERIVED",
+     "inches": 109,
+     "ft": 9.08,
+     "chain": [
+      "TOP_OF_PLATE@21.3 \u2192 FIRST_FLOOR@30.9 = 109\""
+     ]
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   },
+   "right": {
+    "overall_rail_census": {
+     "span": "TOP_OF_PLATE@61.5 \u2192 FIRST_FLOOR@71.0",
+     "bound_sum_in": 109,
+     "bound_gaps": [
+      "TOP_OF_PLATE@61.5\u2192FIRST_FLOOR@71.0 = 109\""
+     ],
+     "unbound_gaps": [],
+     "dp5_conclusion": "no overall rail needed \u2014 every gap on the span is BOUND",
+     "candidates": [
+      {
+       "raw": "9-1%*",
+       "in": 109,
+       "x": 85.8,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@61.5\u2192FIRST_FLOOR@71.0 \u2014 consumed, not overall"
+      },
+      {
+       "raw": "9'-1%",
+       "in": 109,
+       "x": 46.4,
+       "verdict": "BOUND SUB-RAIL of TOP_OF_PLATE@61.5\u2192FIRST_FLOOR@71.0 \u2014 consumed, not overall"
+      }
+     ]
+    },
+    "dp1": {
+     "status": "DERIVED",
+     "inches": 109,
+     "ft": 9.08,
+     "chain": [
+      "TOP_OF_PLATE@61.5 \u2192 FIRST_FLOOR@71.0 = 109\""
+     ]
+    },
+    "below_band_note": "foundation \u2192 first-floor strip is BELOW the siding band (DP-1 sealed) \u2014 not resolved, not a blocker"
+   }
+  }
+ }
+}
