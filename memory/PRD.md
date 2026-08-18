@@ -1,5 +1,44 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-18 SEND-46 — CENSUS FINDING REGISTERED + DP RULINGS SEALED + OVERALL-RAIL CENSUS (read-only, nothing wired)
+Register (`ocr_geometry.RULINGS_REGISTER`, pinned in
+`tests/test_rulings_2026_08_16_send46.py`, 3 pins green): the census
+finding with figures (Boni 20.0 unreconstructable — 9'-11" + 8'-1½" =
+18.04, second string never located; Letrick fans one string across four
+faces; model heights DEMOTED TO HYPOTHESIS — may be shown, may never
+feed a quantity), DP-1 sealed (siding band = FIRST FLOOR → plate/soffit;
+established band = DERIVED; foundation→first-floor strip is below the
+band), DP-4 sealed (walkout footer = suspicion only), DP-5 sealed (joist
+band is SIDED; close by subtraction — overall rail minus bound sub-gaps,
+residual 0; no overall rail → refuse; no convention), DP-2/DP-3 = ONE
+named open (elevation segment x-extents).
+
+**Overall-rail census (`memory/send46_overall_rail_census.py` →
+`send46_report.json`), the DP-5 deciding fact: NO overall rail exists on
+any face of either house.** Boni rear is the only face where subtraction
+is legal (only undimensioned gaps) and no rail ≥ its 206" bound sum
+exists; Boni front/left are blocked by contested gaps (the segment
+x-extents open, not DP-5); Boni right has no FIRST FLOOR datum in band.
+
+**DP-1-closed resolutions:** Letrick front/left/right = DERIVED 9'-1⅛"
+(109") from their own drawings; Letrick rear refuses (contested
+9'-11 vs 9'-1⅛, both ends named); all Boni faces refuse with named
+strips (systematic: the undimensioned joist band SECOND FLOOR → first
+TOP OF PLATE). Wiring awaits authorization.
+
+**HANDBACK NOT STAMPED — live-invariant reds, not suite bugs
+(`memory/incident_2026-08-18_transient_catalog_override.md`):** the
+owner was actively doing a windows takeoff on EST-803966 during the
+runs. Run 1: transient Casile catalog override (Pocket Install lab 200,
+gone minutes later, updated_at untouched since Jul 3 → raw write, no
+in-repo writer). Run 3 VERBATIM: `1 failed, 2548 passed, 9 skipped, 7
+warnings in 193.76s (0:03:13)` — the cross-family pin fired truthfully:
+EST-803966 (lp_smart) now carries 5 windows-tab lines with no
+cross_family_flag. RULING NEEDED: exempt them as Howard's intentional
+lines, or treat as a live recurrence of the restore bug. No real
+estimate was touched.
+
+
 ## 2026-08-16 SEND-45 — SEND-44 REPORT WALK + HEIGHT BUILD DRAFT (NOT WIRED)
 Read-only send per mandate: walked the six SEND-44 reports in consequence
 order, then drafted the Height Build mechanism WITHOUT wiring. Zero
