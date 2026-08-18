@@ -92,6 +92,11 @@ INTERNAL_KEYS = {
     # `refused_faces` {face → failing relation} — our own pipeline shape
     # (DD instrument output), never a model-produced key.
     "refused_faces", "refused",
+    # SEND-47 HEIGHT BUILD (2026-08-18): apply_height_build returns
+    # {status, faces:{face:{status, ft, chain, refusal, ...}}} — our own
+    # pipeline shape (height_read.py), never a model-produced key. The
+    # model's height_ft is DEMOTED TO HYPOTHESIS by this very pass.
+    "status", "ft", "faces",
 }
 
 

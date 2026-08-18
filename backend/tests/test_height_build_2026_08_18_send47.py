@@ -210,11 +210,12 @@ class TestLiveOutcomes:
                     {"estimate_id": eid, "status": "done"},
                     sort=[("created_at", -1)])
                 if not r:
-                    pytest.skip(f"{house} run not in datastore")
+                    pytest.skip("env:fixture_data: boni/letrick blueprint "
+                                "runs not in datastore")
                 out[house] = r["result"]["raw_ai"]["_ocr_text_by_page"]
             return out
-        except Exception as e:  # pragma: no cover
-            pytest.skip(f"datastore unavailable: {e}")
+        except Exception:  # pragma: no cover
+            pytest.skip("env:mongo: datastore unavailable")
 
     def test_letrick_three_faces_derive_from_their_own_drawings(self, live):
         faces = derive_face_heights(live["letrick"])
