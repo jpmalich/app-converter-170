@@ -23,7 +23,7 @@ def sess():
                json={"email": "hhunt6677@yahoo.com",
                      "password": TEST_PASSWORD}, timeout=15)
     if r.status_code != 200:
-        pytest.skip("env:auth: test login unavailable")
+        pytest.skip("env:live_auth: test login unavailable")
     return s
 
 
@@ -55,6 +55,7 @@ def rig(sess):
     assert rr.status_code == 200, rr.text
     clone = dict(src)
     clone.pop("_id", None)
+    clone["test_artifact"] = True
     clone["estimate_id"] = eid
     clone["run_id"] = f"TEST_zone-{uuid.uuid4().hex[:8]}"
     db.ai_blueprint_runs.insert_one(clone)
