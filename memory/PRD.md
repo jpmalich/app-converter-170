@@ -1,5 +1,41 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-18 SEND-47 — EST-803966 REVERSED + HEIGHT BUILD WIRED LIVE (stamped green)
+1. **EST-803966 user-error reversal (authorized):** removed the five
+mistaken windows-tab lines (Pocket Install ×30, Cap window ×30, 3 fees);
+no cross_family_flag added; `lines.user_error_reversal` tracking event
+records the removal verbatim (user-error correction, NOT a restore-bug
+recurrence). Cross-family pin green.
+2. **HEIGHT BUILD WIRED** (`backend/height_read.py`, hook in
+`_aggregate_to_hover_shape` before the walk; 15 pins in
+`tests/test_height_build_2026_08_18_send47.py`): sealed DP-1 band
+(FIRST FLOOR → topmost TOP OF PLATE) from each face's OWN elevation
+drawing; Standing Prohibition structural (band containment); refusals
+name the exact gap and flow to `faces_not_derivable` via
+`height_refusal_reason` threading in `measure_staging`; model heights
+DEMOTED TO HYPOTHESIS (`_model_height_hypothesis_ft` on walls AND
+segments — hypothesis may be shown, never feeds a quantity; a DERIVED
+face whose model claims height segments still refuses pending elevation
+segment x-extents); DP-5 overall rail admitted positionally (glyph box
+straddles an interior datum line) with strict closure (all-bound spans
+demand residual 0); runs with no persisted OCR are DISCLOSED via seam
+`height_build_not_run`, never silently model-fed. Seams `height_build` +
+`height_build_not_run` registered.
+3. **Live outcomes (pinned as observations):** Letrick front/left/right
+DERIVED 9'-1⅛" (9.08 ft) each from its own drawing; Letrick rear REFUSES
+(gap CONTESTED 9'-11 vs 9'-1⅛); Boni rear REFUSES (joist gap
+UNDIMENSIONED), left REFUSES (gap CONTESTED incl. 6'-0), right REFUSES
+(no FIRST FLOOR datum); **Boni front NEW FINDING: p3 (section sheet)
+prints a second "FRONT ELEVATION" title → refuses "multiple front
+elevation drawings located (pages 1, 3)" — awaiting Howard's ruling on
+inset/reference elevation titles.** Ruling V reads stay
+PENDING_CONVERSION. EST-886440 untouched.
+4. **Suite stamped:** `2026-08-18 02:33 UTC · 025a85f · CLEAN · [tests]
+· 2564 passed, 9 skipped` (meta-pins enforced: internal keys reviewed,
+skip reasons class-tagged).
+NEXT (per mandate): STOP and wait. Zone binding follows.
+
+
 ## 2026-08-18 SEND-46 — CENSUS FINDING REGISTERED + DP RULINGS SEALED + OVERALL-RAIL CENSUS (read-only, nothing wired)
 Register (`ocr_geometry.RULINGS_REGISTER`, pinned in
 `tests/test_rulings_2026_08_16_send46.py`, 3 pins green): the census
