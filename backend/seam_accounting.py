@@ -17,6 +17,16 @@ SEAM_REGISTRY = {
         "a total assembled from a subset of walls says which face it "
         "lost (Howard ruled 2026-08-14: unreadable width is unknown, "
         "not zero; a derived value dies with its source).",
+    "height_build":
+        "SEND-47 (Howard authorized 2026-08-18): per-face heights derive "
+        "from each face's OWN elevation drawing (sealed DP-1: FIRST FLOOR "
+        "→ plate/soffit) or the face refuses with the exact gap named. "
+        "Model heights are DEMOTED TO HYPOTHESIS (census finding SEND-46) "
+        "— shown on the record, never feeding a quantity.",
+    "height_build_not_run":
+        "SEND-47: a run without persisted OCR text cannot read its "
+        "elevations — the height build did not run and the model heights "
+        "stand UNVERIFIED. Disclosed on the run, never silent.",
     "dims_nulled_no_evidence":
         "Dims that arrived without a quoted printed string — nulled by "
         "construction (evidence-or-null).",

@@ -4037,6 +4037,28 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             raw, "interior_doors_dropped",
             [str(d.get("id") or "?") for d in _interior])
 
+    # SEND-47 HEIGHT BUILD (Howard authorized 2026-08-18) — sealed DP-1:
+    # a face's height derives from ITS OWN elevation drawing (FIRST FLOOR
+    # → plate/soffit) or the face REFUSES with the exact gap named. Model
+    # heights are DEMOTED TO HYPOTHESIS (census finding SEND-46: Boni's
+    # 20.0 is unreconstructable from its own cited evidence; Letrick's
+    # model copied one string across faces) — shown on the record, never
+    # feeding a quantity. Standing Prohibition is structural: a rail
+    # outside the face's own band can never enter. A run with no
+    # persisted OCR is DISCLOSED via the seam ledger, never silently
+    # model-fed.
+    from height_read import apply_height_build
+    _hb = apply_height_build(raw, walls)
+    if _hb.get("status") == "APPLIED":
+        seam_accounting.account(
+            raw, "height_build",
+            [f"{f}: {r.get('status')}"
+             + (f" {r.get('ft')} ft" if r.get("ft") else "")
+             for f, r in (_hb.get("faces") or {}).items()])
+    else:
+        seam_accounting.account(raw, "height_build_not_run",
+                                [_hb.get("reason") or "no OCR text"])
+
     # Shakedown fix (2026-07-14) — pitch-computed gable rise. Printed
     # pitch is the authority; drawing-scaled reads under-state the rise
     # (June finding: 8.5' scaled vs 8.75' at 7/12 on a 30' end).

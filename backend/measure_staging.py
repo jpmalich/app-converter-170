@@ -97,7 +97,8 @@ def wall_body_gross_sqft(w: dict) -> tuple[float, list, dict]:
             else:
                 reason = ("segment width not read — area not derivable"
                           if not sw > 0
-                          else "segment height not read — area not derivable")
+                          else (w.get("height_refusal_reason")
+                                or "segment height not read — area not derivable"))
                 not_deriv.append({"label": s.get("label"), "reason": reason})
         derivable = len(used) > 0
         return gross, used, {
@@ -111,7 +112,8 @@ def wall_body_gross_sqft(w: dict) -> tuple[float, list, dict]:
             "has_segments": False, "derivable": True,
             "subset": False, "not_derivable": []}
     reason = ("wall width not read — area not derivable" if not width > 0
-              else "wall height not read — area not derivable")
+              else (w.get("height_refusal_reason")
+                    or "wall height not read — area not derivable"))
     return 0.0, [], {
         "has_segments": False, "derivable": False, "subset": False,
         "not_derivable": [{"label": w.get("label"), "reason": reason}]}
