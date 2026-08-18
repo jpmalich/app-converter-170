@@ -1,5 +1,53 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-18 SEND-48 — RULING YY + RULED REFUSAL LANGUAGE + ZONE BINDING (stamped green)
+1. **Ruling YY (structural, no sheet-type classification):** a duplicate
+face title competes only if its band holds FIRST FLOOR + TOP OF PLATE
+datum lines AND vertical rails; empty-band titles (insets/references)
+are DROPPED with provenance; qualifying duplicates that agree
+corroborate, disagreeing ones refuse naming both pages; single-title
+faces always evaluate directly. **Test result on Boni p3: the second
+FRONT ELEVATION band holds no datums and zero rails → dropped; Boni
+front now refuses on its own contested gap.**
+2. **Ruled contested language** (verbatim, general, no job names): "Two
+different wall heights found on this elevation (X and Y). This usually
+means the front and rear plate heights are different (common with
+cut-short side gables or stepped foundations). Please verify or draw a
+zone." Applied to contested path gaps and contested overall rails.
+3. **Rail inventory (`memory/send48_reports.json`):** 27 rails admitted
+across both houses; NOTHING structural distinguishes a wall rail from an
+opening rail (zero opening size-mark strings on any elevation page;
+opening symbols are graphics, invisible to the text store; the lone
+suspect 6'-0" shares the story rails' x-column). No value filter added.
+4. **ZONE BINDING (authorized, built, live):**
+   - Backend (`routes/pdf_overlay.py`): per-surface faces (`gable:<face>`
+     + bodies), surface snapshot at write (`surface_derived_snapshot`
+     from the new `_wall_walk_detail` measurements key — body_sqft/
+     gable_sqft/named refusals added in `measure_staging`), per-surface
+     Law A math (line qty = baseline − Σ replaced surfaces + Σ zones;
+     baseline stays on superseded_qty; per-surface rows on
+     `overlay_replaced_surfaces` incl. refusal text), REFUSING FACES
+     FULLY BINDABLE (snapshot 0.0 + named refusal), legacy zones (no
+     snapshot) keep whole-class replacement, PROPOSED zones provisional
+     (never feed quantity; excluded from override retention),
+     `POST /pdf-overlay/propose` = AI proposals from DERIVED faces (band
+     rectangles with evidence trace scale from the DP-1 chain; 423 on
+     protected estimates; re-propose replaces proposals, never humans),
+     any human touch (draw/bump/confirm) → provenance human.
+   - Frontend (`PdfOverlayEditor.jsx`): gable-surface toggle, "Propose
+     zones (AI · provisional)" button, PROVISIONAL badge + CONFIRM per
+     proposed zone, dashed rendering, per-surface superseded/refusal rows.
+   - Tests: 15 unit pins (`test_zone_binding_2026_08_18_send48.py`) + 4
+     live-route pins (`test_zone_binding_live_2026_08_18.py`, disposable
+     estimate + cloned run, full propose→confirm→delete cycle) + 6 YY/
+     language pins (`test_rulings_2026_08_18_send48.py`). UI smoke
+     verified on preview (3 proposals on the Letrick run; cleaned after).
+5. **Suite stamped:** `2026-08-18 03:37 UTC · e18c416 · CLEAN · 2591
+passed, 9 skipped`. (One earlier run showed a transient redhouse
+live-route failure family that passed in isolation and in the stamped
+rerun — same live-window family as incident_2026-08-18.)
+
+
 ## 2026-08-18 SEND-47 — EST-803966 REVERSED + HEIGHT BUILD WIRED LIVE (stamped green)
 1. **EST-803966 user-error reversal (authorized):** removed the five
 mistaken windows-tab lines (Pocket Install ×30, Cap window ×30, 3 fees);
