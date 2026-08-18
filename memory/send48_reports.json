@@ -1,0 +1,324 @@
+{
+ "ruling_yy_test": {
+  "boni": {
+   "front p1": {
+    "band": [
+     0.0,
+     46.1
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": true,
+    "vertical_rail_count": 5,
+    "qualifies_as_height_source": true
+   },
+   "rear p1": {
+    "band": [
+     46.1,
+     92.4
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": true,
+    "vertical_rail_count": 11,
+    "qualifies_as_height_source": true
+   },
+   "left p2": {
+    "band": [
+     0.0,
+     47.7
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": true,
+    "vertical_rail_count": 7,
+    "qualifies_as_height_source": true
+   },
+   "right p2": {
+    "band": [
+     47.7,
+     88.6
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": false,
+    "vertical_rail_count": 8,
+    "qualifies_as_height_source": false
+   },
+   "front p3": {
+    "band": [
+     0.0,
+     60.4
+    ],
+    "has_TOP_OF_PLATE": false,
+    "has_FIRST_FLOOR": false,
+    "vertical_rail_count": 0,
+    "qualifies_as_height_source": false
+   }
+  },
+  "letrick": {
+   "front p1": {
+    "band": [
+     0.0,
+     44.8
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": true,
+    "vertical_rail_count": 3,
+    "qualifies_as_height_source": true
+   },
+   "rear p1": {
+    "band": [
+     44.8,
+     89.8
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": true,
+    "vertical_rail_count": 2,
+    "qualifies_as_height_source": true
+   },
+   "left p2": {
+    "band": [
+     0.0,
+     45.1
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": true,
+    "vertical_rail_count": 2,
+    "qualifies_as_height_source": true
+   },
+   "right p2": {
+    "band": [
+     45.1,
+     87.0
+    ],
+    "has_TOP_OF_PLATE": true,
+    "has_FIRST_FLOOR": true,
+    "vertical_rail_count": 3,
+    "qualifies_as_height_source": true
+   }
+  }
+ },
+ "rail_inventory": {
+  "boni": [
+   {
+    "face": "front",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@13.9 \u2192 SECOND_FLOOR@22.3",
+    "gap_status": "CONTESTED",
+    "raw": "8\u2032-1%\u201d",
+    "inches": 97
+   },
+   {
+    "face": "front",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@13.9 \u2192 SECOND_FLOOR@22.3",
+    "gap_status": "CONTESTED",
+    "raw": "29'-1",
+    "inches": 349
+   },
+   {
+    "face": "front",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@26.5 \u2192 FIRST_FLOOR@32.8",
+    "gap_status": "CONTESTED",
+    "raw": "9'-1%\"",
+    "inches": 109
+   },
+   {
+    "face": "front",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@26.5 \u2192 FIRST_FLOOR@32.8",
+    "gap_status": "CONTESTED",
+    "raw": "9-11%",
+    "inches": 119
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@57.7 \u2192 SECOND_FLOOR@66.0",
+    "gap_status": "BOUND",
+    "raw": "8-1%*",
+    "inches": 97
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@70.0 \u2192 FIRST_FLOOR@76.3",
+    "gap_status": "BOUND",
+    "raw": "9'-1%",
+    "inches": 109
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@70.0 \u2192 FIRST_FLOOR@76.3",
+    "gap_status": "BOUND",
+    "raw": "9'-1116\"",
+    "inches": null
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_FOUNDATION@77.7 \u2192 WALKOUT_FOOTER@91.2",
+    "gap_status": "CONTESTED",
+    "raw": "13-0*",
+    "inches": 156
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_FOUNDATION@77.7 \u2192 WALKOUT_FOOTER@91.2",
+    "gap_status": "CONTESTED",
+    "raw": "7'-0*",
+    "inches": 84
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_FOUNDATION@77.7 \u2192 WALKOUT_FOOTER@91.2",
+    "gap_status": "CONTESTED",
+    "raw": "11'-0*",
+    "inches": 132
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_FOUNDATION@77.7 \u2192 WALKOUT_FOOTER@91.2",
+    "gap_status": "CONTESTED",
+    "raw": "13'-0*",
+    "inches": 156
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_FOUNDATION@77.7 \u2192 WALKOUT_FOOTER@91.2",
+    "gap_status": "CONTESTED",
+    "raw": "4'-0\u00b0",
+    "inches": 48
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_FOUNDATION@77.7 \u2192 WALKOUT_FOOTER@91.2",
+    "gap_status": "CONTESTED",
+    "raw": "7'-0\u00b0",
+    "inches": 84
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_FOUNDATION@77.7 \u2192 WALKOUT_FOOTER@91.2",
+    "gap_status": "CONTESTED",
+    "raw": "1\u2032-0\u00b0",
+    "inches": 12
+   },
+   {
+    "face": "left",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@13.9 \u2192 SECOND_FLOOR@22.3",
+    "gap_status": "BOUND",
+    "raw": "8\u2032-1%*",
+    "inches": 97
+   },
+   {
+    "face": "left",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@26.5 \u2192 FIRST_FLOOR@32.7",
+    "gap_status": "CONTESTED",
+    "raw": "9\u2032-1%\"",
+    "inches": 109
+   },
+   {
+    "face": "left",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@26.5 \u2192 FIRST_FLOOR@32.7",
+    "gap_status": "CONTESTED",
+    "raw": "9'-1%",
+    "inches": 109
+   },
+   {
+    "face": "left",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@26.5 \u2192 FIRST_FLOOR@32.7",
+    "gap_status": "CONTESTED",
+    "raw": "6\u2032-0\u00b0",
+    "inches": 72
+   },
+   {
+    "face": "right",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@55.7 \u2192 SECOND_FLOOR@64.1",
+    "gap_status": "BOUND",
+    "raw": "8'-1%\u00b0",
+    "inches": 97
+   },
+   {
+    "face": "right",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@55.7 \u2192 SECOND_FLOOR@64.1",
+    "gap_status": "BOUND",
+    "raw": "8\u2032-1%\u201d",
+    "inches": 97
+   },
+   {
+    "face": "right",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@64.9 \u2192 TOP_OF_FOUNDATION@75.8",
+    "gap_status": "BOUND",
+    "raw": "9-11%",
+    "inches": 119
+   }
+  ],
+  "letrick": [
+   {
+    "face": "front",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@20.4 \u2192 FIRST_FLOOR@29.8",
+    "gap_status": "BOUND",
+    "raw": "9-1%*",
+    "inches": 109
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@65.9 \u2192 FIRST_FLOOR@75.3",
+    "gap_status": "CONTESTED",
+    "raw": "9'-11*",
+    "inches": 119
+   },
+   {
+    "face": "rear",
+    "page": "1",
+    "gap": "TOP_OF_PLATE@65.9 \u2192 FIRST_FLOOR@75.3",
+    "gap_status": "CONTESTED",
+    "raw": "9-1%",
+    "inches": 109
+   },
+   {
+    "face": "left",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@21.3 \u2192 FIRST_FLOOR@30.9",
+    "gap_status": "BOUND",
+    "raw": "9-1%*",
+    "inches": 109
+   },
+   {
+    "face": "right",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@61.5 \u2192 FIRST_FLOOR@71.0",
+    "gap_status": "BOUND",
+    "raw": "9-1%*",
+    "inches": 109
+   },
+   {
+    "face": "right",
+    "page": "2",
+    "gap": "TOP_OF_PLATE@61.5 \u2192 FIRST_FLOOR@71.0",
+    "gap_status": "BOUND",
+    "raw": "9'-1%",
+    "inches": 109
+   }
+  ]
+ },
+ "opening_mark_survey": {
+  "boni": [],
+  "letrick": []
+ }
+}

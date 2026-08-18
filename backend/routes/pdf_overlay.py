@@ -98,7 +98,50 @@ def _face_ok(face_id: str) -> bool:
         return False
     if face_id in _FIXED_FACES:
         return True
+    # SEND-48 zone binding: per-surface faces — a gable is its own
+    # bindable surface ("gable:front"), distinct from the face body.
+    if face_id.startswith("gable:") and face_id[len("gable:"):] in _FIXED_FACES:
+        return True
     return face_id.startswith("dormer:") and len(face_id) > len("dormer:")
+
+
+def _surface_of(face_id: str):
+    """(wall_label, surface) for a bindable face_id; None for dormers."""
+    if face_id in _FIXED_FACES:
+        return face_id, "body"
+    if face_id.startswith("gable:"):
+        return face_id[len("gable:"):], "gable"
+    return None
+
+
+def surface_derived_snapshot(est: dict, face_id: str):
+    """SEND-48: the ONE surface a zone supersedes — its derived value or
+    its named refusal, read from the persisted walk detail. Returns
+    (sqft, refusal) — (None, None) when no walk detail exists (legacy
+    whole-class replacement stays in force for that group). A REFUSING
+    face returns (0.0, <named reason>) so it is fully bindable — the
+    primary purpose of the feature."""
+    surf = _surface_of(face_id)
+    if not surf:
+        return None, None
+    label, kind = surf
+    detail = (est.get("hover_measurements") or {}).get("_wall_walk_detail")
+    if not isinstance(detail, list):
+        return None, None
+    row = next((d for d in detail
+                if str(d.get("label") or "").lower() == label), None)
+    if row is None:
+        return 0.0, f"face {label!r} not present in the derivation"
+    if row.get("refused"):
+        return 0.0, row.get("reason") or "face refused"
+    if kind == "body":
+        ref = row.get("body_refusal")
+        return (0.0 if ref else float(row.get("body_sqft") or 0.0)), ref
+    ref = row.get("gable_refusal")
+    if ref:
+        return 0.0, ref
+    g = row.get("gable_sqft")
+    return float(g or 0.0), None
 
 
 class ScaleRefIn(BaseModel):
@@ -138,6 +181,10 @@ class PolygonWriteIn(BaseModel):
     scale_ref: Optional[ScaleRefIn] = None
     page_w_px: Optional[float] = None
     page_h_px: Optional[float] = None
+    # SEND-48: "proposed" zones are PROVISIONAL (AI-suggested, human-
+    # confirmable) and NEVER feed a quantity; "human" zones are the
+    # contractor's hand. Confirming/bumping a proposal makes it human.
+    provenance: str = "human"
 
 
 # ---------------------------------------------------------------------
@@ -316,6 +363,10 @@ def apply_overlay_to_takeoff(
     `derived_baseline_qty` (the app's original number in the line's unit)."""
     by_class: dict[str, list[dict]] = {}
     for p in polygons or []:
+        # SEND-48: PROPOSED zones are provisional — they never feed a
+        # quantity. Only human zones enter the takeoff math.
+        if (p.get("provenance") or "human") == "proposed":
+            continue
         by_class.setdefault(p.get("material_class") or "", []).append(p)
 
     out: list[dict] = []
@@ -345,7 +396,37 @@ def apply_overlay_to_takeoff(
             continue
 
         total_sqft = round(sum(float(p["sqft"]) for p in convertible), 2)
-        line_qty = _sqft_to_line_qty(total_sqft, new.get("unit") or "")
+        # SEND-48 PER-SURFACE BINDING: when every zone in the class
+        # carries its surface snapshot, a zone replaces the ONE surface
+        # it covers (body or gable of one face) — never the whole house.
+        # line qty = baseline − Σ(replaced surface derived) + Σ(zone ft²).
+        # A refusing surface snapshots 0.0 + its named refusal, so a
+        # refused face is fully bindable. Zones missing the snapshot
+        # (pre-SEND-48) keep the legacy whole-class replacement — both
+        # modes are named on the line.
+        per_surface = all(p.get("surface_derived_sqft") is not None
+                          for p in convertible)
+        if per_surface:
+            surf: dict[str, dict] = {}
+            for p in convertible:
+                surf.setdefault(p.get("face_id") or "", {
+                    "face_id": p.get("face_id") or "",
+                    "superseded_sqft": float(p["surface_derived_sqft"]),
+                    "refusal": p.get("surface_refusal")})
+            replaced_sqft = round(sum(s["superseded_sqft"]
+                                      for s in surf.values()), 2)
+            delta_qty = _sqft_to_line_qty(total_sqft - replaced_sqft,
+                                          new.get("unit") or "")
+            base_for_math = (_group_baseline(polys, new) or 0.0)
+            if delta_qty is None:
+                _retire_override(new)
+                new["overlay_scale_unreadable"] = True
+                new["overlay_polygon_count"] = len(convertible)
+                out.append(new)
+                continue
+            line_qty = round(base_for_math + delta_qty, 2)
+        else:
+            line_qty = _sqft_to_line_qty(total_sqft, new.get("unit") or "")
         if line_qty is None:
             # An area cannot bind to this line's unit (e.g. LF) — refuse.
             _retire_override(new)
@@ -364,6 +445,13 @@ def apply_overlay_to_takeoff(
         new["overlay_sqft"] = total_sqft
         new["overlay_polygon_count"] = len(convertible)
         new["overlay_merged"] = len(convertible) > 1
+        if per_surface:
+            new["overlay_per_surface"] = True
+            new["overlay_replaced_surfaces"] = sorted(
+                surf.values(), key=lambda s: s["face_id"])
+        else:
+            new.pop("overlay_per_surface", None)
+            new.pop("overlay_replaced_surfaces", None)
         new.pop("overlay_scale_unreadable", None)
         new["note"] = _overlay_note(line, total_sqft)
         out.append(new)
@@ -393,8 +481,13 @@ def _validate_polygon(p: PolygonWriteIn) -> None:
     if not _face_ok(p.face_id):
         raise HTTPException(
             status_code=400,
-            detail=(f"face_id must be one of {sorted(_FIXED_FACES)} "
-                    "or 'dormer:<label>'"),
+            detail=(f"face_id must be one of {sorted(_FIXED_FACES)}, "
+                    "'gable:<face>' or 'dormer:<label>'"),
+        )
+    if p.provenance not in {"human", "proposed"}:
+        raise HTTPException(
+            status_code=400,
+            detail="provenance must be 'human' or 'proposed'",
         )
     if not p.vertices_pct or len(p.vertices_pct) < 3:
         raise HTTPException(
@@ -474,6 +567,8 @@ async def upsert_pdf_overlay(
     )
     baseline = await _current_baseline_for_class(
         est, est_id, payload.material_class, pid)
+    surface_sqft, surface_refusal = surface_derived_snapshot(
+        est, payload.face_id)
     doc = {
         "id": pid,
         "estimate_id": est_id,
@@ -487,7 +582,13 @@ async def upsert_pdf_overlay(
         "page_h_px": payload.page_h_px,
         "sqft": sqft,                       # None ⇒ scale refused
         "derived_baseline_qty": baseline,   # the app's original number
-        "qty_src": "human",
+        # SEND-48 per-surface snapshot: the ONE surface this zone
+        # supersedes (0.0 + named refusal when the face refuses — a
+        # refusing face is fully bindable, the feature's primary purpose)
+        "surface_derived_sqft": surface_sqft,
+        "surface_refusal": surface_refusal,
+        "provenance": payload.provenance,
+        "qty_src": payload.provenance,
         "author_id": user.get("id") or "",
         "author_email": user.get("email") or "",
         "updated_at": now,
@@ -499,6 +600,10 @@ async def upsert_pdf_overlay(
         # existing polygon (never re-capture from a now-overridden line).
         if existing.get("derived_baseline_qty") is not None:
             doc["derived_baseline_qty"] = existing["derived_baseline_qty"]
+        # ... and the surface snapshot (never re-capture post-override).
+        if existing.get("surface_derived_sqft") is not None:
+            doc["surface_derived_sqft"] = existing["surface_derived_sqft"]
+            doc["surface_refusal"] = existing.get("surface_refusal")
         await db.pdf_overlay_polygons.replace_one({"id": pid}, doc)
     else:
         doc["created_at"] = now
@@ -541,7 +646,10 @@ async def delete_pdf_overlay(
 
     remaining = await db.pdf_overlay_polygons.count_documents(
         {"estimate_id": est_id,
-         "material_class": victim.get("material_class")})
+         "material_class": victim.get("material_class"),
+         # SEND-48: proposed zones are provisional — they never hold an
+         # override alive.
+         "provenance": {"$ne": "proposed"}})
     retired = remaining == 0
 
     # Law B: when the last polygon of a class is gone, apply() no longer
@@ -576,6 +684,93 @@ async def delete_pdf_overlay(
             est_id, "pdf_overlay_polygon",
             actor_email=user.get("email", ""), meta=meta)
     return {"ok": True, "deleted": polygon_id, "retired_override": retired}
+
+
+@router.post("/estimates/{est_id}/pdf-overlay/propose")
+async def propose_zones(
+    est_id: str, user: dict = Depends(get_current_user),
+):
+    """SEND-48: AI-PROPOSED zones. For every face whose height the HEIGHT
+    BUILD established (DERIVED), propose a provisional band rectangle on
+    that face's own elevation drawing, carrying an evidence-grounded
+    trace scale read straight from the DP-1 chain. Proposed zones NEVER
+    feed a quantity — the contractor bumps vertices / confirms, which
+    makes them HUMAN. Re-proposing replaces earlier proposals and never
+    touches a human zone. This is a DERIVED write → 423 on a protected
+    estimate."""
+    est = await _est_or_404(est_id, user)
+    if await is_untouchable(est_id):
+        raise HTTPException(
+            status_code=423,
+            detail="protected estimate — proposals are derived writes")
+    run = await db.ai_blueprint_runs.find_one(
+        {"estimate_id": est_id, "status": "done"},
+        {"_id": 0, "result.raw_ai._ocr_text_by_page": 1,
+         "result.raw_ai._ocr_text_ref": 1, "run_id": 1},
+        sort=[("created_at", -1)])
+    raw_ai = ((run or {}).get("result") or {}).get("raw_ai") or {}
+    ot = raw_ai.get("_ocr_text_by_page")
+    if not ot and raw_ai.get("_ocr_text_ref"):
+        ref = await db.ai_blueprint_ocr.find_one(
+            {"run_id": raw_ai["_ocr_text_ref"]}, {"_id": 0, "pages": 1})
+        ot = (ref or {}).get("pages")
+    if not isinstance(ot, dict) or not ot:
+        raise HTTPException(
+            status_code=409,
+            detail="no persisted OCR text on this estimate's blueprint "
+                   "run — nothing to propose from")
+
+    from height_read import derive_face_heights
+    faces = derive_face_heights(ot)
+    await db.pdf_overlay_polygons.delete_many(
+        {"estimate_id": est_id, "provenance": "proposed"})
+    now = datetime.now(timezone.utc)
+    created = []
+    face_to_id = {"front": "front", "rear": "back",
+                  "left": "left", "right": "right"}
+    for face, r in faces.items():
+        if r.get("status") != "DERIVED" or not r.get("span_y"):
+            continue
+        y_top, y_bot = (r["span_y"][0] / 100.0), (r["span_y"][1] / 100.0)
+        page = ot.get(r["page"]) or {}
+        band = r.get("band") or [0.0, 100.0]
+        doc = {
+            "id": str(uuid.uuid4()),
+            "estimate_id": est_id,
+            "page": int(r["page"]),
+            "face_id": face_to_id[face],
+            "material_class": "siding",
+            "vertices_pct": [[0.02, y_top], [0.98, y_top],
+                             [0.98, y_bot], [0.02, y_bot]],
+            "scale_ref": {"mode": "trace",
+                          "p1": [0.5, y_top], "p2": [0.5, y_bot],
+                          "real_ft": r["ft"], "source": "READ",
+                          "from_quote": (r.get("chain") or [""])[0]},
+            "page_w_px": page.get("page_w"),
+            "page_h_px": page.get("page_h"),
+            "sqft": None,          # provisional — never feeds a quantity
+            "derived_baseline_qty": None,
+            "surface_derived_sqft": None,
+            "surface_refusal": None,
+            "provenance": "proposed",
+            "qty_src": "proposed",
+            "proposed_from": {"run_id": (run or {}).get("run_id"),
+                              "height_ft": r["ft"],
+                              "span": r.get("span"),
+                              "band": band},
+            "author_id": "height_build",
+            "author_email": "",
+            "created_at": now,
+            "updated_at": now,
+        }
+        await db.pdf_overlay_polygons.insert_one(doc)
+        created.append({k: v for k, v in doc.items() if k != "_id"})
+    for c in created:
+        c["created_at"] = str(c["created_at"])
+        c["updated_at"] = str(c["updated_at"])
+    return {"ok": True, "proposed": created,
+            "note": ("proposed zones are PROVISIONAL — they feed no "
+                     "quantity until a human confirms or bumps them")}
 
 
 async def _recompute_and_store(

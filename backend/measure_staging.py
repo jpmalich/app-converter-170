@@ -277,6 +277,17 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None) -> dict:
         detail.append({"label": w.get("label"), "width_ft": width_ft,
                        "eave_h": eave_h, "pct": pct,
                        "segments": segs_used,
+                       # SEND-48 zone binding: per-surface derived numbers
+                       # (or their refusals) so a zone can supersede ONE
+                       # surface, never the whole house.
+                       "body_sqft": round(gross * (pct / 100.0), 2),
+                       "body_refusal": (None if deriv["derivable"]
+                                        else (deriv["not_derivable"][0].get("reason")
+                                              if deriv["not_derivable"] else
+                                              "wall area not derivable")),
+                       "gable_refusal": ("wall width not read — gable area "
+                                         "not derivable"
+                                         if wall_gable is None else None),
                        "rise_read": rise_read, "rise_used": rise,
                        "gable_sqft": wall_gable,
                        "gable_convention": (GABLE_CONVENTION_LABEL

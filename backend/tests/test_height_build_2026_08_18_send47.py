@@ -64,7 +64,7 @@ class TestDP1Derivation:
         assert "TOP_OF_PLATE" in r["refusal"] and "FIRST_FLOOR" in r["refusal"]
         assert "area not derivable" in r["refusal"]
 
-    def test_contested_gap_refuses_naming_both_rails(self):
+    def test_contested_gap_refuses_with_ruled_language(self):
         ot = {"1": _front_rear_page([
             _label("TOP OF PLATE", 20.0),
             _rail("9'-1\"", 25.0, x=6.0),
@@ -72,8 +72,9 @@ class TestDP1Derivation:
             _label("FIRST FLOOR", 30.0)])}
         r = derive_face_heights(ot)["front"]
         assert r["status"] == "REFUSED"
-        assert "CONTESTED" in r["refusal"]
-        assert "9'-1" in r["refusal"] and "9'-11" in r["refusal"]
+        assert "Two different wall heights found on this elevation" in r["refusal"]
+        assert "9'-1\"" in r["refusal"] and "9'-11\"" in r["refusal"]
+        assert "Please verify or draw a zone." in r["refusal"]
 
     def test_missing_datum_refuses_named(self):
         ot = {"1": _front_rear_page([_label("TOP OF PLATE", 20.0)])}
@@ -223,15 +224,17 @@ class TestLiveOutcomes:
             assert faces[f]["status"] == "DERIVED", faces[f]
             assert faces[f]["ft"] == round(109 / 12.0, 2)
         assert faces["rear"]["status"] == "REFUSED"
-        assert "CONTESTED" in faces["rear"]["refusal"]
+        assert "Two different wall heights" in faces["rear"]["refusal"]
 
     def test_boni_faces_refuse_with_named_reasons(self, live):
         faces = derive_face_heights(live["boni"])
         assert all(r["status"] == "REFUSED" for r in faces.values())
-        # p3 (section sheet) prints a second FRONT ELEVATION title — a
-        # SEND-47 finding awaiting Howard's ruling; the face refuses with
-        # both pages named rather than picking one.
-        assert "multiple front elevation drawings located" in faces["front"]["refusal"]
+        # Ruling YY (SEND-48): the p3 inset FRONT ELEVATION title holds no
+        # datums/rails — dropped, and front refuses on its own contested gap.
+        assert any(d["page"] == "3" for d in faces["front"]["dropped_titles"])
+        assert "Two different wall heights" in faces["front"]["refusal"]
+        assert "8'-1\" and 29'-1\"" in faces["front"]["refusal"]
         assert "UNDIMENSIONED" in faces["rear"]["refusal"]
-        assert "CONTESTED" in faces["left"]["refusal"]
+        assert "Two different wall heights" in faces["left"]["refusal"]
+        assert "6'-0\" and 9'-1\"" in faces["left"]["refusal"]
         assert "no FIRST FLOOR datum located" in faces["right"]["refusal"]

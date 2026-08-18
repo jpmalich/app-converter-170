@@ -191,6 +191,9 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   const [face, setFace] = useState("");           // NEVER defaults — derived from the page
   const [faceAuto, setFaceAuto] = useState(false); // true when face came from the page title
   const [dormerLabel, setDormerLabel] = useState("");
+  // SEND-48 per-surface binding: a gable is its own bindable surface.
+  const [gableSurface, setGableSurface] = useState(false);
+  const [proposing, setProposing] = useState(false);
   const [scaleByPage, setScaleByPage] = useState({}); // {pageIdx: scaleRef}
   const [draft, setDraft] = useState(null);           // {points:[[x,y]], cx, cy}
   const [scaleDraft, setScaleDraft] = useState(null); // {p1,p2,active,dragging}
@@ -207,7 +210,9 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
 
   const page = pages.find((p) => p.idx === activePage);
   const pageScale = scaleByPage[activePage] || null;
-  const faceId = face === "dormer" ? `dormer:${(dormerLabel || "").trim() || "1"}` : face;
+  const faceId = face === "dormer"
+    ? `dormer:${(dormerLabel || "").trim() || "1"}`
+    : (face && gableSurface ? `gable:${face}` : face);
 
   // FACE FROM PAGE (Howard ruled 2026-08-13): derive the face from the
   // page's identified elevation; where unknown, leave it EMPTY so the
@@ -338,9 +343,13 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
         face_id: poly.face_id,
         material_class: poly.material_class,
         vertices_pct: poly.vertices_pct,
-        scale_ref: scaleByPage[poly.page] || null,
-        page_w_px: imgNat.w || null,
-        page_h_px: imgNat.h || null,
+        // A proposal carries its own evidence-grounded trace scale from
+        // the height chain — keep it when the page has no traced scale.
+        scale_ref: scaleByPage[poly.page] || poly.scale_ref || null,
+        page_w_px: imgNat.w || poly.page_w_px || null,
+        page_h_px: imgNat.h || poly.page_h_px || null,
+        // SEND-48: ANY human touch (draw, bump, confirm) makes it HUMAN.
+        provenance: "human",
       };
       const { data } = await api.put(`/estimates/${est.id}/pdf-overlay`, body);
       const saved = data?.polygon;
@@ -358,6 +367,25 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
       onMutated?.();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Failed to save zone");
+    }
+  };
+
+  // SEND-48: AI proposes provisional zones from the Height Build (one
+  // band rectangle per DERIVED face). They feed NO quantity until the
+  // contractor confirms or bumps them (which makes them HUMAN).
+  const proposeZones = async () => {
+    setProposing(true);
+    try {
+      const { data } = await api.post(`/estimates/${est.id}/pdf-overlay/propose`);
+      const fresh = await api.get(`/estimates/${est.id}/pdf-overlay`);
+      setPolygons(fresh.data?.polygons || []);
+      const n = (data?.proposed || []).length;
+      if (n) toast.success(`${n} zone${n === 1 ? "" : "s"} proposed — provisional until you confirm`);
+      else toast.warning("No face established a height — nothing to propose");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Propose failed");
+    } finally {
+      setProposing(false);
     }
   };
 
@@ -441,6 +469,8 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
         human: l.qty, sqft: l.overlay_sqft,
         merged: !!l.overlay_merged, count: l.overlay_polygon_count,
         refused: !!l.overlay_scale_unreadable,
+        perSurface: !!l.overlay_per_surface,
+        surfaces: l.overlay_replaced_surfaces || [],
       }));
   }, [estLines]);
 
@@ -537,11 +567,12 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                     {pagePolys.map((p) => {
                       const col = classColor(p.material_class);
                       const sel = p.id === selectedId;
+                      const proposed = p.provenance === "proposed";
                       return (
                         <polygon key={p.id}
                           points={p.vertices_pct.map((v) => `${v[0] * 100},${v[1] * 100}`).join(" ")}
-                          fill={`${col}${sel ? "44" : "22"}`} stroke={col} strokeWidth={sel ? "0.6" : "0.4"}
-                          strokeDasharray={p.sqft == null ? "1 0.6" : "0"} />
+                          fill={`${col}${proposed ? "11" : sel ? "44" : "22"}`} stroke={col} strokeWidth={sel ? "0.6" : "0.4"}
+                          strokeDasharray={proposed ? "2 1.2" : p.sqft == null ? "1 0.6" : "0"} />
                       );
                     })}
                     {draft?.points?.length > 0 && (
@@ -651,6 +682,19 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                   placeholder="dormer label (e.g. A)" className="mt-1 w-full border border-[var(--border)] px-2 py-1 text-[11px]"
                   data-testid="pdf-overlay-dormer-label" />
               )}
+              {face && face !== "dormer" && (
+                <button type="button" onClick={() => setGableSurface((g) => !g)}
+                  className={`mt-1 w-full text-[10px] uppercase font-bold px-2 py-1.5 border ${gableSurface ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
+                  data-testid="pdf-overlay-gable-toggle">
+                  {gableSurface ? `binding: gable of ${face}` : "bind the gable (triangle) instead"}
+                </button>
+              )}
+              <button type="button" onClick={proposeZones} disabled={proposing}
+                className="mt-2 w-full text-[10px] uppercase font-bold px-2 py-1.5 border border-[var(--ai)] text-[var(--ai)] hover:bg-[var(--ai-soft)] flex items-center justify-center gap-1 disabled:opacity-50"
+                data-testid="pdf-overlay-propose-zones">
+                {proposing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                Propose zones (AI · provisional)
+              </button>
               <p className="text-[10px] text-[var(--muted)] mt-2 flex items-center gap-1">
                 <MousePointer2 className="w-3 h-3" /> Click each corner on the page, click the first point (or press Enter) to close.
               </p>
@@ -664,12 +708,22 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                 <div key={p.id} className={`flex items-center justify-between border p-1.5 mb-1 cursor-pointer ${p.id === selectedId ? "border-[var(--ai)]" : "border-[var(--border)]"}`}
                   onClick={() => setSelectedId(p.id)} data-testid={`pdf-overlay-zone-${p.id}`}>
                   <span className="text-[11px] font-bold" style={{ color: classColor(p.material_class) }}>
-                    {p.material_class} · {p.face_id} · {p.sqft == null ? "no scale" : `${p.sqft} ft²`}
+                    {p.material_class} · {p.face_id} · {p.sqft == null ? (p.provenance === "proposed" ? "proposed" : "no scale") : `${p.sqft} ft²`}
+                    {p.provenance === "proposed" && (
+                      <span className="ml-1 text-[9px] uppercase font-bold text-[var(--warning-text)]">provisional</span>
+                    )}
                   </span>
-                  <button type="button" onClick={(e) => { e.stopPropagation(); deletePolygon(p.id); }}
-                    className="text-[var(--muted)] hover:text-[var(--danger)]" data-testid={`pdf-overlay-delete-${p.id}`}>
-                    <Trash2 size={13} />
-                  </button>
+                  <span className="flex items-center gap-1">
+                    {p.provenance === "proposed" && (
+                      <button type="button" onClick={(e) => { e.stopPropagation(); persistPolygon(p); }}
+                        className="text-[9px] uppercase font-bold px-1.5 py-0.5 border border-[var(--success)] text-[var(--success)] hover:bg-[#ECFDF5]"
+                        data-testid={`pdf-overlay-confirm-${p.id}`}>confirm</button>
+                    )}
+                    <button type="button" onClick={(e) => { e.stopPropagation(); deletePolygon(p.id); }}
+                      className="text-[var(--muted)] hover:text-[var(--danger)]" data-testid={`pdf-overlay-delete-${p.id}`}>
+                      <Trash2 size={13} />
+                    </button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -693,6 +747,15 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                       <span className="font-bold text-[var(--ai)]">you {im.human} {im.unit}</span>
                       {im.sqft != null && <span className="ml-1 text-[9px] text-[var(--muted)]">({im.sqft} ft²)</span>}
                       {im.merged && <span className="ml-1 text-[9px] uppercase font-bold text-[var(--warning-text)]">merged</span>}
+                      {im.perSurface && im.surfaces.map((s) => (
+                        <div key={s.face_id} className="mt-0.5 text-[10px]" data-testid={`pdf-overlay-surface-${s.face_id.replace(/[^a-z]+/g, "-")}`}>
+                          <span className="uppercase font-bold">{s.face_id}</span>
+                          {" — "}
+                          {s.refusal
+                            ? <span className="text-[var(--warning-text)]">was refused: {s.refusal}</span>
+                            : <span>replaced app {s.superseded_sqft} ft²</span>}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

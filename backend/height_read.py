@@ -183,6 +183,22 @@ def _overall_candidates(lines, rails, top, bot):
     return out
 
 
+def _fmt_ftin(inches):
+    ft, rem = divmod(int(inches), 12)
+    return f"{ft}'-{rem}\""
+
+
+def _contested_message(values_in):
+    """SEND-48 ruled language for two-or-more wall-height candidates on
+    one elevation. General: uses only the dimensions found on THIS
+    drawing; never references another job; no hard-coded house."""
+    dims = " and ".join(_fmt_ftin(v) for v in sorted(values_in))
+    return (f"Two different wall heights found on this elevation ({dims}). "
+            f"This usually means the front and rear plate heights are "
+            f"different (common with cut-short side gables or stepped "
+            f"foundations). Please verify or draw a zone.")
+
+
 def dp1_face_height(face, lines, gaps, rails):
     """Sealed DP-1: lowest FIRST FLOOR line up to the topmost TOP OF
     PLATE line, every gap on the path BOUND (or closed by a DP-5 overall
@@ -203,9 +219,9 @@ def dp1_face_height(face, lines, gaps, rails):
             and g["bottom"]["y"] <= bot["y"]]
     contested = [g for g in path if g["status"] == "CONTESTED"]
     if contested:
-        g = contested[0]
-        who = ", ".join(f"{r['raw']}({r['in']}\")" for r in g["rails"])
-        return refuse(f"gap {g['from']} → {g['to']} CONTESTED — rails: {who}")
+        vals = sorted({r["in"] for r in contested[0]["rails"]
+                       if r["in"] is not None})
+        return {"status": "REFUSED", "refusal": _contested_message(vals)}
     unbound = [g for g in path if g["status"] != "BOUND"]
     bound_sum = sum(g["value_in"] for g in path if g["status"] == "BOUND")
     cands = [r for r in _overall_candidates(lines, rails, top, bot)
@@ -224,15 +240,15 @@ def dp1_face_height(face, lines, gaps, rails):
             g = unbound[0]
             return refuse(f"gap {g['from']} → {g['to']} UNDIMENSIONED")
         if len(vals) > 1:
-            return refuse("overall rail CONTESTED — rails: "
-                          + ", ".join(f"{v}\"" for v in vals))
+            return {"status": "REFUSED", "refusal": _contested_message(vals)}
         total = vals[0]
         chain = [f"overall rail {vals[0]}\" − bound sum {bound_sum}\" closes "
                  + "; ".join(f"{g['from']} → {g['to']}" for g in unbound)
                  + f" (residual {vals[0] - bound_sum}\")"]
     return {"status": "DERIVED", "inches": total,
             "ft": round(total / 12.0, 2), "chain": chain,
-            "span": f"{top['name']}@{top['y']} → {bot['name']}@{bot['y']}"}
+            "span": f"{top['name']}@{top['y']} → {bot['name']}@{bot['y']}",
+            "span_y": [top["y"], bot["y"]]}
 
 
 def derive_face_heights(ot):
@@ -252,24 +268,68 @@ def derive_face_heights(ot):
                                      f"height not established — area not "
                                      f"derivable")}
             continue
-        if len(homes) > 1:
+        # RULING YY (SEND-48, structural — no sheet-type classification):
+        # applies ONLY when a face's title appears more than once. A
+        # duplicate title only competes if its band actually holds the
+        # makings of a height read (FIRST FLOOR + TOP OF PLATE datum
+        # lines AND vertical rails). A title over an empty band (an inset
+        # or reference) is DROPPED, recorded on the provenance. Two
+        # qualifying bands that AGREE corroborate; two that DISAGREE keep
+        # the refusal and name both pages. A face with a SINGLE title
+        # always evaluates directly (its refusal names its own gap).
+        evals, dropped = [], []
+        for pg, (y0, y1) in homes:
+            raw_runs = ot[pg].get("runs") or []
+            lines = datum_lines(raw_runs, y0, y1, furn_idx)
+            rails = vertical_rails(merge_positions(raw_runs), y0, y1)
+            qualifies = (len(homes) == 1
+                         or (any(L["name"] == "TOP_OF_PLATE" for L in lines)
+                             and any(L["name"] == "FIRST_FLOOR" for L in lines)
+                             and bool(rails)))
+            if qualifies:
+                gaps = gap_bind(lines, rails)
+                evals.append((pg, (y0, y1), lines, rails, gaps))
+            else:
+                dropped.append({"page": pg,
+                                "reason": ("Ruling YY: band holds no "
+                                           "FIRST FLOOR + TOP OF PLATE "
+                                           "datums with vertical rails — "
+                                           "not a competing height source")})
+        if not evals:
             out[face] = {"status": "REFUSED",
-                         "refusal": (f"multiple {face} elevation drawings "
-                                     f"located (pages "
-                                     + ", ".join(pg for pg, _ in homes)
-                                     + ") — ambiguous — area not derivable")}
+                         "refusal": (f"no {face} elevation drawing located — "
+                                     f"height not established — area not "
+                                     f"derivable"),
+                         "dropped_titles": dropped}
             continue
-        pg, (y0, y1) = homes[0]
-        raw_runs = ot[pg].get("runs") or []
-        lines = datum_lines(raw_runs, y0, y1, furn_idx)
-        rails = vertical_rails(merge_positions(raw_runs), y0, y1)
-        gaps = gap_bind(lines, rails)
-        r = dp1_face_height(face, lines, gaps, rails)
-        r["page"] = pg
-        r["band"] = [round(y0, 1), round(y1, 1)]
-        r["datum_lines"] = [f"{L['name']}@{L['y']}" for L in lines]
-        r["gaps"] = [{k: g[k] for k in ("from", "to", "status", "value_in",
-                                        "rails")} for g in gaps]
+        results = []
+        for pg, (y0, y1), lines, rails, gaps in evals:
+            r = dp1_face_height(face, lines, gaps, rails)
+            r["page"] = pg
+            r["band"] = [round(y0, 1), round(y1, 1)]
+            r["datum_lines"] = [f"{L['name']}@{L['y']}" for L in lines]
+            r["gaps"] = [{k: g[k] for k in ("from", "to", "status",
+                                            "value_in", "rails")}
+                         for g in gaps]
+            results.append(r)
+        if len(results) == 1:
+            r = results[0]
+        else:
+            derived = [x for x in results if x["status"] == "DERIVED"]
+            if (len(derived) == len(results)
+                    and len({x["inches"] for x in derived}) == 1):
+                r = dict(derived[0])
+                r["corroborated_by_pages"] = [x["page"] for x in derived[1:]]
+            else:
+                r = {"status": "REFUSED",
+                     "refusal": (f"multiple {face} elevation drawings "
+                                 f"located (pages "
+                                 + ", ".join(x["page"] for x in results)
+                                 + ") and they do not agree — area not "
+                                   "derivable"),
+                     "candidates": results}
+        if dropped:
+            r["dropped_titles"] = dropped
         out[face] = r
     return out
 

@@ -4629,6 +4629,10 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # quote-gate blocker (gates.footprint_does_not_close).
     measurements["_garage_side_verdict"] = _garage_verdict
     measurements["_footprint_closure"] = _closure
+    # SEND-48 zone binding: the per-face walk detail rides the
+    # measurements so a zone write can capture the ONE surface it
+    # supersedes (body or gable, derived value or named refusal).
+    measurements["_wall_walk_detail"] = _walk["detail"]
     return measurements
 
 
