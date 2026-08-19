@@ -20,11 +20,11 @@ from height_read import datum_lines, datum_span_x  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# datum_span_x — the span rule itself
+# datum_span_x — the span rule itself (RULING ZZ: inner edge to inner edge)
 # ---------------------------------------------------------------------------
-def test_two_corner_markers_span_leftmost_to_rightmost():
+def test_two_corner_markers_span_inner_edge_to_inner_edge():
     line = {"markers": [[6.7, 10.2], [60.4, 63.6], [7.1, 10.1]]}
-    assert datum_span_x(line) == [6.7, 63.6]
+    assert datum_span_x(line) == [10.2, 60.4]
 
 
 def test_single_marker_is_indeterminate():
@@ -44,7 +44,32 @@ def test_no_markers_is_indeterminate():
 
 def test_span_never_extrapolates_beyond_the_marker_boxes():
     span = datum_span_x({"markers": [[10.0, 13.0], [50.0, 53.0]]})
-    assert span == [10.0, 53.0]  # box edges exactly — no symmetry, no pad
+    assert span == [13.0, 50.0]  # inner edges exactly — no symmetry, no pad
+
+
+def test_ruling_zz_the_label_box_is_never_inside_the_span():
+    """A label's glyph box is not the wall by construction (Ruling ZZ):
+    the span excludes BOTH label widths entirely."""
+    span = datum_span_x({"markers": [[10.0, 13.0], [50.0, 53.0]]})
+    assert span[0] >= 13.0 and span[1] <= 50.0
+
+
+def test_ruling_aaa_registered_no_proposal_borrows_another_drawing():
+    from ocr_geometry import RULINGS_REGISTER
+    assert any("RULING AAA" in s for s in RULINGS_REGISTER["sealed"])
+    aaa = next(s for s in RULINGS_REGISTER["sealed"] if "RULING AAA" in s)
+    assert "own evidence" in aaa
+
+
+def test_single_corner_faces_registered_as_a_permanent_limit():
+    from ocr_geometry import RULINGS_REGISTER
+    assert any("single corner" in s for s in RULINGS_REGISTER["findings"])
+
+
+def test_leader_offset_limit_registered():
+    from ocr_geometry import RULINGS_REGISTER
+    assert any("LEADER-OFFSET LIMIT" in s
+               for s in RULINGS_REGISTER["findings"])
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +87,7 @@ def test_merged_datum_line_keeps_both_corner_markers():
     assert len(lines) == 1
     L = lines[0]
     assert len(L["markers"]) == 2
-    assert datum_span_x(L) == [7.0, 63.4]
+    assert datum_span_x(L) == [10.4, 60.0]
 
 
 def test_non_overlapping_same_label_lines_stay_separate_each_single_ended():

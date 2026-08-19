@@ -141,14 +141,18 @@ def datum_lines(runs, y0, y1, furn_idx):
 
 
 def datum_span_x(line):
-    """SEND-50 item 3: a datum LABEL is a short string — one box's width
-    is a few percent of the page, never the wall. The labels print at
-    BOTH wall corners, so the wall's x-extent at that datum y is the span
-    from the LEFTMOST to the RIGHTMOST marker box. INDETERMINATE (None)
-    when single-ended: fewer than two markers, OR the leftmost and
-    rightmost boxes x-overlap (two reads of the SAME corner label are one
-    end, not a span — structural, no threshold). No extrapolation, no
-    symmetry assumption, no band-width fallback."""
+    """SEND-50 item 3 + RULING ZZ (SEND-54, shipped): a datum LABEL is a
+    short string — one box's width is a few percent of the page, never
+    the wall. The labels print at BOTH wall corners, so the wall's
+    x-extent at that datum y is measured INNER EDGE to INNER EDGE (right
+    edge of the leftmost box → left edge of the rightmost): a label's
+    glyph box is not the wall by construction, and its inner edge sits
+    nearer where its leader anchors. The remaining leader offset stays
+    REPORTED AND UNSUBTRACTED. INDETERMINATE (None) when single-ended:
+    fewer than two markers, OR the extreme boxes x-overlap (two reads of
+    the SAME corner label are one end, not a span — structural, no
+    threshold). No extrapolation, no symmetry assumption, no band-width
+    fallback."""
     ms = line.get("markers") or []
     if len(ms) < 2:
         return None
@@ -156,7 +160,7 @@ def datum_span_x(line):
     right = max(ms, key=lambda m: m[1])
     if left[1] > right[0]:  # boxes overlap in x → same corner
         return None
-    return [round(left[0], 2), round(right[1], 2)]
+    return [round(left[1], 2), round(right[0], 2)]
 
 
 def vertical_rails(runs, y0, y1):

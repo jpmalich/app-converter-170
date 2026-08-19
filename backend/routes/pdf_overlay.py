@@ -789,8 +789,9 @@ async def propose_zones(
                                              round(x1 * 100, 2)],
                               "span_x_basis": ("datum marker span ("
                                                + " + ".join(span_names)
-                                               + ") — leftmost to rightmost"
-                                               " corner label")},
+                                               + ") — inner label edges, "
+                                               "Ruling ZZ; leader offset "
+                                               "reported, never subtracted")},
             "author_id": "height_build",
             "author_email": "",
             "created_at": now,

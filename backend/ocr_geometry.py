@@ -752,6 +752,18 @@ RULINGS_REGISTER = {
     ],
     # SEND-46: registered findings and sealed field rulings.
     "findings": [
+        "DATUM-SPAN LIMIT (SEND-52/54): a face whose datum labels print "
+        "at a single corner only (Boni FRONT labels its LEFT corner "
+        "only, Boni REAR its RIGHT only) can NEVER be spanned by datum "
+        "markers on any run — a permanent limit of the approach, not a "
+        "gap awaiting a fix; such faces belong to the proposal ladder.",
+        "LEADER-OFFSET LIMIT (SEND-54 horizontal census, both houses): "
+        "NO elevation prints an overall width dimension — every "
+        "horizontal dim in the face bands is an overhang (1'-0\"), a "
+        "scale string, a prose ceiling note, or a partial-feature dim. "
+        "The 10-16 ft leader offset is NOT resolvable from elevation "
+        "text; under RULING AAA it may not be resolved from any other "
+        "sheet. Hard limit, registered beside the single-corner faces.",
         "CENSUS FINDING (SEND-46, qualifies every Boni accuracy claim "
         "from SEND-19 forward): Boni's model height 20.0 ft is "
         "UNRECONSTRUCTABLE from its own cited evidence — 9'-11\" + "
@@ -765,6 +777,16 @@ RULINGS_REGISTER = {
         "drawing or the face refuses.",
     ],
     "sealed": [
+        "RULING AAA (SEND-54, Howard verbatim): 'Every elevation must "
+        "stand completely on its own evidence. Do not size the zone from "
+        "a known plan width. The proposed zone may only use what can be "
+        "read from that elevation drawing itself.' Broader than zones: a "
+        "drawing's proposal may not borrow another drawing's numbers — "
+        "not as a fallback, a sanity check, a clamp, or a tiebreak.",
+        "RULING ZZ (SEND-54): datum-span width is measured INNER label "
+        "edge to INNER label edge — a label's glyph box is not the wall "
+        "by construction. The remaining leader offset (10–16 ft on the "
+        "census houses) stays REPORTED and UNSUBTRACTED.",
         "DP-1 (SEND-46, Howard field ruling): siding band = FIRST "
         "FLOOR (subfloor line) up to plate/soffit — the band the "
         "elevations actually dimension. A face that establishes this "
