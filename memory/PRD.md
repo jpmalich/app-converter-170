@@ -1,5 +1,39 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-19 SEND-63 — METRIC NUMBERS + TOF BOTTOM SHIPPED + LINE-WORK DESIGN (stamped green)
+1. **Item 1 — recorded field numbers (EST-569367, 10:19–10:22):** it
+RECORDED. CORRECTED front (edges L+4.94/R−5.15/T+0.61↓/B+2.22↓ ft, width
+−10.09, area Δ6.5%), right (L+6.57/R−7.13/T−0.65↑/B+1.29↓, width −13.70,
+Δ29.1%); LEFT touch at 02:35 PRE-DATED the 03:10 metric (timing gap, not
+a defect) — RECONSTRUCTED L+7.05/R−5.84, width −12.89, Δ~30.5%.
+ADDED_FROM_SCRATCH ×7: rear body 3 pieces 641.7 ft² (face-tagged "front"
+— page-level face attribution on FRONT&REAR sheet, FLAGGED), 2 gable
+triangles, 2 side strips. DELETED 0. Denominator 8 surfaces: 3 corrected,
+5 missed. Untouched-good vs unreachable NOT distinguishable from events
+alone (join vs still-proposed zones is the remedy). Prediction SCORED and
+appended (unrevised): HORIZONTAL CONFIRMED 10.1–13.7 ft (Howard: ~15);
+VERTICAL REFUTED, bottom 1.1–2.2 ft high everywhere, sides symmetric ≈
+half the leader offset per side. Run used PRE-ladder proposals (02:34)
+→ tier null, rear had no proposal.
+2. **Item 2 SHIPPED — proposal bottom drops to TOP OF FOUNDATION** when
+located on the face's own drawing (position, not dimension); else FF,
+basis stated either way. DP-1's DERIVED band stays sealed at FF — zones
+carry `band_note` ("taller than the derived wall band — confirming will
+change the quantity"), retained through confirm (`confirmed_from.band_note`),
+`proposed_from.bottom_datum` recorded. **Trace scale stays anchored to
+the datum pair (`scale_y`), never the TOF bottom.** TOF report: Letrick
+all 4 faces drop (1.06/1.06/0.85/0.76 ft); Boni front/rear/left drop
+(1.40/1.40/1.10 %-y, no evidence scale for ft), right falls back (no FF
+located). +5 unit pins, +1 live pin, confirm-retention pin extended.
+3. **Item 3 — line-work DESIGN report only** at
+`memory/send63_linework_design.md` (7 questions answered; predictions
+written pre-build; check-not-target vs sealed widths; INDETERMINATE
+never silently falls back; polygon output; Boni front/rear become
+reachable since line-work needs no corner labels). NO CODE.
+4. Vertical-rail span report HELD pending line-work approve/reject.
+**Suite stamped:** `2026-08-19 10:52 UTC · f098e33 · CLEAN · 2639
+passed, 9 skipped`.
+
 ## 2026-08-19 SEND-55 — RULING BBB LADDER + CORRECTION METRIC + VECTOR REPORT (stamped green)
 1. **Rulings registered from Howard:** RULING BBB (strict AAA — model
 heights BARRED from proposals; ladder: derived chain / larger contestant
