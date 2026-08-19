@@ -5339,6 +5339,9 @@ async def _execute_ai_blueprint_worker(
         # event loop; failure never sinks the run.
         try:
             if raw.get("_dim_evidence"):
+                # honest stage: this local OCR pass runs minutes on a
+                # 10-page set — say so instead of sitting on "aggregating"
+                await _set_stage("ocr_locate")
                 await asyncio.to_thread(_ocr_locate_evidence,
                                         raw["_dim_evidence"],
                                         image_payloads, raw)
@@ -5363,9 +5366,11 @@ async def _execute_ai_blueprint_worker(
         # locates is dropped as fabricated; a fabricated size quote is
         # killed. Failure never sinks the run.
         try:
+            await _set_stage("mark_locate")
             await asyncio.to_thread(_ocr_verify_marks, raw, image_payloads)
         except Exception:
             logger.exception("[ai-blueprint] mark-locate failed — rows stand")
+        await _set_stage("aggregating")
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
         # SPEC-FIELD PRECEDENCE (ruled 2026-08-07): a PRINTED overhang
         # beats the form default; the source is named either way.

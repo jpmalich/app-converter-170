@@ -633,6 +633,9 @@ export default function BlueprintMeasureButton({ est, update, save, applyLines }
         {busy
           ? (busyStage === "claude" ? "Reading plans…"
             : busyStage === "aggregating" ? "Aggregating walls…"
+            : busyStage === "ocr_locate" ? "Locating dimensions on the sheets (OCR)…"
+            : busyStage === "mark_locate" ? "Verifying schedule marks on the sheets (OCR)…"
+            : busyStage === "roof_pass" ? "Roof geometry pass…"
             : busyStage === "mapping" ? "Mapping to catalog…"
             : busyStage === "starting" ? "Uploading…"
             : "Reading plans…")
