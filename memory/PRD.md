@@ -1,5 +1,24 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-19 "STUCK READ" INVESTIGATION — NOT STUCK, SLOW + MISLABELED (stamped green)
+User report: read stuck on AGGREGATING WALLS + elevation-sheet 404s on
+estimate 07517940 (Letrick 8-18 10pm). FINDINGS: all three runs
+COMPLETED (617s / 648s / 374s — first two ran CONCURRENTLY after the
+user re-launched, competing for CPU). The minutes sit in the LOCAL OCR
+passes (ocr-locate + mark-locate over 10 rendered pages) which ran under
+the single "aggregating" stage — the dialog showed no movement for 5-10
+min and read as hung. The `/elevation-sheet/{face}` 404s are the AI
+PHOTO MEASURE panel probing sheets that don't exist on a blueprint-only
+estimate (benign); the blueprint's own sheets serve 200 at
+`/blueprint-elevation/{face}` (EL-1..EL-4 links). Fresh run verified
+healthy: front/left/right DERIVED 9.08 ft with inner-edge spans, rear
+refuses contested — SEND-54 chain live. FIX SHIPPED: honest sub-stages
+`ocr_locate` / `mark_locate` set around the heavy passes
+(`ai_blueprint.py`), labels in `BlueprintMeasureButton.jsx` ("Locating
+dimensions on the sheets (OCR)…" / "Verifying schedule marks…"), and
+"aggregating" now covers only the actual aggregation. Suite stamped:
+`2026-08-19 02:28 UTC · 9f55560 · CLEAN · 2617 passed, 9 skipped`.
+
 ## 2026-08-19 SEND-54 — RULING ZZ SHIPPED + RULING AAA REGISTERED + HORIZONTAL CENSUS (stamped green)
 1. **Ruling ZZ SHIPPED:** `datum_span_x` measures INNER label edge →
 INNER label edge (a label's glyph box is not the wall by construction).
