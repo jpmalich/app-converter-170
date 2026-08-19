@@ -76,9 +76,12 @@ def test_propose_creates_provisional_zones_feeding_no_quantity(sess, rig):
                   timeout=30)
     assert r.status_code == 200, r.text
     proposed = r.json()["proposed"]
-    # letrick-shaped run: three DERIVED faces → three proposals
-    assert len(proposed) == 3
-    assert {p["face_id"] for p in proposed} == {"front", "left", "right"}
+    # letrick-shaped run: SEND-55 ladder — EVERY evaluated face proposes
+    # (three DERIVED chains + rear's contested tier). Coverage is a
+    # fact, not a success metric.
+    assert len(proposed) == 4
+    assert {p["face_id"] for p in proposed} == {"front", "back",
+                                                "left", "right"}
     assert all(p["provenance"] == "proposed" for p in proposed)
     assert all(p["sqft"] is None for p in proposed)
     assert _siding(sess, rig["eid"])["qty"] == 44.0  # untouched

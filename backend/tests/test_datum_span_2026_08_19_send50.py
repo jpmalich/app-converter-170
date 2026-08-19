@@ -178,8 +178,9 @@ def test_proposals_draw_the_datum_box_not_the_band(sess, rig):
     expect = _face_spans_from_run(rig["src"])
     id_to_face = {"front": "front", "back": "rear",
                   "left": "left", "right": "right"}
-    assert len(proposed) == len(expect) > 0
-    for p in proposed:
+    derived = [p for p in proposed if p.get("tier") == "derived_chain"]
+    assert len(derived) == len(expect) > 0
+    for p in derived:
         face = id_to_face[p["face_id"]]
         (x0, x1), (y0, y1) = expect[face]
         xs = sorted({v[0] for v in p["vertices_pct"]})
@@ -190,7 +191,7 @@ def test_proposals_draw_the_datum_box_not_the_band(sess, rig):
         assert abs(ys[-1] - max(y0, y1)) < 1e-6
         # never the old page-band rectangle
         assert xs[0] > 0.02 and xs[-1] < 0.98
-        basis = (p.get("proposed_from") or {}).get("span_x_basis") or ""
+        basis = p.get("basis") or ""
         assert "datum marker span" in basis
     # body zone stops at the plate: y-extent is the datum pair, and the
     # proposal never reaches the band top (roof/gable stays out)
@@ -203,10 +204,12 @@ def test_proposals_draw_the_datum_box_not_the_band(sess, rig):
         {"estimate_id": rig["eid"], "provenance": "proposed"})
 
 
-def test_indeterminate_span_face_proposes_nothing_and_is_named(sess, rig):
+def test_indeterminate_span_face_still_proposes_naming_page_width(sess, rig):
     """Strip the right-corner FIRST FLOOR + TOP OF PLATE labels from one
-    face's band in the clone → its span turns single-ended → that face is
-    SKIPPED with the reason named (falls to the item-2 ladder)."""
+    face's band in the clone → its span turns single-ended. Under the
+    SEND-55 ladder the face STILL proposes (the refusing/unmeasured face
+    is the one that most needs a starting shape) — but the x-extent
+    falls to page width and the basis SAYS SO."""
     db = rig["db"]
     src = db.ai_blueprint_runs.find_one({"run_id": rig["run_id"]})
     raw = src["result"]["raw_ai"]
@@ -234,9 +237,10 @@ def test_indeterminate_span_face_proposes_nothing_and_is_named(sess, rig):
                   timeout=30)
     assert r.status_code == 200, r.text
     body = r.json()
-    skipped = {s["face_id"]: s["reason"] for s in body.get("skipped", [])}
-    assert "right" in skipped
-    assert "INDETERMINATE" in skipped["right"]
-    assert all(p["face_id"] != "right" for p in body["proposed"])
+    right = next(p for p in body["proposed"] if p["face_id"] == "right")
+    xs = sorted({v[0] for v in right["vertices_pct"]})
+    assert xs[0] == 0.02 and xs[-1] == 0.98
+    assert right["tier"] == "datum_rectangle"
+    assert "PAGE WIDTH" in (right.get("basis") or "")
     rig["db"].pdf_overlay_polygons.delete_many(
         {"estimate_id": rig["eid"], "provenance": "proposed"})

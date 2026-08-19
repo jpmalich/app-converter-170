@@ -62,6 +62,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from math import hypot
 from typing import Optional
+import re
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -596,6 +597,19 @@ async def upsert_pdf_overlay(
     existing = await db.pdf_overlay_polygons.find_one({"id": pid})
     if existing:
         doc["created_at"] = existing.get("created_at") or now
+        # SEND-55 item 2 — CONFIRMATION MUST NOT LAUNDER THE BASIS.
+        # Confirmation upgrades AUTHORITY, not EVIDENCE: the record keeps
+        # what was confirmed (tier + basis + the proposal's own shape).
+        if (existing.get("provenance") == "proposed"
+                and doc["provenance"] == "human"):
+            doc["confirmed_from"] = {
+                "tier": existing.get("tier"),
+                "basis": existing.get("basis"),
+                "proposed_vertices_pct": existing.get("vertices_pct"),
+                "proposed_from": existing.get("proposed_from"),
+            }
+        elif existing.get("confirmed_from"):
+            doc["confirmed_from"] = existing["confirmed_from"]
         # Preserve the group's original baseline across edits of an
         # existing polygon (never re-capture from a now-overridden line).
         if existing.get("derived_baseline_qty") is not None:
@@ -610,6 +624,23 @@ async def upsert_pdf_overlay(
         await db.pdf_overlay_polygons.insert_one(doc)
 
     await _recompute_and_store(est_id, user, est.get("lines") or [])
+
+    # SEND-55 item 4 — the correction metric (eval only, never an input).
+    if doc.get("confirmed_from") and doc["provenance"] == "human":
+        metrics = zone_event_metrics(
+            doc["confirmed_from"].get("proposed_vertices_pct") or [],
+            doc["vertices_pct"], doc.get("scale_ref"),
+            doc.get("page_w_px"), doc.get("page_h_px"))
+        await _record_zone_event("CORRECTED", est_id, doc, user, metrics)
+    elif not existing and doc["provenance"] == "human":
+        n_props = await db.pdf_overlay_polygons.count_documents(
+            {"estimate_id": est_id, "face_id": doc["face_id"],
+             "material_class": doc["material_class"],
+             "provenance": "proposed"})
+        await _record_zone_event(
+            "ADDED_FROM_SCRATCH", est_id, doc, user,
+            extra={"proposal_existed_on_face": n_props > 0,
+                   "area_confirmed_sqft": sqft})
 
     if await is_untouchable(est_id):
         await ledger_human_write(
@@ -643,6 +674,14 @@ async def delete_pdf_overlay(
         raise HTTPException(status_code=404, detail="Polygon not found")
     await db.pdf_overlay_polygons.delete_one(
         {"id": polygon_id, "estimate_id": est_id})
+
+    # SEND-55 item 4 — a deleted PROPOSAL scores ZERO, never "no data":
+    # a face whose proposal was thrown away is a total failure of the
+    # proposal and must appear as one.
+    if victim.get("provenance") == "proposed":
+        await _record_zone_event(
+            "DELETED", est_id, victim, user,
+            extra={"area_delta_ratio": None, "score": 0.0})
 
     remaining = await db.pdf_overlay_polygons.count_documents(
         {"estimate_id": est_id,
@@ -684,6 +723,125 @@ async def delete_pdf_overlay(
             est_id, "pdf_overlay_polygon",
             actor_email=user.get("email", ""), meta=meta)
     return {"ok": True, "deleted": polygon_id, "retired_override": retired}
+
+
+def _gap_y(s: str):
+    m = re.search(r"@([\d.]+)", s or "")
+    return float(m.group(1)) if m else None
+
+
+def _contested_chain_value(r: dict, top_y: float, bot_y: float):
+    """RULING BBB — the CONTESTED tier's value. Walk the gaps strictly
+    between the datum pair. Every gap must be BOUND (its printed value)
+    or CONTESTED (take the LARGER contestant — running short costs a
+    trip, over-ordering costs dollars; never averaged, never list-order).
+    Any UNDIMENSIONED gap → no chain value (None). Returns
+    (total_inches, [contested rail raws]) or None."""
+    total, named, any_contested = 0.0, [], False
+    for g in r.get("gaps") or []:
+        y0, y1 = _gap_y(g.get("from")), _gap_y(g.get("to"))
+        if y0 is None or y1 is None:
+            continue
+        if min(y0, y1) < top_y - 0.05 or max(y0, y1) > bot_y + 0.05:
+            continue  # outside the datum pair
+        if g.get("status") == "BOUND" and g.get("value_in"):
+            total += float(g["value_in"])
+        elif g.get("status") == "CONTESTED" and g.get("rails"):
+            vals = [(float(x["in"]), x.get("raw", "")) for x in g["rails"]
+                    if x.get("in")]
+            if not vals:
+                return None
+            vals.sort(reverse=True)
+            total += vals[0][0]
+            named.extend(v[1] for v in vals)
+            any_contested = True
+        else:
+            return None
+    if not any_contested or total <= 0:
+        return None
+    return total, named
+
+
+def _ladder_geometry(r: dict):
+    """SEND-55 item 2 — RULING BBB ladder: EVERY evaluated face proposes.
+    Model heights are BARRED from proposals (Ruling BBB, strict AAA):
+    every number below is read from that elevation drawing itself.
+
+      DERIVED   → the face's own chain (tier: derived_chain)
+      CONTESTED → the larger contestant, BOTH named (contested_pick_larger)
+      otherwise → rectangle from the located datums (datum_rectangle)
+                  or the title-carved band (band_rectangle)
+
+    Returns a spec dict or None (face has no evaluated elevation)."""
+    geo = r.get("datum_geometry") or {}
+    band = r.get("band")
+    if not r.get("page") or (not geo and not band):
+        return None
+    top, bot = geo.get("top_of_plate"), geo.get("first_floor")
+    spans, span_names = [], []
+    for name, d in (("TOP_OF_PLATE", top), ("FIRST_FLOOR", bot)):
+        if d and d.get("span_x"):
+            spans.append(d["span_x"])
+            span_names.append(name)
+    if spans:
+        x = [min(s[0] for s in spans) / 100.0,
+             max(s[1] for s in spans) / 100.0]
+        x_basis = ("x: datum marker span (" + " + ".join(span_names)
+                   + "), inner label edges (Ruling ZZ); leader offset "
+                   "reported, never subtracted")
+        x_measured = True
+    else:
+        x = [0.02, 0.98]
+        x_basis = ("x: PAGE WIDTH — no two-corner datum markers on this "
+                   "elevation; needs full horizontal adjustment")
+        x_measured = False
+
+    if r.get("status") == "DERIVED" and r.get("span_y"):
+        y = [r["span_y"][0] / 100.0, r["span_y"][1] / 100.0]
+        return {"page": r["page"], "x": x, "y": y, "ft": r.get("ft"),
+                "tier": "derived_chain" if x_measured else "datum_rectangle",
+                "basis": (f"derived FIRST FLOOR → TOP OF PLATE chain, "
+                          f"{r.get('ft')} ft; {x_basis}")}
+    if top and bot:
+        y = [top["y"] / 100.0, bot["y"] / 100.0]
+        contested = _contested_chain_value(r, top["y"], bot["y"])
+        if contested:
+            inches, named = contested
+            ft = round(inches / 12.0, 2)
+            picked = max(named, key=lambda s: len(s)) if named else ""
+            return {"page": r["page"], "x": x, "y": y, "ft": ft,
+                    "tier": "contested_pick_larger",
+                    "basis": (f"CONTESTED height — rails "
+                              f"{' vs '.join(named)}; proposed from the "
+                              f"LARGER ({ft} ft): running short costs a "
+                              f"trip, over-ordering costs dollars; never "
+                              f"averaged; {x_basis}"),
+                    "contested_rails": named}
+        return {"page": r["page"], "x": x, "y": y, "ft": None,
+                "tier": "datum_rectangle",
+                "basis": ("rectangle from the located datums (FIRST "
+                          "FLOOR → TOP OF PLATE y); height NOT "
+                          f"established on this elevation; {x_basis}")}
+    if band:
+        return {"page": r["page"],
+                "x": x, "y": [band[0] / 100.0, band[1] / 100.0],
+                "ft": None, "tier": "band_rectangle",
+                "basis": ("STARTING SHAPE from the title-carved band — "
+                          "no datum pair located on this elevation; "
+                          f"needs full adjustment; {x_basis}")}
+    return None
+
+
+_TIER_RANK = {"derived_chain": 0, "contested_pick_larger": 1,
+              "datum_rectangle": 2, "band_rectangle": 3}
+
+
+def _best_ladder_spec(face_result: dict):
+    cands = face_result.get("candidates") or [face_result]
+    specs = [s for s in (_ladder_geometry(c) for c in cands) if s]
+    if not specs:
+        return None
+    return min(specs, key=lambda s: _TIER_RANK[s["tier"]])
 
 
 @router.post("/estimates/{est_id}/pdf-overlay/propose")
@@ -730,49 +888,34 @@ async def propose_zones(
     face_to_id = {"front": "front", "rear": "back",
                   "left": "left", "right": "right"}
     for face, r in faces.items():
-        if r.get("status") != "DERIVED" or not r.get("span_y"):
-            continue
-        y_top, y_bot = (r["span_y"][0] / 100.0), (r["span_y"][1] / 100.0)
-        # SEND-50 item 3 — HORIZONTAL: the wall's x-extent is the measured
-        # datum MARKER span (labels print at both wall corners), never the
-        # band width. Census finding (both houses): the markers sit at the
-        # end of leader lines OUTSIDE the wall — the span lands ~+20 ft
-        # wide of the sealed readings. That offset is REPORTED, not
-        # subtracted (a guessed constant is a threshold). Single-ended
-        # datums are INDETERMINATE: such a face falls to the item-2
-        # proposal ladder (not yet authorized) and proposes nothing here.
-        geo = r.get("datum_geometry") or {}
-        spans, span_names = [], []
-        for key, label in (("top_of_plate", "TOP_OF_PLATE"),
-                           ("first_floor", "FIRST_FLOOR")):
-            d = geo.get(key)
-            if d and d.get("span_x"):
-                spans.append(d["span_x"])
-                span_names.append(label)
-        if not spans:
+        # SEND-55 item 2 — RULING BBB ladder: EVERY evaluated face
+        # proposes. Coverage is a FACT, not a success metric — the
+        # metric is correction distance (item 4).
+        spec = _best_ladder_spec(r)
+        if not spec:
             skipped.append({
                 "face_id": face_to_id[face],
-                "reason": ("wall x-extent INDETERMINATE — datum markers "
-                           "single-ended on this elevation; no proposal "
-                           "(falls to the proposal ladder, a separate "
-                           "send)")})
+                "reason": ("no evaluated elevation drawing for this face "
+                           "— nothing to propose from")})
             continue
-        x0 = min(s[0] for s in spans) / 100.0
-        x1 = max(s[1] for s in spans) / 100.0
-        page = ot.get(r["page"]) or {}
+        (x0, x1), (y_top, y_bot) = spec["x"], spec["y"]
+        page = ot.get(spec["page"]) or {}
         band = r.get("band") or [0.0, 100.0]
+        scale_ref = None
+        if spec.get("ft"):
+            scale_ref = {"mode": "trace",
+                         "p1": [0.5, y_top], "p2": [0.5, y_bot],
+                         "real_ft": spec["ft"], "source": "READ",
+                         "from_quote": (r.get("chain") or [spec["tier"]])[0]}
         doc = {
             "id": str(uuid.uuid4()),
             "estimate_id": est_id,
-            "page": int(r["page"]),
+            "page": int(spec["page"]),
             "face_id": face_to_id[face],
             "material_class": "siding",
             "vertices_pct": [[x0, y_top], [x1, y_top],
                              [x1, y_bot], [x0, y_bot]],
-            "scale_ref": {"mode": "trace",
-                          "p1": [0.5, y_top], "p2": [0.5, y_bot],
-                          "real_ft": r["ft"], "source": "READ",
-                          "from_quote": (r.get("chain") or [""])[0]},
+            "scale_ref": scale_ref,
             "page_w_px": page.get("page_w"),
             "page_h_px": page.get("page_h"),
             "sqft": None,          # provisional — never feeds a quantity
@@ -781,17 +924,15 @@ async def propose_zones(
             "surface_refusal": None,
             "provenance": "proposed",
             "qty_src": "proposed",
+            "tier": spec["tier"],
+            "basis": spec["basis"],
             "proposed_from": {"run_id": (run or {}).get("run_id"),
-                              "height_ft": r["ft"],
+                              "height_ft": spec.get("ft"),
                               "span": r.get("span"),
                               "band": band,
+                              "tier": spec["tier"],
                               "span_x_pct": [round(x0 * 100, 2),
-                                             round(x1 * 100, 2)],
-                              "span_x_basis": ("datum marker span ("
-                                               + " + ".join(span_names)
-                                               + ") — inner label edges, "
-                                               "Ruling ZZ; leader offset "
-                                               "reported, never subtracted")},
+                                             round(x1 * 100, 2)]},
             "author_id": "height_build",
             "author_email": "",
             "created_at": now,
@@ -805,6 +946,91 @@ async def propose_zones(
     return {"ok": True, "proposed": created, "skipped": skipped,
             "note": ("proposed zones are PROVISIONAL — they feed no "
                      "quantity until a human confirms or bumps them")}
+
+
+def _ft_per_px(scale_ref, W, H):
+    """ft per rendered pixel from a trace scale, or None."""
+    if not scale_ref or not W or not H:
+        return None
+    p1, p2 = scale_ref.get("p1"), scale_ref.get("p2")
+    real_ft = scale_ref.get("real_ft")
+    if not p1 or not p2 or not real_ft:
+        return None
+    d = hypot((p2[0] - p1[0]) * W, (p2[1] - p1[1]) * H)
+    return (real_ft / d) if d > 0 else None
+
+
+def zone_event_metrics(proposed_v, confirmed_v, scale_ref, W, H):
+    """SEND-55 item 4 — how far the human moved the proposal.
+
+    PER-VERTEX displacement in FEET (percent-of-page is not a number a
+    contractor can act on) + WHICH EDGE moved (a consistently-short
+    right edge is a diagnosis, an aggregate hides it) + AREA DELTA
+    |proposed − confirmed| / confirmed — the headline: four vertices
+    translating a foot barely changes area; one vertex can shift it 20%.
+    This is an EVAL. Nothing may read it at derivation time."""
+    out = {"ft_available": False, "per_vertex_ft": None, "edges_ft": None,
+           "area_proposed_sqft": None, "area_confirmed_sqft": None,
+           "area_delta_ratio": None}
+    fpp = _ft_per_px(scale_ref, W, H)
+    a_prop = polygon_sqft_from_scale(proposed_v, scale_ref, W, H)
+    a_conf = polygon_sqft_from_scale(confirmed_v, scale_ref, W, H)
+    out["area_proposed_sqft"] = a_prop
+    out["area_confirmed_sqft"] = a_conf
+    if a_prop is not None and a_conf and a_conf > 0:
+        out["area_delta_ratio"] = round(abs(a_prop - a_conf) / a_conf, 4)
+    if fpp:
+        out["ft_available"] = True
+        if len(proposed_v) == len(confirmed_v):
+            pv = []
+            for i, (p, c) in enumerate(zip(proposed_v, confirmed_v)):
+                dx = (c[0] - p[0]) * W * fpp
+                dy = (c[1] - p[1]) * H * fpp
+                pv.append({"i": i, "dx_ft": round(dx, 2),
+                           "dy_ft": round(dy, 2),
+                           "dist_ft": round(hypot(dx, dy), 2)})
+            out["per_vertex_ft"] = pv
+        out["edges_ft"] = {
+            "left": round((min(v[0] for v in confirmed_v)
+                           - min(v[0] for v in proposed_v)) * W * fpp, 2),
+            "right": round((max(v[0] for v in confirmed_v)
+                            - max(v[0] for v in proposed_v)) * W * fpp, 2),
+            "top": round((min(v[1] for v in confirmed_v)
+                          - min(v[1] for v in proposed_v)) * H * fpp, 2),
+            "bottom": round((max(v[1] for v in confirmed_v)
+                             - max(v[1] for v in proposed_v)) * H * fpp, 2),
+        }
+    return out
+
+
+async def _record_zone_event(event: str, est_id: str, doc: dict,
+                             user: dict, metrics: dict | None = None,
+                             extra: dict | None = None):
+    """One row per (zone, event) in `zone_correction_events`. CORRECTED
+    upserts on every human write so the FINAL confirmed shape scores —
+    the first vertex bump must not freeze the measurement. DELETED
+    scores zero, never 'no data'. ADDED_FROM_SCRATCH is area the system
+    missed entirely. The denominator is FACES THAT NEEDED A ZONE, not
+    proposals offered — a coverage-blind metric rewards not proposing."""
+    row = {
+        "id": f"{doc.get('id')}::{event}",
+        "zone_id": doc.get("id"),
+        "estimate_id": est_id,
+        "event": event,
+        "face_id": doc.get("face_id"),
+        "material_class": doc.get("material_class"),
+        "page": doc.get("page"),
+        "tier": (doc.get("confirmed_from") or {}).get("tier") or doc.get("tier"),
+        "basis": (doc.get("confirmed_from") or {}).get("basis") or doc.get("basis"),
+        "author_email": (user or {}).get("email") or "",
+        "at": datetime.now(timezone.utc),
+    }
+    if metrics:
+        row.update(metrics)
+    if extra:
+        row.update(extra)
+    await db.zone_correction_events.replace_one(
+        {"id": row["id"]}, row, upsert=True)
 
 
 async def _recompute_and_store(

@@ -742,12 +742,17 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
               <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">Zones on this page ({pagePolys.length})</div>
               {pagePolys.length === 0 && <div className="text-[11px] text-[var(--muted)] italic">None yet.</div>}
               {pagePolys.map((p) => (
-                <div key={p.id} className={`flex items-center justify-between border p-1.5 mb-1 cursor-pointer ${p.id === selectedId ? "border-[var(--ai)]" : "border-[var(--border)]"}`}
+                <div key={p.id} className={`border p-1.5 mb-1 cursor-pointer ${p.id === selectedId ? "border-[var(--ai)]" : "border-[var(--border)]"}`}
                   onClick={() => setSelectedId(p.id)} data-testid={`pdf-overlay-zone-${p.id}`}>
+                  <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold" style={{ color: classColor(p.material_class) }}>
                     {p.material_class} · {p.face_id} · {p.sqft == null ? (p.provenance === "proposed" ? "proposed" : "no scale") : `${p.sqft} ft²`}
                     {p.provenance === "proposed" && (
                       <span className="ml-1 text-[9px] uppercase font-bold text-[var(--warning-text)]">provisional</span>
+                    )}
+                    {p.tier && p.provenance === "proposed" && (
+                      <span className={`ml-1 text-[9px] uppercase font-bold ${p.tier === "derived_chain" ? "text-[var(--success)]" : p.tier === "contested_pick_larger" ? "text-[var(--warning-text)]" : "text-[var(--danger)]"}`}
+                        data-testid={`pdf-overlay-tier-${p.id}`}>{p.tier.replaceAll("_", " ")}</span>
                     )}
                   </span>
                   <span className="flex items-center gap-1">
@@ -761,6 +766,15 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                       <Trash2 size={13} />
                     </button>
                   </span>
+                  </div>
+                  {p.provenance === "proposed" && p.basis && (
+                    <div className="text-[10px] text-[var(--muted)] mt-0.5" data-testid={`pdf-overlay-basis-${p.id}`}>{p.basis}</div>
+                  )}
+                  {p.provenance !== "proposed" && p.confirmed_from?.tier && (
+                    <div className="text-[10px] text-[var(--muted)] mt-0.5" data-testid={`pdf-overlay-confirmed-from-${p.id}`}>
+                      human-confirmed a proposal based on: {p.confirmed_from.basis || p.confirmed_from.tier}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
