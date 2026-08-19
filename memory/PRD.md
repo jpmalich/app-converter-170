@@ -1,5 +1,44 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-19 SEND-55 — RULING BBB LADDER + CORRECTION METRIC + VECTOR REPORT (stamped green)
+1. **Rulings registered from Howard:** RULING BBB (strict AAA — model
+heights BARRED from proposals; ladder: derived chain / larger contestant
+both named / rectangle from own datums or title band). Bottom-edge:
+derived band AND proposal both stay FIRST FLOOR → TOP OF PLATE (no TOF
+drop). Width problem (~15 ft leader offset) PARKED pending the first
+measured field run.
+2. **Item 2 SHIPPED (`routes/pdf_overlay.py`):** `_ladder_geometry` +
+`_contested_chain_value` (chain over gaps inside the datum pair; every
+gap BOUND or CONTESTED-take-larger; any UNDIMENSIONED kills the value —
+pick by VALUE never list order). EVERY evaluated face proposes with
+top-level `tier` + `basis`. Letrick: front/left/right derived_chain,
+REAR contested_pick_larger 9.92 ft naming 9'-11* vs 9-1%. Boni:
+front/rear datum_rectangle at page width (single-corner limit),
+left datum_rectangle with marker span, right band_rectangle. Frontend
+zone rows show tier chip (color by attention) + basis line
+(`pdf-overlay-tier-*`, `pdf-overlay-basis-*`).
+3. **Confirmation does not launder:** upsert retains `confirmed_from`
+{tier, basis, proposed_vertices_pct, proposed_from} when proposed→human;
+survives later edits; UI shows "human-confirmed a proposal based on: …"
+(`pdf-overlay-confirmed-from-*`).
+4. **Item 4 SHIPPED (eval only):** prediction file FIRST
+(`memory/send55_item4_prediction.md`: vertical ≈0, horizontal ≈10–16 ft
+wide). `zone_correction_events` records CORRECTED (upserted on every
+human write so the FINAL shape scores — per-vertex ft, edge deltas ft,
+area delta ratio headline), DELETED (score 0, never "no data"),
+ADDED_FROM_SCRATCH (missed area, with proposal_existed_on_face).
+Nothing reads the collection at derivation (pinned). NO dashboard.
+5. **Vector/raster REPORT (report only):** BOTH houses' source PDFs are
+VECTOR — Letrick p1 38,637 line objects + 3,746 curves, Boni p1 56,988
+lines; zero text chars (glyphs outlined → hence OCR); ARCH C 24×18 in.
+The parked line-work read would consume exact vector geometry, no
+raster detection needed — entirely inside AAA.
+6. **Pins:** +17 (`tests/test_ladder_2026_08_19_send55.py` unit + live);
+updated datum-span + zone-binding live pins to ladder behavior (4/4
+faces propose). UI smoke verified in browser. **Suite stamped:**
+`2026-08-19 03:10 UTC · 70fb614 · CLEAN · 2634 passed, 9 skipped`.
+7. Next: Howard's MEASURED field run → review line-work detection.
+
 ## 2026-08-19 "STUCK READ" INVESTIGATION — NOT STUCK, SLOW + MISLABELED (stamped green)
 User report: read stuck on AGGREGATING WALLS + elevation-sheet 404s on
 estimate 07517940 (Letrick 8-18 10pm). FINDINGS: all three runs
