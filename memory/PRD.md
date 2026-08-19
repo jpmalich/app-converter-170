@@ -1,5 +1,45 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-19 SEND-51 / SEND-50 ITEM 3 — DATUM-BOX PROPOSALS (stamped green)
+1. **Item-1 robustness answers (reported, not rebuilt):** unmount teardown
+CLEAN (effect cleanup removes both window listeners on unmount and drag
+end); release-outside-window is a REAL GAP reasoned from spec (no mouseup
+reaches the window; move handler doesn't check `e.buttons`, so a stale
+drag survives re-entry until the next press). Candidate fixes named
+(`setPointerCapture` canonical, `e.buttons===0` guard minimal) — NOT
+built, awaiting Howard.
+2. **Datum x-spans (`height_read.py`):** datum lines now carry every
+marker box (`markers`); `datum_span_x` = leftmost→rightmost marker box,
+INDETERMINATE when <2 markers OR the extreme boxes x-overlap (two reads
+of the SAME corner are one end — structural, caught Letrick LEFT's bogus
+4.7% "span"). `datum_geometry` (y + markers + span per datum) recorded on
+EVERY evaluated face, refusing ones included.
+3. **Census (BEFORE the fix, `memory/send50_item3_census.py`):** every
+determinate span lands consistently WIDE of Howard's sealed readings —
+Letrick front +19.2 ft, left +20.0, right +20.4 (vs 54/30/30); Boni left
++23.6/+24.5, right +20.1 (vs 30'-2"/33', scale from BOUND datum gaps).
+The labels sit at the END OF LEADER LINES outside the wall. OFFSET
+REPORTED, NOT SUBTRACTED (a guessed constant is a threshold). Old 96%-
+page proposals were +70..+93 ft wide. Boni front/rear x-spans
+INDETERMINATE (single-ended); Boni OCR lives on EST-713272's run (MUV
+rebuild), EST-886440's runs carry no OCR.
+4. **The fix (`routes/pdf_overlay.py` propose):** HORIZONTAL = measured
+datum marker span (union of determinate TOP_OF_PLATE/FIRST_FLOOR spans;
+basis recorded on `proposed_from.span_x_basis`); VERTICAL stays the datum
+pair (body zone stops at the plate; gable remains its own bindable
+surface). Faces with NO determinate span propose NOTHING and are named in
+the response `skipped` list (falls to the item-2 ladder, not yet
+authorized). Frontend toasts skipped faces.
+5. **Letrick post-fix boxes:** FRONT p1 x 6.7→63.8% y 20.4→29.8% (TP+FF);
+LEFT p2 x 11.2→50.9% y 21.3→30.9% (FF only — TP single-ended); RIGHT p2
+x 46.5→86.3% y 61.5→71.0% (TP+FF); REAR none (refuses — item 2).
+6. **Pins (+9):** `tests/test_datum_span_2026_08_19_send50.py` — span
+rule (corners/single/same-corner/no-extrapolation), markers on merged
+lines, live propose draws the datum box exactly (cloned run, disposable
+estimate), indeterminate face skips with named reason. **Suite stamped:**
+`2026-08-19 00:53 UTC · 2e67f89 · CLEAN · 2612 passed, 9 skipped`.
+Items 2 → 4 queued in Howard's order.
+
 ## 2026-08-19 SEND-50 ITEM 1 — VERTEX DRAG FIXED (stamped green)
 **Field defect (Howard, Letrick):** dragged vertex moved only a tiny
 distance. **Measured on the broken build (preview, disposable rig):**
