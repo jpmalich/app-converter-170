@@ -1,5 +1,34 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-19 SEND-50 ITEM 1 — VERTEX DRAG FIXED (stamped green)
+**Field defect (Howard, Letrick):** dragged vertex moved only a tiny
+distance. **Measured on the broken build (preview, disposable rig):**
+150px drag → 11.0px at zoom 100%, 10.9px at 156% — factor ~13.6/13.8,
+zoom-independent, exactly ONE mousemove step. NOT a unit confusion
+(factor ≠ ~100): drag events routed through the `<img>` died after one
+step — (a) moves over the handle `<div>` (a sibling overlaying the img)
+never reach the img handler; (b) the instant the vertex re-renders under
+the cursor the img fires mouseleave → `onMouseLeave={onMouseUp}` ended
+the drag and persisted; (c) the sqft badge fully covered vertex 0's
+handle → that vertex was DEAD (0.0px). **Units were already correct and
+inverse:** write = clientXY − renderedRect.origin ÷ renderedRect.size →
+fraction 0–1 (zoom cancels, one division); read = fraction ×100 into the
+0-100 viewBox / % offsets. Conventions: zone vertices 0–1 EVERYWHERE
+(frontend + API + Mongo, validator rejects >1); OCR store 0–100
+percent-of-page; sole conversion boundary `routes/pdf_overlay.py`
+propose (`span/100`). **Fix:** live drags listen on WINDOW (moves reach
+the handler regardless of what's under the cursor; drag ends on window
+mouseup only); img onMouseMove no longer owns drags; badge is
+`pointer-events-none`. **Verified in the browser (observed):** 150px →
+150.0px @100%; (100,60) → (101,61) on the badge vertex; (-140,60) →
+(-139.9,61) @156%. **Pins (+12):**
+`tests/test_vertex_drag_2026_08_19_send50.py` — round-trip arithmetic at
+4 zooms, 1:1 delta reproduction, percent-delta-on-fraction breaks the
+round trip, API rejects percent-space vertices, structural pins on
+window listeners + click-through badge. **Suite stamped:** `2026-08-19
+00:29 UTC · 194cea9 · CLEAN · 2603 passed, 9 skipped`. Items 3, 2, 4
+wait for Howard's acceptance, in that order (his sequencing note).
+
 ## 2026-08-18 SEND-48 — RULING YY + RULED REFUSAL LANGUAGE + ZONE BINDING (stamped green)
 1. **Ruling YY (structural, no sheet-type classification):** a duplicate
 face title competes only if its band holds FIRST FLOOR + TOP OF PLATE
