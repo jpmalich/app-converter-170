@@ -262,6 +262,44 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
     ];
   };
 
+  // SEND-50 item 1 — vertex drag. ROOT CAUSE (traced + measured, not
+  // units): drag events routed through the <img> die after ONE step.
+  // (1) moves over the handle <div> (a SIBLING overlaying the img) never
+  // reach the img handler; (2) the instant the vertex re-renders under
+  // the cursor, the img fires mouseleave → onMouseUp ended the drag, so
+  // each grab moved exactly one mousemove step (~11px measured, zoom-
+  // independent); (3) the sqft badge covered vertex 0's handle entirely
+  // (0px — dead). Units were already correct: normFromEvent divides by
+  // the RENDERED rect exactly once, so zoom cancels, and the read path
+  // (×100 into the 0-100 viewBox / % offsets) is its exact inverse.
+  // Fix: while a drag is live, listen on WINDOW so every move reaches us
+  // regardless of what's under the cursor, and end on window mouseup.
+  useEffect(() => {
+    if (!dragVertex) return;
+    const move = (e) => {
+      if (!imgRef.current) return;
+      const [x, y] = normFromEvent(e);
+      setPolygons((cur) => cur.map((p) => p.id === dragVertex.polyId
+        ? { ...p, vertices_pct: p.vertices_pct.map((v, i) => i === dragVertex.index ? [x, y] : v) }
+        : p));
+    };
+    const up = () => {
+      const poly = polygonsRef.current.find((p) => p.id === dragVertex.polyId);
+      setDragVertex(null);
+      if (poly) persistPolygon(poly);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragVertex]);
+
+  const polygonsRef = useRef([]);
+  useEffect(() => { polygonsRef.current = polygons; }, [polygons]);
+
   const onMouseDown = (e) => {
     if (!imgRef.current) return;
     const [x, y] = normFromEvent(e);
@@ -298,21 +336,13 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
     if (!imgRef.current) return;
     const [x, y] = normFromEvent(e);
     if (scaleDraft?.active && scaleDraft.p1) { setScaleDraft({ ...scaleDraft, p2: [x, y] }); return; }
-    if (dragVertex) {
-      setPolygons((cur) => cur.map((p) => p.id === dragVertex.polyId
-        ? { ...p, vertices_pct: p.vertices_pct.map((v, i) => i === dragVertex.index ? [x, y] : v) }
-        : p));
-      return;
-    }
+    if (dragVertex) return; // the window-level drag effect owns vertex moves
     if (draft) setDraft({ ...draft, cx: x, cy: y });
   };
 
   const onMouseUp = async () => {
-    if (dragVertex) {
-      const poly = polygons.find((p) => p.id === dragVertex.polyId);
-      setDragVertex(null);
-      if (poly) await persistPolygon(poly);
-    }
+    // vertex drags end on the WINDOW mouseup (see the drag effect) —
+    // never here, so leaving the img mid-drag can't cut a drag short.
   };
 
   const finalizeDraft = async (points) => {
@@ -593,8 +623,11 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                       data-testid={`pdf-overlay-vertex-${p.id}-${i}`} />
                   )))}
                   {/* per-polygon sqft badge */}
+                  {/* pointer-events-none: the badge sits ON vertex 0 and, being
+                      rendered after the handles, would otherwise swallow its
+                      mousedown — a fully dead handle (SEND-50 item 1). */}
                   {pagePolys.map((p) => (
-                    <div key={`lbl-${p.id}`} className="absolute text-white font-bold" style={{
+                    <div key={`lbl-${p.id}`} className="absolute text-white font-bold pointer-events-none" style={{
                       left: `${p.vertices_pct[0][0] * 100}%`, top: `${p.vertices_pct[0][1] * 100}%`,
                       background: classColor(p.material_class), fontSize: "9px", padding: "1px 3px", lineHeight: 1,
                     }}>
