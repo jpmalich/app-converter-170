@@ -276,17 +276,20 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   // regardless of what's under the cursor, and end on window mouseup.
   useEffect(() => {
     if (!dragVertex) return;
-    const move = (e) => {
-      if (!imgRef.current) return;
-      const [x, y] = normFromEvent(e);
-      setPolygons((cur) => cur.map((p) => p.id === dragVertex.polyId
-        ? { ...p, vertices_pct: p.vertices_pct.map((v, i) => i === dragVertex.index ? [x, y] : v) }
-        : p));
-    };
     const up = () => {
       const poly = polygonsRef.current.find((p) => p.id === dragVertex.polyId);
       setDragVertex(null);
       if (poly) persistPolygon(poly);
+    };
+    const move = (e) => {
+      if (!imgRef.current) return;
+      // SEND-52 3B: button released OUTSIDE the window → no mouseup ever
+      // reaches us; the first buttons-free move on re-entry ends the drag.
+      if (e.buttons === 0) { up(); return; }
+      const [x, y] = normFromEvent(e);
+      setPolygons((cur) => cur.map((p) => p.id === dragVertex.polyId
+        ? { ...p, vertices_pct: p.vertices_pct.map((v, i) => i === dragVertex.index ? [x, y] : v) }
+        : p));
     };
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", up);

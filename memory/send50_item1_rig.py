@@ -34,6 +34,7 @@ if sys.argv[1] == "create":
                      "name": "D4 Clapboard"}]
     rr = s.put(f"{API}/estimates/{eid}", json=est, timeout=15)
     assert rr.status_code == 200, rr.text
+    db.estimates.update_one({"id": eid}, {"$set": {"kind": "siding"}})
     clone = dict(src)
     clone.pop("_id", None)
     clone["test_artifact"] = True

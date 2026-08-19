@@ -127,6 +127,14 @@ def test_img_mousemove_no_longer_owns_the_drag():
     assert "if (dragVertex) return; // the window-level drag effect owns vertex moves" in src
 
 
+def test_buttons_free_move_ends_a_stale_drag():
+    """SEND-52 3B: a release OUTSIDE the window delivers no mouseup; the
+    first buttons-free move on re-entry must end the drag, or the vertex
+    sticks to the cursor until the next press."""
+    src = _jsx()
+    assert "if (e.buttons === 0) { up(); return; }" in src
+
+
 def test_sqft_badge_cannot_swallow_a_vertex_handle():
     src = _jsx()
     badge = src.split("per-polygon sqft badge")[1].split("data-testid")[0]
