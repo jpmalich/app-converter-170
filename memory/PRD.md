@@ -1,5 +1,31 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-19 SEND-54 — RULING ZZ SHIPPED + RULING AAA REGISTERED + HORIZONTAL CENSUS (stamped green)
+1. **Ruling ZZ SHIPPED:** `datum_span_x` measures INNER label edge →
+INNER label edge (a label's glyph box is not the wall by construction).
+Leader offset (10–16 ft) stays reported, never subtracted. Letrick
+post-ZZ boxes: FRONT p1 x 10.2→60.4% y 20.4→29.8; LEFT p2 x 14.3→47.7%
+y 21.3→30.9 (FF only); RIGHT p2 x 49.6→83.1% y 61.5→71.0; REAR none.
+2. **Ruling AAA REGISTERED (sealed, Howard verbatim):** every elevation
+stands on its own evidence — a proposal may not borrow another drawing's
+numbers, not as fallback/sanity check/clamp/tiebreak. Pinned.
+3. **Horizontal census (`memory/send54_horizontal_census.py`, report
+only):** NO elevation prints an overall width on either house — bands
+hold only 1'-0" overhang dims, scale strings, prose ceiling notes, and
+partial dims (Boni rear: 24'/25'/10'/6' — none reads as the 58' face).
+Every Letrick face + Boni left/right carry BOTH a horizontal dim and a
+determinate span, but no dim is an overall width → **LEADER-OFFSET LIMIT
+registered**: not resolvable from elevation text, and under AAA not from
+any other sheet. Registered beside the single-corner faces (Boni FRONT
+labels LEFT corner only, REAR labels RIGHT only — permanent ladder
+faces).
+4. **Pins:** datum-span file now 14 (inner-edge expectations, ZZ pin,
+AAA register pin, limits pins). Live propose pins recompute from the
+same chain → verified inner-edge boxes over HTTP. **Suite stamped:**
+`2026-08-19 01:26 UTC · 5bdd652 · CLEAN · 2617 passed, 9 skipped`.
+5. Next: Howard's field run (noting per-face misses by eye as the item-4
+baseline) → item 2 (ladder) → item 4 (correction metric).
+
 ## 2026-08-19 SEND-52 — 3A INNER-EDGE CALIBRATION (report only) + 3B GUARD (stamped green)
 1. **3A inner-edge census (`memory/send52_inner_edge_census.py`, NOTHING
 shipped):** inner span = right edge of leftmost marker → left edge of
