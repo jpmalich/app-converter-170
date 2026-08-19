@@ -102,6 +102,62 @@ def test_no_datums_propose_the_title_band_and_say_so():
     assert "STARTING SHAPE" in s["basis"]
 
 
+# ---------------------------------------------------------------------------
+# SEND-63 item 2 — proposal bottom drops to TOP OF FOUNDATION (Howard's
+# ruling). DP-1's DERIVED band stays sealed at FIRST FLOOR: the proposal
+# and the derivation now DELIBERATELY differ, and the zone says so.
+# ---------------------------------------------------------------------------
+GEO_TOF = dict(GEO, top_of_foundation={"y": 32.0, "markers": [[7, 10]],
+                                       "span_x": None})
+
+
+def test_located_foundation_datum_drops_the_proposal_bottom():
+    r = {"status": "DERIVED", "page": "1", "ft": 9.08,
+         "span_y": [20.0, 30.0], "band": [15.0, 35.0],
+         "datum_geometry": GEO_TOF}
+    s = _ladder_geometry(r)
+    assert s["y"] == [0.20, 0.32]              # zone bottom at TOF
+    assert s["scale_y"] == [0.20, 0.30]        # scale stays the datum pair
+    assert s["differs_from_derived_band"] is True
+    assert "bottom: TOP OF FOUNDATION datum, this elevation" in s["basis"]
+
+
+def test_no_foundation_datum_keeps_first_floor_and_says_so():
+    r = {"status": "DERIVED", "page": "1", "ft": 9.08,
+         "span_y": [20.0, 30.0], "band": [15.0, 35.0],
+         "datum_geometry": GEO}
+    s = _ladder_geometry(r)
+    assert s["y"] == [0.20, 0.30]
+    assert s["differs_from_derived_band"] is False
+    assert ("bottom: FIRST FLOOR datum — no foundation datum located"
+            in s["basis"])
+
+
+def test_a_foundation_datum_above_first_floor_is_never_used():
+    geo = dict(GEO, top_of_foundation={"y": 25.0, "markers": [[7, 10]],
+                                       "span_x": None})
+    r = {"status": "DERIVED", "page": "1", "ft": 9.08,
+         "span_y": [20.0, 30.0], "band": [15.0, 35.0],
+         "datum_geometry": geo}
+    s = _ladder_geometry(r)
+    assert s["y"] == [0.20, 0.30]
+    assert s["differs_from_derived_band"] is False
+
+
+def test_contested_tier_also_drops_to_foundation():
+    r = {"status": "REFUSED", "page": "1", "band": [15.0, 35.0],
+         "datum_geometry": GEO_TOF,
+         "gaps": [{"from": "TOP_OF_PLATE@20.0", "to": "FIRST_FLOOR@30.0",
+                   "status": "CONTESTED", "value_in": None,
+                   "rails": [{"raw": "a", "in": 109},
+                             {"raw": "b", "in": 119}]}]}
+    s = _ladder_geometry(r)
+    assert s["tier"] == "contested_pick_larger"
+    assert s["y"] == [0.20, 0.32]
+    assert s["scale_y"] == [0.20, 0.30]
+    assert s["differs_from_derived_band"] is True
+
+
 def test_single_ended_span_falls_to_page_width_and_says_so():
     geo = {"top_of_plate": {"y": 20.0, "markers": [[7, 10]], "span_x": None},
            "first_floor": {"y": 30.0, "markers": [[8, 11]], "span_x": None}}
@@ -256,6 +312,26 @@ def test_live_every_letrick_face_proposes_with_basis_and_tier(sess, rig):
     assert back["scale_ref"]["real_ft"] == round(119 / 12.0, 2)  # larger
 
 
+def test_live_tof_bottom_scale_anchor_and_band_note(sess, rig):
+    """SEND-63: on Letrick every face locates TOP OF FOUNDATION — the
+    zone bottom sits at TOF, the trace scale stays anchored to the datum
+    pair, and the zone SAYS it is taller than the derived band."""
+    polys = sess.get(f"{API}/estimates/{rig['eid']}/pdf-overlay",
+                     timeout=15).json()["polygons"]
+    props = [p for p in polys if p["provenance"] == "proposed"]
+    assert props
+    for p in props:
+        ys = sorted({v[1] for v in p["vertices_pct"]})
+        sr = p.get("scale_ref")
+        if sr:
+            # zone bottom is BELOW the scale trace's bottom (TOF < FF on
+            # the page means larger y)
+            assert ys[-1] > sr["p2"][1] - 1e-9
+        assert "bottom: TOP OF FOUNDATION datum" in p["basis"]
+        assert "confirming it will change the quantity" in (p.get("band_note") or "")
+        assert (p.get("proposed_from") or {}).get("bottom_datum") == "TOP_OF_FOUNDATION"
+
+
 def test_live_confirmation_retains_the_basis_and_records_corrected(sess, rig):
     polys = sess.get(f"{API}/estimates/{rig['eid']}/pdf-overlay",
                      timeout=15).json()["polygons"]
@@ -277,6 +353,9 @@ def test_live_confirmation_retains_the_basis_and_records_corrected(sess, rig):
     assert out["provenance"] == "human"
     assert out["confirmed_from"]["tier"] == "contested_pick_larger"
     assert "9'-11" in out["confirmed_from"]["basis"]
+    # SEND-63: the derived-band difference is retained on confirm
+    assert "confirming it will change the quantity" in (
+        out["confirmed_from"].get("band_note") or "")
     ev = rig["db"].zone_correction_events.find_one(
         {"zone_id": back["id"], "event": "CORRECTED"})
     assert ev, "CORRECTED event must be recorded"

@@ -605,6 +605,7 @@ async def upsert_pdf_overlay(
             doc["confirmed_from"] = {
                 "tier": existing.get("tier"),
                 "basis": existing.get("basis"),
+                "band_note": existing.get("band_note"),
                 "proposed_vertices_pct": existing.get("vertices_pct"),
                 "proposed_from": existing.get("proposed_from"),
             }
@@ -796,32 +797,56 @@ def _ladder_geometry(r: dict):
                    "elevation; needs full horizontal adjustment")
         x_measured = False
 
+    def _bottom(y_ff_frac):
+        """SEND-63 item 2 (Howard's ruling): the PROPOSAL bottom drops to
+        TOP OF FOUNDATION when that datum is located on the face's own
+        drawing; else FIRST FLOOR, basis stated either way. DP-1's
+        DERIVED band stays sealed at FIRST FLOOR — the proposal and the
+        derivation now deliberately differ, and the zone says so."""
+        tof = geo.get("top_of_foundation")
+        if tof and tof["y"] / 100.0 > y_ff_frac:
+            return (tof["y"] / 100.0,
+                    "bottom: TOP OF FOUNDATION datum, this elevation",
+                    True)
+        return (y_ff_frac,
+                "bottom: FIRST FLOOR datum — no foundation datum located "
+                "on this drawing", False)
+
     if r.get("status") == "DERIVED" and r.get("span_y"):
-        y = [r["span_y"][0] / 100.0, r["span_y"][1] / 100.0]
-        return {"page": r["page"], "x": x, "y": y, "ft": r.get("ft"),
+        scale_y = [r["span_y"][0] / 100.0, r["span_y"][1] / 100.0]
+        y_bot, bottom_basis, differs = _bottom(scale_y[1])
+        return {"page": r["page"], "x": x, "y": [scale_y[0], y_bot],
+                "scale_y": scale_y, "ft": r.get("ft"),
                 "tier": "derived_chain" if x_measured else "datum_rectangle",
+                "differs_from_derived_band": differs,
                 "basis": (f"derived FIRST FLOOR → TOP OF PLATE chain, "
-                          f"{r.get('ft')} ft; {x_basis}")}
+                          f"{r.get('ft')} ft; {bottom_basis}; {x_basis}")}
     if top and bot:
-        y = [top["y"] / 100.0, bot["y"] / 100.0]
+        scale_y = [top["y"] / 100.0, bot["y"] / 100.0]
+        y_bot, bottom_basis, differs = _bottom(scale_y[1])
+        y = [scale_y[0], y_bot]
         contested = _contested_chain_value(r, top["y"], bot["y"])
         if contested:
             inches, named = contested
             ft = round(inches / 12.0, 2)
-            picked = max(named, key=lambda s: len(s)) if named else ""
-            return {"page": r["page"], "x": x, "y": y, "ft": ft,
+            return {"page": r["page"], "x": x, "y": y, "scale_y": scale_y,
+                    "ft": ft,
                     "tier": "contested_pick_larger",
+                    "differs_from_derived_band": differs,
                     "basis": (f"CONTESTED height — rails "
                               f"{' vs '.join(named)}; proposed from the "
                               f"LARGER ({ft} ft): running short costs a "
                               f"trip, over-ordering costs dollars; never "
-                              f"averaged; {x_basis}"),
+                              f"averaged; {bottom_basis}; {x_basis}"),
                     "contested_rails": named}
-        return {"page": r["page"], "x": x, "y": y, "ft": None,
+        return {"page": r["page"], "x": x, "y": y, "scale_y": scale_y,
+                "ft": None,
                 "tier": "datum_rectangle",
+                "differs_from_derived_band": differs,
                 "basis": ("rectangle from the located datums (FIRST "
                           "FLOOR → TOP OF PLATE y); height NOT "
-                          f"established on this elevation; {x_basis}")}
+                          f"established on this elevation; {bottom_basis}; "
+                          f"{x_basis}")}
     if band:
         return {"page": r["page"],
                 "x": x, "y": [band[0] / 100.0, band[1] / 100.0],
@@ -903,10 +928,20 @@ async def propose_zones(
         band = r.get("band") or [0.0, 100.0]
         scale_ref = None
         if spec.get("ft"):
+            # the trace scale stays anchored to the DATUM PAIR (scale_y),
+            # never the zone's TOF-extended bottom — the chain ft spans
+            # FIRST FLOOR → TOP OF PLATE only.
+            sy = spec.get("scale_y") or [y_top, y_bot]
             scale_ref = {"mode": "trace",
-                         "p1": [0.5, y_top], "p2": [0.5, y_bot],
+                         "p1": [0.5, sy[0]], "p2": [0.5, sy[1]],
                          "real_ft": spec["ft"], "source": "READ",
                          "from_quote": (r.get("chain") or [spec["tier"]])[0]}
+        band_note = None
+        if spec.get("differs_from_derived_band"):
+            band_note = ("this proposal is taller than the derived wall "
+                         "band (bottom at TOP OF FOUNDATION; DP-1's "
+                         "derived band stays FIRST FLOOR) — confirming "
+                         "it will change the quantity")
         doc = {
             "id": str(uuid.uuid4()),
             "estimate_id": est_id,
@@ -926,11 +961,15 @@ async def propose_zones(
             "qty_src": "proposed",
             "tier": spec["tier"],
             "basis": spec["basis"],
+            "band_note": band_note,
             "proposed_from": {"run_id": (run or {}).get("run_id"),
                               "height_ft": spec.get("ft"),
                               "span": r.get("span"),
                               "band": band,
                               "tier": spec["tier"],
+                              "bottom_datum": ("TOP_OF_FOUNDATION"
+                                               if spec.get("differs_from_derived_band")
+                                               else "FIRST_FLOOR"),
                               "span_x_pct": [round(x0 * 100, 2),
                                              round(x1 * 100, 2)]},
             "author_id": "height_build",

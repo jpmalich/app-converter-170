@@ -350,6 +350,18 @@ def derive_face_heights(ot):
                 f = floors[-1]
                 geo["first_floor"] = {"y": f["y"], "markers": f["markers"],
                                       "span_x": datum_span_x(f)}
+                # SEND-63 item 2: the nearest TOP OF FOUNDATION BELOW the
+                # governing FIRST FLOOR — a zone bottom needs the datum's
+                # POSITION, not a dimension (usable even where no rail
+                # spans FF→FND).
+                tofs = [L for L in lines
+                        if L["name"] == "TOP_OF_FOUNDATION"
+                        and L["y"] > f["y"]]
+                if tofs:
+                    t = tofs[0]
+                    geo["top_of_foundation"] = {
+                        "y": t["y"], "markers": t["markers"],
+                        "span_x": datum_span_x(t)}
             r["datum_geometry"] = geo
             r["gaps"] = [{k: g[k] for k in ("from", "to", "status",
                                             "value_in", "rails")}

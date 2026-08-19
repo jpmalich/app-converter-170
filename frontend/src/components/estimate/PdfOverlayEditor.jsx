@@ -770,6 +770,9 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                   {p.provenance === "proposed" && p.basis && (
                     <div className="text-[10px] text-[var(--muted)] mt-0.5" data-testid={`pdf-overlay-basis-${p.id}`}>{p.basis}</div>
                   )}
+                  {p.provenance === "proposed" && p.band_note && (
+                    <div className="text-[10px] font-bold text-[var(--warning-text)] mt-0.5" data-testid={`pdf-overlay-band-note-${p.id}`}>{p.band_note}</div>
+                  )}
                   {p.provenance !== "proposed" && p.confirmed_from?.tier && (
                     <div className="text-[10px] text-[var(--muted)] mt-0.5" data-testid={`pdf-overlay-confirmed-from-${p.id}`}>
                       human-confirmed a proposal based on: {p.confirmed_from.basis || p.confirmed_from.tier}

@@ -163,9 +163,14 @@ def _face_spans_from_run(src):
                  (geo.get("top_of_plate"), geo.get("first_floor"))
                  if d and d.get("span_x")]
         if spans:
+            geo = r.get("datum_geometry") or {}
+            y_bot = r["span_y"][1] / 100.0
+            tof = geo.get("top_of_foundation") or {}
+            if tof.get("y") and tof["y"] / 100.0 > y_bot:
+                y_bot = tof["y"] / 100.0  # SEND-63: proposal bottom at TOF
             out[face] = ([min(s[0] for s in spans) / 100.0,
                           max(s[1] for s in spans) / 100.0],
-                         [r["span_y"][0] / 100.0, r["span_y"][1] / 100.0])
+                         [r["span_y"][0] / 100.0, y_bot])
     return out
 
 
