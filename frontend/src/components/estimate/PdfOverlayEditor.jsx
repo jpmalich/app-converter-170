@@ -412,6 +412,7 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
       const n = (data?.proposed || []).length;
       if (n) toast.success(`${n} zone${n === 1 ? "" : "s"} proposed — provisional until you confirm`);
       else toast.warning("No face established a height — nothing to propose");
+      (data?.skipped || []).forEach((s) => toast.warning(`${s.face_id}: ${s.reason}`));
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Propose failed");
     } finally {

@@ -119,7 +119,9 @@ def datum_lines(runs, y0, y1, furn_idx):
                 b0 = r["loc"]["y_pct"]
                 b1 = b0 + r["loc"]["h_pct"]
                 if y0 <= (b0 + b1) / 2 <= y1:
-                    inst.append({"name": name, "b0": b0, "b1": b1})
+                    inst.append({"name": name, "b0": b0, "b1": b1,
+                                 "x0": r["loc"]["x_pct"],
+                                 "x1": r["loc"]["x_pct"] + r["loc"]["w_pct"]})
                 break
     lines = []
     for i in sorted(inst, key=lambda d: d["b0"]):
@@ -127,12 +129,34 @@ def datum_lines(runs, y0, y1, furn_idx):
             if L["name"] == i["name"] and i["b0"] <= L["b1"] and i["b1"] >= L["b0"]:
                 L["b0"] = min(L["b0"], i["b0"])
                 L["b1"] = max(L["b1"], i["b1"])
+                L["markers"].append([i["x0"], i["x1"]])
                 break
         else:
-            lines.append(dict(i))
+            d = {"name": i["name"], "b0": i["b0"], "b1": i["b1"],
+                 "markers": [[i["x0"], i["x1"]]]}
+            lines.append(d)
     for L in lines:
         L["y"] = round((L["b0"] + L["b1"]) / 2, 1)
     return sorted(lines, key=lambda L: L["y"])
+
+
+def datum_span_x(line):
+    """SEND-50 item 3: a datum LABEL is a short string — one box's width
+    is a few percent of the page, never the wall. The labels print at
+    BOTH wall corners, so the wall's x-extent at that datum y is the span
+    from the LEFTMOST to the RIGHTMOST marker box. INDETERMINATE (None)
+    when single-ended: fewer than two markers, OR the leftmost and
+    rightmost boxes x-overlap (two reads of the SAME corner label are one
+    end, not a span — structural, no threshold). No extrapolation, no
+    symmetry assumption, no band-width fallback."""
+    ms = line.get("markers") or []
+    if len(ms) < 2:
+        return None
+    left = min(ms, key=lambda m: m[0])
+    right = max(ms, key=lambda m: m[1])
+    if left[1] > right[0]:  # boxes overlap in x → same corner
+        return None
+    return [round(left[0], 2), round(right[1], 2)]
 
 
 def vertical_rails(runs, y0, y1):
@@ -308,6 +332,21 @@ def derive_face_heights(ot):
             r["page"] = pg
             r["band"] = [round(y0, 1), round(y1, 1)]
             r["datum_lines"] = [f"{L['name']}@{L['y']}" for L in lines]
+            # SEND-50 item 3: the datum pair's own geometry (y AND marker
+            # x-spans) — recorded on EVERY evaluated face, refusing ones
+            # included (their datums may still be located).
+            geo = {}
+            plates = [L for L in lines if L["name"] == "TOP_OF_PLATE"]
+            floors = [L for L in lines if L["name"] == "FIRST_FLOOR"]
+            if plates:
+                p = plates[0]
+                geo["top_of_plate"] = {"y": p["y"], "markers": p["markers"],
+                                       "span_x": datum_span_x(p)}
+            if floors:
+                f = floors[-1]
+                geo["first_floor"] = {"y": f["y"], "markers": f["markers"],
+                                      "span_x": datum_span_x(f)}
+            r["datum_geometry"] = geo
             r["gaps"] = [{k: g[k] for k in ("from", "to", "status",
                                             "value_in", "rails")}
                          for g in gaps]

@@ -726,12 +726,39 @@ async def propose_zones(
         {"estimate_id": est_id, "provenance": "proposed"})
     now = datetime.now(timezone.utc)
     created = []
+    skipped = []
     face_to_id = {"front": "front", "rear": "back",
                   "left": "left", "right": "right"}
     for face, r in faces.items():
         if r.get("status") != "DERIVED" or not r.get("span_y"):
             continue
         y_top, y_bot = (r["span_y"][0] / 100.0), (r["span_y"][1] / 100.0)
+        # SEND-50 item 3 — HORIZONTAL: the wall's x-extent is the measured
+        # datum MARKER span (labels print at both wall corners), never the
+        # band width. Census finding (both houses): the markers sit at the
+        # end of leader lines OUTSIDE the wall — the span lands ~+20 ft
+        # wide of the sealed readings. That offset is REPORTED, not
+        # subtracted (a guessed constant is a threshold). Single-ended
+        # datums are INDETERMINATE: such a face falls to the item-2
+        # proposal ladder (not yet authorized) and proposes nothing here.
+        geo = r.get("datum_geometry") or {}
+        spans, span_names = [], []
+        for key, label in (("top_of_plate", "TOP_OF_PLATE"),
+                           ("first_floor", "FIRST_FLOOR")):
+            d = geo.get(key)
+            if d and d.get("span_x"):
+                spans.append(d["span_x"])
+                span_names.append(label)
+        if not spans:
+            skipped.append({
+                "face_id": face_to_id[face],
+                "reason": ("wall x-extent INDETERMINATE — datum markers "
+                           "single-ended on this elevation; no proposal "
+                           "(falls to the proposal ladder, a separate "
+                           "send)")})
+            continue
+        x0 = min(s[0] for s in spans) / 100.0
+        x1 = max(s[1] for s in spans) / 100.0
         page = ot.get(r["page"]) or {}
         band = r.get("band") or [0.0, 100.0]
         doc = {
@@ -740,8 +767,8 @@ async def propose_zones(
             "page": int(r["page"]),
             "face_id": face_to_id[face],
             "material_class": "siding",
-            "vertices_pct": [[0.02, y_top], [0.98, y_top],
-                             [0.98, y_bot], [0.02, y_bot]],
+            "vertices_pct": [[x0, y_top], [x1, y_top],
+                             [x1, y_bot], [x0, y_bot]],
             "scale_ref": {"mode": "trace",
                           "p1": [0.5, y_top], "p2": [0.5, y_bot],
                           "real_ft": r["ft"], "source": "READ",
@@ -757,7 +784,13 @@ async def propose_zones(
             "proposed_from": {"run_id": (run or {}).get("run_id"),
                               "height_ft": r["ft"],
                               "span": r.get("span"),
-                              "band": band},
+                              "band": band,
+                              "span_x_pct": [round(x0 * 100, 2),
+                                             round(x1 * 100, 2)],
+                              "span_x_basis": ("datum marker span ("
+                                               + " + ".join(span_names)
+                                               + ") — leftmost to rightmost"
+                                               " corner label")},
             "author_id": "height_build",
             "author_email": "",
             "created_at": now,
@@ -768,7 +801,7 @@ async def propose_zones(
     for c in created:
         c["created_at"] = str(c["created_at"])
         c["updated_at"] = str(c["updated_at"])
-    return {"ok": True, "proposed": created,
+    return {"ok": True, "proposed": created, "skipped": skipped,
             "note": ("proposed zones are PROVISIONAL — they feed no "
                      "quantity until a human confirms or bumps them")}
 
