@@ -1,5 +1,27 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-19 SEND-52 — 3A INNER-EDGE CALIBRATION (report only) + 3B GUARD (stamped green)
+1. **3A inner-edge census (`memory/send52_inner_edge_census.py`, NOTHING
+shipped):** inner span = right edge of leftmost marker → left edge of
+rightmost. Residuals vs sealed: Letrick front +10.6/+10.1 (FF/TP), left
++12.2, right +12.7/+12.0; Boni left +15.4/+15.7, right +11.6. Verdict:
+STILL ADDITIVE (larger walls do NOT carry larger residuals — front 54'
+carries ~10 ft, sides 30' carry ~12 ft), moderately consistent (10–16 ft
+≈ 5–8 ft of leader per side), NOT erratic → markers are what we think:
+labels at the end of leader lines of varying length. Residual REPORTED,
+not subtracted. Outer-edge spans remain the shipped proposal geometry.
+2. **3B shipped:** `e.buttons === 0` guard in the window move handler —
+a release outside the window ends the drag on the first buttons-free
+move on re-entry (persists via the same `up` path). Drag sanity
+re-verified in browser: (150,40) → (151,41). Pin added (13 in the
+vertex-drag file). setPointerCapture held in reserve per Howard.
+3. **Coverage limit stated (tracked, not acted on):** Boni FRONT labels
+only its LEFT corner, Boni REAR only its RIGHT — those two faces can
+NEVER be spanned by datum markers on any run; they belong to item 2's
+ladder PERMANENTLY.
+4. **Suite stamped:** `2026-08-19 01:09 UTC · cf52485 · CLEAN · 2613
+passed, 9 skipped`. Next: Howard's field run → item 2 → item 4.
+
 ## 2026-08-19 SEND-51 / SEND-50 ITEM 3 — DATUM-BOX PROPOSALS (stamped green)
 1. **Item-1 robustness answers (reported, not rebuilt):** unmount teardown
 CLEAN (effect cleanup removes both window listeners on unmount and drag
