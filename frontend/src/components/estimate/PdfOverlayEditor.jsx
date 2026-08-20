@@ -368,6 +368,8 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
     });
   };
 
+  const [faceAsk, setFaceAsk] = useState(null); // SEND-66: FACE_AMBIGUOUS → ask, never guess
+
   const persistPolygon = async (poly) => {
     try {
       const body = {
@@ -383,6 +385,8 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
         page_h_px: imgNat.h || poly.page_h_px || null,
         // SEND-48: ANY human touch (draw, bump, confirm) makes it HUMAN.
         provenance: "human",
+        // SEND-66: only true when the user answered the explicit face ask.
+        face_confirmed: poly.face_confirmed || false,
       };
       const { data } = await api.put(`/estimates/${est.id}/pdf-overlay`, body);
       const saved = data?.polygon;
@@ -391,6 +395,9 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
         return [...rest, saved];
       });
       setSelectedId(saved.id);
+      if (saved.face_resolution?.disagreed_with_tag) {
+        toast.info(`Face resolved from the drawing band: ${saved.face_id} (tag said ${saved.face_resolution.submitted_face_id})`);
+      }
       if (data?.scale_read === false) {
         toast.warning("Zone saved — scale not read on this view, area refused");
       } else {
@@ -399,7 +406,13 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
       await refreshLines();
       onMutated?.();
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to save zone");
+      const d = e?.response?.data?.detail;
+      if (e?.response?.status === 409 && d?.code === "FACE_AMBIGUOUS") {
+        // SEND-66: the write is NOT guessed — ask which face, and say why.
+        setFaceAsk({ poly, reason: d.reason, candidates: d.candidates || [] });
+        return;
+      }
+      toast.error((typeof d === "string" && d) || "Failed to save zone");
     }
   };
 
@@ -547,6 +560,29 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   return (
     <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-3"
       data-testid="pdf-overlay-modal" onClick={onClose}>
+      {faceAsk && (
+        <div className="absolute inset-0 z-[70] bg-black/50 flex items-center justify-center p-4"
+          data-testid="pdf-overlay-face-ask" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white border border-[var(--border)] max-w-md w-full p-4">
+            <div className="font-heading text-sm mb-1">Which face is this zone?</div>
+            <div className="text-[11px] text-[var(--muted)] mb-3" data-testid="pdf-overlay-face-ask-reason">{faceAsk.reason}</div>
+            <div className="flex flex-wrap gap-2">
+              {faceAsk.candidates.map((c) => (
+                <button key={c} type="button"
+                  className="px-3 py-1.5 border border-[var(--ai)] text-[var(--ai)] text-[11px] font-bold uppercase hover:bg-[var(--ai)] hover:text-white"
+                  data-testid={`pdf-overlay-face-ask-${c.replace(/[^a-z]+/g, "-")}`}
+                  onClick={() => {
+                    const poly = { ...faceAsk.poly, face_id: c, face_confirmed: true };
+                    setFaceAsk(null);
+                    persistPolygon(poly);
+                  }}>{c}</button>
+              ))}
+              <button type="button" className="px-3 py-1.5 border border-[var(--border)] text-[11px] uppercase"
+                data-testid="pdf-overlay-face-ask-cancel" onClick={() => setFaceAsk(null)}>cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="bg-[var(--surface)] w-full h-[92vh] max-w-6xl flex flex-col border border-[var(--border)]"
         onClick={(e) => e.stopPropagation()}>
         {/* Header */}
@@ -772,6 +808,25 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                   )}
                   {p.provenance === "proposed" && p.band_note && (
                     <div className="text-[10px] font-bold text-[var(--warning-text)] mt-0.5" data-testid={`pdf-overlay-band-note-${p.id}`}>{p.band_note}</div>
+                  )}
+                  {p.provenance === "proposed" && p.geometry_tier && (
+                    <div className={`text-[9px] uppercase font-bold mt-0.5 ${p.geometry_tier === "wall_outline" ? "text-[var(--success)]" : p.geometry_tier === "datum_span_after_linework_refused" ? "text-[var(--danger)]" : "text-[var(--muted)]"}`}
+                      data-testid={`pdf-overlay-geom-${p.id}`}>
+                      {p.geometry_tier === "wall_outline" ? "wall outline (line-work)" : p.geometry_tier === "datum_span_after_linework_refused" ? "datum span — line-work refused" : "datum span"}
+                    </div>
+                  )}
+                  {p.derived_gable_sqft != null && (
+                    <div className="text-[10px] text-[var(--muted)] mt-0.5" data-testid={`pdf-overlay-gable-derived-${p.id}`}>
+                      derived gable: {p.derived_gable_sqft} ft²
+                    </div>
+                  )}
+                  {p.divergence_notice && (
+                    <div className="text-[10px] font-bold text-[var(--danger)] mt-0.5" data-testid={`pdf-overlay-gable-divergence-${p.id}`}>{p.divergence_notice}</div>
+                  )}
+                  {p.face_resolution?.disagreed_with_tag && (
+                    <div className="text-[10px] font-bold text-[var(--warning-text)] mt-0.5" data-testid={`pdf-overlay-face-resolved-${p.id}`}>
+                      face resolved from the drawing band: {p.face_id} (tag said {p.face_resolution.submitted_face_id})
+                    </div>
                   )}
                   {p.provenance !== "proposed" && p.confirmed_from?.tier && (
                     <div className="text-[10px] text-[var(--muted)] mt-0.5" data-testid={`pdf-overlay-confirmed-from-${p.id}`}>

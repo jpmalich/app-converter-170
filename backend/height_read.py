@@ -344,11 +344,15 @@ def derive_face_heights(ot):
             floors = [L for L in lines if L["name"] == "FIRST_FLOOR"]
             if plates:
                 p = plates[0]
-                geo["top_of_plate"] = {"y": p["y"], "markers": p["markers"],
+                geo["top_of_plate"] = {"y": p["y"], "b0": p["b0"],
+                                       "b1": p["b1"],
+                                       "markers": p["markers"],
                                        "span_x": datum_span_x(p)}
             if floors:
                 f = floors[-1]
-                geo["first_floor"] = {"y": f["y"], "markers": f["markers"],
+                geo["first_floor"] = {"y": f["y"], "b0": f["b0"],
+                                      "b1": f["b1"],
+                                      "markers": f["markers"],
                                       "span_x": datum_span_x(f)}
                 # SEND-63 item 2: the nearest TOP OF FOUNDATION BELOW the
                 # governing FIRST FLOOR — a zone bottom needs the datum's
@@ -360,7 +364,8 @@ def derive_face_heights(ot):
                 if tofs:
                     t = tofs[0]
                     geo["top_of_foundation"] = {
-                        "y": t["y"], "markers": t["markers"],
+                        "y": t["y"], "b0": t["b0"], "b1": t["b1"],
+                        "markers": t["markers"],
                         "span_x": datum_span_x(t)}
             r["datum_geometry"] = geo
             r["gaps"] = [{k: g[k] for k in ("from", "to", "status",

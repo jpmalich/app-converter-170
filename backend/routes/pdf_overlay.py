@@ -186,6 +186,9 @@ class PolygonWriteIn(BaseModel):
     # confirmable) and NEVER feed a quantity; "human" zones are the
     # contractor's hand. Confirming/bumping a proposal makes it human.
     provenance: str = "human"
+    # SEND-66: set ONLY by the UI's explicit face pick after the API
+    # returned FACE_AMBIGUOUS — the human's answer, recorded as such.
+    face_confirmed: bool = False
 
 
 # ---------------------------------------------------------------------
@@ -509,6 +512,90 @@ def _validate_polygon(p: PolygonWriteIn) -> None:
         )
 
 
+_BAND_FACE_TO_ID = {"front": "front", "rear": "back",
+                    "left": "left", "right": "right"}
+
+
+def resolve_face_from_bands(bands: dict, vertices_pct: list,
+                            face_id: str) -> dict:
+    """SEND-66 (Howard's ruling, P0 money bug): a human zone's face
+    resolves from its CENTROID'S ELEVATION BAND on that page — never the
+    page tag. If the zone straddles two bands or the centroid sits in no
+    band, the write is NOT GUESSED: AMBIGUOUS comes back and the UI asks
+    for the face explicitly. Pure — the same band carving the height
+    read already uses.
+
+    bands: {face_name: (y0, y1)} percent-of-page from `face_bands`.
+    vertices_pct: [[x, y], ...] page-normalised [0, 1].
+    face_id: the submitted tag ("front", "gable:front", "dormer:x")."""
+    if face_id.startswith("dormer:"):
+        return {"status": "NO_BANDS",
+                "reason": "a dormer zone carries no elevation face"}
+    if not bands or not vertices_pct:
+        return {"status": "NO_BANDS",
+                "reason": ("no face bands carved on this page — the tag "
+                           "stands")}
+
+    def _band_of(y_pct):
+        # 1e-3 pct boundary tolerance: a vertex constructed ON the band
+        # edge (a gable top at the band's own y0) must not flip bands on
+        # float round-trip noise.
+        for f, (b0, b1) in bands.items():
+            if b0 - 1e-3 <= y_pct < b1 - 1e-3:
+                return f
+        return None
+
+    cy = sum(v[1] for v in vertices_pct) / len(vertices_pct) * 100.0
+    c_face = _band_of(cy)
+    is_gable = face_id.startswith("gable:")
+    if c_face is None:
+        cands = sorted(_BAND_FACE_TO_ID[f] for f in bands)
+        return {"status": "AMBIGUOUS",
+                "reason": ("this zone's centroid sits in no elevation "
+                           "drawing's band on this sheet — which face is "
+                           "it? A zone outside every drawing may have "
+                           "been drawn in the title block or margin by "
+                           "accident."),
+                "candidates": [("gable:" + c) if is_gable else c
+                               for c in cands]}
+    touched = {c_face} | {f for f in (_band_of(v[1] * 100.0)
+                                      for v in vertices_pct) if f}
+    if len(touched) > 1:
+        names = " and ".join(sorted(f.upper() for f in touched))
+        return {"status": "AMBIGUOUS",
+                "reason": (f"this zone sits across the {names} drawings "
+                           "on this sheet — which face is it? A zone "
+                           "drawn across two elevations is usually an "
+                           "accident: fixing the shape may be the real "
+                           "answer."),
+                "candidates": [("gable:" + _BAND_FACE_TO_ID[f]) if is_gable
+                               else _BAND_FACE_TO_ID[f]
+                               for f in sorted(touched)]}
+    base = _BAND_FACE_TO_ID[c_face]
+    resolved = ("gable:" + base) if is_gable else base
+    sub = face_id[len("gable:"):] if is_gable else face_id
+    return {"status": "RESOLVED", "resolved_face_id": resolved,
+            "band_face": c_face, "disagrees": sub != base}
+
+
+async def _latest_ocr(est_id: str):
+    """The latest done blueprint run's persisted OCR pages + the run doc
+    (run_id, source_files). Inline pages or the spillover ref."""
+    run = await db.ai_blueprint_runs.find_one(
+        {"estimate_id": est_id, "status": "done"},
+        {"_id": 0, "result.raw_ai._ocr_text_by_page": 1,
+         "result.raw_ai._ocr_text_ref": 1, "run_id": 1,
+         "source_files": 1},
+        sort=[("created_at", -1)])
+    raw_ai = ((run or {}).get("result") or {}).get("raw_ai") or {}
+    ot = raw_ai.get("_ocr_text_by_page")
+    if not ot and raw_ai.get("_ocr_text_ref"):
+        ref = await db.ai_blueprint_ocr.find_one(
+            {"run_id": raw_ai["_ocr_text_ref"]}, {"_id": 0, "pages": 1})
+        ot = (ref or {}).get("pages")
+    return (ot if isinstance(ot, dict) and ot else None), run
+
+
 @router.get("/estimates/{est_id}/pdf-overlay")
 async def get_pdf_overlay(
     est_id: str, user: dict = Depends(get_current_user),
@@ -560,24 +647,56 @@ async def upsert_pdf_overlay(
     est = await _est_or_404(est_id, user)
     pid = payload.id or str(uuid.uuid4())
     now = datetime.now(timezone.utc)
+    verts = [[float(x), float(y)] for x, y in payload.vertices_pct]
+
+    # SEND-66 INVARIANT: a zone whose tag and centroid band disagree
+    # never binds silently, on any path. The face resolves from the
+    # centroid's band; straddle / no band → 409, the UI asks.
+    from height_read import elevation_page_faces
+    ot, _run = await _latest_ocr(est_id)
+    bands = ((elevation_page_faces(ot) if ot else {})
+             .get(str(payload.page))) or {}
+    face_res = resolve_face_from_bands(bands, verts, payload.face_id)
+    face_id = payload.face_id
+    if face_res["status"] == "AMBIGUOUS":
+        if payload.face_confirmed:
+            face_resolution = {"method": "human_choice_on_ambiguity",
+                               "reason": face_res["reason"],
+                               "chosen_face_id": payload.face_id}
+        else:
+            raise HTTPException(status_code=409, detail={
+                "code": "FACE_AMBIGUOUS",
+                "reason": face_res["reason"],
+                "candidates": face_res["candidates"],
+                "message": ("pick the face explicitly — the write is "
+                            "not guessed")})
+    elif face_res["status"] == "RESOLVED":
+        face_id = face_res["resolved_face_id"]
+        face_resolution = {"method": "centroid_band",
+                           "band_face": face_res["band_face"],
+                           "submitted_face_id": payload.face_id,
+                           "resolved_face_id": face_id,
+                           "disagreed_with_tag": face_res["disagrees"]}
+    else:
+        face_resolution = {"method": "tag_stands_no_bands",
+                           "reason": face_res["reason"]}
 
     scale_ref = payload.scale_ref.dict() if payload.scale_ref else None
     sqft = polygon_sqft_from_scale(
-        [[float(x), float(y)] for x, y in payload.vertices_pct],
-        scale_ref, payload.page_w_px, payload.page_h_px,
+        verts, scale_ref, payload.page_w_px, payload.page_h_px,
     )
     baseline = await _current_baseline_for_class(
         est, est_id, payload.material_class, pid)
     surface_sqft, surface_refusal = surface_derived_snapshot(
-        est, payload.face_id)
+        est, face_id)
     doc = {
         "id": pid,
         "estimate_id": est_id,
         "page": int(payload.page),
-        "face_id": payload.face_id,
+        "face_id": face_id,
+        "face_resolution": face_resolution,
         "material_class": payload.material_class,
-        "vertices_pct": [[float(x), float(y)]
-                         for x, y in payload.vertices_pct],
+        "vertices_pct": verts,
         "scale_ref": scale_ref,
         "page_w_px": payload.page_w_px,
         "page_h_px": payload.page_h_px,
@@ -606,6 +725,9 @@ async def upsert_pdf_overlay(
                 "tier": existing.get("tier"),
                 "basis": existing.get("basis"),
                 "band_note": existing.get("band_note"),
+                "geometry_tier": existing.get("geometry_tier"),
+                "derived_gable_sqft": existing.get("derived_gable_sqft"),
+                "divergence_notice": existing.get("divergence_notice"),
                 "proposed_vertices_pct": existing.get("vertices_pct"),
                 "proposed_from": existing.get("proposed_from"),
             }
@@ -858,7 +980,8 @@ def _ladder_geometry(r: dict):
 
 
 _TIER_RANK = {"derived_chain": 0, "contested_pick_larger": 1,
-              "datum_rectangle": 2, "band_rectangle": 3}
+              "datum_rectangle": 2, "band_rectangle": 3,
+              "gable_rectangle": 4}
 
 
 def _best_ladder_spec(face_result: dict):
@@ -886,22 +1009,27 @@ async def propose_zones(
         raise HTTPException(
             status_code=423,
             detail="protected estimate — proposals are derived writes")
-    run = await db.ai_blueprint_runs.find_one(
-        {"estimate_id": est_id, "status": "done"},
-        {"_id": 0, "result.raw_ai._ocr_text_by_page": 1,
-         "result.raw_ai._ocr_text_ref": 1, "run_id": 1},
-        sort=[("created_at", -1)])
-    raw_ai = ((run or {}).get("result") or {}).get("raw_ai") or {}
-    ot = raw_ai.get("_ocr_text_by_page")
-    if not ot and raw_ai.get("_ocr_text_ref"):
-        ref = await db.ai_blueprint_ocr.find_one(
-            {"run_id": raw_ai["_ocr_text_ref"]}, {"_id": 0, "pages": 1})
-        ot = (ref or {}).get("pages")
-    if not isinstance(ot, dict) or not ot:
+    ot, run = await _latest_ocr(est_id)
+    if not ot:
         raise HTTPException(
             status_code=409,
             detail="no persisted OCR text on this estimate's blueprint "
                    "run — nothing to propose from")
+
+    # SEND-69: the line-work read consumes the run's retained VECTOR
+    # source (single PDF). Absent → NOT_ATTEMPTED, disclosed per zone.
+    from linework_read import page_segments, wall_outline_from_segments
+    src_pdf = None
+    pdf_name = next((f.get("name")
+                     for f in ((run or {}).get("source_files") or [])
+                     if isinstance(f, dict) and f.get("kind") == "pdf"),
+                    None)
+    if pdf_name:
+        from config import UPLOAD_DIR
+        cand_path = UPLOAD_DIR / pdf_name
+        if cand_path.exists():
+            src_pdf = str(cand_path)
+    seg_cache: dict = {}
 
     from height_read import derive_face_heights
     faces = derive_face_heights(ot)
@@ -923,9 +1051,68 @@ async def propose_zones(
                 "reason": ("no evaluated elevation drawing for this face "
                            "— nothing to propose from")})
             continue
+        # SEND-69 — the LINE-WORK read (wall outline only). When it
+        # resolves, the drawn outline REPLACES the datum-span geometry
+        # and the basis says so; when it cannot, the datum span stands
+        # under ITS OWN geometry tier — a fallback never wears a read's
+        # clothes.
+        cand = next((c for c in (r.get("candidates") or [r])
+                     if c.get("page") == spec["page"]), r)
+        geo = cand.get("datum_geometry") or {}
+        band = cand.get("band") or [0.0, 100.0]
+        top_d, bot_d = geo.get("top_of_plate"), geo.get("first_floor")
+        bot_box = bot_d
+        if spec.get("differs_from_derived_band"):
+            tof = geo.get("top_of_foundation") or {}
+            if tof.get("b0") is not None:
+                bot_box = tof
+        lw = {"status": "NOT_ATTEMPTED",
+              "reason": "datum pair not located on this drawing"}
+        if not src_pdf:
+            lw = {"status": "NOT_ATTEMPTED",
+                  "reason": "no single-PDF vector source retained on "
+                            "the run"}
+        elif (top_d and bot_box and top_d.get("b0") is not None
+                and bot_box.get("b0") is not None):
+            try:
+                idx = int(spec["page"]) - 1
+                if idx not in seg_cache:
+                    seg_cache[idx] = page_segments(src_pdf, idx)
+                mask = [(u["loc"]["x_pct"], u["loc"]["y_pct"],
+                         u["loc"]["x_pct"] + u["loc"]["w_pct"],
+                         u["loc"]["y_pct"] + u["loc"]["h_pct"])
+                        for u in (ot.get(spec["page"]) or {}).get("runs")
+                        or []]
+                lw = wall_outline_from_segments(
+                    seg_cache[idx], (band[0], band[1]),
+                    (top_d["b0"], top_d["b1"]),
+                    (bot_box["b0"], bot_box["b1"]), mask)
+            except Exception as e:
+                lw = {"status": "INDETERMINATE",
+                      "reason": f"line-work read failed: {e}"}
+        geometry_tier = "datum_span"
+        if lw.get("status") == "RESOLVED":
+            geometry_tier = "wall_outline"
+            spec["datum_span_x_pct"] = [round(spec["x"][0] * 100, 2),
+                                        round(spec["x"][1] * 100, 2)]
+            spec["outline_vertices"] = lw["vertices_pct"]
+            spec["x"] = [lw["x_span"][0] / 100.0,
+                         lw["x_span"][1] / 100.0]
+            spec["y"] = [lw["y_top"] / 100.0, lw["y_bot"] / 100.0]
+            spec["basis"] += (
+                "; GEOMETRY FROM WALL OUTLINE (line-work read): lateral "
+                "bounds are drawn boundaries spanning the datum "
+                "interval, top/bottom the drawn datum-level lines; the "
+                "datum-span figures are kept in proposed_from for "
+                "comparison")
+        elif lw.get("status") == "INDETERMINATE":
+            geometry_tier = "datum_span_after_linework_refused"
+            spec["basis"] += (
+                "; line-work could not resolve the outline on this "
+                "drawing — this is the datum-marker span, which carries "
+                f"the leader offset ({lw.get('reason')})")
         (x0, x1), (y_top, y_bot) = spec["x"], spec["y"]
         page = ot.get(spec["page"]) or {}
-        band = r.get("band") or [0.0, 100.0]
         scale_ref = None
         if spec.get("ft"):
             # the trace scale stays anchored to the DATUM PAIR (scale_y),
@@ -948,8 +1135,9 @@ async def propose_zones(
             "page": int(spec["page"]),
             "face_id": face_to_id[face],
             "material_class": "siding",
-            "vertices_pct": [[x0, y_top], [x1, y_top],
-                             [x1, y_bot], [x0, y_bot]],
+            "vertices_pct": (spec.get("outline_vertices")
+                             or [[x0, y_top], [x1, y_top],
+                                 [x1, y_bot], [x0, y_bot]]),
             "scale_ref": scale_ref,
             "page_w_px": page.get("page_w"),
             "page_h_px": page.get("page_h"),
@@ -962,6 +1150,7 @@ async def propose_zones(
             "tier": spec["tier"],
             "basis": spec["basis"],
             "band_note": band_note,
+            "geometry_tier": geometry_tier,
             "proposed_from": {"run_id": (run or {}).get("run_id"),
                               "height_ft": spec.get("ft"),
                               "span": r.get("span"),
@@ -971,7 +1160,14 @@ async def propose_zones(
                                                if spec.get("differs_from_derived_band")
                                                else "FIRST_FLOOR"),
                               "span_x_pct": [round(x0 * 100, 2),
-                                             round(x1 * 100, 2)]},
+                                             round(x1 * 100, 2)],
+                              "datum_span_x_pct": spec.get("datum_span_x_pct"),
+                              "geometry_tier": geometry_tier,
+                              "linework": {
+                                  "status": lw.get("status"),
+                                  "reason": lw.get("reason"),
+                                  "n_spanning": lw.get("n_spanning"),
+                                  "n_vertices": lw.get("n_vertices")}},
             "author_id": "height_build",
             "author_email": "",
             "created_at": now,
@@ -979,6 +1175,95 @@ async def propose_zones(
         }
         await db.pdf_overlay_polygons.insert_one(doc)
         created.append({k: v for k, v in doc.items() if k != "_id"})
+        # SEND-68 — GABLE STARTING SHAPES. Only faces the roof read says
+        # carry a gable end (the walk detail row derived a gable or
+        # named its refusal). A band_rectangle-style STARTING SHAPE that
+        # states plainly the triangle could not be read — NO triangle
+        # computed from pitch and width (a computed triangle would be a
+        # derived shape wearing a measured shape's clothes; the 0.70
+        # convention lives on the derived side and stays there).
+        walk = ((est.get("hover_measurements") or {})
+                .get("_wall_walk_detail") or [])
+        wrow = next((d for d in walk if isinstance(d, dict)
+                     and str(d.get("label") or "").lower()
+                     == face_to_id[face]), None)
+        carries_gable = bool(wrow and (
+            float(wrow.get("gable_sqft") or 0) > 0
+            or wrow.get("gable_refusal")))
+        if carries_gable:
+            plate = geo.get("top_of_plate")
+            if not plate:
+                skipped.append({
+                    "face_id": f"gable:{face_to_id[face]}",
+                    "reason": ("gable starting shape needs the TOP OF "
+                               "PLATE datum on this drawing — not "
+                               "located")})
+            else:
+                g_top = round(band[0] / 100.0, 4)
+                g_bot = round(plate["y"] / 100.0, 4)
+                g_derived = (round(float(wrow["gable_sqft"]), 2)
+                             if float(wrow.get("gable_sqft") or 0) > 0
+                             else None)
+                if g_derived is not None:
+                    notice = (f"this face's gable already derives at "
+                              f"{g_derived} ft². This starting rectangle "
+                              "is larger than the gable and will "
+                              "OVERSTATE it if confirmed — pull it in to "
+                              "the roof line first.")
+                else:
+                    notice = ("this face's gable area is not derivable ("
+                              + str(wrow.get("gable_refusal"))
+                              + ") — this rectangle is still larger than "
+                              "the gable triangle and will OVERSTATE it "
+                              "if confirmed as-is; pull it in to the "
+                              "roof line first.")
+                gdoc = {
+                    "id": str(uuid.uuid4()),
+                    "estimate_id": est_id,
+                    "page": int(spec["page"]),
+                    "face_id": f"gable:{face_to_id[face]}",
+                    "material_class": "siding",
+                    "vertices_pct": [[x0, g_top], [x1, g_top],
+                                     [x1, g_bot], [x0, g_bot]],
+                    "scale_ref": scale_ref,
+                    "page_w_px": page.get("page_w"),
+                    "page_h_px": page.get("page_h"),
+                    "sqft": None,
+                    "derived_baseline_qty": None,
+                    "surface_derived_sqft": None,
+                    "surface_refusal": None,
+                    "provenance": "proposed",
+                    "qty_src": "proposed",
+                    "tier": "gable_rectangle",
+                    "geometry_tier": "datum_span",
+                    "derived_gable_sqft": g_derived,
+                    "divergence_notice": notice,
+                    "basis": ("GABLE STARTING SHAPE — the roof read puts "
+                              "a gable end on this face; the triangle "
+                              "could not be read from the drawing, and "
+                              "no triangle is computed from pitch and "
+                              "width. bottom: TOP OF PLATE datum, this "
+                              "elevation (the body zone's top); top: top "
+                              "of this face's drawing band — the ridge "
+                              "could not be read from the drawing; "
+                              "sides: the body zone's span, same basis"),
+                    "band_note": None,
+                    "proposed_from": {
+                        "run_id": (run or {}).get("run_id"),
+                        "tier": "gable_rectangle",
+                        "band": band,
+                        "derived_gable_sqft": g_derived,
+                        "gable_refusal": wrow.get("gable_refusal"),
+                        "span_x_pct": [round(x0 * 100, 2),
+                                       round(x1 * 100, 2)]},
+                    "author_id": "height_build",
+                    "author_email": "",
+                    "created_at": now,
+                    "updated_at": now,
+                }
+                await db.pdf_overlay_polygons.insert_one(gdoc)
+                created.append({k: v for k, v in gdoc.items()
+                                if k != "_id"})
     for c in created:
         c["created_at"] = str(c["created_at"])
         c["updated_at"] = str(c["updated_at"])
