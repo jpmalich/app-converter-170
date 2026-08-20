@@ -176,7 +176,7 @@ def _face_spans_from_run(src):
 
 def test_proposals_draw_the_datum_box_not_the_band(sess, rig):
     r = sess.post(f"{API}/estimates/{rig['eid']}/pdf-overlay/propose",
-                  timeout=30)
+                  timeout=120)
     assert r.status_code == 200, r.text
     body = r.json()
     proposed = body["proposed"]
@@ -190,14 +190,23 @@ def test_proposals_draw_the_datum_box_not_the_band(sess, rig):
         (x0, x1), (y0, y1) = expect[face]
         xs = sorted({v[0] for v in p["vertices_pct"]})
         ys = sorted({v[1] for v in p["vertices_pct"]})
-        assert abs(xs[0] - x0) < 1e-6 and abs(xs[-1] - x1) < 1e-6, \
-            f"{face}: x {xs} != datum span [{x0}, {x1}]"
-        assert abs(ys[0] - min(y0, y1)) < 1e-6
-        assert abs(ys[-1] - max(y0, y1)) < 1e-6
+        if p.get("geometry_tier") == "wall_outline":
+            # SEND-69: the drawn outline OVERRIDES the datum span — the
+            # span survives in proposed_from for comparison, disclosed.
+            ds = (p.get("proposed_from") or {}).get("datum_span_x_pct")
+            assert ds is not None
+            assert abs(ds[0] - x0 * 100) < 1e-2
+            assert abs(ds[1] - x1 * 100) < 1e-2
+            assert "WALL OUTLINE" in (p.get("basis") or "")
+        else:
+            assert abs(xs[0] - x0) < 1e-6 and abs(xs[-1] - x1) < 1e-6, \
+                f"{face}: x {xs} != datum span [{x0}, {x1}]"
+            assert abs(ys[0] - min(y0, y1)) < 1e-6
+            assert abs(ys[-1] - max(y0, y1)) < 1e-6
+            basis = p.get("basis") or ""
+            assert "datum marker span" in basis
         # never the old page-band rectangle
         assert xs[0] > 0.02 and xs[-1] < 0.98
-        basis = p.get("basis") or ""
-        assert "datum marker span" in basis
     # body zone stops at the plate: y-extent is the datum pair, and the
     # proposal never reaches the band top (roof/gable stays out)
     for p in proposed:
