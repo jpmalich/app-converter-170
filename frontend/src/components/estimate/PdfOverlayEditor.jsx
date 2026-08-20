@@ -810,9 +810,9 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                     <div className="text-[10px] font-bold text-[var(--warning-text)] mt-0.5" data-testid={`pdf-overlay-band-note-${p.id}`}>{p.band_note}</div>
                   )}
                   {p.provenance === "proposed" && p.geometry_tier && (
-                    <div className={`text-[9px] uppercase font-bold mt-0.5 ${p.geometry_tier === "wall_outline" ? "text-[var(--success)]" : p.geometry_tier === "datum_span_after_linework_refused" ? "text-[var(--danger)]" : "text-[var(--muted)]"}`}
+                    <div className={`text-[9px] uppercase font-bold mt-0.5 ${(p.geometry_tier === "wall_outline" || p.geometry_tier === "gable_outline") ? "text-[var(--success)]" : p.geometry_tier === "datum_span_after_linework_refused" ? "text-[var(--danger)]" : "text-[var(--muted)]"}`}
                       data-testid={`pdf-overlay-geom-${p.id}`}>
-                      {p.geometry_tier === "wall_outline" ? "wall outline (line-work)" : p.geometry_tier === "datum_span_after_linework_refused" ? "datum span — line-work refused" : "datum span"}
+                      {p.geometry_tier === "wall_outline" ? "wall outline (line-work)" : p.geometry_tier === "gable_outline" ? "gable traced (line-work)" : p.geometry_tier === "datum_span_after_linework_refused" ? "datum span — line-work refused" : "datum span"}
                     </div>
                   )}
                   {p.derived_gable_sqft != null && (
@@ -826,6 +826,11 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                   {p.face_resolution?.disagreed_with_tag && (
                     <div className="text-[10px] font-bold text-[var(--warning-text)] mt-0.5" data-testid={`pdf-overlay-face-resolved-${p.id}`}>
                       face resolved from the drawing band: {p.face_id} (tag said {p.face_resolution.submitted_face_id})
+                    </div>
+                  )}
+                  {p.binding_suspended && (
+                    <div className="text-[10px] font-bold text-[var(--danger)] mt-0.5" data-testid={`pdf-overlay-suspended-${p.id}`}>
+                      NOT BINDING — {p.binding_suspended.reason || "flagged face-ambiguous by ruling; redraw to bind"}
                     </div>
                   )}
                   {p.provenance !== "proposed" && p.confirmed_from?.tier && (

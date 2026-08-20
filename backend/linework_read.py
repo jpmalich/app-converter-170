@@ -96,8 +96,13 @@ def _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol):
         span_bot = s["bottom"] >= ff_box[0]
         if span_top and span_bot:
             x = (s["x0"] + s["x1"]) / 2.0
-            singles.append({"x_top": x, "x_bot": x, "jog_y": None})
-        elif reach_top:
+            singles.append({"x_top": x, "x_bot": x, "jog_y": None,
+                            # SEND-71 item 3: a stroke TERMINATING at the
+                            # plate box (within a joint) is the drawn
+                            # WALL LINE itself; roof-borne edges (rake,
+                            # corner board) continue far above it.
+                            "pt": s["top"] >= plate_box[0] - gap_tol})
+        elif reach_top and s["top"] >= plate_box[0] - gap_tol:
             tops.append(s)
         elif reach_bot:
             bots.append(s)
@@ -121,7 +126,8 @@ def _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol):
                 h0, h1 = min(h["x0"], h["x1"]), max(h["x0"], h["x1"])
                 # a JOINT: the horizontal's ENDS meet both verticals
                 if abs(h0 - lo) <= gap_tol and abs(h1 - hi) <= gap_tol:
-                    chains.append({"x_top": xa, "x_bot": xb, "jog_y": jy})
+                    chains.append({"x_top": xa, "x_bot": xb, "jog_y": jy,
+                                   "pt": True})
                     break
     return singles + chains
 
@@ -157,6 +163,16 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
     vert = _merge_collinear(vert, "v", gap_tol)
     horiz = _merge_collinear(horiz, "h", gap_tol)
     cands = _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol)
+    # SEND-71 item 3 — RAKE-EDGE SEPARATION. Where the drawing shows
+    # WALL LINES (spanning strokes terminating at the plate box), the
+    # outline is chosen among them and roof-borne edges lose. Where it
+    # shows none (eave faces whose corner trim carries the edge up to
+    # the eave), the spanning set stands as the only drawn boundary.
+    # A preference for stronger evidence — not a size threshold, and
+    # nothing tunes toward any sealed width.
+    plate_terminated = [c for c in cands if c.get("pt")]
+    if plate_terminated:
+        cands = plate_terminated
     # a chain CONTRADICTED by a full spanning stroke strictly inside its
     # jog range is not a region boundary — that is interior detail
     # joined by a trim line, not a step in the silhouette.
@@ -209,12 +225,121 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
         pts += [(left["x_bot"], left["jog_y"]),
                 (left["x_top"], left["jog_y"])]
     xs = [p[0] for p in pts]
+    corner_singles = [c["x_top"] for c in cands
+                      if c["jog_y"] is None and c.get("pt")]
     return {"status": "RESOLVED",
             "x_span": [round(min(xs), 2), round(max(xs), 2)],
+            "top_corners": [round(left["x_top"], 2),
+                            round(right["x_top"], 2)],
+            # the outermost DRAWN WALL LINES (plate-terminated singles) —
+            # the gable's base corners; a chimney chain is silhouette,
+            # not a wall corner carrying a rake.
+            "wall_corners": ([round(min(corner_singles), 2),
+                              round(max(corner_singles), 2)]
+                             if len(corner_singles) >= 2 else None),
             "y_top": round(y_top, 2), "y_bot": round(y_bot, 2),
             "n_spanning": len(cands), "n_vertices": len(pts),
             "vertices_pct": [[round(x / 100.0, 4), round(y / 100.0, 4)]
                              for x, y in pts]}
+
+
+def gable_triangle_from_segments(segments, band, plate_box, top_corners,
+                                 y_plate, mask_boxes):
+    """SEND-71 item 5 — trace the DRAWN gable triangle above the plate.
+
+    top_corners: (xL, xR), the resolved wall outline's top-edge corners.
+    y_plate: the drawn plate-level closure. A RAKE is a diagonal stroke
+    (both extents beyond the line-weight scale) whose line passes within
+    a joint of a wall corner and rises inward; the two rakes' lines must
+    intersect at an apex ABOVE the plate, inside the span, and both
+    drawn upper ends must reach that apex within a joint — the triangle
+    is drawn geometry or it is not returned. Never computed from pitch
+    and width; nothing tunes toward any derived figure."""
+    y0, y1 = band
+    gap_tol = plate_box[1] - plate_box[0]
+    diags = []
+    for s in segments:
+        if "p0" not in s:
+            continue                     # rect edges are axis-aligned
+        top, bot = min(s["top"], s["bottom"]), max(s["top"], s["bottom"])
+        if top < y0 or bot > y1:
+            continue                     # band containment (border out)
+        dx, dy = abs(s["x1"] - s["x0"]), bot - top
+        if dx <= gap_tol or dy <= gap_tol:
+            continue                     # not a diagonal
+        mx, my = (s["x0"] + s["x1"]) / 2.0, (top + bot) / 2.0
+        if any(bx0 <= mx <= bx1 and by0 <= my <= by1
+               for bx0, by0, bx1, by1 in mask_boxes):
+            continue
+        diags.append((tuple(s["p0"]), tuple(s["p1"])))
+    if not diags:
+        return {"status": "INDETERMINATE",
+                "reason": "no diagonal strokes in this drawing's band"}
+
+    def _line_dist(p, a, b):
+        (px, py), (ax, ay), (bx, by) = p, a, b
+        vx, vy = bx - ax, by - ay
+        n = (vx * vx + vy * vy) ** 0.5
+        return abs(vx * (py - ay) - vy * (px - ax)) / n if n else 1e9
+
+    xl, xr = top_corners
+
+    def _rake_for(cx, inward_right):
+        best = None
+        for a, b in diags:
+            if _line_dist((cx, y_plate), a, b) > gap_tol:
+                continue
+            hi = a if a[1] < b[1] else b      # upper end (smaller top-y)
+            if inward_right and not (hi[0] > cx + gap_tol):
+                continue
+            if not inward_right and not (hi[0] < cx - gap_tol):
+                continue
+            d = _line_dist((cx, y_plate), a, b)
+            if best is None or d < best[0]:
+                best = (d, a, b, hi)
+        return best
+
+    L = _rake_for(xl, inward_right=True)
+    R = _rake_for(xr, inward_right=False)
+    if not L or not R:
+        return {"status": "INDETERMINATE",
+                "reason": ("no drawn rake passes within a joint of the "
+                           + ("left" if not L else "right")
+                           + " wall corner")}
+    (_, a1, b1, hi1), (_, a2, b2, hi2) = L, R
+    # intersection of the two rake lines
+    x1, y1a = a1
+    dx1, dy1 = b1[0] - a1[0], b1[1] - a1[1]
+    x2, y2a = a2
+    dx2, dy2 = b2[0] - a2[0], b2[1] - a2[1]
+    den = dx1 * dy2 - dy1 * dx2
+    if abs(den) < 1e-9:
+        return {"status": "INDETERMINATE",
+                "reason": "the two rakes are parallel — no apex"}
+    t = ((x2 - x1) * dy2 - (y2a - y1a) * dx2) / den
+    ax_, ay_ = x1 + t * dx1, y1a + t * dy1
+    if not (y0 <= ay_ < plate_box[0]):
+        return {"status": "INDETERMINATE",
+                "reason": "apex not above the plate inside this band"}
+    if not (xl + gap_tol < ax_ < xr - gap_tol):
+        return {"status": "INDETERMINATE",
+                "reason": "apex outside the wall span"}
+    for hi in (hi1, hi2):
+        if ((hi[0] - ax_) ** 2 + (hi[1] - ay_) ** 2) ** 0.5 > 2 * gap_tol:
+            return {"status": "INDETERMINATE",
+                    "reason": ("a rake's drawn end stops short of the "
+                               "apex — the ridge is not drawn to the "
+                               "peak")}
+    return {"status": "RESOLVED",
+            "apex": [round(ax_, 2), round(ay_, 2)],
+            "rise_pct": round(y_plate - ay_, 2),
+            "n_diagonals": len(diags),
+            "vertices_pct": [[round(xl / 100.0, 4),
+                              round(y_plate / 100.0, 4)],
+                             [round(ax_ / 100.0, 4),
+                              round(ay_ / 100.0, 4)],
+                             [round(xr / 100.0, 4),
+                              round(y_plate / 100.0, 4)]]}
 
 
 def page_segments(pdf_path, page_index):
@@ -227,9 +352,14 @@ def page_segments(pdf_path, page_index):
         pg = pdf.pages[page_index]
         W, H = float(pg.width), float(pg.height)
         for L in pg.lines:
+            # `pts` carries TRUE endpoint pairing (top-based); the bbox
+            # y0/y1 fields are normalized and lose the slope sign.
+            p0, p1 = L["pts"][0], L["pts"][-1]
             segs.append({"x0": L["x0"] / W * 100, "x1": L["x1"] / W * 100,
                          "top": L["top"] / H * 100,
-                         "bottom": L["bottom"] / H * 100})
+                         "bottom": L["bottom"] / H * 100,
+                         "p0": [p0[0] / W * 100, p0[1] / H * 100],
+                         "p1": [p1[0] / W * 100, p1[1] / H * 100]})
         for rc in pg.rects:
             x0, x1 = rc["x0"] / W * 100, rc["x1"] / W * 100
             t, b = rc["top"] / H * 100, rc["bottom"] / H * 100

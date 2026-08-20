@@ -371,6 +371,13 @@ def apply_overlay_to_takeoff(
         # quantity. Only human zones enter the takeoff math.
         if (p.get("provenance") or "human") == "proposed":
             continue
+        # SEND-71 (one-off cleanup, registered — NOT a class): a zone
+        # FLAGGED face-ambiguous by ruling stops binding until Howard
+        # redraws it. The FACE_AMBIGUOUS write gate (SEND-66) catches
+        # straddles at write time now, so this flag exists for the
+        # single pre-gate zone. Do not build a splitting feature.
+        if p.get("binding_suspended"):
+            continue
         by_class.setdefault(p.get("material_class") or "", []).append(p)
 
     out: list[dict] = []
@@ -810,8 +817,9 @@ async def delete_pdf_overlay(
         {"estimate_id": est_id,
          "material_class": victim.get("material_class"),
          # SEND-48: proposed zones are provisional — they never hold an
-         # override alive.
-         "provenance": {"$ne": "proposed"}})
+         # override alive. SEND-71: neither does a suspended zone.
+         "provenance": {"$ne": "proposed"},
+         "binding_suspended": {"$exists": False}})
     retired = remaining == 0
 
     # Law B: when the last polygon of a class is gone, apply() no longer
@@ -981,7 +989,7 @@ def _ladder_geometry(r: dict):
 
 _TIER_RANK = {"derived_chain": 0, "contested_pick_larger": 1,
               "datum_rectangle": 2, "band_rectangle": 3,
-              "gable_rectangle": 4}
+              "gable_outline": 4, "gable_rectangle": 5}
 
 
 def _best_ladder_spec(face_result: dict):
@@ -1018,7 +1026,8 @@ async def propose_zones(
 
     # SEND-69: the line-work read consumes the run's retained VECTOR
     # source (single PDF). Absent → NOT_ATTEMPTED, disclosed per zone.
-    from linework_read import page_segments, wall_outline_from_segments
+    from linework_read import (page_segments, wall_outline_from_segments,
+                               gable_triangle_from_segments)
     src_pdf = None
     pdf_name = next((f.get("name")
                      for f in ((run or {}).get("source_files") or [])
@@ -1068,6 +1077,7 @@ async def propose_zones(
                 bot_box = tof
         lw = {"status": "NOT_ATTEMPTED",
               "reason": "datum pair not located on this drawing"}
+        lw_ctx = None
         if not src_pdf:
             lw = {"status": "NOT_ATTEMPTED",
                   "reason": "no single-PDF vector source retained on "
@@ -1087,6 +1097,7 @@ async def propose_zones(
                     seg_cache[idx], (band[0], band[1]),
                     (top_d["b0"], top_d["b1"]),
                     (bot_box["b0"], bot_box["b1"]), mask)
+                lw_ctx = (idx, mask)
             except Exception as e:
                 lw = {"status": "INDETERMINATE",
                       "reason": f"line-work read failed: {e}"}
@@ -1199,32 +1210,93 @@ async def propose_zones(
                                "PLATE datum on this drawing — not "
                                "located")})
             else:
-                g_top = round(band[0] / 100.0, 4)
-                g_bot = round(plate["y"] / 100.0, 4)
                 g_derived = (round(float(wrow["gable_sqft"]), 2)
                              if float(wrow.get("gable_sqft") or 0) > 0
                              else None)
-                if g_derived is not None:
-                    notice = (f"this face's gable already derives at "
-                              f"{g_derived} ft². This starting rectangle "
-                              "is larger than the gable and will "
-                              "OVERSTATE it if confirmed — pull it in to "
-                              "the roof line first.")
+                # SEND-71 item 5 — GABLE LINE-WORK: trace the drawn
+                # triangle where the wall outline resolved (the read
+                # earned the extension). Refusal keeps the SEND-68
+                # starting rectangle and says why.
+                g_read = None
+                if (lw.get("status") == "RESOLVED"
+                        and lw.get("wall_corners") and lw_ctx):
+                    try:
+                        g_read = gable_triangle_from_segments(
+                            seg_cache[lw_ctx[0]], (band[0], band[1]),
+                            (top_d["b0"], top_d["b1"]),
+                            lw["wall_corners"], lw["y_top"], lw_ctx[1])
+                    except Exception as e:
+                        g_read = {"status": "INDETERMINATE",
+                                  "reason": f"gable read failed: {e}"}
+                if g_read and g_read.get("status") == "RESOLVED":
+                    g_verts = [[round(v[0], 4), round(v[1], 4)]
+                               for v in g_read["vertices_pct"]]
+                    g_tier = "gable_outline"
+                    traced = (polygon_sqft_from_scale(
+                        g_verts, scale_ref, page.get("page_w"),
+                        page.get("page_h")) if scale_ref else None)
+                    g_basis = (
+                        "GABLE TRACED FROM LINE-WORK — base: the drawn "
+                        "wall corners at the plate-level closure; sides: "
+                        "the drawn rakes (each passes within a joint of "
+                        "its wall corner); apex: their drawn "
+                        f"intersection at x={g_read['apex'][0]}%, "
+                        f"y={g_read['apex'][1]}%. No triangle computed "
+                        "from pitch and width")
+                    if traced is not None and g_derived is not None:
+                        notice = (f"traced gable reads {traced} ft²; "
+                                  f"this face's gable derives at "
+                                  f"{g_derived} ft² (0.70 convention "
+                                  "carries waste — the traced figure is "
+                                  "the drawn triangle)")
+                    elif g_derived is not None:
+                        notice = (f"this face's gable derives at "
+                                  f"{g_derived} ft²; the traced triangle "
+                                  "carries no scale on this view")
+                    else:
+                        notice = ("traced from the drawing; no derived "
+                                  "gable figure exists ("
+                                  + str(wrow.get("gable_refusal")) + ")")
                 else:
-                    notice = ("this face's gable area is not derivable ("
-                              + str(wrow.get("gable_refusal"))
-                              + ") — this rectangle is still larger than "
-                              "the gable triangle and will OVERSTATE it "
-                              "if confirmed as-is; pull it in to the "
-                              "roof line first.")
+                    g_top = round(band[0] / 100.0, 4)
+                    g_bot = round(plate["y"] / 100.0, 4)
+                    g_verts = [[x0, g_top], [x1, g_top],
+                               [x1, g_bot], [x0, g_bot]]
+                    g_tier = "gable_rectangle"
+                    g_basis = (
+                        "GABLE STARTING SHAPE — the roof read puts "
+                        "a gable end on this face; the triangle "
+                        "could not be read from the drawing, and "
+                        "no triangle is computed from pitch and "
+                        "width. bottom: TOP OF PLATE datum, this "
+                        "elevation (the body zone's top); top: top "
+                        "of this face's drawing band — the ridge "
+                        "could not be read from the drawing; "
+                        "sides: the body zone's span, same basis")
+                    if g_read:
+                        g_basis += ("; gable line-work refused: "
+                                    + str(g_read.get("reason")))
+                    if g_derived is not None:
+                        notice = (f"this face's gable already derives at "
+                                  f"{g_derived} ft². This starting "
+                                  "rectangle is larger than the gable "
+                                  "and will OVERSTATE it if confirmed — "
+                                  "pull it in to the roof line first.")
+                    else:
+                        notice = ("this face's gable area is not "
+                                  "derivable ("
+                                  + str(wrow.get("gable_refusal"))
+                                  + ") — this rectangle is still larger "
+                                  "than the gable triangle and will "
+                                  "OVERSTATE it if confirmed as-is; pull "
+                                  "it in to the roof line first.")
                 gdoc = {
                     "id": str(uuid.uuid4()),
                     "estimate_id": est_id,
                     "page": int(spec["page"]),
                     "face_id": f"gable:{face_to_id[face]}",
                     "material_class": "siding",
-                    "vertices_pct": [[x0, g_top], [x1, g_top],
-                                     [x1, g_bot], [x0, g_bot]],
+                    "vertices_pct": g_verts,
                     "scale_ref": scale_ref,
                     "page_w_px": page.get("page_w"),
                     "page_h_px": page.get("page_h"),
@@ -1234,26 +1306,30 @@ async def propose_zones(
                     "surface_refusal": None,
                     "provenance": "proposed",
                     "qty_src": "proposed",
-                    "tier": "gable_rectangle",
-                    "geometry_tier": "datum_span",
+                    "tier": g_tier,
+                    "geometry_tier": g_tier if g_tier == "gable_outline"
+                                     else "datum_span",
                     "derived_gable_sqft": g_derived,
                     "divergence_notice": notice,
-                    "basis": ("GABLE STARTING SHAPE — the roof read puts "
-                              "a gable end on this face; the triangle "
-                              "could not be read from the drawing, and "
-                              "no triangle is computed from pitch and "
-                              "width. bottom: TOP OF PLATE datum, this "
-                              "elevation (the body zone's top); top: top "
-                              "of this face's drawing band — the ridge "
-                              "could not be read from the drawing; "
-                              "sides: the body zone's span, same basis"),
+                    "basis": g_basis,
                     "band_note": None,
                     "proposed_from": {
                         "run_id": (run or {}).get("run_id"),
-                        "tier": "gable_rectangle",
+                        "tier": g_tier,
                         "band": band,
                         "derived_gable_sqft": g_derived,
                         "gable_refusal": wrow.get("gable_refusal"),
+                        "gable_linework": (
+                            {"status": g_read.get("status"),
+                             "reason": g_read.get("reason"),
+                             "apex": g_read.get("apex"),
+                             "n_diagonals": g_read.get("n_diagonals")}
+                            if g_read else
+                            {"status": "NOT_ATTEMPTED",
+                             "reason": ("wall outline not resolved on "
+                                        "this drawing — the gable read "
+                                        "only extends a trusted wall "
+                                        "read")}),
                         "span_x_pct": [round(x0 * 100, 2),
                                        round(x1 * 100, 2)]},
                     "author_id": "height_build",

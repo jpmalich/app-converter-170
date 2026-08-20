@@ -163,6 +163,61 @@ def test_prediction_file_written_before_the_wiring():
 
 
 # ---------------------------------------------------------------------------
+# SEND-71 item 5 — GABLE LINE-WORK (trace the drawn triangle)
+# ---------------------------------------------------------------------------
+from linework_read import gable_triangle_from_segments  # noqa: E402
+
+GBAND = (5.0, 50.0)
+GPLATE = (25.5, 26.5)
+
+
+def _rake(x0, y0, x1, y1):
+    return {"x0": min(x0, x1), "x1": max(x0, x1),
+            "top": min(y0, y1), "bottom": max(y0, y1),
+            "p0": [x0, y0], "p1": [x1, y1]}
+
+
+def test_gable_triangle_traces_the_drawn_rakes():
+    segs = [_rake(20, 26, 40, 10), _rake(40, 10, 60, 26)]
+    r = gable_triangle_from_segments(segs, GBAND, GPLATE,
+                                     (20.0, 60.0), 26.0, [])
+    assert r["status"] == "RESOLVED"
+    assert abs(r["apex"][0] - 40) < 0.5 and abs(r["apex"][1] - 10) < 0.5
+    assert len(r["vertices_pct"]) == 3
+
+
+def test_gable_refuses_when_a_rake_stops_short_of_the_apex():
+    segs = [_rake(20, 26, 30, 18), _rake(40, 10, 60, 26)]
+    r = gable_triangle_from_segments(segs, GBAND, GPLATE,
+                                     (20.0, 60.0), 26.0, [])
+    assert r["status"] == "INDETERMINATE"
+    assert "stops short" in r["reason"]
+
+
+def test_gable_refuses_with_no_rake_at_a_corner():
+    segs = [_rake(40, 10, 60, 26)]
+    r = gable_triangle_from_segments(segs, GBAND, GPLATE,
+                                     (20.0, 60.0), 26.0, [])
+    assert r["status"] == "INDETERMINATE"
+    assert "left wall corner" in r["reason"]
+
+
+def test_gable_masked_diagonals_never_trace():
+    segs = [_rake(20, 26, 40, 10), _rake(40, 10, 60, 26)]
+    r = gable_triangle_from_segments(
+        segs, GBAND, GPLATE, (20.0, 60.0), 26.0,
+        [(15.0, 5.0, 65.0, 30.0)])           # everything under text
+    assert r["status"] == "INDETERMINATE"
+
+
+def test_gable_read_never_computes_from_pitch_or_convention():
+    with open("/app/backend/linework_read.py", encoding="utf-8") as f:
+        src = f.read()
+    assert "0.70" not in src
+    assert "GABLE_FACTOR" not in src
+
+
+# ---------------------------------------------------------------------------
 # live pins — every proposal discloses its geometry tier
 # ---------------------------------------------------------------------------
 from api_base import API  # noqa: E402
