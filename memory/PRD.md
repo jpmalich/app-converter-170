@@ -1,5 +1,70 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-20 SEND-66/67/68/69 — FACE-TAG FIX + AUTHORIZED RE-ATTRIBUTION + GABLE STARTING SHAPES + LINE-WORK WIRED (stamped green)
+1. **SEND-66 SHIPPED (P0 money bug):** a human zone's face resolves from
+its CENTROID'S ELEVATION BAND (`resolve_face_from_bands`, same carving
+the height read uses), never the page tag. Straddle / no band → 409
+`FACE_AMBIGUOUS` with the reason + candidates; the UI asks (face-ask
+modal, `pdf-overlay-face-ask-*`) and the explicit answer binds as
+`human_choice_on_ambiguity`. Every write records `face_resolution` —
+never silent. INVARIANT PINNED (outlives the handler): the raw payload
+tag is never written as the binding face; `pdf_overlay_polygons` is
+written only from `routes/pdf_overlay.py` (+ the verbatim-clone MUV
+duplicator, which assigns no face). Band membership carries a 1e-3 pct
+boundary tolerance (float round-trip noise at a band edge).
+**CENSUS (report only):** 52 zones examined — 3 disagreeing, ALL THREE
+the known EST-569367 rear pieces; NO other confirmed mis-bind exists.
+One open item for Howard: EST-713272 zone `33e4b47a` (95.8 ft², legacy
+binding) STRADDLES left/right — not touched. 3 orphaned test-rig
+proposals deleted (test artifacts, zero money).
+2. **SEND-67 APPLIED (authorized):** the 3 zones (204.90/106.30/330.54 =
+641.74 ft², ALL CONFIRMED) re-attributed front→back with audit
+`face_resolution.authorized_reattribution`; their events re-attributed
+(metric bookkeeping, said so); tracking event
+`zones.face_reattribution` on EST-569367. **Siding line 25.94 SQ →
+25.94 SQ — the line did NOT move** (rear refuses at derived 0, so the
+mis-tag was an attribution error, not yet a dollar error — trap now
+closed). Corrected baseline appended beside the original at
+`memory/send67_corrected_baseline.md`: split stays 3 corrected /
+5 missed, rear now owns its 641.7 ft². Prediction scoring unaffected
+(stated so nobody re-scores it).
+3. **SEND-68 SHIPPED:** gable STARTING SHAPES in the propose loop — only
+faces whose walk-detail row carries a gable (derived figure or named
+refusal). Rectangle: bottom TOP OF PLATE datum, top the face's band top
+("the ridge could not be read"), sides the body zone's span. NO triangle
+from pitch×width (pinned: no GABLE_FACTOR in the propose path). LOWEST
+tier `gable_rectangle`; `derived_gable_sqft` shown alongside; strongest
+divergence notice ("…will OVERSTATE it if confirmed — pull it in to the
+roof line first"), retained through confirm in `confirmed_from`.
+4. **SEND-69 SHIPPED:** line-work read wired into propose (source PDF
+from the run's retained vector source, per-page segment cache).
+RESOLVED → outline polygon replaces datum-span geometry, basis says so,
+span kept in `proposed_from.datum_span_x_pct`. INDETERMINATE → datum
+span under ITS OWN tier `datum_span_after_linework_refused` + leader-
+offset sentence (`geometry_tier` on every proposal + UI chip). Core
+hardened structurally: band CONTAINMENT excludes the sheet border (set
+membership, no size threshold); drawn-continuity merge (fragments of one
+vector line share its coordinate, `_COORD_EPS`); one-jog JOINTED chains
+give steps; chains contradicted by an interior full spanner rejected.
+**Prediction file FIRST, scored after, unrevised**
+(`memory/send69_linework_prediction.md`): LETRICK front 54.71 ft vs 54'
+(**+0.71 from the measured 10–15**); left 35.15 vs 30' (+5.15: ~3 ft
+rake-edge grab — the design's named failure — plus a 2.7 ft jointed
+step ≈ the 2'-7" projection, 6 vertices); rear 60.15 at the CONTESTED
+9.92 scale (≈55.1 at the 9'-1⅛" contestant — scale artifact, not
+geometry); right refuses honestly (top closure). BONI front/rear became
+REACHABLE (design's claim confirmed; no evidence scale → shape only);
+left INDETERMINATE, right NOT_ATTEMPTED (no FF datum). Rear chimney
+prediction REFUTED (plain rectangle on rear; the step shows on LEFT).
+Report: `memory/send69_linework_report.py`.
+5. **Pins:** +30 (`test_face_tag_2026_08_19_send66.py`,
+`test_gable_2026_08_19_send68.py`, `test_linework_2026_08_19_send69.py`);
+datum-span pin updated to the outline-override law. **Suite stamped:**
+`2026-08-20 10:22 UTC · c0135d5 · CLEAN · 2669 passed, 9 skipped`.
+6. Next: Howard rules on the EST-713272 straddling zone; height cards +
+Ruling V conversion unblock; gable/chimney line-work only after the wall
+outline is trusted.
+
 ## 2026-08-19 SEND-63 — METRIC NUMBERS + TOF BOTTOM SHIPPED + LINE-WORK DESIGN (stamped green)
 1. **Item 1 — recorded field numbers (EST-569367, 10:19–10:22):** it
 RECORDED. CORRECTED front (edges L+4.94/R−5.15/T+0.61↓/B+2.22↓ ft, width
