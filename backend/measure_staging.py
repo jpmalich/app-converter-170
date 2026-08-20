@@ -27,6 +27,32 @@ GABLE_FACTOR = 0.70
 # DRAWN/traced gable replaces it entirely (Law A) — that binding is a build,
 # see the send-23 report.
 GABLE_CONVENTION_LABEL = "0.70 gable convention (trade allowance, ≈1.4× geometric ½·width·rise)"
+# SEND-74 (Howard, 2026-08-21) — GABLE BASIS, a strict BINARY. Every
+# gable quantity carries exactly ONE of two bases, never both, never a
+# third:
+#   TRACED      → the drawn triangle's true area, NO factor.
+#   NOT TRACED  → area × 0.70 field factor (safety margin for an
+#                 approximate gable measurement).
+# The label rides the quantity to the sheet, the read-back card and the
+# money line — two gables on one house priced on different bases must
+# be tellable apart by the reader.
+GABLE_BASIS_TRACED = "traced"
+GABLE_BASIS_FIELD_FACTOR = "field_factor_0_70"
+GABLE_BASES = frozenset({GABLE_BASIS_TRACED, GABLE_BASIS_FIELD_FACTOR})
+
+
+def gable_basis_label(basis: str, sqft=None) -> str:
+    """The SEND-74 mandated sentences, verbatim."""
+    if basis == GABLE_BASIS_TRACED:
+        if sqft is not None:
+            return (f"gable traced from the drawing — {sqft} ft², "
+                    "no field factor")
+        return ("gable traced from the drawing — no field factor "
+                "(no evidence scale on this view for the ft² figure)")
+    if basis == GABLE_BASIS_FIELD_FACTOR:
+        return ("gable not traced — 0.70 field factor applied (safety "
+                "margin for an approximate gable measurement)")
+    raise ValueError(f"unknown gable basis: {basis!r}")
 
 
 def eaves_from_walls(walls: list, raw_eaves) -> float:
@@ -290,6 +316,16 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None) -> dict:
                                          if wall_gable is None else None),
                        "rise_read": rise_read, "rise_used": rise,
                        "gable_sqft": wall_gable,
+                       # SEND-74: the derived path never traces — every
+                       # derived gable quantity carries the FIELD FACTOR
+                       # basis; a refusal is not a quantity and carries
+                       # no basis. (Tracing lives on the overlay/proposal
+                       # layer and carries the TRACED basis there.)
+                       "gable_basis": (GABLE_BASIS_FIELD_FACTOR
+                                       if wall_gable else None),
+                       "gable_basis_label": (
+                           gable_basis_label(GABLE_BASIS_FIELD_FACTOR)
+                           if wall_gable else None),
                        "gable_convention": (GABLE_CONVENTION_LABEL
                                             if wall_gable else None)})
     return {"siding_sqft": siding_sqft, "gable_sqft": gable_sqft,

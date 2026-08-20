@@ -820,6 +820,9 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                       derived gable: {p.derived_gable_sqft} ft²
                     </div>
                   )}
+                  {p.gable_basis_label && (
+                    <div className="text-[10px] font-bold text-[var(--warning-text)] mt-0.5" data-testid={`pdf-overlay-gable-basis-${p.id}`}>{p.gable_basis_label}</div>
+                  )}
                   {p.divergence_notice && (
                     <div className="text-[10px] font-bold text-[var(--danger)] mt-0.5" data-testid={`pdf-overlay-gable-divergence-${p.id}`}>{p.divergence_notice}</div>
                   )}

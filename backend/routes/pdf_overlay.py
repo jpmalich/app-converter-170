@@ -308,9 +308,15 @@ def _sqft_to_line_qty(total_sqft: float, unit: str) -> Optional[float]:
     return None
 
 
-def _overlay_note(line: dict, total: float) -> str:
+def _overlay_note(line: dict, total: float, gable_zone: bool = False) -> str:
     base = (line.get("note") or "").split(" · PDF-OVERLAY")[0]
-    return (base + f" · PDF-OVERLAY zone ({total:.1f} ft²)").strip(" ·")
+    note = (base + f" · PDF-OVERLAY zone ({total:.1f} ft²)").strip(" ·")
+    if gable_zone:
+        # SEND-74 — the money line says the gable basis: a bound gable
+        # zone is drawn evidence at its true area, never factored.
+        note += (" · gable zone bound at its drawn area — no field "
+                 "factor")
+    return note
 
 
 def _retire_override(line: dict) -> bool:
@@ -464,7 +470,10 @@ def apply_overlay_to_takeoff(
             new.pop("overlay_per_surface", None)
             new.pop("overlay_replaced_surfaces", None)
         new.pop("overlay_scale_unreadable", None)
-        new["note"] = _overlay_note(line, total_sqft)
+        new["note"] = _overlay_note(
+            line, total_sqft,
+            gable_zone=any(str(p.get("face_id") or "").startswith("gable:")
+                           for p in convertible))
         out.append(new)
     return out
 
@@ -1028,6 +1037,9 @@ async def propose_zones(
     # source (single PDF). Absent → NOT_ATTEMPTED, disclosed per zone.
     from linework_read import (page_segments, wall_outline_from_segments,
                                gable_triangle_from_segments)
+    from measure_staging import (GABLE_BASIS_TRACED,
+                                 GABLE_BASIS_FIELD_FACTOR,
+                                 gable_basis_label)
     src_pdf = None
     pdf_name = next((f.get("name")
                      for f in ((run or {}).get("source_files") or [])
@@ -1093,10 +1105,26 @@ async def propose_zones(
                          u["loc"]["y_pct"] + u["loc"]["h_pct"])
                         for u in (ot.get(spec["page"]) or {}).get("runs")
                         or []]
+                # SEND-77 (authorized) — X-SCOPING: the face's own
+                # datum-line extent fences the strokes, so a second
+                # drawing sharing the band's y-range is excluded by the
+                # face's own evidence. Union of the governing datum
+                # labels' marker boxes, applied VERBATIM (never shrunk).
+                fence_xs = []
+                for dkey in ("top_of_plate", "first_floor",
+                             "top_of_foundation"):
+                    for mk in (geo.get(dkey) or {}).get("markers") or []:
+                        fence_xs.extend(mk)
+                x_fence = ((min(fence_xs), max(fence_xs))
+                           if len(fence_xs) >= 2 else None)
                 lw = wall_outline_from_segments(
                     seg_cache[idx], (band[0], band[1]),
                     (top_d["b0"], top_d["b1"]),
-                    (bot_box["b0"], bot_box["b1"]), mask)
+                    (bot_box["b0"], bot_box["b1"]), mask,
+                    x_fence=x_fence)
+                if x_fence is not None:
+                    lw["x_fence"] = [round(x_fence[0], 2),
+                                     round(x_fence[1], 2)]
                 lw_ctx = (idx, mask)
             except Exception as e:
                 lw = {"status": "INDETERMINATE",
@@ -1178,7 +1206,11 @@ async def propose_zones(
                                   "status": lw.get("status"),
                                   "reason": lw.get("reason"),
                                   "n_spanning": lw.get("n_spanning"),
-                                  "n_vertices": lw.get("n_vertices")}},
+                                  "n_vertices": lw.get("n_vertices"),
+                                  # SEND-77: the x-scoping fence (the
+                                  # face's own datum-line extent) that
+                                  # scoped the stroke set, disclosed.
+                                  "x_fence": lw.get("x_fence")}},
             "author_id": "height_build",
             "author_email": "",
             "created_at": now,
@@ -1243,19 +1275,24 @@ async def propose_zones(
                         f"intersection at x={g_read['apex'][0]}%, "
                         f"y={g_read['apex'][1]}%. No triangle computed "
                         "from pitch and width")
+                    # SEND-74 — TRACED basis, mandated sentence first.
+                    g_basis_kind = GABLE_BASIS_TRACED
+                    g_basis_lab = gable_basis_label(GABLE_BASIS_TRACED,
+                                                    traced)
                     if traced is not None and g_derived is not None:
-                        notice = (f"traced gable reads {traced} ft²; "
-                                  f"this face's gable derives at "
-                                  f"{g_derived} ft² (0.70 convention "
-                                  "carries waste — the traced figure is "
-                                  "the drawn triangle)")
+                        notice = (g_basis_lab
+                                  + f"; this face's gable derives at "
+                                  f"{g_derived} ft² (the 0.70 field "
+                                  "factor carries the safety margin — "
+                                  "the traced figure is the drawn "
+                                  "triangle)")
                     elif g_derived is not None:
-                        notice = (f"this face's gable derives at "
-                                  f"{g_derived} ft²; the traced triangle "
-                                  "carries no scale on this view")
+                        notice = (g_basis_lab
+                                  + f"; this face's gable derives at "
+                                  f"{g_derived} ft²")
                     else:
-                        notice = ("traced from the drawing; no derived "
-                                  "gable figure exists ("
+                        notice = (g_basis_lab
+                                  + "; no derived gable figure exists ("
                                   + str(wrow.get("gable_refusal")) + ")")
                 else:
                     g_top = round(band[0] / 100.0, 4)
@@ -1263,6 +1300,15 @@ async def propose_zones(
                     g_verts = [[x0, g_top], [x1, g_top],
                                [x1, g_bot], [x0, g_bot]]
                     g_tier = "gable_rectangle"
+                    # SEND-74 — a starting rectangle is a shape, not a
+                    # quantity; the QUANTITY alongside is the derived
+                    # gable, which always carries the FIELD FACTOR basis
+                    # (the derived path never traces).
+                    g_basis_kind = (GABLE_BASIS_FIELD_FACTOR
+                                    if g_derived is not None else None)
+                    g_basis_lab = (
+                        gable_basis_label(GABLE_BASIS_FIELD_FACTOR)
+                        if g_derived is not None else None)
                     g_basis = (
                         "GABLE STARTING SHAPE — the roof read puts "
                         "a gable end on this face; the triangle "
@@ -1310,6 +1356,10 @@ async def propose_zones(
                     "geometry_tier": g_tier if g_tier == "gable_outline"
                                      else "datum_span",
                     "derived_gable_sqft": g_derived,
+                    # SEND-74 — the gable basis is a strict binary and
+                    # rides the proposal to the editor surface.
+                    "gable_basis": g_basis_kind,
+                    "gable_basis_label": g_basis_lab,
                     "divergence_notice": notice,
                     "basis": g_basis,
                     "band_note": None,

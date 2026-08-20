@@ -133,20 +133,32 @@ def _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol):
 
 
 def wall_outline_from_segments(segments, band, plate_box, ff_box,
-                               mask_boxes):
+                               mask_boxes, x_fence=None):
     """Pure core. segments: {x0,x1,top,bottom} in percent-of-page.
     band: (y0,y1) — the face's title-carved band. plate_box/ff_box: the
     governing datum LABEL's own (b0,b1) y-box (the FLOOR box may be the
     TOP OF FOUNDATION when the ladder dropped the bottom there).
-    mask_boxes: OCR text boxes (x0,y0,x1,y1) pct. Returns RESOLVED with
-    the outline polygon, or INDETERMINATE with the reason."""
+    mask_boxes: OCR text boxes (x0,y0,x1,y1) pct. x_fence (SEND-77,
+    authorized): the face's OWN datum-line extent (xmin,xmax) in pct —
+    FENCE CONTAINMENT mirrors BAND CONTAINMENT: a qualifying stroke
+    lies entirely inside the fence (± the drawing's own line-weight
+    tolerance), so a second drawing sharing the band's y-range is
+    excluded by the face's own evidence. The fence is applied VERBATIM
+    — never shrunk to fit (that would be a threshold). Returns RESOLVED
+    with the outline polygon, or INDETERMINATE with the reason."""
     y0, y1 = band
+    gap_tol = max(plate_box[1] - plate_box[0], ff_box[1] - ff_box[0])
     keep = []
     for s in segments:
         top, bot = min(s["top"], s["bottom"]), max(s["top"], s["bottom"])
         # BAND CONTAINMENT — structural sheet-border exclusion.
         if top < y0 or bot > y1:
             continue
+        # FENCE CONTAINMENT (SEND-77) — the face's own datum extent.
+        if x_fence is not None:
+            lo, hi = min(s["x0"], s["x1"]), max(s["x0"], s["x1"])
+            if lo < x_fence[0] - gap_tol or hi > x_fence[1] + gap_tol:
+                continue
         mx = (s["x0"] + s["x1"]) / 2.0
         my = (top + bot) / 2.0
         if any(bx0 <= mx <= bx1 and by0 <= my <= by1
@@ -158,7 +170,6 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
             if abs(s["x1"] - s["x0"]) < (s["bottom"] - s["top"])]
     horiz = [s for s in keep
              if abs(s["x1"] - s["x0"]) >= (s["bottom"] - s["top"])]
-    gap_tol = max(plate_box[1] - plate_box[0], ff_box[1] - ff_box[0])
     # drawn continuity: rejoin strokes fragmented at intersections
     vert = _merge_collinear(vert, "v", gap_tol)
     horiz = _merge_collinear(horiz, "h", gap_tol)

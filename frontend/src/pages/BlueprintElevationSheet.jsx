@@ -106,10 +106,15 @@ export default function BlueprintElevationSheet() {
           <div className="font-bold text-[11px] uppercase tracking-wider mb-2">Wall area — gable-honest</div>
           <ul className="space-y-1">
             {data.wall.area_components.map((c, i) => (
-              <li key={i} className="flex items-baseline gap-2 font-mono-num">
-                <span className="w-40">{c.name}</span>
-                <span>{c.sqft} sqft</span>
-                <span className="text-[10px] text-[#5a6472]">({c.kind})</span>
+              <li key={i} className="flex flex-col" data-testid={`bp-elevation-area-component-${i}`}>
+                <div className="flex items-baseline gap-2 font-mono-num">
+                  <span className="w-40">{c.name}</span>
+                  <span>{c.sqft} sqft</span>
+                  <span className="text-[10px] text-[#5a6472]">({c.kind})</span>
+                </div>
+                {c.gable_basis_label && (
+                  <div className="text-[10px] font-bold text-[#8a5a00]" data-testid={`bp-elevation-gable-basis-${i}`}>{c.gable_basis_label}</div>
+                )}
               </li>
             ))}
           </ul>

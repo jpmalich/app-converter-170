@@ -184,6 +184,11 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
             </tbody>
           </table>
         )}
+        {plane_totals && Number(plane_totals.gable_ends) > 0 && (
+          <div className="text-[10px] font-bold text-[var(--warning-text)]" data-testid="bp-rb-gable-basis">
+            gable not traced — 0.70 field factor applied (safety margin for an approximate gable measurement)
+          </div>
+        )}
         {gable_attribution && gable_attribution.attributions && gable_attribution.attributions.length > 0 && (
           <div className="space-y-1" data-testid="bp-rb-gable-attribution">
             <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
