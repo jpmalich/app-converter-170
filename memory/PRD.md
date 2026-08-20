@@ -1,5 +1,53 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-20 SEND-71 — STRADDLE RULED + RAKE SEPARATION + BOTH CONTESTANTS + GABLE LINE-WORK (stamped green)
+1. **Straddle (EST-713272 `33e4b47a`, 95.8 ft², binding legacy):** report
+first — it supersedes no single surface (legacy whole-class zone, group
+3,291.26 ft²); the STORED siding line is human-set 18.0 SQ with overlay
+markers stripped, so the zone stopping binding moves **0.00 SQ** (said
+so, proceeded). Latent named: any recompute would rebind the class
+18.0→32.91/31.95 SQ regardless of this cleanup. Split preview (app
+arithmetic, report only): LEFT 1.63 / RIGHT 94.18 ft² — one vertex pokes
+~1% over the boundary; redraw is the real fix. **Path: PREFERRED —
+flag only.** `binding_suspended` on the zone (excluded in
+`apply_overlay_to_takeoff` + delete-retirement), editor shows NOT
+BINDING with the ruling text, app drew nothing, tracking event pushed.
+REGISTERED one-off (only straddle in 52, predates the SEND-66 gate) —
+pinned that no splitting feature exists.
+2. **Rake-edge separation (item 3):** property reported first — the WALL
+LINE terminates AT its plate (tops inside the plate label's box); rake/
+corner-board edges run ~9% above it; eave faces have no plate-terminated
+stroke at all (corner trim carries the edge to the eave). Fix: plate-
+terminated spanning strokes PREFERRED when present, spanning set stands
+otherwise. Letrick left 35.15→**32.60 ft** (= 30' wall + 2'-7" step, 6
+vertices; the ~2.4' rake grab gone); front unchanged 54.71 (+0.71);
+right refuses honestly (second drawing shares the band's y-range —
+x-scoping by the face's own datum-line extent is the structural cure,
+REPORTED, not built unordered). Boni: front/rear resolved (x-extents
+45.72%/45.69%, no evidence scale), left one-corner, right no FF datum.
+3. **Contested widths at both contestants (Letrick rear):** 9'-11" →
+60.15 ft (+6.15) · 9'-1" → 55.10 ft (+1.10). Geometry matches front
+(≈42.7% page); the residual difference is the contested scale.
+4. **GABLE LINE-WORK shipped:** `gable_triangle_from_segments` — base =
+`wall_corners` (outermost plate-terminated wall lines; chimney chains
+are silhouette, never rake corners), sides = drawn rakes (true endpoint
+pairing from the PDF's `pts`; bbox loses slope sign), apex = drawn
+intersection both rake ends must reach within a joint. **Letrick left
+gable TRACED: 129.98 ft²** vs 131.25 pure half-base (within 1%) vs
+183.75 under the 0.70 convention. Right keeps the SEND-68 rectangle
+(wall refused → the gable read only extends a trusted wall read); Boni
+none trusted. Tier `gable_outline` vs `gable_rectangle`, each with its
+own basis/notice; traced notice states both figures plainly. UI chip
+"gable traced (line-work)".
+5. Pins: +9 (straddle 3, gable trace 5, contract updates); single-corner
+pin updated — line-work RESCUES label-stripped faces from page width
+(vector strokes need no corner labels). **Suite stamped: `2026-08-20
+11:10 UTC · c238cdb · CLEAN · 2677 passed, 9 skipped`.** Full report:
+`memory/send71_report.md`.
+6. Next (Howard's stated order): height cards, then Ruling V conversion
+(2 PENDING_CONVERSION reads named by the census pin: downspout drops,
+gutter corners). Letrick-right x-scoping mechanism awaits an order.
+
 ## 2026-08-20 SEND-66/67/68/69 — FACE-TAG FIX + AUTHORIZED RE-ATTRIBUTION + GABLE STARTING SHAPES + LINE-WORK WIRED (stamped green)
 1. **SEND-66 SHIPPED (P0 money bug):** a human zone's face resolves from
 its CENTROID'S ELEVATION BAND (`resolve_face_from_bands`, same carving
