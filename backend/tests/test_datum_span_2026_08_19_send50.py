@@ -253,8 +253,16 @@ def test_indeterminate_span_face_still_proposes_naming_page_width(sess, rig):
     body = r.json()
     right = next(p for p in body["proposed"] if p["face_id"] == "right")
     xs = sorted({v[0] for v in right["vertices_pct"]})
-    assert xs[0] == 0.02 and xs[-1] == 0.98
     assert right["tier"] == "datum_rectangle"
     assert "PAGE WIDTH" in (right.get("basis") or "")
+    if right.get("geometry_tier") == "wall_outline":
+        # SEND-69/71: line-work reads the VECTOR strokes and needs no
+        # corner labels — the single-ended face is RESCUED by the drawn
+        # outline instead of standing at page width. The page-width
+        # datum basis is still named; the outline says what replaced it.
+        assert xs[0] > 0.02 and xs[-1] < 0.98
+        assert "WALL OUTLINE" in right["basis"]
+    else:
+        assert xs[0] == 0.02 and xs[-1] == 0.98
     rig["db"].pdf_overlay_polygons.delete_many(
         {"estimate_id": rig["eid"], "provenance": "proposed"})
