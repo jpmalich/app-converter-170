@@ -135,9 +135,13 @@ def test_live_gable_shape_bounds_and_basis(rig):
             assert "top of this face's drawing band" in g["basis"]
             assert "ridge could not be read" in g["basis"]
     # on this clone the LEFT wall outline resolves → left gable traced;
-    # the RIGHT wall refuses → right keeps the starting rectangle.
+    # SEND-77 (authorized): the x-scoping fence excludes the second
+    # drawing sharing right's band, so RIGHT's wall now resolves too and
+    # its gable TRACES (129.98 / 128.82 ft² — the two drawings agree
+    # within 1%). The starting-rectangle contract above still pins the
+    # rectangle truth for any face whose wall refuses.
     assert _by_face(rig)["gable:left"]["tier"] == "gable_outline"
-    assert _by_face(rig)["gable:right"]["tier"] == "gable_rectangle"
+    assert _by_face(rig)["gable:right"]["tier"] == "gable_outline"
 
 
 def test_live_derived_gable_shown_alongside_with_overstate_notice(rig):
@@ -148,14 +152,24 @@ def test_live_derived_gable_shown_alongside_with_overstate_notice(rig):
         assert "OVERSTATE" in g["divergence_notice"]
         assert "pull it in to the roof line first" in g["divergence_notice"]
     else:
-        assert "traced gable reads" in g["divergence_notice"]
+        # SEND-74: the traced notice LEADS with the mandated basis
+        # sentence and still states the derived figure beside it.
+        assert "gable traced from the drawing" in g["divergence_notice"]
+        assert "no field factor" in g["divergence_notice"]
 
 
 def test_live_refused_gable_names_the_refusal_and_still_warns(rig):
+    """SEND-77: right's wall resolves under the x-scoping fence, so its
+    gable now TRACES — but the DERIVED figure is still refused and the
+    notice still NAMES the refusal (SEND-74 basis sentence leads)."""
     g = _by_face(rig)["gable:right"]
     assert g["derived_gable_sqft"] is None
     assert "not derivable" in g["divergence_notice"]
-    assert "OVERSTATE" in g["divergence_notice"]
+    if g["tier"] == "gable_rectangle":
+        assert "OVERSTATE" in g["divergence_notice"]
+    else:
+        assert "no derived gable figure exists" in g["divergence_notice"]
+        assert "no field factor" in g["divergence_notice"]
 
 
 def test_live_confirming_a_gable_retains_the_divergence_notice(sess, rig):
