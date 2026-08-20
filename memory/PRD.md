@@ -1,5 +1,74 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-21 SEND-74/75/76/77 — GABLE BASIS BINARY + X-SCOPING FENCE + EST-713272 RE-CHECK + STRIPPED-MARKER CENSUS (stamped green)
+1. **SEND-75 re-check (report: `memory/send75_76_report.md`):** Howard
+deleted not only the 18.0 SQ human total but the ENTIRE 9-zone legacy
+group (incl. the suspended straddler `33e4b47a`) — only 4 PROPOSED
+zones remain on EST-713272. Siding computes to **22.0 SQ derived** (the
+polygon-captured baseline restored by delete-retirement), NOT 31.95/
+32.91: the prediction's precondition (8 sound zones surviving) is gone,
+so it is moot, not refuted. Split stated: derived 1,750 ft² (front 920
++ back 680 PARTIAL + 150 chimney chase; left/right REFUSE) from the
+8-16 run which PREDATES the height build; human zones 0 ft². Nothing on
+the estimate is near sealed 33 anymore. Nothing else human-set. Named
+gap: human-zone deletions are UNLEDGERED on unprotected estimates (the
+delete route records DELETED only for proposals) — Howard's 9
+deletions left zero trace.
+2. **SEND-76 census (report only, nothing touched):** the stripped-
+marker class is EMPTY today (EST-713272 was the only member, cured by
+Howard's own deletion). 3 marker-intact overlay lines (EST-886440/
+655664/569367) all recompute to EXACTLY their stored value. 18 human
+lines never had zones (plain Law-A hand-sets; largest delta EST-853809
+Ascend 0 vs derived 47 SQ = −$27.4k, shape of a family zero-out).
+**ROOT CAUSE, LIVE PATH NAMED (not fixed — not authorized):** the
+rederive rebuild merge (`routes/hover.py` ~L3357) carries qty_src=human
+qty verbatim onto FRESH line dicts and drops every overlay marker;
+overlay-bound lines are qty_src=human by construction; nothing re-runs
+`apply_overlay_to_takeoff` after a rebuild. Reachable from spec-save +
+manual rederive. Blast radius: the 3 marker-intact estimates join the
+class on their next rederive. Fix shape reported (re-run the overlay
+law after rebuild).
+3. **SEND-77 X-SCOPING WIRED (prediction+outcome:
+`memory/send77_prediction.md`):** FENCE CONTAINMENT mirrors BAND
+CONTAINMENT — a stroke lies entirely inside the face's own datum-line
+extent (union of marker boxes, ± line-weight), applied VERBATIM, never
+shrunk. **LETRICK RIGHT RESOLVES: 29.65 ft, 4 vertices** — Howard's own
+second prediction branch (30-flat: chimney offset left OR read missed
+it; his prints settle which). Downstream win reported as a change:
+right's gable TRACES 128.82 ft² (within 1% of left's 129.98 — two
+drawings corroborating). Move-check exhaustive: NO currently-resolved
+face moved (all 7 others byte-identical). Fence margins measured: Boni
+front/rear THIN (2–3% of fence width) — works there by sheet spacing,
+said so. Wired into `linework_read.py` (+`x_fence`) + propose (fence
+disclosed on `proposed_from.linework.x_fence`). Pins:
+`test_xscope_2026_08_21_send77.py` (6).
+4. **SEND-74 GABLE BASIS BINARY SHIPPED (report:
+`memory/send74_report.md`):** exactly two bases, a third raises —
+TRACED → "gable traced from the drawing — [X] ft², no field factor" ·
+NOT TRACED → "gable not traced — 0.70 field factor applied (safety
+margin for an approximate gable measurement)". Label rides: the MONEY
+LINE (siding SQ notes when derived gables contribute; bound gable zones
+append "drawn area — no field factor"), the SHEET (gable area
+components, `bp-elevation-gable-basis-*`), the READ-BACK CARD
+(`bp-rb-gable-basis`), the OVERLAY EDITOR (every gable proposal carries
+`gable_basis`/`gable_basis_label`; the traced notice LEADS with the
+mandated sentence), and the walk detail rows. Census: 3 estimates
+(Letrick trio) priced on 0.70 (367.5 ft² each; traced would read
+~258.8, −1.09 SQ). Structural answer to the recompute-drop question: NO
+silent drop path exists — tracing is proposal-only (pinned SEND-68);
+only a human confirm moves a gable from 0.70 to traced, and that write
+keeps the record. Pins: `test_gable_basis_2026_08_21_send74.py` (10);
+send68 live gable pins updated to the new ruled truths.
+5. **Suite stamped: `2026-08-20 23:32 UTC · a58a61d · CLEAN · 2693
+passed, 9 skipped`** (+16 pins). One transient acceptance-table flake
+(ASCEND live-window, passed in isolation and in the stamped rerun —
+known family).
+6. Next (Howard's stated order): height cards, then Ruling V conversion
+(downspout drops, gutter corners). Open for Howard: right-side chimney
+question (prints settle it), the live marker-stripping path fix
+(reported, awaiting authorization), Boni p4 LEFT still blocked on the
+segment-vs-total ruling.
+
 ## 2026-08-20 SEND-71 — STRADDLE RULED + RAKE SEPARATION + BOTH CONTESTANTS + GABLE LINE-WORK (stamped green)
 1. **Straddle (EST-713272 `33e4b47a`, 95.8 ft², binding legacy):** report
 first — it supersedes no single surface (legacy whole-class zone, group
