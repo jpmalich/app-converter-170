@@ -123,16 +123,16 @@ def main():
                                 continue
                             if r1 - r0 < _COORD_EPS:
                                 continue
-                            lok = _ccc_end_ok(r0, lo, 1, ly, vert, True)
-                            rok = _ccc_end_ok(r1, hi, -1, ly, vert, True)
+                            through = sorted(
+                                (v["x0"] + v["x1"]) / 2.0 for v in vert
+                                if v["top"] <= ly - _COORD_EPS
+                                and v["bottom"] >= ly + _COORD_EPS)
+                            lok = _ccc_end_ok(r0, lo, 1, through, True)
+                            rok = _ccc_end_ok(r1, hi, -1, through, True)
                             if lok and rok:
                                 joined = (w, ly)
                                 break
                             # classify the nearer failure
-                            through = [
-                                (v["x0"] + v["x1"]) / 2.0 for v in vert
-                                if v["top"] <= ly - _COORD_EPS
-                                and v["bottom"] >= ly + _COORD_EPS]
                             for end, bnd, inw in ((r0, lo, 1),
                                                   (r1, hi, -1)):
                                 if (end - bnd) * inw <= _COORD_EPS:

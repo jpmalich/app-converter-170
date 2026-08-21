@@ -1,5 +1,70 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-21 SEND-84 — RULING CCC SHIPPED (option b as a MINIMUM) + DELETION LEDGER + FENCE MARGIN WARNING + 4 REPORTS
+1. **RULING CCC WIRED** (`linework_read.py`: `_joint_lines` /
+`_ccc_end_ok` / `_ccc_joint`; report `memory/send84_report.md`,
+register `memory/register_send84.md`): joints judged on RAW drawn jog
+lines (y clustered at line-weight, ink runs merged at line-weight —
+never on gap_tol-merged strokes). An end reaches its boundary stroke
+or terminates ON the member's named INNER TWIN (through-going
+vertical, nothing between it and the boundary — allowance is the
+member's own twin separation, no snapping). Shoulder pairs (wall ×
+non-plate-terminated spanning stroke) run the naming law OUTWARD too
+(strict: an overspanning end lands ON boundary/outer twin — found
+necessary: face-long course lines otherwise established phantom
+shoulders within gap_tol; none moved an outline, dead by law now).
+Fragment chains keep SEND-69's gap_tol outside law (their members
+terminate at the jog). **KEY ANATOMY FINDING: SEND-82's 0.34/0.40
+"shortfall" was a MERGE ARTIFACT** — connector pieces at y=64.04 tie
+the shoulder rect to both members exactly; gap_tol merge had absorbed
+the run into a siding course line.
+2. **WHAT MOVED (both moves verified, all 4 SEND-84 fixed points
+hold):** RIGHT [54.71,80.01] v6, bump on RIGHT edge at drawn joint
+y=62.40, SIL 32.24 / WALL 29.65 / sealed 32.7 (outer stroke 80.01
+carried per ruling). LEFT [17.43,42.76] v6 — the 45.30 front-edge
+wrong bump DIED and the same law found a REAL drawn shoulder at
+y=22.28 joining wall 19.45 to the BACK-EDGE chimney 17.43/17.67 (the
+edge Howard's prints settled): SIL 31.94 / WALL 29.4 / sealed 32.7.
+The 32.60-front-bump failure state is gone. All other faces
+byte-identical; BONI left stays INDETERMINATE (34.94 refused: member
+3+ strokes — its cure a separate ruling). Jog carried at the TOPMOST
+connecting drawn line — flagged to Howard as a which-line-carries-
+the-step choice if he wants the rect (right y≈64.5) instead.
+**UNVALIDATED caveat registered: one house, one drafting hand — third
+plan set is the test.** `projection_refusals` now rides RESOLVED
+payloads + proposal basis ("PROJECTION REFUSED — …"); guard census: 4
+joined (2 real chimneys × 2 strokes), 15 no-jog-ink (incl. all 8 kept
+eave boundaries — untouched), 3 member-3+-strokes, 0 names-nothing.
+3. **DELETION LEDGER (report 1): EST-713272's nine zones NOT
+RECOVERABLE from any source** (zone_correction_events 0,
+protected_estimate_ledger 0, trash 0, no embedded vertices in 14 run
+docs, no line markers) — decay complete, nothing restored. **WIRED
+going forward on every estimate:** `zone_deletion_ledger` — DELETE
+endpoint snapshots the full victim (kind=human_delete); re-propose
+snapshots replaced proposals (kind=propose_rebuild_wipe). 3 pins in
+`test_deletion_ledger_2026_08_21_send84.py`.
+4. **FENCE MARGIN WARNING WIRED (report 3, authorized):** propose
+compares each face's fence to every other drawing's datum extent on
+the page; shared band + extent inside fence → plain
+`fence_margin_warning` in disclosure + basis. Fence applied VERBATIM,
+never shrunk. No current face triggers it. **RULING XX WIRING
+(report 2, not built):** seat = propose pre-pass via envelope probe's
+ESTABLISHED page; verdict → `proposed_from.attribution`; unlocks the
+left/right width cross-check (post-CCC: 31.94 vs 32.24 — agreeing
+where they should); ~30 lines + pins, awaiting the word. **PRE-HEIGHT
+CENSUS (report 4):** EST-713272 is the ONLY estimate carrying
+superseded-rule wall-outline geometry (4 pre-SEND-77 proposals);
+Letrick series (655664/715139/351320) carry pre-linework
+band-rectangle-era proposals; human zones on EST-886440 (protected,
+untouched) + EST-569367. No writes.
+5. Perf: CCC evaluation memoizes through-verticals per drawn line
+(bisect windows) — sub-second per face (a first pass timed out the
+gable tests' propose; cured, results byte-identical).
+6. Awaiting Howard: which drawn line carries the step when several
+establish (topmost vs the rect); word on re-proposing EST-713272
+under current rules; authorization for XX cross-check wiring. Still
+queued: height cards, Ruling V conversion.
+
 ## 2026-08-21 SEND-81 — OUTERMOST-BOUNDARY REFINEMENT: PROPERTY FAILS, REPORTED, NOT WIRED (stamped green)
 1. Left settled by Howard's prints: chimney on the BACK wall, LEFT side
 of the left elevation only; correct left = 32.60 with one projection.
