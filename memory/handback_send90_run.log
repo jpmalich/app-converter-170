@@ -1,8 +1,0 @@
-GUARD HARD-FAIL: TREE DIRTY — commit first. Nothing stamped, nothing logged.
-   M backend/routes/pdf_overlay.py
-  ?? backend/tests/test_xx_crosscheck_2026_08_21_send90.py
-  ?? memory/handback_send90_run.log
-  ?? memory/send87_chase_probe.py
-  ?? memory/send89_probe.py
-  ?? memory/send89_probe_out.txt
-  ?? memory/send91_propose_response.json
