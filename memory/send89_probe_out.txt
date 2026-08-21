@@ -1,0 +1,287 @@
+
+==== LETRICK front p1 status=RESOLVED reason=None ====
+  fpp_x=1.2879 fpp_y=0.966 plate=(19.68, 21.21) floor=(29.02, 30.52) gap_tol=1.53
+  FULL-HEIGHT SPANNERS (singles spanning plate->floor):
+    x=14.01 pt=False
+    x=14.25 pt=False
+    x=56.20 pt=False
+    x=56.49 pt=False
+  CAPS (horizontal joining two riser tops, above plate):
+    cap y=9.21 x[38.24,38.95] W=0.92ft cap_to_plate=10.12ft riser_bottoms=(20.73,20.73)
+    cap y=9.48 x[38.71,39.89] W=1.52ft cap_to_plate=9.85ft riser_bottoms=(20.73,20.73)
+    cap y=10.06 x[39.00,39.86] W=1.11ft cap_to_plate=9.29ft riser_bottoms=(20.73,20.73)
+    cap y=10.80 x[13.33,57.16] W=56.45ft cap_to_plate=8.58ft riser_bottoms=(40.64,33.25)
+    cap y=11.06 x[13.33,57.16] W=56.45ft cap_to_plate=8.33ft riser_bottoms=(40.64,33.25)
+    cap y=11.32 x[13.33,57.16] W=56.45ft cap_to_plate=8.08ft riser_bottoms=(40.64,33.25)
+    cap y=11.58 x[13.33,57.16] W=56.45ft cap_to_plate=7.82ft riser_bottoms=(40.64,33.25)
+    cap y=11.84 x[13.33,57.16] W=56.45ft cap_to_plate=7.57ft riser_bottoms=(40.64,33.25)
+    cap y=13.94 x[13.33,57.16] W=56.45ft cap_to_plate=5.55ft riser_bottoms=(16.47,17.09)
+    cap y=14.72 x[13.33,57.16] W=56.45ft cap_to_plate=4.79ft riser_bottoms=(16.47,17.09)
+    cap y=15.24 x[59.84,61.10] W=1.63ft cap_to_plate=4.28ft riser_bottoms=(17.09,17.09)
+    cap y=15.35 x[58.03,59.12] W=1.40ft cap_to_plate=4.18ft riser_bottoms=(17.09,17.09)
+    cap y=15.50 x[59.84,61.10] W=1.63ft cap_to_plate=4.04ft riser_bottoms=(17.09,17.09)
+  OUTLINE x_span=[14.01, 56.49] wall_corners=None y_top=20.37 y_bot=29.73 SIL=54.71ft WALL=Noneft
+  AREA outline=494.67 ft2 wall_rect=None ft2 residue(outline-wall)=None ft2
+
+==== LETRICK rear p1 status=RESOLVED reason=None ====
+  fpp_x=1.4071 fpp_y=1.0553 plate=(65.12, 66.65) floor=(74.63, 75.99000000000001) gap_tol=1.53
+  FULL-HEIGHT SPANNERS (singles spanning plate->floor):
+    x=38.13 pt=False
+    x=38.52 pt=False
+    x=53.12 pt=False
+    x=53.36 pt=False
+    x=57.27 pt=False
+    x=57.52 pt=False
+    x=80.47 pt=False
+    x=80.88 pt=False
+  CAPS (horizontal joining two riser tops, above plate):
+    cap y=54.64 x[51.39,52.29] W=1.26ft cap_to_plate=11.06ft riser_bottoms=(65.35,65.35)
+    cap y=55.01 x[54.86,55.77] W=1.28ft cap_to_plate=10.66ft riser_bottoms=(76.80,76.80)
+    cap y=56.03 x[37.60,81.43] W=61.68ft cap_to_plate=9.59ft riser_bottoms=(77.70,86.16)
+    cap y=56.19 x[37.60,81.43] W=61.68ft cap_to_plate=9.42ft riser_bottoms=(77.70,86.16)
+    cap y=56.30 x[53.10,57.53] W=6.23ft cap_to_plate=9.31ft riser_bottoms=(76.80,76.80)
+    cap y=56.72 x[37.60,81.43] W=61.68ft cap_to_plate=8.87ft riser_bottoms=(77.70,86.16)
+    cap y=56.72 x[87.61,87.73] W=0.16ft cap_to_plate=8.87ft riser_bottoms=(66.33,66.33)
+    cap y=56.97 x[37.60,81.43] W=61.68ft cap_to_plate=8.60ft riser_bottoms=(77.70,86.16)
+    cap y=57.24 x[37.60,53.11] W=21.83ft cap_to_plate=8.32ft riser_bottoms=(77.70,76.80)
+    cap y=57.24 x[57.51,81.43] W=33.65ft cap_to_plate=8.32ft riser_bottoms=(76.80,86.16)
+    cap y=57.35 x[53.36,57.27] W=5.50ft cap_to_plate=8.20ft riser_bottoms=(76.80,76.80)
+    cap y=57.49 x[37.60,53.11] W=21.83ft cap_to_plate=8.05ft riser_bottoms=(77.70,76.80)
+    cap y=57.49 x[57.51,81.43] W=33.65ft cap_to_plate=8.05ft riser_bottoms=(76.80,86.16)
+    cap y=59.07 x[37.60,81.43] W=61.68ft cap_to_plate=6.38ft riser_bottoms=(61.82,62.01)
+    cap y=60.11 x[32.46,35.61] W=4.43ft cap_to_plate=5.28ft riser_bottoms=(62.15,62.15)
+    cap y=60.11 x[37.60,81.43] W=61.68ft cap_to_plate=5.28ft riser_bottoms=(61.82,62.01)
+    cap y=60.27 x[33.62,34.88] W=1.78ft cap_to_plate=5.12ft riser_bottoms=(62.15,62.15)
+    cap y=60.27 x[83.34,86.49] W=4.43ft cap_to_plate=5.12ft riser_bottoms=(62.32,62.32)
+    cap y=60.38 x[35.17,81.43] W=65.09ft cap_to_plate=5.00ft riser_bottoms=(62.15,62.01)
+    cap y=60.38 x[84.50,85.76] W=1.78ft cap_to_plate=5.00ft riser_bottoms=(62.32,62.32)
+    cap y=60.74 x[84.50,85.76] W=1.78ft cap_to_plate=4.63ft riser_bottoms=(62.32,62.32)
+    cap y=62.32 x[58.03,59.06] W=1.44ft cap_to_plate=2.95ft riser_bottoms=(64.36,64.36)
+    cap y=62.48 x[57.50,59.02] W=2.14ft cap_to_plate=2.79ft riser_bottoms=(64.36,64.36)
+  OUTLINE x_span=[38.13, 80.88] wall_corners=None y_top=65.84 y_bot=75.27 SIL=60.15ft WALL=Noneft
+  AREA outline=598.62 ft2 wall_rect=None ft2 residue(outline-wall)=None ft2
+
+==== LETRICK left p2 status=RESOLVED reason=None ====
+  fpp_x=1.2611 fpp_y=0.9458 plate=(20.57, 22.1) floor=(30.21, 31.51) gap_tol=1.53
+  FULL-HEIGHT SPANNERS (singles spanning plate->floor):
+    x=17.43 pt=False
+    x=17.67 pt=False
+    x=19.45 pt=True
+    x=19.83 pt=False
+    x=42.76 pt=True
+  CHAIN x_top=19.45 x_bot=17.43 jog_y=22.28
+  CHAIN x_top=19.45 x_bot=17.67 jog_y=22.28
+  CAPS (horizontal joining two riser tops, above plate):
+    cap y=10.49 x[18.19,19.09] W=1.12ft cap_to_plate=9.54ft riser_bottoms=(32.27,33.17)
+    cap y=10.65 x[18.81,21.01] W=2.77ft cap_to_plate=9.38ft riser_bottoms=(33.17,33.17)
+    cap y=11.07 x[18.22,19.06] W=1.06ft cap_to_plate=8.98ft riser_bottoms=(32.27,33.17)
+    cap y=11.45 x[18.81,19.05] W=0.30ft cap_to_plate=8.62ft riser_bottoms=(33.17,33.17)
+    cap y=11.64 x[17.41,20.11] W=3.41ft cap_to_plate=8.44ft riser_bottoms=(32.27,33.17)
+    cap y=11.77 x[17.41,20.11] W=3.41ft cap_to_plate=8.32ft riser_bottoms=(32.27,33.17)
+    cap y=12.13 x[17.67,19.85] W=2.75ft cap_to_plate=7.98ft riser_bottoms=(32.27,33.17)
+    cap y=12.48 x[17.67,19.85] W=2.75ft cap_to_plate=7.65ft riser_bottoms=(32.27,33.17)
+    cap y=12.82 x[17.67,19.85] W=2.75ft cap_to_plate=7.33ft riser_bottoms=(32.27,33.17)
+    cap y=13.17 x[17.67,19.85] W=2.75ft cap_to_plate=7.00ft riser_bottoms=(32.27,33.17)
+    cap y=13.17 x[29.35,32.02] W=3.36ft cap_to_plate=7.00ft riser_bottoms=(15.04,15.04)
+    cap y=13.48 x[28.90,32.46] W=4.49ft cap_to_plate=6.70ft riser_bottoms=(15.04,15.37)
+    cap y=15.60 x[17.67,19.85] W=2.75ft cap_to_plate=4.70ft riser_bottoms=(17.41,19.66)
+    cap y=16.17 x[18.71,30.68] W=15.10ft cap_to_plate=4.17ft riser_bottoms=(19.66,19.05)
+    cap y=16.45 x[19.56,30.68] W=14.03ft cap_to_plate=3.90ft riser_bottoms=(19.66,19.05)
+    cap y=17.33 x[17.67,22.43] W=6.01ft cap_to_plate=3.07ft riser_bottoms=(22.65,19.06)
+    cap y=18.38 x[17.67,19.85] W=2.75ft cap_to_plate=2.07ft riser_bottoms=(22.65,22.65)
+  OUTLINE x_span=[17.43, 42.76] wall_corners=[19.45, 42.76] y_top=21.18 y_bot=30.91 SIL=31.94ft WALL=29.4ft
+  AREA outline=291.33 ft2 wall_rect=270.53 ft2 residue(outline-wall)=20.79 ft2
+  BUMP chain x[17.43,19.45] depth=2.55ft below-jog h=8.16ft area=20.80 ft2
+  BUMP chain x[17.67,19.45] depth=2.24ft below-jog h=8.16ft area=18.25 ft2
+  TWINS near wall corner L x=19.45: 
+    x=18.70 (-0.94ft) y[10.44,11.64] spans=False plate_term=False
+    x=18.70 (-0.94ft) y[18.56,22.65] spans=False plate_term=False
+    x=18.70 (-0.94ft) y[24.37,26.02] spans=False plate_term=True
+    x=18.70 (-0.94ft) y[30.60,34.46] spans=False plate_term=True
+    x=18.70 (-0.94ft) y[41.64,42.69] spans=False plate_term=True
+    x=19.45 (-0.00ft) y[21.32,32.27] spans=True plate_term=True
+    x=19.56 (+0.13ft) y[20.79,21.32] spans=False plate_term=True
+    x=19.56 (+0.13ft) y[32.27,41.63] spans=False plate_term=True
+    x=19.61 (+0.21ft) y[32.27,32.85] spans=False plate_term=True
+    x=19.83 (+0.48ft) y[11.90,33.17] spans=True plate_term=False
+    x=20.00 (+0.69ft) y[18.06,19.83] spans=False plate_term=False
+    x=20.11 (+0.84ft) y[11.64,18.99] spans=False plate_term=False
+    x=20.11 (+0.84ft) y[32.27,32.85] spans=False plate_term=True
+    x=20.21 (+0.96ft) y[16.10,19.66] spans=False plate_term=False
+    x=20.32 (+1.10ft) y[13.35,13.51] spans=False plate_term=False
+    x=20.43 (+1.24ft) y[16.15,19.48] spans=False plate_term=False
+    x=20.43 (+1.24ft) y[32.33,32.59] spans=False plate_term=True
+  TWINS near wall corner R x=42.76: 
+    x=42.01 (-0.95ft) y[32.27,32.85] spans=False plate_term=True
+    x=42.28 (-0.61ft) y[32.33,32.59] spans=False plate_term=True
+    x=42.53 (-0.29ft) y[32.27,32.85] spans=False plate_term=True
+    x=42.76 (-0.00ft) y[21.61,33.17] spans=True plate_term=True
+    x=42.99 (+0.30ft) y[21.71,22.24] spans=False plate_term=True
+    x=42.99 (+0.30ft) y[32.27,41.63] spans=False plate_term=True
+    x=43.22 (+0.58ft) y[22.17,32.27] spans=False plate_term=True
+    x=43.22 (+0.58ft) y[36.22,36.43] spans=False plate_term=True
+    x=43.22 (+0.58ft) y[41.64,42.69] spans=False plate_term=True
+    x=43.55 (+1.00ft) y[22.24,22.57] spans=False plate_term=True
+  ABOVE-PLATE ink at proj x=17.43: rises to y=11.64 (8.44ft above plate)
+  ABOVE-PLATE ink at proj x=17.67: rises to y=11.90 (8.20ft above plate)
+  ABOVE-PLATE ink at proj x=17.43: rises to y=11.64 (8.44ft above plate)
+  ABOVE-PLATE ink at proj x=17.67: rises to y=11.90 (8.20ft above plate)
+  ABOVE-PLATE ink at proj x=18.04: rises to y=18.56 (1.90ft above plate)
+
+==== LETRICK right p2 status=RESOLVED reason=None ====
+  fpp_x=1.2744 fpp_y=0.9558 plate=(60.73, 62.19) floor=(70.37, 71.54) gap_tol=1.46
+  FULL-HEIGHT SPANNERS (singles spanning plate->floor):
+    x=54.71 pt=True
+    x=77.64 pt=False
+    x=77.98 pt=True
+    x=79.77 pt=False
+    x=80.01 pt=False
+  CHAIN x_top=65.92 x_bot=54.24 jog_y=63.15
+  CHAIN x_top=66.16 x_bot=54.24 jog_y=63.15
+  CHAIN x_top=68.94 x_bot=54.24 jog_y=63.15
+  CHAIN x_top=54.71 x_bot=77.64 jog_y=63.15
+  CHAIN x_top=77.98 x_bot=79.77 jog_y=62.40
+  CHAIN x_top=77.98 x_bot=80.01 jog_y=62.40
+  CAPS (horizontal joining two riser tops, above plate):
+    cap y=50.57 x[78.40,79.20] W=1.01ft cap_to_plate=9.71ft riser_bottoms=(73.27,72.37)
+    cap y=50.99 x[75.68,76.59] W=1.16ft cap_to_plate=9.31ft riser_bottoms=(52.76,73.27)
+    cap y=51.46 x[76.59,77.80] W=1.55ft cap_to_plate=8.86ft riser_bottoms=(73.27,73.27)
+    cap y=51.72 x[77.33,80.03] W=3.44ft cap_to_plate=8.61ft riser_bottoms=(73.27,72.37)
+    cap y=51.88 x[77.56,77.80] W=0.31ft cap_to_plate=8.46ft riser_bottoms=(73.27,73.27)
+    cap y=52.51 x[76.35,76.82] W=0.59ft cap_to_plate=7.85ft riser_bottoms=(73.27,73.27)
+    cap y=52.60 x[76.82,79.77] W=3.76ft cap_to_plate=7.77ft riser_bottoms=(73.27,72.37)
+    cap y=52.70 x[77.11,77.36] W=0.32ft cap_to_plate=7.67ft riser_bottoms=(73.27,73.27)
+    cap y=52.92 x[77.59,79.77] W=2.78ft cap_to_plate=7.46ft riser_bottoms=(73.27,72.37)
+    cap y=53.27 x[65.42,68.09] W=3.40ft cap_to_plate=7.13ft riser_bottoms=(55.29,55.29)
+    cap y=53.62 x[64.98,68.53] W=4.54ft cap_to_plate=6.80ft riser_bottoms=(58.23,57.02)
+    cap y=53.95 x[64.53,68.98] W=5.67ft cap_to_plate=6.48ft riser_bottoms=(58.23,57.02)
+    cap y=54.31 x[64.08,69.43] W=6.81ft cap_to_plate=6.13ft riser_bottoms=(58.23,57.89)
+    cap y=54.48 x[63.92,64.13] W=0.27ft cap_to_plate=5.98ft riser_bottoms=(58.23,58.23)
+    cap y=54.66 x[63.64,69.87] W=7.95ft cap_to_plate=5.80ft riser_bottoms=(57.89,57.89)
+    cap y=55.00 x[63.19,70.32] W=9.09ft cap_to_plate=5.48ft riser_bottoms=(57.89,57.89)
+    cap y=55.14 x[66.40,67.67] W=1.61ft cap_to_plate=5.34ft riser_bottoms=(58.23,58.05)
+    cap y=55.29 x[64.59,65.68] W=1.38ft cap_to_plate=5.20ft riser_bottoms=(58.23,58.23)
+    cap y=55.29 x[67.95,69.07] W=1.42ft cap_to_plate=5.20ft riser_bottoms=(58.05,57.89)
+    cap y=55.36 x[62.74,65.22] W=3.16ft cap_to_plate=5.14ft riser_bottoms=(57.89,58.23)
+    cap y=55.36 x[68.40,70.77] W=3.01ft cap_to_plate=5.14ft riser_bottoms=(57.02,57.89)
+    cap y=55.45 x[62.50,62.71] W=0.27ft cap_to_plate=5.04ft riser_bottoms=(57.89,57.89)
+    cap y=55.45 x[66.40,67.67] W=1.61ft cap_to_plate=5.04ft riser_bottoms=(58.23,58.05)
+    cap y=55.56 x[70.88,71.09] W=0.27ft cap_to_plate=4.94ft riser_bottoms=(57.89,57.89)
+    cap y=55.70 x[62.30,65.22] W=3.73ft cap_to_plate=4.81ft riser_bottoms=(57.89,58.23)
+    cap y=56.27 x[66.75,78.73] W=15.26ft cap_to_plate=4.27ft riser_bottoms=(58.05,59.68)
+    cap y=56.54 x[66.55,77.88] W=14.43ft cap_to_plate=4.00ft riser_bottoms=(58.05,59.68)
+  OUTLINE x_span=[54.71, 80.01] wall_corners=[54.71, 77.98] y_top=61.32 y_bot=70.85 SIL=32.24ft WALL=29.65ft
+  AREA outline=291.01 ft2 wall_rect=270.12 ft2 residue(outline-wall)=20.89 ft2
+  BUMP chain x[54.24,65.92] depth=14.87ft below-jog h=7.36ft area=109.48 ft2
+  BUMP chain x[54.24,66.16] depth=15.19ft below-jog h=7.36ft area=111.78 ft2
+  BUMP chain x[54.24,68.94] depth=18.73ft below-jog h=7.36ft area=137.82 ft2
+  BUMP chain x[54.71,77.64] depth=29.22ft below-jog h=7.36ft area=215.06 ft2
+  BUMP chain x[77.98,79.77] depth=2.28ft below-jog h=8.07ft area=18.42 ft2
+  BUMP chain x[77.98,80.01] depth=2.59ft below-jog h=8.07ft area=20.93 ft2
+  TWINS near wall corner L x=54.71: 
+    x=54.24 (-0.59ft) y[62.31,72.37] spans=False plate_term=True
+    x=54.24 (-0.59ft) y[76.32,76.53] spans=False plate_term=True
+    x=54.24 (-0.59ft) y[81.74,82.79] spans=False plate_term=True
+    x=54.44 (-0.34ft) y[61.81,62.34] spans=False plate_term=True
+    x=54.44 (-0.34ft) y[72.37,81.74] spans=False plate_term=True
+    x=54.50 (-0.27ft) y[72.37,72.96] spans=False plate_term=True
+    x=54.71 (+0.00ft) y[61.71,73.27] spans=True plate_term=True
+    x=55.02 (+0.40ft) y[72.37,72.96] spans=False plate_term=True
+    x=55.29 (+0.74ft) y[72.43,72.70] spans=False plate_term=True
+    x=55.54 (+1.06ft) y[72.37,72.96] spans=False plate_term=True
+  TWINS near wall corner R x=77.98: 
+    x=77.04 (-1.20ft) y[56.20,59.41] spans=False plate_term=False
+    x=77.14 (-1.07ft) y[52.55,52.70] spans=False plate_term=False
+    x=77.14 (-1.07ft) y[72.43,72.70] spans=False plate_term=True
+    x=77.28 (-0.90ft) y[56.28,59.68] spans=False plate_term=False
+    x=77.35 (-0.80ft) y[51.74,59.13] spans=False plate_term=False
+    x=77.44 (-0.68ft) y[58.12,59.93] spans=False plate_term=False
+    x=77.44 (-0.68ft) y[72.37,72.96] spans=False plate_term=True
+    x=77.64 (-0.43ft) y[51.70,73.27] spans=True plate_term=False
+    x=77.88 (-0.12ft) y[59.98,61.42] spans=False plate_term=True
+    x=77.88 (-0.12ft) y[72.37,81.74] spans=False plate_term=True
+    x=77.98 (-0.00ft) y[61.42,72.37] spans=True plate_term=True
+    x=78.04 (+0.08ft) y[59.98,60.11] spans=False plate_term=True
+    x=78.26 (+0.36ft) y[61.42,61.75] spans=False plate_term=True
+    x=78.33 (+0.45ft) y[61.42,61.73] spans=False plate_term=True
+    x=78.33 (+0.45ft) y[64.04,64.60] spans=False plate_term=True
+    x=78.33 (+0.45ft) y[81.74,82.79] spans=False plate_term=True
+    x=78.79 (+1.03ft) y[50.54,51.74] spans=False plate_term=False
+    x=78.79 (+1.03ft) y[60.09,64.60] spans=False plate_term=True
+    x=78.79 (+1.03ft) y[72.37,75.45] spans=False plate_term=True
+  ABOVE-PLATE ink at proj x=77.14: rises to y=52.55 (7.82ft above plate)
+  ABOVE-PLATE ink at proj x=77.28: rises to y=56.28 (4.25ft above plate)
+  ABOVE-PLATE ink at proj x=77.35: rises to y=51.74 (8.59ft above plate)
+  ABOVE-PLATE ink at proj x=77.44: rises to y=58.12 (2.49ft above plate)
+  ABOVE-PLATE ink at proj x=77.64: rises to y=51.70 (8.63ft above plate)
+  ABOVE-PLATE ink at proj x=79.77: rises to y=52.00 (8.34ft above plate)
+  ABOVE-PLATE ink at proj x=80.01: rises to y=51.74 (8.59ft above plate)
+  ABOVE-PLATE ink at proj x=79.77: rises to y=52.00 (8.34ft above plate)
+  ABOVE-PLATE ink at proj x=80.01: rises to y=51.74 (8.59ft above plate)
+
+==== BONI front p1 status=RESOLVED reason=None ====
+  fpp_x=None fpp_y=None plate=(13.26, 14.59) floor=(32.14, 33.38) gap_tol=1.33
+  FULL-HEIGHT SPANNERS (singles spanning plate->floor):
+    x=16.29 pt=False
+    x=61.66 pt=False
+    x=62.01 pt=False
+  CAPS (horizontal joining two riser tops, above plate):
+    cap y=4.71 x[15.70,43.91] riser_bottoms=(44.40,23.65)
+    cap y=4.92 x[15.70,43.91] riser_bottoms=(44.40,23.65)
+    cap y=5.12 x[15.70,43.91] riser_bottoms=(44.40,23.65)
+    cap y=5.34 x[15.70,43.91] riser_bottoms=(44.40,23.65)
+    cap y=5.55 x[15.70,43.91] riser_bottoms=(44.40,23.65)
+    cap y=5.77 x[15.70,43.91] riser_bottoms=(44.40,23.65)
+    cap y=7.95 x[43.90,62.66] riser_bottoms=(23.65,35.13)
+    cap y=9.11 x[15.72,22.48] riser_bottoms=(12.37,11.55)
+    cap y=9.29 x[15.72,22.33] riser_bottoms=(12.37,11.55)
+    cap y=10.15 x[15.72,22.12] riser_bottoms=(12.37,14.83)
+    cap y=10.15 x[24.55,28.26] riser_bottoms=(13.44,13.44)
+    cap y=10.34 x[11.25,22.11] riser_bottoms=(12.37,14.83)
+    cap y=10.34 x[24.55,28.26] riser_bottoms=(13.44,13.44)
+    cap y=10.49 x[12.40,13.67] riser_bottoms=(12.37,12.37)
+    cap y=10.57 x[15.72,22.13] riser_bottoms=(12.37,14.83)
+    cap y=10.64 x[13.96,14.83] riser_bottoms=(12.37,12.37)
+    cap y=10.80 x[12.40,22.17] riser_bottoms=(12.37,14.83)
+    cap y=10.80 x[24.49,28.31] riser_bottoms=(13.44,13.44)
+    cap y=10.98 x[15.45,22.23] riser_bottoms=(12.37,14.83)
+    cap y=10.98 x[24.44,25.41] riser_bottoms=(13.44,13.44)
+    cap y=10.98 x[27.30,28.38] riser_bottoms=(13.44,13.44)
+    cap y=11.20 x[24.35,28.47] riser_bottoms=(13.57,13.44)
+    cap y=11.38 x[24.20,25.01] riser_bottoms=(13.57,13.44)
+    cap y=11.38 x[27.69,28.61] riser_bottoms=(13.44,13.44)
+    cap y=11.62 x[24.03,28.78] riser_bottoms=(13.57,13.44)
+  OUTLINE x_span=[16.29, 62.01] wall_corners=None y_top=13.94 y_bot=32.71 SIL=Noneft WALL=Noneft
+
+==== BONI rear p1 status=RESOLVED reason=None ====
+  fpp_x=None fpp_y=None plate=(56.94, 58.379999999999995) floor=(75.66, 76.92) gap_tol=1.44
+  FULL-HEIGHT SPANNERS (singles spanning plate->floor):
+    x=36.11 pt=False
+    x=36.48 pt=False
+    x=81.80 pt=False
+  CAPS (horizontal joining two riser tops, above plate):
+    cap y=48.13 x[54.20,82.41] riser_bottoms=(62.49,90.05)
+    cap y=48.23 x[54.20,82.41] riser_bottoms=(62.49,90.05)
+    cap y=48.48 x[54.20,82.41] riser_bottoms=(62.49,90.05)
+    cap y=48.75 x[54.20,82.41] riser_bottoms=(62.49,90.05)
+    cap y=49.00 x[54.20,82.41] riser_bottoms=(62.49,90.05)
+    cap y=49.27 x[54.20,82.41] riser_bottoms=(62.49,90.05)
+    cap y=49.52 x[54.20,82.41] riser_bottoms=(62.49,90.05)
+    cap y=50.74 x[35.45,54.20] riser_bottoms=(85.88,61.99)
+  OUTLINE x_span=[36.11, 81.8] wall_corners=None y_top=57.71 y_bot=76.35 SIL=Noneft WALL=Noneft
+
+==== BONI left p2 status=INDETERMINATE reason=all spanning boundaries sit at one corner ====
+  fpp_x=None fpp_y=None plate=(13.26, 14.59) floor=(32.11, 33.37) gap_tol=1.33
+  FULL-HEIGHT SPANNERS (singles spanning plate->floor):
+    x=11.52 pt=True
+    x=12.01 pt=True
+    x=34.94 pt=False
+  CAPS (horizontal joining two riser tops, above plate):
+    cap y=6.73 x[21.47,25.43] riser_bottoms=(8.67,8.67)
+    cap y=7.07 x[21.03,25.88] riser_bottoms=(8.67,8.67)
+    cap y=8.28 x[14.38,15.52] riser_bottoms=(10.01,10.01)
+    cap y=10.76 x[33.58,35.30] riser_bottoms=(13.27,34.97)
+    cap y=10.92 x[35.32,35.99] riser_bottoms=(34.97,34.97)
+    cap y=11.18 x[35.32,35.99] riser_bottoms=(34.97,34.97)
+
+==== BONI right: datum pair not located ====

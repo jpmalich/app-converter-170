@@ -601,6 +601,7 @@ async def _latest_ocr(est_id: str):
         {"estimate_id": est_id, "status": "done"},
         {"_id": 0, "result.raw_ai._ocr_text_by_page": 1,
          "result.raw_ai._ocr_text_ref": 1, "run_id": 1,
+         "result.raw_ai.sheets_identified": 1,
          "source_files": 1},
         sort=[("created_at", -1)])
     raw_ai = ((run or {}).get("result") or {}).get("raw_ai") or {}
@@ -1020,6 +1021,137 @@ def _best_ladder_spec(face_result: dict):
     return min(specs, key=lambda s: _TIER_RANK[s["tier"]])
 
 
+# SEND-90 (Howard, 2026-08-14) — RULING XX WIDTH CROSS-CHECK, register:
+# THIS WOULD HAVE CAUGHT THE MISSING CHIMNEY WITHOUT ANYONE CHECKING
+# PRINTS. Left read 32.60 and right read 29.65, three feet apart, on a
+# house XX already knew had equal depths. Nobody noticed until Howard
+# looked at the drawings.
+XX_CROSS_CHECK_REGISTER = (
+    "RULING XX width cross-check (SEND-90): left and right elevation "
+    "widths that disagree are FLAGGED ON THE PAYLOAD, NEVER "
+    "AUTO-RESOLVED. It compares WALL-ONLY figures (a depth is a "
+    "plan-derived wall figure; a silhouette includes projections — "
+    "pairing them mixes two rulers). It reports the DIFFERENCE "
+    "MAGNITUDE, never a boolean flag — any 'agree within X' is a "
+    "chosen threshold, and a boolean either needs a number nobody can "
+    "justify or fires on every face. Silent-because-INDETERMINATE is "
+    "distinguishable from silent-because-agreeing. This would have "
+    "caught the missing chimney: left 32.60 vs right 29.65, three feet "
+    "apart, on a house XX already knew had equal depths.")
+
+
+def _xx_seat_verdict(ot: dict, run: dict) -> dict:
+    """SEND-90 — the XX verdict's SEAT: the run's FLOOR-PLAN sheets
+    (XX's claim is about plan-derived depths, never a silhouette page —
+    elevation pages establish envelopes of their own and would seat the
+    verdict on the wrong instrument). Plan sheets that disagree are
+    FLAGGED INDETERMINATE naming each page — never resolved."""
+    from ocr_geometry import attribution_verdict
+    sheets = (((run or {}).get("result") or {}).get("raw_ai")
+              or {}).get("sheets_identified") or []
+    plan_pages = [str(s.get("page")) for s in sheets
+                  if isinstance(s, dict)
+                  and s.get("useful_for") == "floor_plan"]
+    out = {"seat_pages": plan_pages, "seat_source": "sheets_identified",
+           "status": "INDETERMINATE", "why": None, "depth": None,
+           "per_page": []}
+    if not plan_pages:
+        out["why"] = ("no floor-plan sheet identified on the run — the "
+                      "verdict has no seat")
+        return out
+    for pg in plan_pages:
+        page = (ot or {}).get(pg) or {}
+        try:
+            v = attribution_verdict(page.get("runs") or [])
+        except Exception as e:
+            v = {"status": "INDETERMINATE",
+                 "why": f"verdict failed on p{pg}: {e}", "depth": None}
+        out["per_page"].append({"page": pg, "status": v.get("status"),
+                                "why": v.get("why"),
+                                "depth": v.get("depth")})
+    statuses = {p["status"] for p in out["per_page"]}
+    if statuses == {"IMMATERIAL"}:
+        depths = {(p["depth"] or {}).get("feet") is not None
+                  and ((p["depth"] or {}).get("feet"),
+                       (p["depth"] or {}).get("inches"))
+                  for p in out["per_page"]}
+        if len(depths) == 1:
+            out["status"] = "IMMATERIAL"
+            out["depth"] = out["per_page"][0]["depth"]
+            out["why"] = ("equal side depths on every floor-plan sheet "
+                          f"(pages {', '.join(plan_pages)})")
+            return out
+        out["why"] = ("floor-plan sheets all read IMMATERIAL but at "
+                      "different depths: " + "; ".join(
+                          f"p{p['page']} {p['depth']}"
+                          for p in out["per_page"]))
+        return out
+    if statuses == {"MATERIAL"}:
+        out["status"] = "MATERIAL"
+        out["why"] = ("unequal side depths on every floor-plan sheet "
+                      f"(pages {', '.join(plan_pages)})")
+        return out
+    out["why"] = ("floor-plan sheets disagree — flagged, never "
+                  "resolved: " + "; ".join(
+                      f"p{p['page']} {p['status']} ({p['why']})"
+                      for p in out["per_page"]))
+    return out
+
+
+def _xx_width_cross_check(verdict: dict, sides: dict) -> dict:
+    """SEND-90 — the cross-check payload. Compares WALL-ONLY widths,
+    reports the DIFFERENCE MAGNITUDE (never a boolean, no threshold),
+    and keeps silent-because-INDETERMINATE distinguishable from
+    silent-because-agreeing. Flags, never resolves."""
+    out = {"register": XX_CROSS_CHECK_REGISTER, "verdict": verdict,
+           "sides": sides, "state": None, "statement": None,
+           "difference_ft": None, "silhouette_difference_ft": None}
+    st = (verdict or {}).get("status")
+    if st == "MATERIAL":
+        out["state"] = "NOT_COMPARED"
+        out["statement"] = ("XX says the side depths are UNEQUAL — "
+                            "equality is not claimed on this house; no "
+                            "width comparison applies")
+        return out
+    if st != "IMMATERIAL":
+        out["state"] = "SILENT_INDETERMINATE"
+        out["statement"] = (
+            f"XX verdict is {st or 'INDETERMINATE'} — the check is "
+            "silent because attribution is unresolved "
+            f"({(verdict or {}).get('why')}), NOT because the sides "
+            "agree")
+        return out
+    L = (sides or {}).get("left") or {}
+    R = (sides or {}).get("right") or {}
+    lw_, rw_ = L.get("wall_only_ft"), R.get("wall_only_ft")
+    if lw_ is None or rw_ is None:
+        missing = [s for s in ("left", "right")
+                   if ((sides or {}).get(s) or {}).get("wall_only_ft")
+                   is None]
+        out["state"] = "SILENT_NO_FIGURE"
+        out["statement"] = (
+            "XX says the side depths are EQUAL but no wall-only width "
+            "stands on: " + "; ".join(
+                f"{s} ({((sides or {}).get(s) or {}).get('note') or 'no wall-only figure'})"
+                for s in missing))
+        return out
+    d = round(abs(lw_ - rw_), 2)
+    out["state"] = "REPORTED"
+    out["difference_ft"] = d
+    out["statement"] = (
+        f"XX says the side depths are EQUAL — wall-only widths: left "
+        f"{lw_} ft, right {rw_} ft — differ by {d} ft")
+    ls, rs = L.get("silhouette_ft"), R.get("silhouette_ft")
+    if ls is not None and rs is not None:
+        sd = round(abs(ls - rs), 2)
+        out["silhouette_difference_ft"] = sd
+        out["statement"] += (
+            f" (silhouettes: left {ls} ft, right {rs} ft — differ by "
+            f"{sd} ft; silhouettes include projections and are NOT the "
+            "compared figures)")
+    return out
+
+
 @router.post("/estimates/{est_id}/pdf-overlay/propose")
 async def propose_zones(
     est_id: str, user: dict = Depends(get_current_user),
@@ -1087,6 +1219,10 @@ async def propose_zones(
     skipped = []
     face_to_id = {"front": "front", "rear": "back",
                   "left": "left", "right": "right"}
+    # SEND-90 — RULING XX width cross-check: verdict seated on the
+    # run's floor-plan sheets; side widths collected per face below.
+    xx_verdict = _xx_seat_verdict(ot, run)
+    xx_sides = {}
     # SEND-84 (authorized) — FENCE MARGIN data: every drawing's own
     # datum extent, per page, for the neighbouring-drawing warning.
     face_fences = {}
@@ -1106,6 +1242,11 @@ async def propose_zones(
         # metric is correction distance (item 4).
         spec = _best_ladder_spec(r)
         if not spec:
+            if face in ("left", "right"):
+                xx_sides[face] = {
+                    "wall_only_ft": None, "silhouette_ft": None,
+                    "note": "no evaluated elevation drawing for this "
+                            "face"}
             skipped.append({
                 "face_id": face_to_id[face],
                 "reason": ("no evaluated elevation drawing for this face "
@@ -1188,6 +1329,38 @@ async def propose_zones(
             except Exception as e:
                 lw = {"status": "INDETERMINATE",
                       "reason": f"line-work read failed: {e}"}
+        # SEND-90 — side widths for the XX cross-check: WALL-ONLY (the
+        # plate-terminated wall corners) is the compared figure; the
+        # SILHOUETTE (x_span, includes projections) rides alongside and
+        # is never compared — pairing them mixes two rulers.
+        if face in ("left", "right"):
+            entry = {"wall_only_ft": None, "silhouette_ft": None,
+                     "note": None}
+            pgd = ot.get(spec["page"]) or {}
+            if (lw.get("status") == "RESOLVED" and spec.get("ft")
+                    and spec.get("scale_y") and pgd.get("page_w")
+                    and pgd.get("page_h")):
+                sy = spec["scale_y"]
+                fppx = (spec["ft"] / (abs(sy[1] - sy[0])
+                                      * pgd["page_h"])
+                        * pgd["page_w"] / 100.0)
+                entry["silhouette_ft"] = round(
+                    (lw["x_span"][1] - lw["x_span"][0]) * fppx, 2)
+                wc = lw.get("wall_corners")
+                if wc:
+                    entry["wall_only_ft"] = round(
+                        (wc[1] - wc[0]) * fppx, 2)
+                else:
+                    entry["note"] = ("no plate-terminated wall corners "
+                                     "on this drawing — a wall-only "
+                                     "width does not stand")
+            elif lw.get("status") != "RESOLVED":
+                entry["note"] = (f"line-work {lw.get('status')}: "
+                                 f"{lw.get('reason')}")
+            else:
+                entry["note"] = ("no evidence scale on this face — "
+                                 "feet not derivable")
+            xx_sides[face] = entry
         geometry_tier = "datum_span"
         if lw.get("status") == "RESOLVED":
             geometry_tier = "wall_outline"
@@ -1258,6 +1431,13 @@ async def propose_zones(
             "geometry_tier": geometry_tier,
             "proposed_from": {"run_id": (run or {}).get("run_id"),
                               "height_ft": spec.get("ft"),
+                              # SEND-90: the XX verdict rides every
+                              # proposal (seat + status, never a value).
+                              "attribution": {
+                                  "status": xx_verdict.get("status"),
+                                  "why": xx_verdict.get("why"),
+                                  "seat_pages":
+                                      xx_verdict.get("seat_pages")},
                               "span": r.get("span"),
                               "band": band,
                               "tier": spec["tier"],
@@ -1468,6 +1648,10 @@ async def propose_zones(
         c["created_at"] = str(c["created_at"])
         c["updated_at"] = str(c["updated_at"])
     return {"ok": True, "proposed": created, "skipped": skipped,
+            # SEND-90 — RULING XX width cross-check: flagged on the
+            # payload, never auto-resolved; magnitude, never a boolean.
+            "width_cross_check": _xx_width_cross_check(xx_verdict,
+                                                       xx_sides),
             "note": ("proposed zones are PROVISIONAL — they feed no "
                      "quantity until a human confirms or bumps them")}
 
