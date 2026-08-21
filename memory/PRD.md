@@ -1,5 +1,35 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-21 SEND-81 — OUTERMOST-BOUNDARY REFINEMENT: PROPERTY FAILS, REPORTED, NOT WIRED (stamped green)
+1. Left settled by Howard's prints: chimney on the BACK wall, LEFT side
+of the left elevation only; correct left = 32.60 with one projection.
+2. **The refinement was tested BEFORE wiring and FAILED — nothing
+shipped** (`memory/send81_report.md`, prediction+outcome in
+`memory/send81_prediction.md`): literal and interval-restricted
+outermost exclude ALL 7 dropped strokes AND all 8 currently-kept
+boundaries (dimension/leader ink lies outboard of every silhouette
+edge); spanning-class-restricted admits the right chimney and Boni
+left's far corner but ALSO left's back-edge strokes → left would move
+off sealed 32.60. **left-17.67 and right-79.77 are structurally
+identical under every variant** — no outermost rule can admit one and
+exclude the other.
+3. Named findings: (a) the CANCELLATION — both candidate projections
+measure ≈2'-7", so today's 32.60 rides the front-edge fragment chain
+(wrong edge per prints) yet lands the right width; (b) the one drawn
+difference — right has a true shoulder horizontal spanning the
+wall→chimney gap; formalizing it needs a sub-line-weight joint
+tolerance (0.40 vs 1.45 vs gap_tol 1.53) = a tuned threshold, ruled
+against — left for Howard; (c) **MIRROR CHECK HOLDS** (chimney on
+opposite edges of the two side views; no mirrored read). Prediction #5
+recorded as NOT SATISFIABLE by this property. Move-check n/a (no wire).
+4. **Suite stamped: `2026-08-21 00:39 UTC · a9b5b32 · CLEAN · 2697
+passed, 9 skipped`** (no code change — report-only pass).
+5. Awaiting Howard: a ruling on the projection joint (the shoulder
+tolerance) or an alternative discriminator. Still queued: deletion
+ledger + EST-713272 nine-zone recoverability, pre-height-build census,
+fence margin warning (authorized), Ruling XX live-wiring cost report,
+height cards, Ruling V conversion.
+
 ## 2026-08-21 SEND-79 — MARKER-STRIP CURE BY CONSTRUCTION + CHIMNEY RCA + XX CROSS-CHECK (stamped green)
 1. **Item 1 BUILT (authorized):** every rebuild door (`/rederive`,
 `hover-lp-run`, `lp-package/materialize`) now RE-RUNS the overlay law
