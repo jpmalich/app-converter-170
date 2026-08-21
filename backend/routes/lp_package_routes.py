@@ -665,6 +665,9 @@ async def lp_package_materialize(est_id: str, payload: dict | None = None,
     # every tab — scope before the write, same one-copy filter as
     # /rederive and hover-lp-run.
     tab_lines = scope_to_lp_family(tab_lines, (full_est or {}).get("lines") or [])
+    # SEND-79 Item 1 — re-run the overlay law, never copy markers.
+    from routes.pdf_overlay import reapply_overlay_law
+    tab_lines = await reapply_overlay_law(est_id, tab_lines)
     est_set: dict = {"lines": tab_lines}
     rid = str(run.get("run_id") or "").strip() or None
     archived = await archive_run_for_artifact(

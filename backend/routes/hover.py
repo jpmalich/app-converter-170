@@ -3640,6 +3640,11 @@ async def rederive_estimate(
         # human-typed rows survive regardless of tab — flagged in the
         # response, never silently dropped.
         tab_lines = scope_to_lp_family(tab_lines, prev_lines)
+    # SEND-79 Item 1 — the overlay law RE-RUNS over the rebuilt lines
+    # (never copied across the merge): what a human value superseded
+    # survives every rebuild by construction.
+    from routes.pdf_overlay import reapply_overlay_law
+    tab_lines = await reapply_overlay_law(est_id, tab_lines)
     await db.estimates.update_one(
         {"id": est_id},
         {"$set": {"lines": tab_lines, "hover_measurements": scoped}})
@@ -3760,6 +3765,9 @@ async def hover_lp_run(
         # emits every tab — the wholesale write here was re-landing
         # vinyl/ascend rows on LP estimates after the /rederive fix.
         rebuilt_lines = scope_to_lp_family(rebuilt_lines, est.get("lines") or [])
+        # SEND-79 Item 1 — re-run the overlay law, never copy markers.
+        from routes.pdf_overlay import reapply_overlay_law
+        rebuilt_lines = await reapply_overlay_law(est_id, rebuilt_lines)
         est_set["lines"] = rebuilt_lines
         # Porch-ceiling recompute basis (Casile set-back doorway item):
         # the classic import apply persists est.hover_measurements; the

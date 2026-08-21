@@ -1483,6 +1483,24 @@ async def _record_zone_event(event: str, est_id: str, doc: dict,
         {"id": row["id"]}, row, upsert=True)
 
 
+async def reapply_overlay_law(est_id: str, lines: list[dict]) -> list[dict]:
+    """SEND-79 Item 1 (authorized) — THE LAW SURVIVES BY CONSTRUCTION.
+    Every rebuild door re-RUNS the overlay law over the fresh lines
+    instead of carrying markers across a merge: a copied marker is one
+    refactor away from being dropped again; a re-run law cannot lose
+    what it recomputes. Called by every path that rebuilds lines from a
+    derivation before it writes them (pinned structurally in
+    tests/test_overlay_rederive_2026_08_21_send79.py)."""
+    all_polys: list[dict] = []
+    async for row in db.pdf_overlay_polygons.find(
+        {"estimate_id": est_id}, {"_id": 0}
+    ):
+        all_polys.append(row)
+    if not all_polys:
+        return lines
+    return apply_overlay_to_takeoff(lines, all_polys)
+
+
 async def _recompute_and_store(
     est_id: str, user: dict, lines: list[dict],
 ) -> None:
