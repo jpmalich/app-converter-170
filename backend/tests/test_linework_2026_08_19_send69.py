@@ -276,9 +276,15 @@ def test_live_every_proposal_discloses_its_geometry_tier(rig):
     for p in rig["proposed"]:
         assert p["geometry_tier"] in (
             "wall_outline", "datum_span",
-            "datum_span_after_linework_refused"), p["face_id"]
+            "datum_span_after_linework_refused",
+            "chase_outline"), p["face_id"]   # SEND-94: chase surfaces
         if p["face_id"].startswith("gable:"):
             continue                      # gables are out of scope (walls only)
+        if p["geometry_tier"] == "chase_outline":
+            # SEND-94: a chase rides a RESOLVED outline's linework
+            assert p["face_id"].startswith("chase:")
+            assert p["proposed_from"]["linework"]["status"] == "RESOLVED"
+            continue
         lw = p["proposed_from"]["linework"]
         assert lw["status"] in ("RESOLVED", "INDETERMINATE",
                                 "NOT_ATTEMPTED")

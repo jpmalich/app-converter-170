@@ -367,6 +367,83 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
     xs = [p[0] for p in pts]
     corner_singles = [c["x_top"] for c in cands
                       if c["jog_y"] is None and c.get("pt")]
+    # ── SEND-89/94 — THE PARTITION: a chimney/chase is its own surface.
+    # EDGE (the outline's own shoulder chain to a non-plate-terminated
+    # projection member) → two surfaces; INTERRUPTING (full-height
+    # non-pt members strictly inside the body, joined by a DRAWN CAP
+    # above the plate) → three. Detection is drawn structure only — the
+    # full-height discriminator (SEND-89 item 2) is the spanning-singles
+    # set itself; no window/bay enters it on either house.
+    nonpt_xs = [c["x_top"] for c in all_singles if not c.get("pt")]
+
+    def _ink_top(x):
+        tops = [v["top"] for v in vert
+                if abs(((v["x0"] + v["x1"]) / 2.0) - x) <= _COORD_EPS
+                and v["top"] < plate_box[0] - gap_tol]
+        return min(tops) if tops else None
+
+    body_lo = min(corner_singles) if len(corner_singles) >= 2 else min(xs)
+    body_hi = max(corner_singles) if len(corner_singles) >= 2 else max(xs)
+    chases = []
+    for c in (left, right):
+        if c["jog_y"] is None:
+            continue
+        if not any(abs(c["x_bot"] - nx) <= _COORD_EPS for nx in nonpt_xs):
+            continue                 # a drawn step, not a projection
+        ti = _ink_top(c["x_bot"])
+        chases.append({"kind": "edge",
+                       "x_wall": round(c["x_top"], 2),
+                       "x_proj": round(c["x_bot"], 2),
+                       "jog_y": round(c["jog_y"], 2),
+                       "top_ink_y": None if ti is None else round(ti, 2)})
+    # interrupting: cluster interior non-pt spanning members at
+    # line-weight-scale, pair adjacent clusters through a drawn cap
+    # whose ends land on riser tops of each cluster (a joint, not a
+    # crossing — the eave/ridge lines end at the face boundary, never
+    # on the chase members).
+    interior = sorted(x for x in nonpt_xs
+                      if body_lo + gap_tol < x < body_hi - gap_tol)
+    clusters = []
+    for x in interior:
+        if clusters and x - clusters[-1][-1] <= gap_tol:
+            clusters[-1].append(x)
+        else:
+            clusters.append([x])
+
+    def _cap_between(cl_l, cl_r):
+        caps_y = []
+        for h in horiz:
+            hy = (h["top"] + h["bottom"]) / 2.0
+            if hy >= plate_box[0]:
+                continue
+            h0, h1 = min(h["x0"], h["x1"]), max(h["x0"], h["x1"])
+            if not (any(abs(x - h0) <= gap_tol for x in cl_l)
+                    and any(abs(x - h1) <= gap_tol for x in cl_r)):
+                continue
+            ends_on_tops = all(
+                any(abs(((v["x0"] + v["x1"]) / 2.0) - he) <= gap_tol
+                    and abs(v["top"] - hy) <= gap_tol
+                    and v["bottom"] > hy + gap_tol for v in vert)
+                for he in (h0, h1))
+            if ends_on_tops:
+                caps_y.append(hy)
+        return min(caps_y) if caps_y else None      # topmost drawn cap
+
+    for i in range(len(clusters) - 1):
+        cap_y = _cap_between(clusters[i], clusters[i + 1])
+        if cap_y is None:
+            continue
+        tis = [t for t in (_ink_top(x)
+                           for x in clusters[i] + clusters[i + 1])
+               if t is not None]
+        chases.append({
+            "kind": "interrupting",
+            "x_inner": [round(max(clusters[i]), 2),
+                        round(min(clusters[i + 1]), 2)],
+            "x_outer": [round(min(clusters[i]), 2),
+                        round(max(clusters[i + 1]), 2)],
+            "cap_y": round(cap_y, 2),
+            "top_ink_y": round(min(tis), 2) if tis else None})
     # RULING CCC (SEND-84) — an unresolvable projection SAYS SO: a
     # spanning stroke outside the resolved silhouette that no drawn
     # shoulder joins to a wall line is a REFUSED projection, disclosed
@@ -392,6 +469,10 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
             "wall_corners": ([round(min(corner_singles), 2),
                               round(max(corner_singles), 2)]
                              if len(corner_singles) >= 2 else None),
+            # SEND-89/94 — partition surfaces: the body is WALL-ONLY
+            # where a chase splits off; the chase never disappears.
+            "body_x_span": [round(body_lo, 2), round(body_hi, 2)],
+            "chases": chases or None,
             "y_top": round(y_top, 2), "y_bot": round(y_bot, 2),
             "n_spanning": len(cands), "n_vertices": len(pts),
             "projection_refusals": refusals or None,

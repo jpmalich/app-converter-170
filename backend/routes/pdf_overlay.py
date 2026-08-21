@@ -1098,6 +1098,17 @@ def _xx_seat_verdict(ot: dict, run: dict) -> dict:
     return out
 
 
+def _chase_partition(face_ft_h: int, chase_ft_h: int, ratio_l: float):
+    """SEND-94 item 2 — the sum holds BY CONSTRUCTION, never by
+    tolerance: the chase is the (possibly human-set) value, the wall
+    sections are the remainder split at the chase's drawn position.
+    Integer hundredths of a foot — the three parts always sum to the
+    face exactly, at either contested scale."""
+    rem = face_ft_h - chase_ft_h
+    wall_l = int(round(rem * ratio_l))
+    return wall_l, chase_ft_h, face_ft_h - chase_ft_h - wall_l
+
+
 def _xx_width_cross_check(verdict: dict, sides: dict) -> dict:
     """SEND-90 — the cross-check payload. Compares WALL-ONLY widths,
     reports the DIFFERENCE MAGNITUDE (never a boolean, no threshold),
@@ -1223,6 +1234,14 @@ async def propose_zones(
     # run's floor-plan sheets; side widths collected per face below.
     xx_verdict = _xx_seat_verdict(ot, run)
     xx_sides = {}
+    # SEND-94 item 1 — HUMAN-SUPPLIED chase widths (e.g. Howard reading
+    # the print). Stored as data with provenance, never in code; a
+    # human dimension is NEVER presented as derived.
+    _hd_rows = await db.human_dimensions.find(
+        {"estimate_id": est_id, "kind": "chase_width_ft"},
+        {"_id": 0}).to_list(20)
+    chase_width_by_face = {d.get("face_id"): d for d in _hd_rows}
+    partitions = {}
     # SEND-84 (authorized) — FENCE MARGIN data: every drawing's own
     # datum extent, per page, for the neighbouring-drawing warning.
     face_fences = {}
@@ -1366,9 +1385,23 @@ async def propose_zones(
             geometry_tier = "wall_outline"
             spec["datum_span_x_pct"] = [round(spec["x"][0] * 100, 2),
                                         round(spec["x"][1] * 100, 2)]
-            spec["outline_vertices"] = lw["vertices_pct"]
-            spec["x"] = [lw["x_span"][0] / 100.0,
-                         lw["x_span"][1] / 100.0]
+            body_span = lw.get("body_x_span") or lw["x_span"]
+            if lw.get("chases"):
+                # SEND-94 — THE PARTITION: the chase is its own surface;
+                # the body reverts to WALL-ONLY (edge) or splits into
+                # wall sections (interrupting). The bump never
+                # disappears — chase zones are created below.
+                spec["outline_vertices"] = None
+                spec["x"] = [body_span[0] / 100.0, body_span[1] / 100.0]
+                spec["basis"] += (
+                    "; PARTITION (SEND-89/94 interrupted-wall ruling): "
+                    "the chimney chase is its own surface — this body "
+                    "is wall-only; the silhouette span is kept in "
+                    "proposed_from")
+            else:
+                spec["outline_vertices"] = lw["vertices_pct"]
+                spec["x"] = [lw["x_span"][0] / 100.0,
+                             lw["x_span"][1] / 100.0]
             spec["y"] = [lw["y_top"] / 100.0, lw["y_bot"] / 100.0]
             spec["basis"] += (
                 "; GEOMETRY FROM WALL OUTLINE (line-work read): lateral "
@@ -1407,6 +1440,15 @@ async def propose_zones(
                          "band (bottom at TOP OF FOUNDATION; DP-1's "
                          "derived band stays FIRST FLOOR) — confirming "
                          "it will change the quantity")
+        # SEND-94 — per-face x/y scales for the partition figures
+        fpp_x = fpp_y = None
+        if (spec.get("ft") and spec.get("scale_y")
+                and page.get("page_w") and page.get("page_h")):
+            _sy = spec["scale_y"]
+            fpp_x = (spec["ft"] / (abs(_sy[1] - _sy[0])
+                                   * page["page_h"])
+                     * page["page_w"] / 100.0)
+            fpp_y = spec["ft"] / (abs(_sy[1] - _sy[0]) * 100.0)
         doc = {
             "id": str(uuid.uuid4()),
             "estimate_id": est_id,
@@ -1453,6 +1495,11 @@ async def propose_zones(
                                   "reason": lw.get("reason"),
                                   "n_spanning": lw.get("n_spanning"),
                                   "n_vertices": lw.get("n_vertices"),
+                                  # SEND-94: silhouette kept beside the
+                                  # wall-only body; chases disclosed.
+                                  "silhouette_x_span": lw.get("x_span"),
+                                  "body_x_span": lw.get("body_x_span"),
+                                  "chases": lw.get("chases"),
                                   # SEND-77: the x-scoping fence (the
                                   # face's own datum-line extent) that
                                   # scoped the stroke set, disclosed.
@@ -1470,8 +1517,176 @@ async def propose_zones(
             "created_at": now,
             "updated_at": now,
         }
+        # ── SEND-94 — THE PARTITION, wired. INTERRUPTING chases split
+        # the body into wall sections at the chase's drawn inner
+        # strokes; every chase becomes its own proposal surface; the
+        # partition payload sums to the face BY CONSTRUCTION.
+        chase_list = ((lw.get("chases") or [])
+                      if lw.get("status") == "RESOLVED" else [])
+        inter_chs = sorted((c2 for c2 in chase_list
+                            if c2["kind"] == "interrupting"),
+                           key=lambda c2: c2["x_inner"][0])
+        sib_docs = []
+        if inter_chs:
+            lo2 = x0
+            sections = []
+            for c2 in inter_chs:
+                sections.append((lo2, c2["x_inner"][0] / 100.0))
+                lo2 = c2["x_inner"][1] / 100.0
+            sections.append((lo2, x1))
+            a2, b2 = sections[0]
+            doc["vertices_pct"] = [[a2, y_top], [b2, y_top],
+                                   [b2, y_bot], [a2, y_bot]]
+            doc["basis"] += (f"; WALL SECTION 1 of {len(sections)} "
+                             "(face interrupted by the chase)")
+            doc["proposed_from"] = {**doc["proposed_from"],
+                                    "wall_section": 1}
+            for i2, (a2, b2) in enumerate(sections[1:], start=2):
+                sib_docs.append({
+                    **doc, "id": str(uuid.uuid4()),
+                    "vertices_pct": [[a2, y_top], [b2, y_top],
+                                     [b2, y_bot], [a2, y_bot]],
+                    "basis": (doc["basis"].rsplit("; WALL SECTION", 1)[0]
+                              + f"; WALL SECTION {i2} of {len(sections)}"),
+                    "proposed_from": {**doc["proposed_from"],
+                                      "wall_section": i2}})
         await db.pdf_overlay_polygons.insert_one(doc)
         created.append({k: v for k, v in doc.items() if k != "_id"})
+        for sib in sib_docs:
+            await db.pdf_overlay_polygons.insert_one(sib)
+            created.append({k: v for k, v in sib.items() if k != "_id"})
+        # chase surfaces — the bump moves to its own surface, it does
+        # not disappear; the above-plate chase stops being dropped.
+        recovered_sqft = []
+        for c2 in chase_list:
+            if c2["kind"] == "edge":
+                cx0, cx1 = sorted((c2["x_proj"], c2["x_wall"]))
+                hd = None
+            else:
+                cx0, cx1 = c2["x_inner"]
+                hd = chase_width_by_face.get(face_to_id[face])
+            top_pct = (c2["top_ink_y"] if c2.get("top_ink_y") is not None
+                       else lw["y_top"])
+            drawn_w = (round((cx1 - cx0) * fpp_x, 2) if fpp_x else None)
+            width_ft = (round(float(hd["value_ft"]), 2) if hd
+                        else drawn_w)
+            rise_ft = (round((lw["y_top"] - top_pct) * fpp_y, 2)
+                       if (fpp_y and top_pct < lw["y_top"]) else None)
+            if width_ft is not None and rise_ft:
+                recovered_sqft.append(round(width_ft * rise_ft, 2))
+            if hd:
+                cbasis = (
+                    f"{hd.get('basis')} — HUMAN DIMENSION, never "
+                    "presented as derived; drawn strokes read "
+                    f"{round((c2['x_inner'][1] - c2['x_inner'][0]) * fpp_x, 2) if fpp_x else None} ft (inner) / "
+                    f"{round((c2['x_outer'][1] - c2['x_outer'][0]) * fpp_x, 2) if fpp_x else None} ft (outer) "
+                    "at the carried scale")
+            else:
+                cbasis = (
+                    "chimney chase — its own bindable surface "
+                    "(interrupted-wall ruling SEND-89/94): drawn "
+                    + ("depth" if c2["kind"] == "edge" else "width")
+                    + (f" {drawn_w} ft" if drawn_w is not None
+                       else " (no evidence scale — shape only)"))
+            if rise_ft:
+                cbasis += (f"; drawn ink rises {rise_ft} ft above the "
+                           "plate closure — above-plate area carried "
+                           "(previously dropped)")
+            if spec["tier"] == "contested_pick_larger":
+                cbasis += ("; this face's scale stays CONTESTED ("
+                           + " vs ".join(spec.get("contested_rails")
+                                         or []) +
+                           ") — wall sections shift with the "
+                           "contestant, the chase width is fixed "
+                           "either way")
+            cdoc = {
+                **{k: v for k, v in doc.items() if k != "_id"},
+                "id": str(uuid.uuid4()),
+                "face_id": f"chase:{face_to_id[face]}",
+                "vertices_pct": [[cx0 / 100.0, top_pct / 100.0],
+                                 [cx1 / 100.0, top_pct / 100.0],
+                                 [cx1 / 100.0, y_bot],
+                                 [cx0 / 100.0, y_bot]],
+                "basis": cbasis,
+                "band_note": None,
+                "geometry_tier": "chase_outline",
+                "proposed_from": {
+                    **doc["proposed_from"], "wall_section": None,
+                    "geometry_tier": "chase_outline",
+                    "chase": {**c2,
+                              "width_ft": width_ft,
+                              "width_source": ("human" if hd
+                                               else "drawn"),
+                              "rise_above_plate_ft": rise_ft,
+                              "human_dimension": ({
+                                  "value_ft": hd.get("value_ft"),
+                                  "basis": hd.get("basis"),
+                                  "supplied_by": hd.get("supplied_by")}
+                                  if hd else None)}}}
+            await db.pdf_overlay_polygons.insert_one(cdoc)
+            created.append({k: v for k, v in cdoc.items()
+                            if k != "_id"})
+        # partition payload — sums to the face BY CONSTRUCTION
+        if chase_list:
+            part = {"face_id": face_to_id[face],
+                    "kind": ("interrupting" if inter_chs else "edge"),
+                    "contested": spec["tier"] == "contested_pick_larger",
+                    "contested_rails": spec.get("contested_rails"),
+                    "parts": [], "sums_exact": None,
+                    "above_plate_recovered_sqft":
+                        (round(sum(recovered_sqft), 2)
+                         if recovered_sqft else None),
+                    "notes": []}
+            bs = lw.get("body_x_span") or lw["x_span"]
+            if not inter_chs:
+                sil_h = round((lw["x_span"][1] - lw["x_span"][0]) * 100)
+                wall_h = round((bs[1] - bs[0]) * 100)
+                ch_hs = [round(abs(c2["x_wall"] - c2["x_proj"]) * 100)
+                         for c2 in chase_list if c2["kind"] == "edge"]
+                part["parts"] = [
+                    {"surface": "wall (body)", "pct": wall_h / 100.0,
+                     "ft": (round(wall_h / 100.0 * fpp_x, 2)
+                            if fpp_x else None)}] + [
+                    {"surface": "chase", "pct": ch / 100.0,
+                     "ft": (round(ch / 100.0 * fpp_x, 2)
+                            if fpp_x else None),
+                     "width_source": "drawn"} for ch in ch_hs]
+                part["face_pct"] = sil_h / 100.0
+                part["sums_exact"] = (wall_h + sum(ch_hs) == sil_h)
+            elif len(inter_chs) == 1 and fpp_x:
+                c2 = inter_chs[0]
+                face_h = round((lw["x_span"][1] - lw["x_span"][0])
+                               * fpp_x * 100)
+                hd = chase_width_by_face.get(face_to_id[face])
+                chase_h = (round(float(hd["value_ft"]) * 100) if hd
+                           else round((c2["x_inner"][1]
+                                       - c2["x_inner"][0])
+                                      * fpp_x * 100))
+                drawn_rem = ((lw["x_span"][1] - lw["x_span"][0])
+                             - (c2["x_inner"][1] - c2["x_inner"][0]))
+                ratio_l = (((c2["x_inner"][0] - lw["x_span"][0])
+                            / drawn_rem) if drawn_rem else 0.5)
+                wl, cc, wr = _chase_partition(face_h, chase_h, ratio_l)
+                part["parts"] = [
+                    {"surface": "wall", "ft": wl / 100.0},
+                    {"surface": "chase", "ft": cc / 100.0,
+                     "width_source": "human" if hd else "drawn",
+                     "drawn_inner_ft": round((c2["x_inner"][1]
+                                              - c2["x_inner"][0])
+                                             * fpp_x, 2),
+                     "drawn_outer_ft": round((c2["x_outer"][1]
+                                              - c2["x_outer"][0])
+                                             * fpp_x, 2)},
+                    {"surface": "wall", "ft": wr / 100.0}]
+                part["face_ft"] = face_h / 100.0
+                part["sums_exact"] = (wl + cc + wr == face_h)
+                if hd:
+                    part["chase_width_basis"] = hd.get("basis")
+            else:
+                part["notes"].append(
+                    "no evidence scale (or multiple chases) — parts "
+                    "reported in pct on the zones themselves")
+            partitions[face_to_id[face]] = part
         # SEND-68 — GABLE STARTING SHAPES. Only faces the roof read says
         # carry a gable end (the walk detail row derived a gable or
         # named its refusal). A band_rectangle-style STARTING SHAPE that
@@ -1652,6 +1867,9 @@ async def propose_zones(
             # payload, never auto-resolved; magnitude, never a boolean.
             "width_cross_check": _xx_width_cross_check(xx_verdict,
                                                        xx_sides),
+            # SEND-94 — the partition per face: sums to the face by
+            # construction; chase provenance stated, never laundered.
+            "partitions": partitions,
             "note": ("proposed zones are PROVISIONAL — they feed no "
                      "quantity until a human confirms or bumps them")}
 
