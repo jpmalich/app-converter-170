@@ -89,6 +89,7 @@ def test_propose_rebuild_wipe_ledgers_replaced_proposals(s, mongo, rig):
     # a minimal 'done' run so propose passes the OCR gate; no faces
     # derive, so the endpoint only wipes and re-proposes nothing.
     mongo.ai_blueprint_runs.insert_one({
+        "test_artifact": True,
         "estimate_id": eid, "status": "done",
         "run_id": f"send84-{uuid.uuid4().hex[:8]}",
         "created_at": datetime.now(timezone.utc),
@@ -118,6 +119,7 @@ def test_propose_rebuild_wipe_ledgers_replaced_proposals(s, mongo, rig):
 def test_no_wipe_entry_when_nothing_wiped(s, mongo, rig):
     eid = rig
     mongo.ai_blueprint_runs.insert_one({
+        "test_artifact": True,
         "estimate_id": eid, "status": "done",
         "run_id": f"send84-{uuid.uuid4().hex[:8]}",
         "created_at": datetime.now(timezone.utc),

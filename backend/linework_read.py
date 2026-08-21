@@ -91,10 +91,10 @@ def _joint_lines(horiz, y_lo, y_hi):
     own drawn ink — the gap_tol merge absorbs course lines and the
     joint's own connector pieces (SEND-82's 'shortfall' was that
     artifact). Returns [(y, [[x0, x1], ...]), ...]."""
-    items = sorted(((s["top"] + s["bottom"]) / 2.0,
-                    min(s["x0"], s["x1"]), max(s["x0"], s["x1"]))
-                   for s in horiz
-                   if y_lo < (s["top"] + s["bottom"]) / 2.0 < y_hi)
+    items = sorted({((s["top"] + s["bottom"]) / 2.0,
+                     min(s["x0"], s["x1"]), max(s["x0"], s["x1"]))
+                    for s in horiz
+                    if y_lo < (s["top"] + s["bottom"]) / 2.0 < y_hi})
     lines = []
     for y, a, b in items:
         if lines and y - lines[-1][-1][0] <= _COORD_EPS:
@@ -115,9 +115,10 @@ def _joint_lines(horiz, y_lo, y_hi):
     return out
 
 
-def _ccc_end_ok(r_end, x_bound, inward, ly, vert, strict_overspan=False):
+def _ccc_end_ok(r_end, x_bound, inward, through, strict_overspan=False):
     """RULING CCC (SEND-84, Howard's option b stated as a MINIMUM): one
-    end of a joint line against its member's boundary stroke.
+    end of a joint line against its member's boundary stroke. `through`
+    is the sorted x-list of through-going verticals at the line's y.
     - Reaching the boundary stroke (line-weight) passes.
     - Falling SHORT into the gap passes only if the end terminates ON
       the member's INNER TWIN: a through-going vertical at the end
@@ -141,31 +142,54 @@ def _ccc_end_ok(r_end, x_bound, inward, ly, vert, strict_overspan=False):
         return True
     if over > _COORD_EPS and not strict_overspan:
         return True
-    through = [
-        (v["x0"] + v["x1"]) / 2.0 for v in vert
-        if v["top"] <= ly - _COORD_EPS and v["bottom"] >= ly + _COORD_EPS]
-    if not any(abs(t - r_end) <= _COORD_EPS for t in through):
+    import bisect
+    i = bisect.bisect_left(through, r_end - _COORD_EPS)
+    if i >= len(through) or through[i] > r_end + _COORD_EPS:
         return False                # lands on neither twin of the member
     lo, hi = sorted((x_bound, r_end))
     # a stroke strictly between = the member carries 3+ strokes
-    return not any(lo + _COORD_EPS < t < hi - _COORD_EPS for t in through)
+    j = bisect.bisect_right(through, lo + _COORD_EPS)
+    k = bisect.bisect_left(through, hi - _COORD_EPS)
+    return j >= k
 
 
 def _ccc_joint(jog_lines, vert, xa, xb, gap_tol, y_near=None,
-               strict_overspan=False):
+               strict_overspan=False, _cache=None):
     """A drawn joint between boundary strokes at xa < xb under RULING
     CCC: a jog line whose ink meets both members. Outside, each end
     stays within the joint law (_ccc_end_ok — a joint, not a crossing);
     inside, a shortfall must terminate on the member's named inner
-    twin. Returns the joint's drawn y or None."""
-    for ly, runs in jog_lines:
-        if y_near is not None and abs(ly - y_near) > gap_tol:
-            continue
+    twin. Returns the joint's drawn y or None. _cache memoizes each
+    line's through-going verticals across pairs (identity, not a
+    rule)."""
+    import bisect
+    if _cache is None:
+        _cache = {}
+    ys = _cache.get("_ys")
+    if ys is None:
+        ys = _cache["_ys"] = [ly for ly, _ in jog_lines]
+    if y_near is not None:
+        i0 = bisect.bisect_left(ys, y_near - gap_tol)
+        i1 = bisect.bisect_right(ys, y_near + gap_tol)
+    else:
+        i0, i1 = 0, len(jog_lines)
+    for li in range(i0, i1):
+        ly, runs = jog_lines[li]
+        through = None
         for r0, r1 in runs:
+            if r1 < xa - gap_tol or r0 > xb + gap_tol:
+                continue
             if r0 < xa - gap_tol or r1 > xb + gap_tol:
                 continue            # a crossing, not a joint
-            if (_ccc_end_ok(r0, xa, 1, ly, vert, strict_overspan)
-                    and _ccc_end_ok(r1, xb, -1, ly, vert,
+            if through is None:
+                through = _cache.get(li)
+                if through is None:
+                    through = _cache[li] = sorted(
+                        (v["x0"] + v["x1"]) / 2.0 for v in vert
+                        if v["top"] <= ly - _COORD_EPS
+                        and v["bottom"] >= ly + _COORD_EPS)
+            if (_ccc_end_ok(r0, xa, 1, through, strict_overspan)
+                    and _ccc_end_ok(r1, xb, -1, through,
                                     strict_overspan)):
                 return ly
     return None
@@ -177,6 +201,7 @@ def _lateral_candidates(vert, jog_lines, plate_box, ff_box, gap_tol):
     the datum boxes — a horizontal AT datum level is a closure line,
     never a step. Joints are established under RULING CCC (SEND-84).
     Each: {x_top, x_bot, jog_y}."""
+    ccc_cache = {}
     singles, tops, bots = [], [], []
     for s in vert:
         reach_top = s["top"] <= plate_box[1] and s["bottom"] >= plate_box[0]
@@ -206,7 +231,8 @@ def _lateral_candidates(vert, jog_lines, plate_box, ff_box, gap_tol):
             if hi - lo <= gap_tol:
                 continue                      # collinear stub, not a step
             jy = (a["bottom"] + b["top"]) / 2.0
-            ly = _ccc_joint(jog_lines, vert, lo, hi, gap_tol, y_near=jy)
+            ly = _ccc_joint(jog_lines, vert, lo, hi, gap_tol, y_near=jy,
+                            _cache=ccc_cache)
             if ly is not None:
                 chains.append({"x_top": xa, "x_bot": xb, "jog_y": ly,
                                "pt": True})
@@ -223,7 +249,7 @@ def _lateral_candidates(vert, jog_lines, plate_box, ff_box, gap_tol):
             if hi - lo <= gap_tol:
                 continue                      # one drawn corner, not a step
             ly = _ccc_joint(jog_lines, vert, lo, hi, gap_tol,
-                            strict_overspan=True)
+                            strict_overspan=True, _cache=ccc_cache)
             if ly is not None:
                 chains.append({"x_top": w["x_top"], "x_bot": p["x_top"],
                                "jog_y": ly, "pt": True})
