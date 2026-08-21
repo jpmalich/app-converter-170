@@ -1,5 +1,46 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-21 SEND-79 — MARKER-STRIP CURE BY CONSTRUCTION + CHIMNEY RCA + XX CROSS-CHECK (stamped green)
+1. **Item 1 BUILT (authorized):** every rebuild door (`/rederive`,
+`hover-lp-run`, `lp-package/materialize`) now RE-RUNS the overlay law
+(`reapply_overlay_law` → `apply_overlay_to_takeoff`) over the fresh
+lines before writing — nothing copies markers across the merge. Pinned
+as the INVARIANT (`test_overlay_rederive_2026_08_21_send79.py`, 4):
+live double-rederive keeps `superseded_qty`/`overlay_superseded`;
+structural AST sweep fails any future rebuild door that skips the law;
+a second structural pin forbids hand-copying marker fields. Report on
+clones via the real door: EST-655664 and EST-569367 markers
+byte-identical through a real rederive; EST-886440's clone refused 423
+(untouchable protection follows the estimate number).
+2. **Item 2 REPORTED, NOT WIRED (`memory/send79_report.md`):** the
+chimney hypothesis is CONFIRMED — right's chimney strokes (x
+79.77/80.01, 2'-7" at the outer stroke, rising 8.3 ft past the plate)
+entered the candidate set and were dropped by SEND-71's
+plate-termination filter (`linework_read.py` L184-186; chains hardcode
+pt=True L130). Left's step was fragment-joint LUCK (jogless re-run:
+32.60 → 29.4, step gone). Census: 7 dropped strokes, 3 faces; the same
+rule is why BONI LEFT refuses at "one corner" (its far boundary at
+x=34.94 is dropped). **COMPLICATION sent to Howard:** the structural
+"departs-and-returns" cure that admits right's chimney ALSO admits
+left's back-edge strokes (17.43/17.67, ≈2'-7", cladding courses end on
+them) — LEFT would move from sealed 32.60 to ~35+; left shows a 2'-7"
+feature at BOTH edges (front step kept today, back edge dropped).
+Stopped rather than move a resolved face; Howard's prints settle which
+reading is the house (29.4 / 32.60 / ~35).
+3. **Item 3 REPORTED, NOT BUILT:** the left/right width cross-check is
+buildable from Ruling XX's `attribution_verdict` (IMMATERIAL + depth
+pair) vs propose's per-face widths — flag, never resolve. Wiring
+facts: attribution_verdict not yet in the live pipeline (script-only);
+single-sided projections are legitimate disagreements (still flag);
+XX INDETERMINATE (Boni tie) → check silent.
+4. **Suite stamped: `2026-08-21 00:06 UTC · 4eac056 · CLEAN · 2697
+passed, 9 skipped`** (+4 pins).
+5. Awaiting Howard: the left-elevation ruling (Item 2), authorization
+to wire the projection-class cure and the XX cross-check. Still queued
+from SEND-79 tail: deletion ledger + EST-713272 nine-zone
+recoverability report, pre-height-build census, fence margin warning,
+height cards, Ruling V conversion.
+
 ## 2026-08-21 SEND-74/75/76/77 — GABLE BASIS BINARY + X-SCOPING FENCE + EST-713272 RE-CHECK + STRIPPED-MARKER CENSUS (stamped green)
 1. **SEND-75 re-check (report: `memory/send75_76_report.md`):** Howard
 deleted not only the 18.0 SQ human total but the ENTIRE 9-zone legacy
