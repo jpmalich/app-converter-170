@@ -1,5 +1,83 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-21 SEND-89/90/91 — CHIMNEY PROBE REPORT (nothing wired) + RULING XX CROSS-CHECK WIRED + BONI RE-PROPOSE LEDGERED (stamped green)
+1. **SEND-89 REPORT DELIVERED, NOTHING WIRED** (`memory/send89_report.md`,
+probe `memory/send89_probe.py`): EDGE vs INTERRUPTING per face — Letrick
+LEFT/RIGHT = EDGE (two surfaces; chimney at the outline extreme, shoulders
+y=22.28/62.40), REAR = **INTERRUPTING, three surfaces — the chimney is drawn
+FULL HEIGHT on the rear** (twins 53.12/53.36 + 57.27/57.52 span plate→floor,
+strictly inside [38.13,80.88]) — wider than SEND-87's above-roofline premise,
+reported as a finding; FRONT = one surface (only 0.92–1.63 ft cap signatures,
+too narrow for the ~5.3 ft chase — flue/vent ink, Howard's print settles);
+BONI = **no chase ink on any evaluable face** (the old "150 ft² chase" was a
+model claim). PARTITION SUMS EXACTLY: left 291.33 = 270.53 wall + 20.80 bump;
+right 291.01 = 270.12 + 20.93; rear three-way 21.43 + 5.50 + 33.22 =
+60.15 ft = the face exactly (shared boundary strokes — no gap/overlap by
+construction). Chimney dims: sides depth 2.55/2.59 ft (2'-7" dead-on at the
+outer stroke); rear W along the wall 5.50 inner / 6.19 outer / 6.23 cap —
+**W UNSEALED until Howard reads the print**. Plate-vs-cap: rises 9.02 ft
+(left), 9.16 ft (right, NO drawn cap found inside band+fence — said plainly),
+10.07 ft (rear) above the drawn plate closure. **THE ABOVE-PLATE CHASE IS
+SILENTLY DROPPED TODAY on every face** (outline clips at the plate closure;
+~23/24/56 ft² of drawn chase reaches nothing). Item 2 census: NOTHING but
+boundary trim and chimneys spans full height on either house — no window/bay
+would trip the discriminator. Item 3 (report only): corners come from the
+model's footprint read (`outside_corner_count`, hover prompt contract) —
+nothing in the path knows projections; Letrick would gain 4 corner verticals
+× ~20.0 ft ≈ 80 LF (composition as drawn: 2 convex at the outer face, 2 at
+the wall junctions — count is Howard's to seal); Boni gains zero (no ink,
+and Ruling G blocks it anyway). FOUR OWED QUESTIONS ANSWERED: (1) wall twin —
+the chimney's OUTER stroke is drawn continuous, the wall's outer stroke is
+FRAGMENTED at every corner (right 54.24 misses the plate box by 0.12 pct;
+78.26/78.33 pieces only) so wall reads inner ink, chimney outer — no
+tolerance anywhere; (2) deletion ledger snapshots FULL polygon geometry
+(human_delete L817-824; propose_rebuild_wipe verified live); (3) NO merged-run
+length feeds a measurement — merged ink enters arithmetic only as weights for
+closure()'s mean-y position (L347-349), named; (4) topmost-line anchor fires
+ONLY for shoulder pairs (no y_near — scans ascending y); fragment chains
+anchor at their members' own termination (y_near window).
+2. **SEND-90 RULING XX WIDTH CROSS-CHECK WIRED** (`routes/pdf_overlay.py`:
+`_xx_seat_verdict` / `_xx_width_cross_check` / `XX_CROSS_CHECK_REGISTER`;
+register `memory/register_send90.md`; pins
+`tests/test_xx_crosscheck_2026_08_21_send90.py` ×11): seat = the run's
+FLOOR-PLAN sheets (`sheets_identified.useful_for == floor_plan`; elevation
+pages would seat the verdict on the wrong instrument); plan sheets that
+disagree are FLAGGED INDETERMINATE naming each page. Compares **WALL-ONLY**
+(plate-terminated wall_corners in ft) — silhouette rides alongside marked
+"NOT the compared figures" (survives SEND-89's coming side reversion without
+the check's meaning shifting). Reports **MAGNITUDE, never a boolean** —
+pinned that a 3 ft gap lands in the same REPORTED state; no code-picked
+threshold exists. Distinguishable silences: REPORTED / SILENT_INDETERMINATE
+("NOT because the sides agree") / SILENT_NO_FIGURE (side + reason named) /
+NOT_COMPARED (MATERIAL). Verdict rides every proposal at
+`proposed_from.attribution`. LIVE TODAY: **Letrick IMMATERIAL 30' →
+"left 29.4, right 29.65 — differ by 0.25 ft" (silhouettes 31.94/32.24, 0.30)**;
+**Boni SILENT_INDETERMINATE on the p4 tie** (p4 INDETERMINATE tie; p6/p7
+MATERIAL — flagged, never resolved). Register states what it exists for:
+would have caught the missing chimney (32.60 vs 29.65).
+3. **SEND-91 BONI RE-PROPOSE EXECUTED, WIPE LEDGERED**
+(`memory/send91_boni_repropose.md`, response
+`memory/send91_propose_response.json`): provenance stated — the wiped
+geometry descends from the 8-16 pre-height run whose 20.0 ft stackup was
+UNRECONSTRUCTABLE (a fabrication — that is why it goes, not "stale"); the
+stored money line is human-set 18.0 SQ and untouched (proposals feed no
+quantity). HUMAN-ZONE GUARD verified BEFORE the wipe: 0 human zones remained,
+wipe path filtered `provenance:"proposed"` structurally + SEND-84 pins; 0
+after. Ledger row `propose_rebuild_wipe` holds all 4 pre-SEND-77 polygons in
+full. Came back 4/4 — **coverage reported as a FACT at the weakest tiers**:
+front/back datum_rectangle (heights contested/UNDIMENSIONED), left
+datum_rectangle after linework refused, right band_rectangle (no FIRST FLOOR
+datum). Derived 0 ft² / human 0 ft² / 4 named refusals — the rulings working,
+not a regression. **CENSUS ITEM CLOSED: zero estimates remain on
+superseded-rule (pre-x_fence) wall-outline geometry.**
+4. **Suite stamped: `2026-08-21 22:34 UTC · 42abf3f · CLEAN · 2720 passed,
+9 skipped` (+11 pins).**
+5. Awaiting Howard: the SEND-89 report walk (edge/interrupting verdicts, the
+full-height rear chimney finding, rear W to read off the print, the corner
+composition to seal, the dropped above-plate chase) → then authorize the
+partition/chase wiring. Still queued: height cards, Ruling V conversion,
+openings/schedule threads (pending authorization).
+
 ## 2026-08-21 SEND-84 — RULING CCC SHIPPED (option b as a MINIMUM) + DELETION LEDGER + FENCE MARGIN WARNING + 4 REPORTS
 1. **RULING CCC WIRED** (`linework_read.py`: `_joint_lines` /
 `_ccc_end_ok` / `_ccc_joint`; report `memory/send84_report.md`,
