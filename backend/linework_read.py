@@ -83,11 +83,100 @@ def _merge_collinear(strokes, axis, gap_tol):
             for p, a, b in merged]
 
 
-def _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol):
+def _joint_lines(horiz, y_lo, y_hi):
+    """RULING CCC (SEND-84) — drawn horizontal LINES strictly between
+    the datum boxes (the jog region): raw kept strokes clustered at
+    line-weight (_COORD_EPS) in y, each line's ink merged along x with
+    breaks up to line-weight ONLY. The joint is judged on the line's
+    own drawn ink — the gap_tol merge absorbs course lines and the
+    joint's own connector pieces (SEND-82's 'shortfall' was that
+    artifact). Returns [(y, [[x0, x1], ...]), ...]."""
+    items = sorted(((s["top"] + s["bottom"]) / 2.0,
+                    min(s["x0"], s["x1"]), max(s["x0"], s["x1"]))
+                   for s in horiz
+                   if y_lo < (s["top"] + s["bottom"]) / 2.0 < y_hi)
+    lines = []
+    for y, a, b in items:
+        if lines and y - lines[-1][-1][0] <= _COORD_EPS:
+            lines[-1].append((y, a, b))
+        else:
+            lines.append([(y, a, b)])
+    out = []
+    for cl in lines:
+        y = sum(c[0] for c in cl) / len(cl)
+        ivs = sorted((a, b) for _, a, b in cl)
+        runs = [list(ivs[0])]
+        for a, b in ivs[1:]:
+            if a <= runs[-1][1] + _COORD_EPS:
+                runs[-1][1] = max(runs[-1][1], b)
+            else:
+                runs.append([a, b])
+        out.append((y, runs))
+    return out
+
+
+def _ccc_end_ok(r_end, x_bound, inward, ly, vert, strict_overspan=False):
+    """RULING CCC (SEND-84, Howard's option b stated as a MINIMUM): one
+    end of a joint line against its member's boundary stroke.
+    - Reaching the boundary stroke (line-weight) passes.
+    - Falling SHORT into the gap passes only if the end terminates ON
+      the member's INNER TWIN: a through-going vertical at the end
+      (line-weight identity) with NO other through-going vertical
+      between it and the boundary stroke. A joint that cannot name the
+      reference it terminates at has not established a shoulder — no
+      snapping to the nearest stroke (that is how a tolerance sneaks
+      back in through the endpoint). The allowance is the member's own
+      drawn twin separation, never a constant.
+    - OVERSPAN: for shoulder pairs (strict_overspan) the same naming
+      law runs outward — the end terminates ON the boundary or ON the
+      member's outer twin, never merely NEAR it (a face-long course
+      line overspanning two members within gap_tol is a crossing, not
+      a shoulder). Fragment chains keep the SEND-69 joint law outside
+      (the caller bounds overspill by gap_tol — their members TERMINATE
+      at the jog, which ties the joint structurally)."""
+    over = (x_bound - r_end) * inward
+    short = (r_end - x_bound) * inward
+    if short <= _COORD_EPS and (not strict_overspan
+                                or over <= _COORD_EPS):
+        return True
+    if over > _COORD_EPS and not strict_overspan:
+        return True
+    through = [
+        (v["x0"] + v["x1"]) / 2.0 for v in vert
+        if v["top"] <= ly - _COORD_EPS and v["bottom"] >= ly + _COORD_EPS]
+    if not any(abs(t - r_end) <= _COORD_EPS for t in through):
+        return False                # lands on neither twin of the member
+    lo, hi = sorted((x_bound, r_end))
+    # a stroke strictly between = the member carries 3+ strokes
+    return not any(lo + _COORD_EPS < t < hi - _COORD_EPS for t in through)
+
+
+def _ccc_joint(jog_lines, vert, xa, xb, gap_tol, y_near=None,
+               strict_overspan=False):
+    """A drawn joint between boundary strokes at xa < xb under RULING
+    CCC: a jog line whose ink meets both members. Outside, each end
+    stays within the joint law (_ccc_end_ok — a joint, not a crossing);
+    inside, a shortfall must terminate on the member's named inner
+    twin. Returns the joint's drawn y or None."""
+    for ly, runs in jog_lines:
+        if y_near is not None and abs(ly - y_near) > gap_tol:
+            continue
+        for r0, r1 in runs:
+            if r0 < xa - gap_tol or r1 > xb + gap_tol:
+                continue            # a crossing, not a joint
+            if (_ccc_end_ok(r0, xa, 1, ly, vert, strict_overspan)
+                    and _ccc_end_ok(r1, xb, -1, ly, vert,
+                                    strict_overspan)):
+                return ly
+    return None
+
+
+def _lateral_candidates(vert, jog_lines, plate_box, ff_box, gap_tol):
     """Boundary elements spanning the datum interval: single strokes
     plus one-jog jointed chains. A chain's jog lies STRICTLY BETWEEN
     the datum boxes — a horizontal AT datum level is a closure line,
-    never a step. Each: {x_top, x_bot, jog_y}."""
+    never a step. Joints are established under RULING CCC (SEND-84).
+    Each: {x_top, x_bot, jog_y}."""
     singles, tops, bots = [], [], []
     for s in vert:
         reach_top = s["top"] <= plate_box[1] and s["bottom"] >= plate_box[0]
@@ -106,8 +195,6 @@ def _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol):
             tops.append(s)
         elif reach_bot:
             bots.append(s)
-    jog_h = [h for h in horiz
-             if plate_box[1] < (h["top"] + h["bottom"]) / 2.0 < ff_box[0]]
     chains = []
     for a in tops:
         xa = (a["x0"] + a["x1"]) / 2.0
@@ -119,16 +206,27 @@ def _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol):
             if hi - lo <= gap_tol:
                 continue                      # collinear stub, not a step
             jy = (a["bottom"] + b["top"]) / 2.0
-            for h in jog_h:
-                hy = (h["top"] + h["bottom"]) / 2.0
-                if abs(hy - jy) > gap_tol:
-                    continue
-                h0, h1 = min(h["x0"], h["x1"]), max(h["x0"], h["x1"])
-                # a JOINT: the horizontal's ENDS meet both verticals
-                if abs(h0 - lo) <= gap_tol and abs(h1 - hi) <= gap_tol:
-                    chains.append({"x_top": xa, "x_bot": xb, "jog_y": jy,
-                                   "pt": True})
-                    break
+            ly = _ccc_joint(jog_lines, vert, lo, hi, gap_tol, y_near=jy)
+            if ly is not None:
+                chains.append({"x_top": xa, "x_bot": xb, "jog_y": ly,
+                               "pt": True})
+    # RULING CCC (SEND-84) — PROJECTION SHOULDERS. A spanning stroke
+    # that does not terminate at the plate (a chimney rising past the
+    # roof) joins the outline only through a DRAWN SHOULDER: a jog line
+    # meeting the wall line and the projection member under the same
+    # joint law. The chain carries the wall's x above the shoulder and
+    # the projection's x below it. ONE true shoulder across two houses
+    # — UNVALIDATED beyond n=1 (memory/register_send84.md).
+    for w in [c for c in singles if c["pt"]]:
+        for p in [c for c in singles if not c["pt"]]:
+            lo, hi = sorted((w["x_top"], p["x_top"]))
+            if hi - lo <= gap_tol:
+                continue                      # one drawn corner, not a step
+            ly = _ccc_joint(jog_lines, vert, lo, hi, gap_tol,
+                            strict_overspan=True)
+            if ly is not None:
+                chains.append({"x_top": w["x_top"], "x_bot": p["x_top"],
+                               "jog_y": ly, "pt": True})
     return singles + chains
 
 
@@ -170,10 +268,15 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
             if abs(s["x1"] - s["x0"]) < (s["bottom"] - s["top"])]
     horiz = [s for s in keep
              if abs(s["x1"] - s["x0"]) >= (s["bottom"] - s["top"])]
+    # RULING CCC: joints are judged on the RAW kept horizontals (line-
+    # weight merging only) — the gap_tol merge below is for closures.
+    jog_lines = _joint_lines(horiz, plate_box[1], ff_box[0])
     # drawn continuity: rejoin strokes fragmented at intersections
     vert = _merge_collinear(vert, "v", gap_tol)
     horiz = _merge_collinear(horiz, "h", gap_tol)
-    cands = _lateral_candidates(vert, horiz, plate_box, ff_box, gap_tol)
+    cands = _lateral_candidates(vert, jog_lines, plate_box, ff_box,
+                                gap_tol)
+    all_singles = [c for c in cands if c["jog_y"] is None]
     # SEND-71 item 3 — RAKE-EDGE SEPARATION. Where the drawing shows
     # WALL LINES (spanning strokes terminating at the plate box), the
     # outline is chosen among them and roof-borne edges lose. Where it
@@ -238,6 +341,21 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
     xs = [p[0] for p in pts]
     corner_singles = [c["x_top"] for c in cands
                       if c["jog_y"] is None and c.get("pt")]
+    # RULING CCC (SEND-84) — an unresolvable projection SAYS SO: a
+    # spanning stroke outside the resolved silhouette that no drawn
+    # shoulder joins to a wall line is a REFUSED projection, disclosed
+    # by x. Silhouette geometry alone cannot tell a chimney from a
+    # course-end line (structural-identity bound, register_send82.md);
+    # only a drawn shoulder distinguishes, and only where one exists.
+    refusals = [
+        {"x": round(d["x_top"], 2),
+         "reason": (f"spanning stroke at x={d['x_top']:.2f}% carries no "
+                    "drawn shoulder joining it to a wall line — "
+                    "projection refused (RULING CCC)")}
+        for d in all_singles
+        if not d.get("pt")
+        and (d["x_top"] < min(xs) - _COORD_EPS
+             or d["x_top"] > max(xs) + _COORD_EPS)]
     return {"status": "RESOLVED",
             "x_span": [round(min(xs), 2), round(max(xs), 2)],
             "top_corners": [round(left["x_top"], 2),
@@ -250,6 +368,7 @@ def wall_outline_from_segments(segments, band, plate_box, ff_box,
                              if len(corner_singles) >= 2 else None),
             "y_top": round(y_top, 2), "y_bot": round(y_bot, 2),
             "n_spanning": len(cands), "n_vertices": len(pts),
+            "projection_refusals": refusals or None,
             "vertices_pct": [[round(x / 100.0, 4), round(y / 100.0, 4)]
                              for x, y in pts]}
 

@@ -811,6 +811,17 @@ async def delete_pdf_overlay(
         {"id": polygon_id, "estimate_id": est_id}, {"_id": 0})
     if not victim:
         raise HTTPException(status_code=404, detail="Polygon not found")
+    # SEND-84 — DELETION LEDGER on EVERY estimate: a deleted zone
+    # leaves a full recoverable snapshot. EST-713272's nine human
+    # zones died traceless; that class of loss ends here.
+    await db.zone_deletion_ledger.insert_one({
+        "id": str(uuid.uuid4()),
+        "estimate_id": est_id,
+        "kind": "human_delete",
+        "actor_email": user.get("email", ""),
+        "at": datetime.now(timezone.utc),
+        "polygon": dict(victim),
+    })
     await db.pdf_overlay_polygons.delete_one(
         {"id": polygon_id, "estimate_id": est_id})
 
@@ -1054,6 +1065,21 @@ async def propose_zones(
 
     from height_read import derive_face_heights
     faces = derive_face_heights(ot)
+    # SEND-84 — the rebuild wipe of derived proposals is ledgered too:
+    # a rule change overwrites old geometry; the ledger keeps what the
+    # superseded rules had drawn.
+    wiped = await db.pdf_overlay_polygons.find(
+        {"estimate_id": est_id, "provenance": "proposed"},
+        {"_id": 0}).to_list(200)
+    if wiped:
+        await db.zone_deletion_ledger.insert_one({
+            "id": str(uuid.uuid4()),
+            "estimate_id": est_id,
+            "kind": "propose_rebuild_wipe",
+            "actor_email": user.get("email", ""),
+            "at": datetime.now(timezone.utc),
+            "polygons": wiped,
+        })
     await db.pdf_overlay_polygons.delete_many(
         {"estimate_id": est_id, "provenance": "proposed"})
     now = datetime.now(timezone.utc)
@@ -1061,6 +1087,19 @@ async def propose_zones(
     skipped = []
     face_to_id = {"front": "front", "rear": "back",
                   "left": "left", "right": "right"}
+    # SEND-84 (authorized) — FENCE MARGIN data: every drawing's own
+    # datum extent, per page, for the neighbouring-drawing warning.
+    face_fences = {}
+    for f2, r2 in faces.items():
+        for c2 in (r2.get("candidates") or [r2]):
+            g2 = c2.get("datum_geometry") or {}
+            fx = []
+            for dk in ("top_of_plate", "first_floor", "top_of_foundation"):
+                for mk in (g2.get(dk) or {}).get("markers") or []:
+                    fx.extend(mk)
+            if c2.get("page") and c2.get("band") and len(fx) >= 2:
+                face_fences.setdefault(str(c2["page"]), []).append(
+                    (f2, c2["band"], (min(fx), max(fx))))
     for face, r in faces.items():
         # SEND-55 item 2 — RULING BBB ladder: EVERY evaluated face
         # proposes. Coverage is a FACT, not a success metric — the
@@ -1125,6 +1164,26 @@ async def propose_zones(
                 if x_fence is not None:
                     lw["x_fence"] = [round(x_fence[0], 2),
                                      round(x_fence[1], 2)]
+                    # SEND-84 (authorized) — FENCE MARGIN WARNING: when
+                    # a neighbouring drawing's own datum extent reaches
+                    # inside this face's fence, say so plainly. The
+                    # fence stays applied VERBATIM — never shrunk.
+                    for f2, b2, fn2 in face_fences.get(
+                            str(spec["page"]), []):
+                        if f2 == face:
+                            continue
+                        if not (b2[0] < band[1] and b2[1] > band[0]):
+                            continue      # bands do not share y-range
+                        if fn2[0] < x_fence[1] and fn2[1] > x_fence[0]:
+                            lw["fence_margin_warning"] = (
+                                f"the {f2} drawing's datum extent "
+                                f"[{fn2[0]:.2f}, {fn2[1]:.2f}]% shares "
+                                "this band and reaches inside this "
+                                f"face's fence [{x_fence[0]:.2f}, "
+                                f"{x_fence[1]:.2f}]% — its strokes may "
+                                "sit inside the fence; the fence is "
+                                "applied verbatim, never shrunk")
+                            break
                 lw_ctx = (idx, mask)
             except Exception as e:
                 lw = {"status": "INDETERMINATE",
@@ -1144,12 +1203,19 @@ async def propose_zones(
                 "interval, top/bottom the drawn datum-level lines; the "
                 "datum-span figures are kept in proposed_from for "
                 "comparison")
+            # RULING CCC (SEND-84) — a refused projection SAYS SO on
+            # the face itself, not only in the disclosure.
+            for pr in lw.get("projection_refusals") or []:
+                spec["basis"] += "; PROJECTION REFUSED — " + pr["reason"]
         elif lw.get("status") == "INDETERMINATE":
             geometry_tier = "datum_span_after_linework_refused"
             spec["basis"] += (
                 "; line-work could not resolve the outline on this "
                 "drawing — this is the datum-marker span, which carries "
                 f"the leader offset ({lw.get('reason')})")
+        if lw.get("fence_margin_warning"):
+            spec["basis"] += ("; FENCE MARGIN WARNING — "
+                              + lw["fence_margin_warning"])
         (x0, x1), (y_top, y_bot) = spec["x"], spec["y"]
         page = ot.get(spec["page"]) or {}
         scale_ref = None
@@ -1210,7 +1276,15 @@ async def propose_zones(
                                   # SEND-77: the x-scoping fence (the
                                   # face's own datum-line extent) that
                                   # scoped the stroke set, disclosed.
-                                  "x_fence": lw.get("x_fence")}},
+                                  "x_fence": lw.get("x_fence"),
+                                  # SEND-84 RULING CCC: projections the
+                                  # drawing refused, by x, disclosed.
+                                  "projection_refusals":
+                                      lw.get("projection_refusals"),
+                                  # SEND-84: neighbouring-drawing fence
+                                  # margin warning (fence never shrunk).
+                                  "fence_margin_warning":
+                                      lw.get("fence_margin_warning")}},
             "author_id": "height_build",
             "author_email": "",
             "created_at": now,
