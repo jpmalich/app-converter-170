@@ -1,8 +1,14 @@
 """Iter 78z (P1.4) — End-to-end HTTP tests for new gutter/downspout geometry
 auto-fills surfaced via POST /api/measure/map.
 
+PINS UPDATED (SEND-105, named per SEND-99 condition 1): these pins
+previously asserted the story-default ladder (_ai_avg_wall_height_ft as
+base, _ai_story_count × 9, hardcoded 12 LF floor). RULING V made those
+values wrong — the drop derives from _verified_wall_heights_ft only and
+REFUSES named where none exists. Geometry formulas unchanged.
+
 Verifies (against the live FastAPI route — no LLM cost):
-  * Downspout 6" LF now scales by avg_wall_height / story_count
+  * Downspout 6" LF scales by the VERIFIED wall height (Ruling V)
   * Mitre Each emits for hip roof, suppressed for gable roof
   * Pipe Clips Each scales with downspout drop
   * Gutter Sealant Each derives from joint count
@@ -67,8 +73,7 @@ def test_two_story_hip_roof_downspout_lf(auth_session):
         "rake_lf": 0,            # hip roof has no rakes
         "outside_corner_lf": 72, # 4 corners × 18 ft wall = 72 LF
         "inside_corner_lf": 0,
-        "_ai_avg_wall_height_ft": 18.0,
-        "_ai_story_count": 2,
+        "_verified_wall_heights_ft": {"front": {"ft": 18.0, "src": "taped_human"}},
     })
     lines = data["lines"]
     ds = _gutter(lines, 'Downspout 6"')
@@ -85,8 +90,7 @@ def test_two_story_hip_roof_emits_mitre_pipe_clips_sealant(auth_session):
         "eaves_lf": 100,
         "outside_corner_lf": 72,
         "inside_corner_lf": 0,
-        "_ai_avg_wall_height_ft": 18.0,
-        "_ai_story_count": 2,
+        "_verified_wall_heights_ft": {"front": {"ft": 18.0, "src": "taped_human"}},
     })
     lines = data["lines"]
 
@@ -119,7 +123,7 @@ def test_gable_roof_zero_mitres_but_clips_and_sealant_emit(auth_session):
         "rake_lf": 60,
         "outside_corner_lf": 72,
         "inside_corner_lf": 0,
-        "_ai_avg_wall_height_ft": 18.0,
+        "_verified_wall_heights_ft": {"front": {"ft": 18.0, "src": "taped_human"}},
         "_per_elevation_breakdown": [
             {"label": "front", "gable_sqft": 50, "wall_body_sqft": 800},
         ],
@@ -144,7 +148,7 @@ def test_gable_roof_via_ai_aggregate(auth_session):
     data = _post_map(auth_session, {
         "eaves_lf": 100,
         "outside_corner_lf": 72,
-        "_ai_avg_wall_height_ft": 18.0,
+        "_verified_wall_heights_ft": {"front": {"ft": 18.0, "src": "taped_human"}},
         "_ai_gable_sqft": 120,
     })
     lines = data["lines"]
@@ -159,7 +163,7 @@ def test_zero_eaves_suppresses_all_gutter_accessories(auth_session):
     data = _post_map(auth_session, {
         "eaves_lf": 0,
         "outside_corner_lf": 50,
-        "_ai_avg_wall_height_ft": 18.0,
+        "_verified_wall_heights_ft": {"front": {"ft": 18.0, "src": "taped_human"}},
     })
     lines = data["lines"]
     assert _gutter(lines, "Mitre") is None, "Mitre must be suppressed when eaves=0"
@@ -172,31 +176,26 @@ def test_zero_eaves_suppresses_all_gutter_accessories(auth_session):
 # ---------------------------------------------------------------------------
 # 4. Story-count fallback path (no avg_wall_height_ft provided)
 # ---------------------------------------------------------------------------
-def test_one_story_fallback_downspout_drop(auth_session):
-    """1-story (no avg_wall_height): drop = 9+3 = 12 LF/down."""
-    data = _post_map(auth_session, {"eaves_lf": 100, "_ai_story_count": 1})
-    ds = _gutter(data["lines"], 'Downspout 6"')
-    assert ds is not None
-    # 4 downspouts × 12 = 48 LF → 5 × 10' sticks (ruled 2026-07-31)
-    assert ds["qty"] == 5, f"expected 5 sticks, got {ds['qty']}"
+def test_story_count_no_longer_a_base_refuses_named(auth_session):
+    """RULING V: a story count is not a verified height — the read
+    REFUSES, named, never a silent zero (was: 1→12/2→21 ladder)."""
+    for m in ({"eaves_lf": 100, "_ai_story_count": 1},
+              {"eaves_lf": 100, "_ai_story_count": 2}):
+        data = _post_map(auth_session, m)
+        ds = _gutter(data["lines"], 'Downspout 6"')
+        assert ds is not None
+        assert ds["qty"] is None and ds["not_derivable"]
+        assert "Ruling V" in ds["not_derivable_reason"]
 
 
-def test_two_story_fallback_downspout_drop(auth_session):
-    """2-story (no avg_wall_height): drop = 18+3 = 21 LF/down."""
-    data = _post_map(auth_session, {"eaves_lf": 100, "_ai_story_count": 2})
-    ds = _gutter(data["lines"], 'Downspout 6"')
-    assert ds is not None
-    # 4 downspouts × 21 = 84 LF → 9 × 10' sticks (ruled 2026-07-31)
-    assert ds["qty"] == 9, f"expected 9 sticks, got {ds['qty']}"
-
-
-def test_no_height_data_falls_back_to_12(auth_session):
-    """Neither avg_wall_height nor story_count → 12 LF baseline."""
+def test_no_height_data_refuses_never_12(auth_session):
+    """RULING V: no verified height → REFUSED, the 12 LF baseline is
+    retired."""
     data = _post_map(auth_session, {"eaves_lf": 100})
     ds = _gutter(data["lines"], 'Downspout 6"')
     assert ds is not None
-    # 48 LF → 5 × 10' sticks (ruled 2026-07-31)
-    assert ds["qty"] == 5, f"expected 5 sticks (4×12 LF), got {ds['qty']}"
+    assert ds["qty"] is None and ds["not_derivable"]
+    assert "no verified wall height" in ds["not_derivable_reason"]
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +209,7 @@ def test_multi_profile_siding_and_gutter_accessories_coexist(auth_session):
         "_per_profile_sqft": {"lap": 1840.0, "shake": 168.0, "board_batten": 60.0},
         "eaves_lf": 100,
         "outside_corner_lf": 72,
-        "_ai_avg_wall_height_ft": 18.0,
+        "_verified_wall_heights_ft": {"front": {"ft": 18.0, "src": "taped_human"}},
     })
     lines = data["lines"]
     vinyl_siding = [l for l in lines if l.get("tab") == "vinyl" and l.get("section") == "Vinyl Siding"]
@@ -234,7 +233,7 @@ def test_l_shaped_house_inside_corner_adds_mitre(auth_session):
         "eaves_lf": 120,
         "outside_corner_lf": 72,  # 4 corners
         "inside_corner_lf": 18,   # 1 inside corner
-        "_ai_avg_wall_height_ft": 18.0,
+        "_verified_wall_heights_ft": {"front": {"ft": 18.0, "src": "taped_human"}},
     })
     mitre = _gutter(data["lines"], "Mitre")
     assert mitre is not None and mitre["qty"] == 5, \

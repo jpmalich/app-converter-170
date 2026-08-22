@@ -279,27 +279,49 @@ def _downspout_count(m: dict) -> int:
     return max(2, math.ceil(glf / 25 - 1e-9))
 
 
-# Iter 78z (P1.4) — Story-aware downspout drop length.
-# A downspout's vertical drop ≈ eave height + 2 ft kick-out + 1 ft slack.
-# For 1-story homes (~9 ft eave) drop ≈ 12 LF; for 2-story (~18 ft eave)
-# drop ≈ 21 LF. The previous flat 10 LF/downspout assumption
-# under-counted 2-story homes by >2x, which is exactly what Howard
-# called out on his LETRICK reconciliation. Source priority for height:
-#   1. `_ai_avg_wall_height_ft` (AI Measure / Blueprint vision-extracted)
-#   2. fallback by `_ai_story_count`: 1 → 9 ft, 2 → 18 ft, 3 → 27 ft
-#   3. final fallback: 9 ft (single-story baseline)
-def _downspout_drop_ft(m: dict) -> float:
-    h = float(m.get("_ai_avg_wall_height_ft") or 0)
-    if h <= 0:
-        s = int(m.get("_ai_story_count") or 1) or 1
-        h = max(1, s) * 9.0
+# SEND-105 — RULING V CONVERSION (was PENDING_CONVERSION in every
+# census line since send 19). The drop height comes from a VERIFIED
+# base or the read REFUSES: no story defaults, no `_ai_story_count
+# or 1`, no hardcoded 9'. Model heights stay hypothesis-only.
+def _verified_drop_height_ft(m: dict):
+    """(height_ft, basis) from the estimate's own VERIFIED heights —
+    taped human dimensions or the face's own DP-1 DERIVED chain —
+    worst-case MAX, never averaged (Ruling T precedent). (None, why)
+    when nothing verified exists."""
+    vh = m.get("_verified_wall_heights_ft") or {}
+    ents = [(f, d) for f, d in vh.items()
+            if isinstance(d, dict) and d.get("ft")]
+    if not ents:
+        return None, ("no verified wall height on this estimate — "
+                      "nothing taped and no DP-1 DERIVED chain; a model "
+                      "height is hypothesis only and never a quantity "
+                      "base (Ruling V)")
+    f, d = max(ents, key=lambda e: float(e[1]["ft"]))
+    return float(d["ft"]), (f"{d.get('src')} {d['ft']} ft ({f} face — "
+                            f"max of {len(ents)} verified, never "
+                            "averaged)")
+
+
+def _downspout_drop_ft(m: dict):
+    """Verified eave height + 2 ft kick-out + 1 ft slack, or None
+    (REFUSED — Ruling V). The story-count ladder (1→9/2→18/3→27) and
+    the 9 ft floor are RETIRED."""
+    h, _ = _verified_drop_height_ft(m)
+    if h is None:
+        return None
     return h + 3.0  # +2 ft kick + 1 ft slack
 
 
-def _downspout_lf(m: dict) -> int:
-    """Total downspout coil LF for the job (count × per-drop)."""
+def _downspout_lf(m: dict):
+    """Total downspout coil LF for the job (count × per-drop), or None
+    when the drop height REFUSES (Ruling V)."""
     n = _downspout_count(m)
-    return int(round(n * _downspout_drop_ft(m)))
+    if n <= 0:
+        return 0
+    drop = _downspout_drop_ft(m)
+    if drop is None:
+        return None
+    return int(round(n * drop))
 
 
 def _gutter_basis(m: dict) -> str:
@@ -314,11 +336,17 @@ def _downspout_breakdown(m: dict) -> str:
     raw = glf / 25
     n = _downspout_count(m)
     drop = _downspout_drop_ft(m)
+    if drop is None:
+        _, why = _verified_drop_height_ft(m)
+        return (f"REFUSED — drop height not derivable: {why}; "
+                f"{n} downspouts stand, LF and sticks refuse")
     total_lf = _downspout_lf(m)
+    _, basis = _verified_drop_height_ft(m)
     min_hit = " (min 2)" if n == 2 and raw < 2 else ""
     sticks = math.ceil(total_lf / 10 - 1e-9) if total_lf > 0 else 0
     return (f"{glf:.0f} {_gutter_basis(m)} ÷ 25 = {raw:.1f} → ceil = "
-            f"{n} downspouts{min_hit} × {drop:.0f} LF drop = {total_lf} LF "
+            f"{n} downspouts{min_hit} × {drop:.0f} LF drop "
+            f"(verified: {basis} + 3 ft kick/slack) = {total_lf} LF "
             f"→ {sticks} sticks (10' each, whole sticks — ruled 2026-07-31)")
 
 
@@ -430,26 +458,31 @@ def _has_gable_wall(m: dict) -> bool:
     return float(m.get("_ai_gable_sqft") or 0) > 0
 
 
-def _gutter_corner_count(m: dict) -> tuple[int, int]:
-    """Returns (outside_corners, inside_corners) of the gutter run.
+def _gutter_corner_count(m: dict):
+    """Returns (outside_corners, inside_corners) of the gutter run, or
+    None when no verified height exists to divide the corner LF by
+    (SEND-105 Ruling V — the hardcoded 9 ft floor is RETIRED).
 
     Outside corners drive ROOFLINE mitres. Inside corners (re-entrant
     L-shaped footprints) also drive mitres 1:1.
     """
-    h = float(m.get("_ai_avg_wall_height_ft") or 0)
-    if h <= 0:
-        h = 9.0  # single-story baseline
+    h, _ = _verified_drop_height_ft(m)
+    if h is None or h <= 0:
+        return None
     out_lf = float(m.get("outside_corner_lf") or 0)
     in_lf = float(m.get("inside_corner_lf") or 0)
-    out_n = round(out_lf / h) if h > 0 else 0
-    in_n = round(in_lf / h) if h > 0 else 0
+    out_n = round(out_lf / h)
+    in_n = round(in_lf / h)
     return max(0, out_n), max(0, in_n)
 
 
-def _mitre_count(m: dict) -> int:
+def _mitre_count(m: dict):
     if _gutter_lf(m) <= 0:
         return 0
-    out_n, in_n = _gutter_corner_count(m)
+    cc = _gutter_corner_count(m)
+    if cc is None:
+        return None
+    out_n, in_n = cc
     # Gable house: gutter doesn't wrap → 0 outside mitres. Inside
     # corners (porches / L-shapes) still get a mitre because the gutter
     # has to follow the re-entrant fascia.
@@ -462,7 +495,11 @@ def _mitre_count(m: dict) -> int:
 def _mitre_breakdown(m: dict) -> str:
     if _gutter_lf(m) <= 0:
         return "No gutter → 0 mitres"
-    out_n, in_n = _gutter_corner_count(m)
+    cc = _gutter_corner_count(m)
+    if cc is None:
+        _, why = _verified_drop_height_ft(m)
+        return f"REFUSED — corner count not derivable: {why}"
+    out_n, in_n = cc
     gable = _has_gable_wall(m)
     n = _mitre_count(m)
     if gable:
@@ -476,11 +513,13 @@ def _mitre_breakdown(m: dict) -> str:
 # Most installs use 2 clips per single-story drop (~12 LF / 6 = 2),
 # 4 clips per 2-story drop. Each clip secures the downspout to the
 # wall against wind load.
-def _pipe_clips_count(m: dict) -> int:
+def _pipe_clips_count(m: dict):
     n_down = _downspout_count(m)
     if n_down <= 0:
         return 0
     drop = _downspout_drop_ft(m)
+    if drop is None:
+        return None
     per_down = max(2, math.ceil(drop / 6 - 1e-9))
     return n_down * per_down
 
@@ -490,6 +529,9 @@ def _pipe_clips_breakdown(m: dict) -> str:
     if n_down <= 0:
         return "No downspouts → 0 pipe clips"
     drop = _downspout_drop_ft(m)
+    if drop is None:
+        _, why = _verified_drop_height_ft(m)
+        return f"REFUSED — clip count not derivable: {why}"
     per_down = max(2, math.ceil(drop / 6 - 1e-9))
     total = n_down * per_down
     return (f"{n_down} downspouts × {per_down} clips ({drop:.0f} LF drop ÷ 6) "
@@ -500,10 +542,12 @@ def _pipe_clips_breakdown(m: dict) -> str:
 # every mitre + every end cap + every outlet (1 outlet per downspout).
 # A standard 10 oz tube covers ~16-20 ft of joint, and each connection
 # uses ~4-5 ft. Howard's job-cost rule of thumb: 1 tube per 4 joints.
-def _sealant_count(m: dict) -> int:
+def _sealant_count(m: dict):
     if _gutter_lf(m) <= 0:
         return 0
     mitres = _mitre_count(m)
+    if mitres is None:
+        return None
     runs = _gutter_run_count(m)
     end_caps = runs * 2
     outlets = _downspout_count(m)
@@ -515,6 +559,9 @@ def _sealant_breakdown(m: dict) -> str:
     if _gutter_lf(m) <= 0:
         return "No gutter → 0 sealant tubes"
     mitres = _mitre_count(m)
+    if mitres is None:
+        _, why = _verified_drop_height_ft(m)
+        return f"REFUSED — joint count not derivable: {why}"
     runs = _gutter_run_count(m)
     end_caps = runs * 2
     outlets = _downspout_count(m)
@@ -1923,7 +1970,9 @@ HOVER_MAPPING_SPEC = [
         # STICKS — qty is whole sticks, ceil(LF ÷ 10). LF math unchanged
         # underneath (story-aware drops, Iter 78z).
         "unit": "Stick",
-        "extract": lambda m: math.ceil(_downspout_lf(m) / 10 - 1e-9) if _downspout_lf(m) > 0 else 0,
+        "extract": lambda m: (None if _downspout_lf(m) is None
+                              else math.ceil(_downspout_lf(m) / 10 - 1e-9)
+                              if _downspout_lf(m) > 0 else 0),
         "note": lambda m: _downspout_breakdown(m),
         "viz": lambda m: _gutter_viz(m),
     },
@@ -2749,9 +2798,29 @@ def _build_lines(measurements: dict) -> list[dict]:
         if skip_default_siding and spec.get("_is_default_siding"):
             continue
         try:
-            qty = float(spec["extract"](measurements))
+            _raw_q = spec["extract"](measurements)
         except (TypeError, ValueError):
-            qty = 0
+            _raw_q = 0
+        if _raw_q is None:
+            # SEND-105 RULING V — a refused base emits a NAMED refusal
+            # row, never a silent zero and never a skipped row.
+            _note = spec["note"]
+            if callable(_note):
+                try:
+                    _note = _note(measurements)
+                except Exception:
+                    _note = ""
+            if not (_note or "").startswith("REFUSED"):
+                _note = ("REFUSED — no verified wall height on this "
+                         "estimate (Ruling V)")
+            for tab in spec["tabs"]:
+                out.append({"tab": tab, "section": spec["section"],
+                            "name": spec["item"], "unit": spec["unit"],
+                            "qty": None, "not_derivable": True,
+                            "not_derivable_reason": _note,
+                            "note": _note})
+            continue
+        qty = float(_raw_q)
         # Q1 (ruled 2026-07-27): presence rows (Tear-Off / Dumpster) emit
         # at qty 0 — contractor-entered, flagged pending until set.
         if qty <= 0 and not spec.get("always_emit"):
@@ -3310,6 +3379,36 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
             scoped["_bb_wall_height_ft"] = _bbh
     # CORNER-COUNT CORRECTION (ruled 2026-07-28): human walked count
     # governs the tab-line rebuild too; report count kept for comparison.
+    # SEND-105 — RULING V fold: this estimate's own VERIFIED wall
+    # heights (taped human dimensions + DP-1 DERIVED chain faces) ride
+    # the rebuild; the downspout-drop and gutter-mitre reads refuse
+    # without one. Model heights stay hypothesis-only, never a base.
+    _vh = {}
+    try:
+        async for _t in db.human_dimensions.find(
+                {"estimate_id": est_id, "kind": "taped_wall_height_ft"},
+                {"_id": 0, "face_id": 1, "value_ft": 1}):
+            if _t.get("value_ft"):
+                _vh[_t["face_id"]] = {"ft": float(_t["value_ft"]),
+                                      "src": "taped_human"}
+    except Exception:
+        pass
+    try:
+        from routes.pdf_overlay import _latest_ocr
+        _ot, _run105 = await _latest_ocr(est_id)
+        if _ot:
+            from height_read import derive_face_heights
+            _fid = {"front": "front", "rear": "back",
+                    "left": "left", "right": "right"}
+            for _f, _rr in (derive_face_heights(_ot) or {}).items():
+                if (_rr.get("status") == "DERIVED" and _rr.get("ft")
+                        and _fid[_f] not in _vh):
+                    _vh[_fid[_f]] = {"ft": float(_rr["ft"]),
+                                     "src": "dp1_derived_chain"}
+    except Exception:
+        pass
+    if _vh:
+        scoped["_verified_wall_heights_ft"] = _vh
     _ccf = (est.get("lp_flag_checklist") or {}).get("corner_locators") or {}
     if _ccf.get("status") == "closed" and not scoped.get("_corner_count_human"):
         _cvals = _ccf.get("values") or {}

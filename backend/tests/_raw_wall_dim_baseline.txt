@@ -26,13 +26,9 @@
 # PARTIAL), not here.
 
 # [PENDING_CONVERSION]
-# RULING V (send-19): both hover.py `_ai_avg_wall_height_ft` reads REACH the
-# material list, so they are catalogued here as owed conversions (like the
-# corner/OSC reader was its own pass). Full Q-conversion (routing height as a
-# status-carrying Quantity through the gutter/downspout/mitre line builders)
-# is the next focused pass — NOT half-done, to avoid a new silent zero.
-hover::_downspout_drop_ft::_ai_avg_wall_height_ft | downspout DROP length → _downspout_lf coil (material, sold by the stick). Silent substitutes to kill on conversion: `_ai_story_count or 1` (defaults missing story to 1) and the hardcoded 9' single-story baseline
-hover::_gutter_corner_count::_ai_avg_wall_height_ft | divides corner LF by avg wall height to back out corner COUNT → _mitre_count (material). Silent substitute to kill: the hardcoded h=9.0 fallback
+# RULING V (send-19): CONVERTED IN FULL, SEND-105 — both hover.py
+# `_ai_avg_wall_height_ft` reads are GONE (lines pruned per Ruling U;
+# see REMOVAL_LOG). The class is now empty.
 
 # [OUT_OF_SCOPE_N_BUT_PRICED]
 lp_package::assemble_lp_package::width_ft | dormer fascia LF (d.get("width_ft")) — PRICED (feeds the 440 8" fascia line) but a dormer dimension, not a wall dim; candidate for a follow-on ruling
@@ -55,3 +51,5 @@ profile_callouts::breakdown_walls_by_profile::height_ft | breakdown eave_h / raw
 #   lp_package::assemble_lp_package::_ai_avg_wall_height_ft @L361 — RULING Q CONVERSION: corner/OSC average retired; _corner_height_ft derives from verified touching walls (NOT DERIVABLE when dead)
 #   lp_package::assemble_lp_package::avg_wall_height_ft @L432     — RULING Q CONVERSION: no-C3 corner-walk fallback now a 1-stick/corner floor, no average
 #   profile_callouts::breakdown_walls_by_profile::width_ft @L223  — RULING Q CONVERSION: base-course/gable width routes through wall_width_for_pricing (killed width ⇒ NOT DERIVABLE)
+#   hover::_downspout_drop_ft::_ai_avg_wall_height_ft            — RULING V CONVERSION (SEND-105): drop derives from _verified_wall_heights_ft (taped human / DP-1 DERIVED chain, max never averaged) or REFUSES named; the `_ai_story_count or 1` ladder and the hardcoded 9' baseline are KILLED, not defaulted
+#   hover::_gutter_corner_count::_ai_avg_wall_height_ft          — RULING V CONVERSION (SEND-105): corner count divides by the verified height or REFUSES named; the hardcoded h=9.0 fallback is KILLED; refused reads emit not_derivable rows (never a silent zero, never a skipped row)
