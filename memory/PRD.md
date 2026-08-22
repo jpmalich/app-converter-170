@@ -8369,3 +8369,49 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   WW+TT — room-label precondition remains their only exclusion.
 - NEXT: per-surface zone binding (critical path), Ruling V conversion,
   segment-vs-total ruling awaited.
+
+## 2026-08-22 — SEND-105/106/107 (Ruling V sealed; real-estate write census; money-walk companions; six-section report)
+- RULING V FINALIZED: downspout drop + gutter-mitre on VERIFIED heights only
+  (taped human + own DP-1 chain, max never averaged). Killed: model-avg base,
+  `_ai_story_count or 1` ladder, 9'/12-LF floors. Census: 0 PENDING_CONVERSION.
+  Refused rows now carry machine code RULING_V_NO_VERIFIED_HEIGHT
+  (hover.py) so companions assert the code, never prose.
+- CASILE MONEY WALK: pin moved with FOUR FIELDS (23,642.04 → 22,943.35;
+  delta = exactly the 4 refused gutter rows: downspout 10 sticks, mitre 20,
+  clips 16, sealant 11 — old values preserved row-by-row in the pin).
+  PRICED companion on a disposable clone @ obviously-synthetic 99 ft
+  (82 sticks / 1 mitre / 136 clips / 6 tubes) + REFUSAL companion (reason
+  code). Classification: (a)=1, (b)=ZERO regressions (stated). Flakes named:
+  guard_extension profile-annotations + id_migration rename — both passed
+  standalone and in the clean run.
+- P0 CENSUS (SEND-107): the suite WROTE to real estimates for weeks —
+  Casile (profile_owns_family rebuilds, iteration_48 spec churn), Mark
+  Letrick (8 files), doug jones (2 files). ALL 11 writer files converted to
+  disposable clones (tests/clone_util.py: duplicate door + estimate-scoped
+  run copies with [:8]-preserving reminted run_ids + stamp remap). Register:
+  fixture_protection (423 pin), tape_check (400 pins). NOT converted,
+  reported: lp_master_sheet_binding writes real Casile COMPANY catalog
+  override (restored in-test) — awaiting ruling.
+- NEW PINS: test_real_estate_write_census_2026_08_23_send107.py — (1) write
+  census: any hardcoded estimate id resolved into a mutating op fails
+  (HTTP verbs, non-registered POSTs, db writes, mutating-named helpers);
+  (2) anti-default pin lexical+functional (empty verified heights MUST yield
+  None for drop/mitre/clips/sealant); (3) money-walk pairing pin (walk
+  without named refusal_companion fails; second walk found in
+  segment_partial_derivability, companion renamed to be discoverable).
+- INCIDENT (disclosed, send107 §4): derived run id was hover-run+profile
+  only → clone rebuild HIJACKED real Casile's run doc; probe cleanup deleted
+  it. FIXED: per-estimate id `hover-{run12}-{profile}-{est8}` (hover.py).
+  Run doc RESTORED by re-derivation (derived artifact; estimate LINES not
+  touched — the 4 refusals stand, recoverable from git f9934de backup,
+  Howard rules).
+- CHECKLIST-HEIGHT FOLD: stays dropped — planes do NOT match (batten tape =
+  sided band; drop needs eave→grade; foundation band between). Registered.
+- STAMP: RECORDED 2026-08-22 21:40 UTC · 3697e35 · CLEAN · 2777 passed,
+  9 skipped · ingress smoke 4 passed. Reports: memory/send105_report.md
+  (six sections: per-face snapshot both houses, soffit measured ≤0.17 ft /
+  ≤5 ft², Boni plate lines, Ruling V before→now, Boni-left bindability
+  confirmed-by-doing, standing opens) + memory/send107_report.md.
+- NEXT: Howard rules on — Casile's 4 refused rows (restore vs stand),
+  company-write class, checklist-fold plane, inverted 423 guard,
+  soffit pair (numbers say current stands). QR field sheet stays parked.
