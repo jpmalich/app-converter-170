@@ -887,6 +887,16 @@ async def _readiness_items(est_id: str, user: dict) -> list:
             items.append({"kind": g.get("kind") or "quote_gate", **g})
     # ONE TRUTH STAMP (Howard ruled 2026-08-04): every item carries its
     # registry tier + blocking flag — chips and modal read the SAME flags.
+    # SEND-96 item 2 — Ruling L on the quote: a chimney-chase row that
+    # REFUSES (contested scale / no usable scale) blocks the customer
+    # surface. An unverifiable quantity must not quietly price.
+    for l in est.get("lines") or []:
+        if l.get("overlay_chase_line") and l.get("not_derivable"):
+            items.append({
+                "kind": "chase_refused", "code": "chase_contested_scale",
+                "tier": "quote", "blocking": True,
+                "label": (f"{l.get('name')}: REFUSED — "
+                          + str(l.get("not_derivable_reason") or ""))})
     # QUOTE-tier items block the customer surface (unpriced / labor rows:
     # "the PRINT-BLOCK working, not a bug"); ORDER-tier items (field-verify
     # ambers, taped flags) stay VISIBLE but never gate the quote — amber is

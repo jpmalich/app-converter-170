@@ -127,5 +127,16 @@ export function calcTotals(est, { tab } = {}) {
     sell = base * (1 + pct);
   }
   const profit = sell - base;
-  return { subMat, subLab, wasted, wasteAdd, tax, base, sell, profit };
+  // SEND-96 / Ruling L — a total that sums over a refused (NOT
+  // DERIVABLE) line is INCOMPLETE and is never presented as a price.
+  const refusedLines = lines.filter((l) => l?.not_derivable);
+  return {
+    subMat, subLab, wasted, wasteAdd, tax, base, sell, profit,
+    incomplete: refusedLines.length > 0,
+    refusedCount: refusedLines.length,
+    incompleteLabel:
+      refusedLines.length > 0
+        ? `INCOMPLETE — ${refusedLines.length} line(s) refused (Ruling L: not a price)`
+        : null,
+  };
 }

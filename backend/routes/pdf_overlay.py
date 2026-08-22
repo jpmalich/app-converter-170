@@ -103,6 +103,12 @@ def _face_ok(face_id: str) -> bool:
     # bindable surface ("gable:front"), distinct from the face body.
     if face_id.startswith("gable:") and face_id[len("gable:"):] in _FIXED_FACES:
         return True
+    # SEND-96: a chimney chase is its own bindable surface — it exists
+    # even where no chase ink was found (refused faces must leave
+    # Howard somewhere to draw; the SEND-48 lesson, third instance
+    # prevented).
+    if face_id.startswith("chase:") and face_id[len("chase:"):] in _FIXED_FACES:
+        return True
     return face_id.startswith("dormer:") and len(face_id) > len("dormer:")
 
 
@@ -112,6 +118,8 @@ def _surface_of(face_id: str):
         return face_id, "body"
     if face_id.startswith("gable:"):
         return face_id[len("gable:"):], "gable"
+    if face_id.startswith("chase:"):
+        return face_id[len("chase:"):], "chase"
     return None
 
 
@@ -126,6 +134,12 @@ def surface_derived_snapshot(est: dict, face_id: str):
     if not surf:
         return None, None
     label, kind = surf
+    if kind == "chase":
+        # SEND-96: the walk derives body and gable only — a chase never
+        # has a derived figure to supersede. 0.0 + the named reason
+        # keeps every chase surface fully bindable, ink or no ink.
+        return 0.0, ("no chase is ever derived by the walk — chase "
+                     "area enters only by a drawn zone")
     detail = (est.get("hover_measurements") or {}).get("_wall_walk_detail")
     if not isinstance(detail, list):
         return None, None
@@ -372,6 +386,7 @@ def apply_overlay_to_takeoff(
     each polygon carries a pre-computed `sqft` (None ⇒ scale refused) and a
     `derived_baseline_qty` (the app's original number in the line's unit)."""
     by_class: dict[str, list[dict]] = {}
+    chase_zones: list[dict] = []
     for p in polygons or []:
         # SEND-48: PROPOSED zones are provisional — they never feed a
         # quantity. Only human zones enter the takeoff math.
@@ -384,10 +399,17 @@ def apply_overlay_to_takeoff(
         # single pre-gate zone. Do not build a splitting feature.
         if p.get("binding_suspended"):
             continue
+        # SEND-96 item 2: a chase zone is its OWN quote row, basis
+        # labelled — it never merges into the body line's class math.
+        if str(p.get("face_id") or "").startswith("chase:"):
+            chase_zones.append(p)
+            continue
         by_class.setdefault(p.get("material_class") or "", []).append(p)
 
     out: list[dict] = []
     for line in (lines or []):
+        if line.get("overlay_chase_line"):
+            continue    # SEND-96: rebuilt fresh from the zones each pass
         new = dict(line)
         matched = next(
             (c for c in by_class if _line_matches(new, c)),
@@ -475,6 +497,63 @@ def apply_overlay_to_takeoff(
             gable_zone=any(str(p.get("face_id") or "").startswith("gable:")
                            for p in convertible))
         out.append(new)
+    # ── SEND-96 item 2 — CHIMNEY CHASE rows on the quote, basis
+    # labelled (customer-facing is where a laundered basis does the
+    # most damage). A chase on a CONTESTED-scale face REFUSES and
+    # blocks the quote gate (Ruling L: the total is INCOMPLETE).
+    _face_disp = {"back": "rear", "front": "front",
+                  "left": "left", "right": "right"}
+    for p in chase_zones:
+        face = str(p.get("face_id") or "").split(":", 1)[-1]
+        basis = str(p.get("basis")
+                    or "zone drawn by hand — human trace")
+        host = next((ln for ln in (lines or [])
+                     if _line_matches(ln, p.get("material_class") or "")),
+                    None)
+        row = {"id": f"chase-{p.get('id')}",
+               "name": f"Chimney Chase — {_face_disp.get(face, face)}",
+               "unit": "SQ", "mat": 0, "lab": 0,
+               "tab": (host or {}).get("tab") or "vinyl",
+               "section": (host or {}).get("section") or "Vinyl Siding",
+               "overlay_chase_line": True,
+               "qty_src": "human",
+               # SEND-96 order item 2 — the four chase corner verticals,
+               # a visible UNPRICED note; no corner-count change
+               # (Ruling G: corners over unverified heights are not
+               # derivable).
+               "chase_corner_note": (
+                   "carries 4 corner verticals running the chase "
+                   "height — UNPRICED, corner count unchanged")}
+        contested = (p.get("tier") == "contested_pick_larger"
+                     or "CONTESTED" in basis)
+        if contested:
+            row.update({
+                "qty": None, "raw_qty": None,
+                "not_derivable": True,
+                "not_derivable_reason": (
+                    "chase sits on a CONTESTED-scale face — an "
+                    "unverifiable quantity must not quietly price; "
+                    "the total is INCOMPLETE until the contest "
+                    "resolves (Ruling L). Basis: " + basis),
+                "note": "REFUSED — contested scale. Basis: " + basis})
+        else:
+            sqft = p.get("sqft")
+            qty = (_sqft_to_line_qty(float(sqft), "SQ")
+                   if sqft is not None else None)
+            if qty is None:
+                row.update({
+                    "qty": None, "raw_qty": None,
+                    "not_derivable": True,
+                    "not_derivable_reason": (
+                        "chase zone carries no usable scale — the "
+                        "area is REFUSED, never $0. Basis: " + basis),
+                    "note": "REFUSED — no usable scale. Basis: "
+                            + basis})
+            else:
+                row.update({"qty": qty, "raw_qty": qty,
+                            "overlay_sqft": round(float(sqft), 2),
+                            "note": "Basis: " + basis})
+        out.append(row)
     return out
 
 
@@ -602,6 +681,7 @@ async def _latest_ocr(est_id: str):
         {"_id": 0, "result.raw_ai._ocr_text_by_page": 1,
          "result.raw_ai._ocr_text_ref": 1, "run_id": 1,
          "result.raw_ai.sheets_identified": 1,
+         "result.raw_ai.appendages": 1,
          "source_files": 1},
         sort=[("created_at", -1)])
     raw_ai = ((run or {}).get("result") or {}).get("raw_ai") or {}
@@ -1630,6 +1710,12 @@ async def propose_zones(
         if chase_list:
             part = {"face_id": face_to_id[face],
                     "kind": ("interrupting" if inter_chs else "edge"),
+                    # SEND-96 order item 2 — visible UNPRICED note; no
+                    # corner-count change (Ruling G).
+                    "corner_note": (
+                        "each chase carries 4 corner verticals running "
+                        "its height — UNPRICED note, corner count "
+                        "unchanged"),
                     "contested": spec["tier"] == "contested_pick_larger",
                     "contested_rails": spec.get("contested_rails"),
                     "parts": [], "sums_exact": None,
@@ -1862,6 +1948,40 @@ async def propose_zones(
     for c in created:
         c["created_at"] = str(c["created_at"])
         c["updated_at"] = str(c["updated_at"])
+    # ── SEND-96 item 1 — a model-claimed chase with no locatable ink
+    # REFUSES into a surface that still exists and stays bindable
+    # (the SEND-48 lesson: refused surfaces must leave Howard
+    # somewhere to draw).
+    _claimed = (((run or {}).get("result") or {}).get("raw_ai")
+                or {}).get("appendages") or []
+    _chase_created = {str(c.get("face_id")) for c in created
+                      if str(c.get("face_id") or "").startswith("chase:")}
+    _wall_map = {"front": "front", "rear": "back", "back": "back",
+                 "left": "left", "right": "right"}
+    for ap in _claimed:
+        if not isinstance(ap, dict):
+            continue
+        try:
+            _fs = float(ap.get("faces_sqft") or 0)
+        except (TypeError, ValueError):
+            _fs = 0.0
+        if _fs <= 0:
+            continue
+        _w = str(ap.get("wall") or "?").lower()
+        _fid = "chase:" + _wall_map.get(_w, _w)
+        if _fid in _chase_created:
+            continue
+        skipped.append({
+            "face_id": _fid,
+            "reason": (
+                f"REFUSED — the run claims a "
+                f"{str(ap.get('kind') or 'chase').replace('_', ' ')} of "
+                f"{_fs:.0f} ft² on this wall; no chase ink locatable on "
+                "any evaluable face — the claim is hypothesis only and "
+                "feeds nothing; the chase surface still exists and "
+                "stays bindable — draw a zone to bind it")})
+    _rec_total = round(sum((p.get("above_plate_recovered_sqft") or 0)
+                           for p in partitions.values()), 2)
     return {"ok": True, "proposed": created, "skipped": skipped,
             # SEND-90 — RULING XX width cross-check: flagged on the
             # payload, never auto-resolved; magnitude, never a boolean.
@@ -1870,8 +1990,75 @@ async def propose_zones(
             # SEND-94 — the partition per face: sums to the face by
             # construction; chase provenance stated, never laundered.
             "partitions": partitions,
+            # SEND-96 item 3 — warn, never move silently: the recovery
+            # enters a quantity ONLY through a human-confirmed chase
+            # zone; this names the jump before anyone confirms one.
+            "recovery_warning": (
+                (f"the chase partition newly carries {_rec_total} ft² "
+                 "of above-plate chase area on this estimate — nothing "
+                 "moves until a human confirms a chase zone (proposals "
+                 "feed no quantity); confirming them will raise the "
+                 "siding takeoff by about that much")
+                if _rec_total else None),
             "note": ("proposed zones are PROVISIONAL — they feed no "
                      "quantity until a human confirms or bumps them")}
+
+
+@router.get("/estimates/{est_id}/pdf-overlay/height-cards")
+async def height_cards(est_id: str,
+                       user: dict = Depends(get_current_user)):
+    """SEND-96 order item 3 — HEIGHT CARDS: every refusing face gets a
+    plain, printable card saying what to tape. A card is a field
+    instruction, never a quantity — the tape's figure comes back as a
+    human dimension."""
+    await _est_or_404(est_id, user)
+    ot, run = await _latest_ocr(est_id)
+    if not ot:
+        return {"cards": [], "note": "no blueprint run on this estimate"}
+    from height_read import derive_face_heights
+    faces = derive_face_heights(ot)
+    cards = []
+    for face in ("front", "rear", "left", "right"):
+        r = faces.get(face) or {}
+        spec = _best_ladder_spec(r)
+        if spec and spec.get("tier") == "derived_chain":
+            continue                       # the face derives — no card
+        refusal = str(r.get("refusal") or r.get("reason") or "")
+        page = (spec or {}).get("page") or r.get("page")
+        if spec and spec.get("tier") == "contested_pick_larger":
+            rails = " vs ".join(spec.get("contested_rails") or [])
+            kind = "contested"
+            refusal = (f"the print carries two figures ({rails}) and "
+                       "the app may not choose between them")
+            tape = ("Tape ONE height on this wall: hook at the TOP OF "
+                    "PLATE line, read at the FIRST FLOOR line. The "
+                    f"tape decides between {rails}.")
+        elif "Two different wall heights" in refusal:
+            kind = "conflicting_heights"
+            tape = ("The print shows two conflicting wall heights on "
+                    "this elevation. Tape plate-to-floor ONCE at this "
+                    "wall — the tape decides which figure is real.")
+        elif "UNDIMENSIONED" in refusal:
+            kind = "undimensioned_band"
+            tape = ("One band of this wall is printed with NO "
+                    "dimension. Tape the wall from TOP OF PLATE down "
+                    "to FIRST FLOOR in one pull — the missing band is "
+                    "inside that pull.")
+        elif "no FIRST FLOOR datum" in refusal or "datum" in refusal:
+            kind = "no_datum"
+            tape = ("The drawing gives no usable floor line on this "
+                    "face. Tape the full wall height — grade to top "
+                    "of wall — and write the figure on this card.")
+        else:
+            kind = "refused"
+            tape = ("Tape the wall from TOP OF PLATE to FIRST FLOOR "
+                    "at this face and write the figure on this card.")
+        cards.append({"face": face, "page": page, "kind": kind,
+                      "refusal": refusal or "height not established",
+                      "tape": tape})
+    return {"cards": cards,
+            "note": ("a card is a field instruction, never a quantity "
+                     "— the taped figure enters as a human dimension")}
 
 
 def _ft_per_px(scale_ref, W, H):

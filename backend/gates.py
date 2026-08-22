@@ -38,6 +38,12 @@ GATE_TIERS: dict[str, str] = {
                                              # footprint closure is NOT
                                              # DERIVABLE — never priced against
                                              # a check that says it cannot close
+    "chase_contested_scale": "quote",        # BLOCKING (SEND-96 item 2): a
+                                             # chimney-chase row on a
+                                             # CONTESTED-scale face refuses —
+                                             # an unverifiable quantity must
+                                             # not quietly price; Ruling L
+                                             # makes the total INCOMPLETE
     "vision_zero_pages": "quote",            # informational, LOUD, never blocks —
                                              # silent-zero-verification class
                                              # (Howard 2026-07-29): a verification
@@ -76,6 +82,7 @@ QUOTE_BLOCKING = frozenset({
     "siding_family_conflict", "no_siding_on_siding_job",
     "photo_fillin_unset",  # ruled 2026-08-02 — silent-zero class, hard block
     "footprint_does_not_close",  # Ruling EE 2026-08-14 send-25 — hard block
+    "chase_contested_scale",  # SEND-96 item 2 — Ruling L hard block
     # labor_pending_contractor REMOVED from blocking (Howard re-ruled
     # 2026-07-29): labor is N/A or >$0; anything else is UNDECIDED —
     # ONE line with a count, never a block.

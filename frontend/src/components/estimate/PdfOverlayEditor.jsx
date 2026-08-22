@@ -193,6 +193,8 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   const [dormerLabel, setDormerLabel] = useState("");
   // SEND-48 per-surface binding: a gable is its own bindable surface.
   const [gableSurface, setGableSurface] = useState(false);
+  const [chaseSurface, setChaseSurface] = useState(false);
+  const [heightCards, setHeightCards] = useState(null);
   const [proposing, setProposing] = useState(false);
   const [scaleByPage, setScaleByPage] = useState({}); // {pageIdx: scaleRef}
   const [draft, setDraft] = useState(null);           // {points:[[x,y]], cx, cy}
@@ -204,6 +206,13 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   const [zoom, setZoom] = useState(1);
   const [ocrBusy, setOcrBusy] = useState(false);
   const [estLines, setEstLines] = useState(est?.lines || []);
+  useEffect(() => {
+    let live = true;
+    api.get(`/estimates/${est.id}/pdf-overlay/height-cards`)
+      .then(({ data }) => { if (live) setHeightCards(data?.cards || []); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [est.id]);
   const imgRef = useRef(null);
   const scrollRef = useRef(null);      // the scrolling canvas viewport
   const wheelAnchor = useRef(null);    // {fx,fy,ox,oy} to keep the cursor point fixed across a wheel-zoom
@@ -212,7 +221,8 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
   const pageScale = scaleByPage[activePage] || null;
   const faceId = face === "dormer"
     ? `dormer:${(dormerLabel || "").trim() || "1"}`
-    : (face && gableSurface ? `gable:${face}` : face);
+    : (face && chaseSurface ? `chase:${face}`
+       : (face && gableSurface ? `gable:${face}` : face));
 
   // FACE FROM PAGE (Howard ruled 2026-08-13): derive the face from the
   // page's identified elevation; where unknown, leave it EMPTY so the
@@ -756,10 +766,17 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                   data-testid="pdf-overlay-dormer-label" />
               )}
               {face && face !== "dormer" && (
-                <button type="button" onClick={() => setGableSurface((g) => !g)}
+                <button type="button" onClick={() => setGableSurface((g) => { if (!g) setChaseSurface(false); return !g; })}
                   className={`mt-1 w-full text-[10px] uppercase font-bold px-2 py-1.5 border ${gableSurface ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
                   data-testid="pdf-overlay-gable-toggle">
                   {gableSurface ? `binding: gable of ${face}` : "bind the gable (triangle) instead"}
+                </button>
+              )}
+              {face && face !== "dormer" && (
+                <button type="button" onClick={() => setChaseSurface((c) => { if (!c) setGableSurface(false); return !c; })}
+                  className={`mt-1 w-full text-[10px] uppercase font-bold px-2 py-1.5 border ${chaseSurface ? "bg-[var(--bar-bg)] text-white border-[var(--border-strong)]" : "border-[var(--border)] hover:bg-[var(--surface-muted)]"}`}
+                  data-testid="pdf-overlay-chase-toggle">
+                  {chaseSurface ? `binding: chimney chase of ${face}` : "bind the chimney chase instead"}
                 </button>
               )}
               <button type="button" onClick={proposeZones} disabled={proposing}
@@ -772,6 +789,22 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
                 <MousePointer2 className="w-3 h-3" /> Click each corner on the page, click the first point (or press Enter) to close.
               </p>
             </div>
+
+            {/* SEND-96 — HEIGHT CARDS: what to tape, per refusing face */}
+            {heightCards && heightCards.length > 0 && (
+              <div className="p-3 border-b border-[var(--border)]" data-testid="height-cards">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">
+                  Height cards — what to tape ({heightCards.length} refusing face{heightCards.length > 1 ? "s" : ""})
+                </div>
+                {heightCards.map((c) => (
+                  <div key={c.face} className="border border-[var(--border)] p-2 mb-1" data-testid={`height-card-${c.face}`}>
+                    <div className="text-[11px] font-bold uppercase">{c.face}{c.page ? ` — p${c.page}` : ""}</div>
+                    <div className="text-[10px] text-[var(--warning-text)] mt-0.5">{c.refusal}</div>
+                    <div className="text-[10px] font-bold mt-1">TAPE: {c.tape}</div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Zones on this page */}
             <div className="p-3 border-b border-[var(--border)]">
