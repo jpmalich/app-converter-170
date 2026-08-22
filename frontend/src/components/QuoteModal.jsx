@@ -194,18 +194,24 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             </ul>
           </div>
         )}
-        {totals?.incomplete && (
-          <div className="no-print w-full max-w-3xl mb-3 bg-[#FEF2F2] border border-[#DC2626] px-4 py-3" data-testid="quote-incomplete-banner">
-            <div className="text-xs font-bold text-[#991B1B] mb-1">{totals.incompleteLabel}</div>
-            <ul className="space-y-0.5">
-              {(estimate.lines || []).filter((l) => l?.not_derivable).map((l, i) => (
-                <li key={i} className="text-[11px] text-[#991B1B]" data-testid="quote-refused-line">
-                  • {l.name}: {l.not_derivable_reason || "REFUSED"}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {(() => {
+          const refused = (estimate.lines || []).filter((l) => l?.not_derivable);
+          if (refused.length === 0) return null;
+          return (
+            <div className="no-print w-full max-w-3xl mb-3 bg-[#FEF2F2] border border-[#DC2626] px-4 py-3" data-testid="quote-incomplete-banner">
+              <div className="text-xs font-bold text-[#991B1B] mb-1">
+                {`INCOMPLETE — ${refused.length} line(s) refused (Ruling L: not a price)`}
+              </div>
+              <ul className="space-y-0.5">
+                {refused.map((l, i) => (
+                  <li key={i} className="text-[11px] text-[#991B1B]" data-testid="quote-refused-line">
+                    • {l.name}: {l.not_derivable_reason || "REFUSED"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
         {/* LABOR UNDECIDED — one line, a count, never a block (re-ruled 2026-07-29) */}
         {laborItem && (
           <div className="no-print w-full max-w-3xl mb-3 bg-[#FFFBEB] border border-[#D97706] px-4 py-2 text-[11px] text-[#92400E]" data-testid="quote-labor-undecided-line">

@@ -79,10 +79,14 @@ def test_tier_assignments_sealed():
     # face that fails DD footprint closure is NOT DERIVABLE and hard-blocks
     # the quote — pricing a face against a check that says it cannot be
     # closed is the exact silent number EE exists to stop.
+    # chase_contested_scale ADDED by SEND-96 item 2: a chimney-chase row
+    # on a CONTESTED-scale face refuses — an unverifiable quantity must
+    # not quietly price; Ruling L makes the total INCOMPLETE.
     assert QUOTE_BLOCKING == {
         "facade_scope_unresolved_zero", "area_conservation_breach",
         "siding_family_conflict", "no_siding_on_siding_job",
-        "photo_fillin_unset", "footprint_does_not_close"}
+        "photo_fillin_unset", "footprint_does_not_close",
+        "chase_contested_scale"}
     assert ORDER_BLOCKING == {
         "batten_wall_heights", "corner_locators", "opening_schedule",
         "opening_facade_attribution", "porch_ceiling_implied"}

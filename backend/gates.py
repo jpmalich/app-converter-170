@@ -62,6 +62,10 @@ GATE_TIERS: dict[str, str] = {
 KIND_TIERS: dict[str, str] = {
     "family_conflict": "quote",
     "labor_pending": "quote",
+    "chase_refused": "quote",     # BLOCKING (SEND-96 item 2): a refused
+                                  # chimney-chase row (contested scale /
+                                  # no usable scale) — Ruling L makes the
+                                  # total INCOMPLETE; never quietly priced
     "unpriced_row": "quote",      # BLOCKING (Howard re-ruled 2026-08-04): an
                                   # unpriced money-surface row must never reach
                                   # a homeowner as $0 — "the PRINT-BLOCK

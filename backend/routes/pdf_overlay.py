@@ -1977,8 +1977,8 @@ async def propose_zones(
                 f"REFUSED — the run claims a "
                 f"{str(ap.get('kind') or 'chase').replace('_', ' ')} of "
                 f"{_fs:.0f} ft² on this wall; no chase ink locatable on "
-                "any evaluable face — the claim is hypothesis only and "
-                "feeds nothing; the chase surface still exists and "
+                "any evaluable face — the model's claim feeds nothing; "
+                "the chase surface still exists and "
                 "stays bindable — draw a zone to bind it")})
     _rec_total = round(sum((p.get("above_plate_recovered_sqft") or 0)
                            for p in partitions.values()), 2)
