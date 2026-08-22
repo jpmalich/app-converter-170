@@ -364,3 +364,5 @@
 - 2026-08-22 15:17 UTC · 7103823 · INGRESS-SMOKE-CLEAN · 4 passed in 1.45s
 - 2026-08-22 15:39 UTC · ff1385c · CLEAN · [tests] · 2752 passed, 9 skipped, 7 warnings in 421.59s (0:07:01)
 - 2026-08-22 15:39 UTC · ff1385c · INGRESS-SMOKE-CLEAN · 4 passed in 1.67s
+- 2026-08-22 17:40 UTC · 125e8ea · CLEAN · [tests] · 2758 passed, 9 skipped, 7 warnings in 494.19s (0:08:14)
+- 2026-08-22 17:40 UTC · 125e8ea · INGRESS-SMOKE-CLEAN · 4 passed in 1.73s

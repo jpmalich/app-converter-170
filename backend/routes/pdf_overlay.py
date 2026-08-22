@@ -553,6 +553,26 @@ def apply_overlay_to_takeoff(
                 row.update({"qty": qty, "raw_qty": qty,
                             "overlay_sqft": round(float(sqft), 2),
                             "note": "Basis: " + basis})
+                # SEND-104 (authorized) — CHASE PRICING: the chase is
+                # sided in the face's own material, so the row takes
+                # the HOST siding line's own rates, source named. No
+                # host line → stays unpriced with the reason on the
+                # row; rates are never invented. A contested chase
+                # never reaches this branch (Ruling L holds above).
+                if host is not None:
+                    row["mat"] = host.get("mat") or 0
+                    row["lab"] = host.get("lab") or 0
+                    row["note"] += (
+                        "; priced at the host siding line's rates ("
+                        + str(host.get("name")) + ": $"
+                        + str(row["mat"]) + "/SQ mat, $"
+                        + str(row["lab"]) + "/SQ lab) — the chase is "
+                        "sided in the face's own material")
+                else:
+                    row["note"] += (
+                        "; UNPRICED — no host siding line on this "
+                        "estimate to take rates from; rates are never "
+                        "invented")
         out.append(row)
     return out
 
