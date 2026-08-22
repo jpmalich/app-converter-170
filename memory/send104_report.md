@@ -133,9 +133,23 @@ kept and its contradiction stated.
   full spanner beyond the fence-side corner — names its basis, weakest tier;
   (b) let a drawn human zone stand as the cure (already possible today);
   (c) leave it refusing. Nothing wired without the ruling.
-- **Chase pricing (authorized): NOT yet wired this send** — next up, with
-  basis on every row, contested chase still refusing, and the dollar value
-  of the ≈0.9 SQ recovery reported on Letrick's total.
+- **Chase pricing (authorized): WIRED AND PINNED this send.** A clean chase
+  row prices at the HOST siding line's own rates, source named verbatim on
+  the row (`…; priced at the host siding line's rates (Charter Oak Standard
+  color Dutch Lap 4.5" .046: $151.31/SQ mat, $0/SQ lab) — the chase is sided
+  in the face's own material`). A contested chase still refuses (Ruling L
+  untouched); no host line → the row stays unpriced with the reason printed;
+  rates are never invented (4 pins,
+  `test_chase_pricing_2026_08_22_send104.py`). **Letrick's dollars, observed
+  on a disposable clone (deleted after):**
+  - Baseline, no chase confirmed: **$13,171.75**
+  - Sides confirmed — the ≈0.99 SQ recovery is worth **+$149.80**
+    (0.49 + 0.50 SQ at $151.31/SQ mat, $0 lab): **$13,321.55**
+  - Rear confirmed pre-tape: REFUSED, $0, gate blocking — total unchanged
+  - Rear taped (TEST FIGURE 9'-6" TOF→soffit, not Howard's measurement) and
+    re-confirmed: 0.88 SQ, **+$133.15**, gate clear: **$13,454.70**
+  - All-in recovery on the clone: **+$282.95** (rear portion moves with the
+    real tape; the sides' $149.80 stands on its own confirms)
 - **Ruling V conversion: not started** (verified-height bases, refuse where
   unverified, no story defaults, no `_ai_story_count or 1`, no hardcoded 9').
 
