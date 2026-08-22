@@ -148,14 +148,23 @@ def test_live_band_matched_tape_governs_the_contested_rear(sess, rig):
     body = r.json()
     assert "GOVERNS" in body["statement"]
     assert body["tape"]["prior_read"]["tier"] == "contested_pick_larger"
-    # a plane-differing tape on LEFT: recorded, never converted
+    # PIN UPDATED (SEND-104, named per SEND-99 condition 1): this
+    # sub-pin previously asserted a top_of_foundation → bottom_of_soffit
+    # tape on LEFT is RECORDED only ("bands DIFFER", never governs, left
+    # stays derived_chain). The SEND-104 reachable-plane ruling made
+    # that value wrong: "A TAPED MEASUREMENT RESOLVES BOTH THE HEIGHT
+    # AND THE SCALE" — the same tape now GOVERNS the sided height
+    # directly and calibrates LEFT's scale (both endpoint datums are
+    # drawn on Letrick left). The old behavior is not a regression; the
+    # new assertions pin the ruled behavior.
     r2 = sess.post(f"{API}/estimates/{eid}/pdf-overlay/tape",
                    json={"face_id": "left", "text": "10-2",
                          "ref_from": "top_of_foundation",
                          "ref_to": "bottom_of_soffit"}, timeout=15)
     assert r2.status_code == 200
-    assert "bands DIFFER" in r2.json()["statement"]
-    # propose — the tape governs rear; left keeps its own read
+    assert "SIDED HEIGHT directly" in r2.json()["statement"]
+    assert r2.json()["tape"]["resolves"] == "height+scale"
+    # propose — the tape governs rear; left is governed by ITS OWN tape
     rp = sess.post(f"{API}/estimates/{eid}/pdf-overlay/propose",
                    timeout=240)
     assert rp.status_code == 200, rp.text
@@ -168,10 +177,16 @@ def test_live_band_matched_tape_governs_the_contested_rear(sess, rig):
     assert "Kept in the record" in rear[0]["basis"]
     assert d["tapes"]["back"]["governs"] is True
     assert "both" in d["tapes"]["back"]["statement"].lower()
-    # left face: the tape is recorded against its own plane only
-    assert d["tapes"]["left"]["governs"] is False
+    # left face (SEND-104): its own reachable tape governs it — height
+    # and scale, prior derived_chain read kept in the record
+    assert d["tapes"]["left"]["governs"] is True
+    assert "height AND scale" in d["tapes"]["left"]["statement"]
+    assert ("contradicts the prior derived_chain read"
+            in d["tapes"]["left"]["statement"])
     left = next(p for p in d["proposed"] if p["face_id"] == "left")
-    assert left["tier"] == "derived_chain"       # unchanged read
+    assert left["tier"] == "taped_human"
+    assert left["proposed_from"]["height_ft"] == 10.1667
+    assert "Kept in the record" in left["basis"]
     # the rear CHASE stops refusing: contested cleared by the tape
     chase = next(p for p in d["proposed"] if p["face_id"] == "chase:back")
     assert "CONTESTED" not in chase["basis"]
