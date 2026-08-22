@@ -297,7 +297,9 @@ def test_live_every_letrick_face_proposes_with_basis_and_tier(sess, rig):
                   timeout=30)
     assert r.status_code == 200, r.text
     proposed = r.json()["proposed"]
-    by_face = {p["face_id"]: p for p in proposed}
+    by_face = {p["face_id"]: p for p in proposed
+               # SEND-94: chase surfaces ride beside the body zones
+               if not p["face_id"].startswith("chase:")}
     assert set(by_face) == {"front", "back", "left", "right"}
     for p in proposed:
         assert p["provenance"] == "proposed"
@@ -321,6 +323,8 @@ def test_live_tof_bottom_scale_anchor_and_band_note(sess, rig):
     props = [p for p in polys if p["provenance"] == "proposed"]
     assert props
     for p in props:
+        if p["face_id"].startswith("chase:"):
+            continue     # SEND-94: chase surfaces carry their own basis
         ys = sorted({v[1] for v in p["vertices_pct"]})
         sr = p.get("scale_ref")
         if sr:

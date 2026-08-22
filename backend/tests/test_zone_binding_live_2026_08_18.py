@@ -78,10 +78,12 @@ def test_propose_creates_provisional_zones_feeding_no_quantity(sess, rig):
     proposed = r.json()["proposed"]
     # letrick-shaped run: SEND-55 ladder — EVERY evaluated face proposes
     # (three DERIVED chains + rear's contested tier). Coverage is a
-    # fact, not a success metric.
-    assert len(proposed) == 4
-    assert {p["face_id"] for p in proposed} == {"front", "back",
-                                                "left", "right"}
+    # fact, not a success metric. SEND-94: chase surfaces ride beside
+    # the four body zones.
+    bodies = [p for p in proposed
+              if not p["face_id"].startswith("chase:")]
+    assert {p["face_id"] for p in bodies} == {"front", "back",
+                                              "left", "right"}
     assert all(p["provenance"] == "proposed" for p in proposed)
     assert all(p["sqft"] is None for p in proposed)
     assert _siding(sess, rig["eid"])["qty"] == 44.0  # untouched
