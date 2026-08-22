@@ -365,8 +365,9 @@ def _lp_diff(
     for k in keys:
         lo = legacy_idx.get(k)
         new = pdf_idx.get(k)
-        legacy_qty = float(lo["qty"]) if lo else 0.0
-        pdf_qty = float(new["qty"]) if new else 0.0
+        # SEND-105 Ruling V: a REFUSED row carries qty None — diff as 0
+        legacy_qty = float(lo["qty"] or 0) if lo else 0.0
+        pdf_qty = float(new["qty"] or 0) if new else 0.0
         delta = pdf_qty - legacy_qty
         pct = (delta / legacy_qty * 100.0) if legacy_qty > 0 else (100.0 if pdf_qty > 0 else 0.0)
         if abs(delta) > 0.0001:

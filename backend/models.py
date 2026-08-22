@@ -104,7 +104,9 @@ class EstimateLine(BaseModel):
     section: str
     name: str
     unit: str
-    qty: float = 0
+    # SEND-105 RULING V: qty None is a REFUSED read (not_derivable row) —
+    # first-class on the money surface, must round-trip every write.
+    qty: Optional[float] = 0
     mat: float = 0
     lab: float = 0
     # Iter 78 (Howard's "1C · 2C · 3A"): when an estimate imports a HOVER

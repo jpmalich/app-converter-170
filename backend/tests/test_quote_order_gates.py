@@ -50,8 +50,11 @@ def test_every_emitted_flag_code_has_a_tier():
         for k in set(kind_pat.findall(txt)):
             # readiness "kind" values tier through KIND_TIERS; package-line
             # derivation kinds (osc, isc, starter…) are not flags.
+            # taped_wall_height_ft (SEND-105): a human_dimensions record
+            # kind queried by the Ruling V fold — a measurement, not a flag.
             if k in ("osc", "isc", "starter", "fascia_rake", "osc_lf",
-                     "osc_hover_lf", "osc_corner_walk", "isc_corner_walk"):
+                     "osc_hover_lf", "osc_corner_walk", "isc_corner_walk",
+                     "taped_wall_height_ft"):
                 continue
             if k not in KIND_TIERS and k not in GATE_TIERS:
                 unassigned.append(f"{p.name}: kind={k}")
