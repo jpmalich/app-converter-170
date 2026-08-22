@@ -26,7 +26,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from api_base import API  # env-derived (un-hardcoded 2026-07-23)
-EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick 7-14-26 7pm
+from clone_util import clone_estimate, drop_clone
+from creds_for_tests import TEST_EMAIL, TEST_PASSWORD
+EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick 7-14-26 7pm — READ-ONLY clone source (SEND-107)
 TOKEN = "pin-accept-3d-letrick"
 
 FORBIDDEN = (
@@ -41,26 +43,30 @@ def _mongo():
     return MongoClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
 
 
+# SEND-107: this file wrote accept_token + lp_field_verify DIRECTLY onto
+# the real Mark Letrick estimate. All writes now land on a disposable
+# clone (runs copied so house3d resolves); the token binds the clone.
 @pytest.fixture(scope="module", autouse=True)
-def ensure_token():
-    db = _mongo()
-    est = db.estimates.find_one({"id": EST_ID}, {"accept_token": 1})
-    had = est.get("accept_token")
-    if not had:
-        db.estimates.update_one({"id": EST_ID}, {"$set": {"accept_token": TOKEN}})
-    yield had or TOKEN
-    if not had:
-        db.estimates.update_one({"id": EST_ID}, {"$unset": {"accept_token": ""}})
+def clone_ctx():
+    s = requests.Session()
+    r = s.post(f"{API}/auth/login",
+               json={"email": TEST_EMAIL or "hhunt6677@yahoo.com",
+                     "password": TEST_PASSWORD}, timeout=20)
+    assert r.status_code == 200, r.text
+    cid = clone_estimate(s, API, EST_ID, copy_runs=True)
+    _mongo().estimates.update_one({"id": cid}, {"$set": {"accept_token": TOKEN}})
+    yield cid
+    drop_clone(s, API, cid)
 
 
-def _get(token):
+def _get(token=TOKEN):
     r = requests.get(f"{API}/public/accept/{token}", timeout=20)
     assert r.status_code == 200, r.text
     return r.json()
 
 
-def test_house3d_present_and_sanitized(ensure_token):
-    d = _get(ensure_token)
+def test_house3d_present_and_sanitized(clone_ctx):
+    d = _get()
     h = d.get("house3d")
     assert h, "accept payload must carry the sanitized 3D block"
     assert h["raw_ai"]["walls"] and h["measurements"]
@@ -73,20 +79,20 @@ def test_house3d_present_and_sanitized(ensure_token):
         assert term not in blob, f"asserted-absence violated: {term}"
 
 
-def test_softened_footnote_flag(ensure_token):
+def test_softened_footnote_flag(clone_ctx):
     # letrick has amber chase corners with no ratification → footnote on
-    d = _get(ensure_token)
+    d = _get()
     assert d.get("on_site_note") is True
 
 
-def test_attestation_aggregate_only(ensure_token):
+def test_attestation_aggregate_only(clone_ctx):
     db = _mongo()
     key = "corner:osc:chimney-chase-near-side-outside-corner"
     now = datetime.now(timezone.utc).isoformat()
-    db.estimates.update_one({"id": EST_ID}, {"$set": {f"lp_field_verify.{key}": {
+    db.estimates.update_one({"id": clone_ctx}, {"$set": {f"lp_field_verify.{key}": {
         "status": "verified", "by": "hhunt6677@yahoo.com", "at": now}}})
     try:
-        d = _get(ensure_token)
+        d = _get()
         a = d.get("attestation")
         assert a and a["count"] == 1 and a["initials"] == "HH" and a["date"] == now[:10]
         # per-feature statuses stay absent even WITH a ratified location
@@ -94,24 +100,24 @@ def test_attestation_aggregate_only(ensure_token):
         for term in FORBIDDEN:
             assert term not in blob, f"asserted-absence violated post-ratify: {term}"
     finally:
-        db.estimates.update_one({"id": EST_ID}, {"$unset": {f"lp_field_verify.{key}": ""}})
+        db.estimates.update_one({"id": clone_ctx}, {"$unset": {f"lp_field_verify.{key}": ""}})
 
 
-def test_no_attestation_when_nothing_confirmed(ensure_token):
-    d = _get(ensure_token)
+def test_no_attestation_when_nothing_confirmed(clone_ctx):
+    d = _get()
     assert d.get("attestation") is None
 
 
-def test_removed_corner_leaves_customer_render(ensure_token):
+def test_removed_corner_leaves_customer_render(clone_ctx):
     db = _mongo()
     key = "corner:osc:chimney-chase-near-side-outside-corner"
-    db.estimates.update_one({"id": EST_ID}, {"$set": {f"lp_field_verify.{key}": {
+    db.estimates.update_one({"id": clone_ctx}, {"$set": {f"lp_field_verify.{key}": {
         "status": "user_removed", "by": "hhunt6677@yahoo.com",
         "at": datetime.now(timezone.utc).isoformat()}}})
     try:
-        d = _get(ensure_token)
+        d = _get()
         locs = [c["locator"] for c in d["house3d"]["raw_ai"]["corner_locations"]]
         assert "chimney chase near-side outside corner" not in locs
         assert d.get("attestation") is None  # removal is not a confirmation
     finally:
-        db.estimates.update_one({"id": EST_ID}, {"$unset": {f"lp_field_verify.{key}": ""}})
+        db.estimates.update_one({"id": clone_ctx}, {"$unset": {f"lp_field_verify.{key}": ""}})

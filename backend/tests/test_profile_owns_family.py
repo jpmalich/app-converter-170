@@ -30,6 +30,7 @@ BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
 load_dotenv(BACKEND / ".env")
 from api_base import API  # noqa: E402
+from clone_util import clone_estimate, drop_clone  # noqa: E402
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
 CASILE_EST = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"  # EST-523061
@@ -53,13 +54,25 @@ def session():
     return s
 
 
-def _put_lines(session, lines):
-    r = session.put(f"{API}/estimates/{CASILE_EST}", json={"lines": lines}, timeout=30)
+# SEND-107 (Howard, 2026-08-23): these founding-era pins REBUILT THE REAL
+# Jon Casile estimate (EST-523061) IN PLACE — under Ruling V that rebuild
+# wrote four refused gutter rows onto a REAL CLOSED JOB (found and reported
+# in memory/send107_report.md). Every write now lands on a DISPOSABLE CLONE
+# through the real duplicate door; CASILE_EST itself is never written again.
+@pytest.fixture(scope="module")
+def est_id(session):
+    cid = clone_estimate(session, API, CASILE_EST)
+    yield cid
+    drop_clone(session, API, cid)
+
+
+def _put_lines(session, est_id, lines):
+    r = session.put(f"{API}/estimates/{est_id}", json={"lines": lines}, timeout=30)
     assert r.status_code == 200, r.text
 
 
-def _get_lines(session):
-    return session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()["lines"]
+def _get_lines(session, est_id):
+    return session.get(f"{API}/estimates/{est_id}", timeout=30).json()["lines"]
 
 
 def test_measure_map_profile_blind_reproduces_the_regression(session):
@@ -91,19 +104,19 @@ def test_measure_map_with_profile_owns_its_family(session):
     assert (LAP_KEY["tab"], LAP_KEY["section"], LAP_KEY["name"]) in zeros
 
 
-def test_founding_state_rebuild_zeroes_lap_keeps_panels(session):
+def test_founding_state_rebuild_zeroes_lap_keeps_panels(session, est_id):
     """FOUNDING TEST (Jon's exact regression state): seed lap 251 as
     machine residue → rebuild → lap row PRESENT at qty 0, panels 68,
     lp_smart group total counts the panel family only."""
-    lines = _get_lines(session)
+    lines = _get_lines(session, est_id)
     lines = [l for l in lines if l.get("name") != LAP_KEY["name"]]
     lines.append({**LAP_KEY, "unit": "PCS", "qty": 251, "raw_qty": 228.0,
                   "mat": 30.99, "lab": 0.0})
-    _put_lines(session, lines)
-    r = session.post(f"{API}/estimates/{CASILE_EST}/hover-lp-run",
+    _put_lines(session, est_id, lines)
+    r = session.post(f"{API}/estimates/{est_id}/hover-lp-run",
                      json=REBUILD_PAYLOAD, timeout=90)
     assert r.status_code == 200, r.text
-    after = _get_lines(session)
+    after = _get_lines(session, est_id)
     lap = [l for l in after if l.get("name") == LAP_KEY["name"]]
     assert lap and lap[0]["qty"] == 0, lap  # zeroed, visible, price kept
     panel = next(l for l in after if l.get("name") == PANEL_NAME)
@@ -113,26 +126,26 @@ def test_founding_state_rebuild_zeroes_lap_keeps_panels(session):
     assert lap_dollars == 0
 
 
-def test_human_typed_quantity_survives_rebuild(session):
+def test_human_typed_quantity_survives_rebuild(session, est_id):
     """Mixed-material jobs are human choices: a qty_src=human lap row
     survives the B&B rebuild with its quantity intact."""
-    lines = [l for l in _get_lines(session) if l.get("name") != LAP_KEY["name"]]
+    lines = [l for l in _get_lines(session, est_id) if l.get("name") != LAP_KEY["name"]]
     lines.append({**LAP_KEY, "unit": "PCS", "qty": 12, "mat": 30.99, "lab": 0.0,
                   "qty_src": "human"})
-    _put_lines(session, lines)
-    r = session.post(f"{API}/estimates/{CASILE_EST}/hover-lp-run",
+    _put_lines(session, est_id, lines)
+    r = session.post(f"{API}/estimates/{est_id}/hover-lp-run",
                      json=REBUILD_PAYLOAD, timeout=90)
     assert r.status_code == 200, r.text
-    after = _get_lines(session)
+    after = _get_lines(session, est_id)
     lap = next(l for l in after if l.get("name") == LAP_KEY["name"])
     assert lap["qty"] == 12 and lap.get("qty_src") == "human"
     # restore the founding state: machine residue → rebuild zeroes it
-    lines = [l for l in _get_lines(session) if l.get("name") != LAP_KEY["name"]]
+    lines = [l for l in _get_lines(session, est_id) if l.get("name") != LAP_KEY["name"]]
     lines.append({**LAP_KEY, "unit": "PCS", "qty": 251, "mat": 30.99, "lab": 0.0})
-    _put_lines(session, lines)
-    session.post(f"{API}/estimates/{CASILE_EST}/hover-lp-run",
+    _put_lines(session, est_id, lines)
+    session.post(f"{API}/estimates/{est_id}/hover-lp-run",
                  json=REBUILD_PAYLOAD, timeout=90)
-    final = next(l for l in _get_lines(session) if l.get("name") == LAP_KEY["name"])
+    final = next(l for l in _get_lines(session, est_id) if l.get("name") == LAP_KEY["name"])
     assert final["qty"] == 0
 
 

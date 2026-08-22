@@ -28,7 +28,7 @@ ADMIN_EMAIL = "hhunt6677@yahoo.com"
 ADMIN_PASSWORD = TEST_PASSWORD
 SOURCE_RUN = "2a2e8a1227d145a588b71387903e1320"  # comparison run1_opus (11 windows)
 FIXTURE_RUN_ID = "test-bp-remove-fixture"
-EST_ID = "db82ec7a-3177-406d-a602-927255e9e10e"
+EST_ID = "db82ec7a-3177-406d-a602-927255e9e10e"  # READ-ONLY clone source (SEND-107)
 
 
 @pytest.fixture(scope="module")
@@ -37,6 +37,16 @@ def session():
     r = s.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD}, timeout=15)
     assert r.status_code == 200, r.text
     yield s
+
+
+# SEND-107: openings-review writes land on a disposable clone; the
+# phantom fixture run binds to the CLONE's id, never the real estimate.
+@pytest.fixture(scope="module")
+def est_id(session):
+    from clone_util import clone_estimate, drop_clone
+    cid = clone_estimate(session, f"{API}", EST_ID)
+    yield cid
+    drop_clone(session, f"{API}", cid)
 
 
 @pytest.fixture(scope="module")
@@ -137,7 +147,7 @@ def test_items_carry_delete_guard_info():
 # ── E2E: the ruled fixture — phantom B×1 on the cloned comparison run ──
 
 @pytest.fixture(scope="module")
-def phantom_fixture(mongo_db):
+def phantom_fixture(mongo_db, est_id):
     # fixture_runs fallback: comparison runs outlive the 24h TTL there
     # (restored 2026-07-16 after TTL loss — artifact pin).
     src = mongo_db.ai_blueprint_runs.find_one({"run_id": SOURCE_RUN}, {"_id": 0}) \
@@ -149,16 +159,16 @@ def phantom_fixture(mongo_db):
     src["result"]["measurements"] = {**src["result"]["measurements"],
                                      "_ai_openings_schedule": meas["_ai_openings_schedule"]}
     src["run_id"] = FIXTURE_RUN_ID
+    src["estimate_id"] = est_id  # SEND-107: binds to the CLONE
     mongo_db.ai_blueprint_runs.delete_many({"run_id": FIXTURE_RUN_ID})
     src["test_artifact"] = True
     mongo_db.ai_blueprint_runs.insert_one(src)
     yield meas["_ai_openings_schedule"]
     mongo_db.ai_blueprint_runs.delete_many({"run_id": FIXTURE_RUN_ID})
-    mongo_db.estimates.update_one({"id": EST_ID}, {"$unset": {"lp_openings_review": ""}})
 
 
-def _preview(session):
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-package/preview",
+def _preview(session, est_id):
+    r = session.post(f"{API}/estimates/{est_id}/lp-package/preview",
                      json={"run_id": FIXTURE_RUN_ID}, timeout=30)
     assert r.status_code == 200, r.text
     return r.json()
@@ -172,8 +182,8 @@ def _wrap_note(pkg):
     return ""
 
 
-def test_phantom_b_removal_e2e(session, phantom_fixture):
-    pkg = _preview(session)
+def test_phantom_b_removal_e2e(session, est_id, phantom_fixture):
+    pkg = _preview(session, est_id)
     assert "(11×14')" in _wrap_note(pkg), _wrap_note(pkg)
     items = pkg["openings_review"]["items"]
     phantom = next(it for it in items
@@ -182,14 +192,14 @@ def test_phantom_b_removal_e2e(session, phantom_fixture):
     assert phantom["carries"], "delete-guard info missing on window item"
 
     # remove — provenance-logged
-    r = session.post(f"{API}/estimates/{EST_ID}/openings-review",
+    r = session.post(f"{API}/estimates/{est_id}/openings-review",
                      json={"key": phantom["key"], "action": "remove"}, timeout=15)
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "user_removed" and body["by"] and body["at"]
 
     # pin: removed opening appears nowhere in counts / trim math / quote surface
-    pkg2 = _preview(session)
+    pkg2 = _preview(session, est_id)
     assert "(10×14')" in _wrap_note(pkg2), _wrap_note(pkg2)
     orv = pkg2["openings_review"]
     assert orv["removed"] == 1 and orv["removals"]
@@ -197,10 +207,10 @@ def test_phantom_b_removal_e2e(session, phantom_fixture):
     assert it2["status"] == "user_removed" and it2["by"] and it2["at"]
 
     # revertible
-    r = session.post(f"{API}/estimates/{EST_ID}/openings-review",
+    r = session.post(f"{API}/estimates/{est_id}/openings-review",
                      json={"key": phantom["key"], "action": "reset"}, timeout=15)
     assert r.status_code == 200
-    pkg3 = _preview(session)
+    pkg3 = _preview(session, est_id)
     assert "(11×14')" in _wrap_note(pkg3)
     assert pkg3["openings_review"]["removed"] == 0
 
@@ -219,8 +229,8 @@ def test_admin_lp_estimates_carry_extraction_spend():
         assert tracked[0]["extraction_spend_usd"] > 0
 
 
-def test_leak_scan_no_cost_data_on_contractor_preview(session, phantom_fixture):
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-package/preview",
+def test_leak_scan_no_cost_data_on_contractor_preview(session, est_id, phantom_fixture):
+    r = session.post(f"{API}/estimates/{est_id}/lp-package/preview",
                      json={"run_id": FIXTURE_RUN_ID}, timeout=30)
     assert r.status_code == 200
     text = r.text
@@ -278,14 +288,14 @@ def test_db_telemetry_untouched_by_redaction(mongo_db):
 
 # ── Journey-log ratify events (approved 2026-07-15) ──────────────────
 
-def test_ratify_events_append_to_tracking(session, phantom_fixture, mongo_db):
-    pkg = _preview(session)
+def test_ratify_events_append_to_tracking(session, est_id, phantom_fixture, mongo_db):
+    pkg = _preview(session, est_id)
     item = next(it for it in pkg["openings_review"]["items"] if it["type"] == "window")
     for action, ev in (("remove", "opening.removed"), ("reset", "opening.reset")):
-        r = session.post(f"{API}/estimates/{EST_ID}/openings-review",
+        r = session.post(f"{API}/estimates/{est_id}/openings-review",
                          json={"key": item["key"], "action": action}, timeout=15)
         assert r.status_code == 200
-        est = mongo_db.estimates.find_one({"id": EST_ID}, {"tracking": 1})
+        est = mongo_db.estimates.find_one({"id": est_id}, {"tracking": 1})
         evs = [t for t in (est.get("tracking") or []) if t.get("type") == ev]
         assert evs and evs[-1]["meta"]["key"] == item["key"] and evs[-1]["meta"]["by"]
 

@@ -283,6 +283,12 @@ def _downspout_count(m: dict) -> int:
 # census line since send 19). The drop height comes from a VERIFIED
 # base or the read REFUSES: no story defaults, no `_ai_story_count
 # or 1`, no hardcoded 9'. Model heights stay hypothesis-only.
+# SEND-107: refused rows carry a MACHINE REASON CODE so companions
+# assert the code, never the prose sentence (a reworded message must
+# not break a pin when no behaviour changed).
+RULING_V_REFUSAL_CODE = "RULING_V_NO_VERIFIED_HEIGHT"
+
+
 def _verified_drop_height_ft(m: dict):
     """(height_ft, basis) from the estimate's own VERIFIED heights —
     taped human dimensions or the face's own DP-1 DERIVED chain —
@@ -2817,6 +2823,7 @@ def _build_lines(measurements: dict) -> list[dict]:
                 out.append({"tab": tab, "section": spec["section"],
                             "name": spec["item"], "unit": spec["unit"],
                             "qty": None, "not_derivable": True,
+                            "not_derivable_code": RULING_V_REFUSAL_CODE,
                             "not_derivable_reason": _note,
                             "note": _note})
             continue
@@ -3807,7 +3814,13 @@ async def hover_lp_run(
         soffit_breakdown=(payload or {}).get("soffit_breakdown"),
         waste_pct=(payload or {}).get("waste_pct"),
     )
-    lp_run_id = f"hover-{hover_run_id[:12]}-{profile}"
+    # SEND-107: the derived run id is PER-ESTIMATE. It was keyed by hover
+    # run + profile alone, so a duplicate rebuilding from the same hover
+    # run HIJACKED the source estimate's run doc (upsert re-pointed
+    # estimate_id) — "no estimate influences another" applies to run
+    # identity too. Existing stamped docs keep their old ids; only new
+    # rebuilds mint the scoped form.
+    lp_run_id = f"hover-{hover_run_id[:12]}-{profile}-{est_id[:8]}"
     now = datetime.now(timezone.utc)
     await db.ai_measure_runs.update_one(
         {"run_id": lp_run_id},

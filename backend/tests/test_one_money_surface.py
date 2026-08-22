@@ -80,16 +80,22 @@ def test_contractor_preview_carries_no_dollars(session):
 
 def test_frozen_qr_snapshot_carries_no_dollars(session):
     """Freeze mints the QR share; the public read (legacy snapshots
-    included) must render unpriced."""
-    r = session.post(f"{API}/estimates/{LETRICK_EST}/lp-material-list/freeze",
-                     json={}, timeout=90)
-    assert r.status_code == 200, r.text
-    token = r.json().get("token") or r.json().get("share", {}).get("token")
-    assert token, r.text
-    pub = requests.get(f"{API}/public/lp-material-list/{token}", timeout=30)
-    assert pub.status_code == 200, pub.text
-    found = _dollar_keys_in(pub.json())
-    assert not found, f"dollar keys leaked on the public QR list: {found}"
+    included) must render unpriced. SEND-107: the freeze WRITE lands on a
+    disposable clone of Letrick (runs copied) — never the real estimate."""
+    from clone_util import clone_estimate, drop_clone
+    cid = clone_estimate(session, API, LETRICK_EST, copy_runs=True)
+    try:
+        r = session.post(f"{API}/estimates/{cid}/lp-material-list/freeze",
+                         json={}, timeout=90)
+        assert r.status_code == 200, r.text
+        token = r.json().get("token") or r.json().get("share", {}).get("token")
+        assert token, r.text
+        pub = requests.get(f"{API}/public/lp-material-list/{token}", timeout=30)
+        assert pub.status_code == 200, pub.text
+        found = _dollar_keys_in(pub.json())
+        assert not found, f"dollar keys leaked on the public QR list: {found}"
+    finally:
+        drop_clone(session, API, cid)
 
 
 def test_admin_cost_preview_keeps_full_pricing(session):

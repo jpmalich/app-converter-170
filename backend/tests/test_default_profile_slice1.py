@@ -24,7 +24,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from api_base import API  # env-derived (un-hardcoded 2026-07-23)
-EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick (lap, LP-kind)
+from clone_util import clone_estimate, drop_clone
+EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick (lap, LP-kind) — READ-ONLY clone source (SEND-107)
 
 PANEL = "38 Series 4' x 10' Panel"
 LAP = '38 Series Lap 3/8" x 8" x 16\''
@@ -36,8 +37,15 @@ def session():
     r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD}, timeout=15)
     assert r.status_code == 200, r.text
     yield s
-    # restore: letrick fixture stays profile-less (lap via engine default)
-    s.post(f"{API}/estimates/{EST_ID}/default-profile", json={"profile": None}, timeout=15)
+
+
+# SEND-107: default-profile writes land on a disposable clone (runs
+# copied so preview resolves); the restore teardown is retired.
+@pytest.fixture(scope="module")
+def est_id(session):
+    cid = clone_estimate(session, API, EST_ID, copy_runs=True)
+    yield cid
+    drop_clone(session, API, cid)
 
 
 def _named(pkg):
@@ -102,27 +110,27 @@ class TestHoverMappingContractUnit:
 
 
 class TestDefaultProfileHttp:
-    def test_set_default_rederives_bb(self, session):
-        r = session.post(f"{API}/estimates/{EST_ID}/default-profile",
+    def test_set_default_rederives_bb(self, session, est_id):
+        r = session.post(f"{API}/estimates/{est_id}/default-profile",
                          json={"profile": "board_batten"}, timeout=15)
         assert r.status_code == 200 and r.json()["to"] == "board_batten"
-        pkg = session.post(f"{API}/estimates/{EST_ID}/lp-package/preview", json={}, timeout=60).json()
+        pkg = session.post(f"{API}/estimates/{est_id}/lp-package/preview", json={}, timeout=60).json()
         names = _named(pkg)
         assert PANEL in names and LAP not in names
         assert not any("starter" in n.lower() for n in names)
         assert "profile: Board & Batten" in pkg["geometry_basis"]["label"]
 
-    def test_clear_default_reverts_to_extraction(self, session):
-        r = session.post(f"{API}/estimates/{EST_ID}/default-profile",
+    def test_clear_default_reverts_to_extraction(self, session, est_id):
+        r = session.post(f"{API}/estimates/{est_id}/default-profile",
                          json={"profile": None}, timeout=15)
         assert r.status_code == 200 and r.json()["to"] is None
-        pkg = session.post(f"{API}/estimates/{EST_ID}/lp-package/preview", json={}, timeout=60).json()
+        pkg = session.post(f"{API}/estimates/{est_id}/lp-package/preview", json={}, timeout=60).json()
         names = _named(pkg)
         assert LAP in names and PANEL not in names
         assert "profile:" not in pkg["geometry_basis"]["label"]
 
-    def test_invalid_profile_422(self, session):
-        r = session.post(f"{API}/estimates/{EST_ID}/default-profile",
+    def test_invalid_profile_422(self, session, est_id):
+        r = session.post(f"{API}/estimates/{est_id}/default-profile",
                          json={"profile": "stucco"}, timeout=15)
         assert r.status_code == 422
 

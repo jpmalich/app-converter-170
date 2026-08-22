@@ -26,7 +26,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from api_base import API  # env-derived (un-hardcoded 2026-07-23)
-EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick
+from clone_util import clone_estimate, drop_clone
+EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick — READ-ONLY clone source (SEND-107)
 HOVER_RUN = "7c6194d46b91444990b6910a175b12ff"  # re-ingested 2026-07-18 (TTL 2nd-instance re-arm; archived from birth)
 BATTEN = '190 Series Trim 19/32" x 3" x 16\''
 
@@ -37,7 +38,14 @@ def session():
     r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD}, timeout=15)
     assert r.status_code == 200, r.text
     yield s
-    s.post(f"{API}/estimates/{EST_ID}/default-profile", json={"profile": None}, timeout=15)
+
+
+# SEND-107: default-profile provenance writes land on a disposable clone.
+@pytest.fixture(scope="module")
+def est_id(session):
+    cid = clone_estimate(session, API, EST_ID)
+    yield cid
+    drop_clone(session, API, cid)
 
 
 @pytest.fixture(scope="module")
@@ -58,15 +66,15 @@ def _batten_qty(session, est_id):
 
 
 class TestProvenanceAndRevert:
-    def test_change_carries_provenance(self, session):
-        r = session.post(f"{API}/estimates/{EST_ID}/default-profile",
+    def test_change_carries_provenance(self, session, est_id):
+        r = session.post(f"{API}/estimates/{est_id}/default-profile",
                          json={"profile": "board_batten"}, timeout=15).json()
         ch = r["change"]
         assert ch["from"] is None and ch["to"] == "board_batten"
         assert ch["by"] == "hhunt6677@yahoo.com" and ch["at"]
 
-    def test_revert_is_a_logged_set(self, session):
-        r = session.post(f"{API}/estimates/{EST_ID}/default-profile",
+    def test_revert_is_a_logged_set(self, session, est_id):
+        r = session.post(f"{API}/estimates/{est_id}/default-profile",
                          json={"profile": None}, timeout=15).json()
         ch = r["change"]
         assert ch["from"] == "board_batten" and ch["to"] is None

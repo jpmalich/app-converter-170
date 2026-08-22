@@ -78,7 +78,10 @@ def test_money_walk_sums_subset_and_names_missing():
     assert fnd and fnd[0].get("partial") is True
 
 
-def test_all_segments_dead_is_not_derivable_and_names_each():
+def test_all_segments_dead_refusal_companion_names_each():
+    # SEND-107 PAIRING: this is the walk's REFUSAL COMPANION — all
+    # segments dead → not derivable, each named. Renamed (assertions
+    # untouched) so the money-walk pairing pin can discover it.
     w = {
         "label": "back", "width_ft": None, "height_ft": None,
         "wall_body_profile_callout": "lap",

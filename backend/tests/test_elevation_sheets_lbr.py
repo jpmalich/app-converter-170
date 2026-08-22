@@ -45,10 +45,22 @@ def session():
     return s
 
 
-def _sheet(session, which):
-    r = session.get(f"{API}/estimates/{LETRICK_EST}/elevation-sheet/{which}", timeout=30)
+def _sheet(session, which, est=None):
+    r = session.get(f"{API}/estimates/{est or LETRICK_EST}/elevation-sheet/{which}", timeout=30)
     assert r.status_code == 200, f"{which}: {r.text}"
     return r.json()
+
+
+# SEND-107: the three WRITE pins in this file (appendage width set/revert,
+# the two openings-review verb tests) land on a disposable clone of the
+# real Mark Letrick estimate (runs copied so the sheets serve). Every
+# other pin READS the real estimate, which stays lawful.
+@pytest.fixture(scope="module")
+def letrick_wr(session):
+    from clone_util import clone_estimate, drop_clone
+    cid = clone_estimate(session, API, LETRICK_EST, copy_runs=True)
+    yield cid
+    drop_clone(session, API, cid)
 
 
 def test_all_four_sheets_200_and_unknown_404(session):
@@ -171,7 +183,7 @@ def test_chase_profile_on_sides_and_cap_on_front(session):
     assert _sheet(session, "left")["chase_cap"] is None
 
 
-def test_chase_ratification_provenance(session):
+def test_chase_ratification_provenance(session, letrick_wr):
     """Ratification entered via the appendage machinery (journey-logged):
     appendage:back height_ft 19.552 / depth_ft 2.583 user_measured. PIN
     AMENDED BY RULING 2026-07-19 (collision ruling): door_offset_ft joins
@@ -181,7 +193,7 @@ def test_chase_ratification_provenance(session):
     a later tape upgrades it by the normal amendment path (user_measured). Width STILL rides the sealed-key amendment only
     — the dims machinery pin rejects width_ft (400) and pins are amended
     by ruling, not silently."""
-    r = session.get(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims", timeout=20)
+    r = session.get(f"{API}/estimates/{letrick_wr}/lp-appendage-dims", timeout=20)
     assert r.status_code == 200
     back = (r.json()["dims"] or {}).get("appendage:back") or {}
     assert back.get("height_ft", {}).get("value") == 19.552
@@ -193,14 +205,14 @@ def test_chase_ratification_provenance(session):
     # PIN AMENDED BY RULING 2026-07-22 (confirmation-weighted geometry):
     # width_ft JOINS the machinery — the tape-upgrade path for the ASSUMED
     # standard chase width 48". BEFORE: 400 (not a machinery field).
-    rr = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
+    rr = session.post(f"{API}/estimates/{letrick_wr}/lp-appendage-dims",
                       json={"key": "appendage:back", "field": "width_ft", "value": 5.333}, timeout=20)
     assert rr.status_code == 200, rr.text
-    rv = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
+    rv = session.post(f"{API}/estimates/{letrick_wr}/lp-appendage-dims",
                       json={"key": "appendage:back", "field": "width_ft", "action": "revert"}, timeout=20)
     assert rv.status_code == 200, rv.text
     # unknown fields still refuse — the contract stays closed
-    bad = session.post(f"{API}/estimates/{LETRICK_EST}/lp-appendage-dims",
+    bad = session.post(f"{API}/estimates/{letrick_wr}/lp-appendage-dims",
                        json={"key": "appendage:back", "field": "girth_ft", "value": 1.0}, timeout=20)
     assert bad.status_code == 400
 
@@ -362,51 +374,51 @@ def test_basis_line_completeness_all_sheets(session):
             assert s["deviation"]["governs"] == "tape", which
 
 
-def test_verb_remove_reset_left_vent(session):
+def test_verb_remove_reset_left_vent(session, letrick_wr):
     """Verb machinery per-sheet pin (LEFT): user_removed vent row (schedule
     index 4) drops from the sheet; reset restores it."""
     key = f"open:{LETRICK_RUN[:8]}:4"
-    url = f"{API}/estimates/{LETRICK_EST}/openings-review"
+    url = f"{API}/estimates/{letrick_wr}/openings-review"
     r = session.post(url, json={"key": key, "action": "remove"}, timeout=20)
     assert r.status_code == 200, r.text
     try:
-        s = _sheet(session, "left")
+        s = _sheet(session, "left", est=letrick_wr)
         assert [o["tag"] for o in s["openings"]] == ["W1"]
         assert s["opening_counts"] == {"windows": 1, "doors": 0, "patio_doors": 0,
                                        "vents": 0, "garage_doors": 0}
     finally:
         rr = session.post(url, json={"key": key, "action": "reset"}, timeout=20)
         assert rr.status_code == 200, rr.text
-    s = _sheet(session, "left")
+    s = _sheet(session, "left", est=letrick_wr)
     assert [o["tag"] for o in s["openings"]] == ["V1", "W1"]
     assert s["opening_counts"] == {"windows": 1, "doors": 0, "patio_doors": 0,
                                    "vents": 1, "garage_doors": 0}
 
 
-def test_verb_remove_reset_back_window_group(session):
+def test_verb_remove_reset_back_window_group(session, letrick_wr):
     """Verb machinery per-sheet pin (BACK): removing the 36×54 group
     (schedule index 5, 2 members) drops BOTH raw members; cross-wall
     isolation: RIGHT stays empty and 200 throughout; reset restores."""
     key = f"open:{LETRICK_RUN[:8]}:5"
-    url = f"{API}/estimates/{LETRICK_EST}/openings-review"
+    url = f"{API}/estimates/{letrick_wr}/openings-review"
     r = session.post(url, json={"key": key, "action": "remove"}, timeout=20)
     assert r.status_code == 200, r.text
     try:
-        s = _sheet(session, "back")
+        s = _sheet(session, "back", est=letrick_wr)
         assert not any(o["height_in"] == 54 for o in s["openings"])
         assert s["opening_counts"] == {"windows": 3, "doors": 1, "patio_doors": 0,
                                        "vents": 0, "garage_doors": 0}
         assert [o["tag"] for o in s["openings"]] == ["D1", "W1", "W2", "W3"]
         # cross-wall isolation
-        sr = _sheet(session, "right")
+        sr = _sheet(session, "right", est=letrick_wr)
         assert sr["openings"] == []
-        sl = _sheet(session, "left")
+        sl = _sheet(session, "left", est=letrick_wr)
         assert sl["opening_counts"] == {"windows": 1, "doors": 0, "patio_doors": 0,
                                         "vents": 1, "garage_doors": 0}
     finally:
         rr = session.post(url, json={"key": key, "action": "reset"}, timeout=20)
         assert rr.status_code == 200, rr.text
-    s = _sheet(session, "back")
+    s = _sheet(session, "back", est=letrick_wr)
     assert s["opening_counts"] == {"windows": 5, "doors": 1, "patio_doors": 0,
                                    "vents": 0, "garage_doors": 0}
 

@@ -11,7 +11,7 @@ import requests
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD
 
 BASE = open("/app/frontend/.env").read().split("REACT_APP_BACKEND_URL=")[1].split()[0]
-JON = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"  # Jon Casile — LP B&B, 68 4x10 panels
+JON = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"  # Jon Casile — READ-ONLY clone source (SEND-107)
 DEG1PM = "f3e7d728-e27d-437a-b257-a898e4afcec8"  # 3 degree 1pm — LP B&B, 138 panels
 
 
@@ -25,6 +25,21 @@ def sess():
         s.headers["Authorization"] = f"Bearer {tok}"
     # else: httpOnly cookies already on the session
     return s
+
+
+# SEND-107 (Howard, 2026-08-23): this module PUT trade specs and
+# MATERIALIZED the REAL Jon Casile estimate every run — one of the writers
+# that maintained his stored lines as suite residue. All writes now land
+# on a disposable clone; the real estimate is never written.
+@pytest.fixture(scope="module")
+def jon(sess):
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from clone_util import clone_estimate, drop_clone
+    cid = clone_estimate(sess, f"{BASE}/api", JON, copy_runs=True)
+    yield cid
+    drop_clone(sess, f"{BASE}/api", cid)
 
 
 def _get(sess, eid):
@@ -56,36 +71,36 @@ def _lines(est, name_sub, section=None):
 
 # ---- PUT BOUNDS ----
 class TestPutBounds:
-    def test_panel_size_4x12_rejected(self, sess):
-        r = _put(sess, JON, {"panel_size": "4x12"})
+    def test_panel_size_4x12_rejected(self, sess, jon):
+        r = _put(sess, jon, {"panel_size": "4x12"})
         assert r.status_code == 422, f"expected 422 got {r.status_code}: {r.text[:200]}"
 
-    def test_wrap_trim_5_rejected(self, sess):
-        r = _put(sess, JON, {"wrap_trim_width_in": 5})
+    def test_wrap_trim_5_rejected(self, sess, jon):
+        r = _put(sess, jon, {"wrap_trim_width_in": 5})
         assert r.status_code == 422, f"expected 422 got {r.status_code}: {r.text[:200]}"
 
-    def test_panel_size_4x8_accepted(self, sess):
-        r = _put(sess, JON, {"panel_size": "4x8"})
+    def test_panel_size_4x8_accepted(self, sess, jon):
+        r = _put(sess, jon, {"panel_size": "4x8"})
         assert r.status_code == 200, r.text
 
-    def test_wrap_trim_6_accepted(self, sess):
-        r = _put(sess, JON, {"wrap_trim_width_in": 6})
+    def test_wrap_trim_6_accepted(self, sess, jon):
+        r = _put(sess, jon, {"wrap_trim_width_in": 6})
         assert r.status_code == 200, r.text
 
 
 # ---- PERSISTENCE (silent-strip) ----
 class TestPersistence:
-    def test_four_specs_persist(self, sess):
+    def test_four_specs_persist(self, sess, jon):
         patch = {
             "panel_size": "4x8",
             "wrap_trim_width_in": 6,
             "fascia_width_in": 12,
             "batten_spacing_in": 16,
         }
-        r = _put(sess, JON, patch)
+        r = _put(sess, jon, patch)
         assert r.status_code == 200, r.text
         # GET back
-        e = _get(sess, JON)
+        e = _get(sess, jon)
         assert e.get("panel_size") == "4x8"
         assert e.get("wrap_trim_width_in") == 6
         assert e.get("fascia_width_in") == 12
@@ -97,20 +112,20 @@ class TestDerivation:
     """The review says LP tab rebuilds server-side. So PUT should trigger
     rename/recount on stored lines. Verify by GET after PUT."""
 
-    def test_panel_size_4x8_renames_and_recounts(self, sess):
+    def test_panel_size_4x8_renames_and_recounts(self, sess, jon):
         # Baseline: put back to 4x10, capture count
-        _put(sess, JON, {"panel_size": "4x10"})
-        ok, _, _ = _materialize(sess, JON)
+        _put(sess, jon, {"panel_size": "4x10"})
+        ok, _, _ = _materialize(sess, jon)
         assert ok, "materialize baseline failed"
-        e0 = _get(sess, JON)
+        e0 = _get(sess, jon)
         base_panels = _lines(e0, "38 Series", section="LP Smart Siding")
         base_4x10 = [l for l in base_panels if "4' x 10' Panel" in (l.get("name") or "")]
         assert base_4x10, f"expected 4x10 panel line at baseline; got names={[l.get('name') for l in base_panels]}"
         q10 = float(base_4x10[0].get("qty") or 0)
         # Flip to 4x8
-        _put(sess, JON, {"panel_size": "4x8"})
-        _materialize(sess, JON)
-        e1 = _get(sess, JON)
+        _put(sess, jon, {"panel_size": "4x8"})
+        _materialize(sess, jon)
+        e1 = _get(sess, jon)
         panels = _lines(e1, "38 Series", section="LP Smart Siding")
         four_x_eight = [l for l in panels if "4' x 8' Panel" in (l.get("name") or "")]
         four_x_ten = [l for l in panels if "4' x 10' Panel" in (l.get("name") or "")]
@@ -124,17 +139,17 @@ class TestDerivation:
         assert abs(q8 - exp) <= 2, f"panel count 4x8={q8}, expected ~{exp} (base 4x10={q10})"
         print(f"PANEL 4x10={q10} -> 4x8={q8} (expected ~{exp})")
 
-    def test_wrap_trim_width_renames_only(self, sess):
-        _put(sess, JON, {"wrap_trim_width_in": 4})
-        _materialize(sess, JON)
-        e0 = _get(sess, JON)
+    def test_wrap_trim_width_renames_only(self, sess, jon):
+        _put(sess, jon, {"wrap_trim_width_in": 4})
+        _materialize(sess, jon)
+        e0 = _get(sess, jon)
         base = _lines(e0, '540 Series Trim', section="LP SmartSide Trim")
         base_4 = [l for l in base if '5/4" x 4"' in (l.get("name") or "")]
         assert base_4, f"expected 5/4\" x 4\" 540 line; got {[l.get('name') for l in base]}"
         q0 = float(base_4[0].get("qty") or 0)
-        _put(sess, JON, {"wrap_trim_width_in": 6})
-        _materialize(sess, JON)
-        e1 = _get(sess, JON)
+        _put(sess, jon, {"wrap_trim_width_in": 6})
+        _materialize(sess, jon)
+        e1 = _get(sess, jon)
         after = _lines(e1, '540 Series Trim', section="LP SmartSide Trim")
         after_6 = [l for l in after if '5/4" x 6"' in (l.get("name") or "")]
         assert after_6, f"expected 5/4\" x 6\" 540 line after PUT; got {[l.get('name') for l in after]}"
@@ -142,16 +157,16 @@ class TestDerivation:
         assert q1 == q0, f"wrap trim width should be name-only; qty changed {q0} -> {q1}"
         print(f"WRAP 4\"={q0} -> 6\"={q1} (name-only, qty unchanged)")
 
-    def test_fascia_width_renames_440(self, sess):
-        _put(sess, JON, {"fascia_width_in": 8})
-        _materialize(sess, JON)
-        e0 = _get(sess, JON)
+    def test_fascia_width_renames_440(self, sess, jon):
+        _put(sess, jon, {"fascia_width_in": 8})
+        _materialize(sess, jon)
+        e0 = _get(sess, jon)
         base = _lines(e0, '440 Series Trim', section="LP SmartSide Trim")
         base_8 = [l for l in base if '4/4" x 8"' in (l.get("name") or "")]
         assert base_8, f"expected 4/4\" x 8\" 440 baseline; got {[l.get('name') for l in base]}"
-        _put(sess, JON, {"fascia_width_in": 12})
-        _materialize(sess, JON)
-        e1 = _get(sess, JON)
+        _put(sess, jon, {"fascia_width_in": 12})
+        _materialize(sess, jon)
+        e1 = _get(sess, jon)
         after = _lines(e1, '440 Series Trim', section="LP SmartSide Trim")
         after_12 = [l for l in after if '4/4" x 12"' in (l.get("name") or "")]
         assert after_12, f"expected 4/4\" x 12\" after PUT; got {[l.get('name') for l in after]}"
@@ -160,8 +175,8 @@ class TestDerivation:
 
 # ---- WHOLE UNITS (R3) ----
 class TestWholeUnits:
-    def test_no_fractional_qty(self, sess):
-        e = _get(sess, JON)
+    def test_no_fractional_qty(self, sess, jon):
+        e = _get(sess, jon)
         bad = []
         for ln in e.get("lines") or []:
             q = ln.get("qty")
@@ -177,13 +192,13 @@ class TestWholeUnits:
 
 
 # ---- CLEANUP: restore defaults ----
-def test_zz_restore_defaults(sess):
-    _put(sess, JON, {
+def test_zz_restore_defaults(sess, jon):
+    _put(sess, jon, {
         "panel_size": "4x10",
         "wrap_trim_width_in": 4,
         "fascia_width_in": 8,
         "batten_spacing_in": 12,
     })
-    _materialize(sess, JON)
-    e = _get(sess, JON)
+    _materialize(sess, jon)
+    e = _get(sess, jon)
     assert e.get("panel_size") in (None, "4x10")

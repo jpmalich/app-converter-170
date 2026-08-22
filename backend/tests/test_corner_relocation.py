@@ -18,8 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from api_base import BASE_URL  # env-derived (un-hardcoded 2026-07-23)
+from clone_util import clone_estimate, drop_clone
 API = f"{BASE_URL}/api"
-EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick 7-14-26 7pm
+EST_ID = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"  # letrick 7-14-26 7pm — READ-ONLY clone source (SEND-107)
 CHASE_KEY = "corner:isc:chimney-chase-near-side-inside-corner-on-right-wall"
 
 
@@ -29,9 +30,15 @@ def session():
     r = s.post(f"{API}/auth/login", json={"email": "hhunt6677@yahoo.com", "password": TEST_PASSWORD}, timeout=15)
     assert r.status_code == 200, r.text
     yield s
-    # leave the estimate as found
-    s.post(f"{API}/estimates/{EST_ID}/lp-field-verify",
-           json={"key": CHASE_KEY, "status": "unverified"}, timeout=15)
+
+
+# SEND-107: all lp-field-verify writes land on a disposable clone (runs
+# copied so preview resolves). The "leave as found" revert is retired.
+@pytest.fixture(scope="module")
+def est_id(session):
+    cid = clone_estimate(session, API, EST_ID, copy_runs=True)
+    yield cid
+    drop_clone(session, API, cid)
 
 
 @pytest.fixture(scope="module")
@@ -41,8 +48,8 @@ def mongo_db():
     client.close()
 
 
-def _preview(session):
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-package/preview", json={}, timeout=30)
+def _preview(session, est_id):
+    r = session.post(f"{API}/estimates/{est_id}/lp-package/preview", json={}, timeout=30)
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -79,25 +86,25 @@ def test_removed_corner_leaves_assembly_inputs():
     assert len(out) == 1 and out[0]["locator"] == "plain house corner"
 
 
-def test_relocate_requires_valid_wall(session):
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-field-verify",
+def test_relocate_requires_valid_wall(session, est_id):
+    r = session.post(f"{API}/estimates/{est_id}/lp-field-verify",
                      json={"key": CHASE_KEY, "status": "relocated", "to_wall": "roof"}, timeout=15)
     assert r.status_code == 400
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-field-verify",
+    r = session.post(f"{API}/estimates/{est_id}/lp-field-verify",
                      json={"key": CHASE_KEY, "status": "relocated", "to_wall": "back",
                            "position_frac": 1.7}, timeout=15)
     assert r.status_code == 400
 
 
-# ── E2E on the ruled fixture ──────────────────────────────────────────
+# ── E2E on the ruled fixture (disposable clone — SEND-107) ────────────
 
-def test_chase_relocation_e2e(session, mongo_db):
-    pkg = _preview(session)
+def test_chase_relocation_e2e(session, est_id, mongo_db):
+    pkg = _preview(session, est_id)
     before = _item(pkg, CHASE_KEY)
     assert before["status"] == "unverified" and before["walls"] == ["right"]
 
     # relocate right → back (truth per Howard's field check)
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-field-verify",
+    r = session.post(f"{API}/estimates/{est_id}/lp-field-verify",
                      json={"key": CHASE_KEY, "status": "relocated", "to_wall": "back",
                            "from_walls": ["right"], "position_frac": 0.8}, timeout=15)
     assert r.status_code == 200
@@ -105,53 +112,53 @@ def test_chase_relocation_e2e(session, mongo_db):
     assert body["status"] == "user_relocated" and body["to"] == "back"
     assert body["from"] == ["right"] and body["by"] and body["at"]
 
-    pkg2 = _preview(session)
+    pkg2 = _preview(session, est_id)
     it = _item(pkg2, CHASE_KEY)
     assert it["status"] == "user_relocated" and it["relocated_to"] == "back"
     assert it["position_frac"] == 0.8
 
     # journey-logged
-    est = mongo_db.estimates.find_one({"id": EST_ID}, {"tracking": 1})
+    est = mongo_db.estimates.find_one({"id": est_id}, {"tracking": 1})
     evs = [t for t in est["tracking"] if t["type"] == "corner.relocated"]
     assert evs and evs[-1]["meta"]["to"] == "back" and evs[-1]["meta"]["from"] == ["right"]
 
     # revertible
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-field-verify",
+    r = session.post(f"{API}/estimates/{est_id}/lp-field-verify",
                      json={"key": CHASE_KEY, "status": "unverified"}, timeout=15)
     assert r.status_code == 200
-    pkg3 = _preview(session)
+    pkg3 = _preview(session, est_id)
     assert _item(pkg3, CHASE_KEY)["status"] == "unverified"
-    est = mongo_db.estimates.find_one({"id": EST_ID}, {"tracking": 1})
+    est = mongo_db.estimates.find_one({"id": est_id}, {"tracking": 1})
     assert any(t["type"] == "corner.reset" for t in est["tracking"])
 
 
-def test_removed_corner_redrives_stick_note(session):
+def test_removed_corner_redrives_stick_note(session, est_id):
     """Amber OSC removal must re-derive the OSC line note (2 amber → 1)."""
     osc_key = "corner:osc:chimney-chase-near-side-outside-corner"
     def osc_note():
-        pkg = _preview(session)
+        pkg = _preview(session, est_id)
         return next(l["note"] for l in pkg["lines"] if "OSC" in l["name"])
     assert "2 unconfirmed (amber)" in osc_note()
-    r = session.post(f"{API}/estimates/{EST_ID}/lp-field-verify",
+    r = session.post(f"{API}/estimates/{est_id}/lp-field-verify",
                      json={"key": osc_key, "status": "removed"}, timeout=15)
     assert r.status_code == 200
     try:
         assert "1 unconfirmed (amber)" in osc_note()
     finally:
-        session.post(f"{API}/estimates/{EST_ID}/lp-field-verify",
+        session.post(f"{API}/estimates/{est_id}/lp-field-verify",
                      json={"key": osc_key, "status": "unverified"}, timeout=15)
     assert "2 unconfirmed (amber)" in osc_note()
 
 
 # ── Audit timeline: admin boundary ────────────────────────────────────
 
-def test_admin_events_endpoint():
+def test_admin_events_endpoint(session, est_id):
     token = os.environ["SUPPLIER_ADMIN_TOKEN"]
-    r = requests.get(f"{API}/admin/estimates/{EST_ID}/events",
+    r = requests.get(f"{API}/admin/estimates/{est_id}/events",
                      headers={"X-Admin-Token": token}, timeout=15)
     assert r.status_code == 200
     body = r.json()
-    assert body["estimate"]["id"] == EST_ID
+    assert body["estimate"]["id"] == est_id
     types = {e["type"] for e in body["events"]}
     assert "corner.relocated" in types and "corner.reset" in types
     # newest first

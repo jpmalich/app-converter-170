@@ -29,9 +29,18 @@ BACKEND = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND))
 load_dotenv(BACKEND / ".env")
 from api_base import API  # noqa: E402
+from clone_util import clone_estimate, drop_clone  # noqa: E402
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
 CASILE_EST = "e2ce35b8-95ea-4dbc-89c9-f7a7a5c34170"
+# SEND-107 companion rebuild payload — same door + scope the founding
+# pins use (test_profile_owns_family), run against DISPOSABLE CLONES only.
+CASILE_REBUILD = {
+    "hover_run_id": "8f6f9b5e6bb3422f84e24932addc0a13",
+    "profile": "board_batten",
+    "facade_scope": {"mode": "custom", "wrap_sqft": 2064,
+                     "excluded": {"stucco": 312, "brick": 234}},
+}
 
 
 @pytest.fixture(scope="module")
@@ -276,15 +285,41 @@ class TestV3MoneyWalk:
         #   battens 194→129                  −65 × 19.66 = −1,277.90
         #   caulk 9→6 (129 sticks ÷ 23)      −3 × 14.03 = −42.09
         # sub_mat 24,950.83 → 23,630.84
-        # SALES UNIT (ruled 2026-07-31): downspout 46 LF ($128.80) →
-        # 5 × 10' sticks ($140.00): 23,630.84 → 23,642.04
-        assert round(sub_mat, 2) == 23642.04   # materials-true
+        # PIN MOVED — SEND-107 / RULING V (2026-08-23). FOUR FIELDS:
+        #   WHICH PIN: TestV3MoneyWalk.test_lp_smart_walk_figures sub_mat
+        #     (and its tax/base/sell chain).
+        #   WHAT IT ASSERTED: sub_mat 23,642.04 (tax 1,654.94 · base
+        #     25,296.98 · sell 36,138.55).
+        #   WHAT IT ASSERTS NOW: sub_mat 22,943.35 (tax 1,606.03 · base
+        #     24,549.38 · sell 35,070.55).
+        #   WHICH RULING MADE THE OLD VALUE WRONG: RULING V (SEND-105) —
+        #     downspout drop + gutter-mitre reads moved onto VERIFIED
+        #     height bases. The old rows were manufactured by the retired
+        #     hardcoded 9-ft base (drop 12 LF = 9+3; corners ÷ 9 ft).
+        #     Casile carries no verified wall height (nothing taped, no
+        #     DP-1 chain), so the four height-based gutter rows REFUSE
+        #     (qty None, not_derivable, code RULING_V_NO_VERIFIED_HEIGHT).
+        # OLD QUANTITIES PRESERVED ROW BY ROW (the only surviving record
+        # of what the 9-ft default produced on this job):
+        #   Downspout 6"    10 sticks × 28.00 = 280.00 (8 drops × 12 LF
+        #                   default drop = 96 LF; the 8 DROPS still stand
+        #                   — the count is height-independent)
+        #   Mitre           20 × 13.75 = 275.00 (outside 16 + inside 4,
+        #                   corner LF ÷ 9 ft)
+        #   Pipe Clips      16 × 2.58  =  41.28 (8 × 2; 12 LF drop ÷ 6)
+        #   Gutter Sealant  11 × 9.31  = 102.41 (42 joints ÷ 4)
+        #   removed 698.69 → 23,642.04 − 698.69 = 22,943.35 (to the cent)
+        # SALES UNIT history retained above. The PRICED path stays covered
+        # by the synthetic-height companion below (99 ft, disposable
+        # clone); the refusal path by its refusal companion. The REAL
+        # estimate is READ ONLY from SEND-107 on.
+        assert round(sub_mat, 2) == 22943.35   # materials-true
         tax = sub_mat * 0.07
-        assert round(tax, 2) == 1654.94
+        assert round(tax, 2) == 1606.03
         base = sub_mat + tax + sub_lab
-        assert round(base, 2) == 25296.98
+        assert round(base, 2) == 24549.38
         sell = base / (1 - 0.30)
-        assert round(sell, 2) == 36138.55
+        assert round(sell, 2) == 35070.55
 
     def test_no_unflagged_labor_anywhere_on_walk_surface(self, session):
         est = session.get(f"{API}/estimates/{CASILE_EST}", timeout=30).json()
@@ -293,6 +328,65 @@ class TestV3MoneyWalk:
                 continue
             if float(l.get("lab") or 0) > 0:
                 assert (l.get("lab_src") or "") in ("human", "company"), l.get("name")
+
+    # ── SEND-107 COMPANIONS — CLONES ONLY, the real estimate is never
+    # written (the founding-era in-place rebuild is retired; see
+    # memory/send107_report.md). Pairing is itself pinned:
+    # test_real_estate_write_census_2026_08_23_send107.py fails any
+    # MoneyWalk module without a refusal companion. ──────────────────
+
+    def _rebuild_clone(self, session, *, synthetic_height_ft=None):
+        import os as _os
+
+        from pymongo import MongoClient
+        cid = clone_estimate(session, API, CASILE_EST)
+        if synthetic_height_ft is not None:
+            # OBVIOUSLY SYNTHETIC FIXTURE HEIGHT (SEND-107 mandate): 99 ft
+            # — a figure no real house carries — documented AT THE FIXTURE.
+            db = MongoClient(_os.environ["MONGO_URL"])[_os.environ["DB_NAME"]]
+            db.human_dimensions.insert_one({
+                "estimate_id": cid, "kind": "taped_wall_height_ft",
+                "face_id": "pin_synthetic", "value_ft": synthetic_height_ft,
+                "test_artifact": True})
+        r = session.post(f"{API}/estimates/{cid}/hover-lp-run",
+                         json=CASILE_REBUILD, timeout=90)
+        assert r.status_code == 200, r.text
+        est = session.get(f"{API}/estimates/{cid}", timeout=30).json()
+        rows = {l["name"]: l for l in est["lines"] if l.get("tab") == "lp_smart"}
+        return cid, rows
+
+    def test_lp_smart_walk_priced_companion_synthetic_height(self, session):
+        """PRICED COMPANION (SEND-107): the walk's fixture on a disposable
+        clone with an obviously synthetic verified height (99 ft) — the
+        gutter builders must produce exactly the scaled quantities, so the
+        priced path stays covered end to end without the retired default."""
+        cid, rows = self._rebuild_clone(session, synthetic_height_ft=99.0)
+        try:
+            assert rows['Downspout 6"']["qty"] == 82   # 8 drops × (99+3)=102 LF → 816 LF → 82 ten-ft sticks
+            assert rows["Mitre"]["qty"] == 1           # hip: round(out_lf/99)=1 + round(in_lf/99)=0
+            assert rows["Pipe Clips"]["qty"] == 136    # 8 × 17 (102 LF drop ÷ 6)
+            assert rows["Gutter Sealant"]["qty"] == 6  # 1 mitre + 14 caps + 8 outlets = 23 joints ÷ 4
+            for name, q in (('Gutter 6"', 184.0), ("elbow", 16.0),
+                            ("End Cap", 14.0), ("Hangars with Screws", 100.0)):
+                assert rows[name]["qty"] == q, name    # height-free rows never move
+        finally:
+            drop_clone(session, API, cid)
+
+    def test_lp_smart_walk_refusal_companion(self, session):
+        """REFUSAL COMPANION (SEND-107): the same fixture WITHOUT a
+        verified height — asserts the machine REASON CODE, never the prose
+        sentence (a reworded message must not break this pin)."""
+        cid, rows = self._rebuild_clone(session)
+        try:
+            for name in ('Downspout 6"', "Mitre", "Pipe Clips", "Gutter Sealant"):
+                l = rows[name]
+                assert l["qty"] is None and l.get("not_derivable") is True, name
+                assert l.get("not_derivable_code") == "RULING_V_NO_VERIFIED_HEIGHT", name
+            for name, q in (('Gutter 6"', 184.0), ("elbow", 16.0),
+                            ("End Cap", 14.0), ("Hangars with Screws", 100.0)):
+                assert rows[name]["qty"] == q, name    # height-free rows stand
+        finally:
+            drop_clone(session, API, cid)
 
 
 class TestFamilyCheckTripwire:
