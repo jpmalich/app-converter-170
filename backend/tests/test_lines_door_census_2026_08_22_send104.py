@@ -5,7 +5,18 @@ structural: EVERY write that puts `lines` onto an estimate must either
 re-run the overlay law on the value it writes (reapply_overlay_law —
 what the law recomputes it cannot lose) or sit on the register below
 with a reason a reviewer can check. A NEW lines-writing door fails this
-test until it does one or the other — no fourth accidental member."""
+test until it does one or the other.
+
+SCOPE, stated honestly (SEND-110 correction): this census proves what it
+swept — every SERVER-SIDE `lines` write in routes/ — and nothing more.
+A census can never prove a class is closed. It is structurally blind to
+anything that transforms a payload BEFORE it reaches a write: the fifth
+member (SEND-109, the browser catalog merge in useEstimate.js dropping
+the refusal trio) lived exactly there, upstream of every door this test
+can see. The earlier claim here ("no fourth accidental member") was
+falsified by that fifth member and is withdrawn. The unswept class —
+client-side payload transforms — is inventoried in
+memory/send110_report.md §3.3."""
 import ast
 import os
 

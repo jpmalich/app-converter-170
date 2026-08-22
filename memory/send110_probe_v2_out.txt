@@ -1,0 +1,361 @@
+INFO:routes.ai_measure:[AI_MEASURE key-routing] anthropic Phase A=ANTHROPIC_API_KEY (direct), anthropic Phase B=ANTHROPIC_API_KEY (direct), gemini/openai=EMERGENT_LLM_KEY (proxy) [flags: A=1, B=1, legacy=phase_b_only, key=present]
+
+==== LETRICK front p1 lw=RESOLVED x_span=[14.01, 56.49] wall_corners=None ====
+  [SIL-L] x=14.010 (outboard = -x):
+    x=14.705 Δ=-0.695% -0.896ft frags=3 y[19.68,20.73] cov=0.58% cont=False reach_both=False pt=True gaps=[0.24, 0.24]
+    x=14.479 Δ=-0.469% -0.604ft frags=3 y[19.41,20.73] cov=0.85% cont=False reach_both=False pt=True gaps=[0.24, 0.24]
+    x=14.259 Δ=-0.249% -0.321ft frags=3 y[19.69,31.26] cov=10.56% cont=False reach_both=True pt=True gaps=[0.26, 0.76]
+    x=13.950 Δ=+0.060% +0.077ft frags=2 y[19.44,33.44] cov=13.60% cont=False reach_both=True pt=True gaps=[0.4]
+    x=13.700 Δ=+0.310% +0.400ft frags=1 y[25.91,26.14] cov=0.23% cont=True reach_both=False pt=True gaps=[]
+    x=13.564 Δ=+0.446% +0.575ft frags=5 y[19.41,26.04] cov=2.45% cont=False reach_both=False pt=True gaps=[0.24, 0.24, 0.49, 3.22]
+    x=13.359 Δ=+0.651% +0.838ft frags=1 y[10.50,21.24] cov=10.74% cont=True reach_both=False pt=False gaps=[]
+    x=11.875 Δ=+2.135% +2.750ft frags=1 y[24.94,25.97] cov=1.03% cont=True reach_both=False pt=True gaps=[]
+    x=11.794 Δ=+2.216% +2.855ft frags=1 y[22.37,24.42] cov=2.05% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=14.704 Δ=-0.694% y[10.50,20.73] spans=False pt=False
+    MERGED x=14.704 Δ=-0.694% y[31.44,31.69] spans=False pt=True
+    MERGED x=14.479 Δ=-0.469% y[10.52,20.73] spans=False pt=False
+    MERGED x=14.401 Δ=-0.391% y[31.26,31.96] spans=False pt=True
+    MERGED x=14.251 Δ=-0.241% y[10.50,31.26] spans=True pt=False
+    MERGED x=14.012 Δ=-0.002% y[10.50,40.64] spans=True pt=False
+    MERGED x=13.695 Δ=+0.315% y[25.91,26.14] spans=False pt=True
+    MERGED x=13.695 Δ=+0.315% y[40.64,41.68] spans=False pt=True
+    MERGED x=13.559 Δ=+0.451% y[10.52,22.69] spans=False pt=False
+    MERGED x=13.559 Δ=+0.451% y[25.91,26.04] spans=False pt=True
+    MERGED x=13.359 Δ=+0.651% y[10.50,21.24] spans=False pt=False
+    MERGED x=13.261 Δ=+0.749% y[16.19,16.47] spans=False pt=False
+    MERGED x=13.154 Δ=+0.856% y[16.19,16.30] spans=False pt=False
+    MERGED x=13.101 Δ=+0.909% y[31.96,37.16] spans=False pt=True
+  [SIL-R] x=56.490 (outboard = +x):
+    x=55.744 Δ=-0.746% -0.961ft frags=2 y[19.69,20.48] cov=0.53% cont=False reach_both=False pt=True gaps=[0.26]
+    x=55.974 Δ=-0.516% -0.664ft frags=3 y[19.41,20.73] cov=0.85% cont=False reach_both=False pt=True gaps=[0.24, 0.24]
+    x=56.201 Δ=-0.289% -0.372ft frags=4 y[19.68,31.26] cov=10.61% cont=False reach_both=True pt=True gaps=[0.24, 0.24, 0.5]
+    x=56.499 Δ=+0.009% +0.012ft frags=4 y[19.44,32.16] cov=11.79% cont=False reach_both=True pt=True gaps=[0.27, 0.27, 0.4]
+    x=56.654 Δ=+0.164% +0.211ft frags=3 y[19.69,31.27] cov=2.79% cont=False reach_both=True pt=True gaps=[0.26, 8.54]
+    x=56.898 Δ=+0.408% +0.526ft frags=4 y[19.41,21.57] cov=1.18% cont=False reach_both=False pt=True gaps=[0.24, 0.24, 0.5]
+    x=56.962 Δ=+0.472% +0.607ft frags=1 y[21.24,21.54] cov=0.30% cont=True reach_both=False pt=True gaps=[]
+    x=57.125 Δ=+0.635% +0.818ft frags=1 y[10.50,21.24] cov=10.74% cont=True reach_both=False pt=False gaps=[]
+    x=57.785 Δ=+1.295% +1.668ft frags=1 y[29.18,29.52] cov=0.33% cont=True reach_both=False pt=True gaps=[]
+    x=57.841 Δ=+1.351% +1.740ft frags=1 y[29.22,29.52] cov=0.29% cont=True reach_both=False pt=True gaps=[]
+    x=58.027 Δ=+1.537% +1.980ft frags=1 y[27.07,29.52] cov=2.45% cont=True reach_both=False pt=True gaps=[]
+    x=58.159 Δ=+1.669% +2.150ft frags=1 y[29.02,31.27] cov=2.26% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=55.744 Δ=-0.746% y[10.50,20.48] spans=False pt=False
+    MERGED x=55.815 Δ=-0.675% y[31.44,31.69] spans=False pt=True
+    MERGED x=55.974 Δ=-0.516% y[10.52,20.73] spans=False pt=False
+    MERGED x=56.068 Δ=-0.422% y[31.26,31.96] spans=False pt=True
+    MERGED x=56.200 Δ=-0.290% y[10.50,31.26] spans=True pt=False
+    MERGED x=56.337 Δ=-0.153% y[31.26,40.62] spans=False pt=True
+    MERGED x=56.491 Δ=+0.001% y[10.55,33.25] spans=True pt=False
+    MERGED x=56.665 Δ=+0.175% y[10.50,20.48] spans=False pt=False
+    MERGED x=56.665 Δ=+0.175% y[29.02,31.27] spans=False pt=True
+    MERGED x=56.792 Δ=+0.302% y[40.64,41.68] spans=False pt=True
+    MERGED x=56.896 Δ=+0.406% y[10.52,21.57] spans=False pt=False
+    MERGED x=56.962 Δ=+0.472% y[21.24,21.54] spans=False pt=True
+    MERGED x=57.123 Δ=+0.633% y[10.50,21.24] spans=False pt=False
+    MERGED x=57.224 Δ=+0.734% y[16.23,16.52] spans=False pt=False
+    MERGED x=57.331 Δ=+0.841% y[16.23,16.34] spans=False pt=False
+  RULES @9.08: current=54.71ft ruleA=67.10ft ruleB=55.00ft (L 13.950 R 56.654) sealed=54.0
+    ruleB moves: L +0.077ft outboard, R +0.211ft outboard (vs current wall ruler)
+
+==== LETRICK rear p1 lw=RESOLVED x_span=[38.13, 80.88] wall_corners=None ====
+  [SIL-L] x=38.130 (outboard = -x):
+    x=38.759 Δ=-0.629% -0.884ft frags=2 y[65.06,67.62] cov=2.17% cont=False reach_both=False pt=True gaps=[0.38]
+    x=38.549 Δ=-0.419% -0.589ft frags=1 y[65.85,76.80] cov=10.95% cont=True reach_both=True pt=True gaps=[]
+    x=38.128 Δ=+0.002% +0.003ft frags=2 y[65.09,77.70] cov=12.20% cont=False reach_both=True pt=True gaps=[0.4]
+    x=37.827 Δ=+0.303% +0.426ft frags=1 y[65.06,65.35] cov=0.28% cont=True reach_both=False pt=True gaps=[]
+    x=37.735 Δ=+0.395% +0.556ft frags=1 y[65.85,66.77] cov=0.92% cont=True reach_both=False pt=True gaps=[]
+    x=37.629 Δ=+0.501% +0.704ft frags=1 y[56.03,66.77] cov=10.74% cont=True reach_both=False pt=False gaps=[]
+    x=37.078 Δ=+1.052% +1.480ft frags=1 y[74.85,75.17] cov=0.32% cont=True reach_both=False pt=True gaps=[]
+    x=37.027 Δ=+1.103% +1.552ft frags=1 y[74.93,75.17] cov=0.24% cont=True reach_both=False pt=True gaps=[]
+    x=36.975 Δ=+1.155% +1.625ft frags=1 y[67.30,69.35] cov=2.05% cont=True reach_both=False pt=True gaps=[]
+    x=36.591 Δ=+1.539% +2.165ft frags=1 y[72.74,76.81] cov=4.07% cont=True reach_both=False pt=True gaps=[]
+    x=36.466 Δ=+1.664% +2.341ft frags=2 y[74.12,76.98] cov=2.69% cont=False reach_both=False pt=True gaps=[0.17]
+    x=36.335 Δ=+1.795% +2.524ft frags=1 y[74.20,77.16] cov=2.95% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=38.750 Δ=-0.620% y[56.18,67.62] spans=False pt=False
+    MERGED x=38.671 Δ=-0.541% y[76.80,77.38] spans=False pt=True
+    MERGED x=38.521 Δ=-0.391% y[56.03,76.80] spans=True pt=False
+    MERGED x=38.418 Δ=-0.288% y[76.80,77.58] spans=False pt=True
+    MERGED x=38.418 Δ=-0.288% y[79.14,86.16] spans=False pt=True
+    MERGED x=38.129 Δ=+0.001% y[56.03,77.70] spans=True pt=False
+    MERGED x=37.954 Δ=+0.176% y[76.74,77.30] spans=False pt=True
+    MERGED x=37.954 Δ=+0.176% y[86.17,87.21] spans=False pt=True
+    MERGED x=37.827 Δ=+0.303% y[56.18,65.35] spans=False pt=False
+    MERGED x=37.735 Δ=+0.395% y[65.85,66.77] spans=False pt=True
+    MERGED x=37.622 Δ=+0.508% y[56.03,66.77] spans=False pt=False
+    MERGED x=37.488 Δ=+0.642% y[61.54,61.65] spans=False pt=False
+    MERGED x=37.488 Δ=+0.642% y[77.38,77.47] spans=False pt=True
+    MERGED x=37.341 Δ=+0.789% y[76.74,77.30] spans=False pt=True
+  [SIL-R] x=80.880 (outboard = +x):
+    x=80.244 Δ=-0.636% -0.894ft frags=1 y[65.06,65.35] cov=0.28% cont=True reach_both=False pt=True gaps=[]
+    x=80.473 Δ=-0.407% -0.573ft frags=2 y[65.33,76.80] cov=10.96% cont=False reach_both=True pt=True gaps=[0.5]
+    x=80.895 Δ=+0.015% +0.022ft frags=2 y[65.09,77.70] cov=12.20% cont=False reach_both=True pt=True gaps=[0.4]
+    x=81.059 Δ=+0.179% +0.251ft frags=2 y[65.70,71.64] cov=0.56% cont=False reach_both=False pt=True gaps=[5.38]
+    x=81.154 Δ=+0.274% +0.385ft frags=3 y[65.06,71.54] cov=0.72% cont=False reach_both=False pt=True gaps=[0.35, 5.41]
+    x=81.290 Δ=+0.410% +0.577ft frags=1 y[65.85,66.77] cov=0.92% cont=True reach_both=False pt=True gaps=[]
+    x=81.397 Δ=+0.517% +0.727ft frags=1 y[56.03,66.77] cov=10.74% cont=True reach_both=False pt=False gaps=[]
+    x=81.905 Δ=+1.025% +1.442ft frags=1 y[70.86,71.89] cov=1.03% cont=True reach_both=False pt=True gaps=[]
+    x=82.466 Δ=+1.586% +2.231ft frags=1 y[67.08,67.13] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=82.575 Δ=+1.695% +2.384ft frags=1 y[67.08,67.13] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=80.085 Δ=-0.795% y[76.86,77.12] spans=False pt=True
+    MERGED x=80.244 Δ=-0.636% y[56.18,65.35] spans=False pt=False
+    MERGED x=80.338 Δ=-0.542% y[76.80,77.38] spans=False pt=True
+    MERGED x=80.470 Δ=-0.410% y[56.03,76.80] spans=True pt=False
+    MERGED x=80.885 Δ=+0.005% y[56.03,86.16] spans=True pt=False
+    MERGED x=81.061 Δ=+0.181% y[65.70,66.03] spans=False pt=True
+    MERGED x=81.061 Δ=+0.181% y[71.41,71.64] spans=False pt=True
+    MERGED x=81.061 Δ=+0.181% y[86.17,87.21] spans=False pt=True
+    MERGED x=81.164 Δ=+0.284% y[56.18,66.00] spans=False pt=False
+    MERGED x=81.164 Δ=+0.284% y[71.41,71.54] spans=False pt=True
+    MERGED x=81.290 Δ=+0.410% y[65.85,66.77] spans=False pt=True
+    MERGED x=81.395 Δ=+0.515% y[56.03,66.77] spans=False pt=False
+    MERGED x=81.536 Δ=+0.656% y[61.72,61.83] spans=False pt=False
+    MERGED x=81.654 Δ=+0.774% y[77.49,82.70] spans=False pt=True
+  RULES @9'-11: current=60.13ft ruleA=75.76ft ruleB=69.71ft (L 38.128 R 87.687) sealed=54.0
+    ruleB moves: L +0.003ft outboard, R +9.575ft outboard (vs current wall ruler)
+  RULES @9'-1 1/8: current=55.14ft ruleA=69.48ft ruleB=63.93ft (L 38.128 R 87.687) sealed=54.0
+    ruleB moves: L +0.003ft outboard, R +8.781ft outboard (vs current wall ruler)
+
+==== LETRICK left p2 lw=RESOLVED x_span=[17.43, 42.76] wall_corners=[19.45, 42.76] ====
+  [SIL-L] x=17.430 (outboard = -x):
+    x=18.163 Δ=-0.733% -0.924ft frags=1 y[22.60,22.65] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=17.673 Δ=-0.243% -0.306ft frags=1 y[11.90,32.27] cov=20.37% cont=True reach_both=True pt=False gaps=[]
+    x=17.570 Δ=-0.140% -0.176ft frags=1 y[21.21,21.32] cov=0.11% cont=True reach_both=False pt=True gaps=[]
+    x=17.442 Δ=-0.012% -0.015ft frags=1 y[11.90,32.27] cov=20.37% cont=True reach_both=True pt=False gaps=[]
+    x=17.022 Δ=+0.408% +0.515ft frags=1 y[19.57,21.49] cov=1.92% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=18.041 Δ=-0.611% y[18.56,19.12] spans=False pt=False
+    MERGED x=17.673 Δ=-0.243% y[11.90,32.27] spans=True pt=False
+    MERGED x=17.570 Δ=-0.140% y[21.21,21.32] spans=False pt=True
+    MERGED x=17.425 Δ=+0.005% y[11.64,32.27] spans=True pt=False
+    MERGED x=17.022 Δ=+0.408% y[19.57,21.49] spans=False pt=True
+    MERGED x=16.888 Δ=+0.542% y[32.21,32.77] spans=False pt=True
+    MERGED x=16.761 Δ=+0.669% y[16.85,17.41] spans=False pt=False
+    MERGED x=16.432 Δ=+0.998% y[32.85,32.94] spans=False pt=True
+  [SIL-R] x=42.760 (outboard = +x):
+    x=42.757 Δ=-0.003% -0.003ft frags=2 y[21.61,33.17] cov=11.49% cont=False reach_both=True pt=True gaps=[0.07]
+    x=42.994 Δ=+0.234% +0.296ft frags=1 y[21.71,22.24] cov=0.53% cont=True reach_both=False pt=True gaps=[]
+    x=43.100 Δ=+0.340% +0.429ft frags=2 y[22.24,32.27] cov=9.79% cont=False reach_both=False pt=True gaps=[0.23]
+    x=43.208 Δ=+0.448% +0.565ft frags=1 y[30.60,30.73] cov=0.13% cont=True reach_both=False pt=True gaps=[]
+    x=43.414 Δ=+0.654% +0.825ft frags=3 y[22.17,26.02] cov=0.71% cont=False reach_both=False pt=True gaps=[1.87, 1.26]
+    x=43.554 Δ=+0.794% +1.001ft frags=1 y[22.24,22.57] cov=0.33% cont=True reach_both=False pt=True gaps=[]
+    x=43.605 Δ=+0.845% +1.066ft frags=1 y[22.24,22.50] cov=0.25% cont=True reach_both=False pt=True gaps=[]
+    x=43.688 Δ=+0.928% +1.170ft frags=1 y[22.17,23.78] cov=1.61% cont=True reach_both=False pt=True gaps=[]
+    x=43.863 Δ=+1.103% +1.391ft frags=2 y[21.72,32.13] cov=2.21% cont=False reach_both=True pt=True gaps=[8.2]
+    x=44.039 Δ=+1.279% +1.613ft frags=1 y[21.70,22.14] cov=0.45% cont=True reach_both=False pt=True gaps=[]
+    x=44.123 Δ=+1.363% +1.719ft frags=1 y[21.70,21.90] cov=0.20% cont=True reach_both=False pt=True gaps=[]
+    x=44.313 Δ=+1.553% +1.959ft frags=1 y[21.07,21.98] cov=0.91% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=42.010 Δ=-0.750% y[32.27,32.85] spans=False pt=True
+    MERGED x=42.279 Δ=-0.481% y[32.33,32.59] spans=False pt=True
+    MERGED x=42.531 Δ=-0.229% y[32.27,32.85] spans=False pt=True
+    MERGED x=42.757 Δ=-0.003% y[21.61,33.17] spans=True pt=True
+    MERGED x=42.994 Δ=+0.234% y[21.71,22.24] spans=False pt=True
+    MERGED x=42.994 Δ=+0.234% y[32.27,41.63] spans=False pt=True
+    MERGED x=43.218 Δ=+0.458% y[22.17,32.27] spans=False pt=True
+    MERGED x=43.218 Δ=+0.458% y[36.22,36.43] spans=False pt=True
+    MERGED x=43.218 Δ=+0.458% y[41.64,42.69] spans=False pt=True
+    MERGED x=43.554 Δ=+0.794% y[22.24,22.57] spans=False pt=True
+  [WALL-L] x=19.450 (outboard = -x):
+    x=19.793 Δ=-0.343% -0.433ft frags=2 y[20.69,33.17] cov=12.41% cont=False reach_both=True pt=True gaps=[0.07]
+    x=19.557 Δ=-0.107% -0.135ft frags=1 y[20.79,21.32] cov=0.53% cont=True reach_both=False pt=True gaps=[]
+    x=19.446 Δ=+0.004% +0.005ft frags=2 y[21.32,32.27] cov=10.71% cont=False reach_both=True pt=True gaps=[0.23]
+    x=19.214 Δ=+0.236% +0.298ft frags=4 y[21.31,30.73] cov=2.04% cont=False reach_both=True pt=True gaps=[2.73, 0.06, 4.58]
+    x=18.979 Δ=+0.471% +0.594ft frags=1 y[24.75,25.50] cov=0.75% cont=True reach_both=False pt=True gaps=[]
+    x=18.689 Δ=+0.761% +0.960ft frags=1 y[20.80,21.56] cov=0.76% cont=True reach_both=False pt=True gaps=[]
+    x=18.511 Δ=+0.939% +1.185ft frags=1 y[20.97,21.22] cov=0.25% cont=True reach_both=False pt=True gaps=[]
+    x=18.451 Δ=+0.999% +1.260ft frags=1 y[20.93,20.97] cov=0.04% cont=True reach_both=False pt=True gaps=[]
+    x=18.270 Δ=+1.180% +1.488ft frags=1 y[22.60,22.65] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=18.163 Δ=+1.287% +1.624ft frags=1 y[22.60,22.65] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=17.673 Δ=+1.777% +2.241ft frags=1 y[11.90,32.27] cov=20.37% cont=True reach_both=True pt=False gaps=[]
+    x=17.570 Δ=+1.880% +2.371ft frags=1 y[21.21,21.32] cov=0.11% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=20.211 Δ=-0.761% y[16.10,19.66] spans=False pt=False
+    MERGED x=20.115 Δ=-0.665% y[11.64,18.99] spans=False pt=False
+    MERGED x=20.115 Δ=-0.665% y[32.27,32.85] spans=False pt=True
+    MERGED x=19.999 Δ=-0.549% y[18.06,19.83] spans=False pt=False
+    MERGED x=19.827 Δ=-0.377% y[11.90,33.17] spans=True pt=False
+    MERGED x=19.614 Δ=-0.164% y[32.27,32.85] spans=False pt=True
+    MERGED x=19.557 Δ=-0.107% y[20.79,21.32] spans=False pt=True
+    MERGED x=19.557 Δ=-0.107% y[32.27,41.63] spans=False pt=True
+    MERGED x=19.446 Δ=+0.004% y[21.32,32.27] spans=True pt=True
+    MERGED x=18.703 Δ=+0.747% y[10.44,11.64] spans=False pt=False
+    MERGED x=18.703 Δ=+0.747% y[18.56,22.65] spans=False pt=False
+    MERGED x=18.703 Δ=+0.747% y[24.37,26.02] spans=False pt=True
+    MERGED x=18.703 Δ=+0.747% y[30.60,34.46] spans=False pt=True
+    MERGED x=18.703 Δ=+0.747% y[41.64,42.69] spans=False pt=True
+  RULES @9.08: current=29.40ft ruleA=45.53ft ruleB=40.91ft (L 11.419 R 43.863) sealed=30.0
+    ruleB moves: L +10.128ft outboard, R +1.391ft outboard (vs current wall ruler)
+
+==== LETRICK right p2 lw=RESOLVED x_span=[54.71, 80.01] wall_corners=[54.71, 77.98] ====
+  [SIL-L] x=54.710 (outboard = -x):
+    x=54.680 Δ=+0.030% +0.038ft frags=2 y[61.71,73.27] cov=11.49% cont=False reach_both=True pt=True gaps=[0.07]
+    x=54.443 Δ=+0.267% +0.340ft frags=1 y[61.81,62.34] cov=0.53% cont=True reach_both=False pt=True gaps=[]
+    x=54.332 Δ=+0.378% +0.482ft frags=2 y[62.34,72.37] cov=9.79% cont=False reach_both=False pt=True gaps=[0.23]
+    x=54.202 Δ=+0.508% +0.648ft frags=3 y[62.31,70.83] cov=1.20% cont=False reach_both=False pt=True gaps=[2.22, 5.1]
+    x=54.027 Δ=+0.683% +0.870ft frags=3 y[62.31,66.12] cov=1.16% cont=False reach_both=False pt=True gaps=[1.85, 0.8]
+    x=53.858 Δ=+0.852% +1.086ft frags=2 y[62.28,65.60] cov=1.03% cont=False reach_both=False pt=True gaps=[2.28]
+    x=53.729 Δ=+0.981% +1.250ft frags=1 y[62.46,62.57] cov=0.11% cont=True reach_both=False pt=True gaps=[]
+    x=53.574 Δ=+1.136% +1.448ft frags=2 y[61.76,72.48] cov=2.88% cont=False reach_both=True pt=True gaps=[7.85]
+    x=53.407 Δ=+1.303% +1.660ft frags=1 y[61.84,62.25] cov=0.41% cont=True reach_both=False pt=True gaps=[]
+    x=53.336 Δ=+1.374% +1.751ft frags=1 y[61.95,62.00] cov=0.04% cont=True reach_both=False pt=True gaps=[]
+    x=53.238 Δ=+1.472% +1.876ft frags=1 y[60.85,62.08] cov=1.24% cont=True reach_both=False pt=True gaps=[]
+    x=52.649 Δ=+2.061% +2.626ft frags=1 y[62.66,64.72] cov=2.05% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=55.289 Δ=-0.579% y[72.43,72.70] spans=False pt=True
+    MERGED x=55.021 Δ=-0.311% y[72.37,72.96] spans=False pt=True
+    MERGED x=54.713 Δ=-0.003% y[61.71,73.27] spans=True pt=True
+    MERGED x=54.500 Δ=+0.210% y[72.37,72.96] spans=False pt=True
+    MERGED x=54.443 Δ=+0.267% y[61.81,62.34] spans=False pt=True
+    MERGED x=54.443 Δ=+0.267% y[72.37,81.74] spans=False pt=True
+    MERGED x=54.244 Δ=+0.466% y[62.31,72.37] spans=False pt=True
+    MERGED x=54.244 Δ=+0.466% y[76.32,76.53] spans=False pt=True
+    MERGED x=54.244 Δ=+0.466% y[81.74,82.79] spans=False pt=True
+  [SIL-R] x=80.010 (outboard = +x):
+    x=79.217 Δ=-0.793% -1.011ft frags=1 y[62.59,62.64] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=79.346 Δ=-0.664% -0.846ft frags=2 y[62.59,64.60] cov=0.61% cont=False reach_both=False pt=True gaps=[1.4]
+    x=79.769 Δ=-0.241% -0.308ft frags=1 y[52.00,72.37] cov=20.37% cont=True reach_both=True pt=False gaps=[]
+    x=79.996 Δ=-0.014% -0.018ft frags=1 y[52.00,72.37] cov=20.37% cont=True reach_both=True pt=False gaps=[]
+    MERGED x=79.769 Δ=-0.241% y[52.00,72.37] spans=True pt=False
+    MERGED x=80.013 Δ=+0.003% y[51.74,72.37] spans=True pt=False
+    MERGED x=80.209 Δ=+0.199% y[72.38,74.13] spans=False pt=True
+    MERGED x=80.654 Δ=+0.644% y[75.18,77.26] spans=False pt=True
+    MERGED x=80.715 Δ=+0.705% y[72.96,74.26] spans=False pt=True
+    MERGED x=80.790 Δ=+0.780% y[72.38,74.13] spans=False pt=True
+  [WALL-R] x=77.980 (outboard = +x):
+    x=77.642 Δ=-0.338% -0.431ft frags=2 y[60.79,73.27] cov=12.41% cont=False reach_both=True pt=True gaps=[0.07]
+    x=77.881 Δ=-0.099% -0.126ft frags=1 y[60.89,61.42] cov=0.53% cont=True reach_both=False pt=True gaps=[]
+    x=77.978 Δ=-0.002% -0.002ft frags=2 y[61.42,72.37] cov=10.71% cont=False reach_both=True pt=True gaps=[0.23]
+    x=78.262 Δ=+0.282% +0.360ft frags=1 y[61.42,61.75] cov=0.33% cont=True reach_both=False pt=True gaps=[]
+    x=78.323 Δ=+0.343% +0.437ft frags=2 y[61.42,64.60] cov=0.87% cont=False reach_both=False pt=True gaps=[2.31]
+    x=78.747 Δ=+0.767% +0.977ft frags=2 y[60.90,64.51] cov=1.06% cont=False reach_both=False pt=True gaps=[2.55]
+    x=78.927 Δ=+0.947% +1.207ft frags=1 y[61.07,61.32] cov=0.25% cont=True reach_both=False pt=True gaps=[]
+    x=78.987 Δ=+1.007% +1.284ft frags=1 y[61.03,61.07] cov=0.04% cont=True reach_both=False pt=True gaps=[]
+    x=79.217 Δ=+1.237% +1.576ft frags=1 y[62.59,62.64] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=79.346 Δ=+1.366% +1.741ft frags=2 y[62.59,64.60] cov=0.61% cont=False reach_both=False pt=True gaps=[1.4]
+    x=79.769 Δ=+1.789% +2.279ft frags=1 y[52.00,72.37] cov=20.37% cont=True reach_both=True pt=False gaps=[]
+    x=79.996 Δ=+2.016% +2.569ft frags=1 y[52.00,72.37] cov=20.37% cont=True reach_both=True pt=False gaps=[]
+    MERGED x=77.275 Δ=-0.705% y[56.28,59.68] spans=False pt=False
+    MERGED x=77.350 Δ=-0.630% y[51.74,59.13] spans=False pt=False
+    MERGED x=77.444 Δ=-0.536% y[58.12,59.93] spans=False pt=False
+    MERGED x=77.444 Δ=-0.536% y[72.37,72.96] spans=False pt=True
+    MERGED x=77.641 Δ=-0.339% y[51.70,73.27] spans=True pt=False
+    MERGED x=77.882 Δ=-0.098% y[59.98,61.42] spans=False pt=True
+    MERGED x=77.882 Δ=-0.098% y[72.37,81.74] spans=False pt=True
+    MERGED x=77.978 Δ=-0.002% y[61.42,72.37] spans=True pt=True
+    MERGED x=78.043 Δ=+0.063% y[59.98,60.11] spans=False pt=True
+    MERGED x=78.262 Δ=+0.282% y[61.42,61.75] spans=False pt=True
+    MERGED x=78.332 Δ=+0.352% y[61.42,61.73] spans=False pt=True
+    MERGED x=78.332 Δ=+0.352% y[64.04,64.60] spans=False pt=True
+    MERGED x=78.332 Δ=+0.352% y[81.74,82.79] spans=False pt=True
+    MERGED x=78.786 Δ=+0.806% y[50.54,51.74] spans=False pt=False
+    MERGED x=78.786 Δ=+0.806% y[60.09,64.60] spans=False pt=True
+    MERGED x=78.786 Δ=+0.806% y[72.37,75.45] spans=False pt=True
+  RULES @9.08: current=29.66ft ruleA=50.14ft ruleB=33.67ft (L 53.574 R 79.996) sealed=30.0
+    ruleB moves: L +1.448ft outboard, R +2.569ft outboard (vs current wall ruler)
+
+==== BONI front p1 lw=RESOLVED x_span=[16.29, 62.01] wall_corners=None ====
+  [SIL-L] x=16.290 (outboard = -x):
+    x=17.089 Δ=-0.799% frags=13 y[13.68,33.81] cov=10.77% cont=False reach_both=True pt=True gaps=[0.19, 0.19, 6.82, 0.14]
+    x=16.852 Δ=-0.562% frags=10 y[13.70,23.61] cov=1.80% cont=False reach_both=False pt=True gaps=[0.19, 6.91, 0.15, 0.14]
+    x=16.762 Δ=-0.472% frags=1 y[13.04,13.69] cov=0.65% cont=True reach_both=False pt=True gaps=[]
+    x=16.570 Δ=-0.280% frags=12 y[13.09,33.81] cov=17.96% cont=False reach_both=True pt=True gaps=[0.2, 0.2, 0.7, 0.16]
+    x=16.282 Δ=+0.008% frags=2 y[13.07,34.97] cov=21.50% cont=False reach_both=True pt=True gaps=[0.4]
+    x=15.918 Δ=+0.372% frags=17 y[13.28,33.07] cov=4.24% cont=False reach_both=True pt=True gaps=[0.19, 0.19, 0.49, 0.06]
+    x=15.727 Δ=+0.563% frags=5 y[4.56,30.47] cov=13.38% cont=False reach_both=False pt=False gaps=[0.38, 5.9, 0.36, 5.9]
+    x=15.536 Δ=+0.754% frags=2 y[14.83,30.88] cov=3.13% cont=False reach_both=False pt=True gaps=[12.93]
+    x=15.350 Δ=+0.940% frags=1 y[27.22,33.24] cov=6.01% cont=True reach_both=False pt=True gaps=[]
+    x=15.207 Δ=+1.083% frags=2 y[26.77,27.35] cov=0.24% cont=False reach_both=False pt=True gaps=[0.34]
+    x=15.067 Δ=+1.223% frags=1 y[26.77,33.24] cov=6.46% cont=True reach_both=False pt=True gaps=[]
+    x=14.823 Δ=+1.467% frags=2 y[29.95,30.85] cov=0.82% cont=False reach_both=False pt=True gaps=[0.08]
+    MERGED x=16.855 Δ=-0.565% y[4.56,14.33] spans=False pt=False
+    MERGED x=16.855 Δ=-0.565% y[21.24,23.61] spans=False pt=True
+    MERGED x=16.855 Δ=-0.565% y[34.15,34.83] spans=False pt=True
+    MERGED x=16.762 Δ=-0.472% y[13.04,13.69] spans=False pt=True
+    MERGED x=16.291 Δ=-0.001% y[4.56,44.40] spans=True pt=False
+    MERGED x=15.922 Δ=+0.368% y[4.56,15.26] spans=False pt=False
+    MERGED x=15.922 Δ=+0.368% y[21.24,24.53] spans=False pt=True
+    MERGED x=15.922 Δ=+0.368% y[29.49,31.15] spans=False pt=True
+    MERGED x=15.922 Δ=+0.368% y[32.81,33.07] spans=False pt=True
+    MERGED x=15.727 Δ=+0.563% y[4.56,15.26] spans=False pt=False
+    MERGED x=15.727 Δ=+0.563% y[21.15,24.53] spans=False pt=True
+    MERGED x=15.727 Δ=+0.563% y[30.43,30.47] spans=False pt=True
+    MERGED x=15.512 Δ=+0.778% y[10.79,10.94] spans=False pt=False
+    MERGED x=15.512 Δ=+0.778% y[14.83,16.57] spans=False pt=True
+    MERGED x=15.512 Δ=+0.778% y[29.49,30.88] spans=False pt=True
+    MERGED x=15.350 Δ=+0.940% y[27.22,33.24] spans=False pt=True
+  [SIL-R] x=62.010 (outboard = +x):
+    x=61.434 Δ=-0.576% frags=20 y[13.44,23.65] cov=5.65% cont=False reach_both=False pt=True gaps=[0.24, 0.24, 0.24, 0.24]
+    x=61.661 Δ=-0.349% frags=22 y[13.18,34.15] cov=15.71% cont=False reach_both=True pt=True gaps=[0.24, 0.24, 0.24, 0.24]
+    x=62.003 Δ=-0.007% frags=2 y[13.20,35.13] cov=21.55% cont=False reach_both=True pt=True gaps=[0.38]
+    x=62.254 Δ=+0.244% frags=2 y[26.26,27.90] cov=0.85% cont=False reach_both=False pt=True gaps=[0.8]
+    x=62.364 Δ=+0.354% frags=22 y[13.44,27.38] cov=6.44% cont=False reach_both=False pt=True gaps=[0.24, 0.24, 0.24, 0.24]
+    x=62.500 Δ=+0.490% frags=1 y[24.63,24.67] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=62.589 Δ=+0.579% frags=1 y[7.17,24.13] cov=16.96% cont=True reach_both=False pt=False gaps=[]
+    MERGED x=61.434 Δ=-0.576% y[7.17,23.65] spans=False pt=False
+    MERGED x=61.434 Δ=-0.576% y[34.31,34.57] spans=False pt=True
+    MERGED x=61.662 Δ=-0.348% y[7.17,34.83] spans=True pt=False
+    MERGED x=61.835 Δ=-0.175% y[34.15,38.32] spans=False pt=True
+    MERGED x=62.006 Δ=-0.004% y[7.17,35.13] spans=True pt=False
+    MERGED x=62.006 Δ=-0.004% y[38.32,39.19] spans=False pt=True
+    MERGED x=62.254 Δ=+0.244% y[26.26,27.90] spans=False pt=True
+    MERGED x=62.361 Δ=+0.351% y[7.17,24.67] spans=False pt=False
+    MERGED x=62.361 Δ=+0.351% y[26.64,27.38] spans=False pt=True
+    MERGED x=62.500 Δ=+0.490% y[24.63,24.67] spans=False pt=True
+    MERGED x=62.587 Δ=+0.577% y[7.17,24.13] spans=False pt=False
+  RULES: no evidence scale — widths in %: current=45.72 ruleA=61.30 ruleB=46.08522675195648
+
+==== BONI rear p1 lw=RESOLVED x_span=[36.11, 81.8] wall_corners=None ====
+  [SIL-L] x=36.110 (outboard = -x):
+    x=36.683 Δ=-0.573% frags=10 y[56.86,61.84] cov=2.65% cont=False reach_both=False pt=True gaps=[0.26, 0.27, 0.26, 0.26]
+    x=36.440 Δ=-0.330% frags=11 y[57.12,77.72] cov=17.69% cont=False reach_both=True pt=True gaps=[0.27, 0.28, 0.27, 0.27]
+    x=36.115 Δ=-0.005% frags=2 y[56.84,78.52] cov=21.28% cont=False reach_both=True pt=True gaps=[0.4]
+    x=35.855 Δ=+0.255% frags=2 y[69.83,71.47] cov=0.85% cont=False reach_both=False pt=True gaps=[0.8]
+    x=35.622 Δ=+0.488% frags=3 y[50.74,70.95] cov=17.75% cont=False reach_both=False pt=False gaps=[0.39, 2.07]
+    x=35.238 Δ=+0.872% frags=1 y[62.39,63.90] cov=1.51% cont=True reach_both=False pt=True gaps=[]
+    x=35.062 Δ=+1.048% frags=1 y[63.01,63.06] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=34.953 Δ=+1.157% frags=1 y[63.01,63.06] cov=0.05% cont=True reach_both=False pt=True gaps=[]
+    x=34.157 Δ=+1.953% frags=1 y[63.58,65.63] cov=2.05% cont=True reach_both=False pt=True gaps=[]
+    MERGED x=36.764 Δ=-0.654% y[77.72,78.50] spans=False pt=True
+    MERGED x=36.683 Δ=-0.573% y[50.74,61.84] spans=False pt=False
+    MERGED x=36.481 Δ=-0.371% y[50.86,80.14] spans=True pt=False
+    MERGED x=36.481 Δ=-0.371% y[82.91,83.06] spans=False pt=True
+    MERGED x=36.111 Δ=-0.001% y[50.74,85.88] spans=True pt=False
+    MERGED x=35.630 Δ=+0.480% y[50.74,68.14] spans=False pt=False
+    MERGED x=35.630 Δ=+0.480% y[70.21,70.95] spans=False pt=True
+    MERGED x=35.630 Δ=+0.480% y[77.66,78.22] spans=False pt=True
+    MERGED x=35.362 Δ=+0.748% y[54.78,55.01] spans=False pt=False
+    MERGED x=35.240 Δ=+0.870% y[54.78,54.92] spans=False pt=False
+    MERGED x=35.240 Δ=+0.870% y[62.39,63.90] spans=False pt=True
+    MERGED x=35.112 Δ=+0.998% y[82.60,83.16] spans=False pt=True
+  [SIL-R] x=81.800 (outboard = +x):
+    x=81.175 Δ=-0.625% frags=2 y[57.09,57.90] cov=0.57% cont=False reach_both=False pt=True gaps=[0.24]
+    x=81.401 Δ=-0.399% frags=3 y[56.84,57.90] cov=0.58% cont=False reach_both=False pt=True gaps=[0.24, 0.24]
+    x=81.458 Δ=-0.342% frags=1 y[58.40,77.72] cov=19.32% cont=True reach_both=False pt=True gaps=[]
+    x=81.626 Δ=-0.174% frags=2 y[57.12,57.90] cov=0.51% cont=False reach_both=False pt=True gaps=[0.27]
+    x=81.810 Δ=+0.010% frags=3 y[56.86,83.08] cov=25.31% cont=False reach_both=True pt=True gaps=[0.26, 0.66]
+    x=82.097 Δ=+0.297% frags=2 y[57.09,57.90] cov=0.57% cont=False reach_both=False pt=True gaps=[0.24]
+    x=82.167 Δ=+0.367% frags=2 y[68.07,75.31] cov=1.44% cont=False reach_both=False pt=True gaps=[5.8]
+    x=82.341 Δ=+0.541% frags=5 y[48.13,74.90] cov=13.39% cont=False reach_both=False pt=False gaps=[0.51, 5.77, 0.37, 6.75]
+    x=82.507 Δ=+0.707% frags=1 y[74.86,74.90] cov=0.04% cont=True reach_both=False pt=True gaps=[]
+    x=82.576 Δ=+0.776% frags=1 y[73.92,75.31] cov=1.39% cont=True reach_both=False pt=True gaps=[]
+    x=82.670 Δ=+0.870% frags=1 y[70.36,70.68] cov=0.32% cont=True reach_both=False pt=True gaps=[]
+    x=82.740 Δ=+0.940% frags=2 y[70.36,77.72] cov=7.17% cont=False reach_both=False pt=True gaps=[0.2]
+    MERGED x=81.035 Δ=-0.765% y[77.72,83.19] spans=False pt=True
+    MERGED x=81.175 Δ=-0.625% y[48.21,57.90] spans=False pt=False
+    MERGED x=81.287 Δ=-0.513% y[77.98,82.93] spans=False pt=True
+    MERGED x=81.401 Δ=-0.399% y[48.13,57.90] spans=False pt=False
+    MERGED x=81.458 Δ=-0.342% y[58.40,77.72] spans=False pt=True
+    MERGED x=81.796 Δ=-0.004% y[48.13,90.05] spans=True pt=False
+    MERGED x=82.097 Δ=+0.297% y[48.21,57.90] spans=False pt=False
+    MERGED x=82.167 Δ=+0.367% y[68.07,68.11] spans=False pt=True
+    MERGED x=82.167 Δ=+0.367% y[73.92,75.31] spans=False pt=True
+    MERGED x=82.335 Δ=+0.535% y[48.13,58.96] spans=False pt=False
+    MERGED x=82.335 Δ=+0.535% y[64.72,68.11] spans=False pt=True
+    MERGED x=82.335 Δ=+0.535% y[74.86,74.90] spans=False pt=True
+    MERGED x=82.335 Δ=+0.535% y[77.76,78.86] spans=False pt=True
+    MERGED x=82.507 Δ=+0.707% y[74.86,74.90] spans=False pt=True
+    MERGED x=82.576 Δ=+0.776% y[73.92,75.31] spans=False pt=True
+    MERGED x=82.670 Δ=+0.870% y[70.36,70.68] spans=False pt=True
+    MERGED x=82.748 Δ=+0.948% y[70.36,77.72] spans=False pt=True
+    MERGED x=82.748 Δ=+0.948% y[82.08,82.64] spans=False pt=True
+  RULES: no evidence scale — widths in %: current=45.69 ruleA=58.33 ruleB=45.694769353703784
+
+==== BONI left p2 lw=INDETERMINATE x_span=None wall_corners=None ====
+  reason=all spanning boundaries sit at one corner
+
+==== BONI right: datum pair not located ====

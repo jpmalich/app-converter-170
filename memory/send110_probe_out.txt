@@ -1,0 +1,404 @@
+INFO:routes.ai_measure:[AI_MEASURE key-routing] anthropic Phase A=ANTHROPIC_API_KEY (direct), anthropic Phase B=ANTHROPIC_API_KEY (direct), gemini/openai=EMERGENT_LLM_KEY (proxy) [flags: A=1, B=1, legacy=phase_b_only, key=present]
+
+######## LETRICK pdf=bpsrc_160686916c13490985fe54acbd99a851.pdf run=6a82157e7082dbcdfb1db363 live_tapes=0 ########
+  PAGEBOX p1: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+  PAGEBOX p2: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+  PAGEBOX p3: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+  PAGEBOX p4: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+
+==== LETRICK front p1 tier=derived_chain ft=9.08 contested=None ====
+  SCALE drawn_gap dy=9.400 y-% (scale_y=[20.4, 29.8])
+    candidate 9.08=9.08 ft: fpp_y=0.96596 ft/y-%  fpp_x=1.28794 ft/x-%
+  LINEWORK status=RESOLVED reason=None x_span=[14.01, 56.49] wall_corners=None body=[14.01, 56.49] fence=(6.7, 63.81)
+  CURRENT boundaries: L=14.012 R=56.491  width=54.71 ft
+  L-BOUNDARY x=14.012 — clusters from 1%% inboard OUTWARD (datum interval 19.68..30.52 = 10.84%):
+    x=14.931 Δ=-0.919% (-1.184 ft) frags=3 y[19.44,20.73] covered=0.77% (7% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.27, 0.27]
+    x=14.705 Δ=-0.694% (-0.894 ft) frags=3 y[19.68,20.73] covered=0.58% (5% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24, 0.24]
+    x=14.479 Δ=-0.467% (-0.602 ft) frags=3 y[19.41,20.73] covered=0.85% (8% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24, 0.24]
+    x=14.259 Δ=-0.247% (-0.319 ft) frags=3 y[19.69,31.26] covered=10.56% (97% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.26, 0.76]
+    x=13.950 Δ=+0.061% (+0.079 ft) frags=2 y[19.44,33.44] covered=13.60% (125% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.4]
+    x=13.700 Δ=+0.312% (+0.402 ft) frags=1 y[25.91,26.14] covered=0.23% (2% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    POST-MERGE x=14.930 Δ=-0.919% y[10.55,20.73] spans=False plate_term=False
+    POST-MERGE x=14.930 Δ=-0.919% y[31.26,31.96] spans=False plate_term=True
+    POST-MERGE x=14.704 Δ=-0.692% y[10.50,20.73] spans=False plate_term=False
+    POST-MERGE x=14.704 Δ=-0.692% y[31.44,31.69] spans=False plate_term=True
+    POST-MERGE x=14.479 Δ=-0.467% y[10.52,20.73] spans=False plate_term=False
+    POST-MERGE x=14.401 Δ=-0.389% y[31.26,31.96] spans=False plate_term=True
+    POST-MERGE x=14.251 Δ=-0.239% y[10.50,31.26] spans=True plate_term=False
+    POST-MERGE x=14.012 Δ=-0.000% y[10.50,40.64] spans=True plate_term=False
+    POST-MERGE x=13.695 Δ=+0.317% y[25.91,26.14] spans=False plate_term=True
+    POST-MERGE x=13.695 Δ=+0.317% y[40.64,41.68] spans=False plate_term=True
+    POST-MERGE x=13.559 Δ=+0.452% y[10.52,22.69] spans=False plate_term=False
+    POST-MERGE x=13.559 Δ=+0.452% y[25.91,26.04] spans=False plate_term=True
+    POST-MERGE x=13.359 Δ=+0.652% y[10.50,21.24] spans=False plate_term=False
+    POST-MERGE x=13.261 Δ=+0.751% y[16.19,16.47] spans=False plate_term=False
+    POST-MERGE x=13.154 Δ=+0.857% y[16.19,16.30] spans=False plate_term=False
+    POST-MERGE x=13.101 Δ=+0.911% y[31.96,37.16] spans=False plate_term=True
+    POST-MERGE x=12.875 Δ=+1.137% y[15.27,16.47] spans=False plate_term=False
+    POST-MERGE x=12.765 Δ=+1.247% y[31.40,31.96] spans=False plate_term=True
+  R-BOUNDARY x=56.491 — clusters from 1%% inboard OUTWARD (datum interval 19.68..30.52 = 10.84%):
+    x=55.504 Δ=-0.987% (-1.271 ft) frags=3 y[19.44,20.73] covered=0.77% (7% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.27, 0.27]
+    x=55.744 Δ=-0.747% (-0.962 ft) frags=2 y[19.69,20.48] covered=0.53% (5% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.26]
+    x=55.974 Δ=-0.516% (-0.665 ft) frags=3 y[19.41,20.73] covered=0.85% (8% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24, 0.24]
+    x=56.201 Δ=-0.289% (-0.373 ft) frags=4 y[19.68,31.26] covered=10.61% (98% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.24, 0.24, 0.5]
+    x=56.499 Δ=+0.009% (+0.011 ft) frags=4 y[19.44,32.16] covered=11.79% (109% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.27, 0.27, 0.4]
+    x=56.654 Δ=+0.163% (+0.210 ft) frags=3 y[19.69,31.27] covered=2.79% (26% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.26, 8.54]
+    POST-MERGE x=55.508 Δ=-0.983% y[10.55,20.73] spans=False plate_term=False
+    POST-MERGE x=55.508 Δ=-0.983% y[31.26,31.96] spans=False plate_term=True
+    POST-MERGE x=55.744 Δ=-0.747% y[10.50,20.48] spans=False plate_term=False
+    POST-MERGE x=55.815 Δ=-0.675% y[31.44,31.69] spans=False plate_term=True
+    POST-MERGE x=55.974 Δ=-0.516% y[10.52,20.73] spans=False plate_term=False
+    POST-MERGE x=56.068 Δ=-0.423% y[31.26,31.96] spans=False plate_term=True
+    POST-MERGE x=56.200 Δ=-0.291% y[10.50,31.26] spans=True plate_term=False
+    POST-MERGE x=56.337 Δ=-0.153% y[31.26,40.62] spans=False plate_term=True
+    POST-MERGE x=56.491 Δ=+0.000% y[10.55,33.25] spans=True plate_term=False
+    POST-MERGE x=56.665 Δ=+0.174% y[10.50,20.48] spans=False plate_term=False
+    POST-MERGE x=56.665 Δ=+0.174% y[29.02,31.27] spans=False plate_term=True
+    POST-MERGE x=56.792 Δ=+0.302% y[40.64,41.68] spans=False plate_term=True
+    POST-MERGE x=56.896 Δ=+0.406% y[10.52,21.57] spans=False plate_term=False
+    POST-MERGE x=56.962 Δ=+0.471% y[21.24,21.54] spans=False plate_term=True
+    POST-MERGE x=57.123 Δ=+0.633% y[10.50,21.24] spans=False plate_term=False
+    POST-MERGE x=57.224 Δ=+0.733% y[16.23,16.52] spans=False plate_term=False
+    POST-MERGE x=57.331 Δ=+0.840% y[16.23,16.34] spans=False plate_term=False
+    POST-MERGE x=57.538 Δ=+1.047% y[33.59,34.15] spans=False plate_term=True
+    POST-MERGE x=57.594 Δ=+1.103% y[15.35,16.52] spans=False plate_term=False
+    POST-MERGE x=57.700 Δ=+1.209% y[32.14,32.70] spans=False plate_term=True
+    POST-MERGE x=57.785 Δ=+1.294% y[29.18,29.52] spans=False plate_term=True
+    POST-MERGE x=57.863 Δ=+1.372% y[29.22,29.52] spans=False plate_term=True
+    POST-MERGE x=57.863 Δ=+1.372% y[31.96,32.04] spans=False plate_term=True
+    POST-MERGE x=57.964 Δ=+1.474% y[33.30,33.39] spans=False plate_term=True
+  THEORETICAL (outermost collinear fragment, no joining): L=8.644 (frags=1 covered=2.05%) R=60.740 (frags=1 covered=1.50%)
+    @9.08: theoretical=67.10 ft  current=54.71 ft  sealed=54.0  moves_L=True moves_R=True
+
+==== LETRICK rear p1 tier=contested_pick_larger ft=9.92 contested=["9'-11*", '9-1%'] ====
+  SCALE drawn_gap dy=9.400 y-% (scale_y=[65.9, 75.3])
+    candidate 9'-11"=9.9167 ft: fpp_y=1.05497 ft/y-%  fpp_x=1.40662 ft/x-%
+    candidate 9'-1 1/8"=9.0938 ft: fpp_y=0.96743 ft/y-%  fpp_x=1.28990 ft/x-%
+  LINEWORK status=RESOLVED reason=None x_span=[38.13, 80.88] wall_corners=None body=[38.13, 80.88] fence=(31.07, 87.94999999999999)
+  CURRENT boundaries: L=38.129 R=80.885  width=60.14 ft
+  L-BOUNDARY x=38.129 — clusters from 1%% inboard OUTWARD (datum interval 65.12..75.99 = 10.87%):
+    x=38.975 Δ=-0.846% (-1.190 ft) frags=1 y[65.33,65.35] covered=0.02% (0% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=38.759 Δ=-0.630% (-0.885 ft) frags=2 y[65.06,67.62] covered=2.17% (20% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.38]
+    x=38.549 Δ=-0.420% (-0.590 ft) frags=1 y[65.85,76.80] covered=10.95% (101% of interval) continuous=True reaches_both=True plate_term=True gaps=[]
+    x=38.128 Δ=+0.001% (+0.002 ft) frags=2 y[65.09,77.70] covered=12.20% (112% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.4]
+    x=37.827 Δ=+0.302% (+0.425 ft) frags=1 y[65.06,65.35] covered=0.28% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=37.735 Δ=+0.394% (+0.555 ft) frags=1 y[65.85,66.77] covered=0.92% (8% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    POST-MERGE x=38.974 Δ=-0.844% y[56.03,65.35] spans=False plate_term=False
+    POST-MERGE x=38.974 Δ=-0.844% y[76.86,77.12] spans=False plate_term=True
+    POST-MERGE x=38.750 Δ=-0.621% y[56.18,67.62] spans=False plate_term=False
+    POST-MERGE x=38.671 Δ=-0.542% y[76.80,77.38] spans=False plate_term=True
+    POST-MERGE x=38.521 Δ=-0.391% y[56.03,76.80] spans=True plate_term=False
+    POST-MERGE x=38.418 Δ=-0.289% y[76.80,77.58] spans=False plate_term=True
+    POST-MERGE x=38.418 Δ=-0.289% y[79.14,86.16] spans=False plate_term=True
+    POST-MERGE x=38.129 Δ=-0.000% y[56.03,77.70] spans=True plate_term=False
+    POST-MERGE x=37.954 Δ=+0.176% y[76.74,77.30] spans=False plate_term=True
+    POST-MERGE x=37.954 Δ=+0.176% y[86.17,87.21] spans=False plate_term=True
+    POST-MERGE x=37.827 Δ=+0.302% y[56.18,65.35] spans=False plate_term=False
+    POST-MERGE x=37.735 Δ=+0.394% y[65.85,66.77] spans=False plate_term=True
+    POST-MERGE x=37.622 Δ=+0.507% y[56.03,66.77] spans=False plate_term=False
+    POST-MERGE x=37.488 Δ=+0.642% y[61.54,61.65] spans=False plate_term=False
+    POST-MERGE x=37.488 Δ=+0.642% y[77.38,77.47] spans=False plate_term=True
+    POST-MERGE x=37.341 Δ=+0.788% y[76.74,77.30] spans=False plate_term=True
+    POST-MERGE x=37.101 Δ=+1.028% y[60.41,61.82] spans=False plate_term=False
+    POST-MERGE x=37.101 Δ=+1.028% y[74.85,75.17] spans=False plate_term=True
+    POST-MERGE x=37.027 Δ=+1.102% y[74.93,75.17] spans=False plate_term=True
+    POST-MERGE x=36.975 Δ=+1.154% y[67.30,69.35] spans=False plate_term=True
+  R-BOUNDARY x=80.885 — clusters from 1%% inboard OUTWARD (datum interval 65.12..75.99 = 10.87%):
+    x=80.244 Δ=-0.640% (-0.901 ft) frags=1 y[65.06,65.35] covered=0.28% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=80.473 Δ=-0.412% (-0.579 ft) frags=2 y[65.33,76.80] covered=10.96% (101% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.5]
+    x=80.895 Δ=+0.011% (+0.015 ft) frags=2 y[65.09,77.70] covered=12.20% (112% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.4]
+    x=81.059 Δ=+0.174% (+0.245 ft) frags=2 y[65.70,71.64] covered=0.56% (5% of interval) continuous=False reaches_both=False plate_term=True gaps=[5.38]
+    x=81.154 Δ=+0.269% (+0.379 ft) frags=3 y[65.06,71.54] covered=0.72% (7% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.35, 5.41]
+    x=81.290 Δ=+0.405% (+0.570 ft) frags=1 y[65.85,66.77] covered=0.92% (8% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    POST-MERGE x=80.014 Δ=-0.871% y[56.03,65.09] spans=False plate_term=False
+    POST-MERGE x=80.085 Δ=-0.799% y[76.86,77.12] spans=False plate_term=True
+    POST-MERGE x=80.244 Δ=-0.640% y[56.18,65.35] spans=False plate_term=False
+    POST-MERGE x=80.338 Δ=-0.547% y[76.80,77.38] spans=False plate_term=True
+    POST-MERGE x=80.470 Δ=-0.415% y[56.03,76.80] spans=True plate_term=False
+    POST-MERGE x=80.885 Δ=+0.000% y[56.03,86.16] spans=True plate_term=False
+    POST-MERGE x=81.061 Δ=+0.177% y[65.70,66.03] spans=False plate_term=True
+    POST-MERGE x=81.061 Δ=+0.177% y[71.41,71.64] spans=False plate_term=True
+    POST-MERGE x=81.061 Δ=+0.177% y[86.17,87.21] spans=False plate_term=True
+    POST-MERGE x=81.164 Δ=+0.280% y[56.18,66.00] spans=False plate_term=False
+    POST-MERGE x=81.164 Δ=+0.280% y[71.41,71.54] spans=False plate_term=True
+    POST-MERGE x=81.290 Δ=+0.405% y[65.85,66.77] spans=False plate_term=True
+    POST-MERGE x=81.395 Δ=+0.510% y[56.03,66.77] spans=False plate_term=False
+    POST-MERGE x=81.536 Δ=+0.651% y[61.72,61.83] spans=False plate_term=False
+    POST-MERGE x=81.654 Δ=+0.769% y[77.49,82.70] spans=False plate_term=True
+    POST-MERGE x=81.901 Δ=+1.016% y[60.59,62.01] spans=False plate_term=False
+    POST-MERGE x=81.901 Δ=+1.016% y[70.86,71.89] spans=False plate_term=True
+    POST-MERGE x=82.029 Δ=+1.144% y[81.32,81.55] spans=False plate_term=True
+    POST-MERGE x=82.149 Δ=+1.265% y[81.42,81.55] spans=False plate_term=True
+    POST-MERGE x=82.250 Δ=+1.365% y[77.49,82.70] spans=False plate_term=True
+  THEORETICAL (outermost collinear fragment, no joining): L=33.825 (frags=1 covered=2.05%) R=87.687 (frags=2 covered=10.89%)
+    @9'-11": theoretical=75.76 ft  current=60.14 ft  sealed=54.0  moves_L=True moves_R=True
+    @9'-1 1/8": theoretical=69.48 ft  current=55.15 ft  sealed=54.0  moves_L=True moves_R=True
+
+==== LETRICK left p2 tier=derived_chain ft=9.08 contested=None ====
+  SCALE drawn_gap dy=9.600 y-% (scale_y=[21.3, 30.9])
+    candidate 9.08=9.08 ft: fpp_y=0.94583 ft/y-%  fpp_x=1.26111 ft/x-%
+  LINEWORK status=RESOLVED reason=None x_span=[17.43, 42.76] wall_corners=[19.45, 42.76] body=[19.45, 42.76] fence=(11.24, 50.96)
+  CURRENT boundaries: L=17.425 R=42.757  width=31.95 ft
+  L-BOUNDARY x=17.425 — clusters from 1%% inboard OUTWARD (datum interval 20.57..31.51 = 10.94%):
+    x=18.270 Δ=-0.845% (-1.065 ft) frags=1 y[22.60,22.65] covered=0.05% (0% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=18.163 Δ=-0.737% (-0.930 ft) frags=1 y[22.60,22.65] covered=0.05% (0% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=17.673 Δ=-0.248% (-0.312 ft) frags=1 y[11.90,32.27] covered=20.37% (186% of interval) continuous=True reaches_both=True plate_term=False gaps=[]
+    x=17.570 Δ=-0.145% (-0.182 ft) frags=1 y[21.21,21.32] covered=0.11% (1% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=17.442 Δ=-0.016% (-0.021 ft) frags=1 y[11.90,32.27] covered=20.37% (186% of interval) continuous=True reaches_both=True plate_term=False gaps=[]
+    x=17.022 Δ=+0.403% (+0.509 ft) frags=1 y[19.57,21.49] covered=1.92% (18% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    POST-MERGE x=18.041 Δ=-0.615% y[18.56,19.12] spans=False plate_term=False
+    POST-MERGE x=17.673 Δ=-0.248% y[11.90,32.27] spans=True plate_term=False
+    POST-MERGE x=17.570 Δ=-0.145% y[21.21,21.32] spans=False plate_term=True
+    POST-MERGE x=17.425 Δ=-0.000% y[11.64,32.27] spans=True plate_term=False
+    POST-MERGE x=17.022 Δ=+0.403% y[19.57,21.49] spans=False plate_term=True
+    POST-MERGE x=16.888 Δ=+0.537% y[32.21,32.77] spans=False plate_term=True
+    POST-MERGE x=16.761 Δ=+0.664% y[16.85,17.41] spans=False plate_term=False
+    POST-MERGE x=16.432 Δ=+0.993% y[32.85,32.94] spans=False plate_term=True
+    POST-MERGE x=16.323 Δ=+1.102% y[32.21,33.90] spans=False plate_term=True
+  R-BOUNDARY x=42.757 — clusters from 1%% inboard OUTWARD (datum interval 20.57..31.51 = 10.94%):
+    x=42.757 Δ=+0.000% (+0.000 ft) frags=2 y[21.61,33.17] covered=11.49% (105% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.07]
+    x=42.994 Δ=+0.237% (+0.299 ft) frags=1 y[21.71,22.24] covered=0.53% (5% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=43.100 Δ=+0.342% (+0.432 ft) frags=2 y[22.24,32.27] covered=9.79% (90% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.23]
+    x=43.208 Δ=+0.450% (+0.568 ft) frags=1 y[30.60,30.73] covered=0.13% (1% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=43.414 Δ=+0.657% (+0.828 ft) frags=3 y[22.17,26.02] covered=0.71% (7% of interval) continuous=False reaches_both=False plate_term=True gaps=[1.87, 1.26]
+    x=43.554 Δ=+0.796% (+1.004 ft) frags=1 y[22.24,22.57] covered=0.33% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    POST-MERGE x=42.010 Δ=-0.747% y[32.27,32.85] spans=False plate_term=True
+    POST-MERGE x=42.279 Δ=-0.479% y[32.33,32.59] spans=False plate_term=True
+    POST-MERGE x=42.531 Δ=-0.226% y[32.27,32.85] spans=False plate_term=True
+    POST-MERGE x=42.757 Δ=+0.000% y[21.61,33.17] spans=True plate_term=True
+    POST-MERGE x=42.994 Δ=+0.237% y[21.71,22.24] spans=False plate_term=True
+    POST-MERGE x=42.994 Δ=+0.237% y[32.27,41.63] spans=False plate_term=True
+    POST-MERGE x=43.218 Δ=+0.461% y[22.17,32.27] spans=False plate_term=True
+    POST-MERGE x=43.218 Δ=+0.461% y[36.22,36.43] spans=False plate_term=True
+    POST-MERGE x=43.218 Δ=+0.461% y[41.64,42.69] spans=False plate_term=True
+    POST-MERGE x=43.554 Δ=+0.796% y[22.24,22.57] spans=False plate_term=True
+    POST-MERGE x=43.857 Δ=+1.100% y[21.72,23.78] spans=False plate_term=True
+    POST-MERGE x=43.857 Δ=+1.100% y[30.68,32.51] spans=False plate_term=True
+    POST-MERGE x=44.069 Δ=+1.311% y[21.70,22.14] spans=False plate_term=True
+    POST-MERGE x=44.069 Δ=+1.311% y[32.40,32.51] spans=False plate_term=True
+  THEORETICAL (outermost collinear fragment, no joining): L=11.419 (frags=2 covered=1.32%) R=47.525 (frags=1 covered=2.05%)
+    @9.08: theoretical=45.53 ft  current=31.95 ft  sealed=30.0  moves_L=True moves_R=True
+
+==== LETRICK right p2 tier=derived_chain ft=9.08 contested=None ====
+  SCALE drawn_gap dy=9.500 y-% (scale_y=[61.5, 71.0])
+    candidate 9.08=9.08 ft: fpp_y=0.95579 ft/y-%  fpp_x=1.27439 ft/x-%
+  LINEWORK status=RESOLVED reason=None x_span=[54.71, 80.01] wall_corners=[54.71, 77.98] body=[54.71, 77.98] fence=(46.49, 86.29)
+  CURRENT boundaries: L=54.244 R=80.013  width=32.84 ft
+  L-BOUNDARY x=54.244 — clusters from 1%% inboard OUTWARD (datum interval 60.73..71.54 = 10.81%):
+    x=54.680 Δ=-0.436% (-0.555 ft) frags=2 y[61.71,73.27] covered=11.49% (106% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.07]
+    x=54.443 Δ=-0.199% (-0.254 ft) frags=1 y[61.81,62.34] covered=0.53% (5% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=54.332 Δ=-0.088% (-0.112 ft) frags=2 y[62.34,72.37] covered=9.79% (91% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.23]
+    x=54.202 Δ=+0.043% (+0.055 ft) frags=3 y[62.31,70.83] covered=1.20% (11% of interval) continuous=False reaches_both=False plate_term=True gaps=[2.22, 5.1]
+    x=54.027 Δ=+0.218% (+0.277 ft) frags=3 y[62.31,66.12] covered=1.16% (11% of interval) continuous=False reaches_both=False plate_term=True gaps=[1.85, 0.8]
+    x=53.858 Δ=+0.386% (+0.492 ft) frags=2 y[62.28,65.60] covered=1.03% (10% of interval) continuous=False reaches_both=False plate_term=True gaps=[2.28]
+    POST-MERGE x=55.021 Δ=-0.776% y[72.37,72.96] spans=False plate_term=True
+    POST-MERGE x=54.713 Δ=-0.468% y[61.71,73.27] spans=True plate_term=True
+    POST-MERGE x=54.500 Δ=-0.255% y[72.37,72.96] spans=False plate_term=True
+    POST-MERGE x=54.443 Δ=-0.199% y[61.81,62.34] spans=False plate_term=True
+    POST-MERGE x=54.443 Δ=-0.199% y[72.37,81.74] spans=False plate_term=True
+    POST-MERGE x=54.244 Δ=-0.000% y[62.31,72.37] spans=False plate_term=True
+    POST-MERGE x=54.244 Δ=-0.000% y[76.32,76.53] spans=False plate_term=True
+    POST-MERGE x=54.244 Δ=-0.000% y[81.74,82.79] spans=False plate_term=True
+    POST-MERGE x=53.587 Δ=+0.657% y[61.76,62.98] spans=False plate_term=True
+    POST-MERGE x=53.587 Δ=+0.657% y[64.85,65.60] spans=False plate_term=True
+    POST-MERGE x=53.587 Δ=+0.657% y[70.83,72.61] spans=False plate_term=True
+    POST-MERGE x=53.388 Δ=+0.857% y[61.84,62.25] spans=False plate_term=True
+    POST-MERGE x=53.388 Δ=+0.857% y[72.50,72.61] spans=False plate_term=True
+    POST-MERGE x=53.238 Δ=+1.007% y[60.85,62.08] spans=False plate_term=True
+    POST-MERGE x=53.070 Δ=+1.174% y[72.50,73.06] spans=False plate_term=True
+    POST-MERGE x=52.779 Δ=+1.466% y[72.38,74.13] spans=False plate_term=True
+  R-BOUNDARY x=80.013 — clusters from 1%% inboard OUTWARD (datum interval 60.73..71.54 = 10.81%):
+    x=79.217 Δ=-0.796% (-1.014 ft) frags=1 y[62.59,62.64] covered=0.05% (0% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=79.346 Δ=-0.666% (-0.849 ft) frags=2 y[62.59,64.60] covered=0.61% (6% of interval) continuous=False reaches_both=False plate_term=True gaps=[1.4]
+    x=79.769 Δ=-0.244% (-0.311 ft) frags=1 y[52.00,72.37] covered=20.37% (188% of interval) continuous=True reaches_both=True plate_term=False gaps=[]
+    x=79.996 Δ=-0.016% (-0.021 ft) frags=1 y[52.00,72.37] covered=20.37% (188% of interval) continuous=True reaches_both=True plate_term=False gaps=[]
+    x=86.036 Δ=+6.023% (+7.676 ft) frags=1 y[71.37,72.37] covered=1.00% (9% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    POST-MERGE x=79.769 Δ=-0.244% y[52.00,72.37] spans=True plate_term=False
+    POST-MERGE x=80.013 Δ=+0.000% y[51.74,72.37] spans=True plate_term=False
+    POST-MERGE x=80.209 Δ=+0.196% y[72.38,74.13] spans=False plate_term=True
+    POST-MERGE x=80.654 Δ=+0.642% y[75.18,77.26] spans=False plate_term=True
+    POST-MERGE x=80.715 Δ=+0.703% y[72.96,74.26] spans=False plate_term=True
+    POST-MERGE x=80.790 Δ=+0.778% y[72.38,74.13] spans=False plate_term=True
+    POST-MERGE x=81.163 Δ=+1.151% y[75.73,75.98] spans=False plate_term=True
+    POST-MERGE x=81.443 Δ=+1.431% y[58.75,59.78] spans=False plate_term=False
+    POST-MERGE x=81.443 Δ=+1.431% y[75.32,75.58] spans=False plate_term=True
+  THEORETICAL (outermost collinear fragment, no joining): L=46.691 (frags=1 covered=0.33%) R=86.036 (frags=1 covered=1.00%)
+    @9.08: theoretical=50.14 ft  current=32.84 ft  sealed=30.0  moves_L=True moves_R=True
+
+######## BONI pdf=bpsrc_926decf0dd6244d1b8bac8a2c56bc702.pdf run=6a81acc34f48591f39ffb091 live_tapes=0 ########
+  PAGEBOX p1: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+  PAGEBOX p2: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+  PAGEBOX p3: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+  PAGEBOX p4: pdf 1728.00x1296.00 pt = 24.000x18.000 in | ocr raster 3456x2592 px
+
+==== BONI front p1 tier=datum_rectangle ft=None contested=None ====
+  SCALE drawn_gap dy=18.900 y-% (scale_y=[13.9, 32.8])
+    no real gap ft on this face — quotient not derivable (drawn gap % reported above)
+  LINEWORK status=RESOLVED reason=None x_span=[16.29, 62.01] wall_corners=None body=[16.29, 62.01] fence=(7.46, 68.25)
+  CURRENT boundaries: L=16.291 R=62.006
+  L-BOUNDARY x=16.291 — clusters from 1%% inboard OUTWARD (datum interval 13.26..33.38 = 20.12%):
+    x=17.089 Δ=-0.799% frags=13 y[13.68,33.81] covered=10.77% (54% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.19, 0.19, 6.82, 0.14]
+    x=16.852 Δ=-0.562% frags=10 y[13.70,23.61] covered=1.80% (9% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.19, 6.91, 0.15, 0.14]
+    x=16.762 Δ=-0.471% frags=1 y[13.04,13.69] covered=0.65% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=16.570 Δ=-0.280% frags=12 y[13.09,33.81] covered=17.96% (89% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.2, 0.2, 0.7, 0.16]
+    x=16.282 Δ=+0.008% frags=2 y[13.07,34.97] covered=21.50% (107% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.4]
+    x=15.918 Δ=+0.373% frags=17 y[13.28,33.07] covered=4.24% (21% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.19, 0.19, 0.49, 0.06]
+    POST-MERGE x=17.141 Δ=-0.851% y[4.70,14.33] spans=False plate_term=False
+    POST-MERGE x=17.141 Δ=-0.851% y[21.15,34.57] spans=False plate_term=True
+    POST-MERGE x=16.855 Δ=-0.564% y[4.56,14.33] spans=False plate_term=False
+    POST-MERGE x=16.855 Δ=-0.564% y[21.24,23.61] spans=False plate_term=True
+    POST-MERGE x=16.855 Δ=-0.564% y[34.15,34.83] spans=False plate_term=True
+    POST-MERGE x=16.762 Δ=-0.471% y[13.04,13.69] spans=False plate_term=True
+    POST-MERGE x=16.291 Δ=-0.000% y[4.56,44.40] spans=True plate_term=False
+    POST-MERGE x=15.922 Δ=+0.368% y[4.56,15.26] spans=False plate_term=False
+    POST-MERGE x=15.922 Δ=+0.368% y[21.24,24.53] spans=False plate_term=True
+    POST-MERGE x=15.922 Δ=+0.368% y[29.49,31.15] spans=False plate_term=True
+    POST-MERGE x=15.922 Δ=+0.368% y[32.81,33.07] spans=False plate_term=True
+    POST-MERGE x=15.727 Δ=+0.564% y[4.56,15.26] spans=False plate_term=False
+    POST-MERGE x=15.727 Δ=+0.564% y[21.15,24.53] spans=False plate_term=True
+    POST-MERGE x=15.727 Δ=+0.564% y[30.43,30.47] spans=False plate_term=True
+    POST-MERGE x=15.512 Δ=+0.779% y[10.79,10.94] spans=False plate_term=False
+    POST-MERGE x=15.512 Δ=+0.779% y[14.83,16.57] spans=False plate_term=True
+    POST-MERGE x=15.512 Δ=+0.779% y[29.49,30.88] spans=False plate_term=True
+    POST-MERGE x=15.350 Δ=+0.940% y[27.22,33.24] spans=False plate_term=True
+    POST-MERGE x=15.207 Δ=+1.083% y[26.77,27.35] spans=False plate_term=True
+    POST-MERGE x=15.067 Δ=+1.223% y[26.77,33.24] spans=False plate_term=True
+    POST-MERGE x=14.823 Δ=+1.467% y[29.95,30.85] spans=False plate_term=True
+  R-BOUNDARY x=62.006 — clusters from 1%% inboard OUTWARD (datum interval 13.26..33.38 = 20.12%):
+    x=61.203 Δ=-0.803% frags=20 y[13.20,23.39] covered=5.30% (26% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.26, 0.26, 0.26, 0.26]
+    x=61.434 Δ=-0.573% frags=20 y[13.44,23.65] covered=5.65% (28% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24, 0.24, 0.24, 0.24]
+    x=61.661 Δ=-0.345% frags=22 y[13.18,34.15] covered=15.71% (78% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.24, 0.24, 0.24, 0.24]
+    x=62.003 Δ=-0.003% frags=2 y[13.20,35.13] covered=21.55% (107% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.38]
+    x=62.254 Δ=+0.248% frags=2 y[26.26,27.90] covered=0.85% (4% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.8]
+    x=62.364 Δ=+0.358% frags=22 y[13.44,27.38] covered=6.44% (32% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24, 0.24, 0.24, 0.24]
+    POST-MERGE x=61.093 Δ=-0.913% y[6.99,7.17] spans=False plate_term=False
+    POST-MERGE x=61.201 Δ=-0.805% y[7.17,23.39] spans=False plate_term=False
+    POST-MERGE x=61.201 Δ=-0.805% y[34.29,34.83] spans=False plate_term=True
+    POST-MERGE x=61.434 Δ=-0.573% y[7.17,23.65] spans=False plate_term=False
+    POST-MERGE x=61.434 Δ=-0.573% y[34.31,34.57] spans=False plate_term=True
+    POST-MERGE x=61.662 Δ=-0.344% y[7.17,34.83] spans=True plate_term=False
+    POST-MERGE x=61.835 Δ=-0.172% y[34.15,38.32] spans=False plate_term=True
+    POST-MERGE x=62.006 Δ=+0.000% y[7.17,35.13] spans=True plate_term=False
+    POST-MERGE x=62.006 Δ=+0.000% y[38.32,39.19] spans=False plate_term=True
+    POST-MERGE x=62.254 Δ=+0.248% y[26.26,27.90] spans=False plate_term=True
+    POST-MERGE x=62.361 Δ=+0.355% y[7.17,24.67] spans=False plate_term=False
+    POST-MERGE x=62.361 Δ=+0.355% y[26.64,27.38] spans=False plate_term=True
+    POST-MERGE x=62.500 Δ=+0.494% y[24.63,24.67] spans=False plate_term=True
+    POST-MERGE x=62.587 Δ=+0.580% y[7.17,24.13] spans=False plate_term=False
+  THEORETICAL (outermost collinear fragment, no joining): L=7.602 (frags=2 covered=1.19%) R=68.906 (frags=2 covered=1.19%)
+
+==== BONI rear p1 tier=datum_rectangle ft=None contested=None ====
+  SCALE drawn_gap dy=18.600 y-% (scale_y=[57.7, 76.3])
+    no real gap ft on this face — quotient not derivable (drawn gap % reported above)
+  LINEWORK status=RESOLVED reason=None x_span=[36.11, 81.8] wall_corners=None body=[36.11, 81.8] fence=(29.44, 89.52)
+  CURRENT boundaries: L=36.111 R=81.796
+  L-BOUNDARY x=36.111 — clusters from 1%% inboard OUTWARD (datum interval 56.94..76.92 = 19.98%):
+    x=36.914 Δ=-0.802% frags=10 y[57.09,61.99] covered=2.73% (14% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24, 0.25, 0.24, 0.24]
+    x=36.683 Δ=-0.572% frags=10 y[56.86,61.84] covered=2.65% (13% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.26, 0.27, 0.26, 0.26]
+    x=36.440 Δ=-0.328% frags=11 y[57.12,77.72] covered=17.69% (89% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.27, 0.28, 0.27, 0.27]
+    x=36.115 Δ=-0.004% frags=2 y[56.84,78.52] covered=21.28% (107% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.4]
+    x=35.855 Δ=+0.256% frags=2 y[69.83,71.47] covered=0.85% (4% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.8]
+    x=35.622 Δ=+0.489% frags=3 y[50.74,70.95] covered=17.75% (89% of interval) continuous=False reaches_both=False plate_term=False gaps=[0.39, 2.07]
+    POST-MERGE x=37.016 Δ=-0.905% y[50.56,50.74] spans=False plate_term=False
+    POST-MERGE x=37.016 Δ=-0.905% y[77.98,78.55] spans=False plate_term=True
+    POST-MERGE x=36.914 Δ=-0.802% y[50.83,61.99] spans=False plate_term=False
+    POST-MERGE x=36.764 Δ=-0.653% y[77.72,78.50] spans=False plate_term=True
+    POST-MERGE x=36.683 Δ=-0.572% y[50.74,61.84] spans=False plate_term=False
+    POST-MERGE x=36.481 Δ=-0.370% y[50.86,80.14] spans=True plate_term=False
+    POST-MERGE x=36.481 Δ=-0.370% y[82.91,83.06] spans=False plate_term=True
+    POST-MERGE x=36.111 Δ=-0.000% y[50.74,85.88] spans=True plate_term=False
+    POST-MERGE x=35.630 Δ=+0.481% y[50.74,68.14] spans=False plate_term=False
+    POST-MERGE x=35.630 Δ=+0.481% y[70.21,70.95] spans=False plate_term=True
+    POST-MERGE x=35.630 Δ=+0.481% y[77.66,78.22] spans=False plate_term=True
+    POST-MERGE x=35.362 Δ=+0.749% y[54.78,55.01] spans=False plate_term=False
+    POST-MERGE x=35.240 Δ=+0.871% y[54.78,54.92] spans=False plate_term=False
+    POST-MERGE x=35.240 Δ=+0.871% y[62.39,63.90] spans=False plate_term=True
+    POST-MERGE x=35.112 Δ=+0.999% y[82.60,83.16] spans=False plate_term=True
+    POST-MERGE x=35.053 Δ=+1.059% y[63.01,63.06] spans=False plate_term=True
+    POST-MERGE x=35.053 Δ=+1.059% y[77.66,78.22] spans=False plate_term=True
+    POST-MERGE x=34.940 Δ=+1.172% y[63.01,63.06] spans=False plate_term=True
+    POST-MERGE x=34.940 Δ=+1.172% y[78.47,78.56] spans=False plate_term=True
+  R-BOUNDARY x=81.796 — clusters from 1%% inboard OUTWARD (datum interval 56.94..76.92 = 19.98%):
+    x=80.944 Δ=-0.852% frags=2 y[56.86,57.64] covered=0.53% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.26]
+    x=81.175 Δ=-0.621% frags=2 y[57.09,57.90] covered=0.57% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24]
+    x=81.401 Δ=-0.396% frags=3 y[56.84,57.90] covered=0.58% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.24, 0.24]
+    x=81.458 Δ=-0.338% frags=1 y[58.40,77.72] covered=19.32% (97% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=81.626 Δ=-0.170% frags=2 y[57.12,57.90] covered=0.51% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.27]
+    x=81.810 Δ=+0.014% frags=3 y[56.86,83.08] covered=25.31% (127% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.26, 0.66]
+    POST-MERGE x=80.858 Δ=-0.939% y[47.94,48.13] spans=False plate_term=False
+    POST-MERGE x=80.858 Δ=-0.939% y[77.72,82.93] spans=False plate_term=True
+    POST-MERGE x=80.944 Δ=-0.852% y[48.13,57.64] spans=False plate_term=False
+    POST-MERGE x=81.035 Δ=-0.762% y[77.72,83.19] spans=False plate_term=True
+    POST-MERGE x=81.175 Δ=-0.621% y[48.21,57.90] spans=False plate_term=False
+    POST-MERGE x=81.287 Δ=-0.510% y[77.98,82.93] spans=False plate_term=True
+    POST-MERGE x=81.401 Δ=-0.396% y[48.13,57.90] spans=False plate_term=False
+    POST-MERGE x=81.458 Δ=-0.338% y[58.40,77.72] spans=False plate_term=True
+    POST-MERGE x=81.796 Δ=+0.000% y[48.13,90.05] spans=True plate_term=False
+    POST-MERGE x=82.097 Δ=+0.300% y[48.21,57.90] spans=False plate_term=False
+    POST-MERGE x=82.167 Δ=+0.371% y[68.07,68.11] spans=False plate_term=True
+    POST-MERGE x=82.167 Δ=+0.371% y[73.92,75.31] spans=False plate_term=True
+    POST-MERGE x=82.335 Δ=+0.538% y[48.13,58.96] spans=False plate_term=False
+    POST-MERGE x=82.335 Δ=+0.538% y[64.72,68.11] spans=False plate_term=True
+    POST-MERGE x=82.335 Δ=+0.538% y[74.86,74.90] spans=False plate_term=True
+    POST-MERGE x=82.335 Δ=+0.538% y[77.76,78.86] spans=False plate_term=True
+    POST-MERGE x=82.507 Δ=+0.711% y[74.86,74.90] spans=False plate_term=True
+    POST-MERGE x=82.576 Δ=+0.779% y[73.92,75.31] spans=False plate_term=True
+    POST-MERGE x=82.670 Δ=+0.874% y[70.36,70.68] spans=False plate_term=True
+    POST-MERGE x=82.748 Δ=+0.952% y[70.36,77.72] spans=False plate_term=True
+    POST-MERGE x=82.748 Δ=+0.952% y[82.08,82.64] spans=False plate_term=True
+    POST-MERGE x=83.020 Δ=+1.224% y[70.36,78.46] spans=False plate_term=True
+    POST-MERGE x=83.285 Δ=+1.489% y[73.52,74.42] spans=False plate_term=True
+    POST-MERGE x=83.285 Δ=+1.489% y[82.08,83.04] spans=False plate_term=True
+  THEORETICAL (outermost collinear fragment, no joining): L=31.007 (frags=1 covered=2.05%) R=89.335 (frags=1 covered=1.00%)
+
+==== BONI left p2 tier=datum_rectangle ft=None contested=None ====
+  SCALE drawn_gap dy=18.800 y-% (scale_y=[13.9, 32.7])
+    no real gap ft on this face — quotient not derivable (drawn gap % reported above)
+  LINEWORK status=INDETERMINATE reason=all spanning boundaries sit at one corner x_span=None wall_corners=None body=None fence=(4.51, 47.129999999999995)
+  CURRENT boundaries: L=11.515 R=12.007
+  L-BOUNDARY x=11.515 — clusters from 1%% inboard OUTWARD (datum interval 13.26..33.37 = 20.11%):
+    x=11.970 Δ=-0.455% frags=2 y[14.20,39.52] covered=25.26% (126% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.06]
+    x=11.735 Δ=-0.220% frags=1 y[14.30,14.83] covered=0.53% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=11.573 Δ=-0.057% frags=2 y[14.83,34.16] covered=19.13% (95% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.2]
+    x=11.315 Δ=+0.201% frags=2 y[26.26,27.91] covered=0.85% (4% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.8]
+    x=11.158 Δ=+0.357% frags=2 y[14.87,27.39] covered=0.75% (4% of interval) continuous=False reaches_both=False plate_term=True gaps=[11.77]
+    x=10.856 Δ=+0.659% frags=5 y[14.31,30.99] covered=3.64% (18% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.47, 2.83, 0.61, 9.13]
+    POST-MERGE x=12.312 Δ=-0.797% y[34.34,39.24] spans=False plate_term=True
+    POST-MERGE x=12.007 Δ=-0.492% y[14.20,39.52] spans=True plate_term=True
+    POST-MERGE x=11.515 Δ=-0.000% y[7.96,10.01] spans=False plate_term=False
+    POST-MERGE x=11.515 Δ=-0.000% y[14.30,44.40] spans=True plate_term=True
+    POST-MERGE x=10.856 Δ=+0.659% y[14.31,15.58] spans=False plate_term=True
+    POST-MERGE x=10.856 Δ=+0.659% y[18.40,19.77] spans=False plate_term=True
+    POST-MERGE x=10.856 Δ=+0.659% y[28.91,30.99] spans=False plate_term=True
+    POST-MERGE x=10.856 Δ=+0.659% y[41.62,41.70] spans=False plate_term=True
+    POST-MERGE x=10.663 Δ=+0.853% y[14.44,14.74] spans=False plate_term=True
+    POST-MERGE x=10.663 Δ=+0.853% y[18.53,18.83] spans=False plate_term=True
+    POST-MERGE x=10.663 Δ=+0.853% y[38.71,39.64] spans=False plate_term=True
+    POST-MERGE x=10.533 Δ=+0.983% y[40.98,41.54] spans=False plate_term=True
+    POST-MERGE x=10.314 Δ=+1.201% y[29.20,29.23] spans=False plate_term=True
+    POST-MERGE x=10.241 Δ=+1.274% y[29.20,29.23] spans=False plate_term=True
+    POST-MERGE x=10.137 Δ=+1.379% y[29.85,30.11] spans=False plate_term=True
+  R-BOUNDARY x=12.007 — clusters from 1%% inboard OUTWARD (datum interval 13.26..33.37 = 20.11%):
+    x=11.158 Δ=-0.849% frags=2 y[14.87,27.39] covered=0.75% (4% of interval) continuous=False reaches_both=False plate_term=True gaps=[11.77]
+    x=11.315 Δ=-0.693% frags=2 y[26.26,27.91] covered=0.85% (4% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.8]
+    x=11.573 Δ=-0.435% frags=2 y[14.83,34.16] covered=19.13% (95% of interval) continuous=False reaches_both=False plate_term=True gaps=[0.2]
+    x=11.735 Δ=-0.272% frags=1 y[14.30,14.83] covered=0.53% (3% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    x=11.970 Δ=-0.037% frags=2 y[14.20,39.52] covered=25.26% (126% of interval) continuous=False reaches_both=True plate_term=True gaps=[0.06]
+    x=15.121 Δ=+3.113% frags=1 y[15.45,19.05] covered=3.60% (18% of interval) continuous=False reaches_both=False plate_term=True gaps=[]
+    POST-MERGE x=11.515 Δ=-0.492% y[7.96,10.01] spans=False plate_term=False
+    POST-MERGE x=11.515 Δ=-0.492% y[14.30,44.40] spans=True plate_term=True
+    POST-MERGE x=12.007 Δ=+0.000% y[14.20,39.52] spans=True plate_term=True
+    POST-MERGE x=12.312 Δ=+0.305% y[34.34,39.24] spans=False plate_term=True
+    POST-MERGE x=12.581 Δ=+0.574% y[34.16,35.90] spans=False plate_term=True
+    POST-MERGE x=12.581 Δ=+0.574% y[37.72,39.02] spans=False plate_term=True
+    POST-MERGE x=12.713 Δ=+0.705% y[34.16,39.37] spans=False plate_term=True
+    POST-MERGE x=12.833 Δ=+0.826% y[34.34,39.14] spans=False plate_term=True
+    POST-MERGE x=12.907 Δ=+0.900% y[42.31,44.23] spans=False plate_term=True
+    POST-MERGE x=13.102 Δ=+1.095% y[34.16,39.02] spans=False plate_term=True
+    POST-MERGE x=13.190 Δ=+1.183% y[36.27,36.83] spans=False plate_term=True
+    POST-MERGE x=13.485 Δ=+1.478% y[34.16,39.04] spans=False plate_term=True
+  THEORETICAL (outermost collinear fragment, no joining): L=4.635 (frags=2 covered=1.19%) R=46.947 (frags=1 covered=9.63%)
+
+==== BONI right p2 tier=band_rectangle ft=None contested=None ====
+  SCALE: no scale_y on this face
+  TRACE: datum pair not located — no linework
