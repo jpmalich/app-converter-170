@@ -183,7 +183,9 @@ def test_proposals_draw_the_datum_box_not_the_band(sess, rig):
     expect = _face_spans_from_run(rig["src"])
     id_to_face = {"front": "front", "back": "rear",
                   "left": "left", "right": "right"}
-    derived = [p for p in proposed if p.get("tier") == "derived_chain"]
+    derived = [p for p in proposed if p.get("tier") == "derived_chain"
+               # SEND-94: chase surfaces ride beside the body zones
+               and not p["face_id"].startswith("chase:")]
     assert len(derived) == len(expect) > 0
     for p in derived:
         face = id_to_face[p["face_id"]]
