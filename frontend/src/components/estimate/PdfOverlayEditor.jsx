@@ -80,7 +80,7 @@ const TapeCard = ({ card, estId }) => {
       <div className="text-[10px] mt-0.5">{card.governing_alternative}</div>
       {entered && (
         <div className="text-[10px] mt-1 font-bold" data-testid={`tape-entered-${card.face}`}>
-          TAPED: {entered.echo} ({entered.ref_from} → {entered.ref_to}){entered.plane_matches_band ? " — GOVERNS" : " — recorded on its own plane (bands differ)"}
+          TAPED: {entered.echo} ({entered.ref_from} → {entered.ref_to}){entered.plane_matches_band ? " — GOVERNS" : entered.resolves === "height+scale" ? " — GOVERNS height + scale (taped over the drawn TOF→plate gap, this face only)" : entered.resolves === "height" ? " — GOVERNS the height; scale NOT calibrated — width blocks stand" : " — recorded on its own plane (bands differ)"}
         </div>
       )}
       <div className="flex gap-1 mt-1 items-center flex-wrap">

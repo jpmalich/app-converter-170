@@ -1114,6 +1114,35 @@ _TAPE_REFS = {
     "top_of_plate_line": "the TOP OF PLATE line",
 }
 _TAPE_BAND_REFS = {"first_floor_line", "top_of_plate_line"}
+# SEND-104 — the reachable plane the card asks for.
+_TAPE_REACHABLE_REFS = {"top_of_foundation", "bottom_of_soffit"}
+
+
+def _reachable_scale(cand: dict):
+    """SEND-104 item 1 — a reachable-plane tape (top of foundation →
+    bottom of soffit) calibrates a face's scale ONLY when both endpoint
+    datums are drawn on that face: the taped feet need a DRAWN gap to
+    divide into. No soffit line is drawn on these faces (verified both
+    houses — SEND-104 item 2): the topmost TOP OF PLATE closure is the
+    upper datum, the difference recorded, never decided here.
+    Returns (plate_y_pct, tof_y_pct, why_not)."""
+    ys = {"TOP_OF_PLATE": [], "TOP_OF_FOUNDATION": []}
+    for d in (cand or {}).get("datum_lines") or []:
+        name, _, y = str(d).partition("@")
+        if name in ys:
+            try:
+                ys[name].append(float(y))
+            except ValueError:
+                pass
+    missing = [lbl for lbl, key in (("TOP OF PLATE", "TOP_OF_PLATE"),
+                                    ("TOP OF FOUNDATION",
+                                     "TOP_OF_FOUNDATION"))
+               if not ys[key]]
+    if missing:
+        return None, None, (
+            " and ".join(missing) + " not located on this drawing — "
+            "there is no drawn gap to divide the taped feet into")
+    return min(ys["TOP_OF_PLATE"]), max(ys["TOP_OF_FOUNDATION"]), None
 
 
 def parse_feet_inches(text: str):
@@ -1203,6 +1232,7 @@ async def tape_enter(est_id: str, body: TapeIn,
         raise HTTPException(status_code=422,
                             detail=f"REJECTED, never guessed: {echo}")
     prior = None
+    face_result = None
     try:
         ot, _run = await _latest_ocr(est_id)
         if ot:
@@ -1210,8 +1240,8 @@ async def tape_enter(est_id: str, body: TapeIn,
             rev = {"front": "front", "back": "rear",
                    "left": "left", "right": "right"}
             faces = derive_face_heights(ot)
-            spec = _best_ladder_spec(
-                faces.get(rev[body.face_id]) or {})
+            face_result = faces.get(rev[body.face_id]) or {}
+            spec = _best_ladder_spec(face_result)
             if spec:
                 prior = {"tier": spec.get("tier"), "ft": spec.get("ft"),
                          "contested_rails": spec.get("contested_rails"),
@@ -1219,11 +1249,25 @@ async def tape_enter(est_id: str, body: TapeIn,
     except Exception:
         prior = None
     plane_matches = {body.ref_from, body.ref_to} == _TAPE_BAND_REFS
+    # SEND-104 — what this tape resolves on THIS face, recorded on the
+    # tape itself: band / height+scale / height / recorded.
+    _resolves, _why_not_104 = "recorded", None
+    if plane_matches:
+        _resolves = "band"
+    elif {body.ref_from, body.ref_to} == _TAPE_REACHABLE_REFS:
+        _why_not_104 = "no drawing geometry evaluated for this face"
+        if face_result:
+            _, _, _why_not_104 = _reachable_scale(
+                next((c for c in (face_result.get("candidates")
+                                  or [face_result])
+                      if c.get("datum_lines")), face_result))
+        _resolves = "height+scale" if _why_not_104 is None else "height"
     doc = {"id": str(uuid.uuid4()), "estimate_id": est_id,
            "face_id": body.face_id, "kind": "taped_wall_height_ft",
            "value_ft": val, "raw_text": body.text, "echo": echo,
            "ref_from": body.ref_from, "ref_to": body.ref_to,
            "plane_matches_band": plane_matches,
+           "resolves": _resolves,
            "prior_read": prior,        # the contestants, KEPT
            "basis": (f"TAPED HUMAN MEASUREMENT — {echo}, taped "
                      f"{_TAPE_REFS[body.ref_from]} → "
@@ -1246,6 +1290,28 @@ async def tape_enter(est_id: str, body: TapeIn,
                    f"{' vs '.join(prior['contested_rails'])}"
                    if prior.get("contested_rails") else ""))
                if prior else "no prior read stood on this face"))
+    elif {body.ref_from, body.ref_to} == _TAPE_REACHABLE_REFS:
+        # SEND-104 — the reachable plane resolves the SIDED height
+        # directly; the scale only where both endpoint datums are drawn.
+        if _why_not_104 is None:
+            statement = (
+                "the tape GOVERNS this face on the next propose — the "
+                "SIDED HEIGHT directly (no conversion into DP-1's band) "
+                "AND this face's SCALE, calibrated over the drawn "
+                "TOF→plate gap (both endpoint datums are drawn on this "
+                "face); "
+                + ((f"prior read kept in the record: {prior['tier']} "
+                    f"{prior['ft']} ft"
+                    + (f", contested rails "
+                       f"{' vs '.join(prior['contested_rails'])}"
+                       if prior.get("contested_rails") else ""))
+                   if prior else "no prior read stood on this face"))
+        else:
+            statement = (
+                "the tape GOVERNS the sided HEIGHT and NOT the SCALE — "
+                + _why_not_104 + "; width-dependent quantities stay "
+                "under the prior scale and any contest stands (a width "
+                "block never lifts on a height tape)")
     else:
         statement = (
             f"taped {_TAPE_REFS[body.ref_from]} → "
@@ -1531,38 +1597,115 @@ async def propose_zones(
                                   "from")}
             continue
         tape = taped_by_face.get(face_to_id[face])
-        if tape and tape.get("plane_matches_band"):
+        _reachable = (bool(tape) and {tape.get("ref_from"),
+                                      tape.get("ref_to")}
+                      == _TAPE_REACHABLE_REFS)
+        if tape and (tape.get("plane_matches_band") or _reachable):
             _prev = {"tier": spec["tier"], "ft": spec.get("ft"),
                      "contested_rails": spec.get("contested_rails"),
                      "basis": spec.get("basis")}
-            spec["ft"] = float(tape["value_ft"])
-            spec["tier"] = "taped_human"
-            spec["contested_rails"] = None
-            spec["basis"] = (
-                "TAPED HUMAN MEASUREMENT — " + str(tape.get("echo"))
-                + ", taped the FIRST FLOOR line → the TOP OF PLATE "
-                "line; GOVERNS (top of the evidence ladder), never "
-                "absorbed into the read. Kept in the record: "
-                + (str(_prev["basis"]) if _prev.get("basis")
-                   else "no prior read"))
-            spec["taped_over"] = _prev
-            _stmt = "the tape governs this face"
-            if (_prev.get("ft") is not None
-                    and _prev["ft"] != spec["ft"]):
-                _stmt += (f"; it contradicts the prior {_prev['tier']} "
-                          f"read of {_prev['ft']} ft — the tape "
-                          "governs, the read is kept, nothing moved "
-                          "silently")
-            if _prev.get("contested_rails"):
-                _stmt += ("; the contest ("
-                          + " vs ".join(_prev["contested_rails"])
-                          + ") is settled by the tape — both "
-                          "contestants kept in the record; if the tape "
-                          "agrees with NEITHER printed figure it still "
-                          "governs and the disagreement stays visible "
-                          "here")
-            tapes_report[face_to_id[face]] = {
-                "tape": tape, "governs": True, "statement": _stmt}
+            _why_not = None
+            if _reachable:
+                _cand104 = next((c for c in (r.get("candidates") or [r])
+                                 if c.get("page") == spec["page"]), r)
+                _plate_y, _tof_y, _why_not = _reachable_scale(_cand104)
+            if _why_not is not None:
+                # SEND-104 item 1 — HEIGHT ONLY. A width block never
+                # lifts on a height tape: ft and scale stay under the
+                # prior chain, the contest stands, the taped height is
+                # recorded and stated.
+                spec["taped_height_ft"] = float(tape["value_ft"])
+                spec["height_source"] = (
+                    "TAPED (top of foundation → bottom of soffit) — "
+                    "governs the sided height")
+                spec["scale_source"] = "DP-1 FALLBACK — " + _why_not
+                spec["basis"] += (
+                    "; TAPED HUMAN MEASUREMENT — " + str(tape.get("echo"))
+                    + " taped the top of the foundation → the bottom of "
+                    "the soffit: governs the SIDED HEIGHT; the scale is "
+                    "NOT calibrated (" + _why_not + ") — width-dependent "
+                    "quantities stay under the prior scale and any "
+                    "contest stands")
+                tapes_report[face_to_id[face]] = {
+                    "tape": tape, "governs": True,
+                    "statement": (
+                        "the tape governs the HEIGHT and NOT the SCALE "
+                        "— " + _why_not + "; width-dependent quantities "
+                        "stay "
+                        + ("CONTESTED"
+                           if _prev.get("contested_rails")
+                           else "under the prior scale")
+                        + " (a width block never lifts on a height "
+                        "tape)")}
+            else:
+                spec["ft"] = float(tape["value_ft"])
+                spec["tier"] = "taped_human"
+                spec["contested_rails"] = None
+                if _reachable:
+                    # SEND-104 — sided height directly + taped scale
+                    # over the drawn TOF→plate gap. THIS face alone,
+                    # never another (Ruling AAA, item 3).
+                    spec["scale_y"] = [_plate_y / 100.0, _tof_y / 100.0]
+                    spec["y"] = [_plate_y / 100.0, _tof_y / 100.0]
+                    spec["height_source"] = (
+                        "TAPED (top of foundation → bottom of soffit) — "
+                        "the SIDED height directly, no conversion into "
+                        "DP-1's band")
+                    spec["scale_source"] = (
+                        "TAPED — calibrated over this face's drawn "
+                        f"TOF→plate gap (plate y {_plate_y}%, TOF y "
+                        f"{_tof_y}%); no soffit line is drawn on this "
+                        "face — the TOP OF PLATE closure is the upper "
+                        "datum, difference recorded, not decided "
+                        "(SEND-104 item 2)")
+                    spec["basis"] = (
+                        "TAPED HUMAN MEASUREMENT — "
+                        + str(tape.get("echo"))
+                        + ", taped the top of the foundation → the "
+                        "bottom of the soffit; GOVERNS the sided height "
+                        "directly (no conversion into DP-1's band) and "
+                        "CALIBRATES this face's scale over the drawn "
+                        "TOF→plate gap — this face alone, never another "
+                        "(Ruling AAA). Kept in the record: "
+                        + (str(_prev["basis"]) if _prev.get("basis")
+                           else "no prior read"))
+                else:
+                    spec["height_source"] = (
+                        "TAPED (FIRST FLOOR → TOP OF PLATE) — the "
+                        "derivation band itself")
+                    spec["scale_source"] = (
+                        "TAPED — the band tape recalibrates this face's "
+                        "FIRST FLOOR → TOP OF PLATE gap")
+                    spec["basis"] = (
+                        "TAPED HUMAN MEASUREMENT — "
+                        + str(tape.get("echo"))
+                        + ", taped the FIRST FLOOR line → the TOP OF "
+                        "PLATE line; GOVERNS (top of the evidence "
+                        "ladder), never absorbed into the read. Kept in "
+                        "the record: "
+                        + (str(_prev["basis"]) if _prev.get("basis")
+                           else "no prior read"))
+                spec["taped_over"] = _prev
+                _stmt = "the tape governs this face"
+                if _reachable:
+                    _stmt += (" — height AND scale (both endpoint "
+                              "datums are drawn here)")
+                if (_prev.get("ft") is not None
+                        and _prev["ft"] != spec["ft"]):
+                    _stmt += (f"; it contradicts the prior "
+                              f"{_prev['tier']} read of {_prev['ft']} "
+                              "ft — the tape governs, the read is "
+                              "kept, nothing moved silently")
+                if _prev.get("contested_rails"):
+                    _stmt += ("; the contest ("
+                              + " vs ".join(_prev["contested_rails"])
+                              + ") is settled by the tape — both "
+                              "contestants kept in the record; if the "
+                              "tape agrees with NEITHER printed figure "
+                              "it still governs and the disagreement "
+                              "stays visible here")
+                tapes_report[face_to_id[face]] = {
+                    "tape": tape, "governs": True, "statement": _stmt}
         elif tape:
             tapes_report[face_to_id[face]] = {
                 "tape": tape, "governs": False,
@@ -1573,6 +1716,13 @@ async def propose_zones(
                     "own plane; the derivation's band is FIRST FLOOR → "
                     "TOP OF PLATE — the bands DIFFER and are never "
                     "assumed equal (no silent conversion)")}
+        # SEND-104 — the face STATES which band and which scale it is
+        # using: TAPED, or DP-1 FALLBACK. Never both, never silently.
+        spec.setdefault("height_source",
+                        "DP-1 FALLBACK — this face's own FIRST FLOOR → "
+                        "TOP OF PLATE chain")
+        spec.setdefault("scale_source",
+                        "DP-1 FALLBACK — this face's own chain scale")
         # SEND-69 — the LINE-WORK read (wall outline only). When it
         # resolves, the drawn outline REPLACES the datum-span geometry
         # and the basis says so; when it cannot, the datum span stands
@@ -1775,6 +1925,12 @@ async def propose_zones(
             "geometry_tier": geometry_tier,
             "proposed_from": {"run_id": (run or {}).get("run_id"),
                               "height_ft": spec.get("ft"),
+                              # SEND-104: the stated band and scale —
+                              # TAPED or DP-1 FALLBACK, never silent.
+                              "height_source": spec.get("height_source"),
+                              "scale_source": spec.get("scale_source"),
+                              "taped_height_ft":
+                                  spec.get("taped_height_ft"),
                               # SEND-90: the XX verdict rides every
                               # proposal (seat + status, never a value).
                               "attribution": {
@@ -2297,9 +2453,10 @@ async def height_cards(est_id: str,
                       "tape_points": {
                           "from": "top_of_foundation",
                           "to": "bottom_of_soffit",
-                          "label": ("put the tape on the top of the "
-                                    "foundation, read at the bottom of "
-                                    "the soffit")},
+                          # SEND-104 — wording exactly as ruled.
+                          "label": ("Measure from the top of the "
+                                    "foundation to the bottom of the "
+                                    "soffit.")},
                       "band": ("FIRST FLOOR → TOP OF PLATE (the "
                                "derivation's band — not reachable from "
                                "outside the house)"),
