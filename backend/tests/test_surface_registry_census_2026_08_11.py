@@ -77,6 +77,11 @@ BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
     ("components/estimate/AIMeasureButton.jsx", "if (totalLocs === 0 || photoUrls.length === 0) return null;"),
     ("components/estimate/BulkApplyConfirm.jsx", "if (!open) return null;"),
     ("components/estimate/CatalogSyncBanner.jsx", "if (!isDraft || changes.length === 0 || dismissed) return null;"),
+    # SEND-109 — the tape-entry nudge is a REFUSAL COACH, not a data
+    # surface: when no line refuses there is nothing to coach and nothing
+    # is hidden (the rows themselves stay on the estimate either way).
+    # Rendering a chip for "no refusals" would be a chip about absence.
+    ("components/estimate/TapeNudgeCard.jsx", "if (!refused.length) return null;"),
     # SEND-11 pro-quotes reply 3 (2026-08-13) — the P0 chips landed:
     #   CompositionTrace.jsx, FinalJobSurface.jsx, OpeningsReviewCard.jsx,
     #   PhotoFillinGateBanner.jsx, SidingProfileChip.jsx

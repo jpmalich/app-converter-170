@@ -113,7 +113,14 @@ export default function useEstimate(id) {
                 unit: it.unit,
                 mat: saved && saved.mat != null ? saved.mat : it.mat,
                 lab: saved && saved.lab != null ? saved.lab : it.lab,
-                qty: saved ? saved.qty || 0 : 0,
+                // RULING V REFUSALS RIDE THE MERGE (SEND-109): a refused
+                // row keeps qty null — `saved.qty || 0` coerced it to 0
+                // and the autosave wrote the loss back (SILENT-STRIP
+                // CLASS, MERGE LAYER — sealed 2026-07-31, recurred here).
+                qty: saved ? (saved.qty != null ? saved.qty : (saved.not_derivable ? null : 0)) : 0,
+                not_derivable: saved && saved.not_derivable != null ? saved.not_derivable : null,
+                not_derivable_reason: (saved && saved.not_derivable_reason) || null,
+                not_derivable_code: (saved && saved.not_derivable_code) || null,
                 // Round-trip provenance (ruled 2026-07-24): raw_qty feeds
                 // the waste-recompute machinery; qty_src="human" marks a
                 // hand-typed quantity that survives profile rebuilds.

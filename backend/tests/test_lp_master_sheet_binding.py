@@ -112,21 +112,29 @@ def test_dangling_tier_pointer_falls_back_never_empty(loop, patched_db):
 def test_company_overrides_merge_into_sheet(loop, patched_db):
     """The sheet the contractor SEES is tier + their overrides — the
     binding index must speak the same numbers as the catalog surface.
-    (V3 zeroing healed the machine-era lab residue, so the mechanism is
-    exercised with a temporary override, cleaned up after.)"""
+    SEND-109 (cleanliness): the override lands on a COPY of the company +
+    catalog, never the real company's catalog — deleted after."""
     key = 'Seamless Gutter::Gutter 6"'
 
     async def run():
-        await patched_db.catalogs.update_one(
-            {"company_id": CASILE_COMPANY},
-            {"$set": {f"overrides.{key}": {"lab": 1.0}}})
+        src_co = await patched_db.companies.find_one({"id": CASILE_COMPANY}, {"_id": 0})
+        src_cat = await patched_db.catalogs.find_one({"company_id": CASILE_COMPANY}, {"_id": 0})
+        assert src_co and src_cat, "copy sources must exist"
+        cid = f"zz-test-override-copy-{uuid.uuid4().hex[:8]}"
+        co = dict(src_co)
+        co.update({"id": cid, "name": "ZZ override-copy test co", "test_artifact": True,
+                   "invite_code": f"ZZ{uuid.uuid4().hex[:6].upper()}"})
+        cat = dict(src_cat)
+        cat.update({"company_id": cid, "test_artifact": True})
+        cat.setdefault("overrides", {})[key] = {"lab": 1.0}
+        await patched_db.companies.insert_one(co)
+        await patched_db.catalogs.insert_one(cat)
         try:
             from routes.lp_package_routes import _load_tier_sheet_for
-            return await _load_tier_sheet_for({"company_id": CASILE_COMPANY})
+            return await _load_tier_sheet_for({"company_id": cid})
         finally:
-            await patched_db.catalogs.update_one(
-                {"company_id": CASILE_COMPANY},
-                {"$unset": {f"overrides.{key}": ""}})
+            await patched_db.companies.delete_one({"id": cid})
+            await patched_db.catalogs.delete_one({"company_id": cid})
 
     idx = loop.run_until_complete(run())
     assert idx['gutter 6"']["lab"] == 1.0, idx.get('gutter 6"')

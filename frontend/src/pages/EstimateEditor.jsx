@@ -32,6 +32,7 @@ import { VISIBLE_TAB_IDS, ALL_TAB_DEFS, WINDOWS_KIND_TAB_IDS, LP_KIND_TAB_IDS, S
 import QuoteModal from "@/components/QuoteModal";
 import TabPickerModal from "@/components/TabPickerModal";
 import LpMaterialListPanel from "@/components/estimate/LpMaterialListPanel";
+import TapeNudgeCard from "@/components/estimate/TapeNudgeCard";
 import SidingProfileChip from "@/components/estimate/SidingProfileChip";
 import PdfOverlayEditor from "@/components/estimate/PdfOverlayEditor";
 import PerElevationBreakdownCard from "@/components/estimate/PerElevationBreakdownCard";
@@ -456,7 +457,10 @@ export default function EstimateEditor() {
         ) : visibleSections.length === 0 ? (
           <>
             {isLpKind && activeTab === "lp_smart" && (
-              <LpMaterialListPanel est={est} update={update} onPackage={setLpPkg} />
+              <>
+                <TapeNudgeCard est={est} onRederived={reload} />
+                <LpMaterialListPanel est={est} update={update} onPackage={setLpPkg} />
+              </>
             )}
             <div
               className="card p-8 text-center"
@@ -472,7 +476,10 @@ export default function EstimateEditor() {
         ) : (
           <>
             {isLpKind && activeTab === "lp_smart" && (
-              <LpMaterialListPanel est={est} update={update} onPackage={setLpPkg} />
+              <>
+                <TapeNudgeCard est={est} onRederived={reload} />
+                <LpMaterialListPanel est={est} update={update} onPackage={setLpPkg} />
+              </>
             )}
             {/* PROFILE SELECTION WORKS ON EVERY DOOR (ruled 2026-08-09):
                 never gated behind a measurement run. */}
