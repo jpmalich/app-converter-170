@@ -168,3 +168,24 @@ def test_live_tape_then_reconfirm_prices_the_chase(sess, rig):
     assert "Basis:" in row["note"]
     rd = sess.get(f"{API}/estimates/{eid}/readiness", timeout=60).json()
     assert not any(i.get("kind") == "chase_refused" for i in rd["items"])
+
+
+def test_live_client_save_cannot_strip_chase_rows(sess, rig):
+    """SEND-100 finding 2: the browser's catalog merge cannot carry
+    chase rows, so every autosave stripped them from the estimate. The
+    estimate PUT now re-runs the overlay law (SEND-79: the law survives
+    by construction) — a lines write WITHOUT the chase rows still comes
+    back with them, rebuilt from the zones."""
+    eid = rig["eid"]
+    est = sess.get(f"{API}/estimates/{eid}", timeout=60).json()
+    stripped = [ln for ln in est["lines"]
+                if not ln.get("overlay_chase_line")]
+    assert len(stripped) < len(est["lines"])   # rows existed to strip
+    r = sess.put(f"{API}/estimates/{eid}",
+                 json={"lines": stripped}, timeout=120)
+    assert r.status_code == 200, r.text
+    after = sess.get(f"{API}/estimates/{eid}", timeout=60).json()
+    rows = [ln for ln in after["lines"] if ln.get("overlay_chase_line")]
+    assert rows, "chase rows must be rebuilt from the zones on save"
+    rear = next(ln for ln in rows if ln["name"] == "Chimney Chase — rear")
+    assert rear["qty"] is not None and "Basis:" in rear["note"]

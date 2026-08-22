@@ -33,6 +33,19 @@ The SEND-96 pins had exercised `apply_overlay_to_takeoff` as a pure function
 with `chase:*` ids passed directly — the laundering happened one step earlier,
 on the write.
 
+**A SECOND BUG, caught by the browser pass (SEND-100)**: the browser's
+catalog merge rebuilds `est.lines` from the catalog on load — non-catalog
+chase rows vanished from the client, and the next save (autosave fires every
+2s of editing; the Customer Quote button saves first) wrote the loss back to
+the server: **the chase rows and the Ruling L block were being silently
+deleted by any browser session that saved.** This is the registered
+SILENT-STRIP CLASS, third member. Fixed by construction, per SEND-79's own
+sealed principle: the estimate PUT/PATCH now re-run the overlay law over
+every lines write — chase rows rebuild from the zones, never from the
+client. The frontend displays them and deliberately never sends them.
+Pinned: `test_live_client_save_cannot_strip_chase_rows` (a lines write with
+the chase rows stripped comes back with them rebuilt).
+
 ---
 
 ## ITEM 1 — LETRICK'S QUOTE AFTER A TAPE IS ENTERED

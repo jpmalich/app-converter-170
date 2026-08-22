@@ -156,6 +156,15 @@ export default function useEstimate(id) {
           });
         });
 
+        // SEND-100 — overlay CHASE rows are derivation-owned quote rows
+        // (SEND-96), not catalog items: the catalog merge above cannot
+        // re-materialize them, so they ride through verbatim for display
+        // (lines table, quote doc, INCOMPLETE banner). They are NEVER
+        // sent back on save — the server rebuilds them from the zones.
+        (e.data.lines || []).forEach((l) => {
+          if (l.overlay_chase_line) merged.push({ ...l, tab: inferTab(l) });
+        });
+
         // Backfill tab on misc rows too — legacy misc rows go to vinyl.
         const backfillMisc = (rows) =>
           (rows || []).map((m) => ({
@@ -473,6 +482,13 @@ export default function useEstimate(id) {
         // zero prints at 0 with its note — a vanishing line is the exact
         // Hover behaviour this product exists to correct. Only bare
         // note-less catalog rows still drop (they re-materialize).
+        // SEND-100: overlay CHASE rows never travel client→server — the
+        // server re-runs the overlay law on every lines write and
+        // rebuilds them from the zones (a client copy is one refactor
+        // away from being stripped; a re-run law cannot lose what it
+        // recomputes). A refused chase row also carries qty null, which
+        // must never be laundered into a 0.
+        .filter((l) => !l.overlay_chase_line)
         .filter((l) => (l.qty || 0) > 0 || l.qty_src === "human"
           || (l.contractor_note || "").trim()
           || (l.note || "").trim())

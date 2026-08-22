@@ -438,6 +438,14 @@ async def update_estimate(est_id: str, body: EstimateIn, user: dict = Depends(ge
     # full-payload autosave replayed kind="siding" onto the healed
     # lp_smart estimate): no update path may change kind post-create.
     update.pop("kind", None)
+    # SEND-100 — THE LAW SURVIVES BY CONSTRUCTION (SEND-79) applies to
+    # THIS door too: the browser's catalog merge cannot carry overlay
+    # chase rows, so every client save was silently stripping them (and
+    # the Ruling L block with them). Lines re-run the overlay law here;
+    # chase rows rebuild from the zones, never from the client.
+    if "lines" in update:
+        from routes.pdf_overlay import reapply_overlay_law
+        update["lines"] = await reapply_overlay_law(est_id, update["lines"])
     update["updated_at"] = datetime.now(timezone.utc).isoformat()
     await _append_fillin_history(est_id, user["company_id"], update, user)
     res = await db.estimates.update_one(
@@ -463,6 +471,10 @@ async def patch_estimate(est_id: str, body: dict, user: dict = Depends(get_curre
         raise HTTPException(status_code=400, detail=f"unknown fields: {sorted(unknown)}")
     validated = EstimateIn.model_validate(body).model_dump(include=set(body.keys()))
     validated.pop("kind", None)  # kind is identity — immutable post-create (ruled 2026-07-24)
+    # SEND-100: same law re-run as PUT — chase rows rebuild from zones.
+    if "lines" in validated:
+        from routes.pdf_overlay import reapply_overlay_law
+        validated["lines"] = await reapply_overlay_law(est_id, validated["lines"])
     validated["updated_at"] = datetime.now(timezone.utc).isoformat()
     await _append_fillin_history(est_id, user["company_id"], validated, user)
     res = await db.estimates.update_one(
