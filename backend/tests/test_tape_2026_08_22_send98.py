@@ -191,3 +191,30 @@ def test_live_height_cards_carry_the_job_and_the_face(sess, rig):
         assert c["tape_points"]["from"] == "top_of_foundation"
         assert c["plane_matches_band"] is False   # never assumed
         assert "GOVERNS" in c["governing_alternative"]
+
+
+def test_live_band_matched_tape_governs_an_already_resolved_face(sess, rig):
+    """SEND-98 item 1: 'where a tape CONTRADICTS AN ALREADY-RESOLVED
+    READ, IT GOVERNS AND SAYS SO.' LEFT resolved derived_chain; a
+    band-matched tape at a different figure must take the face, name
+    the contradiction, and keep the read in the record."""
+    eid = rig["eid"]
+    r = sess.post(f"{API}/estimates/{eid}/pdf-overlay/tape",
+                  json={"face_id": "left", "text": "8-0",
+                        "ref_from": "first_floor_line",
+                        "ref_to": "top_of_plate_line"}, timeout=15)
+    assert r.status_code == 200, r.text
+    assert "GOVERNS" in r.json()["statement"]
+    rp = sess.post(f"{API}/estimates/{eid}/pdf-overlay/propose",
+                   timeout=240)
+    assert rp.status_code == 200, rp.text
+    d = rp.json()
+    left = next(p for p in d["proposed"] if p["face_id"] == "left")
+    assert left["tier"] == "taped_human"
+    assert left["proposed_from"]["height_ft"] == 8.0
+    assert "TAPED HUMAN MEASUREMENT" in left["basis"]
+    assert "Kept in the record" in left["basis"]
+    t = d["tapes"]["left"]
+    assert t["governs"] is True
+    assert "contradicts the prior derived_chain read" in t["statement"]
+    assert "the tape governs, the read is kept" in t["statement"]

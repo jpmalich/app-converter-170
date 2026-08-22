@@ -642,7 +642,13 @@ def resolve_face_from_bands(bands: dict, vertices_pct: list,
 
     cy = sum(v[1] for v in vertices_pct) / len(vertices_pct) * 100.0
     c_face = _band_of(cy)
-    is_gable = face_id.startswith("gable:")
+    # SEND-100 (found in browser verification): the resolver knew
+    # "gable:" but not "chase:" — confirming a proposed chase zone
+    # stripped the prefix and laundered it into body-class math. A
+    # surface prefix SURVIVES band resolution; only the host face
+    # resolves.
+    prefix = next((p for p in ("gable:", "chase:")
+                   if face_id.startswith(p)), "")
     if c_face is None:
         cands = sorted(_BAND_FACE_TO_ID[f] for f in bands)
         return {"status": "AMBIGUOUS",
@@ -651,8 +657,7 @@ def resolve_face_from_bands(bands: dict, vertices_pct: list,
                            "it? A zone outside every drawing may have "
                            "been drawn in the title block or margin by "
                            "accident."),
-                "candidates": [("gable:" + c) if is_gable else c
-                               for c in cands]}
+                "candidates": [prefix + c for c in cands]}
     touched = {c_face} | {f for f in (_band_of(v[1] * 100.0)
                                       for v in vertices_pct) if f}
     if len(touched) > 1:
@@ -663,12 +668,11 @@ def resolve_face_from_bands(bands: dict, vertices_pct: list,
                            "drawn across two elevations is usually an "
                            "accident: fixing the shape may be the real "
                            "answer."),
-                "candidates": [("gable:" + _BAND_FACE_TO_ID[f]) if is_gable
-                               else _BAND_FACE_TO_ID[f]
+                "candidates": [prefix + _BAND_FACE_TO_ID[f]
                                for f in sorted(touched)]}
     base = _BAND_FACE_TO_ID[c_face]
-    resolved = ("gable:" + base) if is_gable else base
-    sub = face_id[len("gable:"):] if is_gable else face_id
+    resolved = prefix + base
+    sub = face_id[len(prefix):]
     return {"status": "RESOLVED", "resolved_face_id": resolved,
             "band_face": c_face, "disagrees": sub != base}
 
@@ -830,6 +834,13 @@ async def upsert_pdf_overlay(
             }
         elif existing.get("confirmed_from"):
             doc["confirmed_from"] = existing["confirmed_from"]
+        # SEND-100: confirmation upgrades AUTHORITY, not EVIDENCE — the
+        # proposal's tier/basis stay on the zone itself, so a chase on a
+        # CONTESTED face still refuses at the quote (Ruling L) and the
+        # chase row prints its real basis instead of "drawn by hand".
+        for k in ("tier", "basis", "band_note"):
+            if existing.get(k) is not None and doc.get(k) is None:
+                doc[k] = existing[k]
         # Preserve the group's original baseline across edits of an
         # existing polygon (never re-capture from a now-overridden line).
         if existing.get("derived_baseline_qty") is not None:
