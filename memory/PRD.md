@@ -8415,3 +8415,33 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - NEXT: Howard rules on — Casile's 4 refused rows (restore vs stand),
   company-write class, checklist-fold plane, inverted 423 guard,
   soffit pair (numbers say current stands). QR field sheet stays parked.
+
+## 2026-08-22 — SEND-109 (Ruling 4 predictive check; tape-entry nudge; confirmations)
+- RULINGS 1-3 EXECUTED: Casile's 4 refused rows untouched; no inverted 423
+  guard; catalog-override test moved onto a COPIED company+catalog (reminted
+  invite_code, deleted after). Run-identity fix confirmed to TRAVEL (code in
+  hover.py, ships on publish; old stamped ids still resolve).
+- RULING 4 RUN — the soffit predictive check, all 8 faces (send109_report §1):
+  DOES NOT PREDICT, 0/4 measurable faces. Sides INVERT the sign (offsets
+  predict overshoot +0.36/+0.56; actual undershoot −0.60/−0.35); front/rear
+  match sign but fall 2-4× short (+0.18 vs +0.71; +0.33 vs +0.65). Boni: all
+  4 not measurable (no wall line, no scale). VERDICT: pair does NOT move —
+  TOF→plate stands ON EVIDENCE; ~0.5 ft residual STAYS OPEN with a sharper
+  shape (front/rear OVER, sides UNDER — opposite signs by axis → x-ruler or
+  silhouette-content cause, not y-calibration). Nothing adjusted toward
+  sealed figures.
+- TAPE-ENTRY NUDGE SHIPPED: TapeNudgeCard on the estimate LP surface renders
+  when lines carry RULING_V_NO_VERIFIED_HEIGHT (section fallback for
+  pre-code rows). Echo-first (tape/parse), commit through the real tape door
+  (FIRST FLOOR→TOP OF PLATE band) then /rederive + refresh. Verified E2E on
+  a clone: 9'-2" tape → all 4 rows un-refuse, basis named (10 sticks/19
+  mitres/24 clips/11 tubes). Real Casile read-only; refusals stand.
+  testids: ruling-v-tape-nudge, tape-nudge-{face-select,input,check-btn,echo,commit-btn}.
+- SILENT-STRIP RECURRENCE FIXED (useEstimate.js merge): refusal trio
+  (not_derivable/_reason/_code) now rides the merge; refused qty stays null
+  (was coerced to 0 and written back by autosave). calc.js refused-lines
+  filter now actually receives refusals.
+- STAMP: RECORDED 2026-08-22 22:42 UTC · 2efee8e · CLEAN · 2777 passed, 9
+  skipped · census 0 PENDING_CONVERSION · ingress smoke 4 passed.
+- NEXT (Howard's order): QR FIELD SHEET (calibration pair ruled standing on
+  evidence). Then: x-ruler/silhouette residual trace (new sharper shape).

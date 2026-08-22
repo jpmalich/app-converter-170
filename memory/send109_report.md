@@ -107,5 +107,14 @@ No cross-drawing evidence · no estimate influences another · no job names
 in code · model heights hypothesis-only · EST-886440 PROTECTED · 423 on
 every derived write · purity pin holds · quantities only, no dollars.
 
-## STAMP
-(appended after the clean run)
+## STAMP (verbatim)
+```
+RECORDED: 2026-08-22 22:42 UTC · 2efee8e · CLEAN
+RESULT: 2777 passed, 9 skipped, 7 warnings in 484.56s (0:08:04)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+INGRESS SMOKE: 4 passed in 1.65s
+```
+Zero regressions, zero flakes in this run (the one red during iteration was
+the surface-registry census pin correctly catching the nudge's new
+null-return — baselined with its reason: a refusal coach's absence hides
+nothing). One pre-stamp full run + the stamped run both fully green.
