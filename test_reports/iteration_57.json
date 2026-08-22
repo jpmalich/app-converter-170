@@ -1,0 +1,23 @@
+{
+  "summary": "SEND-96 frontend smoke test on Letrick estimate 264b6230-5d0f-49ea-b07d-8d33a537f293 completed successfully. All four acceptance criteria pass: (1) height-cards section renders with only a height-card-rear (Letrick's rear is contested; front/left/right derive so no cards, exactly one card as expected) showing a TAPE instruction; (2) after selecting BACK face in the overlay side panel, pdf-overlay-chase-toggle appears with 'BIND THE CHIMNEY CHASE INSTEAD', toggles to 'BINDING: CHIMNEY CHASE OF BACK', clicking pdf-overlay-gable-toggle clears the chase toggle back to default and vice-versa (mutual exclusivity works both ways); (3) QuoteModal opens with data-testid='quote-modal' and NO quote-incomplete-banner is present (Letrick has no refused/not_derivable lines) — quote renders normally (subject, personal note, EST-655664 preview, VINYL SIDING lines); (4) overlay editor loads all page thumbnails, existing zones list renders (5 zones on page 1), no JS pageerrors on the estimate editor page. The 6 console errors observed are pre-login 401s and 4 x 500s on background resources unrelated to SEND-96 (they appear before/during auth transition and don't block any tested flow). NOTE: correct estimate route is singular '/estimate/:id' not '/estimates/:id'. Did NOT click Propose zones / Confirm / delete any zone per instructions — read-only + toggle-only verification.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PdfOverlayEditor.jsx is 1047 lines — consider splitting the side panel (face/material picker, height cards, zones list) into subcomponents for maintainability (>700 line threshold).",
+    "Non-blocking: 4x HTTP 500 errors observed on background resource loads during the estimate editor bootstrap (before quote actions). Worth investigating in a future iteration to identify which endpoint returns 500 and gate it behind auth/estimate-context; harmless for SEND-96 flows."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "test_credentials": "ADMIN_EMAIL=hhunt6677@yahoo.com, ADMIN_PASSWORD in backend/.env (Admin123!). Login button is labeled 'Sign In' (role=button).",
+  "seed_data_creation": "None — read-only verification on existing Letrick estimate.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Estimate editor route is /estimate/:id (singular). Login flow: /login → email + password → button role='Sign In'. After login, direct navigation to /estimate/{id} works without going through picker. In PdfOverlayEditor side panel, chase and gable toggles only appear AFTER a face is picked via data-testid='pdf-overlay-face-{face}' buttons (except dormer, which uses a label input instead). Chase/gable are mutually exclusive by design (setChaseSurface clears gable and vice-versa via useState updater functions). QuoteModal is reached via [data-testid='open-quote-btn'] → 'Print Customer Quote' picker → 'Continue · 2' button. The quote-incomplete-banner (SEND-96) is separate from the pre-existing quote-print-blocked-banner (readiness gate). Letrick has readiness blockers (LABOR PENDING, unpriced money-surface rows) that trigger print-blocked-banner but not the incomplete banner (no not_derivable lines).",
+  "rca of the issue": "N/A — all tests passed."
+}

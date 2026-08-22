@@ -115,6 +115,11 @@ def test_proposed_chase_zones_feed_no_row():
 def test_gate_registry_carries_the_chase_code_as_quote_blocking():
     assert GATE_TIERS["chase_contested_scale"] == "quote"
     assert "chase_contested_scale" in QUOTE_BLOCKING
+    # the emitted kind is registered too — "chase_refused" rows are
+    # quote-tier by creation (a tierless code is a lying gate)
+    from gates import KIND_TIERS, tier_for
+    assert KIND_TIERS["chase_refused"] == "quote"
+    assert tier_for("chase_contested_scale", "chase_refused") == "quote"
 
 
 def test_structural_readiness_emits_the_blocker_and_propose_refuses():
