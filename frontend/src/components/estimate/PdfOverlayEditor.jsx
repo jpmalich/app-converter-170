@@ -32,6 +32,91 @@ const MATERIAL_CLASSES = [
 ];
 const FIXED_FACES = ["front", "back", "left", "right"];
 
+const TAPE_REF_OPTIONS = [
+  ["top_of_foundation", "top of foundation"],
+  ["bottom_of_soffit", "bottom of soffit"],
+  ["grade", "grade"],
+  ["first_floor_line", "FIRST FLOOR line"],
+  ["top_of_plate_line", "TOP OF PLATE line"],
+];
+
+const TapeCard = ({ card, estId }) => {
+  const [text, setText] = useState("");
+  const [refFrom, setRefFrom] = useState(card.tape_points?.from || "top_of_foundation");
+  const [refTo, setRefTo] = useState(card.tape_points?.to || "bottom_of_soffit");
+  const [echo, setEcho] = useState(null);
+  const [entered, setEntered] = useState(card.tape_entered || null);
+  const [busy, setBusy] = useState(false);
+  const parse = async () => {
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/estimates/${estId}/pdf-overlay/tape/parse`, { text });
+      setEcho(data);
+    } catch { setEcho({ ok: false, reason: "parse failed" }); }
+    setBusy(false);
+  };
+  const commit = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/estimates/${estId}/pdf-overlay/tape`, {
+        face_id: card.face_id, text, ref_from: refFrom, ref_to: refTo,
+      });
+      setEntered(data.tape);
+      toast.success(data.statement);
+      setEcho(null); setText("");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "tape rejected");
+    }
+    setBusy(false);
+  };
+  return (
+    <div className="border border-[var(--border)] p-2 mb-1" data-testid={`height-card-${card.face}`}>
+      <div className="text-[11px] font-bold uppercase">
+        {card.estimate_number ? `${card.estimate_number} · ` : ""}{card.face}{card.page ? ` — p${card.page}` : ""}
+      </div>
+      <div className="text-[10px] text-[var(--warning-text)] mt-0.5">{card.refusal}</div>
+      <div className="text-[10px] font-bold mt-1">TAPE: {card.tape}</div>
+      <div className="text-[10px] mt-0.5">{card.governing_alternative}</div>
+      {entered && (
+        <div className="text-[10px] mt-1 font-bold" data-testid={`tape-entered-${card.face}`}>
+          TAPED: {entered.echo} ({entered.ref_from} → {entered.ref_to}){entered.plane_matches_band ? " — GOVERNS" : " — recorded on its own plane (bands differ)"}
+        </div>
+      )}
+      <div className="flex gap-1 mt-1 items-center flex-wrap">
+        <input value={text} onChange={(e) => { setText(e.target.value); setEcho(null); }}
+          placeholder={'feet-inches, e.g. 9\'-11"'}
+          className="w-28 border border-[var(--border)] px-1.5 py-1 text-[11px]"
+          data-testid={`tape-input-${card.face}`} />
+        <select value={refFrom} onChange={(e) => setRefFrom(e.target.value)} className="text-[10px] border border-[var(--border)] py-1" data-testid={`tape-ref-from-${card.face}`}>
+          {TAPE_REF_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        <span className="text-[10px]">→</span>
+        <select value={refTo} onChange={(e) => setRefTo(e.target.value)} className="text-[10px] border border-[var(--border)] py-1" data-testid={`tape-ref-to-${card.face}`}>
+          {TAPE_REF_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+        {!echo?.ok && (
+          <button type="button" onClick={parse} disabled={busy || !text.trim()}
+            className="text-[10px] uppercase font-bold px-2 py-1 border border-[var(--border)] hover:bg-[var(--surface-muted)] disabled:opacity-40"
+            data-testid={`tape-parse-${card.face}`}>Check</button>
+        )}
+      </div>
+      {echo && !echo.ok && (
+        <div className="text-[10px] text-[#991B1B] mt-1" data-testid={`tape-reject-${card.face}`}>{echo.reason}</div>
+      )}
+      {echo?.ok && (
+        <div className="text-[10px] mt-1" data-testid={`tape-echo-${card.face}`}>
+          Parsed: <b>{echo.echo}</b> — commit?
+          <button type="button" onClick={commit} disabled={busy}
+            className="ml-2 text-[10px] uppercase font-bold px-2 py-0.5 border border-[var(--border-strong)] bg-[var(--bar-bg)] text-white"
+            data-testid={`tape-commit-${card.face}`}>Commit tape</button>
+          <button type="button" onClick={() => setEcho(null)} className="ml-1 text-[10px] px-2 py-0.5 border border-[var(--border)]">Cancel</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 function classColor(mc) {
   return (MATERIAL_CLASSES.find((m) => m.value === mc) || MATERIAL_CLASSES[0]).color;
 }
@@ -790,18 +875,36 @@ function OverlayModal({ est, pages, polygons: initialPolys, renderDpi, perWall, 
               </p>
             </div>
 
-            {/* SEND-96 — HEIGHT CARDS: what to tape, per refusing face */}
+            {/* SEND-96/98 — HEIGHT CARDS: what to tape + tape entry */}
             {heightCards && heightCards.length > 0 && (
               <div className="p-3 border-b border-[var(--border)]" data-testid="height-cards">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">
-                  Height cards — what to tape ({heightCards.length} refusing face{heightCards.length > 1 ? "s" : ""})
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">
+                    Height cards — what to tape ({heightCards.length} refusing face{heightCards.length > 1 ? "s" : ""})
+                  </div>
+                  <button type="button" data-testid="height-cards-print"
+                    className="text-[10px] uppercase font-bold px-2 py-1 border border-[var(--border)] hover:bg-[var(--surface-muted)]"
+                    onClick={() => {
+                      const w = window.open("", "_blank");
+                      if (!w) return;
+                      w.document.write(
+                        "<html><head><title>Height cards</title><style>body{font-family:monospace;padding:24px}div.card{border:2px solid #000;padding:14px;margin-bottom:18px;page-break-inside:avoid}h3{margin:0 0 6px}p{margin:4px 0;font-size:13px}.write{border-bottom:2px solid #000;height:28px;margin-top:10px}</style></head><body>" +
+                        heightCards.map((c) =>
+                          `<div class="card"><h3>${c.estimate_number || c.estimate_id} — ${(c.face || "").toUpperCase()} wall</h3>` +
+                          `<p><b>Why the app could not read it:</b> ${c.refusal}</p>` +
+                          `<p><b>What to tape:</b> ${c.tape}</p>` +
+                          `<p><b>Between:</b> ${c.tape_points?.label || ""}</p>` +
+                          `<p><b>Note:</b> ${c.governing_alternative || ""}</p>` +
+                          `<p><b>Write the figure (feet-inches):</b></p><div class="write"></div></div>`
+                        ).join("") + "</body></html>");
+                      w.document.close();
+                      w.print();
+                    }}>
+                    Print cards
+                  </button>
                 </div>
                 {heightCards.map((c) => (
-                  <div key={c.face} className="border border-[var(--border)] p-2 mb-1" data-testid={`height-card-${c.face}`}>
-                    <div className="text-[11px] font-bold uppercase">{c.face}{c.page ? ` — p${c.page}` : ""}</div>
-                    <div className="text-[10px] text-[var(--warning-text)] mt-0.5">{c.refusal}</div>
-                    <div className="text-[10px] font-bold mt-1">TAPE: {c.tape}</div>
-                  </div>
+                  <TapeCard key={c.face} card={c} estId={est.id} />
                 ))}
               </div>
             )}

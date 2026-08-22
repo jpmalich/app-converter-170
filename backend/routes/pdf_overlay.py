@@ -1088,9 +1088,161 @@ def _ladder_geometry(r: dict):
     return None
 
 
-_TIER_RANK = {"derived_chain": 0, "contested_pick_larger": 1,
+_TIER_RANK = {"taped_human": -1,     # SEND-98: a taped figure GOVERNS
+              "derived_chain": 0, "contested_pick_larger": 1,
               "datum_rectangle": 2, "band_rectangle": 3,
               "gable_outline": 4, "gable_rectangle": 5}
+
+
+# ── SEND-98 — TAPE ENTRY (every face, never rear-specific) ──────────
+_TAPE_REFS = {
+    "top_of_foundation": "the top of the foundation",
+    "bottom_of_soffit": "the bottom of the soffit",
+    "grade": "grade",
+    "first_floor_line": "the FIRST FLOOR line",
+    "top_of_plate_line": "the TOP OF PLATE line",
+}
+_TAPE_BAND_REFS = {"first_floor_line", "top_of_plate_line"}
+
+
+def parse_feet_inches(text: str):
+    """SEND-98 item 4 — feet-inches entry. Accepts 9'-11", 9-11,
+    9' 11", 9'-1 1/8", plain feet (9 / 9') and decimal feet (9.92).
+    REJECTS rather than guesses; an inch component of 12 or more is
+    not feet-inches (Ruling HH). Returns (value_ft, echo) or
+    (None, reason)."""
+    import re
+    s = (text or "").strip()
+    if not s:
+        return None, "empty entry — rejected, never guessed"
+    m = re.fullmatch(
+        r"(\d{1,3})\s*(?:'|ft)?(?:\s*[- ]\s*|\s+)?"
+        r"(?:(\d{1,2})(?:\s+(\d{1,2})/(\d{1,2}))?\s*(?:\"|in)?)?",
+        s)
+    if m and (m.group(2) is not None or not re.search(r"[./]", s)):
+        ft = int(m.group(1))
+        inch = int(m.group(2)) if m.group(2) is not None else 0
+        frac = 0.0
+        if m.group(3):
+            if int(m.group(4) or 0) == 0:
+                return None, f"unreadable fraction in {text!r} — rejected"
+            frac = int(m.group(3)) / int(m.group(4))
+        if m.group(2) is not None and inch + frac >= 12:
+            return None, (f"{text!r} carries an inch component of 12 or "
+                          "more — not feet-inches (Ruling HH); rejected, "
+                          "never guessed")
+        val = round(ft + (inch + frac) / 12.0, 4)
+        if val <= 0:
+            return None, "zero height — rejected"
+        echo = (f"{ft}'-{inch}"
+                + (f" {m.group(3)}/{m.group(4)}" if m.group(3) else "")
+                + f'" = {val} ft')
+        return val, echo
+    m2 = re.fullmatch(r"(\d{1,3}(?:\.\d+)?)\s*(?:'|ft)?", s)
+    if m2:
+        val = round(float(m2.group(1)), 4)
+        if val <= 0:
+            return None, "zero height — rejected"
+        return val, f"{val} ft (decimal feet)"
+    return None, (f"could not read {text!r} as feet-inches — rejected, "
+                  "never guessed")
+
+
+class TapeParseIn(BaseModel):
+    text: str
+
+
+class TapeIn(BaseModel):
+    face_id: str
+    text: str
+    ref_from: str
+    ref_to: str
+
+
+@router.post("/estimates/{est_id}/pdf-overlay/tape/parse")
+async def tape_parse(est_id: str, body: TapeParseIn,
+                     user: dict = Depends(get_current_user)):
+    """Echo BEFORE commit — a misparsed tape is a fabricated
+    measurement wearing the best provenance in the system."""
+    await _est_or_404(est_id, user)
+    val, echo = parse_feet_inches(body.text)
+    if val is None:
+        return {"ok": False, "reason": echo}
+    return {"ok": True, "value_ft": val, "echo": echo,
+            "note": "echo only — nothing committed"}
+
+
+@router.post("/estimates/{est_id}/pdf-overlay/tape")
+async def tape_enter(est_id: str, body: TapeIn,
+                     user: dict = Depends(get_current_user)):
+    """SEND-98 — a TAPED FIGURE GOVERNS (top of the evidence ladder),
+    is clearly labelled as a taped human measurement, keeps the
+    original contestants in the record, and never assumes its
+    reference plane matches the derivation's band."""
+    await _est_or_404(est_id, user)
+    if body.face_id not in _FIXED_FACES:
+        raise HTTPException(status_code=400, detail=(
+            "tape entry is per wall face: front/back/left/right"))
+    if (body.ref_from not in _TAPE_REFS or body.ref_to not in _TAPE_REFS
+            or body.ref_from == body.ref_to):
+        raise HTTPException(status_code=400, detail=(
+            "name the two reference points the tape actually touched"))
+    val, echo = parse_feet_inches(body.text)
+    if val is None:
+        raise HTTPException(status_code=422,
+                            detail=f"REJECTED, never guessed: {echo}")
+    prior = None
+    try:
+        ot, _run = await _latest_ocr(est_id)
+        if ot:
+            from height_read import derive_face_heights
+            rev = {"front": "front", "back": "rear",
+                   "left": "left", "right": "right"}
+            faces = derive_face_heights(ot)
+            spec = _best_ladder_spec(
+                faces.get(rev[body.face_id]) or {})
+            if spec:
+                prior = {"tier": spec.get("tier"), "ft": spec.get("ft"),
+                         "contested_rails": spec.get("contested_rails"),
+                         "basis": spec.get("basis")}
+    except Exception:
+        prior = None
+    plane_matches = {body.ref_from, body.ref_to} == _TAPE_BAND_REFS
+    doc = {"id": str(uuid.uuid4()), "estimate_id": est_id,
+           "face_id": body.face_id, "kind": "taped_wall_height_ft",
+           "value_ft": val, "raw_text": body.text, "echo": echo,
+           "ref_from": body.ref_from, "ref_to": body.ref_to,
+           "plane_matches_band": plane_matches,
+           "prior_read": prior,        # the contestants, KEPT
+           "basis": (f"TAPED HUMAN MEASUREMENT — {echo}, taped "
+                     f"{_TAPE_REFS[body.ref_from]} → "
+                     f"{_TAPE_REFS[body.ref_to]}; never absorbed into "
+                     "the read"),
+           "supplied_by": user.get("email"),
+           "at": datetime.now(timezone.utc).isoformat()}
+    await db.human_dimensions.update_one(
+        {"estimate_id": est_id, "face_id": body.face_id,
+         "kind": "taped_wall_height_ft"},
+        {"$set": doc}, upsert=True)
+    if plane_matches:
+        statement = (
+            "the taped plane matches the derivation band (FIRST FLOOR "
+            "→ TOP OF PLATE) — the tape GOVERNS this face on the next "
+            "propose; "
+            + ((f"prior read kept in the record: {prior['tier']} "
+                f"{prior['ft']} ft"
+                + (f", contested rails "
+                   f"{' vs '.join(prior['contested_rails'])}"
+                   if prior.get("contested_rails") else ""))
+               if prior else "no prior read stood on this face"))
+    else:
+        statement = (
+            f"taped {_TAPE_REFS[body.ref_from]} → "
+            f"{_TAPE_REFS[body.ref_to]} = {val} ft is RECORDED against "
+            "its own plane; the derivation's band is FIRST FLOOR → TOP "
+            "OF PLATE — the bands DIFFER and are never assumed equal "
+            "(no silent conversion)")
+    return {"ok": True, "tape": doc, "statement": statement}
 
 
 def _best_ladder_spec(face_result: dict):
@@ -1322,6 +1474,14 @@ async def propose_zones(
         {"_id": 0}).to_list(20)
     chase_width_by_face = {d.get("face_id"): d for d in _hd_rows}
     partitions = {}
+    # SEND-98 — taped wall heights: a taped figure GOVERNS where its
+    # plane matches the derivation band; otherwise it is reported
+    # against its own plane. Never rear-specific — every face.
+    _taped_rows = await db.human_dimensions.find(
+        {"estimate_id": est_id, "kind": "taped_wall_height_ft"},
+        {"_id": 0}).to_list(20)
+    taped_by_face = {d.get("face_id"): d for d in _taped_rows}
+    tapes_report = {}
     # SEND-84 (authorized) — FENCE MARGIN data: every drawing's own
     # datum extent, per page, for the neighbouring-drawing warning.
     face_fences = {}
@@ -1350,7 +1510,58 @@ async def propose_zones(
                 "face_id": face_to_id[face],
                 "reason": ("no evaluated elevation drawing for this face "
                            "— nothing to propose from")})
+            _t0 = taped_by_face.get(face_to_id[face])
+            if _t0:
+                tapes_report[face_to_id[face]] = {
+                    "tape": _t0, "governs": False,
+                    "statement": ("tape RECORDED, but no drawing "
+                                  "geometry exists to seat it — the "
+                                  "face still has nothing to draw "
+                                  "from")}
             continue
+        tape = taped_by_face.get(face_to_id[face])
+        if tape and tape.get("plane_matches_band"):
+            _prev = {"tier": spec["tier"], "ft": spec.get("ft"),
+                     "contested_rails": spec.get("contested_rails"),
+                     "basis": spec.get("basis")}
+            spec["ft"] = float(tape["value_ft"])
+            spec["tier"] = "taped_human"
+            spec["contested_rails"] = None
+            spec["basis"] = (
+                "TAPED HUMAN MEASUREMENT — " + str(tape.get("echo"))
+                + ", taped the FIRST FLOOR line → the TOP OF PLATE "
+                "line; GOVERNS (top of the evidence ladder), never "
+                "absorbed into the read. Kept in the record: "
+                + (str(_prev["basis"]) if _prev.get("basis")
+                   else "no prior read"))
+            spec["taped_over"] = _prev
+            _stmt = "the tape governs this face"
+            if (_prev.get("ft") is not None
+                    and _prev["ft"] != spec["ft"]):
+                _stmt += (f"; it contradicts the prior {_prev['tier']} "
+                          f"read of {_prev['ft']} ft — the tape "
+                          "governs, the read is kept, nothing moved "
+                          "silently")
+            if _prev.get("contested_rails"):
+                _stmt += ("; the contest ("
+                          + " vs ".join(_prev["contested_rails"])
+                          + ") is settled by the tape — both "
+                          "contestants kept in the record; if the tape "
+                          "agrees with NEITHER printed figure it still "
+                          "governs and the disagreement stays visible "
+                          "here")
+            tapes_report[face_to_id[face]] = {
+                "tape": tape, "governs": True, "statement": _stmt}
+        elif tape:
+            tapes_report[face_to_id[face]] = {
+                "tape": tape, "governs": False,
+                "statement": (
+                    f"taped {_TAPE_REFS.get(tape.get('ref_from'), tape.get('ref_from'))} → "
+                    f"{_TAPE_REFS.get(tape.get('ref_to'), tape.get('ref_to'))} = "
+                    f"{tape.get('value_ft')} ft is RECORDED against its "
+                    "own plane; the derivation's band is FIRST FLOOR → "
+                    "TOP OF PLATE — the bands DIFFER and are never "
+                    "assumed equal (no silent conversion)")}
         # SEND-69 — the LINE-WORK read (wall outline only). When it
         # resolves, the drawn outline REPLACES the datum-span geometry
         # and the basis says so; when it cannot, the datum span stands
@@ -1983,6 +2194,9 @@ async def propose_zones(
     _rec_total = round(sum((p.get("above_plate_recovered_sqft") or 0)
                            for p in partitions.values()), 2)
     return {"ok": True, "proposed": created, "skipped": skipped,
+            # SEND-98 — taped figures per face: govern or recorded
+            # against their own plane, contestants kept, never silent.
+            "tapes": tapes_report,
             # SEND-90 — RULING XX width cross-check: flagged on the
             # payload, never auto-resolved; magnitude, never a boolean.
             "width_cross_check": _xx_width_cross_check(xx_verdict,
@@ -2011,12 +2225,17 @@ async def height_cards(est_id: str,
     plain, printable card saying what to tape. A card is a field
     instruction, never a quantity — the tape's figure comes back as a
     human dimension."""
-    await _est_or_404(est_id, user)
+    est = await _est_or_404(est_id, user)
     ot, run = await _latest_ocr(est_id)
     if not ot:
         return {"cards": [], "note": "no blueprint run on this estimate"}
     from height_read import derive_face_heights
     faces = derive_face_heights(ot)
+    _taped = {d["face_id"]: d for d in await db.human_dimensions.find(
+        {"estimate_id": est_id, "kind": "taped_wall_height_ft"},
+        {"_id": 0}).to_list(20)}
+    _fid = {"front": "front", "rear": "back",
+            "left": "left", "right": "right"}
     cards = []
     for face in ("front", "rear", "left", "right"):
         r = faces.get(face) or {}
@@ -2055,7 +2274,31 @@ async def height_cards(est_id: str,
                     "at this face and write the figure on this card.")
         cards.append({"face": face, "page": page, "kind": kind,
                       "refusal": refusal or "height not established",
-                      "tape": tape})
+                      "tape": tape,
+                      # SEND-98 item 3 — every card carries the job and
+                      # the face; a card with no identifier is a hazard.
+                      "estimate_id": est_id,
+                      "estimate_number": est.get("estimate_number"),
+                      "customer_name": est.get("customer_name"),
+                      "face_id": _fid[face],
+                      # SEND-98 item 2 — reachable reference points; the
+                      # derivation band is NOT assumed to match.
+                      "tape_points": {
+                          "from": "top_of_foundation",
+                          "to": "bottom_of_soffit",
+                          "label": ("put the tape on the top of the "
+                                    "foundation, read at the bottom of "
+                                    "the soffit")},
+                      "band": ("FIRST FLOOR → TOP OF PLATE (the "
+                               "derivation's band — not reachable from "
+                               "outside the house)"),
+                      "plane_matches_band": False,
+                      "governing_alternative": (
+                          "if the FIRST FLOOR line is reachable "
+                          "(inside / garage), tape the FIRST FLOOR "
+                          "line → the TOP OF PLATE line — that pull "
+                          "GOVERNS the derivation directly"),
+                      "tape_entered": _taped.get(_fid[face])})
     return {"cards": cards,
             "note": ("a card is a field instruction, never a quantity "
                      "— the taped figure enters as a human dimension")}
