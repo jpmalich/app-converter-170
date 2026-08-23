@@ -129,6 +129,12 @@ export default function useEstimate(id) {
                 derived_qty: saved && saved.derived_qty != null ? saved.derived_qty : null,
                 qty_src: (saved && saved.qty_src) || null,
                 lab_src: (saved && saved.lab_src) || null,
+                // CROSS-FAMILY GUARD RIDES THE MERGE (SEND-111): the
+                // typed-dollar survivor flag ("flag it for me, do not
+                // silently delete it" — Howard) was rebuilt away here,
+                // so the next autosave unflagged the exact rows the
+                // cross-family pin guards. Exposed-class field, now carried.
+                cross_family_flag: (saved && saved.cross_family_flag) || null,
                 // SILENT-STRIP CLASS, MERGE LAYER (sealed 2026-07-31):
                 // this merge rebuilt fresh objects and dropped the
                 // derivation note, waste flag, and contractor note on
@@ -523,6 +529,7 @@ export default function useEstimate(id) {
           _waste_included: l._waste_included ?? null,
           qty_pending: l.qty_pending ?? null,
           pricing_source: l.pricing_source ?? null,
+          cross_family_flag: l.cross_family_flag ?? null,
           base_item: l.base_item ?? null,
           // Iter 36: persist selected per-line adders (windows-tab only).
           adders: Array.isArray(l.adders)

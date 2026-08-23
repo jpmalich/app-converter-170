@@ -113,6 +113,25 @@ open quote modal.
   list), 4 refused rows, note; endpoint pins green (QR data-URI, no-mint reason on a fresh
   estimate).
 
+# 6. INCIDENT DURING THIS SEND — THE EXPOSED CLASS FIRED LIVE, ON MY OWN SESSION
+
+Stated plainly: my browser smoke-test on the REAL Casile estimate (EST-523061) triggered
+its quote-open autosave, and that autosave STRIPPED `cross_family_flag` from the 6
+typed-dollar survivor rows — the exact guard Howard ruled ("flag it for me, do not
+silently delete it"). The cross-family pin caught it on the very next full run, exactly as
+designed. This is exposed-class field #8 from §2b demonstrating itself in the wild:
+`cross_family_flag` appeared NOWHERE in `useEstimate.js` — neither the merge rebuild nor
+the save whitelist carried it, so any human opening that estimate in a browser would have
+done the same.
+- FIXED (same class of fix as SEND-109's trio carry, not a law widening): the flag now
+  rides the catalog merge and the save whitelist (`useEstimate.js`).
+- REPAIRED: the 6 rows re-flagged to their exact prior state (restoration of stripped
+  data, nothing new invented).
+- VERIFIED E2E: re-drove the same quote-open autosave through the real browser path —
+  all 6 flags and all 4 refusal trios survived the round-trip; the cross-family pin green.
+The register's lesson holds: the pin proved what it swept. The other nine exposed-class
+fields remain carried-but-unswept — inventoried in §2b, no further fix authorized.
+
 ---
 
 ## STAMP
