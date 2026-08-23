@@ -4250,15 +4250,48 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                                  "why": "size refused — contributes 0 ft²"})
     _openings_deduction = None
     if opening_sqft > 0 or _ded_refused:
-        # RULING 7 (2026-08-01) holds: full precision on the way in — no
-        # intake rounding on engine keys; the note rounds at DISPLAY.
-        _openings_deduction = {
-            "deducted_sqft": opening_sqft,
-            "gross_sqft": siding_sqft,
-            "net_sqft": max(siding_sqft - opening_sqft, 0.0),
-            "refused": _ded_refused,
-            "complete": not _ded_refused,
-        }
+        # SEND-116 ITEM 1 (Howard ruled 2026-08-23): AN OPENING MAY ONLY
+        # DEDUCT FROM A GROSS THAT INCLUDES THE FACE IT SITS ON. Without
+        # placement an opening's face is unknown, so the deduction needs
+        # EVERY face in the gross — when any face refused, the DEDUCTION
+        # REFUSES, naming both the openings and the faces. A partial
+        # gross minus a whole-house deduction is a different quantity
+        # wearing the same label (Boni: net 1.5 ft² on a 33-square
+        # house). NO FLOOR: openings meeting/exceeding a fully-derived
+        # gross is a read inconsistency and refuses too — a floor at 0
+        # is a silent zero (dart hid behind one).
+        _ded_faces_refused = sorted({
+            str(f.get("label") or f.get("elevation") or "?")
+            for f in _walk_faces_nd})
+        _net = siding_sqft - opening_sqft
+        if _ded_faces_refused:
+            _openings_deduction = {
+                "deduction_refused": True,
+                "refusal_class": "faces_refused",
+                "openings_sqft_read": opening_sqft,
+                "gross_sqft": siding_sqft,
+                "faces_refused": _ded_faces_refused,
+                "refused": _ded_refused,
+            }
+        elif opening_sqft > 0 and _net <= 0:
+            _openings_deduction = {
+                "deduction_refused": True,
+                "refusal_class": "openings_exceed_gross",
+                "openings_sqft_read": opening_sqft,
+                "gross_sqft": siding_sqft,
+                "faces_refused": [],
+                "refused": _ded_refused,
+            }
+        else:
+            # RULING 7 holds: full precision on the way in — no intake
+            # rounding on engine keys; the note rounds at DISPLAY.
+            _openings_deduction = {
+                "deducted_sqft": opening_sqft,
+                "gross_sqft": siding_sqft,
+                "net_sqft": _net,
+                "refused": _ded_refused,
+                "complete": not _ded_refused,
+            }
 
     # Expand schedule rows into a per-opening list (qty=1 each) so
     # _build_window_openings sees one row per physical window. Matches
@@ -4386,16 +4419,19 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # RULING 7 (2026-08-01): full precision on the way in — no door
         # rounds at intake; the ORDER layer is the one rounding point.
         "siding_sqft": siding_sqft,
-        # SEND-115 RULING 1 (2026-08-23, supersedes the 2026-08-08
-        # None-always convention): openings DEDUCT from the siding area
-        # — full area, no threshold — and this field carries the NET.
-        # The takeoff line names the deduction and every refusal. With
-        # nothing deducted the field stays None (the 08-08 no-alias pin
-        # holds: no gross number ever poses as a +10% HOVER basis).
+        # SEND-115 RULING 1 + SEND-116 ITEM 1: openings DEDUCT — full
+        # area, no threshold — and this field carries the NET, but ONLY
+        # from a gross that includes every face (an opening may only
+        # deduct from a gross that includes the face it sits on; without
+        # placement that means ALL faces). A refused deduction leaves the
+        # field None and the line names the refusal. Nothing deducted →
+        # None (the 08-08 no-alias pin holds: no gross number ever poses
+        # as a +10% HOVER basis).
         "siding_with_openings_sqft": (
             _openings_deduction["net_sqft"]
             if _openings_deduction
-            and _openings_deduction["deducted_sqft"] > 0 else None),
+            and not _openings_deduction.get("deduction_refused")
+            and _openings_deduction.get("deducted_sqft") else None),
         **({"_openings_deduction": _openings_deduction}
            if _openings_deduction else {}),
         "opening_sqft": opening_sqft,

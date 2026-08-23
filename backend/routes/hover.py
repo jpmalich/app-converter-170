@@ -1099,9 +1099,28 @@ def _openings_ded_note(m: dict) -> str:
     d = m.get("_openings_deduction")
     if not d:
         return ""
-    out = (f" · OPENINGS DEDUCTED {round(d['deducted_sqft'], 1):g} ft² — "
-           f"full area, no threshold (gross {round(d['gross_sqft'], 1):g} − "
-           f"openings = {round(d['net_sqft'], 1):g} ft²)")
+    if d.get("deduction_refused"):
+        # SEND-116 ITEM 1: a refused deduction NAMES both the openings
+        # and why — never a partial gross minus a whole-house deduction.
+        if d.get("refusal_class") == "openings_exceed_gross":
+            out = (f" · OPENINGS DEDUCTION REFUSED — openings "
+                   f"{round(d['openings_sqft_read'], 1):g} ft² meet or "
+                   f"exceed the derived gross "
+                   f"{round(d['gross_sqft'], 1):g} ft² — reads disagree; "
+                   f"nothing deducted")
+        else:
+            faces = ", ".join(d.get("faces_refused") or []) or "?"
+            out = (f" · OPENINGS DEDUCTION REFUSED — "
+                   f"{round(d['openings_sqft_read'], 1):g} ft² of openings "
+                   f"read, but face(s) {faces} refused and an opening may "
+                   f"only deduct from a gross that includes its face; no "
+                   f"placement exists to scope the deduction (openings "
+                   f"unplaced); nothing deducted")
+    else:
+        out = (f" · OPENINGS DEDUCTED {round(d['deducted_sqft'], 1):g} ft² "
+               f"— full area, no threshold (gross "
+               f"{round(d['gross_sqft'], 1):g} − openings = "
+               f"{round(d['net_sqft'], 1):g} ft²)")
     groups: dict = {}
     for r in d.get("refused") or []:
         k = ("window" if r.get("kind") == "windows" else "door",
@@ -1110,6 +1129,8 @@ def _openings_ded_note(m: dict) -> str:
     for (kind, why), marks in groups.items():
         out += (f". {len(marks)} {kind} mark{'s' if len(marks) != 1 else ''}"
                 f" refused ({', '.join(marks)}) — {why}")
+    if d.get("deduction_refused"):
+        return out
     if groups:
         out += ". DEDUCTION INCOMPLETE"
     else:
