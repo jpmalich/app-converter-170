@@ -134,5 +134,14 @@ fields remain carried-but-unswept — inventoried in §2b, no further fix author
 
 ---
 
-## STAMP
-(appended after the clean run)
+## STAMP (verbatim)
+```
+RECORDED: 2026-08-23 00:40 UTC · 0a68b1e · CLEAN
+RESULT: 2786 passed, 9 skipped, 7 warnings in 436.81s (0:07:16)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+INGRESS SMOKE: 4 passed in 1.73s
+```
+First run of this send guard-failed (logged, never stamped over) on two items: the §6
+incident (real defect, fixed + repaired above) and one recurrence of the named live-window
+transient (`test_demo_reset` isolation — a suite-disposable Haugh-address estimate changed
+mid-window by an async write; passed standalone and in the stamped rerun).
