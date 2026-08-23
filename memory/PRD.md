@@ -1,5 +1,51 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-23 SEND-115 — DART LIVE BUG FIXED · RULING 1: OPENINGS DEDUCT + DEDUCTION SHOWN · THIRD PLAN SET READY AWAITING SEAL (stamped `2026-08-23 12:41 UTC · 8618c26 · CLEAN · 2810 passed, 9 skipped` + census GREEN 0 PENDING_CONVERSION + INGRESS-SMOKE-CLEAN 4 passed)
+Full record: `memory/send115_report.md` · probe `memory/send115_probe.py` (read-only).
+1. **DART BUG (est 7caeff94)**: the 404s were a backend restart window
+   (`/api/version` 404ing is the tell — that route always exists); the lasting
+   breakage was a 500 masked AS a refusal — dart's read refused all 8 wall
+   heights (evidence-or-null on a foreign drafter) and the elevation-sheet
+   renderer crashed on `fmt_ftin(None)` → 500 ×4 faces → the panel's catch
+   printed "no completed AI measurement run yet" over a DONE run with 11
+   persisted page images. Fixed at the call site (height_label mirrors
+   width_label's None guard, prints "—"). Pinned live (4×200 on the real
+   estimate) + structural; verified in the browser (EL-1..4 render; front:
+   width 62'-0", height —, 23 openings). Page persistence was never broken.
+2. **RULING 1 SHIPPED — openings deduct, full area, no threshold**:
+   `siding_with_openings_sqft` carries the NET on blueprint jobs that read
+   openings (FULL PRECISION — Ruling 7 holds; the guard caught intake
+   rounding on the first run and it was fixed in code); nothing read → None
+   (08-08 no-alias pin survives by scope). THE TAKEOFF LINE (Charter Oak /
+   Ascend / LP lap) prints the deduction and EVERY refusal — count-unread
+   and size-refused marks named — "DEDUCTION INCOMPLETE" when any refuse,
+   and "Aggregate only — not attributed per face (openings unplaced)"; the
+   rail flag copy states the same (EN+ES). LP lap PRICES the net; HOVER
+   jobs byte-identical, pinned. Stale 08-08 pin updated NAMED (4 fields).
+3. **WHAT THE TOTALS BECOME (latest stored runs, bare aggregation; live
+   estimates move on their next rederive where tapes carry the gross)**:
+   Boni gross 200.0 (heights refused, untaped bare run) − 198.5 → net 1.5,
+   G2 size refused; Letrick gross 1654.6 − 81.6 → net 1573.0, A/B/C sizes
+   refused; dart gross 0.0 (8/8 heights refused) − 165.0 → net floors at
+   0.0, 12 sizes refused (marks incl. numeric "1", "2", "GARAGE").
+4. **RULING 2 — THIRD PLAN SET (dart) READY, NOT RUN**: different drafter
+   confirmed by the read itself (numeric marks, no recognizable plate band,
+   stepped walls); every house-leaning piece FAILED SAFE — no fabricated
+   count, no confident placement. BLOCKED ON: Howard seals ground truth
+   (face widths, depths, heights, opening counts, projections) BEFORE a
+   FRESH scored run; predictions written first, unrevised.
+5. **STAMP**: two pre-stamp runs, every red named — (run 1) Ruling-7 pin
+   caught intake rounding in the new deduction record, fixed in code;
+   (run 2) two live-window transients (Haugh disposable hard-delete, KNOWN
+   family 3rd recurrence; a concurrent run's disposable lp_smart estimate
+   with a D4 Clapboard row) — both pass standalone + stamped rerun.
+   `2026-08-23 12:41 UTC · 8618c26 · CLEAN · 2810 passed, 9 skipped` ·
+   census GREEN · ingress 4 passed. EST-886440 untouched (sealed-key path
+   carries no deduction record).
+6. **NEXT**: Howard seals dart ground truth → predictions → fresh scored
+   run. Symbols placement STILL NOT AUTHORIZED (first job named: Boni's two
+   side-entry garage doors). Field sheet photos / tape-from-sheet queued.
+
 ## STANDING NOTES (Howard's rulings, not reflections — read these first)
 - **THE PRINTS FIRST**: the 20-vs-4 window swing stayed open from send 19 to
   send 113 — the whole thread. It was never sampling noise, never a pipeline
