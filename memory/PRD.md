@@ -1,5 +1,52 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-23 SEND-116 — DEDUCTION FACE RULE (reported→fixed) · ROTATED-RASTER FINDING (report only) · ALL-REFUSED SURFACE SWEEP (stamped `2026-08-23 14:36 UTC · 1a664f8 · CLEAN · 2815 passed, 9 skipped` + census GREEN + INGRESS-SMOKE-CLEAN 4 passed)
+Full record: `memory/send116_report.md`.
+1. **ITEM 1 RULED AND SHIPPED — AN OPENING MAY ONLY DEDUCT FROM A GROSS THAT
+   INCLUDES THE FACE IT SITS ON.** Without placement that means EVERY face:
+   any face on faces_not_derivable REFUSES the whole deduction (record
+   `deduction_refused` + class; field stays None; the line names openings
+   ft², the refused faces, and "nothing deducted"; mark refusals still
+   named). NO FLOOR ANYWHERE: openings ≥ a fully-derived gross refuses as a
+   read inconsistency — the `max(net, 0)` floor that hid dart is REMOVED.
+   Applied-deduction path unchanged when all faces derive. 5 new pins.
+2. **THE REPORT THAT PRECEDED THE FIX**: dart 0/4 faces derive (gross 0);
+   Boni 8-22 0/4 (gross 200 = 100% chimney chase); **Letrick 3/4 — back
+   refused — ITS 1654.6−81.6=1573.0 WAS NOT SOUND** and refuses now; the
+   older fuller Boni run (3981.1 gross, back-only refused) refuses too.
+   "Deduct only from derived faces" is NOT COMPUTABLE without placement.
+   Full floor/clamp inventory (7 sites) in the report — three marks-as-1
+   floors named-left-standing (no-count-column row convention), the bucket's
+   silent size-zero named, the line's falsy-collapse named.
+3. **ITEM 2 — FACE-CARVING CAUSE ON DART (report only, fix NOT built)**:
+   none of the three candidates. **THE SHEETS ARE ROTATED 90° IN THE
+   RASTER.** All four face titles exist (FRONT/REAR/LEFT SIDE/RIGHT SIDE
+   ELEVATION · MODERN FARMHOUSE — the matcher would match them); drawings
+   stack exactly as y-bands expect IN DRAWING SPACE. Rotation guts OCR
+   (upright share 9.6%/6.0% vs 38% on Boni/Letrick — the detection signal);
+   1 of 4 titles recovered, glyph-dropped (`EFTSIDE…`, and it sits BESIDE
+   its drawing in raster space). The carver's refusal was CORRECT over what
+   the store contains. Fix shape = rotation detect + raster normalize
+   BEFORE OCR — a build awaiting ruling. Dart's schedule also prints `TAG`
+   headers, no COUNT column, rotated — parser had no jurisdiction, failed
+   safe.
+4. **ITEM 3 — ALL-REFUSED SURFACE SWEEP** (dart = first real fully-refused
+   fixture): elevation sheets CRASHED (fixed 115, pinned); read-back card,
+   walk rows (89 lines), LP package (24 lines), field sheet, gates, overlay
+   list all render clean; frozen material list not exercisable (none
+   exists). **NAMED GAP, unfixed**: the RAIL is silent on aggregation-born
+   refusals — 0 flags while 8 faces + 12 sizes refuse; the refused
+   deduction flags nowhere but the line note. Needs authorization.
+5. **STAMP**: one pre-stamp red, named — the consumer-key census caught
+   `.get` reads of the record's bare child keys in the censused aggregator;
+   fixed in code (net lands from the local), census untouched.
+   `2026-08-23 14:36 UTC · 1a664f8 · CLEAN · 2815 passed, 9 skipped` ·
+   census GREEN · ingress 4 passed. EST-886440 untouched.
+6. **NEXT**: Howard's sealed dart truth → predictions first → fresh scored
+   read. Symbols placement STILL NOT AUTHORIZED. Rotation-normalize build
+   awaits ruling. Rail flags for aggregation-born refusals await
+   authorization.
+
 ## 2026-08-23 SEND-115 — DART LIVE BUG FIXED · RULING 1: OPENINGS DEDUCT + DEDUCTION SHOWN · THIRD PLAN SET READY AWAITING SEAL (stamped `2026-08-23 12:41 UTC · 8618c26 · CLEAN · 2810 passed, 9 skipped` + census GREEN 0 PENDING_CONVERSION + INGRESS-SMOKE-CLEAN 4 passed)
 Full record: `memory/send115_report.md` · probe `memory/send115_probe.py` (read-only).
 1. **DART BUG (est 7caeff94)**: the 404s were a backend restart window
