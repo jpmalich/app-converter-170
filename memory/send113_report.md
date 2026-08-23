@@ -133,5 +133,14 @@ merge nor the save whitelist — now rides both, and a structural pin
 exposed-class field missing from either half turns a pin red instead of stripping
 silently. The refusal trio stays law-owned, not carry-dependent.)
 
-## STAMP
-(appended after the clean run)
+## STAMP (verbatim)
+```
+RECORDED: 2026-08-23 01:05 UTC · ede882d · CLEAN
+RESULT: 2788 passed, 9 skipped, 7 warnings in 427.25s (0:07:07)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+INGRESS SMOKE: 4 passed in 1.75s
+```
+Clean on the first run. Standing rules held: no cross-drawing evidence, no estimate
+influences another, no job names in code, model heights hypothesis-only, EST-886440
+PROTECTED (its 08-11 run was READ, never written), 423 on every derived write, purity pin
+holds. Nothing tuned toward 16, 4, or 526.
