@@ -11,8 +11,9 @@ import { buildEmailHtml, buildEmailSubject, defaultEmailGreeting } from "@/lib/e
 import { tSection, tItem, tUnit } from "@/lib/catalogTranslations";
 import { isValidEmail } from "@/lib/validate";
 import { useReadiness } from "@/components/estimate/ReadinessPanel";
+import TapeNudgeCard from "@/components/estimate/TapeNudgeCard";
 
-export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail, derivedUnapplied }) {
+export default function QuoteModal({ estimate, totals, onClose, emailConfigured, onEmail, derivedUnapplied, onRederived }) {
   const { company } = useCompany();
   const branding = useBranding();
   const { user } = useAuth();
@@ -212,6 +213,15 @@ export default function QuoteModal({ estimate, totals, onClose, emailConfigured,
             </div>
           );
         })()}
+        {/* SEND-111 order item 3 — QUOTE TAPE NUDGE: the refusal coach
+            landing on the surface a contractor actually looks at. A
+            refused row gets its one field tape right where the price is
+            read; the card renders only when Ruling-V refusals exist. */}
+        {(estimate.lines || []).some((l) => l?.not_derivable) && (
+          <div className="no-print w-full max-w-3xl" data-testid="quote-tape-nudge-wrap">
+            <TapeNudgeCard est={estimate} onRederived={onRederived} />
+          </div>
+        )}
         {/* LABOR UNDECIDED — one line, a count, never a block (re-ruled 2026-07-29) */}
         {laborItem && (
           <div className="no-print w-full max-w-3xl mb-3 bg-[#FFFBEB] border border-[#D97706] px-4 py-2 text-[11px] text-[#92400E]" data-testid="quote-labor-undecided-line">

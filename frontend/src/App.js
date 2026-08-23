@@ -16,6 +16,7 @@ import EstimateRouter from "@/pages/EstimateRouter";
 import ElevationSheet from "@/pages/ElevationSheet";
 import BlueprintElevationSheet from "@/pages/BlueprintElevationSheet";
 import ElevationSheetsPrint from "@/pages/ElevationSheetsPrint";
+import FieldSheetPrint from "@/pages/FieldSheetPrint";
 import SourceSheets from "@/pages/SourceSheets";
 import Catalog from "@/pages/Catalog";
 import Team from "@/pages/Team";
@@ -80,6 +81,7 @@ function App() {
                         the siding workspace (legacy default). */}
                     <Route path="/dashboard" element={<Navigate to="/dashboard/siding" replace />} />
                     <Route path="/estimate/:id/elevation-sheets/print" element={<ElevationSheetsPrint />} />
+                    <Route path="/estimate/:id/field-sheet" element={<FieldSheetPrint />} />
                     <Route path="/estimate/:id/elevation-sheet/:which" element={<ElevationSheet />} />
                     <Route path="/estimate/:id/blueprint-elevation/:which" element={<BlueprintElevationSheet />} />
                     {/* Source-view (generalized 2026-07-20): one surface for every

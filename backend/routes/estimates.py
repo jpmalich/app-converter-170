@@ -444,8 +444,12 @@ async def update_estimate(est_id: str, body: EstimateIn, user: dict = Depends(ge
     # the Ruling L block with them). Lines re-run the overlay law here;
     # chase rows rebuild from the zones, never from the client.
     if "lines" in update:
-        from routes.pdf_overlay import reapply_overlay_law
+        from routes.pdf_overlay import reapply_overlay_law, reapply_refusal_law
         update["lines"] = await reapply_overlay_law(est_id, update["lines"])
+        # SEND-111 — the law WIDENED: refusal provenance (the trio +
+        # the qty null) is server-owned exactly as chase rows are; a
+        # client payload cannot create, clear, or alter it.
+        update["lines"] = await reapply_refusal_law(est_id, update["lines"])
     update["updated_at"] = datetime.now(timezone.utc).isoformat()
     await _append_fillin_history(est_id, user["company_id"], update, user)
     res = await db.estimates.update_one(
@@ -473,8 +477,11 @@ async def patch_estimate(est_id: str, body: dict, user: dict = Depends(get_curre
     validated.pop("kind", None)  # kind is identity — immutable post-create (ruled 2026-07-24)
     # SEND-100: same law re-run as PUT — chase rows rebuild from zones.
     if "lines" in validated:
-        from routes.pdf_overlay import reapply_overlay_law
+        from routes.pdf_overlay import reapply_overlay_law, reapply_refusal_law
         validated["lines"] = await reapply_overlay_law(est_id, validated["lines"])
+        # SEND-111 — same widened law as PUT: the refusal trio and the
+        # qty null are server-owned; nothing left for a client to decide.
+        validated["lines"] = await reapply_refusal_law(est_id, validated["lines"])
     validated["updated_at"] = datetime.now(timezone.utc).isoformat()
     await _append_fillin_history(est_id, user["company_id"], validated, user)
     res = await db.estimates.update_one(

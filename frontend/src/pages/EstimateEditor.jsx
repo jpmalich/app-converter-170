@@ -559,6 +559,7 @@ export default function EstimateEditor() {
           estimate={quoteEstimate}
           totals={quoteTotals}
           derivedUnapplied={lpDerivedUnapplied}
+          onRederived={reload}
           onClose={() => setShowQuote(false)}
           emailConfigured={emailStatus.configured}
           onEmail={async ({ recipient_email, html, subject, accept_token }) => {

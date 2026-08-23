@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { fmt } from "@/lib/api";
 import { useT } from "@/lib/i18n";
-import { Save, FileText, Printer, Download, ClipboardList, ListChecks } from "lucide-react";
+import { Save, FileText, Printer, Download, ClipboardList, ListChecks, QrCode } from "lucide-react";
 import ReadinessPanel from "./ReadinessPanel";
 
 const TAB_LABEL_KEYS = {
@@ -63,6 +63,15 @@ export default function TotalsSummary({ est, totals, activeTab, saving, onSave, 
         </button>
         <button className="btn-secondary" onClick={onPrintMaterials} data-testid="material-list-btn">
           <ClipboardList className="w-4 h-4" /> {t("est.materialList")}
+        </button>
+        {/* SEND-111 order item 4 — QR FIELD SHEET: printable crew page
+            with height cards + QR links, opens its own print route. */}
+        <button
+          className="btn-secondary"
+          onClick={() => window.open(`/estimate/${est.id}/field-sheet`, "_blank")}
+          data-testid="field-sheet-btn"
+        >
+          <QrCode className="w-4 h-4" /> Field Sheet
         </button>
         <button className="btn-secondary" onClick={onPrint} data-testid="print-btn">
           <Printer className="w-4 h-4" /> {t("est.print")}

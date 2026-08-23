@@ -2492,6 +2492,59 @@ async def height_cards(est_id: str,
                      "— the taped figure enters as a human dimension")}
 
 
+@router.get("/estimates/{est_id}/pdf-overlay/field-sheet")
+async def field_sheet(est_id: str, app_url: str = "",
+                      user: dict = Depends(get_current_user)):
+    """SEND-111 order item 4 — THE QR FIELD SHEET: one printable page
+    for the crew at the house. Carries the height cards (what to tape,
+    per refusing face), the refused rows, and QR links — the estimate
+    itself (the tape nudge is right there on a phone) and the frozen
+    material list share link IF one exists (never minted silently). A
+    field sheet is instructions and links, never a quantity."""
+    est = await _est_or_404(est_id, user)
+    cards = (await height_cards(est_id, user)).get("cards") or []
+    refused = [{"name": l.get("name"), "section": l.get("section"),
+                "tab": l.get("tab"),
+                "reason": l.get("not_derivable_reason") or "REFUSED"}
+               for l in est.get("lines") or [] if l.get("not_derivable")]
+    import base64
+    import io
+    import qrcode
+
+    def _qr(data: str) -> str:
+        img = qrcode.make(data, box_size=6, border=2)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return ("data:image/png;base64,"
+                + base64.b64encode(buf.getvalue()).decode())
+
+    origin = (app_url or "").rstrip("/")
+    est_link = f"{origin}/estimate/{est_id}" if origin else None
+    snap = await db.lp_material_list_snapshots.find_one(
+        {"estimate_id": est_id, "revoked": {"$ne": True}},
+        sort=[("created_at", -1)])
+    ml_link = (f"{origin}/m/{snap['token']}"
+               if origin and snap and snap.get("token") else None)
+    return {
+        "estimate_id": est_id,
+        "estimate_number": est.get("estimate_number"),
+        "customer_name": est.get("customer_name"),
+        "address": est.get("address"),
+        "cards": cards,
+        "refused_lines": refused,
+        "qr_estimate": ({"link": est_link, "png": _qr(est_link)}
+                        if est_link else None),
+        "qr_material_list": ({"link": ml_link, "png": _qr(ml_link)}
+                             if ml_link else
+                             {"link": None, "png": None,
+                              "reason": ("no frozen material list on "
+                                         "this estimate — freeze one "
+                                         "from the LP Material List "
+                                         "panel to add its QR")}),
+        "note": ("a field sheet is instructions and links, never a "
+                 "quantity — tapes come back as human dimensions")}
+
+
 def _ft_per_px(scale_ref, W, H):
     """ft per rendered pixel from a trace scale, or None."""
     if not scale_ref or not W or not H:
@@ -2593,6 +2646,69 @@ async def reapply_overlay_law(est_id: str, lines: list[dict]) -> list[dict]:
     if not all_polys:
         return lines
     return apply_overlay_to_takeoff(lines, all_polys)
+
+
+# SEND-111 (authorized) — WIDEN WHAT THE LAW OWNS. The RCA (SEND-110 §3)
+# found the law RAN on the stripped payload and chase rows were immune
+# because the law owns them; the refusal trio was lost because it did
+# not. Refusal provenance is server-derived data: a client payload can
+# neither create, clear, nor alter it — there is nothing left for a
+# client merge to decide. Called ONLY at the CLIENT-SHAPED doors
+# (estimates PUT/PATCH); rebuild doors never call this — a fresh
+# derivation is the trio's birthplace and stays authoritative.
+REFUSAL_TRIO = ("not_derivable", "not_derivable_reason",
+                "not_derivable_code")
+
+
+def _refusal_key(line: dict):
+    return (str(line.get("tab") or ""), str(line.get("section") or ""),
+            str(line.get("name") or ""))
+
+
+def apply_refusal_law(stored_lines: list[dict],
+                      incoming: list[dict]) -> list[dict]:
+    stored = {}
+    for s in stored_lines or []:
+        if s.get("overlay_chase_line"):
+            continue                    # the overlay law owns chase rows
+        stored[_refusal_key(s)] = s
+    out, seen = [], set()
+    for l in incoming or []:
+        if l.get("overlay_chase_line"):
+            out.append(l)               # freshly rebuilt by the overlay law
+            continue
+        l = dict(l)
+        k = _refusal_key(l)
+        seen.add(k)
+        s = stored.get(k)
+        if s is None or not s.get("not_derivable"):
+            # a client payload cannot MINT a refusal
+            for f in REFUSAL_TRIO:
+                l.pop(f, None)
+        else:
+            # the stored trio re-seats VERBATIM — client copy irrelevant
+            for f in REFUSAL_TRIO:
+                if s.get(f) is not None:
+                    l[f] = s[f]
+                else:
+                    l.pop(f, None)
+            # a refused row's qty null is never laundered into a 0;
+            # only an explicit human figure supersedes it (Law A)
+            if not (l.get("qty_src") == "human" and l.get("qty") is not None):
+                l["qty"] = None
+        out.append(l)
+    # the law re-ADDS what it owns: a refused row the client dropped
+    for k, s in stored.items():
+        if s.get("not_derivable") and k not in seen:
+            out.append(dict(s))
+    return out
+
+
+async def reapply_refusal_law(est_id: str, lines: list[dict]) -> list[dict]:
+    """Async door for estimates PUT/PATCH — re-runs the refusal law
+    against the STORED rows (the server's own last state)."""
+    est = await db.estimates.find_one({"id": est_id}, {"_id": 0, "lines": 1})
+    return apply_refusal_law((est or {}).get("lines") or [], lines)
 
 
 async def _recompute_and_store(

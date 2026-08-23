@@ -752,6 +752,26 @@ RULINGS_REGISTER = {
     ],
     # SEND-46: registered findings and sealed field rulings.
     "findings": [
+        # SEND-111 (Howard ruled 2026-08-14) — THE X-RULER RULING.
+        "the ~half-foot elevation residual is REGISTERED AS NAMED, fix "
+        "DECLINED (SEND-110): ~half is the per-face scale spread drawn "
+        "into the prints themselves; the sides' extra under-read is an "
+        "outer-stroke top fragment never drawn at one corner of each "
+        "side face (-0.43 / -0.44 ft; reproduces on the second house). "
+        "The app reads the drawing correctly — the drawing is "
+        "internally inconsistent. The candidate rule (outermost "
+        "collinear fragment, no joining) was tested and REJECTED "
+        "against controls: it moved all eight kept boundaries by up to "
+        "+10 ft. Nothing in software is to chase this residual.",
+        "ELEVATION NOISE FLOOR (SEND-111, standing accuracy floor for "
+        "every elevation-derived quantity): two elevations of the same "
+        "house draw the SAME real dimension up to 3.8% apart — 9.08 ft "
+        "drawn at 9.36 y-% on front vs 9.73 y-% on left, the ink "
+        "itself. No read can beat the drawing's own spread: ~4% bounds "
+        "what line-work can ever achieve on any set, and it says when "
+        "to stop optimizing. Any future proposal chasing a sub-4% "
+        "elevation residual gets read against this floor FIRST.",
+
         "DATUM-SPAN LIMIT (SEND-52/54): a face whose datum labels print "
         "at a single corner only (Boni FRONT labels its LEFT corner "
         "only, Boni REAR its RIGHT only) can NEVER be spanned by datum "
