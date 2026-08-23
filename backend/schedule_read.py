@@ -308,7 +308,8 @@ def read_schedule_counts(raw: dict) -> None:
                     d["count_basis"] = "one schedule row (no count column)"
             raw["doors"] = (raw.get("doors") or []) + [d]
             door_norms.add(mk)
-            recovered.append({"mark": mk, "page": t["page"], "type": hint,
+            recovered.append({"mark": mk, "page": t["page"],
+                              "type_hint": hint,
                               "size": size_txt, "count": d.get("qty")})
     if row_counts:
         raw["_schedule_row_counts"] = row_counts

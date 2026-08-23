@@ -3373,7 +3373,7 @@ def check_read_consistency(raw: dict) -> list[dict]:
             "code": "schedule_row_recovered", "level": "loud",
             "vars": {"mark": str(m.get("mark") or "?"),
                      "page": str(m.get("page") or "?"),
-                     "type": str(m.get("type") or "?")}})
+                     "type": str(m.get("type_hint") or "?")}})
     _row_sourced = (sum(int(c.get("count") or 0)
                         for c in raw.get("_schedule_row_counts") or [])
                     + sum(int(m.get("count") or 0)

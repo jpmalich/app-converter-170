@@ -140,7 +140,7 @@ def _stored_raw(eid):
                                          "status": "done"},
                                         sort=[("created_at", -1)])
     if not run:
-        pytest.skip("env:stored_run_absent")
+        pytest.skip("env:fixture_data: stored blueprint run absent")
     raw = copy.deepcopy((run.get("result") or {}).get("raw_ai") or {})
     if not raw.get("_ocr_text_by_page") and raw.get("_ocr_text_ref"):
         raw["_ocr_text_by_page"] = (db.ai_blueprint_ocr.find_one(
