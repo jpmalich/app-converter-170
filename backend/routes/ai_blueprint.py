@@ -4250,10 +4250,12 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                                  "why": "size refused — contributes 0 ft²"})
     _openings_deduction = None
     if opening_sqft > 0 or _ded_refused:
+        # RULING 7 (2026-08-01) holds: full precision on the way in — no
+        # intake rounding on engine keys; the note rounds at DISPLAY.
         _openings_deduction = {
-            "deducted_sqft": round(opening_sqft, 1),
-            "gross_sqft": round(siding_sqft, 1),
-            "net_sqft": round(max(siding_sqft - opening_sqft, 0.0), 1),
+            "deducted_sqft": opening_sqft,
+            "gross_sqft": siding_sqft,
+            "net_sqft": max(siding_sqft - opening_sqft, 0.0),
             "refused": _ded_refused,
             "complete": not _ded_refused,
         }

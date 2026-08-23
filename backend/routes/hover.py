@@ -1099,9 +1099,9 @@ def _openings_ded_note(m: dict) -> str:
     d = m.get("_openings_deduction")
     if not d:
         return ""
-    out = (f" · OPENINGS DEDUCTED {d['deducted_sqft']:g} ft² — full area, "
-           f"no threshold (gross {d['gross_sqft']:g} − openings = "
-           f"{d['net_sqft']:g} ft²)")
+    out = (f" · OPENINGS DEDUCTED {round(d['deducted_sqft'], 1):g} ft² — "
+           f"full area, no threshold (gross {round(d['gross_sqft'], 1):g} − "
+           f"openings = {round(d['net_sqft'], 1):g} ft²)")
     groups: dict = {}
     for r in d.get("refused") or []:
         k = ("window" if r.get("kind") == "windows" else "door",

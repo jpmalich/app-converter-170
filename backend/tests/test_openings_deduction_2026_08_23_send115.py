@@ -41,7 +41,8 @@ def test_openings_deduct_full_area_net_carried():
     assert d["deducted_sqft"] == 50.0
     assert d["complete"] is True and d["refused"] == []
     assert m["siding_with_openings_sqft"] == d["net_sqft"]
-    assert d["net_sqft"] == round(d["gross_sqft"] - 50.0, 1)
+    assert d["net_sqft"] == d["gross_sqft"] - 50.0, \
+        "full precision — no intake rounding on an engine key (Ruling 7)"
     assert m["opening_sqft"] == 50.0
 
 
