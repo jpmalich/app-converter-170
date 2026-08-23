@@ -1,5 +1,40 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-23 SEND-117 — ROTATION-NORMALIZE BUILT · REFUSAL RAILS BUILT · UNREACHABILITY PINNED (stamped `2026-08-23 16:05 UTC · f95cc5f · CLEAN · 2825 passed, 9 skipped` first-run, census GREEN, ingress 4 passed)
+Full record: `memory/send117_report.md` · probe `memory/send117_dart_probe.py`.
+1. **ROTATION-NORMALIZE (authorized, built)**: `page_rotation.py` + an
+   `orientation` worker stage BEFORE the model sees a sheet — detects per
+   page (full resolution), rotates payloads, REWRITES persisted page images
+   upright, logs verdicts on the read. THE CUT COMES FROM THE OBSERVED GAP
+   (rotated pages 6.0–24.6% upright vs upright pages 33.9–52.3%): ROTATED
+   ≤25% with dominant rot pass; UPRIGHT ≥33.5; between → INDETERMINATE,
+   NEVER normalized on a guess (dart p8 at 33.3/32.3% is the first real
+   member). 90/270 detectable+correctable; **180 NOT independently
+   detectable with three passes** (lands INDETERMINATE; a rot180 pass is a
+   build to rule on). Share ≤25% forces rot dominance ≥1.5× — pinned.
+   **Conditions met**: Boni 11/11 + Letrick 10/10 UPRIGHT, grosses
+   byte-identical; THE CARVER CHANGED NOTHING.
+2. **DART AFTER NORMALIZATION (deterministic re-read, NOT the scored run)**:
+   detection 10/11 ROTATED CCW-270 validated live (p5 9.6%→74.2% upright);
+   **8/8 refused faces and 12/12 refused sizes SURVIVE** — and the carve
+   still refuses because of a SECOND independent cause: the per-drawing
+   titles print in a decorative font tesseract cannot read even upright
+   (1 of 4 recovered, glyph-dropped). ROTATION WAS NOT THE WHOLE CAUSE FOR
+   THE CARVE; the carver's refusal stays correct. Schedule: `TAG` headers,
+   no COUNT column → no jurisdiction, correctly. The gain lands at the
+   FRESH READ — the model's first upright look at the sheets.
+3. **REFUSAL RAILS (authorized, built)**: aggregation-born refusals rail,
+   GROUPED (a fully-refused house = 3 rails, not 20), EN+ES:
+   faces_refused · opening_sizes_refused · deduction_refused ·
+   page_rotation_normalized · page_rotation_indeterminate. AFTER: dart
+   0→5 flags, Boni 4→7, Letrick 0→3 — the rail no longer reads clean on a
+   house where nothing derived.
+4. **ITEM 3**: the marks-as-1 floors' unreachability is PINNED — a governed
+   row reaching the floors with a falsy qty fails the pin and names the mark.
+5. **SEQUENCING**: rotation LANDED → Howard seals dart truth → predictions
+   first, unrevised → fresh scored read. Symbols placement STILL NOT
+   AUTHORIZED.
+
 ## 2026-08-23 SEND-116 — DEDUCTION FACE RULE (reported→fixed) · ROTATED-RASTER FINDING (report only) · ALL-REFUSED SURFACE SWEEP (stamped `2026-08-23 14:36 UTC · 1a664f8 · CLEAN · 2815 passed, 9 skipped` + census GREEN + INGRESS-SMOKE-CLEAN 4 passed)
 Full record: `memory/send116_report.md`.
 1. **ITEM 1 RULED AND SHIPPED — AN OPENING MAY ONLY DEDUCT FROM A GROSS THAT
