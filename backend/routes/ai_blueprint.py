@@ -4249,6 +4249,7 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                                  "mark": str(_r.get("id") or "?"),
                                  "why": "size refused — contributes 0 ft²"})
     _openings_deduction = None
+    _swos_net = None
     if opening_sqft > 0 or _ded_refused:
         # SEND-116 ITEM 1 (Howard ruled 2026-08-23): AN OPENING MAY ONLY
         # DEDUCT FROM A GROSS THAT INCLUDES THE FACE IT SITS ON. Without
@@ -4292,6 +4293,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                 "refused": _ded_refused,
                 "complete": not _ded_refused,
             }
+            if opening_sqft > 0:
+                _swos_net = _net
 
     # Expand schedule rows into a per-opening list (qty=1 each) so
     # _build_window_openings sees one row per physical window. Matches
@@ -4427,11 +4430,7 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # field None and the line names the refusal. Nothing deducted →
         # None (the 08-08 no-alias pin holds: no gross number ever poses
         # as a +10% HOVER basis).
-        "siding_with_openings_sqft": (
-            _openings_deduction["net_sqft"]
-            if _openings_deduction
-            and not _openings_deduction.get("deduction_refused")
-            and _openings_deduction.get("deducted_sqft") else None),
+        "siding_with_openings_sqft": _swos_net,
         **({"_openings_deduction": _openings_deduction}
            if _openings_deduction else {}),
         "opening_sqft": opening_sqft,
