@@ -135,6 +135,12 @@ export default function useEstimate(id) {
                 // so the next autosave unflagged the exact rows the
                 // cross-family pin guards. Exposed-class field, now carried.
                 cross_family_flag: (saved && saved.cross_family_flag) || null,
+                // SEND-113 exposed-field sweep: viz (bars=chips breakdown)
+                // was the last derivation-born field riding NEITHER the
+                // merge nor the save whitelist — coverage bars died on the
+                // first autosave after a reload. Carried now; pinned
+                // structurally in test_exposed_field_carry_2026_08_23.py.
+                viz: (saved && saved.viz) || null,
                 // SILENT-STRIP CLASS, MERGE LAYER (sealed 2026-07-31):
                 // this merge rebuilt fresh objects and dropped the
                 // derivation note, waste flag, and contractor note on
@@ -530,6 +536,7 @@ export default function useEstimate(id) {
           qty_pending: l.qty_pending ?? null,
           pricing_source: l.pricing_source ?? null,
           cross_family_flag: l.cross_family_flag ?? null,
+          viz: l.viz ?? null,
           base_item: l.base_item ?? null,
           // Iter 36: persist selected per-line adders (windows-tab only).
           adders: Array.isArray(l.adders)
