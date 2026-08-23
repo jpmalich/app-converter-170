@@ -2936,6 +2936,36 @@ def _ocr_verify_marks(raw: dict, image_payloads: list,
             [f"{m['kind']}:{m['mark']}:p{m['page']}"
              for m in count_cell_misses])
 
+    # SEND-114 — THE SCHEDULE ROW PARSER (Howard ruled 2026-08-14).
+    # Rows, not strings: a count cell that will not OCR can still be
+    # located BY ITS ROW. Where a count cannot be established from its
+    # row it REFUSES naming the mark — never a collapse to 1 (a floor
+    # that looks like a count produced the 4; honoring unverified
+    # claims produced the 20). Doors and windows stay separate;
+    # exterior door rows the model missed (the E3 class) are recovered
+    # from the printed row itself.
+    try:
+        from schedule_read import read_schedule_counts
+        read_schedule_counts(raw)
+        if raw.get("_schedule_row_counts"):
+            seam_accounting.account(
+                raw, "schedule_row_counts",
+                [f"{c['kind']}:{c['mark']}:p{c['page']}={c['count']}"
+                 for c in raw["_schedule_row_counts"]])
+        if raw.get("_schedule_count_unread"):
+            seam_accounting.account(
+                raw, "schedule_count_unread",
+                [f"{u['kind']}:{u['mark']}"
+                 for u in raw["_schedule_count_unread"]])
+        if raw.get("_schedule_rows_recovered"):
+            seam_accounting.account(
+                raw, "schedule_rows_recovered",
+                [f"{m['mark']}:p{m['page']}"
+                 for m in raw["_schedule_rows_recovered"]])
+    except Exception:
+        logger.exception("[schedule-read] row parser failed — the read "
+                         "stands unmodified")
+
 
 def compute_read_stability(prev_raw: dict, raw: dict) -> dict:
     """DETERMINISM GATE (Howard ruled 2026-08-08): REPORTS STABILITY,
@@ -3327,6 +3357,31 @@ def check_read_consistency(raw: dict) -> list[dict]:
                          "cells": ", ".join(f"sheet {k}: {v}" for k, v in sorted(cbp.items())),
                          "summed": str(summed),
                          "carried": str(win.get("qty") or 0)}})
+
+    # SEND-114 — the schedule row parser discloses. Refused counts and
+    # recovered rows are LOUD; schedule-derived openings ride the NAMED
+    # UNPLACED BUCKET (a schedule is silent on location by design).
+    for u in (raw.get("_schedule_count_unread") or []):
+        flags.append({
+            "code": "schedule_count_unread", "level": "loud",
+            "vars": {"kind": ("door" if u.get("kind") == "doors"
+                              else "window"),
+                     "mark": str(u.get("mark") or "?"),
+                     "reason": str(u.get("reason") or "")}})
+    for m in (raw.get("_schedule_rows_recovered") or []):
+        flags.append({
+            "code": "schedule_row_recovered", "level": "loud",
+            "vars": {"mark": str(m.get("mark") or "?"),
+                     "page": str(m.get("page") or "?"),
+                     "type": str(m.get("type") or "?")}})
+    _row_sourced = (sum(int(c.get("count") or 0)
+                        for c in raw.get("_schedule_row_counts") or [])
+                    + sum(int(m.get("count") or 0)
+                          for m in raw.get("_schedule_rows_recovered") or []))
+    if _row_sourced:
+        flags.append({
+            "code": "openings_unplaced", "level": "loud",
+            "vars": {"count": str(_row_sourced)}})
 
     # DOOR SIZES FROM PRINT (ruled 2026-08-08): "appears to be 16x7" is
     # an admission of no source. When a door row quotes a printed size,
@@ -4168,6 +4223,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     counts = _bk["counts"]
     opening_sqft = _bk["opening_sqft"]
     perimeter_lf = _bk["opening_perimeter_lf"]
+    # SEND-114 — no floor that looks like a count: when every window
+    # mark's count REFUSED, window_count is REFUSED (None), never a 0
+    # posing as a survey and never marks-as-1.
+    _sched_unread = raw.get("_schedule_count_unread") or []
+    _win_unread = [u for u in _sched_unread if u.get("kind") == "windows"]
 
     # Expand schedule rows into a per-opening list (qty=1 each) so
     # _build_window_openings sees one row per physical window. Matches
@@ -4335,7 +4395,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         "inside_corner_lf": float(raw.get("inside_corner_lf") or 0),
         "opening_perimeter_lf": perimeter_lf,
         "opening_count": _bk["opening_count"],
-        "window_count": counts["window"],
+        "window_count": (counts["window"]
+                         if (counts["window"] or not _win_unread)
+                         else None),
+        **({"opening_marks_unread": _sched_unread}
+           if _sched_unread else {}),
         "entry_door_count": counts["entry_door"],
         "patio_door_count": counts["patio_door"],
         "garage_door_count": counts["garage_door"],

@@ -752,6 +752,24 @@ RULINGS_REGISTER = {
     ],
     # SEND-46: registered findings and sealed field rulings.
     "findings": [
+        # SEND-114 (Howard ruled 2026-08-14) — THE COUNT-CELL FINDING.
+        "EVIDENCE-OR-NULL DISCARDED CORRECT DATA BECAUSE THE "
+        "VERIFICATION MECHANISM COULD NOT REACH IT: the second house's "
+        "window COUNT cells never OCR, so the count-cell locator had "
+        "nothing to verify against and quarantined claims whose sum "
+        "(16) equals the sealed count. THIS IS NOT AN ARGUMENT TO "
+        "WEAKEN THE POLICY — the other reading of this finding is "
+        "dangerous. It is the argument that a schedule ROW needs its "
+        "own locator: a count cell that will not OCR can still be "
+        "located BY ITS ROW. The schedule row parser (schedule_read.py) "
+        "is that locator; where a count cannot be established from its "
+        "row it REFUSES naming the mark — it never collapses to 1, "
+        "because a floor that looks like a count is what produced the "
+        "4, and honoring unverified claims is what produced the 20. "
+        "A schedule-derived opening whose face is unknown rides the "
+        "NAMED UNPLACED BUCKET — a schedule is silent on location by "
+        "design and no face is ever silently assigned.",
+
         # SEND-111 (Howard ruled 2026-08-14) — THE X-RULER RULING.
         "the ~half-foot elevation residual is REGISTERED AS NAMED, fix "
         "DECLINED (SEND-110): ~half is the per-face scale spread drawn "
