@@ -1092,6 +1092,32 @@ def _bb_batten_sticks(m: dict) -> int:
         wall_height_ft=float(m.get("_bb_wall_height_ft") or 0))
 
 
+def _openings_ded_note(m: dict) -> str:
+    """SEND-115 RULING 1 (2026-08-23): the deduction prints on the
+    takeoff — what was deducted AND what refused. Aggregate only until
+    a placement read exists."""
+    d = m.get("_openings_deduction")
+    if not d:
+        return ""
+    out = (f" · OPENINGS DEDUCTED {d['deducted_sqft']:g} ft² — full area, "
+           f"no threshold (gross {d['gross_sqft']:g} − openings = "
+           f"{d['net_sqft']:g} ft²)")
+    groups: dict = {}
+    for r in d.get("refused") or []:
+        k = ("window" if r.get("kind") == "windows" else "door",
+             r.get("why") or "refused")
+        groups.setdefault(k, []).append(str(r.get("mark") or "?"))
+    for (kind, why), marks in groups.items():
+        out += (f". {len(marks)} {kind} mark{'s' if len(marks) != 1 else ''}"
+                f" refused ({', '.join(marks)}) — {why}")
+    if groups:
+        out += ". DEDUCTION INCOMPLETE"
+    else:
+        out += ". Deduction complete — every schedule count read"
+    out += ". Aggregate only — not attributed per face (openings unplaced)"
+    return out
+
+
 def _batten_note(m: dict) -> str:
     """Batten statement — names the spacing, and NAMES THE DELTA
     explicitly when the trade-spec spacing moves off the 12\" default
@@ -1155,9 +1181,12 @@ HOVER_MAPPING_SPEC = [
         # blueprint read carries no such row — its note says what the
         # number is: gross area, openings kept, no waste inside.
         "note": lambda m: (
-            ("From HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'"
-             if (m.get("siding_with_openings_sqft") or 0) > 0
-             else "Gross wall area ÷ 100 = SQ — openings NOT deducted (ruled convention); no waste inside this number, the Waste % field is the only waste")
+            (("Wall area ÷ 100 = SQ" + _openings_ded_note(m)
+              + "; no waste inside this number, the Waste % field is the only waste")
+             if m.get("_openings_deduction")
+             else ("From HOVER 'SIDING WASTE TOTALS → + Openings < 20ft² +10%'"
+                   if (m.get("siding_with_openings_sqft") or 0) > 0
+                   else "Gross wall area ÷ 100 = SQ — no openings read to deduct (deduction ruled 2026-08-23); no waste inside this number, the Waste % field is the only waste"))
             # A DEFAULTED PROFILE PRINTS AS DEFAULTED (Howard ruled
             # 2026-08-09): this row is the spec default, not a choice.
             + " · PROFILE DEFAULTED — not a choice; pick the profile on the estimate"
@@ -1173,7 +1202,8 @@ HOVER_MAPPING_SPEC = [
             ((m.get("siding_with_openings_sqft") or m.get("siding_sqft") or 0)) / 100.0,
             1,
         ),
-        "note": "Siding sqft ÷ 100 = SQ — default Ascend profile (change via edit)",
+        "note": lambda m: ("Siding sqft ÷ 100 = SQ — default Ascend profile "
+                           "(change via edit)") + _openings_ded_note(m),
         "_is_default_siding": True,
     },
     {
@@ -1210,7 +1240,7 @@ HOVER_MAPPING_SPEC = [
             "38 Lap: ceil(sqft ÷ 100 × 11 × (1+waste)) — 11 pcs per square; waste = contractor's % field, not baked into the formula"
             if lp_formulas.is_enabled()
             else "11 PCS per Sq (LP 8\" lap exposure); sqft × 0.11 rounded"
-        ),
+        ) + _openings_ded_note(m),
         "_is_default_siding": True,
     },
     # Iter 68 (2026-06-22) — LP starter-pack auto-fill so HOVER imports

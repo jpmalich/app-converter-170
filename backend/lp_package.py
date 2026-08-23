@@ -407,8 +407,14 @@ def assemble_lp_package(measurements: dict, corner_locations=None, wall_heights=
         l["qty"] = rq
 
     flags = []
+    # SEND-115 RULING 1 (2026-08-23): a blueprint job carrying an
+    # openings deduction prices lap on the NET basis — the same basis
+    # the line note names. Jobs without one are byte-identical to before.
+    _net = (measurements.get("siding_with_openings_sqft")
+            if measurements.get("_openings_deduction") else None)
     try:
-        sqft = float(measurements.get("siding_sqft") or 0)
+        sqft = float(_net if _net is not None
+                     else measurements.get("siding_sqft") or 0)
     except (TypeError, ValueError):
         sqft = 0.0
     lap_math = None

@@ -41,12 +41,22 @@ def test_hover_job_keeps_the_plus10_provenance_note():
 
 
 def test_blueprint_job_names_the_real_basis_no_false_plus10_claim():
+    # STALE ASSERTION UPDATED (named, SEND-115 Ruling 1, 2026-08-23):
+    #   pin: blueprint Charter Oak note, no-deduction case
+    #   asserted: note contains "openings NOT deducted" (the 2026-08-08
+    #     ruled convention — openings never deducted on blueprint jobs)
+    #   asserts now: "no openings read to deduct" (nothing read = nothing
+    #     to deduct; when openings ARE read they DEDUCT and the note
+    #     prints the deduction — pinned in the send115 file)
+    #   ruling that made the old value wrong: SEND-115 Ruling 1
+    #     (2026-08-23) — deduct openings, full area, no threshold, show
+    #     the deduction and every refusal on the takeoff line.
     s = _spec()
     m = {"siding_with_openings_sqft": None, "siding_sqft": 3990}
     assert s["extract"](m) == 39.9, "fallback keeps the identical quantity"
     note = s["note"](m)
     assert "+10%" not in note, "a +10% claim over a number that never got it"
-    assert "openings NOT deducted" in note
+    assert "no openings read to deduct" in note
     assert "no waste inside this number" in note
 
 

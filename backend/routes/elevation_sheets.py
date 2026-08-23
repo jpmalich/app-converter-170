@@ -1833,7 +1833,8 @@ async def elevation_sheet(est_id: str, which: str, user: dict = Depends(get_curr
             "width_ft": width_ft,
             "width_label": fmt_ftin(width_ft) if width_ft is not None else "—",
             "height_ft": height_ft,
-            "height_label": fmt_ftin(height_ft),
+            "height_label": (fmt_ftin(height_ft)
+                             if height_ft is not None else "—"),
             **basis,
             "segments": segments,
             "step_note": ("stepped wall — step location NOT TAPED (indicative only)"

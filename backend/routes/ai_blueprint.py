@@ -4229,6 +4229,35 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     _sched_unread = raw.get("_schedule_count_unread") or []
     _win_unread = [u for u in _sched_unread if u.get("kind") == "windows"]
 
+    # SEND-115 RULING 1 (2026-08-23): DEDUCT OPENINGS, SHOW THE DEDUCTION.
+    # Full area, no threshold. The deduction lands at AGGREGATE until a
+    # placement read exists (openings_unplaced) — never attributed per
+    # face. What refused is NAMED for the takeoff line — a refused count
+    # or size contributes 0 ft², never a guess.
+    _ded_refused = [{"kind": u.get("kind"), "mark": str(u.get("mark") or "?"),
+                     "why": "count cell unreadable"} for u in _sched_unread]
+    for _r in windows:
+        if isinstance(_r, dict) and not _r.get("_count_unread") \
+                and not (_r.get("width_in") and _r.get("height_in")):
+            _ded_refused.append({"kind": "windows",
+                                 "mark": str(_r.get("id") or "?"),
+                                 "why": "size refused — contributes 0 ft²"})
+    for _r in doors:
+        if isinstance(_r, dict) and not _r.get("_count_unread") \
+                and not (_r.get("width_in") and _r.get("height_in")):
+            _ded_refused.append({"kind": "doors",
+                                 "mark": str(_r.get("id") or "?"),
+                                 "why": "size refused — contributes 0 ft²"})
+    _openings_deduction = None
+    if opening_sqft > 0 or _ded_refused:
+        _openings_deduction = {
+            "deducted_sqft": round(opening_sqft, 1),
+            "gross_sqft": round(siding_sqft, 1),
+            "net_sqft": round(max(siding_sqft - opening_sqft, 0.0), 1),
+            "refused": _ded_refused,
+            "complete": not _ded_refused,
+        }
+
     # Expand schedule rows into a per-opening list (qty=1 each) so
     # _build_window_openings sees one row per physical window. Matches
     # the HOVER importer's contract.
@@ -4355,13 +4384,18 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # RULING 7 (2026-08-01): full precision on the way in — no door
         # rounds at intake; the ORDER layer is the one rounding point.
         "siding_sqft": siding_sqft,
-        # BASIS TRUTH (Howard's open question, answered 2026-08-08): a
-        # blueprint read has NO HOVER "+ Openings < 20ft² +10%" row —
-        # aliasing the gross area into this field made the Charter Oak
-        # note claim a +10% source that was never applied. The field
-        # stays None; the line falls back to siding_sqft (same number,
-        # ×1.0) and the note names the real basis.
-        "siding_with_openings_sqft": None,
+        # SEND-115 RULING 1 (2026-08-23, supersedes the 2026-08-08
+        # None-always convention): openings DEDUCT from the siding area
+        # — full area, no threshold — and this field carries the NET.
+        # The takeoff line names the deduction and every refusal. With
+        # nothing deducted the field stays None (the 08-08 no-alias pin
+        # holds: no gross number ever poses as a +10% HOVER basis).
+        "siding_with_openings_sqft": (
+            _openings_deduction["net_sqft"]
+            if _openings_deduction
+            and _openings_deduction["deducted_sqft"] > 0 else None),
+        **({"_openings_deduction": _openings_deduction}
+           if _openings_deduction else {}),
         "opening_sqft": opening_sqft,
         "eaves_lf": float(raw.get("eaves_lf") or 0),
         "rakes_lf": float(raw.get("rakes_lf") or 0),
