@@ -56,6 +56,7 @@ import seam_accounting
 from routes.hover import _build_lines, _build_window_openings
 import measure_staging as staging
 import ocr_geometry
+import page_rotation
 
 logger = logging.getLogger(__name__)
 
@@ -3456,6 +3457,60 @@ def check_read_consistency(raw: dict) -> list[dict]:
             "code": "eave_rake_orientation", "level": "loud",
             "vars": {"eaves": f"{ev:g}", "gsum": f"{g_sum:g}",
                      "esum": f"{e_sum:g}"}})
+    # ======================================================================
+    # SEND-117 ITEM 2 (Howard authorized 2026-08-23): AGGREGATION-BORN
+    # REFUSALS GET RAILS. Dart showed 0 flags while 8 faces and 12 sizes
+    # refused — a silent rail on a house where nothing derived is the
+    # opposite of the thesis. GROUPED, never one row per refusal: a rail
+    # that fires on everything trains the reader to skip it.
+    _faces_ref = sorted(str(w.get("label") or "?") for w in walls
+                        if not (_f(w.get("width_ft")) > 0
+                                and _f(w.get("height_ft")) > 0))
+    if _faces_ref:
+        flags.append({
+            "code": "faces_refused", "level": "loud",
+            "vars": {"count": len(_faces_ref),
+                     "faces": ", ".join(_faces_ref)}})
+    _sizes_ref = []
+    for _kind in ("windows", "doors"):
+        for _o in (raw.get(_kind) or []):
+            if not isinstance(_o, dict) or _o.get("_count_unread"):
+                continue
+            if _kind == "doors" and str(
+                    _o.get("exterior_evidence") or "").lower() == "none":
+                continue
+            if not (_f(_o.get("width_in")) > 0 and _f(_o.get("height_in")) > 0):
+                _sizes_ref.append(str(_o.get("id") or "?"))
+    if _sizes_ref:
+        flags.append({
+            "code": "opening_sizes_refused", "level": "loud",
+            "vars": {"count": len(_sizes_ref),
+                     "marks": ", ".join(sorted(_sizes_ref))}})
+    _n_rows = sum(1 for _k in ("windows", "doors")
+                  for _o in (raw.get(_k) or [])
+                  if isinstance(_o, dict) and not _o.get("_count_unread"))
+    if _faces_ref and _n_rows:
+        flags.append({
+            "code": "deduction_refused", "level": "loud",
+            "vars": {"rows": _n_rows, "count": len(_faces_ref),
+                     "faces": ", ".join(_faces_ref)}})
+    # SEND-117 ITEM 1: the orientation verdicts rail — what normalized
+    # and what stayed indeterminate, per page.
+    _rot = raw.get("_page_rotation") or []
+    _rot_pages = [str(e["page"]) for e in _rot
+                  if isinstance(e, dict) and e["verdict"] == "ROTATED"]
+    _ind_pages = [str(e["page"]) for e in _rot
+                  if isinstance(e, dict) and e["verdict"] == "INDETERMINATE"]
+    if _rot_pages:
+        flags.append({
+            "code": "page_rotation_normalized", "level": "warn",
+            "vars": {"count": len(_rot_pages),
+                     "pages": ", ".join(_rot_pages)}})
+    if _ind_pages:
+        flags.append({
+            "code": "page_rotation_indeterminate", "level": "loud",
+            "vars": {"count": len(_ind_pages),
+                     "pages": ", ".join(_ind_pages)}})
     return flags
 
 
@@ -5335,6 +5390,41 @@ async def _execute_ai_blueprint_worker(
             {"$set": {"stage": stage, "updated_at": datetime.now(timezone.utc)}},
         )
     try:
+        # SEND-117 ITEM 1 (Howard authorized 2026-08-23): ROTATION-
+        # NORMALIZE BEFORE THE MODEL SEES A SHEET. A rotated raster was
+        # the single root cause of most of dart's failures (face carve,
+        # schedule jurisdiction, heights). Detection is the upright-share
+        # collapse across the three OCR passes; the cut comes from the
+        # observed gap (24.6 → 33.9 across 32 pages of three houses).
+        # INDETERMINATE pages are NEVER normalized on a guess — logged
+        # and railed. Persisted page images are rewritten upright so the
+        # annotator, the model and the OCR store all see the same sheet.
+        await _set_stage("orientation")
+        _rot_log: list[dict] = []
+        try:
+            from config import UPLOAD_DIR  # local import to dodge cycle
+            _rd = await db.ai_blueprint_runs.find_one(
+                {"run_id": run_id}, {"page_paths": 1})
+            _pnames = [s for s in ((_rd or {}).get("page_paths") or ""
+                                   ).split(",") if s]
+            for _i in range(len(image_payloads)):
+                _v = await asyncio.to_thread(
+                    page_rotation.detect_image_bytes,
+                    image_payloads[_i], _ocr_runs)
+                _v["page"] = _i + 1
+                _rot_log.append(_v)
+                if _v["verdict"] == "ROTATED":
+                    image_payloads[_i] = _compress_for_claude(
+                        await asyncio.to_thread(
+                            page_rotation.rotate_image_bytes,
+                            image_payloads[_i], _v["rotation_ccw"]))
+                    if _i < len(_pnames) and _pnames[_i]:
+                        await asyncio.to_thread(
+                            (UPLOAD_DIR / _pnames[_i]).write_bytes,
+                            image_payloads[_i])
+        except Exception:
+            logger.exception(
+                "[ai-blueprint] orientation pass failed — pages stand as rendered")
         await _set_stage("claude")
         # Iter 78z+ (Annotations as Claude hints) — load + format
         # user-drawn boxes so Claude can use them as ground truth.
@@ -5469,6 +5559,10 @@ async def _execute_ai_blueprint_worker(
                     kept=int(_pt["read"]))
         except Exception:
             logger.exception("[ai-blueprint] page-truncation accounting failed")
+        if _rot_log:
+            # SEND-117: the orientation verdicts ride the raw so the
+            # rail can name what normalized and what stayed indeterminate.
+            raw["_page_rotation"] = _rot_log
         # OCR-FOR-COORDINATES (ruled 2026-08-08): deterministic, local,
         # no extra model call. LOCATION ONLY — never value. Runs off the
         # event loop; failure never sinks the run.
