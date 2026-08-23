@@ -335,5 +335,15 @@ heights hypothesis-only · EST-886440 PROTECTED (untouched; probes read-only) ·
 derived write · purity pin holds · quantities only, no dollars · nothing adjusted toward
 any sealed figure.
 
-## STAMP
-(appended after the clean run)
+## STAMP (verbatim)
+```
+RECORDED: 2026-08-22 23:52 UTC · 8934549 · CLEAN
+RESULT: 2777 passed, 9 skipped, 7 warnings in 428.16s (0:07:08)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+INGRESS SMOKE: 4 passed in 1.90s
+```
+One named transient in the first run (guard-fail logged, not stamped over):
+`test_demo_reset` isolation — a disposable Haugh-address estimate (`0319b122`) was
+hard-deleted asynchronously mid-run (in neither `estimates` nor `estimates_trash` after;
+the known live-window family). Passed standalone and in the stamped rerun. No test
+assertion changed; no real estimate touched; EST-886440 untouched.
