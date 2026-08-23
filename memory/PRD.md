@@ -1,5 +1,121 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## STANDING NOTES (Howard's rulings, not reflections — read these first)
+- **THE PRINTS FIRST**: the 20-vs-4 window swing stayed open from send 19 to
+  send 113 — the whole thread. It was never sampling noise, never a pipeline
+  defect: ONE count-cell read, fabricating when trusted and collapsing when
+  quarantined. It was solved by READING THE SCHEDULE, which nobody had looked
+  at. Same shape as the 39, the 30'-2", the 20.0 stackup, the chimney on the
+  right, the fabricated chase — every one settled by looking at the DRAWING
+  rather than at the model's output. THE NEXT UNEXPLAINED NUMBER SENDS SOMEONE
+  TO THE PRINTS FIRST.
+- **GENERALITY CONDITION (ruled at SEND-114 close)**: everything built must
+  work on other blueprints, not just Letrick and Boni. Contractor effort is
+  acceptable (taping refused heights, adjusting zones, confirming openings);
+  a system reliable only on these two houses is not. Every new rule and parser
+  gets the test: "would this still make sense on a completely different plan
+  set with different drafting conventions?" A rule that works only by a quirk
+  of Letrick or Boni is NAMED HOUSE-SPECIFIC and never becomes general logic.
+- **THE ~HALF-FOOT RESIDUAL** (send 110/111): named with both causes — front/
+  rear ride outer boundary twins at both corners, sides drop one corner each to
+  inner (twin separations 0.38–0.54 ft); four per-face scale rulers disagree
+  1–3.8% underneath. The app reads the drawing correctly; the drawing is
+  internally inconsistent. Fix declined on evidence; nothing in software
+  chases it.
+- **THE 3.8% ELEVATION NOISE FLOOR** (send 111): a standing accuracy bound on
+  drawn elevation geometry. Every future sub-4% elevation-residual proposal is
+  read against it FIRST.
+
+## 2026-08-23 SEND-114 — THE SCHEDULE ROW PARSER: RULED AND BUILT (stamped `2026-08-23 03:10 UTC · d6d9cb1 · CLEAN · 2797 passed, 9 skipped` + census GREEN 0 PENDING_CONVERSION + INGRESS-SMOKE-CLEAN 4 passed)
+Full record: `memory/send114_report.md` · probe `memory/send114_probe.py`
+(read-only, stored runs, deep copies — no estimate written; EST-886440 untouched).
+
+**=== THE RULING ===**
+OPENINGS: THE SCHEDULE ROW PARSER FIRST, the symbols placement read second.
+Deterministic text before graphics; scoreable against a seal; fixes the largest
+live quantity error; placement has nothing to place until the count exists.
+Conditions: ROWS ARE THE EVIDENCE; mark and size are already reliable and are
+NOT rebuilt; a count that cannot be established from its row REFUSES AND NEVER
+COLLAPSES TO 1; doors and windows stay separate; a schedule-derived opening
+whose face is unknown is NEVER silently assigned.
+
+**=== THE FINDINGS, WHICH OUTLAST THE RULING ===**
+1. **THE 20-vs-4 SWING IS SOLVED, OPEN SINCE SEND 19.** Both figures came from
+   ONE source — the LLM's schedule count-cell read. Honoured, it fabricated
+   (mark C claimed 9 vs 5 between runs → 20); quarantined, it collapsed to 1
+   per mark → 4. NEITHER WAS EVER A READ OF THE SCHEDULE.
+2. **EVIDENCE-OR-NULL DISCARDED CORRECT DATA.** The latest run's discarded
+   claims sum to 16 — the sealed count. Boni's count cells never OCR, so the
+   locator had nothing to verify and quarantined a right answer. **THE COROLLARY,
+   RECORDED EXPLICITLY because the other reading is dangerous: THIS IS NOT A
+   REASON TO WEAKEN THE POLICY. It is the reason a schedule ROW needs its own
+   locator.** (Both worded thus in `RULINGS_REGISTER["findings"]`, pinned.)
+3. **THE LIVE UNDER-DEDUCTION ON BONI IS ≈335 ft²** — about 3.3 SQ of siding
+   charged for holes: carried figures 4 windows, 3 doors, 190.5 ft² against a
+   sealed ≈526 ft².
+4. **THE SCHEDULE ROUTE SCORES 16/16 windows, 4/4 doors, 453–501 ft², −4.7%**
+   against the seal.
+5. **A SCHEDULE IS SILENT ON LOCATION BY DESIGN.** Schedule gives count and
+   size; symbols give placement. Different halves, not competing answers.
+6. **E3 SLIDING IS MISSED IN 5 OF 6 RUNS** — and it is a door that takes trim.
+
+**=== WHAT WAS BUILT (the SEND-114 order: build it, score it) ===**
+Scope stated, closure NOT claimed — the parser reads what its jurisdiction
+covers and refuses the rest; nothing on placement exists.
+1. **`schedule_read.py` (new), wired into `_ocr_verify_marks`** — deterministic
+   text over the existing OCR store; tables anchor on WINDOW/DOOR SCHEDULE
+   headers; row anchors: mark token → unique product-code → unique printed-size
+   (locating text only, never a value); ambiguity refuses. **Count cells read BY
+   POSITION** (COUNT column strip × located row band): one integer → evidence
+   (`_row_count`); empty/ambiguous → the mark REFUSES NAMED
+   (`schedule_count_unread`, loud) and NEVER collapses to 1. JURISDICTION only
+   where a COUNT column exists; locator-verified cells stand; a no-count-column
+   schedule's one-row-one-opening convention is not overruled.
+2. **E3-class recovery**: exterior door rows the model missed are recovered from
+   the printed row itself (HOLLOW CORE never; rows with no exterior evidence go
+   to a NAMED unclaimed list, never guessed). Digit-sibling vs letter-drift
+   guard (E3 vs E2 legitimate; F2~E2 skipped).
+3. **THE NAMED UNPLACED BUCKET**: schedule-derived instances are never silently
+   assigned a face — loud `openings_unplaced` flag carries the count and the
+   reason. Legacy mark-level claims keep `placement_source: "elevation"` on the
+   record; no new quantity rides the known-wrong G1/G2 "front".
+4. **Billed siding unmoved BY RULING** (2026-08-08: `siding_with_openings_sqft`
+   None on blueprint jobs) — the parser improves counts and the
+   measurement-surface deduction figure; billed siding stays until the symbols
+   route lands placement AND a deduction ruling exists. What moves on next
+   rederive: window/door/garage cap counts, sill-LF fallback, opening_count/
+   opening_sqft, every refusal loud on the rail.
+5. **SCORE (check, never target; nothing tuned toward 16, 4, or 526)** — Boni:
+   doors **4/4 with E3 recovered** (residual 0); windows **REFUSED honestly**
+   (None, 4 marks named — the print's count cells are not ink-text; the parser
+   cannot read what is not there and says so per mark, sealed 16); deduction
+   148.0 ft² carried, every missing ft² NAMED (16 windows + 2 door sizes
+   refused). Letrick: windows **8 read from rows** (A=1, B=4, D=3; C and F
+   refused named), deduction from readable rows 97.6 ft² (was 41.6); doors: no
+   COUNT column → no jurisdiction → E1/E2 row-per-instance stand (2).
+6. **GENERALITY (per the standing condition)**: general — header/column
+   anchoring, row-band association, count-by-position, refusal law,
+   jurisdiction rule. HOUSE-LEANING, NAMED — `OPENING ID`/`PRODUCT CODE`/
+   `LIBRARY NAME` header vocabulary, the `_STOPS` title-block words, and the
+   E/G mark-prefix + row-text exterior signals of the E3 recovery. Every
+   house-leaning piece FAILS SAFE: degrades to refusal/no-jurisdiction, never
+   to a fabricated count.
+7. **Also this send (carried from 113)**: the exposed-field sweep completing —
+   `viz` rides merge + save whitelist; the structural pin scanning
+   `useEstimate.js` for all 13 carried fields is GREEN in the stamp.
+8. **STAMP**: first run guard-failed `2 failed, 2795 passed` — NOT flakes, both
+   the guard catching this send's new code, both fixed IN CODE (bare `type` key
+   → `type_hint` schema key at the producer; unregistered skip class →
+   `env:fixture_data`), zero old pins touched. Stamped rerun:
+   `2026-08-23 03:10 UTC · d6d9cb1 · CLEAN · [tests] · 2797 passed, 9 skipped,
+   7 warnings in 438.88s` · census GREEN 0 PENDING_CONVERSION ·
+   INGRESS-SMOKE-CLEAN `4 passed in 1.67s`. 10 new pins in
+   `test_schedule_row_parser_2026_08_23_send114.py`.
+9. **NEXT**: the SYMBOLS PLACEMENT READ — queued, NOT AUTHORIZED. Its first
+   job, named in the ruling: Boni's two side-entry garage doors the app puts on
+   the FRONT (known-wrong placement, sealed answer). Then per-face deduction
+   needs a deduction ruling. Live estimates change only on their next rederive.
+
 ## 2026-08-23 SEND-113 — OPENINGS REPORT (both routes, REPORT ONLY) + EXPOSED-FIELD SWEEP (stamped `2026-08-23 01:05 UTC · ede882d · CLEAN · 2788 passed, 9 skipped` + census GREEN + INGRESS-SMOKE-CLEAN)
 Full record: `memory/send113_report.md` · probe `memory/send113_probe.py` (read-only). NEITHER ROUTE BUILT.
 1. **SCHEDULES EXIST, BOTH HOUSES, RECOVERABLE AS ROWS from the existing OCR store**: Boni p6+p7 (window schedule header `OPENING ID|PRODUCT CODE|SIZE|COUNT|LIBRARY NAME`; door rows E2/E3/G1 16'-0"×8'-0"/G2 9'-0"×8'-0" — **the schedule prints all FOUR exterior doors incl. E3 sliding**, which the LLM read misses in 5 of 6 runs); Letrick p5+p7 (incl. one row with a LOCATED count: `A · BOWMAN KEMP 4040 · 1`). MARK+SIZE reliable; window COUNT cells never OCR on Boni; interior doors mixed into the same table.

@@ -79,5 +79,37 @@ only on their next rederive.
 The symbols placement read. Its first job, named in the ruling: Boni's two side-entry
 garage doors that the app puts on the FRONT — a known-wrong placement with a sealed answer.
 
-## STAMP
-(appended after the clean run)
+# 7. GENERALITY (Howard's standing condition, applied to this parser)
+Named plainly, general vs house-leaning — every house-leaning piece FAILS SAFE
+(degrades to refusal/no-jurisdiction, never to a fabricated count):
+- **GENERAL**: WINDOW/DOOR SCHEDULE header anchoring; MARK/SIZE/COUNT/QTY column
+  words; row-band association; count-by-position; empty-cell refusal; the
+  no-count-column jurisdiction rule (one row = one opening is the drafting
+  convention, not this parser's to overrule).
+- **HOUSE-LEANING, NAMED**: (a) `OPENING ID`/`PRODUCT CODE`/`LIBRARY NAME` header
+  words are these plan sets' (Softplan-style) vocabulary — additive; a set using
+  other words simply locates no columns → no jurisdiction → rows stand; (b) the
+  `_STOPS` table-bottom words (`FINAL CONSTRUCTION PRINTS`, `LEGACY FEATURES`)
+  are these sets' title-block text — a fixed fallback stop bounds the body when
+  absent; (c) E3-class recovery keys on E/G mark prefixes + GARAGE/SLIDING/GLASS
+  row text — a drafting convention of these plans; on a set with other mark
+  conventions it does not fire, and rows with no exterior evidence already go to
+  the named unclaimed list, never guessed.
+
+## STAMP (VERBATIM, from memory/handback_green_log.md)
+- 2026-08-23 03:10 UTC · d6d9cb1 · CLEAN · [tests] · 2797 passed, 9 skipped, 7 warnings in 438.88s (0:07:18)
+- 2026-08-23 03:10 UTC · d6d9cb1 · INGRESS-SMOKE-CLEAN · 4 passed in 1.67s
+- CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+
+**FIRST RUN GUARD-FAILED (2 failed, 2795 passed) — NOT FLAKES, both named, both
+the guard catching THIS SEND'S new code; both fixed IN CODE, zero old pins touched:**
+1. `test_schema_consumer_keys_2026_08_10` — the consumer-key census caught
+   `ai_blueprint.py` reading bare `.get('type')` off recovered rows, a key the
+   model is never asked to produce. Fixed at the PRODUCER: `schedule_read.py`
+   recovered entries now carry `type_hint` (an existing schema key).
+2. `test_skip_reason_class_registry_2026_08_13` — the new SEND-114 test file's
+   skip reason `env:stored_run_absent` was an unregistered class. Reclassed to
+   the registered `env:fixture_data`.
+No live-invariant pin fired; nobody was in the app; no estimate touched;
+EST-886440 untouched. Suite deltas: 2788 → 2797 passed (+9 net new pins), 9
+skips unchanged (roster printed, same 9, same rulings).
