@@ -102,6 +102,19 @@ SEAM_REGISTRY = {
     "mark_size_quotes_nulled":
         "Printed-size quotes OCR cannot find on the row's sheets — the "
         "quote is killed, its parse never reaches the takeoff.",
+    "lf_lanes_nulled_inputs_dead":
+        "SEND-122 item 1 (Howard ruled 2026-08-24): computed LF totals "
+        "(starter/eaves/rakes/corner LF) arrive as bare model arithmetic "
+        "over the wall dimensions; when the quote guard nulls the widths "
+        "or heights those formulas stand on, the totals null with them — "
+        "Tanis carried starter 308 = 2×97 + 2×57 and eaves 194 = 2×97 "
+        "built from widths already dismissed as fabricated.",
+    "counts_refused_no_evidence":
+        "SEND-122 item 2 (Howard ruled 2026-08-24, supersedes the "
+        "ungoverned one-row-one-opening convention): a window/door row "
+        "whose qty carries no located/parsed count evidence REFUSES "
+        "named — it never floors to 1. Tanis reached the marks-as-1 "
+        "floor through the ungoverned lane: window_count 7 vs sealed 20.",
     "mark_count_cells_nulled":
         "COUNT-CELL claims OCR cannot find as an isolated integer "
         "token in the mark's row-band on the claimed page — the claim "

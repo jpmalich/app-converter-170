@@ -2989,12 +2989,13 @@ def compute_read_stability(prev_raw: dict, raw: dict) -> dict:
             return None
 
     def _wins(d):
-        return sum(int(w.get("qty") or 1) for w in (d.get("windows") or [])
-                   if isinstance(w, dict))
+        # SEND-122: evidence counts only — a refused row is not a 1.
+        return sum(int(w.get("qty") or 0) for w in (d.get("windows") or [])
+                   if isinstance(w, dict) and not w.get("_count_unread"))
 
     def _doors(d):
-        return sum(int(x.get("qty") or 1) for x in (d.get("doors") or [])
-                   if isinstance(x, dict))
+        return sum(int(x.get("qty") or 0) for x in (d.get("doors") or [])
+                   if isinstance(x, dict) and not x.get("_count_unread"))
 
     def _gables(d):
         return sum(int(p.get("gable_ends") or 0)
@@ -3103,6 +3104,111 @@ def _opposing_pairs(widths: dict) -> tuple[float, float, list]:
     return _side("front", "back"), _side("left", "right"), disags
 
 
+def _null_computed_lf_lanes(raw: dict) -> None:
+    """SEND-122 ITEM 1 (Howard ruled 2026-08-24): THE COMPUTED LF LANE
+    MAY NOT OUTLIVE ITS NULLED INPUTS. starter/eaves/rakes/corner LF
+    arrive as BARE model arithmetic (no quote — the quote guard never
+    sees them), yet their formulas stand on the guarded wall dims.
+    Tanis: starter 308 = 2×97 + 2×57 and eaves 194 = 2×97 EXACTLY —
+    arithmetic products of widths nulled as fabricated/misread. A
+    computed total whose formula inputs died nulls NAMED, never carried.
+    SCOPE (stated, not closure): the computed LF lane only. Printed-only
+    bare fields (soffit_sqft, friezes, drip_edge_lf, total_trim_sqft)
+    remain OUTSIDE any guard — reported at SEND-122, awaiting a ruling."""
+    if not isinstance(raw, dict):
+        return
+    walls = [w for w in (raw.get("walls") or []) if isinstance(w, dict)]
+    if not walls:
+        return
+
+    def _fv(v):
+        try:
+            return float(v or 0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    widths_alive = all(_fv(w.get("width_ft")) > 0 for w in walls)
+    heights_alive = all(_fv(w.get("height_ft")) > 0 for w in walls)
+    gable_walls = [w for w in walls
+                   if _fv(w.get("gable_triangle_height_ft")) > 0]
+    eave_walls = [w for w in walls
+                  if _fv(w.get("gable_triangle_height_ft")) <= 0]
+    eave_widths_alive = (all(_fv(w.get("width_ft")) > 0 for w in eave_walls)
+                         if eave_walls else widths_alive)
+    rake_widths_alive = (all(_fv(w.get("width_ft")) > 0 for w in gable_walls)
+                         if gable_walls else widths_alive)
+    hs = raw.get("outside_corner_heights_ft") or []
+    corner_heights_alive = bool(hs) and all(_fv(h) > 0 for h in hs)
+    nulled: list[dict] = []
+
+    def _kill(key: str, why: str) -> None:
+        v = _fv(raw.get(key))
+        if v <= 0:
+            return
+        raw[key] = None
+        nulled.append({"lane": key, "value": v, "why": why})
+
+    if not widths_alive:
+        _kill("starter_lf",
+              "perimeter formula inputs dead — wall width(s) nulled/unread")
+    if not eave_widths_alive:
+        _kill("eaves_lf",
+              "eave-wall width(s) nulled/unread — the eave sum has no live inputs")
+    # The plane sum still governs rakes later WHEN evidenced planes
+    # carry rake figures; only the bare top-level number dies here.
+    if not rake_widths_alive:
+        _kill("rakes_lf",
+              "gable-wall width(s) nulled/unread — the rake formula has no live inputs")
+    if not (corner_heights_alive or heights_alive):
+        _kill("outside_corner_lf",
+              "per-corner heights nulled/unread and wall heights refused — "
+              "corner trim LF has no live height input")
+    if not heights_alive:
+        _kill("inside_corner_lf",
+              "wall heights refused — count × avg height would ride the "
+              "model-height hypothesis, which never feeds a quantity")
+    if nulled:
+        raw["_lf_lane_nulled"] = nulled
+        seam_accounting.account(
+            raw, "lf_lanes_nulled_inputs_dead",
+            [f"{n['lane']}={n['value']:g}" for n in nulled])
+
+
+def _refuse_unevidenced_counts(raw: dict) -> None:
+    """SEND-122 ITEM 2 (Howard ruled 2026-08-24, superseding the
+    ungoverned-row one-row-one-opening convention left standing at
+    SEND-114/116): A ROW WITH NO COUNT EVIDENCE REFUSES. IT DOES NOT
+    CARRY 1. The marks-as-1 floors were pinned unreachable for GOVERNED
+    rows (SEND-117 item 3); Tanis reached them through the UNGOVERNED
+    lane — six count-cell locate misses flooring to 1 each =
+    window_count 7 against a sealed 20. After every locator has run, a
+    window/door row whose qty carries no evidence (None/0) becomes a
+    NAMED refusal riding the same rails as schedule_count_unread."""
+    if not isinstance(raw, dict):
+        return
+    refused: list[dict] = []
+    for coll in ("windows", "doors"):
+        for r in (raw.get(coll) or []):
+            if not isinstance(r, dict) or r.get("_count_unread"):
+                continue
+            try:
+                q = int(r.get("qty") or 0)
+            except (TypeError, ValueError):
+                q = 0
+            if q > 0:
+                continue
+            r["qty"] = None
+            r["_count_unread"] = True
+            refused.append({"kind": coll,
+                            "mark": str(r.get("id") or "?").strip() or "?",
+                            "why": "no count evidence — refused, never 1"})
+    if refused:
+        raw.setdefault("_schedule_count_unread", []).extend(refused)
+        seam_accounting.account(
+            raw, "counts_refused_no_evidence",
+            [f"{u['kind']}:{u['mark']}" for u in refused])
+
+
 def check_read_consistency(raw: dict) -> list[dict]:
     """INTERNAL CONSISTENCY CHECKER (Howard ruled 2026-08-07): the card
     arrives already clean — contradictions the app can catch itself never
@@ -3149,7 +3255,7 @@ def check_read_consistency(raw: dict) -> list[dict]:
         placed = []
         for src, kind in ((windows, "window"), (doors, "door")):
             for o in src:
-                if not isinstance(o, dict):
+                if not isinstance(o, dict) or o.get("_count_unread"):
                     continue
                 elev = str(o.get("elevation") or "").strip().lower()
                 if elev != lbl:
@@ -3511,6 +3617,28 @@ def check_read_consistency(raw: dict) -> list[dict]:
             "code": "page_rotation_indeterminate", "level": "loud",
             "vars": {"count": len(_ind_pages),
                      "pages": ", ".join(_ind_pages)}})
+    # SEND-122 ITEM 1: the computed-LF lane nulled on dead inputs.
+    _lfn = raw.get("_lf_lane_nulled") or []
+    if _lfn:
+        flags.append({
+            "code": "lf_lane_refused", "level": "loud",
+            "vars": {"count": len(_lfn),
+                     "lanes": ", ".join(
+                         f"{n['lane']} {float(n['value']):g}"
+                         for n in _lfn)}})
+    # SEND-122 ITEM 3: THE REFUSAL BEFORE THE READ — a drawn below-grade
+    # level names itself; no below-grade/walkout path exists, so any
+    # walkout siding is invisible to the read and the rail says so.
+    _bg_pages = []
+    for _s in (raw.get("sheets_identified") or []):
+        _t = str((_s or {}).get("sheet_title") or "").upper()
+        if any(k in _t for k in ("BASEMENT", "LOWER LEVEL", "WALKOUT",
+                                 "WALK-OUT", "WALK OUT")):
+            _bg_pages.append(f"p{_s.get('page')} \u201c{_s.get('sheet_title')}\u201d")
+    if _bg_pages:
+        flags.append({
+            "code": "below_grade_unread", "level": "loud",
+            "vars": {"pages": "; ".join(_bg_pages)}})
     return flags
 
 
@@ -4420,12 +4548,22 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # deduction (single-source convention — pre-deducting here would
     # double-deduct downstream in lp_package.assemble_lp_package).
     _perimeter_lf = sum(float(w.get("width_ft") or 0) for w in walls)
+    # SEND-122 ITEM 1: lanes the input-death sweep nulled carry None —
+    # a refused LF never resurrects through an `or 0` or a hypothesis.
+    _lf_nulled_lanes = {str(n.get("lane")): n
+                        for n in (raw.get("_lf_lane_nulled") or [])
+                        if isinstance(n, dict)}
     _printed_starter = float(raw.get("starter_lf") or raw.get("eaves_lf") or 0)
     if _perimeter_lf > 0:
         _starter_lf = _perimeter_lf
         _starter_basis = (
             f"perimeter {_perimeter_lf:.0f} LF — engine deducts entry-door widths "
             f"per convention (printed read {_printed_starter:.0f})")
+    elif "starter_lf" in _lf_nulled_lanes:
+        _starter_lf = None
+        _starter_basis = (
+            "REFUSED — printed starter nulled: its perimeter formula inputs "
+            "(wall widths) were nulled by the evidence guard (SEND-122)")
     else:
         _starter_lf = _printed_starter
         _starter_basis = "printed read (no wall widths extracted)"
@@ -4489,8 +4627,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         **({"_openings_deduction": _openings_deduction}
            if _openings_deduction else {}),
         "opening_sqft": opening_sqft,
-        "eaves_lf": float(raw.get("eaves_lf") or 0),
-        "rakes_lf": float(raw.get("rakes_lf") or 0),
+        "eaves_lf": (None if "eaves_lf" in _lf_nulled_lanes
+                     else float(raw.get("eaves_lf") or 0)),
+        "rakes_lf": (None if ("rakes_lf" in _lf_nulled_lanes
+                              and not raw.get("_rakes_plane_summed"))
+                     else float(raw.get("rakes_lf") or 0)),
         # Boni ruling 1: porch plane ceiling feeds soffit; plane marker
         # tells the engine (and future overrides) the eave figure is a
         # roof-plane sum, not a wall derivation.
@@ -4514,11 +4655,13 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         **({"_gable_ends_plane_read": int(raw["_gable_ends_plane_read"])}
            if raw.get("_gable_ends_plane_read") else {}),
         "starter_lf": _starter_lf,
-        "outside_corner_lf": float(
+        "outside_corner_lf": (None if "outside_corner_lf" in _lf_nulled_lanes
+                              else float(
             raw.get("outside_corner_lf")
             or 4 * float(raw.get("avg_wall_height_ft") or 0)
-        ),
-        "inside_corner_lf": float(raw.get("inside_corner_lf") or 0),
+        )),
+        "inside_corner_lf": (None if "inside_corner_lf" in _lf_nulled_lanes
+                             else float(raw.get("inside_corner_lf") or 0)),
         "opening_perimeter_lf": perimeter_lf,
         "opening_count": _bk["opening_count"],
         "window_count": (counts["window"]
@@ -4578,13 +4721,16 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # Class C (R6 sealed): read from explicit assignment, never inferred.
     measurements["opening_facade_assignments"] = raw.get("opening_facade_assignments") or []
     # wbw — measured sum of window bottom (sill) widths off the schedule.
-    _wbw = sum(max(1, int(w.get("qty") or 1)) * float(w.get("width_in") or 0) / 12.0
-               for w in windows)
+    _wbw = sum(int(w.get("qty") or 0) * float(w.get("width_in") or 0) / 12.0
+               for w in windows
+               if isinstance(w, dict) and not w.get("_count_unread"))
     if _wbw > 0:
         measurements["window_bottom_width_total_lf"] = _wbw
     measurements["outside_corner_count"] = int(raw.get("outside_corner_count") or 0)
     measurements["inside_corner_count"] = int(raw.get("inside_corner_count") or 0)
-    measurements["inside_corner_lf"] = float(raw.get("inside_corner_lf") or 0)
+    measurements["inside_corner_lf"] = (
+        None if "inside_corner_lf" in _lf_nulled_lanes
+        else float(raw.get("inside_corner_lf") or 0))
     if _osc_features:
         measurements["_ai_osc_features"] = _osc_features
     if gable_pitch_provenance:
@@ -4669,6 +4815,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         return (elev, True) if elev in _valid_walls else ("front", False)
 
     for win in windows:
+        if win.get("_count_unread"):
+            continue  # no count evidence — refused, never 1 (SEND-122)
         try:
             qty = max(1, int(win.get("qty") or 1))
         except (TypeError, ValueError):
@@ -4689,6 +4837,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                 "on_dormer": False,
             })
     for d in doors:
+        if d.get("_count_unread"):
+            continue  # no count evidence — refused, never 1 (SEND-122)
         try:
             qty = max(1, int(d.get("qty") or 1))
         except (TypeError, ValueError):
@@ -4775,10 +4925,10 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
 
     measurements["_ai_openings_schedule"] = [
         _sched_row(win, "window", _hint_to_style.get((win.get("type_hint") or "").lower(), ""))
-        for win in windows
+        for win in windows if not win.get("_count_unread")
     ] + [
         _sched_row(d, _hint_to_door_type.get((d.get("type_hint") or "").lower(), "entry_door"), "")
-        for d in doors
+        for d in doors if not d.get("_count_unread")
     ]
 
     # Iter 79j.34 sanity reconciliation — REWIRED (ruled 2026-08-01, step 1,
@@ -5586,6 +5736,12 @@ async def _execute_ai_blueprint_worker(
             _null_unverified_quotes(raw)
         except Exception:
             logger.exception("[ai-blueprint] unverified-null pass failed")
+        # SEND-122 ITEM 1: computed LF totals die with their inputs —
+        # runs AFTER the quote guard so it sees the surviving dims.
+        try:
+            _null_computed_lf_lanes(raw)
+        except Exception:
+            logger.exception("[ai-blueprint] lf-lane null pass failed")
         try:
             _one_source_one_path_guard(raw)
         except Exception:
@@ -5599,6 +5755,12 @@ async def _execute_ai_blueprint_worker(
             await asyncio.to_thread(_ocr_verify_marks, raw, image_payloads)
         except Exception:
             logger.exception("[ai-blueprint] mark-locate failed — rows stand")
+        # SEND-122 ITEM 2: after every locator has run, a row with no
+        # count evidence REFUSES NAMED — it never floors to 1.
+        try:
+            _refuse_unevidenced_counts(raw)
+        except Exception:
+            logger.exception("[ai-blueprint] count-refusal pass failed")
         await _set_stage("aggregating")
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
         # SPEC-FIELD PRECEDENCE (ruled 2026-08-07): a PRINTED overhang
