@@ -7217,7 +7217,7 @@ construction photos. Your ONLY job: find a dimension that can be used
 to calibrate the image's scale.
 
 PRIORITY 1 — Find a printed wall dimension with an arrow / extension
-lines (e.g. '30'-0"' or '40'-6"' marking the length of a wall on the
+lines (e.g. '41'-3"' or '27'-9"' marking the length of a wall on the
 elevation or floor plan). Return the pixel coordinates of the TWO
 endpoints of the dimension line (where the arrow tips sit) PLUS the
 labeled real-world value in feet.

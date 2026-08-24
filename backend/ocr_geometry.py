@@ -770,6 +770,30 @@ RULINGS_REGISTER = {
         "NAMED UNPLACED BUCKET — a schedule is silent on location by "
         "design and no face is ever silently assigned.",
 
+        # SEND-123 (Howard ruled 2026-08-24) — THE PROMPT-EXPOSURE
+        # QUALIFICATION.
+        "PRIOR-HOUSE FIGURES WERE IN FRONT OF THE MODEL ON EVERY READ "
+        "from the day the derived-value worked example was written "
+        "until SEND-123 neutralized it: the blueprint prompt shipped "
+        "Letrick's fan string (9'-11 1/8\"), Boni's ceiling note "
+        "(8'-1 1/8\") and the fabricated stackup total (20'-0\") "
+        "verbatim; the schedule examples shipped a real SIZE string "
+        "(2'-11 1/2\" x 4'-11 1/2\") and a real garage wall height "
+        "(9'-11 7/8\"); the hover scale prompt shipped 30'-0\". THIS "
+        "QUALIFIES EVERY PRIOR RUN the way the 20.0 census qualified "
+        "every Boni accuracy claim — a condition they were all taken "
+        "under, not an invalidation. Since SEND-123 every prompt "
+        "example uses obviously-synthetic figures and a structural pin "
+        "(test_send123_prompt_purity) scans every prompt constant "
+        "against the fixture-figure set. Tanis's volunteered 9'-1 1/8\" "
+        "COMPOSES from both sources: the print's vertical tail -1 1/8\" "
+        "(p3, ROT270) plus a feet digit 9 — and THE POST-SWAP RE-READ "
+        "ANSWERED IT (SEND-123, run 580ff451, neutral prompt): the "
+        "model volunteered 9'-1 1/8\" AGAIN on every face and corner, "
+        "all nulled again by the quote guard. The print's own glyphs "
+        "produce the figure without the example — THE EXPOSURE WAS "
+        "REAL BUT WAS NOT DOING THE WORK ON THIS CLAIM.",
+
         # SEND-111 (Howard ruled 2026-08-14) — THE X-RULER RULING.
         "the ~half-foot elevation residual is REGISTERED AS NAMED, fix "
         "DECLINED (SEND-110): ~half is the per-face scale spread drawn "

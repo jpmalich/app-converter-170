@@ -151,10 +151,10 @@ verbatim>", "srcs": [{"page": n, "from": "<printed string>", "loc":
 is as unrepresentable as a bare number.
 IF A VALUE IS COMPUTED, IT IS DERIVED (ruled 2026-08-08): a wall or
 corner height you obtain by ADDING printed components (plate heights +
-floor thickness + upper plate, e.g. 9'-11 1/8" + 1'-0" + 8'-1 1/8" +
-11 1/2") MUST use the derived form above — each component carrying its
+floor thickness + upper plate, e.g. 7'-4 3/8" + 1'-1" + 6'-5 5/8" +
+10 1/2") MUST use the derived form above — each component carrying its
 own printed quote. NEVER present a computed total as a single read with
-a fabricated quote (e.g. "20'-0\"") when no such string is printed on
+a fabricated quote (e.g. "15'-9 1/2\"") when no such string is printed on
 the sheet: A COMPUTED NUMBER WEARING A QUOTE IS A LIE WITH A CITATION.
 "from" may only hold a string that is PRINTED AS SUCH on the page — a
 local text-read cross-checks every quote against the page pixels, and
@@ -222,7 +222,7 @@ an unfindable quote is flagged as a contradiction.
     // size like 38×54. NEVER snap a printed dimension to a catalog size.
     // THE SIZE COLUMN GOVERNS (ruled 2026-08-08): when the schedule prints
     // BOTH a product/unit code (e.g. "SH 3-0_5-0") AND a SIZE column
-    // (e.g. 2'-11 1/2" x 4'-11 1/2"), the SIZE column IS the dimension —
+    // (e.g. 2'-7 3/8" x 4'-3 5/8"), the SIZE column IS the dimension —
     // width_in/height_in parse the SIZE column, NEVER the code. Units
     // commonly print a half inch under the code's nominal; converting the
     // code (36×60) while 35.5×59.5 sits in the next column violates
@@ -242,9 +242,9 @@ an unfindable quote is flagged as a contradiction.
     // NEVER retype one as the other.
     {"id": "<mark like 'W1' or 'A' or blank>",
      "product_code": "<the schedule's product/unit CODE column VERBATIM (e.g. 'SH 3-0_5-0'); empty if none — a FAMILY LABEL, never a dimension source>",
-     "printed_size": "<the schedule's SIZE column VERBATIM (e.g. 2'-11 1/2\" x 4'-11 1/2\") when one exists; otherwise the code-style size string ('3-0x5-0'/'3050'); empty if only drawn>",
+     "printed_size": "<the schedule's SIZE column VERBATIM (e.g. 2'-7 3/8\" x 4'-3 5/8\") when one exists; otherwise the code-style size string ('3-0x5-0'/'3050'); empty if only drawn>",
      "catalog_size": "<a SEPARATELY-printed catalog/order size if the schedule prints one (e.g. '38x54'); empty otherwise — NEVER derived>",
-     "width_in": number,                  // exact parse of printed_size: 2'-11 1/2" → 35.5; 3-6 → 42; 3050 → 36×60 — the SIZE column when printed, the code only when it is all there is
+     "width_in": number,                  // exact parse of printed_size: 2'-7 3/8" → 31.375; 3-6 → 42; 3050 → 36×60 — the SIZE column when printed, the code only when it is all there is
      "height_in": number,
      "qty": 1,                            // THE COUNT COLUMN GOVERNS COUNTS (ruled 2026-08-08): the schedule PRINTS a COUNT — read it. qty = the printed COUNT summed across every schedule sheet that lists this mark. NEVER count window symbols on a floor plan, NEVER infer quantity from elevations or anything else. If a sheet's schedule prints no count for a mark, that sheet contributes nothing — flag it, don't estimate.
      "count_by_page": {"<sheet>": n},     // the COUNT column value per schedule sheet, verbatim (e.g. {"6": 2, "7": 7}) — qty must equal their sum
@@ -320,7 +320,7 @@ ROW IDENTITY (ruled 2026-08-09): sibling schedule rows share a code prefix (SH 3
      "porch_width_ft": DIM | null,     // porch planes only: {"v","page","from"} — the porch's PRINTED floor-plan width (the side along the house wall). null when not dimensioned — NEVER derived from the area (an area does not determine a shape, ruled 2026-08-07)
      "porch_depth_ft": DIM | null,     // porch planes only: {"v","page","from"} — PRINTED depth (out from the wall). null when not dimensioned — NEVER √area, never a guess
      "overhang_in": DIM | null,        // PER-PLANE printed eave overhang depth in inches — e.g. 12 at main eaves, 0 at "FASCIA ONLY NO OVERHANG". null when this plane's overhang is not dimensioned — NEVER inherit from another plane (ruled 2026-08-11 send-6: overhang is per-location, one default does not cover a house that varies).
-     "wall_height_ft": DIM | null      // OPTIONAL: printed wall (siding) height under this plane's eave — e.g. a garage wall printed 9'-11 7/8" is this plane's siding height. null when not dimensioned. The main-body wall heights ride walls[]; use this ONLY for planes whose walls are not in the four-wall list (garage/wing/porch faces).
+     "wall_height_ft": DIM | null      // OPTIONAL: printed wall (siding) height under this plane's eave — e.g. a garage wall printed 7'-10 3/8" is this plane's siding height. null when not dimensioned. The main-body wall heights ride walls[]; use this ONLY for planes whose walls are not in the four-wall list (garage/wing/porch faces).
     }
   ],
   // SELF-CHECK before returning roof_planes: (S1) EMIT-ONE-PER-END —
@@ -452,9 +452,9 @@ chase's sides return to the wall in inside_corner_count.
 
 CRITICAL RULES:
 
-A. PREFER PRINTED DIMS OVER ESTIMATION. If the floor plan shows "32'-0\""
-   along the front wall, the front wall width is 32.0 ft — never round
-   it to 30 or 35. If a dim is missing or illegible, set the wall to
+A. PREFER PRINTED DIMS OVER ESTIMATION. If the floor plan shows "43'-0\""
+   along the front wall, the front wall width is 43.0 ft — never round
+   it to 40 or 45. If a dim is missing or illegible, set the wall to
    the best inferred value and FLAG IT in notes.
 
 B. WINDOW / DOOR SCHEDULE WINS. If a schedule sheet is present, the
