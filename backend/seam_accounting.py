@@ -115,6 +115,14 @@ SEAM_REGISTRY = {
         "whose qty carries no located/parsed count evidence REFUSES "
         "named — it never floors to 1. Tanis reached the marks-as-1 "
         "floor through the ungoverned lane: window_count 7 vs sealed 20.",
+    "siding_pct_gated_no_evidence":
+        "SEND-124 item 1 (Howard ruled 2026-08-24): siding_pct_this_wall "
+        "may not scale a face without evidence — an unverified 85 "
+        "silently removes ~15% of a wall (≈192 ft² on Tanis's back at "
+        "the seal). A pct claim whose justifying callout does not locate "
+        "in the run's own OCR reverts to 100 NAMED and rides the "
+        "material-confirmation card. Category callouts route families, "
+        "not quantities — they go to the card, never the gate.",
     "mark_count_cells_nulled":
         "COUNT-CELL claims OCR cannot find as an isolated integer "
         "token in the mark's row-band on the claimed page — the claim "

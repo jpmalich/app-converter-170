@@ -16,6 +16,8 @@ scale strings) is REVIEWED-GENERIC — conventions, not house evidence.
 """
 import ast
 
+from fixture_figures import FIXTURE_FIGURES, all_fixture_figures
+
 PROMPT_MODULES = [
     "/app/backend/routes/ai_blueprint.py",
     "/app/backend/routes/ai_measure.py",
@@ -25,18 +27,10 @@ PROMPT_MODULES = [
     "/app/backend/page_rotation.py",
 ]
 
-FIXTURE_FIGURES = [
-    # Letrick — heights, fan string, side width
-    "9'-11 1/8\"", "9'-11\"", "9'-1 1/8\"", "30'-2\"", "62'-0\"",
-    # Boni — ceiling notes, fabricated stackup, sealed side
-    "8'-1 1/8\"", "8'-1 1/2\"", "20'-0\"", "30'-0\"",
-    # real garage wall + real schedule SIZE string (send-6 era examples)
-    "9'-11 7/8\"", "2'-11 1/2\"", "4'-11 1/2\"",
-    # glyph-drop census pair
-    "33'-5 1/2\"", "32'-5 1/2\"",
-    # Tanis — sealed + model-claimed
-    "127'-2\"", "58'-8\"", "10'-1 1/8\"", "97'-0\"", "57'-4\"",
-]
+# SEND-124 item 3: the figure set lives in fixture_figures.py — the
+# registry grows WITH the seals (dart joins when Howard seals it); the
+# coupling pins below stop the set narrowing silently.
+FIXTURE_FIGURES_UNION = all_fixture_figures()
 
 
 def _prompt_constants(path):
@@ -58,12 +52,29 @@ def test_no_fixture_figure_in_any_prompt():
     hits = []
     for path in PROMPT_MODULES:
         for name, ln, text in _prompt_constants(path) or ():
-            for fig in FIXTURE_FIGURES:
+            for fig in FIXTURE_FIGURES_UNION:
                 if fig in text:
                     hits.append(f"{path}:{ln} {name} carries {fig!r}")
     assert not hits, (
         "PROMPT EXPOSURE — fixture figures reachable by the model:\n"
         + "\n".join(hits))
+
+
+def test_registry_stays_in_step_with_the_seals():
+    # SEND-124 item 3 coupling: every fixture house has an entry, and an
+    # entry may sit empty ONLY while explicitly pending_seal — sealing a
+    # house without adding its figures fails here, so the set can only
+    # narrow deliberately, never silently.
+    for house in ("boni", "letrick", "tanis", "dart"):
+        assert house in FIXTURE_FIGURES, f"{house} missing from registry"
+    for house, entry in FIXTURE_FIGURES.items():
+        assert isinstance(entry, dict) and "figures" in entry \
+            and "pending_seal" in entry, house
+        if not entry["pending_seal"]:
+            assert entry["figures"], (
+                f"{house} is sealed-class but carries no figures — "
+                "the registry narrowed silently")
+    assert len(FIXTURE_FIGURES_UNION) >= 19
 
 
 def test_qualification_is_registered():

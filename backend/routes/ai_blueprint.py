@@ -360,13 +360,13 @@ ROW IDENTITY (ruled 2026-08-09): sibling schedule rows share a code prefix (SH 3
   ],
   "inside_corner_count": number,  // INTEGER. Number of INSIDE corner locations on the floor plan. Default is NOT 0 — walk the perimeter and count.
   "inside_corner_lf": number,  // = inside_corner_count × avg_wall_height_ft.
-  "soffit_sqft": number | null,        // PRINTED soffit/overhang area if the plans state it (eave detail sections, "SOFFIT" callouts, roof plan overhang dims × eave run). null if not printed — do NOT estimate.
+  "soffit_sqft": DIM | null,           // PRINTED soffit/overhang area if the plans state it (eave detail sections, "SOFFIT" callouts, roof plan overhang dims × eave run) — {"v","page","from"} quoting the printed string. null if not printed — do NOT estimate, NEVER a bare number.
   "eave_overhang_in": DIM | null,      // {"v","page","from"} — PRINTED eave overhang depth (soffit width) in INCHES from an eave detail/section or roof plan dim (e.g. 16). null when the drawings don't dimension it — NEVER a guess, NEVER a typical value. The app flags an undimensioned overhang instead of silently defaulting (ruled 2026-08-07).
   "fascia_width_in": DIM | null,       // {"v","page","from"} — PRINTED fascia board width in INCHES (e.g. a "1x6 FASCIA" callout → 6). null when not printed — same rule: flag, never default.
-  "level_frieze_lf": number | null,    // PRINTED level frieze-board run if the elevations/details call it out. null if not printed.
-  "sloped_frieze_lf": number | null,   // PRINTED sloped (rake) frieze-board run. null if not printed.
-  "drip_edge_lf": number | null,       // PRINTED drip-edge / roof-edge perimeter from the roof plan. null if not printed.
-  "total_trim_sqft": number | null,    // PRINTED trim area if a trim schedule/table states it. null if not printed.
+  "level_frieze_lf": DIM | null,       // PRINTED level frieze-board run if the elevations/details call it out — {"v","page","from"} quoting the printed string. null if not printed.
+  "sloped_frieze_lf": DIM | null,      // PRINTED sloped (rake) frieze-board run — DIM with the printed quote. null if not printed.
+  "drip_edge_lf": DIM | null,          // PRINTED drip-edge / roof-edge perimeter from the roof plan — DIM with the printed quote. null if not printed.
+  "total_trim_sqft": DIM | null,       // PRINTED trim area if a trim schedule/table states it — DIM with the printed quote. null if not printed.
   "footprint_area_sqft": number | null, // GROUND-FLOOR FOOTPRINT ONLY: first-floor area + attached garage, read from the floor plan or the labelled area rows. NEVER the "TOTAL FINISHED" / living-area figure — that SUMS STOREYS and is not a footprint (category error ruled 2026-08-08). null if not printed.
   "area_table": {                       // The printed AREA table, each row read AS LABELLED — never one quantity read as another (ruled 2026-08-08).
     "total_finished_sqft": number | null,
@@ -1011,7 +1011,15 @@ def _parse_printed_size(s: str) -> tuple[float, float] | None:
 # CONSTRUCTION: the pipeline drops it, the flag fires, and the card says
 # the drawing does not dimension it. Same shape as source retention:
 # don't ask the model to behave, make the wrong behaviour unrepresentable.
-_EVIDENCE_SCALARS = ("eave_overhang_in", "fascia_width_in")
+_EVIDENCE_SCALARS = ("eave_overhang_in", "fascia_width_in",
+                     # SEND-124 item 2 (Howard authorized 2026-08-24):
+                     # the printed-only lanes join the DIM discipline
+                     # while their surface is empty — a bare number
+                     # nulls as no-evidence; a DIM quote gets located
+                     # or nulls. Future claims refuse until located —
+                     # the named, accepted risk.
+                     "soffit_sqft", "level_frieze_lf", "sloped_frieze_lf",
+                     "drip_edge_lf", "total_trim_sqft")
 
 
 def _norm_loc(loc):
@@ -3174,6 +3182,59 @@ def _null_computed_lf_lanes(raw: dict) -> None:
             [f"{n['lane']}={n['value']:g}" for n in nulled])
 
 
+def _gate_siding_pct(raw: dict) -> None:
+    """SEND-124 ITEM 1 (Howard ruled 2026-08-24): siding_pct_this_wall
+    is GATED — IT MAY NOT SCALE A FACE WITHOUT EVIDENCE. An unverified
+    85 silently removes ~15% of a wall (≈192 ft² on Tanis's back at the
+    seal) — a silent deduction, not allowed. Default 100. A pct claim
+    stands ONLY when the callout justifying it (stone_callout /
+    wall_body_profile_callout) LOCATES in the run's own OCR store;
+    otherwise the pct reverts to 100 NAMED and the claim rides the
+    material-confirmation card. THE SORT (ruled): a field that CHANGES
+    QUANTITY gates (this one); fields that only ROUTE a category
+    (wall_body/gable/dormer/appendage profile callouts, stone_callout's
+    label itself) go to the confirmation card, ungated."""
+    if not isinstance(raw, dict):
+        return
+    walls = [w for w in (raw.get("walls") or []) if isinstance(w, dict)]
+    if not walls:
+        return
+
+    def _txt(s):
+        return re.sub(r"[^A-Z0-9]", "", str(s or "").upper())
+
+    ocr = raw.get("_ocr_text_by_page") or {}
+    ocr_blob = _txt("".join(v if isinstance(v, str) else json.dumps(v)
+                            for v in ocr.values()))
+    gated: list[dict] = []
+    for w in walls:
+        try:
+            p = float(w.get("siding_pct_this_wall"))
+        except (TypeError, ValueError):
+            continue
+        if 0 < p < 1:
+            p *= 100.0
+        if p <= 0 or p >= 100:
+            continue
+        callouts = [str(w.get(f) or "").strip()
+                    for f in ("stone_callout", "wall_body_profile_callout")]
+        callouts = [c for c in callouts if c]
+        located = any(_txt(c) and _txt(c) in ocr_blob for c in callouts)
+        if located and ocr_blob:
+            continue
+        gated.append({
+            "label": str(w.get("label") or "?"),
+            "claimed_pct": p,
+            "callout": callouts[0] if callouts else "",
+            "reason": "pct claim without located evidence — reverted to 100"})
+        w["siding_pct_this_wall"] = 100
+    if gated:
+        raw["_siding_pct_gated"] = gated
+        seam_accounting.account(
+            raw, "siding_pct_gated_no_evidence",
+            [f"{g['label']}={g['claimed_pct']:g}%" for g in gated])
+
+
 def _refuse_unevidenced_counts(raw: dict) -> None:
     """SEND-122 ITEM 2 (Howard ruled 2026-08-24, superseding the
     ungoverned-row one-row-one-opening convention left standing at
@@ -3639,6 +3700,23 @@ def check_read_consistency(raw: dict) -> list[dict]:
         flags.append({
             "code": "below_grade_unread", "level": "loud",
             "vars": {"pages": "; ".join(_bg_pages)}})
+    # SEND-124 ITEM 1: material claims are never silently trusted — the
+    # grouped card rail names every category claim and any gated pct.
+    _mc = []
+    for _w in (raw.get("walls") or []):
+        if not isinstance(_w, dict):
+            continue
+        for _f in ("wall_body_profile_callout", "gable_profile_callout",
+                   "dormer_profile_callout", "stone_callout"):
+            _v = str(_w.get(_f) or "").strip()
+            if _v:
+                _mc.append(f"{_w.get('label')}: \u201c{_v}\u201d")
+    for _g in (raw.get("_siding_pct_gated") or []):
+        _mc.append(f"{_g.get('label')}: {_g.get('claimed_pct'):g}% \u2192 100 (gated)")
+    if _mc:
+        flags.append({
+            "code": "material_claims_unconfirmed", "level": "loud",
+            "vars": {"count": len(_mc), "claims": "; ".join(_mc)}})
     return flags
 
 
@@ -4963,6 +5041,33 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         measurements["_per_elevation_breakdown"] = []
         measurements["_per_profile_sqft"] = {}
         measurements["_faces_not_derivable"] = []
+    # SEND-124 ITEM 1 — THE MATERIAL CONFIRMATION CARD (category claims
+    # are never gated; they surface for a human: claim + face + ft² at
+    # stake). Gated pct reversion rides the same card, named.
+    _face_sqft = {str(e.get("label") or "").lower(): e.get("wall_body_sqft")
+                  for e in (measurements.get("_per_elevation_breakdown") or [])
+                  if isinstance(e, dict)}
+    _claims: list[dict] = []
+    for _w in walls:
+        _lbl = str(_w.get("label") or "?").lower()
+        for _f in ("wall_body_profile_callout", "gable_profile_callout",
+                   "dormer_profile_callout", "stone_callout"):
+            _v = str(_w.get(_f) or "").strip()
+            if _v:
+                _claims.append({"face": _lbl, "field": _f, "claim": _v,
+                                "sqft_at_stake": _face_sqft.get(_lbl)})
+    for _a in (raw.get("appendages") or []):
+        if isinstance(_a, dict) and str(_a.get("profile_callout") or "").strip():
+            _claims.append({"face": str(_a.get("wall") or "?").lower(),
+                            "field": "appendage.profile_callout",
+                            "claim": str(_a.get("profile_callout")).strip(),
+                            "sqft_at_stake": None})
+    for _g in (raw.get("_siding_pct_gated") or []):
+        _claims.append({"face": str(_g.get("label") or "?").lower(),
+                        "field": "siding_pct_this_wall",
+                        "claim": f"{_g.get('claimed_pct'):g}% claimed — reverted to 100 (no located evidence)",
+                        "sqft_at_stake": _face_sqft.get(str(_g.get("label") or "").lower())})
+    measurements["_material_claims"] = _claims
     # RULINGS CC + DD + EE (send-24/25): garage-side contradiction detector
     # and footprint closure. DD now WIRED — refused faces above go NOT
     # DERIVABLE through the derivation and the report field drives the
@@ -5742,6 +5847,11 @@ async def _execute_ai_blueprint_worker(
             _null_computed_lf_lanes(raw)
         except Exception:
             logger.exception("[ai-blueprint] lf-lane null pass failed")
+        # SEND-124 ITEM 1: a pct may not scale a face without evidence.
+        try:
+            _gate_siding_pct(raw)
+        except Exception:
+            logger.exception("[ai-blueprint] siding-pct gate failed")
         try:
             _one_source_one_path_guard(raw)
         except Exception:
