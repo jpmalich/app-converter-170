@@ -51,7 +51,17 @@ class TestSeamRegistered:
 class TestClientContract:
     def test_banner_checks_on_focus_and_never_fires_on_network_noise(self):
         src = (FRONTEND / "components" / "BuildMismatchBanner.jsx").read_text()
-        assert 'api.get("/version")' in src
+        # STALE ASSERTION UPDATED (named, cold-start fix 2026-08-24):
+        #   pin: the mismatch banner polls /version on focus
+        #   asserted: the exact call text 'api.get("/version")'
+        #   asserts now: 'api.get("/version", { __noRetry: true })' — the
+        #     poll opts OUT of the client's new health-gated cold-start
+        #     retry so a downtime poll fails fast instead of looping
+        #   what made the old value wrong: the 2026-08-24 cold-start fix
+        #     (dart/Tanis 404 bursts) added the retry interceptor; the
+        #     poll's intent (check on focus, swallow network noise) is
+        #     unchanged and still asserted below.
+        assert 'api.get("/version", { __noRetry: true })' in src
         assert '"focus"' in src
         assert "never fires the banner" in src  # catch swallows, no banner
         assert "build-mismatch-banner" in src
