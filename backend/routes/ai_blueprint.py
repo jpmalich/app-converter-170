@@ -3201,7 +3201,7 @@ def _refuse_unevidenced_counts(raw: dict) -> None:
             r["_count_unread"] = True
             refused.append({"kind": coll,
                             "mark": str(r.get("id") or "?").strip() or "?",
-                            "why": "no count evidence — refused, never 1"})
+                            "reason": "no count evidence — refused, never 1"})
     if refused:
         raw.setdefault("_schedule_count_unread", []).extend(refused)
         seam_accounting.account(
