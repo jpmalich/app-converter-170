@@ -1,7 +1,13 @@
 # SEND-122 REPORT — LF-LANE GUARD · COUNT FLOOR DEAD · THE REFUSAL BEFORE THE READ · PURITY CHECK · STONE-REACH REPORT
 2026-08-24 · Items 1–3 BUILT and pinned; items 4–5 REPORT ONLY.
-Stamp recorded at the bottom once the guard lands. No estimate written;
-EST-886440 untouched. Quantities only.
+STAMP: `2026-08-24 17:47 UTC · 9392f40 · CLEAN · 2837 passed, 9 skipped`
+(+9 SEND-122 pins) · census GREEN 0 PENDING_CONVERSION · ingress 4
+passed. Two pre-stamp reds, BOTH the guard catching this send's new
+code, both fixed NAMED: the consumer-key census on the internal record's
+`lane` key (subscript, census untouched — SEND-116 precedent); the seam
+census on 4 new comprehensions (2 INERT classifications, 2 ACCOUNTED
+`_count_unread` skips booked upstream). No estimate written; EST-886440
+untouched. Quantities only.
 
 ## ITEM 5 — PURITY CHECK (done first, as ordered)
 **Is the volunteered 9'-1⅛" Letrick's figure, and was Letrick reachable

@@ -1,5 +1,68 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-24 SEND-122 — LF-LANE GUARD BUILT · MARKS-AS-1 FLOOR DEAD · BELOW-GRADE RAIL BUILT · PURITY + STONE-REACH REPORTED (stamped `2026-08-24 17:47 UTC · 9392f40 · CLEAN · 2837 passed, 9 skipped` + census GREEN + ingress 4 passed)
+Full record: `memory/send122_report.md` · 9 pins in
+`tests/test_send122_lf_count_walkout_2026_08_24.py`.
+1. **ITEM 1 BUILT — A COMPUTED TOTAL MAY NOT OUTLIVE ITS NULLED INPUTS.**
+   `_null_computed_lf_lanes` (after the quote guard): starter/eaves/rakes/
+   corner LF null NAMED when the wall dims their formulas stand on died;
+   nulled lanes carry None into measurements (no `or 0` resurrection, no
+   4×avg-height hypothesis fallback — a model height never feeds a
+   quantity); loud `lf_lane_refused` rail EN/ES; seam ledger
+   `lf_lanes_nulled_inputs_dead`. Tanis replay: all five lanes null with
+   the leaked values (308/194/122/80/40 → None). **SCOPE STATED, NOT
+   CLOSURE — lanes still outside any guard, reported**: soffit_sqft,
+   level/sloped_frieze_lf, drip_edge_lf, total_trim_sqft (printed-only
+   bare claims — DIM schema change awaits ruling), vent/shutter counts;
+   footprint_area_sqft partially covered (srcs ride the locator).
+2. **ITEM 2 BUILT — A ROW WITH NO COUNT EVIDENCE REFUSES, NEVER CARRIES
+   1** (supersedes the ungoverned one-row-one-opening convention of
+   SEND-114/116). `_refuse_unevidenced_counts` after every locator:
+   falsy-qty rows become `_count_unread` + NAMED `schedule_count_unread`
+   entries ("no count evidence — refused, never 1"); every remaining
+   floor site sits behind a `_count_unread` skip (derived openings,
+   `_ai_openings_schedule`, garage signal, sill sum, comparators).
+   Tanis replay: window_count 7 → **1** (marks 1,2,4,5,6,8 refuse named;
+   mark 7's located count stands); rails 4 → 12. **"Unreachable"
+   exceptions re-read (all 5)**: SEND-117 governed-row pin HOLDS and is
+   strengthened; SEND-38 NO_PAIR geometric HOLDS; color-tier structural
+   HOLDS; two others are narrative/error-copy, not exceptions.
+3. **ITEM 3 BUILT — THE REFUSAL BEFORE THE READ.** Loud
+   `below_grade_unread` rail from the sheet inventory (BASEMENT / LOWER
+   LEVEL / WALKOUT titles): "this read has no below-grade/walkout path;
+   any walkout siding is NOT included; flag by hand." Tanis fires it (p1
+   BASEMENT FLOOR LEVEL PLAN). **Evidence census on Tanis**: GRADE /
+   WALKOUT / T.O.F / LOWER LEVEL / FOOTING / EGRESS — ZERO hits beyond
+   the p1 title. THE HONEST ANSWER STANDS: beyond the sheet name,
+   walkouts on this drafter leave nothing machine-readable — WALKOUTS
+   NEED A HUMAN FLAG; the rail is the refusal the evidence supports.
+4. **ITEM 4 REPORTED, NOT BUILT — material-claim reach**:
+   `wall_body_profile_callout` (model text, never OCR-verified) →
+   `classify_profile` → `_per_profile_sqft` → LP profile lines.
+   `classify_profile("SYNTHETIC STONE AS SPECIFIED") = "stone"` — a
+   derived Tanis rear would have routed its ENTIRE body ft² out of every
+   siding line, unflagged; only the width refusal stopped it. No flag
+   class exists for material claims — guard shape reported, awaits ruling.
+5. **ITEM 5 PURITY CHECK**: the exact 9'-1⅛" is NOT reachable from the
+   run (no cross-estimate reads; the only codebase instance is a parser
+   docstring that never enters a model call). **NAMED EXPOSURE**: the
+   blueprint prompt's derived-value worked example ships prior-house
+   figures verbatim (`9'-11 1/8" + 1'-0" + 8'-1 1/8" + 11 1/2"` —
+   Letrick's fan string, Boni's ceiling note) — awaits ruling. Likelier
+   cause found ON THE PRINT: Tanis p3 carries a vertical `-1 1/8` OCR
+   tail (ROT270, x23.6/y75.9) — the drawn 10'-1⅛" with its feet digits
+   dropped; a glyph-level misread of Tanis's OWN ink lands on 9'-1⅛".
+   Not closed as coincidence; stated with scope.
+6. **STAMP**: two pre-stamp reds, both the guard catching this send's
+   new code, both fixed named (consumer-key census `lane` read;
+   seam census × 4 new comprehensions — 2 INERT, 2 ACCOUNTED).
+   `2026-08-24 17:47 UTC · 9392f40 · CLEAN · 2837 passed, 9 skipped` ·
+   census GREEN · ingress 4 passed.
+7. **NEXT**: dart's sealed ground truth (Howard) → predictions first →
+   fresh scored read. Symbols placement STILL NOT AUTHORIZED. Awaiting
+   rulings: printed-only bare fields to DIM · material-claim flag class ·
+   prompt worked-example figures · walkout human-flag surface.
+
 ## 2026-08-24 SEND-121 — TANIS SCORED READ: 3 REAL FAILURES NAMED · 6 PREDICTIONS CONFIRMED · 2 SAFE FAILURES · 1 NOT SATISFIABLE (report-only; no code touched, no estimate written; stamped `2026-08-24 12:11 UTC · 58f9827 · CLEAN · 2828 passed, 9 skipped` first-run + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send121_report.md` · predictions written first,
 unrevised, outcomes appended: `memory/send121_predictions.md`.
