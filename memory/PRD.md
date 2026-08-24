@@ -1,5 +1,31 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-24 COLD-START BUG (dart + Tanis "Read Blueprints 404s") — ROOT-CAUSED AND FIXED CLIENT-SIDE (stamped `2026-08-24 01:07 UTC · c27fe35 · CLEAN · 2828 passed, 9 skipped` + census GREEN + ingress 4 passed)
+1. **THE READS WERE NEVER FAILING.** Tanis (4 pages) and dart (re-run
+   through the new orientation stage) both completed; page images on disk;
+   every endpoint 200 when probed. THE POD ITSELF RESTARTS BETWEEN SESSIONS
+   (7 restarts in 4 days — supervisord log); during the boot window the
+   ingress answers 502/404 on EVERY /api route including `/api/version`
+   (the tell — that route always exists). The "…1" suffixes in the console
+   paste are repeat-count badges; "ai-blue-…" is console middle-ellipsis.
+2. **THE APP-LEVEL DEFECT**: the client read the burst as "no data" and
+   printed "NEEDS A COMPLETED BLUEPRINT READ" over DONE runs — a 502
+   wearing "no run"'s clothes (the SEND-115 lesson, client side).
+3. **THE FIX (lib/api.js + ServerWakingBanner)**: a HEALTH-GATED retry —
+   on any transport-class failure (network/404/502/503/504) the client
+   probes `/api/version`; it retries ONLY when the probe confirms the
+   whole tree is down (the original request never reached the app, so a
+   replay can never double-fire a write); a real answer from a live
+   backend passes through untouched; 5-step backoff to ~41 s; an amber
+   banner names the state EN/ES ("The server is restarting — … Nothing
+   shown below is trustworthy until this banner clears"). The /version
+   poll opts out (`__noRetry`).
+4. **VERIFIED LIVE**: an induced 80-second backend outage — banner at 2 s
+   over an honest "Loading…", cleared at recovery, request replayed, app
+   self-healed to a working page. 3 structural pins + one 2026-08-09 pin
+   assertion updated NAMED (poll call text; intent unchanged).
+5. Pod restarts are platform behaviour; the app now survives them honestly.
+
 ## 2026-08-23 SEND-117 — ROTATION-NORMALIZE BUILT · REFUSAL RAILS BUILT · UNREACHABILITY PINNED (stamped `2026-08-23 16:05 UTC · f95cc5f · CLEAN · 2825 passed, 9 skipped` first-run, census GREEN, ingress 4 passed)
 Full record: `memory/send117_report.md` · probe `memory/send117_dart_probe.py`.
 1. **ROTATION-NORMALIZE (authorized, built)**: `page_rotation.py` + an
