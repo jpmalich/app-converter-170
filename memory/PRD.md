@@ -8973,3 +8973,34 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   skipped · census 0 PENDING_CONVERSION · ingress smoke 4 passed.
 - NEXT (Howard's order): QR FIELD SHEET (calibration pair ruled standing on
   evidence). Then: x-ruler/silhouette residual trace (new sharper shape).
+
+## 2026-08-24 — SEND-125 (claim distinction enforced by data)
+- RECORDING: foreign-drafter derivation is Dart 0/4, Tanis 0/4. Guards
+  fired every time; no quantity fabricated. EARNED: "it fails safe on
+  unfamiliar sets." NOT EARNED: the read claim. On a foreign set the
+  product still returns to creation, not correction. Consequence
+  recorded: the phase AFTER Dart is scored aims at the READ, not more
+  guards.
+- ENFORCEMENT (Howard authorized b+c, "enforced by data, not by memory"):
+  (c) NEW REGISTRY backend/foreign_drafter_scoreboard.py — derived/total
+  per foreign drafter; earned_claim() COMPUTES the claim (read-claim
+  needs >1 drafter deriving; one set is an anecdote). House names are
+  data, per fixture_figures precedent.
+  (b) NEW PIN tests/test_send125_claim_distinction_2026_08_24.py — 6
+  pins. Lexical scan of memory/*.md + all backend .py + frontend src for
+  assertions of the unearned claim (reads unfamiliar/foreign/unseen,
+  generalizes to/across, drafter-agnostic, works on unfamiliar);
+  recording it as NOT earned stays legal via negation marker on the line
+  or 3 lines above; in PROMPT constants the phrases are banned outright.
+  Ban is COUPLED to the scoreboard — it lifts by itself if the figures
+  ever earn the read claim. Self-checks: catches a real assertion, does
+  not flag a legal recording.
+- NOTHING ELSE MOVED: no read, no prediction, no prompt change, no
+  fixture_figures change (Dart still pending_seal). EST-886440 untouched.
+- STAMP: RECORDED 2026-08-24 20:44 UTC · b957ce5 · CLEAN · 2858 passed,
+  9 skipped · census GREEN · ingress smoke 4 passed. Report:
+  memory/send125_report.md.
+- NEXT: Howard seals Dart (widths, depths, heights, opening counts,
+  projections) → figures join fixture_figures.py in that same send →
+  predictions first, then the scored read. Then the READ phase.
+  Symbols placement still NOT AUTHORIZED.

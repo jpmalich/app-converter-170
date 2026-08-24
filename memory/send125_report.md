@@ -71,5 +71,16 @@ written FIRST, then the scored read.
 - Catch-all message inventory — still owed by agent.
 - rot180 held. CCC unvalidated at n=2.
 
+## 6. STAMP
+RECORDED: 2026-08-24 20:44 UTC · b957ce5 · CLEAN
+RESULT: 2858 passed, 9 skipped, 7 warnings in 466.86s (0:07:46)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION
+INGRESS SMOKE: 4 passed in 2.01s
+(+6 tests over SEND-124's 2852: the SEND-125 pins.)
+NOTE: an earlier guard attempt reported 1 failed
+(test_blind_row_note_survives_rederive, 404 on a factory estimate) — two
+guard runs were racing and one deleted the other's factory estimate. Rerun
+alone: green. No product code involved; recorded, not swept.
+
 Standing rules unchanged: no cross-drawing borrowing, no guessing, no
 job names in operative code, model heights hypothesis-only.
