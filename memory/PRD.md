@@ -1,5 +1,47 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-24 SEND-124 — MATERIAL SPLIT LANDED: PCT GATED · CARD LIVE · DIM LANES LANDED EMPTY · REGISTRY IN STEP (stamped `2026-08-24 19:29 UTC · 4dfce13 · CLEAN · 2852 passed, 9 skipped` + census GREEN + ingress 4 passed)
+Full record: `memory/send124_report.md` · 12 pins in
+`tests/test_send124_material_split_dim_lanes_2026_08_24.py`.
+1. **ITEM 1 — THE SORT RULED AND BUILT.** Quantity-changing gates;
+   category-routing cards. `siding_pct_this_wall` GATED
+   (`_gate_siding_pct`: default 100; a pct < 100 stands only when its
+   justifying callout LOCATES in the run's own OCR; else reverts to 100
+   NAMED + seam `siding_pct_gated_no_evidence`). The five callout
+   fields → **human confirmation card**: `_material_claims` in
+   measurements (claim + face + ft²-at-stake) + grouped loud
+   `material_claims_unconfirmed` rail EN/ES. **Pre-landing replay on
+   all four houses (ordered)**: only Tanis's SEND-121 run gates (back
+   85 + left 85 → 100; ≈192.5 + 88.8 ft² protected at the seal; 0 ft²
+   moves today — those faces are refused); dart/Boni/Letrick claim 100
+   everywhere — no house loses a quantity it has. Tap-to-confirm write
+   path NOT built (needs its own 423 ruling).
+2. **ITEM 2 — DIM CHANGE AUTHORIZED, LANDED EMPTY.** 5 schema fields →
+   `DIM | null` demanding printed quotes; the walker change collapsed
+   to ONE seam (the five joined `_EVIDENCE_SCALARS`); aggregation's 13
+   sites needed nothing; both structural censuses extended (normalizer
+   suffix registry + consumer-key discipline). **Post-change fresh
+   Tanis read (run 072e8c36): all five lanes None, nothing nulled —
+   still zero, nothing previously invisible appeared.** Accepted risk
+   stands: a future bare number nulls as no-evidence.
+3. **ITEM 3 — THE REGISTRY MECHANISM.** Fixture figures moved to
+   `backend/fixture_figures.py` keyed by house with `pending_seal`
+   discipline; the purity pin scans the UNION; the coupling pin fails
+   any sealed-class house with no figures and any missing drafter.
+   **STANDING PROCEDURE: a house's figures join the registry IN ITS
+   SEALING SEND (dart next, entry sits pending_seal until then).** The
+   set can grow only deliberately, never narrow silently.
+4. **Fresh-read notes**: the model volunteered 9'-1⅛" a THIRD time
+   under the fully neutral prompt (nulled again — composition answer at
+   n=2); window_count 2 this run with 5 refusals named (row-claim
+   variation continues, evidence-only counting holds); 12 rails incl.
+   the new material card rail. One rerun died mid-guard (server
+   recycle) — errored honestly, retried clean.
+5. **NEXT**: DART'S SEALED GROUND TRUTH (Howard) — figures join the
+   registry in that send. Awaiting rulings: material-card confirm
+   write path (423) · walkout manual-entry surface. Symbols STILL NOT
+   AUTHORIZED.
+
 ## 2026-08-24 SEND-123 — PROMPT NEUTRALIZED · COMPOSITION ANSWERED · CALLOUT VERIFIABILITY = HUMAN CONFIRMATION · PRINTED-ONLY LANES SIZED AT ZERO (stamped `2026-08-24 18:25 UTC · 6e6fd72 · CLEAN · 2840 passed, 9 skipped` first-run + census GREEN + ingress 4 passed)
 Full record: `memory/send123_report.md` · 3 pins in
 `tests/test_send123_prompt_purity_2026_08_24.py`.
