@@ -21,7 +21,7 @@ export default function BuildMismatchBanner() {
     let alive = true;
     const check = async () => {
       try {
-        const r = await api.get("/version");
+        const r = await api.get("/version", { __noRetry: true });
         const v = r?.data?.version;
         if (!alive || !v) return;
         if (loadedRef.current === null) loadedRef.current = v;
