@@ -1,5 +1,68 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-24 SEND-121 — TANIS SCORED READ: 3 REAL FAILURES NAMED · 6 PREDICTIONS CONFIRMED · 2 SAFE FAILURES · 1 NOT SATISFIABLE (report-only; no code touched, no estimate written)
+Full record: `memory/send121_report.md` · predictions written first,
+unrevised, outcomes appended: `memory/send121_predictions.md`.
+1. **THE RUN**: EST-564805, run 4670606f… 2026-08-24 01:38:40 UTC — 13 s
+   after the predictions commit, under the CURRENT build (post-SEND-117
+   rotation-normalize + rails; no backend change since). A second same-build
+   run reproduces every scored figure byte-identical (sole delta:
+   vent_count 1→2). A 00:07 run pre-dates predictions and was NOT scored.
+2. **RULED-STYLE FINDINGS (what was FOUND, scope stated — the run scored is
+   the run described; nothing here claims closure over other plan sets)**:
+   - **REAL FAILURE — THE WALKOUT SILENTLY MISSED** (predicted by P2): zero
+     walkout/below-grade mentions in the read; NO STEP PATH even to refuse;
+     the right side's below-grade area + 2 windows + 1 SGD invisible. Only
+     the right face's independent width refusal kept a short figure from
+     landing. THE WALKOUT RULING'S FIRST EXHIBIT.
+   - **REAL FAILURE — WINDOW COUNT 7 vs SEALED 20**: no COUNT column → no
+     jurisdiction (correct) → the ungoverned one-row-one-opening convention
+     carried 7×1 (6 of 7 are the marks-as-1 floor; mark 7's "1" located).
+     The convention that stood on Letrick under-counts Tanis by 13.
+   - **REAL FAILURE — THE LF-LANE FABRICATION LEAK**: starter_lf 308 =
+     2×97+2×57 and eaves_lf 194 = 2×97 EXACTLY — arithmetic products of the
+     widths the quote guard NULLED as fabricated/misread (97'-0", 57'-4");
+     rakes_lf 122 nulled at roof_planes.main yet carried top-level. THE
+     QUOTE GUARD COVERS walls/roof_planes/corner_heights/marks — NOT
+     eaves_lf / rakes_lf / starter_lf.
+   - **HEIGHTS, the cleanest test yet (sealed 10'-1⅛" all around)**: 0 of 4
+     faces read it — all four REFUSED named (no TOP OF PLATE datum located;
+     left: no left elevation drawing located). The model volunteered 9'-1⅛"
+     (a FOOT low) on every face + 8 corners — all 12 claims nulled. Trusted,
+     the read would have been ≈2,807 ft² vs the ≈3,752 anchor (−25%);
+     instead it produced 0.0 ft² and refused whole. 26 dims + 5 marks
+     dismissed by the seam ledger in total.
+   - **ROTATION 4/4 UPRIGHT decisive** (37.2/42.4/62.5/58.4%, all ≥33.5) —
+     the pinned bands ruled honestly on a third drafter, no normalization.
+   - **CARVE MISSED LEFT on p4** (two drawings per sheet; p4 OCR carries
+     REAR ELEVATION titles only, no left-side title) — refused NAMED, safe;
+     a generality gap to rule on.
+   - **GARAGE DOORS**: model claimed TWO (16'×8', 9'×8') vs sealed FOUR;
+     both dropped-not-located named → 0 carried, 0 placed. Omission, safe —
+     no confident wrong placement exists.
+   - **STONE CHIMNEY**: no chase surface was ever created (nothing derived)
+     — material-on-chase UNTESTED; adjacent NEW CLASS named: the model
+     classed the ENTIRE rear body "SYNTHETIC STONE AS SPECIFIED" against a
+     sealed SIDED rear — stone-vs-siding disagreement has no flag class.
+   - **RAILS**: 4 loud flags as rendered — corner_walk_conflict (8/4 vs
+     10/6), faces_refused ×4, opening_sizes_refused ×7, deduction_refused
+     (7 rows, 4 faces). The rail does not read clean on a house where
+     nothing derived.
+   - **CCC stays UNVALIDATED at n=2** — Tanis carried no drawn shoulder.
+3. **SCORING**: P2/P4/P5/P7/P8/P9 CONFIRMED · P1/P6 SAFE FAILURE · P3 NOT
+   SATISFIABLE. Zero fabricated counts, zero confident wrong placements —
+   the two dangerous classes did not fire; the three real failures above are
+   a silent geometric miss, a convention floor, and a guard-coverage gap.
+4. **STANDING BOUNDS carried forward together**: the ~half-foot residual
+   (both causes named, send 110/111) · the 3.8% elevation noise floor
+   (send 111) · NEW from Tanis: the top-level LF lane sits OUTSIDE the
+   quote guard, and the marks-as-1 convention now has a live wrong figure
+   against a seal — both await rulings, neither fixed (no-code order).
+5. **QUEUE**: dart scored run (Howard seals → predictions → fresh read) at
+   the top. Symbols placement STILL NOT AUTHORIZED. Walkout STEP path,
+   LF-lane guard, convention jurisdiction bound, p4 title carve — all
+   await rulings. Catch-all message inventory still owed. rot180 held.
+
 ## 2026-08-24 COLD-START BUG (dart + Tanis "Read Blueprints 404s") — ROOT-CAUSED AND FIXED CLIENT-SIDE (stamped `2026-08-24 01:07 UTC · c27fe35 · CLEAN · 2828 passed, 9 skipped` + census GREEN + ingress 4 passed)
 1. **THE READS WERE NEVER FAILING.** Tanis (4 pages) and dart (re-run
    through the new orientation stage) both completed; page images on disk;
@@ -160,9 +223,11 @@ Full record: `memory/send115_report.md` · probe `memory/send115_probe.py` (read
   defect: ONE count-cell read, fabricating when trusted and collapsing when
   quarantined. It was solved by READING THE SCHEDULE, which nobody had looked
   at. Same shape as the 39, the 30'-2", the 20.0 stackup, the chimney on the
-  right, the fabricated chase — every one settled by looking at the DRAWING
-  rather than at the model's output. THE NEXT UNEXPLAINED NUMBER SENDS SOMEONE
-  TO THE PRINTS FIRST.
+  right, the fabricated chase — and Tanis's 97'-0"/57'-4"/9'-1⅛" (every claim
+  dismissed against the drawing's own text; starter 308 exposed as 2×97+2×57
+  by arithmetic against those same nulled claims) — every one settled by
+  looking at the DRAWING rather than at the model's output. THE NEXT
+  UNEXPLAINED NUMBER SENDS SOMEONE TO THE PRINTS FIRST.
 - **GENERALITY CONDITION (ruled at SEND-114 close)**: everything built must
   work on other blueprints, not just Letrick and Boni. Contractor effort is
   acceptable (taping refused heights, adjusting zones, confirming openings);
