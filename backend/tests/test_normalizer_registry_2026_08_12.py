@@ -60,6 +60,14 @@ EVIDENCE_BEARING_FIELD_SUFFIXES: set[str] = {
     # top-level scalars (via _EVIDENCE_SCALARS)
     "eave_overhang_in",
     "fascia_width_in",
+    # SEND-124 item 2 — the printed-only lanes joined the DIM
+    # discipline while their surface was empty (zero on all four
+    # houses); a bare number nulls as no-evidence.
+    "soffit_sqft",
+    "level_frieze_lf",
+    "sloped_frieze_lf",
+    "drip_edge_lf",
+    "total_trim_sqft",
 }
 
 
@@ -106,6 +114,13 @@ def _norm_walks_suffix(norm_src: str, suffix: str) -> bool:
         return "_EVIDENCE_SCALARS" in norm_src
     if suffix == "fascia_width_in":
         return "_EVIDENCE_SCALARS" in norm_src
+    # SEND-124 item 2 — the printed-only lanes also ride the
+    # _EVIDENCE_SCALARS loop (registered in the tuple, walked by the
+    # same `for k in _EVIDENCE_SCALARS` block).
+    if suffix in ("soffit_sqft", "level_frieze_lf", "sloped_frieze_lf",
+                  "drip_edge_lf", "total_trim_sqft"):
+        from routes.ai_blueprint import _EVIDENCE_SCALARS
+        return suffix in _EVIDENCE_SCALARS and "_EVIDENCE_SCALARS" in norm_src
     if suffix == "corner_heights.<i>":
         # Walked via outside_corner_heights_ft list iteration.
         return "outside_corner_heights_ft" in norm_src

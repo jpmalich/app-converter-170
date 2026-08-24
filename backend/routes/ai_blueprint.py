@@ -3712,7 +3712,9 @@ def check_read_consistency(raw: dict) -> list[dict]:
             if _v:
                 _mc.append(f"{_w.get('label')}: \u201c{_v}\u201d")
     for _g in (raw.get("_siding_pct_gated") or []):
-        _mc.append(f"{_g.get('label')}: {_g.get('claimed_pct'):g}% \u2192 100 (gated)")
+        if not isinstance(_g, dict) or "claimed_pct" not in _g:
+            continue
+        _mc.append(f"{_g.get('label')}: {_g['claimed_pct']:g}% \u2192 100 (gated)")
     if _mc:
         flags.append({
             "code": "material_claims_unconfirmed", "level": "loud",
@@ -5044,9 +5046,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # SEND-124 ITEM 1 — THE MATERIAL CONFIRMATION CARD (category claims
     # are never gated; they surface for a human: claim + face + ft² at
     # stake). Gated pct reversion rides the same card, named.
-    _face_sqft = {str(e.get("label") or "").lower(): e.get("wall_body_sqft")
+    _face_sqft = {str(e.get("label") or "").lower(): e["wall_body_sqft"]
                   for e in (measurements.get("_per_elevation_breakdown") or [])
-                  if isinstance(e, dict)}
+                  if isinstance(e, dict) and "wall_body_sqft" in e}
     _claims: list[dict] = []
     for _w in walls:
         _lbl = str(_w.get("label") or "?").lower()
@@ -5063,9 +5065,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
                             "claim": str(_a.get("profile_callout")).strip(),
                             "sqft_at_stake": None})
     for _g in (raw.get("_siding_pct_gated") or []):
+        if not isinstance(_g, dict) or "claimed_pct" not in _g:
+            continue
         _claims.append({"face": str(_g.get("label") or "?").lower(),
                         "field": "siding_pct_this_wall",
-                        "claim": f"{_g.get('claimed_pct'):g}% claimed — reverted to 100 (no located evidence)",
+                        "claim": f"{_g['claimed_pct']:g}% claimed — reverted to 100 (no located evidence)",
                         "sqft_at_stake": _face_sqft.get(str(_g.get("label") or "").lower())})
     measurements["_material_claims"] = _claims
     # RULINGS CC + DD + EE (send-24/25): garage-side contradiction detector
