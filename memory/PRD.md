@@ -1,5 +1,58 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-24 SEND-123 — PROMPT NEUTRALIZED · COMPOSITION ANSWERED · CALLOUT VERIFIABILITY = HUMAN CONFIRMATION · PRINTED-ONLY LANES SIZED AT ZERO (stamped `2026-08-24 18:25 UTC · 6e6fd72 · CLEAN · 2840 passed, 9 skipped` first-run + census GREEN + ingress 4 passed)
+Full record: `memory/send123_report.md` · 3 pins in
+`tests/test_send123_prompt_purity_2026_08_24.py`.
+1. **ITEM 1 FIXED — THE PROMPT EXPOSURE.** Every real fixture figure
+   swapped to obviously-synthetic ones: the derived-value worked example
+   (`7'-4 3/8" + 1'-1" + 6'-5 5/8" + 10 1/2"`, lie-example `15'-9 1/2"`
+   = the synthetic sum, pedagogy preserved), schedule SIZE examples
+   (`2'-7 3/8" x 4'-3 5/8"` ×3 sites), garage wall (`7'-10 3/8"`),
+   floor-plan example (`43'-0"`), hover scale examples (`41'-3"`/
+   `27'-9"` — 30'-0" was Boni's sealed side). **QUALIFICATION
+   REGISTERED**: prior-house figures were in front of the model on
+   every read since the example was written — qualifies every prior run
+   like the 20.0 census; a condition, not an invalidation. **PINNED**:
+   structural AST scan of every prompt constant in 6 modules against a
+   19-figure fixture set (industry shorthand REVIEWED-GENERIC). Sweep:
+   real figures existed in exactly TWO prompts (blueprint SYSTEM_PROMPT,
+   hover OCR_SCALE_PROMPT) — both neutralized; the other 8 carry none.
+2. **ITEM 2 ANSWERED — THE COMPOSITION.** Post-swap fresh Tanis read
+   (run 580ff451, neutral prompt): **the model volunteered 9'-1⅛"
+   AGAIN** on every face and corner — all nulled again. The print's
+   vertical `-1 1/8"` tail plus the model's own feet-digit read produce
+   the figure with no prior-house figure anywhere in the prompt. THE
+   EXPOSURE WAS REAL BUT WAS NOT DOING THE WORK ON THIS CLAIM.
+   Registered. Bonus: SEND-122's guards fired LIVE on their first fresh
+   run — LF lanes nulled named (308/194/122/54/18 → None; an evidenced
+   garage-plane eave 24.0 survived through the plane lane, by design),
+   counts evidence-only (window_count 3, 5 refusals named — model
+   claimed different rows this run), 11 rails incl. `lf_lane_refused`
+   and `below_grade_unread`, siding 0.0, heights 0/4 refused.
+3. **ITEM 3 REPORTED — MATERIAL CALLOUTS CANNOT CARRY A GATE.** Six
+   claim fields reach quantities; the largest reach is
+   `siding_pct_this_wall` (scales face ft² directly at measure_staging
+   L248 — Tanis carries 85/85 on back/left, unverified). Verifiability:
+   **2 of 24 claims locate in OCR across the four houses** (Boni gable
+   SHINGLES ×2); VINYL/HORIZONTAL SIDING/AS-SPECIFIED strings are
+   category answers or un-OCR'd ink. A gate would refuse the entire
+   profile lane on all four houses. **PER HOWARD'S OWN CONDITION: the
+   ruling changes from a gate to HUMAN CONFIRMATION** — an unconfirmed
+   material card (claim + face + ft² at stake), same shape as the
+   walkout answer. Not built; awaits ruling.
+4. **ITEM 4 REPORTED — PRINTED-ONLY LANES SIZED.** DIM schema change:
+   5 fields number→DIM, +5 evidence-walker paths, ~13 aggregation
+   sites, 3 lp_package consumers unchanged; risk = model compliance
+   flips future claims to refused-until-located. **THE EXPOSURE TODAY
+   IS ZERO ft² / ZERO LF — all five lanes are None on all four houses'
+   latest reads**; only vents (1–2) and shutters (dart 8) carry as bare
+   counts. The ruling can price the change against a zero present
+   exposure.
+5. **NEXT**: DART'S SEALED GROUND TRUTH (Howard) — Tanis alone is still
+   an anecdote. Awaiting rulings: material human-confirmation card ·
+   printed-only DIM change · walkout human-flag surface. Symbols STILL
+   NOT AUTHORIZED.
+
 ## 2026-08-24 SEND-122 — LF-LANE GUARD BUILT · MARKS-AS-1 FLOOR DEAD · BELOW-GRADE RAIL BUILT · PURITY + STONE-REACH REPORTED (stamped `2026-08-24 17:47 UTC · 9392f40 · CLEAN · 2837 passed, 9 skipped` + census GREEN + ingress 4 passed)
 Full record: `memory/send122_report.md` · 9 pins in
 `tests/test_send122_lf_count_walkout_2026_08_24.py`.
