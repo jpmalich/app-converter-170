@@ -400,3 +400,5 @@
 - 2026-08-24 18:25 UTC · 6e6fd72 · INGRESS-SMOKE-CLEAN · 4 passed in 1.94s
 - 2026-08-24 19:29 UTC · 4dfce13 · CLEAN · [tests] · 2852 passed, 9 skipped, 7 warnings in 452.33s (0:07:32)
 - 2026-08-24 19:29 UTC · 4dfce13 · INGRESS-SMOKE-CLEAN · 4 passed in 2.44s
+- 2026-08-24 20:28 UTC · e53af2e · CLEAN · [tests] · 2858 passed, 9 skipped, 7 warnings in 461.53s (0:07:41)
+- 2026-08-24 20:28 UTC · e53af2e · INGRESS-SMOKE-CLEAN · 4 passed in 2.37s
