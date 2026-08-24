@@ -4550,9 +4550,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     _perimeter_lf = sum(float(w.get("width_ft") or 0) for w in walls)
     # SEND-122 ITEM 1: lanes the input-death sweep nulled carry None —
     # a refused LF never resurrects through an `or 0` or a hypothesis.
-    _lf_nulled_lanes = {str(n.get("lane")): n
+    _lf_nulled_lanes = {str(n["lane"]): n
                         for n in (raw.get("_lf_lane_nulled") or [])
-                        if isinstance(n, dict)}
+                        if isinstance(n, dict) and "lane" in n}
     _printed_starter = float(raw.get("starter_lf") or raw.get("eaves_lf") or 0)
     if _perimeter_lf > 0:
         _starter_lf = _perimeter_lf

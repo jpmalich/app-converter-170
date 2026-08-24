@@ -31,6 +31,19 @@ BP = Path(__file__).resolve().parents[1] / "routes" / "ai_blueprint.py"
 # INERT = a selection/projection that feeds a comparison, never a store.
 # A new entry appearing here unreviewed is the failure this test exists for.
 ALLOWLIST = {
+    # INERT (SEND-122) — gable/eave wall CLASSIFICATION inside the
+    # LF-lane input-death sweep; both partitions are used, nothing
+    # leaves the data flow.
+    '[w for w in walls if _fv(w.get("gable_triangle_height_ft")) > 0]',
+    '[w for w in walls if _fv(w.get("gable_triangle_height_ft")) <= 0]',
+    # ACCOUNTED (counts_refused_no_evidence, SEND-122) — rows the
+    # refusal pass named ride the seam ledger + schedule_count_unread
+    # rail; the schedule surface then skips exactly those rows.
+    '[ _sched_row(win, "window", _hint_to_style.get((win.get("type_hint") '
+    'or "").lower(), "")) for win in windows if not win.get("_count_unread") ]',
+    '[ _sched_row(d, _hint_to_door_type.get((d.get("type_hint") or '
+    '"").lower(), "entry_door"), "") for d in doors '
+    'if not d.get("_count_unread") ]',
     # INERT — selects the garage plane to pick roof-pass sheets.
     '[p for p in planes if "garage" in str(p.get("label") or "").lower()]',
     # INERT — wall heights feeding the tallest-wall comparison.
