@@ -139,3 +139,8 @@ heights hypothesis-only, predictions unrevised. EST-886440 untouched.
 Purity pin holds — dart's sealed figures and its distinctive drawn
 glyphs joined `fixture_figures.py` in this same send, per the in-step
 rule.
+
+## 9. STAMP
+RECORDED: 2026-08-25 02:01 UTC · a531df9 · CLEAN
+RESULT: 2858 passed, 9 skipped, 7 warnings in 429.54s (0:07:09)
+CENSUS: census pin GREEN — 0 PENDING_CONVERSION · INGRESS SMOKE: 4 passed

@@ -9004,3 +9004,42 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   projections) → figures join fixture_figures.py in that same send →
   predictions first, then the scored read. Then the READ phase.
   Symbols placement still NOT AUTHORIZED.
+
+## 2026-08-24/25 — SEND-126 (dart sealed · predictions first · scored read)
+- SEALED (Howard): dart front/back 55'-6", left/right 50'-0", main wall
+  19'-2", 3 levels, 18 windows, 2 front garage doors, 1 front entry, 1
+  right slider, gables front 3 / right 2 / left 3 / back 0, no stone.
+  Figures joined fixture_figures.py in this send (in-step rule).
+- PREDICTIONS COMMITTED FIRST at 63aa1f3 (memory/send126_dart_predictions.md,
+  unrevised, never edited after the read). Then scored read run ff0d596e
+  (rerun of eb87852f, 11 cached pages). Estimate untouched (59 lines,
+  updated_at unchanged); nothing priced.
+- SCORE: 0/4 faces derived — as predicted. MECHANISM NOT AS PREDICTED:
+  heights 4/4 refused (exact), but 3 widths came back as NUMBERS from
+  LOCATED-BUT-MIS-ASSIGNED glyphs — front 58.0 (truth 55.5) from 58'-4";
+  left AND right both 56.0 (truth 50.0) from ONE located 56'-0" box.
+  Evidence-or-null can ask "does this figure exist here?" but not "does
+  it belong to THIS line".
+- TWO PRE-REGISTERED FALSIFIERS FIRED (reported, not softened):
+  (1) siding_sqft 1280.53 with wall_body_derivable FALSE on all four
+  faces — all of it gable (left 640.27 + right 640.27 = width 56.0 ×
+  rise 16.33 × 0.70 field factor). Gable needs no height, so no height
+  refusal stops it; truth's gable placement (3/0/3/2) is wrong too.
+  (2) starter_lf 170.0 riding footprint_perimeter_ft 170 while the
+  model's own starter quote (228) was nulled as evidence-free.
+  HELD: no height without a located DIM; pct 100 everywhere; the front
+  STONE callout (truth: no stone) carded with sqft_at_stake null;
+  window_count 2 not 18 with 14 counts refused by name; garage side
+  REFUSED on CONFLICT.
+- SCOREBOARD: tanis 0/4 · dart 0/4 sealed. earned_claim() still
+  "fails safe on unfamiliar sets" — and that claim is now known to be
+  only PARTLY true: it holds on height/body-area/count/pct/garage-side
+  lanes, NOT on the gable-area or starter/perimeter lanes.
+- STAMP: RECORDED 2026-08-25 02:01 UTC · a531df9 · CLEAN · 2858 passed,
+  9 skipped · census GREEN · ingress 4 passed. Report:
+  memory/send126_report.md (probe: memory/send126_score_probe.py).
+- AWAITING HOWARD'S RULING (nothing built): (1) gable-area gate when the
+  face body is not derivable or its width is not uniquely located;
+  (2) refuse a width whose located box is shared with another face;
+  (3) refuse starter_lf on an unverified footprint outline.
+  Symbols placement still NOT AUTHORIZED.
