@@ -35,10 +35,10 @@ FIXTURE_FIGURES = {
                     "57'-4\"", "57'-0\""],
     },
     "dart": {
-        # Sealed truth OWED BY HOWARD — figures join here in the sealing
-        # send. pending_seal is the ONLY way an entry may sit empty.
-        "pending_seal": True,
-        "figures": [],
+        # SEALED 2026-08-24 by Howard (SEND-126). Distinctive sealed
+        # figures joined in the sealing send, per the in-step rule.
+        "pending_seal": False,
+        "figures": ["55'-6\"", "50'-0\"", "19'-2\"", "55' 6\"", "19' 2\""],
     },
 }
 
