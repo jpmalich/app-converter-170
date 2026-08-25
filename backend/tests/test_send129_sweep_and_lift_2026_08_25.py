@@ -202,7 +202,8 @@ def test_the_gate_lifts_the_sides_and_keeps_the_shared_pair_refused():
     assert walls["front"].get("_width_unattributed")
     assert walls["back"].get("_width_unattributed")
     lifted = {c["path"] for c in raw["_attribution_corroboration"]
-              if c.get("delta_ft") is not None and c.get("lifted") is not False}
+              if c.get("delta_ft") is not None
+              and c.get("lifted") is not False}
     assert lifted == {"walls.left.width_ft", "walls.right.width_ft"}
     m = _aggregate_to_hover_shape(raw)
     # the sides' gables return; the perimeter still needs all four widths

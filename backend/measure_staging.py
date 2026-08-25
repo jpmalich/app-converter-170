@@ -223,12 +223,12 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
     # refuses the BODY only — the gable does not read a height.
     unattributed_faces = {
         str(k).lower(): (v if isinstance(v, dict)
-                         else {"reason": v, "scope": "face"})
+                         else {"reason": v, "_scope": "face"})
         for k, v in (unattributed_faces or {}).items()}
     for w in walls:
         _label_lc = str(w.get("label") or "").lower()
         _ua = unattributed_faces.get(_label_lc)
-        if _ua and _ua.get("scope") == "body":
+        if _ua and _ua.get("_scope") == "body":
             w = {**w, "height_ft": None, "_body_refusal": _ua["reason"]}
             faces_not_derivable.append({
                 "label": w.get("label"), "surface": "height_attribution",

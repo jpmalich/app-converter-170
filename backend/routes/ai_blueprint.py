@@ -2542,14 +2542,14 @@ def _attribution_gate(raw: dict) -> None:
                                    "delta_ft": verdict["delta_ft"],
                                    "delta_pct": verdict["delta_pct"],
                                    "floor_pct": verdict["floor_pct"],
-                                   "statement": verdict["statement"]})
+                                   "_statement": verdict["statement"]})
                     continue
                 lifted.append({"path": f"walls.{label}.{leaf}",
                                "quote": hit["quote"], "lifted": False,
                                "delta_ft": verdict["delta_ft"],
                                "delta_pct": verdict["delta_pct"],
                                "floor_pct": verdict["floor_pct"],
-                               "statement": verdict["statement"]})
+                               "_statement": verdict["statement"]})
             reason = (
                 f"{leaf} located but UNATTRIBUTED — the printed "
                 f"{hit['quote']} (p{hit['page']}) is claimed by "
@@ -4208,7 +4208,7 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     if _corr_rail:
         rail.append({
             "level": "info", "code": "attribution_corroboration",
-            "text": "; ".join(f"{c.get('path')}: {c.get('statement')}"
+            "text": "; ".join(f"{c.get('path')}: {c.get('_statement')}"
                               for c in _corr_rail)})
     _ua_rail = raw.get("_dim_unattributed") or []
     if _ua_rail:
@@ -4621,11 +4621,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         _lbl = str(w.get("label") or "").lower()
         if w.get("_width_unattributed"):
             _unattributed_faces[_lbl] = {
-                "reason": w["_width_unattributed"], "scope": "face"}
+                "reason": w["_width_unattributed"], "_scope": "face"}
         elif w.get("_height_unattributed"):
             # width owned, height not: the BODY refuses, the gable stands
             _unattributed_faces[_lbl] = {
-                "reason": w["_height_unattributed"], "scope": "body"}
+                "reason": w["_height_unattributed"], "_scope": "body"}
     # INTERIOR-DOOR GUARD (Howard ruled 2026-08-07): a door with no
     # exterior evidence never pollutes the entry-door count — doors drive
     # J-channel and coil. Dropped rows are COUNTED and FLAGGED, never silent.
@@ -4657,18 +4657,18 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # Cleared and NAMED, never dropped quietly.
     for _w in walls:
         if (isinstance(_w, dict) and _w.get("_height_unattributed")
-                and _w.get("height_src") == "height_build"):
+                and _w.get("height_src") == "height_build"):  # noqa: internal
             _lbl = str(_w.get("label") or "").lower()
             raw.setdefault("_attribution_corroboration", []).append({
                 "path": f"walls.{_w.get('label')}.height_ft",
-                "statement": (
+                "_statement": (
                     f"height mark CLEARED — the model's shared figure was "
                     f"demoted to hypothesis and replaced by "
                     f"{_w.get('height_ft')} ft read from this face's own "
                     f"FIRST FLOOR → TOP OF PLATE chain, so the quantity no "
                     f"longer rides the shared quote (SEND-129)")})
             _w.pop("_height_unattributed", None)
-            if _unattributed_faces.get(_lbl, {}).get("scope") == "body":
+            if _unattributed_faces.get(_lbl, {}).get("_scope") == "body":
                 _unattributed_faces.pop(_lbl, None)
     if _hb.get("status") == "APPLIED":
         seam_accounting.account(

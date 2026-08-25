@@ -55,6 +55,10 @@ INTERNAL_KEYS = {
     "front", "back", "left", "right",
     # locator-written precision tag on evidence srcs
     "precision",
+    # height_read.apply_height_build stamps this on each wall it rebuilds
+    # from that face's own datum chain; SEND-129 reads it to clear a
+    # height attribution mark whose figure has been replaced (reviewed).
+    "height_src",
     # profile_callouts internals (the _dormer_composition stamp's child
     # keys + the annotation-echo tag)
     "face_sqft", "cheek_sqft", "openings_deducted", "from_annotation",
