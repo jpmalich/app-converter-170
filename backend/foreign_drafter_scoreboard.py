@@ -16,9 +16,10 @@ CLAIM_READS = "reads unfamiliar sets"
 
 FOREIGN_DRAFTER_SCOREBOARD = {
     "tanis": {"derived": 0, "total": 4, "sealed": True},
-    # dart: scoreboard figure stands at 0/4 from the probe reads; its
-    # SCORED read waits on Howard's seal (fixture_figures.pending_seal).
-    "dart": {"derived": 0, "total": 4, "sealed": False},
+    # dart: SEALED 2026-08-24, scored read ff0d596e the same day —
+    # 0 of 4 faces derived (3 widths returned from LOCATED but
+    # MIS-ASSIGNED glyphs, all outside tolerance; 4 heights refused).
+    "dart": {"derived": 0, "total": 4, "sealed": True},
 }
 
 # The read-claim is earned only when MORE THAN ONE foreign drafter shows

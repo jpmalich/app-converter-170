@@ -38,7 +38,10 @@ FIXTURE_FIGURES = {
         # SEALED 2026-08-24 by Howard (SEND-126). Distinctive sealed
         # figures joined in the sealing send, per the in-step rule.
         "pending_seal": False,
-        "figures": ["55'-6\"", "50'-0\"", "19'-2\"", "55' 6\"", "19' 2\""],
+        # sealed figures + the print's own distinctive drawn glyphs the
+        # SEND-126 read leaned on (58'-4", 56'-0", 38'-0").
+        "figures": ["55'-6\"", "50'-0\"", "19'-2\"", "55' 6\"", "19' 2\"",
+                    "58'-4\"", "56'-0\"", "38'-0\""],
     },
 }
 
