@@ -51,7 +51,18 @@ SEAM_REGISTRY = {
         "demote-all destroyed legitimately-shared printed dims (58'-0\" "
         "genuinely IS both front and back width) and never caught a real "
         "defect — the fabricated 39s die at EXISTENCE, not here. Kept "
-        "registered so any stray firing still names its layer.",
+        "registered so any stray firing still names its layer. "
+        "AMENDED 2026-08-25 send-128, registered against send-13 "
+        "EXPLICITLY: the narrowing from KILL to FLAG was RIGHT FOR "
+        "DISPLAY and WRONG FOR QUANTITY. Displaying a shared printed dim "
+        "with every consumer named is correct and stays. Letting it feed "
+        "money is what bought dart 1,280.53 ft² of gable and 170 LF of "
+        "starter off one 56'-0\" claimed by two faces (sealed truth "
+        "50'-0\" on both). Send-127 splits it by CONSUMER: display keeps "
+        "the figure, quantity refuses (see "
+        "`dims_unattributed_quantity_refused`). Send-13 was not wrong to "
+        "stop the kill — it was wrong to let the flag stay silent where "
+        "the money is.",
     "dims_unattributed_quantity_refused":
         "EVIDENCE-AND-ATTRIBUTION-OR-NULL (Howard ruled 2026-08-25 "
         "send-127). A located figure whose ONE printed quote is claimed "
