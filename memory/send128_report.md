@@ -202,3 +202,10 @@ Standing rules held: no cross-drawing borrowing, no estimate influenced
 another, no job names in operative code, model heights hypothesis-only.
 EST-886440 PROTECTED and unaffected. Purity pin holds. Gable placement
 still noted-not-fixed. Symbols placement still NOT AUTHORIZED.
+
+## 8. STAMP
+RECORDED: 2026-08-25 19:00 UTC · d05461e · CLEAN
+RESULT: 2873 passed, 9 skipped, 7 warnings in 468.19s (0:07:48)
+CENSUS: census pin GREEN — 0 PENDING_CONVERSION · INGRESS SMOKE: 4 passed
+(+2 pins over SEND-127's 2871: the register amendment and the FAILS_SAFE
+answer. No quantity logic changed this send — the lift is not built.)

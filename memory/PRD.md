@@ -9086,3 +9086,50 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
 - OPEN: gable placement (truth 3/3/2/0 vs read 0/1/1/0) noted NOT fixed;
   an attribution-ESTABLISHMENT path (how a shared overall becomes owned)
   is not built — today a share can only refuse; symbols NOT AUTHORIZED.
+
+## 2026-08-25 — SEND-128 (corroboration reported, lift NOT built)
+- PLAIN ANSWER: earned_claim() = "fails safe on unfamiliar sets" —
+  FAILS_SAFE for the first time on the quantity-emitted metric.
+  unattributed_lanes() == {}; no lane to name.
+- LINE-WORK AVAILABILITY per face (read-only probe
+  memory/send128_corroboration_probe.py, pipeline's own code):
+  letrick front 54.73 vs 54.0 (Δ0.73) · left 29.41 vs 30.0 (Δ0.59) ·
+  right 29.67 vs 30.0 (Δ0.33) · back geometry RESOLVED but NO usable
+  scale. boni left INDETERMINATE, right NOT_ATTEMPTED. tanis
+  NOT_ATTEMPTED ×4. dart NOT_ATTEMPTED ×4 (no elevation drawing located
+  on any face). Line-work UNDERSHOOTS on every face where both exist.
+- REQUIRED BLIND-SPOT CHECK: three inheritance paths — band (structurally
+  clean, Ruling YY refuses a doubled title first), fence (SEND-84
+  fence_margin_warning must block a lift; letrick's reads are null =
+  clean), SCALE (LIVE: letrick's BACK has no scale but the CONTESTED
+  9'-11 1/8" — the very unattributed quote — so a back lift would be
+  circular and must refuse). COROLLARY: line-work can NEVER corroborate
+  a HEIGHT, because the height is its ruler.
+- WHAT WOULD MOVE: letrick recovers its SIDES only — 367.6 ft² of gable
+  (183.8 × 2) + 64 LF rakes; front/back body 1,069.2 ft², starter/
+  perimeter 168 LF, eaves 108 LF, OSC 39.6 LF STAY REFUSED. Dart
+  recovers NOTHING (no second read exists). Boni and Tanis do not move.
+- HARD CUT BROUGHT TO HOWARD (as instructed): a lift is boolean by
+  nature. (A) structural — RESOLVED + wall-only figure + no fence
+  warning + clean scale quote, Δ reported never gating; (B) same plus a
+  chosen Δ number (0.35 admits right only; 0.60 admits left+right; 0.75
+  admits all three; 2% proportional admits all three). SECOND decision
+  owed: when corroborated, does the printed model figure or the drawn
+  line-work figure feed the quantity (the undershoot is systematic).
+- REGISTERED: the send-13 entry in seam_accounting now carries the
+  amendment naming send-13 explicitly — kill→flag was RIGHT FOR DISPLAY,
+  WRONG FOR QUANTITY. Pinned in
+  tests/test_send128_register_and_claim_2026_08_25.py.
+- NEW CLASS INVENTORIED (reported, NOT fixed, per order): "a refusal a
+  later pass can overwrite" — 5 classes / 14 sites. A: ledger overwrite
+  (_lf_lane_nulled FIXED 127; _dim_evidence whole-map assign;
+  _dim_shared_source duplicate-on-rerun; seam account() not idempotent).
+  B: stale flag revival (_rakes_plane_summed FIXED 127; **_eaves_plane_
+  summed STILL LIVE**; differs_from_derived_band / gable pitch
+  provenance). C: `or 0` coercion (hover.py 478/479/645/973/1041;
+  lp_package_routes 1374; ai_blueprint 3906-3912/3947-3949). D: second
+  writer (ai_measure 2117 footprint_perimeter_ft; hover reconcile
+  810-844). E: re-derivation after null (_printed_starter 4851;
+  _gable_rise 0.70 fallback).
+- STAMP: RECORDED 2026-08-25 19:00 UTC · d05461e · CLEAN · 2873 passed,
+  9 skipped · census GREEN · ingress 4 passed. No quantity logic changed.
