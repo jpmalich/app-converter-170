@@ -9133,3 +9133,54 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   _gable_rise 0.70 fallback).
 - STAMP: RECORDED 2026-08-25 19:00 UTC · d05461e · CLEAN · 2873 passed,
   9 skipped · census GREEN · ingress 4 passed. No quantity logic changed.
+
+## 2026-08-25 — SEND-129 (sweep first, then the lift)
+- Δ-DIRECTION CORRECTED: SEND-128's "every face undershoots" was WRONG.
+  Signed: letrick front +0.73 ft (line-work runs OVER), left −0.59,
+  right −0.33. The undershoot is a SIDE pattern, not universal.
+- THE SWEEP (all 14 sites answered BEFORE the lift): FIXED this send —
+  _dim_evidence merges; _dim_shared_source idempotent; seam account()
+  idempotent; _eaves_plane_summed cleared; hover `_key_refused` so a
+  REFUSED key is not a zero (mitres + corner posts refuse, starter row
+  says REFUSED); lp_package prints a refused batten term; readback rows
+  carry eave_refused/rake_refused + corners basis "refused";
+  ai_measure stamps _perimeter_writer and seam_accounting.carry_refusals
+  records _refused_overwritten at the estimate seam; roof-pass corner
+  fill names the refused keys it replaced; _printed_starter can no
+  longer re-source a killed starter from eaves. Already fixed in 127:
+  _lf_lane_nulled merge, _rakes_plane_summed. CLEARED ON INSPECTION (not
+  sites, reported as such): differs_from_derived_band /
+  _gable_pitch_provenance (single-pass), _gable_rise 0.70 fallback (no
+  refused traced rise upstream). Also: explicit None in eaves_lf/rakes_lf
+  stays a refusal (absent = never read = 0), and the walk vs
+  _per_elevation_breakdown disagreement is closed — one mark drives both,
+  WIDTH-unattributed refuses body+gable, HEIGHT-unattributed refuses the
+  BODY only.
+- THE MARK BELONGS TO THE FIGURE: when the height build replaces the
+  shared model height with a reading of that face's OWN FF→plate chain,
+  the height mark is CLEARED AND NAMED (height_src == "height_build").
+- THE LIFT (attribution_lift.py + linework_corroboration.py): structural
+  conditions (RESOLVED, wall-only figure, no fence warning, clean scale
+  quote) PLUS Δ inside the registered 3.8% elevation noise floor
+  (SEND-111 — derived, not chosen). Δ printed either way, on the rail and
+  readback (attribution_corroboration, EN+ES). PRINTED figure feeds.
+  WIDTH INSTRUMENT ONLY — a height can never be corroborated (its own
+  ruler); pinned.
+- RE-CHECK, all four houses: BONI identical (3,981.075 / 194 / 284 / 110 /
+  140 / 80) · TANIS unchanged (0.0, all None) · DART unchanged, still
+  refuses (no elevation located on any face → NOT_ATTEMPTED ×4) ·
+  LETRICK RECOVERED to 1,498.62 ft² + 64 LF rakes.
+  SIZING CORRECTION: the ruling sized letrick's recovery at ~368 ft²; the
+  machine recovers 1,402.62 ft² (96.0 was never lost) because front
+  corroborates at Δ1.35% and front/left/right heights come from their own
+  datum chains, not the contested 9'-11 1/8". STILL REFUSED on letrick:
+  back body/width (its line-work read has NO wall-only figure — the real
+  first lock, correcting SEND-128's contested-scale explanation), starter/
+  perimeter 168 LF, eaves 108 LF, OSC 39.6 LF, ISC.
+- earned_claim() = FAILS_SAFE over a SWEPT pipeline; unattributed_lanes()
+  == {}. No lane to name.
+- STAMP: RECORDED 2026-08-25 20:33 UTC · 935f267 · CLEAN · 2886 passed,
+  9 skipped · census GREEN · ingress 4 passed. Report:
+  memory/send129_report.md.
+- OPEN: gable placement (3/3/2/0 vs 0/1/1/0) noted-not-fixed; height
+  corroboration needs a different instrument; symbols NOT AUTHORIZED.
