@@ -2114,7 +2114,13 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # Footprint perimeter = the same measured wall-width sum the starter
     # basis uses. Writer-key == reader-key (batten machinery).
     if _fp > 0:
+        # SEND-129 (class D): this is a SECOND WRITER to a key the
+        # blueprint lane may have REFUSED. The photo read is legitimate,
+        # but it may not erase the refusal silently — the overwrite is
+        # named on the payload (seam_accounting.carry_refusals does the
+        # same at the estimate seam).
         measurements["footprint_perimeter_ft"] = _fp
+        measurements["_perimeter_writer"] = "photo door (ai_measure)"
     measurements["_starter_basis"] = _starter_basis
     # STEP 4 — CONFIDENCE GATE (findings 4 + 9a, ruled 2026-08-01): the
     # code now KNOWS a photo read is a suggestion. Any substituted height,

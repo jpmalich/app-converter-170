@@ -289,6 +289,46 @@ def _downspout_count(m: dict) -> int:
 RULING_V_REFUSAL_CODE = "RULING_V_NO_VERIFIED_HEIGHT"
 
 
+# SEND-129 (Howard ruled 2026-08-25) — A REFUSAL THAT DOES NOT SURVIVE TO
+# THE END OF THE PIPELINE IS NOT A REFUSAL. The measurement keys below are
+# read by priced lanes; a REFUSED key (present and None) used to arrive as
+# `or 0`, i.e. a silent zero indistinguishable from a real zero. Now the
+# refusal is (a) carried to the takeoff as its own disclosure and (b)
+# refuses the lanes whose whole basis it is.
+REFUSAL_SENSITIVE_LANES = {
+    "starter_lf": ["starter course", "starter door deduction"],
+    "footprint_perimeter_ft": ["batten stackup", "start course"],
+    "outside_corner_lf": ["outside corner posts", "roofline mitres"],
+    "inside_corner_lf": ["inside corner posts", "mitres"],
+    "eaves_lf": ["gutter", "fascia", "level frieze"],
+    "rakes_lf": ["rake trim", "sloped frieze"],
+    "siding_sqft": ["field siding"],
+    "soffit_sqft": ["soffit"],
+    "level_frieze_lf": ["level frieze"],
+    "sloped_frieze_lf": ["sloped frieze"],
+    "drip_edge_lf": ["drip edge"],
+}
+
+
+def _key_refused(m: dict, key: str) -> bool:
+    """REFUSED = the key is present and None. Absent is 'never read'."""
+    return isinstance(m, dict) and key in m and m.get(key) is None
+
+
+def refused_measurement_lanes(m: dict) -> list:
+    """Every refused measurement key with the priced lanes that read it —
+    the disclosure that rides the takeoff so a refusal is never a zero."""
+    out = []
+    for key, lanes in REFUSAL_SENSITIVE_LANES.items():
+        if _key_refused(m, key):
+            out.append({"key": key, "lanes": lanes,
+                        "note": (f"{key} REFUSED upstream — the lane(s) "
+                                 f"{', '.join(lanes)} have no owned input; "
+                                 "a zero here would be a real zero, and "
+                                 "this is not one")})
+    return out
+
+
 def _verified_drop_height_ft(m: dict):
     """(height_ft, basis) from the estimate's own VERIFIED heights —
     taped human dimensions or the face's own DP-1 DERIVED chain —
@@ -475,6 +515,10 @@ def _gutter_corner_count(m: dict):
     h, _ = _verified_drop_height_ft(m)
     if h is None or h <= 0:
         return None
+    # SEND-129: a refused corner LF refuses the mitre count — the caller
+    # already emits a NAMED refusal row for None (Ruling V machinery).
+    if _key_refused(m, "outside_corner_lf") or _key_refused(m, "inside_corner_lf"):
+        return None
     out_lf = float(m.get("outside_corner_lf") or 0)
     in_lf = float(m.get("inside_corner_lf") or 0)
     out_n = round(out_lf / h)
@@ -642,6 +686,14 @@ def _region_context_lines(m: dict) -> list[dict]:
     clap_fams = sorted(f for f in per if f not in _NO_STARTER_FAMILIES)
     clap_label = "/".join(clap_fams) if clap_fams else "lap"
     total_base = sum(base_lf.values())
+    # SEND-129 (class C): a REFUSED starter must not read as 0 LF and
+    # silently become the whole door deduction. The rows say REFUSED.
+    if _key_refused(m, "starter_lf"):
+        line(f"Starter — {clap_label} body", "Starter", 0,
+             "REFUSED — starter_lf has no owned input upstream (perimeter "
+             "refused or unattributed); this is not a zero, it is a "
+             "refusal (SEND-129)")
+        return out
     starter_lf = float(m.get("starter_lf") or 0)
     door_ded = max(0.0, total_base - starter_lf) if total_base > 0 else 0.0
 
@@ -971,6 +1023,8 @@ def _isc_540_pcs(m: dict) -> int:
     whole-stick round-up, min 1 pc per corner (pooling retired)."""
     ic = int(m.get("inside_corner_count") or 0)
     ilf = float(m.get("inside_corner_lf") or 0)
+    if ic <= 0 and _key_refused(m, "inside_corner_lf"):
+        return 0      # refused, and the takeoff carries the refusal
     if ic > 0:
         per_h = (ilf / ic) if ilf > 0 else 9.5
         return ic * max(1, math.ceil(per_h / 16.0 - 1e-9))
@@ -1039,6 +1093,10 @@ def _osc_lp_pcs(m: dict) -> int:
     the 10' average hid). Identical math to the package emitter, pinned."""
     oc = int(m.get("outside_corner_count") or 0)
     olf = float(m.get("outside_corner_lf") or 0)
+    # SEND-129 (class C): a refused corner LF with no count is a refusal,
+    # and the takeoff carries it — never a quiet 0 pieces.
+    if oc <= 0 and _key_refused(m, "outside_corner_lf"):
+        return 0
     tall = [float(h) for h in (m.get("_osc_tall_corners_ft") or []) if h]
     # PER-CORNER HEIGHTS (Howard ruled 2026-08-06): a door that read each
     # corner's own dimension governs — taped heights (human) still win.
@@ -3348,6 +3406,10 @@ async def rebuild_lp_tab_lines(*, est_id: str, company_id: str,
     Returns (tab_lines, scoped_measurements)."""
     from routes.lp_package_routes import _DEFAULT_PROFILES, _force_profile_measurements
     scoped = dict(base_measurements)
+    # SEND-129: the refusal rides all the way to the persisted takeoff.
+    _ref_lanes = refused_measurement_lanes(scoped)
+    if _ref_lanes:
+        scoped["_refused_measurement_lanes"] = _ref_lanes
     # PORCH CEILINGS ROLL INTO SOFFIT SERVER-SIDE (ruled 2026-07-24,
     # Casile set-back entry): Job-Info porch entries feed the Vented
     # soffit derivation on every rebuild — same math as the editor's
@@ -3802,6 +3864,9 @@ async def rederive_estimate(
     # survives every rebuild by construction.
     from routes.pdf_overlay import reapply_overlay_law
     tab_lines = await reapply_overlay_law(est_id, tab_lines)
+    import seam_accounting
+    scoped = seam_accounting.carry_refusals(
+        est.get("hover_measurements"), scoped, f"{kind} rederive")
     await db.estimates.update_one(
         {"id": est_id},
         {"$set": {"lines": tab_lines, "hover_measurements": scoped}})
@@ -3937,7 +4002,9 @@ async def hover_lp_run(
         # server-side rebuild must too, or a Job-Info porch-ceiling entry
         # recomputes soffit off an EMPTY basis (eaves/rakes = 0) and
         # clobbers the import-derived qtys.
-        est_set["hover_measurements"] = scoped
+        import seam_accounting
+        est_set["hover_measurements"] = seam_accounting.carry_refusals(
+            est.get("hover_measurements"), scoped, "lp materialize")
     await db.estimates.update_one({"id": est_id}, {"$set": est_set})
     # TTL pin, 2nd instance (2026-07-18): the stamp above is a persistent
     # artifact — archive BOTH the materialized LP run and its SOURCE hover

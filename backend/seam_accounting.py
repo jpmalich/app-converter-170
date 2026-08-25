@@ -251,8 +251,40 @@ def account(carrier: dict, seam: str, removed, kept=None) -> dict:
     led = carrier.setdefault("_seam_ledger", {})
     entry = led.setdefault(seam, {"removed": 0, "items": []})
     items = list(removed) if isinstance(removed, (list, tuple)) else [removed]
-    entry["removed"] += len(items)
-    entry["items"] = (entry["items"] + [str(i) for i in items])[:40]
+    # SEND-129 (overwrite sweep, class A): IDEMPOTENT. A pass that runs
+    # twice used to double-count `removed`, so the disclosure of how much
+    # was refused drifted upward with every re-run. The SAME item is
+    # recorded once; a genuinely new item still counts.
+    fresh = [str(i) for i in items if str(i) not in set(entry["items"])]
+    entry["removed"] += len(fresh)
+    entry["items"] = (entry["items"] + fresh)[:40]
     if kept is not None:
         entry["kept"] = kept
     return carrier
+
+
+def carry_refusals(prev: dict | None, new: dict, lane: str) -> dict:
+    """SEND-129 (Howard ruled 2026-08-25) — A REFUSAL MUST SURVIVE TO THE
+    END OF THE PIPELINE. When a later write replaces a key the previous
+    read REFUSED (present and None) with a figure, the refusal is not
+    erased silently: it rides `_refused_overwritten` on the new dict,
+    naming the key, the lane that wrote over it and the new value. The
+    write is NOT blocked — a fresh read of the house is legitimate — but
+    it can no longer look as though nothing was ever refused."""
+    if not isinstance(prev, dict) or not isinstance(new, dict):
+        return new
+    over = []
+    for k, v in prev.items():
+        if v is not None or str(k).startswith("_"):
+            continue
+        nv = new.get(k)
+        if nv is None:
+            continue
+        over.append({"key": str(k), "overwritten_by": lane, "new_value": nv})
+    if over:
+        prior = [o for o in (new.get("_refused_overwritten") or [])
+                 if isinstance(o, dict)]
+        seen = {(o.get("key"), o.get("overwritten_by")) for o in prior}
+        new["_refused_overwritten"] = prior + [
+            o for o in over if (o["key"], o["overwritten_by"]) not in seen]
+    return new

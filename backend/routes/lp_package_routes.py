@@ -1373,7 +1373,17 @@ def _hover_mapping_contract(hover_meas: dict, profile: str,
         # flagged comparison, reversible both ways (14-vs-20 machinery).
         _perim = float(hover_meas.get("footprint_perimeter_ft") or 0)
         _sided = float(m.get("siding_sqft") or 0)
-        if _perim > 0 and _sided > 0:
+        # SEND-129 (class C): a REFUSED perimeter (present and None) is not
+        # 0 LF — the batten term says refused, never "term = 0".
+        _perim_refused = ("footprint_perimeter_ft" in hover_meas
+                          and hover_meas.get("footprint_perimeter_ft") is None)
+        if _perim_refused:
+            _bwh_label = (
+                "Batten height REFUSED — the footprint perimeter has no owned "
+                "input upstream (refused or unattributed); this is not a zero "
+                "term, it is a refusal. Tape the wall heights at the house "
+                "(SEND-129)")
+        elif _perim > 0 and _sided > 0:
             _stacked = round(_sided / _perim, 1)
             _bwh_label = (
                 f"Batten height figured from the report: stacked wall height "

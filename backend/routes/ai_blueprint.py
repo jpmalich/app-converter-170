@@ -53,6 +53,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from deps import get_current_user
 from db import db
 import seam_accounting
+import attribution_lift
 from routes.hover import _build_lines, _build_window_openings
 import measure_staging as staging
 import ocr_geometry
@@ -863,6 +864,17 @@ def _merge_roof_pass(raw: dict, rp: dict) -> dict:
             "stands, neither is adopted as truth")
     elif oc > 0 and old_oc <= 0 and (oc - ic) == 4 and oclf > 0:
         # FILL — the primary read carried no corner walk at all.
+        # SEND-129 (class D): if the primary REFUSED these keys (present
+        # and None), the fill is a SECOND WRITER over a refusal. The roof
+        # pass is a genuine read, so the fill stands — but the refusal it
+        # replaced is named, never erased silently.
+        _over = [k for k in ("outside_corner_lf", "inside_corner_lf",
+                             "outside_corner_count")
+                 if k in raw and raw.get(k) is None]
+        if _over:
+            overwrites.append(
+                "roof pass filled corner keys the primary REFUSED: "
+                + ", ".join(_over) + " (SEND-129 — refusal named, not erased)")
         raw["outside_corner_count"] = oc
         raw["outside_corner_lf"] = oclf
         raw["inside_corner_count"] = ic
@@ -1163,7 +1175,11 @@ def _enforce_evidence_or_null(raw: dict) -> dict:
                     unread.append(f"corner_heights.{i}")
         raw["outside_corner_heights_ft"] = out
     if evidence:
-        raw["_dim_evidence"] = evidence
+        # SEND-129 (class A): MERGE. A whole-map assignment let a second
+        # pass drop provenance every downstream refusal reads.
+        _prev_ev = raw.get("_dim_evidence")
+        raw["_dim_evidence"] = ({**_prev_ev, **evidence}
+                                if isinstance(_prev_ev, dict) else evidence)
     if nulled:
         raw["_nulled_no_evidence"] = nulled
         seam_accounting.account(raw, "dims_nulled_no_evidence", nulled)
@@ -2436,7 +2452,16 @@ def _one_source_one_path_guard(raw: dict) -> None:
         })
 
     if shared_records:
-        raw.setdefault("_dim_shared_source", []).extend(shared_records)
+        # SEND-129 (class A): IDEMPOTENT EXTEND — a second guard pass used
+        # to duplicate every record, inflating the disclosure the
+        # attribution gate reads.
+        _cur = raw.setdefault("_dim_shared_source", [])
+        _seen = {(str(r.get("quote")), r.get("page"),
+                  tuple(r.get("consumers") or []))
+                 for r in _cur if isinstance(r, dict)}
+        _cur.extend(r for r in shared_records
+                    if (str(r.get("quote")), r.get("page"),
+                        tuple(r.get("consumers") or [])) not in _seen)
 
 
 def _unattributed_dim_paths(raw: dict) -> dict:
@@ -2491,6 +2516,12 @@ def _attribution_gate(raw: dict) -> None:
     ua = _unattributed_dim_paths(raw)
     walls = [w for w in (raw.get("walls") or []) if isinstance(w, dict)]
     marked: list = []
+    # SEND-129 — CORROBORATION IS THE LIFT. A second independent read of
+    # the drawn WIDTH can establish attribution; a HEIGHT can never be
+    # corroborated this way (the height is the read's own ruler), so the
+    # lift is offered to width marks only.
+    corr = raw.get("_linework_corroboration") or {}
+    lifted: list = []
     for w in walls:
         label = str(w.get("label") or "")
         for leaf, mark in (("width_ft", "_width_unattributed"),
@@ -2498,6 +2529,27 @@ def _attribution_gate(raw: dict) -> None:
             hit = ua.get(f"walls.{label}.{leaf}")
             if not hit or w.get(leaf) in (None, 0):
                 continue
+            if leaf == "width_ft" and corr:
+                verdict = attribution_lift.evaluate(w.get(leaf),
+                                                    corr.get(label))
+                if verdict["lifted"]:
+                    # THE PRINTED FIGURE FEEDS (decision 2) — the drawn
+                    # read confirms and never measures. Δ printed either
+                    # way.
+                    w.pop(mark, None)
+                    lifted.append({"path": f"walls.{label}.{leaf}",
+                                   "quote": hit["quote"],
+                                   "delta_ft": verdict["delta_ft"],
+                                   "delta_pct": verdict["delta_pct"],
+                                   "floor_pct": verdict["floor_pct"],
+                                   "statement": verdict["statement"]})
+                    continue
+                lifted.append({"path": f"walls.{label}.{leaf}",
+                               "quote": hit["quote"], "lifted": False,
+                               "delta_ft": verdict["delta_ft"],
+                               "delta_pct": verdict["delta_pct"],
+                               "floor_pct": verdict["floor_pct"],
+                               "statement": verdict["statement"]})
             reason = (
                 f"{leaf} located but UNATTRIBUTED — the printed "
                 f"{hit['quote']} (p{hit['page']}) is claimed by "
@@ -2508,6 +2560,8 @@ def _attribution_gate(raw: dict) -> None:
             marked.append({"path": f"walls.{label}.{leaf}",
                            "quote": hit["quote"], "page": hit["page"],
                            "_competitors": hit["_competitors"]})
+    if lifted:
+        raw["_attribution_corroboration"] = lifted
     if marked:
         raw["_dim_unattributed"] = marked
         seam_accounting.account(
@@ -3909,6 +3963,11 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             "label": str(p.get("label") or "?"),
             "eave_lf": float(p.get("eave_lf") or 0),
             "rake_lf": rake,
+            # SEND-129 (class C): `or 0` above keeps the arithmetic safe,
+            # but a REFUSED figure must not read as a real zero on the
+            # card — the refusal rides with the row.
+            **({"eave_refused": True} if p.get("eave_lf") is None else {}),
+            **({"rake_refused": True} if p.get("rake_lf") is None else {}),
             "gable_ends": int(p.get("gable_ends") or 0),
             "is_porch": is_porch,
             "porch_ceiling_sqft": float(p.get("porch_ceiling_sqft") or 0),
@@ -3949,8 +4008,12 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
     oclf = float(raw.get("outside_corner_lf") or 0)
     iclf = float(raw.get("inside_corner_lf") or 0)
     avg_h = float(raw.get("avg_wall_height_ft") or 0)
+    # SEND-129 (class C): distinguish REFUSED from a real zero.
+    _corner_refused = sorted(
+        k for k in ("outside_corner_lf", "inside_corner_lf")
+        if k in raw and raw.get(k) is None)
     if oc <= 0 or oclf <= 0:
-        basis = "missing"
+        basis = "refused" if _corner_refused else "missing"
     elif avg_h > 0 and abs(oclf - oc * avg_h) <= max(1.0, 0.02 * oclf):
         # count × avg height — the 261 Haugh smell: averaging blurs tall
         # 2-story corners with short garage-wing corners.
@@ -4140,6 +4203,13 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
                          for r in _shared_plain)})
     # SEND-127: the attribution refusal is its own rail on the card —
     # DISPLAY shows the flagged figure, every quantity refuses.
+    _corr_rail = [c for c in (raw.get("_attribution_corroboration") or [])
+                  if isinstance(c, dict)]
+    if _corr_rail:
+        rail.append({
+            "level": "info", "code": "attribution_corroboration",
+            "text": "; ".join(f"{c.get('path')}: {c.get('statement')}"
+                              for c in _corr_rail)})
     _ua_rail = raw.get("_dim_unattributed") or []
     if _ua_rail:
         rail.append({
@@ -4333,6 +4403,7 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             "outside_lf": oclf, "inside_lf": iclf,
             "invariant_ok": (oc - ic) == 4 if (oc or ic) else None,
             "basis": basis, "avg_wall_height_ft": avg_h,
+            **({"refused_keys": _corner_refused} if _corner_refused else {}),
             "heights_ft": heights, "undimensioned": undim,
         },
         "wing_check": {
@@ -4379,6 +4450,10 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         # SEND-127: located-but-unattributed dims — DISPLAY lane. The
         # figure is shown flagged here and refused by every quantity.
         "dim_unattributed": list(raw.get("_dim_unattributed") or []),
+        # SEND-129: the corroboration verdicts — Δ IS PRINTED EITHER WAY,
+        # lifted or refused.
+        "attribution_corroboration": list(
+            raw.get("_attribution_corroboration") or []),
         # SEAM ACCOUNTING (ruled 2026-08-09): the ledger of everything
         # any layer removed — visible, never silent.
         "seams": raw.get("_seam_ledger") or None,
@@ -4539,10 +4614,18 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         _null_computed_lf_lanes(raw, attribution_only=True)
     except Exception:
         logger.exception("[ai-blueprint] attribution gate failed")
-    _unattributed_faces = {
-        str(w.get("label") or "").lower(): w["_width_unattributed"]
-        for w in walls
-        if isinstance(w, dict) and w.get("_width_unattributed")}
+    _unattributed_faces = {}
+    for w in walls:
+        if not isinstance(w, dict):
+            continue
+        _lbl = str(w.get("label") or "").lower()
+        if w.get("_width_unattributed"):
+            _unattributed_faces[_lbl] = {
+                "reason": w["_width_unattributed"], "scope": "face"}
+        elif w.get("_height_unattributed"):
+            # width owned, height not: the BODY refuses, the gable stands
+            _unattributed_faces[_lbl] = {
+                "reason": w["_height_unattributed"], "scope": "body"}
     # INTERIOR-DOOR GUARD (Howard ruled 2026-08-07): a door with no
     # exterior evidence never pollutes the entry-door count — doors drive
     # J-channel and coil. Dropped rows are COUNTED and FLAGGED, never silent.
@@ -4567,6 +4650,26 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # model-fed.
     from height_read import apply_height_build
     _hb = apply_height_build(raw, walls)
+    # SEND-129: THE MARK BELONGS TO THE FIGURE, NOT THE FACE. Where the
+    # height build has REPLACED the model's height with a reading of that
+    # face's OWN datum chain, the ambiguous figure is gone — the mark
+    # would refuse a quantity riding evidence that is no longer shared.
+    # Cleared and NAMED, never dropped quietly.
+    for _w in walls:
+        if (isinstance(_w, dict) and _w.get("_height_unattributed")
+                and _w.get("height_src") == "height_build"):
+            _lbl = str(_w.get("label") or "").lower()
+            raw.setdefault("_attribution_corroboration", []).append({
+                "path": f"walls.{_w.get('label')}.height_ft",
+                "statement": (
+                    f"height mark CLEARED — the model's shared figure was "
+                    f"demoted to hypothesis and replaced by "
+                    f"{_w.get('height_ft')} ft read from this face's own "
+                    f"FIRST FLOOR → TOP OF PLATE chain, so the quantity no "
+                    f"longer rides the shared quote (SEND-129)")})
+            _w.pop("_height_unattributed", None)
+            if _unattributed_faces.get(_lbl, {}).get("scope") == "body":
+                _unattributed_faces.pop(_lbl, None)
     if _hb.get("status") == "APPLIED":
         seam_accounting.account(
             raw, "height_build",
@@ -4798,6 +4901,11 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
     plane_eaves = sum(float(p.get("eave_lf") or 0) for p in planes)
     any_gable = any(float(w.get("gable_triangle_height_ft") or 0) > 0 for w in walls)
+    if plane_eaves <= 0:
+        # SEND-129 (class B): a STALE _eaves_plane_summed made a refused
+        # eave read as a figure on a later pass — the flag describes THIS
+        # aggregation, so it is cleared when no plane carries a live eave.
+        raw.pop("_eaves_plane_summed", None)
     if plane_eaves > 0:
         raw["eaves_lf"] = plane_eaves
         raw["_eaves_plane_summed"] = True
@@ -4848,7 +4956,14 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     _lf_nulled_lanes = {str(n["lane"]): n
                         for n in (raw.get("_lf_lane_nulled") or [])
                         if isinstance(n, dict) and "lane" in n}
-    _printed_starter = float(raw.get("starter_lf") or raw.get("eaves_lf") or 0)
+    # SEND-129 (class E): a REFUSED lane may not be re-sourced from
+    # another printed lane. The old fallback read `starter_lf or eaves_lf`,
+    # so a starter the input-death sweep had killed came back wearing the
+    # eaves figure.
+    def _live_lane(_k):
+        return 0.0 if _k in _lf_nulled_lanes else float(raw.get(_k) or 0)
+
+    _printed_starter = _live_lane("starter_lf") or _live_lane("eaves_lf")
     if _perimeter_lf > 0:
         _starter_lf = _perimeter_lf
         _starter_basis = (
@@ -4929,9 +5044,16 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         **({"_openings_deduction": _openings_deduction}
            if _openings_deduction else {}),
         "opening_sqft": opening_sqft,
-        "eaves_lf": (None if "eaves_lf" in _lf_nulled_lanes
+        # SEND-129 (class C): an EXPLICIT None is a refusal and stays one —
+        # only an ABSENT key (never read) reads as 0.
+        "eaves_lf": (None if ("eaves_lf" in _lf_nulled_lanes
+                              or (raw.get("eaves_lf") is None
+                                  and "eaves_lf" in raw
+                                  and not raw.get("_eaves_plane_summed")))
                      else float(raw.get("eaves_lf") or 0)),
-        "rakes_lf": (None if ("rakes_lf" in _lf_nulled_lanes
+        "rakes_lf": (None if (("rakes_lf" in _lf_nulled_lanes
+                               or (raw.get("rakes_lf") is None
+                                   and "rakes_lf" in raw))
                               and not raw.get("_rakes_plane_summed"))
                      else float(raw.get("rakes_lf") or 0)),
         # Boni ruling 1: porch plane ceiling feeds soffit; plane marker
@@ -6101,6 +6223,28 @@ async def _execute_ai_blueprint_worker(
             _refuse_unevidenced_counts(raw)
         except Exception:
             logger.exception("[ai-blueprint] count-refusal pass failed")
+        # SEND-129 — THE SECOND READ (corroboration input). Geometry only,
+        # off the event loop, failure never sinks the run: without it the
+        # gate simply refuses, as built.
+        try:
+            _ot = raw.get("_ocr_text_by_page")
+            from config import UPLOAD_DIR as _UPD
+            _pdf = next((os.path.join(str(_UPD), str(f.get("name")))
+                         for f in ((run_meta or {}).get("source_files") or [])
+                         if isinstance(f, dict) and f.get("kind") == "pdf"),
+                        None)
+            if _ot and _pdf:
+                import linework_corroboration
+                _amb = {str(r.get("quote"))
+                        for r in (raw.get("_dim_shared_source") or [])
+                        if isinstance(r, dict)}
+                _corr = await asyncio.to_thread(
+                    linework_corroboration.read_face_widths, _ot, _pdf, _amb)
+                if _corr:
+                    raw["_linework_corroboration"] = _corr
+        except Exception:
+            logger.exception("[ai-blueprint] corroboration read failed — "
+                             "the attribution gate refuses, as built")
         await _set_stage("aggregating")
         measurements = _aggregate_to_hover_shape(raw, annotations=annotations)
         # SPEC-FIELD PRECEDENCE (ruled 2026-08-07): a PRINTED overhang

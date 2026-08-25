@@ -217,19 +217,31 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
     detail = []
     faces_not_derivable = []
     refused_faces = {str(k).lower(): v for k, v in (refused_faces or {}).items()}
-    unattributed_faces = {str(k).lower(): v
-                          for k, v in (unattributed_faces or {}).items()}
+    # SEND-129: the mark may be WIDTH-scoped or HEIGHT-scoped. An
+    # unattributed WIDTH refuses body AND gable (the gable needs no
+    # height, so nothing else would stop it). An unattributed HEIGHT
+    # refuses the BODY only — the gable does not read a height.
+    unattributed_faces = {
+        str(k).lower(): (v if isinstance(v, dict)
+                         else {"reason": v, "scope": "face"})
+        for k, v in (unattributed_faces or {}).items()}
     for w in walls:
         _label_lc = str(w.get("label") or "").lower()
-        if _label_lc in unattributed_faces:
+        _ua = unattributed_faces.get(_label_lc)
+        if _ua and _ua.get("scope") == "body":
+            w = {**w, "height_ft": None, "_body_refusal": _ua["reason"]}
+            faces_not_derivable.append({
+                "label": w.get("label"), "surface": "height_attribution",
+                "reason": _ua["reason"]})
+        elif _label_lc in unattributed_faces:
             # SEND-127: located but unattributed — quantity refuses, the
             # read width stays on the record for display.
             faces_not_derivable.append({
                 "label": w.get("label"), "surface": "width_attribution",
-                "reason": unattributed_faces[_label_lc]})
+                "reason": _ua["reason"]})
             detail.append({"label": w.get("label"), "refused": True,
                            "width_ft": float(w.get("width_ft") or 0),
-                           "reason": unattributed_faces[_label_lc]})
+                           "reason": _ua["reason"]})
             continue
         if _label_lc in refused_faces:
             # RULING EE: footprint closure refuses this face. NOT DERIVABLE,
