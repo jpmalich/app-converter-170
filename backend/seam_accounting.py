@@ -52,6 +52,19 @@ SEAM_REGISTRY = {
         "genuinely IS both front and back width) and never caught a real "
         "defect — the fabricated 39s die at EXISTENCE, not here. Kept "
         "registered so any stray firing still names its layer.",
+    "dims_unattributed_quantity_refused":
+        "EVIDENCE-AND-ATTRIBUTION-OR-NULL (Howard ruled 2026-08-25 "
+        "send-127). A located figure whose ONE printed quote is claimed "
+        "by two or more DIFFERENT named features for the same leaf — two "
+        "faces' width_ft — has passed EXISTENCE but not OWNERSHIP. Split "
+        "by CONSUMER, not by value: the figure is DISPLAYED flagged "
+        "(`_dim_unattributed`, readback `dim_unattributed`, the wall "
+        "record keeps its value) and REFUSED by every quantity — body "
+        "and gable area, starter, perimeter, eaves, rakes, corner LF. "
+        "Amends send-13's 'the value survives and feeds money': it "
+        "survives for DISPLAY only. Dart emitted 1,280.53 ft² of gable "
+        "and 170 LF of starter on one 56'-0\" claimed by two faces "
+        "(truth 50'-0\" on both) while every height correctly refused.",
     "dims_misread":
         "Dims whose quoted printed string does NOT appear on the page's "
         "pixels in any orientation, BUT a real OCR run on that page "

@@ -21,7 +21,7 @@ import re
 
 from foreign_drafter_scoreboard import (
     CLAIM_FAILS_SAFE, CLAIM_READS, FOREIGN_DRAFTER_SCOREBOARD,
-    derived_total, drafters_deriving, earned_claim, read_claim_earned,
+    drafters_emitting, earned_claim, read_claim_earned, unattributed_lanes,
 )
 
 UNEARNED_CLAIM_PATTERNS = [
@@ -122,17 +122,23 @@ def test_lexical_pin_actually_catches_an_assertion():
 
 
 def test_earned_claim_is_computed_from_the_figures():
+    # METRIC CHANGED SEND-127: quantity emitted, not faces derived —
+    # dart emitted 1,280.53 ft² with zero faces derived.
     assert earned_claim() == CLAIM_FAILS_SAFE
-    assert derived_total() == (0, 8)
-    assert drafters_deriving() == 0
+    assert unattributed_lanes() == {}
+    assert drafters_emitting() == 0
 
 
-def test_claim_flips_only_on_more_than_one_drafter_deriving():
-    one = {"tanis": {"derived": 3, "total": 4, "sealed": True},
-           "dart": {"derived": 0, "total": 4, "sealed": True}}
+def test_claim_flips_only_on_more_than_one_drafter_emitting():
+    one = {"tanis": {"sealed": True, "unattributed_quantity_emitted": {},
+                     "attributed_quantity_emitted": {"siding_sqft": 900.0}},
+           "dart": {"sealed": True, "unattributed_quantity_emitted": {},
+                    "attributed_quantity_emitted": {}}}
     assert earned_claim(one) == CLAIM_FAILS_SAFE
-    two = {"tanis": {"derived": 3, "total": 4, "sealed": True},
-           "dart": {"derived": 1, "total": 4, "sealed": True}}
+    two = {"tanis": {"sealed": True, "unattributed_quantity_emitted": {},
+                     "attributed_quantity_emitted": {"siding_sqft": 900.0}},
+           "dart": {"sealed": True, "unattributed_quantity_emitted": {},
+                    "attributed_quantity_emitted": {"siding_sqft": 1200.0}}}
     assert earned_claim(two) == CLAIM_READS
 
 
@@ -140,5 +146,6 @@ def test_scoreboard_shape_cannot_narrow_silently():
     for house in ("tanis", "dart"):
         assert house in FOREIGN_DRAFTER_SCOREBOARD, house
     for house, e in FOREIGN_DRAFTER_SCOREBOARD.items():
-        assert set(e) == {"derived", "total", "sealed"}, house
-        assert e["total"] > 0 and 0 <= e["derived"] <= e["total"], house
+        assert set(e) == {"sealed", "unattributed_quantity_emitted",
+                          "attributed_quantity_emitted"}, house
+        assert isinstance(e["unattributed_quantity_emitted"], dict), house

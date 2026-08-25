@@ -2439,6 +2439,115 @@ def _one_source_one_path_guard(raw: dict) -> None:
         raw.setdefault("_dim_shared_source", []).extend(shared_records)
 
 
+def _unattributed_dim_paths(raw: dict) -> dict:
+    """SEND-127 (Howard ruled 2026-08-25) — EVIDENCE-AND-ATTRIBUTION-OR-NULL.
+
+    A located figure is UNATTRIBUTED when its one located quote (same page
+    + same printed string) is claimed by TWO OR MORE DIFFERENT NAMED
+    FEATURES for the SAME leaf field — two walls' width_ft, two walls'
+    height_ft. Existence passed; ownership did not. A quote shared between
+    a feature and its OWN downstream consumer (a wall width and the rake
+    computed from it) is ONE attribution flowing on, not competing
+    ownership, and is not listed here.
+
+    Returns {path: {quote, page, competitors, conflicting}}.
+
+    TAINT (send-127): when a record's quote IS ambiguous, EVERY consumer
+    in that record is returned — a rake or a corner height computed from
+    an unowned width is an unowned quantity too.
+    """
+    out: dict = {}
+    for rec in (raw.get("_dim_shared_source") or []):
+        if not isinstance(rec, dict):
+            continue
+        groups: dict = {}
+        for p in (rec.get("consumers") or []):
+            parts = str(p).split(".")
+            if len(parts) < 2:
+                continue
+            groups.setdefault(parts[-1], set()).add(".".join(parts[:-1]))
+        ambiguous = {leaf: sorted(feats) for leaf, feats in groups.items()
+                     if len(feats) >= 2}
+        if not ambiguous:
+            continue
+        competitors = sorted({f"{f}.{leaf}" for leaf, feats
+                              in ambiguous.items() for f in feats})
+        for p in (rec.get("consumers") or []):
+            out[str(p)] = {
+                "quote": rec.get("quote"), "page": rec.get("page"),
+                "competitors": competitors,
+                "conflicting": bool(rec.get("conflicting"))}
+    return out
+
+
+def _attribution_gate(raw: dict) -> None:
+    """SEND-127: mark every wall whose width/height is LOCATED BUT
+    UNATTRIBUTED. Split by CONSUMER, not by value — the figure stays on
+    the record (display may show it, flagged); nothing that reaches ft²,
+    LF or a count may read it. Idempotent: safe to re-run on a replay.
+    """
+    if not isinstance(raw, dict):
+        return
+    ua = _unattributed_dim_paths(raw)
+    walls = [w for w in (raw.get("walls") or []) if isinstance(w, dict)]
+    marked: list = []
+    for w in walls:
+        label = str(w.get("label") or "")
+        for leaf, mark in (("width_ft", "_width_unattributed"),
+                           ("height_ft", "_height_unattributed")):
+            hit = ua.get(f"walls.{label}.{leaf}")
+            if not hit or w.get(leaf) in (None, 0):
+                continue
+            reason = (
+                f"{leaf} located but UNATTRIBUTED — the printed "
+                f"{hit['quote']} (p{hit['page']}) is claimed by "
+                + " and ".join(hit["competitors"])
+                + "; no quantity may ride an unattributed dimension "
+                  "(SEND-127)")
+            w[mark] = reason
+            marked.append({"path": f"walls.{label}.{leaf}",
+                           "quote": hit["quote"], "page": hit["page"],
+                           "competitors": hit["competitors"]})
+    if marked:
+        raw["_dim_unattributed"] = marked
+        seam_accounting.account(
+            raw, "dims_unattributed_quantity_refused",
+            sorted({m["path"] for m in marked}))
+
+    # QUANTITY-ONLY INPUTS DIE OUTRIGHT. A face dim is displayed flagged;
+    # a plane's rake/eave LF and a per-corner height are pure quantity
+    # inputs with no display surface of their own, so an unattributed one
+    # is nulled where it sits (otherwise the plane sum rebuilds the
+    # number the face refusal just stopped — dart's rakes 136 LF).
+    killed: list = []
+    planes = [p for p in (raw.get("roof_planes") or []) if isinstance(p, dict)]
+    for p in planes:
+        lbl = str(p.get("label") or "")
+        for leaf in ("rake_lf", "eave_lf", "wall_height_ft"):
+            if p.get(leaf) in (None, 0):
+                continue
+            if f"roof_planes.{lbl}.{leaf}" in ua:
+                p[leaf] = None
+                killed.append(f"roof_planes.{lbl}.{leaf}")
+    hs = raw.get("outside_corner_heights_ft")
+    if isinstance(hs, list):
+        for i, h in enumerate(hs):
+            if h in (None, 0):
+                continue
+            if f"corner_heights.{i}" in ua:
+                hs[i] = None
+                killed.append(f"corner_heights.{i}")
+    for r in (raw.get("gutter_runs") or []):
+        if not isinstance(r, dict) or r.get("lf") in (None, 0):
+            continue
+        if f"gutter_runs.{str(r.get('label') or '')}.lf" in ua:
+            r["lf"] = None
+            killed.append(f"gutter_runs.{r.get('label')}.lf")
+    if killed:
+        seam_accounting.account(
+            raw, "dims_unattributed_quantity_refused", sorted(set(killed)))
+
+
 def _ocr_verify_marks(raw: dict, image_payloads: list,
                       runs_for_page=None) -> None:
     """MARKS FACE THE LOCATOR TOO (Howard ruled 2026-08-08/09 — 'an E1
@@ -3135,48 +3244,68 @@ def _null_computed_lf_lanes(raw: dict) -> None:
         except (TypeError, ValueError):
             return 0.0
 
-    widths_alive = all(_fv(w.get("width_ft")) > 0 for w in walls)
-    heights_alive = all(_fv(w.get("height_ft")) > 0 for w in walls)
+    # SEND-127: an UNATTRIBUTED width or height is dead to every computed
+    # lane — the formula inputs are not owned, so the total is not owned.
+    def _w_alive(w):
+        return _fv(w.get("width_ft")) > 0 and not w.get("_width_unattributed")
+
+    def _h_alive(w):
+        return _fv(w.get("height_ft")) > 0 and not w.get("_height_unattributed")
+
+    widths_alive = all(_w_alive(w) for w in walls)
+    heights_alive = all(_h_alive(w) for w in walls)
     gable_walls = [w for w in walls
                    if _fv(w.get("gable_triangle_height_ft")) > 0]
     eave_walls = [w for w in walls
                   if _fv(w.get("gable_triangle_height_ft")) <= 0]
-    eave_widths_alive = (all(_fv(w.get("width_ft")) > 0 for w in eave_walls)
+    eave_widths_alive = (all(_w_alive(w) for w in eave_walls)
                          if eave_walls else widths_alive)
-    rake_widths_alive = (all(_fv(w.get("width_ft")) > 0 for w in gable_walls)
+    rake_widths_alive = (all(_w_alive(w) for w in gable_walls)
                          if gable_walls else widths_alive)
     hs = raw.get("outside_corner_heights_ft") or []
     corner_heights_alive = bool(hs) and all(_fv(h) > 0 for h in hs)
     nulled: list[dict] = []
 
-    def _kill(key: str, why: str) -> None:
+    def _kill(key: str, why: str, even_if_absent: bool = False) -> None:
         v = _fv(raw.get(key))
-        if v <= 0:
+        if v <= 0 and not even_if_absent:
             return
         raw[key] = None
         nulled.append({"lane": key, "value": v, "why": why})
 
     if not widths_alive:
         _kill("starter_lf",
-              "perimeter formula inputs dead — wall width(s) nulled/unread")
+              "perimeter formula inputs dead — wall width(s) nulled/unread "
+              "or UNATTRIBUTED (SEND-127)", even_if_absent=True)
     if not eave_widths_alive:
         _kill("eaves_lf",
-              "eave-wall width(s) nulled/unread — the eave sum has no live inputs")
+              "eave-wall width(s) nulled/unread — the eave sum has no live inputs",
+              even_if_absent=True)
     # The plane sum still governs rakes later WHEN evidenced planes
     # carry rake figures; only the bare top-level number dies here.
     if not rake_widths_alive:
         _kill("rakes_lf",
-              "gable-wall width(s) nulled/unread — the rake formula has no live inputs")
+              "gable-wall width(s) nulled/unread — the rake formula has no live inputs",
+              even_if_absent=True)
     if not (corner_heights_alive or heights_alive):
         _kill("outside_corner_lf",
               "per-corner heights nulled/unread and wall heights refused — "
-              "corner trim LF has no live height input")
+              "corner trim LF has no live height input", even_if_absent=True)
     if not heights_alive:
         _kill("inside_corner_lf",
               "wall heights refused — count × avg height would ride the "
-              "model-height hypothesis, which never feeds a quantity")
+              "model-height hypothesis, which never feeds a quantity",
+              even_if_absent=True)
     if nulled:
-        raw["_lf_lane_nulled"] = nulled
+        # SEND-127: MERGE, never replace — this pass now runs a second
+        # time (after the attribution gate), and overwriting the ledger
+        # erased the earlier kills, which let a refused starter resurrect
+        # from a printed fallback.
+        _prev = [n for n in (raw.get("_lf_lane_nulled") or [])
+                 if isinstance(n, dict)]
+        _have = {n.get("lane") for n in _prev}
+        raw["_lf_lane_nulled"] = _prev + [n for n in nulled
+                                          if n["lane"] not in _have]
         seam_accounting.account(
             raw, "lf_lanes_nulled_inputs_dead",
             [f"{n['lane']}={n['value']:g}" for n in nulled])
@@ -3638,6 +3767,18 @@ def check_read_consistency(raw: dict) -> list[dict]:
             "code": "faces_refused", "level": "loud",
             "vars": {"count": len(_faces_ref),
                      "faces": ", ".join(_faces_ref)}})
+    # SEND-127: the attribution refusal gets its own loud rail — a share
+    # that only whispers on the shared-source rail is what let 1,280 ft²
+    # ride an unowned width.
+    _ua_marks = [m for m in (raw.get("_dim_unattributed") or [])
+                 if isinstance(m, dict)]
+    if _ua_marks:
+        flags.append({
+            "code": "dims_unattributed_quantity_refused", "level": "loud",
+            "vars": {"count": len(_ua_marks),
+                     "dims": "; ".join(
+                         f"{m.get('path')} ← {m.get('quote')}"
+                         for m in _ua_marks[:8])}})
     _sizes_ref = []
     for _kind in ("windows", "doors"):
         for _o in (raw.get(_kind) or []):
@@ -3964,6 +4105,16 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
                          f"(cited for {len(r.get('consumers') or [])} paths "
                          "— attribution unverified, value kept)"
                          for r in _shared_plain)})
+    # SEND-127: the attribution refusal is its own rail on the card —
+    # DISPLAY shows the flagged figure, every quantity refuses.
+    _ua_rail = raw.get("_dim_unattributed") or []
+    if _ua_rail:
+        rail.append({
+            "level": "loud", "code": "dims_unattributed_quantity_refused",
+            "text": "; ".join(
+                f"{r.get('path')} ← {r.get('quote')} p{r.get('page')} "
+                f"claimed by {', '.join(r.get('competitors') or [])}"
+                for r in _ua_rail)})
     if _shared_conf:
         _unk = sorted({lf for r in _shared_conf
                        for lf in _unknown_axis_leaves(r.get("consumers") or [])})
@@ -4192,6 +4343,9 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
         "dim_fabricated": list(raw.get("_dim_fabricated") or []),
         "dim_misread": list(raw.get("_dim_misread") or []),
         "dim_shared_source": list(raw.get("_dim_shared_source") or []),
+        # SEND-127: located-but-unattributed dims — DISPLAY lane. The
+        # figure is shown flagged here and refused by every quantity.
+        "dim_unattributed": list(raw.get("_dim_unattributed") or []),
         # SEAM ACCOUNTING (ruled 2026-08-09): the ledger of everything
         # any layer removed — visible, never silent.
         "seams": raw.get("_seam_ledger") or None,
@@ -4343,6 +4497,19 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     walls = raw.get("walls") or []
     windows = raw.get("windows") or []
     doors = raw.get("doors") or []
+    # SEND-127 (Howard ruled 2026-08-25): ATTRIBUTION BEFORE ANY QUANTITY.
+    # Marks the located-but-unattributed dims, then re-runs the computed-LF
+    # sweep so lanes whose inputs are unowned die here too. Both passes are
+    # idempotent, so a replay of a stored raw gates exactly like a fresh run.
+    try:
+        _attribution_gate(raw)
+        _null_computed_lf_lanes(raw)
+    except Exception:
+        logger.exception("[ai-blueprint] attribution gate failed")
+    _unattributed_faces = {
+        str(w.get("label") or "").lower(): w["_width_unattributed"]
+        for w in walls
+        if isinstance(w, dict) and w.get("_width_unattributed")}
     # INTERIOR-DOOR GUARD (Howard ruled 2026-08-07): a door with no
     # exterior evidence never pollutes the entry-door count — doors drive
     # J-channel and coil. Dropped rows are COUNTED and FLAGGED, never silent.
@@ -4409,7 +4576,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # (the pre-C4 0.5 true-triangle retired). Blueprint's source adapter
     # keeps the pitch-computed rise (printed pitch beats drawing-scaled).
     _walk = staging.walk_walls(walls, gable_rise_fn=_gable_rise,
-                               refused_faces=_refused_faces)
+                               refused_faces=_refused_faces,
+                               unattributed_faces=_unattributed_faces)
     siding_sqft = _walk["siding_sqft"]
     gable_sqft = _walk["gable_sqft"]
     dormer_sqft = _walk["dormer_sqft"]
@@ -4619,6 +4787,10 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         raw["rakes_lf"] = plane_rakes
         raw["_rakes_plane_summed"] = True
     else:
+        # SEND-127: a STALE plane-summed flag must not turn a refused
+        # rake into 0.0 — the flag describes THIS aggregation, so it is
+        # cleared when no plane carries a live rake figure.
+        raw.pop("_rakes_plane_summed", None)
         if any_gable:
             # ONE COPY (step 6): the recompute lives in measure_staging.
             raw["eaves_lf"] = staging.eaves_from_walls(walls, raw.get("eaves_lf"))
@@ -4628,6 +4800,16 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # deduction (single-source convention — pre-deducting here would
     # double-deduct downstream in lp_package.assemble_lp_package).
     _perimeter_lf = sum(float(w.get("width_ft") or 0) for w in walls)
+    # SEND-127: THE PERIMETER COMES UNDER THE SAME GUARD. The LF guard
+    # nulled the model's own starter claim on dart and the perimeter lane
+    # rebuilt the number from the same unowned widths. An unattributed
+    # width may not be summed into a perimeter, and no lane downstream
+    # (starter course, batten stackups) may read one.
+    _perimeter_unattributed = sorted(
+        str(w.get("label") or "?") for w in walls
+        if isinstance(w, dict) and w.get("_width_unattributed"))
+    if _perimeter_unattributed:
+        _perimeter_lf = 0.0
     # SEND-122 ITEM 1: lanes the input-death sweep nulled carry None —
     # a refused LF never resurrects through an `or 0` or a hypothesis.
     _lf_nulled_lanes = {str(n["lane"]): n
@@ -4639,6 +4821,13 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         _starter_basis = (
             f"perimeter {_perimeter_lf:.0f} LF — engine deducts entry-door widths "
             f"per convention (printed read {_printed_starter:.0f})")
+    elif _perimeter_unattributed:
+        _starter_lf = None
+        _starter_basis = (
+            "REFUSED — perimeter inputs UNATTRIBUTED: the located width(s) on "
+            + ", ".join(_perimeter_unattributed)
+            + " are claimed by more than one face; a quantity may not ride an "
+              "unattributed dimension (SEND-127)")
     elif "starter_lf" in _lf_nulled_lanes:
         _starter_lf = None
         _starter_basis = (
@@ -4780,7 +4969,10 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     }
     # Shakedown provenance fields (2026-07-14)
     measurements["_starter_basis"] = _starter_basis
-    measurements["_perimeter_lf"] = _perimeter_lf
+    measurements["_perimeter_lf"] = (None if _perimeter_unattributed
+                                     else _perimeter_lf)
+    if _perimeter_unattributed:
+        measurements["_perimeter_refused"] = _starter_basis
     # STEP 2 (Howard ruled 2026-08-01): SOURCE PROVIDES IT → ENGINE CONSUMES
     # IT. Every figure the plans PRINT lands under the key the engine reads.
     # FOOTPRINT-PERIMETER KEY FIX (named item): the batten stacked-height
@@ -5017,7 +5209,8 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # itself drifted. It now recomputes through the ONE shared walk; a
     # >2% delta can only mean someone forked the aggregation math again.
     _sanity = staging.walk_walls(walls, gable_rise_fn=_gable_rise,
-                                 refused_faces=_refused_faces)
+                                 refused_faces=_refused_faces,
+                                 unattributed_faces=_unattributed_faces)
     threed_sqft = (_sanity["siding_sqft"] + _sanity["gable_sqft"]
                    + _sanity["dormer_sqft"] + appendage_sqft)
     if siding_sqft > 0:

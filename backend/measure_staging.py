@@ -186,7 +186,8 @@ def wall_height_for_pricing(w: dict):
     return h, h > 0
 
 
-def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None) -> dict:
+def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
+               unattributed_faces=None) -> dict:
     """THE wall-area walk (one copy, ruled). For each wall:
     gross = width × eave height, credited at siding_pct (fraction/percent
     defense shared), plus GABLE_FACTOR × width × rise for gable ends, plus
@@ -202,6 +203,13 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None) -> dict:
     read width is NEVER nulled here (that would erase the failing
     relation's own evidence and mislabel it "width not read"); the value
     stays on the wall record and the refusal names the real relation.
+
+    EVIDENCE-AND-ATTRIBUTION-OR-NULL (Howard ruled 2026-08-25 send-127):
+    `unattributed_faces` {label(lower) → reason} is the same shape for a
+    face whose width LOCATED but whose ATTRIBUTION is unestablished (one
+    printed quote claimed by two different faces). Display keeps the
+    figure; NO quantity rides it — body AND gable refuse, because the
+    gable needs no height and would otherwise carry the whole face.
     Returns full-precision totals + per-wall detail for provenance."""
     siding_sqft = 0.0
     gable_sqft = 0.0
@@ -209,8 +217,20 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None) -> dict:
     detail = []
     faces_not_derivable = []
     refused_faces = {str(k).lower(): v for k, v in (refused_faces or {}).items()}
+    unattributed_faces = {str(k).lower(): v
+                          for k, v in (unattributed_faces or {}).items()}
     for w in walls:
         _label_lc = str(w.get("label") or "").lower()
+        if _label_lc in unattributed_faces:
+            # SEND-127: located but unattributed — quantity refuses, the
+            # read width stays on the record for display.
+            faces_not_derivable.append({
+                "label": w.get("label"), "surface": "width_attribution",
+                "reason": unattributed_faces[_label_lc]})
+            detail.append({"label": w.get("label"), "refused": True,
+                           "width_ft": float(w.get("width_ft") or 0),
+                           "reason": unattributed_faces[_label_lc]})
+            continue
         if _label_lc in refused_faces:
             # RULING EE: footprint closure refuses this face. NOT DERIVABLE,
             # named with the failing relation; no area (body or gable) rides.
