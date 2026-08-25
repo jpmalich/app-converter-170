@@ -132,4 +132,85 @@ Truth front 3 · left 3 · right 2 · back 0 versus read 0 · 1 · 1 · 0.
 **Noted, not fixed in this pass** (per order).
 
 ## 8. WHAT THIS SEND THEN BUILT
-See §9 below — written after the build, with the pins and the stamp.
+
+**THE SPLIT** — `_unattributed_dim_paths` + `_attribution_gate`
+(ai_blueprint.py), run at the top of aggregation so a replay of a stored
+raw gates exactly like a fresh run, and idempotent.
+- DISPLAY keeps everything: the wall record keeps `width_ft`, the mark
+  rides `_width_unattributed` / `_height_unattributed`, the ledger rides
+  `_dim_unattributed`, the readback carries `dim_unattributed`, and a new
+  LOUD rail `dims_unattributed_quantity_refused` names each figure, its
+  page and every face claiming it (EN + ES).
+- QUANTITY refuses: `walk_walls(unattributed_faces=…)` refuses BODY AND
+  GABLE on an unattributed face (the gable is the lane that needs no
+  height, so nothing else would have stopped it) while the read width
+  still rides the walk detail for display.
+- TAINT: when a quote is ambiguous, EVERY consumer in that record is
+  unattributed — a rake or a corner height computed from an unowned width
+  is an unowned quantity. Pure quantity inputs with no display surface of
+  their own (`roof_planes.*.rake_lf` / `eave_lf` / `wall_height_ft`,
+  `corner_heights.i`, `gutter_runs.*.lf`) are nulled where they sit,
+  because the plane sum otherwise rebuilds exactly what the face refusal
+  just stopped (dart's rakes 136 LF did).
+- PERIMETER UNDER THE SAME GUARD: `_perimeter_lf` refuses,
+  `footprint_perimeter_ft` is not written, `starter_lf` is None and
+  `_starter_basis` names the faces whose widths are claimed twice — so
+  the lp_package starter/batten readers get nothing to read.
+- SCOPE DISCIPLINE: the aggregation-time LF sweep runs
+  `attribution_only=True`. The worker's full sweep already ran upstream;
+  re-judging aliveness after the height build demotes model heights would
+  have killed lanes for reasons OUTSIDE this ruling (it killed Boni's
+  printed per-corner 126 LF in a pin — caught and narrowed).
+- TWO DEFECTS FOUND WHILE BUILDING, both fixed: (1) the LF ledger was
+  OVERWRITTEN on a second pass, which erased earlier kills and let a
+  refused starter resurrect from a printed 16 LF fallback — it now MERGES;
+  (2) a STALE `_rakes_plane_summed` flag turned a refused rake into 0.0 —
+  the flag is cleared when no plane carries a live rake.
+- METRIC CHANGED (`foreign_drafter_scoreboard.py`): the registry now
+  tracks `unattributed_quantity_emitted` and `attributed_quantity_emitted`
+  per drafter, plus `PRE_SEND127_LEAK` (dart: gable 1,280.53 ft², starter
+  170 LF, perimeter 170 LF, rakes 136 LF) as the record of what a
+  faces-derived metric was blind to. `earned_claim()` now returns
+  CLAIM_NEITHER while ANY lane leaks, CLAIM_FAILS_SAFE at zero leaks, and
+  the read-claim only when more than one drafter emits ATTRIBUTED
+  quantity. Self-lifting coupling kept: the SEND-125 lexical ban still
+  lifts by itself if the figures ever earn the read claim.
+
+**THE REPLAY, AFTER THE BUILD (same read-only method, all four houses)**
+
+| house | siding ft² | starter | perimeter | eaves | rakes | OSC | ISC |
+|---|---|---|---|---|---|---|---|
+| boni | 3,981.08 (unchanged) | 194 | 194 | 284 | 110 | 140 | 80 |
+| letrick | 96.0 (was 1,498.62 on the same replay) | None | None | None | None | None | None |
+| tanis | 0.0 | None | None | None | None | None | None |
+| dart | **0.0 (was 1,280.53)** | **None (was 170)** | **None (was 170)** | None | **None (was 136)** | **None (was 108)** | **None (was 74)** |
+
+- **Boni: byte-identical before and after** (verified by running the same
+  replay on the pre-split code — 3,981.075 both times). EST-886440 loses
+  nothing.
+- **Letrick pays the cost, as reported in §6**: its 1,498.62 ft² replay
+  total drops to 96.0 (an appendage/accent figure that rides its own dims,
+  not a shared wall width), and all four LF lanes refuse.
+- **Dart's two leaking lanes are closed.**
+
+## 9. PINS + STAMP
+`tests/test_send127_attribution_or_null_2026_08_25.py` — 13 pins:
+detection (two faces one quote → unattributed + taint; own quote per face
+→ nothing; one feature sharing with its own consumer → nothing), the gate
+(marks, keeps the value, nulls quantity-only inputs, seam accounted,
+idempotent), the walk (gable refuses without a height, width still on the
+detail, surface `width_attribution`), aggregation (every width lane
+refuses on the dart shape; an own-quote house is left alone), the readback
+display lane + rail, the LF-ledger merge, and the three scoreboard states.
+`tests/test_send125_claim_distinction_2026_08_24.py` updated to the new
+metric. Seam `dims_unattributed_quantity_refused` registered.
+
+STAMP: RECORDED 2026-08-25 12:00 UTC · 0baf5bc · CLEAN ·
+**2871 passed, 9 skipped, 7 warnings in 462.70s** · census pin GREEN, 0
+PENDING_CONVERSION · ingress smoke 4 passed. (+13 pins over SEND-126's
+2858.)
+
+Standing rules held: no cross-drawing borrowing, no estimate influenced
+another, no job names in operative code, model heights hypothesis-only.
+EST-886440 PROTECTED and provably unchanged. Purity pin holds. Gable
+placement noted, not fixed. Symbols placement still NOT AUTHORIZED.

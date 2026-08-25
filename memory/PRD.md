@@ -9043,3 +9043,46 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   (2) refuse a width whose located box is shared with another face;
   (3) refuse starter_lf on an unverified footprint outline.
   Symbols placement still NOT AUTHORIZED.
+
+## 2026-08-25 — SEND-127 (Evidence-and-Attribution-or-Null)
+- ANSWERED FIRST: the `dims_shared_source` rail DID fire on dart's 56'-0"
+  (consumers walls.left.width_ft, walls.right.width_ft,
+  roof_planes.main.rake_lf; conflicting FALSE — the send-14 D rule calls a
+  horizontal opposing-facade share legitimate; kept, demoted nothing).
+  So: rail gap NO, consumer gap YES — send-13's "the value survives and
+  feeds money" is what bought the 1,280.53 ft².
+- REPORTED BEFORE BUILDING (memory/send127_report.md): DISPLAY vs
+  QUANTITY consumer inventory; the 7 lanes that compute from a width with
+  NO height (2× primary gable, wing gable, starter, perimeter, eaves,
+  rakes); every perimeter consumer; four-house replay with the cost named.
+- BUILT: `_unattributed_dim_paths` + `_attribution_gate` (idempotent, runs
+  at aggregation top so replays gate identically); walk_walls
+  `unattributed_faces` refuses BODY AND GABLE while the width stays for
+  display; taint of every consumer of an ambiguous quote with
+  quantity-only inputs (plane rake/eave/wall height, corner heights,
+  gutter runs) nulled where they sit; perimeter + footprint_perimeter_ft +
+  starter_lf refuse with the faces named; LOUD rail
+  `dims_unattributed_quantity_refused` (EN+ES) + readback
+  `dim_unattributed`; seam registered.
+- TWO DEFECTS FOUND WHILE BUILDING, FIXED: the LF ledger was overwritten
+  on the second pass (a refused starter resurrected from a printed 16 LF)
+  — now MERGES; a stale `_rakes_plane_summed` turned a refusal into 0.0 —
+  now cleared. Aggregation sweep narrowed to `attribution_only=True` after
+  it killed Boni's printed per-corner 126 LF in a pin.
+- METRIC CHANGED to QUANTITY EMITTED: scoreboard tracks
+  unattributed/attributed quantity per drafter + PRE_SEND127_LEAK (dart
+  gable 1280.53 ft², starter 170, perimeter 170, rakes 136).
+  earned_claim() = CLAIM_NEITHER while any lane leaks, FAILS_SAFE at zero,
+  READS only when >1 drafter emits attributed quantity. Self-lifting
+  coupling kept.
+- COST, NAMED: boni loses NOTHING (3,981.075 ft² identical pre/post on the
+  same replay; EST-886440 protected). LETRICK loses its whole derived read
+  (replay 1,498.62 → 96.0 ft²; starter 168 / eaves 108 / rakes 64 / OSC
+  39.6 → all None) because its legitimate front/back + left/right overall
+  shares are indistinguishable from dart's wrong one. Tanis unchanged.
+  Dart's leaks closed (siding 0.0, all LF lanes None).
+- STAMP: RECORDED 2026-08-25 12:00 UTC · 0baf5bc · CLEAN · 2871 passed,
+  9 skipped · census GREEN · ingress 4 passed.
+- OPEN: gable placement (truth 3/3/2/0 vs read 0/1/1/0) noted NOT fixed;
+  an attribution-ESTABLISHMENT path (how a shared overall becomes owned)
+  is not built — today a share can only refuse; symbols NOT AUTHORIZED.
