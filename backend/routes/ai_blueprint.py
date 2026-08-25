@@ -2475,7 +2475,7 @@ def _unattributed_dim_paths(raw: dict) -> dict:
         for p in (rec.get("consumers") or []):
             out[str(p)] = {
                 "quote": rec.get("quote"), "page": rec.get("page"),
-                "competitors": competitors,
+                "_competitors": competitors,
                 "conflicting": bool(rec.get("conflicting"))}
     return out
 
@@ -2501,13 +2501,13 @@ def _attribution_gate(raw: dict) -> None:
             reason = (
                 f"{leaf} located but UNATTRIBUTED — the printed "
                 f"{hit['quote']} (p{hit['page']}) is claimed by "
-                + " and ".join(hit["competitors"])
+                + " and ".join(hit["_competitors"])
                 + "; no quantity may ride an unattributed dimension "
                   "(SEND-127)")
             w[mark] = reason
             marked.append({"path": f"walls.{label}.{leaf}",
                            "quote": hit["quote"], "page": hit["page"],
-                           "competitors": hit["competitors"]})
+                           "_competitors": hit["_competitors"]})
     if marked:
         raw["_dim_unattributed"] = marked
         seam_accounting.account(
@@ -2544,6 +2544,7 @@ def _attribution_gate(raw: dict) -> None:
             r["lf"] = None
             killed.append(f"gutter_runs.{r.get('label')}.lf")
     if killed:
+        raw["_attribution_killed"] = sorted(set(killed))
         seam_accounting.account(
             raw, "dims_unattributed_quantity_refused", sorted(set(killed)))
 
@@ -3221,7 +3222,7 @@ def _opposing_pairs(widths: dict) -> tuple[float, float, list]:
     return _side("front", "back"), _side("left", "right"), disags
 
 
-def _null_computed_lf_lanes(raw: dict) -> None:
+def _null_computed_lf_lanes(raw: dict, attribution_only: bool = False) -> None:
     """SEND-122 ITEM 1 (Howard ruled 2026-08-24): THE COMPUTED LF LANE
     MAY NOT OUTLIVE ITS NULLED INPUTS. starter/eaves/rakes/corner LF
     arrive as BARE model arithmetic (no quote — the quote guard never
@@ -3246,10 +3247,18 @@ def _null_computed_lf_lanes(raw: dict) -> None:
 
     # SEND-127: an UNATTRIBUTED width or height is dead to every computed
     # lane — the formula inputs are not owned, so the total is not owned.
+    # `attribution_only` is the aggregation-time pass: it adds ONLY the
+    # attribution deaths, because the worker's full sweep already ran
+    # upstream (re-judging aliveness after the height build demotes model
+    # heights would kill lanes for reasons outside this ruling).
     def _w_alive(w):
+        if attribution_only:
+            return not w.get("_width_unattributed")
         return _fv(w.get("width_ft")) > 0 and not w.get("_width_unattributed")
 
     def _h_alive(w):
+        if attribution_only:
+            return not w.get("_height_unattributed")
         return _fv(w.get("height_ft")) > 0 and not w.get("_height_unattributed")
 
     widths_alive = all(_w_alive(w) for w in walls)
@@ -3263,7 +3272,12 @@ def _null_computed_lf_lanes(raw: dict) -> None:
     rake_widths_alive = (all(_w_alive(w) for w in gable_walls)
                          if gable_walls else widths_alive)
     hs = raw.get("outside_corner_heights_ft") or []
-    corner_heights_alive = bool(hs) and all(_fv(h) > 0 for h in hs)
+    if attribution_only:
+        corner_heights_alive = not any(
+            str(k).startswith("corner_heights.")
+            for k in (raw.get("_attribution_killed") or []))
+    else:
+        corner_heights_alive = bool(hs) and all(_fv(h) > 0 for h in hs)
     nulled: list[dict] = []
 
     def _kill(key: str, why: str, even_if_absent: bool = False) -> None:
@@ -3287,15 +3301,34 @@ def _null_computed_lf_lanes(raw: dict) -> None:
         _kill("rakes_lf",
               "gable-wall width(s) nulled/unread — the rake formula has no live inputs",
               even_if_absent=True)
-    if not (corner_heights_alive or heights_alive):
-        _kill("outside_corner_lf",
-              "per-corner heights nulled/unread and wall heights refused — "
-              "corner trim LF has no live height input", even_if_absent=True)
-    if not heights_alive:
-        _kill("inside_corner_lf",
-              "wall heights refused — count × avg height would ride the "
-              "model-height hypothesis, which never feeds a quantity",
-              even_if_absent=True)
+    if attribution_only:
+        # ONLY the attribution deaths: a corner height killed as
+        # unattributed, or an unattributed wall height, with no live
+        # height left anywhere.
+        _live_height = any(_fv(w.get("height_ft")) > 0
+                           and not w.get("_height_unattributed")
+                           for w in walls)
+        _h_attr = (any(str(k).startswith("corner_heights.")
+                       for k in (raw.get("_attribution_killed") or []))
+                   or any(w.get("_height_unattributed") for w in walls))
+        if _h_attr and not _live_height:
+            _kill("outside_corner_lf",
+                  "per-corner heights UNATTRIBUTED and no live wall height "
+                  "remains — corner trim LF has no owned height input "
+                  "(SEND-127)", even_if_absent=True)
+            _kill("inside_corner_lf",
+                  "wall heights UNATTRIBUTED — count × avg height would ride "
+                  "an unowned figure (SEND-127)", even_if_absent=True)
+    else:
+        if not (corner_heights_alive or heights_alive):
+            _kill("outside_corner_lf",
+                  "per-corner heights nulled/unread and wall heights refused — "
+                  "corner trim LF has no live height input", even_if_absent=True)
+        if not heights_alive:
+            _kill("inside_corner_lf",
+                  "wall heights refused — count × avg height would ride the "
+                  "model-height hypothesis, which never feeds a quantity",
+                  even_if_absent=True)
     if nulled:
         # SEND-127: MERGE, never replace — this pass now runs a second
         # time (after the attribution gate), and overwriting the ledger
@@ -4113,7 +4146,7 @@ def build_blueprint_readback(raw: dict | None) -> dict | None:
             "level": "loud", "code": "dims_unattributed_quantity_refused",
             "text": "; ".join(
                 f"{r.get('path')} ← {r.get('quote')} p{r.get('page')} "
-                f"claimed by {', '.join(r.get('competitors') or [])}"
+                f"claimed by {', '.join(r.get('_competitors') or [])}"
                 for r in _ua_rail)})
     if _shared_conf:
         _unk = sorted({lf for r in _shared_conf
@@ -4503,7 +4536,7 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # idempotent, so a replay of a stored raw gates exactly like a fresh run.
     try:
         _attribution_gate(raw)
-        _null_computed_lf_lanes(raw)
+        _null_computed_lf_lanes(raw, attribution_only=True)
     except Exception:
         logger.exception("[ai-blueprint] attribution gate failed")
     _unattributed_faces = {
