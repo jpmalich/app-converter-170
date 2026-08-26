@@ -7,3 +7,13 @@
 // re-entry (stop-loss doctrine). Asserted-absence pins enforce that no
 // route, toggle, setting or URL renders a 3D while this is false.
 export const RENDER_3D_ENABLED = false;
+
+// PHOTO_ELEVATIONS_ENABLED (Howard ruled 2026-08-26, SEND-131A): the
+// PHOTO-GENERATED elevation drawings (EL-1..EL-4 rendered from an AI
+// photo-measure run) are OUT OF THE CONTRACTOR VIEW. The contractor
+// works on the PHOTOS THEMSELVES — Photo Takeoff — not on renders made
+// from them. Same stop-loss doctrine as 3D: every render component,
+// backend route and pin stays intact for re-entry; this flag is the one
+// named boundary. BLUEPRINT elevation sheets are a DIFFERENT route and
+// are not governed by this flag.
+export const PHOTO_ELEVATIONS_ENABLED = false;

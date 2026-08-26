@@ -73,6 +73,18 @@ def _registry_chip_mounts() -> list[str]:
 # pair below WITH A COMMENT saying why the null-return is legitimate
 # and not an estimate-page gated surface.
 BASELINE_NULL_RETURNS: set[tuple[str, str]] = {
+    # SEND-131A (2026-08-26) — PhotoTakeoffEditor's four hits are VALUE
+    # HELPERS, not surfaces: `inPerPx` returns null when this photo has
+    # no scale, and `sqftOf` returns null when a mark has no scale or no
+    # drawn extent. NULL IS THE ANSWER — the editor renders the NAMED
+    # refusal for exactly these cases (photo-takeoff-scale-refusal,
+    # "count only — no drawn extent", "no scale" on the mark badge), so a
+    # zero is never shown and nothing is hidden. No component branch is
+    # short-circuited by any of them.
+    ("components/estimate/PhotoTakeoffEditor.jsx", "if (!scale || !scale.span_px) return null;"),
+    ("components/estimate/PhotoTakeoffEditor.jsx", "if (!inches) return null;"),
+    ("components/estimate/PhotoTakeoffEditor.jsx", "if (!sc) return null;"),
+    ("components/estimate/PhotoTakeoffEditor.jsx", "if (pts.length < 3) return null;"),
     ("components/estimate/AIMeasureButton.jsx", "if (modelHistory.length < 2 || uniqueModels.size < 2) return null;"),
     ("components/estimate/AIMeasureButton.jsx", "if (totalLocs === 0 || photoUrls.length === 0) return null;"),
     ("components/estimate/BulkApplyConfirm.jsx", "if (!open) return null;"),

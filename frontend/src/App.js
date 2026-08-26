@@ -14,9 +14,10 @@ import IssPicker from "@/pages/IssPicker";
 import ContractorPicker from "@/pages/ContractorPicker";
 import Dashboard from "@/pages/Dashboard";
 import EstimateRouter from "@/pages/EstimateRouter";
-import ElevationSheet from "@/pages/ElevationSheet";
+// SEND-131A — the photo-elevation pages are NO LONGER ROUTED (see the
+// route block below). Their files stay; the imports go, so nothing in
+// the contractor bundle points at them.
 import BlueprintElevationSheet from "@/pages/BlueprintElevationSheet";
-import ElevationSheetsPrint from "@/pages/ElevationSheetsPrint";
 import FieldSheetPrint from "@/pages/FieldSheetPrint";
 import SourceSheets from "@/pages/SourceSheets";
 import Catalog from "@/pages/Catalog";
@@ -85,9 +86,17 @@ function App() {
                     {/* Back-compat: old bookmarks pointing to /dashboard hit
                         the siding workspace (legacy default). */}
                     <Route path="/dashboard" element={<Navigate to="/dashboard/siding" replace />} />
-                    <Route path="/estimate/:id/elevation-sheets/print" element={<ElevationSheetsPrint />} />
+                    {/* PHOTO-GENERATED ELEVATIONS ARE OUT OF THE
+                        CONTRACTOR UI (Howard ruled 2026-08-26, SEND-131A):
+                        the contractor works on the PHOTOS, not on renders
+                        made from them. The two photo-elevation print
+                        routes are unreachable from here; the page
+                        components (`ElevationSheet`, `ElevationSheetsPrint`)
+                        and the backend `/elevation-sheet/{which}` route
+                        with all its pins stay in place, untouched.
+                        BLUEPRINT elevation sheets are a different route
+                        and are not affected. */}
                     <Route path="/estimate/:id/field-sheet" element={<FieldSheetPrint />} />
-                    <Route path="/estimate/:id/elevation-sheet/:which" element={<ElevationSheet />} />
                     <Route path="/estimate/:id/blueprint-elevation/:which" element={<BlueprintElevationSheet />} />
                     {/* Source-view (generalized 2026-07-20): one surface for every
                         intake door — photos / blueprints / hover reference. The

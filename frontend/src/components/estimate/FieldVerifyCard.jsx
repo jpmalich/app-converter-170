@@ -13,6 +13,7 @@ import api from "@/lib/api";
 import TapeCheckPanel from "@/components/estimate/TapeCheckPanel";
 import { buildHouseJson, DimEditRow } from "@/components/estimate/HouseModel3D";
 import { crossCheckRidges } from "@/lib/gableMath";
+import { PHOTO_ELEVATIONS_ENABLED } from "@/lib/featureFlags";
 
 export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved, dimsRefreshKey }) {
   const t = useT();
@@ -133,7 +134,7 @@ export default function FieldVerifyCard({ preview, estimate, runId, onDimsSaved,
               <DoorIcon className="w-3 h-3" /> {DOOR_LABEL[door]}
             </a>
           )}
-          {door === "photo" && (sheetWalls.length > 0 ? (
+          {PHOTO_ELEVATIONS_ENABLED && door === "photo" && (sheetWalls.length > 0 ? (
             <span className="inline-flex items-center gap-1.5" data-testid="field-verify-elevation-sheets">
               <PencilRuler className="w-3 h-3 text-[var(--ai)]" />
               {sheetWalls.map((w) => (

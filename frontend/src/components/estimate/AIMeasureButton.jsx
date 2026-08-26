@@ -15,6 +15,7 @@ import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import writeThrough from "@/lib/write_through";
 import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
+import PhotoTakeoffEditor from "@/components/estimate/PhotoTakeoffEditor";
 import {
   inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges, dormerNetArea,
 } from "@/lib/gableMath";
@@ -112,6 +113,9 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // before sending to Claude, and described as text alongside.
   const [photoAnnotations, setPhotoAnnotations] = useState({});
   const [annotateOpenFor, setAnnotateOpenFor] = useState(null); // filename or null
+  // SEND-131A — the photo takeoff editor (marks ON the photo). Separate
+  // from Annotate: that one preps the AI read, this one carries quantity.
+  const [takeoffOpenFor, setTakeoffOpenFor] = useState(null);
   // Refine on Photo now opens the SAME PhotoAnnotateModal in guided
   // 7-step mode (one annotation system — no separate tap-measure UI).
   const [annotateGuided, setAnnotateGuided] = useState(false);
@@ -3447,6 +3451,22 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                     <Wand2 className="w-2.5 h-2.5" />
                                     {hasRef || zoneCount > 0 ? "Edit annotations" : "Annotate"}
                                   </button>
+                                  {/* SEND-131A — the contractor works on the
+                                      PHOTO. Annotate stays the pre-AI
+                                      annotator; Photo Takeoff is the marks
+                                      editor whose CONFIRMED marks carry
+                                      quantity. Two different jobs, two
+                                      buttons — neither replaces the other. */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setTakeoffOpenFor(name)}
+                                    className="w-full px-2 py-1 bg-[var(--ai)] text-white border border-[var(--ai)] hover:opacity-90 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
+                                    data-testid={`ai-measure-photo-takeoff-${i}`}
+                                    title="Mark siding, non-siding and openings ON THIS PHOTO — confirmed marks carry ft² and counts (never money)"
+                                  >
+                                    <Ruler className="w-2.5 h-2.5" />
+                                    Photo Takeoff
+                                  </button>
                                 </div>
                               </div>
                             );
@@ -4910,6 +4930,17 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
           </div>
         </div>
       )}
+      {/* SEND-131A — PHOTO TAKEOFF: marks on the photo itself. Mounted
+          beside the annotator, never in place of it. */}
+      {takeoffOpenFor && (
+        <PhotoTakeoffEditor
+          est={{ id: estimateId }}
+          photoKey={takeoffOpenFor}
+          photoUrl={`/api/uploads/${takeoffOpenFor}`}
+          onClose={() => setTakeoffOpenFor(null)}
+        />
+      )}
+
       {/* Iter 56: pre-AI annotation modal. Lets the contractor mark a
           reference scale anchor + no-siding zones on each photo BEFORE
           submitting to Claude. The annotations are burned into the

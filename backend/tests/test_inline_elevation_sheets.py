@@ -47,8 +47,22 @@ def session():
 
 class TestInlinePanelPins:
     def test_editor_mounts_the_section(self):
+        """NAMED PIN UPDATE (SEND-131A, Howard ruled 2026-08-26): the
+        2026-07-24 ruling that this section mounts automatically is
+        SUPERSEDED for the PHOTO path — photo-generated elevations are
+        out of the contractor view; the contractor works on the photos
+        themselves (Photo Takeoff). The mount stays in the tree behind
+        the one named flag (stop-loss doctrine — nothing deleted), and
+        this pin now asserts the gate, not the render. BLUEPRINT
+        elevation sheets are a different route and are untouched."""
         assert "ElevationSheetsPanel" in EDITOR
-        assert "<ElevationSheetsPanel est={est} />" in EDITOR
+        assert "{PHOTO_ELEVATIONS_ENABLED && <ElevationSheetsPanel est={est} />}" \
+            in EDITOR, ("the panel must stay in the tree behind the flag "
+                        "— neither deleted nor rendered")
+        flags = (FE / "lib" / "featureFlags.js").read_text()
+        assert "export const PHOTO_ELEVATIONS_ENABLED = false;" in flags, (
+            "the photo-elevation flag is not OFF — the contractor would "
+            "see EL-1..4 rendered from photos again")
 
     def test_mount_condition_not_gated_on_apply(self):
         # the panel probes the sheet endpoint per wall — never reads any

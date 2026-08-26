@@ -1,5 +1,64 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-26 SEND-131A — PHOTO TAKEOFF PHASE 1 BUILT · PHOTO ELEVATIONS RETIRED FROM THE CONTRACTOR VIEW (stamped `2026-08-26 · CLEAN · 2919 passed, 9 skipped, 7 warnings in 445.49s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send131a_report.md` · 28 pins in
+`tests/test_send131a_photo_takeoff_2026_08_26.py` · browser pass
+`test_reports/iteration_58.json` (zero defects).
+1. **THE ROUTE WAS DEAD ON ARRIVAL** — `routes/photo_takeoff.py` existed
+   from the prior session and was **never mounted**: zero live
+   endpoints, zero pins. Registered; a pin now fails the suite if it is
+   ever unmounted.
+2. **PHASE 1 BACKEND** `/api/estimates/{id}/photo-takeoff` (GET · scale
+   PUT · marks POST/PATCH/DELETE · import-annotations · apply).
+   `photo_key` = the photo FILENAME, the same key `photoAnnotations`
+   already uses (imports line up by construction). Marks stored in the
+   photo's NATURAL PIXELS.
+3. **THE DISCIPLINE CARRIED VERBATIM**: a mark lands PROVISIONAL and
+   carries NOTHING (named, never absent) · **THE TAPE WINS** over the
+   two-tap anchor, both kept, the label says which governs · no anchor
+   and no tape = a NAMED refusal, **never a 0** · a lane with no
+   confirmed mark of its kind reports **None, never 0** · adjusting a
+   confirmed mark returns it to PROVISIONAL (a confirmation cannot
+   outlive its figure) · a phase-2 kind is REFUSED AND NAMED · **423 on
+   protected estimates** for the derived write.
+4. **AN OPENING TAP CARRIES A COUNT, NOT AN AREA** — the annotator's
+   tagged windows are taps, so they import as POINT openings: a count
+   with **no ft², named**, never a silent zero.
+5. **OPENINGS REPORT SEPARATELY — NO DEDUCTION IN PHASE 1** (ruled).
+   `openings_deducted: false` rides every payload; the blueprint lane's
+   deduction ruling does NOT carry here and gets its own ruling once
+   both numbers are visible.
+6. **APPLY WRITES A SEPARATE PHOTO LANE, QUANTITY ONLY** — four
+   top-level `photo_*` keys + the `photo_takeoff` record; they do NOT
+   enter `hover_measurements` or any blueprint/derived total (pinned),
+   and being outside `EstimateIn` **the silent-strip class cannot reach
+   this lane by construction**. A structural pin fails on any
+   price/money/`lines` token in the module.
+7. **THE EDITOR** `PhotoTakeoffEditor.jsx` — full-screen, one photo,
+   shaped after `PdfOverlayEditor` (same snap, the overlay editor's
+   siding blue + the annotator's material colours, no new colour
+   system), pinch-zoom on a phone, and vertex drag on WINDOW pointer
+   events normalised against the rendered rect once — **tracks the
+   finger 1:1 at any zoom** (SEND-50's invariant). Marks list with
+   Confirm/Refuse/Adjust/Delete, live quantities, every refusal named,
+   "pull in what I already drew" (idempotent, lands PROVISIONAL).
+8. **ENTRY POINT** — a per-photo **Photo Takeoff** button BESIDE
+   `Annotate` in the AI Photo Measure grid. Annotate stays the pre-AI
+   annotator; neither replaces the other (pinned).
+9. **PHOTO-GENERATED ELEVATIONS OUT OF THE CONTRACTOR VIEW** — one
+   named flag `PHOTO_ELEVATIONS_ENABLED = false` (stop-loss doctrine,
+   same shape as `RENDER_3D_ENABLED`): panel mount, FieldVerify sheet
+   links and both frontend print routes gone. **NOTHING DELETED** —
+   render components, the backend `/elevation-sheet/{which}` route and
+   its pins stay intact. **BLUEPRINT elevation sheets untouched**
+   (pinned both ways). **TWO NAMED PIN UPDATES** (never silently
+   flipped) + one surface-census baseline entry with its reason.
+10. **NEXT**: PHASE 2 linear trim runs (corners · J-channel · starter ·
+    soffit · fascia · finish trim) — declared, refused, NOT built.
+    Awaiting rulings: photo-opening deduction · whether the photo lane
+    ever meets the existing measurement lanes · a takeoff-mark
+    pollution tripwire. Blueprint work stays **PARKED**.
+
 ## 2026-08-24 SEND-124 — MATERIAL SPLIT LANDED: PCT GATED · CARD LIVE · DIM LANES LANDED EMPTY · REGISTRY IN STEP (stamped `2026-08-24 19:29 UTC · 4dfce13 · CLEAN · 2852 passed, 9 skipped` + census GREEN + ingress 4 passed)
 Full record: `memory/send124_report.md` · 12 pins in
 `tests/test_send124_material_split_dim_lanes_2026_08_24.py`.

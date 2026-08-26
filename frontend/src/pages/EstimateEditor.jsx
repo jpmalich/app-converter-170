@@ -22,7 +22,10 @@ import VeroPanel from "@/components/estimate/VeroPanel";
 import VeroJobSnapshot from "@/components/estimate/VeroJobSnapshot";
 import SettingsRow from "@/components/estimate/SettingsRow";
 import PhotosPanel from "@/components/estimate/PhotosPanel";
+// SEND-131A — the panel is mounted behind PHOTO_ELEVATIONS_ENABLED
+// (false): photo-generated elevations are out of the contractor view.
 import ElevationSheetsPanel from "@/components/estimate/ElevationSheetsPanel";
+import { PHOTO_ELEVATIONS_ENABLED } from "@/lib/featureFlags";
 import SectionAccordion from "@/components/estimate/SectionAccordion";
 import TotalsSummary from "@/components/estimate/TotalsSummary";
 import CatalogSyncBanner from "@/components/estimate/CatalogSyncBanner";
@@ -404,7 +407,15 @@ export default function EstimateEditor() {
         />
         <SettingsRow est={est} update={update} save={save} />
         <PhotosPanel est={est} update={update} />
-        <ElevationSheetsPanel est={est} />
+        {/* SEND-131A (Howard ruled 2026-08-26) — PHOTO-GENERATED
+            ELEVATIONS ARE OUT OF THE CONTRACTOR VIEW. The contractor
+            works on the photos themselves (Photo Takeoff), not on
+            renders made from them. The panel, the page components and
+            the backend `/elevation-sheet/{which}` route with all its
+            pins stay intact behind the one named flag — stop-loss
+            doctrine, nothing deleted. BLUEPRINT elevation sheets are a
+            different route and are untouched. */}
+        {PHOTO_ELEVATIONS_ENABLED && <ElevationSheetsPanel est={est} />}
 
         <EstimatorTabs est={est} activeTab={activeTab} onChange={setActiveTab} tabs={visibleTabDefs} derivedUnappliedTab={lpDerivedUnapplied ? "lp_smart" : null} />
 

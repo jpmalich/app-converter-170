@@ -16,8 +16,21 @@ APP = (FE / "App.js").read_text()
 
 
 def test_route_registered():
-    assert '"/estimate/:id/elevation-sheets/print"' in APP
-    assert "ElevationSheetsPrint" in APP
+    """NAMED PIN UPDATE (SEND-131A, Howard ruled 2026-08-26): the
+    photo-elevation print route is REMOVED FROM THE CONTRACTOR ROUTER —
+    unreachable in the UI. The page component, the backend
+    `/elevation-sheet/{which}` route and every other pin in this file
+    stay intact for re-entry (stop-loss doctrine). This pin now asserts
+    the retirement and names why. BLUEPRINT elevation sheets keep their
+    own route and are untouched."""
+    assert '"/estimate/:id/elevation-sheets/print"' not in APP, (
+        "the photo-elevation print route is routable again")
+    assert '"/estimate/:id/elevation-sheet/:which"' not in APP, (
+        "the single photo-elevation sheet route is routable again")
+    assert "PHOTO-GENERATED ELEVATIONS ARE OUT OF THE" in APP, (
+        "the retirement must be NAMED at the router, not silent")
+    # the blueprint lane is a different route and stays
+    assert '"/estimate/:id/blueprint-elevation/:which"' in APP
 
 
 def test_print_page_reuses_sheet_svg_verbatim():
