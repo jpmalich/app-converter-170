@@ -794,6 +794,62 @@ RULINGS_REGISTER = {
         "produce the figure without the example — THE EXPOSURE WAS "
         "REAL BUT WAS NOT DOING THE WORK ON THIS CLAIM.",
 
+        # SEND-130 (Howard ruled 2026-08-25) — FOUR REGISTRATIONS FROM
+        # THE SWEEP AND THE LIFT.
+        "THE MARK BELONGS TO THE FIGURE, NOT THE FACE: an attribution "
+        "mark is made about a SPECIFIC figure. Replace that figure with "
+        "an independently evidenced one and the mark CLEARS, NAMED "
+        "(send-129: a height whose model value was demoted to hypothesis "
+        "and replaced by a reading of that face's OWN FIRST FLOOR -> TOP "
+        "OF PLATE chain no longer rides the shared quote). The shape "
+        "generalises past attribution: any refusal keyed to a figure "
+        "must be re-asked when the figure changes, and the clearing is "
+        "always named.",
+
+        "THE WIDTH/HEIGHT ASYMMETRY, STATED RATHER THAN IMPLIED: an "
+        "UNATTRIBUTED WIDTH refuses BODY AND GABLE; an UNATTRIBUTED "
+        "HEIGHT refuses the BODY ONLY. A gable reads a width and a rise "
+        "and never a height, so a height refusal cannot stop it — that "
+        "asymmetry is exactly why the gable lane leaked 1,280.53 ft2 on "
+        "dart while all four heights correctly refused (send-126/127).",
+
+        "THE LIFT DID NOT ADVANCE GENERALITY, AS PREDICTED. "
+        "Corroboration needs a SECOND read and neither foreign drafter "
+        "has a FIRST: dart's line-work is NOT_ATTEMPTED on 4 of 4 faces, "
+        "tanis's on 4 of 4. Letrick's 1,402.62 ft2 recovery is the "
+        "restoration of a house that was ALREADY working and MUST NOT be "
+        "read as movement on the reads claim. The reads claim stays "
+        "unearned for the predicted reason: neither foreign drafter "
+        "emits.",
+
+        "THE FRONT OVERREAD IS EXPLAINED, AND TWO INDEPENDENT ROUTES NOW "
+        "AGREE. Line-work on a face with NO PROJECTION has a body span "
+        "that IS its silhouette, so it reads LONG: letrick front drawn "
+        "54.73 vs printed 54.00 = +0.73 ft OVER, while the sides read "
+        "UNDER (-0.59 left, -0.33 right). That is the SEND-110 residual "
+        "shape - over on front/back, under on sides - arrived at from a "
+        "different instrument (drawn outline vs x-ruler). The residual "
+        "was registered as NAMED with fix DECLINED; it is now CLOSER TO "
+        "EXPLAINED than it was, on two routes, and the fix stays "
+        "declined.",
+
+        "TANIS LINE-WORK, WHERE IT STOPS PER FACE (send-130, five steps: "
+        "CARVE -> DATUM PAIR -> SEGMENTS -> FENCE -> OUTLINE). front p3 "
+        "and right p3 and rear p4: CARVE OK, DATUM PAIR FAILED (no TOP OF "
+        "PLATE and no FIRST FLOOR located at all), SEGMENTS OK (31,841 on "
+        "p3, 27,566 on p4), fence and outline NEVER REACHED. left: CARVE "
+        "FAILED (no left elevation located) - the same class as all four "
+        "dart faces. The bands were re-rendered and re-OCR'd at x2, x4 "
+        "and x6: ZERO datum words at every scale, and the drawing area "
+        "carries 2 / 39 / 8 text runs of which none is a level label or a "
+        "dimension string. So the instrument is READY on three faces "
+        "(the outline has 31.8k/27.6k segments to trace) and what is "
+        "missing is the RULER: this drafter's elevations carry no "
+        "labelled datum pair and no dimension inside the band. NOT a "
+        "resolution problem, NOT a fence, NOT an unresolved outline. "
+        "What cannot be distinguished from here: whether the labels were "
+        "never printed or are printed in a form no OCR reads.",
+
         # SEND-111 (Howard ruled 2026-08-14) — THE X-RULER RULING.
         "the ~half-foot elevation residual is REGISTERED AS NAMED, fix "
         "DECLINED (SEND-110): ~half is the per-face scale spread drawn "
