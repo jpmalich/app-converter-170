@@ -9184,3 +9184,47 @@ STILL HOWARD'S: site visit on J 30-vs-32; Alside logo; 5 demo one-liners. Post-S
   memory/send129_report.md.
 - OPEN: gable placement (3/3/2/0 vs 0/1/1/0) noted-not-fixed; height
   corroboration needs a different instrument; symbols NOT AUTHORIZED.
+
+## 2026-08-26 — SEND-130 (the tanis line-work query, answered per face)
+- THE ANSWER: on all THREE carved faces tanis stops at STEP 2 of 5
+  (CARVE → DATUM PAIR → SEGMENTS → FENCE → OUTLINE): the DATUM PAIR is
+  not located — no TOP OF PLATE, no FIRST FLOOR, no TOP OF FOUNDATION in
+  any band. Not a fence, not an unresolved outline. front p3 and right p3
+  carry 31,841 vector segments, rear p4 carries 27,566 — the OUTLINE
+  INSTRUMENT IS READY; what is missing is the RULER. The LEFT face fails
+  one step earlier at the CARVE (no left elevation located) — dart's class.
+- HOW THE LIMIT WAS SEPARATED FROM A SMALL BUG: bands re-rendered and
+  re-OCR'd at x2/x4/x6 (to 15,552 x 4,790 px) → ZERO datum words at every
+  scale, run counts FALLING with scale (front 21→17→15). Text inside the
+  drawing area (x<90%): front 2, right 39, rear 8 — all window-schedule,
+  sheet titles or OCR noise; no level label, no dimension string. The PDF
+  has NO text layer (0-18 chars/page — a raster scan in a wrapper).
+  VERDICT: a LIMIT, but a narrow one — anything that establishes a face
+  scale WITHOUT a labelled datum pair (graphic scale bar, a dimension
+  inside the band, a plan-derived width tied to that face) unlocks three
+  tanis faces at once, because steps 1 and 3 already pass. OPEN and not
+  guessed: whether the labels were never printed or are printed in a form
+  no OCR reads.
+- REGISTERED (ocr_geometry.RULINGS_REGISTER findings, all pinned in
+  tests/test_send130_tanis_stop_and_registrations_2026_08_25.py):
+  (1) THE MARK BELONGS TO THE FIGURE, NOT THE FACE — replace the figure
+  and the mark clears, named; generalises past attribution.
+  (2) THE WIDTH/HEIGHT ASYMMETRY — an unattributed WIDTH refuses BODY AND
+  GABLE, an unattributed HEIGHT refuses the BODY ONLY; stated, and
+  exercised against walk_walls.
+  (3) THE LIFT DID NOT ADVANCE GENERALITY, AS PREDICTED — letrick's
+  1,402.62 ft2 is restoration of a working house, NOT movement on the
+  reads claim; pinned with drafters_emitting() == 0.
+  (4) THE FRONT OVERREAD IS EXPLAINED — no projection so body span IS the
+  silhouette and it reads long (+0.73 front, -0.59/-0.33 sides); the
+  SEND-110 residual shape reached by a SECOND independent instrument;
+  fix stays DECLINED.
+  (5) TANIS LINE-WORK STOP PER FACE, with segment counts, the three OCR
+  scales, the annotation counts and the open question.
+- CLAIM UNMOVED: earned_claim() = FAILS_SAFE, drafters_emitting() = 0.
+- STAMP: RECORDED 2026-08-26 01:19 UTC · e774561 · CLEAN · 2891 passed,
+  9 skipped · census GREEN · ingress 4 passed. Report:
+  memory/send130_report.md.
+- NEXT REAL STEP toward the reads claim: a face scale that does not need a
+  labelled datum pair (three tanis faces are one instrument away), and/or
+  dart's carve (decorative title font) which blocks 4 of 4.
