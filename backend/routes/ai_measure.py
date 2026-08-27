@@ -1752,6 +1752,46 @@ def _corner_lf_from_walls(walls: list) -> float:
     return round(total, 1)
 
 
+REFUSING_WIDTH_HEIGHT_SOURCES = {
+    "assumed_symmetric", "estimated_no_direct_view", "mirrored",
+    "assumed", "symmetric_assumption", "copied_from_opposite",
+    "ai-no-direct-view", "estimated",
+}
+
+
+def _face_photo_evidence(w: dict) -> tuple[bool, str | None]:
+    """BLOCK A — NO PHOTO, NO WALL (Howard ruled 2026-08-27, SEND-136).
+
+    The Standing Prohibition, on the photo path: A FACE WITH NO PHOTO OF
+    ITS OWN DOES NOT GET ANOTHER FACE'S NUMBER. No mirroring, no symmetry
+    assumption, no copied width, height, gable or depth — including when
+    the house "looks rectangular".
+
+    A wall is MEASURED only when a photo showed it. Two independent
+    tests, either of which refuses:
+      * `_source_photo_indices` present and EMPTY — the reconciler itself
+        recorded that no photo fed this wall;
+      * a width or height whose stated source is a mirror, a symmetry
+        assumption or a no-direct-view estimate.
+    """
+    label = str(w.get("label") or "?").upper()
+    idxs = w.get("_source_photo_indices")
+    if isinstance(idxs, list) and not idxs:
+        return False, (f"{label} — no photo of this wall. Not measured. "
+                       "Not copied from another face.")
+    bad = []
+    for field, src in (("width", w.get("width_ft_source")),
+                       ("height", w.get("height_ft_source"))):
+        s = str(src or "").strip().lower()
+        if s in REFUSING_WIDTH_HEIGHT_SOURCES:
+            bad.append(f"{field} ({s})")
+    if bad:
+        return False, (f"{label} — no photo measured this wall's "
+                       f"{' and '.join(bad)}. Not measured. Not copied "
+                       "from another face.")
+    return True, None
+
+
 def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dict:
     """Roll up Claude's per-wall / per-opening estimates into the same
     measurements dict that the HOVER PDF importer returns. The frontend
@@ -1772,6 +1812,36 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         projecting from the roof slope — added as an extra to siding.
     """
     walls = raw.get("walls") or []
+    # BLOCK A — NO PHOTO, NO WALL. The gate runs BEFORE any math: a
+    # refused face contributes no ft², no gable, no starter, no eave, no
+    # corner, no opening and no line. What the model claimed stays on the
+    # record (`_refused` + `_refusal` on the wall) so the gap is NAMED,
+    # not erased — and so no reader mistakes a refusal for a zero.
+    _measured_walls: list[dict] = []
+    _refused_faces: list[dict] = []
+    for _w in walls:
+        _ok, _why = _face_photo_evidence(_w)
+        if _ok:
+            _w.pop("_refused", None)
+            _w.pop("_refusal", None)
+            _measured_walls.append(_w)
+            continue
+        _w["_refused"] = True
+        _w["_refusal"] = _why
+        _refused_faces.append({
+            "label": str(_w.get("label") or "?"),
+            "refusal": _why,
+            # what the model OFFERED, kept as a claim and never as money
+            "claimed_width_ft": _w.get("width_ft"),
+            "claimed_height_ft": _w.get("height_ft"),
+            "claimed_gable_rise_ft": _w.get("gable_triangle_height_ft"),
+            "claimed_width_source": _w.get("width_ft_source"),
+            "claimed_height_source": _w.get("height_ft_source"),
+        })
+    _faces_measured = [str(w.get("label") or "?") for w in _measured_walls]
+    _house_complete = not _refused_faces
+    _measured_labels = {s.strip().lower() for s in _faces_measured}
+    walls = _measured_walls
     # Iter 57b — dedupe openings as a safety net. Even with the
     # strengthened double-count prompt rule, Opus occasionally returns
     # the same window twice when it appears at the edges of two photos.
@@ -1782,6 +1852,35 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     openings = _dedupe_openings(raw_openings)
     openings = _enforce_symmetry(openings)
     openings = _snap_window_sizes(openings)
+    # BLOCK A — AN OPENING ON A REFUSED FACE IS ALSO REFUSED. No photo
+    # showed that wall, so no photo showed a window in it. Openings with
+    # no wall label are KEPT (they were seen in some photo; the label is
+    # missing, the evidence is not).
+    _refused_openings: list[dict] = []
+    if _refused_faces:
+        _refused_labels = {str(f["label"]).strip().lower()
+                           for f in _refused_faces}
+        _kept = []
+        for _o in openings:
+            _wall = str(_o.get("wall") or "").strip().lower()
+            if _wall and _wall in _refused_labels and _wall not in _measured_labels:
+                _refused_openings.append({
+                    "wall": _o.get("wall"), "type": _o.get("type"),
+                    "width_in": _o.get("width_in"),
+                    "height_in": _o.get("height_in"),
+                    "refusal": (f"{str(_o.get('wall')).upper()} — no photo of "
+                                "this wall, so no opening in it is measured"),
+                })
+            else:
+                _kept.append(_o)
+        openings = _kept
+        if raw.get("openings_schedule"):
+            raw["openings_schedule"] = [
+                s for s in raw["openings_schedule"]
+                if str(s.get("elevation") or s.get("wall") or "").strip().lower()
+                not in (_refused_labels - _measured_labels)
+                or not str(s.get("elevation") or s.get("wall") or "").strip()
+            ]
     # Snap the schedule rolls too so the on-screen + PDF tables match.
     if raw.get("openings_schedule"):
         raw["openings_schedule"] = _snap_schedule_sizes(raw["openings_schedule"])
@@ -1882,7 +1981,12 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # STEP 6 (ruled fix-it 10a, 2026-08-01): the blueprint door's defensive
     # eaves recompute extends to photo through the ONE shared rule — on a
     # gabled house gutters run the non-gable walls only.
-    _eaves_lf = staging.eaves_from_walls(adapted_walls, raw.get("eaves_lf"))
+    # BLOCK A (SEND-136): EAVES ARE A HOUSE-LEVEL RUN. With any face
+    # refused, the gutter line cannot be closed — and the AI's own
+    # `eaves_lf` was computed over the invented faces. REFUSED (None),
+    # never a zero and never a partial number dressed as a total.
+    _eaves_lf = (staging.eaves_from_walls(adapted_walls, raw.get("eaves_lf"))
+                 if _house_complete else None)
 
     # Approximate opening areas to deduct (informational).
     opening_sqft = 0.0
@@ -1922,12 +2026,30 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             f"perimeter {_fp:.0f} LF (wall-width sum) — engine deducts "
             "entry-door widths downstream (finding 8 ruled 2026-08-01: "
             "blueprint rule extended to photo)")
-    elif float(raw.get("starter_lf") or 0) > 0:
+        if not _house_complete:
+            # BLOCK A (SEND-136): starter IS per face — it runs along the
+            # bottom of each wall we measured. So it is derived, but it
+            # is NOT a house total, and the payload says so.
+            _starter_basis = (
+                f"{_fp:.0f} LF — MEASURED FACES ONLY "
+                f"({', '.join(_faces_measured) or 'none'}). "
+                f"{len(_refused_faces)} face(s) refused for want of a photo "
+                "and contribute NO starter: "
+                + "; ".join(f["refusal"] for f in _refused_faces))
+    elif float(raw.get("starter_lf") or 0) > 0 and _house_complete:
         _starter_lf = float(raw.get("starter_lf") or 0)
         _starter_basis = "AI-read starter_lf (no measured walls to sum)"
-    else:
+    elif _house_complete:
         _starter_lf = float(raw.get("eaves_lf") or 0)
         _starter_basis = "eaves fallback (legacy last resort — no walls, no AI starter)"
+    else:
+        # No measured face at all: the AI's own totals were built over
+        # faces no photo showed. REFUSED.
+        _starter_lf = None
+        _starter_basis = (
+            "REFUSED — no face on this job carries a photo of its own; "
+            "the AI's starter total was built over faces no photo showed: "
+            + "; ".join(f["refusal"] for f in _refused_faces))
 
     measurements = {
         # RULING 7 (2026-08-01): full precision on the way in — no door
@@ -1939,19 +2061,27 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # the deduped list serves legacy sessions only.
         "opening_sqft": (_bk["opening_sqft"] if schedule_for_counts else opening_sqft),
         "eaves_lf": _eaves_lf,
-        "rakes_lf": float(raw.get("rakes_lf") or 0),
+        # BLOCK A (SEND-136): RAKES, CORNERS and INSIDE CORNERS are
+        # house-level runs the AI computed over EVERY face it emitted —
+        # including the ones it mirrored. They cannot be decomposed after
+        # the fact, so with any face refused they are REFUSED (None).
+        # None is the project's refusal marker; a 0 would read as
+        # "measured and none", which is a lie here.
+        "rakes_lf": (float(raw.get("rakes_lf") or 0) if _house_complete
+                     else None),
         "starter_lf": _starter_lf,
         # Corners — Iter 79j.64: computed per-corner from the reconciled
         # per-wall heights (corner posts stand at eave lines; on stepped
         # or asymmetric houses `4 × avg` over/under-counts by several
         # LF). Falls back to the AI estimate, then the legacy 4 × avg,
         # when any primary wall is unmeasured.
-        "outside_corner_lf": float(
+        "outside_corner_lf": (float(
             _corner_lf_from_walls(walls)
             or raw.get("outside_corner_lf")
             or 4 * float(raw.get("avg_wall_height_ft") or 0)
-        ),
-        "inside_corner_lf": float(raw.get("inside_corner_lf") or 0),
+        ) if _house_complete else None),
+        "inside_corner_lf": (float(raw.get("inside_corner_lf") or 0)
+                             if _house_complete else None),
         "opening_perimeter_lf": perimeter_lf,
         "opening_count": _bk["opening_count"],
         "window_count": counts["window"],
@@ -2104,13 +2234,21 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     # Corner COUNTS from the corner-location machinery (finding 7 ruled:
     # per-corner Q13/Q12 + never-average tall rule fire on the photo door).
     _clocs = raw.get("corner_locations") or []
-    if _clocs:
+    if _clocs and _house_complete:
         _osc_n = sum(1 for c in _clocs if (c or {}).get("type") == "outside")
         _isc_n = sum(1 for c in _clocs if (c or {}).get("type") == "inside")
         if _osc_n > 0:
             measurements["outside_corner_count"] = _osc_n
         if _isc_n > 0:
             measurements["inside_corner_count"] = _isc_n
+    elif _clocs:
+        # BLOCK A (SEND-136): a corner stands between TWO faces. With a
+        # face refused, the corner COUNT is a whole-footprint fact the
+        # photos do not support — refused with the LF, so the stick
+        # builders (which honour `_key_refused`) emit nothing rather
+        # than flooring at one stick per lane.
+        measurements["outside_corner_count"] = None
+        measurements["inside_corner_count"] = None
     # Footprint perimeter = the same measured wall-width sum the starter
     # basis uses. Writer-key == reader-key (batten machinery).
     if _fp > 0:
@@ -2119,9 +2257,30 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
         # but it may not erase the refusal silently — the overwrite is
         # named on the payload (seam_accounting.carry_refusals does the
         # same at the estimate seam).
-        measurements["footprint_perimeter_ft"] = _fp
+        # BLOCK A (SEND-136): a FOOTPRINT is a closed loop. With a face
+        # refused there is no loop — the key is REFUSED (None), the
+        # established refusal marker the LP package reader already honours.
+        measurements["footprint_perimeter_ft"] = _fp if _house_complete else None
         measurements["_perimeter_writer"] = "photo door (ai_measure)"
     measurements["_starter_basis"] = _starter_basis
+    # BLOCK A (SEND-136) — NO PHOTO, NO WALL. The gap travels with the
+    # numbers so no surface can price a face nobody photographed.
+    measurements["_faces_measured"] = _faces_measured
+    measurements["_faces_refused"] = _refused_faces
+    measurements["_openings_refused"] = _refused_openings
+    measurements["_face_rule"] = (
+        "NO PHOTO, NO WALL (ruled 2026-08-27): a face with no photo of "
+        "its own gets no number — no mirroring, no symmetry assumption, "
+        "no copied width, height, gable or depth, and no accessory "
+        "derived from it.")
+    measurements["_face_refusal_note"] = (
+        ("Faces measured: " + (", ".join(_faces_measured) or "none")
+         + ". REFUSED for want of a photo: "
+         + "; ".join(f["refusal"] for f in _refused_faces)
+         + ". House-level runs (eaves, rakes, corners, footprint) are "
+           "REFUSED because the AI computed them over the faces it "
+           "mirrored; they are not zeros.")
+        if _refused_faces else None)
     # STEP 4 — CONFIDENCE GATE (findings 4 + 9a, ruled 2026-08-01): the
     # code now KNOWS a photo read is a suggestion. Any substituted height,
     # any wall the model itself marked <50 ("barely visible / inferred"),
@@ -3520,6 +3679,46 @@ async def ai_measure_latest_for_estimate(
     if not archived:
         archived = bool(await archive_run_on_view(
             doc, reason="view:measure-latest"))
+    # BLOCK A / NO PHOTO, NO WALL — READ-SIDE RE-GATE (SEND-136, Howard
+    # ruled 2026-08-27). A run READ BEFORE this rule existed still has
+    # its mirrored faces in `raw_ai.walls`, and its stored totals were
+    # summed over them. On the way out we (a) stamp those faces REFUSED
+    # so no surface prices them, and (b) mark the payload STALE so it
+    # cannot be applied: its house-level runs (eaves, rakes, corners,
+    # footprint) were computed over faces no photo showed and cannot be
+    # pulled apart after the fact. READ ONLY — nothing is written back,
+    # and a run read AFTER the rule already carries `_faces_refused`.
+    _result = strip_cost_keys(doc.get("result"))
+    try:
+        _raw = (_result or {}).get("raw_ai") or {}
+        _meas = (_result or {}).get("measurements")
+        if isinstance(_meas, dict) and "_faces_refused" not in _meas:
+            _stale = []
+            for _w in (_raw.get("walls") or []):
+                _ok, _why = _face_photo_evidence(_w)
+                if not _ok:
+                    _w["_refused"] = True
+                    _w["_refusal"] = _why
+                    _stale.append({"label": str(_w.get("label") or "?"),
+                                   "refusal": _why,
+                                   "claimed_width_ft": _w.get("width_ft"),
+                                   "claimed_height_ft": _w.get("height_ft")})
+            if _stale:
+                _meas["_faces_refused"] = _stale
+                _meas["_faces_measured"] = [
+                    str(w.get("label") or "?")
+                    for w in (_raw.get("walls") or []) if not w.get("_refused")]
+                _meas["_face_rule_stale"] = True
+                _meas["_face_refusal_note"] = (
+                    "This read was taken BEFORE the no-photo-no-wall rule "
+                    "(2026-08-27). Its totals were summed over faces no "
+                    "photo showed: "
+                    + " ".join(f["refusal"] for f in _stale)
+                    + " It cannot be applied. Re-run the read on the photos "
+                      "you have, or draw the missing faces yourself on a "
+                      "photo in the takeoff editor.")
+    except Exception:
+        pass
     created = _as_aware_utc(doc.get("created_at"))
     completed = _as_aware_utc(doc.get("completed_at") or doc.get("updated_at"))
     now = datetime.now(timezone.utc)
@@ -3550,7 +3749,7 @@ async def ai_measure_latest_for_estimate(
             # Contractor-measured dormer faces (ruled 2026-07-25) — same
             # TAPED-class treatment as gables.
             "contractor_dormers": doc.get("contractor_dormers") or [],
-            "result": strip_cost_keys(doc.get("result")),
+            "result": _result,
             "error": doc.get("error"),
             "elapsed_ms": elapsed_ms,
             "age_seconds": age_seconds,

@@ -472,6 +472,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
     let gableSqft = 0;
     let dormerSqft = 0;
     for (const w of walls) {
+      // BLOCK A — NO PHOTO, NO WALL (Howard ruled 2026-08-27, SEND-136).
+      // A face the backend refused for want of a photo contributes
+      // NOTHING here either. This live recompute is a second money
+      // surface: if it kept summing the mirrored faces, the headline
+      // would put back exactly the ft² the read refused.
+      if (w._refused) continue;
       const width = Number(w.width_ft) || 0;
       const eave = Number(w.height_ft) || 0;
       const gross = width * eave;
@@ -3863,6 +3869,22 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         If the AI got the geometry wrong (e.g. called a 1-story dormer a 2-story wall),
                         edit the numbers below. Siding ft² updates live. Apply re-runs the line math.
                       </div>
+                      {/* BLOCK A — NO PHOTO, NO WALL: the gap is named at
+                          the top of the table, in the contractor's words. */}
+                      {(preview.measurements?._faces_refused || []).length > 0 && (
+                        <div className="mt-2 p-2 bg-[#FEF2F2] border border-[#DC2626] text-[10px] text-[#B91C1C] leading-snug" data-testid="ai-measure-faces-refused-banner">
+                          <b className="uppercase tracking-wider">No photo, no wall.</b>{" "}
+                          {(preview.measurements._faces_refused || []).map((f) => f.refusal).join(" ")}{" "}
+                          Nothing is priced from a refused face — no ft², no gable, no starter, no corner, no J-channel, no line.
+                          House-level runs (eaves, rakes, corners, footprint) are REFUSED as well: the read computed them over the faces it mirrored, and they cannot be pulled apart afterwards. They are refusals, not zeros.
+                          {preview.measurements._face_rule_stale && (
+                            <div className="mt-1 pt-1 border-t border-[#DC2626]" data-testid="ai-measure-face-rule-stale">
+                              <b>This read predates the rule and CANNOT BE APPLIED.</b>{" "}
+                              {preview.measurements._face_refusal_note}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <table className="w-full mt-2 text-xs" data-testid="ai-measure-wall-table">
                         <thead className="text-left text-[var(--muted)] uppercase tracking-wider text-[10px]">
                           <tr>
@@ -3878,6 +3900,22 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         </thead>
                         <tbody>
                           {preview.raw_ai.walls.map((w, i) => {
+                            // BLOCK A — a REFUSED face shows its refusal and
+                            // nothing else: no ft², no editable number. The
+                            // claim the model made stays in the tooltip so the
+                            // record is intact, and typing here can never turn
+                            // a face nobody photographed into money.
+                            if (w._refused) {
+                              return (
+                                <tr key={i} className="border-b border-[var(--bg-app)] bg-[#FEF2F2]" data-testid={`ai-measure-wall-refused-${i}`}>
+                                  <td className="py-1 font-bold text-[#B91C1C] uppercase tracking-wider text-[10px]">{w.label}</td>
+                                  <td colSpan={7} className="text-[10px] text-[#B91C1C] leading-snug"
+                                    title={`The read offered ${w.width_ft || "?"} × ${w.height_ft || "?"} ft (width source: ${w.width_ft_source || "?"}, height source: ${w.height_ft_source || "?"}). Refused — a photo of this wall is the only thing that measures it.`}>
+                                    <b>REFUSED</b> — {w._refusal || "no photo of this wall"} Nothing is priced from it: no ft², no gable, no starter, no corner, no line. Take a photo of this wall, or draw it yourself on a photo in the takeoff editor.
+                                  </td>
+                                </tr>
+                              );
+                            }
                             const width = Number(w.width_ft) || 0;
                             const eave = Number(w.height_ft) || 0;
                             const gable = Number(w.gable_triangle_height_ft) || 0;
@@ -4912,13 +4950,23 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                         const hasFootprint =
                           raWalls > 0 || raDormers > 0 || raOpenings > 0 ||
                           sidingSqft > 0 || eavesLf > 0;
+                        // BLOCK A (SEND-136) — A STALE READ CANNOT BE
+                        // APPLIED. This run was taken before the
+                        // no-photo-no-wall rule: its house-level runs
+                        // (eaves, rakes, corners, footprint) were summed
+                        // over faces no photo showed and cannot be pulled
+                        // apart afterwards. Re-run the read, or draw the
+                        // missing faces on a photo in the takeoff editor.
+                        if (m._face_rule_stale) return true;
                         return !hasFootprint;
                       })()}
                       className="px-3 py-2 bg-[var(--brand)] text-[var(--on-brand)] hover:bg-[var(--brand-hover)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                       data-testid="ai-measure-apply-btn"
-                      title={preview?.raw_ai?._reconciliation_error
-                        ? "Reconciliation failed — nothing to apply. Retry Phase B first."
-                        : "Apply the AI takeoff to the estimate"}
+                      title={preview?.measurements?._face_rule_stale
+                        ? (preview.measurements._face_refusal_note || "This read predates the no-photo-no-wall rule — re-run it.")
+                        : preview?.raw_ai?._reconciliation_error
+                          ? "Reconciliation failed — nothing to apply. Retry Phase B first."
+                          : "Apply the AI takeoff to the estimate"}
                     >
                       {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                       {busy ? "Saving…" : "Apply Measurements"}

@@ -263,13 +263,134 @@ async def _validated_product(est: dict, name: str) -> str:
     return name
 
 
+def _plane_basis(marks: List[dict], ipp: Optional[float]) -> dict:
+    """BLOCK B ITEM 1+2 (Howard ruled 2026-08-27, SEND-136) — NAME THE
+    PLANE. The ft² math is scaled-orthographic: one inches-per-pixel
+    over the whole frame, `ipp²/144 × shoelace(px)`. That is only true of
+    a wall square-on to the camera; on an oblique photo it measures the
+    wall's PROJECTION. Until this send that assumption was SILENT. It is
+    now stated on every figure, as one of exactly three values:
+
+        SQUARE-ON   measured, with what earned it
+        OBLIQUE     with the angle ONLY if the evidence gives one
+        UNKNOWN     nothing on this photo supports a verdict
+
+    THE CLASSIFIER USES ONLY MARKS ALREADY ON THE PHOTO:
+      * a boxed opening's pixel aspect vs its typed aspect;
+      * two boxed openings' inches-per-pixel disagreeing across depth;
+      * converging verticals — NOT AVAILABLE: nothing in phase 1 traces
+        a vertical line, so this test cannot run and says so.
+
+    THERE IS NO DEFAULT THAT READS AS SQUARE-ON, and no correction
+    factor is derived from any of this. A verdict is a label, never a
+    multiplier.
+    """
+    ev: List[str] = []
+    oblique: List[str] = []
+    square: List[str] = []
+    angle_deg = None
+    boxed = [m for m in marks
+             if m.get("kind") == "opening" and len(m.get("points") or []) >= 3]
+    # (1) pixel aspect vs typed aspect
+    for m in boxed:
+        w_in = float(m.get("width_in") or 0)
+        h_in = float(m.get("height_in") or 0)
+        if w_in <= 0 or h_in <= 0:
+            continue
+        xs = [p["x"] for p in m["points"]]
+        ys = [p["y"] for p in m["points"]]
+        w_px = max(xs) - min(xs)
+        h_px = max(ys) - min(ys)
+        if w_px <= 0 or h_px <= 0:
+            continue
+        ratio = (w_px / h_px) / (w_in / h_in)
+        tag = m.get("style") or m.get("label") or "opening"
+        if abs(ratio - 1.0) <= 0.08:
+            square.append(f"{tag}: drawn box matches its typed "
+                          f"{w_in:g}×{h_in:g} in aspect within "
+                          f"{abs(ratio - 1) * 100:.0f}%")
+        elif ratio < 0.92:
+            import math
+            a = math.degrees(math.acos(max(0.0, min(1.0, ratio))))
+            angle_deg = round(a, 1) if angle_deg is None else angle_deg
+            oblique.append(f"{tag}: drawn box is horizontally compressed "
+                           f"{(1 - ratio) * 100:.0f}% against its typed "
+                           f"{w_in:g}×{h_in:g} in — a wall turned "
+                           f"≈{a:.0f}° from the camera reads like this")
+        else:
+            oblique.append(f"{tag}: drawn box is {(ratio - 1) * 100:.0f}% "
+                           f"wider than its typed {w_in:g}×{h_in:g} in "
+                           "aspect — a turned wall or a tilted camera; the "
+                           "angle is NOT stated because the two cannot be "
+                           "told apart from this alone")
+    # (2) two openings' inches-per-pixel across depth
+    ipps = []
+    for m in boxed:
+        w_in = float(m.get("width_in") or 0)
+        if w_in <= 0:
+            continue
+        xs = [p["x"] for p in m["points"]]
+        w_px = max(xs) - min(xs)
+        if w_px > 0:
+            ipps.append((w_in / w_px, m.get("style") or m.get("label") or "opening"))
+    if len(ipps) >= 2:
+        lo = min(ipps)[0]
+        hi = max(ipps)[0]
+        spread = (hi / lo) if lo else 0
+        if spread > 1.15:
+            oblique.append(
+                f"two boxed openings disagree on scale by {(spread - 1) * 100:.0f}%"
+                f" ({lo:.3f} vs {hi:.3f} in/px) — the scale falls off across "
+                "this frame, which one ruler cannot describe")
+        elif spread <= 1.08:
+            square.append(
+                f"two boxed openings agree on scale within "
+                f"{(spread - 1) * 100:.0f}% ({lo:.3f} vs {hi:.3f} in/px)")
+    ev.append("converging verticals: NOT TESTED — phase 1 traces no "
+              "vertical lines on the photo, so this test cannot run")
+    if oblique:
+        basis = "OBLIQUE"
+        reason = ("OBLIQUE — this photo's own marks say the wall is turned "
+                  "from the camera, so an area from it measures the wall's "
+                  "PROJECTION, not the wall: " + "; ".join(oblique)
+                  + (f". Angle indicated ≈{angle_deg}° (from the box "
+                     "compression only)" if angle_deg is not None else
+                     ". No angle is stated — the evidence does not give one")
+                  + ". NO correction is applied: a perspective correction "
+                    "from an unmeasured angle is a fabricated ruler.")
+    elif square:
+        basis = "SQUARE-ON"
+        reason = ("SQUARE-ON — earned by this photo's own marks: "
+                  + "; ".join(square)
+                  + ". The area math (one inches-per-pixel over the frame) "
+                    "holds on a wall square-on to the camera.")
+    else:
+        basis = "UNKNOWN"
+        reason = ("UNKNOWN — nothing on this photo supports a verdict. No "
+                  "boxed opening carries BOTH a typed width and height, and "
+                  "no two boxed openings carry typed widths, so neither "
+                  "aspect nor scale-falloff can be tested. The ft² here "
+                  "assumes the wall is square-on to the camera; that "
+                  "assumption is UNVERIFIED, and an oblique photo reads "
+                  "LOW (≈13% at 30°, ≈29% at 45°). Box one window and type "
+                  "its width and height to settle it.")
+    return {"plane_basis": basis, "plane_basis_reason": reason,
+            "plane_basis_evidence": (oblique + square + ev) or ev,
+            "plane_basis_angle_deg": angle_deg}
+
+
 def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
     """Quantity from CONFIRMED marks only, and only with a scale. Every
     refusal is named; a refusal is never reported as 0."""
     ipp, basis = _in_per_px(scale)
     confirmed = [m for m in marks if m.get("status") == "confirmed"]
     provisional = [m for m in marks if m.get("status") == "provisional"]
+    # NAME THE PLANE ON EVERY FIGURE — computed from ALL marks on the
+    # photo (a provisional boxed window is still evidence about the
+    # photo's geometry), and stated even when there is no scale at all.
+    plane = _plane_basis(marks, ipp)
     out: Dict[str, Any] = {
+        **plane,
         "scale_basis": basis if ipp else None,
         "scale_refusal": None if ipp else basis,
         "confirmed_marks": len(confirmed),
@@ -914,6 +1035,17 @@ async def apply_photo_takeoff(est_id: str,
         "photo_opening_sqft": round(tot_open_sqft, 2) if live else None,
         "photo_opening_count": tot_open_n if live else None,
         "photo_siding_by_product": by_product or None,
+        # NAME THE PLANE (SEND-136): the assumption behind every one of
+        # these figures, per photo. UNKNOWN is the honest starting state
+        # — it is never defaulted to SQUARE-ON.
+        "plane_basis_by_photo": {k: v.get("plane_basis")
+                                 for k, v in per_photo.items()},
+        "plane_basis_note": (
+            "each photo's ft² carries its own plane basis: SQUARE-ON "
+            "(earned by that photo's marks), OBLIQUE (the area measures "
+            "the wall's projection, and reads LOW), or UNKNOWN (nothing "
+            "on the photo supports a verdict). No correction factor is "
+            "applied to any of them."),
         "guidance_confirmed_marks": guidance_confirmed or None,
         "guidance_confirmed_note": (
             f"{guidance_confirmed} confirmed mark(s) are GUIDANCE-CONFIRMED "

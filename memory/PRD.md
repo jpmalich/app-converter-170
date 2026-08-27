@@ -1,5 +1,77 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-27 SEND-136 — CLOSED: (A) NO PHOTO, NO WALL · (B) NAME THE PLANE (32 pins green in `tests/test_send136_no_photo_no_wall_and_plane_basis_2026_08_27.py`; browser front-only rig PASS; EST-381546 untouched)
+Full record: `memory/send136_report.md`. Closed on Howard's order
+2026-08-27: **close-out only, no new code.**
+1. **BLOCK A — A FACE WITH NO PHOTO IS REFUSED, NOT MIRRORED.** One gate
+   at the one funnel (`_face_photo_evidence` in
+   `_aggregate_to_hover_shape`): `_source_photo_indices` present and
+   EMPTY, or a width/height source that is a mirror / symmetry
+   assumption / no-direct-view estimate → **REFUSE**. A refused face
+   contributes no ft², no gable, no dormer, no starter, no eave, no
+   corner, no opening, **no line**. Its claim is KEPT on the record
+   (`_refused`/`_refusal` on the wall, `claimed_*` in `_faces_refused`)
+   so the gap is NAMED, never erased. **A refusal is None, never 0.**
+2. **EST-381546 WAS THE EXHIBIT** (read-only): 1 photo, 1 face. front
+   `direct_ref` DERIVED; back/left/right all `assumed_symmetric` /
+   `estimated_no_direct_view` with empty photo indices → refused.
+   siding 1,312.92 → **404.46**; eaves/rakes/corners/footprint-perimeter
+   → **REFUSED (None)**; starter 102.0 → **27.0** (the measured face's
+   own width, basis names it); the mirrored REAR GABLE is gone; the 4
+   openings all stand (every one was seen in the photo). Through the
+   real mapper: **44 priced lines → 28** — gutters, rake/fascia, soffit,
+   4 outside-corner sticks, inside corner and finish trim all off the
+   refused faces; window/door labour and disposal were never
+   face-derived and stay.
+3. **A FOUR-PHOTO JOB STILL PRICES FOUR WALLS** (pinned) — the rule
+   costs an honest job nothing.
+4. **EVERY RESTORE IS A DOOR**: a run stored before the rule is re-gated
+   ON READ, stamped `_face_rule_stale`, and **Apply Measurements is
+   DISABLED with the reason printed**. Read-only; nothing written back.
+   **NOT A GUESS IN THE OTHER DIRECTION** — a refused row shows the
+   refusal and **no editable width box**. The browser's second money
+   surface (`recomputeFromWalls`) was gated too, so the fix cannot be
+   undone on screen; the `routes/hover.py` corner stick builders no
+   longer floor at `max(1, …)` over a refused lane.
+5. **BLOCK B — `plane_basis` RIDES EVERY PHOTO-TAKEOFF QUANTITY PAYLOAD**
+   and prints in the editor rail (`photo-takeoff-plane-basis`). **Three
+   values, no fourth**: `SQUARE-ON` · `OBLIQUE` · `UNKNOWN`; the surface
+   falls back to UNKNOWN, never square-on. **The silent
+   fronto-parallel assumption is over.** Classifier uses only marks
+   already present: boxed-opening pixel-vs-typed aspect (≤8% →
+   SQUARE-ON; compressed → OBLIQUE with the angle; **stretched →
+   OBLIQUE with the angle WITHHELD**, a turned wall and a tilted camera
+   both explain it); two openings' inches-per-pixel across depth (>15%
+   apart → OBLIQUE); **converging verticals NOT TESTED and it says so**
+   (phase 1 traces no verticals — a test that cannot run is declared,
+   never silently passed). EST-381546's front photo earns **SQUARE-ON**;
+   every photo with no typed opening width AND height reads UNKNOWN —
+   the correct starting state.
+6. **RECTIFY NOT BUILT** (pinned: no homography/warp/correction-factor
+   tokens; the only trigonometry reports an ANGLE and never scales a
+   figure). The 13%/29% oblique under-read stays on the record.
+7. **THE GABLE CONVENTION IS NOT THE AGENT'S TO PICK — HOWARD'S RULING
+   IS OUTSTANDING.** The frontend's `recomputeFromWalls` uses the
+   **measured triangle ½·w·h**; the backend uses the **field allowance
+   0.70 × width × rise**. Ruled 2026-08-27: **these are DIFFERENT
+   THINGS, not two implementations of one number** — measured triangle
+   vs allowance for when the triangle was not traced. Howard will rule
+   which governs when the triangle IS measured and which when it is
+   NOT. **UNTIL THAT RULING: BOTH NUMBERS STAY VISIBLE AND NEITHER IS
+   "FIXED."**
+8. **NAMED GAPS, REGISTERED NOT BUILT**: gables and dormers were never
+   moved into `PhotoTakeoffEditor` (they live only in Annotate) ·
+   **ANNOTATE STAYS — the idempotent import was NEVER verified on a
+   real session**, so all THREE doors (grid button · Refine on Photo ·
+   Refine photo picker) remain · Stage 2 has **no wall proposals** (the
+   read yields openings and marks, not wall polygons; propose-and-correct
+   is CORRECT-ONLY for openings, ADD-ONLY for walls, and the pull says
+   so every run).
+9. **PARKED, UNTOUCHED**: PHASE 2 linear trim runs · rectify-from-a-window
+   · splitting hover/photo storage · Annotate retirement · quote /
+   material-list wiring from photo-lane quantities · the blueprint path.
+
+
 ## 2026-08-27 SEND-135 — P0 MONEY BUG FIXED: HOVER RESTORE IS LANE-LOCKED AND CLICK-ONLY (stamped `2026-08-27 · CLEAN · 2943 passed, 9 skipped in 451.90s`; browser PASS both ways)
 Full record: `memory/send135_report.md` · 11 pins in
 `tests/test_send135_hover_restore_lane_lock_2026_08_27.py`.

@@ -723,6 +723,12 @@ function buildHouseJson(preview, overrides, estimate, apDims) {
       gableEnd: gableEndIds.has(id),
       confidence: wallData?.confidence ?? null,
       estimated: !wallData,
+      // BLOCK A — NO PHOTO, NO WALL (Howard ruled 2026-08-27, SEND-136).
+      // The read refuses a face no photo showed; the panel must not put
+      // a number back on it. The geometry still renders (a house has
+      // four sides) but the face is REFUSED and carries no ft².
+      refused: !!wallData?._refused,
+      refusal: wallData?._refusal || null,
       aiGableTriangleHeightFt: Number(wallData?.gable_triangle_height_ft || 0),
       openings: sp.placed,
       omittedOpenings: sp.omitted,
@@ -2193,12 +2199,27 @@ export default function HouseModel3D({ preview, estimate, runId, onSnapshot, has
               </span>
             )}
           </div>
+          {facade.refused ? (
+            <div
+              className="text-[10px] leading-snug p-1.5 border"
+              style={{ color: "#B91C1C", borderColor: "#DC2626", background: "#FEF2F2" }}
+              data-testid={`ai-measure-3d-facade-refused-${facade.id}`}
+            >
+              <b className="uppercase tracking-wider">Refused — no photo of this wall.</b>{" "}
+              {facade.refusal || ""} No ft², no gable, no starter, no corner and no line come from
+              this face. The shape you see is the render only. Take a photo of this wall, or draw it
+              yourself on a photo in the takeoff editor.
+            </div>
+          ) : (
+            <>
           <Row k="Wall body" v={`${(peb.wall_body_sqft || 0).toFixed(0)} sf`} />
           {(peb.gable_sqft || 0) > 0 && <Row k="Gable area" v={`${peb.gable_sqft.toFixed(0)} sf`} />}
           {(peb.dormer_sqft || 0) > 0 && <Row k="Dormer face" v={`${peb.dormer_sqft.toFixed(0)} sf`} />}
           {(peb.stone_sqft || 0) > 0 && <Row k="Stone / masked" v={`${peb.stone_sqft.toFixed(0)} sf`} />}
           <Row k="Total (this wall)" v={`${totalSqft.toFixed(0)} sf`} bold />
           <Row k="Openings" v={facade.omittedOpenings ? `${facade.omittedOpenings} not drawn on this wall — see opening schedule` : `${facade.openings.length} — this wall`} />
+            </>
+          )}
           {house.openingPlacementDefaulted > 0 && (
             <div className="text-[9px] italic text-[var(--warning-text)] leading-tight" data-testid="ai-measure-3d-opening-placement-note">
               <AlertTriangle className="w-2.5 h-2.5 inline mr-0.5" style={{ color: AMBER }} />

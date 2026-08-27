@@ -1540,7 +1540,8 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: (
             _osc_per_corner_pcs(m, 12.5)
             if _osc_per_corner_pcs(m, 12.5) is not None
-            else max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9))),
+            else (0 if _key_refused(m, "outside_corner_lf")
+                  else max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9)))),
         "note": lambda m: (
             _osc_heights_note(m, 12.5)
             if _osc_per_corner_pcs(m, 12.5) is not None
@@ -1555,7 +1556,8 @@ HOVER_MAPPING_SPEC = [
         "extract": lambda m: (
             _osc_per_corner_pcs(m, 12.5)
             if _osc_per_corner_pcs(m, 12.5) is not None
-            else max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9))),
+            else (0 if _key_refused(m, "outside_corner_lf")
+                  else max(1, math.ceil((m.get("outside_corner_lf") or 0) / 12.5 - 1e-9)))),
         "note": lambda m: (
             _osc_heights_note(m, 12.5)
             if _osc_per_corner_pcs(m, 12.5) is not None
