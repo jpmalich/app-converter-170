@@ -470,13 +470,21 @@ def test_the_vertex_drag_tracks_the_pointer_and_pinch_zoom_exists():
     assert "pinch.current" in EDITOR
 
 
-def test_the_entry_point_sits_beside_annotate_and_does_not_replace_it():
+def test_the_entry_point_is_now_the_one_drawing_door_on_the_photo():
+    """NAMED PIN UPDATE (SEND-139, Howard ruled 2026-08-27). SEND-131A put
+    the takeoff editor BESIDE Annotate while the gable and dormer tools
+    still lived there. Those tools MOVED into the editor, so the Annotate
+    doors came off and this entry point is THE drawing door. What the pin
+    holds is unchanged: the entry point exists, per photo, and opens the
+    editor."""
     assert "PhotoTakeoffEditor" in AIM
     assert "ai-measure-photo-takeoff-${i}" in AIM
-    # ANNOTATE STAYS the pre-AI annotator — both buttons, per photo
-    assert "ai-measure-photo-annotate-${i}" in AIM
-    assert "PhotoAnnotateModal" in AIM
     assert "setTakeoffOpenFor(name)" in AIM
+    # and the retired door is not quietly back
+    code = "\n".join(ln for ln in AIM.splitlines()
+                      if not ln.lstrip().startswith(("//", "/*", "*")))
+    assert "ai-measure-photo-annotate-${i}" not in code
+    assert "PhotoAnnotateModal" not in code
 
 
 # ── PHOTO-GENERATED ELEVATIONS ARE OUT OF THE CONTRACTOR VIEW ────────

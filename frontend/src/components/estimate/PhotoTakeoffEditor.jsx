@@ -2,6 +2,14 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { X, ZoomIn, ZoomOut, AlertTriangle, Ruler, Trash2, Check, Ban, Move, Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+// SEND-139 — the gable and dormer tools MOVE HERE from the annotator.
+// The annotator's own math module is REUSED, not re-implemented: same
+// base/rise/pitch, same averaged dormer edges, same masking. Its gable
+// area has always been the true triangle (½ × base × rise), which is
+// exactly what SEND-137 ruled — no 0.70 exists in this path.
+import {
+  GABLE_PITCH_PRESETS, gableDims, dormerDims, pitchOutOfRange,
+} from "@/lib/gableMath";
 
 /* PHOTO TAKEOFF EDITOR — PHASE 1 (Howard ruled 2026-08-26, SEND-131A).
    The contractor marks THE PHOTO. Full-screen, one photo at a time,
@@ -20,6 +28,15 @@ import api from "@/lib/api";
 
 const SIDING = "#2563EB";                       // PdfOverlayEditor's siding blue
 const OPENING = "#FACC15";                      // the annotator's window yellow
+const GABLE = "#15803D";                        // the annotator's own gable green
+const DORMER = "#0EA5E9";                       // the annotator's dormer blue
+// The drawing gesture, carried over word for word from the annotator.
+const TAP_ORDER = {
+  gable: ["Tap the LEFT EAVE point of the gable.", "Tap the PEAK (ridge) point.",
+    "Tap the RIGHT EAVE point to finish the triangle."],
+  dormer: ["Tap the BOTTOM-LEFT corner of the dormer face.", "Tap the BOTTOM-RIGHT corner.",
+    "Tap the TOP-RIGHT corner.", "Tap the TOP-LEFT corner to finish the face."],
+};
 const CATEGORIES = [                            // the annotator's own zone colours
   { key: "brick", name: "Brick", color: "#B45309" },
   { key: "stone", name: "Stone", color: "#57534E" },
@@ -31,10 +48,14 @@ const CATEGORIES = [                            // the annotator's own zone colo
 const markColor = (m) => {
   if (m.kind === "siding_zone") return SIDING;
   if (m.kind === "opening") return OPENING;
+  if (m.kind === "gable") return GABLE;
+  if (m.kind === "dormer") return DORMER;
   return (CATEGORIES.find((c) => c.key === m.category) || CATEGORIES[4]).color;
 };
 const kindLabel = (m) => (m.kind === "siding_zone" ? "SIDING"
-  : m.kind === "opening" ? "OPENING"
+  : m.kind === "gable" ? "GABLE"
+    : m.kind === "dormer" ? "DORMER"
+      : m.kind === "opening" ? "OPENING"
     : (CATEGORIES.find((c) => c.key === m.category)?.name || "NON-SIDING").toUpperCase());
 
 const polyAreaPx = (pts) => {
@@ -67,7 +88,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
   const [stage, setStage] = useState(null);          // {stage, ai_read, stage_note, proposals_refusal}
   const [products, setProducts] = useState([]);
   const [productsNote, setProductsNote] = useState(null);
-  const [tool, setTool] = useState("siding_zone");   // siding_zone | non_siding_zone | opening | scale
+  const [tool, setTool] = useState("siding_zone");   // siding_zone | non_siding_zone | opening | gable | dormer | scale
   const [category, setCategory] = useState("brick");
   const [draft, setDraft] = useState(null);          // {points:[{x,y}] norm, cx, cy}
   const [scaleDraft, setScaleDraft] = useState(null);// {p1,p2} norm
@@ -152,12 +173,13 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
   }, [dragVertex]);
 
   // ── server calls ───────────────────────────────────────────────────
-  const addMark = async (points, shape) => {
+  const addMark = async (points, shape, extra = {}) => {
     try {
       const body = {
         photo_key: photoKey, kind: tool, shape,
         points: points.map(toNat),
         category: tool === "non_siding_zone" ? category : null,
+        ...extra,
       };
       await api.post(`/estimates/${est.id}/photo-takeoff/marks`, body);
       await load();
@@ -264,6 +286,17 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
       addMark([a, { x: p.x, y: a.y }, p, { x: a.x, y: p.y }], "rect");
       return;
     }
+    // SEND-139 — GABLE: three taps, LEFT EAVE → PEAK → RIGHT EAVE.
+    // DORMER: four taps round the vertical face. The annotator's gesture,
+    // unchanged; the count is fixed, so nothing is padded to fit.
+    if (tool === "gable" || tool === "dormer") {
+      const need = tool === "gable" ? 3 : 4;
+      const next = [...pts, p];
+      if (next.length < need) { setDraft({ points: next, cx: p.x, cy: p.y }); return; }
+      setDraft(null);
+      addMark(next, "poly");
+      return;
+    }
     if (pts.length >= 3) {
       const d = Math.hypot(pts[0].x - p.x, pts[0].y - p.y);
       if (d < 0.02) { setDraft(null); addMark(pts, "poly"); return; }
@@ -279,7 +312,8 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
   useEffect(() => {
     const h = (e) => {
       if (e.key === "Escape") { setDraft(null); setScaleDraft(null); setScaleAsk(null); }
-      if (e.key === "Enter" && draft?.points?.length >= 3 && tool !== "opening") {
+      if (e.key === "Enter" && draft?.points?.length >= 3
+          && tool !== "opening" && tool !== "gable" && tool !== "dormer") {
         const pts = draft.points; setDraft(null); addMark(pts, "poly");
       }
     };
@@ -338,11 +372,39 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
     wheelAnchor.current = null;
   }, [zoom]);
 
+  // SEND-139 — the annotator's own gable/dormer math, on this photo's
+  // scale. gableDims returns base, rise, pitch and grossAreaFt = ½ ×
+  // base × rise; dormerDims averages the opposing edges. Nothing here is
+  // a second implementation of either.
+  const gDims = (m) => (m.kind === "gable" ? gableDims(m.points, sc?.ipp || null)
+    : m.kind === "dormer" ? dormerDims(m.points, sc?.ipp || null) : null);
+
+  // PITCH → PEAK, ported verbatim: rise = base/2 × pitch/12. The peak
+  // MOVES, which is a geometry change — a confirmed gable returns to
+  // provisional, exactly as any other adjustment does.
+  const applyGablePitch = (m, pitch) => {
+    const [L, P, R] = m.points;
+    const basePx = Math.hypot(R.x - L.x, R.y - L.y);
+    if (basePx <= 0) { toast.error("this gable has no width — re-tap the eave points"); return; }
+    const risePx = (basePx / 2) * (pitch / 12);
+    const mid = { x: (L.x + R.x) / 2, y: (L.y + R.y) / 2 };
+    const peakX = m.symmetric ? mid.x : P.x;
+    patchMark(m.id, { points: [L, { x: peakX, y: mid.y - risePx }, R], pitch_set: pitch });
+  };
+  const toggleSymmetric = (m) => {
+    const sym = !m.symmetric;
+    const pts = m.points.map((q) => ({ ...q }));
+    if (sym) pts[1] = { x: (pts[0].x + pts[2].x) / 2, y: pts[1].y };
+    patchMark(m.id, { symmetric: sym, points: pts });
+  };
+
   const nMark = (m) => (m.points || []).map(toNorm);
   const TOOLS = [
     { key: "siding_zone", label: "Siding zone", color: SIDING },
     { key: "non_siding_zone", label: "Non-siding", color: CATEGORIES.find((c) => c.key === category)?.color },
     { key: "opening", label: "Opening", color: OPENING },
+    { key: "gable", label: "Gable", color: GABLE },
+    { key: "dormer", label: "Dormer", color: DORMER },
     { key: "scale", label: "Scale", color: "#10B981" },
   ];
 
@@ -352,14 +414,14 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
         <div className="bg-[var(--ai)] text-white px-4 py-2.5 flex items-center justify-between">
           <div className="min-w-0">
             <div className="font-heading text-base">Photo Takeoff — phase 1</div>
-            <div className="text-[11px] opacity-90 truncate">{photoKey} · siding · non-siding · openings — confirmed marks carry quantity, never money</div>
+            <div className="text-[11px] opacity-90 truncate">{photoKey} · siding · non-siding · openings · gables · dormers — confirmed marks carry quantity, never money</div>
           </div>
           <button type="button" onClick={onClose} className="text-white/90 hover:text-white" data-testid="photo-takeoff-close"><X size={18} /></button>
         </div>
 
         <div className="px-3 py-1.5 bg-[#FEF3C7] border-b border-[#F59E0B] text-[10px] font-bold text-[var(--warning-text)] flex items-center gap-1.5" data-testid="photo-takeoff-known-limit">
           <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-          Phase 1: areas and openings only. Trim runs (corners, J-channel, starter, soffit, fascia) are NOT built. Openings are reported — nothing is deducted from siding.
+          Phase 1: areas, openings, gables and dormers. Trim runs (corners, J-channel, starter, soffit, fascia) are NOT built. Openings are reported — nothing is deducted from siding.
         </div>
 
         {/* ONE EDITOR, TWO STAGES. The stage is decided by THIS photo's own
@@ -487,7 +549,9 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
               <span className="text-[9px] text-[var(--muted)] px-1 self-center">
                 {tool === "scale" ? "tap both ends of a known span"
                   : tool === "opening" ? "tap two opposite corners"
-                    : "tap each corner · tap the first again to close"}
+                    : TAP_ORDER[tool]
+                      ? TAP_ORDER[tool][(draft?.points?.length || 0)] || TAP_ORDER[tool][0]
+                      : "tap each corner · tap the first again to close"}
               </span>
             </div>
           </div>
@@ -550,7 +614,17 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                 <div>Non-siding</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-nonsiding">{qty?.non_siding_sqft ?? "—"} {qty?.non_siding_sqft != null ? "ft²" : ""}</div>
                 <div>Openings</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-opening-count">{qty?.opening_count ?? "—"}</div>
                 <div>Opening ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-opening-sqft">{qty?.opening_sqft ?? "—"}</div>
+                {/* SEND-139 — the gable and dormer lanes. A lane with
+                    nothing measured shows an em dash, never a 0. */}
+                <div>Gable ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-gable">{qty?.gable_sqft ?? "—"} {qty?.gable_sqft != null ? "ft²" : ""}</div>
+                <div>Dormer face ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-dormer-face">{qty?.dormer_face_sqft ?? "—"} {qty?.dormer_face_sqft != null ? "ft²" : ""}</div>
+                <div>Dormer cheeks ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-dormer-cheeks">{qty?.dormer_cheek_sqft ?? "—"} {qty?.dormer_cheek_sqft != null ? "ft²" : ""}</div>
               </div>
+              {qty?.gable_basis_note && (
+                <div className="mt-1.5 text-[9px] text-[var(--success)] font-bold leading-snug" data-testid="photo-takeoff-gable-basis">
+                  {qty.gable_basis_note}
+                </div>
+              )}
               {qty?.non_siding_by_category && (
                 <div className="mt-1.5 flex flex-wrap gap-1" data-testid="photo-takeoff-qty-by-category">
                   {Object.entries(qty.non_siding_by_category).map(([k, v]) => (
@@ -569,7 +643,9 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                 </div>
               )}
               {[qty?.provisional_note, qty?.openings_note, qty?.openings_without_extent_note,
-                qty?.guidance_confirmed_note, ...(qty?.product_basis_notes || [])].filter(Boolean).map((n, i) => (
+                qty?.guidance_confirmed_note, ...(qty?.gable_refusals || []),
+                ...(qty?.gable_pitch_warnings || []), ...(qty?.dormer_refusals || []),
+                ...(qty?.product_basis_notes || [])].filter(Boolean).map((n, i) => (
                 <div key={i} className="mt-1.5 text-[10px] text-[var(--warning-text)] leading-snug" data-testid={`photo-takeoff-refusal-${i}`}>· {n}</div>
               ))}
             </div>
@@ -641,7 +717,81 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                     </div>
                     {m.id === selectedId && (
                       <div className="mt-1.5 pt-1.5 border-t border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
-                        {m.kind === "opening" ? (
+                        {m.kind === "gable" || m.kind === "dormer" ? (
+                          /* SEND-139 — THE ANNOTATOR'S OWN FIELDS, PORTED.
+                             Gable: symmetric + pitch (preset or typed).
+                             Dormer: typed depth for the cheeks. Nothing
+                             new was invented for either tool. */
+                          (() => {
+                            const d = gDims(m);
+                            if (m.kind === "gable") {
+                              return (
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-bold" style={{ color: GABLE }} data-testid={`photo-takeoff-gable-dims-${m.id}`}>
+                                    {d && d.baseFt !== undefined
+                                      ? `${d.baseFt.toFixed(1)} ft × ${d.riseFt.toFixed(1)} ft rise · ½ × w × rise = ${d.grossAreaFt.toFixed(1)} ft²`
+                                      : "no scale on this photo — width and rise have no feet, so there is no area (refused, not 0)"}
+                                    {d?.pitch != null ? ` · pitch ${d.pitch}/12` : ""}
+                                  </div>
+                                  {d && pitchOutOfRange(d.pitch) && (
+                                    <div className="text-[9px] font-bold text-[var(--warning-text)]" data-testid={`photo-takeoff-gable-pitch-warning-${m.id}`}>
+                                      pitch {d.pitch}/12 is outside the usual 3/12–18/12 range — check the tapped points
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <label className="flex items-center gap-1 text-[10px]">
+                                      <input type="checkbox" checked={!!m.symmetric}
+                                        onChange={() => toggleSymmetric(m)}
+                                        data-testid={`photo-takeoff-gable-symmetric-${m.id}`} />
+                                      Symmetric gable
+                                    </label>
+                                    <select value={GABLE_PITCH_PRESETS.includes(m.pitch_set) ? String(m.pitch_set) : ""}
+                                      onChange={(e) => { const v = Number(e.target.value); if (v) applyGablePitch(m, v); }}
+                                      className="text-[10px] border border-[var(--border)] px-1 py-0.5"
+                                      title="Selecting a pitch moves the peak (rise = base/2 × pitch/12). Dragging the peak re-derives the pitch."
+                                      data-testid={`photo-takeoff-gable-pitch-${m.id}`}>
+                                      <option value="">pitch {d?.pitch != null ? `${d.pitch}/12` : "—"}</option>
+                                      {GABLE_PITCH_PRESETS.map((v) => <option key={v} value={v}>{v}/12</option>)}
+                                    </select>
+                                    <input type="number" min="1" max="24" step="0.5" placeholder="custom"
+                                      className="w-16 text-[10px] border border-[var(--border)] px-1 py-0.5"
+                                      onKeyDown={(e) => { if (e.key === "Enter") { const v = Number(e.target.value); if (v > 0) applyGablePitch(m, v); } }}
+                                      data-testid={`photo-takeoff-gable-pitch-custom-${m.id}`} />
+                                  </div>
+                                  <div className="text-[9px] text-[var(--muted)]">
+                                    Moving the peak or the eaves is a geometry change — a confirmed gable goes back to provisional and is re-confirmed.
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="space-y-1">
+                                <div className="text-[10px] font-bold" style={{ color: DORMER }} data-testid={`photo-takeoff-dormer-dims-${m.id}`}>
+                                  {d && d.widthFt !== undefined
+                                    ? `${d.widthFt.toFixed(1)} ft × ${d.heightFt.toFixed(1)} ft = ${d.grossAreaFt.toFixed(1)} ft² face`
+                                    : "no scale on this photo — no feet, no area (refused, not 0)"}
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <label className="text-[10px] text-[var(--muted)] font-bold" htmlFor={`ptd-${m.id}`}>Depth (ft)</label>
+                                  <input id={`ptd-${m.id}`} type="number" min="0" step="0.1" inputMode="decimal"
+                                    defaultValue={m.depth_ft ?? ""}
+                                    onBlur={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v !== m.depth_ft) patchMark(m.id, { depth_ft: v }); }}
+                                    className="w-16 text-[10px] border border-[var(--border)] px-1 py-0.5"
+                                    data-testid={`photo-takeoff-dormer-depth-${m.id}`} />
+                                  {m.depth_ft && d?.heightFt !== undefined ? (
+                                    <span className="text-[10px] font-bold" style={{ color: DORMER }} data-testid={`photo-takeoff-dormer-cheeks-${m.id}`}>
+                                      + cheeks 2 × {d.heightFt.toFixed(1)}×{Number(m.depth_ft).toFixed(1)} = {(2 * d.heightFt * Number(m.depth_ft)).toFixed(1)} ft²
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-bold text-[var(--warning-text)]" data-testid={`photo-takeoff-dormer-cheeks-refused-${m.id}`}>
+                                      cheeks REFUSED — depth is measured on the roof, never read off the photo. No default depth.
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()
+                        ) : m.kind === "opening" ? (
                           <div className="flex flex-wrap items-center gap-1">
                             <input defaultValue={m.style || ""} placeholder="window style"
                               onBlur={(e) => { const v = e.target.value.trim(); if (v !== (m.style || "")) patchMark(m.id, { style: v }); }}

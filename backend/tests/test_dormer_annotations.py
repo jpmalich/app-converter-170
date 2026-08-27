@@ -267,8 +267,13 @@ class TestContractorQuadGovernsDrawnBand:
     def test_frontend_sends_position_fracs(self):
         assert "x_center_frac" in AIBTN and "y_bottom_frac" in AIBTN
         assert "width_frac" in AIBTN and "height_frac" in AIBTN
-        # natural dims round-trip on the annotation save
-        assert "imageDims: imageDims || prev[annotateOpenFor]?.imageDims" in AIBTN
+        # natural dims round-trip on the annotation save. NAMED PIN
+        # UPDATE (SEND-139, Howard ruled 2026-08-27): the annotator's mount
+        # on this screen went out with its doors, so the round-trip now
+        # rides the GUIDED CAPTURE merge — the surviving path. THE PIN'S
+        # SUBJECT IS UNCHANGED: natural image dims must survive the save,
+        # or the position fractions mean nothing.
+        assert "merged.imageDims = annotations.imageDims" in AIBTN
 
 
 class TestDormerCheeks:

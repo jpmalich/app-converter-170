@@ -9,12 +9,11 @@
 // shape as HOVER, so we hand it to the same `onApply` callback the page
 // already uses for HOVER.
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, Wand2, FileText, Printer, Bug, Lightbulb, ScanSearch, HelpCircle } from "lucide-react";
+import { Sparkles, X, Check, Loader2, AlertTriangle, Camera, Upload, Ruler, RotateCcw, FileText, Printer, Bug, Lightbulb, ScanSearch, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import writeThrough from "@/lib/write_through";
-import PhotoAnnotateModal from "@/components/estimate/PhotoAnnotateModal";
 import PhotoTakeoffEditor from "@/components/estimate/PhotoTakeoffEditor";
 import {
   inchesPerPx as gableInchesPerPx, gableNetArea, crossCheckRidges, dormerNetArea,
@@ -112,13 +111,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // Annotations are burned into the photo via Canvas in runMeasure()
   // before sending to Claude, and described as text alongside.
   const [photoAnnotations, setPhotoAnnotations] = useState({});
-  const [annotateOpenFor, setAnnotateOpenFor] = useState(null); // filename or null
-  // SEND-131A — the photo takeoff editor (marks ON the photo). Separate
-  // from Annotate: that one preps the AI read, this one carries quantity.
+  // SEND-131A / SEND-139 — the photo takeoff editor (marks ON the photo)
+  // is the ONE drawing door on this screen. The annotator's own state
+  // (annotateOpenFor / annotateGuided / refineOpen) went out with its
+  // doors; the annotator is an import source and the Guided Capture
+  // step, never a drawing UI here.
   const [takeoffOpenFor, setTakeoffOpenFor] = useState(null);
-  // Refine on Photo now opens the SAME PhotoAnnotateModal in guided
-  // 7-step mode (one annotation system — no separate tap-measure UI).
-  const [annotateGuided, setAnnotateGuided] = useState(false);
   // Amber nudge — annotations edited after the last run only fold into
   // the measurements on Re-run. Cleared on run success / Start Over.
   const [annotDirtySinceRun, setAnnotDirtySinceRun] = useState(false);
@@ -252,7 +250,6 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
   // PerElevationBreakdownCard can fire the cross-check endpoint.
   // Populated by both the fresh-run path and the resume path.
   const [currentRunId, setCurrentRunId] = useState(null);
-  const [refineOpen, setRefineOpen] = useState(false);
   // RULING B (2026-07-26): "quote gables/dormers as shake" are a thin
   // alias over the per-elevation breakdown — the toggle sets the
   // surfaces' profile to shake and re-derives lines via /measure/map
@@ -3454,22 +3451,18 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                                       <option key={o.key} value={o.key}>{o.label}</option>
                                     ))}
                                   </select>
-                                  <button
-                                    type="button"
-                                    onClick={() => setAnnotateOpenFor(name)}
-                                    className="w-full px-2 py-1 bg-[var(--surface)] text-[var(--ai)] border border-[var(--ai)] hover:bg-[#FAF5FF] text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
-                                    data-testid={`ai-measure-photo-annotate-${i}`}
-                                    title="Mark a reference scale anchor and/or no-siding zones BEFORE sending to AI"
-                                  >
-                                    <Wand2 className="w-2.5 h-2.5" />
-                                    {hasRef || zoneCount > 0 ? "Edit annotations" : "Annotate"}
-                                  </button>
-                                  {/* SEND-131A — the contractor works on the
-                                      PHOTO. Annotate stays the pre-AI
-                                      annotator; Photo Takeoff is the marks
-                                      editor whose CONFIRMED marks carry
-                                      quantity. Two different jobs, two
-                                      buttons — neither replaces the other. */}
+                                  {/* SEND-139 (Howard ruled 2026-08-27) — THE
+                                      ANNOTATE DOOR IS GONE. The gable and
+                                      dormer tools moved into Photo Takeoff
+                                      first (Item 2), so this tile has ONE
+                                      drawing door and it is the editor whose
+                                      confirmed marks carry quantity. What the
+                                      contractor already drew in the annotator
+                                      is not lost: "pull in what I already
+                                      drew" imports it, gables and dormers
+                                      included. The annotator survives as an
+                                      IMPORT SOURCE and as the Guided Capture
+                                      step — never again as a drawing UI. */}
                                   <button
                                     type="button"
                                     onClick={() => setTakeoffOpenFor(name)}
@@ -4808,33 +4801,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
                           : "Running…")
                         : "Re-run"}
                     </button>
-                    {/* Refine on Photo — opens the SAME guided 7-step
-                        annotation flow (PhotoAnnotateModal) on one of
-                        the run's photos. One annotation system: same
-                        data, same tools (scale, windows, masks,
-                        profiles, gables, dormers) as the capture path.
-                        Edits feed the identical photoAnnotations store
-                        Claude reads on Re-run. */}
-                    {showAdvanced && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (photoUrls.length === 1) {
-                          setAnnotateGuided(true);
-                          setAnnotateOpenFor(photoUrls[0]);
-                        } else {
-                          setRefineOpen(true);
-                        }
-                      }}
-                      disabled={busy || photoUrls.length === 0}
-                      className="px-3 py-2 bg-[var(--surface)] text-[#0EA5E9] border border-[#0EA5E9] hover:bg-[var(--surface-muted)] text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 disabled:opacity-50"
-                      data-testid="ai-measure-refine-btn"
-                      title="Pick one of your photos and walk the same guided 7-step annotation flow (scale, windows, masks, profiles, gables, dormers). Re-run to fold the edits into the measurements."
-                    >
-                      <Ruler className="w-3.5 h-3.5" />
-                      Refine on Photo
-                    </button>
-                    )}
+                    {/* SEND-139 — "REFINE ON PHOTO" IS RETIRED. It was a
+                        door into the old annotator as a DRAWING tool; the
+                        gable and dormer tools it was mostly used for now
+                        live in Photo Takeoff, where a confirmed mark
+                        carries a quantity instead of only feeding a read.
+                        Advanced Tools stays for the debug view. */}
                     {/* Iter 79j.36 — Debug view button. Advanced-only.
                         Opens a two-column modal: per-photo raw
                         observations on the left, reconciled house
@@ -4996,216 +4968,12 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
         />
       )}
 
-      {/* Iter 56: pre-AI annotation modal. Lets the contractor mark a
-          reference scale anchor + no-siding zones on each photo BEFORE
-          submitting to Claude. The annotations are burned into the
-          rendered image in runMeasure() and described as text alongside. */}
-      <PhotoAnnotateModal
-        open={!!annotateOpenFor}
-        onClose={() => { setAnnotateOpenFor(null); setAnnotateGuided(false); }}
-        guidedFlow={annotateGuided ? {
-          // Refine path — same 7-step guided walkthrough as capture.
-          // Last-step Save fires onSave (below) then onClose.
-          // On finish, return to the Refine photo picker so the
-          // contractor can keep refining other photos (NOT the main
-          // AI Photo Measure screen).
-          onFinish: () => setRefineOpen(true),
-          onExit: () => setAnnotateGuided(false),
-        } : null}
-        photoUrl={annotateOpenFor ? `/api/uploads/${annotateOpenFor}` : null}
-        elevation={
-          annotateOpenFor
-            ? (photoAnnotations[annotateOpenFor]?.elevation || "")
-            : ""
-        }
-        reference={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.reference || null) : null
-        }
-        windowReference={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.windowReference || null) : null
-        }
-        zones={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.zones || []) : []
-        }
-        targetPin={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.targetPin || null) : null
-        }
-        windows={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.windows || []) : []
-        }
-        profileBoxes={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.profileBoxes || []) : []
-        }
-        gables={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.gables || []) : []
-        }
-        dormers={
-          annotateOpenFor ? (photoAnnotations[annotateOpenFor]?.dormers || []) : []
-        }
-        onSave={({ reference, windowReference, zones, targetPin, windows, profileBoxes, gables, dormers, imageDims }) => {
-          if (!annotateOpenFor) return;
-          setPhotoAnnotations((prev) => ({
-            ...prev,
-            [annotateOpenFor]: {
-              ...(prev[annotateOpenFor] || {}),
-              reference,
-              windowReference,
-              zones,
-              targetPin,
-              windows,
-              profileBoxes,
-              gables,
-              dormers,
-              // natural photo dims — the dormer quad's photo-frac norms
-              // (position ground truth for the sheet binder) need them
-              imageDims: imageDims || prev[annotateOpenFor]?.imageDims || null,
-            },
-          }));
-          // Iter 78z+++ — push the new in-modal profile boxes into the
-          // estimate-level annotations object so the worker treats them
-          // as ground-truth on Run / Re-run. Keyed by photo INDEX to
-          // match the backend (apply_annotations_to_breakdown).
-          const idx = photoUrls.indexOf(annotateOpenFor);
-          if (idx >= 0) {
-            const naturalW = imageDims?.w || 1;
-            const naturalH = imageDims?.h || 1;
-            const elev = photoAnnotations[annotateOpenFor]?.elevation || "other";
-            const boxesForBackend = (profileBoxes || []).map((b) => {
-              const xs = b.points.map((p) => p.x);
-              const ys = b.points.map((p) => p.y);
-              const minX = Math.min(...xs), minY = Math.min(...ys);
-              const maxX = Math.max(...xs), maxY = Math.max(...ys);
-              return {
-                shape: b.shape,
-                elevation_label: elev,
-                profile: b.profile,
-                location: b.location,
-                sqft: b.sqft,
-                callout: b.note || "",
-                ...(b.shape === "polygon"
-                  ? {
-                      points: b.points.map((p) => ({ x_norm: p.x / naturalW, y_norm: p.y / naturalH })),
-                    }
-                  : {
-                      x_norm: minX / naturalW,
-                      y_norm: minY / naturalH,
-                      w_norm: (maxX - minX) / naturalW,
-                      h_norm: (maxY - minY) / naturalH,
-                    }),
-              };
-            });
-            // Build a fresh scale_ref from the wall anchor for backend
-            // sqft recompute parity.
-            //
-            // Iter 79j.63 — Write BOTH schemas so future consumers
-            // reading either shape work. See wizard-path counterpart
-            // for the full rationale.
-            const ref = reference;
-            let scaleRef = null;
-            if (ref && ref.p1 && ref.p2 && ref.inches > 0) {
-              const dx = ref.p2.x - ref.p1.x;
-              const dy = ref.p2.y - ref.p1.y;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist > 0) {
-                scaleRef = {
-                  // OLD shape (backend + ProfileAnnotator display)
-                  px_height: dist,
-                  real_ft: ref.inches / 12,
-                  img_w: naturalW,
-                  img_h: naturalH,
-                  // NEW shape (parity with wizard writer)
-                  p1_x_norm: ref.p1.x / naturalW,
-                  p1_y_norm: ref.p1.y / naturalH,
-                  p2_x_norm: ref.p2.x / naturalW,
-                  p2_y_norm: ref.p2.y / naturalH,
-                  inches: ref.inches,
-                };
-              }
-            }
-            setSavedProfileAnnotations((prev) => {
-              const next = { ...(prev || {}) };
-              next[String(idx)] = boxesForBackend;
-              const refs = { ...((prev && prev._scale_refs) || {}) };
-              if (scaleRef) refs[String(idx)] = scaleRef;
-              else delete refs[String(idx)];
-              next._scale_refs = refs;
-              // Iter 79j.14 — persist to backend so the Run AI Measure
-              // worker can read the profile boxes from the estimate doc.
-              // Previous local-only state meant shake polygons drawn in
-              // the guided flow never reached Claude / the sqft router,
-              // so Apply Measurements didn't move the ft² into the
-              // SHAKE / B&B / etc. profile SKUs. Fire-and-forget PUT;
-              // failure is non-fatal (annotations stay in local state
-              // for this session, but log so we can debug).
-              if (estimateId) {
-                api.put(`/estimates/${estimateId}/profile-annotations`, { annotations: next })
-                  .catch((err) => console.warn("profile-annotations persist failed:", err?.message));
-              }
-              return next;
-            });
-          }
-          toast.success("Annotations saved · Claude will see them when you Run AI Measure");
-          setAnnotDirtySinceRun(true);
-        }}
-        onOpenProfileAnnotator={
-          estimateId
-            ? () => {
-                // Iter 78z+++ — Profile button inside the annotate modal.
-                // Close the per-photo modal and open the cross-photo
-                // Tag Profiles tool (LAP / SHAKE / B&B / Stone / Brick
-                // / dormer routing). User keeps using AI Measure photos.
-                setProfileAnnotatorOpen(true);
-              }
-            : undefined
-        }
-      />
-      {/* Refine on Photo photo picker — choose which photo to re-open
-          in the guided 7-step annotation flow. Same modal, same data,
-          same tools as the capture path (one annotation system). */}
-      {refineOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" data-testid="refine-photo-picker">
-          <div className="bg-[var(--surface)] max-w-2xl w-full shadow-2xl border border-[#0EA5E9]">
-            <div className="bg-[#0EA5E9] px-4 py-3 flex items-start justify-between gap-3">
-              <div>
-                <div className="text-white text-sm font-heading font-bold uppercase tracking-wider">Refine on Photo</div>
-                <div className="text-white/80 text-[11px] mt-0.5 leading-snug">
-                  Pick a photo — it opens in the same guided 7-step annotation flow (scale · windows · masks · profiles · gables · dormers). Your existing annotations load for editing.
-                </div>
-              </div>
-              <button type="button" onClick={() => setRefineOpen(false)}
-                      className="text-white/80 hover:text-white" title="Close"
-                      data-testid="refine-photo-picker-close">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-4 grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[60vh] overflow-y-auto">
-              {photoUrls.map((name, i) => {
-                const elev = photoAnnotations[name]?.elevation || "";
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => {
-                      setRefineOpen(false);
-                      setAnnotateGuided(true);
-                      setAnnotateOpenFor(name);
-                    }}
-                    className="relative border border-[var(--border)] hover:border-[#0EA5E9] focus:border-[#0EA5E9] overflow-hidden group"
-                    data-testid={`refine-photo-pick-${i}`}
-                    title={`Refine ${elev || `photo ${i + 1}`}`}
-                  >
-                    <img src={`/api/uploads/${name}`} alt={elev || `photo ${i + 1}`}
-                         className="w-full h-24 object-cover group-hover:opacity-90" />
-                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 text-left">
-                      {elev || `photo ${i + 1}`}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SEND-139 — THE ANNOTATOR IS NO LONGER MOUNTED HERE. Nothing on
+          this screen opens it as a drawing UI. It remains the Guided
+          Capture step (its own mount, inside the wizard) and the import
+          source Photo Takeoff pulls from. */}
+      {/* SEND-139 — the Refine photo picker is retired with the door it
+          served. Guided Capture (below) is NOT an Annotate door and stays. */}
       <GuidedCaptureWizard
         open={wizardOpen}
         onClose={() => setWizardOpen(false)}

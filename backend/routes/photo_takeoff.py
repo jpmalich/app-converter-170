@@ -42,7 +42,23 @@ router = APIRouter(tags=["photo-takeoff"])
 # phase 2 adds the linear runs.
 AREA_KINDS = {"siding_zone", "non_siding_zone"}
 OPENING_KINDS = {"opening"}
-PHASE1_KINDS = AREA_KINDS | OPENING_KINDS
+# SEND-139 (Howard ruled 2026-08-27) — THE GABLE AND DORMER TOOLS MOVE
+# HERE FROM THE ANNOTATOR. Ported, not reinvented: the same drawing
+# gesture (gable = LEFT EAVE → PEAK → RIGHT EAVE, dormer = the four
+# corners of the vertical face), the same typed fields (symmetric, pitch,
+# dormer depth), the same masking rule. The NUMBER obeys the SEND-137
+# gable ruling: ½ × width × rise where both exist, and a NAMED REFUSAL
+# where either does not. No 0.70 comes across (the annotator's drawn
+# gable never used it — see the send-139 report).
+GABLE_KINDS = {"gable", "dormer"}
+PHASE1_KINDS = AREA_KINDS | OPENING_KINDS | GABLE_KINDS
+# Exact point counts — a gable is a triangle and a dormer face is a quad.
+# A wrong count is refused by name, never padded or truncated.
+KIND_POINTS = {"gable": 3, "dormer": 4}
+# The annotator's own pitch presets, carried over verbatim.
+GABLE_PITCH_PRESETS = (4, 5, 6, 7, 8, 9, 10, 12)
+GABLE_PITCH_MIN = 3
+GABLE_PITCH_MAX = 18
 PHASE2_KINDS = {"outside_corner", "inside_corner", "j_channel", "starter",
                 "soffit", "fascia", "finish_trim"}
 NON_SIDING_CATEGORIES = {"brick", "stone", "stucco", "garage_door", "other"}
@@ -87,6 +103,15 @@ class MarkIn(BaseModel):
     height_in: Optional[float] = None
     # body-siding product for a zone — only a product already on the job
     product: Optional[str] = None
+    # SEND-139 — GABLE fields, ported from the annotator. `symmetric`
+    # mirrors the peak to the base midpoint; `pitch_set` records the
+    # preset the contractor picked (the rise it implies is in the
+    # geometry, never a second stored number).
+    symmetric: Optional[bool] = None
+    pitch_set: Optional[float] = None
+    # DORMER DEPTH — TYPED, NEVER PHOTO-DERIVED. Untyped → the cheeks
+    # REFUSE (no default depth is invented here).
+    depth_ft: Optional[float] = None
 
 
 class MarkPatch(BaseModel):
@@ -101,6 +126,9 @@ class MarkPatch(BaseModel):
     # A PRODUCT CHANGE ALTERS THE OUTPUT, NOT THE GEOMETRY — it is
     # recorded and it does NOT drop a confirmed mark to provisional.
     product: Optional[str] = None
+    symmetric: Optional[bool] = None
+    pitch_set: Optional[float] = None
+    depth_ft: Optional[float] = None
 
 
 class ScaleIn(BaseModel):
@@ -128,6 +156,172 @@ def _poly_area_px(points: List[dict]) -> float:
         q = points[(i + 1) % len(points)]
         a += float(p["x"]) * float(q["y"]) - float(q["x"]) * float(p["y"])
     return abs(a) / 2.0
+
+
+def _centroid(points: List[dict]) -> dict:
+    n = len(points)
+    return {"x": sum(float(p["x"]) for p in points) / n,
+            "y": sum(float(p["y"]) for p in points) / n}
+
+
+def _point_in_triangle(pt: dict, tri: List[dict]) -> bool:
+    def sign(p1, p2, p3):
+        return ((float(p1["x"]) - float(p3["x"])) * (float(p2["y"]) - float(p3["y"]))
+                - (float(p2["x"]) - float(p3["x"])) * (float(p1["y"]) - float(p3["y"])))
+    a, b, c = tri
+    d1, d2, d3 = sign(pt, a, b), sign(pt, b, c), sign(pt, c, a)
+    neg = d1 < 0 or d2 < 0 or d3 < 0
+    pos = d1 > 0 or d2 > 0 or d3 > 0
+    return not (neg and pos)
+
+
+def _point_in_polygon(pt: dict, pts: List[dict]) -> bool:
+    inside = False
+    j = len(pts) - 1
+    for i in range(len(pts)):
+        xi, yi = float(pts[i]["x"]), float(pts[i]["y"])
+        xj, yj = float(pts[j]["x"]), float(pts[j]["y"])
+        if ((yi > pt["y"]) != (yj > pt["y"])
+                and pt["x"] < (xj - xi) * (pt["y"] - yi) / (yj - yi) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def _masked_sqft(container: List[dict], masks: List[dict], ipp: float,
+                 inside) -> float:
+    """The annotator's own masking rule, ported: a NO-SIDING mask whose
+    CENTROID sits inside the shape subtracts its own area. Only CONFIRMED
+    masks subtract — a provisional mark carries no quantity anywhere in
+    this editor, and it may not silently reduce one either."""
+    px = 0.0
+    for m in masks:
+        pts = m.get("points") or []
+        if len(pts) < 3:
+            continue
+        if inside(_centroid(pts), container):
+            px += _poly_area_px(pts)
+    return px * ((ipp * ipp) / 144.0)
+
+
+def _gable_figure(mark: dict, masks: List[dict],
+                  ipp: Optional[float]) -> dict:
+    """THE GABLE, PORTED FROM THE ANNOTATOR (SEND-139) AND RULED BY
+    SEND-137: pts = [LEFT EAVE, PEAK, RIGHT EAVE] in this photo's own
+    pixels. Base = the eave-point span. Rise = the PERPENDICULAR distance
+    from the peak to the eave line (the eave line may tilt a touch; the
+    perpendicular keeps it honest). Pitch is scale-free.
+
+        AREA = ½ × width × rise
+
+    and NOTHING ELSE. Where width or rise is missing the gable REFUSES BY
+    NAME — never a 0, and never the retired 0.70 factor on an unmeasured
+    triangle."""
+    pts = mark.get("points") or []
+    out: Dict[str, Any] = {"base_ft": None, "rise_ft": None, "pitch": None,
+                           "gross_sqft": None, "masked_sqft": None,
+                           "sqft": None, "refusal": None, "pitch_warning": None}
+    if len(pts) != 3:
+        out["refusal"] = ("a gable is a triangle: LEFT EAVE, PEAK, RIGHT "
+                          "EAVE — this mark carries "
+                          f"{len(pts)} point(s), so it has no width and no "
+                          "rise. REFUSED, never a 0")
+        return out
+    L, P, R = pts
+    base_px = ((float(R["x"]) - float(L["x"])) ** 2
+               + (float(R["y"]) - float(L["y"])) ** 2) ** 0.5
+    if base_px <= 0:
+        out["refusal"] = ("the two eave points sit on top of each other — "
+                          "this gable has NO WIDTH. ½ × width × rise cannot "
+                          "be formed: REFUSED, never a 0")
+        return out
+    rise_px = abs((float(R["x"]) - float(L["x"])) * (float(L["y"]) - float(P["y"]))
+                  - (float(L["x"]) - float(P["x"])) * (float(R["y"]) - float(L["y"]))
+                  ) / base_px
+    out["pitch"] = round((rise_px / (base_px / 2)) * 12, 1) if base_px else None
+    if rise_px <= 0:
+        out["refusal"] = ("the peak sits on the eave line — this gable has "
+                          "NO RISE. An untraced gable has no area: REFUSED, "
+                          "never a 0 and never a factor on an unmeasured "
+                          "triangle")
+        return out
+    if out["pitch"] is not None and not (
+            GABLE_PITCH_MIN <= out["pitch"] <= GABLE_PITCH_MAX):
+        out["pitch_warning"] = (
+            f"pitch {out['pitch']}/12 is outside the usual "
+            f"{GABLE_PITCH_MIN}/12–{GABLE_PITCH_MAX}/12 range — check the "
+            "tapped points. This is a warning, never a block")
+    if not ipp:
+        out["refusal"] = ("this gable is drawn but this photo carries no "
+                          "scale — width and rise have no feet, so there is "
+                          "no area. REFUSED, never a 0")
+        return out
+    base_ft = (base_px * ipp) / 12.0
+    rise_ft = (rise_px * ipp) / 12.0
+    gross = 0.5 * base_ft * rise_ft
+    masked = _masked_sqft(pts, masks, ipp, _point_in_triangle)
+    out.update({"base_ft": round(base_ft, 2), "rise_ft": round(rise_ft, 2),
+                "gross_sqft": round(gross, 2),
+                "masked_sqft": round(masked, 2) if masked > 0 else None,
+                "sqft": round(max(0.0, gross - masked), 2)})
+    return out
+
+
+def _dormer_figure(mark: dict, masks: List[dict],
+                   ipp: Optional[float]) -> dict:
+    """THE DORMER FACE, PORTED FROM THE ANNOTATOR (SEND-139): pts =
+    [BOTTOM-LEFT, BOTTOM-RIGHT, TOP-RIGHT, TOP-LEFT] of the VERTICAL
+    face. Width and height AVERAGE the opposing edges, exactly as the
+    annotator does. Face area = width × height, less masks inside.
+
+    CHEEKS need a TYPED depth (2 × height × depth). The annotator
+    substituted a 1.5 ft DEFAULT when the contractor typed nothing; that
+    default does NOT come across — an untyped depth REFUSES the cheeks by
+    name, the same way a missing rise refuses a gable."""
+    pts = mark.get("points") or []
+    out: Dict[str, Any] = {"width_ft": None, "height_ft": None,
+                           "gross_sqft": None, "masked_sqft": None,
+                           "sqft": None, "cheek_sqft": None,
+                           "cheek_refusal": None, "refusal": None}
+    if len(pts) != 4:
+        out["refusal"] = ("a dormer face is a quad: bottom-left, "
+                          "bottom-right, top-right, top-left — this mark "
+                          f"carries {len(pts)} point(s). REFUSED, never a 0")
+        return out
+    bl, br, tr, tl = pts
+    w_px = (((float(br["x"]) - float(bl["x"])) ** 2 + (float(br["y"]) - float(bl["y"])) ** 2) ** 0.5
+            + ((float(tr["x"]) - float(tl["x"])) ** 2 + (float(tr["y"]) - float(tl["y"])) ** 2) ** 0.5) / 2
+    h_px = (((float(tl["x"]) - float(bl["x"])) ** 2 + (float(tl["y"]) - float(bl["y"])) ** 2) ** 0.5
+            + ((float(tr["x"]) - float(br["x"])) ** 2 + (float(tr["y"]) - float(br["y"])) ** 2) ** 0.5) / 2
+    if w_px <= 0 or h_px <= 0:
+        out["refusal"] = ("this dormer face has no width or no height — "
+                          "REFUSED, never a 0")
+        return out
+    if not ipp:
+        out["refusal"] = ("this dormer is drawn but this photo carries no "
+                          "scale — no feet, no area. REFUSED, never a 0")
+        return out
+    w_ft = (w_px * ipp) / 12.0
+    h_ft = (h_px * ipp) / 12.0
+    gross = w_ft * h_ft
+    masked = _masked_sqft(pts, masks, ipp, _point_in_polygon)
+    depth = mark.get("depth_ft")
+    try:
+        depth = float(depth) if depth not in (None, "") else None
+    except (TypeError, ValueError):
+        depth = None
+    if depth and depth > 0:
+        out["cheek_sqft"] = round(2 * h_ft * depth, 2)
+    else:
+        out["cheek_refusal"] = ("dormer depth is not typed — the cheeks "
+                                "REFUSE. Depth is measured on the roof, "
+                                "never read off the photo, and no default "
+                                "depth is invented here")
+    out.update({"width_ft": round(w_ft, 2), "height_ft": round(h_ft, 2),
+                "gross_sqft": round(gross, 2),
+                "masked_sqft": round(masked, 2) if masked > 0 else None,
+                "sqft": round(max(0.0, gross - masked), 2)})
+    return out
 
 
 def _in_per_px(scale: Optional[dict]) -> tuple[Optional[float], str]:
@@ -413,7 +607,72 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         "product_basis_notes": None,
         "guidance_confirmed": None,
         "guidance_confirmed_note": None,
+        # SEND-139 — the gable and dormer lanes. None, never 0.
+        "gable_sqft": None,
+        "gable_count": None,
+        "gable_refusals": None,
+        "gable_pitch_warnings": None,
+        "gable_rows": None,
+        "dormer_face_sqft": None,
+        "dormer_cheek_sqft": None,
+        "dormer_count": None,
+        "dormer_refusals": None,
+        "dormer_rows": None,
+        "gable_basis_note": None,
     }
+    # ── SEND-139: THE GABLE AND DORMER LANES ────────────────────────────
+    # Stated BEFORE the no-scale return, so a drawn gable with no scale
+    # still NAMES its refusal instead of vanishing.
+    masks = [m for m in confirmed if m.get("kind") == "non_siding_zone"]
+    g_marks = [m for m in confirmed if m.get("kind") == "gable"]
+    d_marks = [m for m in confirmed if m.get("kind") == "dormer"]
+    if g_marks:
+        rows = []
+        g_total = 0.0
+        g_any = False
+        refusals, warns = [], []
+        for m in g_marks:
+            f = _gable_figure(m, masks, ipp)
+            rows.append({"id": m.get("id"), "label": m.get("label"), **f})
+            if f["refusal"]:
+                refusals.append(f"{m.get('label') or 'gable'}: {f['refusal']}")
+            if f["pitch_warning"]:
+                warns.append(f"{m.get('label') or 'gable'}: {f['pitch_warning']}")
+            if f["sqft"] is not None:
+                g_total += f["sqft"]
+                g_any = True
+        out["gable_rows"] = rows
+        out["gable_count"] = len(g_marks)
+        out["gable_sqft"] = round(g_total, 2) if g_any else None
+        out["gable_refusals"] = refusals or None
+        out["gable_pitch_warnings"] = warns or None
+        out["gable_basis_note"] = (
+            "gable measured — ½ × width × rise from the triangle drawn on "
+            "THIS photo, no field factor (SEND-137). A face with no photo "
+            "gets no gable: nothing here is copied from another face")
+    if d_marks:
+        rows = []
+        f_total = c_total = 0.0
+        f_any = c_any = False
+        refusals = []
+        for m in d_marks:
+            f = _dormer_figure(m, masks, ipp)
+            rows.append({"id": m.get("id"), "label": m.get("label"),
+                         "depth_ft": m.get("depth_ft"), **f})
+            for r in (f["refusal"], f["cheek_refusal"]):
+                if r:
+                    refusals.append(f"{m.get('label') or 'dormer'}: {r}")
+            if f["sqft"] is not None:
+                f_total += f["sqft"]
+                f_any = True
+            if f["cheek_sqft"] is not None:
+                c_total += f["cheek_sqft"]
+                c_any = True
+        out["dormer_rows"] = rows
+        out["dormer_count"] = len(d_marks)
+        out["dormer_face_sqft"] = round(f_total, 2) if f_any else None
+        out["dormer_cheek_sqft"] = round(c_total, 2) if c_any else None
+        out["dormer_refusals"] = refusals or None
     if not ipp:
         return out
     sq_ft_per_px = (ipp * ipp) / 144.0
@@ -593,8 +852,17 @@ async def add_mark(est_id: str, body: MarkIn,
     if body.kind not in PHASE1_KINDS:
         raise HTTPException(status_code=400,
                             detail=f"unknown mark kind {body.kind!r}")
-    need = 1 if body.shape == "point" else 3
+    need = KIND_POINTS.get(body.kind, 1 if body.shape == "point" else 3)
     pts = [p.model_dump() for p in body.points]
+    if body.kind in KIND_POINTS and len(pts) != need:
+        raise HTTPException(
+            status_code=400,
+            detail=(f"a {body.kind} needs exactly {need} point(s) in this "
+                    f"photo's natural pixels — "
+                    + ("LEFT EAVE, PEAK, RIGHT EAVE"
+                       if body.kind == "gable" else
+                       "bottom-left, bottom-right, top-right, top-left")
+                    + "; nothing is padded or truncated to fit"))
     if len(pts) < need:
         raise HTTPException(
             status_code=400,
@@ -620,6 +888,9 @@ async def add_mark(est_id: str, body: MarkIn,
         "style": body.style, "width_in": body.width_in,
         "height_in": body.height_in,
         "product": product,
+        "symmetric": body.symmetric,
+        "pitch_set": body.pitch_set,
+        "depth_ft": body.depth_ft,
         "product_history": [],
         "confirmed_under_product": None,
         "source": body.source, "status": "provisional",
@@ -654,10 +925,12 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
     upd: Dict[str, Any] = {"updated_at": _now()}
     if body.points is not None:
         pts = [p.model_dump() for p in body.points]
-        need = 1 if cur.get("shape") == "point" else 3
-        if len(pts) < need:
+        need = KIND_POINTS.get(cur.get("kind"),
+                               1 if cur.get("shape") == "point" else 3)
+        if (len(pts) != need if cur.get("kind") in KIND_POINTS
+                else len(pts) < need):
             raise HTTPException(status_code=400,
-                               detail=f"a mark needs {need} point(s)")
+                                detail=f"a mark needs {need} point(s)")
         upd["points"] = pts
         if cur.get("status") == "confirmed":
             upd.update({"status": "provisional", "confirmed_at": None,
@@ -671,10 +944,26 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
         upd["category"] = body.category
     if body.label is not None:
         upd["label"] = body.label
-    for field in ("style", "width_in", "height_in"):
+    for field in ("style", "width_in", "height_in", "symmetric",
+                  "pitch_set"):
         v = getattr(body, field)
         if v is not None:
             upd[field] = v
+    if body.depth_ft is not None and body.depth_ft != cur.get("depth_ft"):
+        # DORMER DEPTH IS A QUANTITY INPUT, not a guidance claim: the
+        # cheeks are 2 × height × depth. A confirmation cannot outlive
+        # the figure it was given for, so a depth change on a CONFIRMED
+        # dormer returns it to PROVISIONAL — the same rule the geometry
+        # already follows.
+        upd["depth_ft"] = body.depth_ft
+        if cur.get("status") == "confirmed":
+            upd.update({"status": "provisional", "confirmed_at": None,
+                        "confirmed_by": None, "confirmed_stage": None,
+                        "confirmed_basis": None,
+                        "confirmed_after_ai_read": None,
+                        "refused_reason": "dormer depth changed after "
+                                          "confirmation — re-confirm the "
+                                          "new cheek figure"})
     if body.product is not None:
         # A PRODUCT CHANGE ALTERS THE OUTPUT, NOT THE GEOMETRY — the mark
         # keeps its confirmation, the swap is recorded, and the basis
@@ -837,6 +1126,79 @@ async def import_annotations(est_id: str, photo_key: str,
             "confirmed_after_ai_read": None,
             "refused_reason": None, "created_at": _now(),
             "created_by": user.get("email"), "updated_at": _now()})
+    # SEND-139 — THE ANNOTATOR IS AN IMPORT SOURCE, NOT A DRAWING DOOR.
+    # Gables and dormers the contractor already drew there come across
+    # with their own typed fields (symmetric, pitch, dormer depth), as
+    # PROVISIONAL, exactly like every other imported mark.
+    for g in (ann.get("gables") or []):
+        pts = [{"x": float(p["x"]), "y": float(p["y"])}
+               for p in (g.get("pts") or g.get("points") or [])]
+        if len(pts) != KIND_POINTS["gable"]:
+            continue
+        sig = ("imported_annotation",
+               tuple((round(p["x"], 1), round(p["y"], 1)) for p in pts))
+        if sig in existing:
+            continue
+        existing.add(sig)
+        made.append({
+            "id": str(uuid4()), "estimate_id": est_id,
+            "company_id": user["company_id"], "photo_key": photo_key,
+            "kind": "gable", "shape": "poly", "points": pts,
+            "category": None, "label": "imported gable",
+            "source": "imported_annotation",
+            "style": None, "width_in": None, "height_in": None,
+            "product": None, "product_history": [],
+            "confirmed_under_product": None,
+            "symmetric": bool(g.get("symmetric")) or None,
+            "pitch_set": (float(g["pitch_set"])
+                          if g.get("pitch_set") else None),
+            "depth_ft": None,
+            "origin": "imported_annotation", "stage": 1,
+            "basis": _origin_basis("imported_annotation", 1), "ai": None,
+            "status": "provisional", "confirmed_at": None,
+            "confirmed_by": None, "confirmed_stage": None,
+            "confirmed_basis": None, "confirmed_after_ai_read": None,
+            "refused_reason": None,
+            "created_at": _now(), "created_by": user.get("email"),
+            "updated_at": _now()})
+    for d in (ann.get("dormers") or []):
+        pts = [{"x": float(p["x"]), "y": float(p["y"])}
+               for p in (d.get("pts") or d.get("points") or [])]
+        if len(pts) != KIND_POINTS["dormer"]:
+            continue
+        sig = ("imported_annotation",
+               tuple((round(p["x"], 1), round(p["y"], 1)) for p in pts))
+        if sig in existing:
+            continue
+        existing.add(sig)
+        depth = d.get("depth_ft")
+        try:
+            depth = float(depth) if depth not in (None, "") else None
+        except (TypeError, ValueError):
+            depth = None
+        made.append({
+            "id": str(uuid4()), "estimate_id": est_id,
+            "company_id": user["company_id"], "photo_key": photo_key,
+            "kind": "dormer", "shape": "poly", "points": pts,
+            "category": None, "label": "imported dormer",
+            "source": "imported_annotation",
+            "style": None, "width_in": None, "height_in": None,
+            "product": None, "product_history": [],
+            "confirmed_under_product": None,
+            "symmetric": None, "pitch_set": None,
+            # A DEPTH THE CONTRACTOR NEVER TYPED DOES NOT ARRIVE AS 1.5:
+            # it arrives as nothing, and the cheeks refuse until he types
+            # it here.
+            "depth_ft": depth,
+            "origin": "imported_annotation", "stage": 1,
+            "basis": _origin_basis("imported_annotation", 1), "ai": None,
+            "status": "provisional", "confirmed_at": None,
+            "confirmed_by": None, "confirmed_stage": None,
+            "confirmed_basis": None, "confirmed_after_ai_read": None,
+            "refused_reason": None,
+            "created_at": _now(), "created_by": user.get("email"),
+            "updated_at": _now()})
+
     if made:
         await db.photo_takeoff_marks.insert_many([dict(m) for m in made])
     ref = ann.get("reference") or {}
@@ -961,6 +1323,16 @@ async def propose_from_read(est_id: str, photo_key: str,
         "non_siding_zone": ("this read produces NO non-siding-zone geometry "
                             "— the masks are an INPUT to the read, never an "
                             "output; draw them yourself"),
+        # SEND-139 — the read returns a gable RISE and dormer counts as
+        # NUMBERS, never as a triangle or a quad drawn on this photo.
+        # There is nothing to propose, and nothing is placed at a guessed
+        # spot to look helpful.
+        "gable": ("this read returns a gable RISE figure, not a triangle "
+                  "drawn on this photo — draw the gable yourself; ½ × width "
+                  "× rise comes from what you draw here"),
+        "dormer": ("this read returns dormer counts and sizes, not the four "
+                   "corners of a face on this photo — draw the dormer face "
+                   "yourself; nothing is placed at a guessed spot"),
     }
     return {
         "ok": True, "run_id": run["run_id"], "photo_index": idx,
@@ -1001,6 +1373,8 @@ async def apply_photo_takeoff(est_id: str,
         scales[s["photo_key"]] = _mark_public(s)
     per_photo = {}
     tot_siding = tot_non = tot_open_sqft = 0.0
+    tot_gable = tot_dormer_face = tot_dormer_cheek = 0.0
+    live_gable = live_dormer_face = live_dormer_cheek = False
     tot_open_n = 0
     by_product: Dict[str, float] = {}
     guidance_confirmed = 0
@@ -1012,6 +1386,17 @@ async def apply_photo_takeoff(est_id: str,
         for prod, v in (qty.get("siding_by_product") or {}).items():
             by_product[prod] = round(by_product.get(prod, 0.0) + v, 2)
         guidance_confirmed += int(qty.get("guidance_confirmed") or 0)
+        # SEND-139 — the gable and dormer lanes total the same way: a
+        # lane with nothing measured stays None, never 0.
+        if qty.get("gable_sqft") is not None:
+            tot_gable += qty["gable_sqft"]
+            live_gable = True
+        if qty.get("dormer_face_sqft") is not None:
+            tot_dormer_face += qty["dormer_face_sqft"]
+            live_dormer_face = True
+        if qty.get("dormer_cheek_sqft") is not None:
+            tot_dormer_cheek += qty["dormer_cheek_sqft"]
+            live_dormer_cheek = True
         for src, add in (("siding_sqft", "siding"), ("non_siding_sqft", "non"),
                          ("opening_sqft", "open_sqft"),
                          ("opening_count", "open_n")):
@@ -1034,6 +1419,15 @@ async def apply_photo_takeoff(est_id: str,
         "photo_non_siding_sqft": round(tot_non, 2) if live else None,
         "photo_opening_sqft": round(tot_open_sqft, 2) if live else None,
         "photo_opening_count": tot_open_n if live else None,
+        "photo_gable_sqft": round(tot_gable, 2) if live_gable else None,
+        "photo_dormer_face_sqft": (round(tot_dormer_face, 2)
+                                   if live_dormer_face else None),
+        "photo_dormer_cheek_sqft": (round(tot_dormer_cheek, 2)
+                                    if live_dormer_cheek else None),
+        "photo_gable_basis": (
+            "½ × width × rise — the triangle drawn on each photo, no field "
+            "factor (SEND-137). A face with no photo has no gable here: "
+            "nothing is mirrored, nothing is copied from another face"),
         "photo_siding_by_product": by_product or None,
         # NAME THE PLANE (SEND-136): the assumption behind every one of
         # these figures, per photo. UNKNOWN is the honest starting state
@@ -1069,5 +1463,8 @@ async def apply_photo_takeoff(est_id: str,
                   "photo_non_siding_sqft": block["photo_non_siding_sqft"],
                   "photo_opening_sqft": block["photo_opening_sqft"],
                   "photo_opening_count": block["photo_opening_count"],
+                  "photo_gable_sqft": block["photo_gable_sqft"],
+                  "photo_dormer_face_sqft": block["photo_dormer_face_sqft"],
+                  "photo_dormer_cheek_sqft": block["photo_dormer_cheek_sqft"],
                   "updated_at": _now()}})
     return {"ok": True, "photo_takeoff": block}

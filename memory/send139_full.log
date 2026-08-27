@@ -1,0 +1,122 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 21%]
+..............................................F......................... [ 23%]
+........................................................................ [ 26%]
+...........................................................ssss......... [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 33%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+........................................................................ [ 49%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+............................................................F........... [ 66%]
+........................................................................ [ 68%]
+............................................................sss.......s. [ 71%]
+.....s.................................................................. [ 73%]
+........................................................................ [ 75%]
+........................................................................ [ 78%]
+........................................................................ [ 80%]
+...................................F.................................... [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 87%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+...............                                                          [100%]
+=================================== FAILURES ===================================
+____ TestContractorQuadGovernsDrawnBand.test_frontend_sends_position_fracs _____
+
+self = <test_dormer_annotations.TestContractorQuadGovernsDrawnBand object at 0xfc527c06c110>
+
+    def test_frontend_sends_position_fracs(self):
+        assert "x_center_frac" in AIBTN and "y_bottom_frac" in AIBTN
+        assert "width_frac" in AIBTN and "height_frac" in AIBTN
+        # natural dims round-trip on the annotation save
+>       assert "imageDims: imageDims || prev[annotateOpenFor]?.imageDims" in AIBTN
+E       AssertionError: assert 'imageDims: imageDims || prev[annotateOpenFor]?.imageDims' in '// AI Photo Measure button.\n//\n// Mirrors the HOVER import button visually + behaviorally so contractors\n// have a...Cancel\n              </button>\n            </div>\n          </div>\n        </div>\n      )}\n    </div>\n  );\n}\n'
+
+tests/test_dormer_annotations.py:271: AssertionError
+___________________ test_refine_opens_guided_annotate_modal ____________________
+
+    def test_refine_opens_guided_annotate_modal():
+>       assert 'data-testid="ai-measure-refine-btn"' in AIBTN
+E       assert 'data-testid="ai-measure-refine-btn"' in '// AI Photo Measure button.\n//\n// Mirrors the HOVER import button visually + behaviorally so contractors\n// have a...Cancel\n              </button>\n            </div>\n          </div>\n        </div>\n      )}\n    </div>\n  );\n}\n'
+
+tests/test_refine_single_annotation_system.py:29: AssertionError
+______ test_the_entry_point_sits_beside_annotate_and_does_not_replace_it _______
+
+    def test_the_entry_point_sits_beside_annotate_and_does_not_replace_it():
+        assert "PhotoTakeoffEditor" in AIM
+        assert "ai-measure-photo-takeoff-${i}" in AIM
+        # ANNOTATE STAYS the pre-AI annotator — both buttons, per photo
+>       assert "ai-measure-photo-annotate-${i}" in AIM
+E       AssertionError: assert 'ai-measure-photo-annotate-${i}' in '// AI Photo Measure button.\n//\n// Mirrors the HOVER import button visually + behaviorally so contractors\n// have a...Cancel\n              </button>\n            </div>\n          </div>\n        </div>\n      )}\n    </div>\n  );\n}\n'
+
+tests/test_send131a_photo_takeoff_2026_08_26.py:477: AssertionError
+=============================== warnings summary ===============================
+../../root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12
+  /root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+  /app/backend/server.py:128: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+  /root/.venv/lib/python3.11/site-packages/fastapi/applications.py:4495: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+  /app/backend/server.py:133: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_no_raw_wall_dim_in_priced_path_2026_08_14_send17.py::test_no_new_raw_wall_dim_read_appears_in_a_priced_path
+  /app/backend/tests/test_no_raw_wall_dim_in_priced_path_2026_08_14_send17.py:180: UserWarning: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+    warnings.warn(summary, stacklevel=1)
+
+tests/test_security_audit_fixes.py::test_pdf_fetcher_allows_data_uri
+  /root/.venv/lib/python3.11/site-packages/weasyprint/urls.py:199: DeprecationWarning: default_url_fetcher is deprecated and will be removed in WeasyPrint 69.0, please use URLFetcher instead. For security reasons, HTTP redirects are not supported anymore with default_url_fetcher, but are with URLFetcher.
+  
+  See https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#url-fetchers
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_dormer_annotations.py::TestContractorQuadGovernsDrawnBand::test_frontend_sends_position_fracs
+FAILED tests/test_refine_single_annotation_system.py::test_refine_opens_guided_annotate_modal
+FAILED tests/test_send131a_photo_takeoff_2026_08_26.py::test_the_entry_point_sits_beside_annotate_and_does_not_replace_it
+3 failed, 3027 passed, 9 skipped, 7 warnings in 461.35s (0:07:41)
