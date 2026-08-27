@@ -218,14 +218,22 @@ def _gable_figure(mark: dict, masks: List[dict],
     NAME — never a 0, and never the retired 0.70 factor on an unmeasured
     triangle."""
     pts = mark.get("points") or []
+    # SEND-140 — THE REFUSAL RECEIPT. Every refusal already names its
+    # reason; `receipt` adds ONE contractor sentence naming THE ACTUAL
+    # MISSING FIELD and what to tape for it. It never invents a number,
+    # never mentions a factor, and never points at another photo or
+    # another face. A measured gable carries NO receipt.
     out: Dict[str, Any] = {"base_ft": None, "rise_ft": None, "pitch": None,
                            "gross_sqft": None, "masked_sqft": None,
-                           "sqft": None, "refusal": None, "pitch_warning": None}
+                           "sqft": None, "refusal": None, "receipt": None,
+                           "pitch_warning": None}
     if len(pts) != 3:
         out["refusal"] = ("a gable is a triangle: LEFT EAVE, PEAK, RIGHT "
                           "EAVE — this mark carries "
                           f"{len(pts)} point(s), so it has no width and no "
                           "rise. REFUSED, never a 0")
+        out["receipt"] = ("Trace left eave, peak, and right eave — this mark "
+                          f"is not a triangle yet ({len(pts)} of 3 points).")
         return out
     L, P, R = pts
     base_px = ((float(R["x"]) - float(L["x"])) ** 2
@@ -234,6 +242,8 @@ def _gable_figure(mark: dict, masks: List[dict],
         out["refusal"] = ("the two eave points sit on top of each other — "
                           "this gable has NO WIDTH. ½ × width × rise cannot "
                           "be formed: REFUSED, never a 0")
+        out["receipt"] = ("Re-tap the left and right eave points apart on "
+                          "this photo — rise is known, width is not.")
         return out
     rise_px = abs((float(R["x"]) - float(L["x"])) * (float(L["y"]) - float(P["y"]))
                   - (float(L["x"]) - float(P["x"])) * (float(R["y"]) - float(L["y"]))
@@ -244,6 +254,8 @@ def _gable_figure(mark: dict, masks: List[dict],
                           "NO RISE. An untraced gable has no area: REFUSED, "
                           "never a 0 and never a factor on an unmeasured "
                           "triangle")
+        out["receipt"] = ("Measure the rise at the peak on this photo — "
+                          "width is known, rise is not.")
         return out
     if out["pitch"] is not None and not (
             GABLE_PITCH_MIN <= out["pitch"] <= GABLE_PITCH_MAX):
@@ -255,6 +267,9 @@ def _gable_figure(mark: dict, masks: List[dict],
         out["refusal"] = ("this gable is drawn but this photo carries no "
                           "scale — width and rise have no feet, so there is "
                           "no area. REFUSED, never a 0")
+        out["receipt"] = ("Set the scale on this photo — tap both ends of a "
+                          "span you measured and type its feet; the triangle "
+                          "is already drawn.")
         return out
     base_ft = (base_px * ipp) / 12.0
     rise_ft = (rise_px * ipp) / 12.0
@@ -282,11 +297,14 @@ def _dormer_figure(mark: dict, masks: List[dict],
     out: Dict[str, Any] = {"width_ft": None, "height_ft": None,
                            "gross_sqft": None, "masked_sqft": None,
                            "sqft": None, "cheek_sqft": None,
-                           "cheek_refusal": None, "refusal": None}
+                           "cheek_refusal": None, "cheek_receipt": None,
+                           "refusal": None, "receipt": None}
     if len(pts) != 4:
         out["refusal"] = ("a dormer face is a quad: bottom-left, "
                           "bottom-right, top-right, top-left — this mark "
                           f"carries {len(pts)} point(s). REFUSED, never a 0")
+        out["receipt"] = ("Trace all four corners of the dormer face — this "
+                          f"mark is not a face yet ({len(pts)} of 4 points).")
         return out
     bl, br, tr, tl = pts
     w_px = (((float(br["x"]) - float(bl["x"])) ** 2 + (float(br["y"]) - float(bl["y"])) ** 2) ** 0.5
@@ -296,10 +314,15 @@ def _dormer_figure(mark: dict, masks: List[dict],
     if w_px <= 0 or h_px <= 0:
         out["refusal"] = ("this dormer face has no width or no height — "
                           "REFUSED, never a 0")
+        out["receipt"] = ("Re-tap the dormer corners apart on this photo — "
+                          "two of them landed on the same spot.")
         return out
     if not ipp:
         out["refusal"] = ("this dormer is drawn but this photo carries no "
                           "scale — no feet, no area. REFUSED, never a 0")
+        out["receipt"] = ("Set the scale on this photo — tap both ends of a "
+                          "span you measured and type its feet; the face is "
+                          "already drawn.")
         return out
     w_ft = (w_px * ipp) / 12.0
     h_ft = (h_px * ipp) / 12.0
@@ -317,6 +340,8 @@ def _dormer_figure(mark: dict, masks: List[dict],
                                 "REFUSE. Depth is measured on the roof, "
                                 "never read off the photo, and no default "
                                 "depth is invented here")
+        out["cheek_receipt"] = ("Type the dormer depth in feet — the face is "
+                                "drawn, cheeks cannot be counted without it.")
     out.update({"width_ft": round(w_ft, 2), "height_ft": round(h_ft, 2),
                 "gross_sqft": round(gross, 2),
                 "masked_sqft": round(masked, 2) if masked > 0 else None,
@@ -618,6 +643,10 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         "dormer_count": None,
         "dormer_refusals": None,
         "dormer_rows": None,
+        # SEND-140 — one contractor sentence per refused gable / cheek,
+        # naming the actual missing field. A measured figure has none.
+        "gable_receipts": None,
+        "dormer_receipts": None,
         "gable_basis_note": None,
     }
     # ── SEND-139: THE GABLE AND DORMER LANES ────────────────────────────
@@ -630,12 +659,16 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         rows = []
         g_total = 0.0
         g_any = False
-        refusals, warns = [], []
+        refusals, warns, receipts = [], [], []
         for m in g_marks:
             f = _gable_figure(m, masks, ipp)
             rows.append({"id": m.get("id"), "label": m.get("label"), **f})
             if f["refusal"]:
                 refusals.append(f"{m.get('label') or 'gable'}: {f['refusal']}")
+            if f["receipt"]:
+                receipts.append({"id": m.get("id"),
+                                 "label": m.get("label"),
+                                 "receipt": f["receipt"]})
             if f["pitch_warning"]:
                 warns.append(f"{m.get('label') or 'gable'}: {f['pitch_warning']}")
             if f["sqft"] is not None:
@@ -645,6 +678,7 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         out["gable_count"] = len(g_marks)
         out["gable_sqft"] = round(g_total, 2) if g_any else None
         out["gable_refusals"] = refusals or None
+        out["gable_receipts"] = receipts or None
         out["gable_pitch_warnings"] = warns or None
         out["gable_basis_note"] = (
             "gable measured — ½ × width × rise from the triangle drawn on "
@@ -654,7 +688,7 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         rows = []
         f_total = c_total = 0.0
         f_any = c_any = False
-        refusals = []
+        refusals, receipts = [], []
         for m in d_marks:
             f = _dormer_figure(m, masks, ipp)
             rows.append({"id": m.get("id"), "label": m.get("label"),
@@ -662,6 +696,10 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
             for r in (f["refusal"], f["cheek_refusal"]):
                 if r:
                     refusals.append(f"{m.get('label') or 'dormer'}: {r}")
+            for r in (f["receipt"], f["cheek_receipt"]):
+                if r:
+                    receipts.append({"id": m.get("id"),
+                                     "label": m.get("label"), "receipt": r})
             if f["sqft"] is not None:
                 f_total += f["sqft"]
                 f_any = True
@@ -673,6 +711,7 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         out["dormer_face_sqft"] = round(f_total, 2) if f_any else None
         out["dormer_cheek_sqft"] = round(c_total, 2) if c_any else None
         out["dormer_refusals"] = refusals or None
+        out["dormer_receipts"] = receipts or None
     if not ipp:
         return out
     sq_ft_per_px = (ipp * ipp) / 144.0

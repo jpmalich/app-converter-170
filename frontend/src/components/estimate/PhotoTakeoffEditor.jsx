@@ -398,6 +398,11 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
     patchMark(m.id, { symmetric: sym, points: pts });
   };
 
+  // SEND-140 — the receipt comes from the SERVER's own refusal, keyed by
+  // mark id. Nothing about the reason is re-decided here.
+  const receiptFor = (id) => ([...(qty?.gable_receipts || []),
+    ...(qty?.dormer_receipts || [])].find((r) => r.id === id) || {}).receipt || null;
+
   const nMark = (m) => (m.points || []).map(toNorm);
   const TOOLS = [
     { key: "siding_zone", label: "Siding zone", color: SIDING },
@@ -702,6 +707,16 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                       </div>
                     )}
                     {m.refused_reason && <div className="text-[9px] text-[var(--muted)] leading-snug">{m.refused_reason}</div>}
+                    {/* SEND-140 — THE REFUSAL RECEIPT. One contractor
+                        sentence, written by the server from the ACTUAL
+                        missing field, saying what to tape. A measured
+                        gable and a counted cheek carry none. */}
+                    {receiptFor(m.id) && (
+                      <div className="mt-0.5 text-[10px] font-bold text-[var(--warning-text)] leading-snug"
+                        data-testid={`photo-takeoff-receipt-${m.id}`}>
+                        {receiptFor(m.id)}
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 mt-1">
                       <button type="button" onClick={(e) => { e.stopPropagation(); patchMark(m.id, { status: "confirmed" }); }}
                         className="inline-flex items-center gap-0.5 px-1.5 py-0.5 border border-[var(--success)] text-[var(--success)] text-[9px] font-bold uppercase"
