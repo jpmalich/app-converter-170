@@ -1,5 +1,65 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-26 SEND-132 — ONE EDITOR, TWO STAGES (stamped `2026-08-26 · CLEAN · 2932 passed, 9 skipped in 452.93s`; browser 11/11 zero defects, `test_reports/iteration_59.json`)
+Full record: `memory/send132_report.md` · rectification report:
+`memory/send132_rectification_report.md` · 13 pins in
+`tests/test_send132_one_editor_two_stages_2026_08_26.py` · rig:
+`scripts/send132_ui_rig.py`.
+1. **ANNOTATE'S CAPABILITIES MOVED IN**: siding · non-siding (5
+   categories) · openings · **window style** · **typed window
+   height/width** · two-tap anchor + typed tape (tape wins). Elevation
+   labelling and gables/dormers/exposure were NOT moved and are recorded
+   as not moved. Exposure / brick-course inches stay a PRODUCT/INSTALL
+   setting — **brick-course-as-scale is CLOSED**.
+2. **THE STAGE IS PER PHOTO**: a completed read must carry THAT photo.
+   Stage 1 = GUIDANCE (blue banner, AI proposals disabled with the
+   reason printed). Stage 2 = the read's own proposals (green banner).
+3. **STAGE 2 PULL** `/photo-takeoff/propose` — takes every kind the read
+   produced for that photo, placed in the photo's own natural pixels
+   from the read's normalised boxes; **IDEMPOTENT** per (run_id, ref).
+   The read produces **NO zone geometry** (masks are an INPUT to it) and
+   the endpoint **SAYS SO PLAINLY** — no wall proposal is invented.
+4. **GUIDANCE NEVER LAUNDERS INTO EVIDENCE**: `origin` survives every
+   confirm; `confirmed_basis` is either EVIDENCE… or **GUIDANCE-CONFIRMED
+   — no AI read on this photo… NOT evidence that an AI read was
+   checked**, and the quantity payload carries the count.
+5. **A CONFIRM STILL NEEDS A SCALE** — no anchor and no tape is a named
+   refusal, never a 0.
+6. **PRODUCT CHANGE**: per-zone picker offering ONLY body-siding
+   products already on the job (accessories excluded; a foreign product
+   is refused 400). The swap is recorded in `product_history`
+   (from → to · when · who · **ft² at the moment of the swap**), does
+   **NOT** drop the confirmation, keeps `confirmed_under_product`, and
+   prints "confirmed under X, now assigned Y — the geometry did not
+   change; the output did". Quantities break out `siding_by_product`.
+   **Geometry still drops the confirmation** — the two rules do not blur.
+7. **THE IMPORT RUNS ONCE**: annotator zones + tagged windows arrive
+   PROVISIONAL with category/style/height intact; a second press imports
+   0.
+8. **ANNOTATE STAYS** until Howard verifies the import on a real
+   session. Its doors are **three**, not two: the grid button, "Refine
+   on Photo" (behind Advanced Tools, guided 7-step), and the Refine
+   photo picker. (Correction to what was reported at planning: the
+   Guided Capture Wizard is NOT a separate Annotate door.)
+9. **RECTIFICATION — REPORT ONLY, NOTHING BUILT**: the ft² math is
+   scaled-orthographic and, on an oblique photo, measures the wall's
+   PROJECTION (≈13% low at 30°, ≈29% at 45°). A homography IS
+   establishable from ONE boxed opening with a real width AND height —
+   the only clean source in frame; the tape gives a line, never a plane.
+   Front-on vs oblique IS classifiable from marks already present; where
+   nothing supports it the answer is UNKNOWN. An oblique photo should
+   NAME its plane basis, rectify only from measured rectangles (with the
+   residual reported), else REFUSE the area and keep the marks. **No
+   correction factor was added; today's payload carries no `plane_basis`,
+   so the fronto-parallel assumption is currently SILENT — naming it is
+   the first fix if authorised.**
+10. **DESTINATION FLOW RECORDED** (not built): photo-by-photo marks → AI
+    draws zones AND accessory lines on the photos → contractor edits in
+    the same editor → the material list fills from confirmed marks →
+    the quote completes. Not in this send: accessory/trim lines, the
+    material list, completing the quote, mixing photo quantities into
+    blueprint/derived totals.
+
 ## 2026-08-26 SEND-131A — PHOTO TAKEOFF PHASE 1 BUILT · PHOTO ELEVATIONS RETIRED FROM THE CONTRACTOR VIEW (stamped `2026-08-26 · CLEAN · 2919 passed, 9 skipped, 7 warnings in 445.49s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send131a_report.md` · 28 pins in
 `tests/test_send131a_photo_takeoff_2026_08_26.py` · browser pass

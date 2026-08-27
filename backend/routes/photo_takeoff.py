@@ -48,6 +48,19 @@ PHASE2_KINDS = {"outside_corner", "inside_corner", "j_channel", "starter",
 NON_SIDING_CATEGORIES = {"brick", "stone", "stucco", "garage_door", "other"}
 STATUSES = {"provisional", "confirmed", "refused"}
 
+# SEND-132 — ONE EDITOR, TWO STAGES. Provenance never launders:
+#   contractor_stage1     drawn before any AI read on this photo — GUIDANCE
+#   imported_annotation   pulled in from the pre-AI annotator — GUIDANCE
+#   ai_proposal           minted from a completed read on THIS photo
+#   contractor_stage2     drawn by hand after the read (what the AI missed)
+ORIGINS = {"contractor_stage1", "imported_annotation", "ai_proposal",
+           "contractor_stage2"}
+GUIDANCE_ORIGINS = {"contractor_stage1", "imported_annotation"}
+# The body-siding sections a zone's product may come from. Accessories,
+# soffit and trim are NOT body products and are never offered.
+BODY_SECTION_EXCLUDE = ("accessor", "soffit", "fascia", "trim", "labor",
+                        "install", "misc")
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -66,6 +79,14 @@ class MarkIn(BaseModel):
     category: Optional[str] = None          # non-siding: brick/stone/...
     label: Optional[str] = None
     source: str = "human"                   # human | imported_annotation
+    # STAGE 1 GUIDANCE CLAIMS (openings): what the contractor knows and
+    # the AI should read. They are NOT quantity inputs — ft² comes from
+    # the drawn geometry and this photo's own scale, never from these.
+    style: Optional[str] = None
+    width_in: Optional[float] = None
+    height_in: Optional[float] = None
+    # body-siding product for a zone — only a product already on the job
+    product: Optional[str] = None
 
 
 class MarkPatch(BaseModel):
@@ -74,6 +95,12 @@ class MarkPatch(BaseModel):
     label: Optional[str] = None
     status: Optional[str] = None            # confirmed | refused | provisional
     refused_reason: Optional[str] = None
+    style: Optional[str] = None
+    width_in: Optional[float] = None
+    height_in: Optional[float] = None
+    # A PRODUCT CHANGE ALTERS THE OUTPUT, NOT THE GEOMETRY — it is
+    # recorded and it does NOT drop a confirmed mark to provisional.
+    product: Optional[str] = None
 
 
 class ScaleIn(BaseModel):
@@ -126,6 +153,116 @@ def _mark_public(m: dict) -> dict:
     return {k: v for k, v in m.items() if k not in ("_id", "company_id")}
 
 
+def _run_photo_names(run: dict) -> List[str]:
+    return [n for n in str(run.get("photo_paths") or "").split(",") if n]
+
+
+async def _photo_read(est_id: str, photo_key: str) -> Optional[dict]:
+    """THE STAGE IS PER PHOTO (Howard ruled 2026-08-26, SEND-132): a
+    completed read on ANOTHER photo unlocks nothing here. Returns the
+    latest done run that actually carried THIS photo, or None."""
+    async for run in db.ai_measure_runs.find(
+            {"estimate_id": est_id, "status": "done"},
+            sort=[("created_at", -1)]).limit(25):
+        if photo_key in _run_photo_names(run):
+            return run
+    return None
+
+
+def _stage_block(run: Optional[dict], photo_key: str) -> dict:
+    if not run:
+        return {
+            "stage": 1,
+            "ai_read": None,
+            "stage_note": ("STAGE 1 — BEFORE AI. Marks here are GUIDANCE: "
+                           "the AI reads them, they do not price anything. "
+                           "Confirming one still writes quantity, and the "
+                           "record says it was confirmed with no AI read on "
+                           "this photo."),
+            "proposals_refusal": ("no completed AI read carries this photo — "
+                                  "Stage 2 is not unlocked here; a read on "
+                                  "another photo unlocks nothing on this one"),
+        }
+    return {
+        "stage": 2,
+        "ai_read": {
+            "run_id": run.get("run_id"),
+            "completed_at": (run.get("completed_at").isoformat()
+                             if hasattr(run.get("completed_at"), "isoformat")
+                             else run.get("completed_at")),
+            "photo_index": _run_photo_names(run).index(photo_key),
+        },
+        "stage_note": ("STAGE 2 — AFTER AI. Pull the read's proposals, then "
+                       "confirm, adjust, refuse or delete each one and add "
+                       "what it missed. A confirm here is EVIDENCE."),
+        "proposals_refusal": None,
+    }
+
+
+def _job_body_products(est: dict) -> List[dict]:
+    """ONLY BODY-SIDING PRODUCTS ALREADY ON THIS JOB (ruled). Accessories,
+    soffit, fascia, trim, labour and misc are not body products and are
+    never offered. No catalog, no invention — an empty list says so."""
+    out: List[dict] = []
+    seen = set()
+    for ln in (est.get("lines") or []):
+        section = str(ln.get("section") or "")
+        name = str(ln.get("name") or "").strip()
+        low = section.lower()
+        if "siding" not in low or not name:
+            continue
+        if any(tok in low for tok in BODY_SECTION_EXCLUDE):
+            continue
+        if name in seen:
+            continue
+        seen.add(name)
+        out.append({"name": name, "tab": ln.get("tab"), "section": section,
+                    "unit": ln.get("unit")})
+    return out
+
+
+def _photo_natural_size(photo_key: str) -> Optional[tuple[float, float]]:
+    """The read's boxes are NORMALISED; they land in this photo's own
+    natural pixels or they do not land at all. No assumed size."""
+    try:
+        from PIL import Image
+        from config import UPLOAD_DIR
+        path = UPLOAD_DIR / photo_key
+        if not path.exists():
+            return None
+        with Image.open(path) as im:
+            w, h = im.size
+        return (float(w), float(h)) if w and h else None
+    except Exception:
+        return None
+
+
+def _origin_basis(origin: str, stage: int) -> str:
+    if origin == "ai_proposal":
+        return ("AI PROPOSAL — minted from the completed read on this photo; "
+                "provisional until the contractor rules on it")
+    if origin == "contractor_stage2":
+        return ("STAGE 2 — drawn by the contractor after the AI read on this "
+                "photo (what the read missed)")
+    if origin == "imported_annotation":
+        return ("GUIDANCE — pulled in from the pre-AI annotator on this "
+                "photo; the AI reads it, it prices nothing")
+    return ("GUIDANCE — drawn before any AI read on this photo; the AI "
+            "reads it, it prices nothing")
+
+
+async def _validated_product(est: dict, name: str) -> str:
+    """A zone may only carry a body-siding product ALREADY ON THIS JOB."""
+    allowed = {p["name"] for p in _job_body_products(est)}
+    if name not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=(f"{name!r} is not a body-siding product on this job — "
+                    f"the picker offers only {sorted(allowed)}; no catalog "
+                    "product and no invented product may ride a zone"))
+    return name
+
+
 def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
     """Quantity from CONFIRMED marks only, and only with a scale. Every
     refusal is named; a refusal is never reported as 0."""
@@ -150,6 +287,11 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         "openings_without_extent_note": None,
         "openings_deducted": False,
         "openings_note": None,
+        "siding_by_product": None,
+        "siding_no_product_sqft": None,
+        "product_basis_notes": None,
+        "guidance_confirmed": None,
+        "guidance_confirmed_note": None,
     }
     if not ipp:
         return out
@@ -157,6 +299,9 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
     siding = 0.0
     non_siding = 0.0
     by_cat: Dict[str, float] = {}
+    by_prod: Dict[str, float] = {}
+    no_prod = 0.0
+    prod_notes: List[str] = []
     op_n = 0
     op_sqft = 0.0
     op_no_extent = 0
@@ -165,6 +310,24 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         area = _poly_area_px(pts) * sq_ft_per_px
         if m["kind"] == "siding_zone":
             siding += area
+            # THE BASIS NAMES THE PRODUCT THE QUANTITY WAS CONFIRMED
+            # UNDER. A later swap alters the OUTPUT, not the geometry —
+            # both names stay in the record and the note says so.
+            prod = m.get("product")
+            under = m.get("confirmed_under_product")
+            if prod:
+                by_prod[prod] = round(by_prod.get(prod, 0.0) + area, 2)
+            else:
+                no_prod += area
+            if under and prod and under != prod:
+                prod_notes.append(
+                    f"{round(area, 2)} ft² was confirmed under "
+                    f"{under!r}, now assigned {prod!r} — the geometry did "
+                    "not change; the output did")
+            elif under and not prod:
+                prod_notes.append(
+                    f"{round(area, 2)} ft² was confirmed under {under!r} "
+                    "and now carries no product")
         elif m["kind"] == "non_siding_zone":
             non_siding += area
             cat = m.get("category") or "other"
@@ -203,6 +366,22 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
     out["openings_note"] = (
         "openings report separately — nothing is deducted from the "
         "confirmed siding ft² on this photo (phase 1)") if any_open else None
+    out["siding_by_product"] = by_prod or None
+    out["siding_no_product_sqft"] = (round(no_prod, 2)
+                                     if no_prod > 0 else None)
+    out["product_basis_notes"] = prod_notes or None
+    # GUIDANCE AND EVIDENCE STAY DISTINCT. A confirmed mark whose origin
+    # is guidance is NOT evidence that the AI was checked — the count is
+    # reported so no reader can mistake one for the other.
+    g = [m for m in confirmed
+         if m.get("origin") in GUIDANCE_ORIGINS
+         and not m.get("confirmed_after_ai_read")]
+    out["guidance_confirmed"] = len(g) or None
+    out["guidance_confirmed_note"] = (
+        f"{len(g)} confirmed mark(s) are GUIDANCE-CONFIRMED — the "
+        "contractor's own pre-AI marks, confirmed with no AI read on this "
+        "photo. They carry quantity; they are NOT evidence that an AI "
+        "read was checked") if g else None
     return out
 
 
@@ -225,15 +404,25 @@ async def get_photo_takeoff(est_id: str, photo_key: Optional[str] = None,
     async for s in db.photo_takeoff_scale.find(sq):
         scales[s["photo_key"]] = _mark_public(s)
     per_photo = {}
-    for key in {m["photo_key"] for m in marks} | set(scales):
+    est = await _est_or_404(est_id, user)
+    products = _job_body_products(est)
+    for key in {m["photo_key"] for m in marks} | set(scales) | (
+            {photo_key} if photo_key else set()):
+        run = await _photo_read(est_id, key)
         per_photo[key] = {
             "scale": scales.get(key),
             "quantities": _quantities(
                 [m for m in marks if m["photo_key"] == key], scales.get(key)),
+            **_stage_block(run, key),
         }
     return {"ok": True, "phase": 1,
             "kinds": sorted(PHASE1_KINDS),
             "phase2_kinds_not_built": sorted(PHASE2_KINDS),
+            "products": products,
+            "products_note": (None if products else
+                              "this job carries no body-siding product line "
+                              "yet — the picker stays empty; no product is "
+                              "invented to fill it"),
             "marks": marks, "per_photo": per_photo}
 
 
@@ -274,7 +463,7 @@ async def add_mark(est_id: str, body: MarkIn,
                    user: dict = Depends(get_current_user)):
     """A new mark lands PROVISIONAL. It carries no quantity until a human
     confirms it."""
-    await _est_or_404(est_id, user)
+    est = await _est_or_404(est_id, user)
     if body.kind in PHASE2_KINDS:
         raise HTTPException(
             status_code=400,
@@ -295,13 +484,30 @@ async def add_mark(est_id: str, body: MarkIn,
         raise HTTPException(
             status_code=400,
             detail=f"category must be one of {sorted(NON_SIDING_CATEGORIES)}")
+    product = None
+    if body.product:
+        product = await _validated_product(est, body.product)
+    run = await _photo_read(est_id, body.photo_key)
+    stage = 2 if run else 1
+    origin = ("imported_annotation" if body.source == "imported_annotation"
+              else ("contractor_stage2" if run else "contractor_stage1"))
     doc = {
         "id": str(uuid4()), "estimate_id": est_id,
         "company_id": user["company_id"], "photo_key": body.photo_key,
         "kind": body.kind, "shape": body.shape, "points": pts,
         "category": body.category, "label": body.label,
+        "style": body.style, "width_in": body.width_in,
+        "height_in": body.height_in,
+        "product": product,
+        "product_history": [],
+        "confirmed_under_product": None,
         "source": body.source, "status": "provisional",
-        "confirmed_at": None, "confirmed_by": None, "refused_reason": None,
+        "origin": origin, "stage": stage,
+        "basis": _origin_basis(origin, stage),
+        "ai": None,
+        "confirmed_at": None, "confirmed_by": None, "confirmed_stage": None,
+        "confirmed_basis": None, "confirmed_after_ai_read": None,
+        "refused_reason": None,
         "created_at": _now(), "created_by": user.get("email"),
         "updated_at": _now(),
     }
@@ -315,12 +521,15 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
     """Adjust, CONFIRM or REFUSE. Adjusting a confirmed mark returns it to
     PROVISIONAL — the confirmation was of the old geometry, and a
     confirmation cannot outlive the figure it was given for."""
-    await _est_or_404(est_id, user)
+    est = await _est_or_404(est_id, user)
     key = {"id": mark_id, "estimate_id": est_id,
            "company_id": user["company_id"]}
     cur = await db.photo_takeoff_marks.find_one(key)
     if not cur:
         raise HTTPException(status_code=404, detail="mark not found")
+    scale = await db.photo_takeoff_scale.find_one(
+        {"estimate_id": est_id, "company_id": user["company_id"],
+         "photo_key": cur["photo_key"]})
     upd: Dict[str, Any] = {"updated_at": _now()}
     if body.points is not None:
         pts = [p.model_dump() for p in body.points]
@@ -331,7 +540,9 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
         upd["points"] = pts
         if cur.get("status") == "confirmed":
             upd.update({"status": "provisional", "confirmed_at": None,
-                        "confirmed_by": None,
+                        "confirmed_by": None, "confirmed_stage": None,
+                        "confirmed_basis": None,
+                        "confirmed_after_ai_read": None,
                         "refused_reason": "geometry changed after "
                                           "confirmation — re-confirm the "
                                           "new figure"})
@@ -339,21 +550,68 @@ async def patch_mark(est_id: str, mark_id: str, body: MarkPatch,
         upd["category"] = body.category
     if body.label is not None:
         upd["label"] = body.label
+    for field in ("style", "width_in", "height_in"):
+        v = getattr(body, field)
+        if v is not None:
+            upd[field] = v
+    if body.product is not None:
+        # A PRODUCT CHANGE ALTERS THE OUTPUT, NOT THE GEOMETRY — the mark
+        # keeps its confirmation, the swap is recorded, and the basis
+        # keeps the product the quantity was confirmed under.
+        new_prod = (await _validated_product(est, body.product)
+                    if body.product else None)
+        if new_prod != cur.get("product"):
+            ipp, _ = _in_per_px(scale)
+            sqft = (round(_poly_area_px(cur.get("points") or [])
+                          * ((ipp * ipp) / 144.0), 2) if ipp else None)
+            upd["product"] = new_prod
+            upd["product_history"] = list(cur.get("product_history") or []) + [{
+                "from": cur.get("product"), "to": new_prod,
+                "at": _now(), "by": user.get("email") or None,
+                "sqft_at_swap": sqft,
+            }]
     if body.status is not None:
         if body.status not in STATUSES:
             raise HTTPException(status_code=400,
                                detail=f"status must be one of {sorted(STATUSES)}")
         upd["status"] = body.status
         if body.status == "confirmed":
+            # A CONFIRM STILL NEEDS A SCALE ON THIS PHOTO. No tape and no
+            # anchor → NAMED refusal, never a 0.
+            ipp, sbasis = _in_per_px(scale)
+            if not ipp:
+                raise HTTPException(status_code=400, detail=sbasis)
+            run = await _photo_read(est_id, cur["photo_key"])
+            after = bool(run)
+            origin = cur.get("origin") or "contractor_stage1"
+            if origin == "ai_proposal":
+                cbasis = ("EVIDENCE — an AI proposal on this photo, checked "
+                          "and confirmed by the contractor")
+            elif after:
+                cbasis = ("EVIDENCE — confirmed with the AI read on this "
+                          f"photo present (origin {origin})")
+            else:
+                cbasis = ("GUIDANCE-CONFIRMED — no AI read on this photo. "
+                          "It carries quantity; it is NOT evidence that an "
+                          "AI read was checked")
             upd.update({"confirmed_at": _now(),
                         "confirmed_by": user.get("email"),
+                        "confirmed_stage": 2 if after else 1,
+                        "confirmed_basis": cbasis,
+                        "confirmed_after_ai_read": after,
+                        "confirmed_under_product": (
+                            upd.get("product", cur.get("product"))),
                         "refused_reason": None})
         elif body.status == "refused":
             upd.update({"confirmed_at": None, "confirmed_by": None,
+                        "confirmed_stage": None, "confirmed_basis": None,
+                        "confirmed_after_ai_read": None,
                         "refused_reason": (body.refused_reason
                                            or "refused by the contractor")})
         else:
-            upd.update({"confirmed_at": None, "confirmed_by": None})
+            upd.update({"confirmed_at": None, "confirmed_by": None,
+                        "confirmed_stage": None, "confirmed_basis": None,
+                        "confirmed_after_ai_read": None})
     await db.photo_takeoff_marks.update_one(key, {"$set": upd})
     doc = await db.photo_takeoff_marks.find_one(key)
     return {"ok": True, "mark": _mark_public(doc)}
@@ -406,8 +664,15 @@ async def import_annotations(est_id: str, photo_key: str,
             "points": pts,
             "category": cat if cat in NON_SIDING_CATEGORIES else "other",
             "label": f"imported {cat} zone", "source": "imported_annotation",
+            "style": None, "width_in": None, "height_in": None,
+            "product": None, "product_history": [],
+            "confirmed_under_product": None,
+            "origin": "imported_annotation", "stage": 1,
+            "basis": _origin_basis("imported_annotation", 1), "ai": None,
             "status": "provisional", "confirmed_at": None,
-            "confirmed_by": None, "refused_reason": None,
+            "confirmed_by": None, "confirmed_stage": None,
+            "confirmed_basis": None, "confirmed_after_ai_read": None,
+            "refused_reason": None,
             "created_at": _now(), "created_by": user.get("email"),
             "updated_at": _now()})
     for w in (ann.get("windows") or []):
@@ -434,8 +699,21 @@ async def import_annotations(est_id: str, photo_key: str,
             "kind": "opening", "shape": shape, "points": pts,
             "category": None,
             "label": f"imported {w.get('style') or 'window'}",
+            # THE ANNOTATOR'S OWN CLAIMS COME WITH IT — style and the
+            # typed height are GUIDANCE, never a quantity input.
+            "style": w.get("style") or None,
+            "width_in": (float(w["width_in"])
+                         if w.get("width_in") else None),
+            "height_in": (float(w["height_in"])
+                          if w.get("height_in") else None),
+            "product": None, "product_history": [],
+            "confirmed_under_product": None,
+            "origin": "imported_annotation", "stage": 1,
+            "basis": _origin_basis("imported_annotation", 1), "ai": None,
             "source": "imported_annotation", "status": "provisional",
             "confirmed_at": None, "confirmed_by": None,
+            "confirmed_stage": None, "confirmed_basis": None,
+            "confirmed_after_ai_read": None,
             "refused_reason": None, "created_at": _now(),
             "created_by": user.get("email"), "updated_at": _now()})
     if made:
@@ -463,6 +741,124 @@ async def import_annotations(est_id: str, photo_key: str,
                      "refuse each one; nothing imported carries a quantity")}
 
 
+@router.post("/estimates/{est_id}/photo-takeoff/propose")
+async def propose_from_read(est_id: str, photo_key: str,
+                            user: dict = Depends(get_current_user)):
+    """STAGE 2 — the AI's own marks on THIS photo, as PROVISIONAL
+    proposals. The pull is not limited to any one kind: it takes every
+    mark kind the read produced for this photo, and where the read
+    produced none of a kind IT SAYS SO PLAINLY. Nothing is invented to
+    fill a gap — a wall proposal that the read never made does not
+    appear here.
+
+    IDEMPOTENT per (run_id, mark id): a second pull adds nothing."""
+    await _est_or_404(est_id, user)
+    run = await _photo_read(est_id, photo_key)
+    if not run:
+        raise HTTPException(
+            status_code=400,
+            detail=("no completed AI read carries this photo — Stage 2 is "
+                    "not unlocked here; a read on another photo unlocks "
+                    "nothing on this one"))
+    idx = _run_photo_names(run).index(photo_key)
+    raw = ((run.get("result") or {}).get("raw_ai") or {})
+
+    dims = _photo_natural_size(photo_key)
+    if not dims:
+        raise HTTPException(
+            status_code=400,
+            detail=("this photo's file is not on disk, so the read's "
+                    "normalised boxes cannot be placed in its own pixels — "
+                    "nothing is placed on a guessed size"))
+    nat_w, nat_h = dims
+
+    have = set()
+    async for m in db.photo_takeoff_marks.find(
+            {"estimate_id": est_id, "company_id": user["company_id"],
+             "photo_key": photo_key}):
+        ai = m.get("ai") or {}
+        if ai.get("run_id"):
+            have.add((ai["run_id"], ai.get("ref_id")))
+
+    made: List[dict] = []
+    no_box = 0
+    for op in (raw.get("openings") or []):
+        if not isinstance(op, dict):
+            continue
+        on_this = (op.get("bbox_photo_idx") == idx
+                   or (op.get("bbox_photo_idx") is None
+                       and op.get("photo_idx") == idx))
+        if not on_this:
+            continue
+        b = op.get("bbox")
+        ref_id = str(op.get("opening_id") or "")
+        if not (isinstance(b, dict) and float(b.get("w") or 0) > 0
+                and float(b.get("h") or 0) > 0):
+            no_box += 1
+            continue
+        if (run["run_id"], ref_id) in have:
+            continue
+        have.add((run["run_id"], ref_id))
+        x, y = float(b["x"]) * nat_w, float(b["y"]) * nat_h
+        w, h = float(b["w"]) * nat_w, float(b["h"]) * nat_h
+        made.append({
+            "id": str(uuid4()), "estimate_id": est_id,
+            "company_id": user["company_id"], "photo_key": photo_key,
+            "kind": "opening", "shape": "rect",
+            "points": [{"x": x, "y": y}, {"x": x + w, "y": y},
+                       {"x": x + w, "y": y + h}, {"x": x, "y": y + h}],
+            "category": None,
+            "label": f"AI {op.get('type') or 'opening'} {ref_id}".strip(),
+            "style": op.get("style") or None,
+            "width_in": (float(op["width_in"]) if op.get("width_in") else None),
+            "height_in": (float(op["height_in"]) if op.get("height_in") else None),
+            "product": None, "product_history": [],
+            "confirmed_under_product": None,
+            "origin": "ai_proposal", "stage": 2,
+            "basis": _origin_basis("ai_proposal", 2),
+            "ai": {"run_id": run["run_id"], "ref_id": ref_id,
+                   "kind_claimed": op.get("type"),
+                   "wall_claimed": op.get("wall"),
+                   "bbox_source": op.get("_bbox_source")},
+            "source": "ai_proposal", "status": "provisional",
+            "confirmed_at": None, "confirmed_by": None,
+            "confirmed_stage": None, "confirmed_basis": None,
+            "confirmed_after_ai_read": None, "refused_reason": None,
+            "created_at": _now(), "created_by": user.get("email"),
+            "updated_at": _now()})
+    if made:
+        await db.photo_takeoff_marks.insert_many([dict(m) for m in made])
+
+    # WHAT THE READ DOES NOT PRODUCE, SAID PLAINLY. The read returns no
+    # zone geometry of any kind — masks are an INPUT to it, never an
+    # output — so siding and non-siding zones have nothing to propose
+    # and none is invented.
+    kinds_absent = {
+        "siding_zone": ("this read produces NO siding-zone geometry — it "
+                        "returns wall dimensions, not drawn polygons; draw "
+                        "the siding zones yourself, nothing is invented"),
+        "non_siding_zone": ("this read produces NO non-siding-zone geometry "
+                            "— the masks are an INPUT to the read, never an "
+                            "output; draw them yourself"),
+    }
+    return {
+        "ok": True, "run_id": run["run_id"], "photo_index": idx,
+        "proposed": len(made),
+        "marks": [_mark_public(m) for m in made],
+        "kinds_proposed": ["opening"] if made else [],
+        "kinds_absent": kinds_absent,
+        "openings_without_a_box": no_box or None,
+        "openings_without_a_box_note": (
+            f"{no_box} opening(s) this read placed on this photo carry NO "
+            "box — they cannot be drawn and are NOT placed at a guessed "
+            "spot; add them by hand where you see them") if no_box else None,
+        "note": ("every proposal is PROVISIONAL — confirm, adjust, refuse "
+                 "or delete each one, and add what the read missed. A "
+                 "confirm here is EVIDENCE and writes quantity only"),
+    }
+
+
+
 @router.post("/estimates/{est_id}/photo-takeoff/apply")
 async def apply_photo_takeoff(est_id: str,
                               user: dict = Depends(get_current_user)):
@@ -485,11 +881,16 @@ async def apply_photo_takeoff(est_id: str,
     per_photo = {}
     tot_siding = tot_non = tot_open_sqft = 0.0
     tot_open_n = 0
+    by_product: Dict[str, float] = {}
+    guidance_confirmed = 0
     live = False
     for key in {m["photo_key"] for m in marks}:
         qty = _quantities([m for m in marks if m["photo_key"] == key],
                           scales.get(key))
         per_photo[key] = qty
+        for prod, v in (qty.get("siding_by_product") or {}).items():
+            by_product[prod] = round(by_product.get(prod, 0.0) + v, 2)
+        guidance_confirmed += int(qty.get("guidance_confirmed") or 0)
         for src, add in (("siding_sqft", "siding"), ("non_siding_sqft", "non"),
                          ("opening_sqft", "open_sqft"),
                          ("opening_count", "open_n")):
@@ -512,6 +913,13 @@ async def apply_photo_takeoff(est_id: str,
         "photo_non_siding_sqft": round(tot_non, 2) if live else None,
         "photo_opening_sqft": round(tot_open_sqft, 2) if live else None,
         "photo_opening_count": tot_open_n if live else None,
+        "photo_siding_by_product": by_product or None,
+        "guidance_confirmed_marks": guidance_confirmed or None,
+        "guidance_confirmed_note": (
+            f"{guidance_confirmed} confirmed mark(s) are GUIDANCE-CONFIRMED "
+            "— pre-AI marks confirmed with no AI read on their photo; they "
+            "carry quantity and are NOT evidence an AI read was checked")
+        if guidance_confirmed else None,
         "note": ("quantity only — confirmed photo marks carry ft² and "
                  "counts under the photo lane's own keys; no price, no "
                  "priced line, no money is written here; openings are "

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { X, ZoomIn, ZoomOut, AlertTriangle, Ruler, Trash2, Check, Ban, Move, Download } from "lucide-react";
+import { X, ZoomIn, ZoomOut, AlertTriangle, Ruler, Trash2, Check, Ban, Move, Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 
@@ -64,6 +64,9 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
   const [marks, setMarks] = useState([]);
   const [scale, setScale] = useState(null);
   const [qty, setQty] = useState(null);
+  const [stage, setStage] = useState(null);          // {stage, ai_read, stage_note, proposals_refusal}
+  const [products, setProducts] = useState([]);
+  const [productsNote, setProductsNote] = useState(null);
   const [tool, setTool] = useState("siding_zone");   // siding_zone | non_siding_zone | opening | scale
   const [category, setCategory] = useState("brick");
   const [draft, setDraft] = useState(null);          // {points:[{x,y}] norm, cx, cy}
@@ -93,6 +96,10 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
       const per = (data.per_photo || {})[photoKey] || {};
       setScale(per.scale || null);
       setQty(per.quantities || null);
+      setStage({ stage: per.stage || 1, ai_read: per.ai_read || null,
+        stage_note: per.stage_note, proposals_refusal: per.proposals_refusal });
+      setProducts(data.products || []);
+      setProductsNote(data.products_note || null);
     } catch { toast.error("Could not read this photo's takeoff"); }
   }, [est.id, photoKey]);
   useEffect(() => { load(); }, [load]);
@@ -205,6 +212,19 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
       toast.success(data.imported ? `${data.imported} mark(s) pulled in — all PROVISIONAL` : "Nothing new to pull in");
       if (data.scale_note) toast.info(data.scale_note);
     } catch (e) { toast.error(e?.response?.data?.detail || "Import failed"); }
+    setBusy(false);
+  };
+  const pullProposals = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.post(`/estimates/${est.id}/photo-takeoff/propose`, null, { params: { photo_key: photoKey } });
+      await load();
+      toast.success(data.proposed
+        ? `${data.proposed} AI proposal(s) on this photo — all PROVISIONAL until you rule on them`
+        : "Nothing new — this read's proposals are already here");
+      if (data.openings_without_a_box_note) toast.warning(data.openings_without_a_box_note);
+      Object.values(data.kinds_absent || {}).forEach((n) => toast.info(n));
+    } catch (e) { toast.error(e?.response?.data?.detail || "The read had nothing to propose here"); }
     setBusy(false);
   };
   const apply = async () => {
@@ -341,6 +361,33 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
           <AlertTriangle className="w-3 h-3 flex-shrink-0" />
           Phase 1: areas and openings only. Trim runs (corners, J-channel, starter, soffit, fascia) are NOT built. Openings are reported — nothing is deducted from siding.
         </div>
+
+        {/* ONE EDITOR, TWO STAGES. The stage is decided by THIS photo's own
+            read — a read on another photo unlocks nothing here. */}
+        <div
+          className={`px-3 py-2 border-b flex flex-col md:flex-row md:items-center gap-1.5 md:gap-3 ${stage?.stage === 2 ? "bg-[#ECFDF5] border-[#10B981]" : "bg-[#EFF6FF] border-[#3B82F6]"}`}
+          data-testid="photo-takeoff-stage-banner"
+        >
+          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 text-white ${stage?.stage === 2 ? "bg-[var(--success)]" : "bg-[var(--ai)]"}`}>
+            {stage?.stage === 2 ? "Stage 2 — after AI" : "Stage 1 — before AI"}
+          </span>
+          <span className="text-[10px] text-[var(--ink-2)] leading-snug flex-1" data-testid="photo-takeoff-stage-note">
+            {stage?.stage_note || "Reading this photo's state…"}
+          </span>
+          <button
+            type="button" onClick={pullProposals} disabled={busy || stage?.stage !== 2}
+            title={stage?.proposals_refusal || "Pull this photo's AI proposals"}
+            className="inline-flex items-center gap-1 px-2 py-1 border text-[10px] font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed border-[var(--success)] text-[var(--success)]"
+            data-testid="photo-takeoff-propose-btn"
+          >
+            <Sparkles className="w-3 h-3" /> AI proposals
+          </button>
+        </div>
+        {stage?.proposals_refusal && (
+          <div className="px-3 py-1 bg-white border-b border-[var(--border)] text-[10px] text-[var(--warning-text)]" data-testid="photo-takeoff-proposals-refusal">
+            AI proposals are off on this photo: {stage.proposals_refusal}
+          </div>
+        )}
 
         <div className="flex-1 flex min-h-0 flex-col md:flex-row">
           {/* canvas */}
@@ -499,7 +546,18 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                   ))}
                 </div>
               )}
-              {[qty?.provisional_note, qty?.openings_note, qty?.openings_without_extent_note].filter(Boolean).map((n, i) => (
+              {qty?.siding_by_product && (
+                <div className="mt-1.5 flex flex-wrap gap-1" data-testid="photo-takeoff-qty-by-product">
+                  {Object.entries(qty.siding_by_product).map(([k, v]) => (
+                    <span key={k} className="text-[9px] font-bold px-1.5 py-0.5" style={{ background: `${SIDING}22`, color: SIDING }}>{k} · {v} ft²</span>
+                  ))}
+                  {qty.siding_no_product_sqft != null && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)]">no product assigned · {qty.siding_no_product_sqft} ft²</span>
+                  )}
+                </div>
+              )}
+              {[qty?.provisional_note, qty?.openings_note, qty?.openings_without_extent_note,
+                qty?.guidance_confirmed_note, ...(qty?.product_basis_notes || [])].filter(Boolean).map((n, i) => (
                 <div key={i} className="mt-1.5 text-[10px] text-[var(--warning-text)] leading-snug" data-testid={`photo-takeoff-refusal-${i}`}>· {n}</div>
               ))}
             </div>
@@ -531,8 +589,30 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                       </span>
                     </div>
                     <div className="text-[9px] uppercase tracking-wider font-bold" style={{ color: m.status === "confirmed" ? "var(--success)" : m.status === "refused" ? "var(--muted)" : "var(--warning-text)" }}>
-                      {m.status}{m.source === "imported_annotation" ? " · imported" : ""}
+                      {m.status}
                     </div>
+                    {/* PROVENANCE NEVER LAUNDERS — the badge says which the
+                        mark carries, and a confirm does not rewrite it. */}
+                    <div className="text-[9px] font-bold uppercase tracking-wider" data-testid={`photo-takeoff-origin-${m.id}`}
+                      style={{ color: m.origin === "ai_proposal" ? "var(--ai)" : m.status === "confirmed" && m.confirmed_after_ai_read ? "var(--success)" : "var(--warning-text)" }}>
+                      {m.origin === "ai_proposal" ? "AI PROPOSAL"
+                        : m.confirmed_after_ai_read ? "EVIDENCE"
+                          : m.status === "confirmed" ? "GUIDANCE-CONFIRMED" : "GUIDANCE"}
+                      {m.origin === "imported_annotation" ? " · imported" : ""}
+                    </div>
+                    {(m.confirmed_basis || m.basis) && (
+                      <div className="text-[9px] text-[var(--muted)] leading-snug" data-testid={`photo-takeoff-basis-${m.id}`}>
+                        {m.confirmed_basis || m.basis}
+                      </div>
+                    )}
+                    {m.style && <div className="text-[9px] text-[var(--ink-2)]">{m.style}{m.height_in ? ` · ${m.height_in}" h` : ""}{m.width_in ? ` · ${m.width_in}" w` : ""}</div>}
+                    {m.product && (
+                      <div className="text-[9px] text-[var(--ink-2)]" data-testid={`photo-takeoff-product-of-${m.id}`}>
+                        product: {m.product}
+                        {m.confirmed_under_product && m.confirmed_under_product !== m.product
+                          ? ` · confirmed under ${m.confirmed_under_product} — the geometry did not change; the output did` : ""}
+                      </div>
+                    )}
                     {m.refused_reason && <div className="text-[9px] text-[var(--muted)] leading-snug">{m.refused_reason}</div>}
                     <div className="flex items-center gap-1 mt-1">
                       <button type="button" onClick={(e) => { e.stopPropagation(); patchMark(m.id, { status: "confirmed" }); }}
@@ -547,6 +627,49 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                       <button type="button" onClick={(e) => { e.stopPropagation(); delMark(m.id); }}
                         className="ml-auto text-[var(--danger)]" data-testid={`photo-takeoff-delete-${m.id}`}><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
+                    {m.id === selectedId && (
+                      <div className="mt-1.5 pt-1.5 border-t border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
+                        {m.kind === "opening" ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            <input defaultValue={m.style || ""} placeholder="window style"
+                              onBlur={(e) => { const v = e.target.value.trim(); if (v !== (m.style || "")) patchMark(m.id, { style: v }); }}
+                              className="flex-1 min-w-[110px] border border-[var(--border)] px-1.5 py-1 text-[10px]"
+                              data-testid="photo-takeoff-style-input" />
+                            <input defaultValue={m.height_in ?? ""} placeholder="h in" inputMode="decimal"
+                              onBlur={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v !== m.height_in) patchMark(m.id, { height_in: v }); }}
+                              className="w-14 border border-[var(--border)] px-1.5 py-1 text-[10px]"
+                              data-testid="photo-takeoff-height-in" />
+                            <input defaultValue={m.width_in ?? ""} placeholder="w in" inputMode="decimal"
+                              onBlur={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v !== m.width_in) patchMark(m.id, { width_in: v }); }}
+                              className="w-14 border border-[var(--border)] px-1.5 py-1 text-[10px]"
+                              data-testid="photo-takeoff-width-in" />
+                            <span className="text-[9px] text-[var(--muted)] w-full">Style and height are GUIDANCE for the read — the ft² comes from the box you drew and this photo's scale.</span>
+                          </div>
+                        ) : (
+                          <div>
+                            <select value={m.product || ""} disabled={products.length === 0}
+                              onChange={(e) => patchMark(m.id, { product: e.target.value })}
+                              className="w-full border border-[var(--border)] px-1.5 py-1 text-[10px] disabled:opacity-50"
+                              data-testid="photo-takeoff-product-select">
+                              <option value="">{products.length ? "— no product assigned —" : "— none on this job —"}</option>
+                              {products.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+                            </select>
+                            <span className="text-[9px] text-[var(--muted)]">
+                              {products.length
+                                ? "Changing the product does NOT redraw or unconfirm the zone — the swap is recorded with the ft² at that moment."
+                                : (productsNote || "no body-siding product on this job yet")}
+                            </span>
+                            {(m.product_history || []).length > 0 && (
+                              <div className="mt-1 text-[9px] text-[var(--muted)]" data-testid={`photo-takeoff-product-history-${m.id}`}>
+                                {m.product_history.map((h, i) => (
+                                  <div key={i}>{h.from || "—"} → {h.to || "—"} · {h.sqft_at_swap ?? "—"} ft² · {String(h.at).slice(0, 16).replace("T", " ")} · {h.by || "unknown"}</div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

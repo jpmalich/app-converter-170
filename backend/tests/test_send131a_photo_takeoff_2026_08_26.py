@@ -372,14 +372,26 @@ def test_a_refused_mark_carries_nothing_and_keeps_its_reason(sess, eid):
 # ── STRUCTURAL ───────────────────────────────────────────────────────
 def test_the_module_touches_no_money_key_structurally():
     """The photo lane writes quantity. A price key appearing in this
-    module is the defect this pin exists to catch."""
+    module is the defect this pin exists to catch.
+
+    NAMED PIN UPDATE (SEND-132): the module now READS `est["lines"]` to
+    list the body-siding products already on the job for the per-zone
+    picker. A read is not a write — the ban is narrowed to exactly that:
+    `lines` may be read, and may never appear in a write."""
     src = SRC.read_text()
     for token in ("unit_price", "mat_price", "lab_price", "margin",
-                  "total_price", "sell_price", "pricing_source", "\"lines\"",
-                  "'lines'"):
+                  "total_price", "sell_price", "pricing_source"):
         assert token not in src, (
             f"{token!r} appears in photo_takeoff.py — this path writes "
             "QUANTITY ONLY; money depends on the product and stays out")
+    # the ONLY permitted mention of lines is the product read
+    assert src.count('"lines"') == 1 and 'est.get("lines")' in src, (
+        "photo_takeoff.py mentions `lines` somewhere other than the "
+        "product read — this path may never write a priced line")
+    for token in ('"lines":', "'lines':"):
+        assert token not in src, (
+            f"{token!r} appears in photo_takeoff.py — a lines WRITE from "
+            "the photo lane is exactly the defect this pin exists to catch")
 
 
 def test_phase_two_kinds_are_declared_and_unimplemented():
