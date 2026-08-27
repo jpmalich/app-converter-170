@@ -1,5 +1,94 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-27 SEND-139 — GABLES AND DORMERS MOVED INTO PHOTOTAKEOFFEDITOR · THE ANNOTATE DOORS ARE OFF (stamped `2026-08-27 21:54 UTC · b00f642 · CLEAN · 3030 passed, 9 skipped, 7 warnings in 455.91s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send139_report.md` · 28 pins in
+`tests/test_send139_gable_dormer_move_2026_08_27.py` · live API e2e on a
+throwaway estimate (`memory/send139_e2e.py`, created then deleted) · **all
+7 browser verifications PASS** (`test_reports/iteration_60.json`; the
+agent's two drawn marks were deleted from EST-373526 afterwards).
+**EST-886440 untouched.**
+1. **ITEM 1 — THE ANNOTATE TOOL, REPORTED BEFORE A LINE WAS WRITTEN.**
+   GABLE: three taps, **LEFT EAVE → PEAK → RIGHT EAVE**, vertices
+   draggable; typed controls are **symmetric** (mirrors the peak to the
+   base midpoint) and **pitch** (preset 4·5·6·7·8·9·10·12 /12 or custom —
+   picking one MOVES the peak, `rise = base/2 × pitch/12`; dragging the
+   peak re-derives it). Number = `gableNetArea`: base = eave span, rise =
+   the **PERPENDICULAR** drop from the peak to the eave line, area =
+   **`(base × rise) / 2`**, less NO-SIDING masks whose CENTROID sits
+   inside, clamped ≥ 0. DORMER: four taps round the vertical face
+   (BL→BR→TR→TL); one typed field, **DEPTH (ft)** — typed, never
+   photo-derived; width and height AVERAGE the opposing edges; face = w × h
+   less masks inside; cheeks = 2 × height × depth. Missing scale → pixels
+   only, "dims pending scale ref", the shape still saves.
+2. **HOWARD'S QUESTION ANSWERED: ANNOTATE DOES NOT MULTIPLY BY 0.70 AND
+   NEVER DID.** The drawn gable has always been ½ × base × rise; the 0.70
+   factor lived on the DERIVED side and SEND-137 retired it there. Nothing
+   to convert on the way in — and a pin now holds `0.7` out of both the new
+   editor and `lib/gableMath.js`.
+3. **THE TWO DEVIATIONS FROM A LITERAL PORT, NAMED NOT SMUGGLED**: (a) the
+   annotator's **1.5 ft DEFAULT DORMER DEPTH DOES NOT COME ACROSS** — an
+   untyped depth REFUSES THE CHEEKS BY NAME ("depth is measured on the
+   roof, never read off the photo. No default depth"), the drawn face still
+   stands; (b) **every refusal is now NAMED** where the annotator quietly
+   produced nothing (no scale, no width, no rise, wrong point count), and
+   the ft² is None, **never 0**. One tightening: **only CONFIRMED masks
+   subtract** — a provisional mark carries no quantity, so it may not
+   silently reduce one.
+4. **ITEM 2 — THE TOOLS MOVED, PORTED NOT REINVENTED**: the gesture is the
+   annotator's gesture **word for word** (a pin asserts each prompt string
+   exists in BOTH files, so it cannot drift), the fields are its fields,
+   and `lib/gableMath.js` is IMPORTED rather than copied — no second
+   implementation to disagree with. Quantity rule: 3 points + width +
+   rise + scale → **½ × width × rise** less confirmed masks; wrong point
+   count / no width / no rise / no scale → **NAMED REFUSAL**; pitch outside
+   3/12–18/12 → measured anyway with a **warning, never a block**.
+5. **GUIDANCE UNTIL CONFIRMED · QUANTITY, NEVER MONEY**: a gable lands
+   provisional and contributes nothing (the rail shows an em dash, not a
+   0); apply writes `photo_gable_sqft` / `photo_dormer_face_sqft` /
+   `photo_dormer_cheek_sqft` on the photo lane. A pin scans the route for
+   `total_sell`/`unit_price`/`mat`/`lab`/`margin` and finds none; the live
+   run wrote **0 priced lines and no total_sell**.
+6. **A FACE WITH NO PHOTO STILL GETS NO GABLE**: a mark is geometry on ONE
+   photo, nothing mirrors or copies, and the basis line on the figure says
+   so. The AI read **proposes no gable and says why** — it returns a rise
+   NUMBER, not a triangle, so nothing is placed at a guessed spot.
+7. **DORMER DEPTH IS A QUANTITY INPUT**: changing it on a CONFIRMED dormer
+   returns the mark to PROVISIONAL — a confirmation cannot outlive the
+   figure it was given for.
+8. **"PULL IN WHAT I ALREADY DREW" NOW CARRIES GABLES AND DORMERS** with
+   symmetric, pitch and typed depth, as PROVISIONAL. A depth never typed
+   arrives as **nothing**, not as 1.5.
+9. **LIVE API RUN (throwaway estimate, deleted after)**: gable 30.0 ×
+   8.0 rise → **120.0 ft²** (0.70 would have said 168.0) · 2-point gable →
+   **400, refused by name** · dormer 6 × 10 → face 60.0, **cheeks refused**
+   → depth 2.0 typed → **demoted to provisional** → re-confirmed → cheeks
+   **40.0** · apply → photo-lane keys, 0 lines, no total_sell.
+10. **ITEM 3 — THE DOORS CAME OFF, AND ONLY THE DOORS.** Removed: the
+    tile's **Annotate / Edit annotations**, **Refine on Photo**, the
+    **refine photo picker**, and the annotator's **mount and import** on
+    that screen (with `annotateOpenFor` / `annotateGuided` / `refineOpen`).
+    KEPT and verified: PhotoTakeoffEditor (the ONE drawing door, 8 tiles) ·
+    pull-in · **Guided Capture Wizard** (its own mount, not an Annotate
+    door) · Advanced Tools for the debug view · the annotator as an IMPORT
+    SOURCE only. A pin fails if its name reappears in `AIMeasureButton.jsx`
+    outside a comment.
+11. **THE FIVE BROWSER CHECKS** (real photos, EST-373526): gable and dormer
+    **drawn** ✓ · panel `14.0 ft × 5.1 ft rise · ½ × w × rise = 35.4 ft²`,
+    rail **em dash while provisional** then **35.44 ft²** confirmed (the
+    retired factor would have printed 49.98) ✓ · dormer face 29.3, cheeks
+    em dash + named refusal, depth 2 → provisional → re-confirmed →
+    **18.75 ft²** ✓ · `ai-measure-photo-annotate-*` **0 of 8** (iteration 59
+    still saw 8), `ai-measure-refine-btn` **0**, `refine-photo-picker`
+    **0**, `photo-annotate-modal` never appears ✓ · pull-in "Nothing new to
+    pull in", no 500 ✓ · Guided Capture opens ✓.
+12. **REGISTERED, NOT BUILT** (reviewer's note, for Howard's ruling):
+    `PhotoTakeoffEditor.jsx` is now ~800 lines and `AIMeasureButton.jsx`
+    ~5,200 (it LOST 180 lines this send). A rail split is overdue; it is a
+    refactor, was not authorised, and was not attempted.
+13. **NOT AUTHORISED, NOT TOUCHED**: phase 2 trim · rectify · split
+    storage · rederive sweep · quote wiring.
+
+
 ## 2026-08-27 SEND-138 — GABLE RE-SEALED TO THE TRIANGLE (367.5 → 262.5) · NO REDERIVE SWEEP (stamped `2026-08-27 20:44 UTC · 1bfbfae · CLEAN · 3002 passed, 9 skipped, 7 warnings in 463.95s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed; zero pre-stamp reds)
 Full record: `memory/send138_report.md` · 11 pins in
 `tests/test_send138_gable_reseal_2026_08_27.py` + 6 NAMED pin updates.

@@ -1,5 +1,16 @@
 # SEND-139 — GABLES AND DORMERS MOVE INTO PHOTOTAKEOFFEDITOR · THE ANNOTATE DOORS COME OFF — 2026-08-27
 
+**STAMP: `2026-08-27 21:54 UTC · b00f642 · CLEAN · 3030 passed, 9 skipped,
+7 warnings in 455.91s`** · census pin GREEN, 0 PENDING_CONVERSION · ingress
+smoke 4 passed. **Pre-stamp reds: 3, all of them the guard catching THIS
+send's authorised removal** (pins that asserted the retired doors EXIST) —
+all three fixed as NAMED PIN UPDATES, no assertion weakened:
+`test_send131a` (the takeoff entry point is now THE drawing door, and the
+old one is pinned ABSENT), `test_refine_single_annotation_system` (re-cut:
+two annotation UIs became one — the rule is completed, not weakened), and
+`test_dormer_annotations` (the natural-image-dims round-trip now rides the
+surviving Guided Capture merge; its subject is unchanged).
+
 28 pins in `tests/test_send139_gable_dormer_move_2026_08_27.py` · live API
 e2e on a throwaway estimate (created and deleted, `memory/send139_e2e.py`)
 · **all 7 browser verifications PASS** (`test_reports/iteration_60.json`).
