@@ -167,20 +167,21 @@ export default function HoverImportButton({ est, update, save }) {
   // a fresh PDF read. Shown as a subtitle in the modal header so the
   // contractor knows no new LLM call was made.
   const [restoredAt, setRestoredAt] = useState(null);
-  // Iter 78ac — only treat the cache as restorable HOVER data when it
-  // was written by the HOVER importer. Blueprint and AI-Photo flows
-  // also persist into `est.hover_measurements`, but their lines can't
-  // be reliably re-derived from the cached payload (annotations + AI
-  // re-run are required), so the Restore HOVER button must hide for
-  // those sources. Legacy data without `_source` is assumed HOVER for
-  // backwards compatibility.
+  // SEND-135 (P0 MONEY BUG, Howard 2026-08-27 on EST-381546): the HOVER
+  // door is now SOURCE-LOCKED BY ALLOW-LIST. The previous guard was a
+  // DENY-list naming "blueprint" and "ai_photo" — and the photo apply
+  // writes `_source: "photo"`, a string that list never named. So a
+  // brand-new estimate that had only ever seen an AI PHOTO run grew a
+  // "Restore HOVER Lines" button, and pressing it presented PHOTO
+  // numbers under the words "cached HOVER measurements". A deny-list
+  // cannot hold: every future door has to remember to add itself.
+  // ONLY HOVER-SOURCED DATA IS RESTORABLE HERE. Legacy blobs with no
+  // `_source` predate the stamp and stay HOVER (back-compat, unchanged).
   const cachedSource = est?.hover_measurements?._source;
-  const hasCached = !!(
-    est?.hover_measurements
-    && Object.keys(est.hover_measurements).length
-    && cachedSource !== "blueprint"
-    && cachedSource !== "ai_photo"
-  );
+  const cachedIsHover = !cachedSource || cachedSource === "hover";
+  const hasAnyCached = !!(est?.hover_measurements
+    && Object.keys(est.hover_measurements).length);
+  const hasCached = hasAnyCached && cachedIsHover;
   // (Deep Verify retired 2026-07-29 — the straight-on elevation read is
   // the single verification pass; its warnings ride the same banner.)
   // SEALED DEFAULT (Howard, 2026-07-28 — production restore): the facade
@@ -321,7 +322,23 @@ export default function HoverImportButton({ est, update, save }) {
   // preview modal as a fresh import so the contractor can review +
   // selectively re-apply auto-fills that were accidentally cleared.
   const restore = async () => {
-    if (!hasCached) return;
+    // SEND-135 — THE CLICK IS THE ONLY TRIGGER, AND THE SOURCE IS
+    // CHECKED AT THE CLICK. This runs from the button and from nothing
+    // else: there is no effect, no page-load path and no AI-Photo side
+    // effect that can reach it. The source check is belt-and-braces
+    // behind the allow-list above — if a future door ever writes into
+    // the shared blob, the restore REFUSES BY NAME instead of dressing
+    // that door's numbers as HOVER lines.
+    if (!hasAnyCached) return;
+    if (!cachedIsHover) {
+      toast.error(
+        `This estimate's measurements came from the ${String(cachedSource).toUpperCase()} door, `
+        + "not a HOVER report. HOVER restore only ever re-derives THIS estimate's own HOVER "
+        + "source — another lane's numbers are never presented as HOVER lines.",
+        { duration: 9000 }
+      );
+      return;
+    }
     setBusy(true);
     setResult(null);
     setOpenings([]);
@@ -331,6 +348,12 @@ export default function HoverImportButton({ est, update, save }) {
     try {
       const { data } = await api.post("/measure/map", {
         measurements: est.hover_measurements,
+        // SEND-135 — the refusal is ENFORCED SERVER-SIDE too. The
+        // mapper is shared with the photo/per-elevation doors, so it
+        // cannot blanket-refuse; naming the lane we expect lets it
+        // refuse a cross-lane restore even if a future UI forgets.
+        expect_source: "hover",
+        estimate_id: est?.id || null,
         // PROFILE OWNS ITS FAMILY (P0 regression, ruled 2026-07-24): on a
         // profile-mapped estimate the restore derives the MAPPED family
         // and returns zero_family_lines so residue from other families
@@ -657,6 +680,19 @@ export default function HoverImportButton({ est, update, save }) {
           {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
           {t("hov.restore")}
         </button>
+      )}
+      {/* SEND-135 — WHERE THE DOOR IS OFF, IT SAYS SO. A missing button
+          with no reason is how a contractor ends up hunting for a
+          restore that must not exist on this estimate. */}
+      {hasAnyCached && !cachedIsHover && (
+        <div
+          className="text-[10px] leading-snug text-[var(--muted)] px-0.5"
+          data-testid="hover-restore-off-reason"
+        >
+          No HOVER restore on this estimate — its measurements came from the{" "}
+          <b className="uppercase">{String(cachedSource)}</b> door, not a HOVER report.
+          Another lane&apos;s numbers are never restored as HOVER lines.
+        </div>
       )}
 
       {showWarning && (

@@ -6828,6 +6828,24 @@ async def map_measurements_to_lines(
     the contractor produces measurements by tapping on a photo and we
     just need the same line mapping HOVER provides."""
     measurements = payload.get("measurements") or {}
+    # SEND-135 (P0 MONEY BUG, Howard 2026-08-27): A LANE MAY ONLY RESTORE
+    # ITS OWN SOURCE. The mapper is shared — the photo door and the
+    # per-elevation override door both call it legitimately with photo
+    # numbers — so it cannot blanket-refuse by source. What it CAN do is
+    # hold a caller to the lane it names: the HOVER restore sends
+    # `expect_source: "hover"`, and a blob stamped by any other door is
+    # REFUSED BY NAME here, not silently mapped and dressed as HOVER
+    # lines. Legacy blobs with no `_source` predate the stamp and pass.
+    expect_source = payload.get("expect_source")
+    if expect_source:
+        got = measurements.get("_source")
+        if got and got != expect_source:
+            raise HTTPException(
+                status_code=400,
+                detail=(f"these measurements came from the {got.upper()} door, "
+                        f"not {expect_source.upper()} — a lane restores only "
+                        "its own source; another door's numbers are never "
+                        f"mapped as {expect_source.upper()} lines"))
     # COLOR TIER (superseded 2026-08-02): tier derives from the colors,
     # per row. Caller may pass the estimate's Material Colors picks.
     if payload.get("row_colors"):

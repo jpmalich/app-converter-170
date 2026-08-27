@@ -1,5 +1,44 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-27 SEND-135 — P0 MONEY BUG FIXED: HOVER RESTORE IS LANE-LOCKED AND CLICK-ONLY (stamped `2026-08-27 · CLEAN · 2943 passed, 9 skipped in 451.90s`; browser PASS both ways)
+Full record: `memory/send135_report.md` · 11 pins in
+`tests/test_send135_hover_restore_lane_lock_2026_08_27.py`.
+**EST-381546 was READ ONLY — 44 lines, updated_at 09:50:22, unchanged;
+the 56 lines were never applied.**
+1. **ROOT CAUSE — ONE, NOT TWO**: the HOVER door's guard was a
+   **DENY-LIST** naming `"blueprint"` and `"ai_photo"`. The photo apply
+   stamps `_source: "photo"` — a string that list never named — so a
+   photo-only estimate grew a "Restore HOVER Lines" button and offered
+   PHOTO numbers as *cached HOVER measurements*. A deny-list cannot hold.
+2. **THE CROSS-ESTIMATE FAILURE DID NOT HAPPEN — reported honestly.**
+   The cache key is the estimate's own document. Mongo shows
+   `hover_measurements._run_id` = a run whose `estimate_id` IS
+   EST-381546, and no other estimate carries it. What crossed was the
+   **LANE**, not the estimate.
+3. **THE 5:45 TRIGGER**: `HoverImportButton.restore()` is the only code
+   that can open that dialog; the component has **no `useEffect` at
+   all**, one call site, and no other file calls it or reaches the
+   button. The press landed on a button **that should never have
+   existed** — it sits one tap-target below "IMPORT HOVER" and had
+   appeared minutes earlier when the photo apply wrote the blob.
+4. **THE VINYL DOLLARS** came from **Apply Measurements (photo run)** —
+   44 lines / $10,320.95 stamped at 09:50:22 with the photo run id —
+   **not** from the restore (it offered 56 and was cancelled).
+5. **THE FIX**: the door is now an **ALLOW-LIST** (`!_source || _source
+   === "hover"`), so every other door is shut by default without being
+   named; the click re-checks the lane and refuses by name; the refusal
+   is **enforced server-side** (`expect_source` on `/api/measure/map`,
+   400 naming the door the numbers came from) while the shared mapper
+   still serves its legitimate photo callers; and **where the door is
+   off it says so** (`hover-restore-off-reason`).
+6. **THE PIN HOWARD ASKED FOR**: a fresh estimate created over HTTP and
+   read twice carries no `hover_measurements` and **no lines** — the
+   dialog cannot exist and nothing writes a line on load.
+7. **RESIDUAL, NAMED**: photo numbers still live in the shared
+   `hover_measurements` blob (the ruled STEP-4 design; `_run_id` there is
+   load-bearing for `/pending-runs`). The DOOR was locked, not the
+   storage. Physically separating the lanes would be its own send.
+
 ## 2026-08-26 SEND-132 — ONE EDITOR, TWO STAGES (stamped `2026-08-26 · CLEAN · 2932 passed, 9 skipped in 452.93s`; browser 11/11 zero defects, `test_reports/iteration_59.json`)
 Full record: `memory/send132_report.md` · rectification report:
 `memory/send132_rectification_report.md` · 13 pins in
