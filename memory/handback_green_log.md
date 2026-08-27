@@ -414,3 +414,5 @@
 - 2026-08-25 20:33 UTC · 935f267 · INGRESS-SMOKE-CLEAN · 4 passed in 2.09s
 - 2026-08-26 01:19 UTC · e774561 · CLEAN · [tests] · 2891 passed, 9 skipped, 7 warnings in 478.15s (0:07:58)
 - 2026-08-26 01:19 UTC · e774561 · INGRESS-SMOKE-CLEAN · 4 passed in 1.64s
+- 2026-08-27 19:34 UTC · e1046d0 · CLEAN · [tests] · 2991 passed, 9 skipped, 7 warnings in 487.46s (0:08:07)
+- 2026-08-27 19:34 UTC · e1046d0 · INGRESS-SMOKE-CLEAN · 4 passed in 1.76s

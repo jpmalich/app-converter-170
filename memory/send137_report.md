@@ -1,5 +1,24 @@
 # SEND-137 — THE GABLE RULING: MEASURE THE TRIANGLE · 0.70 RETIRED — 2026-08-27
 
+**STAMP: `2026-08-27 19:34 UTC · e1046d0 · CLEAN · 2991 passed, 9 skipped,
+7 warnings in 487.46s`** · census pin GREEN, 0 PENDING_CONVERSION · ingress
+smoke 4 passed.
+
+**PRE-STAMP REDS, NAMED, NEVER STAMPED OVER (10 on the first run):** eight
+were the guard catching THIS send's change — stale 0.70 expectations in old
+pins — and all eight were fixed as **NAMED PIN UPDATES** (listed at the
+bottom), zero assertions weakened. Two were the known live-window transient
+family (`test_demo_reset` isolation: a concurrent test's `TEST_GATE` price
+tier and one extra estimate inside the reset window); both pass standalone
+and in the stamped run.
+
+**LIVE E2E, READ-ONLY, ON REAL BLUEPRINT ESTIMATES** (`/api/estimates/{id}/
+blueprint-elevation/left`, nothing written): EST-530671 left gable now
+returns **131.2 ft²** and EST-349048 left gable **222.3 ft²**, each stamped
+`gable_basis: "measured_triangle"` with the sentence *"gable measured — ½ ×
+width × rise = … from this face's own width and rise, no field factor"* —
+the same ½ figures the table below predicts, from the live surface.
+
 Howard's ruling, executed. `½ × width × rise` is the gable wall wherever
 that face's own width and rise exist. `0.70 × width × rise` is retired —
 not a fallback, not a waste factor, not a default, not a "close enough".

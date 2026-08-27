@@ -1,5 +1,84 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-27 SEND-137 — THE GABLE RULING EXECUTED: MEASURE THE TRIANGLE · 0.70 RETIRED · UNTRACED GABLE REFUSES (stamped `2026-08-27 19:34 UTC · e1046d0 · CLEAN · 2991 passed, 9 skipped, 7 warnings in 487.46s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send137_report.md` · 15 pins in
+`tests/test_send137_gable_ruling_2026_08_27.py` · probes (read-only)
+`memory/send137_probe.py` + `_probe2.py`. **EST-886440 read only; no
+estimate was written.**
+1. **HOWARD'S RULING, VERBATIM IN FORCE**: area = **½ × width × rise** when
+   width and rise exist on that face — that is the gable wall. **0.70 ×
+   width × rise is RETIRED**: not a fallback, not a waste factor, not a
+   default, not a "close enough". **AN UNTRACED GABLE HAS NO AREA** — it
+   refuses until the triangle is measured or Howard draws it (the same
+   shape as no-photo-no-wall).
+2. **ITEM 1 — EVERY LIVE 0.70 FIGURE NAMED, with the factor MEASURED from
+   the source run's own walls** (`carried ÷ Σ w×rise`): eleven blueprint
+   estimates at **0.70** (EST-349048 0.6985 · EST-530671 0.7000 and four
+   siblings at 367.5 · six at 621.1) and **EST-381546 at 0.5000 EXACTLY —
+   the PANEL's number, saved into the estimate.** Totals across the walk
+   rows in hand: **1,653.75 ft² at 0.70 → 1,050.00 ft² at ½ (−36.5%)**.
+   367.5 → **262.5** · 621.1 → **444.6** · EST-381546's 172.8 → **86.4**
+   (front only — SEND-136 refuses its unphotographed rear). The three
+   already-refusing houses do not change: a refusal was never a factor
+   question. Live estimates move on their NEXT REDERIVE.
+3. **ITEM 2 — THE FUNCTIONS, NAMED, NOT DEFENDED.** The two Howard meant:
+   **`measure_staging.walk_walls`** (0.70 — the function that put 0.70 in
+   the database) and **`recomputeFromWalls` in `AIMeasureButton.jsx`** (½ —
+   and whatever it computed got SAVED). **THREE MORE COPIES OF THE SAME
+   DISEASE, found while wiring and reported**: `profile_callouts`
+   (0.7, locked to the headline at the wrong number *by its own
+   docstring*), `routes/blueprint_elevation.py` (arithmetic ALREADY ½ while
+   printing the words "0.70 field factor applied" — the sheet disagreed
+   with its own sentence), and `PhotoMeasureButton.jsx` (the manual tape
+   card, `gw × gh × 0.7`, inflating a contractor's own taped triangle 40%).
+   **0.70 was never a second convention; it was a second implementation of
+   one number.**
+4. **WIRED — ONE FORMULA, ONE CONSTANT, ONE LABEL**: `GABLE_FACTOR = 0.70`
+   → **`GABLE_TRIANGLE_FACTOR = 0.5`** (renamed on purpose so every
+   consumer had to be re-read, never silently inherit). Basis binary
+   re-cut: `traced` (line-work) · `measured_triangle` (½ × w × rise); a
+   third value still raises. All five surfaces compute ½; the read-back
+   card's hard-coded 0.70 sentence is gone.
+5. **THE REFUSAL IS EVIDENCED, NOT NOISY**: `gable_claim_without_rise`
+   refuses only on the read's **explicit null rise** (its own "not
+   visible", which is NOT the `0` that means eave-only) or an explicit
+   upstream rise refusal. An ABSENT field claims no gable, so hip houses,
+   rectangle walls and hip-zeroed walls stay silent; a gable profile
+   callout is NOT accepted as a rise claim. ft² is **None, never 0**, the
+   reason rides `gable_refusal` + `faces_not_derivable`, and the
+   per-profile split names the same gap.
+6. **THE STORED PAST IS NAMED**: `GABLE_BASIS_RETIRED_FIELD_FACTOR` lives
+   on for ONE job — recognising a pre-ruling figure and answering **"STALE
+   BASIS … reads high until this estimate is re-derived"**. It is not a
+   member of `GABLE_BASES`, so nothing can compute with it again.
+7. **THE SEALED HAND TAKEOFF WAS NOT REWRITTEN.** Letrick's sealed key
+   carries a human's 367.5 ft² gable written by hand as w×h×0.7. Software's
+   0.70 is gone; a person's sealed figure is **Howard's to re-seal** — the
+   number stands and its basis line now says exactly that, with the
+   measured-triangle read and the delta printed beside it.
+8. **PANEL AND STORED FIGURE MATCH — PINNED EXECUTABLY**, not by comment: a
+   pin regex-reads the coefficient out of `AIMeasureButton.jsx` and asserts
+   it equals the backend constant; another runs an invented four-wall house
+   and asserts the panel's own arithmetic equals the walk's `gable_sqft`
+   (320.0 ft²); a third binds the per-profile split to body + gable. A
+   fourth scans staging, both AI doors, hover, lp_package and
+   profile_callouts so **the factor cannot return through a sixth copy**.
+9. **LIVE E2E (read-only)**: EST-530671 left gable returns **131.2 ft²**
+   and EST-349048 left **222.3 ft²**, both stamped `measured_triangle` with
+   the mandated sentence — the ½ figures, from the live surface.
+10. **NAMED PIN UPDATES (never silently flipped)**: three-doors step 1
+    (factor 0.70 → ½; ONE formula both doors unchanged) · send74 gable
+    basis (binary's second member changed, discipline did not) · Ruling Y
+    send23 (intent untouched: the gable stays as wide as its real widths) ·
+    d667 reconcile (the self-disagreement stays closed, at 271.5) ·
+    blueprint-cut pitch delta (10.5 → 7.5) · Letrick lap-unification seals
+    1 and 2 · SEND-136's three gable arithmetic pins.
+11. **STILL OPEN / NOT AUTHORISED**: gables and dormers are not in
+    PhotoTakeoffEditor · **Annotate stays** (import never verified on a
+    real session) · phase 2 trim, rectify, hover/photo storage split all
+    parked.
+
+
 ## 2026-08-27 SEND-136 — CLOSED: (A) NO PHOTO, NO WALL · (B) NAME THE PLANE (32 pins green in `tests/test_send136_no_photo_no_wall_and_plane_basis_2026_08_27.py`; browser front-only rig PASS; EST-381546 untouched)
 Full record: `memory/send136_report.md`. Closed on Howard's order
 2026-08-27: **close-out only, no new code.**
