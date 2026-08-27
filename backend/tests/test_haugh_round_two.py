@@ -180,13 +180,19 @@ class TestRoundTwoPins:
         no tape, no DP-1 chain — so the height-based gutter reads
         (downspout sticks, pipe clips) now REFUSE instead of deriving
         from the retired model-height/story ladder. Their rows drop out
-        of the priced preview: 13314.98 → 13089.60. The refusal is the
+        of the priced preview: 13314.98 → 13089.60.
+        PIN AMENDED (SEND-138 GABLE RE-SEAL, Howard ruled 2026-08-27):
+        the sealed fixture's gable total is re-sealed to the measured
+        triangle (367.5 → 262.5), so the key raw drops 2099.7 → 1994.7 —
+        lap 255 → 242 pcs (−13 × $30.99 = −$402.87) and caulk 21 → 20
+        tubes (−$14.03): 13089.60 → 12672.70 (−$416.90, fully accounted).
+        The refusal is the
         ruling working, not a regression."""
         import os
         tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
         d = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
                          json={}, headers={"X-Admin-Token": tok}, timeout=60).json()
-        assert d["summary"]["pricing"]["total_sell"] == 13089.60
+        assert d["summary"]["pricing"]["total_sell"] == 12672.70
         l540 = _line(d, '540 Series Trim 5/4" x 4"')
         assert "MEASURED opening perimeter" not in l540["note"]
 

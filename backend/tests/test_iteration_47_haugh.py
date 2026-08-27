@@ -154,7 +154,12 @@ def test_C_letrick_photo_regression(sess):
     PIN AMENDED (SEND-105 RULING V, named per SEND-99 cond. 1): the
     photo estimate has no verified wall height, so the height-based
     gutter reads (downspout sticks, pipe clips) REFUSE — the retired
-    model/story ladder no longer prices them: 13314.98 → 13089.60."""
+    model/story ladder no longer prices them: 13314.98 → 13089.60.
+    PIN AMENDED (SEND-138 GABLE RE-SEAL, Howard ruled 2026-08-27): the
+    sealed fixture's gable total is re-sealed to the measured triangle
+    (367.5 → 262.5), so the key raw drops 2099.7 → 1994.7 — lap 255 → 242
+    pcs (−$402.87) and caulk 21 → 20 tubes (−$14.03): 13089.60 →
+    12672.70 (−$416.90, fully accounted)."""
     import os
     tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
     p = sess.post(f"{API}/admin/estimates/{LETRICK_ID}/lp-package/cost-preview",
@@ -165,7 +170,7 @@ def test_C_letrick_photo_regression(sess):
     pricing = summary.get("pricing") or {}
     total = pricing.get("total_sell") or summary.get("total_sell") or data.get("total_sell")
     assert total is not None, f"no total_sell; summary keys={list(summary.keys())} pricing={pricing}"
-    assert abs(float(total) - 13089.60) < 0.01, f"total_sell={total}, expected 13089.60"
+    assert abs(float(total) - 12672.70) < 0.01, f"total_sell={total}, expected 12672.70"
     wpa = summary.get("waste_pct_applied")
     assert wpa is not None, "summary.waste_pct_applied missing on letrick"
     assert abs(float(wpa) - 0.10) < 1e-6, f"waste_pct_applied={wpa}"

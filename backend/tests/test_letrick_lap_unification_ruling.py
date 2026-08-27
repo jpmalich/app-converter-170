@@ -56,7 +56,10 @@ def test_seal1_key_bound_area_every_line_names_basis(pkg):
     assert comps["front wall"]["sqft"] == 478.1
     assert comps["back wall"]["sqft"] == 535.7
     assert comps["stepped side walls"]["sqft"] == 566.4
-    assert comps["gables"]["sqft"] == 367.5
+    # NAMED PIN UPDATE (SEND-138, Howard re-sealed 2026-08-27): the sealed
+    # gable total is the same walls at ½ × width × rise — 262.5, not the
+    # 0.70-era 367.5, which is RETIRED AS A TARGET.
+    assert comps["gables"]["sqft"] == 262.5
     assert comps["chase faces"]["sqft"] == 152.39
     # NAMED PIN UPDATE (SEND-137, 2026-08-27): "BOOK" left the vocabulary
     # with the 0.70 factor. The DISCIPLINE is unchanged — EVERY component
@@ -65,9 +68,10 @@ def test_seal1_key_bound_area_every_line_names_basis(pkg):
     assert all(("TAPED" in b["basis"] or "SEALED HAND TAKEOFF" in b["basis"])
                for b in ab)
     # itemization carries the key's own rounding ("~566.4" sides) —
-    # governing total is the key raw 2099.7, bound below
-    assert abs(sum(b["sqft"] for b in ab) - 2099.7) <= 0.5
-    assert pkg["summary"]["chase_face_ratification"]["siding_sqft_effective"] == 2099.7
+    # governing total is the key raw, bound below. NAMED PIN UPDATE
+    # (SEND-138): the re-sealed gable drops the raw 2099.7 → 1994.7.
+    assert abs(sum(b["sqft"] for b in ab) - 1994.7) <= 0.5
+    assert pkg["summary"]["chase_face_ratification"]["siding_sqft_effective"] == 1994.7
     ai = pkg["summary"]["area_basis_ai_comparison"]
     assert ai["siding_sqft"] == 1889.1
     assert "named fallback" in ai["note"]
@@ -86,19 +90,21 @@ def test_seal2_gable_book_convention_with_deviation_flag(pkg):
     assert not hasattr(lp_package, "GABLE_BOOK_FACTOR")
     g = next(b for b in pkg["summary"]["area_basis"] if b["component"] == "gables")
     assert "SEALED HAND TAKEOFF" in g["basis"]
-    assert "RETIRED in software" in g["basis"]
-    assert "re-seals" in g["basis"]
+    assert "RE-SEALED TO THE TRIANGLE" in g["basis"]
+    assert "½ × 30.0' × 8.75'" in g["basis"]
+    assert "retired as a target" in g["basis"]
     assert "on record" in g["basis"] and "flagged" in g["basis"]
 
 
 def test_seal3_book_piece_formula_pdf_retired(pkg):
     """Item 3: 11 pcs/sq (book counter convention, cited); base count
-    carries NO baked waste: 2099.7 ÷ 100 × 11 = 230.97."""
+    carries NO baked waste. NAMED PIN UPDATE (SEND-138 gable re-seal):
+    1994.7 ÷ 100 × 11 = 219.42 (was 230.97 on the 0.70-era gable)."""
     from lp_conventions import LAP_PCS_PER_SQUARE_16FT
     from lp_smartside_formulas import LAP_PCS_PER_SQUARE
     assert LAP_PCS_PER_SQUARE == LAP_PCS_PER_SQUARE_16FT['8" Lap'] == 11
     lap = next(l for l in pkg["lines"] if "38 Series Lap 3/8" in l["name"])
-    assert lap["math"]["base_qty"] == 230.97          # no waste baked
+    assert lap["math"]["base_qty"] == 219.42          # no waste baked
     assert "book 11 pcs/sq" in lap["math"]["formula"]
     assert "PDF 9.17 retired" in lap["math"]["formula"]
 
@@ -117,8 +123,10 @@ def test_seal4_waste_is_contractors_no_silent_waste(pkg):
 
 def test_letrick_identity_app_equals_key_residual_zero(pkg):
     """Item 5 receipt: restated app lap (key-bound area, book formula,
-    contractor 10%) = 255 = the sealed key's 255 — residual ZERO."""
+    contractor 10%) = the sealed key's own lap — residual ZERO. NAMED PIN
+    UPDATE (SEND-138 gable re-seal): both ledgers move together, 255 →
+    242, and the identity holds — which is what this pin is for."""
     from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
     key_lap = next(l for l in KEY["lines"] if "38 Series Lap" in l["item"])
     app_lap = next(l for l in pkg["lines"] if "38 Series Lap 3/8" in l["name"])
-    assert app_lap["qty"] == key_lap["qty"] == 255
+    assert app_lap["qty"] == key_lap["qty"] == 242

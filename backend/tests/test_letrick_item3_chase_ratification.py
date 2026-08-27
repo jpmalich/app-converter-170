@@ -80,13 +80,14 @@ def test_chase_face_formula_named_and_pinned():
 def test_app_ledger_key_bound_area_and_unified_lap(pkg):
     """PIN AMENDED (lap unification ruling, 2026-07-19; was 227→230 swap
     pin): APP line now KEY-BOUND + book formula + contractor waste —
-    area 2099.7 (sealed key raw), base 2099.7 ÷ 100 × 11 = 230.97 (NO
-    baked waste), contractor's field 10% → 254.06 → ceil = 255 = the
-    sealed key EXACTLY (residual zero). Receipts on the line note."""
+    area = sealed key raw. NAMED PIN UPDATE (SEND-138 gable re-seal to the
+    triangle): raw 2099.7 → 1994.7, base 1994.7 ÷ 100 × 11 = 219.42 (NO
+    baked waste), contractor's field 10% → 241.36 → ceil = 242 = the
+    sealed key EXACTLY (residual zero holds). Receipts on the line note."""
     lap = _line(pkg, "38 Series Lap 3/8")
-    assert lap["qty"] == 255
-    assert lap["math"]["base_qty"] == 230.97
-    assert lap["math"]["ordered_pcs"] == 255
+    assert lap["qty"] == 242
+    assert lap["math"]["base_qty"] == 219.42
+    assert lap["math"]["ordered_pcs"] == 242
     assert lap["math"]["waste_pct"] == 10.0
     assert "book 11 pcs/sq" in lap["math"]["formula"]
     assert "AREA BASIS KEY-BOUND" in lap["note"]
@@ -94,7 +95,7 @@ def test_app_ledger_key_bound_area_and_unified_lap(pkg):
     assert "SUPERSEDE AI-attributed 130 ft² (swap, no double count)" in lap["note"]
     cfr = pkg["summary"]["chase_face_ratification"]
     assert cfr["total_sqft"] == 152.39 and cfr["ai_sqft"] == 130.0
-    assert cfr["siding_sqft_effective"] == 2099.7
+    assert cfr["siding_sqft_effective"] == 1994.7
 
 
 def test_osc_unchanged_with_sealed_placement_rule(pkg):
@@ -114,14 +115,16 @@ def test_key_ledger_item3_amendment():
     chase_outer 47.97 → 51.37, chase_sides 97.56 → 101.02, raw 2092.8 →
     2099.7, lap 254 → 255. LEDGERS UNIFIED (lap unification ruling,
     2026-07-19): the app line binds the key area + book formula +
-    contractor waste and lands on the SAME 255 — residual zero."""
+    contractor waste and lands on the SAME figure — residual zero.
+    NAMED PIN UPDATE (SEND-138 gable re-seal): raw 2099.7 → 1994.7 and
+    lap 255 → 242; the item-3 chase figures are UNTOUCHED."""
     from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
     assert KEY["inputs"]["chase_outer_sqft"] == 51.37
     assert KEY["inputs"]["chase_sides_sqft"] == 101.02
-    assert KEY["inputs"]["raw_sqft"] == 2099.7
+    assert KEY["inputs"]["raw_sqft"] == 1994.7
     lap = next(l for l in KEY["lines"] if "38 Series Lap" in l["item"])
-    assert lap["qty"] == 255
-    assert "item-3 ratified 2026-07-19" in lap["derivation"]
+    assert lap["qty"] == 242
+    assert "gable re-seal to the triangle 2026-08-27" in lap["derivation"]
     osc = next(l for l in KEY["lines"] if "540 Series OSC" in l["item"])
     assert osc["qty"] == 8
     assert "POOLED convention SEALED 2026-07-19" in osc["derivation"]

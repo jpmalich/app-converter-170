@@ -255,9 +255,11 @@ def _apply_key_bound_areas(measurements, est):
     2026-07-19; generalizes the item-3 gate): material-list area
     derivation BINDS the sealed key's taped/TAPED-DERIVED dims wherever
     they exist; AI-run values are the NAMED FALLBACK only where no key
-    value exists. Every area line names its basis. Letrick: 54' eaves,
-    taped heights, stepped sides, book gables (w×h×0.7, sealed), composed
-    chase faces (item-3 ratified) → key raw_sqft governs siding area.
+    value exists. Every area line names its basis. The sealed fixture: 54'
+    eaves, taped heights, stepped sides, **gables re-sealed to the measured
+    triangle (½ × width × rise, SEND-138 2026-08-27 — the 0.70-era figure
+    is retired as a target)**, composed chase faces (item-3 ratified) →
+    key raw_sqft governs siding area.
     Gate: portable `sealed_key` doc flag (ruled 2026-07-26) — no runtime
     match on estimate numbers; values stay in letrick_hand_takeoff_key.py."""
     if est.get("sealed_key") != "letrick_v3":
@@ -279,13 +281,13 @@ def _apply_key_bound_areas(measurements, est):
         {"component": "front wall", "sqft": 478.1, "basis": "TAPED-DERIVED — sealed key (54' × 8.85')"},
         {"component": "back wall", "sqft": 535.7, "basis": "TAPED-DERIVED — sealed key (54' × 9.92')"},
         {"component": "stepped side walls", "sqft": 566.4, "basis": "TAPED-DERIVED — sealed key (taped segments)"},
-        {"component": "gables", "sqft": 367.5,
-         "basis": (f"SEALED HAND TAKEOFF 2026-07-19 — a human's figure, not "
-                   f"a computation (it was written as w×h×0.7; that factor "
-                   f"is RETIRED in software, SEND-137 2026-08-27, and this "
-                   f"sealed number stands until Howard re-seals it). "
+        {"component": "gables", "sqft": inp["gables_sqft"],
+         "basis": (f"SEALED HAND TAKEOFF, RE-SEALED TO THE TRIANGLE "
+                   f"2026-08-27 — 2 gable ends, each ½ × 30.0' × 8.75' = "
+                   f"131.25 (the 0.70-era 367.5 is retired as a target). "
                    f"Measured-triangle read {ai_gables:g} on record, "
-                   f"Δ {round(367.5 - ai_gables, 1):+g} flagged")},
+                   f"Δ {round(float(inp['gables_sqft']) - ai_gables, 1):+g} "
+                   f"flagged")},
         {"component": "chase faces", "sqft": chase_total,
          "basis": "TAPED — item-3 ratified 2026-07-19 (outboard 51.37 + sides 101.02)"},
     ]
