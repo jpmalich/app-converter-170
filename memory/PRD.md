@@ -1,5 +1,61 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-27 SEND-140 — THE REFUSAL RECEIPT: ONE LINE THAT SAYS WHAT TO TAPE (stamped `2026-08-27 22:47 UTC · 4ae840a · CLEAN · 3045 passed, 9 skipped, 7 warnings in 467.68s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed; zero pre-stamp reds)
+Full record: `memory/send140_report.md` · 15 pins in
+`tests/test_send140_refusal_receipt_2026_08_27.py` · all four
+verifications done **in the browser on real photos**. No estimate written
+(the run's 3 marks + scale were deleted from EST-373526 after).
+**EST-886440 untouched.**
+1. **THE LINE IS WRITTEN FROM THE LIVE REFUSAL, NOT HARD-CODED.** Real
+   strings: rise missing → *"Measure the rise at the peak on this photo —
+   width is known, rise is not."* · width missing → *"Re-tap the left and
+   right eave points apart on this photo — rise is known, width is not."* ·
+   not a triangle → *"Trace left eave, peak, and right eave — this mark is
+   not a triangle yet (2 of 3 points)."* · no scale → *"Set the scale on
+   this photo … the triangle is already drawn."* · cheeks → *"Type the
+   dormer depth in feet — the face is drawn, cheeks cannot be counted
+   without it."* (plus the dormer's own not-a-face / corners / no-scale
+   lines).
+2. **IT NAMES THE MISSING FIELD, NOT A GENERIC PLEA** — the rise case says
+   the width IS known and the width case says the reverse, pinned both ways
+   round so they can never be swapped; the point-count lines carry the
+   mark's OWN count, which is why they could not be hard-coded.
+3. **WHAT IT NEVER DOES, pinned across every sentence the route can emit**:
+   no invented number · **no 0.7 / 0.70 / "factor"** · no ft², "typical",
+   "average", "assume" · **never points at another photo or another face**
+   (no "another"/"other face"/"opposite"/"mirror"/"same as") — every line
+   points at THIS photo, THIS mark, or the depth field in front of him.
+4. **A MEASURED FIGURE CARRIES NO RECEIPT**: `receipt` is None on a
+   measured gable, `cheek_receipt` None on a counted cheek, and a drawn
+   dormer face with no depth **keeps its face figure** while the receipt
+   rides the CHEEKS only. A provisional mark earns none — not confirmed is
+   not refused, it is guidance and already named.
+5. **THE SERVER WRITES THE LINE, THE EDITOR ONLY PRINTS IT**:
+   `gable_receipts` / `dormer_receipts` carry `{id, label, receipt}` and
+   nothing else, keyed by mark; a pin asserts none of these sentences
+   exists in the JSX, so the reason cannot be re-decided or drift on the
+   client.
+6. **THE FOUR CHECKS, IN THE BROWSER (EST-373526, front elevation)**: flat
+   gable → the rise line, rail **em dash** ✓ · dormer with no depth → the
+   depth line, cheeks **em dash**, face **27 ft²** ✓ · measured gable →
+   panel `12.5 ft × 5.3 ft rise · ½ × w × rise = 32.8 ft²`, rail **32.81
+   ft²**, receipt count **0** while the flat gable's receipt still showed a
+   row above (so the absence is the rule working, not the feature missing)
+   ✓ · **no money token on the route** ✓.
+7. **SCOPE HELD**: a pin asserts the ONLY receipt keys in the whole route
+   are `receipt`, `cheek_receipt`, `gable_receipts`, `dormer_receipts`, and
+   that nothing above the gable helper coaches anything — **no coach for
+   wall-height refusals, blueprint faces or openings.**
+8. **SEEN AND NOT TOUCHED, FOR HOWARD'S RULING**: the refused gable's mark
+   row shows **"0 ft²"** on the right — that is the DRAWN POLYGON's own
+   area (a flat triangle encloses nothing), not a quantity, but it sits on
+   the same row as *"REFUSED, never a 0"* and reads as a contradiction.
+   Fixing it is a display change this send did not authorise ("Nothing
+   else"), so it is reported and left alone.
+9. **NOT AUTHORISED, NOT TOUCHED**: rail split · phase 2 trim · fixture
+   rename · quote wiring · rectify.
+
+
 ## 2026-08-27 SEND-139 — GABLES AND DORMERS MOVED INTO PHOTOTAKEOFFEDITOR · THE ANNOTATE DOORS ARE OFF (stamped `2026-08-27 21:54 UTC · b00f642 · CLEAN · 3030 passed, 9 skipped, 7 warnings in 455.91s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send139_report.md` · 28 pins in
 `tests/test_send139_gable_dormer_move_2026_08_27.py` · live API e2e on a

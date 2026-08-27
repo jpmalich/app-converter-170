@@ -1,5 +1,9 @@
 # SEND-140 — THE REFUSAL RECEIPT: GABLES AND DORMER CHEEKS — 2026-08-27
 
+**STAMP: `2026-08-27 22:47 UTC · 4ae840a · CLEAN · 3045 passed, 9 skipped,
+7 warnings in 467.68s`** · census pin GREEN, 0 PENDING_CONVERSION · ingress
+smoke 4 passed. **Zero pre-stamp reds — the full run was green first time.**
+
 One contractor sentence on the refused mark, saying what to tape. Nothing
 else. 15 pins in `tests/test_send140_refusal_receipt_2026_08_27.py`, all
 four verifications done **in the browser on real photos**. No estimate was
