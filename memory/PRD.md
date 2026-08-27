@@ -1,5 +1,55 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-27 SEND-138 — GABLE RE-SEALED TO THE TRIANGLE (367.5 → 262.5) · NO REDERIVE SWEEP (stamped `2026-08-27 20:44 UTC · 1bfbfae · CLEAN · 3002 passed, 9 skipped, 7 warnings in 463.95s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed; zero pre-stamp reds)
+Full record: `memory/send138_report.md` · 11 pins in
+`tests/test_send138_gable_reseal_2026_08_27.py` + 6 NAMED pin updates.
+**No estimate written. No sweep run. EST-886440 untouched.**
+1. **RULING 1 — NO REDERIVE SWEEP, honoured by doing nothing.** The eleven
+   0.70 estimates keep their stored figures; they are not real quotes. No
+   migration exists, and a pin now fails the suite if a bulk write ever
+   appears beside gable logic in `routes/`. Software already computes ½ on
+   the next live derivation — those documents simply never take one.
+2. **RULING 2 — THE FACES: two gable ends, ONE PER SIDE FACE, each 30.0 ft
+   wide × 8.75 ft rise. ½ × 30.0 × 8.75 = 131.25 each → 262.5 SEALED.**
+   Two independent routes agree: Howard's 367.5 × (0.5/0.7) = 262.5 to the
+   penny, and the old figure's own composition 0.70 × 2 × 30.0 × 8.75 (the
+   same walls, only the factor moved).
+3. **THE SEAL PROVES ITS OWN GEOMETRY — no outside read borrowed**:
+   `rakes_lf` 69.6 = 4 × 17.4 (four rakes ⇒ TWO gable ends), and
+   √(15.0² + 8.75²) = 17.37 ≈ 17.4 reproduces both the 30 ft width and the
+   8.75 ft rise from inside the seal. Pinned.
+4. **262.5 IS A REGISTERED VALUE, not a comment.** The sealed fixture gains
+   `inputs["gables_sqft"] = 262.5` with its own `bases` formula entry;
+   before this send the gable total lived only inside a code comment. The
+   consumer now READS that value (`inp["gables_sqft"]`) and keeps no copy —
+   one home for the sealed figure.
+5. **367.5 IS RETIRED AS A TARGET.** Pinned: no sealed input and no sealed
+   line equals it; the consumer holds no `"sqft": 367.5`; wherever the
+   digits survive they sit INSIDE the sentence that retires them. Nothing
+   tunes toward it, and the retirement is recorded rather than erased.
+6. **DEPENDENTS RE-DERIVED (a seal that does not sum is not a seal)**, per
+   the standing ruling that a computed total may not outlive a superseded
+   input and the fixture's own KEY-HYGIENE precedent: gables 367.5 →
+   **262.5** · walls_gables 1947.3 → **1842.3** (the stated total less the
+   same 105.0; the pre-existing 0.4 back-wall rounding flag left exactly as
+   it was) · raw 2099.7 → **1994.7** · sealed lap 255 → **242 PCS**.
+   **NOTHING ELSE MOVED** (pinned): eaves/rakes/fascia/perimeter/starter/
+   OSC/ISC/soffit/trim read no gable area; item-3 chase figures untouched.
+7. **MONEY CONSEQUENCE, FULLY ACCOUNTED, REPORTED NOT BURIED**: the sealed
+   fixture's demo estimate `total_sell` **13,089.60 → 12,672.70
+   (−416.90)** — lap 13 pcs (−$402.87) + caulk 1 tube (−$14.03), every cent
+   named. **THE IDENTITY SURVIVED**: app lap == key lap (242 = 242,
+   residual ZERO) — both ledgers moved together.
+8. **NO JOB NAME INTRODUCED**: the new pin file speaks of THE SEALED
+   FIXTURE and a pin enforces that the legacy name appears only where the
+   pre-existing module is imported; the consumer docstring stopped using
+   the customer name; the gate stays the portable `sealed_key` doc flag,
+   never a runtime match on an estimate number. **PRE-EXISTING AND
+   REPORTED, NOT TOUCHED**: the key module's filename/constant and the
+   `fixture_figures` registry key already carry that name from earlier
+   sends; renaming was not authorised and was not attempted.
+
+
 ## 2026-08-27 SEND-137 — THE GABLE RULING EXECUTED: MEASURE THE TRIANGLE · 0.70 RETIRED · UNTRACED GABLE REFUSES (stamped `2026-08-27 19:34 UTC · e1046d0 · CLEAN · 2991 passed, 9 skipped, 7 warnings in 487.46s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send137_report.md` · 15 pins in
 `tests/test_send137_gable_ruling_2026_08_27.py` · probes (read-only)

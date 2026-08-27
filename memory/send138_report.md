@@ -1,5 +1,11 @@
 # SEND-138 — THE GABLE RE-SEAL: 367.5 → 262.5 · NO REDERIVE SWEEP — 2026-08-27
 
+**STAMP: `2026-08-27 20:44 UTC · 1bfbfae · CLEAN · 3002 passed, 9 skipped,
+7 warnings in 463.95s`** · census pin GREEN, 0 PENDING_CONVERSION · ingress
+smoke 4 passed. **Zero pre-stamp reds — the pre-stamp full run was green
+first time (3002 passed), every affected pin having been updated NAMED
+before it was run.**
+
 Two rulings, executed. 11 pins in
 `tests/test_send138_gable_reseal_2026_08_27.py` + 6 NAMED pin updates.
 **No estimate was written. No sweep was run. EST-886440 untouched.**
