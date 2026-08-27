@@ -196,8 +196,9 @@ BATTEN_STOCK_LENGTH_FT = 16.0
 #   default spacing→ 16" o.c., JOB-EDITABLE, divides-48 validation
 #   starter        → NO starter on B&B — panels start on the ledge; a
 #                    starter line on B&B composition is a BUG (pinned)
-#   gable factor   → ×0.7, same as lap (carried by the measurement
-#                    engine's C4 gable-area convention upstream)
+#   gable factor   → ½ × width × rise, the measured triangle (carried by
+#                    the measurement engine upstream; SEND-137 retired the
+#                    0.7 factor — an untraced gable has no area)
 #   panel waste    → family default 30% (SEALED 2026-07-24 — Casile
 #                    68-panel walk is the standing proof; corrected here
 #                    by ruling C 2026-07-26; the 2026-07-16 "10% incl.
@@ -213,7 +214,9 @@ BB_RULED_FINAL = {
     "default_spacing_in": DEFAULT_BATTEN_SPACING_IN,
     "default_spacing_in_2026_07_16_superseded": 16,
     "starter_on_bb": False,
-    "gable_factor": "0.7 — same as lap, applied upstream (C4)",
+    "gable_factor": ("½ × width × rise — the measured triangle, applied "
+                     "upstream (SEND-137 2026-08-27; the 0.7 factor is "
+                     "RETIRED, not carried here)"),
     "panel_waste_default": 0.30,
 }
 

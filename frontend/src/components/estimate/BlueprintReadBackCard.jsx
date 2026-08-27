@@ -186,7 +186,7 @@ export default function BlueprintReadBackCard({ readback, pagePaths = [] }) {
         )}
         {plane_totals && Number(plane_totals.gable_ends) > 0 && (
           <div className="text-[10px] font-bold text-[var(--warning-text)]" data-testid="bp-rb-gable-basis">
-            gable not traced — 0.70 field factor applied (safety margin for an approximate gable measurement)
+            gable measured — ½ × width × rise from this face's own width and rise, no field factor (SEND-137: the 0.70 field factor is retired; an untraced gable has no area and refuses by name)
           </div>
         )}
         {gable_attribution && gable_attribution.attributions && gable_attribution.attributions.length > 0 && (

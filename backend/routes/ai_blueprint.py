@@ -4708,8 +4708,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
     except Exception:
         _garage_verdict, _closure, _refused_faces = None, None, {}
     # ONE WALL WALK (ruled 2026-08-01, step 1): shared math in
-    # measure_staging.walk_walls — GABLE FACTOR 0.70 sealed across doors
-    # (the pre-C4 0.5 true-triangle retired). Blueprint's source adapter
+    # measure_staging.walk_walls — GABLE = ½ × width × rise, THE MEASURED
+    # TRIANGLE (SEND-137, Howard ruled 2026-08-27; the 0.70 field factor is
+    # retired). Blueprint's source adapter
     # keeps the pitch-computed rise (printed pitch beats drawing-scaled).
     _walk = staging.walk_walls(walls, gable_rise_fn=_gable_rise,
                                refused_faces=_refused_faces,

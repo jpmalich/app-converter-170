@@ -1,27 +1,34 @@
 """STEP 1 SEALS — Three Doors build (Howard ruled 2026-08-01).
-ONE aggregation copy: gable 0.70 all doors · door_count lands on every door ·
-ONE window-openings builder (paired by shared UUID) · full precision at intake
-(round once, at the order layer) · no second copy of the walk anywhere."""
+ONE aggregation copy: ONE gable formula all doors · door_count lands on every
+door · ONE window-openings builder (paired by shared UUID) · full precision at
+intake (round once, at the order layer) · no second copy of the walk anywhere.
+
+NAMED PIN UPDATE (SEND-137, Howard ruled 2026-08-27): the sealed factor moves
+from 0.70 to ½ — the measured triangle. STEP 1'S INVARIANT IS UNCHANGED and is
+what these pins hold: ONE formula, both doors, no second copy."""
 import inspect
 
-from measure_staging import (GABLE_FACTOR, walk_walls, bucket_openings,
-                             build_paired_openings)
+from measure_staging import (GABLE_TRIANGLE_FACTOR, walk_walls,
+                             bucket_openings, build_paired_openings)
 from routes.ai_measure import _aggregate_to_hover_shape as photo_agg
 from routes.ai_blueprint import _aggregate_to_hover_shape as bp_agg
 
 
-def test_gable_factor_sealed_070():
-    assert GABLE_FACTOR == 0.70
+def test_gable_factor_is_the_measured_triangle():
+    assert GABLE_TRIANGLE_FACTOR == 0.5
 
 
 def test_same_gable_same_area_both_ai_doors():
-    """The 0.5-vs-0.7 door divergence is CLOSED: identical wall reads yield
+    """The door divergence stays CLOSED: identical wall reads yield
     identical gable credit through photo and blueprint (no pitch)."""
     walls = [{"label": "front", "width_ft": 32, "height_ft": 9,
-              "gable_triangle_height_ft": 6, "siding_pct_this_wall": 100}]
+              "gable_triangle_height_ft": 6, "siding_pct_this_wall": 100,
+              "_source_photo_indices": [0],
+              "width_ft_source": "direct_ref",
+              "height_ft_source": "direct_single_reading"}]
     p = photo_agg({"walls": [dict(w) for w in walls], "openings": []})
     b = bp_agg({"walls": [dict(w) for w in walls], "windows": [], "doors": []})
-    expect = 0.70 * 32 * 6
+    expect = 0.5 * 32 * 6
     assert p["_ai_gable_sqft"] == round(expect, 1)
     assert b["_ai_gable_sqft"] == round(expect, 1)
     assert p["siding_sqft"] == b["siding_sqft"] == 32 * 9 + expect
@@ -85,7 +92,7 @@ def test_shared_walk_and_buckets_math():
                      "gable_triangle_height_ft": 8.5,
                      "siding_pct_this_wall": 0.85}])   # fraction defense
     assert w["siding_sqft"] == 30 * 8.5 * 0.85
-    assert w["gable_sqft"] == 0.70 * 30 * 8.5
+    assert w["gable_sqft"] == 0.5 * 30 * 8.5
     bk = bucket_openings([{"type": "entry_door", "count": 2, "width_in": 36, "height_in": 80}])
     assert bk["door_count"] == 2 and bk["opening_count"] == 2
     assert bk["opening_perimeter_lf"] == 2 * 2 * ((36 + 80) / 12.0)

@@ -280,8 +280,12 @@ def _apply_key_bound_areas(measurements, est):
         {"component": "back wall", "sqft": 535.7, "basis": "TAPED-DERIVED — sealed key (54' × 9.92')"},
         {"component": "stepped side walls", "sqft": 566.4, "basis": "TAPED-DERIVED — sealed key (taped segments)"},
         {"component": "gables", "sqft": 367.5,
-         "basis": (f"BOOK w×h×0.7 — sealed 2026-07-19 (AI true-triangle {ai_gables:g} on record, "
-                   f"Δ {round(367.5 - ai_gables, 1):+g} flagged)")},
+         "basis": (f"SEALED HAND TAKEOFF 2026-07-19 — a human's figure, not "
+                   f"a computation (it was written as w×h×0.7; that factor "
+                   f"is RETIRED in software, SEND-137 2026-08-27, and this "
+                   f"sealed number stands until Howard re-seals it). "
+                   f"Measured-triangle read {ai_gables:g} on record, "
+                   f"Δ {round(367.5 - ai_gables, 1):+g} flagged")},
         {"component": "chase faces", "sqft": chase_total,
          "basis": "TAPED — item-3 ratified 2026-07-19 (outboard 51.37 + sides 101.02)"},
     ]

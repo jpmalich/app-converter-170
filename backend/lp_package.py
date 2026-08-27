@@ -42,11 +42,11 @@ SIDING_BOARD_LEN_FT = 16.0
 OSC_PLACEMENT_RULE = ("placement (sealed 2026-07-19): full sticks at corner "
                       "BOTTOMS; spliced remnants upper portion only, cut from shared sticks")
 
-# ── GABLE CONVENTION — SEALED (Howard, ruled 2026-07-19): book w × h ×
-# 0.7 governs for estimating area; the AI's true-triangle read stays ON
-# RECORD as the comparison, deviation-flagged where it differs (book-wins
-# governance, same as the AMI fix).
-GABLE_BOOK_FACTOR = 0.7
+# ── GABLE CONVENTION — RETIRED 2026-08-27 (SEND-137, Howard): the book
+# w × h × 0.7 estimating area is gone. A gable is the MEASURED TRIANGLE
+# (½ × width × rise, measure_staging.GABLE_TRIANGLE_FACTOR) or it has no
+# area at all. The constant that used to live here had no live caller when
+# it was retired; it is not replaced by a second copy of the factor.
 
 # ── CHASE FACE AREA — ITEM-3 RATIFICATION (Howard, ruled 2026-07-19):
 # ratified TAPED chase faces SUPERSEDE the AI-attributed appendage area

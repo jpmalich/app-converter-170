@@ -90,11 +90,12 @@ def test_a_front_only_job_prices_the_front_and_refuses_three_faces():
     assert m["_faces_measured"] == ["front"], m["_faces_measured"]
     labels = sorted(f["label"] for f in m["_faces_refused"])
     assert labels == ["back", "left", "right"]
-    # THE FRONT ONLY. 30 × 10 = 300 body + ONE gable at the trade's own
-    # 0.70 convention (0.70 × 30 × 6 = 126) = 426. The refused rear
-    # gable adds nothing.
-    assert m["siding_sqft"] == pytest.approx(426.0, abs=0.6), m["siding_sqft"]
-    assert m["_ai_gable_sqft"] == pytest.approx(126.0, abs=0.6)
+    # THE FRONT ONLY. 30 × 10 = 300 body + ONE gable, ½ × 30 × 6 = 90
+    # (NAMED PIN UPDATE, SEND-137 2026-08-27: the measured triangle; the
+    # 0.70 field factor is retired — SEND-136's subject, the REFUSED REAR,
+    # is unchanged) = 390. The refused rear gable adds nothing.
+    assert m["siding_sqft"] == pytest.approx(390.0, abs=0.6), m["siding_sqft"]
+    assert m["_ai_gable_sqft"] == pytest.approx(90.0, abs=0.6)
     # NO ACCESSORY FROM AN INVENTED WALL. These are REFUSALS (None), and
     # a refusal is never a 0.
     for key in ("eaves_lf", "rakes_lf", "outside_corner_lf",
@@ -128,7 +129,8 @@ def test_a_gable_on_an_unphotographed_face_is_not_copied():
               wsrc="assumed_symmetric", hsrc="assumed_symmetric"),
     ]
     m = _aggregate_to_hover_shape(_raw(walls))
-    one_gable = 0.70 * 30.0 * 6.0        # the 0.70 trade convention
+    # NAMED PIN UPDATE (SEND-137): ½ × width × rise, the measured triangle.
+    one_gable = 0.5 * 30.0 * 6.0
     assert m["_ai_gable_sqft"] == pytest.approx(one_gable, abs=0.6), (
         "the rear gable was copied from the front elevation")
 
@@ -177,9 +179,9 @@ def test_a_four_photo_job_still_prices_four_walls():
     assert m["_faces_refused"] == []
     assert m["_faces_measured"] == ["front", "back", "left", "right"]
     assert m["_face_refusal_note"] is None
-    # 2×(30×10) + 2×(20×10) = 1000 body, + TWO measured gables at the
-    # 0.70 convention (0.70 × 30 × 6 = 126 each) = 1252
-    assert m["siding_sqft"] == pytest.approx(1252.0, abs=1.0), m["siding_sqft"]
+    # 2×(30×10) + 2×(20×10) = 1000 body, + TWO measured gables at
+    # ½ × 30 × 6 = 90 each (NAMED PIN UPDATE, SEND-137) = 1180
+    assert m["siding_sqft"] == pytest.approx(1180.0, abs=1.0), m["siding_sqft"]
     for key in ("eaves_lf", "rakes_lf", "outside_corner_lf",
                 "footprint_perimeter_ft", "starter_lf"):
         assert m[key] is not None and m[key] > 0, (

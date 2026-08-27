@@ -191,10 +191,10 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap",
       - Wall body ft² = width × eave_height × (siding_pct / 100). Stone /
         masonry watertable is captured in stone_sqft separately so the
         contractor sees how much area is NOT siding.
-      - Gable triangle ft² = 0.7 × width × gable_triangle_height_ft (C4
-        ruled convention — angle-cut coverage, NOT the true triangle ÷2;
-        conforms to apply_roof_type_material_math, d667 reconciliation
-        2026-07-16). Only when gable_triangle_height_ft > 0. Profile
+      - Gable triangle ft² = ½ × width × gable_triangle_height_ft (SEND-137
+        ruled 2026-08-27 — THE MEASURED TRIANGLE; the 0.70 field factor is
+        RETIRED, and an untraced gable has no area at all). Only when
+        gable_triangle_height_ft > 0. Profile
         inherits from body when gable_profile_callout is empty.
       - Dormer ft² = wall's dormer_face_sqft verbatim (single owner: the
         reconciler/geometry math already composed face + cheeks −
@@ -248,7 +248,8 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap",
         # route through the status-carrying gateway wall_width_for_pricing —
         # a killed width returns (0.0, False) so it can never be priced as a
         # silent 0. eave_h stays a provenance read (AUDITED_SAFE).
-        from measure_staging import wall_width_for_pricing
+        from measure_staging import (GABLE_TRIANGLE_FACTOR,
+                                     wall_width_for_pricing)
         width, width_derivable, _w_subset, _w_missing = wall_width_for_pricing(w)
         eave_h = _safe_float(w.get("height_ft"))
         gable_h = _safe_float(w.get("gable_triangle_height_ft"))
@@ -344,18 +345,31 @@ def breakdown_walls_by_profile(walls: list, default_body_profile: str = "lap",
                 "reason": "wall width not read — gable area not derivable",
             })
         elif gable_h > 0 and width_readable:
-            # C4 (ruled 2026-07-13; d667 reconciliation 2026-07-16): gable
-            # area = 0.7 × width × triangle height — the ruled estimating
-            # convention (angle-cut coverage), matching
-            # apply_roof_type_material_math. The legacy 0.5 true-triangle
-            # path is removed; per-profile splits no longer self-disagree
-            # with the headline siding_sqft.
-            gable_sqft = 0.7 * width * gable_h
+            # SEND-137 (Howard ruled 2026-08-27): gable area = ½ × width ×
+            # triangle height — THE MEASURED TRIANGLE. The 0.70 field
+            # factor is RETIRED (it was a second implementation of this
+            # same number, ~40% apart). One formula, so the per-profile
+            # split and the headline siding_sqft cannot self-disagree.
+            gable_sqft = GABLE_TRIANGLE_FACTOR * width * gable_h
             gable_family = classify_profile(w.get("gable_profile_callout")) or body_family
             _add(gable_family, gable_sqft)
             # Vinyl-conventions batch: gable-break LF per gable family
             # (shake gables start their course run at the break).
             gable_break_lf[gable_family] = gable_break_lf.get(gable_family, 0.0) + width
+
+        elif gable_h <= 0:
+            # SEND-137 — a face that claims a gable it never measured
+            # refuses BY NAME here too, so the per-profile split names the
+            # same gap the wall walk names.
+            from measure_staging import gable_claim_without_rise
+            _no_rise = gable_claim_without_rise(w)
+            if _no_rise:
+                gable_sqft = None
+                gable_family = (classify_profile(w.get("gable_profile_callout"))
+                                or body_family)
+                faces_not_derivable.append({
+                    "elevation": label, "surface": "gable",
+                    "profile": gable_family, "reason": _no_rise})
 
         # Dormer face
         dormer_sqft = _safe_float(w.get("dormer_face_sqft"))

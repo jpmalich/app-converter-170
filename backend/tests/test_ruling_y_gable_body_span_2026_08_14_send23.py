@@ -14,7 +14,7 @@ import sys
 
 sys.path.insert(0, "/app/backend")
 
-from measure_staging import GABLE_FACTOR, walk_walls  # noqa: E402
+from measure_staging import GABLE_TRIANGLE_FACTOR, walk_walls  # noqa: E402
 
 
 def _wall():
@@ -31,7 +31,12 @@ def _wall():
 def test_gable_keeps_full_width_body_drops_the_dead_height_segment():
     out = walk_walls([_wall()])
     # gable stays as wide as its REAL widths (30+9=39) — NOT shrunk to 30.
-    assert round(out["gable_sqft"], 1) == round(GABLE_FACTOR * 39.0 * 11.4, 1)
+    # NAMED PIN UPDATE (SEND-137, 2026-08-27): the factor is now ½ (the
+    # measured triangle) — Ruling Y's intent is UNCHANGED and is what this
+    # pin holds: the gable stays as wide as its REAL widths (30+9=39),
+    # never shrunk to 30 for a height reason.
+    assert round(out["gable_sqft"], 1) == round(
+        GABLE_TRIANGLE_FACTOR * 39.0 * 11.4, 1)
     # body counts only the height-derivable segment (30×20 = 600).
     d = out["detail"][0]
     assert sum(sw * sh for sw, sh in d["segments"]) == 600.0
@@ -55,9 +60,14 @@ def test_gable_body_span_disagreement_is_named_and_both_partial():
 
 
 def test_gable_convention_is_labelled_not_a_bare_float():
-    # Ruling X req 1: the 0.70 convention must be named on the surface.
+    # Ruling X req 1: the convention must be NAMED on the surface, never a
+    # bare float. NAMED PIN UPDATE (SEND-137): the convention it names is
+    # now ½ × width × rise — the 0.70 field factor is retired, and the
+    # label must say so where a reader can see it.
     out = walk_walls([_wall()])
-    assert "0.70 gable convention" in (out["detail"][0]["gable_convention"] or "")
+    conv = out["detail"][0]["gable_convention"] or ""
+    assert "½ × width × rise" in conv
+    assert "RETIRED" in conv
 
 
 def test_agreeing_segments_raise_no_gable_span_flag():

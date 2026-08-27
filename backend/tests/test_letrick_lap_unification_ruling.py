@@ -58,7 +58,12 @@ def test_seal1_key_bound_area_every_line_names_basis(pkg):
     assert comps["stepped side walls"]["sqft"] == 566.4
     assert comps["gables"]["sqft"] == 367.5
     assert comps["chase faces"]["sqft"] == 152.39
-    assert all(("TAPED" in b["basis"] or "BOOK" in b["basis"]) for b in ab)
+    # NAMED PIN UPDATE (SEND-137, 2026-08-27): "BOOK" left the vocabulary
+    # with the 0.70 factor. The DISCIPLINE is unchanged — EVERY component
+    # must name its basis — and the sealed gable figure now names itself
+    # for what it is: a human's sealed hand takeoff.
+    assert all(("TAPED" in b["basis"] or "SEALED HAND TAKEOFF" in b["basis"])
+               for b in ab)
     # itemization carries the key's own rounding ("~566.4" sides) —
     # governing total is the key raw 2099.7, bound below
     assert abs(sum(b["sqft"] for b in ab) - 2099.7) <= 0.5
@@ -69,13 +74,21 @@ def test_seal1_key_bound_area_every_line_names_basis(pkg):
 
 
 def test_seal2_gable_book_convention_with_deviation_flag(pkg):
-    """Item 2: book w×h×0.7 governs (367.5); AI true-triangle 380.1 on
-    record, Δ −12.6 flagged. Constant sealed in code."""
-    from lp_package import GABLE_BOOK_FACTOR
-    assert GABLE_BOOK_FACTOR == 0.7
+    """Item 2 — NAMED PIN UPDATE (SEND-137, Howard ruled 2026-08-27).
+
+    THE SEALED FIGURE STILL GOVERNS (367.5) and the measured-triangle read
+    is still ON RECORD with its deviation flagged — that discipline is
+    unchanged. WHAT CHANGED: the 0.70 factor is RETIRED IN SOFTWARE, so
+    `GABLE_BOOK_FACTOR` is gone and cannot be computed with again; 367.5
+    stands as a human's sealed hand takeoff until Howard re-seals it, and
+    the basis line says exactly that."""
+    import lp_package
+    assert not hasattr(lp_package, "GABLE_BOOK_FACTOR")
     g = next(b for b in pkg["summary"]["area_basis"] if b["component"] == "gables")
-    assert "BOOK w×h×0.7" in g["basis"]
-    assert "380.1 on record" in g["basis"] and "-12.6 flagged" in g["basis"]
+    assert "SEALED HAND TAKEOFF" in g["basis"]
+    assert "RETIRED in software" in g["basis"]
+    assert "re-seals" in g["basis"]
+    assert "on record" in g["basis"] and "flagged" in g["basis"]
 
 
 def test_seal3_book_piece_formula_pdf_retired(pkg):

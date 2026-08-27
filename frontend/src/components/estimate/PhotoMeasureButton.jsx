@@ -93,14 +93,16 @@ function buildMeasurements(measures, openings, zones = [], gables = []) {
   // Wall area = Σ width × avg height (the contractor usually measures
   // each visible wall but only 1–2 heights; reuse the avg).
   const wallArea = widths.reduce((a, w) => a + w * avgHeight, 0);
-  // Gable triangles use the HTML's 0.7 factor for the gable wall + the
-  // triangle (gw × gh × 0.7 already covers half-tri + bonus for siding
-  // up to the peak).
+  // SEND-137 — THE GABLE RULING (Howard, 2026-08-27). A taped gable width
+  // and rise ARE the measured triangle: area = ½ × width × rise. The old
+  // 0.7 factor (inherited from the HTML tool, "half-tri plus bonus up to
+  // the peak") is RETIRED — it was a second implementation of this same
+  // number and it read ~40% high against every other surface.
   const gableWidths = measures.filter((m) => m.label === "gable_w").map((m) => m.feet);
   const gableHeights = measures.filter((m) => m.label === "gable_h").map((m) => m.feet);
   let gableArea = 0;
   for (let i = 0; i < gableWidths.length; i++) {
-    gableArea += gableWidths[i] * (gableHeights[i] || gableHeights[0] || 0) * 0.7;
+    gableArea += 0.5 * gableWidths[i] * (gableHeights[i] || gableHeights[0] || 0);
   }
   // Tap-triangle gables (ruled 2026-07-24): area stored at creation time
   // (base × rise ÷ 2), so the value survives photo swaps like zones do.

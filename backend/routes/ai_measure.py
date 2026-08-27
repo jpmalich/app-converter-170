@@ -1952,8 +1952,9 @@ def _aggregate_to_hover_shape(raw: dict, annotations: dict | None = None) -> dic
             width_ft = 0
         adapted_walls.append({**w, "width_ft": width_ft, "height_ft": eave_h})
     # ONE WALL WALK (ruled 2026-08-01, step 1): shared math in
-    # measure_staging.walk_walls — GABLE FACTOR 0.70 (C4 ruled 2026-07-13,
-    # sealed across all doors 2026-08-01).
+    # measure_staging.walk_walls — GABLE = ½ × width × rise, THE MEASURED
+    # TRIANGLE (SEND-137, Howard ruled 2026-08-27; the 0.70 field factor is
+    # retired and an untraced gable has no area at all).
     _walk = staging.walk_walls(adapted_walls)
     siding_sqft = _walk["siding_sqft"]
     gable_sqft = _walk["gable_sqft"]

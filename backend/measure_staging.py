@@ -8,9 +8,12 @@ printed-dims trust and pitch-computed rise) stay in their routes — but the MAT
 window-openings builder, the no-intake-rounding policy) has exactly one copy.
 A fix here reaches all three doors; a second copy anywhere is a regression.
 
-RULING 1 — GABLE FACTOR = 0.70, one sealed constant, all doors, all families
-(C4 angle-cut coverage convention, ruled 2026-07-13; sealed across doors
-2026-08-01. The blueprint door's pre-C4 0.5 true-triangle retired).
+RULING 1 — SUPERSEDED 2026-08-27 BY THE SEND-137 GABLE RULING. The 0.70
+angle-cut/field-factor convention (C4, 2026-07-13) is RETIRED. A gable wall
+is measured for what it is: ½ × width × rise, from that face's OWN width and
+rise. Where the triangle is not measured there is NO AREA — the gable
+REFUSES BY NAME. One formula, all doors, all families, and the same number
+on the panel as in the database.
 
 RULING 7 — ROUND ONCE, AT THE ORDER LAYER. Full-precision measurements carried
 end to end; no door rounds on the way in. Rounding happens exactly once, where
@@ -19,39 +22,77 @@ _order_whole_units).
 """
 import uuid
 
-GABLE_FACTOR = 0.70
-# RULING X (Howard sealed send-23): 0.70 is a TRADE CONVENTION (≈1.4× the
-# geometric ½·width·rise — it encodes an allowance), NOT an invented
-# constant. It stays for a DERIVED gable and must be LABELLED wherever it is
-# applied so a reader can tell an allowanced gable from a measured one. A
-# DRAWN/traced gable replaces it entirely (Law A) — that binding is a build,
-# see the send-23 report.
-GABLE_CONVENTION_LABEL = "0.70 gable convention (trade allowance, ≈1.4× geometric ½·width·rise)"
-# SEND-74 (Howard, 2026-08-21) — GABLE BASIS, a strict BINARY. Every
-# gable quantity carries exactly ONE of two bases, never both, never a
-# third:
-#   TRACED      → the drawn triangle's true area, NO factor.
-#   NOT TRACED  → area × 0.70 field factor (safety margin for an
-#                 approximate gable measurement).
-# The label rides the quantity to the sheet, the read-back card and the
-# money line — two gables on one house priced on different bases must
-# be tellable apart by the reader.
+GABLE_TRIANGLE_FACTOR = 0.5
+# SEND-137 — THE GABLE RULING (Howard, 2026-08-27). MEASURE THE GABLE FOR
+# WHAT IT IS. `½ × width × rise` IS the gable wall wherever that face's own
+# width and rise exist. THE 0.70 FACTOR IS RETIRED — it is not a fallback,
+# not a waste factor, not a default, and not a "close enough" on an untraced
+# gable. AN UNTRACED GABLE HAS NO AREA: it refuses until the triangle is
+# measured or drawn (the same shape as no-photo-no-wall, SEND-136 — missing
+# evidence does not become a number). ½ and 0.70 were never two conventions
+# to choose between; they were two implementations of ONE number, and they
+# disagreed by ~40% of every gable between the panel and the database.
+GABLE_CONVENTION_LABEL = ("½ × width × rise — the measured gable triangle "
+                          "(the 0.70 field factor is RETIRED, SEND-137)")
+# SEND-74 (Howard, 2026-08-21) — GABLE BASIS, a strict BINARY, re-cut by the
+# SEND-137 ruling. Every gable quantity carries exactly ONE of two bases,
+# never both, never a third:
+#   TRACED            → the drawn triangle's true area, read from line-work.
+#   MEASURED_TRIANGLE → ½ × width × rise from that face's own width and rise.
+# There is no third basis and no factored basis. A gable with neither is not
+# a quantity — it is a NAMED REFUSAL.
 GABLE_BASIS_TRACED = "traced"
-GABLE_BASIS_FIELD_FACTOR = "field_factor_0_70"
-GABLE_BASES = frozenset({GABLE_BASIS_TRACED, GABLE_BASIS_FIELD_FACTOR})
+GABLE_BASIS_MEASURED_TRIANGLE = "measured_triangle"
+GABLE_BASES = frozenset({GABLE_BASIS_TRACED, GABLE_BASIS_MEASURED_TRIANGLE})
+# The RETIRED basis string, kept for exactly one purpose: a figure STORED
+# before this ruling carries it, and a stored record must be recognised as
+# STALE and NAMED — never silently reprinted as if it were current.
+GABLE_BASIS_RETIRED_FIELD_FACTOR = "field_factor_0_70"
+
+
+def gable_claim_without_rise(w: dict) -> str | None:
+    """SEND-137 — AN UNTRACED GABLE HAS NO AREA, AND SAYS SO.
+
+    A gable whose triangle was never measured must REFUSE BY NAME, never
+    collapse to a silent 0 and never take a factor on an unmeasured
+    triangle. The claim must be EVIDENCED: the only signals accepted are
+    the read's own explicit null rise (the field is present and the answer
+    is `null` — "not visible", which is not the same answer as the `0` that
+    means "this wall ends in an eave") and an explicit rise refusal stamped
+    upstream. An ABSENT field claims no gable, so it earns no refusal — a
+    hip house and a rectangle wall stay silent."""
+    if "gable_triangle_height_ft" in w and w.get("gable_triangle_height_ft") is None:
+        return ("a gable rise was asked for on this face and came back null "
+                "— not visible, which is not the 0 that means eave-only. "
+                "½ × width × rise has no rise: gable area REFUSED, never a "
+                "0 and never a factor on an unmeasured triangle")
+    for k in ("_gable_rise_refusal", "gable_rise_refusal"):
+        v = w.get(k)
+        if isinstance(v, str) and v.strip():
+            return (f"gable rise refused upstream ({v.strip()}) — ½ × width "
+                    "× rise has no rise: gable area REFUSED")
+    return None
 
 
 def gable_basis_label(basis: str, sqft=None) -> str:
-    """The SEND-74 mandated sentences, verbatim."""
+    """The SEND-74 mandated sentences, re-cut for the SEND-137 ruling."""
     if basis == GABLE_BASIS_TRACED:
         if sqft is not None:
             return (f"gable traced from the drawing — {sqft} ft², "
                     "no field factor")
         return ("gable traced from the drawing — no field factor "
                 "(no evidence scale on this view for the ft² figure)")
-    if basis == GABLE_BASIS_FIELD_FACTOR:
-        return ("gable not traced — 0.70 field factor applied (safety "
-                "margin for an approximate gable measurement)")
+    if basis == GABLE_BASIS_MEASURED_TRIANGLE:
+        if sqft is not None:
+            return (f"gable measured — ½ × width × rise = {sqft} ft² from "
+                    "this face's own width and rise, no field factor")
+        return ("gable measured — ½ × width × rise from this face's own "
+                "width and rise, no field factor")
+    if basis == GABLE_BASIS_RETIRED_FIELD_FACTOR:
+        return ("STALE BASIS — this figure was computed with the 0.70 field "
+                "factor, RETIRED 2026-08-27 (SEND-137). ½ × width × rise "
+                "governs; the stored figure reads high until this estimate "
+                "is re-derived")
     raise ValueError(f"unknown gable basis: {basis!r}")
 
 
@@ -190,8 +231,8 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
                unattributed_faces=None) -> dict:
     """THE wall-area walk (one copy, ruled). For each wall:
     gross = width × eave height, credited at siding_pct (fraction/percent
-    defense shared), plus GABLE_FACTOR × width × rise for gable ends, plus
-    dormer face ft². `gable_rise_fn(width_ft, read_rise_ft) -> rise_ft` lets
+    defense shared), plus ½ × width × rise for gable ends (SEND-137 —
+    the measured triangle, no factor), plus dormer face ft². `gable_rise_fn(width_ft, read_rise_ft) -> rise_ft` lets
     the blueprint door substitute its pitch-computed rise (printed pitch is
     the authority over drawing-scaled reads); default uses the read value.
     Walls are consumed AS ADAPTED by the door (photo's clamps run upstream).
@@ -288,6 +329,7 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
         rise_read = float(w.get("gable_triangle_height_ft") or 0)
         rise = gable_rise_fn(width_ft, rise_read) if gable_rise_fn else rise_read
         wall_gable = 0.0
+        _gable_refusal = None
         # GABLE — subset-aware (send-15 H). A gable triangle spans the
         # WHOLE wall width, so a killed/unread width makes the gable NOT
         # DERIVABLE — never a silent 0. Canonical honesty matches
@@ -311,7 +353,8 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
         _gable_span = [str(s.get("label") or "segment") for s in _segs
                        if float(s.get("width_ft") or 0) > 0]
         if rise > 0 and g_width_ok:
-            wall_gable = GABLE_FACTOR * g_width * rise
+            # SEND-137: ½ × width × rise. THE MEASURED TRIANGLE, no factor.
+            wall_gable = GABLE_TRIANGLE_FACTOR * g_width * rise
             gable_sqft += wall_gable
             if _segs and set(_gable_span) != set(_body_span):
                 _only_gable = [n for n in _gable_span if n not in _body_span]
@@ -327,10 +370,23 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
                                "WIDTH not height — Ruling Y; gable NOT shrunk "
                                "to match)")})
         elif rise > 0 and not g_width_ok:
+            _gable_refusal = ("wall width not read — gable area not "
+                              "derivable")
             faces_not_derivable.append({
                 "label": w.get("label"), "surface": "gable",
-                "reason": "wall width not read — gable area not derivable"})
+                "reason": _gable_refusal})
             wall_gable = None
+        else:
+            # SEND-137 — AN UNTRACED GABLE HAS NO AREA. A face that claims
+            # a gable it never measured refuses BY NAME; a face that claims
+            # none stays silent.
+            _no_rise = gable_claim_without_rise(w)
+            if _no_rise:
+                _gable_refusal = _no_rise
+                faces_not_derivable.append({
+                    "label": w.get("label"), "surface": "gable",
+                    "reason": _no_rise})
+                wall_gable = None
         dormer_sqft += float(w.get("dormer_face_sqft") or 0)
         detail.append({"label": w.get("label"), "width_ft": width_ft,
                        "eave_h": eave_h, "pct": pct,
@@ -343,20 +399,20 @@ def walk_walls(walls: list, gable_rise_fn=None, refused_faces=None,
                                         else (deriv["not_derivable"][0].get("reason")
                                               if deriv["not_derivable"] else
                                               "wall area not derivable")),
-                       "gable_refusal": ("wall width not read — gable area "
-                                         "not derivable"
-                                         if wall_gable is None else None),
+                       "gable_refusal": (_gable_refusal or None),
                        "rise_read": rise_read, "rise_used": rise,
                        "gable_sqft": wall_gable,
-                       # SEND-74: the derived path never traces — every
-                       # derived gable quantity carries the FIELD FACTOR
-                       # basis; a refusal is not a quantity and carries
-                       # no basis. (Tracing lives on the overlay/proposal
-                       # layer and carries the TRACED basis there.)
-                       "gable_basis": (GABLE_BASIS_FIELD_FACTOR
+                       # SEND-137: the derived path measures the triangle
+                       # (½ × width × rise) — that IS a measurement, and it
+                       # carries the MEASURED_TRIANGLE basis. A refusal is
+                       # not a quantity and carries no basis. (Tracing from
+                       # line-work lives on the overlay/proposal layer and
+                       # carries the TRACED basis there.)
+                       "gable_basis": (GABLE_BASIS_MEASURED_TRIANGLE
                                        if wall_gable else None),
                        "gable_basis_label": (
-                           gable_basis_label(GABLE_BASIS_FIELD_FACTOR)
+                           gable_basis_label(GABLE_BASIS_MEASURED_TRIANGLE,
+                                             round(wall_gable, 2))
                            if wall_gable else None),
                        "gable_convention": (GABLE_CONVENTION_LABEL
                                             if wall_gable else None)})

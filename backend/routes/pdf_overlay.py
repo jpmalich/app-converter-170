@@ -1521,7 +1521,7 @@ async def propose_zones(
     from linework_read import (page_segments, wall_outline_from_segments,
                                gable_triangle_from_segments)
     from measure_staging import (GABLE_BASIS_TRACED,
-                                 GABLE_BASIS_FIELD_FACTOR,
+                                 GABLE_BASIS_MEASURED_TRIANGLE,
                                  gable_basis_label)
     src_pdf = None
     pdf_name = next((f.get("name")
@@ -2176,8 +2176,8 @@ async def propose_zones(
         # named its refusal). A band_rectangle-style STARTING SHAPE that
         # states plainly the triangle could not be read — NO triangle
         # computed from pitch and width (a computed triangle would be a
-        # derived shape wearing a measured shape's clothes; the 0.70
-        # convention lives on the derived side and stays there).
+        # derived shape wearing a measured shape's clothes; the derived
+        # side's own arithmetic stays on the derived side).
         walk = ((est.get("hover_measurements") or {})
                 .get("_wall_walk_detail") or [])
         wrow = next((d for d in walk if isinstance(d, dict)
@@ -2235,10 +2235,11 @@ async def propose_zones(
                     if traced is not None and g_derived is not None:
                         notice = (g_basis_lab
                                   + f"; this face's gable derives at "
-                                  f"{g_derived} ft² (the 0.70 field "
-                                  "factor carries the safety margin — "
-                                  "the traced figure is the drawn "
-                                  "triangle)")
+                                  f"{g_derived} ft² from ½ × width × rise "
+                                  "(SEND-137 — the retired 0.70 field "
+                                  "factor is gone). Where the two differ, "
+                                  "the TRACED figure is the drawn "
+                                  "triangle")
                     elif g_derived is not None:
                         notice = (g_basis_lab
                                   + f"; this face's gable derives at "
@@ -2255,12 +2256,14 @@ async def propose_zones(
                     g_tier = "gable_rectangle"
                     # SEND-74 — a starting rectangle is a shape, not a
                     # quantity; the QUANTITY alongside is the derived
-                    # gable, which always carries the FIELD FACTOR basis
-                    # (the derived path never traces).
-                    g_basis_kind = (GABLE_BASIS_FIELD_FACTOR
+                    # gable. SEND-137: that quantity is the MEASURED
+                    # TRIANGLE (½ × width × rise) — no factor, and no
+                    # third basis.
+                    g_basis_kind = (GABLE_BASIS_MEASURED_TRIANGLE
                                     if g_derived is not None else None)
                     g_basis_lab = (
-                        gable_basis_label(GABLE_BASIS_FIELD_FACTOR)
+                        gable_basis_label(GABLE_BASIS_MEASURED_TRIANGLE,
+                                          g_derived)
                         if g_derived is not None else None)
                     g_basis = (
                         "GABLE STARTING SHAPE — the roof read puts "

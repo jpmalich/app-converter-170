@@ -2994,16 +2994,16 @@ def _build_lines(measurements: dict) -> list[dict]:
     # width call-out renames the 440 fascia SKU — the material list prints
     # the width on the line (wrong lumber on the truck is the risk; the
     # printed width is the protection). Default 8" applies silently.
-    # SEND-74 — the MONEY LINE says the gable basis. When the walk's
-    # derived gables contributed to the siding quantity, every siding SQ
-    # line names the field-factor basis; a traced/drawn gable zone names
-    # its own basis through the overlay note instead.
-    from measure_staging import (GABLE_BASIS_FIELD_FACTOR,
+    # SEND-74 — the MONEY LINE says the gable basis. SEND-137: the walk's
+    # gables are MEASURED TRIANGLES (½ × width × rise); the retired 0.70
+    # field factor no longer appears on any line. A traced/drawn gable zone
+    # names its own basis through the overlay note instead.
+    from measure_staging import (GABLE_BASIS_MEASURED_TRIANGLE,
                                  gable_basis_label)
     _walk_rows = measurements.get("_wall_walk_detail") or []
     if any((d.get("gable_sqft") or 0) > 0 for d in _walk_rows
            if isinstance(d, dict)):
-        _basis_note = gable_basis_label(GABLE_BASIS_FIELD_FACTOR)
+        _basis_note = gable_basis_label(GABLE_BASIS_MEASURED_TRIANGLE)
         for l in out:
             if (l.get("unit") == "SQ"
                     and l.get("section") in ("Vinyl Siding",

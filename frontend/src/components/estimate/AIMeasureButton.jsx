@@ -486,6 +486,13 @@ export default function AIMeasureButton({ kind, onApply, address, overhangIn, es
       if (pct > 100) pct = 100;
       sidingSqft += gross * (pct / 100);
       const gableH = Number(w.gable_triangle_height_ft) || 0;
+      // SEND-137 — THE GABLE RULING (Howard, 2026-08-27). ½ × width × rise
+      // IS the gable wall. This panel always used ½; the backend used a
+      // 0.70 field factor, so the number on screen and the number in the
+      // database disagreed by ~40% of every gable. The 0.70 factor is
+      // RETIRED: both surfaces now measure the triangle, and where the
+      // triangle is not measured NEITHER writes an area (an untraced gable
+      // refuses — the backend names the refusal, this panel adds nothing).
       if (gableH > 0 && width > 0) gableSqft += 0.5 * width * gableH;
       dormerSqft += Number(w.dormer_face_sqft) || 0;
     }

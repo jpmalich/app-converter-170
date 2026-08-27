@@ -217,18 +217,19 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
     # Primary gable triangle carried by THIS wall.
     if gable_ft and width_ft:
         pri_tri = 0.5 * float(width_ft) * float(gable_ft)
-        from measure_staging import (GABLE_BASIS_FIELD_FACTOR,
+        from measure_staging import (GABLE_BASIS_MEASURED_TRIANGLE,
                                      gable_basis_label)
         area_components.append({
             "kind": "gable_triangle_primary",
             "name": "primary gable",
             "sqft": round(pri_tri, 1),
-            # SEND-74 — the sheet says the gable basis: nothing on the
-            # sheet is line-work traced; the priced quantity carries
-            # the 0.70 field factor.
-            "gable_basis": GABLE_BASIS_FIELD_FACTOR,
+            # SEND-137 — the sheet says the gable basis, and the sheet's
+            # own arithmetic has always been ½ × width × rise. The 0.70
+            # field factor it used to CLAIM is retired: the number and the
+            # label now say the same thing.
+            "gable_basis": GABLE_BASIS_MEASURED_TRIANGLE,
             "gable_basis_label": gable_basis_label(
-                GABLE_BASIS_FIELD_FACTOR)})
+                GABLE_BASIS_MEASURED_TRIANGLE, round(pri_tri, 1))})
         area = (area or 0.0) + round(pri_tri, 1)
     # Wing (secondary) gables attributed via send-3 module.
     # Each wing gable's base width is the wing segment on this wall,
@@ -317,15 +318,15 @@ def build_blueprint_sheet(est: dict, run: dict, which: str) -> dict:
         }
         wing_triangle_notes.append(wing_note)
         if area_sqft is not None:
-            from measure_staging import (GABLE_BASIS_FIELD_FACTOR,
+            from measure_staging import (GABLE_BASIS_MEASURED_TRIANGLE,
                                          gable_basis_label)
             area_components.append({
                 "kind": "gable_triangle_secondary",
                 "name": f"wing gable ({sg.get('plane')})",
                 "sqft": area_sqft,
-                "gable_basis": GABLE_BASIS_FIELD_FACTOR,
+                "gable_basis": GABLE_BASIS_MEASURED_TRIANGLE,
                 "gable_basis_label": gable_basis_label(
-                    GABLE_BASIS_FIELD_FACTOR)})
+                    GABLE_BASIS_MEASURED_TRIANGLE, area_sqft)})
             area = (area or 0.0) + area_sqft
         else:
             area_missing.append(
