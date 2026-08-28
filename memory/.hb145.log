@@ -1,7 +1,0 @@
-GUARD HARD-FAIL: TREE DIRTY — commit first. Nothing stamped, nothing logged.
-   M backend/photo_zone_proposals.py
-  ?? backend/tests/test_send145_zone_anchor_2026_08_28.py
-  ?? memory/.hb144.log
-  ?? memory/.hb145.log
-  ?? memory/send145_predict.py
-  ?? memory/send145_probe.py
