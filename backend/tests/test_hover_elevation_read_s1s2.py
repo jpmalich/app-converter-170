@@ -78,8 +78,16 @@ def test_no_s3_wiring_by_construction():
 
 def test_s1_import_persists_pdf():
     src = (BACKEND / "routes" / "hover.py").read_text()
-    assert 'uploads", "hover_pdfs"' in src.replace("'", '"')
-    assert '"pdf_path": pdf_path' in src
+    # SEND-142 NAMED PIN UPDATE (Howard authorised 2026-08-28): S1's
+    # substrate persistence is UNCHANGED as a rule — the PDF is still kept
+    # past the page-cache TTL, keyed by run_id — but it is kept in Emergent
+    # OBJECT STORAGE instead of the pod's own disk, which a pod
+    # replacement used to wipe. The pin follows the substrate.
+    assert "hover_pdf_path(run_id)" in src
+    assert '"pdf_object": pdf_object' in src
+    assert 'uploads", "hover_pdfs"' not in src.replace("'", '"')
+    # a run from BEFORE the move still reads off its legacy disk path
+    assert 'doc.get("pdf_path")' in src
     # the read endpoint refuses politely when the substrate predates S1
     assert "re-upload the Hover" in src
 

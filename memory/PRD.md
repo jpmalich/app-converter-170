@@ -1,5 +1,62 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-28 SEND-142 — CLEANUP: THE DUPES, THE RAIL, THE NAME (stamped `2026-08-28 01:34 UTC · e3f83e6 · CLEAN · 3058 passed, 9 skipped, 7 warnings in 461.45s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send142_report.md` · browser 6/6
+`test_reports/iteration_61.json`. Cleanup only — **no sealed figure and no
+quote number moved. Phase 2 stays off. EST-886440 untouched** (EST-373526's
+drawn marks + scale deleted after the check).
+1. **ITEM 1 — NOT ONE REPEATED DICT KEY IS LEFT IN `catalog_seed.py`**
+   (`memory/send142_probe_catalog.py` prints nothing). Eleven were the three
+   coil items declared twice in `ITEM_META` and twice in `PER_TIER_PRICES`
+   with byte-identical values. **THE TWELFTH WAS NOT IDENTICAL**:
+   `'3/8" Fan Fold'` was priced 11.06 THEN 22.12 — the later literal always
+   governed, so the catalog has always charged 22.12 (the 2026-07-31 SALES
+   UNIT ruling, SQ → Bundle). The dead 11.06 line is gone, its history is in
+   the comment above the survivor, **NO PRICE CHANGED** and
+   `test_pricing_parity` is green.
+2. **ITEM 2 — THE RAIL IS THREE PANELS**: editor 800 → **626 lines**;
+   `phototakeoff/ScalePanel.jsx` · `QuantitiesPanel.jsx` · `MarksPanel.jsx`
+   + shared `marks.js`. **THE PANELS STAY DUMB** — `qtyCell`, `sqftOf`,
+   `gDims`, `ft2`, `receiptFor` are still owned by the editor and passed as
+   props, and the surface still contains `qtyCell(m, a)` exactly TWICE (the
+   row and the tag), so SEND-141's one-decider rule is intact.
+3. **THE SUITE WAS RED ON ARRIVAL AND THE PINS WERE UPDATED BY NAME**: ten
+   pins read the editor's source TEXT and broke when the text moved.
+   `tests/phototakeoff_surface.py` reads the WHOLE surface and **fails loud
+   if a surface file is missing**, so no pin can pass over a file that
+   quietly disappeared. Same assertions, nothing relaxed (send131a · 132 ·
+   136 · 139 incl. the 0.70 sweep, now scanning every panel · 140 · 141).
+4. **THE BROWSER SAYS THE REFACTOR CHANGED NOTHING** (real photos): three
+   separate panels ✓ · anchor then tape → **TAPE GOVERNS**, refusal cleared
+   ✓ · confirmed gable `26.4 ft × 11.0 ft rise · ½ × w × rise = 145.2 ft² ·
+   pitch 10/12`, row and Gable lane both 145.2 ✓ · flat gable → row **—**,
+   dims `= —`, the rise receipt, **no `0 ft²` anywhere** ✓ · contractor
+   REFUSE → **—** ✓ · pull-in 200, no 500 ✓.
+5. **ITEM 3 — THE CUSTOMER NAME IS OFF THE PATH AND OFF THE CONSTANT**:
+   `letrick_hand_takeoff_key.py` → **`sealed_hand_takeoff_key.py`**,
+   `LETRICK_HAND_TAKEOFF_KEY` → **`SEALED_HAND_TAKEOFF_KEY`**, contents
+   BYTE-IDENTICAL but for that name — no figure, no basis line, no ruling
+   text touched. The old path stays as a **re-export shim for ONE release**
+   holding no figure of its own, so there is still exactly ONE home for the
+   sealed values.
+6. **LIVE IMPORTS REPOINTED**: `routes/lp_package_routes.py` ·
+   `routes/elevation_sheets.py` · `lp_domain_manifest.py` (new module AND
+   the shim enumerated, so the fork-boundary drift check stays green) ·
+   the `lp_conventions.py` ground-truth docstring · four test files.
+   `fixture_figures.py`'s `"letrick"` → **`"sealed_hand_takeoff"`** with the
+   figures list untouched: `all_fixture_figures()` returns the SAME 28
+   numbers, so the purity pin scans what it always scanned, and its
+   coupling pin now also asserts the old key is GONE.
+7. **WHERE THE NAME STILL LIVES — REPORTED, NOT AUTHORISED**: `boni` /
+   `tanis` / `dart` in the same registry · the portable gate flag VALUE
+   `sealed_key == "letrick_v3"` (fixture data, not a code path) ·
+   `LETRICK_TAPE_WALLS` in `routes/demo.py` · two test FILENAMES (imports
+   fixed, names left per ruling) · ~80 files overall of demo/fixture
+   records and `memory/` narratives, including the two backup paths the
+   sealed module's own ruling text cites — which is why that text stands.
+8. **NOT TOUCHED**: phase 2 trim · quote wiring · rectify · blueprint path ·
+   storage split · the eleven 0.70 estimates (still no sweep).
+
 ## 2026-08-28 SEND-141 — A REFUSED ROW SHOWS NO NUMBER: EM DASH, NEVER 0 FT² (stamped `2026-08-28 00:10 UTC · 83319d8 · CLEAN · 3058 passed, 9 skipped, 7 warnings in 463.71s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed; zero pre-stamp reds)
 Full record: `memory/send141_report.md` · 13 pins in
 `tests/test_send141_refused_rows_show_no_zero_2026_08_27.py` · all four

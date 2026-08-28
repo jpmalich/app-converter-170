@@ -29,6 +29,7 @@ from fastapi.responses import FileResponse, Response
 
 from config import UPLOAD_DIR
 from deps import get_current_user
+from object_storage import aget, aput, upload_path
 from upload_store import load_blob, rehydrate_to_disk, save_blob
 
 router = APIRouter()
@@ -119,11 +120,21 @@ async def upload_photo(file: UploadFile = File(...), user: dict = Depends(get_cu
         "image/heic": "heic",
     }[sniffed]
     name = f"{uuid.uuid4().hex}.{ext_from_mime}"
-    dest = UPLOAD_DIR / name
-    with open(dest, "wb") as f:
-        f.write(content)
-    # Mirror into the durable MongoDB backing store. Failure is
-    # non-fatal — disk write still succeeded.
+    # SEND-142 (authorised 2026-08-28) — THE PHOTO NO LONGER LANDS ON THE
+    # POD'S DISK. It goes to Emergent object storage, which outlives the
+    # pod; a failed store is a NAMED REFUSAL (502), never a silent success
+    # that hands back a URL with nothing behind it.
+    try:
+        await aput(upload_path(name), content, sniffed)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=("Upload could not be stored — the photo was NOT saved. "
+                    "Try again; nothing was recorded on this estimate."),
+        ) from exc
+    # The MongoDB backing store stays (SOURCE-RETENTION ruling 2026-08-07:
+    # the original upload is retained, every door). Failure is non-fatal —
+    # object storage already holds the file.
     await save_blob(name, content, sniffed)
     return {"url": f"/api/uploads/{name}", "name": name}
 
@@ -148,6 +159,14 @@ async def serve_upload(name: str):
             data = target.read_bytes()
         except OSError:
             data = None
+    if data is None:
+        # SEND-142 — object storage is where every upload from this send
+        # onward lives. A file uploaded BEFORE it is still on the legacy
+        # disk path above (and rendered blueprint page images still write
+        # there — that lane was not in scope), so the disk read stays.
+        obj = await aget(upload_path(name))
+        if obj:
+            data = obj[0]
     if data is None:
         # Disk miss → rehydrate from MongoDB.
         restored = await rehydrate_to_disk(name, UPLOAD_DIR)

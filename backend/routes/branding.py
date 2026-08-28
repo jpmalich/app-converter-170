@@ -11,14 +11,15 @@ from config import (
     SUPPLIER_NAME,
     SUPPLIER_TAGLINE,
     SIGNUP_CODE,
-    UPLOAD_DIR,
     RESEND_API_KEY,
     SENDER_EMAIL,
 )
 from db import db, logger
 from deps import check_admin_token
 from models import BrandingUpdate, InviteContractorIn
+from object_storage import aput, upload_path
 from services import get_branding
+from upload_store import save_blob
 
 router = APIRouter()
 
@@ -148,12 +149,24 @@ async def admin_upload_logo(request: Request, file: UploadFile = File(...)):
     if ext not in {"jpg", "jpeg", "png", "webp", "svg"}:
         ext = "png"
     name = f"supplier-logo-{uuid.uuid4().hex[:8]}.{ext}"
-    dest = UPLOAD_DIR / name
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="Logo too large (>5MB)")
-    with open(dest, "wb") as f:
-        f.write(content)
+    # SEND-142 (authorised 2026-08-28) — the logo goes to Emergent object
+    # storage, not the pod disk; it is served by the SAME /api/uploads/
+    # door as before, so every quote and email that prints it is unchanged.
+    # A failed store REFUSES: the branding doc is not pointed at a file
+    # that does not exist.
+    ctype = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+             "webp": "image/webp", "svg": "image/svg+xml"}.get(ext, "image/png")
+    try:
+        await aput(upload_path(name), content, ctype)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail="Logo could not be stored — branding was NOT changed.",
+        ) from exc
+    await save_blob(name, content, ctype)
     url = f"/api/uploads/{name}"
     await db.settings.update_one(
         {"id": "branding"},

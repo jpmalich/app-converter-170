@@ -37,6 +37,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from deps import get_current_user
+from object_storage import aget, aput, hover_pdf_path
 import lp_smartside_formulas as lp_formulas
 from vinyl_color_tiers import apply_row_color_tiers as _apply_row_color_tiers
 from measure_staging import (guess_vero_product_type as _staging_guess_vero,
@@ -3187,14 +3188,22 @@ async def hover_import(
     user_id = user.get("id", "anon")
     run_id = uuid.uuid4().hex
     now = datetime.now(timezone.utc)
-    # S1 — SUBSTRATE PERSISTENCE (authorized 2026-07-29): keep the PDF on
-    # disk past the 1h page-cache TTL so the elevation-geometry read
-    # (S2) can re-render Hover's drawn pages any time. Keyed by run_id.
-    pdf_dir = os.path.join(os.path.dirname(__file__), "..", "uploads", "hover_pdfs")
-    os.makedirs(pdf_dir, exist_ok=True)
-    pdf_path = os.path.abspath(os.path.join(pdf_dir, f"{run_id}.pdf"))
-    with open(pdf_path, "wb") as fh:
-        fh.write(raw)
+    # S1 — SUBSTRATE PERSISTENCE (authorized 2026-07-29): keep the PDF past
+    # the 1h page-cache TTL so the elevation-geometry read (S2) can
+    # re-render Hover's drawn pages any time. Keyed by run_id.
+    # SEND-142 (authorised 2026-08-28): it is kept in Emergent OBJECT
+    # STORAGE, not on the pod's disk — a pod replacement used to take the
+    # substrate with it. A failed store REFUSES the import by name rather
+    # than starting a run whose PDF is already gone.
+    pdf_object = hover_pdf_path(run_id)
+    try:
+        await aput(pdf_object, raw, "application/pdf")
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=("The PDF could not be stored — the import was NOT "
+                    "started. Try the upload again."),
+        ) from exc
     await db.hover_import_runs.insert_one({
         "run_id": run_id,
         "user_id": user_id,
@@ -3204,7 +3213,7 @@ async def hover_import(
         "raw_extract_chars": len(text),
         "pdf_size_bytes": len(raw),
         "pdf_name": file.filename,
-        "pdf_path": pdf_path,
+        "pdf_object": pdf_object,
         "created_at": now,
         "updated_at": now,
         "completed_at": None,
@@ -3240,16 +3249,25 @@ async def hover_elevation_read(run_id: str, user: dict = Depends(get_current_use
     doc = await db.hover_import_runs.find_one({"run_id": run_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Hover run not found (runs expire after 24h — re-upload the PDF)")
-    pdf_path = doc.get("pdf_path")
-    if not pdf_path or not os.path.exists(pdf_path):
+    pdf_object = doc.get("pdf_object")
+    raw = None
+    if pdf_object:
+        got = await aget(pdf_object)
+        if got:
+            raw = got[0]
+    if raw is None:
+        # A run from BEFORE SEND-142 kept its PDF on the pod disk.
+        legacy = doc.get("pdf_path")
+        if legacy and os.path.exists(legacy):
+            with open(legacy, "rb") as fh:
+                raw = fh.read()
+    if raw is None:
         raise HTTPException(status_code=409, detail=(
             "This run predates PDF persistence (S1) — re-upload the Hover "
             "PDF and run the read on the fresh import."))
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY missing on server")
-    with open(pdf_path, "rb") as fh:
-        raw = fh.read()
     from routes.hover_elevation_read import read_elevation_geometry
     schedule_text = _extract_pdf_text(raw)
     report = await read_elevation_geometry(
