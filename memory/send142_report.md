@@ -112,3 +112,74 @@ Every drawn mark and the scale were deleted at teardown.
 Phase 2 trim runs · quote / material-list wiring · rectify / homography ·
 the blueprint path · hover/photo storage split · the eleven 0.70
 estimates (still no sweep, per SEND-138 ruling 1).
+
+---
+
+# SEND-142 ADDENDUM — THE THREE UPLOAD DOORS MOVED OFF THE POD DISK
+Howard authorised 2026-08-28, MINIMUM SCOPE. Stamp, verbatim:
+
+```
+RECORDED: 2026-08-28 11:29 UTC · 4adad63 · CLEAN
+RESULT: 3068 passed, 9 skipped, 7 warnings in 435.84s (0:07:15)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none)
+INGRESS SMOKE: 4 passed in 2.16s
+```
+
+10 pins in `tests/test_send142_object_storage_2026_08_28.py` (one of them a
+LIVE round trip through the real storage API). No quantity changed, no price
+changed, no hover/photo lane split, Phase 2 untouched, EST-886440 untouched.
+
+`backend/object_storage.py` is the ONE module that speaks to storage. It
+stores and returns BYTES: a purity pin fails it on any sqft / total_sell /
+unit_price / margin / lines / estimates / measurements / qty token, so it
+can never decide anything.
+
+## PATH BY PATH — WHERE IT WROTE, WHERE IT WRITES NOW
+
+1. **JOB PHOTOS — `routes/uploads.py`**
+   · BEFORE: `open(UPLOAD_DIR / name, "wb")` — the pod's own disk, mirrored
+     into Mongo `upload_blobs`.
+   · NOW: `aput(upload_path(name), …)` → **`pro-quote/uploads/{uuid}.{ext}`**
+     in Emergent object storage. The Mongo mirror STAYS (source-retention
+     ruling 2026-08-07: the original is retained at every door).
+   · A failed store is a **NAMED 502** — *"the photo was NOT saved …
+     nothing was recorded on this estimate"*. No URL over nothing.
+   · **LIVE PROOF**: `POST /api/uploads` → `33d0125163694f80985fa641c38d8235.png`;
+     `/app/backend/uploads/<name>` **does not exist** (nothing on the pod);
+     `GET /api/uploads/<name>` → **200, image/png, bytes identical**; and the
+     same URL an `<img>` uses **RENDERS IN THE BROWSER** at its true
+     200×120 (`/tmp/send142_photo_opens.png`). An uploaded photo still opens.
+
+2. **HOVER PDFs — `routes/hover.py`**
+   · BEFORE: `backend/uploads/hover_pdfs/{run_id}.pdf` on the pod disk, path
+     stored on the run as `pdf_path` (S1 substrate persistence, 2026-07-29).
+   · NOW: **`pro-quote/hover_pdfs/{run_id}.pdf`** in object storage, keyed by
+     run_id exactly as before; the run carries `pdf_object`.
+   · A failed store REFUSES the import (502, *"the import was NOT
+     started"*) rather than starting a run whose substrate is already gone.
+   · **A RUN FROM BEFORE THE MOVE STILL READS**: S2 tries `pdf_object`, then
+     the legacy `pdf_path` on disk, and only then prints the SAME
+     "re-upload the Hover PDF" refusal. Pin updated BY NAME in
+     `test_hover_elevation_read_s1s2.py` — the rule did not change, the
+     substrate moved.
+
+3. **SUPPLIER LOGO — `routes/branding.py`**
+   · BEFORE: `open(UPLOAD_DIR / "supplier-logo-*.png", "wb")`.
+   · NOW: object storage under the same `pro-quote/uploads/` prefix; the URL
+     handed back is **unchanged** (`/api/uploads/{name}`), so every quote,
+     print and invitation email that prints the logo is untouched.
+   · A failed store REFUSES (502) and **the branding doc is NOT pointed at a
+     file that does not exist**.
+   · **LIVE PROOF**: `tests/test_iteration5_supplier.py` posts a real logo to
+     `/admin/upload-logo` and passes.
+
+## THE READ PATH DID NOT CHANGE
+Same `/api/uploads/{name}` door, same order of last resort: legacy disk file
+(pre-move uploads and the rendered blueprint page images, a lane NOT in
+scope) → object storage → the Mongo blob. SEC-003 stands: the Content-Type
+is still sniffed from the bytes, unknown types still force a download, and
+`X-Content-Type-Options: nosniff` still rides every response.
+
+## NOT TOUCHED
+The hover/photo storage split · rendered blueprint page images (they are
+derived artifacts, not uploads) · Phase 2 · quote wiring · rectify.

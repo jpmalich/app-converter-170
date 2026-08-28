@@ -1,5 +1,38 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-28 SEND-142 ADDENDUM — AN UPLOADED FILE NO LONGER LIVES ON THE POD (stamped `2026-08-28 11:29 UTC · 4adad63 · CLEAN · 3068 passed, 9 skipped, 7 warnings in 435.84s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Authorised by Howard 2026-08-28, MINIMUM SCOPE. Full record: the addendum in
+`memory/send142_report.md` · 10 pins in
+`tests/test_send142_object_storage_2026_08_28.py`, one a LIVE round trip.
+**No quantity changed. No price changed. No hover/photo lane split. Phase 2
+untouched. EST-886440 untouched.**
+1. **JOB PHOTOS** (`routes/uploads.py`): pod disk → **`pro-quote/uploads/{uuid}.{ext}`**
+   in Emergent object storage; the Mongo `upload_blobs` mirror STAYS
+   (source-retention ruling 2026-08-07). **LIVE**: upload lands, the pod has
+   **no file**, `GET /api/uploads/{name}` returns 200 image/png with
+   **identical bytes**, and the same URL an `<img>` uses **renders in the
+   browser** at its true 200×120 — an uploaded photo still opens.
+2. **HOVER PDFs** (`routes/hover.py`): `uploads/hover_pdfs/{run_id}.pdf` on
+   disk → **`pro-quote/hover_pdfs/{run_id}.pdf`**, keyed by run_id exactly as
+   S1 always was; the run carries `pdf_object`. **A RUN FROM BEFORE THE MOVE
+   STILL READS** — object first, legacy `pdf_path` second, and only then the
+   SAME "re-upload the Hover PDF" refusal. Pin updated BY NAME.
+3. **SUPPLIER LOGO** (`routes/branding.py`): object storage, and **the URL
+   handed back is unchanged** (`/api/uploads/{name}`), so every quote, print
+   and invitation email that prints it is untouched. Verified live by the
+   existing supplier test.
+4. **A FAILED STORE IS A NAMED REFUSAL, NEVER A URL OVER NOTHING**: 502 at
+   all three doors — *"the photo was NOT saved"* · *"the import was NOT
+   started"* · *"branding was NOT changed"*. Nothing writes a placeholder.
+5. **STORAGE DECIDES NOTHING**: `object_storage.py` stores and returns bytes;
+   a purity pin fails it on any sqft / total_sell / unit_price / margin /
+   lines / estimates / measurements / qty token.
+6. **THE READ PATH DID NOT CHANGE**: same door, order of last resort legacy
+   disk (pre-move files and the rendered blueprint page images — a lane NOT
+   in scope) → object storage → Mongo blob. SEC-003 intact: Content-Type
+   still sniffed from the bytes, unknown types still forced to download,
+   `nosniff` on every response.
+
 ## 2026-08-28 SEND-142 — CLEANUP: THE DUPES, THE RAIL, THE NAME (stamped `2026-08-28 01:34 UTC · e3f83e6 · CLEAN · 3058 passed, 9 skipped, 7 warnings in 461.45s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send142_report.md` · browser 6/6
 `test_reports/iteration_61.json`. Cleanup only — **no sealed figure and no
