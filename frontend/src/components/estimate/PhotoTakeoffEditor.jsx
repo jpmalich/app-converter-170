@@ -5,6 +5,10 @@ import api from "@/lib/api";
 import MarksPanel from "@/components/estimate/phototakeoff/MarksPanel";
 import QuantitiesPanel from "@/components/estimate/phototakeoff/QuantitiesPanel";
 import ScalePanel from "@/components/estimate/phototakeoff/ScalePanel";
+// SEND-143 — PHASE 2 LINEAR RUNS: J-channel from the drawn opening box,
+// the gable rake from the lines drawn with the triangle, and a named
+// refusal row for every trim whose mark does not exist yet.
+import TrimPanel from "@/components/estimate/phototakeoff/TrimPanel";
 import {
   CATEGORIES, DORMER, GABLE, OPENING, SIDING, TAP_ORDER, kindLabel, markColor,
 } from "@/components/estimate/phototakeoff/marks";
@@ -572,6 +576,8 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
               setTapeIn={setTapeIn} commitTape={commitTape} />
 
             <QuantitiesPanel qty={qty} />
+
+            {qty?.trim_rows?.length ? <TrimPanel qty={qty} /> : null}
 
             <MarksPanel marks={marks} selectedId={selectedId}
               setSelectedId={setSelectedId} busy={busy} products={products}

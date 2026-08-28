@@ -1065,7 +1065,7 @@ def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     BOTH tape segments, each with its own courses × exposure basis.
     Gate: portable `sealed_key` doc flag (ruled 2026-07-26) — no runtime
     match on estimate numbers."""
-    if est.get("sealed_key") != "letrick_v3":
+    if est.get("sealed_key") != "sealed_v3":
         return None
     from sealed_hand_takeoff_key import SEALED_HAND_TAKEOFF_KEY as KEY
     from routes.demo import LETRICK_TAPE_WALLS  # constant import only

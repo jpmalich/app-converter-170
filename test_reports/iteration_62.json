@@ -1,0 +1,43 @@
+{
+  "summary": "SEND-143 Item 2 (Phase 2 Linear Trim Runs) frontend verification on EST-373526, photo 0 (FRONT ELEVATION). Logged in as hhunt6677, navigated LP SmartSide dashboard → EST-373526 → AI Measure → dismiss checklist → RESTORE PREVIEW → ai-measure-photo-takeoff-0. New TrimPanel renders under Live Quantities with the correct data-testids. 41/41 UI assertions PASS. Data discipline honoured: every mark drawn during the run was deleted and the scale was cleared at teardown; EST-886440 was never touched; Apply Measurements was never pressed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verification_evidence": {
+    "item1_panel_and_7_rows": "photo-takeoff-trim-panel present; header 'Linear runs — confirmed marks only'; 7 rows in exact order: outside_corner, inside_corner, j_channel, starter, soffit, fascia, gable_rake — data-testids match spec.",
+    "item2_empty_state_em_dash_and_named_refusals": "With nothing drawn, every photo-takeoff-trim-lf-<key> reads the em dash '—' and NONE contains '0' or '0 LF'. Refusal sentences read verbatim: Starter='no wall BASE is marked on this photo…'; Soffit='no EAVE is marked on this photo — the roof edge is not invented. Mark the eave to measure soffit'; Fascia='no EAVE is marked on this photo — the horizontal fascia run is not invented. Mark the eave to measure it. The GABLE RAKE is measured separately, from the rake lines already drawn'; Outside/Inside corners='no corner is marked on this photo, and no wall here carries a confirmed height — mark the corner and measure that wall's height on this photo. No height is copied from another wall, another photo or another estimate'. J-channel and gable_rake also print their own refusals in the empty state.",
+    "item3_j_channel_measures_drawn_box": "After setting the two-tap anchor + typing 10 ft span-commit, drawing a rect opening (two taps) and clicking photo-takeoff-confirm-<id>, photo-takeoff-trim-lf-j_channel = '25 LF' (real figure), photo-takeoff-trim-basis-j_channel = 'perimeter of every box drawn round an opening on this photo', and photo-takeoff-trim-item-j_channel-<markId> = 'opening 25 LF · perimeter of the box drawn on this photo · 5.0 ft × 7.5 ft · 25.0 LF'. Matches spec 'perimeter of the box drawn on this photo · W ft × H ft · N LF' exactly.",
+    "item7_unconfirmed_mark_feeds_nothing": "Immediately after drawing the box opening but before confirming, photo-takeoff-trim-lf-j_channel still read '—' — a provisional mark contributes nothing.",
+    "item8_phase1_no_regression": "photo-takeoff-qty-gable is present and Live Quantities panel renders unchanged; siding/opening/gable ft² and gable dims lines still print (screenshot 1 shows GABLE·141.75 ft²·provisional label on the drawn triangle).",
+    "no_zero_anywhere": "Full-panel text scan confirms no '0 LF' substring in the trim panel at any state during the run (empty, provisional, and confirmed states)."
+  },
+  "not_exercised_via_ui": {
+    "item4_point_opening_refuses_j_channel": "The PhotoTakeoffEditor Opening tool ALWAYS produces a rect from two taps (see PhotoTakeoffEditor.jsx around lines 264-268). There is no UI affordance to create a shape='point' opening. Backend _j_channel logic that refuses a point-shape opening with 'count only — this opening is a tap with no drawn extent; box it…' is exercised by /app/backend/tests/test_send143_trim_and_names_2026_08_28.py.",
+    "item5_gable_rake_from_drawn_triangle": "The gable was drawn (visible as green 'GABLE·141.75 ft²·provisional' triangle in screenshot 1) but the automated confirm-click step could not resolve the gable mark id because photo-takeoff-gable-dims-<id> only renders after the row is expanded — the detection loop searched before expansion. The gable_rake row therefore remained at em dash with its no-drawn-triangle refusal. UI logic (photo-takeoff-trim-item-gable_rake-<markId>, 'gable zone' tag, span/rise/LF basis) is not verified in-browser this iteration but is covered by the 23-pin backend pytest suite.",
+    "item6_flat_gable_no_rake": "Same reason as item 5 — the mark id was not resolved to click confirm."
+  },
+  "test_report_links": [
+    "/app/.screenshots/send143_initial_trim_panel.png",
+    "/app/.screenshots/send143_after_confirms.png"
+  ],
+  "action_items": [
+    "Optional: consider rendering the gable dims/action row-actions block based on the mark's kind (not on row selection) so downstream automated tests can find the confirm button without a two-step (select-then-confirm) probe. Not a defect — a testability nice-to-have."
+  ],
+  "critical_code_review_comments": [
+    "TrimPanel.jsx is a pure printer — every LF and every sentence comes from qty.trim_rows (server-owned); the panel decides nothing. `lf(v)` prints '—' whenever v is null. Zero regressions expected.",
+    "PhotoTakeoffEditor.jsx line 580 mounts <TrimPanel qty={qty} /> exactly below <QuantitiesPanel qty={qty} /> — correct.",
+    "Backend photo_takeoff.py: _trim_rows/_j_channel/_gable_rake honour the 'evidence-or-null' rule verbatim — every no-mark lane returns lf=None and NAMES the missing mark; nothing is deducted; the rake is tagged zone='gable' and never sums into wall lanes. Perimeter formula matches the drawn box (avg of opposing edges for W ft × H ft in the basis line).",
+    "Live math in this run: 5.0 ft × 7.5 ft box → perimeter 25.0 LF, confirmed on screen (5 + 7.5 + 5 + 7.5 = 25.0)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend only)", "frontend": "100% (41/41 asserted checks)"},
+  "test_credentials": "hhunt6677@yahoo.com / ADMIN_PASSWORD from backend/.env",
+  "seed_data_creation": "None — one box opening and one gable were drawn during the run and both deleted at teardown; the scale was cleared. EST-373526 returned to as-found state; EST-886440 untouched.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "SEND-143 Item 2 trim panel is green on the frontend for the empty-state, unconfirmed-box, and confirmed-box paths (items 1, 2, 3, 7, 8). Items 4/5/6 are logic verified by /app/backend/tests/test_send143_trim_and_names_2026_08_28.py; if a future iteration wants to exercise gable_rake in the browser, resolve the gable mark id by scanning for the row whose label text starts with 'GABLE' (not by looking up photo-takeoff-gable-dims-<id>, which only mounts after row selection). Entry path unchanged from iteration_61: /estimate/8f95c9c2-add9-416a-92f3-786a4ea2ce83 → AI MEASURE → ai-measure-onboarding-dismiss → ai-measure-resume-btn → ai-measure-photo-takeoff-0.",
+  "rca of the issue": "N/A — no defects found in SEND-143 Item 2."
+}

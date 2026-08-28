@@ -403,7 +403,16 @@ def test_phase_two_kinds_are_declared_and_unimplemented():
     for kind in ("outside_corner", "inside_corner", "j_channel", "starter",
                  "soffit", "fascia", "finish_trim"):
         assert kind in m.group(1), f"{kind} dropped from the phase-2 set"
-    assert "PHASE 2 (next pass, NOT built)" in src
+    # SEND-143 NAMED PIN UPDATE (Howard authorised 2026-08-28): the phase
+    # boundary is still explicit, but it MOVED. The linear runs that read
+    # marks already drawn — J-channel and the gable rake — are now BUILT;
+    # the five trims with no mark to read are still refused BY NAME, and no
+    # new MARK TYPE was added, so a starter/corner/soffit/fascia mark is
+    # still rejected at the door (that is what PHASE2_KINDS above holds).
+    assert "PHASE 2 (SEND-143, 2026-08-28 — LINEAR RUNS FROM MARKS ALREADY" in src
+    assert "no mark type is invented" in " ".join(src.lower().split())
+    from routes.photo_takeoff import PHASE1_KINDS, PHASE2_KINDS
+    assert not (PHASE1_KINDS & PHASE2_KINDS)
 
 
 def test_the_router_is_registered_under_the_api_prefix():

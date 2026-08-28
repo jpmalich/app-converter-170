@@ -2564,6 +2564,13 @@ async def ai_measure(
         for name in [p.strip() for p in photo_paths.split(",") if p.strip()]:
             target = UPLOAD_DIR / name
             if not target.exists():
+                # SEND-143 — since SEND-142 an upload lives in object
+                # storage, not on this pod. Fetch it back before refusing.
+                from upload_store import rehydrate_to_disk
+                restored = await rehydrate_to_disk(name, UPLOAD_DIR)
+                if restored and restored.exists():
+                    target = restored
+            if not target.exists():
                 raise HTTPException(
                     status_code=404,
                     detail=f"Uploaded photo {name!r} not found on server",
@@ -7328,7 +7335,13 @@ async def ai_cross_check(
     for name in paths:
         target = UPLOAD_DIR / name
         if not target.exists():
-            continue
+            # SEND-143 — the upload's home is object storage; ask for it
+            # back before treating the photo as gone.
+            from upload_store import rehydrate_to_disk
+            restored = await rehydrate_to_disk(name, UPLOAD_DIR)
+            if not (restored and restored.exists()):
+                continue
+            target = restored
         raw = target.read_bytes()
         # Reuse the same compressor the primary pass uses.
         image_payloads.append(_compress_for_claude(raw))

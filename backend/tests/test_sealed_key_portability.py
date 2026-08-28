@@ -1,7 +1,7 @@
 """SEALED-KEY PORTABILITY pins (ruled 2026-07-26).
 
 The two sealed-key runtime gates match the portable `sealed_key` doc
-flag ("letrick_v3"), never an estimate number. Sweep: no runtime route
+flag ("sealed_v3"), never an estimate number. Sweep: no runtime route
 code compares against any EST-* estimate number. Sealed VALUES stay in
 sealed_hand_takeoff_key.py (code), never in the estimate doc.
 """
@@ -15,8 +15,8 @@ SHEETS = (BACKEND / "routes" / "elevation_sheets.py").read_text()
 
 
 def test_gates_use_sealed_key_flag():
-    assert 'est.get("sealed_key") != "letrick_v3"' in LP_PKG
-    assert 'est.get("sealed_key") != "letrick_v3"' in SHEETS
+    assert 'est.get("sealed_key") != "sealed_v3"' in LP_PKG
+    assert 'est.get("sealed_key") != "sealed_v3"' in SHEETS
     assert 'est.get("estimate_number") != "EST-373526"' not in LP_PKG
     assert 'est.get("estimate_number") != "EST-373526"' not in SHEETS
 
@@ -35,14 +35,14 @@ def test_no_runtime_estimate_number_matching():
         assert not hits, f"runtime estimate-number match in {f.name}: {hits}"
 
 
-def test_letrick_fixture_carries_sealed_key():
+def test_the_sealed_fixture_carries_the_sealed_key():
     docs = json.loads((BACKEND / "fixtures" / "docs" / "estimates.json").read_text())
-    letrick = next(e for e in docs if e.get("estimate_number") == "EST-373526")
-    assert letrick.get("sealed_key") == "letrick_v3"
+    sealed = next(e for e in docs if e.get("estimate_number") == "EST-373526")
+    assert sealed.get("sealed_key") == "sealed_v3"
 
 
 def test_sealed_values_stay_in_code_not_doc():
     docs = json.loads((BACKEND / "fixtures" / "docs" / "estimates.json").read_text())
-    letrick = next(e for e in docs if e.get("estimate_number") == "EST-373526")
+    sealed = next(e for e in docs if e.get("estimate_number") == "EST-373526")
     for k in ("raw_sqft", "exposure_in", "chase_outer_sqft", "eaves_lf"):
-        assert k not in letrick, f"sealed value {k} must live in sealed_hand_takeoff_key.py only"
+        assert k not in sealed, f"sealed value {k} must live in sealed_hand_takeoff_key.py only"

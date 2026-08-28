@@ -338,10 +338,22 @@ def test_no_correction_factor_was_built():
     # the only trig in the module reports an ANGLE; it never scales a figure
     body = src.split("def _plane_basis(")[1].split("\ndef ")[0]
     assert "math.acos" in body
+    # SEND-143 NAMED PIN UPDATE: the trim lanes measure the LENGTH of a line
+    # the contractor drew, which is `math.hypot` on two of their own points —
+    # a ruler, not a correction. Every other trig call stays banned outside
+    # the classifier: no cosine, no angle, no factor may touch a figure.
     after = src.split("def _plane_basis(")[1].split("\ndef ")[1:]
-    assert not any("math." in chunk for chunk in after), (
-        "trigonometry escaped the classifier — a correction factor from "
-        "an unmeasured angle is a fabricated ruler")
+    for chunk in after:
+        for call in ("math.acos", "math.cos", "math.sin", "math.tan",
+                     "math.atan", "math.radians", "math.degrees"):
+            assert call not in chunk, (
+                f"{call} escaped the classifier — a correction factor from "
+                "an unmeasured angle is a fabricated ruler")
+        for line in chunk.splitlines():
+            if "math." in line:
+                assert "math.hypot" in line, (
+                    "only math.hypot (the length of a drawn line) is allowed "
+                    f"outside the classifier: {line.strip()}")
 
 
 # ── BLOCK A — THE RULE REACHES EVERY RESTORE, INCLUDING OLD RUNS ──────

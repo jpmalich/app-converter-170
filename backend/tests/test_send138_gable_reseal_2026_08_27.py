@@ -132,7 +132,7 @@ def test_this_pin_file_names_no_customer_and_the_gate_stays_portable():
     """The fixture is reached by the portable `sealed_key` flag, never by
     matching an estimate number or a customer name at runtime."""
     src = CONSUMER.read_text()
-    assert 'est.get("sealed_key") != "letrick_v3"' in src
+    assert 'est.get("sealed_key") != "sealed_v3"' in src
     assert "customer_name" not in src.split("_apply_key_bound_areas")[1][:2000]
     # This file refers to THE SEALED FIXTURE. The legacy name may appear
     # ONLY where the pre-existing module is imported or its path named —

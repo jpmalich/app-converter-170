@@ -1,4 +1,4 @@
-"""LETRICK REGRESSION GUARD — pins the Letrick estimate
+"""SEALED_FIXTURE REGRESSION GUARD — pins the the sealed fixture estimate
 (8f95c9c2-add9-416a-92f3-786a4ea2ce83), banked hand-takeoff key ledger.
 Renamed from test_lap_unification_ruling.py (hygiene order, 2026-07-20):
 the filename now states the estimate this file pins.
@@ -15,7 +15,7 @@ LAP UNIFICATION RULING (Howard, 2026-07-19) — four seals, pinned:
 4. WASTE IS THE CONTRACTOR'S: estimate waste_pct field only (default 0,
    per-estimate, surfaced); DEFAULT_WASTE auto-default RETIRED; no
    formula anywhere silently includes waste.
-Result: Letrick app lap = 255 = sealed key EXACTLY (residual zero).
+Result: the sealed fixture app lap = 255 = sealed key EXACTLY (residual zero).
 """
 import sys
 from pathlib import Path
@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
 from api_base import API  # env-derived (un-hardcoded 2026-07-23)
-LETRICK = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
+SEALED_FIXTURE = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
 
 
 @pytest.fixture(scope="module")
@@ -42,7 +42,7 @@ def session():
 
 @pytest.fixture(scope="module")
 def pkg(session):
-    r = session.post(f"{API}/estimates/{LETRICK}/lp-package/preview", json={}, timeout=60)
+    r = session.post(f"{API}/estimates/{SEALED_FIXTURE}/lp-package/preview", json={}, timeout=60)
     assert r.status_code == 200
     return r.json()
 
@@ -111,7 +111,7 @@ def test_seal3_book_piece_formula_pdf_retired(pkg):
 
 def test_seal4_waste_is_contractors_no_silent_waste(pkg):
     """Item 4: the applied waste is the estimate's waste_pct field
-    (Letrick field = 10 → 0.10 applied AND reported); assemble with no
+    (the sealed fixture field = 10 → 0.10 applied AND reported); assemble with no
     _waste_pct applies and reports 0 — no formula silently adds waste."""
     assert pkg["summary"]["waste_pct_applied"] == 0.10  # contractor's field, surfaced
     from lp_package import assemble_lp_package
@@ -121,7 +121,7 @@ def test_seal4_waste_is_contractors_no_silent_waste(pkg):
     assert d["summary"]["waste_pct_applied"] == 0.0
 
 
-def test_letrick_identity_app_equals_key_residual_zero(pkg):
+def test_sealed_fixture_identity_app_equals_key_residual_zero(pkg):
     """Item 5 receipt: restated app lap (key-bound area, book formula,
     contractor 10%) = the sealed key's own lap — residual ZERO. NAMED PIN
     UPDATE (SEND-138 gable re-seal): both ledgers move together, 255 →

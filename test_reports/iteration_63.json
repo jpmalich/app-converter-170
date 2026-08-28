@@ -1,0 +1,28 @@
+{
+  "summary": "SEND-143 Item 2 (Phase 2 Linear Trim Runs) READ-ONLY re-verification on EST-373526 photo 0 (FRONT ELEVATION). The rig placed by the main agent (tape scale + 4 confirmed marks) was already on screen. Entered the Photo Takeoff editor and read the 'Linear runs — confirmed marks only' panel (photo-takeoff-trim-panel). All THREE rows that iteration_62 could not exercise in-browser (gable_rake real figure, flat-gable NO-RISE refusal, tapped-opening J-channel refusal) verified verbatim, plus no-leak of the rake into wall lanes. NOTHING was drawn, deleted, or applied. EST-886440 was not touched.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verification_evidence": {
+    "gable_rake_row_header_and_lf": "photo-takeoff-trim-row-gable_rake present. Row header reads 'Gable rake  GABLE ZONE'. photo-takeoff-trim-lf-gable_rake = '36.06 LF' (matches expected 36.06). photo-takeoff-trim-basis-gable_rake = 'the rake lines drawn with each gable triangle on this photo — GABLE ZONE, never a wall run'.",
+    "gable_rake_front_gable_item_line": "photo-takeoff-trim-item-gable_rake-96bd8c44-cc16-4b34-8030-36b8311c2d86 => 'front gable 36.06 LF · the two rake lines drawn on this photo · span 30.0 ft · rise 10.0 ft · 36.06 LF' — matches expected 'the two rake lines drawn on this photo · span 30.0 ft · rise 10.0 ft · 36.06 LF' exactly.",
+    "gable_rake_flat_gable_em_dash_refusal": "photo-takeoff-trim-item-gable_rake-baaf3b44-947c-490a-b848-3433be4f39a5 => 'flat gable — · the peak sits on the eave line — this gable has NO RISE. An untraced gable has no area: REFUSED, never a 0 and never a factor on an unmeasured triangle'. Prints em dash '—', contains 'NO RISE' verbatim, explicitly says 'never a 0'. No bare 0 or 0 LF.",
+    "j_channel_row_and_lines": "photo-takeoff-trim-lf-j_channel = '18 LF'. photo-takeoff-trim-basis-j_channel = 'perimeter of every box drawn round an opening on this photo'. Boxed-opening line: 'front window 18 LF · perimeter of the box drawn on this photo · 3.0 ft × 6.0 ft · 18.0 LF' (perimeter 2*(3+6)=18.0, verified). Tapped-opening line: 'tapped window — · count only — this opening is a tap with no drawn extent; box it on this photo to measure its J-channel' — em dash + tap refusal verbatim.",
+    "no_rake_leak_into_wall_lanes": "Even with a measured rake (36.06 LF) on screen: photo-takeoff-trim-lf-starter='—' (named refusal: 'no wall BASE is marked on this photo…'), photo-takeoff-trim-lf-outside_corner='—' (named refusal: 'no corner is marked on this photo, and no wall here carries a confirmed height…'), photo-takeoff-trim-lf-inside_corner='—' (same named corner refusal), photo-takeoff-trim-lf-soffit='—', photo-takeoff-trim-lf-fascia='—' (fascia refusal explicitly states 'The GABLE RAKE is measured separately, from the rake lines already drawn'). Rake did NOT leak into any wall lane.",
+    "no_zero_defect": "Full-panel text scan: every real figure is 18 LF, 18.0 LF, 36.06 LF, 3.0 ft, 6.0 ft, 30.0 ft, 10.0 ft. No bare '0' or '0 LF' appears in any row as a measurement. (The literal string 'never a 0' inside the flat-gable refusal sentence is the intended print, not a defect.)"
+  },
+  "test_report_links": ["/app/.screenshots/iter63_trim_panel.png"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "TrimPanel.jsx remains a pure printer — every LF and every refusal comes from qty.trim_rows on the server. lf() prints '—' whenever the figure is null, so the em-dash-not-zero contract is upheld structurally.",
+    "Backend _gable_rake correctly zones the row (GABLE ZONE tag rendered) and per-gable lines carry span/rise/LF from the rake lines actually drawn — 30 ft span + 10 ft rise resolves to hypotenuse √(15²+10²)=18.028 per side × 2 = 36.056 ≈ 36.06 LF, math checks out.",
+    "Flat gable (rise=0) is refused with 'NO RISE' language and explicit 'never a 0' — no factor is invented and no fallback to 0."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend only)", "frontend": "100% — every targeted row, basis, per-item line and refusal read verbatim"},
+  "test_credentials": "hhunt6677@yahoo.com / ADMIN_PASSWORD from backend/.env",
+  "seed_data_creation": "None — READ-ONLY run. Zero draws, zero deletes, zero Apply Measurements. Rig left exactly as found.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "SEND-143 Item 2 is now fully green in-browser across all seven target rows including the previously unexercised gable_rake real figure, flat-gable NO-RISE refusal, and tapped-opening J-channel refusal. Screenshot at /app/.screenshots/iter63_trim_panel.png shows the whole panel with 36.06 LF / 18 LF / em-dash lanes visible together. Entry path unchanged: /login → /estimate/8f95c9c2-add9-416a-92f3-786a4ea2ce83 → AI MEASURE → ai-measure-onboarding-dismiss → ai-measure-resume-btn → ai-measure-photo-takeoff-0. Note: rows may need to be clicked/expanded to reveal photo-takeoff-trim-item-<key>-<markId> per-item lines, but the top-line LF and basis are always rendered.",
+  "rca of the issue": "N/A — no defects found. Iteration_62's inability to resolve the gable mark id was purely a test-automation limitation (searching for photo-takeoff-gable-dims-<id> before row expansion); with the rig pre-placed by the main agent, all trim rows and per-item lines rendered correctly on first read."
+}

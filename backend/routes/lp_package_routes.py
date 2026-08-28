@@ -262,7 +262,7 @@ def _apply_key_bound_areas(measurements, est):
     key raw_sqft governs siding area.
     Gate: portable `sealed_key` doc flag (ruled 2026-07-26) — no runtime
     match on estimate numbers; values stay in sealed_hand_takeoff_key.py."""
-    if est.get("sealed_key") != "letrick_v3":
+    if est.get("sealed_key") != "sealed_v3":
         return measurements  # no sealed key — AI values are the named fallback
     dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
     h = dims.get("height_ft") or {}

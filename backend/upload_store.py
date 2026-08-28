@@ -24,6 +24,7 @@ Implementation notes:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
@@ -119,14 +120,29 @@ async def load_blob(name: str) -> Optional[tuple[bytes, str]]:
 
 
 async def rehydrate_to_disk(name: str, upload_dir: Path) -> Optional[Path]:
-    """If we have a blob for `name` but no disk copy, write it back to
+    """If we have the bytes for `name` but no disk copy, write them back to
     `upload_dir` so subsequent reads (e.g. PIL.Image, fitz, FileResponse)
     work normally. Returns the path on success, None on miss.
+
+    SEND-143: OBJECT STORAGE IS ASKED FIRST. Since SEND-142 an upload's
+    home is Emergent object storage, not this pod — a disk file is only ever
+    a cache now, and every reader that used to find the upload on disk has
+    to be able to get it back. The Mongo backing store stays as the second
+    source (source-retention ruling 2026-08-07).
     """
-    blob = await load_blob(name)
-    if blob is None:
-        return None
-    data, _ctype = blob
+    data: Optional[bytes] = None
+    try:
+        from object_storage import get_object, upload_path
+        got = await asyncio.to_thread(get_object, upload_path(name))
+        if got:
+            data = got[0]
+    except Exception as e:  # noqa: BLE001
+        logger.warning("upload_store: object storage miss for %s: %s", name, e)
+    if data is None:
+        blob = await load_blob(name)
+        if blob is None:
+            return None
+        data, _ctype = blob
     target = upload_dir / name
     try:
         target.write_bytes(data)

@@ -22,9 +22,16 @@ The discipline is the blueprint discipline, carried over verbatim:
     the blueprint lane does.
 
 PHASE 1 (the ft² spine): siding zones, non-siding zones, openings.
-PHASE 2 (next pass, NOT built): outside/inside corners, J-channel,
-starter, soffit, fascia, finish trim.
+PHASE 2 (SEND-143, 2026-08-28 — LINEAR RUNS FROM MARKS ALREADY DRAWN):
+J-channel measures the perimeter of the box drawn round each opening, and
+the GABLE RAKE measures the two sloped lines drawn with each gable
+triangle. Outside/inside corners, starter, soffit and horizontal fascia
+have NOTHING to read yet (there is no corner tick, no wall-base mark and
+no eave mark) — their rows still appear and NAME the missing mark. No mark
+type is invented, and no linear run is derived from a figure the
+contractor did not draw.
 """
+import math
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -598,6 +605,187 @@ def _plane_basis(marks: List[dict], ipp: Optional[float]) -> dict:
             "plane_basis_angle_deg": angle_deg}
 
 
+def _seg_ft(a: dict, b: dict, ipp: float) -> float:
+    """Length of a DRAWN segment in feet. Nothing here is derived from a
+    typed figure — the contractor's own line is measured."""
+    px = math.hypot(float(a["x"]) - float(b["x"]), float(a["y"]) - float(b["y"]))
+    return px * ipp / 12.0
+
+
+def _perimeter_ft(pts: List[dict], ipp: float) -> float:
+    n = len(pts)
+    return sum(_seg_ft(pts[i], pts[(i + 1) % n], ipp) for i in range(n))
+
+
+# PHASE 2 TRIM (Howard ruled 2026-08-28, SEND-143) — LINEAR RUNS FROM
+# MARKS ALREADY DRAWN. Two lanes measure; the other four have NOTHING to
+# read and say so on screen. The refusal names the missing MARK and what
+# to draw — it is never a 0 and it is never hidden.
+TRIM_REFUSALS = {
+    "outside_corner": (
+        "no corner is marked on this photo, and no wall here carries a "
+        "confirmed height — mark the corner and measure that wall's height "
+        "on this photo. No height is copied from another wall, another "
+        "photo or another estimate"),
+    "inside_corner": (
+        "no corner is marked on this photo, and no wall here carries a "
+        "confirmed height — mark the corner and measure that wall's height "
+        "on this photo. No height is copied from another wall, another "
+        "photo or another estimate"),
+    "starter": (
+        "no wall BASE is marked on this photo — a zone outline does not say "
+        "which of its edges is the base, and the base may not be read off "
+        "the plate line or the eave. Mark the base to measure starter"),
+    "soffit": (
+        "no EAVE is marked on this photo — the roof edge is not invented. "
+        "Mark the eave to measure soffit"),
+    "fascia": (
+        "no EAVE is marked on this photo — the horizontal fascia run is not "
+        "invented. Mark the eave to measure it. The GABLE RAKE is measured "
+        "separately, from the rake lines already drawn"),
+}
+TRIM_ORDER = ("outside_corner", "inside_corner", "j_channel", "starter",
+              "soffit", "fascia", "gable_rake")
+TRIM_LABELS = {"outside_corner": "Outside corners",
+               "inside_corner": "Inside corners",
+               "j_channel": "J-channel",
+               "starter": "Starter",
+               "soffit": "Soffit",
+               "fascia": "Fascia",
+               "gable_rake": "Gable rake"}
+TRIM_ZONES = {"gable_rake": "gable"}          # everything else is body
+
+
+def _j_channel(marks: List[dict], ipp: Optional[float]) -> dict:
+    """J-CHANNEL = THE PERIMETER OF THE BOX DRAWN ROUND THE OPENING, on
+    this photo, in this photo's own scale. A tap carries a COUNT and no
+    extent — its J-channel is REFUSED BY NAME until the opening is boxed.
+    No size is ever invented, and a typed width/height is a guidance claim,
+    never a quantity input (SEND-131A)."""
+    opens = [m for m in marks if m.get("kind") in OPENING_KINDS
+             and m.get("status") == "confirmed"]
+    rows, refusals = [], []
+    total = 0.0
+    live = False
+    for m in opens:
+        pts = m.get("points") or []
+        label = m.get("label") or "opening"
+        if len(pts) < 3:
+            reason = ("count only — this opening is a tap with no drawn "
+                      "extent; box it on this photo to measure its J-channel")
+            rows.append({"id": m.get("id"), "label": label, "lf": None,
+                         "basis": None, "refusal": reason})
+            refusals.append(f"{label}: {reason}")
+            continue
+        if not ipp:
+            reason = ("no scale on this photo — the box is drawn, its "
+                      "length is not known")
+            rows.append({"id": m.get("id"), "label": label, "lf": None,
+                         "basis": None, "refusal": reason})
+            refusals.append(f"{label}: {reason}")
+            continue
+        per = _perimeter_ft(pts, ipp)
+        w_ft = h_ft = None
+        if len(pts) == 4:
+            w_ft = round((_seg_ft(pts[0], pts[1], ipp)
+                          + _seg_ft(pts[2], pts[3], ipp)) / 2.0, 2)
+            h_ft = round((_seg_ft(pts[1], pts[2], ipp)
+                          + _seg_ft(pts[3], pts[0], ipp)) / 2.0, 2)
+        if not per > 0 or not _poly_area_px(pts) > 0:
+            reason = ("the box drawn round this opening encloses nothing — "
+                      "re-draw it")
+            rows.append({"id": m.get("id"), "label": label, "lf": None,
+                         "basis": None, "refusal": reason})
+            refusals.append(f"{label}: {reason}")
+            continue
+        basis = ("perimeter of the box drawn on this photo"
+                 + (f" · {w_ft} ft × {h_ft} ft" if w_ft and h_ft else "")
+                 + f" · {round(per, 2)} LF")
+        rows.append({"id": m.get("id"), "label": label,
+                     "lf": round(per, 2), "width_ft": w_ft, "height_ft": h_ft,
+                     "basis": basis, "refusal": None})
+        total += per
+        live = True
+    return {"lf": round(total, 2) if live else None,
+            "rows": rows or None, "refusals": refusals or None,
+            "count": len(opens) or None}
+
+
+def _gable_rake(marks: List[dict], masks: List[dict],
+                ipp: Optional[float]) -> dict:
+    """GABLE RAKE = THE TWO SLOPED LINES THE CONTRACTOR ALREADY DREW
+    (left eave → peak → right eave), measured as drawn. It is a GABLE-ZONE
+    figure: it is not a wall starter, not a wall corner, not J-channel, and
+    it never joins any of them (Howard, SEND-143). A gable whose triangle
+    is refused has NO rake — em dash, never a 0."""
+    g = [m for m in marks if m.get("kind") == "gable"
+         and m.get("status") == "confirmed"]
+    rows, refusals = [], []
+    total = 0.0
+    live = False
+    for m in g:
+        label = m.get("label") or "gable"
+        f = _gable_figure(m, masks, ipp)
+        pts = m.get("points") or []
+        if f["refusal"] or len(pts) != KIND_POINTS["gable"] or not ipp:
+            reason = f["refusal"] or (
+                "no scale on this photo — the rake lines are drawn, their "
+                "length is not known")
+            rows.append({"id": m.get("id"), "label": label, "lf": None,
+                         "basis": None, "refusal": reason})
+            refusals.append(f"{label}: {reason}")
+            continue
+        left, peak, right = pts[0], pts[1], pts[2]
+        rake = _seg_ft(left, peak, ipp) + _seg_ft(peak, right, ipp)
+        basis = (f"the two rake lines drawn on this photo · span "
+                 f"{f['base_ft']} ft · rise {f['rise_ft']} ft · "
+                 f"{round(rake, 2)} LF")
+        rows.append({"id": m.get("id"), "label": label, "lf": round(rake, 2),
+                     "span_ft": f["base_ft"], "rise_ft": f["rise_ft"],
+                     "basis": basis, "refusal": None})
+        total += rake
+        live = True
+    return {"lf": round(total, 2) if live else None,
+            "rows": rows or None, "refusals": refusals or None,
+            "count": len(g) or None}
+
+
+def _trim_rows(marks: List[dict], masks: List[dict],
+               ipp: Optional[float]) -> tuple[List[dict], dict, dict]:
+    """The six trims Howard named plus the gable rake, IN ONE LIST, every
+    row present whether or not it can be measured. A lane with no mark to
+    read prints the em dash and NAMES the missing mark."""
+    j = _j_channel(marks, ipp)
+    r = _gable_rake(marks, masks, ipp)
+    rows = []
+    for key in TRIM_ORDER:
+        if key == "j_channel":
+            rows.append({"key": key, "label": TRIM_LABELS[key],
+                         "zone": TRIM_ZONES.get(key, "body"),
+                         "lf": j["lf"], "rows": j["rows"],
+                         "refusal": None if j["lf"] is not None else (
+                             "no boxed opening is confirmed on this photo — "
+                             "box an opening to measure its J-channel"),
+                         "basis": ("perimeter of every box drawn round an "
+                                   "opening on this photo")})
+        elif key == "gable_rake":
+            rows.append({"key": key, "label": TRIM_LABELS[key],
+                         "zone": TRIM_ZONES.get(key, "body"),
+                         "lf": r["lf"], "rows": r["rows"],
+                         "refusal": None if r["lf"] is not None else (
+                             "no measured gable triangle on this photo — "
+                             "the rake is the two lines you draw with it"),
+                         "basis": ("the rake lines drawn with each gable "
+                                   "triangle on this photo — GABLE ZONE, "
+                                   "never a wall run")})
+        else:
+            rows.append({"key": key, "label": TRIM_LABELS[key],
+                         "zone": TRIM_ZONES.get(key, "body"),
+                         "lf": None, "rows": None,
+                         "refusal": TRIM_REFUSALS[key], "basis": None})
+    return rows, j, r
+
+
 def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
     """Quantity from CONFIRMED marks only, and only with a scale. Every
     refusal is named; a refusal is never reported as 0."""
@@ -648,11 +836,42 @@ def _quantities(marks: List[dict], scale: Optional[dict]) -> dict:
         "gable_receipts": None,
         "dormer_receipts": None,
         "gable_basis_note": None,
+        # SEND-143 — PHASE 2 TRIM. Every row is present; a lane with no
+        # mark to read carries None and names the missing mark.
+        "trim_rows": None,
+        "j_channel_lf": None,
+        "j_channel_rows": None,
+        "j_channel_refusals": None,
+        "gable_rake_lf": None,
+        "gable_rake_rows": None,
+        "gable_rake_refusals": None,
+        "trim_basis_note": None,
     }
     # ── SEND-139: THE GABLE AND DORMER LANES ────────────────────────────
     # Stated BEFORE the no-scale return, so a drawn gable with no scale
     # still NAMES its refusal instead of vanishing.
     masks = [m for m in confirmed if m.get("kind") == "non_siding_zone"]
+    # SEND-143 — THE TRIM ROWS ARE STATED BEFORE THE NO-SCALE RETURN, so a
+    # drawn box or a drawn rake still NAMES its refusal instead of
+    # vanishing off the rail. CONFIRMED marks only, and a non-siding mask
+    # never shortens a linear run (nothing is deducted here).
+    trim_rows, j_lane, rake_lane = _trim_rows(confirmed, masks, ipp)
+    out["trim_rows"] = trim_rows
+    out["j_channel_lf"] = j_lane["lf"]
+    out["j_channel_rows"] = j_lane["rows"]
+    out["j_channel_refusals"] = j_lane["refusals"]
+    out["gable_rake_lf"] = rake_lane["lf"]
+    out["gable_rake_rows"] = rake_lane["rows"]
+    out["gable_rake_refusals"] = rake_lane["refusals"]
+    out["trim_basis_note"] = (
+        "linear runs come from marks ALREADY DRAWN on this photo and from "
+        "this photo's own scale (the tape governs): J-channel is the "
+        "perimeter of the box drawn round an opening, the gable rake is the "
+        "two sloped lines drawn with the gable triangle. Corners, starter, "
+        "soffit and horizontal fascia have no mark to read on this photo — "
+        "each row says which mark is missing. Nothing is deducted from a "
+        "linear run, no height is copied, and the gable rake never joins a "
+        "wall lane")
     g_marks = [m for m in confirmed if m.get("kind") == "gable"]
     d_marks = [m for m in confirmed if m.get("kind") == "dormer"]
     if g_marks:
@@ -834,9 +1053,17 @@ async def get_photo_takeoff(est_id: str, photo_key: Optional[str] = None,
                 [m for m in marks if m["photo_key"] == key], scales.get(key)),
             **_stage_block(run, key),
         }
-    return {"ok": True, "phase": 1,
+    return {"ok": True, "phase": 2,
             "kinds": sorted(PHASE1_KINDS),
             "phase2_kinds_not_built": sorted(PHASE2_KINDS),
+            "phase2_linear_measured": ["j_channel", "gable_rake"],
+            "phase2_linear_refused": ["outside_corner", "inside_corner",
+                                      "starter", "soffit", "fascia"],
+            "phase2_note": (
+                "SEND-143: the linear runs come from marks ALREADY DRAWN — "
+                "no new mark type exists, so a starter/corner/soffit/fascia "
+                "MARK is still refused, and those rows print the em dash "
+                "with the missing mark named"),
             "products": products,
             "products_note": (None if products else
                               "this job carries no body-siding product line "
@@ -1287,9 +1514,17 @@ async def propose_from_read(est_id: str, photo_key: str,
 
     dims = _photo_natural_size(photo_key)
     if not dims:
+        # SEND-143 — the photo's home is object storage since SEND-142; get
+        # it back before refusing. The refusal below still stands when the
+        # bytes cannot be found ANYWHERE — no size is ever guessed.
+        from config import UPLOAD_DIR
+        from upload_store import rehydrate_to_disk
+        if await rehydrate_to_disk(photo_key, UPLOAD_DIR):
+            dims = _photo_natural_size(photo_key)
+    if not dims:
         raise HTTPException(
             status_code=400,
-            detail=("this photo's file is not on disk, so the read's "
+            detail=("this photo's file cannot be found, so the read's "
                     "normalised boxes cannot be placed in its own pixels — "
                     "nothing is placed on a guessed size"))
     nat_w, nat_h = dims
@@ -1414,6 +1649,8 @@ async def apply_photo_takeoff(est_id: str,
     tot_siding = tot_non = tot_open_sqft = 0.0
     tot_gable = tot_dormer_face = tot_dormer_cheek = 0.0
     live_gable = live_dormer_face = live_dormer_cheek = False
+    tot_j = tot_rake = 0.0
+    live_j = live_rake = False
     tot_open_n = 0
     by_product: Dict[str, float] = {}
     guidance_confirmed = 0
@@ -1436,6 +1673,15 @@ async def apply_photo_takeoff(est_id: str,
         if qty.get("dormer_cheek_sqft") is not None:
             tot_dormer_cheek += qty["dormer_cheek_sqft"]
             live_dormer_cheek = True
+        # SEND-143 — the two PHASE 2 lanes that measure. A refused lane
+        # carries None into the write, never a 0, and the four lanes with
+        # no mark to read never reach this loop at all.
+        if qty.get("j_channel_lf") is not None:
+            tot_j += qty["j_channel_lf"]
+            live_j = True
+        if qty.get("gable_rake_lf") is not None:
+            tot_rake += qty["gable_rake_lf"]
+            live_rake = True
         for src, add in (("siding_sqft", "siding"), ("non_siding_sqft", "non"),
                          ("opening_sqft", "open_sqft"),
                          ("opening_count", "open_n")):
@@ -1467,6 +1713,18 @@ async def apply_photo_takeoff(est_id: str,
             "½ × width × rise — the triangle drawn on each photo, no field "
             "factor (SEND-137). A face with no photo has no gable here: "
             "nothing is mirrored, nothing is copied from another face"),
+        # SEND-143 — PHASE 2 LINEAR RUNS, QUANTITY ONLY. No price, no
+        # priced line, no material-list row: quote wiring stays off.
+        "photo_j_channel_lf": round(tot_j, 2) if live_j else None,
+        "photo_gable_rake_lf": round(tot_rake, 2) if live_rake else None,
+        "photo_trim_basis": (
+            "J-channel is the perimeter of the box drawn round each opening "
+            "on its own photo; the gable rake is the two sloped lines drawn "
+            "with each gable triangle, and it is a GABLE-ZONE run that "
+            "never joins starter, wall corners or J-channel. Corners, "
+            "starter, soffit and horizontal fascia are REFUSED — no corner "
+            "tick, no wall base and no eave is marked on any photo, and "
+            "none of them is invented"),
         "photo_siding_by_product": by_product or None,
         # NAME THE PLANE (SEND-136): the assumption behind every one of
         # these figures, per photo. UNKNOWN is the honest starting state
@@ -1505,5 +1763,7 @@ async def apply_photo_takeoff(est_id: str,
                   "photo_gable_sqft": block["photo_gable_sqft"],
                   "photo_dormer_face_sqft": block["photo_dormer_face_sqft"],
                   "photo_dormer_cheek_sqft": block["photo_dormer_cheek_sqft"],
+                  "photo_j_channel_lf": block["photo_j_channel_lf"],
+                  "photo_gable_rake_lf": block["photo_gable_rake_lf"],
                   "updated_at": _now()}})
     return {"ok": True, "photo_takeoff": block}

@@ -1,4 +1,4 @@
-"""LETRICK REGRESSION GUARD — pins the Letrick estimate
+"""SEALED_FIXTURE REGRESSION GUARD — pins the the sealed fixture estimate
 (8f95c9c2-add9-416a-92f3-786a4ea2ce83), item-3 chase ratification.
 Renamed from test_item3_chase_ratification.py (hygiene order, 2026-07-20):
 the filename now states the estimate this file pins.
@@ -6,7 +6,7 @@ the filename now states the estimate this file pins.
 ITEM-3 CHASE-SIDING RATIFICATION + SEALED CORNER CONVENTION (Howard,
 ruled 2026-07-19 close-out). Pins:
 
-1. CHASE FACES enter Letrick materials — TAPED faces SUPERSEDE the AI's
+1. CHASE FACES enter the sealed fixture materials — TAPED faces SUPERSEDE the AI's
    130 ft² attribution (SWAP, never add-on-top). Named formula-layer
    factor CHASE_FACE_WASTE = standing 10% + profile PDF coverage.
 2. TWO LEDGERS, kept distinct on the record (never absorbed): the APP
@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from creds_for_tests import TEST_EMAIL, TEST_PASSWORD  # noqa: E402
 
 from api_base import API  # env-derived (un-hardcoded 2026-07-23)
-LETRICK = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
+SEALED_FIXTURE = "8f95c9c2-add9-416a-92f3-786a4ea2ce83"
 
 
 @pytest.fixture(scope="module")
@@ -51,7 +51,7 @@ def pkg(session):
     keeps the full pricing layer (same engine, same derivation)."""
     import os
     tok = os.environ.get("TEST_ADMIN_TOKEN") or os.environ.get("SUPPLIER_ADMIN_TOKEN", "")
-    r = session.post(f"{API}/admin/estimates/{LETRICK}/lp-package/cost-preview",
+    r = session.post(f"{API}/admin/estimates/{SEALED_FIXTURE}/lp-package/cost-preview",
                      json={}, headers={"X-Admin-Token": tok}, timeout=60)
     assert r.status_code == 200
     return r.json()
@@ -144,6 +144,6 @@ def test_gate_scoped_to_ratified_estimate_only():
     out_num_only = _apply_key_bound_areas(m, {"estimate_number": "EST-373526",
                                               "lp_appendage_dims": {}})
     assert out_num_only == m
-    out2 = _apply_key_bound_areas(m, {"sealed_key": "letrick_v3",
+    out2 = _apply_key_bound_areas(m, {"sealed_key": "sealed_v3",
                                       "lp_appendage_dims": {}})
     assert out2 == m  # no machinery dims → gate stays shut

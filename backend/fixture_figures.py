@@ -18,7 +18,13 @@ belong here.
 """
 
 FIXTURE_FIGURES = {
-    "boni": {
+    # SEND-143 (Howard ruled 2026-08-28): the customer names are OFF the
+    # registry. Scheme: sealed_fixture_<letter> for the plan-set houses;
+    # the LP hand-takeoff fixture keeps the descriptive id it was given in
+    # SEND-142 because its own sealed module is named for it, not for a
+    # customer. Figures are UNCHANGED — the union the purity pin scans is
+    # the same 28 numbers it scanned before either rename.
+    "sealed_fixture_c": {
         "pending_seal": False,
         "figures": ["8'-1 1/8\"", "8'-1 1/2\"", "20'-0\"", "30'-0\"",
                     "62'-0\"", "9'-11 7/8\""],
@@ -31,12 +37,12 @@ FIXTURE_FIGURES = {
                     "2'-11 1/2\"", "4'-11 1/2\"", "33'-5 1/2\"",
                     "32'-5 1/2\""],
     },
-    "tanis": {
+    "sealed_fixture_d": {
         "pending_seal": False,
         "figures": ["127'-2\"", "58'-8\"", "10'-1 1/8\"", "97'-0\"",
                     "57'-4\"", "57'-0\""],
     },
-    "dart": {
+    "sealed_fixture_e": {
         # SEALED 2026-08-24 by Howard (SEND-126). Distinctive sealed
         # figures joined in the sealing send, per the in-step rule.
         "pending_seal": False,

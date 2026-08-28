@@ -15,7 +15,7 @@ EST = pathlib.Path("/app/frontend/src/components/estimate")
 EDITOR_FILE = EST / "PhotoTakeoffEditor.jsx"
 PANEL_FILES = [EST / "phototakeoff" / n for n in
                ("ScalePanel.jsx", "QuantitiesPanel.jsx", "MarksPanel.jsx",
-                "marks.js")]
+                "TrimPanel.jsx", "marks.js")]
 SURFACE_FILES = [EDITOR_FILE, *PANEL_FILES]
 
 
