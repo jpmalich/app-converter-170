@@ -398,6 +398,31 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
     patchMark(m.id, { symmetric: sym, points: pts });
   };
 
+  // SEND-141 (Howard ruled 2026-08-27) — A REFUSED ROW SHOWS NO NUMBER.
+  // The figure a refused mark used to print was the FLAT POLYGON'S PIXEL
+  // AREA — 0 — and next to REFUSED it read as a measured zero. It is not
+  // a takeoff, so it is not promoted anywhere: the cell is an EM DASH.
+  // Never 0, never 0.0, never 0 ft². The receipt stays, the reason stays,
+  // and a measured gable still prints ½ × width × rise.
+  // The FACE refusal blanks the cell; a CHEEK refusal never does — that
+  // face was drawn and measured (SEND-140).
+  const figureRefused = (id) => {
+    const row = [...(qty?.gable_rows || []), ...(qty?.dormer_rows || [])]
+      .find((r) => r.id === id);
+    return !!(row && row.refusal);
+  };
+  // The same rule for any ft² figure on a panel: a number only when there
+  // IS one. 0.0 ft² beside a refusal is the same measured-zero lie.
+  const ft2 = (v) => (v > 0 ? `${v.toFixed(1)} ft²` : "—");
+
+  // The ONE place that decides what a mark's quantity cell may say.
+  const qtyCell = (m, a) => {
+    if (m.shape === "point") return "count only — no drawn extent";
+    if (a == null) return "no scale";
+    if (m.status === "refused" || figureRefused(m.id) || !(a > 0)) return "—";
+    return `${a} ft²`;
+  };
+
   // SEND-140 — the receipt comes from the SERVER's own refusal, keyed by
   // mark id. Nothing about the reason is re-decided here.
   const receiptFor = (id) => ([...(qty?.gable_receipts || []),
@@ -524,7 +549,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                     return (
                       <div key={`lbl-${m.id}`} className="absolute text-white font-bold pointer-events-none"
                         style={{ left: `${p.x * 100}%`, top: `${p.y * 100}%`, background: markColor(m), fontSize: "9px", padding: "1px 3px", lineHeight: 1 }}>
-                        {kindLabel(m)}·{a == null ? "no scale" : `${a} ft²`}{m.status !== "confirmed" ? `·${m.status === "refused" ? "refused" : "provisional"}` : ""}
+                        {kindLabel(m)}·{qtyCell(m, a)}{m.status !== "confirmed" ? `·${m.status === "refused" ? "refused" : "provisional"}` : ""}
                       </div>
                     );
                   })}
@@ -678,7 +703,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-[11px] font-bold" style={{ color: markColor(m) }}>{kindLabel(m)}</span>
                       <span className="text-[10px] font-bold">
-                        {m.shape === "point" ? "count only — no drawn extent" : a == null ? "no scale" : `${a} ft²`}
+                        {qtyCell(m, a)}
                       </span>
                     </div>
                     <div className="text-[9px] uppercase tracking-wider font-bold" style={{ color: m.status === "confirmed" ? "var(--success)" : m.status === "refused" ? "var(--muted)" : "var(--warning-text)" }}>
@@ -744,7 +769,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                                 <div className="space-y-1">
                                   <div className="text-[10px] font-bold" style={{ color: GABLE }} data-testid={`photo-takeoff-gable-dims-${m.id}`}>
                                     {d && d.baseFt !== undefined
-                                      ? `${d.baseFt.toFixed(1)} ft × ${d.riseFt.toFixed(1)} ft rise · ½ × w × rise = ${d.grossAreaFt.toFixed(1)} ft²`
+                                      ? `${d.baseFt.toFixed(1)} ft × ${d.riseFt.toFixed(1)} ft rise · ½ × w × rise = ${ft2(d.grossAreaFt)}`
                                       : "no scale on this photo — width and rise have no feet, so there is no area (refused, not 0)"}
                                     {d?.pitch != null ? ` · pitch ${d.pitch}/12` : ""}
                                   </div>
@@ -783,7 +808,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                               <div className="space-y-1">
                                 <div className="text-[10px] font-bold" style={{ color: DORMER }} data-testid={`photo-takeoff-dormer-dims-${m.id}`}>
                                   {d && d.widthFt !== undefined
-                                    ? `${d.widthFt.toFixed(1)} ft × ${d.heightFt.toFixed(1)} ft = ${d.grossAreaFt.toFixed(1)} ft² face`
+                                    ? `${d.widthFt.toFixed(1)} ft × ${d.heightFt.toFixed(1)} ft = ${ft2(d.grossAreaFt)} face`
                                     : "no scale on this photo — no feet, no area (refused, not 0)"}
                                 </div>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -795,7 +820,7 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
                                     data-testid={`photo-takeoff-dormer-depth-${m.id}`} />
                                   {m.depth_ft && d?.heightFt !== undefined ? (
                                     <span className="text-[10px] font-bold" style={{ color: DORMER }} data-testid={`photo-takeoff-dormer-cheeks-${m.id}`}>
-                                      + cheeks 2 × {d.heightFt.toFixed(1)}×{Number(m.depth_ft).toFixed(1)} = {(2 * d.heightFt * Number(m.depth_ft)).toFixed(1)} ft²
+                                      + cheeks 2 × {d.heightFt.toFixed(1)}×{Number(m.depth_ft).toFixed(1)} = {ft2(2 * d.heightFt * Number(m.depth_ft))}
                                     </span>
                                   ) : (
                                     <span className="text-[10px] font-bold text-[var(--warning-text)]" data-testid={`photo-takeoff-dormer-cheeks-refused-${m.id}`}>

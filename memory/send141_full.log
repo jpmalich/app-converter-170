@@ -1,0 +1,88 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+...........................................................ssss......... [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+............................................................sss.......s. [ 70%]
+.....s.................................................................. [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 82%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 89%]
+........................................................................ [ 91%]
+........................................................................ [ 93%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+...........................................                              [100%]
+=============================== warnings summary ===============================
+../../root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12
+  /root/.venv/lib/python3.11/site-packages/starlette/formparsers.py:12: PendingDeprecationWarning: Please use `import python_multipart` instead.
+    import multipart
+
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+  /app/backend/server.py:128: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+  /root/.venv/lib/python3.11/site-packages/fastapi/applications.py:4495: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+tests/test_integral_j_toggle_2026_08_06.py::test_validation_reject_logs_field_and_layer_server_side
+  /app/backend/server.py:133: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("shutdown")
+
+tests/test_no_raw_wall_dim_in_priced_path_2026_08_14_send17.py::test_no_new_raw_wall_dim_read_appears_in_a_priced_path
+  /app/backend/tests/test_no_raw_wall_dim_in_priced_path_2026_08_14_send17.py:180: UserWarning: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+    warnings.warn(summary, stacklevel=1)
+
+tests/test_security_audit_fixes.py::test_pdf_fetcher_allows_data_uri
+  /root/.venv/lib/python3.11/site-packages/weasyprint/urls.py:199: DeprecationWarning: default_url_fetcher is deprecated and will be removed in WeasyPrint 69.0, please use URLFetcher instead. For security reasons, HTTP redirects are not supported anymore with default_url_fetcher, but are with URLFetcher.
+  
+  See https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#url-fetchers
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3058 passed, 9 skipped, 7 warnings in 472.87s (0:07:52)
