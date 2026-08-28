@@ -23,7 +23,9 @@ FIXTURE_FIGURES = {
         "figures": ["8'-1 1/8\"", "8'-1 1/2\"", "20'-0\"", "30'-0\"",
                     "62'-0\"", "9'-11 7/8\""],
     },
-    "letrick": {
+    # Renamed from the customer name 2026-08-28 (SEND-142) — the figures
+    # list and the union are byte-identical; only the key is neutral.
+    "sealed_hand_takeoff": {
         "pending_seal": False,
         "figures": ["9'-11 1/8\"", "9'-11\"", "9'-1 1/8\"", "30'-2\"",
                     "2'-11 1/2\"", "4'-11 1/2\"", "33'-5 1/2\"",

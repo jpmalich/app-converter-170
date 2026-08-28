@@ -20,6 +20,10 @@ import pytest  # noqa: E402
 from routes.photo_takeoff import (  # noqa: E402
     _dormer_figure, _gable_figure, _quantities)
 
+# SEND-142 NAMED PIN UPDATE: the rail split moved this text into
+# ./phototakeoff/*; the pin reads the WHOLE surface, same question.
+from phototakeoff_surface import editor_surface  # noqa: E402
+
 EDITOR = pathlib.Path(
     "/app/frontend/src/components/estimate/PhotoTakeoffEditor.jsx")
 ROUTE = pathlib.Path("/app/backend/routes/photo_takeoff.py")
@@ -142,7 +146,7 @@ def test_the_rail_names_the_mark_the_line_belongs_to():
 
 
 def test_the_editor_prints_the_servers_line_and_decides_nothing_itself():
-    src = EDITOR.read_text()
+    src = editor_surface()
     assert "photo-takeoff-receipt-" in src
     assert "qty?.gable_receipts" in src and "qty?.dormer_receipts" in src
     # the reason is never re-decided on the client

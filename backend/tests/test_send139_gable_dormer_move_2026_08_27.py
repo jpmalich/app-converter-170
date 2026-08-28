@@ -23,6 +23,10 @@ from routes.photo_takeoff import (  # noqa: E402
     KIND_POINTS, PHASE1_KINDS, PHASE2_KINDS, _dormer_figure, _gable_figure,
     _poly_area_px, _quantities)
 
+# SEND-142 NAMED PIN UPDATE: the rail split moved this text into
+# ./phototakeoff/*; the pin reads the WHOLE surface, same question.
+from phototakeoff_surface import editor_surface  # noqa: E402
+
 EDITOR = pathlib.Path(
     "/app/frontend/src/components/estimate/PhotoTakeoffEditor.jsx")
 AI_BUTTON = pathlib.Path(
@@ -238,14 +242,14 @@ def test_nothing_in_this_path_writes_money():
 # 6. THE PORT IS A PORT — SAME GESTURE, SAME FIELDS, NO 0.70 ANYWHERE
 # ---------------------------------------------------------------------------
 def test_the_editor_reuses_the_annotators_own_math_module():
-    src = EDITOR.read_text()
+    src = editor_surface()
     assert 'from "@/lib/gableMath"' in src
     assert "gableDims" in src and "dormerDims" in src
     assert "GABLE_PITCH_PRESETS" in src and "pitchOutOfRange" in src
 
 
 def test_the_gesture_is_the_annotators_gesture_word_for_word():
-    src = EDITOR.read_text()
+    src = editor_surface()
     for phrase in ("Tap the LEFT EAVE point of the gable.",
                    "Tap the PEAK (ridge) point.",
                    "Tap the RIGHT EAVE point to finish the triangle.",
@@ -256,7 +260,7 @@ def test_the_gesture_is_the_annotators_gesture_word_for_word():
 
 
 def test_the_fields_came_across():
-    src = EDITOR.read_text()
+    src = editor_surface()
     for t in ("photo-takeoff-gable-symmetric-", "photo-takeoff-gable-pitch-",
               "photo-takeoff-gable-pitch-custom-",
               "photo-takeoff-dormer-depth-", "photo-takeoff-dormer-cheeks-",
@@ -269,7 +273,10 @@ def test_the_fields_came_across():
 
 
 def test_no_zero_point_seven_reaches_the_new_editor_or_the_math_module():
-    for p in (EDITOR, GABLE_MATH):
+    # SEND-142: the rail split — every surface file is scanned, so 0.70
+    # cannot return through a panel the pin never read.
+    from phototakeoff_surface import SURFACE_FILES
+    for p in (*SURFACE_FILES, GABLE_MATH):
         src = p.read_text()
         for bad in ("0.7 *", "0.70 *", "* 0.7)", "* 0.7;"):
             assert bad not in src, f"{p.name}: {bad}"
@@ -306,8 +313,8 @@ def test_what_howard_kept_is_kept():
     # the annotator survives as the Guided Capture step (its own mount)…
     assert "PhotoAnnotateModal" in WIZARD.read_text()
     # …and as an IMPORT SOURCE for the editor
-    assert "photo-takeoff-import-btn" in EDITOR.read_text()
-    assert "import-annotations" in EDITOR.read_text()
+    assert "photo-takeoff-import-btn" in editor_surface()
+    assert "import-annotations" in editor_surface()
 
 
 def test_pull_in_what_i_already_drew_brings_gables_and_dormers_across():

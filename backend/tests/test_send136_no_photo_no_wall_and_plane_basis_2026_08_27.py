@@ -318,7 +318,10 @@ def test_the_plane_rides_every_quantity_payload():
 
 
 def test_the_editor_prints_the_plane_where_the_quantity_appears():
-    src = (FE / "components" / "estimate" / "PhotoTakeoffEditor.jsx").read_text()
+    from phototakeoff_surface import editor_surface
+    # SEND-142 NAMED PIN UPDATE: the rail split moved this text into
+    # ./phototakeoff/*; the pin reads the WHOLE surface, same question.
+    src = editor_surface()
     assert 'data-testid="photo-takeoff-plane-basis"' in src
     assert "qty?.plane_basis_reason" in src
     assert 'Plane: {qty?.plane_basis || "UNKNOWN"}' in src, (

@@ -398,7 +398,11 @@ def test_the_import_carries_kind_style_and_height(sess, rig):
 
 # ── THE SURFACE ──────────────────────────────────────────────────────
 FE = Path("/app/frontend/src")
-EDITOR = (FE / "components" / "estimate" / "PhotoTakeoffEditor.jsx").read_text()
+# SEND-142 NAMED PIN UPDATE: the rail split moved this text into
+# ./phototakeoff/*; the pin reads the WHOLE surface, same question.
+from phototakeoff_surface import editor_surface  # noqa: E402
+
+EDITOR = editor_surface()
 
 
 def test_the_editor_renders_both_stages_in_one_surface():

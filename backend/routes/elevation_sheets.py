@@ -1067,7 +1067,7 @@ def _sealed_tape_basis(est: dict, wall_label: str) -> dict | None:
     match on estimate numbers."""
     if est.get("sealed_key") != "letrick_v3":
         return None
-    from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
+    from sealed_hand_takeoff_key import SEALED_HAND_TAKEOFF_KEY as KEY
     from routes.demo import LETRICK_TAPE_WALLS  # constant import only
     tw = LETRICK_TAPE_WALLS.get(wall_label)
     if not tw:

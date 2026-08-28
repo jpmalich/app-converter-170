@@ -65,8 +65,14 @@ def test_registry_stays_in_step_with_the_seals():
     # entry may sit empty ONLY while explicitly pending_seal — sealing a
     # house without adding its figures fails here, so the set can only
     # narrow deliberately, never silently.
-    for house in ("boni", "letrick", "tanis", "dart"):
+    # SEND-142 NAMED PIN UPDATE: the letrick entry is now the neutral id
+    # `sealed_hand_takeoff` (no customer name in code). FOUR ENTRIES STILL
+    # REQUIRED and the union is unchanged — the coupling did not loosen,
+    # only the key is neutral. (boni / tanis / dart still carry names —
+    # reported, not authorised to rename in this send.)
+    for house in ("boni", "sealed_hand_takeoff", "tanis", "dart"):
         assert house in FIXTURE_FIGURES, f"{house} missing from registry"
+    assert "letrick" not in FIXTURE_FIGURES
     for house, entry in FIXTURE_FIGURES.items():
         assert isinstance(entry, dict) and "figures" in entry \
             and "pending_seal" in entry, house

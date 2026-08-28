@@ -126,7 +126,7 @@ def test_letrick_identity_app_equals_key_residual_zero(pkg):
     contractor 10%) = the sealed key's own lap — residual ZERO. NAMED PIN
     UPDATE (SEND-138 gable re-seal): both ledgers move together, 255 →
     242, and the identity holds — which is what this pin is for."""
-    from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
+    from sealed_hand_takeoff_key import SEALED_HAND_TAKEOFF_KEY as KEY
     key_lap = next(l for l in KEY["lines"] if "38 Series Lap" in l["item"])
     app_lap = next(l for l in pkg["lines"] if "38 Series Lap 3/8" in l["name"])
     assert app_lap["qty"] == key_lap["qty"] == 242

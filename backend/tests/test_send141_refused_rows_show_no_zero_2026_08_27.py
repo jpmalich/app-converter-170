@@ -24,9 +24,13 @@ from routes.photo_takeoff import (_dormer_figure, _gable_figure,  # noqa: E402
 
 ROUTE = pathlib.Path("/app/backend/routes/photo_takeoff.py")
 
+# SEND-142 NAMED PIN UPDATE: the rail split moved this text into
+# ./phototakeoff/*; the pin reads the WHOLE surface, same question.
+from phototakeoff_surface import editor_surface  # noqa: E402
+
 EDITOR = pathlib.Path(
     "/app/frontend/src/components/estimate/PhotoTakeoffEditor.jsx")
-SRC = EDITOR.read_text()
+SRC = editor_surface()
 
 IPP = 12.0
 TRI = [{"x": 0, "y": 8}, {"x": 15, "y": 0}, {"x": 30, "y": 8}]

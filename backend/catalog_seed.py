@@ -387,9 +387,6 @@ ITEM_META = {
     "Inside Corners": ("PCS", 0), "Ascend - 5.5\" Trim  (16' length)": ("PCS", 0),
     "Ascend - J - Channel": ("PCS", 0),
     "ASCEND Finish Trim": ("PCS", 0), "Ascend - Starter": ("PCS", 0),
-    ".019 Coil": ("ROLL", 0),
-    "PVC Trim Coil": ("ROLL", 0),
-    "Performance G8 Trim Coil": ("ROLL", 0),
     # Iter 34: split Standard/Architectural variants
     "Outside corners Standard color": ("PCS", 0),
     "Outside corners Architectural color": ("PCS", 0),
@@ -433,8 +430,6 @@ ITEM_META = {
     '1/2" J-Channel White': ("PCS", 0),
     'Fascia/rake or frieze': ("LF", 0), "Cap porch band": ("LF", 0),
     ".019 Coil": ("ROLL", 0),
-    "PVC Trim Coil": ("ROLL", 0),
-    "Performance G8 Trim Coil": ("ROLL", 0),
     "Charter Oak Soffit White": ("PCS", 0), "Wrap porch beam": ("LF", 0),
     'Gutter 6"': ("LF", 0), 'Downspout 6"': ("Stick", 0),
     "elbow": ("Each", 0), "Mitre": ("Each", 0), "End Cap": ("Each", 0), "Gutter Guard (USA Shurflo)": ("LF", 0),
@@ -617,7 +612,10 @@ ITEM_META = {
 IDENTICAL_PRICES = {
     '1 1/4" Trim Nails': 9,
     '2" Nails 30 lbs': 81.63,
-    '3/8" Fan Fold': 11.06,
+    # '3/8" Fan Fold' priced below with its 2026-07-31 SALES UNIT ruling
+    # (SQ -> Bundle, 22.12). The dead 11.06 duplicate of this same key was
+    # dropped 2026-08-28 (SEND-142): a repeated dict literal key never
+    # reached the catalog — the later value always governed.
     'ASCEND Finish Trim': 8.25,
     'Ascend - J - Channel': 10.4,
     'Ascend - Starter': 8.83,
@@ -695,7 +693,12 @@ ZERO_PRICED = {
 # 59 items that truly vary by tier. One block per item so a future
 # Excel update touches ONE place per row (was 4 places before this refactor).
 PER_TIER_PRICES = {
-    '.019 Coil': {"whole-sale": 161.33, "Contractor": 161.33, "Builder-Dealer": 161.33, "one-opp": 133.23},
+    # SEND-142 (2026-08-27): the three coil items were DECLARED TWICE in
+    # this literal with IDENTICAL values — the second declaration won
+    # silently at module load. Same product, ONE declaration (the survivor
+    # is the value that was already in force); the catalog fingerprint is
+    # unchanged, pinned.
+
     ".019 Coil": {"whole-sale": 161.33, "Contractor": 161.33, "Builder-Dealer": 161.33, "one-opp": 133.23},
     '1/2" J-Channel': {"whole-sale": 7.28, "Contractor": 5.23, "Builder-Dealer": 5.23, "one-opp": 4.55},
     '1/2" J-Channel White': {"whole-sale": 7.28, "Contractor": 5.23, "Builder-Dealer": 5.23, "one-opp": 4.55},
@@ -735,9 +738,7 @@ PER_TIER_PRICES = {
     'Odyssey Standard color Dutch Lap 5" .044': {"whole-sale": 122.34, "Contractor": 116.22, "Builder-Dealer": 116.22, "one-opp": 100.11},
     'Outside corners Architectural color': {"whole-sale": 34.58, "Contractor": 28.29, "Builder-Dealer": 25.94, "one-opp": 21.58},
     'Outside corners Standard color': {"whole-sale": 31.54, "Contractor": 25.81, "Builder-Dealer": 23.66, "one-opp": 19.69},
-    'PVC Trim Coil': {"whole-sale": 167.08, "Contractor": 167.08, "Builder-Dealer": 167.08, "one-opp": 149.74},
     "PVC Trim Coil": {"whole-sale": 167.08, "Contractor": 167.08, "Builder-Dealer": 167.08, "one-opp": 149.74},
-    'Performance G8 Trim Coil': {"whole-sale": 170.53, "Contractor": 170.53, "Builder-Dealer": 170.53, "one-opp": 145.89},
     "Performance G8 Trim Coil": {"whole-sale": 170.53, "Contractor": 170.53, "Builder-Dealer": 170.53, "one-opp": 145.89},
     'Soffit & fascia 2T': {"whole-sale": 13.6, "Contractor": 13.6, "Builder-Dealer": 13.6, "one-opp": 9.5},
     'Soffit & fascia Charter Oak Architectural color': {"whole-sale": 22.39, "Contractor": 21.2, "Builder-Dealer": 20.2, "one-opp": 15.5},
@@ -1059,9 +1060,6 @@ ITEM_AMI = {
     'Ascend 5.5" Outside Corner  - MATTE': "108052",
     "Inside Corners": "105053",
     "Ascend - J - Channel": "108062",
-    ".019 Coil": "103954",
-    "PVC Trim Coil": "103956",
-    "Performance G8 Trim Coil": "103960",
     # Iter 34: accessory color variants share the AMI of their base SKU.
     "Outside corners Standard color": "105644",
     "Outside corners Architectural color": "105644",
@@ -1083,6 +1081,11 @@ ITEM_AMI = {
     'Soffit & fascia Charter Oak Architectural color': "105020",
     'Soffit & fascia Greenbriar': "106022",
     'Soffit & fascia 2T': "105007",
+    # SEND-142 (2026-08-27): the three coil items were DECLARED
+    # TWICE in this literal with IDENTICAL values — the second
+    # declaration won silently at module load. Same product, ONE
+    # declaration (the surviving one is the value that was already
+    # in force); the catalog fingerprint is unchanged, pinned.
     ".019 Coil": "103954",
     "PVC Trim Coil": "103956",
     "Performance G8 Trim Coil": "103960",

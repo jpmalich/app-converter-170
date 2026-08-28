@@ -118,7 +118,7 @@ def test_key_ledger_item3_amendment():
     contractor waste and lands on the SAME figure — residual zero.
     NAMED PIN UPDATE (SEND-138 gable re-seal): raw 2099.7 → 1994.7 and
     lap 255 → 242; the item-3 chase figures are UNTOUCHED."""
-    from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
+    from sealed_hand_takeoff_key import SEALED_HAND_TAKEOFF_KEY as KEY
     assert KEY["inputs"]["chase_outer_sqft"] == 51.37
     assert KEY["inputs"]["chase_sides_sqft"] == 101.02
     assert KEY["inputs"]["raw_sqft"] == 1994.7

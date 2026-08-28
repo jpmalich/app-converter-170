@@ -2,6 +2,12 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { X, ZoomIn, ZoomOut, AlertTriangle, Ruler, Trash2, Check, Ban, Move, Download, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import MarksPanel from "@/components/estimate/phototakeoff/MarksPanel";
+import QuantitiesPanel from "@/components/estimate/phototakeoff/QuantitiesPanel";
+import ScalePanel from "@/components/estimate/phototakeoff/ScalePanel";
+import {
+  CATEGORIES, DORMER, GABLE, OPENING, SIDING, TAP_ORDER, kindLabel, markColor,
+} from "@/components/estimate/phototakeoff/marks";
 // SEND-139 — the gable and dormer tools MOVE HERE from the annotator.
 // The annotator's own math module is REUSED, not re-implemented: same
 // base/rise/pitch, same averaged dormer edges, same masking. Its gable
@@ -26,37 +32,9 @@ import {
      · openings are REPORTED, never deducted (phase 1);
      · Apply writes ft²/counts only — no money, ever.  */
 
-const SIDING = "#2563EB";                       // PdfOverlayEditor's siding blue
-const OPENING = "#FACC15";                      // the annotator's window yellow
-const GABLE = "#15803D";                        // the annotator's own gable green
-const DORMER = "#0EA5E9";                       // the annotator's dormer blue
-// The drawing gesture, carried over word for word from the annotator.
-const TAP_ORDER = {
-  gable: ["Tap the LEFT EAVE point of the gable.", "Tap the PEAK (ridge) point.",
-    "Tap the RIGHT EAVE point to finish the triangle."],
-  dormer: ["Tap the BOTTOM-LEFT corner of the dormer face.", "Tap the BOTTOM-RIGHT corner.",
-    "Tap the TOP-RIGHT corner.", "Tap the TOP-LEFT corner to finish the face."],
-};
-const CATEGORIES = [                            // the annotator's own zone colours
-  { key: "brick", name: "Brick", color: "#B45309" },
-  { key: "stone", name: "Stone", color: "#57534E" },
-  { key: "garage_door", name: "Garage door", color: "#FBBF24" },
-  { key: "stucco", name: "Stucco", color: "#A8A29E" },
-  { key: "other", name: "Other", color: "#DC2626" },
-];
-
-const markColor = (m) => {
-  if (m.kind === "siding_zone") return SIDING;
-  if (m.kind === "opening") return OPENING;
-  if (m.kind === "gable") return GABLE;
-  if (m.kind === "dormer") return DORMER;
-  return (CATEGORIES.find((c) => c.key === m.category) || CATEGORIES[4]).color;
-};
-const kindLabel = (m) => (m.kind === "siding_zone" ? "SIDING"
-  : m.kind === "gable" ? "GABLE"
-    : m.kind === "dormer" ? "DORMER"
-      : m.kind === "opening" ? "OPENING"
-    : (CATEGORIES.find((c) => c.key === m.category)?.name || "NON-SIDING").toUpperCase());
+// SEND-142 — the shared mark vocabulary (colours, categories, tap order,
+// labels) moved to ./phototakeoff/marks so the three rail panels and this
+// editor read ONE declaration each.
 
 const polyAreaPx = (pts) => {
   if (!pts || pts.length < 3) return 0;
@@ -588,294 +566,21 @@ export default function PhotoTakeoffEditor({ est, photoUrl, photoKey, onClose })
 
           {/* right rail */}
           <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-[var(--border)] flex flex-col overflow-y-auto">
-            {/* SCALE */}
-            <div className="p-3 border-b border-[var(--border)]">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1 flex items-center gap-1"><Ruler className="w-3 h-3" /> Scale — this photo only</div>
-              {sc ? (
-                <div className="text-[11px] font-bold text-[var(--success)]" data-testid="photo-takeoff-scale-basis">
-                  ✓ {sc.basis === "tape" ? "TAPE GOVERNS" : "TWO-TAP ANCHOR"} — {(sc.ipp * 12).toFixed(3)} ft per 12 px span
-                  {scale?.tape_inches && scale?.anchor?.inches ? " · the anchor figure is kept, the tape wins" : ""}
-                </div>
-              ) : (
-                <div className="text-[11px] font-bold text-[var(--warning-text)] flex items-start gap-1" data-testid="photo-takeoff-scale-refusal">
-                  <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                  {qty?.scale_refusal || "No scale on this photo — no quantity, and no zero is shown in its place."}
-                </div>
-              )}
-              <div className="flex items-center gap-1 mt-2">
-                <button type="button" onClick={() => { setTool("scale"); setScaleDraft(null); }}
-                  className="px-2 py-1 border border-[var(--ai)] text-[var(--ai)] text-[10px] font-bold uppercase"
-                  data-testid="photo-takeoff-scale-start">two-tap span</button>
-                {scale && (
-                  <button type="button" onClick={clearScale} className="px-2 py-1 border border-[var(--border)] text-[10px] font-bold uppercase text-[var(--muted)]" data-testid="photo-takeoff-scale-clear">clear</button>
-                )}
-              </div>
-              {scale?.anchor && (
-                <div className="mt-2">
-                  <div className="text-[9px] uppercase tracking-wider font-bold text-[var(--muted)]">Tape figure for that same span — the tape wins</div>
-                  <div className="flex items-center gap-1 mt-1">
-                    <input value={tapeFt} onChange={(e) => setTapeFt(e.target.value)} placeholder="ft" inputMode="decimal"
-                      className="w-14 border border-[var(--border)] px-1.5 py-1 text-[11px]" data-testid="photo-takeoff-tape-ft" />
-                    <input value={tapeIn} onChange={(e) => setTapeIn(e.target.value)} placeholder="in" inputMode="decimal"
-                      className="w-14 border border-[var(--border)] px-1.5 py-1 text-[11px]" data-testid="photo-takeoff-tape-in" />
-                    <button type="button" onClick={commitTape} className="px-2 py-1 bg-[var(--ai)] text-white text-[10px] font-bold uppercase" data-testid="photo-takeoff-tape-commit">set tape</button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ScalePanel sc={sc} scale={scale} qty={qty} setTool={setTool}
+              setScaleDraft={setScaleDraft} clearScale={clearScale}
+              tapeFt={tapeFt} setTapeFt={setTapeFt} tapeIn={tapeIn}
+              setTapeIn={setTapeIn} commitTape={commitTape} />
 
-            {/* QUANTITIES */}
-            <div className="p-3 border-b border-[var(--border)]">
-              <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)] mb-1">Live quantities — confirmed marks only</div>
-              {/* NAME THE PLANE (SEND-136). Printed wherever the quantity
-                  appears. UNKNOWN is the honest starting state — never a
-                  default that reads as square-on. */}
-              <div className="mb-1.5 p-1.5 border text-[10px] leading-snug"
-                style={{
-                  borderColor: qty?.plane_basis === "SQUARE-ON" ? "var(--success)" : qty?.plane_basis === "OBLIQUE" ? "#DC2626" : "#F59E0B",
-                  background: qty?.plane_basis === "SQUARE-ON" ? "#ECFDF5" : qty?.plane_basis === "OBLIQUE" ? "#FEF2F2" : "#FEF3C7",
-                }}
-                data-testid="photo-takeoff-plane-basis">
-                <b className="uppercase tracking-wider">Plane: {qty?.plane_basis || "UNKNOWN"}</b>
-                <div className="mt-0.5 text-[var(--ink-2)]">{qty?.plane_basis_reason || "reading this photo's marks…"}</div>
-              </div>
-              <div className="grid grid-cols-2 gap-1 text-[11px]">
-                <div>Siding</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-siding">{qty?.siding_sqft ?? "—"} {qty?.siding_sqft != null ? "ft²" : ""}</div>
-                <div>Non-siding</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-nonsiding">{qty?.non_siding_sqft ?? "—"} {qty?.non_siding_sqft != null ? "ft²" : ""}</div>
-                <div>Openings</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-opening-count">{qty?.opening_count ?? "—"}</div>
-                <div>Opening ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-opening-sqft">{qty?.opening_sqft ?? "—"}</div>
-                {/* SEND-139 — the gable and dormer lanes. A lane with
-                    nothing measured shows an em dash, never a 0. */}
-                <div>Gable ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-gable">{qty?.gable_sqft ?? "—"} {qty?.gable_sqft != null ? "ft²" : ""}</div>
-                <div>Dormer face ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-dormer-face">{qty?.dormer_face_sqft ?? "—"} {qty?.dormer_face_sqft != null ? "ft²" : ""}</div>
-                <div>Dormer cheeks ft²</div><div className="font-bold text-right" data-testid="photo-takeoff-qty-dormer-cheeks">{qty?.dormer_cheek_sqft ?? "—"} {qty?.dormer_cheek_sqft != null ? "ft²" : ""}</div>
-              </div>
-              {qty?.gable_basis_note && (
-                <div className="mt-1.5 text-[9px] text-[var(--success)] font-bold leading-snug" data-testid="photo-takeoff-gable-basis">
-                  {qty.gable_basis_note}
-                </div>
-              )}
-              {qty?.non_siding_by_category && (
-                <div className="mt-1.5 flex flex-wrap gap-1" data-testid="photo-takeoff-qty-by-category">
-                  {Object.entries(qty.non_siding_by_category).map(([k, v]) => (
-                    <span key={k} className="text-[9px] font-bold px-1.5 py-0.5" style={{ background: `${CATEGORIES.find((c) => c.key === k)?.color || "#DC2626"}22`, color: CATEGORIES.find((c) => c.key === k)?.color || "#DC2626" }}>{k} {v} ft²</span>
-                  ))}
-                </div>
-              )}
-              {qty?.siding_by_product && (
-                <div className="mt-1.5 flex flex-wrap gap-1" data-testid="photo-takeoff-qty-by-product">
-                  {Object.entries(qty.siding_by_product).map(([k, v]) => (
-                    <span key={k} className="text-[9px] font-bold px-1.5 py-0.5" style={{ background: `${SIDING}22`, color: SIDING }}>{k} · {v} ft²</span>
-                  ))}
-                  {qty.siding_no_product_sqft != null && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 bg-[#FEF3C7] text-[var(--warning-text)]">no product assigned · {qty.siding_no_product_sqft} ft²</span>
-                  )}
-                </div>
-              )}
-              {[qty?.provisional_note, qty?.openings_note, qty?.openings_without_extent_note,
-                qty?.guidance_confirmed_note, ...(qty?.gable_refusals || []),
-                ...(qty?.gable_pitch_warnings || []), ...(qty?.dormer_refusals || []),
-                ...(qty?.product_basis_notes || [])].filter(Boolean).map((n, i) => (
-                <div key={i} className="mt-1.5 text-[10px] text-[var(--warning-text)] leading-snug" data-testid={`photo-takeoff-refusal-${i}`}>· {n}</div>
-              ))}
-            </div>
+            <QuantitiesPanel qty={qty} />
 
-            {/* MARKS */}
-            <div className="p-3 flex-1">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--muted)]">Marks ({marks.length})</div>
-                <button type="button" onClick={importAnnotations} disabled={busy}
-                  className="inline-flex items-center gap-1 px-2 py-1 border border-[var(--border)] text-[9px] font-bold uppercase text-[var(--ink-2)] disabled:opacity-50"
-                  data-testid="photo-takeoff-import-btn"><Download className="w-3 h-3" /> pull in what I already drew</button>
-              </div>
-              {marks.length === 0 && (
-                <div className="text-[11px] text-[var(--muted)] italic" data-testid="photo-takeoff-marks-empty">
-                  No marks on this photo yet — pick a tool and trace the wall.
-                </div>
-              )}
-              {marks.map((m) => {
-                const a = sqftOf(m);
-                return (
-                  <div key={m.id}
-                    className={`border p-1.5 mb-1 cursor-pointer ${m.id === selectedId ? "border-[var(--ai)]" : "border-[var(--border)]"}`}
-                    onClick={() => setSelectedId(m.id === selectedId ? null : m.id)}
-                    data-testid={`photo-takeoff-mark-row-${m.id}`}>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[11px] font-bold" style={{ color: markColor(m) }}>{kindLabel(m)}</span>
-                      <span className="text-[10px] font-bold">
-                        {qtyCell(m, a)}
-                      </span>
-                    </div>
-                    <div className="text-[9px] uppercase tracking-wider font-bold" style={{ color: m.status === "confirmed" ? "var(--success)" : m.status === "refused" ? "var(--muted)" : "var(--warning-text)" }}>
-                      {m.status}
-                    </div>
-                    {/* PROVENANCE NEVER LAUNDERS — the badge says which the
-                        mark carries, and a confirm does not rewrite it. */}
-                    <div className="text-[9px] font-bold uppercase tracking-wider" data-testid={`photo-takeoff-origin-${m.id}`}
-                      style={{ color: m.origin === "ai_proposal" ? "var(--ai)" : m.status === "confirmed" && m.confirmed_after_ai_read ? "var(--success)" : "var(--warning-text)" }}>
-                      {m.origin === "ai_proposal" ? "AI PROPOSAL"
-                        : m.confirmed_after_ai_read ? "EVIDENCE"
-                          : m.status === "confirmed" ? "GUIDANCE-CONFIRMED" : "GUIDANCE"}
-                      {m.origin === "imported_annotation" ? " · imported" : ""}
-                    </div>
-                    {(m.confirmed_basis || m.basis) && (
-                      <div className="text-[9px] text-[var(--muted)] leading-snug" data-testid={`photo-takeoff-basis-${m.id}`}>
-                        {m.confirmed_basis || m.basis}
-                      </div>
-                    )}
-                    {m.style && <div className="text-[9px] text-[var(--ink-2)]">{m.style}{m.height_in ? ` · ${m.height_in}" h` : ""}{m.width_in ? ` · ${m.width_in}" w` : ""}</div>}
-                    {m.product && (
-                      <div className="text-[9px] text-[var(--ink-2)]" data-testid={`photo-takeoff-product-of-${m.id}`}>
-                        product: {m.product}
-                        {m.confirmed_under_product && m.confirmed_under_product !== m.product
-                          ? ` · confirmed under ${m.confirmed_under_product} — the geometry did not change; the output did` : ""}
-                      </div>
-                    )}
-                    {m.refused_reason && <div className="text-[9px] text-[var(--muted)] leading-snug">{m.refused_reason}</div>}
-                    {/* SEND-140 — THE REFUSAL RECEIPT. One contractor
-                        sentence, written by the server from the ACTUAL
-                        missing field, saying what to tape. A measured
-                        gable and a counted cheek carry none. */}
-                    {receiptFor(m.id) && (
-                      <div className="mt-0.5 text-[10px] font-bold text-[var(--warning-text)] leading-snug"
-                        data-testid={`photo-takeoff-receipt-${m.id}`}>
-                        {receiptFor(m.id)}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1 mt-1">
-                      <button type="button" onClick={(e) => { e.stopPropagation(); patchMark(m.id, { status: "confirmed" }); }}
-                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 border border-[var(--success)] text-[var(--success)] text-[9px] font-bold uppercase"
-                        data-testid={`photo-takeoff-confirm-${m.id}`}><Check className="w-3 h-3" /> confirm</button>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); patchMark(m.id, { status: "refused", refused_reason: "refused by the contractor" }); }}
-                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 border border-[var(--border)] text-[var(--muted)] text-[9px] font-bold uppercase"
-                        data-testid={`photo-takeoff-refuse-${m.id}`}><Ban className="w-3 h-3" /> refuse</button>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedId(m.id); }}
-                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 border border-[var(--border)] text-[var(--ink-2)] text-[9px] font-bold uppercase"
-                        data-testid={`photo-takeoff-adjust-${m.id}`}><Move className="w-3 h-3" /> adjust</button>
-                      <button type="button" onClick={(e) => { e.stopPropagation(); delMark(m.id); }}
-                        className="ml-auto text-[var(--danger)]" data-testid={`photo-takeoff-delete-${m.id}`}><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                    {m.id === selectedId && (
-                      <div className="mt-1.5 pt-1.5 border-t border-[var(--border)]" onClick={(e) => e.stopPropagation()}>
-                        {m.kind === "gable" || m.kind === "dormer" ? (
-                          /* SEND-139 — THE ANNOTATOR'S OWN FIELDS, PORTED.
-                             Gable: symmetric + pitch (preset or typed).
-                             Dormer: typed depth for the cheeks. Nothing
-                             new was invented for either tool. */
-                          (() => {
-                            const d = gDims(m);
-                            if (m.kind === "gable") {
-                              return (
-                                <div className="space-y-1">
-                                  <div className="text-[10px] font-bold" style={{ color: GABLE }} data-testid={`photo-takeoff-gable-dims-${m.id}`}>
-                                    {d && d.baseFt !== undefined
-                                      ? `${d.baseFt.toFixed(1)} ft × ${d.riseFt.toFixed(1)} ft rise · ½ × w × rise = ${ft2(d.grossAreaFt)}`
-                                      : "no scale on this photo — width and rise have no feet, so there is no area (refused, not 0)"}
-                                    {d?.pitch != null ? ` · pitch ${d.pitch}/12` : ""}
-                                  </div>
-                                  {d && pitchOutOfRange(d.pitch) && (
-                                    <div className="text-[9px] font-bold text-[var(--warning-text)]" data-testid={`photo-takeoff-gable-pitch-warning-${m.id}`}>
-                                      pitch {d.pitch}/12 is outside the usual 3/12–18/12 range — check the tapped points
-                                    </div>
-                                  )}
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <label className="flex items-center gap-1 text-[10px]">
-                                      <input type="checkbox" checked={!!m.symmetric}
-                                        onChange={() => toggleSymmetric(m)}
-                                        data-testid={`photo-takeoff-gable-symmetric-${m.id}`} />
-                                      Symmetric gable
-                                    </label>
-                                    <select value={GABLE_PITCH_PRESETS.includes(m.pitch_set) ? String(m.pitch_set) : ""}
-                                      onChange={(e) => { const v = Number(e.target.value); if (v) applyGablePitch(m, v); }}
-                                      className="text-[10px] border border-[var(--border)] px-1 py-0.5"
-                                      title="Selecting a pitch moves the peak (rise = base/2 × pitch/12). Dragging the peak re-derives the pitch."
-                                      data-testid={`photo-takeoff-gable-pitch-${m.id}`}>
-                                      <option value="">pitch {d?.pitch != null ? `${d.pitch}/12` : "—"}</option>
-                                      {GABLE_PITCH_PRESETS.map((v) => <option key={v} value={v}>{v}/12</option>)}
-                                    </select>
-                                    <input type="number" min="1" max="24" step="0.5" placeholder="custom"
-                                      className="w-16 text-[10px] border border-[var(--border)] px-1 py-0.5"
-                                      onKeyDown={(e) => { if (e.key === "Enter") { const v = Number(e.target.value); if (v > 0) applyGablePitch(m, v); } }}
-                                      data-testid={`photo-takeoff-gable-pitch-custom-${m.id}`} />
-                                  </div>
-                                  <div className="text-[9px] text-[var(--muted)]">
-                                    Moving the peak or the eaves is a geometry change — a confirmed gable goes back to provisional and is re-confirmed.
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return (
-                              <div className="space-y-1">
-                                <div className="text-[10px] font-bold" style={{ color: DORMER }} data-testid={`photo-takeoff-dormer-dims-${m.id}`}>
-                                  {d && d.widthFt !== undefined
-                                    ? `${d.widthFt.toFixed(1)} ft × ${d.heightFt.toFixed(1)} ft = ${ft2(d.grossAreaFt)} face`
-                                    : "no scale on this photo — no feet, no area (refused, not 0)"}
-                                </div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <label className="text-[10px] text-[var(--muted)] font-bold" htmlFor={`ptd-${m.id}`}>Depth (ft)</label>
-                                  <input id={`ptd-${m.id}`} type="number" min="0" step="0.1" inputMode="decimal"
-                                    defaultValue={m.depth_ft ?? ""}
-                                    onBlur={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v !== m.depth_ft) patchMark(m.id, { depth_ft: v }); }}
-                                    className="w-16 text-[10px] border border-[var(--border)] px-1 py-0.5"
-                                    data-testid={`photo-takeoff-dormer-depth-${m.id}`} />
-                                  {m.depth_ft && d?.heightFt !== undefined ? (
-                                    <span className="text-[10px] font-bold" style={{ color: DORMER }} data-testid={`photo-takeoff-dormer-cheeks-${m.id}`}>
-                                      + cheeks 2 × {d.heightFt.toFixed(1)}×{Number(m.depth_ft).toFixed(1)} = {ft2(2 * d.heightFt * Number(m.depth_ft))}
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] font-bold text-[var(--warning-text)]" data-testid={`photo-takeoff-dormer-cheeks-refused-${m.id}`}>
-                                      cheeks REFUSED — depth is measured on the roof, never read off the photo. No default depth.
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })()
-                        ) : m.kind === "opening" ? (
-                          <div className="flex flex-wrap items-center gap-1">
-                            <input defaultValue={m.style || ""} placeholder="window style"
-                              onBlur={(e) => { const v = e.target.value.trim(); if (v !== (m.style || "")) patchMark(m.id, { style: v }); }}
-                              className="flex-1 min-w-[110px] border border-[var(--border)] px-1.5 py-1 text-[10px]"
-                              data-testid="photo-takeoff-style-input" />
-                            <input defaultValue={m.height_in ?? ""} placeholder="h in" inputMode="decimal"
-                              onBlur={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v !== m.height_in) patchMark(m.id, { height_in: v }); }}
-                              className="w-14 border border-[var(--border)] px-1.5 py-1 text-[10px]"
-                              data-testid="photo-takeoff-height-in" />
-                            <input defaultValue={m.width_in ?? ""} placeholder="w in" inputMode="decimal"
-                              onBlur={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v !== m.width_in) patchMark(m.id, { width_in: v }); }}
-                              className="w-14 border border-[var(--border)] px-1.5 py-1 text-[10px]"
-                              data-testid="photo-takeoff-width-in" />
-                            <span className="text-[9px] text-[var(--muted)] w-full">Style and height are GUIDANCE for the read — the ft² comes from the box you drew and this photo's scale.</span>
-                          </div>
-                        ) : (
-                          <div>
-                            <select value={m.product || ""} disabled={products.length === 0}
-                              onChange={(e) => patchMark(m.id, { product: e.target.value })}
-                              className="w-full border border-[var(--border)] px-1.5 py-1 text-[10px] disabled:opacity-50"
-                              data-testid="photo-takeoff-product-select">
-                              <option value="">{products.length ? "— no product assigned —" : "— none on this job —"}</option>
-                              {products.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
-                            </select>
-                            <span className="text-[9px] text-[var(--muted)]">
-                              {products.length
-                                ? "Changing the product does NOT redraw or unconfirm the zone — the swap is recorded with the ft² at that moment."
-                                : (productsNote || "no body-siding product on this job yet")}
-                            </span>
-                            {(m.product_history || []).length > 0 && (
-                              <div className="mt-1 text-[9px] text-[var(--muted)]" data-testid={`photo-takeoff-product-history-${m.id}`}>
-                                {m.product_history.map((h, i) => (
-                                  <div key={i}>{h.from || "—"} → {h.to || "—"} · {h.sqft_at_swap ?? "—"} ft² · {String(h.at).slice(0, 16).replace("T", " ")} · {h.by || "unknown"}</div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <MarksPanel marks={marks} selectedId={selectedId}
+              setSelectedId={setSelectedId} busy={busy} products={products}
+              productsNote={productsNote} sqftOf={sqftOf} qtyCell={qtyCell}
+              receiptFor={receiptFor} gDims={gDims} ft2={ft2}
+              patchMark={patchMark} delMark={delMark}
+              importAnnotations={importAnnotations}
+              toggleSymmetric={toggleSymmetric}
+              applyGablePitch={applyGablePitch} />
 
             <div className="p-3 border-t border-[var(--border)]">
               <button type="button" onClick={apply} disabled={busy}

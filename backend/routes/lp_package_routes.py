@@ -261,7 +261,7 @@ def _apply_key_bound_areas(measurements, est):
     is retired as a target)**, composed chase faces (item-3 ratified) →
     key raw_sqft governs siding area.
     Gate: portable `sealed_key` doc flag (ruled 2026-07-26) — no runtime
-    match on estimate numbers; values stay in letrick_hand_takeoff_key.py."""
+    match on estimate numbers; values stay in sealed_hand_takeoff_key.py."""
     if est.get("sealed_key") != "letrick_v3":
         return measurements  # no sealed key — AI values are the named fallback
     dims = (est.get("lp_appendage_dims") or {}).get("appendage:back") or {}
@@ -269,7 +269,7 @@ def _apply_key_bound_areas(measurements, est):
     d = dims.get("depth_ft") or {}
     if h.get("status") not in _DIM_STATUSES or d.get("status") not in _DIM_STATUSES:
         return measurements
-    from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as KEY
+    from sealed_hand_takeoff_key import SEALED_HAND_TAKEOFF_KEY as KEY
     inp = KEY["inputs"]
     if not inp.get("raw_sqft"):
         return measurements

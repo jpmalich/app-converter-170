@@ -18,9 +18,9 @@ import sys
 
 sys.path.insert(0, "/app/backend")
 
-from letrick_hand_takeoff_key import LETRICK_HAND_TAKEOFF_KEY as SEALED
+from sealed_hand_takeoff_key import SEALED_HAND_TAKEOFF_KEY as SEALED
 
-KEY_MODULE = pathlib.Path("/app/backend/letrick_hand_takeoff_key.py")
+KEY_MODULE = pathlib.Path("/app/backend/sealed_hand_takeoff_key.py")
 CONSUMER = pathlib.Path("/app/backend/routes/lp_package_routes.py")
 
 

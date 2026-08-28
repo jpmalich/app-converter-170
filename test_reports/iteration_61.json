@@ -1,0 +1,41 @@
+{
+  "summary": "SEND-142 Item 2 rail-split verification for PhotoTakeoffEditor on EST-373526 (LP SmartSide / Mark Letrick). Logged in as hhunt6677, opened AI Photo Measure, restored the saved preview, adjusted photos, and opened Photo Takeoff on photo 0 (FRONT ELEVATION). Verified the right rail renders three distinct panels (ScalePanel, QuantitiesPanel, MarksPanel) with identical behaviour to iteration_60. All 6 acceptance criteria pass. Data discipline: every drawn mark and the scale were deleted at teardown; estimate returned to as-found state. EST-886440 was not touched. Apply Measurements was NOT pressed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "AIMeasureButton (unrelated to SEND-142)", "issues": ["React hydration warning in console: '<span> cannot be a child of <option>' — pre-existing HTML nesting issue in AIMeasureButton dropdown option content, not caused by rail split"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/.screenshots/T1_three_panels.png",
+    "/app/.screenshots/T2_scale_set.png",
+    "/app/.screenshots/T3_gable_confirmed.png",
+    "/app/.screenshots/T4_flat_gable.png",
+    "/app/.screenshots/T5_cleanup.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Rail split is clean: PhotoTakeoffEditor.jsx now composes <ScalePanel>, <QuantitiesPanel>, <MarksPanel>. Every figure still comes from the server's own qty payload; qtyCell (line 397) remains the single decider for what a mark row prints. No new formulas, no new refusal paths — a genuine refactor.",
+    "MarksPanel imports lucide icons Ban, Check, Download, Move, Trash2 — clean. gDims/ft2/qtyCell/receiptFor still owned by the editor and passed as props (correct — the panels stay dumb).",
+    "Unrelated: AIMeasureButton.jsx dropdown emits a <span> inside <option>, tripping a React hydration warning. Not caused by SEND-142 but visible in console during this run."
+  ],
+  "verification_evidence": {
+    "three_panels_separate": "T1_three_panels.png shows SCALE, LIVE QUANTITIES, MARKS as three distinct bordered sections in the right rail",
+    "scale_two_tap": "TWO-TAP ANCHOR — 4.762 ft per 12 px span after span=20ft commit",
+    "scale_tape_governs": "TAPE GOVERNS — 5.238 ft per 12 px span · the anchor figure is kept, the tape wins (after tape=22ft commit); refusal cleared",
+    "gable_dims_line": "26.4 ft × 11.0 ft rise · ½ × w × rise = 145.2 ft² · pitch 10/12 — mark row quantity cell = 145.2 ft², QuantitiesPanel Gable ft² = 145.2 ft²",
+    "flat_gable_refused": "Row shows quantity cell '—' (em dash), NO '0 ft²' text anywhere on row/tag; dims line reads '44.0 ft × 0.0 ft rise · ½ × w × rise = —'; receipt: 'Measure the rise at the peak on this photo — width is known, rise is not.'",
+    "contractor_refuse": "REFUSE on confirmed gable → status REFUSED, qty cell '—', reason 'refused by the contractor'; no 0 ft² printed",
+    "pull_in": "POST /api/estimates/{id}/photo-takeoff/import-annotations?photo_key=... returned HTTP 200; no 500, no console exception"
+  },
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend only)", "frontend": "100% (6/6)"},
+  "test_credentials": "hhunt6677@yahoo.com / ADMIN_PASSWORD from backend/.env",
+  "seed_data_creation": "None — all drawn marks and the tape/anchor scale were deleted at end of run",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "SEND-142 Item 2 rail split is verified green. Entry path: LP SmartSide dashboard → EST-373526 → AI Measure → checklist GOT IT → RESTORE PREVIEW (session had 8 photos saved) → Adjust Photos → per-photo takeoff button ai-measure-photo-takeoff-0. Editor has 3 panels: ScalePanel, QuantitiesPanel, MarksPanel. To hit tape-commit you must first set an anchor (two-tap + span-commit), then tape ft/in inputs appear. Flat gable geometry yields '—' in every ft² slot, never 0. EST-886440 remains untouched.",
+  "rca of the issue": "N/A — no defects found"
+}

@@ -16,6 +16,8 @@ LP_CORE_MODULES = [
     "lp_smartside_formulas.py",
     "lp_truck_reconcile.py",
     "lp_expertfinish_matrix.py",
+    "sealed_hand_takeoff_key.py",
+    # Deprecated alias path, one release only (SEND-142) — re-export shim.
     "letrick_hand_takeoff_key.py",
 ]
 

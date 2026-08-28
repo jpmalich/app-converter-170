@@ -170,7 +170,7 @@ MILESTONES = {
         "Letrick hand-takeoff (the engine's claim); end-to-end photos-to-order "
         "= 6/8 within ±3% with ambers flagging the extraction residual "
         "(the pipeline's claim, honestly labeled). "
-        "Ground truth: letrick_hand_takeoff_key.py; runs 4a009e93 (C4 e2e), "
+        "Ground truth: sealed_hand_takeoff_key.py; runs 4a009e93 (C4 e2e), "
         "5005d6eb (pre-C4); reports in /app/memory/."
     ),
 }

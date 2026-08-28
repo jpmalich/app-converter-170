@@ -3,7 +3,7 @@
 The two sealed-key runtime gates match the portable `sealed_key` doc
 flag ("letrick_v3"), never an estimate number. Sweep: no runtime route
 code compares against any EST-* estimate number. Sealed VALUES stay in
-letrick_hand_takeoff_key.py (code), never in the estimate doc.
+sealed_hand_takeoff_key.py (code), never in the estimate doc.
 """
 import json
 import re
@@ -45,4 +45,4 @@ def test_sealed_values_stay_in_code_not_doc():
     docs = json.loads((BACKEND / "fixtures" / "docs" / "estimates.json").read_text())
     letrick = next(e for e in docs if e.get("estimate_number") == "EST-373526")
     for k in ("raw_sqft", "exposure_in", "chase_outer_sqft", "eaves_lf"):
-        assert k not in letrick, f"sealed value {k} must live in letrick_hand_takeoff_key.py only"
+        assert k not in letrick, f"sealed value {k} must live in sealed_hand_takeoff_key.py only"

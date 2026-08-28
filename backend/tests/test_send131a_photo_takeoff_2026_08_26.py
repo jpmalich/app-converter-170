@@ -416,7 +416,11 @@ def test_the_router_is_registered_under_the_api_prefix():
 
 # ── THE SURFACE (structural — the editor and its entry point) ────────
 FE = Path("/app/frontend/src")
-EDITOR = (FE / "components" / "estimate" / "PhotoTakeoffEditor.jsx").read_text()
+# SEND-142 NAMED PIN UPDATE: the rail split moved this text into
+# ./phototakeoff/*; the pin reads the WHOLE surface, same question.
+from phototakeoff_surface import editor_surface  # noqa: E402
+
+EDITOR = editor_surface()
 AIM = (FE / "components" / "estimate" / "AIMeasureButton.jsx").read_text()
 
 
