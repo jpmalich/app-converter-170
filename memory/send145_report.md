@@ -13,8 +13,14 @@ refused · EST-886440 untouched.** No new mark type. No quote wiring. No price,
 no material line. No second finder, no re-OCR — every figure still comes out of
 the finished run `556b9121…`.
 
-Stamp, verbatim from `scripts/handback_green.sh`: see `memory/handback_green_log.md`
-(this send's line) — quoted in the PRD entry.
+Stamp, verbatim from `scripts/handback_green.sh`:
+
+```
+RECORDED: 2026-08-28 20:54 UTC · 1af496c · CLEAN
+RESULT: 3125 passed, 9 skipped, 7 warnings in 452.09s (0:07:32)
+CENSUS: census pin GREEN — 6 baselined reads, 0 PENDING_CONVERSION (none); 8 removal(s) logged (see baseline REMOVAL_LOG)
+INGRESS SMOKE: 4 passed in 1.92s
+```
 
 12 pins in `tests/test_send145_zone_anchor_2026_08_28.py` ·
 browser `test_reports/iteration_66.json` (**7/7 pass**) plus my own four
@@ -153,7 +159,22 @@ the live photos through the read-photo buttons:
 Nothing was confirmed, refused, adjusted, deleted or applied. **The new boxes
 are LEFT IN PLACE on EST-176308 for Howard to look at.**
 
-## 7. NOT AUTHORISED, NOT TOUCHED
+## 7. SEEN ON THE WAY THROUGH, REPORTED NOT FIXED (not SEND-145)
+
+Two guard runs before the clean one went red on **object storage LATENCY**,
+never on this send's logic: once
+`TestUploads.test_upload_and_serve` → **502 *"the photo was NOT saved"***, once
+`test_post_hover_import_returns_async_shape` → the POST **read-timed-out at
+30 s**. Measured directly: `put_object` normally answers in **0.17 s** but one
+call in a short probe took **27.68 s** (`memory/send145_probe2.py` sits beside
+the probe I used). The **refusal itself is correct** — SEND-142 ruled a failed
+store must be a named refusal, never a URL over nothing — so nothing here is a
+bug in the rule; it is the proxy stalling. **Not touched**: adding a retry or a
+longer timeout to `object_storage.put_object` is real work outside this send's
+scope and was not authorised. Registered for Howard's ruling, because it makes
+the handback stamp intermittently red on a lane that is otherwise green.
+
+## 8. NOT AUTHORISED, NOT TOUCHED
 
 corner tick · wall base · eave mark types (which would make anchor 1 real) ·
 quote wiring · rectify / homography · the blueprint path · the hover/photo

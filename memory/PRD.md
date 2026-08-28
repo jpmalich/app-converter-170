@@ -1,5 +1,87 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-28 SEND-145 — THE ANCHOR WAS WRONG, THE SHAPE WAS FINE: A FIRST-FLOOR SILL IS THE WALL LINE (stamped `2026-08-28 20:54 UTC · 1af496c · CLEAN · 3125 passed, 9 skipped, 7 warnings in 452.09s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
+Full record: `memory/send145_report.md` · probes `memory/send145_probe.py`,
+`send145_probe2.py`, `send145_check.py` · browser
+`test_reports/iteration_66.json` (**7/7 pass**) plus four screenshots I took
+myself on the live photos · 12 pins in
+`tests/test_send145_zone_anchor_2026_08_28.py`. **Defect fix for SEND-144 only.
+No new mark type. No quote wiring, no price, no material line. No second
+finder, no re-OCR. RIGHT stays REFUSED. EST-886440 untouched. The new boxes are
+LEFT IN PLACE on EST-176308 for Howard to look at.**
+1. **HOWARD'S FIELD RUN, VERBATIM**: *"Placement uses 80% of photo width, near
+   the BOTTOM OF THE PHOTO. That is a photo rule, not a wall rule. A yard or a
+   patio puts the box on the grass. The same rule parked the dormer on the
+   first floor."* Measured against the new anchor, the old `0.92 × photo
+   height` bottom was low by **244 px ≈ 4.0 ft (FRONT, driveway)**, **128 px ≈
+   7.3 ft (LEFT, lawn)**, **219 px ≈ 6.5 ft (BACK, gravel patio)**, and its
+   plane scale was wrong in BOTH directions (71.1 → **61.8** px/ft front,
+   13.8 → **17.6** left, 42.3 → **33.8** back) because it was a fraction of the
+   FRAME, never a measured box on the wall.
+2. **THE ANCHOR ORDER IS WRITTEN WHERE THE CODE CAN BE READ, and only one rung
+   exists today**: (1) the starter-candidate / wall-base MARK — no such mark
+   type yet, and SEND-144's candidate edge is derived FROM the body zone so
+   reading it back would be **circular**; (2) the **WALL REF bar** — the read
+   NAMES it in prose and writes **no pixel geometry**, and prose is not a
+   position; (3) **THE READ'S OWN FIRST-FLOOR OPENING BOXES — BUILT**; (4) else
+   the photo bottom, **and the basis says it is a PHOTO EDGE, NOT a wall
+   line — INDETERMINATE**. Doors (1) and (2) stay in the module and answer
+   honestly with nothing.
+3. **THE LOWEST first-floor box sets the BOTTOM** (its sill line — nothing on a
+   wall sits below the first floor) and **THE BIGGEST first-floor box sets the
+   PLANE SCALE** (its own measured width against its own pixels). **ONE NAMED
+   BOX, NEVER AN AVERAGE** — a pin bans `mean(`, `sum(`, `statistics` and
+   `/ len(` from the whole module, and the basis prints the box's id, its feet
+   and its pixels.
+4. **A DORMER OPENING AND A GABLE-PEAK WINDOW SET NEITHER**: the dormer opening
+   is excluded outright (`on_dormer`), and a box whose sill sits above the wall
+   band (lowest sill + the run's own wall height) is **DROPPED AND NAMED** —
+   *"Dropped above the wall band (not first floor): front-w1"*. **A BOX WITH NO
+   TYPED SIZE NEVER CARRIES THE RULER.**
+5. **THE DORMER STACKS ABOVE THE BODY TOP** — *"placed ABOVE THE BODY TOP, on
+   the upper wall of this photo — never at the photo bottom"*. That is Howard's
+   second complaint, answered in the basis. **A WALL THAT NO LONGER FITS THE
+   FRAME IS CUT AND SAYS SO** (*"move the sides onto what you can actually
+   see"*) — a real scale may overflow; it is reported, never quietly shrunk.
+6. **THE NEW BOXES ON EST-176308 (run `556b9121…`)**: **FRONT** bottom+scale
+   `front-gd1` (garage door, 8.25 ft / 510 px → 61.82 px/ft), 3 first-floor
+   boxes, `front-w1` (peak window) DROPPED · **LEFT** bottom `left-w1`, scale
+   `left-w3` (2.5 ft / 44 px → 17.6 px/ft) — **the lowest and the biggest are
+   DIFFERENT boxes here**, and the two dormer windows were excluded outright ·
+   **BACK** bottom+scale `back-d1-patio` (patio door threshold, 5.83 ft / 197 px
+   → 33.77 px/ft), `back-w1-gable` DROPPED. **RIGHT: the face refusal still
+   fires first** — *"no photo measured this wall's width (assumed_symmetric).
+   Not measured. Not copied from another face."* **A better anchor is not a
+   licence to place a box on a wall nobody measured.**
+7. **THE PIN I CORRECTED, NAMED, NOTHING RELAXED**: the file arrived asserting
+   the FRONT bottom came from the small window rather than the garage door,
+   contradicting its own fixture comment and Howard's *"Lowest opening for the
+   bottom"* (lowest ON THE WALL = the largest sill y). The **code was right and
+   the expectation was wrong**; the expectation was corrected with the ruling
+   quoted, and the file was **strengthened** with a new pin proving the two
+   choices are INDEPENDENT (a window dropped below the garage door takes the
+   bottom while the scale stays on the garage door).
+8. **LOOKED AT, NOT INFERRED** (Howard: *"do not call it on the wall from
+   numbers alone"*): FRONT — the bottom runs where the two garage doors and the
+   entry door meet the driveway, the driveway BELOW the box, the gable on the
+   body top · LEFT — the bottom runs along the mulch/siding line with the whole
+   lawn OUTSIDE the box, the dormer above the body top over the real pop-up
+   dormer · BACK — the bottom runs along the patio-door threshold, the gravel,
+   fire pit and chairs all BELOW · RIGHT — STARTING ZONES refuses and places
+   0 marks · FRONT idempotent (6 → 6, *"nothing was overwritten"*). Nothing
+   confirmed, refused, adjusted, deleted or applied.
+9. **REPORTED, NOT FIXED (not this send's logic)**: two guard runs went red on
+   **object storage LATENCY** — `TestUploads.test_upload_and_serve` 502 *"the
+   photo was NOT saved"*, and `test_post_hover_import_returns_async_shape`
+   read-timing-out at 30 s. `put_object` normally answers in **0.17 s**; one
+   probe call took **27.68 s**. The refusal is SEND-142's correct behaviour, so
+   the rule is not at fault — the proxy stalls. A retry / longer timeout is
+   work outside SEND-145 and was **not attempted**; it awaits Howard's ruling.
+10. **PARKED, UNTOUCHED**: corner tick · wall base · eave mark types (which
+    would make anchor 1 real) · quote wiring · rectify / homography · the
+    blueprint path · the hover/photo storage split.
+
+
 ## 2026-08-28 SEND-144 — THE HANDOFF: THE READ'S FINDINGS BECOME STARTING ZONES (stamped `2026-08-28 18:15 UTC · 9c62e6b · CLEAN · 3113 passed, 9 skipped, 7 warnings in 469.93s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed)
 Full record: `memory/send144_report.md` · report probe `memory/send144_probe.py`
 · browser `test_reports/iteration_64.json` (found the entry gap) and
