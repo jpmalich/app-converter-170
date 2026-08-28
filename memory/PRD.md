@@ -1,5 +1,51 @@
 # Siding Estimator — PRD (Alside Supply Edition)
 
+## 2026-08-28 SEND-141 — A REFUSED ROW SHOWS NO NUMBER: EM DASH, NEVER 0 FT² (stamped `2026-08-28 00:10 UTC · 83319d8 · CLEAN · 3058 passed, 9 skipped, 7 warnings in 463.71s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed; zero pre-stamp reds)
+Full record: `memory/send141_report.md` · 13 pins in
+`tests/test_send141_refused_rows_show_no_zero_2026_08_27.py` · all four
+verifications done **in the browser on real photos**. No estimate written
+(the run's 3 marks + scale deleted from EST-373526 after).
+**EST-886440 untouched.**
+1. **THE RULE, IN ONE PLACE.** `qtyCell(mark, area)` is now the ONLY thing
+   in the editor allowed to decide what a quantity cell may say, and it
+   answers in order: point mark → "count only" · no scale → "no scale" ·
+   **refused, or its FIGURE refused, or the area is not > 0 → `—`** · only
+   then a number. **The em dash is reachable BEFORE the number is**, and
+   `!(a > 0)` catches both 0 and 0.0 — the ordering itself is pinned.
+2. **THE 0 WAS PRINTED TWICE** — in the mark list AND on the coloured tag
+   drawn over the polygon. Both call `qtyCell` now, and a pin counts
+   exactly two call sites so the number cannot return on one surface while
+   the other stays honest.
+3. **THE SAME LIE ON THE PANELS IS GONE**: the gable panel printed
+   `½ × w × rise = 0.0 ft²` and the cheek line could print `= 0.0 ft²`.
+   Every ft² figure there now goes through `ft2(v)` → em dash when there is
+   no figure; pinned that no raw `.toFixed(1)} ft²` remains.
+4. **A FACE REFUSAL BLANKS THE CELL; A CHEEK REFUSAL NEVER DOES** —
+   SEND-140 survives intact (the drawn dormer FACE keeps its figure while
+   the cheeks refuse for want of a typed depth). `figureRefused()` reads
+   `row.refusal` only, and a pin asserts it never reads `cheek_refusal`.
+5. **THE SAME RULE COVERS SIDING, NON-SIDING AND OPENINGS** (Howard's scope
+   note): any refused mark of any kind, and any degenerate shape enclosing
+   nothing, shows the em dash. One rule, one helper, every kind.
+6. **NOTHING PROMOTED, NOTHING WRITTEN.** The 0 was the flat polygon's
+   client-side pixel area — it never existed on the server. The lane a
+   refusal feeds is None, apply accumulates a lane only `if … is not None`
+   and emits the key as None unless a live figure arrived, and a pin scans
+   the route for `"photo_gable_sqft": 0` / `0.0` / `or 0` defaults and
+   finds none. **No new coach**: a pin asserts the only receipt keys in the
+   editor are SEND-140's.
+7. **THE FOUR CHECKS, IN THE BROWSER (EST-373526)**: refused gable → row
+   `GABLE | —` with the rise receipt, panel `= —`, tag `GABLE·—`, no
+   `0 ft²` anywhere on the row ✓ · dormer with no depth → row **27 ft²**
+   (the FACE was drawn), rail cheeks **—**, cheek refusal line intact ✓ ·
+   measured gable → **32.81 ft²** and `12.5 ft × 5.3 ft rise · ½ × w ×
+   rise = 32.8 ft² · pitch 10.1/12`, receipt count 0, while the refused
+   gable's em dash was still on screen two rows above ✓ · refused lanes
+   report None and Siding / Non-siding / Openings all read **—** ✓.
+8. **NOT AUTHORISED, NOT TOUCHED**: rail split · phase 2 trim · fixture
+   rename · quote wiring.
+
+
 ## 2026-08-27 SEND-140 — THE REFUSAL RECEIPT: ONE LINE THAT SAYS WHAT TO TAPE (stamped `2026-08-27 22:47 UTC · 4ae840a · CLEAN · 3045 passed, 9 skipped, 7 warnings in 467.68s` + census GREEN 0 PENDING_CONVERSION + ingress 4 passed; zero pre-stamp reds)
 Full record: `memory/send140_report.md` · 15 pins in
 `tests/test_send140_refusal_receipt_2026_08_27.py` · all four

@@ -1,5 +1,9 @@
 # SEND-141 — A REFUSED ROW SHOWS NO NUMBER — 2026-08-27
 
+**STAMP: `2026-08-28 00:10 UTC · 83319d8 · CLEAN · 3058 passed, 9 skipped,
+7 warnings in 463.71s`** · census pin GREEN, 0 PENDING_CONVERSION · ingress
+smoke 4 passed. **Zero pre-stamp reds.**
+
 The 0 is gone. 13 pins in
 `tests/test_send141_refused_rows_show_no_zero_2026_08_27.py`, all four
 verifications done **in the browser on real photos**. No estimate was
